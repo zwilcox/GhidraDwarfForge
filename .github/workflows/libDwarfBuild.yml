@@ -2,41 +2,36 @@ name: build-libdwarf
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
   pull_request:
   workflow_dispatch:
 
 permissions:
   contents: write
 
+############################################
+# Build job: Linux
+############################################
 jobs:
-  build:
-    name: Build on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-
+  build-linux:
+    runs-on: ubuntu-latest
+    outputs:
+      cache_miss: ${{ steps.set-output.outputs.cache_miss }}
     steps:
-      - name: Checkout workflow repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # ---------------- Cache restore ----------------
-      - name: Restore cached binaries
+      - name: Restore cached binaries (linux)
         id: restore-cache
         uses: actions/cache/restore@v4
         with:
           path: cache/libdwarf
-          key: libdwarf-${{ runner.os }}-v0.12.0
-          restore-keys: |
-            libdwarf-${{ runner.os }}-
+          key: libdwarf-linux-v0.12.0
+          restore-keys: libdwarf-linux-
 
-      # ---------------- If cache hit, skip compilation ----------------
       - name: Copy cached outputs
         if: steps.restore-cache.outputs.cache-hit == 'true'
         run: |
-          echo "Cache hit – re‑using prebuilt binaries"
+          echo "Cache hit – re‑using linux binaries"
           mkdir -p out
           cp -r cache/libdwarf/* out/
 
@@ -48,38 +43,75 @@ jobs:
           ref: v0.12.0
           path: libdwarf-code
 
-      ########################################
-      # Build (only when cache miss)
-      ########################################
-      - name: Install build deps (Ubuntu)
-        if: matrix.os == 'ubuntu-latest' && steps.restore-cache.outputs.cache-hit != 'true'
+      - name: Install deps & build (cache miss only)
+        if: steps.restore-cache.outputs.cache-hit != 'true'
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y \
             build-essential cmake ninja-build pkg-config \
             zlib1g-dev libzstd-dev
-
-      - name: Configure (Ubuntu)
-        if: matrix.os == 'ubuntu-latest' && steps.restore-cache.outputs.cache-hit != 'true'
-        run: |
-          cmake -S libdwarf-code -B build -G Ninja \
-                -DCMAKE_BUILD_TYPE=Release \
-                -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install"
-
-      - name: Build & install (Ubuntu)
-        if: matrix.os == 'ubuntu-latest' && steps.restore-cache.outputs.cache-hit != 'true'
-        run: cmake --build build --target install --parallel
-
-      - name: Collect outputs (Ubuntu)
-        if: matrix.os == 'ubuntu-latest' && steps.restore-cache.outputs.cache-hit != 'true'
-        run: |
+          cmake -S libdwarf-code -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install"
+          cmake --build build --target install --parallel
           mkdir -p out
           cp install/lib/libdwarf* out/ || true
-          cp install/bin/dwarf* out/ || true
+          cp install/bin/dwarf*  out/ || true
+          # stage into cache dir for saving
+          mkdir -p cache/libdwarf
+          cp -r out/* cache/libdwarf/
 
-      # -------- Windows steps (cache miss only) --------
-      - name: Set up MSYS2 (Windows)
-        if: matrix.os == 'windows-latest' && steps.restore-cache.outputs.cache-hit != 'true'
+      - name: Save linux cache
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: cache/libdwarf
+          key: libdwarf-linux-v0.12.0
+
+      - name: Upload artifact (linux)
+        uses: actions/upload-artifact@v4
+        with:
+          name: libdwarf-linux
+          path: out
+
+      - name: Set output flag
+        id: set-output
+        run: echo "cache_miss=${{ steps.restore-cache.outputs.cache-hit != 'true' }}" >> $GITHUB_OUTPUT
+
+############################################
+# Build job: Windows
+############################################
+  build-windows:
+    runs-on: windows-latest
+    outputs:
+      cache_miss: ${{ steps.set-output.outputs.cache_miss }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore cached binaries (windows)
+        id: restore-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: cache/libdwarf
+          key: libdwarf-windows-v0.12.0
+          restore-keys: libdwarf-windows-
+
+      - name: Copy cached outputs
+        if: steps.restore-cache.outputs.cache-hit == 'true'
+        shell: bash
+        run: |
+          echo "Cache hit – re‑using windows binaries"
+          mkdir -p out
+          cp -r cache/libdwarf/* out/
+
+      - name: Checkout libdwarf-code v0.12.0
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: davea42/libdwarf-code
+          ref: v0.12.0
+          path: libdwarf-code
+
+      - name: Setup MSYS2 & build (cache miss only)
+        if: steps.restore-cache.outputs.cache-hit != 'true'
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
@@ -90,56 +122,47 @@ jobs:
             mingw-w64-x86_64-ninja
             mingw-w64-x86_64-zlib
 
-      - name: Configure (Windows)
-        if: matrix.os == 'windows-latest' && steps.restore-cache.outputs.cache-hit != 'true'
+      - name: Configure, build, collect (windows)
+        if: steps.restore-cache.outputs.cache-hit != 'true'
         shell: msys2 {0}
         run: |
-          cmake -S libdwarf-code -B build -G Ninja \
-                -DCMAKE_BUILD_TYPE=Release \
-                -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install"
-
-      - name: Build & install (Windows)
-        if: matrix.os == 'windows-latest' && steps.restore-cache.outputs.cache-hit != 'true'
-        shell: msys2 {0}
-        run: cmake --build build --target install --parallel
-
-      - name: Collect outputs (Windows)
-        if: matrix.os == 'windows-latest' && steps.restore-cache.outputs.cache-hit != 'true'
-        shell: msys2 {0}
-        run: |
+          cmake -S libdwarf-code -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install"
+          cmake --build build --target install --parallel
           mkdir -p out
           cp install/bin/libdwarf*.dll out/ || true
           cp install/lib/libdwarf*.a   out/ || true
           cp install/bin/dwarf*.exe    out/ || true
+          mkdir -p cache/libdwarf
+          cp -r out/* cache/libdwarf/
 
-      # ---------------- Save to cache when we built new binaries ----------------
-      - name: Save binaries to cache
+      - name: Save windows cache
         if: steps.restore-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: cache/libdwarf
-          key: libdwarf-${{ runner.os }}-v0.12.0
+          key: libdwarf-windows-v0.12.0
 
-      - name: Copy outputs into cache folder (for future runs)
-        if: steps.restore-cache.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p cache/libdwarf
-          cp -r out/* cache/libdwarf/
-
-      - name: Upload artifact
+      - name: Upload artifact (windows)
         uses: actions/upload-artifact@v4
         with:
-          name: libdwarf-${{ matrix.os }}
+          name: libdwarf-windows
           path: out
 
+      - name: Set output flag
+        id: set-output
+        shell: bash
+        run: echo "cache_miss=${{ steps.restore-cache.outputs.cache-hit != 'true' }}" >> $GITHUB_OUTPUT
+
+############################################
+# Publish job runs only if either cache miss is true
+############################################
   publish:
-    name: Commit binaries to repo
+    needs: [build-linux, build-windows]
+    if: needs.build-linux.outputs.cache_miss == 'true' || needs.build-windows.outputs.cache_miss == 'true'
     runs-on: ubuntu-latest
-    needs: build
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           persist-credentials: true
           fetch-depth: 0
@@ -152,13 +175,10 @@ jobs:
       - name: Organize libdwarf folder
         run: |
           mkdir -p libdwarf/linux libdwarf/windows
-          cp -r _artifacts/libdwarf-ubuntu-latest/*   libdwarf/linux/   || true
-          cp -r _artifacts/libdwarf-windows-latest/*  libdwarf/windows/ || true
+          cp -r _artifacts/libdwarf-linux/*   libdwarf/linux/   || true
+          cp -r _artifacts/libdwarf-windows/* libdwarf/windows/ || true
 
-      - name: Show tree (debug)
-        run: tree -L 2 libdwarf || true
-
-      - name: Commit & push if changes
+      - name: Commit & push if binaries changed
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -168,6 +188,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No binary updates to commit."
           else
-            git commit -m "Update prebuilt libdwarf binaries (cached)"
+            git commit -m "Update prebuilt libdwarf binaries to v0.12.0"
             git push origin HEAD
           fi
