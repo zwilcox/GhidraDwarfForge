@@ -22,10 +22,11 @@ jobs:
       - name: Checkout workflow repo
         uses: actions/checkout@v4
 
-      - name: Checkout libdwarf-code source
+      - name: Checkout libdwarf-code v0.12.0
         uses: actions/checkout@v4
         with:
           repository: davea42/libdwarf-code
+          ref: v0.12.0
           path: libdwarf-code
 
       #############################
@@ -120,9 +121,7 @@ jobs:
       - name: Organize libdwarf folder
         run: |
           mkdir -p libdwarf/linux libdwarf/windows
-          # copy linux files
           cp -r _artifacts/libdwarf-ubuntu-latest/*   libdwarf/linux/   || true
-          # copy windows files
           cp -r _artifacts/libdwarf-windows-latest/*  libdwarf/windows/ || true
 
       - name: Show tree (debug)
@@ -138,6 +137,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No binary updates to commit."
           else
-            git commit -m "Update prebuilt libdwarf binaries"
+            git commit -m "Update prebuilt libdwarf binaries to v0.12.0"
             git push origin HEAD
           fi
