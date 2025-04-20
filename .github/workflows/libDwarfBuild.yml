@@ -2,9 +2,7 @@ name: build-libdwarf
 
 on:
   push:
-    branches:
-      - main
-      - master
+    branches: [main, master]
   pull_request:
   workflow_dispatch:
 
@@ -18,60 +16,65 @@ jobs:
         os: [ubuntu-latest, windows-latest]
 
     steps:
-      - name: Checkout source
+      # Checkout *this* repo (so the workflow is present)
+      - name: Checkout workflow repo
         uses: actions/checkout@v4
 
-      # -------- Linux build --------
-      - name: Install dependencies (Ubuntu)
+      # Fetch libdwarf-code sources into a sub‑folder
+      - name: Checkout libdwarf-code source
+        uses: actions/checkout@v4
+        with:
+          repository: davea42/libdwarf-code
+          path: libdwarf-code
+
+      # ---------------- Linux ----------------
+      - name: Install build deps (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y \
-            build-essential \
-            cmake \
-            ninja-build \
-            pkg-config \
-            zlib1g-dev \
-            libzstd-dev
+            build-essential cmake ninja-build pkg-config \
+            zlib1g-dev libzstd-dev
 
       - name: Configure (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: |
-          cmake -S . -B build -G Ninja \
-                -DCMAKE_BUILD_TYPE=Release \
-                -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
+          cmake -S libdwarf-code -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install"
 
       - name: Build & install (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: |
           cmake --build build --target install --parallel
 
-      - name: Gather artifacts (Ubuntu)
+      - name: Collect artifacts (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: |
           mkdir -p libdwarf
           cp install/lib/libdwarf* libdwarf/ || true
-          cp install/bin/dwarfdump* libdwarf/ || true
+          cp install/bin/dwarf* libdwarf/ || true
 
-      # -------- Windows build --------
+      # ---------------- Windows ----------------
       - name: Set up MSYS2 (Windows)
         if: matrix.os == 'windows-latest'
         uses: msys2/setup-msys2@v2
         with:
-          update: true
           msystem: MINGW64
-          install: |
+          update: true
+          install: >-
             mingw-w64-x86_64-toolchain
             mingw-w64-x86_64-cmake
             mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-zlib
 
       - name: Configure (Windows)
         if: matrix.os == 'windows-latest'
         shell: msys2 {0}
         run: |
-          cmake -S . -B build -G Ninja \
-                -DCMAKE_BUILD_TYPE=Release \
-                -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
+          cmake -S libdwarf-code -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install"
 
       - name: Build & install (Windows)
         if: matrix.os == 'windows-latest'
@@ -79,16 +82,16 @@ jobs:
         run: |
           cmake --build build --target install --parallel
 
-      - name: Gather artifacts (Windows)
+      - name: Collect artifacts (Windows)
         if: matrix.os == 'windows-latest'
         shell: msys2 {0}
         run: |
           mkdir -p libdwarf
           cp install/bin/libdwarf*.dll libdwarf/ || true
           cp install/lib/libdwarf*.a libdwarf/ || true
-          cp install/bin/dwarfdump*.exe libdwarf/ || true
+          cp install/bin/dwarf*.exe libdwarf/ || true
 
-      # -------- Upload artifacts --------
+      # Upload combined artifacts per‑OS
       - name: Upload binaries
         uses: actions/upload-artifact@v4
         with:
