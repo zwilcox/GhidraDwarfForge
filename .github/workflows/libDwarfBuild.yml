@@ -6,9 +6,8 @@ on:
   pull_request:
   workflow_dispatch:
 
-# Ensure the workflow can push commits
 permissions:
-  contents: write
+  contents: write  # allow publish job to push binaries back
 
 jobs:
   build:
@@ -20,20 +19,18 @@ jobs:
         os: [ubuntu-latest, windows-latest]
 
     steps:
-      # Checkout this repository (contains the workflow & will hold binaries)
       - name: Checkout workflow repo
         uses: actions/checkout@v4
 
-      # Fetch libdwarf-code sources into a sub‑folder
       - name: Checkout libdwarf-code source
         uses: actions/checkout@v4
         with:
           repository: davea42/libdwarf-code
           path: libdwarf-code
 
-      ################################
+      #############################
       # Linux build
-      ################################
+      #############################
       - name: Install build deps (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: |
@@ -46,23 +43,23 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           cmake -S libdwarf-code -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install"
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install"
 
       - name: Build & install (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: cmake --build build --target install --parallel
 
-      - name: Collect artifacts (Ubuntu)
+      - name: Collect outputs (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: |
-          mkdir -p out/linux
-          cp install/lib/libdwarf* out/linux/ || true
-          cp install/bin/dwarf* out/linux/ || true
+          mkdir -p out
+          cp install/lib/libdwarf* out/ || true
+          cp install/bin/dwarf* out/ || true
 
-      ################################
-      # Windows build (MSYS2)
-      ################################
+      #############################
+      # Windows build
+      #############################
       - name: Set up MSYS2 (Windows)
         if: matrix.os == 'windows-latest'
         uses: msys2/setup-msys2@v2
@@ -80,35 +77,29 @@ jobs:
         shell: msys2 {0}
         run: |
           cmake -S libdwarf-code -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install"
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install"
 
       - name: Build & install (Windows)
         if: matrix.os == 'windows-latest'
         shell: msys2 {0}
         run: cmake --build build --target install --parallel
 
-      - name: Collect artifacts (Windows)
+      - name: Collect outputs (Windows)
         if: matrix.os == 'windows-latest'
         shell: msys2 {0}
         run: |
-          mkdir -p out/windows
-          cp install/bin/libdwarf*.dll out/windows/ || true
-          cp install/lib/libdwarf*.a out/windows/ || true
-          cp install/bin/dwarf*.exe out/windows/ || true
+          mkdir -p out
+          cp install/bin/libdwarf*.dll out/ || true
+          cp install/lib/libdwarf*.a   out/ || true
+          cp install/bin/dwarf*.exe    out/ || true
 
-      ################################
-      # Upload job artifacts to transfer between matrix runners
-      ################################
-      - name: Upload build outputs
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: libdwarf-${{ matrix.os }}
           path: out
 
-  ################################
-  # Publish collected binaries back to repo
-  ################################
   publish:
     name: Commit binaries to repo
     runs-on: ubuntu-latest
@@ -118,33 +109,34 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          persist-credentials: true  # so we can push
-          fetch-depth: 0             # full history to avoid push issues
+          persist-credentials: true
+          fetch-depth: 0
 
-      - name: Download all build artifacts
+      - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           path: _artifacts
 
-      - name: Organize binaries under libdwarf/
+      - name: Organize libdwarf folder
         run: |
           mkdir -p libdwarf/linux libdwarf/windows
-          cp -r _artifacts/libdwarf-ubuntu-latest/* libdwarf/linux/ || true
-          cp -r _artifacts/libdwarf-windows-latest/* libdwarf/windows/ || true
+          # copy linux files
+          cp -r _artifacts/libdwarf-ubuntu-latest/*   libdwarf/linux/   || true
+          # copy windows files
+          cp -r _artifacts/libdwarf-windows-latest/*  libdwarf/windows/ || true
 
-      - name: Show resulting tree (debug)
+      - name: Show tree (debug)
         run: tree -L 2 libdwarf || true
 
-      - name: Commit & push if changed
+      - name: Commit & push if changes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # Add new/changed binaries
           git add libdwarf
           if git diff --cached --quiet; then
-            echo "No changes to commit"
+            echo "No binary updates to commit."
           else
             git commit -m "Update prebuilt libdwarf binaries"
             git push origin HEAD
