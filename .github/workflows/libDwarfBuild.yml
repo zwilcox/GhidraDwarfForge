@@ -2,7 +2,7 @@ name: build-libdwarf
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
