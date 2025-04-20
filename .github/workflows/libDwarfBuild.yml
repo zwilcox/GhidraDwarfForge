@@ -175,8 +175,31 @@ jobs:
       - name: Organize libdwarf folder
         run: |
           mkdir -p libdwarf/linux libdwarf/windows
-          cp -r _artifacts/libdwarf-linux/*   libdwarf/linux/   || true
-          cp -r _artifacts/libdwarf-windows/* libdwarf/windows/ || true
+          # function to copy only when bytes differ
+          copy_if_changed() {
+            src="$1"; dest="$2";
+            mkdir -p "$(dirname "$dest")"
+            if [ -f "$dest" ] && cmp -s "$src" "$dest"; then
+              echo "Unchanged: $dest"
+            else
+              cp "$src" "$dest"
+              echo "Updated: $dest"
+            fi
+          }
+          # Linux artifacts
+          if [ -d _artifacts/libdwarf-linux ]; then
+            find _artifacts/libdwarf-linux -type f -print0 | while IFS= read -r -d '' f; do
+              rel=${f#*_artifacts/libdwarf-linux/}
+              copy_if_changed "$f" "libdwarf/linux/$rel"
+            done
+          fi
+          # Windows artifacts
+          if [ -d _artifacts/libdwarf-windows ]; then
+            find _artifacts/libdwarf-windows -type f -print0 | while IFS= read -r -d '' f; do
+              rel=${f#*_artifacts/libdwarf-windows/}
+              copy_if_changed "$f" "libdwarf/windows/$rel"
+            done
+          fi
 
       - name: Commit & push if binaries changed
         env:
@@ -185,6 +208,12 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add libdwarf
+          if git diff --cached --quiet; then
+            echo "No binary updates to commit."
+            exit 0
+          fi
+          git commit -m "Update prebuilt libdwarf binaries to v0.12.0"
+          git push origin HEAD
           if git diff --cached --quiet; then
             echo "No binary updates to commit."
           else
