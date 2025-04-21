@@ -2,3 +2,5 @@ Name: DwarfForge
 GhidraModuleVersion: 1.0
 Description: Plugin that integrates libdwarf via JNA
 Author: Zachary Wilcox
+
+Requires: GhidraVersion >= 11.3
