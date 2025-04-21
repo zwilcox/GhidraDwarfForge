@@ -1,4 +1,4 @@
-package com.zwilcox.dwarfForge;
+package com.zwilcox.dwarfforge;
 
 import com.sun.jna.*;
 import com.sun.jna.ptr.*;
