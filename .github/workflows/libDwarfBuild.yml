@@ -11,10 +11,10 @@ permissions:
   contents: write
 
 env:
-  LIBDWARF_VERSION: v0.12.0
+  LIBDWARF_VERSION: v0.12.0          # change in one place only
 
 ##############################################################################
-#  Build –  Linux
+#  Build – Linux
 ##############################################################################
 jobs:
   build-linux:
@@ -49,19 +49,15 @@ jobs:
                 -DCMAKE_INSTALL_PREFIX="$PWD/install"
           cmake --build build --target install --parallel
 
-          # ------------------------------------------------------------
-          # Collect only shared libs → wrapper resources + out + cache
-          # ------------------------------------------------------------
-          mkdir -p jna-wrapper/src/main/resources/linux-x86-64
-          mkdir -p out cache/libdwarf/linux
+          # ------------------------------------------------------------------
+          # Collect *.so → wrapper-resources + out + cache
+          # ------------------------------------------------------------------
+          WRAP=jena-wrapper/src/main/resources/linux-x86-64
+          mkdir -p "$WRAP" out cache/libdwarf/linux
 
-          # Move *first* so symlink & target stay intact, then copy with -P
-          mv install/lib/libdwarf*.so* \
-             jna-wrapper/src/main/resources/linux-x86-64/
-
-          cp -P jna-wrapper/src/main/resources/linux-x86-64/libdwarf*.so* out/
-          cp -P jna-wrapper/src/main/resources/linux-x86-64/libdwarf*.so* \
-                cache/libdwarf/linux/
+          cp -P install/lib/libdwarf*.so* "$WRAP/"
+          cp -P "$WRAP"/libdwarf*.so*    out/
+          cp -P "$WRAP"/libdwarf*.so*    cache/libdwarf/linux/
 
       - name: Save cache (linux)
         if: steps.cache.outputs.cache-hit != 'true'
@@ -79,7 +75,7 @@ jobs:
         run: echo "cache_miss=${{ steps.cache.outputs.cache-hit != 'true' }}" >> "$GITHUB_OUTPUT"
 
 ##############################################################################
-#  Build –  Windows (MSYS2 / MinGW-w64)
+#  Build – Windows
 ##############################################################################
   build-windows:
     runs-on: windows-latest
@@ -96,10 +92,7 @@ jobs:
           path: cache/libdwarf
           key: libdwarf-windows-${{ env.LIBDWARF_VERSION }}
 
-      # ------------------------------------------------------------------
-      # Everything below here runs only when cache is missing
-      # ------------------------------------------------------------------
-      - name: MSYS2 setup + toolchain
+      - name: MSYS2 toolchain
         if: steps.cache.outputs.cache-hit != 'true'
         uses: msys2/setup-msys2@v2
         with:
@@ -126,18 +119,12 @@ jobs:
                 -DCMAKE_INSTALL_PREFIX="$PWD/install"
           cmake --build build --target install --parallel
 
-          # ------------------------------------------------------------
-          # Collect only DLLs → wrapper resources + out + cache
-          # ------------------------------------------------------------
-          mkdir -p jna-wrapper/src/main/resources/win32-x86-64
-          mkdir -p out cache/libdwarf/windows
+          WRAP=jena-wrapper/src/main/resources/win32-x86-64
+          mkdir -p "$WRAP" out cache/libdwarf/windows
 
-          mv install/bin/libdwarf*.dll \
-             jna-wrapper/src/main/resources/win32-x86-64/
-
-          cp jna-wrapper/src/main/resources/win32-x86-64/libdwarf*.dll out/
-          cp jna-wrapper/src/main/resources/win32-x86-64/libdwarf*.dll \
-             cache/libdwarf/windows/
+          cp install/bin/libdwarf*.dll "$WRAP/"
+          cp "$WRAP"/libdwarf*.dll      out/
+          cp "$WRAP"/libdwarf*.dll      cache/libdwarf/windows/
 
       - name: Save cache (windows)
         if: steps.cache.outputs.cache-hit != 'true'
@@ -156,7 +143,7 @@ jobs:
         run: echo "cache_miss=${{ steps.cache.outputs.cache-hit != 'true' }}" >> "$GITHUB_OUTPUT"
 
 ##############################################################################
-#  Publish – only when either job had a cache-miss
+#  Publish – only when we actually rebuilt something
 ##############################################################################
   publish:
     needs: [ build-linux, build-windows ]
@@ -173,9 +160,13 @@ jobs:
         with:
           path: _artifacts
 
-      - name: Sync libdwarf folder
+      - name: Sync libdwarf & wrapper folders
         run: |
+          set -e
           mkdir -p libdwarf/linux libdwarf/windows
+          mkdir -p jna-wrapper/src/main/resources/linux-x86-64
+          mkdir -p jna-wrapper/src/main/resources/win32-x86-64
+
           copy_if_changed() {
               src="$1"; dest="$2"
               [ -e "$src" ] || return 0
@@ -187,15 +178,21 @@ jobs:
                   echo "Updated:   $dest"
               fi
           }
-          find _artifacts/libdwarf-linux   -type f -print0 2>/dev/null | \
+
+          # -------- Linux .so --------
+          find _artifacts/libdwarf-linux -type f -name 'libdwarf*.so*' -print0 | \
             while IFS= read -r -d '' f; do
-              rel=${f#*_artifacts/libdwarf-linux/}
-              copy_if_changed "$f" "libdwarf/linux/$rel"
+              base=$(basename "$f")
+              copy_if_changed "$f" "libdwarf/linux/$base"
+              copy_if_changed "$f" "jna-wrapper/src/main/resources/linux-x86-64/$base"
             done
-          find _artifacts/libdwarf-windows -type f -print0 2>/dev/null | \
+
+          # -------- Windows .dll -----
+          find _artifacts/libdwarf-windows -type f -name 'libdwarf*.dll' -print0 | \
             while IFS= read -r -d '' f; do
-              rel=${f#*_artifacts/libdwarf-windows/}
-              copy_if_changed "$f" "libdwarf/windows/$rel"
+              base=$(basename "$f")
+              copy_if_changed "$f" "libdwarf/windows/$base"
+              copy_if_changed "$f" "jna-wrapper/src/main/resources/win32-x86-64/$base"
             done
 
       - name: Commit & push if binaries changed
