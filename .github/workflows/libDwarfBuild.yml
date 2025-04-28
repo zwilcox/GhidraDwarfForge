@@ -1,46 +1,41 @@
-name: Build libdwarf natives
+name: Build libdwarf natives & JAR
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   workflow_dispatch:
 
 env:
-  # Which libdwarf tag/branch to build
+  # -------------------------------------------------------------------------
+  # Update this tag/branch to bump the native libdwarf build
   LIBDWARF_VERSION: v0.12.0
+  # -------------------------------------------------------------------------
 
-# ──────────────────────────────────────────────────────────────────────────────
-# L I N U X
-# ──────────────────────────────────────────────────────────────────────────────
+# --------------------------------------------------------------------------- #
+#  L I N U X   N A T I V E   B U I L D                                        #
+# --------------------------------------------------------------------------- #
 jobs:
   build-linux:
     runs-on: ubuntu-24.04
-
     steps:
       - uses: actions/checkout@v4
 
-      # ---------- cache ------------------------------------------------------
-      - id: cache-linux
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: .cache/libdwarf
           key: libdwarf-linux-${{ env.LIBDWARF_VERSION }}
 
-      # ---------- toolchain --------------------------------------------------
       - name: Install toolchain
-        if: steps.cache-linux.outputs.cache-hit != 'true'
         run: |
           sudo apt-get update -y
           sudo apt-get install --no-install-recommends -y \
             build-essential cmake ninja-build pkg-config \
             zlib1g-dev libzstd-dev
 
-      # ---------- build ------------------------------------------------------
       - name: Build shared library
-        if: steps.cache-linux.outputs.cache-hit != 'true'
         run: |
           git clone --depth 1 --branch "$LIBDWARF_VERSION" \
-              https://github.com/davea42/libdwarf-code libdwarf-code
+            https://github.com/davea42/libdwarf-code libdwarf-code
 
           cmake -S libdwarf-code -B build -G Ninja \
                 -DCMAKE_BUILD_TYPE=Release \
@@ -51,28 +46,23 @@ jobs:
 
           WRAP=jna-wrapper/src/main/resources/linux-x86-64
           mkdir -p "$WRAP" out .cache/libdwarf/linux
-          cp install/lib/libdwarf*.so* "$WRAP/"
-          cp install/lib/libdwarf*.so* out/
-          cp install/lib/libdwarf*.so* .cache/libdwarf/linux/
 
-      # ---------- copy from cache (hit) --------------------------------------
-      - name: Copy cached .so files
-        if: steps.cache-linux.outputs.cache-hit == 'true'
-        run: |
-          WRAP=jna-wrapper/src/main/resources/linux-x86-64
-          mkdir -p "$WRAP" out
-          cp .cache/libdwarf/linux/* "$WRAP"/
-          cp .cache/libdwarf/linux/* out/
+          shopt -s nullglob
+          for so in install/lib/libdwarf*.so*; do
+            cp "$so" "$WRAP/"
+            cp "$so" out/
+            cp "$so" .cache/libdwarf/linux/
+          done
+          shopt -u nullglob
 
-      # ---------- artifact ---------------------------------------------------
       - uses: actions/upload-artifact@v4
         with:
           name: libdwarf-linux
           path: out/*
 
-# ──────────────────────────────────────────────────────────────────────────────
-# W I N D O W S
-# ──────────────────────────────────────────────────────────────────────────────
+# --------------------------------------------------------------------------- #
+#  W I N D O W S   N A T I V E   B U I L D                                    #
+# --------------------------------------------------------------------------- #
   build-windows:
     runs-on: windows-2022
     defaults:
@@ -82,7 +72,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # ---------- MSYS2 ------------------------------------------------------
       - name: MSYS2 setup
         uses: msys2/setup-msys2@v2
         with:
@@ -95,19 +84,15 @@ jobs:
             mingw-w64-x86_64-zlib
             git
 
-      # ---------- cache ------------------------------------------------------
-      - id: cache-win
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: .cache/libdwarf
           key: libdwarf-windows-${{ env.LIBDWARF_VERSION }}
 
-      # ---------- build ------------------------------------------------------
       - name: Build shared library
-        if: steps.cache-win.outputs.cache-hit != 'true'
         run: |
           git clone --depth 1 --branch "$LIBDWARF_VERSION" \
-              https://github.com/davea42/libdwarf-code libdwarf-code
+            https://github.com/davea42/libdwarf-code libdwarf-code
 
           cmake -S libdwarf-code -B build -G Ninja \
                 -DCMAKE_BUILD_TYPE=Release \
@@ -118,47 +103,40 @@ jobs:
 
           WRAP=jna-wrapper/src/main/resources/win32-x86-64
           mkdir -p "$WRAP" out .cache/libdwarf/windows
-          cp install/bin/libdwarf*.dll "$WRAP/"
-          cp install/bin/libdwarf*.dll out/
-          cp install/bin/libdwarf*.dll .cache/libdwarf/windows/
 
-      # ---------- copy from cache (hit) --------------------------------------
-      - name: Copy cached DLLs
-        if: steps.cache-win.outputs.cache-hit == 'true'
-        run: |
-          WRAP=jna-wrapper/src/main/resources/win32-x86-64
-          mkdir -p "$WRAP" out
-          cp .cache/libdwarf/windows/* "$WRAP"/
-          cp .cache/libdwarf/windows/* out/
+          shopt -s nullglob
+          for dll in install/bin/libdwarf*.dll; do
+            cp "$dll" "$WRAP/"
+            cp "$dll" out/
+            cp "$dll" .cache/libdwarf/windows/
+          done
+          shopt -u nullglob
 
-      # ---------- artifact ---------------------------------------------------
       - uses: actions/upload-artifact@v4
         with:
           name: libdwarf-windows
           path: out/*
 
-# ──────────────────────────────────────────────────────────────────────────────
-# P U B L I S H
-# ──────────────────────────────────────────────────────────────────────────────
+# --------------------------------------------------------------------------- #
+#  P U B L I S H   N A T I V E S  (update resources in repo)                  #
+# --------------------------------------------------------------------------- #
   publish:
-    needs: [build-linux, build-windows]
+    needs: [ build-linux, build-windows ]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
 
-    # allow the workflow to push to the repo
     permissions:
-      contents: write
+      contents: write                        # allow push
 
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0          # we will commit / push back
+          fetch-depth: 0                     # we’ll create commits
 
       - uses: actions/download-artifact@v4
         with:
           path: _artifacts
 
-      # ---------- copy into wrapper, but only if binary really changed -------
       - name: Copy binaries into wrapper resources
         run: |
           set -euo pipefail
@@ -166,40 +144,4 @@ jobs:
             src="$1"; dest="$2"
             [ -e "$src" ] || return 0
             mkdir -p "$(dirname "$dest")"
-            if [ -f "$dest" ] && cmp -s "$src" "$dest"; then
-              echo "Unchanged: $dest"
-            else
-              cp "$src" "$dest"
-              echo "Updated:   $dest"
-            fi
-          }
-
-          find _artifacts/libdwarf-linux   -type f -print0 | \
-            while IFS= read -r -d '' f; do
-              rel=${f#*_artifacts/libdwarf-linux/}
-              copy_if_changed "$f" \
-                "jna-wrapper/src/main/resources/linux-x86-64/$rel"
-            done
-
-          find _artifacts/libdwarf-windows -type f -print0 | \
-            while IFS= read -r -d '' f; do
-              rel=${f#*_artifacts/libdwarf-windows/}
-              copy_if_changed "$f" \
-                "jna-wrapper/src/main/resources/win32-x86-64/$rel"
-            done
-
-      # ---------- commit & push (only if changed) ----------------------------
-      - name: Commit & push (only if changed)
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git add jna-wrapper/src/main/resources || true
-
-          if git diff --cached --quiet; then
-            echo "No shared-library updates to commit."
-            exit 0
-          fi
-
-          git commit -m "Update pre-built libdwarf libraries to ${LIBDWARF_VERSION}"
-          git push origin HEAD
+            if [ -f "$dest" ] && cmp -
