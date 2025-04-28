@@ -6,20 +6,18 @@ on:
   workflow_dispatch:
 
 env:
-  # Tag or branch in davea42/libdwarf-code to build
-  LIBDWARF_VERSION: v0.12.0
+  LIBDWARF_VERSION: v0.12.0   # tag/branch to build
 
-jobs:
 # --------------------------------------------------------------------------- #
 #  L I N U X                                                                  #
 # --------------------------------------------------------------------------- #
+jobs:
   build-linux:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
-      - name: Restore build cache
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: .cache/libdwarf
           key: libdwarf-linux-${{ env.LIBDWARF_VERSION }}
@@ -33,12 +31,12 @@ jobs:
 
       - name: Build shared library
         run: |
-          git clone --depth=1 --branch "$LIBDWARF_VERSION" \
+          git clone --depth 1 --branch "$LIBDWARF_VERSION" \
             https://github.com/davea42/libdwarf-code libdwarf-code
 
           cmake -S libdwarf-code -B build -G Ninja \
                 -DCMAKE_BUILD_TYPE=Release \
-                -DBUILD_SHARED=YES -DBUILD_NON_SHARED=NO \
+                -DBUILD_SHARED=YES  -DBUILD_NON_SHARED=NO \
                 -DCMAKE_INSTALL_PREFIX="$PWD/install"
 
           cmake --build build --target install --parallel
@@ -54,8 +52,7 @@ jobs:
           done
           shopt -u nullglob
 
-      - name: Save artifacts
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: libdwarf-linux
           path: out/*
@@ -77,28 +74,26 @@ jobs:
         with:
           msystem: MINGW64
           update: true
-          # regular 'git' package — NO inline comments!
           install: >-
             mingw-w64-x86_64-toolchain
             mingw-w64-x86_64-cmake
             mingw-w64-x86_64-ninja
             mingw-w64-x86_64-zlib
-            git
+            git         # regular git package
 
-      - name: Restore build cache
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: .cache/libdwarf
           key: libdwarf-windows-${{ env.LIBDWARF_VERSION }}
 
       - name: Build shared library
         run: |
-          git clone --depth=1 --branch "$LIBDWARF_VERSION" \
+          git clone --depth 1 --branch "$LIBDWARF_VERSION" \
             https://github.com/davea42/libdwarf-code libdwarf-code
 
           cmake -S libdwarf-code -B build -G Ninja \
                 -DCMAKE_BUILD_TYPE=Release \
-                -DBUILD_SHARED=YES -DBUILD_NON_SHARED=NO \
+                -DBUILD_SHARED=YES  -DBUILD_NON_SHARED=NO \
                 -DCMAKE_INSTALL_PREFIX="$PWD/install"
 
           cmake --build build --target install --parallel
@@ -114,8 +109,7 @@ jobs:
           done
           shopt -u nullglob
 
-      - name: Save artifacts
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: libdwarf-windows
           path: out/*
@@ -128,17 +122,20 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
 
+    # ⬇️ give the token write access so we can push the commit
+    permissions:
+      contents: write
+
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0       # so we can push back
+          fetch-depth: 0
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           path: _artifacts
 
-      - name: Update wrapper resources
+      - name: Copy binaries into wrapper resources
         run: |
           set -euo pipefail
           copy_if_changed() {
@@ -153,19 +150,19 @@ jobs:
             fi
           }
 
-          find _artifacts/libdwarf-linux   -type f -print0 2>/dev/null | \
+          find _artifacts/libdwarf-linux   -type f -print0 | \
             while IFS= read -r -d '' f; do
               rel=${f#*_artifacts/libdwarf-linux/}
               copy_if_changed "$f" "jna-wrapper/src/main/resources/linux-x86-64/$rel"
             done
 
-          find _artifacts/libdwarf-windows -type f -print0 2>/dev/null | \
+          find _artifacts/libdwarf-windows -type f -print0 | \
             while IFS= read -r -d '' f; do
               rel=${f#*_artifacts/libdwarf-windows/}
               copy_if_changed "$f" "jna-wrapper/src/main/resources/win32-x86-64/$rel"
             done
 
-      - name: Commit & push if anything changed
+      - name: Commit & push (only if changed)
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
