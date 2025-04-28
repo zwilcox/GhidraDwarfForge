@@ -51,4 +51,4 @@ jobs:
       with:
         name: libdwarf-java
         path: |
-          target/libdwarf.jar
+          java/target/libdwarf.jar
