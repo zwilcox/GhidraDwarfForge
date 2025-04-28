@@ -1,136 +1,111 @@
-name: build-libdwarf
+name: Build libdwarf natives
 
 on:
   push:
-    branches: [ main, master ]
-  pull_request:
+    branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 env:
+  # Tag or branch in davea42/libdwarf-code to build
   LIBDWARF_VERSION: v0.12.0
 
-##############################################################################
-#  Build – Linux
-##############################################################################
 jobs:
+# --------------------------------------------------------------------------- #
+#  L I N U X                                                                  #
+# --------------------------------------------------------------------------- #
   build-linux:
-    runs-on: ubuntu-latest
-    outputs:
-      cache_miss: ${{ steps.flag.outputs.cache_miss }}
-
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
-      - name: Restore cache (linux)
-        id: cache
-        uses: actions/cache/restore@v4
+      - name: Restore build cache
+        uses: actions/cache@v4
         with:
           path: .cache/libdwarf
           key: libdwarf-linux-${{ env.LIBDWARF_VERSION }}
 
-      - name: Copy from cache
-        if: steps.cache.outputs.cache-hit == 'true'
-        run: |
-          echo "Cache hit – re-using linux libs"
-          mkdir -p out
-          cp -r .cache/libdwarf/linux/* out/
-
-      - name: Build libdwarf (linux)
-        if: steps.cache.outputs.cache-hit != 'true'
+      - name: Install toolchain
         run: |
           sudo apt-get update -y
           sudo apt-get install --no-install-recommends -y \
-              build-essential cmake ninja-build pkg-config \
-              zlib1g-dev libzstd-dev
+            build-essential cmake ninja-build pkg-config \
+            zlib1g-dev libzstd-dev
+
+      - name: Build shared library
+        run: |
           git clone --depth=1 --branch "$LIBDWARF_VERSION" \
-              https://github.com/davea42/libdwarf-code libdwarf-code
+            https://github.com/davea42/libdwarf-code libdwarf-code
+
           cmake -S libdwarf-code -B build -G Ninja \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DBUILD_SHARED=YES -DBUILD_NON_SHARED=NO \
                 -DCMAKE_INSTALL_PREFIX="$PWD/install"
+
           cmake --build build --target install --parallel
 
           WRAP=jna-wrapper/src/main/resources/linux-x86-64
           mkdir -p "$WRAP" out .cache/libdwarf/linux
+
           shopt -s nullglob
           for so in install/lib/libdwarf*.so*; do
-            cp -P "$so" "$WRAP/"
-            cp -P "$so" out/
-            cp -P "$so" .cache/libdwarf/linux/
+            cp "$so" "$WRAP/"
+            cp "$so" out/
+            cp "$so" .cache/libdwarf/linux/
           done
           shopt -u nullglob
 
-      - name: Save cache (linux)
-        if: steps.cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: .cache/libdwarf
-          key: libdwarf-linux-${{ env.LIBDWARF_VERSION }}
-
-      - uses: actions/upload-artifact@v4
+      - name: Save artifacts
+        uses: actions/upload-artifact@v4
         with:
           name: libdwarf-linux
-          path: out
+          path: out/*
 
-      - id: flag
-        run: echo "cache_miss=${{ steps.cache.outputs.cache-hit != 'true' }}" >> "$GITHUB_OUTPUT"
-
-##############################################################################
-#  Build – Windows
-##############################################################################
+# --------------------------------------------------------------------------- #
+#  W I N D O W S                                                              #
+# --------------------------------------------------------------------------- #
   build-windows:
-    runs-on: windows-latest
-    outputs:
-      cache_miss: ${{ steps.flag.outputs.cache_miss }}
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: msys2 {0}
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Restore cache (windows)
-        id: cache
-        uses: actions/cache/restore@v4
-        with:
-          path: .cache/libdwarf
-          key: libdwarf-windows-${{ env.LIBDWARF_VERSION }}
-
-      - name: Copy from cache
-        if: steps.cache.outputs.cache-hit == 'true'
-        shell: bash
-        run: |
-          echo "Cache hit – re-using windows libs"
-          mkdir -p out
-          cp -r .cache/libdwarf/windows/* out/
-
-      - name: Set up MSYS2 and build libdwarf
-        if: steps.cache.outputs.cache-hit != 'true'
+      - name: MSYS2 setup
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
           update: true
+          # regular 'git' package — NO inline comments!
           install: >-
             mingw-w64-x86_64-toolchain
             mingw-w64-x86_64-cmake
             mingw-w64-x86_64-ninja
             mingw-w64-x86_64-zlib
-            mingw-w64-x86_64-git        # ← NEW
+            git
 
-      - name: Configure & compile
-        if: steps.cache.outputs.cache-hit != 'true'
-        shell: msys2 {0}
+      - name: Restore build cache
+        uses: actions/cache@v4
+        with:
+          path: .cache/libdwarf
+          key: libdwarf-windows-${{ env.LIBDWARF_VERSION }}
+
+      - name: Build shared library
         run: |
           git clone --depth=1 --branch "$LIBDWARF_VERSION" \
-              https://github.com/davea42/libdwarf-code libdwarf-code
+            https://github.com/davea42/libdwarf-code libdwarf-code
+
           cmake -S libdwarf-code -B build -G Ninja \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DBUILD_SHARED=YES -DBUILD_NON_SHARED=NO \
                 -DCMAKE_INSTALL_PREFIX="$PWD/install"
+
           cmake --build build --target install --parallel
 
           WRAP=jna-wrapper/src/main/resources/win32-x86-64
           mkdir -p "$WRAP" out .cache/libdwarf/windows
+
           shopt -s nullglob
           for dll in install/bin/libdwarf*.dll; do
             cp "$dll" "$WRAP/"
@@ -139,80 +114,61 @@ jobs:
           done
           shopt -u nullglob
 
-      - name: Save cache (windows)
-        if: steps.cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: .cache/libdwarf
-          key: libdwarf-windows-${{ env.LIBDWARF_VERSION }}
-
-      - uses: actions/upload-artifact@v4
+      - name: Save artifacts
+        uses: actions/upload-artifact@v4
         with:
           name: libdwarf-windows
-          path: out
+          path: out/*
 
-      - id: flag
-        shell: bash
-        run: echo "cache_miss=${{ steps.cache.outputs.cache-hit != 'true' }}" >> "$GITHUB_OUTPUT"
-
-##############################################################################
-#  Publish – only if a cache miss occurred
-##############################################################################
+# --------------------------------------------------------------------------- #
+#  P U B L I S H                                                              #
+# --------------------------------------------------------------------------- #
   publish:
-    needs: [ build-linux, build-windows ]
-    if: needs.build-linux.outputs.cache_miss == 'true' || needs.build-windows.outputs.cache_miss == 'true'
-    runs-on: ubuntu-latest
+    needs: [build-linux, build-windows]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v4
         with:
-          persist-credentials: true
-          fetch-depth: 0
+          fetch-depth: 0       # so we can push back
 
-      - uses: actions/download-artifact@v4
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
         with:
           path: _artifacts
 
-      - name: Sync shared libraries into wrapper
+      - name: Update wrapper resources
         run: |
-          set -e
-          LNX=jena-wrapper/src/main/resources/linux-x86-64
-          WIN=jena-wrapper/src/main/resources/win32-x86-64
-          mkdir -p "$LNX" "$WIN"
-
+          set -euo pipefail
           copy_if_changed() {
             src="$1"; dest="$2"
-            [[ -e "$src" ]] || return 0
+            [ -e "$src" ] || return 0
             mkdir -p "$(dirname "$dest")"
-            if [[ -f "$dest" && $(cmp -s "$src" "$dest"; echo $?) -eq 0 ]]; then
+            if [ -f "$dest" ] && cmp -s "$src" "$dest"; then
               echo "Unchanged: $dest"
             else
-              cp -P "$src" "$dest"
+              cp "$src" "$dest"
               echo "Updated:   $dest"
             fi
           }
 
-          find _artifacts/libdwarf-linux   -type f \( -name 'libdwarf*.so*' \) -print0 2>/dev/null |
+          find _artifacts/libdwarf-linux   -type f -print0 2>/dev/null | \
             while IFS= read -r -d '' f; do
-              copy_if_changed "$f" "$LNX/$(basename "$f")"
+              rel=${f#*_artifacts/libdwarf-linux/}
+              copy_if_changed "$f" "jna-wrapper/src/main/resources/linux-x86-64/$rel"
             done
 
-          find _artifacts/libdwarf-windows -type f -name 'libdwarf*.dll' -print0 2>/dev/null |
+          find _artifacts/libdwarf-windows -type f -print0 2>/dev/null | \
             while IFS= read -r -d '' f; do
-              copy_if_changed "$f" "$WIN/$(basename "$f")"
+              rel=${f#*_artifacts/libdwarf-windows/}
+              copy_if_changed "$f" "jna-wrapper/src/main/resources/win32-x86-64/$rel"
             done
 
-      - name: Commit & push if resources changed
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Commit & push if anything changed
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          # remove obsolete libdwarf folder if it is still tracked
-          if git ls-files --error-unmatch libdwarf >/dev/null 2>&1; then
-            git rm -r libdwarf
-          fi
 
           git add jna-wrapper/src/main/resources || true
 
@@ -221,5 +177,5 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Update pre-built libdwarf shared libraries to ${LIBDWARF_VERSION}"
+          git commit -m "Update pre-built libdwarf libraries to ${LIBDWARF_VERSION}"
           git push origin HEAD
