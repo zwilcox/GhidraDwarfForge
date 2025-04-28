@@ -1,0 +1,54 @@
+name: Package libdwarf Java artifacts
+
+# ────────────────────────────────────────────────────────────────────────── #
+# 1.  Trigger:  run only after “Build libdwarf natives” completes           #
+# ────────────────────────────────────────────────────────────────────────── #
+on:
+  workflow_run:
+    workflows: ["Build libdwarf natives"]   # name of the first workflow
+    types: [completed]
+
+jobs:
+  build-java:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-24.04            # any runner with JDK & Maven is fine
+
+    permissions:
+      contents: write                # only needed if you later push a tag
+      packages: write                # …or publish to GitHub Packages
+
+    steps:
+    # ──────────────────────────────────────────────────────────────────── #
+    # 2.  Checkout the repo at the commit produced by the triggering run  #
+    # ──────────────────────────────────────────────────────────────────── #
+    - name: Checkout updated sources
+      # `github.sha` == commit that finished in the previous workflow:
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.workflow_run.head_sha }}
+
+    # ──────────────────────────────────────────────────────────────────── #
+    # 3.  Set up Java & Maven (Temurin 17 is a safe default)              #
+    # ──────────────────────────────────────────────────────────────────── #
+    - uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '17'
+        cache: maven
+
+    # ──────────────────────────────────────────────────────────────────── #
+    # 4.  Build the shaded JAR exactly as the POM specifies               #
+    # ──────────────────────────────────────────────────────────────────── #
+    - name: Build shaded JAR
+      run: mvn -B -ntp package -DskipTests
+
+    # ──────────────────────────────────────────────────────────────────── #
+    # 5.  Upload the result                                               #
+    #     The shade-plugin creates target/libdwarf.jar (plus the          #
+    #     original jar).  Adjust the path if you change the POM later.    #
+    # ──────────────────────────────────────────────────────────────────── #
+    - uses: actions/upload-artifact@v4
+      with:
+        name: libdwarf-java
+        path: |
+          target/libdwarf.jar
