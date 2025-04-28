@@ -7,7 +7,7 @@ on:
 
 env:
   # -------------------------------------------------------------------------
-  # Update this tag/branch to bump the native libdwarf build
+  # Bump this tag/branch to rebuild libdwarf
   LIBDWARF_VERSION: v0.12.0
   # -------------------------------------------------------------------------
 
@@ -25,7 +25,7 @@ jobs:
           path: .cache/libdwarf
           key: libdwarf-linux-${{ env.LIBDWARF_VERSION }}
 
-      - name: Install toolchain
+      - name: Install build tool-chain
         run: |
           sudo apt-get update -y
           sudo apt-get install --no-install-recommends -y \
@@ -41,7 +41,6 @@ jobs:
                 -DCMAKE_BUILD_TYPE=Release \
                 -DBUILD_SHARED=YES  -DBUILD_NON_SHARED=NO \
                 -DCMAKE_INSTALL_PREFIX="$PWD/install"
-
           cmake --build build --target install --parallel
 
           WRAP=jna-wrapper/src/main/resources/linux-x86-64
@@ -98,7 +97,6 @@ jobs:
                 -DCMAKE_BUILD_TYPE=Release \
                 -DBUILD_SHARED=YES  -DBUILD_NON_SHARED=NO \
                 -DCMAKE_INSTALL_PREFIX="$PWD/install"
-
           cmake --build build --target install --parallel
 
           WRAP=jna-wrapper/src/main/resources/win32-x86-64
@@ -118,30 +116,96 @@ jobs:
           path: out/*
 
 # --------------------------------------------------------------------------- #
-#  P U B L I S H   N A T I V E S  (update resources in repo)                  #
+#  J A V A   W R A P P E R   (shaded JAR)                                     #
+# --------------------------------------------------------------------------- #
+  build-java:
+    needs: [ build-linux, build-windows ]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+
+      - name: Package shaded JAR
+        run: |
+          mvn -B -ntp -f jna-wrapper/pom.xml package -DskipTests
+          mkdir -p out
+          cp jna-wrapper/target/libdwarf*.jar out/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: libdwarf-jar
+          path: out/*
+
+# --------------------------------------------------------------------------- #
+#  P U B L I S H   (commit only if something changed)                         #
 # --------------------------------------------------------------------------- #
   publish:
-    needs: [ build-linux, build-windows ]
+    needs: [ build-linux, build-windows, build-java ]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
 
     permissions:
-      contents: write                        # allow push
+      contents: write        # allows pushing commits
 
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0                     # we’ll create commits
+          fetch-depth: 0      # we are about to commit
 
       - uses: actions/download-artifact@v4
         with:
           path: _artifacts
 
-      - name: Copy binaries into wrapper resources
+      - name: Sync natives & JAR into repo
         run: |
           set -euo pipefail
+
           copy_if_changed() {
-            src="$1"; dest="$2"
+            local src="$1" dest="$2"
             [ -e "$src" ] || return 0
             mkdir -p "$(dirname "$dest")"
-            if [ -f "$dest" ] && cmp -
+            if [ -f "$dest" ] && cmp -s "$src" "$dest"; then
+              echo "Unchanged: $dest"
+            else
+              cp "$src" "$dest"
+              echo "Updated:   $dest"
+            fi
+          }
+
+          # ----- natives (linux) -----
+          find _artifacts/libdwarf-linux   -type f -print0 |
+            while IFS= read -r -d '' f; do
+              rel=${f#*_artifacts/libdwarf-linux/}
+              copy_if_changed "$f" "jna-wrapper/src/main/resources/linux-x86-64/$rel"
+            done
+
+          # ----- natives (windows) -----
+          find _artifacts/libdwarf-windows -type f -print0 |
+            while IFS= read -r -d '' f; do
+              rel=${f#*_artifacts/libdwarf-windows/}
+              copy_if_changed "$f" "jna-wrapper/src/main/resources/win32-x86-64/$rel"
+            done
+
+          # ----- shaded JAR -----
+          jar_src=$(ls _artifacts/libdwarf-jar/*.jar)
+          copy_if_changed "$jar_src" "jna-wrapper/libdwarf.jar"
+
+      - name: Commit & push (only when something changed)
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add jna-wrapper/src/main/resources jna-wrapper/libdwarf.jar || true
+
+          if git diff --cached --quiet; then
+            echo "Everything is up-to-date — nothing to commit."
+            exit 0
+          fi
+
+          git commit -m "Update pre-built libdwarf natives & JAR to ${LIBDWARF_VERSION}"
+          git push origin HEAD
