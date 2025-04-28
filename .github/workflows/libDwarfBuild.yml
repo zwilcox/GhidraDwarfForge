@@ -7,12 +7,12 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write          # allow the workflow to commit binaries
+  contents: write
 
-jobs:
 ##############################################################################
 #  Build job – Linux
 ##############################################################################
+jobs:
   build-linux:
     runs-on: ubuntu-latest
     outputs:
@@ -21,7 +21,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # ---------- Restore cache ----------
       - name: Restore cached binaries (linux)
         id: restore-cache
         uses: actions/cache/restore@v4
@@ -37,7 +36,6 @@ jobs:
           mkdir -p out
           cp -r cache/libdwarf/* out/
 
-      # ---------- Build on cache miss ----------
       - name: Checkout libdwarf-code v0.12.0
         if: steps.restore-cache.outputs.cache-hit != 'true'
         uses: actions/checkout@v4
@@ -55,20 +53,18 @@ jobs:
             zlib1g-dev libzstd-dev
           cmake -S libdwarf-code -B build -G Ninja \
                 -DCMAKE_BUILD_TYPE=Release \
-                -DBUILD_SHARED_LIBS=ON \
+                -DBUILD_DWARF_SHARED=ON \
                 -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install"
           cmake --build build --target install --parallel
 
           mkdir -p out
-          # copy both static and shared + symlink
-          cp install/lib/libdwarf*.a   out/ || true
-          cp install/lib/libdwarf*.so* out/ || true
-          cp install/bin/dwarf*        out/ || true
+          cp install/lib/libdwarf*.a    out/ || true
+          cp install/lib/libdwarf*.so*  out/ || true   # shared & symlink
+          cp install/bin/dwarf*         out/ || true
 
           mkdir -p cache/libdwarf
           cp -r out/* cache/libdwarf/
 
-      # ---------- Save cache ----------
       - name: Save linux cache
         if: steps.restore-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
@@ -76,14 +72,12 @@ jobs:
           path: cache/libdwarf
           key: libdwarf-linux-v0.12.0
 
-      # ---------- Upload artifact ----------
       - name: Upload artifact (linux)
         uses: actions/upload-artifact@v4
         with:
           name: libdwarf-linux
           path: out
 
-      # ---------- Flag for publish job ----------
       - name: Set output flag
         id: set-output
         run: echo "cache_miss=${{ steps.restore-cache.outputs.cache-hit != 'true' }}" >> $GITHUB_OUTPUT
@@ -141,14 +135,14 @@ jobs:
         run: |
           cmake -S libdwarf-code -B build -G Ninja \
                 -DCMAKE_BUILD_TYPE=Release \
-                -DBUILD_SHARED_LIBS=ON \
+                -DBUILD_DWARF_SHARED=ON \
                 -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install"
           cmake --build build --target install --parallel
 
           mkdir -p out
-          cp install/bin/libdwarf*.dll out/ || true    # shared
-          cp install/lib/libdwarf*.a   out/ || true    # static
-          cp install/bin/dwarf*.exe    out/ || true
+          cp install/lib/libdwarf*.a    out/ || true
+          cp install/bin/libdwarf*.dll  out/ || true   # shared
+          cp install/bin/dwarf*.exe     out/ || true
 
           mkdir -p cache/libdwarf
           cp -r out/* cache/libdwarf/
@@ -172,7 +166,7 @@ jobs:
         run: echo "cache_miss=${{ steps.restore-cache.outputs.cache-hit != 'true' }}" >> $GITHUB_OUTPUT
 
 ##############################################################################
-#  Publish job – runs only if we rebuilt on either platform
+#  Publish if anything actually rebuilt
 ##############################################################################
   publish:
     needs: [build-linux, build-windows]
@@ -194,25 +188,25 @@ jobs:
         run: |
           mkdir -p libdwarf/linux libdwarf/windows
           copy_if_changed() {
-            src="$1"; dest="$2";
-            mkdir -p "$(dirname "$dest")"
-            if [ -f "$dest" ] && cmp -s "$src" "$dest"; then
-              echo "Unchanged: $dest"
+            src=\"$1\"; dest=\"$2\";
+            mkdir -p \"$(dirname \"$dest\")\"
+            if [ -f \"$dest\" ] && cmp -s \"$src\" \"$dest\"; then
+              echo \"Unchanged: $dest\"
             else
-              cp "$src" "$dest"
-              echo "Updated: $dest"
+              cp \"$src\" \"$dest\"
+              echo \"Updated: $dest\"
             fi
           }
           if [ -d _artifacts/libdwarf-linux ]; then
             find _artifacts/libdwarf-linux -type f -print0 | while IFS= read -r -d '' f; do
               rel=${f#*_artifacts/libdwarf-linux/}
-              copy_if_changed "$f" "libdwarf/linux/$rel"
+              copy_if_changed \"$f\" \"libdwarf/linux/$rel\"
             done
           fi
           if [ -d _artifacts/libdwarf-windows ]; then
             find _artifacts/libdwarf-windows -type f -print0 | while IFS= read -r -d '' f; do
               rel=${f#*_artifacts/libdwarf-windows/}
-              copy_if_changed "$f" "libdwarf/windows/$rel"
+              copy_if_changed \"$f\" \"libdwarf/windows/$rel\"
             done
           fi
 
