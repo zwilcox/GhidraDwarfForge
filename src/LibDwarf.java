@@ -7,29 +7,12 @@ import com.sun.jna.ptr.LongByReference;
 import com.sun.jna.ptr.PointerByReference;
 import com.sun.jna.ptr.ShortByReference;
 
-/**
- * Minimal JNA mapping for the libdwarf shared library (v0.12.0).
- * <p>
- * • Only the handful of entry‑points most Java tools need are mapped here.
- * • Add more methods/structs as required – just follow the existing pattern.
- * • The native library is expected on the Java library path (see
- * resources/linux-x86-64 & win32-x86-64).
- */
+
 public interface LibDwarf extends Library {
 
-    /*
-     * ---------------------------------------------------------------------
-     * Loading
-     * ------------------------------------------------------------------
-     */
     LibDwarf INSTANCE = Native.load(Platform.isWindows() ? "libdwarf" : "dwarf",
             LibDwarf.class);
 
-    /*
-     * ---------------------------------------------------------------------
-     * Simple typedef helpers
-     * ------------------------------------------------------------------
-     */
     public static class Dwarf_Debug extends PointerType {
         /** no-arg ctor required by JNA */
         public Dwarf_Debug() {
@@ -50,19 +33,9 @@ public interface LibDwarf extends Library {
         }
     }
 
-    /*
-     * ---------------------------------------------------------------------
-     * Constants (trimmed)
-     * ------------------------------------------------------------------
-     */
     int DW_DLC_READ = 0x0001; // read‑only access
     int DW_DLC_WRITE = 0x0002; // write access (for DWARF generators)
 
-    /*
-     * ---------------------------------------------------------------------
-     * Core API – just a starter set
-     * ------------------------------------------------------------------
-     */
 
     /**
      * int dwarf_init(int fd, int access, Dwarf_Handler errhand, Dwarf_Ptr errarg,
