@@ -2,28 +2,22 @@
 name: Build libdwarf JNA jar
 
 on:
-  # run automatically after the native-libraries workflow succeeds
   workflow_run:
     workflows: ["Build libdwarf natives"]
     types: [completed]
-
-  # …and allow manual runs too
   workflow_dispatch:
 
 jobs:
 # --------------------------------------------------------------------------- #
-#  B U I L D   J A R                                                          #
+#  B U I L D   J A V A                                                        #
 # --------------------------------------------------------------------------- #
   build-java:
-    # only run when the triggering workflow succeeded, or on manual dispatch
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          # we need history so later jobs can commit back
-          fetch-depth: 0
+        with: { fetch-depth: 0 }
 
       - uses: actions/setup-java@v4
         with:
@@ -31,52 +25,45 @@ jobs:
           java-version: '17'
           cache: maven
 
-      # --- build the shaded jar ---
       - name: Package libdwarf.jar
-        working-directory: jna-wrapper      # <-- where the pom.xml lives
         run: mvn -B -ntp package -DskipTests
 
       - uses: actions/upload-artifact@v4
         with:
           name: libdwarf-jna
-          path: jna-wrapper/target/libdwarf.jar
+          path: target/libdwarf.jar
 
 # --------------------------------------------------------------------------- #
 #  P U B L I S H   ( copy into repo & commit if changed )                     #
 # --------------------------------------------------------------------------- #
   publish-jar:
     needs: build-java
-    # only do the commit on the main branch
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
 
-    # bot needs write permission to push
-    permissions:
-      contents: write
+    permissions: { contents: write }
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        with: { fetch-depth: 0 }
 
       - uses: actions/download-artifact@v4
         with:
           name: libdwarf-jna
           path: _jar
 
-      - name: Copy JAR into DwarfForge directory
+      - name: Copy JAR into src directory
         run: |
-          mkdir -p DwarfForge
-          cp _jar/libdwarf.jar DwarfForge/
+          mkdir -p src
+          cp _jar/libdwarf.jar src/
 
       - name: Commit & push (only when changed)
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add DwarfForge/libdwarf.jar || true
+          git add src/libdwarf.jar || true
 
-          # nothing to commit?  bail out quietly
           if git diff --cached --quiet; then
             echo "No JAR changes to commit."
             exit 0
