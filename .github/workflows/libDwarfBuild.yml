@@ -55,7 +55,7 @@ jobs:
 
           mkdir -p out
           cp install/lib/libdwarf*.a   out/ || true
-          cp install/lib/libdwarf*.so* out/ || true
+          cp install/lib/libdwarf*.so* out/ || true   # .so and .so.0
           cp install/bin/dwarf*        out/ || true
 
           mkdir -p cache/libdwarf
@@ -102,7 +102,17 @@ jobs:
           mkdir -p out
           cp -r cache/libdwarf/* out/
 
-      - name: Build libdwarf (windows)
+      # --- Checkout libdwarf source with Git for Windows ---
+      - name: Checkout libdwarf-code ${{ env.LIBDWARF_VERSION }}
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: davea42/libdwarf-code
+          ref: ${{ env.LIBDWARF_VERSION }}
+          path: libdwarf-code
+
+      # --- Set up MSYS2 toolchain ---
+      - name: Install MSYS2 toolchain
         if: steps.cache.outputs.cache-hit != 'true'
         uses: msys2/setup-msys2@v2
         with:
@@ -113,12 +123,12 @@ jobs:
             mingw-w64-x86_64-cmake
             mingw-w64-x86_64-ninja
             mingw-w64-x86_64-zlib
-      - name: Configure & compile
+
+      # --- Configure & build inside MSYS2 ---
+      - name: Configure & build (windows)
         if: steps.cache.outputs.cache-hit != 'true'
         shell: msys2 {0}
         run: |
-          git clone --depth=1 --branch $LIBDWARF_VERSION \
-            https://github.com/davea42/libdwarf-code libdwarf-code
           cmake -S libdwarf-code -B build -G Ninja \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DBUILD_SHARED=YES -DBUILD_NON_SHARED=NO \
@@ -150,7 +160,7 @@ jobs:
         run: echo "cache_miss=${{ steps.cache.outputs.cache-hit != 'true' }}" >> "$GITHUB_OUTPUT"
 
 ##############################################################################
-#  Publish if something actually changed
+#  Publish if anything actually changed
 ##############################################################################
   publish:
     needs: [build-linux, build-windows]
