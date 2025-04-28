@@ -1,54 +1,86 @@
-name: Package libdwarf Java artifacts
+# .github/workflows/build-libdwarf-jar.yml
+name: Build libdwarf JNA jar
 
-# ────────────────────────────────────────────────────────────────────────── #
-# 1.  Trigger:  run only after “Build libdwarf natives” completes           #
-# ────────────────────────────────────────────────────────────────────────── #
 on:
+  # run automatically after the native-libraries workflow succeeds
   workflow_run:
-    workflows: ["Build libdwarf natives"]   # name of the first workflow
+    workflows: ["Build libdwarf natives"]
     types: [completed]
 
-jobs:
-  build-java:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    runs-on: ubuntu-24.04            # any runner with JDK & Maven is fine
+  # …and allow manual runs too
+  workflow_dispatch:
 
-    permissions:
-      contents: write                # only needed if you later push a tag
-      packages: write                # …or publish to GitHub Packages
+jobs:
+# --------------------------------------------------------------------------- #
+#  B U I L D   J A R                                                          #
+# --------------------------------------------------------------------------- #
+  build-java:
+    # only run when the triggering workflow succeeded, or on manual dispatch
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
 
     steps:
-    # ──────────────────────────────────────────────────────────────────── #
-    # 2.  Checkout the repo at the commit produced by the triggering run  #
-    # ──────────────────────────────────────────────────────────────────── #
-    - name: Checkout updated sources
-      # `github.sha` == commit that finished in the previous workflow:
-      uses: actions/checkout@v4
-      with:
-        ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: actions/checkout@v4
+        with:
+          # we need history so later jobs can commit back
+          fetch-depth: 0
 
-    # ──────────────────────────────────────────────────────────────────── #
-    # 3.  Set up Java & Maven (Temurin 17 is a safe default)              #
-    # ──────────────────────────────────────────────────────────────────── #
-    - uses: actions/setup-java@v4
-      with:
-        distribution: temurin
-        java-version: '17'
-        cache: maven
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
 
-    # ──────────────────────────────────────────────────────────────────── #
-    # 4.  Build the shaded JAR exactly as the POM specifies               #
-    # ──────────────────────────────────────────────────────────────────── #
-    - name: Build shaded JAR
-      run: mvn -B -ntp package -DskipTests
+      # --- build the shaded jar ---
+      - name: Package libdwarf.jar
+        working-directory: jna-wrapper      # <-- where the pom.xml lives
+        run: mvn -B -ntp package -DskipTests
 
-    # ──────────────────────────────────────────────────────────────────── #
-    # 5.  Upload the result                                               #
-    #     The shade-plugin creates target/libdwarf.jar (plus the          #
-    #     original jar).  Adjust the path if you change the POM later.    #
-    # ──────────────────────────────────────────────────────────────────── #
-    - uses: actions/upload-artifact@v4
-      with:
-        name: libdwarf-java
-        path: |
-          target/libdwarf.jar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: libdwarf-jna
+          path: jna-wrapper/target/libdwarf.jar
+
+# --------------------------------------------------------------------------- #
+#  P U B L I S H   ( copy into repo & commit if changed )                     #
+# --------------------------------------------------------------------------- #
+  publish-jar:
+    needs: build-java
+    # only do the commit on the main branch
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+
+    # bot needs write permission to push
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: libdwarf-jna
+          path: _jar
+
+      - name: Copy JAR into DwarfForge directory
+        run: |
+          mkdir -p DwarfForge
+          cp _jar/libdwarf.jar DwarfForge/
+
+      - name: Commit & push (only when changed)
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add DwarfForge/libdwarf.jar || true
+
+          # nothing to commit?  bail out quietly
+          if git diff --cached --quiet; then
+            echo "No JAR changes to commit."
+            exit 0
+          fi
+
+          git commit -m "Update shaded libdwarf.jar"
+          git push origin HEAD
