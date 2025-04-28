@@ -49,7 +49,7 @@ jobs:
             https://github.com/davea42/libdwarf-code libdwarf-code
           cmake -S libdwarf-code -B build -G Ninja \
                 -DCMAKE_BUILD_TYPE=Release \
-                -DBUILD_DWARF_SHARED=ON \
+                -DBUILD_SHARED=YES -DBUILD_NON_SHARED=NO \
                 -DCMAKE_INSTALL_PREFIX="$PWD/install"
           cmake --build build --target install --parallel
 
@@ -121,7 +121,7 @@ jobs:
             https://github.com/davea42/libdwarf-code libdwarf-code
           cmake -S libdwarf-code -B build -G Ninja \
                 -DCMAKE_BUILD_TYPE=Release \
-                -DBUILD_DWARF_SHARED=ON \
+                -DBUILD_SHARED=YES -DBUILD_NON_SHARED=NO \
                 -DCMAKE_INSTALL_PREFIX="$PWD/install"
           cmake --build build --target install --parallel
 
