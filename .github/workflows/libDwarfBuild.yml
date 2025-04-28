@@ -7,19 +7,21 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: write          # allow the workflow to commit binaries
 
-############################################
-# Build job: Linux
-############################################
 jobs:
+##############################################################################
+#  Build job – Linux
+##############################################################################
   build-linux:
     runs-on: ubuntu-latest
     outputs:
       cache_miss: ${{ steps.set-output.outputs.cache_miss }}
+
     steps:
       - uses: actions/checkout@v4
 
+      # ---------- Restore cache ----------
       - name: Restore cached binaries (linux)
         id: restore-cache
         uses: actions/cache/restore@v4
@@ -31,10 +33,11 @@ jobs:
       - name: Copy cached outputs
         if: steps.restore-cache.outputs.cache-hit == 'true'
         run: |
-          echo "Cache hit – re‑using linux binaries"
+          echo "Cache hit – re-using linux binaries"
           mkdir -p out
           cp -r cache/libdwarf/* out/
 
+      # ---------- Build on cache miss ----------
       - name: Checkout libdwarf-code v0.12.0
         if: steps.restore-cache.outputs.cache-hit != 'true'
         uses: actions/checkout@v4
@@ -43,22 +46,29 @@ jobs:
           ref: v0.12.0
           path: libdwarf-code
 
-      - name: Install deps & build (cache miss only)
+      - name: Install deps & build (linux)
         if: steps.restore-cache.outputs.cache-hit != 'true'
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y \
             build-essential cmake ninja-build pkg-config \
             zlib1g-dev libzstd-dev
-          cmake -S libdwarf-code -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install"
+          cmake -S libdwarf-code -B build -G Ninja \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DBUILD_SHARED_LIBS=ON \
+                -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install"
           cmake --build build --target install --parallel
+
           mkdir -p out
-          cp install/lib/libdwarf* out/ || true
-          cp install/bin/dwarf*  out/ || true
-          # stage into cache dir for saving
+          # copy both static and shared + symlink
+          cp install/lib/libdwarf*.a   out/ || true
+          cp install/lib/libdwarf*.so* out/ || true
+          cp install/bin/dwarf*        out/ || true
+
           mkdir -p cache/libdwarf
           cp -r out/* cache/libdwarf/
 
+      # ---------- Save cache ----------
       - name: Save linux cache
         if: steps.restore-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
@@ -66,23 +76,26 @@ jobs:
           path: cache/libdwarf
           key: libdwarf-linux-v0.12.0
 
+      # ---------- Upload artifact ----------
       - name: Upload artifact (linux)
         uses: actions/upload-artifact@v4
         with:
           name: libdwarf-linux
           path: out
 
+      # ---------- Flag for publish job ----------
       - name: Set output flag
         id: set-output
         run: echo "cache_miss=${{ steps.restore-cache.outputs.cache-hit != 'true' }}" >> $GITHUB_OUTPUT
 
-############################################
-# Build job: Windows
-############################################
+##############################################################################
+#  Build job – Windows
+##############################################################################
   build-windows:
     runs-on: windows-latest
     outputs:
       cache_miss: ${{ steps.set-output.outputs.cache_miss }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -98,7 +111,7 @@ jobs:
         if: steps.restore-cache.outputs.cache-hit == 'true'
         shell: bash
         run: |
-          echo "Cache hit – re‑using windows binaries"
+          echo "Cache hit – re-using windows binaries"
           mkdir -p out
           cp -r cache/libdwarf/* out/
 
@@ -110,7 +123,7 @@ jobs:
           ref: v0.12.0
           path: libdwarf-code
 
-      - name: Setup MSYS2 & build (cache miss only)
+      - name: Setup MSYS2 & build (windows)
         if: steps.restore-cache.outputs.cache-hit != 'true'
         uses: msys2/setup-msys2@v2
         with:
@@ -126,12 +139,17 @@ jobs:
         if: steps.restore-cache.outputs.cache-hit != 'true'
         shell: msys2 {0}
         run: |
-          cmake -S libdwarf-code -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install"
+          cmake -S libdwarf-code -B build -G Ninja \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DBUILD_SHARED_LIBS=ON \
+                -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install"
           cmake --build build --target install --parallel
+
           mkdir -p out
-          cp install/bin/libdwarf*.dll out/ || true
-          cp install/lib/libdwarf*.a   out/ || true
+          cp install/bin/libdwarf*.dll out/ || true    # shared
+          cp install/lib/libdwarf*.a   out/ || true    # static
           cp install/bin/dwarf*.exe    out/ || true
+
           mkdir -p cache/libdwarf
           cp -r out/* cache/libdwarf/
 
@@ -153,9 +171,9 @@ jobs:
         shell: bash
         run: echo "cache_miss=${{ steps.restore-cache.outputs.cache-hit != 'true' }}" >> $GITHUB_OUTPUT
 
-############################################
-# Publish job runs only if either cache miss is true
-############################################
+##############################################################################
+#  Publish job – runs only if we rebuilt on either platform
+##############################################################################
   publish:
     needs: [build-linux, build-windows]
     if: needs.build-linux.outputs.cache_miss == 'true' || needs.build-windows.outputs.cache_miss == 'true'
@@ -175,7 +193,6 @@ jobs:
       - name: Organize libdwarf folder
         run: |
           mkdir -p libdwarf/linux libdwarf/windows
-          # function to copy only when bytes differ
           copy_if_changed() {
             src="$1"; dest="$2";
             mkdir -p "$(dirname "$dest")"
@@ -186,14 +203,12 @@ jobs:
               echo "Updated: $dest"
             fi
           }
-          # Linux artifacts
           if [ -d _artifacts/libdwarf-linux ]; then
             find _artifacts/libdwarf-linux -type f -print0 | while IFS= read -r -d '' f; do
               rel=${f#*_artifacts/libdwarf-linux/}
               copy_if_changed "$f" "libdwarf/linux/$rel"
             done
           fi
-          # Windows artifacts
           if [ -d _artifacts/libdwarf-windows ]; then
             find _artifacts/libdwarf-windows -type f -print0 | while IFS= read -r -d '' f; do
               rel=${f#*_artifacts/libdwarf-windows/}
@@ -214,9 +229,3 @@ jobs:
           fi
           git commit -m "Update prebuilt libdwarf binaries to v0.12.0"
           git push origin HEAD
-          if git diff --cached --quiet; then
-            echo "No binary updates to commit."
-          else
-            git commit -m "Update prebuilt libdwarf binaries to v0.12.0"
-            git push origin HEAD
-          fi
