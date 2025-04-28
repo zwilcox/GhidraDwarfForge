@@ -104,7 +104,7 @@ jobs:
           mkdir -p out
           cp -r .cache/libdwarf/windows/* out/
 
-      - name: Build libdwarf (windows)
+      - name: Set up MSYS2 and build libdwarf
         if: steps.cache.outputs.cache-hit != 'true'
         uses: msys2/setup-msys2@v2
         with:
@@ -115,6 +115,8 @@ jobs:
             mingw-w64-x86_64-cmake
             mingw-w64-x86_64-ninja
             mingw-w64-x86_64-zlib
+            mingw-w64-x86_64-git        # ← NEW
+
       - name: Configure & compile
         if: steps.cache.outputs.cache-hit != 'true'
         shell: msys2 {0}
