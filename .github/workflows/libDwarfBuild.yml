@@ -193,14 +193,14 @@ jobs:
 
           # ----- shaded JAR -----
           jar_src=$(ls _artifacts/libdwarf-jar/*.jar)
-          copy_if_changed "$jar_src" "jna-wrapper/libdwarf.jar"
+          copy_if_changed "$jar_src" "src/libdwarf.jar"
 
       - name: Commit & push (only when something changed)
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add jna-wrapper/src/main/resources jna-wrapper/libdwarf.jar || true
+          git add src/libdwarf.jar || true || true
 
           if git diff --cached --quiet; then
             echo "Everything is up-to-date — nothing to commit."
