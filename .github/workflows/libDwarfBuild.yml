@@ -39,7 +39,8 @@ jobs:
 
           cmake -S libdwarf-code -B build -G Ninja \
                 -DCMAKE_BUILD_TYPE=Release \
-                -DBUILD_SHARED=YES  -DBUILD_NON_SHARED=NO \
+                -DBUILD_SHARED=YES -DBUILD_NON_SHARED=NO \
+                -DDWARF_BUILD_PRODUCER=ON \
                 -DCMAKE_INSTALL_PREFIX="$PWD/install"
           cmake --build build --target install --parallel
 
@@ -95,7 +96,8 @@ jobs:
 
           cmake -S libdwarf-code -B build -G Ninja \
                 -DCMAKE_BUILD_TYPE=Release \
-                -DBUILD_SHARED=YES  -DBUILD_NON_SHARED=NO \
+                -DBUILD_SHARED=YES -DBUILD_NON_SHARED=NO \
+                -DDWARF_BUILD_PRODUCER=ON \
                 -DCMAKE_INSTALL_PREFIX="$PWD/install"
           cmake --build build --target install --parallel
 

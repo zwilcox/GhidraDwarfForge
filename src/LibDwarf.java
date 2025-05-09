@@ -6,12 +6,11 @@ import com.sun.jna.PointerType;
 import com.sun.jna.ptr.LongByReference;
 import com.sun.jna.ptr.PointerByReference;
 import com.sun.jna.ptr.ShortByReference;
-
+import com.sun.jna.ptr.IntByReference;
 
 public interface LibDwarf extends Library {
 
-	
-	public static final int DW_ATE_address = 0x01;
+    public static final int DW_ATE_address = 0x01;
     public static final int DW_ATE_boolean = 0x02;
     public static final int DW_ATE_complex_float = 0x03;
     public static final int DW_ATE_float = 0x04;
@@ -32,6 +31,7 @@ public interface LibDwarf extends Library {
     public static final int DW_AT_location = 0x02;
     public static final int DW_AT_low_pc = 0x11;
     public static final int DW_AT_type = 0x49;
+    public static final int DW_AT_language = 0x13;
     public static final int DW_DLC_OFFSET32 = 0x00010000;
     public static final int DW_DLC_OFFSET64 = 0x10000000;
     public static final int DW_DLC_POINTER32 = 0x20000000;
@@ -97,7 +97,7 @@ public interface LibDwarf extends Library {
     public static final int DW_TAG_variable = 0x34;
 
     LibDwarf INSTANCE = Native.load(Platform.isWindows() ? "libdwarf" : "dwarf",
-            LibDwarf.class);
+        LibDwarf.class);
 
     public static class Dwarf_Debug extends PointerType {
         /** no-arg ctor required by JNA */
@@ -119,7 +119,6 @@ public interface LibDwarf extends Library {
         }
     }
 
-
     /**
      * int dwarf_init(int fd, int access, Dwarf_Handler errhand, Dwarf_Ptr errarg,
      * Dwarf_Debug *dbg, Dwarf_Error *error);
@@ -131,9 +130,37 @@ public interface LibDwarf extends Library {
             PointerByReference dbg, // (out)
             PointerByReference error);
 
+    int dwarf_producer_init_b(int flags, int reserved,
+            Pointer errhand, Pointer errarg,
+            Pointer errstr_cb,
+            PointerByReference dbgOut);
+    
+    int dwarf_add_AT_unsigned_const(Dwarf_P_Debug dbg, Dwarf_P_Die die,
+            int attr, long value, int form);
+    
+    Dwarf_P_Die dwarf_new_die(Dwarf_P_Debug dbg, int tag,
+            Pointer hasSibling, Pointer parent, Pointer child);
+    
+    int dwarf_dieoffset(Dwarf_P_Die die);
+    
+    int dwarf_add_arange_b(Dwarf_P_Debug dbg,
+            long address, long length,
+            long cuDieOffset,
+            int addressSize,         // 4 or 8
+            int segmentSelectorSize, // usually 0
+            Pointer error);          // may be NULL
+    
     /** void dwarf_finish(Dwarf_Debug dbg, Dwarf_Error *error); */
     int dwarf_finish(Dwarf_Debug dbg,
             PointerByReference error);
+
+    int dwarf_producer_finish(Pointer dbg);
+
+    int dwarf_producer_finish_a(Pointer dbg,
+            PointerByReference sectionNames,
+            PointerByReference sectionData,
+            IntByReference sectionSizes,
+            IntByReference sectionCount);
 
     /**
      * int dwarf_next_cu_header_d(Dwarf_Debug dbg,
@@ -183,6 +210,27 @@ public interface LibDwarf extends Library {
             if (res != 0) {
                 throw new LibDwarfException("dwarf_finish failed: " + res);
             }
+        }
+    }
+
+    // classes
+    public static class Dwarf_P_Debug extends PointerType {
+        public Dwarf_P_Debug(Pointer address) {
+            super(address);
+        }
+
+        public Dwarf_P_Debug() {
+            super();
+        }
+    }
+
+    public static class Dwarf_P_Die extends PointerType {
+        public Dwarf_P_Die(Pointer address) {
+            super(address);
+        }
+
+        public Dwarf_P_Die() {
+            super();
         }
     }
 
