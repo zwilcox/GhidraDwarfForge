@@ -104,11 +104,12 @@ jobs:
           mkdir builddir && cd builddir
           cmake -G Ninja                                          \
           -DCMAKE_INSTALL_PREFIX=/c/msys64/usr                    \
+          -DBUILD_DWARFGEN=ON                                     \
           -DBUILD_DWARFEXAMPLE=OFF -DDO_TESTING=OFF               \
           -DBUILD_SHARED:BOOL=TRUE -DBUILD_NON_SHARED:BOOL=FALSE  \
           ../CMakeLists.txt
           ninja
-          
+          ninja install
           
           WRAP=../jna-wrapper/src/main/resources/win32-x86-64
           mkdir -p "$WRAP" out .cache/libdwarf/windows
