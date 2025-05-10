@@ -63,7 +63,7 @@ jobs:
 #  W I N D O W S   N A T I V E   B U I L D                                    #
 # --------------------------------------------------------------------------- #
   build-windows:
-    runs-on: windows-2022
+    runs-on: windows-latest
     defaults:
       run:
         shell: msys2 {0}
