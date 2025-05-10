@@ -97,7 +97,6 @@ jobs:
           echo 'export WANT_AUTOCONF=2.71'    >> "$HOME/.bash_profile"
           echo 'export WANT_AUTOHEADER=2.71'  >> "$HOME/.bash_profile"
 
-
       - name: Build shared library
         env:
           WANT_AUTOCONF: 2.71
@@ -107,12 +106,11 @@ jobs:
             https://github.com/davea42/libdwarf-code libdwarf-code
 
           # 2 patch only for v0.12.0
-          if [ "$LIBDWARF_VERSION" = "v0.12.0" ]; then
             cat >> libdwarf-code/src/lib/libdwarf/libdwarf.def <<'EOF'
           dwarf_force_dnames
           dwarf_add_AT_reference_c
           EOF
-          fi
+
 
           cd ./libdwarf-code
           sh autogen.sh
