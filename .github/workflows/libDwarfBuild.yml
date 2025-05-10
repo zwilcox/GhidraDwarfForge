@@ -76,7 +76,9 @@ jobs:
         run: |
           sudo apt-get update -y
           sudo apt-get install --no-install-recommends -y \
-             mingw-w64 autoconf automake libtool pkg-config git
+             mingw-w64 autoconf automake libtool pkg-config git \
+             libz-mingw-w64-dev libzstd-mingw-w64-dev
+             
 
       - name: Cross-build Win64 DLLs
         env: 
