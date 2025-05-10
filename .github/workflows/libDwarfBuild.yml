@@ -83,7 +83,6 @@ jobs:
             mingw-w64-x86_64-zlib
             mingw-w64-x86_64-zstd
             autoconf2.71
-            autoconf-wrapper
             automake libtool git
 
       - uses: actions/cache@v4
