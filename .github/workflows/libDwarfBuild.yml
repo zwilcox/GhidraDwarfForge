@@ -29,21 +29,19 @@ jobs:
         run: |
           sudo apt-get update -y
           sudo apt-get install --no-install-recommends -y \
-            build-essential cmake ninja-build pkg-config \
-            zlib1g-dev libzstd-dev
+            build-essential zlib1g-dev libzstd-dev \
+            autoconf automake libtool pkg-config
 
       - name: Build shared library
         run: |
           git clone --depth 1 --branch "$LIBDWARF_VERSION" \
             https://github.com/davea42/libdwarf-code libdwarf-code
 
-          cmake -S libdwarf-code -B build -G Ninja \
-                -DCMAKE_BUILD_TYPE=Release \
-                -DBUILD_SHARED=YES -DBUILD_NON_SHARED=NO \
-                -DDWARF_BUILD_PRODUCER=ON \
-                -DCMAKE_INSTALL_PREFIX="$PWD/install"
-          cmake --build build --target install --parallel
-
+          cd ./libdwarf-code
+          sh autogen.sh
+          ./configure --enable-shared --enable-dwarfgen  --prefix="$PWD/install"
+          make -j"$(nproc)"
+          make install
           WRAP=jna-wrapper/src/main/resources/linux-x86-64
           mkdir -p "$WRAP" out .cache/libdwarf/linux
 
@@ -79,8 +77,9 @@ jobs:
           update: true
           install: >-
             mingw-w64-x86_64-toolchain
-            mingw-w64-x86_64-cmake
-            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-autoconf
+            mingw-w64-x86_64-automake
+            mingw-w64-x86_64-libtool
             mingw-w64-x86_64-zlib
             git
 
@@ -94,12 +93,11 @@ jobs:
           git clone --depth 1 --branch "$LIBDWARF_VERSION" \
             https://github.com/davea42/libdwarf-code libdwarf-code
 
-          cmake -S libdwarf-code -B build -G Ninja \
-                -DCMAKE_BUILD_TYPE=Release \
-                -DBUILD_SHARED=YES -DBUILD_NON_SHARED=NO \
-                -DDWARF_BUILD_PRODUCER=ON \
-                -DCMAKE_INSTALL_PREFIX="$PWD/install"
-          cmake --build build --target install --parallel
+          cd ./libdwarf-code
+          sh autogen.sh
+          ./configure --enable-shared --enable-dwarfgen  --prefix="$PWD/install"
+          make -j"$(nproc)"
+          make install
 
           WRAP=jna-wrapper/src/main/resources/win32-x86-64
           mkdir -p "$WRAP" out .cache/libdwarf/windows
