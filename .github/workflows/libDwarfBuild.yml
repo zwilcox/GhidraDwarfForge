@@ -77,10 +77,10 @@ jobs:
           update: true
           install: >-
             mingw-w64-x86_64-toolchain
-            mingw-w64-x86_64-autoconf
-            mingw-w64-x86_64-automake
-            mingw-w64-x86_64-libtool
-            mingw-w64-x86_64-zlib
+            autoconf
+            automake
+            libtool
+            zlib
             git
 
       - uses: actions/cache@v4
