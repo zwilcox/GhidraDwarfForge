@@ -64,9 +64,6 @@ jobs:
 # --------------------------------------------------------------------------- #
   build-windows:
     runs-on: windows-2022
-    env:
-      AUTOCONF_VERSION: "2.71"
-      AUTOHEADER_VERSION: "2.71"
     defaults:
       run:
         shell: msys2 {0}
@@ -94,7 +91,20 @@ jobs:
           path: .cache/libdwarf
           key: libdwarf-windows-${{ env.LIBDWARF_VERSION }}
 
+      - name: Select Autoconf 2.71
+        shell: msys2 {0}
+        run: |
+          echo 'export WANT_AUTOCONF=2.71'    >> "$HOME/.bash_profile"
+          echo 'export WANT_AUTOHEADER=2.71'  >> "$HOME/.bash_profile"
+
+      - name: Remove Autoconf 2.72
+        shell: msys2 {0}
+        run: pacman --noconfirm -Rns autoconf2.72 || true
+
       - name: Build shared library
+        env:
+          WANT_AUTOCONF: 2.71
+          WANT_AUTOHEADER: 2.71
         run: |
           git clone --depth 1 --branch "$LIBDWARF_VERSION" \
             https://github.com/davea42/libdwarf-code libdwarf-code
