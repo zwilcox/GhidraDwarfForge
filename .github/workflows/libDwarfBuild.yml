@@ -106,7 +106,7 @@ jobs:
           cd ./libdwarf-code
           sh ./autogen.sh
           mkdir static-build; cd static-build
-          ../libdwarf-code/configure \
+          ../configure \
             --disable-shared --enable-static  \
             --disable-dwarfgen                \
             --prefix="$PWD/install"
