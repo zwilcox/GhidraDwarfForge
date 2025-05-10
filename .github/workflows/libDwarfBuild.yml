@@ -82,12 +82,20 @@ jobs:
             mingw-w64-x86_64-make
             mingw-w64-x86_64-zlib
             mingw-w64-x86_64-zstd
-            autoconf automake libtool git
+            autoconf2.71
+            autoconf-wrapper
+            automake libtool git
 
       - uses: actions/cache@v4
         with:
           path: .cache/libdwarf
           key: libdwarf-windows-${{ env.LIBDWARF_VERSION }}
+
+      - name: Pin autoconf version
+        shell: msys2 {0}
+        run: |
+          echo 'export AUTOCONF_VERSION=2.71' >> $HOME/.bash_profile
+          echo 'export AUTOHEADER_VERSION=2.71' >> $HOME/.bash_profile
 
       - name: Build shared library
         run: |
