@@ -64,6 +64,9 @@ jobs:
 # --------------------------------------------------------------------------- #
   build-windows:
     runs-on: windows-2022
+    env:
+      AUTOCONF_VERSION: "2.71"
+      AUTOHEADER_VERSION: "2.71"
     defaults:
       run:
         shell: msys2 {0}
@@ -90,12 +93,6 @@ jobs:
         with:
           path: .cache/libdwarf
           key: libdwarf-windows-${{ env.LIBDWARF_VERSION }}
-
-      - name: Pin autoconf version
-        shell: msys2 {0}
-        run: |
-          echo 'export AUTOCONF_VERSION=2.71' >> $HOME/.bash_profile
-          echo 'export AUTOHEADER_VERSION=2.71' >> $HOME/.bash_profile
 
       - name: Build shared library
         run: |
