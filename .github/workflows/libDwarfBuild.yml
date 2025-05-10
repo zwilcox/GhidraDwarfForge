@@ -39,7 +39,8 @@ jobs:
 
           cd ./libdwarf-code
           sh autogen.sh
-          ./configure --enable-shared --enable-dwarfgen  --prefix="$PWD/install"
+          ./configure --enable-shared \
+            --enable-dwarfgen  --disable-static --prefix="$PWD/install"
           make -j"$(nproc)"
           make install
           WRAP=jna-wrapper/src/main/resources/linux-x86-64
@@ -95,7 +96,8 @@ jobs:
 
           cd ./libdwarf-code
           sh autogen.sh
-          ./configure --enable-shared --enable-dwarfgen  --prefix="$PWD/install"
+          ./configure --enable-shared \
+            --enable-dwarfgen  --disable-static --prefix="$PWD/install"
           make -j"$(nproc)"
           make install
 
@@ -200,7 +202,7 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add src/libdwarf.jar || true || true
+          git add src/libdwarf.jar jna-wrapper/src/main/resources || true
 
           if git diff --cached --quiet; then
             echo "Everything is up-to-date — nothing to commit."
