@@ -63,82 +63,41 @@ jobs:
 #  W I N D O W S   N A T I V E   B U I L D                                    #
 # --------------------------------------------------------------------------- #
   build-windows:
-    runs-on: windows-2022
-    defaults:
-      run:
-        shell: msys2 {0}
-
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-
-      - name: MSYS2 setup
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW64
-          path-type: inherit
-          update: true
-          install: >-
-            mingw-w64-x86_64-toolchain
-            mingw-w64-x86_64-make
-            mingw-w64-x86_64-zlib
-            mingw-w64-x86_64-zstd
-            autoconf2.71
-            autoconf-wrapper
-            automake 
-            libtool 
-            git
 
       - uses: actions/cache@v4
         with:
           path: .cache/libdwarf
-          key: libdwarf-windows-${{ env.LIBDWARF_VERSION }}
+          key: libdwarf-linux-${{ env.LIBDWARF_VERSION }}
 
-      - name: Fetch libdwarf sources
+      - name: Install MinGW-w64 toolchain
         run: |
-          git clone --depth 1 --branch "$LIBDWARF_VERSION" \
-            https://github.com/davea42/libdwarf-code libdwarf-code
-          
-      - name: Build **static** libdwarf
-        env:
-          WANT_AUTOCONF: 2.71
-          WANT_AUTOHEADER: 2.71
+          sudo apt-get update -y
+          sudo apt-get install --no-install-recommends -y \
+             mingw-w64 autoconf automake libtool pkg-config git
+
+      - name: Cross-build Win64 DLLs
         run: |
-          cd ./libdwarf-code
-          sh ./autogen.sh
-          mkdir static-build; cd static-build
-          ../configure \
-            --disable-shared --enable-static  \
-            --disable-dwarfgen                \
-            --prefix="$PWD/install"
-          
-          make -j"$(nproc)"
+          git clone --depth 1 --branch "$LIBDWARF_VERSION" https://github.com/davea42/libdwarf-code libdwarf-code
+          cd libdwarf-code
+          sh autogen.sh
+          ./configure --host=$HOST --enable-shared --disable-static \
+                    --enable-dwarfgen --prefix="$PWD/install"
+          make -j$(nproc)
 
-      - name: Build **shared** libdwarfp (single DLL)
-        env:
-          WANT_AUTOCONF: 2.71
-          WANT_AUTOHEADER: 2.71
-        run: |
-          mkdir build-producer && cd build-producer
-          export LIBDWARF_CFLAGS="-I$PWD/../build-static/install/include"
-          export LIBDWARF_LIBS="$PWD/../build-static/install/lib/libdwarf.a"
-          
-          ../libdwarf-code/configure \
-              --enable-shared  --disable-static \
-              --enable-dwarfgen                 \
-              --prefix="$PWD/install"
-          make -j"$(nproc)"
-
-
-          WRAP=../jna-wrapper/src/main/resources/win32-x86-64
+          WRAP=jna-wrapper/src/main/resources/win32-x86-64
           mkdir -p "$WRAP" out .cache/libdwarf/windows
-          cp install/bin/libdwarfp*.dll "$WRAP/"
-          cp install/bin/libdwarfp*.dll out/
-          cp install/bin/libdwarfp*.dll .cache/libdwarf/windows/
+          cp install/bin/libdwarf*.dll "$WRAP/"
+          cp install/bin/libdwarf*.dll out/
+          cp install/bin/libdwarf*.dll .cache/libdwarf/windows/
 
       - uses: actions/upload-artifact@v4
         with:
-          name: libdwarf-windows
+          name: libdwarf-linux
           path: out/*
+
 
 # --------------------------------------------------------------------------- #
 #  J A V A   W R A P P E R   (shaded JAR)                                     #
