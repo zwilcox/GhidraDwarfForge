@@ -63,54 +63,63 @@ jobs:
 #  W I N D O W S   N A T I V E   B U I L D                                    #
 # --------------------------------------------------------------------------- #
   build-windows:
-    runs-on: ubuntu-24.04
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: msys2 {0}
+
     steps:
       - uses: actions/checkout@v4
+
+      - name: MSYS2 setup
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          path-type: inherit
+          update: true
+          install: >-
+            base-devel
+            git
+            autoconf
+            automake 
+            libtool
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-zlib
+
 
       - uses: actions/cache@v4
         with:
           path: .cache/libdwarf
-          key: libdwarf-linux-${{ env.LIBDWARF_VERSION }}
+          key: libdwarf-windows-${{ env.LIBDWARF_VERSION }}
 
-      - name: Install MinGW-w64 toolchain
+      - name: Fetch libdwarf sources
         run: |
-          sudo apt-get update -y
-          sudo apt-get install --no-install-recommends -y \
-             mingw-w64 autoconf automake libtool pkg-config git \
-             libz-mingw-w64-dev libz-mingw-w64-dev
-
-      - name: Cross-build Win64 DLLs
-        env: 
-          HOST: x86_64-w64-mingw32
-
+          git clone --depth 1 --branch "$LIBDWARF_VERSION" \
+            https://github.com/davea42/libdwarf-code libdwarf-code
+          
+      - name: Build libdwarf
+        env:
+          PYTHONIOENCODING: "utf-8"
         run: |
-          git clone --depth 1 --branch "$LIBDWARF_VERSION" https://github.com/davea42/libdwarf-code libdwarf-code
           cd libdwarf-code
-          sh autogen.sh
+          autoreconf -vif
+          ./configure --disable-static --enable-shared
+          
+          make
+          make check
 
-          export PKG_CONFIG_LIBDIR=/usr/x86_64-w64-mingw32/lib/pkgconfig
+          make distcheck DISTCHECK_CONFIGURE_FLAGS="--disable-static --enable-shared"
 
-          ./configure         \
-            --host=$HOST      \
-            --enable-shared   \
-            --disable-static  \
-            --enable-dwarfgen \
-            --disable-zstd    \
-            --prefix="$PWD/install"
-          make -j$(nproc)
-          make install
-
-          WRAP=jna-wrapper/src/main/resources/win32-x86-64
+          WRAP=../jna-wrapper/src/main/resources/win32-x86-64
           mkdir -p "$WRAP" out .cache/libdwarf/windows
-          cp install/bin/libdwarf*.dll "$WRAP/"
-          cp install/bin/libdwarf*.dll out/
-          cp install/bin/libdwarf*.dll .cache/libdwarf/windows/
+          cp install/bin/libdwarfp*.dll "$WRAP/"
+          cp install/bin/libdwarfp*.dll out/
+          cp install/bin/libdwarfp*.dll .cache/libdwarf/windows/
 
       - uses: actions/upload-artifact@v4
         with:
           name: libdwarf-windows
           path: out/*
-
 
 # --------------------------------------------------------------------------- #
 #  J A V A   W R A P P E R   (shaded JAR)                                     #
