@@ -79,6 +79,9 @@ jobs:
              mingw-w64 autoconf automake libtool pkg-config git
 
       - name: Cross-build Win64 DLLs
+        env: 
+          HOST: x86_64-w64-mingw32
+
         run: |
           git clone --depth 1 --branch "$LIBDWARF_VERSION" https://github.com/davea42/libdwarf-code libdwarf-code
           cd libdwarf-code
@@ -86,6 +89,7 @@ jobs:
           ./configure --host=$HOST --enable-shared --disable-static \
                     --enable-dwarfgen --prefix="$PWD/install"
           make -j$(nproc)
+          make install
 
           WRAP=jna-wrapper/src/main/resources/win32-x86-64
           mkdir -p "$WRAP" out .cache/libdwarf/windows
@@ -95,7 +99,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: libdwarf-linux
+          name: libdwarf-windows
           path: out/*
 
 
