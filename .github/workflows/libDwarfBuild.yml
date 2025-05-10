@@ -96,9 +96,18 @@ jobs:
         run: |
           git clone --depth 1 --branch "$LIBDWARF_VERSION" \
             https://github.com/davea42/libdwarf-code libdwarf-code
-          
-      - name: Build libdwarf
 
+      - name: Patch libdwarf CMake so libdwarfp links to libdwarf
+        run: |
+          apply_patch=$(cat <<'PATCH'diff --git a/src/lib/libdwarfp/CMakeLists.txt b/src/lib/libdwarfp/CMakeLists.txt@@
+          add_library(dwarfp SHARED ${DWARFP_SOURCES})
+          +# On Windows libdwarfp needs the import-lib for libdwarf
+          +target_link_libraries(dwarfp PRIVATE dwarf)
+          PATCH
+          )
+          echo "$apply_patch" | git -C libdwarf-code apply -            
+
+      - name: Build libdwarf
         run: |
           cd libdwarf-code
           mkdir builddir && cd builddir
