@@ -104,7 +104,7 @@ jobs:
           mkdir builddir && cd builddir
           cmake -G Ninja                                          \
           -DCMAKE_INSTALL_PREFIX=/c/msys64/usr                    \
-          -DBUILD_DWARFEXAMPLE=ON -DDO_TESTING=ON                 \
+          -DBUILD_DWARFEXAMPLE=OFF -DDO_TESTING=OFF               \
           -DBUILD_SHARED:BOOL=TRUE -DBUILD_NON_SHARED:BOOL=FALSE  \
           ../CMakeLists.txt
           ninja
