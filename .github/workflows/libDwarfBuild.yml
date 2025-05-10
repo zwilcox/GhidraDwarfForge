@@ -95,8 +95,9 @@ jobs:
 
       - name: Fetch libdwarf sources
         run: git clone --depth 1 --branch "$LIBDWARF_VERSION" \
-              https://github.com/davea42/libdwarf-code libdwarf-code
+         https://github.com/davea42/libdwarf-code libdwarf-code
 
+              
       - name: Build **static** libdwarf
         env:
           WANT_AUTOCONF: 2.71
@@ -133,7 +134,7 @@ jobs:
           cp install/bin/libdwarfp*.dll "$WRAP/"
           cp install/bin/libdwarfp*.dll out/
           cp install/bin/libdwarfp*.dll .cache/libdwarf/windows/
-          
+
       - uses: actions/upload-artifact@v4
         with:
           name: libdwarf-windows
