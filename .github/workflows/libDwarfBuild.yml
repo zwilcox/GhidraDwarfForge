@@ -94,10 +94,10 @@ jobs:
           key: libdwarf-windows-${{ env.LIBDWARF_VERSION }}
 
       - name: Fetch libdwarf sources
-        run: git clone --depth 1 --branch "$LIBDWARF_VERSION" \
-         https://github.com/davea42/libdwarf-code libdwarf-code
-
-              
+        run: |
+          git clone --depth 1 --branch "$LIBDWARF_VERSION" \
+            https://github.com/davea42/libdwarf-code libdwarf-code
+          
       - name: Build **static** libdwarf
         env:
           WANT_AUTOCONF: 2.71
