@@ -78,7 +78,7 @@ jobs:
           msystem: MINGW64
           update: true
           install: >-
-            base-devel 
+            base-devel
             git
             mingw-w64-x86_64-toolchain
             mingw-w64-x86_64-cmake
@@ -97,39 +97,34 @@ jobs:
           git clone --depth 1 --branch "$LIBDWARF_VERSION" \
             https://github.com/davea42/libdwarf-code libdwarf-code
 
-      - name: Patch libdwarf CMake so libdwarfp links to libdwarf
-        run: |
-          apply_patch=$(cat <<'PATCH'diff --git a/src/lib/libdwarfp/CMakeLists.txt b/src/lib/libdwarfp/CMakeLists.txt@@
-          add_library(dwarfp SHARED ${DWARFP_SOURCES})
-          +# On Windows libdwarfp needs the import-lib for libdwarf
-          +target_link_libraries(dwarfp PRIVATE dwarf)
-          PATCH
-          )
-          echo "$apply_patch" | git -C libdwarf-code apply -            
 
       - name: Build libdwarf
         run: |
+          set -euo pipefail
           cd libdwarf-code
-          mkdir builddir && cd builddir
-          cmake -G Ninja                                          \
-          -DCMAKE_INSTALL_PREFIX=/c/msys64/usr                    \
-          -DBUILD_DWARFGEN=ON                                     \
-          -DBUILD_DWARFEXAMPLE=OFF -DDO_TESTING=OFF               \
-          -DBUILD_SHARED:BOOL=TRUE -DBUILD_NON_SHARED:BOOL=FALSE  \
-          ../CMakeLists.txt
-          ninja
-          
-          
+          sh autogen.sh
+          ./configure --enable-shared --enable-dwarfgen --disable-static \
+                      --prefix="$PWD/install"
+          make -j"$(nproc || echo 4)"
+          make install
+
+          DLL_DIR="$PWD/install/bin"
           WRAP=../jna-wrapper/src/main/resources/win32-x86-64
-          mkdir -p "$WRAP" out .cache/libdwarf/windows
-          cp install/bin/libdwarfp*.dll "$WRAP/"
-          cp install/bin/libdwarfp*.dll out/
-          cp install/bin/libdwarfp*.dll .cache/libdwarf/windows/
+          mkdir -p "$WRAP" ../out ../.cache/libdwarf/windows
+
+          shopt -s nullglob
+          for dll in "$DLL_DIR"/libdwarf*.dll; do
+            cp "$dll" "$WRAP/"
+            cp "$dll" ../out/
+            cp "$dll" ../.cache/libdwarf/windows/
+          done
+          shopt -u nullglob
 
       - uses: actions/upload-artifact@v4
         with:
           name: libdwarf-windows
           path: out/*
+
 
 # --------------------------------------------------------------------------- #
 #  J A V A   W R A P P E R   (shaded JAR)                                     #
