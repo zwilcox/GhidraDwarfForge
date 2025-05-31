@@ -109,7 +109,7 @@ jobs:
             --enable-dwarfgen  --disable-static --prefix="$PWD/install"
           make -j"$(nproc)"
 
-          DLL_DIR="$PWD/./src/lib"
+          DLL_DIR="$PWD/src/lib/libdwarf/.libs"
           WRAP=../jna-wrapper/src/main/resources/win32-x86-64
           mkdir -p "$WRAP" ../out ../.cache/libdwarf/windows
 
