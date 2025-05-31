@@ -8,7 +8,8 @@ on:
 env:
   # -------------------------------------------------------------------------
   # Bump this tag/branch to rebuild libdwarf
-  LIBDWARF_VERSION: v2.0.0
+  # TODO:  Change this to a tag once all the build issues that were recently fixed are in a tag.
+  LIBDWARF_VERSION: main
   # -------------------------------------------------------------------------
 
 # --------------------------------------------------------------------------- #
