@@ -111,8 +111,8 @@ jobs:
 
 
           mkdir -p ./temp
-          cp "$PWD"/src/lib/libdwarf/.libs/*.dll  ./temp
-          cp "$PWD"/src/lib/libdwarfp/.libs/*.dll ./temp
+          cp "$PWD"/src/lib/libdwarf/.libs/*.dll  ./temp/libdwarf.dll
+          cp "$PWD"/src/lib/libdwarfp/.libs/*.dll ./temp/libdwarfp.dll
 
           DLL_DIR="$PWD/temp"
 
