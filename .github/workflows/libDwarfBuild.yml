@@ -39,19 +39,20 @@ jobs:
             https://github.com/davea42/libdwarf-code libdwarf-code
 
           cd ./libdwarf-code
+          WRAP=../jna-wrapper/src/main/resources/linux-x86-64
+          mkdir -p "$WRAP" ../out ../.cache/libdwarf/linux
+
           sh autogen.sh
           ./configure --enable-shared \
             --enable-dwarfgen  --disable-static --prefix="$PWD/install"
           make -j"$(nproc)"
           make install
-          WRAP=jna-wrapper/src/main/resources/linux-x86-64
-          mkdir -p "$WRAP" out .cache/libdwarf/linux
 
           shopt -s nullglob
           for so in install/lib/libdwarf*.so*; do
             cp "$so" "$WRAP/"
-            cp "$so" out/
-            cp "$so" .cache/libdwarf/linux/
+            cp "$so" ../out/
+            cp "$so" ../.cache/libdwarf/linux/
           done
           shopt -u nullglob
 
