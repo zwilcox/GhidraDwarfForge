@@ -104,9 +104,9 @@ jobs:
           set -euo pipefail
           cd libdwarf-code
           sh autogen.sh
-          ./configure --enable-shared --enable-dwarfgen --disable-static \
-                      --prefix="$PWD/install"
-          make -j"$(nproc || echo 4)"
+          ./configure --enable-shared \
+            --enable-dwarfgen  --disable-static --prefix="$PWD/install"
+          make -j"$(nproc)"
           make install
 
           DLL_DIR="$PWD/install/bin"
