@@ -109,12 +109,18 @@ jobs:
             --enable-dwarfgen  --disable-static --prefix="$PWD/install"
           make -j"$(nproc)"
 
-          DLL_DIR="$PWD/src/lib/libdwarf/.libs"
+
+          mkdir -p ./temp
+          cp "$PWD"/src/lib/libdwarf/.libs/*.dll  ./temp
+          cp "$PWD"/src/lib/libdwarfp/.libs/*.dll ./temp
+
+          DLL_DIR="$PWD/temp"
+
           WRAP=../jna-wrapper/src/main/resources/win32-x86-64
           mkdir -p "$WRAP" ../out ../.cache/libdwarf/windows
-
           shopt -s nullglob
-          for dll in "$DLL_DIR"/libdwarf*.dll; do
+
+          for dll in "$DLL_DIR"/*.dll; do
             cp "$dll" "$WRAP/"
             cp "$dll" ../out/
             cp "$dll" ../.cache/libdwarf/windows/
