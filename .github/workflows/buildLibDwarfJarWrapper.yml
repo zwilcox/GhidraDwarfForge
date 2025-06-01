@@ -57,8 +57,12 @@ jobs:
             cp -L "$so" ../out/
             cp -L "$so" ../.cache/libdwarf/linux/
           done
+
           shopt -u nullglob
-          
+
+          find "$WRAP" -maxdepth 1 -name 'libdwarfp*.so*' \
+            -exec patchelf --set-rpath '$ORIGIN' --force-rpath {} +
+
           # -- verify --------
           readelf -d "$WRAP/libdwarfp.so" | grep -q '(RUNPATH).*[$]ORIGIN' \
             || { echo "::error::RUNPATH not set"; exit 1; }
