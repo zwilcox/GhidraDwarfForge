@@ -166,6 +166,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 1. bring in the natives we just built -------------------------------
+      - uses: actions/download-artifact@v4
+        with:
+          path: _natives        # gets libdwarf-linux/  &  libdwarf-windows/
+
+      - name: Replace bundled natives with the freshly-built ones
+        run: |
+          set -euxo pipefail
+          # wipe the old copies that live in the repo
+          rm -f jna-wrapper/src/main/resources/linux-x86-64/libdwarf*.so*
+          rm -f jna-wrapper/src/main/resources/win32-x86-64/libdwarf*.dll
+
+          # copy the new ones over
+          find _natives/libdwarf-linux   -type f -name 'libdwarf*.so*' \
+               -exec cp -L {} jna-wrapper/src/main/resources/linux-x86-64/ \;
+          find _natives/libdwarf-windows -type f -name 'libdwarf*.dll'  \
+               -exec cp -L {} jna-wrapper/src/main/resources/win32-x86-64/ \;
+
+      # 2. build the shaded JAR --------------------------------------------
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
