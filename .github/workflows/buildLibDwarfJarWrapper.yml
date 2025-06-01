@@ -47,7 +47,7 @@ jobs:
           make install
 
           shopt -s nullglob
-          for so in install/lib/libdwarf*.so; do
+          for so in install/lib/libdwarf*.so*; do
             cp -L "$so" "$WRAP/"
             cp -L "$so" ../out/
             cp -L "$so" ../.cache/libdwarf/linux/
