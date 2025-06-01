@@ -122,8 +122,8 @@ jobs:
 
 
           mkdir -p ./temp
-          cp "$PWD"/src/lib/libdwarf/.libs/*.dll  ./temp/libdwarf.dll
-          cp "$PWD"/src/lib/libdwarfp/.libs/*.dll ./temp/libdwarfp.dll
+          cp "$PWD"/src/lib/libdwarf/.libs/libdwarf-*.dll  ./temp/
+          cp "$PWD"/src/lib/libdwarfp/.libs/libdwarfp-*.dll ./temp/
 
           DLL_DIR="$PWD/temp"
 
@@ -138,14 +138,16 @@ jobs:
           done
           shopt -u nullglob
 
-          deps=$(objdump -p "$WRAP/libdwarfp.dll" \
+          DWARFP_DLL="$(basename "$DLL_DIR"/libdwarfp-*.dll)"
+          deps=$(objdump -p "$WRAP/$DWARFP_DLL" \
                  | sed -n 's/^\s*DLL Name: \(.*\)/\1/p' | tr '[:upper:]' '[:lower:]')
-          echo "libdwarfp.dll depends on: $deps"
+          echo "$DWARFP_DLL depends on: $deps"
 
-          # Expect exactly libdwarf.dll plus the normal Windows CRTs
-          wanted="libdwarf.dll"
+           # Expect exactly the matching libdwarf-*.dll (plus the CRTs)
+          wanted="$(basename "$DLL_DIR"/libdwarf-*.dll | tr '[:upper:]' '[:lower:]')"
+
           if ! printf '%s\n' "$deps" | grep -qx "$wanted"; then
-            echo "::error::libdwarfp.dll should depend on $wanted only (got: $deps)"
+            echo "::error::$DWARFP_DLL should depend on $wanted only (got: $deps)"
             exit 1
           fi
 
