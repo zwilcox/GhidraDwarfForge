@@ -138,9 +138,6 @@ jobs:
           done
           shopt -u nullglob
 
-      - name: Verify DLL dependencies (libdwarfp → libdwarf)
-        run: |
-          set -euo pipefail
           deps=$(objdump -p "$WRAP/libdwarfp.dll" \
                  | sed -n 's/^\s*DLL Name: \(.*\)/\1/p' | tr '[:upper:]' '[:lower:]')
           echo "libdwarfp.dll depends on: $deps"
