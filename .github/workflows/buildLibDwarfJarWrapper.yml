@@ -29,7 +29,7 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install --no-install-recommends -y \
             build-essential zlib1g-dev libzstd-dev \
-            autoconf automake libtool pkg-config
+            autoconf automake libtool pkg-config patchelf
 
       - name: Build shared library
         run: |
@@ -46,6 +46,11 @@ jobs:
           make -j"$(nproc)"
           make install
 
+          # Patch libdwarfp.so*   (libdwarf itself doesn't need the rpath)
+          for so in install/lib/libdwarfp*.so*; do
+            patchelf --set-rpath '$ORIGIN' --force-rpath "$so"
+          done
+
           shopt -s nullglob
           for so in install/lib/libdwarf*.so*; do
             cp -L "$so" "$WRAP/"
@@ -53,6 +58,10 @@ jobs:
             cp -L "$so" ../.cache/libdwarf/linux/
           done
           shopt -u nullglob
+          
+          # -- verify --------
+          readelf -d "$WRAP/libdwarfp.so" | grep -q '(RUNPATH).*[$]ORIGIN' \
+            || { echo "::error::RUNPATH not set"; exit 1; }
 
       - uses: actions/upload-artifact@v4
         with:
@@ -208,7 +217,7 @@ jobs:
             done
 
           # ----- shaded JAR -----
-          jar_src=$(ls _artifacts/libdwarf-jar/*.jar)
+          jar_src=$(find _artifacts/libdwarf-jar -name 'libdwarf*.jar' | head -n1)
           copy_if_changed "$jar_src" "src/libdwarf.jar"
 
       - name: Commit & push (only when something changed)
