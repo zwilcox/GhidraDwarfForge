@@ -48,7 +48,7 @@ jobs:
 
           # Patch libdwarfp.so*   (libdwarf itself doesn't need the rpath)
           for so in install/lib/libdwarfp*.so*; do
-            patchelf --set-rpath '$ORIGIN' --force-rpath "$so"
+            patchelf --set-rpath '$ORIGIN' "$so"
           done
 
           shopt -s nullglob
@@ -61,7 +61,7 @@ jobs:
           shopt -u nullglob
 
           find "$WRAP" -maxdepth 1 -name 'libdwarfp*.so*' \
-            -exec patchelf --set-rpath '$ORIGIN' --force-rpath {} +
+            -exec patchelf --set-rpath '$ORIGIN' {} +
 
           # -- verify --------
           readelf -d "$WRAP/libdwarfp.so" | grep -q '(RUNPATH).*[$]ORIGIN' \
