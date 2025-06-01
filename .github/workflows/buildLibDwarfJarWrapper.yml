@@ -134,6 +134,20 @@ jobs:
           done
           shopt -u nullglob
 
+      - name: Verify DLL dependencies (libdwarfp → libdwarf)
+        run: |
+          set -euo pipefail
+          deps=$(objdump -p "$WRAP/libdwarfp.dll" \
+                 | sed -n 's/^\s*DLL Name: \(.*\)/\1/p' | tr '[:upper:]' '[:lower:]')
+          echo "libdwarfp.dll depends on: $deps"
+
+          # Expect exactly libdwarf.dll plus the normal Windows CRTs
+          wanted="libdwarf.dll"
+          if ! printf '%s\n' "$deps" | grep -qx "$wanted"; then
+            echo "::error::libdwarfp.dll should depend on $wanted only (got: $deps)"
+            exit 1
+          fi
+
       - uses: actions/upload-artifact@v4
         with:
           name: libdwarf-windows
