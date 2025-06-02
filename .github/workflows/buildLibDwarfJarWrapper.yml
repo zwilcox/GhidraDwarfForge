@@ -179,7 +179,7 @@ jobs:
           rm -f jna-wrapper/src/main/resources/win32-x86-64/libdwarf*.dll
 
           # copy the new ones over
-          find _natives/libdwarf-linux/out -name 'libdwarf*.so*' \
+          find _natives/libdwarf-linux -type f -name 'libdwarf*.so*' \
                -exec cp -L {} jna-wrapper/src/main/resources/linux-x86-64/ \;
           find _natives/libdwarf-windows -type f -name 'libdwarf*.dll'  \
                -exec cp -L {} jna-wrapper/src/main/resources/win32-x86-64/ \;
