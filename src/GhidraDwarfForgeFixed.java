@@ -5,9 +5,10 @@
 import ghidra.app.script.GhidraScript;
 import ghidra.program.model.address.*;
 import ghidra.program.model.lang.*;
-import ghidra.program.model.listing.Program;
-import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.*;
 import ghidra.util.exception.CancelledException;
+import ghidra.app.decompiler.*;
+
 import java.nio.charset.StandardCharsets;
 
 import com.sun.jna.NativeLong;
@@ -16,8 +17,11 @@ import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.NativeLongByReference;
 import com.sun.jna.ptr.PointerByReference;
 
+import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -89,7 +93,7 @@ public class GhidraDwarfForgeFixed extends GhidraScript {
     private final class ErrorCallback implements LibDwarfp.Dwarf_Error_Handler {
         @Override
         public void invoke(int errno, Pointer arg) {
-        	printerr("libdwarf error " + errno);
+            printerr("libdwarf error " + errno);
         }
     }
 
@@ -107,6 +111,9 @@ public class GhidraDwarfForgeFixed extends GhidraScript {
             return;
         }
 
+        exportDecompilerC(currentProgram,
+                currentProgram.getExecutablePath() + ".dbg.c");
+
         int ptrSize = currentProgram.getDefaultPointerSize();
         Endian endian = currentProgram.getLanguage().getLanguageDescription().getEndian();
         String abi = getAbi(currentProgram);
@@ -115,11 +122,17 @@ public class GhidraDwarfForgeFixed extends GhidraScript {
         println("Endianness    : " + (endian == Endian.BIG ? "big" : "little"));
         println("ISA/ABI       : " + abi);
 
-        int dlcFlags = (ptrSize > 4 ? DwarfConst.DW_DLC_POINTER64 | DwarfConst.DW_DLC_OFFSET64
-                : DwarfConst.DW_DLC_POINTER32 | DwarfConst.DW_DLC_OFFSET32)
-                | (endian == Endian.BIG ? DwarfConst.DW_DLC_TARGET_BIGENDIAN
-                        : DwarfConst.DW_DLC_TARGET_LITTLEENDIAN)
-                | DwarfConst.DW_DLC_SYMBOLIC_RELOCATIONS;
+        int dlcFlags = DwarfConst.DW_DLC_SYMBOLIC_RELOCATIONS;
+        if (ptrSize > 4) {
+            dlcFlags |= DwarfConst.DW_DLC_POINTER64 | DwarfConst.DW_DLC_OFFSET64;
+        } else {
+            dlcFlags |= DwarfConst.DW_DLC_POINTER32 | DwarfConst.DW_DLC_OFFSET32;
+        }
+        if (endian == Endian.BIG) {
+            dlcFlags |= DwarfConst.DW_DLC_TARGET_BIGENDIAN;
+        } else {
+            dlcFlags |= DwarfConst.DW_DLC_TARGET_LITTLEENDIAN;
+        }
 
         println(String.format("libdwarf dlc flags: 0x%08x", dlcFlags));
 
@@ -206,6 +219,9 @@ public class GhidraDwarfForgeFixed extends GhidraScript {
 
         var fm = currentProgram.getFunctionManager();
         for (Function f : fm.getFunctions(true)) {
+            if (f.isExternal()) {
+                continue;
+            }
             try {
                 monitor.checkCancelled(); // keeps GUI responsive / cancellable
                 buildFunctionDie(dbg, f, cuDie, errRef);
@@ -299,7 +315,7 @@ public class GhidraDwarfForgeFixed extends GhidraScript {
      */
     private static short elfMachine(String proc) {
         proc = proc.toLowerCase();
-    	return switch (proc) {
+        return switch (proc) {
             case "x86" -> (short) 0x3e; // EM_X86_64 (we emit 64‑bit only)
             case "arm" -> (short) 0x28; // EM_ARM
             case "aarch64" -> (short) 0xb7; // EM_AARCH64
@@ -460,7 +476,7 @@ public class GhidraDwarfForgeFixed extends GhidraScript {
             int entsz = entrySize(isRela, is64);
 
             // ".rela.debug_info" → ".debug_info"
-            String target = s.name.replaceFirst("^\\.rela?\\.", ".");
+            String target = s.name.replaceFirst("^\\.rel(a)?\\.", ".");
             int shInfo = headerIndex.getOrDefault(target, 0);
 
             putSh(b,
@@ -572,8 +588,12 @@ public class GhidraDwarfForgeFixed extends GhidraScript {
         long high = fun.getBody().getMaxAddress().getUnsignedOffset() + 1; // past-end
         long span = high - low;
 
+        long spanForm = currentProgram.getDefaultPointerSize() > 4
+                ? span
+                : (span & 0xffff_ffffL);
+
         LibDwarfp.INSTANCE.dwarf_add_AT_unsigned_const_a(
-                dbg, die, (short) DwarfConst.DW_AT_high_pc, span, attr, errRef);
+                dbg, die, (short) DwarfConst.DW_AT_high_pc, spanForm, attr, errRef);
 
         LibDwarfp.INSTANCE.dwarf_add_AT_name_a(die, name, attr, errRef);
         LibDwarfp.INSTANCE.dwarf_add_AT_targ_address_c(
@@ -598,4 +618,48 @@ public class GhidraDwarfForgeFixed extends GhidraScript {
         return die;
     }
 
+    /**
+     * Dumps every function’s decompiled C to <binary>.dbg.c in declaration order.
+     * Call this once the ELF side-car has been written so we can reuse the same
+     * output directory and base name.
+     *
+     * @param program the program being processed
+     * @param elfFile the file we just wrote (…​.dbg); we derive the .dbg.c name
+     * @param monitor a cancellable monitor from the calling plugin/script
+     */
+    public void exportDecompilerC(Program program, String fileName) throws IOException {
+
+        println("Exporting decompiled C.  This may take awhile for large binaries");
+        File fileOut = new File(fileName);
+        try (BufferedWriter w = new BufferedWriter(new FileWriter(fileOut))) {
+
+            DecompileOptions opts = new DecompileOptions(); // default ok
+            DecompInterface ifc = new DecompInterface();
+            ifc.setOptions(opts);
+            ifc.openProgram(program);
+
+            Listing listing = program.getListing();
+            FunctionIterator funcs = listing.getFunctions(true); // by address
+
+            while (funcs.hasNext() && !monitor.isCancelled()) {
+                Function f = funcs.next();
+                
+                if (f.isExternal()) 
+                {
+                    continue;
+                }
+                monitor.setMessage("Decompiling " + f.getName());
+
+                DecompileResults res = ifc.decompileFunction(
+                        f, 0, monitor);
+
+                if (res != null && res.decompileCompleted()) {
+                    w.write(res.getDecompiledFunction().getC());
+                    w.write(System.lineSeparator());
+                    w.write(System.lineSeparator());
+                }
+            }
+            ifc.dispose(); // releases decompiler threads
+        }
+    }
 }
