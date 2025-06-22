@@ -2,6 +2,7 @@
 /* JNA interface to libdwarfp                                           */
 /* ===================================================================== */
 
+
 import com.sun.jna.*;
 import com.sun.jna.ptr.*;
 
@@ -145,13 +146,21 @@ interface LibDwarfp extends Library {
                         NativeLongByReference lengthOut,
                         PointerByReference dataOut,
                         PointerByReference errOut);
-        
+
         int dwarf_add_AT_targ_address_c(
-                Dwarf_P_Debug dbg,        /* producer handle               */
-                Dwarf_P_Die   die,        /* the DIE you add to            */
-                short         attr,       /* e.g. DW_AT_low_pc             */
-                long          symIndex,   /* 0  ? absolute value, no reloc */
-                long          offset,     /* the actual address/offset     */
-                PointerByReference err);
+                        Dwarf_P_Debug dbg,
+                        Dwarf_P_Die die,
+                        short attr,
+                        long offset, /* <- absolute addr or addend */
+                        long symIndex, /* <- -1 or 0 for no reloc */
+                        PointerByReference err);
+
+        int dwarf_add_AT_flag_a(
+                        Dwarf_P_Die die,
+                        short attr, /* e.g. DW_AT_external */
+                        int flag, /* 0 / 1 */
+                        PointerByReference err);
+        
+
 
 }

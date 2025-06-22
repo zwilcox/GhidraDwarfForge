@@ -6,6 +6,8 @@ import ghidra.app.script.GhidraScript;
 import ghidra.program.model.address.*;
 import ghidra.program.model.lang.*;
 import ghidra.program.model.listing.Program;
+import ghidra.program.model.listing.Function;
+import ghidra.util.exception.CancelledException;
 import java.nio.charset.StandardCharsets;
 
 import com.sun.jna.NativeLong;
@@ -84,10 +86,10 @@ public class GhidraDwarfForgeFixed extends GhidraScript {
         }
     }
 
-    private static final class ErrorCallback implements LibDwarfp.Dwarf_Error_Handler {
+    private final class ErrorCallback implements LibDwarfp.Dwarf_Error_Handler {
         @Override
         public void invoke(int errno, Pointer arg) {
-            System.err.println("libdwarf error " + errno);
+        	printerr("libdwarf error " + errno);
         }
     }
 
@@ -178,22 +180,10 @@ public class GhidraDwarfForgeFixed extends GhidraScript {
         LibDwarfp.INSTANCE.dwarf_add_AT_producer_a(cuDie, "GhidraDwarfForge", attr, errRef);
 
         long lo = ranges.get(0).start;
-        long hi = ranges.stream().mapToLong(r -> r.start + r.length).max().orElse(lo);
-
         LibDwarfp.INSTANCE.dwarf_add_AT_targ_address_c(
-                dbg,
-                cuDie,
-                (short) DwarfConst.DW_AT_low_pc,
-                DwarfConst.DW_DLV_NOCOUNT,
-                lo, /* offset / value */
-                errRef);
-
-        LibDwarfp.INSTANCE.dwarf_add_AT_unsigned_const_a(
-                dbg,
-                cuDie,
-                (short) DwarfConst.DW_AT_high_pc,
-                hi - lo,
-                attr,
+                dbg, cuDie, (short) DwarfConst.DW_AT_low_pc,
+                lo, // offset
+                DwarfConst.DW_DLV_NOCOUNT, // symIndex
                 errRef);
 
         LibDwarfp.INSTANCE.dwarf_add_AT_unsigned_const_a(
@@ -213,6 +203,19 @@ public class GhidraDwarfForgeFixed extends GhidraScript {
                     0,
                     0,
                     errRef);
+
+        var fm = currentProgram.getFunctionManager();
+        for (Function f : fm.getFunctions(true)) {
+            try {
+                monitor.checkCancelled(); // keeps GUI responsive / cancellable
+                buildFunctionDie(dbg, f, cuDie, errRef);
+            } catch (CancelledException e) {
+                LibDwarfp.INSTANCE.dwarf_producer_finish_a(dbg, errRef);
+                printerr("Cancelled; no .dbg written.");
+                return;
+            }
+
+        }
 
         LibDwarfp.INSTANCE.dwarf_transform_to_disk_form_a(dbg, errRef);
 
@@ -234,6 +237,7 @@ public class GhidraDwarfForgeFixed extends GhidraScript {
 
             if (res != DwarfConst.DW_DLV_OK) {
                 println("⚠  libdwarf did not return " + s.name());
+
                 continue;
             }
 
@@ -294,12 +298,15 @@ public class GhidraDwarfForgeFixed extends GhidraScript {
      * DWARF sections whose byte‑payloads are present in {@code secs}.
      */
     private static short elfMachine(String proc) {
-        return switch (proc) {
+        proc = proc.toLowerCase();
+    	return switch (proc) {
             case "x86" -> (short) 0x3e; // EM_X86_64 (we emit 64‑bit only)
-            case "ARM" -> (short) 0x28; // EM_ARM
-            case "AArch64" -> (short) 0xb7; // EM_AARCH64
-            case "PowerPC" -> (short) 0x15; // EM_PPC64
-            case "MIPS" -> (short) 0x08; // EM_MIPS (assumes 64‑bit ABI)
+            case "arm" -> (short) 0x28; // EM_ARM
+            case "aarch64" -> (short) 0xb7; // EM_AARCH64
+            case "powerpc" -> (short) 0x15; // EM_PPC64
+            case "riscv" -> (short) 0xf3; // EM_RISCV
+            case "loongarch64" -> (short) 0x102; // EM_LOONGARCH
+            case "mips" -> (short) 0x08; // EM_MIPS (assumes 64‑bit ABI)
             default -> (short) 0; // Unknown → EM_NONE
         };
     }
@@ -529,13 +536,66 @@ public class GhidraDwarfForgeFixed extends GhidraScript {
 
     private static String getAbi(Program p) {
         int ps = p.getDefaultPointerSize();
-        return switch (p.getLanguage().getProcessor().toString()) {
-            case "ARM" -> "arm";
-            case "AArch64" -> "arm64";
-            case "PowerPC" -> ps <= 4 ? "ppc" : "ppc64";
-            case "MIPS" -> "mips";
+        return switch (p.getLanguage().getProcessor().toString().toLowerCase()) {
+            case "arm" -> "arm";
+            case "aarch64" -> "arm64";
+            case "powerpc" -> ps <= 4 ? "ppc" : "ppc64";
+            case "mips" -> "mips";
             case "x86" -> ps <= 4 ? "x86" : "x86_64";
+            case "riscv" -> "riscv";
+            case "loongarch", "loongarch64" -> "loongarch";
             default -> "unknown";
         };
     }
+
+    private LibDwarfp.Dwarf_P_Die buildFunctionDie(
+            LibDwarfp.Dwarf_P_Debug dbg,
+            Function fun,
+            LibDwarfp.Dwarf_P_Die cuDie,
+            PointerByReference errRef) throws IOException {
+
+        PointerByReference dieRef = new PointerByReference();
+        int dl = LibDwarfp.INSTANCE.dwarf_new_die_a(
+                dbg,
+                new NativeLong(DwarfConst.DW_TAG_subprogram),
+                null, null, null, null,
+                dieRef, errRef);
+
+        if (dl != DwarfConst.DW_DLV_OK)
+            throw new IOException("dwarf_new_die_a failed");
+
+        LibDwarfp.Dwarf_P_Die die = new LibDwarfp.Dwarf_P_Die(dieRef.getValue());
+        PointerByReference attr = new PointerByReference();
+
+        String name = fun.getName();
+        long low = fun.getEntryPoint().getUnsignedOffset();
+        long high = fun.getBody().getMaxAddress().getUnsignedOffset() + 1; // past-end
+        long span = high - low;
+
+        LibDwarfp.INSTANCE.dwarf_add_AT_unsigned_const_a(
+                dbg, die, (short) DwarfConst.DW_AT_high_pc, span, attr, errRef);
+
+        LibDwarfp.INSTANCE.dwarf_add_AT_name_a(die, name, attr, errRef);
+        LibDwarfp.INSTANCE.dwarf_add_AT_targ_address_c(
+                dbg, die, (short) DwarfConst.DW_AT_low_pc,
+                low, // offset
+                DwarfConst.DW_DLV_NOCOUNT,
+                errRef);
+
+        // Mark external (global‑visible) if Ghidra thinks so
+        if (fun.hasNoReturn() == false && fun.isExternal()) {
+            LibDwarfp.INSTANCE.dwarf_add_AT_flag_a(
+                    die, (short) 0x3f /* DW_AT_external */, 1, errRef); // flag = true
+        }
+
+        /*
+         * Finally glue it into the CU’s child‑list *
+         * parent = cuDie, left = null, right = null, child = …
+         */
+        LibDwarfp.INSTANCE.dwarf_die_link_a(
+                die, cuDie, null, null, null, errRef);
+
+        return die;
+    }
+
 }

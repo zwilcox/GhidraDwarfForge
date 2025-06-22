@@ -36,7 +36,8 @@ public class DwarfConst {
     public static final int DW_AT_language = 0x13;
     public static final int DW_AT_comp_dir = 0x1b;
     public static final int DW_AT_producer = 0x25;
-
+    public static final int DW_TAG_subprogram = 0x2e;
+    public static final int DW_AT_external = 0x3f;
     /* ---- access modes ---- */
     public static final int DW_DLC_READ = 2;
     public static final int DW_DLC_WRITE = 1;
