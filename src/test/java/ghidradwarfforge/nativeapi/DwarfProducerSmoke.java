@@ -55,6 +55,10 @@ import ghidradwarfforge.elf.MatchedElfSidecarWriter;
  */
 public final class DwarfProducerSmoke {
     private static final String EXPECTED_VERSION = "2.3.2";
+    private static final String ITERATIONS_PROPERTY =
+        "ghidradwarfforge.nativeSmokeIterations";
+    private static final int MAX_ITERATIONS = 1_000;
+    private static final long MAX_REPEATED_RSS_GROWTH = 32L * 1024 * 1024;
     private static final long TEXT_SYMBOL_INDEX = 0x1001L;
     private static final long FUNCTION_SIZE = 0x40L;
 
@@ -158,12 +162,78 @@ public final class DwarfProducerSmoke {
         }
         System.out.println("libdwarf-package-version=" + packageVersion);
 
-        runProducer(producer, consumer, target, sidecar);
+        int iterations = Integer.getInteger(ITERATIONS_PROPERTY, 1);
+        if (iterations <= 0 || iterations > MAX_ITERATIONS) {
+            throw new IllegalArgumentException(ITERATIONS_PROPERTY + " must be between 1 and " +
+                MAX_ITERATIONS + ", found " + iterations);
+        }
+        if (sidecar != null && iterations != 1) {
+            throw new IllegalArgumentException(
+                "sidecar output is available only for a single smoke iteration");
+        }
+        System.out.println("producer-lifetimes=" + iterations);
+        int warmupIterations = Math.min(8, iterations);
+        long warmupResidentBytes = -1;
+        Map<String, String> baselineSections = null;
+        for (int iteration = 1; iteration <= iterations; iteration++) {
+            Map<String, String> currentSections =
+                runProducer(producer, consumer, target, sidecar);
+            if (baselineSections == null) {
+                baselineSections = currentSections;
+            }
+            else if (!baselineSections.equals(currentSections)) {
+                throw new IllegalStateException(
+                    "producer section bytes changed across identical lifetimes: baseline=" +
+                        baselineSections + " current=" + currentSections);
+            }
+            if (iterations > warmupIterations && iteration == warmupIterations) {
+                warmupResidentBytes = settledResidentBytes();
+            }
+            if (iterations > 1 && (iteration == 1 || iteration % 16 == 0 ||
+                    iteration == iterations)) {
+                System.out.printf("completed-producer-lifetimes=%d/%d%n", iteration,
+                iterations);
+            }
+        }
+        if (warmupResidentBytes >= 0) {
+            long finalResidentBytes = settledResidentBytes();
+            long growth = Math.max(0, finalResidentBytes - warmupResidentBytes);
+            System.out.printf("resident-bytes-after-warmup=%d final=%d growth=%d limit=%d%n",
+                warmupResidentBytes, finalResidentBytes, growth, MAX_REPEATED_RSS_GROWTH);
+            if (growth > MAX_REPEATED_RSS_GROWTH) {
+                throw new IllegalStateException(
+                    "repeated producer lifetimes exceeded the resident-memory growth limit");
+            }
+        }
+        else if (iterations > 1) {
+            System.out.println(
+                "resident-memory-check=UNAVAILABLE; repeated producer lifetimes completed");
+        }
+        System.out.println("producer-output-determinism=PASS");
         System.out.println("native-producer-smoke=PASS");
     }
 
-    private static void runProducer(LibDwarfProducer producer, LibDwarfConsumer consumer,
-            TargetProfile target, SidecarRequest sidecar) throws IOException {
+    private static long settledResidentBytes() throws Exception {
+        System.gc();
+        Thread.sleep(50);
+        Path status = Path.of("/proc/self/status");
+        if (!Files.isRegularFile(status)) {
+            return -1;
+        }
+        for (String line : Files.readAllLines(status)) {
+            if (line.startsWith("VmRSS:")) {
+                String[] fields = line.trim().split("\\s+");
+                if (fields.length >= 2) {
+                    return Math.multiplyExact(Long.parseLong(fields[1]), 1024L);
+                }
+            }
+        }
+        return -1;
+    }
+
+    private static Map<String, String> runProducer(LibDwarfProducer producer,
+            LibDwarfConsumer consumer, TargetProfile target, SidecarRequest sidecar)
+            throws Exception {
         Map<Long, SectionRecord> sections = new LinkedHashMap<>();
         long[] nextSectionIndex = { 1L };
         long[] nextSectionSymbolIndex = { 1L };
@@ -196,6 +266,7 @@ public final class DwarfProducerSmoke {
         check(initResult, "dwarf_producer_init", errorOut, consumer);
         Debug debug = new Debug(requirePointer(debugOut, "producer debug"));
         boolean finished = false;
+        Map<String, String> sectionFingerprints = null;
         try {
             checkCall(producer.dwarf_pro_set_default_string_form(debug, DW_FORM_STRP, errorOut),
                 "dwarf_pro_set_default_string_form", errorOut, consumer);
@@ -245,9 +316,10 @@ public final class DwarfProducerSmoke {
             requireSectionWithData(".debug_str", sections, sectionData);
             validateRelocations(producer, consumer, debug, errorOut, sections, sectionData,
                 target.addressBytes);
+            Map<String, byte[]> debugSections = materializeDebugSections(sections,
+                sectionData);
+            sectionFingerprints = fingerprintSections(debugSections);
             if (sidecar != null) {
-                Map<String, byte[]> debugSections = materializeDebugSections(sections,
-                    sectionData);
                 new MatchedElfSidecarWriter().write(sidecar.input(), sidecar.output(),
                     debugSections);
                 System.out.printf("sidecar=%s function-address=0x%x sections=%s%n",
@@ -271,6 +343,18 @@ public final class DwarfProducerSmoke {
                 }
             }
         }
+        return Objects.requireNonNull(sectionFingerprints);
+    }
+
+    private static Map<String, String> fingerprintSections(
+            Map<String, byte[]> debugSections) throws NoSuchAlgorithmException {
+        Map<String, String> result = new LinkedHashMap<>();
+        for (Map.Entry<String, byte[]> entry : debugSections.entrySet()) {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            result.put(entry.getKey(),
+                java.util.HexFormat.of().formatHex(digest.digest(entry.getValue())));
+        }
+        return result;
     }
 
     private static Map<String, byte[]> materializeDebugSections(

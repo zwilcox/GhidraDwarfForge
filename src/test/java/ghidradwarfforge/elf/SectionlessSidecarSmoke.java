@@ -9,6 +9,8 @@ import java.util.Map;
 
 /** Builds matched debug sidecars from program-header-only ELF fixtures. */
 public final class SectionlessSidecarSmoke {
+    private static final long SHT_RELA = 4;
+    private static final long SHT_REL = 9;
     private static final String[] TARGETS = {
         "x86_64", "aarch64", "arm32", "mips32be", "mips32le"
     };
@@ -71,6 +73,11 @@ public final class SectionlessSidecarSmoke {
                     result.is64Bit() != inputImage.is64Bit() ||
                     result.byteOrder() != inputImage.byteOrder()) {
                     throw new IllegalStateException("sidecar target identity mismatch for " + target);
+                }
+                if (result.sections().stream().anyMatch(section ->
+                        section.type == SHT_REL || section.type == SHT_RELA)) {
+                    throw new IllegalStateException(
+                        "matched sidecar retained an unresolved relocation section");
                 }
                 for (Map.Entry<String, byte[]> expected : debugSections.entrySet()) {
                     ElfImage.Section actual = result.sections().stream()

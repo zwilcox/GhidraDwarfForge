@@ -210,6 +210,11 @@ for target in "${targets[@]}"; do
     fi
     grep -q '[.]debug_str' \
         "$result_dir/$target.$fixture_role.readelf-sections.txt"
+    if grep -q '[.]debug_aranges' \
+            "$result_dir/$target.$fixture_role.readelf-sections.txt"; then
+        echo "sidecar unexpectedly contains .debug_aranges; CU ranges are authoritative" >&2
+        exit 1
+    fi
     grep -q 'DW_FORM_strp' \
         "$result_dir/$target.$fixture_role.readelf-abbrev.txt"
     grep -q 'GhidraDwarfForge' \

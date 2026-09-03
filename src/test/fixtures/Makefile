@@ -44,6 +44,8 @@ $(TARGETS): %: \
 	$(BUILD_DIR)/%/semantic.exec.no-build-id.reference \
 	$(BUILD_DIR)/%/semantic.exec.no-build-id.stripped \
 	$(BUILD_DIR)/%/semantic.exec.no-sections.stripped \
+	$(BUILD_DIR)/%/semantic.partial.reference \
+	$(BUILD_DIR)/%/semantic.partial.stripped \
 	$(BUILD_DIR)/%/semantic.pie.reference \
 	$(BUILD_DIR)/%/semantic.pie.stripped \
 	$(BUILD_DIR)/%/libsemantic.so.reference \
@@ -70,6 +72,14 @@ $(BUILD_DIR)/%/semantic.exec.no-build-id.stripped: \
 
 $(BUILD_DIR)/%/semantic.exec.no-sections.stripped: $(BUILD_DIR)/%/semantic.exec.stripped
 	$($*_OBJCOPY) --strip-section-headers "$<" "$@"
+
+$(BUILD_DIR)/%/semantic.partial.reference: $(EXECUTABLE_SOURCE) Makefile
+	@mkdir -p "$(@D)"
+	$($*_CC) $($*_CFLAGS) $(COMMON_CFLAGS) $(NON_PIE_FLAGS) "$<" -o "$@"
+
+$(BUILD_DIR)/%/semantic.partial.stripped: $(BUILD_DIR)/%/semantic.partial.reference
+	cp "$<" "$@"
+	$($*_STRIP) --strip-debug "$@"
 
 $(BUILD_DIR)/%/semantic.pie.reference: $(EXECUTABLE_SOURCE) Makefile
 	@mkdir -p "$(@D)"

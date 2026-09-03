@@ -130,7 +130,7 @@ cp -R "$windows_runtime_compliance" "$module/third_party/windows-runtime"
     echo "libdwarf-release=v2.3.2"
     echo "libdwarf-source-commit=af7b278c6aa2ae9daad94fb7f8bffdc0e9980993"
     echo "libdwarf-archive-sha256=7992e7b9019ebfabdda5773e86243517c48cf89fafed3209e853692bc9573efd"
-    echo "libdwarf-patch-sha256=2046e2f20ef23820e096195f9e1c4ee6e66c0e0ac7c3f90d26ef285798bd1ef6"
+    echo "libdwarf-patch-sha256=b98561b3e63b76546bd2f18d81d53e188b56deb637b5e145205b3b6eedadf696"
     echo "host-platforms=linux_x86_64,win_x86_64"
 } > "$module/RELEASE-MANIFEST.txt"
 

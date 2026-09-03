@@ -28,6 +28,10 @@ tasks.register("nativeProducerSmoke", JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.nativeapi.DwarfProducerSmoke"
     jvmArgs "--enable-native-access=ALL-UNNAMED"
+    if (project.hasProperty("nativeIterations")) {
+        systemProperty "ghidradwarfforge.nativeSmokeIterations",
+            project.property("nativeIterations")
+    }
 
     doFirst {
         if (!project.hasProperty("libdwarfPath") ||
@@ -49,6 +53,28 @@ tasks.register("nativeProducerSmoke", JavaExec) {
         if (configuredSidecarProperties.size() == sidecarProperties.size()) {
             args sidecarProperties.collect { project.property(it) }
         }
+    }
+}
+
+tasks.register("packagedNativeProducerSmoke", JavaExec) {
+    group = "verification"
+    description = "Resolves and runs the packaged libdwarf pair in an isolated JVM"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.nativeapi.PackagedNativeProducerSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+    if (project.hasProperty("nativeIterations")) {
+        systemProperty "ghidradwarfforge.nativeSmokeIterations",
+            project.property("nativeIterations")
+    }
+
+    doFirst {
+        def required = ["packagedModuleRoot", "packagedPlatform", "targetProfile"]
+        def missing = required.findAll { !project.hasProperty(it) }
+        if (!missing.isEmpty()) {
+            throw new GradleException("Missing Gradle properties: " + missing.join(", "))
+        }
+        args required.collect { project.property(it) }
     }
 }
 
@@ -97,6 +123,14 @@ tasks.register("addressNormalizerSmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.AddressNormalizerSmoke"
+}
+
+tasks.register("dwarfTargetSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks table-driven target selection and unsupported-target rejection"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.nativeapi.DwarfTargetSmoke"
 }
 
 tasks.register("typeGraphSmoke", JavaExec) {

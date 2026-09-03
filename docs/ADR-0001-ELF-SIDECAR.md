@@ -37,7 +37,10 @@ Create `<original>.dbg` as a matched, non-loadable ELF sidecar:
 6. When the input has no section headers, begin the new table with `SHT_NULL`,
    reconstruct identity note sections from `PT_NOTE`, and add debug sections
    and `.shstrtab` from scratch.
-7. Publish by atomic replacement only after the complete sidecar validates.
+7. Resolve producer relocation records before publication. Do not copy or emit
+   unresolved `SHT_REL`/`SHT_RELA` sections; inherited relocation headers are
+   represented as zero-length `SHT_NOBITS` placeholders with no link or target.
+8. Publish by atomic replacement only after the complete sidecar validates.
 
 The initial explicit GDB workflow is:
 
@@ -81,6 +84,8 @@ semantic DIE/line/type/location content.
 
 - Product code does not require external `objcopy` or architecture-specific
   ELF relocation encoders to package a linked sidecar.
+- The published sidecar has no unresolved relocation sections or incomplete
+  relocation-to-symbol-table relationships.
 - PIE relocation is handled by GDB using the original executable mapping.
 - Sidecars contain copied bytes that are not described as loadable segments;
   this favors correctness and target identity over minimal file size.

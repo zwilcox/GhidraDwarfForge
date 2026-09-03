@@ -250,16 +250,18 @@ Additional required work:
 
 ## P0.6 Create an isolated native producer smoke-test executable
 
-**Status:** `[~]` — passes in isolated Linux JVMs for x86-64, AArch64, ARM32,
-and MIPS32 target modes and in a Windows JVM for x86-64; packaged-native and
-repetition/leak coverage remain.
+**Status:** `[~]` — explicit-native isolated JVM coverage passes for every
+target profile and packaged-native resolution plus bounded repetition coverage
+is **PRESENT, UNVERIFIED** on hosted Linux/Windows. The repetition test exposed
+and now guards a patched upstream cross-export string-table state leak.
 **Dependency:** P0.4 and P0.5.
 
 ### Work
 
 Create a small Java command-line test that does not depend on Ghidra and that:
 
-1. `[~]` Loads explicit pinned native libraries; packaged-resource loading remains.
+1. `[~]` Loads explicit pinned native libraries and the checksummed native pair
+   from an installed extension; hosted confirmation of the packaged path remains.
 2. `[x]` Calls `dwarf_producer_init`.
 3. `[x]` Creates a compile-unit DIE and one subprogram DIE.
 4. `[x]` Transforms to disk form.
@@ -274,17 +276,17 @@ Run it in a separate process so a native fault produces a test failure rather th
 
 - [x] Exit code is zero on supported Linux/Windows hosts.
 - [x] A crash or signal is surfaced as a failed test.
-- [ ] Repeated runs do not leak unbounded native/JNA resources.
+- [~] A 64-lifetime process test samples Linux RSS and enforces a bounded-growth
+  threshold; hosted Linux/Windows confirmation remains.
 - [x] Section callback indices and relocation data are internally consistent.
 - [x] Test output records the pinned libdwarf revision and native checksum.
 
 ## P0.7 Add source-built ELF fixtures and a test harness
 
-**Status:** `[~]` — a shared semantic source builds ET_EXEC, PIE, shared-object,
-and program-header-only variants for x86-64, AArch64, and MIPS32 big/little
-endian. The full local and hosted real-export/readelf/GDB
-source/type/location matrix passes; Windows-hosted structural export also
-passes.
+**Status:** `[~]` — a redistributable semantic source builds ET_EXEC, PIE,
+shared-object, partially stripped, and program-header-only variants for all
+five target profiles. Reproducibility/metadata capture and the real partial
+export role are **PRESENT, UNVERIFIED** across the hosted matrix.
 **Blocks:** meaningful validation of all exporter work.
 
 ### Work
@@ -295,14 +297,15 @@ Create small redistributable C/C++ fixtures covering:
 - [x] Source constructs for parameters and locals; storage cases remain to be
   asserted after analysis/export.
 - [x] Struct, union, enum, array, typedef, qualifier, recursive pointer type, and function pointer.
-- Contiguous and intentionally discontiguous/partitioned function ranges when toolchain support permits.
+- [x] Contiguous and intentionally discontiguous/partitioned function ranges.
 - [x] Non-PIE `ET_EXEC`.
 - [x] Source-built PIE reference/stripped fixtures with real headless symbol
   export and runtime assertions.
-- Shared object.
+- [x] Shared object built from a dedicated source without `main`.
 - [x] x86-64, AArch64, MIPS32 big-endian, and MIPS32 little-endian builds from
   the same semantic fixture source.
-- Stripped and partially stripped variants.
+- [~] Stripped and partially stripped variants; hosted confirmation of the new
+  partial role remains.
 - [x] Program-header-only variants with no ELF section-header table.
 - [x] A fixture/function that the decompiler cannot complete or a controlled mock failure.
 
@@ -311,12 +314,14 @@ Retain original compiler DWARF in a reference build for expected addresses/types
 ### Completion criteria
 
 - [x] Current non-PIE fixtures build through one documented command.
-- [ ] Stripped and reference variants are generated reproducibly.
-- [ ] Original and stripped hashes/ELF metadata are recorded.
+- [~] Stripped, partially stripped, and reference variants are rebuilt twice
+  and compared byte for byte; hosted confirmation remains.
+- [~] Original, stripped, and partially stripped hashes plus ELF metadata are
+  recorded as CI diagnostics; hosted confirmation remains.
 - [x] Test harness imports/analyzes/exports every current fixture using Ghidra
   12.0.3 and validates the resulting symbol sidecar.
-- [ ] No proprietary firmware is needed for CI.
-- [ ] Each fixture documents what behavior it exercises.
+- [x] No proprietary firmware is needed for CI.
+- [x] Each fixture documents what behavior it exercises.
 
 ### No-section-header regression
 
@@ -331,7 +336,7 @@ exporter that indexes the absent section-name table. GhidraDwarfForge must:
 - never crash Ghidra or publish a partial `.dbg`/`.dbg.c` pair.
 
 **Current evidence:** the real headless function/source exporter completes without a
-crash for all four no-section-table fixtures, creates a fresh section table
+crash for all five no-section-table fixtures, creates a fresh section table
 and correctly typed `SHT_STRTAB` `.shstrtab`, and leaves every input hash
 unchanged. `.dbg.c`, DWARF 5 line tables, all structural validators, and
 native/QEMU GDB source-level behavior pass. Future type/variable paths must
@@ -407,7 +412,9 @@ Implement:
 - [x] Minimal x86-64 non-PIE sidecar passes `readelf -h -S -n`.
 - [x] Producer symbolic relocations are validated and resolved values are
   emitted without an incomplete debug relocation section.
-- [ ] Any relocation section has a valid symbol table link and target info.
+- [x] No unresolved `SHT_REL`/`SHT_RELA` section is emitted; inherited
+  relocation headers are neutralized because producer relocations are resolved
+  before publication.
 - [x] GDB loads the sidecar using the documented path.
 - [x] Function symbols/DIE addresses match the original executable for the
   current contiguous-function fixture coverage.
@@ -864,7 +871,8 @@ storage cases and release support remain.
   storage classes remain.
 - [x] AArch64 PIE/shared cases pass in hosted CI; packaged release evidence
   remains.
-- [ ] No x86-specific assumptions remain in generic code paths exercised by tests.
+- [~] A repository guard confines architecture identifiers/register spellings
+  to target-description boundaries; hosted confirmation remains.
 
 ## P2.3a Add MIPS target support
 
@@ -898,7 +906,8 @@ packaged release evidence remain.
   source/type behavior checks pass for the current artifacts.
 - [x] QEMU runtime addresses/load bias agree with emitted DWARF for non-PIE,
   PIE, and shared objects.
-- [ ] MIPS-specific code is confined to target descriptions/register maps.
+- [~] A repository guard confines MIPS-specific code to target descriptions and
+  register maps; hosted confirmation remains.
 
 ## P2.3b Add ARM32/AArch32 target support
 
@@ -962,8 +971,9 @@ including explicit Windows file-lock contention and rollback.
 
 ## P2.5 Add ELF32 support
 
-**Status:** `[~]` — ELF32 container, DWARF, line mapping, validators, and GDB
-source/type behavior pass for MIPS big/little endian; locations remain.
+**Status:** `[~]` — ELF32 container, DWARF, line mapping, locations, validators,
+and GDB source/type behavior pass for ARM32 and MIPS32 big/little endian. A
+table-driven target-profile regression is **PRESENT, UNVERIFIED** in hosted CI.
 
 ### Work
 
@@ -980,9 +990,9 @@ source/type behavior pass for MIPS big/little endian; locations remain.
 
 ## P2.6 Add big-endian support
 
-**Status:** `[~]` — MIPS32 big-endian container, DWARF 5 line serialization,
-type serialization, validators, and QEMU/GDB pass; variable locations/register
-maps remain.
+**Status:** `[~]` — MIPS32 big-endian container, DWARF 5 line/type/location
+serialization, validators, and QEMU/GDB pass. Fail-closed rejection for
+unsupported big-endian target profiles is **PRESENT, UNVERIFIED** in hosted CI.
 
 ### Work
 
@@ -994,7 +1004,8 @@ maps remain.
 
 - [x] Big-endian fixture artifact passes validators.
 - [x] GDB resolves expected symbols/source mappings under QEMU.
-- [ ] Unsupported big-endian targets fail explicitly rather than producing little-endian output.
+- [~] Unsupported big-endian targets fail explicitly rather than producing
+  little-endian output; hosted confirmation remains.
 
 ---
 
@@ -1315,7 +1326,9 @@ Use the following acceptance gates before updating the original GitHub issues:
 ## Issue #4 — `.debug_aranges`
 
 - [x] Issue is historically closed and prototype calls arange generation.
-- [ ] Regression test verifies CU offset/address correctness in the redesigned exporter.
+- [x] The redesigned exporter deliberately omits this optional accelerator;
+  regression tests require its absence and verify CU/subprogram
+  `DW_AT_ranges` address correctness instead.
 
 Do not reopen/close solely from this checklist; use project/user direction.
 

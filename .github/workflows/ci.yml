@@ -16,7 +16,7 @@ env:
   LIBDWARF_VERSION: v2.3.2
   LIBDWARF_ARCHIVE: libdwarf-2.3.2.tar.xz
   LIBDWARF_ARCHIVE_SHA256: 7992e7b9019ebfabdda5773e86243517c48cf89fafed3209e853692bc9573efd
-  LIBDWARF_PATCH_SHA256: 2046e2f20ef23820e096195f9e1c4ee6e66c0e0ac7c3f90d26ef285798bd1ef6
+  LIBDWARF_PATCH_SHA256: b98561b3e63b76546bd2f18d81d53e188b56deb637b5e145205b3b6eedadf696
   LIBDWARF_SOURCE_COMMIT: af7b278c6aa2ae9daad94fb7f8bffdc0e9980993
 
 jobs:
@@ -413,7 +413,9 @@ jobs:
           mkdir -p build/test-results/extension-build
           {
             src/test/integration/headless-wrapper.sh
-            ./gradlew addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke \
+            src/test/integration/architecture-neutrality.sh
+            ./gradlew addressNormalizerSmoke dwarfTargetSmoke outputPathPolicySmoke \
+              exportReportSmoke \
               syntheticSourceSmoke typeGraphSmoke variableStorageSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
@@ -587,23 +589,41 @@ jobs:
         run: |
           set -euo pipefail
           profile="$TARGET"
+          iterations=1
           if [[ "$profile" == "aarch64" ]]; then
             profile=arm64
+          fi
+          if [[ "$TARGET" == "x86_64" ]]; then
+            iterations=64
           fi
           src/test/integration/run-isolated-native-smoke.sh \
             "build/test-results/native-producer/$TARGET" \
             ./gradlew nativeProducerSmoke \
               -PlibdwarfPath="$PWD/native-integration/libdwarf.so.2.3.2" \
               -PlibdwarfpPath="$PWD/native-integration/libdwarfp.so.2.3.2" \
-              -PtargetProfile="$profile"
+              -PtargetProfile="$profile" \
+              -PnativeIterations="$iterations"
 
       - name: Install extension
         run: unzip -q dist/*.zip -d "$GHIDRA_INSTALL_DIR/Ghidra/Extensions"
 
+      - name: Isolated packaged-native producer smoke test
+        if: matrix.target == 'x86_64'
+        run: |
+          set -euo pipefail
+          module="$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge"
+          ./gradlew packagedNativeProducerSmoke \
+            -PpackagedModuleRoot="$module" \
+            -PpackagedPlatform=linux_x86_64 \
+            -PtargetProfile=x86_64 \
+            -PnativeIterations=2
+
       - name: Build source fixture
         env:
           TARGET: ${{ matrix.target }}
-        run: make -C src/test/fixtures "$TARGET"
+        run: |
+          make -C src/test/fixtures "$TARGET"
+          src/test/integration/fixture-reproducibility.sh "$TARGET"
 
       - name: Verify fixture identity and stripping
         env:
@@ -616,6 +636,12 @@ jobs:
             echo "stripped fixture unexpectedly contains DWARF" >&2
             exit 1
           fi
+          partial="build/fixtures/$TARGET/semantic.partial.stripped"
+          if readelf -S "$partial" | grep -q '\.debug_'; then
+            echo "partially stripped fixture unexpectedly contains DWARF" >&2
+            exit 1
+          fi
+          readelf -Ws "$partial" | grep -Eq '[[:space:]]recovered_add$'
 
       - name: Headless Ghidra preflight
         env:
@@ -678,7 +704,7 @@ jobs:
           set -euo pipefail
           consumer="$PWD/native-integration/libdwarf.so.2.3.2"
           producer="$PWD/native-integration/libdwarfp.so.2.3.2"
-          for role in exec exec.no-build-id exec.no-sections pie shared; do
+          for role in exec partial exec.no-build-id exec.no-sections pie shared; do
             FIXTURE_ROLE="$role" src/test/integration/headless-symbol-export.sh \
               "$GHIDRA_INSTALL_DIR" "$consumer" "$producer" "$TARGET"
             if [[ "$role" == "shared" ]]; then
@@ -939,7 +965,7 @@ jobs:
           & .\gradlew.bat nativeProducerSmoke `
             "-PlibdwarfPath=$($consumer.FullName)" `
             "-PlibdwarfpPath=$($producer.FullName)" `
-            -PtargetProfile=x86_64 2>&1 |
+            -PtargetProfile=x86_64 -PnativeIterations=64 2>&1 |
             Tee-Object -FilePath "$resultDirectory\native-producer.log"
           $nativeStatus = $LASTEXITCODE
           "exit_status=$nativeStatus" |
@@ -950,6 +976,17 @@ jobs:
           }
           'isolated-native-producer=PASS' |
             Add-Content -Path "$resultDirectory\native-producer-status.txt" -Encoding utf8
+
+          $module = Join-Path $env:GHIDRA_INSTALL_DIR `
+            'Ghidra\Extensions\GhidraDwarfForge'
+          & .\gradlew.bat packagedNativeProducerSmoke `
+            "-PpackagedModuleRoot=$module" `
+            -PpackagedPlatform=win_x86_64 `
+            -PtargetProfile=x86_64 -PnativeIterations=2 2>&1 |
+            Tee-Object -FilePath "$resultDirectory\packaged-native-producer.log"
+          if ($LASTEXITCODE -ne 0) {
+            throw "packaged native producer smoke failed with exit code $LASTEXITCODE"
+          }
 
       - name: Windows-hosted headless ELF export
         shell: pwsh

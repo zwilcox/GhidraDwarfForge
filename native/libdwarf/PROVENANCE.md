@@ -48,9 +48,16 @@ Both builds apply the repository-owned patch
 `patches/0001-preserve-aarch64-relocation-type.patch`. libdwarf 2.3.2's private
 producer attribute structure stores `R_AARCH64_ABS32` (258) and
 `R_AARCH64_ABS64` (257) in a `Dwarf_Ubyte`, truncating those values and breaking
-`DW_FORM_strp` output for AArch64. The patch widens only that private field to
-`int`, matching the internal relocation fields it is compared against. CI
-records the patch SHA-256 in native build metadata.
+`DW_FORM_strp` output for AArch64. The patch widens that private field to `int`,
+matching the internal relocation fields it is compared against.
+
+The same patch fixes producer string-section lifetime isolation. Upstream
+2.3.2 points every producer handle at shared mutable `.debug_str` and
+`.debug_line_str` descriptors and does not release their separately allocated
+buffers at finish. Sequential exports therefore inherited earlier strings.
+The patch allocates both descriptors per producer and frees their buffers at
+finish. CI records the complete patch SHA-256 in native build metadata and the
+release bundles the exact patch with the upstream source archive.
 
 The Windows CI build writes `BUILD-METADATA.txt` beside its DLL artifact with
 the pinned release/commit, configure flags, compiler version, SHA-256 for every

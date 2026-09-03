@@ -242,6 +242,7 @@ run_emulated() {
             -ex 'printf "analyst_stack_shifted=%d\n", analyst_stack' \
             -ex frame -ex continue)
     elif [[ "$target:$fixture_role" == arm32:exec ||
+            "$target:$fixture_role" == arm32:partial ||
             "$target:$fixture_role" == arm32:exec.no-build-id ]]; then
         execution_flow=(-ex continue -ex frame -ex list -ex step \
             -ex 'printf "analyst_stack=%d\n", analyst_stack' \
