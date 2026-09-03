@@ -109,11 +109,16 @@ validate_transcript() {
                 grep -Fxq "left = 19" "$transcript"
                 grep -Fxq "right = 23" "$transcript"
                 ;;
-            *aarch64.*|*arm32.*)
+            *aarch64.*)
                 grep -Fq "recovered_add (left=<optimized out>, right=<optimized out>)" \
                     "$transcript"
                 grep -Fxq "left = <optimized out>" "$transcript"
                 grep -Fxq "right = <optimized out>" "$transcript"
+                ;;
+            *arm32.*)
+                grep -Fq "recovered_add (left=<optimized out>, right=23)" "$transcript"
+                grep -Fxq "left = <optimized out>" "$transcript"
+                grep -Fxq "right = 23" "$transcript"
                 ;;
         esac
         grep -Eq '[$][0-9]+ = 0' "$transcript"

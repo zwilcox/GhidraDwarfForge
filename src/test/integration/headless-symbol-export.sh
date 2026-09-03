@@ -296,15 +296,18 @@ for target in "${targets[@]}"; do
         fi
         grep -q "DW_AT_location" \
             "$result_dir/$target.$fixture_role.readelf-info.txt"
-        if [[ "$target" == "aarch64" || "$target" == "arm32" ]]; then
-            register_prefix=x
-            if [[ "$target" == "arm32" ]]; then
-                register_prefix=r
-            fi
-            grep -q "Omitted location for recovered_add::left: function writes parameter register ${register_prefix}0" \
+        if [[ "$target" == "aarch64" ]]; then
+            grep -q "Omitted location for recovered_add::left: function writes parameter register x0" \
                 "$log"
-            grep -q "Omitted location for recovered_add::right: function writes parameter register ${register_prefix}1" \
+            grep -q "Omitted location for recovered_add::right: function writes parameter register x1" \
                 "$log"
+        elif [[ "$target" == "arm32" ]]; then
+            grep -q "Omitted location for recovered_add::left: function writes parameter register r0" \
+                "$log"
+            grep -q "Omitted location for recovered_add::analyst_register: function writes local register r3" \
+                "$log"
+            grep -q "DW_OP_regx: 1" \
+                "$result_dir/$target.$fixture_role.readelf-info.txt"
         else
             grep -Eq "defensible variable locations: [1-9][0-9]*" "$log"
             grep -q "DW_OP_regx: 4" \

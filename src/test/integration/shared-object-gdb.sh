@@ -85,11 +85,16 @@ validate_transcript() {
     grep -Eq '[$][0-9]+ = 7' "$transcript"
     grep -Eq 'starts at address 0x[0-9a-f]+ <recovered_add>' "$transcript"
     grep -Eq 'RUNTIME_BIAS 0x[1-9a-f][0-9a-f]*' "$transcript"
-    if [[ "$target" == "aarch64" || "$target" == "arm32" ]]; then
+    if [[ "$target" == "aarch64" ]]; then
         grep -Fq 'Breakpoint 2, recovered_add (left=<optimized out>, right=<optimized out>)' \
             "$transcript"
         grep -Fxq 'left = <optimized out>' "$transcript"
         grep -Fxq 'right = <optimized out>' "$transcript"
+    elif [[ "$target" == "arm32" ]]; then
+        grep -Fq 'Breakpoint 2, recovered_add (left=<optimized out>, right=23)' \
+            "$transcript"
+        grep -Fxq 'left = <optimized out>' "$transcript"
+        grep -Fxq 'right = 23' "$transcript"
     else
         grep -Fq 'Breakpoint 2, recovered_add (left=19, right=23)' "$transcript"
         grep -Fxq 'left = 19' "$transcript"

@@ -158,7 +158,12 @@ public class RenameFixtureFunction extends GhidraScript {
     }
 
     private Function requireFunction(String address) {
-        Function function = currentProgram.getFunctionManager().getFunctionAt(toAddr(address));
+        var entry = toAddr(address);
+        Function function = currentProgram.getFunctionManager().getFunctionAt(entry);
+        if (function == null) {
+            function = createFunction(entry, null);
+            println("Created analyst fixture function at " + address);
+        }
         if (function == null) {
             throw new IllegalStateException("fixture function not discovered at " + address);
         }
