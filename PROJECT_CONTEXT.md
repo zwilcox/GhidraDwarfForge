@@ -931,6 +931,12 @@ then hit `recovered_add`, resolve and update `fixture_sink`, and exit normally.
 The observed relocated function and global addresses are explicitly checked
 not to fall within any main-executable `PT_LOAD` range.
 
+**PRESENT, UNVERIFIED (2026-09-03):** the `ET_DYN` fixture now builds from the
+dedicated `shared_semantic.c` translation unit rather than reusing the
+executable fixture. It retains the exporter-facing functions, globals, stack
+markers, and semantic type declarations while intentionally defining no
+`main`; the Makefile rejects a shared-library reference ELF that defines one.
+
 **CONFIRMED (2026-09-02):** the P1 global model now retains two additional
 forms of curated Ghidra evidence. A typed `ExternalLocation` emits
 `DW_AT_declaration` plus `DW_AT_external` and no location, while a defined

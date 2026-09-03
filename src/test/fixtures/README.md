@@ -1,9 +1,12 @@
 # Integration fixtures
 
-`semantic.c` is a redistributable source-built fixture shared across target
-architectures. It intentionally contains functions, globals, parameters,
-locals, arrays, an enum, union, typedef, function pointer, and recursive
-structure.
+`semantic.c` and `shared_semantic.c` are redistributable source-built fixtures
+shared across target architectures. They intentionally contain functions,
+globals, parameters, locals, arrays, an enum, union, typedef, function pointer,
+and recursive structure. `semantic.c` supplies the ET_EXEC and PIE programs,
+including their `main`; `shared_semantic.c` supplies the ET_DYN library and
+intentionally defines no `main`. The separate `shared_driver.c` executable
+loads the stripped library and calls its exported `recovered_add` function.
 
 The integration preparation script applies explicit analyst register storage
 to `recovered_add` parameters using each target ABI's input registers. The
