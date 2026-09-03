@@ -215,6 +215,7 @@ run_emulated() {
     local transcript="$result_dir/$target.$fixture_role.txt"
     local type_commands=() print_before=() print_after=()
     local composite_break=() composite_print=() location_break=()
+    local execution_flow=()
     if [[ "$fixture_role" != "exec.no-sections" ]]; then
         type_commands=(-ex "ptype $function" -ex "ptype binary_operation" \
             -ex "ptype recovered_variadic" -ex "ptype recovered_spin" \
@@ -233,6 +234,21 @@ run_emulated() {
         changed_offset=$(symbol_offset "$target" forge_stack_changed recovered_add)
         location_break=(-ex "break *$function+$normal_offset" \
             -ex "break *$function+$changed_offset")
+    fi
+    if [[ "$target:$fixture_role" == arm32:exec ||
+            "$target:$fixture_role" == arm32:exec.no-build-id ||
+            "$target:$fixture_role" == arm32:pie ]]; then
+        execution_flow=(-ex continue -ex frame -ex list -ex step \
+            -ex 'printf "analyst_stack=%d\n", analyst_stack' \
+            "${print_after[@]}" -ex frame -ex continue \
+            -ex 'printf "analyst_stack_shifted=%d\n", analyst_stack' \
+            -ex frame -ex continue)
+    else
+        execution_flow=(-ex frame -ex list -ex next \
+            -ex 'printf "analyst_stack=%d\n", analyst_stack' \
+            "${print_after[@]}" -ex frame -ex step \
+            -ex 'printf "analyst_stack_shifted=%d\n", analyst_stack' \
+            -ex frame -ex nexti -ex continue)
     fi
     "$emulator" -L "$sysroot" -g "$port" \
         "$fixture_dir/$target/semantic.$fixture_role.stripped" &
@@ -258,17 +274,7 @@ run_emulated() {
         -ex "info locals" \
         -ex "info args" \
         "${print_before[@]}" \
-        -ex frame \
-        -ex list \
-        -ex next \
-        -ex 'printf "analyst_stack=%d\n", analyst_stack' \
-        "${print_after[@]}" \
-        -ex frame \
-        -ex step \
-        -ex 'printf "analyst_stack_shifted=%d\n", analyst_stack' \
-        -ex frame \
-        -ex nexti \
-        -ex continue \
+        "${execution_flow[@]}" \
         "${composite_print[@]}" 2>&1 | tee "$transcript"
     wait "$active_emulator_pid"
     active_emulator_pid=""
