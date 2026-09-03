@@ -4,11 +4,13 @@ on:
   workflow_dispatch:
 
 env:
-  # -------------------------------------------------------------------------
-  # Bump this tag/branch to rebuild libdwarf
-  # TODO:  Change this to a tag once all the build issues that were recently fixed are in a tag.
-  LIBDWARF_VERSION: main
-  # -------------------------------------------------------------------------
+  # Pinned upstream release. Keep these values synchronized with
+  # native/libdwarf/PROVENANCE.md.
+  LIBDWARF_VERSION: v2.3.2
+  LIBDWARF_COMMIT: af7b278c6aa2ae9daad94fb7f8bffdc0e9980993
+  LIBDWARF_ARCHIVE_SHA256: 7992e7b9019ebfabdda5773e86243517c48cf89fafed3209e853692bc9573efd
+  LIBDWARF_ARCHIVE: libdwarf-2.3.2.tar.xz
+  LIBDWARF_SOURCE_DIR: libdwarf-2.3.2
 
 # --------------------------------------------------------------------------- #
 #  L I N U X   N A T I V E   B U I L D                                        #
@@ -22,25 +24,27 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: .cache/libdwarf
-          key: libdwarf-linux-${{ env.LIBDWARF_VERSION }}
+          key: libdwarf-linux-${{ env.LIBDWARF_COMMIT }}
 
       - name: Install build tool-chain
         run: |
           sudo apt-get update -y
           sudo apt-get install --no-install-recommends -y \
-            build-essential zlib1g-dev libzstd-dev \
+            build-essential zlib1g-dev libzstd-dev curl xz-utils \
             autoconf automake libtool pkg-config patchelf
 
       - name: Build shared library
         run: |
-          git clone --depth 1 --branch "$LIBDWARF_VERSION" \
-            https://github.com/davea42/libdwarf-code libdwarf-code
+          curl -fL --retry 3 \
+            "https://github.com/davea42/libdwarf-code/releases/download/$LIBDWARF_VERSION/$LIBDWARF_ARCHIVE" \
+            -o "$LIBDWARF_ARCHIVE"
+          echo "$LIBDWARF_ARCHIVE_SHA256  $LIBDWARF_ARCHIVE" | sha256sum -c -
+          tar -xf "$LIBDWARF_ARCHIVE"
 
-          cd ./libdwarf-code
+          cd "$LIBDWARF_SOURCE_DIR"
           WRAP=../jna-wrapper/src/main/resources/linux-x86-64
           mkdir -p "$WRAP" ../out ../.cache/libdwarf/linux
 
-          sh autogen.sh
           ./configure --enable-shared \
             --enable-dwarfgen  --disable-static --prefix="$PWD/install"
           make -j"$(nproc)"
@@ -48,7 +52,7 @@ jobs:
 
           # Patch libdwarfp.so*   (libdwarf itself doesn't need the rpath)
           for so in install/lib/libdwarfp*.so*; do
-            patchelf --set-rpath '$ORIGIN' "$so"
+            patchelf --set-rpath "\$ORIGIN" "$so"
           done
 
           shopt -s nullglob
@@ -61,7 +65,7 @@ jobs:
           shopt -u nullglob
 
           find "$WRAP" -maxdepth 1 -name 'libdwarfp*.so*' \
-            -exec patchelf --set-rpath '$ORIGIN' {} +
+            -exec patchelf --set-rpath "\$ORIGIN" {} +
 
           # -- verify --------
           readelf -d "$WRAP/libdwarfp.so" | grep -q '(RUNPATH).*[$]ORIGIN' \
@@ -92,9 +96,11 @@ jobs:
           update: true
           install: >-
             base-devel
+            curl
             git
             mingw-w64-x86_64-toolchain
             mingw-w64-x86_64-zlib
+            mingw-w64-x86_64-zstd
             autoconf
             automake
             libtool
@@ -103,19 +109,21 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: .cache/libdwarf
-          key: libdwarf-windows-${{ env.LIBDWARF_VERSION }}
+          key: libdwarf-windows-${{ env.LIBDWARF_COMMIT }}
 
       - name: Fetch libdwarf sources
         run: |
-          git clone --depth 1 --branch "$LIBDWARF_VERSION" \
-            https://github.com/davea42/libdwarf-code libdwarf-code
+          curl -fL --retry 3 \
+            "https://github.com/davea42/libdwarf-code/releases/download/$LIBDWARF_VERSION/$LIBDWARF_ARCHIVE" \
+            -o "$LIBDWARF_ARCHIVE"
+          echo "$LIBDWARF_ARCHIVE_SHA256  $LIBDWARF_ARCHIVE" | sha256sum -c -
+          tar -xf "$LIBDWARF_ARCHIVE"
 
 
       - name: Build libdwarf
         run: |
           set -euo pipefail
-          cd libdwarf-code
-          sh autogen.sh
+          cd "$LIBDWARF_SOURCE_DIR"
           ./configure --enable-shared \
             --enable-dwarfgen  --disable-static --prefix="$PWD/install"
           make -j"$(nproc)"
@@ -201,72 +209,3 @@ jobs:
         with:
           name: libdwarf-jar
           path: out/*
-
-# --------------------------------------------------------------------------- #
-#  P U B L I S H   (commit only if something changed)                         #
-# --------------------------------------------------------------------------- #
-  publish:
-    needs: [ build-linux, build-windows, build-java ]
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-24.04
-
-    permissions:
-      contents: write        # allows pushing commits
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0      # we are about to commit
-
-      - uses: actions/download-artifact@v4
-        with:
-          path: _artifacts
-
-      - name: Sync natives & JAR into repo
-        run: |
-          set -euo pipefail
-
-          copy_if_changed() {
-            local src="$1" dest="$2"
-            [ -e "$src" ] || return 0
-            mkdir -p "$(dirname "$dest")"
-            if [ -f "$dest" ] && cmp -s "$src" "$dest"; then
-              echo "Unchanged: $dest"
-            else
-              cp "$src" "$dest"
-              echo "Updated:   $dest"
-            fi
-          }
-
-          # ----- natives (linux) -----
-          find _artifacts/libdwarf-linux   -type f -print0 |
-            while IFS= read -r -d '' f; do
-              rel=${f#*_artifacts/libdwarf-linux/}
-              copy_if_changed "$f" "jna-wrapper/src/main/resources/linux-x86-64/$rel"
-            done
-
-          # ----- natives (windows) -----
-          find _artifacts/libdwarf-windows -type f -print0 |
-            while IFS= read -r -d '' f; do
-              rel=${f#*_artifacts/libdwarf-windows/}
-              copy_if_changed "$f" "jna-wrapper/src/main/resources/win32-x86-64/$rel"
-            done
-
-          # ----- shaded JAR -----
-          jar_src=$(find _artifacts/libdwarf-jar -name 'libdwarf*.jar' | head -n1)
-          copy_if_changed "$jar_src" "src/libdwarf.jar"
-
-      - name: Commit & push (only when something changed)
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git add src/libdwarf.jar jna-wrapper/src/main/resources || true
-
-          if git diff --cached --quiet; then
-            echo "Everything is up-to-date — nothing to commit."
-            exit 0
-          fi
-
-          git commit -m "Update pre-built libdwarf natives & JAR to ${LIBDWARF_VERSION}"
-          git push origin HEAD

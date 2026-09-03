@@ -1,0 +1,193 @@
+/*
+ * Builds GhidraDwarfForge as an external Ghidra extension.
+ *
+ * Supply GHIDRA_INSTALL_DIR as an environment variable or Gradle property.
+ */
+def ghidraInstallDir
+
+if (System.env.GHIDRA_INSTALL_DIR) {
+    ghidraInstallDir = System.env.GHIDRA_INSTALL_DIR
+}
+else if (project.hasProperty("GHIDRA_INSTALL_DIR")) {
+    ghidraInstallDir = project.getProperty("GHIDRA_INSTALL_DIR")
+}
+else {
+    throw new GradleException("Set GHIDRA_INSTALL_DIR to a Ghidra 12.0.3 installation")
+}
+
+task distributeExtension {
+    group = "Ghidra"
+    apply from: new File(ghidraInstallDir).getCanonicalPath() + "/support/buildExtension.gradle"
+    dependsOn ":buildExtension"
+}
+
+tasks.register("nativeProducerSmoke", JavaExec) {
+    group = "verification"
+    description = "Runs the libdwarf producer ABI smoke test in an isolated JVM"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.nativeapi.DwarfProducerSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+
+    doFirst {
+        if (!project.hasProperty("libdwarfPath") ||
+                !project.hasProperty("libdwarfpPath")) {
+            throw new GradleException(
+                "Set -PlibdwarfPath=<absolute path> and -PlibdwarfpPath=<absolute path>")
+        }
+        args project.property("libdwarfPath"), project.property("libdwarfpPath"),
+            project.findProperty("targetProfile") ?: "x86_64"
+        def sidecarProperties = ["sidecarInput", "sidecarOutput", "functionAddress"]
+        def configuredSidecarProperties = sidecarProperties.findAll {
+            project.hasProperty(it)
+        }
+        if (!configuredSidecarProperties.isEmpty() &&
+                configuredSidecarProperties.size() != sidecarProperties.size()) {
+            throw new GradleException(
+                "Set all of -PsidecarInput, -PsidecarOutput, and -PfunctionAddress")
+        }
+        if (configuredSidecarProperties.size() == sidecarProperties.size()) {
+            args sidecarProperties.collect { project.property(it) }
+        }
+    }
+}
+
+tasks.register("sectionlessSidecarSmoke", JavaExec) {
+    group = "verification"
+    description = "Builds matched sidecars from ELF files with no section headers"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.SectionlessSidecarSmoke"
+    args layout.buildDirectory.dir("fixtures").get().asFile.absolutePath
+    if (project.hasProperty("fixtureTarget")) {
+        args project.property("fixtureTarget")
+    }
+}
+
+tasks.register("minimalDwarfSidecarSmoke", JavaExec) {
+    group = "verification"
+    description = "Runs the production symbol-only sidecar exporter in an isolated JVM"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.nativeapi.MinimalDwarfSidecarSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+
+    doFirst {
+        def required = ["libdwarfPath", "libdwarfpPath", "sidecarInput",
+            "sidecarOutput", "functionName", "functionAddress"]
+        def missing = required.findAll { !project.hasProperty(it) }
+        if (!missing.isEmpty()) {
+            throw new GradleException("Missing Gradle properties: " + missing.join(", "))
+        }
+        args required.collect { project.property(it) }
+    }
+}
+
+tasks.register("syntheticSourceSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks deterministic synthetic-source formatting and line metadata"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.source.SyntheticSourceSmoke"
+}
+
+tasks.register("addressNormalizerSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks Ghidra-rebase to ELF link-time address conversion"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.AddressNormalizerSmoke"
+}
+
+tasks.register("typeGraphSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks deterministic canonical and recursive type modeling"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.types.TypeGraphSmoke"
+}
+
+tasks.register("dwarfInfoRepairSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks DWARF32 section-offset and CU-reference width repair"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.dwarf.Dwarf32InfoRepairSmoke"
+}
+
+tasks.register("dwarfRangeListsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks deterministic DWARF 5 discontiguous range-list encoding"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.dwarf.Dwarf5RangeListsSmoke"
+}
+
+tasks.register("dwarfLineTableSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks deterministic overlap and discontiguous line-table planning"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.dwarf.Dwarf5LineTableSmoke"
+}
+
+tasks.register("dwarfLocationListsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks deterministic DWARF 5 variable location-list encoding"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.dwarf.Dwarf5LocationListsSmoke"
+}
+
+tasks.register("variableStorageSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks architecture-neutral storage and target register mappings"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.locations.VariableStorageSmoke"
+}
+
+tasks.register("artifactPairPublisherSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks staged sidecar/source publication and rollback"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.ArtifactPairPublisherSmoke"
+}
+
+tasks.register("outputPathPolicySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks default, explicit, colliding, and unwritable output paths"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.OutputPathPolicySmoke"
+}
+
+tasks.register("exportReportSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks deterministic structured export reports and terminal failures"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.ExportReportSmoke"
+}
+
+// Keep development inputs and the unsafe historical prototype out of releases.
+buildExtension {
+    eachFile { details ->
+        if (details.path == "GhidraDwarfForge/support/ghidra-dwarf-forge-headless") {
+            details.permissions { permissions ->
+                permissions.unix("rwxr-xr-x")
+            }
+        }
+    }
+    exclude ".github/**"
+    exclude ".ghidra-test/**"
+    exclude ".gitignore"
+    exclude "AGENTS.md"
+    exclude "PROJECT_CONTEXT.md"
+    exclude "TODO.md"
+    exclude "README.md"
+    exclude "gradle/**"
+    exclude "jna-wrapper/**"
+    exclude "settings.gradle"
+}

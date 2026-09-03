@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -u
+
+printf '%s\n' "$@" >"$FAKE_ARGUMENT_LOG"
+status=${FAKE_REPORT_STATUS:-SUCCESS}
+if [[ "$status" != NONE ]]; then
+    echo "INFO  GhidraDwarfForge.java> GhidraDwarfForge report: {\"schemaVersion\":1,\"status\":\"$status\"} (GhidraScript)"
+fi
+if [[ "$status" == MULTIPLE ]]; then
+    echo 'INFO  GhidraDwarfForge.java> GhidraDwarfForge report: {"schemaVersion":1,"status":"SUCCESS"} (GhidraScript)'
+fi
+exit "${FAKE_HEADLESS_EXIT:-0}"

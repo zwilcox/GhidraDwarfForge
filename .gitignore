@@ -1,0 +1,27 @@
+# Gradle
+.gradle/
+build/
+dist/
+
+# Maven and historical unpacked/generated artifacts
+jna-wrapper/target/
+src/temp/
+
+# IDEs
+.idea/
+.settings/
+.classpath
+.project
+.vscode/
+*.iml
+
+# Native crashes and temporary output
+core
+core.*
+hs_err_pid*.log
+*.tmp
+*.dbg
+*.dbg.c
+
+# Local headless-test projects
+.ghidra-test/

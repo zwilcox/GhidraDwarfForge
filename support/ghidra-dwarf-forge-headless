@@ -1,0 +1,183 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+usage() {
+    cat >&2 <<'EOF'
+Usage:
+  ghidra-dwarf-forge-headless --import=<elf> [options]
+  ghidra-dwarf-forge-headless --project-dir=<dir> --project-name=<name> \
+      --program=<project-path> [options]
+
+Required options:
+  --libdwarf=<path>       Pinned libdwarf consumer library
+  --libdwarfp=<path>      Pinned libdwarfp producer library
+
+Common options:
+  --ghidra-dir=<dir>      Ghidra installation (or GHIDRA_INSTALL_DIR)
+  --input=<elf>           Original ELF override (defaults to --import value)
+  --output=<path>         Sidecar path (default: <input>.dbg)
+  --log=<path>            Preserve the complete headless transcript
+  --analysis-timeout=<s> Import-mode analysis timeout (default: 120)
+
+Existing-project mode is read-only and disables analysis. The project and
+program are never deleted or saved by this wrapper.
+
+Exit codes:
+  0   Export completed (SUCCESS or PARTIAL; inspect the JSON report)
+  10  Export reported FATAL
+  11  Export reported CANCELLED
+  12  Ghidra failed or did not emit exactly one valid report
+  64  Invalid command-line usage
+EOF
+}
+
+die_usage() {
+    echo "ghidra-dwarf-forge-headless: $1" >&2
+    usage
+    exit 64
+}
+
+ghidra_dir=${GHIDRA_INSTALL_DIR:-}
+consumer=
+producer=
+input=
+output=
+import_path=
+project_dir=
+project_name=
+program=
+log_path=
+analysis_timeout=120
+
+for argument in "$@"; do
+    case "$argument" in
+        --ghidra-dir=*) ghidra_dir=${argument#*=} ;;
+        --libdwarf=*) consumer=${argument#*=} ;;
+        --libdwarfp=*) producer=${argument#*=} ;;
+        --input=*) input=${argument#*=} ;;
+        --output=*) output=${argument#*=} ;;
+        --import=*) import_path=${argument#*=} ;;
+        --project-dir=*) project_dir=${argument#*=} ;;
+        --project-name=*) project_name=${argument#*=} ;;
+        --program=*) program=${argument#*=} ;;
+        --log=*) log_path=${argument#*=} ;;
+        --analysis-timeout=*) analysis_timeout=${argument#*=} ;;
+        --help|-h) usage; exit 0 ;;
+        *) die_usage "unknown argument: $argument" ;;
+    esac
+done
+
+[[ -n "$ghidra_dir" ]] || die_usage "--ghidra-dir or GHIDRA_INSTALL_DIR is required"
+[[ -n "$consumer" ]] || die_usage "--libdwarf is required"
+[[ -n "$producer" ]] || die_usage "--libdwarfp is required"
+[[ "$analysis_timeout" =~ ^[1-9][0-9]*$ ]] ||
+    die_usage "--analysis-timeout must be a positive integer"
+
+import_mode=0
+project_mode=0
+[[ -n "$import_path" ]] && import_mode=1
+if [[ -n "$project_dir" || -n "$project_name" || -n "$program" ]]; then
+    project_mode=1
+fi
+if ((import_mode + project_mode != 1)); then
+    die_usage "select exactly one of --import or existing-project mode"
+fi
+if ((project_mode)); then
+    [[ -n "$project_dir" && -n "$project_name" && -n "$program" ]] ||
+        die_usage "existing-project mode requires --project-dir, --project-name, and --program"
+    [[ "$project_name" != */* && "$project_name" != *\\* ]] ||
+        die_usage "--project-name must not contain a path separator"
+fi
+
+headless="$ghidra_dir/support/analyzeHeadless"
+[[ -x "$headless" ]] || die_usage "Ghidra headless launcher is not executable: $headless"
+[[ -f "$consumer" ]] || die_usage "libdwarf does not exist: $consumer"
+[[ -f "$producer" ]] || die_usage "libdwarfp does not exist: $producer"
+
+temporary_root=
+temporary_log=0
+temporary_base=${TMPDIR:-/tmp}
+[[ -d "$temporary_base" ]] || die_usage "temporary directory does not exist: $temporary_base"
+temporary_base=$(cd "$temporary_base" && pwd -P)
+cleanup() {
+    if [[ -n "$temporary_root" ]]; then
+        case "$temporary_root" in
+            "$temporary_base"/ghidra-dwarf-forge-headless-wrapper.*)
+                rm -rf -- "$temporary_root"
+                ;;
+            *)
+                echo "refusing to remove unexpected temporary path: $temporary_root" >&2
+                ;;
+        esac
+    fi
+    if ((temporary_log)) && [[ -n "$log_path" ]]; then
+        rm -f -- "$log_path"
+    fi
+}
+trap cleanup EXIT
+
+if [[ -z "$log_path" ]]; then
+    log_path=$(mktemp -t ghidra-dwarf-forge-headless-report.XXXXXXXX.log) || exit 12
+    temporary_log=1
+else
+    log_parent=$(dirname "$log_path")
+    [[ -d "$log_parent" && -w "$log_parent" ]] ||
+        die_usage "log directory is not writable: $log_parent"
+fi
+
+export_options=("--libdwarf=$consumer" "--libdwarfp=$producer")
+[[ -n "$input" ]] && export_options+=("--input=$input")
+[[ -n "$output" ]] && export_options+=("--output=$output")
+
+if ((import_mode)); then
+    [[ -f "$import_path" ]] || die_usage "import ELF does not exist: $import_path"
+    if [[ -z "$input" ]]; then
+        export_options+=("--input=$import_path")
+    fi
+    temporary_root=$(mktemp -d \
+        "$temporary_base/ghidra-dwarf-forge-headless-wrapper.XXXXXXXX") || exit 12
+    headless_arguments=(
+        "$temporary_root" GhidraDwarfForgeHeadless -deleteProject
+        -import "$import_path" -analysisTimeoutPerFile "$analysis_timeout"
+        -postScript GhidraDwarfForge.java "${export_options[@]}"
+    )
+else
+    [[ -d "$project_dir" ]] || die_usage "project directory does not exist: $project_dir"
+    headless_arguments=(
+        "$project_dir" "$project_name" -readOnly -noanalysis -process "$program"
+        -postScript GhidraDwarfForge.java "${export_options[@]}"
+    )
+fi
+
+set +e
+"$headless" "${headless_arguments[@]}" 2>&1 | tee "$log_path"
+headless_status=${PIPESTATUS[0]}
+set -e
+
+mapfile -t report_lines < <(grep -F 'GhidraDwarfForge report: ' "$log_path" || true)
+if [[ ${#report_lines[@]} -ne 1 ]]; then
+    echo "ghidra-dwarf-forge-headless: expected one export report, found ${#report_lines[@]}" >&2
+    exit 12
+fi
+status=$(sed -n 's/^.*GhidraDwarfForge report: {"schemaVersion":[0-9][0-9]*,"status":"\([A-Z]*\)".*$/\1/p' \
+    <<<"${report_lines[0]}")
+if [[ -z "$status" ]]; then
+    echo "ghidra-dwarf-forge-headless: malformed export report" >&2
+    exit 12
+fi
+
+case "$status" in
+    SUCCESS|PARTIAL)
+        if ((headless_status != 0)); then
+            echo "ghidra-dwarf-forge-headless: Ghidra exited $headless_status after $status" >&2
+            exit 12
+        fi
+        exit 0
+        ;;
+    FATAL) exit 10 ;;
+    CANCELLED) exit 11 ;;
+    *)
+        echo "ghidra-dwarf-forge-headless: unknown report status: $status" >&2
+        exit 12
+        ;;
+esac
