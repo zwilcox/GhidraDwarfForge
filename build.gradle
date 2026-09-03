@@ -153,6 +153,21 @@ tasks.register("artifactPairPublisherSmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.output.ArtifactPairPublisherSmoke"
+
+    doFirst {
+        def lockProperties = ["lockedArtifact", "lockedSource"]
+        def configuredLockProperties = lockProperties.findAll {
+            project.hasProperty(it)
+        }
+        if (!configuredLockProperties.isEmpty() &&
+                configuredLockProperties.size() != lockProperties.size()) {
+            throw new GradleException(
+                "Set both -PlockedArtifact=<path> and -PlockedSource=<path>")
+        }
+        if (configuredLockProperties.size() == lockProperties.size()) {
+            args lockProperties.collect { project.property(it) }
+        }
+    }
 }
 
 tasks.register("outputPathPolicySmoke", JavaExec) {
