@@ -25,7 +25,7 @@ aarch64_OBJCOPY := aarch64-linux-gnu-objcopy
 arm32_CC := arm-linux-gnueabihf-gcc
 arm32_STRIP := arm-linux-gnueabihf-strip
 arm32_OBJCOPY := arm-linux-gnueabihf-objcopy
-arm32_CFLAGS := -march=armv7-a -marm
+arm32_CFLAGS := -march=armv7-a -marm -mfpu=vfpv3-d16
 mips32be_CC := mips-linux-gnu-gcc
 mips32be_STRIP := mips-linux-gnu-strip
 mips32be_OBJCOPY := mips-linux-gnu-objcopy
