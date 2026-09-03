@@ -179,6 +179,10 @@ for target in "${targets[@]}"; do
         grep -q "Applied favorite recursive fixture type" "$log"
         grep -q "Applied favorite bit-field fixture type" "$log"
         grep -Eq "canonical types: ([8-9]|[1-9][0-9]+)" "$log"
+        if [[ "$target:$fixture_role" == arm32:shared ]]; then
+            grep -Fq "Cleared auto-analysis thunk classification at $rename_address" \
+                "$log"
+        fi
     fi
 
     warnings="$result_dir/$target.$fixture_role.readelf.stderr"
