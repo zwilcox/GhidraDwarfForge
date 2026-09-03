@@ -186,6 +186,14 @@ tasks.register("exportReportSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.output.ExportReportSmoke"
 }
 
+tasks.register("packagedNativeLibrariesSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks packaged-native resolution and checksum enforcement"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.nativeapi.PackagedNativeLibrariesSmoke"
+}
+
 // Keep development inputs and the unsafe historical prototype out of releases.
 buildExtension {
     eachFile { details ->
@@ -203,6 +211,7 @@ buildExtension {
     exclude "TODO.md"
     exclude "README.md"
     exclude "gradle/**"
+    // Also exclude ignored leftovers in developer worktrees after legacy cleanup.
     exclude "jna-wrapper/**"
     exclude "settings.gradle"
 }

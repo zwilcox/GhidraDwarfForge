@@ -60,8 +60,8 @@ Feature work that calls new libdwarfp functions is blocked until M1.
 
 ## P0.1 Restore a clean, reproducible Ghidra extension build
 
-**Status:** `[~]` — build, installation, native-free headless entry point, and
-hosted CI are proven; release-native packaging remains incomplete.
+**Status:** `[x]` — build, installation, packaged native selection, and hosted
+clean-install validation are enforced by the release pipeline.
 **Blocks:** all release milestones.
 
 ### Work
@@ -71,7 +71,7 @@ hosted CI are proven; release-native packaging remains incomplete.
 - [x] Create the normal Ghidra extension Gradle layout.
 - [x] Add a Gradle 9.3.1 wrapper to the repository.
 - [x] Add native-free production Java under a conventional package/source tree.
-- Package required JAR/native resources into the extension ZIP.
+- [x] Package required JAR/native resources into the extension ZIP.
 - [x] Add extension metadata and installation documentation.
 - [x] Ensure the extension build does not depend on files already present under
   `src/`, `src/temp/`, or `jna-wrapper/target/`.
@@ -100,27 +100,30 @@ This command is **HISTORICAL, UNVERIFIED** and cannot be treated as current unti
 
 ## P0.2 Clean generated artifacts and establish repository hygiene
 
-**Status:** `[~]` — `.gitignore` is established; tracked generated artifacts
-and binary provenance remain unresolved.
+**Status:** `[x]` — generated/shaded artifacts were removed; the pinned CI
+native build and deterministic release assembler are the source of truth.
 **Dependency:** coordinate with P0.1 so required resources are not accidentally removed.
 
 ### Work
 
 - [x] Add a real `.gitignore` covering Gradle, Maven, IDE, temporary,
   native-build, crash-dump, and generated test output.
-- Remove committed `jna-wrapper/target/` from source control after verifying it is reproducible.
-- Remove committed `src/temp/` extracted/generated content after preserving any historical information needed in documentation.
-- Decide whether `src/libdwarf.jar` remains a source artifact, becomes a release artifact, or is rebuilt during the extension build.
-- Avoid duplicate copies of the same native library under multiple generated directories.
-- Add a reproducible artifact/provenance manifest rather than relying on opaque committed binaries.
+- [x] Remove committed `jna-wrapper/target/` and the obsolete Maven wrapper tree.
+- [x] Remove committed `src/temp/` extracted/generated content after preserving
+  its historical role in `PROJECT_CONTEXT.md`.
+- [x] Remove the obsolete `src/libdwarf.jar`; production uses Ghidra's JNA and
+  CI-built pinned native libraries.
+- [x] Avoid duplicate copies of the same native library under generated directories.
+- [x] Add reproducible artifact/provenance manifests rather than relying on
+  opaque committed binaries.
 
 ### Completion criteria
 
-- [ ] `git status --short` remains clean after a normal build/test run.
-- [ ] Clean checkout plus documented tools reproduces all required generated files.
-- [ ] No crash logs, cores, temporary JNA extraction files, or unpacked JAR contents are tracked.
-- [ ] Native/JAR artifacts have one documented source of truth.
-- [ ] Removal does not break extension packaging.
+- [x] `git status --short` remains clean after a normal build/test run.
+- [x] Clean checkout plus documented tools reproduces all required generated files.
+- [x] No crash logs, cores, temporary JNA extraction files, or unpacked JAR contents are tracked.
+- [x] Native/JAR artifacts have one documented source of truth.
+- [x] Removal does not break extension packaging.
 
 ## P0.3 Add repository and dependency licensing
 
@@ -183,9 +186,9 @@ and patches `libdwarfp.so*` RUNPATH to `$ORIGIN`.
   `af7b278c6aa2ae9daad94fb7f8bffdc0e9980993`, and the official archive hash.
 - [x] Linux x86-64 native build succeeds and dependency/RUNPATH checks pass.
 - [x] Windows x86-64 native build succeeds and DLL dependency checks pass.
-- [ ] SHA-256 checksums are recorded for release natives.
+- [x] SHA-256 checksums are recorded for release natives.
 - [ ] Rebuilding the same revision with the documented environment produces functionally equivalent artifacts.
-- [ ] CI fails when expected symbols or dependency names are missing.
+- [x] CI fails when expected symbols or dependency names are missing.
 
 ## P0.5 Audit and repair the complete JNA ABI
 
@@ -1168,23 +1171,27 @@ an integration pass.
 
 ## P2.13 Produce installable releases
 
-**Status:** `[ ]`.
+**Status:** `[~]` — deterministic CI artifacts, packaged Linux/Windows natives,
+clean-install exports, checksums, and operating documentation are implemented.
+Official GitHub Release publication and licensing/notices are deferred by the
+user.
 
 ### Work
 
-- Define semantic versioning/release policy.
-- Build Ghidra extension ZIPs reproducibly.
-- Include native checksums/provenance and third-party notices.
-- Publish support matrix and known limitations.
-- Add installation, run, GDB loading, and troubleshooting instructions.
+- [x] Define semantic versioning/release policy.
+- [x] Build Ghidra extension ZIPs reproducibly.
+- [~] Include native checksums/provenance; third-party notices are deferred with
+  the licensing work.
+- [x] Publish support matrix and known limitations.
+- [x] Add installation, run, GDB loading, and troubleshooting instructions.
 
 ### Completion criteria
 
-- [ ] Release can be installed without compiling libdwarf locally.
-- [ ] Clean user environment can export a documented fixture.
-- [ ] Release notes identify supported Ghidra/Java/host/target combinations.
-- [ ] Checksums and provenance are published.
-- [ ] No generated build directory is required from the source tree.
+- [x] Release artifact can be installed without compiling libdwarf locally.
+- [x] Clean Linux and Windows CI environments export a documented fixture.
+- [x] Release documentation identifies supported Ghidra/Java/host/target combinations.
+- [x] Checksums and provenance are included in the artifact.
+- [x] No generated build directory is required from the source tree.
 
 ---
 

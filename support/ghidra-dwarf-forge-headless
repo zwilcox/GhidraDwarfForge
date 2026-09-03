@@ -8,12 +8,10 @@ Usage:
   ghidra-dwarf-forge-headless --project-dir=<dir> --project-name=<name> \
       --program=<project-path> [options]
 
-Required options:
-  --libdwarf=<path>       Pinned libdwarf consumer library
-  --libdwarfp=<path>      Pinned libdwarfp producer library
-
 Common options:
   --ghidra-dir=<dir>      Ghidra installation (or GHIDRA_INSTALL_DIR)
+  --libdwarf=<path>       Override packaged libdwarf (requires --libdwarfp)
+  --libdwarfp=<path>      Override packaged libdwarfp (requires --libdwarf)
   --input=<elf>           Original ELF override (defaults to --import value)
   --output=<path>         Sidecar path (default: <input>.dbg)
   --log=<path>            Preserve the complete headless transcript
@@ -68,8 +66,9 @@ for argument in "$@"; do
 done
 
 [[ -n "$ghidra_dir" ]] || die_usage "--ghidra-dir or GHIDRA_INSTALL_DIR is required"
-[[ -n "$consumer" ]] || die_usage "--libdwarf is required"
-[[ -n "$producer" ]] || die_usage "--libdwarfp is required"
+if [[ -n "$consumer" && -z "$producer" || -z "$consumer" && -n "$producer" ]]; then
+    die_usage "--libdwarf and --libdwarfp must be supplied together"
+fi
 [[ "$analysis_timeout" =~ ^[1-9][0-9]*$ ]] ||
     die_usage "--analysis-timeout must be a positive integer"
 
@@ -91,8 +90,10 @@ fi
 
 headless="$ghidra_dir/support/analyzeHeadless"
 [[ -x "$headless" ]] || die_usage "Ghidra headless launcher is not executable: $headless"
-[[ -f "$consumer" ]] || die_usage "libdwarf does not exist: $consumer"
-[[ -f "$producer" ]] || die_usage "libdwarfp does not exist: $producer"
+if [[ -n "$consumer" ]]; then
+    [[ -f "$consumer" ]] || die_usage "libdwarf does not exist: $consumer"
+    [[ -f "$producer" ]] || die_usage "libdwarfp does not exist: $producer"
+fi
 
 temporary_root=
 temporary_log=0
@@ -125,7 +126,11 @@ else
         die_usage "log directory is not writable: $log_parent"
 fi
 
-export_options=("--libdwarf=$consumer" "--libdwarfp=$producer")
+if [[ -n "$consumer" ]]; then
+    export_options=("--libdwarf=$consumer" "--libdwarfp=$producer")
+else
+    export_options=("--packaged-natives")
+fi
 [[ -n "$input" ]] && export_options+=("--input=$input")
 [[ -n "$output" ]] && export_options+=("--output=$output")
 

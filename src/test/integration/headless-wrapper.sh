@@ -70,4 +70,13 @@ fi
 
 run_status 64 NONE 0 --import="$input" --unknown=value
 
+set +e
+FAKE_ARGUMENT_LOG="$argument_log" FAKE_REPORT_STATUS=SUCCESS FAKE_HEADLESS_EXIT=0 \
+    "$wrapper" --ghidra-dir="$fake_ghidra" --import="$input" \
+    >"$work/output.txt" 2>"$work/error.txt"
+packaged_status=$?
+set -e
+test "$packaged_status" = 0
+grep -Fxq -- '--packaged-natives' "$argument_log"
+
 echo headless-wrapper=PASS

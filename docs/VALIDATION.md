@@ -7,8 +7,9 @@ Host JVM used by Ghidra/Gradle: OpenJDK 25.0.4
 Extension bytecode target: Java 21
 
 This record distinguishes container/oracle validation from real Forge DWARF
-export. The current function/source-line/type/signature/location native path is
-enabled only when explicit library paths are supplied.
+export. Export remains explicit: installed wrappers request checksum-verified
+packaged natives by default, while source-tree audit runs may supply explicit
+library paths.
 
 ## Ancillary local checks
 
@@ -18,18 +19,20 @@ find src/test/integration -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
 
 Result: PASS.
 
-`actionlint` 1.7.12 accepted both workflow files. The main CI workflow also
+`actionlint` 1.7.12 accepted the workflow. The CI workflow also
 downloads that pinned release, verifies it against the upstream checksum file,
-and rejects workflow changes that fail linting. The repository-defined Maven
-packaging command also passed:
+and rejects workflow changes that fail linting. The historical Maven shaded
+JAR path, committed wrapper natives, and unpacked JNA tree were removed in
+favor of the Gradle extension plus CI-native release path.
 
 ```bash
-mvn -B -ntp -f jna-wrapper/pom.xml package -DskipTests
+src/test/integration/release-package.sh
 ```
 
-Maven reported the pre-existing shaded-JAR duplicate JNA resource/class
-warnings; no Maven tests exist. Neither ancillary command substitutes for the
-Gradle extension/integration path recorded below.
+Result: PASS. Two assemblies from identical inputs were byte-identical; all
+platform and release manifests verified and executable wrapper permissions
+were preserved. This synthetic assembly test does not substitute for the
+hosted clean-install native exports.
 
 ## Hosted continuous validation
 
@@ -54,6 +57,12 @@ profiles.
 protection was enabled with strict/up-to-date status checking and
 `required-validation` as its required GitHub Actions check. Force pushes and
 branch deletion remain disabled.
+
+The required workflow now also assembles the Linux/Windows native release ZIP
+twice, compares it byte for byte, verifies every embedded SHA-256 manifest,
+and installs that aggregate artifact for real exports on both host operating
+systems without external native paths. `required-validation` cannot pass when
+release assembly or either clean-install export is skipped or fails.
 
 ## Windows-hosted lane
 
@@ -93,10 +102,10 @@ GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC \
     exportReportSmoke syntheticSourceSmoke typeGraphSmoke variableStorageSmoke \
     dwarfInfoRepairSmoke dwarfLineTableSmoke \
     dwarfRangeListsSmoke dwarfLocationListsSmoke artifactPairPublisherSmoke \
-    buildExtension
+    packagedNativeLibrariesSmoke buildExtension
 ```
 
-Result: PASS. All eleven native-independent smoke tests passed and the
+Result: PASS. All twelve native-independent smoke tests passed and the
 installable artifact was generated under `dist/`. `unzip -t` accepted the ZIP,
 and inspection confirmed that the local `.ghidra-test` directory was not
 packaged.
@@ -125,8 +134,6 @@ src/test/integration/headless-wrapper.sh
 support/ghidra-dwarf-forge-headless \
   --ghidra-dir=/home/ziggy/ghidra_12.0.3_PUBLIC \
   --import=build/fixtures/x86_64/semantic.exec.stripped \
-  --libdwarf=<audit-build>/libdwarf.so.2.3.2 \
-  --libdwarfp=<audit-build>/libdwarfp.so.2.3.2 \
   --output=build/test-results/headless-wrapper/semantic.dbg
 ```
 

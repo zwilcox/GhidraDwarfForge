@@ -39,15 +39,22 @@ At the pinned commit, `Dwarf_Unsigned`, `Dwarf_Signed`, `Dwarf_Off`, and
 `Dwarf_Addr` are fixed 64-bit `long long` types. `Dwarf_Half` is 16-bit and
 `Dwarf_Small` is 8-bit. `Dwarf_Error` and producer handles are opaque pointers.
 
-The workflow uploads reviewed build artifacts. It does not automatically
-commit opaque native binaries back to `main`.
+The CI workflow builds each platform once from this pinned source and passes
+those reviewed artifacts to deterministic release assembly. It does not commit
+opaque native binaries to the source tree.
 
 The Windows CI build writes `BUILD-METADATA.txt` beside its DLL artifact with
 the pinned release/commit, configure flags, compiler version, SHA-256 for every
 bundled DLL, and each DLL's dependency names. Required consumer/producer
 exports and recursively discovered non-system MinGW runtime DLLs are build
-gates. This path is **PRESENT, UNVERIFIED** until a GitHub-hosted Windows run
-passes; no Windows release-native hashes are claimed in advance.
+gates. The Linux build records equivalent source/configuration/compiler/hash
+metadata and verifies the producer `$ORIGIN` RUNPATH.
+
+Release assembly adds per-platform `NATIVE-PAIR.properties` and `SHA256SUMS`,
+plus root `RELEASE-MANIFEST.txt` and `RELEASE-SHA256SUMS`. The exact native
+hashes are therefore properties of each CI-built release artifact rather than
+stale constants in source documentation. The exporter checks the installed
+platform file set and all hashes before loading libdwarf.
 
 ## Local ABI smoke evidence
 

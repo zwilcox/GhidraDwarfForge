@@ -10,6 +10,7 @@ import ghidradwarfforge.GhidraTypeGraph;
 import ghidradwarfforge.elf.ElfImage;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter;
 import ghidradwarfforge.nativeapi.DwarfTarget;
+import ghidradwarfforge.nativeapi.PackagedNativeLibraries;
 import ghidradwarfforge.output.ArtifactPairPublisher;
 import ghidradwarfforge.output.ExportReport;
 import ghidradwarfforge.output.OutputPathPolicy;
@@ -54,14 +55,40 @@ public class GhidraDwarfForge extends GhidraScript {
         println(ExporterPreflight.describe(currentProgram));
         String[] arguments = getScriptArgs();
         if (arguments.length == 0) {
-            println("Symbol export was not requested. Pass explicit --libdwarf and " +
-                "--libdwarfp paths to enable the isolated P0 exporter.");
+            println("Symbol export was not requested. Pass --packaged-natives or explicit " +
+                "--libdwarf and --libdwarfp paths to enable the exporter.");
             return;
         }
 
         Map<String, String> options = parseOptions(arguments);
-        String consumer = requireOption(options, "libdwarf");
-        String producer = requireOption(options, "libdwarfp");
+        boolean packagedNatives = options.containsKey("packaged-natives");
+        boolean explicitConsumer = options.containsKey("libdwarf");
+        boolean explicitProducer = options.containsKey("libdwarfp");
+        if (explicitConsumer != explicitProducer) {
+            throw new IllegalArgumentException(
+                "--libdwarf and --libdwarfp must be supplied together");
+        }
+        if (packagedNatives && explicitConsumer) {
+            throw new IllegalArgumentException(
+                "--packaged-natives cannot be combined with explicit native paths");
+        }
+        Path consumer;
+        Path producer;
+        if (packagedNatives) {
+            PackagedNativeLibraries.Pair pair = PackagedNativeLibraries.resolve();
+            consumer = pair.consumer();
+            producer = pair.producer();
+            println("  native policy: verified packaged libraries in " + pair.directory());
+        }
+        else if (explicitConsumer) {
+            consumer = hostPath(options.get("libdwarf"));
+            producer = hostPath(options.get("libdwarfp"));
+            println("  native policy: explicit library paths");
+        }
+        else {
+            throw new IllegalArgumentException(
+                "pass --packaged-natives or both --libdwarf and --libdwarfp");
+        }
         String executablePath = options.getOrDefault("input",
             currentProgram.getExecutablePath());
         if (executablePath == null || executablePath.isBlank()) {
@@ -136,7 +163,7 @@ public class GhidraDwarfForge extends GhidraScript {
         ArtifactPairPublisher.stageAndPublish(output, sourceOutput,
             stagedOutput -> resultHolder[0] = new MinimalDwarfSidecarExporter().export(
                 input, stagedOutput,
-                hostPath(consumer), hostPath(producer), functions, source, typeModel,
+                consumer, producer, functions, source, typeModel,
                 sourceOutput.getFileName().toString()),
             source::writeAtomically, monitor::checkCancelled);
         MinimalDwarfSidecarExporter.ExportResult result = resultHolder[0];
@@ -187,10 +214,15 @@ public class GhidraDwarfForge extends GhidraScript {
             }
             else {
                 name = argument.substring(2);
-                if (++index >= arguments.length || arguments[index].startsWith("--")) {
-                    throw new IllegalArgumentException("missing value for option " + argument);
+                if (name.equals("packaged-natives")) {
+                    value = "true";
                 }
-                value = arguments[index];
+                else {
+                    if (++index >= arguments.length || arguments[index].startsWith("--")) {
+                        throw new IllegalArgumentException("missing value for option " + argument);
+                    }
+                    value = arguments[index];
+                }
             }
             if (name.isBlank() || value.isBlank() || result.put(name, value) != null) {
                 throw new IllegalArgumentException("invalid/duplicate option " + argument);
@@ -198,19 +230,15 @@ public class GhidraDwarfForge extends GhidraScript {
         }
         for (String name : result.keySet()) {
             if (!name.equals("libdwarf") && !name.equals("libdwarfp") &&
-                    !name.equals("input") && !name.equals("output")) {
+                    !name.equals("input") && !name.equals("output") &&
+                    !name.equals("packaged-natives")) {
                 throw new IllegalArgumentException("unknown option --" + name);
+            }
+            if (name.equals("packaged-natives") && !result.get(name).equals("true")) {
+                throw new IllegalArgumentException("--packaged-natives does not take a value");
             }
         }
         return result;
-    }
-
-    private static String requireOption(Map<String, String> options, String name) {
-        String value = options.get(name);
-        if (value == null) {
-            throw new IllegalArgumentException("missing required option --" + name);
-        }
-        return value;
     }
 
     private static Path hostPath(String value) {
