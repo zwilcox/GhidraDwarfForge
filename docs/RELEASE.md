@@ -39,9 +39,19 @@ The extension root contains `RELEASE-MANIFEST.txt` and
 every packaged file before native code is loaded. CI also checks all manifests
 after assembly.
 
-Project/dependency licensing and publication of an official GitHub Release are
-explicitly deferred. Until that work is completed, CI output is a validated
-pre-release artifact, not a licensing-complete public release.
+The release root also contains `THIRD_PARTY_NOTICES.md`. The
+`third_party/libdwarf/` directory contains the complete LGPL 2.1 text,
+upstream copyright/copying notices, the exact checksummed libdwarf 2.3.2 source
+archive, and the patch applied by CI. `third_party/CORRESPONDING_SOURCE.md`
+records the exact reconstruction commands and modified-library override path.
+Windows zlib and Zstandard package versions and license files are retained
+under `third_party/windows-runtime/`. All of these files are covered by
+`RELEASE-SHA256SUMS`; their nested manifests are also verified during
+assembly. Ghidra and JNA are documented host dependencies and are not bundled
+by this release.
+
+Publication of an official GitHub Release remains a separate release-manager
+operation. CI output is a validated release candidate until it is published.
 
 ## Install
 

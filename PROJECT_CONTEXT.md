@@ -1609,8 +1609,17 @@ invented CFI could corrupt backtraces and variable evaluation.
 
 **CONFIRMED REQUIREMENT (2026-09-03):** the user selected the MIT License for
 GhidraDwarfForge. The repository license covers project-authored work; it does
-not relicense Ghidra, JNA, libdwarf/libdwarfp, or other dependencies. Review of
-their notices and distribution/source obligations remains open under P0.3.
+not relicense Ghidra, JNA, libdwarf/libdwarfp, or other dependencies.
+
+**PRESENT, UNVERIFIED (2026-09-03):** the user chose to retain bundled native
+libraries and provide their required notices and corresponding-source
+availability. Release assembly now requires the exact checksummed libdwarf
+2.3.2 source archive, the applied repository patch, LGPL/copyright notices,
+and reconstruction instructions. It also carries the exact MSYS2 zlib/zstd
+package versions and installed license files for the Windows runtime DLLs.
+Ghidra 12.0.3 and its JNA 5.14.0 remain documented host-provided dependencies,
+not redistributed payloads. Nested compliance manifests and the whole-release
+manifest are checked locally; hosted native-inclusive verification is pending.
 
 ## 17. Open questions
 
@@ -1647,8 +1656,9 @@ Codex should not silently answer these through implementation choices. Investiga
     CFI. See `docs/ADR-0002-DEBUG-FRAME.md`.
 19. **ELF implementation library:** Continue a hand-written emitter, use Ghidra ELF classes, use another Java ELF library, or derive metadata through an external tool? Licensing and portability matter.
 20. **PARTIALLY RESOLVED — distribution license:** GhidraDwarfForge uses MIT.
-    Required notices and source/distribution obligations for bundled
-    libdwarf/JNA binaries remain open under P0.3.
+    Required notices and corresponding source for bundled libdwarf plus the
+    Windows runtime notices are implemented under P0.3, pending hosted bundle
+    verification. Ghidra/JNA are host-provided and are not redistributed.
 21. **RESOLVED — Release format:** one versioned Ghidra extension ZIP includes
     the headless wrappers, Linux/Windows natives, and provenance/checksum
     manifests.
