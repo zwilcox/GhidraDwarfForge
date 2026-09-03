@@ -407,6 +407,8 @@ The first serious support matrix is:
 - x86-64 ET_DYN shared object.
 - AArch64 ET_EXEC, non-PIE.
 - AArch64 PIE or shared object.
+- ARM32/AArch32 little-endian ARMv7 hard-float ET_EXEC, PIE, and shared object,
+  initially under QEMU when native hardware is unavailable.
 - MIPS ELF32 big-endian ET_EXEC, initially under QEMU when native hardware is
   unavailable.
 - At least one MIPS PIE or shared-object case before claiming broad MIPS
@@ -438,11 +440,15 @@ Use small, redistributable source-built fixtures. Do not commit proprietary firm
   AArch64 fixture does not satisfy the integration requirement.
 - Both lanes must use the same production exporter path and retain useful
   diagnostics/artifacts when a job fails.
+- The ARM32/AArch32 lane uses the same production exporter path with an
+  `arm-linux-gnueabihf` fixture toolchain and QEMU/GDB runtime checks. The
+  initial validated profile does not imply Thumb or big-endian ARM support.
 - Add a QEMU-backed MIPS lane as soon as the fixture/export path is available.
   It must perform exporter and GDB behavior checks, not merely cross-compile a
   MIPS binary. This lane becomes required before MIPS is advertised as
   supported.
-- x86-32 and ARM32 remain later target cases unless the user reprioritizes them.
+- x86-32 remains a later target case. ARM32/AArch32 is an active end-to-end
+  target following the user's 2026-09-03 reprioritization.
 
 ## 12. Completion rules
 

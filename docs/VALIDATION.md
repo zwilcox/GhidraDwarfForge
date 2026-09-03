@@ -31,6 +31,29 @@ Maven reported the pre-existing shaded-JAR duplicate JNA resource/class
 warnings; no Maven tests exist. Neither ancillary command substitutes for the
 Gradle extension/integration path recorded below.
 
+## Hosted continuous validation
+
+**CONFIRMED:** GitHub Actions run 33751896850 passed workflow lint, pinned
+Linux and Windows libdwarf builds, the extension build, x86-64/AArch64/MIPS32
+target integration, the Windows-hosted exporter, and the aggregate
+`required-validation` job. Each job records exact Ghidra, libdwarf, Java,
+compiler, binutils, validator, GDB, and applicable QEMU versions. Native smoke
+tests run through an isolated crash-status wrapper, and diagnostic artifacts
+are retained for 14 days even when a job fails.
+
+**CONFIRMED:** GitHub Actions run 33757707307 passed all 11 jobs, including the
+aggregate gate, after adding an ARM32 target job using `arm-linux-gnueabihf`,
+an ARMv7 hard-float little-endian ARM-state fixture, `qemu-arm-static`, and
+`gdb-multiarch`. The lane passed real Ghidra export for ET_EXEC, PIE,
+shared-object, no-build-ID, and no-section-table inputs; GNU readelf, LLVM
+verification, independent dwarfdump, and the runtime GDB oracles accepted the
+artifacts. This evidence does not claim Thumb, big-endian ARM, or other ARM ABI
+profiles.
+
+The aggregate check is ready to be configured as a required status check, but
+merge enforcement is **BLOCKED**: GitHub returns HTTP 403 for both branch
+protection and repository rulesets on this private free-plan repository.
+
 ## Windows-hosted lane
 
 **CONFIRMED:** `.github/workflows/ci.yml` defines a Windows lane
@@ -44,9 +67,12 @@ headless export of the Linux x86-64 ELF fixture.
 The PowerShell harness preserves the input hash, rejects staging leftovers and
 CR bytes, requires the generated `.dbg.c` to match the Linux lane byte for
 byte, compares ELF identity/build ID, and runs Windows GNU `readelf` plus LLVM
-DWARF verification. GitHub Actions run 33747224613 passed the native DLL
-build/audit, real Ghidra export, cross-host source comparison, and both Windows
-validators. Earlier runs exposed and verified fixes for batch argument
+DWARF verification. It also holds the existing source open with Windows
+`FileShare.None`, forces the second publication move to fail, and proves the
+old sidecar/source pair is restored without staged or backup leftovers. GitHub
+Actions run 33751896850 passed the native DLL build/audit, real Ghidra export,
+cross-host source comparison, file-lock rollback, and both Windows validators.
+Earlier runs exposed and verified fixes for batch argument
 transport, Ghidra's Windows drive-path spelling, and MSYS2 tool discovery. GDB
 execution of ELF artifacts remains in the Linux native/QEMU jobs; PE/PDB is out
 of scope.

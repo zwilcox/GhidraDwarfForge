@@ -11,6 +11,8 @@ exporter may emit those locations only when its instruction/p-code scan proves
 the register is not written and the function contains no calls. The current
 x86-64 and MIPS functions retain their input registers; AArch64 overwrites
 `x0`/`x1`, providing the negative case where locations must remain absent.
+ARM32 overwrites `r0` but retains `r1` in the executable/PIE roles; its shared
+object overwrites both, and the role-specific tests require honest omission.
 The compiler fixture also receives a fourth, otherwise-unused argument whose
 ABI input register contains 31. The preparation script models that entry-live
 storage as the analyst-defined local `analyst_register`; the same whole-function
@@ -20,8 +22,9 @@ overwrite/call scan must prove it stable before the exporter emits a location.
 fourth ABI input registers. The preparation script models those ordered
 varnodes as `analyst_composite`; little-endian fixtures put the low word first
 and the big-endian MIPS fixture puts the high word first, matching Ghidra's
-`VariableStorage` contract and DWARF's memory-address piece order. GDB must
-reconstruct `0x1122334455667788` in every target lane.
+`VariableStorage` contract and DWARF's memory-address piece order. GDB
+reconstructs `0x1122334455667788` on x86-64, AArch64, and both MIPS profiles.
+ARM32 overwrites an input piece, so its composite is deliberately locationless.
 
 The preparation script also applies a user-defined `analyst_stack` name to the
 compiler fixture's `sum` stack slot. Its Ghidra incoming-stack-pointer offset is
@@ -44,10 +47,11 @@ Build the current non-PIE reference and stripped inputs with:
 make -C src/test/fixtures all
 ```
 
-The default matrix is x86-64, AArch64, MIPS32 big-endian, and MIPS32
-little-endian, each as non-PIE `ET_EXEC` and PIE. Reference files retain
-compiler DWARF 5 for test-oracle and diagnostic use. `.stripped` files are the
-inputs intended for Ghidra.
+The default matrix is x86-64, AArch64, ARM32, MIPS32 big-endian, and MIPS32
+little-endian, each as non-PIE `ET_EXEC` and PIE. The ARM32 profile is ARMv7
+hard-float, little-endian ARM state. Reference files retain compiler DWARF 5
+for test-oracle and diagnostic use. `.stripped` files are the inputs intended
+for Ghidra.
 
 Each target also has `semantic.exec.no-build-id.{reference,stripped}` built
 with `--build-id=none`. Its Forge sidecar must remain free of a build-ID claim
@@ -83,7 +87,7 @@ files:
 src/test/integration/qemu-gdb-oracle.sh
 ```
 
-That harness runs AArch64 and both MIPS byte orders, checks a function
+That harness runs AArch64, ARM32, and both MIPS byte orders, checks a function
 breakpoint and arguments, performs source stepping, prints a local, and waits
 for normal process exit. It is an oracle/infrastructure test, not a Forge
 sidecar test; the future exporter acceptance harness will load `.dbg` instead

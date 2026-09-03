@@ -11,17 +11,19 @@ synthetic C source. The original executable remains unchanged by default.
 The installable extension now exports deterministic synthetic C and DWARF 5
 functions, source rows, canonical recursive types, signatures, globals,
 namespaces, discontiguous ranges, and evidence-backed variable locations.
-Local end-to-end validation passes on x86-64, AArch64, and MIPS32 big/little
-endian for non-PIE executables, PIE, shared objects, and inputs without section
-headers. Native/QEMU GDB tests cover source stepping, types, globals, stable
-registers, changing stack locations, composites, and honest unavailable
-variables. Explicitly rebased Ghidra projects normalize back to ELF link-time
-addresses.
+Hosted end-to-end validation passes on x86-64, AArch64, ARM32, and MIPS32
+big/little endian for non-PIE executables, PIE, shared objects, and inputs
+without section headers. Native/QEMU GDB tests cover source stepping, types,
+globals, stable registers, changing stack locations, composites, and honest
+unavailable variables. Explicitly rebased Ghidra projects normalize back to
+ELF link-time addresses.
 
 Explicit native-library paths still keep export opt-in. Packaged native
-discovery and hosted CI evidence remain incomplete; the Windows-hosted ELF
-lane is present but unverified. PE/PDB is out of scope. Imports and thunks are
-diagnosed and omitted, and distinct linkage-name emission remains unresolved.
+discovery remains incomplete. The Windows-hosted ELF lane passes native,
+publication/file-lock, real-export, and structural validation tests; ELF/GDB
+execution remains in Linux native/QEMU lanes. PE/PDB is out of scope. Imports
+and thunks are diagnosed and omitted, and distinct linkage-name emission
+remains unresolved.
 
 ## Build
 
@@ -105,18 +107,18 @@ a native ARM64 worker or documented emulation; cross-compilation alone does not
 count as an integration pass.
 
 The architecture is intentionally broader than those first release gates.
-MIPS is explicitly in scope and is the planned first ELF32/big-endian target.
-Its support claim will require the same headless export and validator checks
-plus GDB runtime behavior under native hardware or a documented QEMU setup.
-Architecture-specific ABI and register mappings remain isolated and
-table-driven so additional Ghidra-supported ELF processors can follow.
+ARM32/AArch32 now has a hosted end-to-end ARMv7 hard-float, little-endian
+ARM-state lane. MIPS is explicitly in scope as the first ELF32/big-endian
+target. Architecture-specific ABI and register mappings remain isolated and
+table-driven so additional Ghidra-supported ELF processors can follow. Thumb,
+big-endian ARM, and other ARM ABI profiles are not yet claimed.
 
-The CI scaffold has Linux lanes for x86-64, AArch64, and both MIPS byte orders,
-plus a Windows-hosted x86-64 ELF export lane. Linux runs real headless export,
-two independent DWARF validators, input-hash preservation, deterministic
-reruns, and native/QEMU GDB behavior for non-PIE, PIE, shared, and
-no-section-header inputs. These definitions are not considered confirmed until
-they pass on GitHub-hosted runners.
+CI has Linux lanes for x86-64, AArch64, ARM32, and both MIPS byte orders, plus
+a Windows-hosted x86-64 ELF export lane. Linux runs real headless export,
+independent DWARF validators, input-hash preservation, deterministic reruns,
+and native/QEMU GDB behavior for non-PIE, PIE, shared, and no-section-header
+inputs. The complete P2.12 matrix and ARM32 target lane passed on GitHub-hosted
+runners on 2026-09-03.
 
 See [`docs/VALIDATION.md`](docs/VALIDATION.md) for the exact local commands,
 validator results, and scope boundaries.

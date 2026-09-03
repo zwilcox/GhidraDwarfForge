@@ -63,9 +63,10 @@ sidecar explicitly. The matrix passed for:
 
 - x86-64 ELF64 little-endian ET_EXEC and PIE;
 - AArch64 ELF64 little-endian ET_EXEC and PIE under QEMU;
+- ARM32 ELF32 little-endian ARMv7 hard-float ET_EXEC and PIE under QEMU;
 - MIPS ELF32 big-endian ET_EXEC and PIE under QEMU;
 - MIPS ELF32 little-endian ET_EXEC and PIE under QEMU; and
-- program-header-only/no-section-table ET_EXEC variants of all four targets.
+- program-header-only/no-section-table ET_EXEC variants of all five targets.
 
 For every case, `readelf -h`, `-S`, `-n`, debug-info, abbreviation, and decoded
 line dumps completed without sidecar warnings. GDB broke at `recovered_add`,

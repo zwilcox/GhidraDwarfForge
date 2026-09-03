@@ -664,11 +664,11 @@ split line sequences, validators, and GDB gap behavior pass locally.
 
 ## P1.9 Export global variables
 
-**Status:** `[x]` locally — primary non-default labels backed by defined memory
-data emit typed `DW_TAG_variable` DIEs and tested `DW_OP_addr` locations across
-ET_EXEC, PIE, and shared objects in all four target lanes. A real typed Ghidra
-external declaration emits without a fabricated location, and a curated
-namespace is retained as `DW_TAG_namespace` parentage.
+**Status:** `[x]` — primary non-default labels backed by defined memory data
+emit typed `DW_TAG_variable` DIEs and tested `DW_OP_addr` locations across
+ET_EXEC, PIE, and shared objects in all five hosted target lanes. A real typed
+Ghidra external declaration emits without a fabricated location, and a
+curated namespace is retained as `DW_TAG_namespace` parentage.
 
 ### Work
 
@@ -722,17 +722,20 @@ reports it optimized out. A native-independent planner and audited libdwarf
 producer path now emit exact-width stable register/register-relative locations.
 Production extraction admits explicit Ghidra register parameters only after an
 instruction/p-code scan proves the register is never written and the function
-contains no calls. GDB reads 19/23 on x86-64 and both MIPS byte orders; the
-overwritten AArch64 registers are honestly omitted. Exact Ghidra stack slots
+contains no calls. GDB reads 19/23 on x86-64 and both MIPS byte orders;
+AArch64's overwritten input registers are honestly omitted, while ARM32
+retains only `r1` in executable/PIE roles. Exact Ghidra stack slots
 are translated with instruction-level stack-pointer depths and emitted through
 DWARF 5 `.debug_loclists`; GDB reads the curated local as 42 on x86-64,
-AArch64, and both MIPS byte orders for ET_EXEC and PIE. Exact entry-live
+AArch64, ARM32, and both MIPS byte orders for ET_EXEC and PIE. Exact entry-live
 register locals use the same whole-function overwrite/call-clobber proof;
-GDB reads the curated register local as 31 on all four targets for ET_EXEC and
-PIE. Exact register composites preserve Ghidra's endian-aware varnode order
-and emit explicit `DW_OP_bit_piece` sequences; GDB reconstructs the curated
-64-bit value on all four targets. A controlled stack-depth change proves the
-same local resolves as 42 in two different location-list ranges. Unsupported
+GDB reads the curated register local as 31 on x86-64, AArch64, and both MIPS
+profiles for ET_EXEC and PIE; ARM32's `r3` is overwritten and omitted. Exact
+register composites preserve Ghidra's endian-aware varnode order and emit
+explicit `DW_OP_bit_piece` sequences; GDB reconstructs the curated 64-bit value
+on the same four profiles, while ARM32's overwritten piece remains
+locationless. A controlled stack-depth change proves the stack local resolves
+as 42 in two different location-list ranges on all five targets. Unsupported
 or uncertain storage remains locationless with a diagnostic.
 **Dependency:** P1.10.
 
@@ -806,9 +809,9 @@ directions and overflow.
 
 ## P2.2 Support shared objects
 
-**Status:** `[x]` locally — real stripped `ET_DYN` libraries export through
-headless Ghidra and pass structural plus runtime GDB validation on x86-64,
-AArch64, and MIPS32 big/little endian. Hosted CI remains unverified.
+**Status:** `[x]` — real stripped `ET_DYN` libraries export through headless
+Ghidra and pass hosted structural plus runtime GDB validation on x86-64,
+AArch64, ARM32, and MIPS32 big/little endian.
 
 ### Work
 
@@ -824,12 +827,12 @@ AArch64, and MIPS32 big/little endian. Hosted CI remains unverified.
 - [x] The recovered function breakpoint and global address/value resolve after
   load.
 - [x] The runtime function address is checked against the main executable.
-- [x] Structural and behavior tests pass locally in all four target lanes.
+- [x] Structural and behavior tests pass in all five hosted target lanes.
 
 ## P2.3 Add AArch64 target support
 
-**Status:** `[~]` — the symbol/source-line/type/signature milestone passes
-locally for ET_EXEC, PIE, shared objects, and no-section inputs. Stack-local
+**Status:** `[~]` — the symbol/source-line/type/signature milestone passes in
+hosted CI for ET_EXEC, PIE, shared objects, and no-section inputs. Stack-local
 locations pass; overwritten input registers are honestly omitted. Additional
 storage cases and release support remain.
 
@@ -846,16 +849,17 @@ storage cases and release support remain.
 - [x] Symbol/source-line milestone passes for AArch64 non-PIE and PIE.
 - [~] Type/signature and stack-local milestones pass; additional variable
   storage classes remain.
-- [x] AArch64 PIE/shared cases pass locally; hosted release evidence remains.
+- [x] AArch64 PIE/shared cases pass in hosted CI; packaged release evidence
+  remains.
 - [ ] No x86-specific assumptions remain in generic code paths exercised by tests.
 
 ## P2.3a Add MIPS target support
 
-**Status:** `[~]` — real headless symbol export, structural validation, and
-QEMU/GDB runtime breakpoints pass for MIPS32 big/little endian ET_EXEC, PIE,
-shared-object, and no-section-table inputs; `ptype`, stable register
+**Status:** `[~]` — hosted real headless symbol export, structural validation,
+and QEMU/GDB runtime breakpoints pass for MIPS32 big/little endian ET_EXEC,
+PIE, shared-object, and no-section-table inputs; `ptype`, stable register
 parameters, and stack locals pass, while additional variable storage and
-hosted CI remain.
+packaged release evidence remain.
 
 ### Work
 
@@ -883,13 +887,44 @@ hosted CI remain.
   PIE, and shared objects.
 - [ ] MIPS-specific code is confined to target descriptions/register maps.
 
+## P2.3b Add ARM32/AArch32 target support
+
+**Status:** `[~]` — the ARMv7 hard-float, little-endian ARM-state profile passes
+the hosted producer, real headless exporter, structural-validator, and
+QEMU/GDB behavior matrix for ET_EXEC, PIE, shared objects, no-build-ID inputs,
+and program-header-only inputs. Thumb, big-endian ARM, and additional ABI or
+storage profiles are not claimed.
+
+### Work
+
+- Add a source-built `arm-linux-gnueabihf` fixture using the shared semantic
+  source.
+- Derive ELF32 target identity and isolate the ARM DWARF register map.
+- Exercise the same production exporter path used by the other target lanes.
+- Validate source/type/global behavior, PIE/shared load bias, stack location
+  lists, and honest omission of overwritten registers under QEMU/GDB.
+
+### Completion criteria
+
+- [x] The isolated producer emits 32-bit little-endian ARM DWARF buffers.
+- [x] Ghidra imports and exports ARM32 ET_EXEC, PIE, shared-object,
+  no-build-ID, and no-section-table fixtures.
+- [x] `readelf`, `llvm-dwarfdump --verify`, and independent `dwarfdump`
+  accept every current ARM32 Forge artifact.
+- [x] QEMU plus `gdb-multiarch` proves function/source/type/global behavior,
+  PIE/shared load bias, and the changing stack location.
+- [x] ARM register mappings are isolated and covered by native-independent
+  storage tests.
+- [ ] Thumb, big-endian ARM, and additional ARM ABI/storage profiles are
+  separately modeled and validated before any broader support claim.
+
 ## P2.4 Validate Windows-hosted Ghidra
 
 **Status:** `[~]` — a Windows CI lane builds and audits pinned MinGW DLLs, runs
 isolated native/publisher/source smoke tests, performs a real Ghidra 12.0.3
 headless export of an ELF fixture, and validates source bytes plus ELF/DWARF.
-GitHub Actions run 33747224613 passed the complete lane; an explicit Windows
-file-lock contention test and packaged-native discovery remain.
+GitHub Actions run 33751896850 passed the complete lane, including explicit
+Windows file-lock contention and rollback; packaged-native discovery remains.
 **Dependencies:** pinned Windows natives and corrected JNA ABI.
 
 ### Work
@@ -898,8 +933,8 @@ file-lock contention test and packaged-native discovery remain.
 - [x] Verify JNA finds the explicitly supplied `libdwarf`/`libdwarfp` DLL pair;
   packaged-native discovery remains separate release work.
 - [x] Audit and bundle non-system MinGW runtime dependencies.
-- [~] Output paths, atomic replacement, and UTF-8/LF pass; add an explicit
-  Windows file-lock contention test.
+- [x] Output paths, atomic replacement, UTF-8/LF, and explicit Windows
+  file-lock contention rollback pass.
 - [x] Run a real ELF target export with Windows `readelf` and LLVM validation;
   executable GDB behavior remains in the Linux native/QEMU lanes.
 
@@ -1081,12 +1116,16 @@ until P2.12 runs on a Windows host.
 
 ## P2.12 Add continuous validation
 
-**Status:** `[~]` — Linux target lanes are defined for x86-64, AArch64, MIPS32
+**Status:** `[~]` — Linux target lanes run for x86-64, AArch64, ARM32, MIPS32
 big-endian, and MIPS32 little-endian, plus a Windows-hosted x86-64 ELF export
 lane. They build pinned libdwarf, run the real headless exporter for
 ET_EXEC/PIE/shared/no-section inputs as applicable, preserve input hashes,
-validate with `readelf`/LLVM, and execute GDB/`ptype` natively or through QEMU
-on Linux. GitHub Actions run 33747224613 passed every job.
+validate with GNU/LLVM/libdwarf tools, and execute GDB/`ptype` natively or
+through QEMU. GitHub Actions run 33751896850 passed the complete P2.12
+diagnostic/Windows matrix; run 33757707307 added ARM32 and passed all 11 jobs,
+including the aggregate `required-validation` gate. Enforcing that gate as a
+merge requirement is **BLOCKED** because GitHub returns HTTP 403 for branch
+protection and rulesets on this private free-plan repository.
 
 ### Work
 
@@ -1104,25 +1143,29 @@ CI should include separate jobs for:
 - An x86-64 end-to-end target lane.
 - An AArch64 end-to-end target lane using a dedicated runner or a documented
   cross-compile/emulation environment.
+- An ARM32/AArch32 end-to-end target lane using a documented ARMv7
+  cross-compile/emulation environment.
 - A QEMU-backed MIPS target lane once the MIPS fixture/export path exists.
 
-Both architecture lanes must build fixtures, import/analyze/export through
+Every supported target lane must build fixtures, import/analyze/export through
 headless Ghidra, run ELF/DWARF validators, and execute applicable scripted GDB
-behavior checks. Cross-compilation without exporter and GDB execution is not an
-integration pass.
+behavior checks. Cross-compilation without exporter and GDB execution is not
+an integration pass.
 
 ### Completion criteria
 
-- [ ] Pull requests cannot merge with failing structural/GDB tests for supported paths.
+- [ ] Pull requests cannot merge with failing structural/GDB tests for
+  supported paths. **BLOCKED:** repository branch protection/rulesets require
+  GitHub Pro or a public repository; `required-validation` is ready to require.
 - [x] x86-64 and AArch64 have separate passing hosted end-to-end jobs.
 - [x] Both jobs exercise the same production exporter entry point.
 - [x] The AArch64 job proves runtime address behavior under a native runner or
   documented emulation setup.
 - [x] MIPS is not advertised as release-supported; its hosted QEMU lanes perform
   headless export, validation, and GDB behavior checks.
-- [ ] Test logs expose exact Ghidra/libdwarf/tool versions.
-- [ ] Native crashes are clearly reported as failures.
-- [ ] Artifacts/transcripts are retained for failed runs.
+- [x] Test logs expose exact Ghidra/libdwarf/tool versions.
+- [x] Native crashes are clearly reported as failures.
+- [x] Artifacts/transcripts are retained for failed runs.
 
 ## P2.13 Produce installable releases
 

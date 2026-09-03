@@ -701,7 +701,9 @@ and thunk functions are deliberately omitted with diagnostics instead of
 being misrepresented as addressed definitions; every integration lane
 exercises this policy. Standard calling-convention and external-data
 declaration attributes now pass. Distinct function linkage-name, thunk, and
-alias emission remain incomplete. Windows and hosted-CI evidence remain open.
+alias emission remain incomplete. Later P2.12 hosted runs confirm this same
+semantic path on Linux and Windows where applicable; release packaging remains
+separate.
 
 **CONFIRMED (2026-09-02):** function extraction now retains every Ghidra
 `AddressSetView` interval. Contiguous subprograms keep `low_pc`/`high_pc`;
@@ -1447,7 +1449,7 @@ The initial serious matrix should include:
 
 | Dimension | Cases |
 |---|---|
-| Target architecture | x86-64; AArch64; MIPS32 big-endian expansion |
+| Target architecture | x86-64; AArch64; ARM32; MIPS32 big/little endian |
 | ELF role | non-PIE `ET_EXEC`; PIE; `ET_DYN` shared object |
 | Symbol state | stripped; partially stripped |
 | Ghidra host | Linux; Windows |
@@ -1507,6 +1509,34 @@ libc development headers in addition to each compiler and binutils package.
 The Windows validator steps resolve MinGW binaries from `setup-msys2`'s
 `msys2-location` output instead of assuming the installation is under `C:\`.
 
+**CONFIRMED (2026-09-03):** P2.12 now retains exact tool and source provenance,
+isolates native smoke tests with explicit signal/exit-status diagnostics,
+uploads build logs and integration transcripts on failure, and gates the
+workflow through one aggregate `required-validation` job. GitHub Actions run
+33751896850 passed workflow lint, Linux/Windows native builds, the extension,
+the four existing target lanes, the Windows-hosted real exporter, the explicit
+Windows `FileShare.None` publication-rollback test, and the aggregate job.
+Branch protection and repository rulesets cannot currently require that job:
+both GitHub APIs return HTTP 403 because this is a private repository on the
+free plan. This administrative criterion remains **BLOCKED**, not silently
+treated as complete.
+
+**CONFIRMED (2026-09-03):** ARM32/AArch32 is now an active target profile. The
+initial profile is ARMv7 hard-float, little-endian ARM state, built with
+`arm-linux-gnueabihf` and executed through `qemu-arm-static` plus
+`gdb-multiarch`. The target derives ELF32/EM_ARM identity, uses an isolated
+Ghidra-12.0.3-derived ARM DWARF register map, and runs the same producer and
+real exporter path as every other target. GitHub Actions run 33757707307 passed
+all 11 jobs, including the aggregate validation gate. Its ARM32 lane passed
+ET_EXEC, PIE, shared-object, no-build-ID, and no-section-table export; GNU
+readelf, LLVM, independent libdwarf/dwarfdump, source/type/global tests,
+load-bias checks, and changing stack-location behavior all passed. ARM32
+register locations are emitted only when the per-role overwrite scan supports
+them: `r1` is available in the executable/PIE fixture, while overwritten
+`r0`, `r3`, composite pieces, and shared-object `r1` remain honestly
+locationless. Thumb, big-endian ARM, and other ARM ABI profiles remain
+**PLANNED** rather than implied by this result.
+
 ## 17. Open questions
 
 Codex should not silently answer these through implementation choices. Investigate, document, and obtain user direction when the answer materially changes compatibility or scope.
@@ -1555,7 +1585,7 @@ The safest next move is not to add more DWARF features to the monolithic prototy
 5. Deliver one narrow, fully validated x86-64 non-PIE symbol-only milestone.
 6. Add deterministic source/line mapping.
 7. Add types and variable locations with architecture-neutral models.
-8. Expand to PIE/shared objects, AArch64, Windows host, and a QEMU-backed
-   MIPS32 big-endian case; keep additional architectures table-driven.
+8. Expand to PIE/shared objects, AArch64, ARM32, Windows host, and QEMU-backed
+   MIPS32 cases; keep additional architectures table-driven.
 
 The prioritized, testable work breakdown is in `TODO.md`.
