@@ -10,7 +10,7 @@ fixture_role=${FIXTURE_ROLE:-exec}
 name_rebase_delta=${GHIDRA_NAME_REBASE_DELTA:-0}
 name_rebase_delta=$((name_rebase_delta))
 if [[ $# -eq 0 ]]; then
-    targets=(x86_64 aarch64 mips32be mips32le)
+    targets=(x86_64 aarch64 arm32 mips32be mips32le)
 else
     targets=("$@")
 fi
@@ -27,7 +27,7 @@ mkdir -p "$result_dir"
 function_name() {
     if [[ "$fixture_role" == "exec.no-sections" ]]; then
         local symbol=recovered_add
-        if [[ "$1" == "aarch64" ]]; then
+        if [[ "$1" == "aarch64" || "$1" == "arm32" ]]; then
             # Ghidra 12.0.3 does not discover the tiny recovered_add
             # function separately without section headers; main is valid.
             symbol=main
@@ -43,7 +43,7 @@ function_name() {
         return
     fi
     case "$1" in
-        x86_64|aarch64|mips32be|mips32le) echo recovered_add ;;
+        x86_64|aarch64|arm32|mips32be|mips32le) echo recovered_add ;;
         *) echo "unknown target: $1" >&2; return 2 ;;
     esac
 }
@@ -97,15 +97,19 @@ validate_transcript() {
         grep -Fq "analyst_local = <optimized out>" "$transcript"
         grep -Fq "analyst_stack=42" "$transcript"
         grep -Fq "analyst_stack_shifted=42" "$transcript"
-        grep -Fxq "analyst_register = 31" "$transcript"
-        grep -Eq '[$][0-9]+ = 0x1122334455667788' "$transcript"
+        if [[ "$transcript" == *arm32.* ]]; then
+            grep -Fq "analyst_register = <optimized out>" "$transcript"
+        else
+            grep -Fxq "analyst_register = 31" "$transcript"
+            grep -Eq '[$][0-9]+ = 0x1122334455667788' "$transcript"
+        fi
         case "$transcript" in
             *x86_64.*|*mips32be.*|*mips32le.*)
                 grep -Fq "recovered_add (left=19, right=23)" "$transcript"
                 grep -Fxq "left = 19" "$transcript"
                 grep -Fxq "right = 23" "$transcript"
                 ;;
-            *aarch64.*)
+            *aarch64.*|*arm32.*)
                 grep -Fq "recovered_add (left=<optimized out>, right=<optimized out>)" \
                     "$transcript"
                 grep -Fxq "left = <optimized out>" "$transcript"
@@ -271,6 +275,8 @@ for target in "${targets[@]}"; do
         x86_64) run_native ;;
         aarch64) run_emulated "$target" /usr/bin/qemu-aarch64-static \
             /usr/aarch64-linux-gnu "$base_port" ;;
+        arm32) run_emulated "$target" /usr/bin/qemu-arm-static \
+            /usr/arm-linux-gnueabihf "$((base_port + 3))" ;;
         mips32be) run_emulated "$target" /usr/bin/qemu-mips-static \
             /usr/mips-linux-gnu "$((base_port + 1))" ;;
         mips32le) run_emulated "$target" /usr/bin/qemu-mipsel-static \

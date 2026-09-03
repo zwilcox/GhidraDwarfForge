@@ -9,7 +9,7 @@ fi
 ghidra_dir=$(realpath "$1")
 shift
 if [[ $# -eq 0 ]]; then
-    targets=(x86_64 aarch64 mips32be mips32le)
+    targets=(x86_64 aarch64 arm32 mips32be mips32le)
 else
     targets=("$@")
 fi

@@ -51,6 +51,17 @@ static __attribute__((always_inline)) inline void exercise_stack_depth_change(vo
         "nop\n\t"
         "add sp, sp, #16\n\t"
         ::: "memory");
+#elif defined(__arm__)
+    __asm__ volatile(
+        ".globl forge_stack_normal\n\t"
+        "forge_stack_normal:\n\t"
+        "nop\n\t"
+        "sub sp, sp, #16\n\t"
+        ".globl forge_stack_changed\n\t"
+        "forge_stack_changed:\n\t"
+        "nop\n\t"
+        "add sp, sp, #16\n\t"
+        ::: "memory");
 #elif defined(__mips__)
     __asm__ volatile(
         ".set push\n\t"

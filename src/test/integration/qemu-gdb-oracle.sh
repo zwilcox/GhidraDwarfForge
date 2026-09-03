@@ -10,7 +10,7 @@ active_emulator_pid=""
 fixture_role=${FIXTURE_ROLE:-exec}
 debug_artifact_suffix=${DEBUG_ARTIFACT_SUFFIX:-reference}
 if [[ $# -eq 0 ]]; then
-    targets=(x86_64 aarch64 mips32be mips32le)
+    targets=(x86_64 aarch64 arm32 mips32be mips32le)
 else
     targets=("$@")
 fi
@@ -114,6 +114,10 @@ for target in "${targets[@]}"; do
         aarch64)
             run_emulated_case aarch64 /usr/bin/qemu-aarch64-static \
                 /usr/aarch64-linux-gnu "$base_port"
+            ;;
+        arm32)
+            run_emulated_case arm32 /usr/bin/qemu-arm-static \
+                /usr/arm-linux-gnueabihf "$((base_port + 3))"
             ;;
         mips32be)
             run_emulated_case mips32be /usr/bin/qemu-mips-static \

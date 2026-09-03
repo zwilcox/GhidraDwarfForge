@@ -42,6 +42,7 @@ public record TargetRegisterMap(String target, String provenance,
         return switch (target) {
             case "x86_64" -> x86_64();
             case "aarch64" -> aarch64();
+            case "arm", "arm32" -> arm32();
             case "mips", "mipsel" -> mips(target);
             default -> throw new IllegalArgumentException(
                 "no audited DWARF register map for target " + target);
@@ -109,6 +110,21 @@ public record TargetRegisterMap(String target, String provenance,
         putRange(result, 64, 32, "q", 0);
         return new TargetRegisterMap("aarch64",
             GHIDRA_MAPPING_ROOT + "Processors/AARCH64/data/languages/AARCH64.dwarf",
+            result);
+    }
+
+    private static TargetRegisterMap arm32() {
+        Map<String, Integer> result = new LinkedHashMap<>();
+        putRange(result, 0, 13, "r", 0);
+        put(result, 13, "sp");
+        put(result, 14, "lr");
+        put(result, 15, "pc");
+        put(result, 16, "fpsr");
+        put(result, 17, "cpsr");
+        putRange(result, 64, 32, "s", 0);
+        putRange(result, 256, 32, "d", 0);
+        return new TargetRegisterMap("arm",
+            GHIDRA_MAPPING_ROOT + "Processors/ARM/data/languages/ARMneon.dwarf",
             result);
     }
 

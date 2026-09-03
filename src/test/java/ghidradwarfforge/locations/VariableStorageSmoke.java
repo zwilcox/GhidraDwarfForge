@@ -32,9 +32,11 @@ public final class VariableStorageSmoke {
     public static void main(String[] args) {
         TargetRegisterMap x86 = TargetRegisterMap.forTarget("x86_64");
         TargetRegisterMap arm = TargetRegisterMap.forTarget("aarch64");
+        TargetRegisterMap arm32 = TargetRegisterMap.forTarget("arm");
         TargetRegisterMap mipsBe = TargetRegisterMap.forTarget("mips");
         TargetRegisterMap mipsLe = TargetRegisterMap.forTarget("mipsel");
         if (x86.dwarfNumbers().size() != 59 || arm.dwarfNumbers().size() != 64 ||
+                arm32.dwarfNumbers().size() != 82 ||
                 mipsBe.dwarfNumbers().size() != 64 ||
                 !mipsBe.dwarfNumbers().equals(mipsLe.dwarfNumbers())) {
             throw new AssertionError("target mapping table is incomplete");
@@ -46,6 +48,9 @@ public final class VariableStorageSmoke {
         assertRegister(arm.register("x30", 0, 64), 30);
         assertRegister(arm.register("sp", 0, 64), 31);
         assertRegister(arm.register("q31", 0, 128), 95);
+        assertRegister(arm32.register("r0", 0, 32), 0);
+        assertRegister(arm32.register("sp", 0, 32), 13);
+        assertRegister(arm32.register("d31", 0, 64), 287);
         assertRegister(mipsBe.register("a0", 0, 32), 4);
         assertRegister(mipsBe.register("sp", 0, 32), 29);
         assertRegister(mipsLe.register("f31", 0, 32), 63);

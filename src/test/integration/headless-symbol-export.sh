@@ -11,7 +11,7 @@ consumer=$(realpath "$2")
 producer=$(realpath "$3")
 shift 3
 if [[ $# -eq 0 ]]; then
-    targets=(x86_64 aarch64 mips32be mips32le)
+    targets=(x86_64 aarch64 arm32 mips32be mips32le)
 else
     targets=("$@")
 fi
@@ -49,7 +49,7 @@ analysis_address() {
     if [[ "$role" == "pie" || "$role" == "shared" ]]; then
         case "$target" in
             x86_64|aarch64) rebase=$((0x100000)) ;;
-            mips32be|mips32le) rebase=$((0x10000)) ;;
+            arm32|mips32be|mips32le) rebase=$((0x10000)) ;;
             *) echo "unknown target: $target" >&2; return 2 ;;
         esac
     fi
@@ -279,19 +279,31 @@ for target in "${targets[@]}"; do
                 grep -q 'DW_OP_bregx: 31 (sp) 28' "$locations"
                 grep -q 'DW_OP_bregx: 31 (sp) 44' "$locations"
                 ;;
+            arm32)
+                test "$(grep -Eo 'DW_OP_bregx: 13( \([^)]*\))? -?[0-9]+' \
+                    "$locations" | sort -u | wc -l)" -ge 2
+                ;;
             mips32be|mips32le)
                 grep -q 'DW_OP_bregx: 29 (r29) 4' "$locations"
                 grep -q 'DW_OP_bregx: 29 (r29) 20' "$locations"
                 ;;
         esac
-        test "$(grep -o 'DW_OP_bit_piece: size: 32 offset: 0' \
-            "$result_dir/$target.$fixture_role.readelf-info.txt" | wc -l)" -ge 2
+        if [[ "$target" == "arm32" ]]; then
+            grep -q "Omitted location for recovered_composite::analyst_composite:" "$log"
+        else
+            test "$(grep -o 'DW_OP_bit_piece: size: 32 offset: 0' \
+                "$result_dir/$target.$fixture_role.readelf-info.txt" | wc -l)" -ge 2
+        fi
         grep -q "DW_AT_location" \
             "$result_dir/$target.$fixture_role.readelf-info.txt"
-        if [[ "$target" == "aarch64" ]]; then
-            grep -q "Omitted location for recovered_add::left: function writes parameter register x0" \
+        if [[ "$target" == "aarch64" || "$target" == "arm32" ]]; then
+            register_prefix=x
+            if [[ "$target" == "arm32" ]]; then
+                register_prefix=r
+            fi
+            grep -q "Omitted location for recovered_add::left: function writes parameter register ${register_prefix}0" \
                 "$log"
-            grep -q "Omitted location for recovered_add::right: function writes parameter register x1" \
+            grep -q "Omitted location for recovered_add::right: function writes parameter register ${register_prefix}1" \
                 "$log"
         else
             grep -Eq "defensible variable locations: [1-9][0-9]*" "$log"

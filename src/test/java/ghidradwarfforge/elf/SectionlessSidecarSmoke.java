@@ -10,7 +10,7 @@ import java.util.Map;
 /** Builds matched debug sidecars from program-header-only ELF fixtures. */
 public final class SectionlessSidecarSmoke {
     private static final String[] TARGETS = {
-        "x86_64", "aarch64", "mips32be", "mips32le"
+        "x86_64", "aarch64", "arm32", "mips32be", "mips32le"
     };
     private record Variant(String referenceName, String inputName, String outputName,
         boolean expectNoInputSections) {

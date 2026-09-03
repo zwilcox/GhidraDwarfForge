@@ -7,7 +7,7 @@ result_dir="$repository_dir/build/test-results/shared-object-gdb"
 base_port=$((30000 + ($$ % 15000)))
 active_emulator_pid=""
 if [[ $# -eq 0 ]]; then
-    targets=(x86_64 aarch64 mips32be mips32le)
+    targets=(x86_64 aarch64 arm32 mips32be mips32le)
 else
     targets=("$@")
 fi
@@ -85,7 +85,7 @@ validate_transcript() {
     grep -Eq '[$][0-9]+ = 7' "$transcript"
     grep -Eq 'starts at address 0x[0-9a-f]+ <recovered_add>' "$transcript"
     grep -Eq 'RUNTIME_BIAS 0x[1-9a-f][0-9a-f]*' "$transcript"
-    if [[ "$target" == "aarch64" ]]; then
+    if [[ "$target" == "aarch64" || "$target" == "arm32" ]]; then
         grep -Fq 'Breakpoint 2, recovered_add (left=<optimized out>, right=<optimized out>)' \
             "$transcript"
         grep -Fxq 'left = <optimized out>' "$transcript"
@@ -197,6 +197,8 @@ for target in "${targets[@]}"; do
         x86_64) run_native ;;
         aarch64) run_emulated "$target" /usr/bin/qemu-aarch64-static \
             /usr/aarch64-linux-gnu "$base_port" ;;
+        arm32) run_emulated "$target" /usr/bin/qemu-arm-static \
+            /usr/arm-linux-gnueabihf "$((base_port + 3))" ;;
         mips32be) run_emulated "$target" /usr/bin/qemu-mips-static \
             /usr/mips-linux-gnu "$((base_port + 1))" ;;
         mips32le) run_emulated "$target" /usr/bin/qemu-mipsel-static \

@@ -15,13 +15,17 @@ SHARED_FLAGS := -fPIC -shared -Wl,--build-id=sha1,-soname,libsemantic.so.strippe
 SHARED_DRIVER_FLAGS := -fno-pie -no-pie -Wl,--build-id=sha1 \
 	-Wl,-rpath,'$$ORIGIN'
 
-TARGETS := x86_64 aarch64 mips32be mips32le
+TARGETS := x86_64 aarch64 arm32 mips32be mips32le
 x86_64_CC := gcc
 x86_64_STRIP := strip
 x86_64_OBJCOPY := objcopy
 aarch64_CC := aarch64-linux-gnu-gcc
 aarch64_STRIP := aarch64-linux-gnu-strip
 aarch64_OBJCOPY := aarch64-linux-gnu-objcopy
+arm32_CC := arm-linux-gnueabihf-gcc
+arm32_STRIP := arm-linux-gnueabihf-strip
+arm32_OBJCOPY := arm-linux-gnueabihf-objcopy
+arm32_CFLAGS := -march=armv7-a -marm
 mips32be_CC := mips-linux-gnu-gcc
 mips32be_STRIP := mips-linux-gnu-strip
 mips32be_OBJCOPY := mips-linux-gnu-objcopy
@@ -48,7 +52,7 @@ $(TARGETS): %: \
 
 $(BUILD_DIR)/%/semantic.exec.reference: $(SOURCE) Makefile
 	@mkdir -p "$(@D)"
-	$($*_CC) $(COMMON_CFLAGS) $(NON_PIE_FLAGS) "$<" -o "$@"
+	$($*_CC) $($*_CFLAGS) $(COMMON_CFLAGS) $(NON_PIE_FLAGS) "$<" -o "$@"
 
 $(BUILD_DIR)/%/semantic.exec.stripped: $(BUILD_DIR)/%/semantic.exec.reference
 	cp "$<" "$@"
@@ -56,7 +60,7 @@ $(BUILD_DIR)/%/semantic.exec.stripped: $(BUILD_DIR)/%/semantic.exec.reference
 
 $(BUILD_DIR)/%/semantic.exec.no-build-id.reference: $(SOURCE) Makefile
 	@mkdir -p "$(@D)"
-	$($*_CC) $(COMMON_CFLAGS) $(NO_BUILD_ID_FLAGS) "$<" -o "$@"
+	$($*_CC) $($*_CFLAGS) $(COMMON_CFLAGS) $(NO_BUILD_ID_FLAGS) "$<" -o "$@"
 
 $(BUILD_DIR)/%/semantic.exec.no-build-id.stripped: \
 		$(BUILD_DIR)/%/semantic.exec.no-build-id.reference
@@ -68,7 +72,7 @@ $(BUILD_DIR)/%/semantic.exec.no-sections.stripped: $(BUILD_DIR)/%/semantic.exec.
 
 $(BUILD_DIR)/%/semantic.pie.reference: $(SOURCE) Makefile
 	@mkdir -p "$(@D)"
-	$($*_CC) $(COMMON_CFLAGS) $(PIE_FLAGS) "$<" -o "$@"
+	$($*_CC) $($*_CFLAGS) $(COMMON_CFLAGS) $(PIE_FLAGS) "$<" -o "$@"
 
 $(BUILD_DIR)/%/semantic.pie.stripped: $(BUILD_DIR)/%/semantic.pie.reference
 	cp "$<" "$@"
@@ -76,7 +80,7 @@ $(BUILD_DIR)/%/semantic.pie.stripped: $(BUILD_DIR)/%/semantic.pie.reference
 
 $(BUILD_DIR)/%/libsemantic.so.reference: $(SOURCE) Makefile
 	@mkdir -p "$(@D)"
-	$($*_CC) $(COMMON_CFLAGS) $(SHARED_FLAGS) "$<" -o "$@"
+	$($*_CC) $($*_CFLAGS) $(COMMON_CFLAGS) $(SHARED_FLAGS) "$<" -o "$@"
 
 $(BUILD_DIR)/%/libsemantic.so.stripped: $(BUILD_DIR)/%/libsemantic.so.reference
 	cp "$<" "$@"
@@ -84,7 +88,7 @@ $(BUILD_DIR)/%/libsemantic.so.stripped: $(BUILD_DIR)/%/libsemantic.so.reference
 
 $(BUILD_DIR)/%/semantic.shared-driver.reference: shared_driver.c \
 		$(BUILD_DIR)/%/libsemantic.so.stripped Makefile
-	$($*_CC) $(COMMON_CFLAGS) $(SHARED_DRIVER_FLAGS) "$<" \
+	$($*_CC) $($*_CFLAGS) $(COMMON_CFLAGS) $(SHARED_DRIVER_FLAGS) "$<" \
 		-L"$(@D)" -Wl,-l:libsemantic.so.stripped -o "$@"
 
 $(BUILD_DIR)/%/semantic.shared-driver.stripped: \

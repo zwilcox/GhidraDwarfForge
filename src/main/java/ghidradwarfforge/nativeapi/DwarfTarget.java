@@ -15,6 +15,7 @@ import ghidradwarfforge.elf.ElfImage;
 public record DwarfTarget(String name, String producerIsa, int addressBytes,
         boolean littleEndian) {
     private static final int EM_MIPS = 8;
+    private static final int EM_ARM = 40;
     private static final int EM_X86_64 = 62;
     private static final int EM_AARCH64 = 183;
 
@@ -31,6 +32,11 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
                 requireWidth("AArch64", addressBytes, 8);
                 requireLittleEndian("AArch64", littleEndian);
                 yield new DwarfTarget("aarch64", "arm64", 8, littleEndian);
+            }
+            case EM_ARM -> {
+                requireWidth("ARM", addressBytes, 4);
+                requireLittleEndian("ARM", littleEndian);
+                yield new DwarfTarget("arm", "arm", 4, littleEndian);
             }
             case EM_MIPS -> new DwarfTarget(
                 littleEndian ? "mipsel" : "mips", "mips", addressBytes, littleEndian);

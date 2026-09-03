@@ -60,6 +60,7 @@ public final class DwarfProducerSmoke {
     private enum TargetProfile {
         X86_64("x86_64", 8, true, 0x1_0000_1234L),
         ARM64("arm64", 8, true, 0x1_0000_1234L),
+        ARM32("arm", 4, true, 0x0010_1234L),
         MIPS32BE("mips", 4, false, 0x0040_1234L),
         MIPS32LE("mips", 4, true, 0x0040_1234L);
 
@@ -80,11 +81,12 @@ public final class DwarfProducerSmoke {
             return switch (value.toLowerCase(java.util.Locale.ROOT)) {
                 case "x86_64" -> X86_64;
                 case "arm64", "aarch64" -> ARM64;
+                case "arm", "arm32" -> ARM32;
                 case "mips", "mips32be" -> MIPS32BE;
                 case "mipsel", "mips32le" -> MIPS32LE;
                 default -> throw new IllegalArgumentException(
                     "unknown target profile " + value +
-                        " (expected x86_64, arm64, mips32be, or mips32le)");
+                        " (expected x86_64, arm64, arm32, mips32be, or mips32le)");
             };
         }
 
@@ -126,7 +128,7 @@ public final class DwarfProducerSmoke {
         if (args.length != 3 && args.length != 6) {
             throw new IllegalArgumentException(
                 "usage: DwarfProducerSmoke <absolute-libdwarf> <absolute-libdwarfp> " +
-                    "<x86_64|arm64|mips32be|mips32le> [<input-elf> <output-dbg> " +
+                    "<x86_64|arm64|arm32|mips32be|mips32le> [<input-elf> <output-dbg> " +
                     "<function-address>]");
         }
 

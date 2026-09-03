@@ -293,7 +293,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [ x86_64, aarch64, mips32be, mips32le ]
+        target: [ x86_64, aarch64, arm32, mips32be, mips32le ]
 
     steps:
       - uses: actions/checkout@v4
@@ -316,6 +316,10 @@ jobs:
             aarch64)
               packages+=(gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
                 libc6-dev-arm64-cross qemu-user-static)
+              ;;
+            arm32)
+              packages+=(gcc-arm-linux-gnueabihf binutils-arm-linux-gnueabihf
+                libc6-dev-armhf-cross qemu-user-static)
               ;;
             mips32be)
               packages+=(gcc-mips-linux-gnu binutils-mips-linux-gnu

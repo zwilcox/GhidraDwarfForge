@@ -148,6 +148,9 @@ public class RenameFixtureFunction extends GhidraScript {
         if (language.startsWith("AARCH64:")) {
             return -4;
         }
+        if (language.startsWith("ARM:")) {
+            return -12;
+        }
         if (language.startsWith("MIPS:")) {
             return -12;
         }
@@ -170,6 +173,9 @@ public class RenameFixtureFunction extends GhidraScript {
         }
         else if (language.startsWith("AARCH64:")) {
             names = new String[] { "w0", "w1", "w3" };
+        }
+        else if (language.startsWith("ARM:")) {
+            names = new String[] { "r0", "r1", "r3" };
         }
         else if (language.startsWith("MIPS:")) {
             names = new String[] { "a0", "a1", "a3" };
@@ -195,6 +201,9 @@ public class RenameFixtureFunction extends GhidraScript {
         }
         else if (language.startsWith("AARCH64:")) {
             names = new String[] { "w2", "w3" };
+        }
+        else if (language.startsWith("ARM:")) {
+            names = new String[] { "r2", "r3" };
         }
         else if (language.startsWith("MIPS:")) {
             names = new String[] { "a2", "a3" };

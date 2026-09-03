@@ -2,7 +2,7 @@
 set -euo pipefail
 
 if [[ $# -ne 2 ]]; then
-    echo "usage: $0 <x86_64|aarch64|mips32be|mips32le> <output-file>" >&2
+    echo "usage: $0 <x86_64|aarch64|arm32|mips32be|mips32le> <output-file>" >&2
     exit 2
 fi
 
@@ -23,6 +23,10 @@ case "$target" in
     aarch64)
         compiler=aarch64-linux-gnu-gcc
         runtime=(qemu-aarch64-static)
+        ;;
+    arm32)
+        compiler=arm-linux-gnueabihf-gcc
+        runtime=(qemu-arm-static)
         ;;
     mips32be)
         compiler=mips-linux-gnu-gcc
