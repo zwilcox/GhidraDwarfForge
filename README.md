@@ -40,7 +40,8 @@ The extension ZIP is written to `dist/`.
 
 CI additionally assembles the versioned Linux/Windows bundle documented in
 [`docs/RELEASE.md`](docs/RELEASE.md). That bundle installs without compiling
-libdwarf locally. Official release publication and licensing work are deferred.
+libdwarf locally. Official release publication and third-party notice review
+remain deferred.
 
 ## Headless entry point
 
@@ -129,3 +130,8 @@ runners on 2026-09-03.
 
 See [`docs/VALIDATION.md`](docs/VALIDATION.md) for the exact local commands,
 validator results, and scope boundaries.
+
+## License
+
+GhidraDwarfForge is licensed under the [MIT License](LICENSE). Bundled and
+host-provided dependencies retain their respective upstream licenses.

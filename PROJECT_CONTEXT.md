@@ -1599,6 +1599,11 @@ and uses its existing unwind metadata. Ghidra stack-frame summaries do not
 provide sufficient instruction-range CFA and saved-register evidence, so
 invented CFI could corrupt backtraces and variable evaluation.
 
+**CONFIRMED REQUIREMENT (2026-09-03):** the user selected the MIT License for
+GhidraDwarfForge. The repository license covers project-authored work; it does
+not relicense Ghidra, JNA, libdwarf/libdwarfp, or other dependencies. Review of
+their notices and distribution/source obligations remains open under P0.3.
+
 ## 17. Open questions
 
 Codex should not silently answer these through implementation choices. Investigate, document, and obtain user direction when the answer materially changes compatibility or scope.
@@ -1633,7 +1638,9 @@ Codex should not silently answer these through implementation choices. Investiga
     information in the original target and does not synthesize unsupported
     CFI. See `docs/ADR-0002-DEBUG-FRAME.md`.
 19. **ELF implementation library:** Continue a hand-written emitter, use Ghidra ELF classes, use another Java ELF library, or derive metadata through an external tool? Licensing and portability matter.
-20. **Distribution license:** Which license should cover the repository, and what notices/source obligations apply to bundled libdwarf/JNA binaries?
+20. **PARTIALLY RESOLVED — distribution license:** GhidraDwarfForge uses MIT.
+    Required notices and source/distribution obligations for bundled
+    libdwarf/JNA binaries remain open under P0.3.
 21. **RESOLVED — Release format:** one versioned Ghidra extension ZIP includes
     the headless wrappers, Linux/Windows natives, and provenance/checksum
     manifests.
