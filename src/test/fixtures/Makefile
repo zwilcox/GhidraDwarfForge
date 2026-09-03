@@ -1,7 +1,8 @@
 SHELL := /bin/bash
 
 BUILD_DIR ?= ../../../build/fixtures
-SOURCE := semantic.c
+EXECUTABLE_SOURCE := semantic.c
+SHARED_SOURCE := shared_semantic.c
 SOURCE_DATE_EPOCH ?= 1750550400
 export SOURCE_DATE_EPOCH
 
@@ -50,7 +51,7 @@ $(TARGETS): %: \
 	$(BUILD_DIR)/%/semantic.shared-driver.reference \
 	$(BUILD_DIR)/%/semantic.shared-driver.stripped
 
-$(BUILD_DIR)/%/semantic.exec.reference: $(SOURCE) Makefile
+$(BUILD_DIR)/%/semantic.exec.reference: $(EXECUTABLE_SOURCE) Makefile
 	@mkdir -p "$(@D)"
 	$($*_CC) $($*_CFLAGS) $(COMMON_CFLAGS) $(NON_PIE_FLAGS) "$<" -o "$@"
 
@@ -58,7 +59,7 @@ $(BUILD_DIR)/%/semantic.exec.stripped: $(BUILD_DIR)/%/semantic.exec.reference
 	cp "$<" "$@"
 	$($*_STRIP) --strip-all "$@"
 
-$(BUILD_DIR)/%/semantic.exec.no-build-id.reference: $(SOURCE) Makefile
+$(BUILD_DIR)/%/semantic.exec.no-build-id.reference: $(EXECUTABLE_SOURCE) Makefile
 	@mkdir -p "$(@D)"
 	$($*_CC) $($*_CFLAGS) $(COMMON_CFLAGS) $(NO_BUILD_ID_FLAGS) "$<" -o "$@"
 
@@ -70,7 +71,7 @@ $(BUILD_DIR)/%/semantic.exec.no-build-id.stripped: \
 $(BUILD_DIR)/%/semantic.exec.no-sections.stripped: $(BUILD_DIR)/%/semantic.exec.stripped
 	$($*_OBJCOPY) --strip-section-headers "$<" "$@"
 
-$(BUILD_DIR)/%/semantic.pie.reference: $(SOURCE) Makefile
+$(BUILD_DIR)/%/semantic.pie.reference: $(EXECUTABLE_SOURCE) Makefile
 	@mkdir -p "$(@D)"
 	$($*_CC) $($*_CFLAGS) $(COMMON_CFLAGS) $(PIE_FLAGS) "$<" -o "$@"
 
@@ -78,9 +79,14 @@ $(BUILD_DIR)/%/semantic.pie.stripped: $(BUILD_DIR)/%/semantic.pie.reference
 	cp "$<" "$@"
 	$($*_STRIP) --strip-all "$@"
 
-$(BUILD_DIR)/%/libsemantic.so.reference: $(SOURCE) Makefile
+$(BUILD_DIR)/%/libsemantic.so.reference: $(SHARED_SOURCE) Makefile
 	@mkdir -p "$(@D)"
 	$($*_CC) $($*_CFLAGS) $(COMMON_CFLAGS) $(SHARED_FLAGS) "$<" -o "$@"
+	@if readelf -Ws "$@" | awk \
+		'$$7 != "UND" && $$8 == "main" { found = 1 } END { exit !found }'; then \
+		echo "shared-library fixture unexpectedly defines main: $@" >&2; \
+		exit 1; \
+	fi
 
 $(BUILD_DIR)/%/libsemantic.so.stripped: $(BUILD_DIR)/%/libsemantic.so.reference
 	cp "$<" "$@"

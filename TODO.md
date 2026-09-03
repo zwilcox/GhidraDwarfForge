@@ -821,10 +821,11 @@ AArch64, ARM32, and MIPS32 big/little endian.
 
 ### Work
 
-- Add `ET_DYN` shared-library fixtures.
-- Test loading before and after the library is mapped.
-- Verify exported function/global addresses and load bias.
-- Document exact GDB commands for shared-library sidecars.
+- [x] Add `ET_DYN` shared-library fixtures.
+- [x] Build the library from a dedicated source that does not define `main`.
+- [x] Test loading before and after the library is mapped.
+- [x] Verify exported function/global addresses and load bias.
+- [x] Document exact GDB commands for shared-library sidecars.
 
 ### Completion criteria
 
@@ -833,6 +834,7 @@ AArch64, ARM32, and MIPS32 big/little endian.
 - [x] The recovered function breakpoint and global address/value resolve after
   load.
 - [x] The runtime function address is checked against the main executable.
+- [x] The shared-library ELF has no defined `main` symbol.
 - [x] Structural and behavior tests pass in all five hosted target lanes.
 
 ## P2.3 Add AArch64 target support

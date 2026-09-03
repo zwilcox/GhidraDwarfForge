@@ -37,7 +37,8 @@ text_address() {
     local target=$1
     local address
     address=$(readelf -WS "$fixture_dir/$target/libsemantic.so.reference" |
-        awk '$2 == ".text" { print $4; exit }')
+        awk '$2 == ".text" { print $4; exit }
+            $3 == ".text" { print $5; exit }')
     if [[ -z "$address" ]]; then
         echo "missing .text in $target shared-object reference" >&2
         return 1
