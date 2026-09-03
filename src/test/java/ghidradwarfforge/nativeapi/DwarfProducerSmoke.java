@@ -13,6 +13,7 @@ import static ghidradwarfforge.nativeapi.DwarfConstants.DW_DLC_TARGET_BIGENDIAN;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_DLC_TARGET_LITTLEENDIAN;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_DLV_ERROR;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_DLV_OK;
+import static ghidradwarfforge.nativeapi.DwarfConstants.DW_FORM_STRP;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_LANG_C11;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_TAG_COMPILE_UNIT;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_TAG_FORMAL_PARAMETER;
@@ -166,6 +167,8 @@ public final class DwarfProducerSmoke {
         Map<Long, SectionRecord> sections = new LinkedHashMap<>();
         long[] nextSectionIndex = { 1L };
         long[] nextSectionSymbolIndex = { 1L };
+        long[] callbackErrorNumber = { -1L };
+        String[] callbackErrorMessage = { null };
 
         // Strongly referenced until dwarf_producer_finish_a returns.
         LibDwarfProducer.SectionCallback sectionCallback = (name, size, type, flags, link,
@@ -180,15 +183,22 @@ public final class DwarfProducerSmoke {
                 elfSectionIndex, elfSectionSymbolIndex, name, size, type, flags, link, info);
             return Math.toIntExact(elfSectionIndex);
         };
+        LibDwarfProducer.ErrorHandler errorHandler = (error, errorArgument) -> {
+            long number = consumer.dwarf_errno(error);
+            callbackErrorNumber[0] = number;
+            callbackErrorMessage[0] = consumer.dwarf_errmsg_by_number(number);
+        };
 
         PointerByReference errorOut = new PointerByReference();
         PointerByReference debugOut = new PointerByReference();
         int initResult = producer.dwarf_producer_init(target.producerFlags(), sectionCallback,
-            null, null, null, target.isaName, "V5", "", debugOut, errorOut);
+            errorHandler, null, null, target.isaName, "V5", "", debugOut, errorOut);
         check(initResult, "dwarf_producer_init", errorOut, consumer);
         Debug debug = new Debug(requirePointer(debugOut, "producer debug"));
         boolean finished = false;
         try {
+            checkCall(producer.dwarf_pro_set_default_string_form(debug, DW_FORM_STRP, errorOut),
+                "dwarf_pro_set_default_string_form", errorOut, consumer);
             long functionAddress = sidecar == null
                     ? target.functionAddress : sidecar.functionAddress();
             Die compileUnit = newDie(producer, consumer, debug, DW_TAG_COMPILE_UNIT, errorOut);
@@ -208,6 +218,8 @@ public final class DwarfProducerSmoke {
             addUnsigned(producer, consumer, debug, function, DW_AT_HIGH_PC, FUNCTION_SIZE,
                 errorOut);
             verifyProducerErrorDecoding(producer, consumer, debug, function, errorOut);
+            verifyProducerErrorCallback(producer, debug, function, callbackErrorNumber,
+                callbackErrorMessage);
             Die parameter = newDie(producer, consumer, debug, DW_TAG_FORMAL_PARAMETER,
                 errorOut);
             checkCall(producer.dwarf_die_link_a(parameter, function, null, null, null,
@@ -230,6 +242,7 @@ public final class DwarfProducerSmoke {
                 debug, errorOut, bufferCount, sections);
             requireSectionWithData(".debug_info", sections, sectionData);
             requireSectionWithData(".debug_abbrev", sections, sectionData);
+            requireSectionWithData(".debug_str", sections, sectionData);
             validateRelocations(producer, consumer, debug, errorOut, sections, sectionData,
                 target.addressBytes);
             if (sidecar != null) {
@@ -332,6 +345,19 @@ public final class DwarfProducerSmoke {
         errorOut.setValue(null);
     }
 
+    private static void verifyProducerErrorCallback(LibDwarfProducer producer, Debug debug,
+            Die die, long[] callbackErrorNumber, String[] callbackErrorMessage) {
+        PointerByReference attributeOut = new PointerByReference();
+        int result = producer.dwarf_add_AT_unsigned_const_a(debug, die,
+            DW_AT_DATA_BIT_OFFSET, 0, attributeOut, null);
+        if (result != DW_DLV_ERROR || callbackErrorNumber[0] < 0 ||
+                callbackErrorMessage[0] == null || callbackErrorMessage[0].isBlank()) {
+            throw new IllegalStateException("producer error callback was not decoded");
+        }
+        System.out.printf("producer-error-callback=PASS error=%d message=%s%n",
+            callbackErrorNumber[0], callbackErrorMessage[0]);
+    }
+
     private static void addAddress(LibDwarfProducer producer, LibDwarfConsumer consumer,
             Debug debug, Die die, long address, long symbolIndex,
             PointerByReference errorOut) {
@@ -375,6 +401,8 @@ public final class DwarfProducerSmoke {
                 consumer);
             long sectionIndex = sectionIndexOut.getValue();
             long length = lengthOut.getValue();
+            System.out.printf("buffer=%d section=%d length=%d%n", buffer, sectionIndex,
+                length);
             if (!sections.containsKey(sectionIndex)) {
                 throw new IllegalStateException(
                     "buffer refers to unknown ELF section " + sectionIndex);

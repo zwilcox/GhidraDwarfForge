@@ -147,19 +147,18 @@ native build and deterministic release assembler are the source of truth.
 
 ## P0.4 Pin libdwarf and record native provenance
 
-**Status:** `[~]` — pinned source, checksum, Linux audit build, and safer
-artifact workflow are present. Windows build/export CI now records compiler,
-DLL hashes, dependencies, and required exports. Linux and Windows hosted builds
-pass; reproducibility proof remains.
+**Status:** `[x]` — pinned source, checksums, native provenance, and
+Linux/Windows functional-rebuild comparison gates pass in hosted CI run
+33778570507.
 **Blocks:** P0.5 and all producer feature work.
 
 ### Work
 
 - [x] Replace workflow `LIBDWARF_VERSION: main` with an exact release tag or commit SHA.
-- [~] Record the resolved commit, configure flags, compiler/toolchain versions, target triple, checksums, and dependent DLL/SO names.
-- Decide whether pinned source is fetched at build time, vendored as a submodule/archive, or both.
-- Make Linux and Windows native builds reproducible.
-- Add exported-symbol and dependency checks.
+- [x] Record the resolved commit, configure flags, compiler/toolchain versions, target triple, checksums, and dependent DLL/SO names.
+- [x] Fetch the pinned, checksummed official source archive at build time.
+- [x] Make Linux and Windows native builds functionally reproducible.
+- [x] Add exported-symbol and dependency checks.
 - [x] Do not automatically commit opaque rebuilt binaries directly to `main` without review; choose a safer release/update flow.
 
 Current configure flags that must be preserved or deliberately changed:
@@ -187,19 +186,22 @@ and patches `libdwarfp.so*` RUNPATH to `$ORIGIN`.
 - [x] Linux x86-64 native build succeeds and dependency/RUNPATH checks pass.
 - [x] Windows x86-64 native build succeeds and DLL dependency checks pass.
 - [x] SHA-256 checksums are recorded for release natives.
-- [ ] Rebuilding the same revision with the documented environment produces functionally equivalent artifacts.
+- [x] Rebuilding the same revision with the documented environment produces
+  functionally equivalent artifacts on Linux and Windows.
 - [x] CI fails when expected symbols or dependency names are missing.
 
 ## P0.5 Audit and repair the complete JNA ABI
 
-**Status:** `[~]` — the producer subset needed by the isolated smoke test is
-audited and passes on Linux and Windows, including safe producer-error
-decoding; the complete future API remains.
+**Status:** `[x]` — the complete production producer/consumer surface is
+audited against pinned headers; the C ABI probe and expanded Java smoke pass
+on Linux and Windows in hosted CI run 33778570507.
 **Dependency:** P0.4.
 
 ### Work
 
-Audit every declaration in `src/LibDwarfp.java` and `src/LibDwarf.java` against the exact pinned headers.
+Audit every production declaration against the exact pinned headers. The
+superseded top-level prototype bindings were removed so their known unsafe
+declarations cannot be compiled, packaged, or mistaken for supported APIs.
 
 Known high-risk mismatches observed against the inspected upstream header include:
 
@@ -212,28 +214,33 @@ Known high-risk mismatches observed against the inspected upstream header includ
 
 Additional required work:
 
-- [~] Add opaque JNA types for every handle used by the audited subset.
+- [x] Add opaque JNA types for every handle used by the audited subset.
 - [x] Use fixed-width Java mappings in the new production subset.
-- Verify signedness and pointer indirection.
-- Verify calling convention on Windows.
+- [x] Verify signedness and pointer indirection.
+- [x] Verify calling convention on Windows.
 - [x] Keep strong references to callbacks for the producer lifetime.
 - [x] Check every enabled-subset return status and decode producer
   `Dwarf_Error` through its compatible error number; document and verify
   producer-owned error cleanup through producer finish.
-- Add a small generated/native ABI probe when practical to compare C `sizeof` values with Java assumptions.
+- [x] Add a native ABI probe that checks C signatures, widths, structure size,
+  and offsets against the pinned headers.
 
 ### Completion criteria
 
 - [x] Every function in the new enabled subset has a reference to the pinned
   header declaration.
-- [ ] A mapping test proves 64-bit `Dwarf_Unsigned` behavior on Linux and Windows.
-- [ ] Error callbacks receive valid opaque error objects and produce readable messages.
-- [ ] No known wrong-arity declaration remains.
+- [x] A mapping test proves 64-bit `Dwarf_Unsigned` behavior on Linux and
+  Windows.
+- [x] Error callbacks receive valid opaque error objects and produce readable
+  messages on Linux and Windows.
+- [x] No known wrong-arity declaration remains in the production binding.
 - [x] Callback objects remain reachable until producer finish in the smoke path.
 - [x] A standalone smoke test initializes the producer, creates a CU/DIE,
   transforms it, retrieves sections/relocations, and finishes cleanly.
-- [ ] The smoke test passes under Linux and Windows processes without JVM crash/access violation.
-- [ ] Equivalent calls are not enabled in the Ghidra JVM until the standalone test passes.
+- [x] The expanded smoke test passes under Linux and Windows processes without
+  JVM crash/access violation.
+- [x] Equivalent calls have passed the standalone test before the production
+  exporter path uses them.
 
 ## P0.6 Create an isolated native producer smoke-test executable
 
@@ -465,14 +472,9 @@ Separate Ghidra extraction, source generation, DWARF production, ELF packaging, 
 
 ## P1.2 Generate deterministic `.dbg.c`
 
-**Status:** `[~]` — deterministic production source and staged pair publication
-pass locally. Both complete files are prepared before final paths change; a
-controlled mid-publication failure restores the prior pair or removes a fresh
-partial pair. A controlled real-Ghidra decompiler failure retains a symbol-only
-DIE while every other function continues, and pre-publication cancellation
-preserves the prior pair and removes staging files. A Windows-hosted LF and
-cross-host byte-identity check is present in CI but has not run on a hosted
-worker.
+**Status:** `[x]` — deterministic production source, controlled function
+failure/cancellation, staged pair publication, and Linux/Windows cross-host
+byte identity pass in hosted CI.
 
 ### Work
 
@@ -493,7 +495,7 @@ worker.
 - [x] One controlled decompiler failure does not suppress other functions.
 - [x] Failed function still has a symbol-only DIE and source diagnostic.
 - [x] Cancellation leaves neither final artifact partially updated.
-- [ ] UTF-8/newline behavior is tested on Linux and Windows.
+- [x] UTF-8/newline behavior is tested on Linux and Windows.
 
 ## P1.3 Build a structured address-to-source map
 
@@ -923,18 +925,18 @@ storage profiles are not claimed.
 
 ## P2.4 Validate Windows-hosted Ghidra
 
-**Status:** `[~]` — a Windows CI lane builds and audits pinned MinGW DLLs, runs
-isolated native/publisher/source smoke tests, performs a real Ghidra 12.0.3
-headless export of an ELF fixture, and validates source bytes plus ELF/DWARF.
-GitHub Actions run 33751896850 passed the complete lane, including explicit
-Windows file-lock contention and rollback; packaged-native discovery remains.
+**Status:** `[x]` — the Windows CI lane builds and audits pinned MinGW DLLs,
+runs isolated native/publisher/source smoke tests, performs real Ghidra 12.0.3
+headless exports with explicit and packaged natives, and validates source bytes
+plus ELF/DWARF. GitHub Actions run 33778570507 passed the complete lane,
+including explicit Windows file-lock contention and rollback.
 **Dependencies:** pinned Windows natives and corrected JNA ABI.
 
 ### Work
 
 - [x] Install/test selected Ghidra baseline on Windows.
-- [x] Verify JNA finds the explicitly supplied `libdwarf`/`libdwarfp` DLL pair;
-  packaged-native discovery remains separate release work.
+- [x] Verify JNA finds both the explicitly supplied and packaged
+  `libdwarf`/`libdwarfp` DLL pairs.
 - [x] Audit and bundle non-system MinGW runtime dependencies.
 - [x] Output paths, atomic replacement, UTF-8/LF, and explicit Windows
   file-lock contention rollback pass.
@@ -1199,7 +1201,8 @@ user.
 
 ## P3.1 Investigate `.debug_frame`
 
-**Status:** `[ ]` — **UNCERTAIN REQUIREMENT DETAILS**
+**Status:** `[x]` — ADR-0002 concludes that the current exporter must rely on
+the original ELF's unwind metadata and must not synthesize unsupported CFI.
 **Corresponds to:** issue #8.
 
 ### Questions
@@ -1210,13 +1213,16 @@ user.
 
 ### Completion criteria
 
-- [ ] Written decision explains whether `.debug_frame` is required.
-- [ ] No synthetic CFI is emitted without an evidence-backed generation model.
+- [x] Written decision explains why `.debug_frame` is not required for the
+  current ELF milestone.
+- [x] No synthetic CFI is emitted without an evidence-backed generation model.
 - [ ] If implemented, unwind tests across call stacks pass on every supported architecture.
 
 ## P3.2 Improve string/form policy
 
-**Status:** `[ ]`
+**Status:** `[~]` — deterministic `DW_FORM_strp`/`.debug_str` output passes the
+full hosted target/Windows structural and behavior matrix. Issue closure is
+pending merge.
 **Corresponds to:** issue #9.
 
 ### Work
@@ -1226,8 +1232,8 @@ user.
 
 ### Completion criteria
 
-- [ ] Form policy is documented and deterministic.
-- [ ] `.debug_str` is emitted when selected and all offsets validate.
+- [x] Form policy is documented and deterministic.
+- [x] `.debug_str` is emitted when selected and all offsets validate.
 - [ ] Issue #9 is closed only after structural tests.
 
 ## P3.3 Add richer scopes and declarations
@@ -1278,22 +1284,24 @@ Use the following acceptance gates before updating the original GitHub issues:
 
 ## Issue #1 — output directory
 
-- [~] Prototype writes next to `Program.getExecutablePath()`.
-- [ ] Fallback for unavailable/unwritable path implemented.
-- [ ] Atomic pair behavior tested.
-- [ ] GUI and headless behavior documented.
+- [x] Production export defaults next to `Program.getExecutablePath()`.
+- [x] Missing/stale/unwritable paths fail before publication or use an explicit
+  headless input/output path; the GUI chooser is present but separately tracked
+  as an interactive verification item under P2.7.
+- [x] Atomic pair behavior is tested on Linux and Windows.
+- [x] GUI and headless path behavior is documented.
 
 ## Issue #2 — `.dbg` naming
 
-- [~] Prototype uses `<executablePath>.dbg`.
-- [ ] Naming tested across Linux/Windows paths and extensions.
-- [ ] Sidecar is valid and usable, not just named correctly.
+- [x] Production export uses `<executablePath>.dbg`.
+- [x] Naming is tested across Linux and Windows paths.
+- [x] The named sidecar passes structural validators and GDB behavior tests.
 
 ## Issue #3 — `.dbg.c` naming
 
-- [~] Prototype uses `<executablePath>.dbg.c`.
-- [~] Deterministic source and failure-placeholder implementation is present;
-  controlled failure integration remains.
+- [x] Production export uses `<executablePath>.dbg.c`.
+- [x] Deterministic source, controlled decompiler failure, cancellation, and
+  pair-publication rollback pass integration tests.
 - [x] `.debug_line` references the exact final name.
 
 ## Issue #4 — `.debug_aranges`
@@ -1305,15 +1313,16 @@ Do not reopen/close solely from this checklist; use project/user direction.
 
 ## Issue #5 — `.debug_info`
 
-- [~] Minimal CU/subprogram DIEs exist.
-- [ ] Complete required functions/types/variables/ranges validate.
-- [ ] GDB behavior passes.
+- [x] Production CU/subprogram DIEs exist.
+- [x] Current supported functions/types/variables/ranges validate across the
+  hosted target matrix.
+- [x] GDB behavior passes for every claimed target profile.
 
 ## Issue #6 — `.debug_abbrev`
 
-- [~] libdwarfp produces abbreviations for current minimal DIEs.
-- [ ] Full DIE-set abbreviations validate.
-- [ ] No stale/invalid form combinations.
+- [x] libdwarfp produces abbreviations for the production DIE set.
+- [x] Current full DIE-set abbreviations validate across the hosted matrix.
+- [x] No stale or invalid form combination is accepted by the validators.
 
 ## Issue #7 — `.debug_line`
 
@@ -1323,13 +1332,14 @@ Do not reopen/close solely from this checklist; use project/user direction.
 
 ## Issue #8 — `.debug_frame`
 
-- [ ] Requirement/design investigation.
-- [ ] Implement only if reliable and needed.
+- [x] ADR-0002 records the requirement/design investigation.
+- [x] Synthetic CFI is deferred unless reliable instruction-range unwind
+  evidence and cross-architecture behavior tests become available.
 
 ## Issue #9 — `.debug_str`
 
-- [ ] String/form policy.
-- [ ] Section/offset validation.
+- [x] String/form policy is documented and deterministic.
+- [x] Section/offset validation passes across the hosted matrix.
 
 ---
 

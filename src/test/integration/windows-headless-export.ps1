@@ -130,13 +130,19 @@ $notes = Invoke-NativeChecked 'readelf.exe' @('-n', $sidecar)
 $inputNotes = Invoke-NativeChecked 'readelf.exe' @('-n', $fixtureInput)
 $info = Invoke-NativeChecked 'readelf.exe' @('--debug-dump=info', $sidecar)
 $abbrev = Invoke-NativeChecked 'readelf.exe' @('--debug-dump=abbrev', $sidecar)
+$strings = Invoke-NativeChecked 'readelf.exe' @('--string-dump=.debug_str', $sidecar)
 $line = Invoke-NativeChecked 'readelf.exe' @('--debug-dump=decodedline', $sidecar)
 $verify = Invoke-NativeChecked 'llvm-dwarfdump.exe' @('--verify', $sidecar)
 foreach ($validatorOutput in @($header, $inputHeader, $sections, $notes, $inputNotes,
-        $info, $abbrev, $line, $verify)) {
+        $info, $abbrev, $strings, $line, $verify)) {
     if (($validatorOutput -join "`n") -match '(?i)\b(?:warning|error):') {
         throw "validator reported a warning or error:`n$($validatorOutput -join "`n")"
     }
+}
+if (($sections -join "`n") -notmatch '[.]debug_str' -or
+        ($abbrev -join "`n") -notmatch 'DW_FORM_strp' -or
+        ($strings -join "`n") -notmatch 'GhidraDwarfForge') {
+    throw 'DWARF string-table policy validation failed'
 }
 
 function Get-ReadelfHeaderField {

@@ -23,6 +23,7 @@ import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_NORETURN;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_PROTOTYPED;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_TYPE;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_DLV_OK;
+import static ghidradwarfforge.nativeapi.DwarfConstants.DW_FORM_STRP;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_LANG_C11;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_TAG_COMPILE_UNIT;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_TAG_SUBPROGRAM;
@@ -306,6 +307,8 @@ public final class MinimalDwarfSidecarExporter {
         Debug debug = new Debug(pointer(debugOut, "producer debug"));
         boolean finished = false;
         try {
+            check(producer.dwarf_pro_set_default_string_form(debug, DW_FORM_STRP, errorOut),
+                "dwarf_pro_set_default_string_form", errorOut, consumer);
             Die unit = newDie(producer, consumer, debug, DW_TAG_COMPILE_UNIT, null, errorOut);
             addName(producer, consumer, unit, unitName, errorOut);
             addProducer(producer, consumer, unit, errorOut);
@@ -458,7 +461,8 @@ public final class MinimalDwarfSidecarExporter {
                 result.put(".debug_loclists", locationLists.section());
             }
             if (!result.containsKey(".debug_info") ||
-                    !result.containsKey(".debug_abbrev")) {
+                    !result.containsKey(".debug_abbrev") ||
+                    !result.containsKey(".debug_str")) {
                 throw new IllegalStateException("producer omitted required DWARF sections");
             }
 

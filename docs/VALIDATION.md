@@ -58,6 +58,16 @@ protection was enabled with strict/up-to-date status checking and
 `required-validation` as its required GitHub Actions check. Force pushes and
 branch deletion remain disabled.
 
+**CONFIRMED:** GitHub Actions run 33778570507 passed all 12 jobs after the
+native ABI audit and `.debug_str` implementation. Both Linux and Windows
+compiled and ran the pinned-header C ABI probe, built patched libdwarf twice,
+and passed functional file/export/dependency equivalence. All five target
+lanes passed isolated producer smoke, real headless export, GNU/LLVM/libdwarf
+structural validation, and native/QEMU GDB behavior with `.debug_str` and
+`DW_FORM_strp`. The Windows host passed opaque producer-error callback
+delivery, file-lock rollback, explicit-native export, and packaged-native
+export.
+
 The required workflow now also assembles the Linux/Windows native release ZIP
 twice, compares it byte for byte, verifies every embedded SHA-256 manifest,
 and installs that aggregate artifact for real exports on both host operating
@@ -80,8 +90,11 @@ byte, compares ELF identity/build ID, and runs Windows GNU `readelf` plus LLVM
 DWARF verification. It also holds the existing source open with Windows
 `FileShare.None`, forces the second publication move to fail, and proves the
 old sidecar/source pair is restored without staged or backup leftovers. GitHub
-Actions run 33751896850 passed the native DLL build/audit, real Ghidra export,
-cross-host source comparison, file-lock rollback, and both Windows validators.
+Actions runs 33751896850 and 33778570507 passed the native DLL build/audit,
+real Ghidra export, cross-host source comparison, file-lock rollback, and both
+Windows validators. Run 33778570507 additionally passed the pinned-header ABI
+probe, clean native rebuild comparison, error callback, and `.debug_str`
+checks.
 Earlier runs exposed and verified fixes for batch argument
 transport, Ghidra's Windows drive-path spelling, and MSYS2 tool discovery. GDB
 execution of ELF artifacts remains in the Linux native/QEMU jobs; PE/PDB is out
@@ -156,17 +169,29 @@ GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC \
   ./gradlew nativeProducerSmoke \
   -PlibdwarfPath=<audit-build>/libdwarf.so.2.3.2 \
   -PlibdwarfpPath=<audit-build>/libdwarfp.so.2.3.2 \
-  -PtargetProfile=<x86_64|arm64|mips32be|mips32le>
+  -PtargetProfile=<x86_64|arm64|arm32|mips32be|mips32le>
 ```
 
-Result: PASS for all four profiles in separate JVM processes. Each run
-created a DWARF 5 CU and subprogram, retrieved `.debug_info` and
-`.debug_abbrev`, validated a version-2 symbolic relocation buffer, checked two
-target-address relocations, and finished cleanly. Each run also deliberately
-passes `DW_AT_data_bit_offset` to libdwarfp's restricted fixed-width constant
-helper, checks the expected `DW_DLE_INPUT_ATTR_BAD (143)`, and safely decodes
-the producer error by number before continuing. This specifically guards the
-producer/consumer `Dwarf_Error_s` layout mismatch.
+Result: PASS for all five profiles in separate JVM processes. Each run
+created a DWARF 5 CU and subprogram, retrieved `.debug_info`,
+`.debug_abbrev`, and `.debug_str`, validated a version-2 symbolic relocation
+buffer, checked target-address and string-table relocations, and finished
+cleanly. Each run also deliberately passes `DW_AT_data_bit_offset` to
+libdwarfp's restricted fixed-width constant helper, checks the expected
+`DW_DLE_INPUT_ATTR_BAD (143)`, and safely decodes the producer error both from
+an explicit error output and through the opaque callback. This specifically
+guards the producer/consumer `Dwarf_Error_s` layout mismatch.
+
+The local audit build applies
+`native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch` to the
+pinned v2.3.2 source. A clean second Linux build produced functionally
+equivalent library file sets, ELF identity, exports, SONAME/dependencies, and
+normalized RUNPATH. The exact binary hashes differed because the compiler
+embedded distinct build paths/build IDs; both sets are recorded rather than
+misrepresented as byte reproducible. The pinned-header C ABI probe compiled
+with warnings as errors and reported 64-bit `Dwarf_Unsigned`, `Dwarf_Signed`,
+`Dwarf_Off`, and `Dwarf_Addr`, plus the expected callback/function signatures
+and 24-byte relocation record layout.
 
 ## Cross-target fixtures and Ghidra
 

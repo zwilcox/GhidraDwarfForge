@@ -1566,6 +1566,39 @@ third-party notices, and publication of an official GitHub Release are
 explicitly deferred by the user; CI output is a validated pre-release artifact
 until those items are resumed.
 
+### 16.21 Native ABI audit, string forms, and unwind policy
+
+**CONFIRMED (2026-09-03):** the production JNA surface is now
+inventoried in `docs/LIBDWARF-ABI.md` and checked during both native builds by
+a C probe compiled against the exact pinned libdwarf 2.3.2 headers. The probe
+checks every enabled function signature, fixed-width typedef, and relocation
+record layout. The Java producer smoke additionally verifies opaque error
+callback delivery and readable messages. The obsolete top-level prototype
+sources, which retained known unsafe JNA mappings, were removed; their history
+remains available at the handoff baseline.
+
+Both native jobs build the pinned source twice and require matching file
+sets, exported symbols, target identity, SONAME/dependencies, and normalized
+RUNPATH semantics. Binary hashes are recorded for diagnosis but are not
+required to match because compiler build paths and build IDs can differ.
+GitHub Actions run 33778570507 passed both hosted gates.
+
+The exporter requests `DW_FORM_strp` before DIE construction and requires
+`.debug_str`. Pinned libdwarf retains strings of at most four bytes including
+NUL as inline `DW_FORM_string`; longer strings use deterministic
+`DW_FORM_strp` offsets. A repository-owned patch widens libdwarf's private
+AArch64 producer relocation-type field because the upstream byte field
+truncates `R_AARCH64_ABS32`/`R_AARCH64_ABS64` and otherwise silently prevents
+valid string-table production. GitHub Actions run 33778570507 passed the
+producer and real exporter/validator/GDB matrix for x86-64, AArch64, ARM32,
+and both MIPS32 byte orders, plus the Windows-hosted exporter.
+
+**RESOLVED — `.debug_frame`:** ADR-0002 rejects synthetic call-frame
+information for the current ELF milestone. GDB keeps the original ELF loaded
+and uses its existing unwind metadata. Ghidra stack-frame summaries do not
+provide sufficient instruction-range CFA and saved-register evidence, so
+invented CFI could corrupt backtraces and variable evaluation.
+
 ## 17. Open questions
 
 Codex should not silently answer these through implementation choices. Investigate, document, and obtain user direction when the answer materially changes compatibility or scope.
@@ -1596,7 +1629,9 @@ Codex should not silently answer these through implementation choices. Investiga
 15. **Variable confidence:** What evidence threshold permits emitting `DW_AT_location` versus name/type only?
 16. **Extern/import policy:** Should imported functions receive declarations only, symbol DIEs, PLT/thunk DIEs, or a combination?
 17. **Inlining:** Is reconstructed inline information a later goal, or explicitly out of scope?
-18. **`.debug_frame`:** Is generating synthetic unwind information required, or should the exporter preserve/rely on target `.eh_frame`/`.debug_frame` information?
+18. **RESOLVED — `.debug_frame`:** the current ELF milestone relies on unwind
+    information in the original target and does not synthesize unsupported
+    CFI. See `docs/ADR-0002-DEBUG-FRAME.md`.
 19. **ELF implementation library:** Continue a hand-written emitter, use Ghidra ELF classes, use another Java ELF library, or derive metadata through an external tool? Licensing and portability matter.
 20. **Distribution license:** Which license should cover the repository, and what notices/source obligations apply to bundled libdwarf/JNA binaries?
 21. **RESOLVED — Release format:** one versioned Ghidra extension ZIP includes

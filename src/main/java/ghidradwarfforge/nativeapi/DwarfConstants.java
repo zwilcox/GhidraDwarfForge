@@ -14,6 +14,8 @@ public final class DwarfConstants {
     public static final int DW_DLV_NO_ENTRY = -1;
     public static final int DW_DLV_ERROR = 1;
 
+    public static final int DW_FORM_STRP = 0x0e;
+
     public static final long DW_DLC_POINTER64 = 0x40000000L;
     public static final long DW_DLC_POINTER32 = 0x20000000L;
     public static final long DW_DLC_OFFSET32 = 0x00010000L;
