@@ -1516,10 +1516,12 @@ workflow through one aggregate `required-validation` job. GitHub Actions run
 33751896850 passed workflow lint, Linux/Windows native builds, the extension,
 the four existing target lanes, the Windows-hosted real exporter, the explicit
 Windows `FileShare.None` publication-rollback test, and the aggregate job.
-Branch protection and repository rulesets cannot currently require that job:
-both GitHub APIs return HTTP 403 because this is a private repository on the
-free plan. This administrative criterion remains **BLOCKED**, not silently
-treated as complete.
+The initial branch-protection attempt returned HTTP 403 while the repository
+was private on the free plan. After the user made the repository public on
+2026-09-03, `main` branch protection was enabled with strict/up-to-date
+checking and `required-validation` as the required GitHub Actions status.
+Force pushes and branch deletion remain disabled. This resolves the final
+P2.12 administrative criterion.
 
 **CONFIRMED (2026-09-03):** ARM32/AArch32 is now an active target profile. The
 initial profile is ARMv7 hard-float, little-endian ARM state, built with

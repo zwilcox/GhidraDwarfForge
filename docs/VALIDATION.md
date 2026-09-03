@@ -50,9 +50,10 @@ verification, independent dwarfdump, and the runtime GDB oracles accepted the
 artifacts. This evidence does not claim Thumb, big-endian ARM, or other ARM ABI
 profiles.
 
-The aggregate check is ready to be configured as a required status check, but
-merge enforcement is **BLOCKED**: GitHub returns HTTP 403 for both branch
-protection and repository rulesets on this private free-plan repository.
+**CONFIRMED:** after the repository became public on 2026-09-03, `main` branch
+protection was enabled with strict/up-to-date status checking and
+`required-validation` as its required GitHub Actions check. Force pushes and
+branch deletion remain disabled.
 
 ## Windows-hosted lane
 

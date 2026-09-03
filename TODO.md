@@ -1116,7 +1116,7 @@ until P2.12 runs on a Windows host.
 
 ## P2.12 Add continuous validation
 
-**Status:** `[~]` — Linux target lanes run for x86-64, AArch64, ARM32, MIPS32
+**Status:** `[x]` — Linux target lanes run for x86-64, AArch64, ARM32, MIPS32
 big-endian, and MIPS32 little-endian, plus a Windows-hosted x86-64 ELF export
 lane. They build pinned libdwarf, run the real headless exporter for
 ET_EXEC/PIE/shared/no-section inputs as applicable, preserve input hashes,
@@ -1124,8 +1124,8 @@ validate with GNU/LLVM/libdwarf tools, and execute GDB/`ptype` natively or
 through QEMU. GitHub Actions run 33751896850 passed the complete P2.12
 diagnostic/Windows matrix; run 33757707307 added ARM32 and passed all 11 jobs,
 including the aggregate `required-validation` gate. Enforcing that gate as a
-merge requirement is **BLOCKED** because GitHub returns HTTP 403 for branch
-protection and rulesets on this private free-plan repository.
+strict, up-to-date merge requirement on `main` is now enabled through GitHub
+branch protection for the public repository.
 
 ### Work
 
@@ -1154,9 +1154,8 @@ an integration pass.
 
 ### Completion criteria
 
-- [ ] Pull requests cannot merge with failing structural/GDB tests for
-  supported paths. **BLOCKED:** repository branch protection/rulesets require
-  GitHub Pro or a public repository; `required-validation` is ready to require.
+- [x] Pull requests cannot merge with failing structural/GDB tests for
+  supported paths; strict branch protection requires `required-validation`.
 - [x] x86-64 and AArch64 have separate passing hosted end-to-end jobs.
 - [x] Both jobs exercise the same production exporter entry point.
 - [x] The AArch64 job proves runtime address behavior under a native runner or
