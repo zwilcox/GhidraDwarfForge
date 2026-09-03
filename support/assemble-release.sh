@@ -43,6 +43,14 @@ module="$stage/GhidraDwarfForge"
     echo "base ZIP does not contain GhidraDwarfForge/extension.properties" >&2
     exit 1
 }
+[[ -f "$module/THIRD_PARTY_NOTICES.md" ]] || {
+    echo "base ZIP does not contain GhidraDwarfForge/THIRD_PARTY_NOTICES.md" >&2
+    exit 1
+}
+[[ -f "$module/third_party/CORRESPONDING_SOURCE.md" ]] || {
+    echo "base ZIP does not contain corresponding-source instructions" >&2
+    exit 1
+}
 
 copy_platform() {
     local platform=$1 input=$2 consumer_pattern=$3 producer_pattern=$4
@@ -72,6 +80,49 @@ copy_platform() {
 
 copy_platform linux_x86_64 "$linux_input" 'libdwarf.so.2.3.2' 'libdwarfp.so.2.3.2'
 copy_platform win_x86_64 "$windows_input" 'libdwarf-*.dll' 'libdwarfp-*.dll'
+for bundled_dll in "$module/os/win_x86_64"/*.dll; do
+    bundled_name=$(basename "$bundled_dll" | tr '[:upper:]' '[:lower:]')
+    case "$bundled_name" in
+        libdwarf-*.dll|libdwarfp-*.dll|libzstd.dll|zlib1.dll) ;;
+        *)
+            echo "bundled DLL has no reviewed notice policy: $bundled_name" >&2
+            exit 1
+            ;;
+    esac
+done
+
+libdwarf_compliance="$linux_input/compliance/libdwarf"
+windows_runtime_compliance="$windows_input/compliance/windows-runtime"
+required_compliance_files=(
+    "$libdwarf_compliance/licenses/UPSTREAM-COPYING"
+    "$libdwarf_compliance/licenses/LGPL-2.1.txt"
+    "$libdwarf_compliance/licenses/LIBDWARFCOPYRIGHT"
+    "$libdwarf_compliance/licenses/LIBDWARFP-COPYING"
+    "$libdwarf_compliance/patches/0001-preserve-aarch64-relocation-type.patch"
+    "$libdwarf_compliance/source/libdwarf-2.3.2.tar.xz"
+    "$libdwarf_compliance/SOURCE-SHA256SUMS"
+    "$windows_runtime_compliance/PACKAGE-VERSIONS.txt"
+    "$windows_runtime_compliance/RUNTIME-SHA256SUMS"
+    "$windows_runtime_compliance/zlib/licenses/LICENSE"
+    "$windows_runtime_compliance/zstd/licenses/LICENSE"
+)
+for compliance_file in "${required_compliance_files[@]}"; do
+    [[ -s "$compliance_file" ]] || {
+        echo "required third-party compliance file is missing: $compliance_file" >&2
+        exit 1
+    }
+done
+mkdir -p "$module/third_party"
+cp -R "$libdwarf_compliance" "$module/third_party/libdwarf"
+cp -R "$windows_runtime_compliance" "$module/third_party/windows-runtime"
+(
+    cd "$module/third_party/libdwarf"
+    sha256sum -c SOURCE-SHA256SUMS
+)
+(
+    cd "$module/third_party/windows-runtime"
+    sha256sum -c RUNTIME-SHA256SUMS
+)
 
 {
     echo "release-version=$release_version"
@@ -79,6 +130,7 @@ copy_platform win_x86_64 "$windows_input" 'libdwarf-*.dll' 'libdwarfp-*.dll'
     echo "libdwarf-release=v2.3.2"
     echo "libdwarf-source-commit=af7b278c6aa2ae9daad94fb7f8bffdc0e9980993"
     echo "libdwarf-archive-sha256=7992e7b9019ebfabdda5773e86243517c48cf89fafed3209e853692bc9573efd"
+    echo "libdwarf-patch-sha256=2046e2f20ef23820e096195f9e1c4ee6e66c0e0ac7c3f90d26ef285798bd1ef6"
     echo "host-platforms=linux_x86_64,win_x86_64"
 } > "$module/RELEASE-MANIFEST.txt"
 

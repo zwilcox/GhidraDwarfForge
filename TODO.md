@@ -127,24 +127,29 @@ native build and deterministic release assembler are the source of truth.
 
 ## P0.3 Add repository and dependency licensing
 
-**Status:** `[~]` — the user selected MIT and the repository now carries the
-project license. Third-party dependency review, notices, and corresponding
-source obligations remain.
+**Status:** `[x]` — the project is MIT licensed. The hosted native-inclusive
+bundle carries the third-party inventory, upstream notices, exact LGPL
+corresponding source, local patch, reconstruction instructions, and enforced
+checksums.
 
 ### Work
 
 - [x] Add the project’s chosen MIT `LICENSE`.
-- Record licenses for Ghidra APIs, JNA, libdwarf/libdwarfp, and any future ELF library.
-- Include required notices in the extension/release bundle.
-- Document how corresponding source and build scripts for bundled LGPL components are made available.
-- Ensure the chosen packaging approach is compatible with dependency obligations.
+- [x] Record licenses for Ghidra APIs, JNA, libdwarf/libdwarfp, and current
+  Windows native dependencies.
+- [x] Include required notices in the extension/release bundle.
+- [x] Document how corresponding source and build scripts for bundled LGPL
+  components are made available.
+- [x] Ensure the chosen packaging approach includes the technically reviewed
+  dependency-distribution materials and replacement mechanism.
 
 ### Completion criteria
 
 - [x] Repository has an explicit project license.
-- [ ] Release artifact contains all required notices.
-- [ ] Third-party dependency versions and licenses are documented.
-- [ ] Bundled native distribution obligations have been reviewed and satisfied.
+- [x] Release artifact contains all required notices.
+- [x] Third-party dependency versions and licenses are documented.
+- [x] Bundled native distribution obligations have been technically reviewed
+  and enforced by release assembly and hosted CI.
 
 ## P0.4 Pin libdwarf and record native provenance
 
@@ -1177,16 +1182,16 @@ an integration pass.
 ## P2.13 Produce installable releases
 
 **Status:** `[~]` — deterministic CI artifacts, packaged Linux/Windows natives,
-clean-install exports, checksums, and operating documentation are implemented.
-Official GitHub Release publication and licensing/notices are deferred by the
-user.
+clean-install exports, checksums, operating documentation, third-party
+notices, corresponding-source packaging, and hosted verification are
+implemented. Official GitHub Release publication remains separate.
 
 ### Work
 
 - [x] Define semantic versioning/release policy.
 - [x] Build Ghidra extension ZIPs reproducibly.
-- [~] Include native checksums/provenance; third-party notices are deferred with
-  the licensing work.
+- [x] Include native checksums, provenance, third-party notices, and exact
+  corresponding source.
 - [x] Publish support matrix and known limitations.
 - [x] Add installation, run, GDB loading, and troubleshooting instructions.
 
