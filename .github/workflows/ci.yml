@@ -268,14 +268,16 @@ jobs:
             ./gradlew addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke \
               syntheticSourceSmoke typeGraphSmoke variableStorageSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke \
-              dwarfLocationListsSmoke artifactPairPublisherSmoke buildExtension
+              dwarfLocationListsSmoke artifactPairPublisherSmoke \
+              packagedNativeLibrariesSmoke buildExtension
+            src/test/integration/release-package.sh
             zipinfo -l dist/*.zip | grep -Eq \
               '^-rwxr-xr-x.*GhidraDwarfForge/support/ghidra-dwarf-forge-headless$'
           } 2>&1 | tee build/test-results/extension-build/build.log
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ghidra-dwarf-forge-extension
+          name: ghidra-dwarf-forge-extension-base
           path: dist/*.zip
           if-no-files-found: error
 
@@ -287,8 +289,62 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  release-package:
+    needs: [ extension-build, native-linux, native-windows ]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ghidra-dwarf-forge-extension-base
+          path: base-extension
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: libdwarf-linux-integration
+          path: native-linux
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: libdwarf-windows-integration
+          path: native-windows
+
+      - name: Assemble and verify reproducible release bundle
+        run: |
+          set -euo pipefail
+          mkdir -p release build/test-results/release-package
+          version=$(tr -d '\r\n' < VERSION)
+          output="release/GhidraDwarfForge-$version-ghidra-12.0.3.zip"
+          support/assemble-release.sh base-extension/*.zip native-linux native-windows "$output"
+          support/assemble-release.sh base-extension/*.zip native-linux native-windows \
+            release/rebuilt.zip
+          cmp "$output" release/rebuilt.zip
+          rm release/rebuilt.zip
+          unzip -q "$output" -d build/test-results/release-package/unpacked
+          module=build/test-results/release-package/unpacked/GhidraDwarfForge
+          (cd "$module" && sha256sum -c RELEASE-SHA256SUMS)
+          (cd "$module/os/linux_x86_64" && sha256sum -c SHA256SUMS)
+          (cd "$module/os/win_x86_64" && sha256sum -c SHA256SUMS)
+          sha256sum "$output" | tee build/test-results/release-package/release.sha256
+          unzip -l "$output" > build/test-results/release-package/contents.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ghidra-dwarf-forge-extension
+          path: release/*.zip
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-package-diagnostics
+          path: build/test-results/release-package/
+          if-no-files-found: warn
+          retention-days: 14
+
   target-preflight:
-    needs: [ extension-build, native-linux ]
+    needs: [ release-package, native-linux ]
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -489,6 +545,35 @@ jobs:
             fi
           done
 
+      - name: Clean installed-release export without external natives
+        if: matrix.target == 'x86_64'
+        run: |
+          set -euo pipefail
+          fixture="$PWD/build/fixtures/x86_64/semantic.exec.stripped"
+          result_directory="$PWD/build/test-results/packaged-release"
+          output="$result_directory/semantic.exec.packaged.dbg"
+          log="$result_directory/headless.log"
+          wrapper="$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/support/ghidra-dwarf-forge-headless"
+          mkdir -p "$result_directory"
+          before=$(sha256sum "$fixture" | cut -d' ' -f1)
+          "$wrapper" --ghidra-dir="$GHIDRA_INSTALL_DIR" --import="$fixture" \
+            --output="$output" --log="$log"
+          after=$(sha256sum "$fixture" | cut -d' ' -f1)
+          test "$before" = "$after"
+          grep -Fq 'native policy: verified packaged libraries' "$log"
+          test -s "$output"
+          test -s "$output.c"
+          readelf -h "$output"
+          readelf -S "$output"
+          readelf --debug-dump=info "$output"
+          readelf --debug-dump=abbrev "$output"
+          readelf --debug-dump=decodedline "$output"
+          llvm-dwarfdump --verify "$output"
+          dwarfdump -ka "$output"
+          gdb-multiarch -q -nx -batch \
+            -ex 'set debuginfod enabled off' \
+            -ex "file $fixture" -ex "symbol-file $output" -ex 'info functions'
+
       - name: Rebased Ghidra project normalization
         if: matrix.target == 'x86_64'
         run: |
@@ -529,7 +614,7 @@ jobs:
           if-no-files-found: error
 
   windows-host:
-    needs: [ extension-build, native-windows, target-preflight ]
+    needs: [ release-package, native-windows, target-preflight ]
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -730,6 +815,44 @@ jobs:
             -ProducerDll $producer.FullName `
             -LinuxReferenceDirectory (Resolve-Path linux-reference)
 
+      - name: Clean Windows installed-release export without external natives
+        shell: pwsh
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+        run: |
+          $resultDirectory = 'build\test-results\windows-host\packaged-release'
+          New-Item -ItemType Directory -Force $resultDirectory | Out-Null
+          $fixture = (Resolve-Path 'linux-reference\semantic.exec.stripped').Path
+          $output = Join-Path (Resolve-Path $resultDirectory).Path 'semantic.exec.packaged.dbg'
+          $log = Join-Path (Resolve-Path $resultDirectory).Path 'headless.log'
+          $wrapper = Join-Path $env:GHIDRA_INSTALL_DIR `
+            'Ghidra\Extensions\GhidraDwarfForge\support\ghidra-dwarf-forge-headless.ps1'
+          $before = (Get-FileHash -Algorithm SHA256 $fixture).Hash
+          & $wrapper -GhidraDirectory $env:GHIDRA_INSTALL_DIR `
+            -Import $fixture -Output $output -Log $log
+          if ($LASTEXITCODE -ne 0) {
+            throw "packaged Windows export failed with exit code $LASTEXITCODE"
+          }
+          $after = (Get-FileHash -Algorithm SHA256 $fixture).Hash
+          if ($before -ne $after) { throw 'packaged export modified the input ELF' }
+          if ((Get-Content -Raw $log) -notmatch
+              [regex]::Escape('native policy: verified packaged libraries')) {
+            throw 'packaged-native policy was not reported'
+          }
+          foreach ($artifact in @($output, "$output.c")) {
+            if (-not (Test-Path $artifact -PathType Leaf)) {
+              throw "packaged export output is missing: $artifact"
+            }
+          }
+          $mingwBin = Join-Path $env:MSYS2_LOCATION 'mingw64\bin'
+          $env:PATH = "$mingwBin;$env:PATH"
+          & readelf.exe -h $output
+          if ($LASTEXITCODE -ne 0) { throw 'readelf header validation failed' }
+          & readelf.exe --debug-dump=info $output
+          if ($LASTEXITCODE -ne 0) { throw 'readelf DWARF validation failed' }
+          & llvm-dwarfdump.exe --verify $output
+          if ($LASTEXITCODE -ne 0) { throw 'LLVM DWARF verification failed' }
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -745,6 +868,7 @@ jobs:
       - native-linux
       - native-windows
       - extension-build
+      - release-package
       - target-preflight
       - windows-host
     runs-on: ubuntu-24.04
@@ -755,6 +879,7 @@ jobs:
           NATIVE_LINUX_RESULT: ${{ needs.native-linux.result }}
           NATIVE_WINDOWS_RESULT: ${{ needs.native-windows.result }}
           EXTENSION_BUILD_RESULT: ${{ needs.extension-build.result }}
+          RELEASE_PACKAGE_RESULT: ${{ needs.release-package.result }}
           TARGET_PREFLIGHT_RESULT: ${{ needs.target-preflight.result }}
           WINDOWS_HOST_RESULT: ${{ needs.windows-host.result }}
         run: |
@@ -762,7 +887,8 @@ jobs:
           failed=0
           for result in "$WORKFLOW_LINT_RESULT" "$NATIVE_LINUX_RESULT" \
               "$NATIVE_WINDOWS_RESULT" "$EXTENSION_BUILD_RESULT" \
-              "$TARGET_PREFLIGHT_RESULT" "$WINDOWS_HOST_RESULT"; do
+              "$RELEASE_PACKAGE_RESULT" "$TARGET_PREFLIGHT_RESULT" \
+              "$WINDOWS_HOST_RESULT"; do
             if [[ "$result" != success ]]; then
               failed=1
             fi

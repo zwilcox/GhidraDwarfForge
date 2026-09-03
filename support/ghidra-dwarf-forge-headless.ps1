@@ -22,11 +22,9 @@ function Exit-Usage([string] $Message) {
 if ([string]::IsNullOrWhiteSpace($GhidraDirectory)) {
     Exit-Usage '-GhidraDirectory or GHIDRA_INSTALL_DIR is required'
 }
-if ([string]::IsNullOrWhiteSpace($Libdwarf)) {
-    Exit-Usage '-Libdwarf is required'
-}
-if ([string]::IsNullOrWhiteSpace($Libdwarfp)) {
-    Exit-Usage '-Libdwarfp is required'
+if ([string]::IsNullOrWhiteSpace($Libdwarf) -ne
+        [string]::IsNullOrWhiteSpace($Libdwarfp)) {
+    Exit-Usage '-Libdwarf and -Libdwarfp must be supplied together'
 }
 $importMode = -not [string]::IsNullOrWhiteSpace($Import)
 $projectValues = @($ProjectDirectory, $ProjectName, $Program) |
@@ -43,7 +41,11 @@ if ($projectMode -and $ProjectName -match '[/\\]') {
 }
 
 $headless = Join-Path $GhidraDirectory 'support\analyzeHeadless.bat'
-foreach ($required in @($headless, $Libdwarf, $Libdwarfp)) {
+$requiredFiles = @($headless)
+if (-not [string]::IsNullOrWhiteSpace($Libdwarf)) {
+    $requiredFiles += @($Libdwarf, $Libdwarfp)
+}
+foreach ($required in $requiredFiles) {
     if (-not (Test-Path $required -PathType Leaf)) {
         Exit-Usage "required file does not exist: $required"
     }
@@ -64,7 +66,16 @@ else {
 }
 
 try {
-    $exportOptions = @('--libdwarf', $Libdwarf, '--libdwarfp', $Libdwarfp)
+    if ([string]::IsNullOrWhiteSpace($Libdwarf)) {
+        $exportOptions = @('--packaged-natives')
+        $packagedDirectory = Join-Path $PSScriptRoot '..\os\win_x86_64'
+        if (Test-Path $packagedDirectory -PathType Container) {
+            $env:PATH = "$(Resolve-Path $packagedDirectory);$env:PATH"
+        }
+    }
+    else {
+        $exportOptions = @('--libdwarf', $Libdwarf, '--libdwarfp', $Libdwarfp)
+    }
     if (-not [string]::IsNullOrWhiteSpace($OriginalElf)) {
         $exportOptions += @('--input', $OriginalElf)
     }

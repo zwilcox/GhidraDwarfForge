@@ -298,33 +298,16 @@ discovery remains planned.
 
 ## 10. Build, run, and validation commands
 
-### 10.1 Current repository-defined JAR packaging command
+### 10.1 Native and release packaging
 
-The only current repository-defined local packaging command is:
+The historical Maven shaded-JAR path and committed native/unpacked artifacts
+were removed. `.github/workflows/ci.yml` is the sole production native build;
+it compiles the pinned source once per host platform and passes those artifacts
+to `support/assemble-release.sh`. Release bundles use Ghidra's standard
+`os/<platform>` layout and include per-platform plus whole-release SHA-256
+manifests. Do not reintroduce committed native binaries or a private JNA copy.
 
-```bash
-mvn -B -ntp -f jna-wrapper/pom.xml package -DskipTests
-```
-
-This packages the JNA dependency and bundled native resources. It does **not** compile or package a Ghidra extension, and there are currently no Maven tests.
-
-### 10.2 Current native/JAR workflow
-
-Workflow file:
-
-```text
-.github/workflows/buildLibDwarfJarWrapper.yml
-```
-
-It is `workflow_dispatch` only. A conventional GitHub CLI invocation is:
-
-```bash
-gh workflow run buildLibDwarfJarWrapper.yml --ref main
-```
-
-**UNVERIFIED:** this command was not executed during the handoff, and the GitHub API reported no retained workflow runs. Inspect the workflow run and artifacts rather than assuming success.
-
-The workflow’s current native configuration is:
+The native configuration is:
 
 ```bash
 sh autogen.sh
@@ -333,9 +316,11 @@ make -j"$(nproc)"
 make install                 # Linux job; Windows job stops after make
 ```
 
-Linux additionally sets `$ORIGIN` RUNPATH on `libdwarfp.so*` with `patchelf`. Windows builds under MSYS2 `MINGW64`.
+Linux additionally sets `$ORIGIN` RUNPATH on `libdwarfp.so*` with `patchelf`.
+Windows builds under MSYS2 `MINGW64`. See `docs/RELEASE.md` for the versioning,
+assembly, host support, and install contract.
 
-### 10.3 Full Ghidra extension build
+### 10.2 Full Ghidra extension build
 
 **CONFIRMED:** the first supported baseline is Ghidra 12.0.3. Its extension
 build compiles Java 21-compatible bytecode. The repository-owned wrapper uses

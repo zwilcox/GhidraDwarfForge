@@ -1539,6 +1539,33 @@ them: `r1` is available in the executable/PIE fixture, while overwritten
 locationless. Thumb, big-endian ARM, and other ARM ABI profiles remain
 **PLANNED** rather than implied by this result.
 
+### 16.20 Release packaging and repository cleanup
+
+**CONFIRMED (2026-09-03):** release version `0.1.0-alpha.1` establishes a
+Semantic Versioning source in `VERSION`. The production packaging path is now
+the pinned native builds in `.github/workflows/ci.yml` followed by
+`support/assemble-release.sh`; the historical Maven shaded JAR workflow is no
+longer a production or repository path. Committed `jna-wrapper/`, `src/temp/`,
+and `src/libdwarf.jar` artifacts were removed. Ghidra's bundled JNA remains the
+Java/native bridge.
+
+The assembler adds the Linux x86-64 and Windows x86-64 builds to Ghidra's
+`os/<platform>` extension layout. It writes an exact native-pair descriptor,
+per-platform hashes, build provenance, a root release manifest, and a
+whole-bundle checksum manifest; all ZIP timestamps and entry ordering are
+normalized. CI assembles twice and requires byte identity. Installed wrappers
+select packaged natives by default, while explicit library pairs remain a
+developer override. The exporter checks the packaged file set and hashes
+before loading native code.
+
+The required pipeline installs only the aggregate bundle and runs real
+packaged-native exports on fresh Linux and Windows Ghidra installations. This
+is the evidence boundary for the initial Linux/Windows x86-64 host claim.
+Target coverage remains the separately documented ELF matrix. Licensing,
+third-party notices, and publication of an official GitHub Release are
+explicitly deferred by the user; CI output is a validated pre-release artifact
+until those items are resumed.
+
 ## 17. Open questions
 
 Codex should not silently answer these through implementation choices. Investigate, document, and obtain user direction when the answer materially changes compatibility or scope.
@@ -1550,8 +1577,11 @@ Codex should not silently answer these through implementation choices. Investiga
 3. **RESOLVED — libdwarf revision:** libdwarf v2.3.2, source commit
    `af7b278c6aa2ae9daad94fb7f8bffdc0e9980993`, is pinned with the official
    archive SHA-256.
-4. **Native provenance:** Should release builds compile native libraries in CI, consume checksummed upstream artifacts, or both?
-5. **JNA ownership:** Should the extension use Ghidra’s bundled JNA or a shaded private copy? Classloader/native-loader conflicts must be tested.
+4. **RESOLVED — Native provenance:** release builds compile pinned libdwarf in
+   CI from the checksummed official source archive and package only those
+   reviewed job artifacts.
+5. **RESOLVED — JNA ownership:** the extension uses Ghidra's bundled JNA. The
+   obsolete shaded private copy and unpacked JAR tree were removed.
 6. **ELF packaging:** What precise separate-debug container does GDB accept most reliably across non-PIE, PIE, and shared objects?
 7. **Association:** Is explicit `symbol-file`/`add-symbol-file` sufficient for the first milestone, or is automatic build-ID association required immediately?
 8. **Build ID:** Should the sidecar copy the target build ID, and how should targets without a build ID be handled?
@@ -1569,12 +1599,15 @@ Codex should not silently answer these through implementation choices. Investiga
 18. **`.debug_frame`:** Is generating synthetic unwind information required, or should the exporter preserve/rely on target `.eh_frame`/`.debug_frame` information?
 19. **ELF implementation library:** Continue a hand-written emitter, use Ghidra ELF classes, use another Java ELF library, or derive metadata through an external tool? Licensing and portability matter.
 20. **Distribution license:** Which license should cover the repository, and what notices/source obligations apply to bundled libdwarf/JNA binaries?
-21. **Release format:** Ghidra extension ZIP only, or extension ZIP plus standalone/headless tools and native provenance manifest?
-22. **PARTIALLY RESOLVED — initial support promise:** x86-64 and AArch64 target
+21. **RESOLVED — Release format:** one versioned Ghidra extension ZIP includes
+    the headless wrappers, Linux/Windows natives, and provenance/checksum
+    manifests.
+22. **RESOLVED — initial support promise:** Linux x86-64 and Windows x86-64 are
+    the initial Ghidra host platforms. x86-64 and AArch64 target
     integration lanes are first-release blockers. MIPS is explicitly in the
     product scope and requires a QEMU/native behavior lane before support is
-    advertised. The precise Linux/Windows host release matrix remains to be
-    finalized.
+    advertised broadly; the validated ARM32 and MIPS profiles remain narrower
+    claims documented in the release notes.
 
 ## 18. Immediate strategic direction
 

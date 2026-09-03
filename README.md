@@ -18,8 +18,9 @@ globals, stable registers, changing stack locations, composites, and honest
 unavailable variables. Explicitly rebased Ghidra projects normalize back to
 ELF link-time addresses.
 
-Explicit native-library paths still keep export opt-in. Packaged native
-discovery remains incomplete. The Windows-hosted ELF lane passes native,
+Export remains an explicit operation. Installable CI bundles include verified
+Linux x86-64 and Windows x86-64 native libraries; the packaged headless
+wrappers select them automatically. The Windows-hosted ELF lane passes native,
 publication/file-lock, real-export, and structural validation tests; ELF/GDB
 execution remains in Linux native/QEMU lanes. PE/PDB is out of scope. Imports
 and thunks are diagnosed and omitted, and distinct linkage-name emission
@@ -37,6 +38,10 @@ export GHIDRA_INSTALL_DIR=/path/to/ghidra_12.0.3_PUBLIC
 
 The extension ZIP is written to `dist/`.
 
+CI additionally assembles the versioned Linux/Windows bundle documented in
+[`docs/RELEASE.md`](docs/RELEASE.md). That bundle installs without compiling
+libdwarf locally. Official release publication and licensing work are deferred.
+
 ## Headless entry point
 
 The extension packages Bash and PowerShell headless wrappers under `support/`.
@@ -46,8 +51,6 @@ For a fresh temporary import on Linux:
 support/ghidra-dwarf-forge-headless \
     --ghidra-dir=/path/to/ghidra_12.0.3_PUBLIC \
     --import=/path/to/program.elf \
-    --libdwarf=/path/to/libdwarf.so.2.3.2 \
-    --libdwarfp=/path/to/libdwarfp.so.2.3.2 \
     --output=/path/to/program.elf.dbg
 ```
 
@@ -58,14 +61,13 @@ existing project and program:
 support/ghidra-dwarf-forge-headless \
     --ghidra-dir=/path/to/ghidra_12.0.3_PUBLIC \
     --project-dir=/path/to/projects --project-name=Firmware \
-    --program=/folder/program \
-    --libdwarf=/path/to/libdwarf.so.2.3.2 \
-    --libdwarfp=/path/to/libdwarfp.so.2.3.2
+    --program=/folder/program
 ```
 
 The PowerShell equivalent is `support/ghidra-dwarf-forge-headless.ps1` with
 `-GhidraDirectory`, `-Import`, `-ProjectDirectory`, `-ProjectName`, `-Program`,
-`-Libdwarf`, `-Libdwarfp`, `-Input`, `-Output`, and `-Log` parameters.
+`-Input`, `-Output`, and `-Log` parameters. `-Libdwarf` and `-Libdwarfp` are
+optional paired overrides for development builds.
 
 Exit `0` means the export completed as either `SUCCESS` or `PARTIAL`; inspect
 the schema-versioned JSON report for semantic omissions. Exit `10` means
@@ -80,9 +82,14 @@ reports target metadata without loading native code. Its opt-in export accepts:
 ```text
 --libdwarf=/absolute/path/libdwarf.so.2.3.2
 --libdwarfp=/absolute/path/libdwarfp.so.2.3.2
+--packaged-natives
 --input=/optional/path/to/original-when-Ghidra-path-is-stale
 --output=/optional/path/to/binary.dbg
 ```
+
+Choose either `--packaged-natives` or the two explicit native paths. The
+installed wrappers pass `--packaged-natives` by default and verify the bundled
+file set and SHA-256 manifest before the exporter loads it.
 
 With no `--output`, the exporter writes `<original>.dbg` and
 `<original>.dbg.c` beside the original ELF. Headless mode fails with a clear
