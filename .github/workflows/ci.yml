@@ -107,12 +107,13 @@ jobs:
           cp "$GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch" \
             "$compliance/patches/"
           cp "$GITHUB_WORKSPACE/$LIBDWARF_ARCHIVE" "$compliance/source/"
+          source_manifest=$(mktemp)
           (
             cd "$compliance"
-            find . -type f ! -name SOURCE-SHA256SUMS -print0 |
-              LC_ALL=C sort -z | xargs -0 sha256sum \
-              > SOURCE-SHA256SUMS
+            find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum \
+              > "$source_manifest"
           )
+          mv "$source_manifest" "$compliance/SOURCE-SHA256SUMS"
           {
             echo "libdwarf release: $LIBDWARF_VERSION"
             echo "source commit: $LIBDWARF_SOURCE_COMMIT"
@@ -265,20 +266,23 @@ jobs:
           mkdir -p "$runtime_compliance"
           : > "$runtime_compliance/PACKAGE-VERSIONS.txt"
           copy_package_notices() {
-            local package=$1 component=$2 destination
+            local package=$1 component=$2 destination copied=0
             local license_files=()
             destination="$runtime_compliance/$component/licenses"
             mkdir -p "$destination"
             pacman -Q "$package" >> "$runtime_compliance/PACKAGE-VERSIONS.txt"
             mapfile -t license_files < <(pacman -Ql "$package" |
               awk '$2 ~ /\/share\/licenses\// { print $2 }')
-            if [[ ${#license_files[@]} -eq 0 ]]; then
+            for license_file in "${license_files[@]}"; do
+              if [[ -f "$license_file" ]]; then
+                cp "$license_file" "$destination/$(basename "$license_file")"
+                copied=$((copied + 1))
+              fi
+            done
+            if [[ $copied -eq 0 ]]; then
               echo "no installed license files found for $package" >&2
               return 1
             fi
-            for license_file in "${license_files[@]}"; do
-              cp "$license_file" "$destination/$(basename "$license_file")"
-            done
           }
           copy_package_notices mingw-w64-x86_64-zlib zlib
           copy_package_notices mingw-w64-x86_64-zstd zstd
@@ -294,12 +298,13 @@ jobs:
                 ;;
             esac
           done
+          runtime_manifest=$(mktemp)
           (
             cd "$runtime_compliance"
-            find . -type f ! -name RUNTIME-SHA256SUMS -print0 |
-              LC_ALL=C sort -z | xargs -0 sha256sum \
-              > RUNTIME-SHA256SUMS
+            find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum \
+              > "$runtime_manifest"
           )
+          mv "$runtime_manifest" "$runtime_compliance/RUNTIME-SHA256SUMS"
 
           {
             echo "libdwarf release: $LIBDWARF_VERSION"
