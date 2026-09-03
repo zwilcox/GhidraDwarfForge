@@ -127,32 +127,29 @@ native build and deterministic release assembler are the source of truth.
 
 ## P0.3 Add repository and dependency licensing
 
-**Status:** `[~]` — the project is MIT licensed. A third-party inventory,
-upstream notices, exact LGPL corresponding source, local patch, reconstruction
-instructions, and release-package enforcement are PRESENT, UNVERIFIED pending
-the hosted native-inclusive bundle.
+**Status:** `[x]` — the project is MIT licensed. The hosted native-inclusive
+bundle carries the third-party inventory, upstream notices, exact LGPL
+corresponding source, local patch, reconstruction instructions, and enforced
+checksums.
 
 ### Work
 
 - [x] Add the project’s chosen MIT `LICENSE`.
 - [x] Record licenses for Ghidra APIs, JNA, libdwarf/libdwarfp, and current
   Windows native dependencies.
-- [~] Include required notices in the extension/release bundle; local assembly
-  passes and hosted verification is pending.
+- [x] Include required notices in the extension/release bundle.
 - [x] Document how corresponding source and build scripts for bundled LGPL
   components are made available.
-- [~] Ensure the chosen packaging approach is compatible with dependency
-  obligations; technical checks are implemented and hosted verification is
-  pending.
+- [x] Ensure the chosen packaging approach includes the technically reviewed
+  dependency-distribution materials and replacement mechanism.
 
 ### Completion criteria
 
 - [x] Repository has an explicit project license.
-- [~] Release artifact contains all required notices; hosted evidence is
-  pending.
+- [x] Release artifact contains all required notices.
 - [x] Third-party dependency versions and licenses are documented.
-- [~] Bundled native distribution obligations have been technically reviewed;
-  hosted evidence is pending.
+- [x] Bundled native distribution obligations have been technically reviewed
+  and enforced by release assembly and hosted CI.
 
 ## P0.4 Pin libdwarf and record native provenance
 
@@ -1186,17 +1183,15 @@ an integration pass.
 
 **Status:** `[~]` — deterministic CI artifacts, packaged Linux/Windows natives,
 clean-install exports, checksums, operating documentation, third-party
-notices, and corresponding-source packaging are implemented. Official GitHub
-Release publication remains separate; hosted verification of the new
-compliance payload is pending.
+notices, corresponding-source packaging, and hosted verification are
+implemented. Official GitHub Release publication remains separate.
 
 ### Work
 
 - [x] Define semantic versioning/release policy.
 - [x] Build Ghidra extension ZIPs reproducibly.
-- [~] Include native checksums, provenance, third-party notices, and exact
-  corresponding source; local assembly passes and hosted verification is
-  pending.
+- [x] Include native checksums, provenance, third-party notices, and exact
+  corresponding source.
 - [x] Publish support matrix and known limitations.
 - [x] Add installation, run, GDB loading, and troubleshooting instructions.
 
