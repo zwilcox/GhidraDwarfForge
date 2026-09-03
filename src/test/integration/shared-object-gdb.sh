@@ -156,6 +156,11 @@ info args
 print fixture_sink
 print scoped_counter
 next
+EOF
+    if [[ "$target" == "arm32" ]]; then
+        echo next
+    fi
+    cat <<EOF
 print fixture_sink
 continue
 EOF
