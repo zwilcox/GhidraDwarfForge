@@ -1,0 +1,19 @@
+From: GhidraDwarfForge maintainers
+Subject: [PATCH] Preserve AArch64 producer relocation types
+
+R_AARCH64_ABS32 is 258 and R_AARCH64_ABS64 is 257. Storing either value in
+Dwarf_Ubyte truncates it, causing DW_FORM_strp validation to reject an
+otherwise valid producer attribute. This is a private producer structure;
+widen the field to the same int type used by de_offset_reloc/de_ptr_reloc.
+
+--- a/src/lib/libdwarfp/dwarf_pro_opaque.h
++++ b/src/lib/libdwarfp/dwarf_pro_opaque.h
+@@ -224,7 +224,7 @@ struct Dwarf_P_Attribute_s {
+         index of symbol in SYMTAB */
+     Dwarf_Unsigned ar_debug_str_offset; /* Offset in .debug_str
+         if non-zero. Zero offset never assigned a string. */
+-    Dwarf_Ubyte ar_rel_type;  /* relocation type */
++    int ar_rel_type;          /* relocation type */
+     Dwarf_Unsigned ar_rel_offset; /* Offset of reloc within block */
+     char ar_reloc_len; /* Number of bytes that relocation
+         applies to. 4 or 8. Unused and may

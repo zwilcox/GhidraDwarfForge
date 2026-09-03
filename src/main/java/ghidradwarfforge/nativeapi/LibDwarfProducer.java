@@ -36,6 +36,10 @@ public interface LibDwarfProducer extends Library {
             Pointer errorArgument, Pointer userData, String isaName, String dwarfVersion,
             String extra, PointerByReference debugOut, PointerByReference errorOut);
 
+    // libdwarfp.h 2.3.2 lines 194-196.
+    int dwarf_pro_set_default_string_form(Debug debug, int desiredForm,
+            PointerByReference errorOut);
+
     // libdwarfp.h 2.3.2 lines 558-566.
     int dwarf_new_die_a(Debug debug, long tag, Die parent, Die child, Die left, Die right,
             PointerByReference dieOut, PointerByReference errorOut);

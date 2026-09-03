@@ -184,11 +184,15 @@ for target in "${targets[@]}"; do
     warnings="$result_dir/$target.$fixture_role.readelf.stderr"
     : >"$warnings"
     readelf -h "$output" >/dev/null 2>>"$warnings"
-    readelf -S "$output" >/dev/null 2>>"$warnings"
+    readelf -S "$output" \
+        >"$result_dir/$target.$fixture_role.readelf-sections.txt" 2>>"$warnings"
     readelf -n "$output" >/dev/null 2>>"$warnings"
     readelf --debug-dump=info "$output" \
         >"$result_dir/$target.$fixture_role.readelf-info.txt" 2>>"$warnings"
-    readelf --debug-dump=abbrev "$output" >/dev/null 2>>"$warnings"
+    readelf --debug-dump=abbrev "$output" \
+        >"$result_dir/$target.$fixture_role.readelf-abbrev.txt" 2>>"$warnings"
+    readelf --string-dump=.debug_str "$output" \
+        >"$result_dir/$target.$fixture_role.readelf-strings.txt" 2>>"$warnings"
     readelf --debug-dump=aranges "$output" >/dev/null 2>>"$warnings"
     readelf --debug-dump=decodedline "$output" \
         >"$result_dir/$target.$fixture_role.readelf-decodedline.txt" 2>>"$warnings"
@@ -204,6 +208,12 @@ for target in "${targets[@]}"; do
         cat "$warnings" >&2
         exit 1
     fi
+    grep -q '[.]debug_str' \
+        "$result_dir/$target.$fixture_role.readelf-sections.txt"
+    grep -q 'DW_FORM_strp' \
+        "$result_dir/$target.$fixture_role.readelf-abbrev.txt"
+    grep -q 'GhidraDwarfForge' \
+        "$result_dir/$target.$fixture_role.readelf-strings.txt"
     if [[ "$fixture_role" == "exec.no-build-id" ]]; then
         if readelf -n "$input" | grep -q 'Build ID:' ||
                 readelf -n "$output" | grep -q 'Build ID:'; then

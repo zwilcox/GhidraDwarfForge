@@ -194,7 +194,7 @@ tasks.register("packagedNativeLibrariesSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.nativeapi.PackagedNativeLibrariesSmoke"
 }
 
-// Keep development inputs and the unsafe historical prototype out of releases.
+// Keep repository-only development inputs out of releases.
 buildExtension {
     eachFile { details ->
         if (details.path == "GhidraDwarfForge/support/ghidra-dwarf-forge-headless") {

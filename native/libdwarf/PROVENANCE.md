@@ -39,9 +39,18 @@ At the pinned commit, `Dwarf_Unsigned`, `Dwarf_Signed`, `Dwarf_Off`, and
 `Dwarf_Addr` are fixed 64-bit `long long` types. `Dwarf_Half` is 16-bit and
 `Dwarf_Small` is 8-bit. `Dwarf_Error` and producer handles are opaque pointers.
 
-The CI workflow builds each platform once from this pinned source and passes
-those reviewed artifacts to deterministic release assembly. It does not commit
-opaque native binaries to the source tree.
+The CI workflow makes a primary and clean comparison build on each platform
+from this pinned source. It passes only the primary reviewed artifacts to
+deterministic release assembly and does not commit opaque native binaries to
+the source tree.
+
+Both builds apply the repository-owned patch
+`patches/0001-preserve-aarch64-relocation-type.patch`. libdwarf 2.3.2's private
+producer attribute structure stores `R_AARCH64_ABS32` (258) and
+`R_AARCH64_ABS64` (257) in a `Dwarf_Ubyte`, truncating those values and breaking
+`DW_FORM_strp` output for AArch64. The patch widens only that private field to
+`int`, matching the internal relocation fields it is compared against. CI
+records the patch SHA-256 in native build metadata.
 
 The Windows CI build writes `BUILD-METADATA.txt` beside its DLL artifact with
 the pinned release/commit, configure flags, compiler version, SHA-256 for every
