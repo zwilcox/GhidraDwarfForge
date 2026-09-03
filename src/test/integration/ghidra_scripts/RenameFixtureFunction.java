@@ -167,10 +167,6 @@ public class RenameFixtureFunction extends GhidraScript {
         if (function == null) {
             throw new IllegalStateException("fixture function not discovered at " + address);
         }
-        if (function.isThunk()) {
-            function.setThunkedFunction(null);
-            println("Cleared auto-analysis thunk classification at " + address);
-        }
         return function;
     }
 

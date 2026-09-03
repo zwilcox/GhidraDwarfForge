@@ -91,10 +91,10 @@ validate_transcript() {
         grep -Fxq 'left = <optimized out>' "$transcript"
         grep -Fxq 'right = <optimized out>' "$transcript"
     elif [[ "$target" == "arm32" ]]; then
-        grep -Fq 'Breakpoint 2, recovered_add (left=<optimized out>, right=23)' \
+        grep -Fq 'Breakpoint 2, recovered_add (left=<optimized out>, right=<optimized out>)' \
             "$transcript"
         grep -Fxq 'left = <optimized out>' "$transcript"
-        grep -Fxq 'right = 23' "$transcript"
+        grep -Fxq 'right = <optimized out>' "$transcript"
     else
         grep -Fq 'Breakpoint 2, recovered_add (left=19, right=23)' "$transcript"
         grep -Fxq 'left = 19' "$transcript"

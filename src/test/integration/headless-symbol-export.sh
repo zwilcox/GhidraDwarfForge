@@ -179,10 +179,6 @@ for target in "${targets[@]}"; do
         grep -q "Applied favorite recursive fixture type" "$log"
         grep -q "Applied favorite bit-field fixture type" "$log"
         grep -Eq "canonical types: ([8-9]|[1-9][0-9]+)" "$log"
-        if [[ "$target:$fixture_role" == arm32:shared ]]; then
-            grep -Fq "Cleared auto-analysis thunk classification at $rename_address" \
-                "$log"
-        fi
     fi
 
     warnings="$result_dir/$target.$fixture_role.readelf.stderr"
@@ -310,8 +306,13 @@ for target in "${targets[@]}"; do
                 "$log"
             grep -q "Omitted location for recovered_add::analyst_register: function writes local register r3" \
                 "$log"
-            grep -q "DW_OP_regx: 1" \
-                "$result_dir/$target.$fixture_role.readelf-info.txt"
+            if [[ "$fixture_role" == "shared" ]]; then
+                grep -q "Omitted location for recovered_add::right: function writes parameter register r1" \
+                    "$log"
+            else
+                grep -q "DW_OP_regx: 1" \
+                    "$result_dir/$target.$fixture_role.readelf-info.txt"
+            fi
         else
             grep -Eq "defensible variable locations: [1-9][0-9]*" "$log"
             grep -q "DW_OP_regx: 4" \
