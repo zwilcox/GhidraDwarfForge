@@ -127,12 +127,13 @@ native build and deterministic release assembler are the source of truth.
 
 ## P0.3 Add repository and dependency licensing
 
-**Status:** `[ ]`
-**Design input required:** user must select the project license if not already decided.
+**Status:** `[~]` — the user selected MIT and the repository now carries the
+project license. Third-party dependency review, notices, and corresponding
+source obligations remain.
 
 ### Work
 
-- Add the project’s chosen `LICENSE`.
+- [x] Add the project’s chosen MIT `LICENSE`.
 - Record licenses for Ghidra APIs, JNA, libdwarf/libdwarfp, and any future ELF library.
 - Include required notices in the extension/release bundle.
 - Document how corresponding source and build scripts for bundled LGPL components are made available.
@@ -140,7 +141,7 @@ native build and deterministic release assembler are the source of truth.
 
 ### Completion criteria
 
-- [ ] Repository has an explicit project license.
+- [x] Repository has an explicit project license.
 - [ ] Release artifact contains all required notices.
 - [ ] Third-party dependency versions and licenses are documented.
 - [ ] Bundled native distribution obligations have been reviewed and satisfied.
@@ -244,9 +245,9 @@ Additional required work:
 
 ## P0.6 Create an isolated native producer smoke-test executable
 
-**Status:** `[~]` — passes in isolated Linux JVMs for x86-64, AArch64, and
-MIPS32 target modes and in a Windows JVM for x86-64; packaged-native and
-repetition coverage remain.
+**Status:** `[~]` — passes in isolated Linux JVMs for x86-64, AArch64, ARM32,
+and MIPS32 target modes and in a Windows JVM for x86-64; packaged-native and
+repetition/leak coverage remain.
 **Dependency:** P0.4 and P0.5.
 
 ### Work
@@ -267,10 +268,10 @@ Run it in a separate process so a native fault produces a test failure rather th
 ### Completion criteria
 
 - [x] Exit code is zero on supported Linux/Windows hosts.
-- [ ] A crash or signal is surfaced as a failed test.
+- [x] A crash or signal is surfaced as a failed test.
 - [ ] Repeated runs do not leak unbounded native/JNA resources.
-- [ ] Section callback indices and relocation data are internally consistent.
-- [ ] Test output records the pinned libdwarf revision and native checksum.
+- [x] Section callback indices and relocation data are internally consistent.
+- [x] Test output records the pinned libdwarf revision and native checksum.
 
 ## P0.7 Add source-built ELF fixtures and a test harness
 
@@ -1220,9 +1221,9 @@ the original ELF's unwind metadata and must not synthesize unsupported CFI.
 
 ## P3.2 Improve string/form policy
 
-**Status:** `[~]` — deterministic `DW_FORM_strp`/`.debug_str` output passes the
-full hosted target/Windows structural and behavior matrix. Issue closure is
-pending merge.
+**Status:** `[x]` — deterministic `DW_FORM_strp`/`.debug_str` output passes the
+full hosted target/Windows structural and behavior matrix. Issue #9 was closed
+after merge and post-merge validation.
 **Corresponds to:** issue #9.
 
 ### Work
@@ -1234,7 +1235,7 @@ pending merge.
 
 - [x] Form policy is documented and deterministic.
 - [x] `.debug_str` is emitted when selected and all offsets validate.
-- [ ] Issue #9 is closed only after structural tests.
+- [x] Issue #9 was closed only after structural tests passed.
 
 ## P3.3 Add richer scopes and declarations
 

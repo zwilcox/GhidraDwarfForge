@@ -68,6 +68,11 @@ structural validation, and native/QEMU GDB behavior with `.debug_str` and
 delivery, file-lock rollback, explicit-native export, and packaged-native
 export.
 
+**CONFIRMED:** post-merge `main` run 33781582940 repeated all 12 checks against
+merge commit `c698153` successfully. Issues #1, #2, #3, #5, #6, #7, and #9
+were then closed as completed. Issue #8 was closed as not planned for the
+current ELF milestone under ADR-0002's evidence requirement.
+
 The required workflow now also assembles the Linux/Windows native release ZIP
 twice, compares it byte for byte, verifies every embedded SHA-256 manifest,
 and installs that aggregate artifact for real exports on both host operating
