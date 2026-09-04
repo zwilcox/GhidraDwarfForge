@@ -53,8 +53,29 @@ make -C src/test/fixtures all
 The default matrix is x86-64, AArch64, ARM32, MIPS32 big-endian, and MIPS32
 little-endian, each as non-PIE `ET_EXEC` and PIE. The ARM32 profile is ARMv7
 hard-float, little-endian ARM state. Reference files retain compiler DWARF 5
-for test-oracle and diagnostic use. `.stripped` files are the inputs intended
-for Ghidra.
+for test-oracle and diagnostic use. Most `.stripped` files have all symbols
+removed and are the inputs intended for Ghidra. The
+`semantic.partial.stripped` case instead removes compiler debug sections while
+retaining its normal symbol table; every target lane imports, exports, validates,
+and debugs this partially stripped input as a distinct regression.
+
+| Fixture | Source | Behavior exercised |
+| --- | --- | --- |
+| `semantic.exec.*` | `semantic.c` | Fixed-address executable, full semantic model, and fully stripped input |
+| `semantic.partial.*` | `semantic.c` | Partially stripped executable with symbols but no compiler DWARF |
+| `semantic.exec.no-build-id.*` | `semantic.c` | Explicit loading when no build identity exists |
+| `semantic.exec.no-sections.stripped` | derived from `semantic.exec.stripped` | Program-header-only input and new output section table |
+| `semantic.pie.*` | `semantic.c` | PIE load bias and ASLR behavior |
+| `libsemantic.so.*` | `shared_semantic.c` | PIC shared object without `main` |
+| `semantic.shared-driver.*` | `shared_driver.c` | Runtime loading and calls into the stripped shared object |
+
+`src/test/integration/fixture-reproducibility.sh <target>` builds this complete
+set twice in isolated directories and requires byte-identical file lists and
+contents. It records per-artifact SHA-256 values plus ELF headers, program
+headers, section tables, and notes under
+`build/test-results/fixture-metadata/<target>/`. CI retains that directory with
+the target-lane diagnostics. The script also enforces the reviewed fixture
+source inventory: the tests require no firmware or external binary input.
 
 Each target also has `semantic.exec.no-build-id.{reference,stripped}` built
 with `--build-id=none`. Its Forge sidecar must remain free of a build-ID claim

@@ -73,6 +73,13 @@ merge commit `c698153` successfully. Issues #1, #2, #3, #5, #6, #7, and #9
 were then closed as completed. Issue #8 was closed as not planned for the
 current ELF milestone under ADR-0002's evidence requirement.
 
+**CONFIRMED:** GitHub Actions run 33824105805 passed all 12 jobs after the
+release-hardening additions. Linux and Windows passed repeated producer
+lifetimes and clean installed-extension native loading; all five target lanes
+passed reproducible fixture rebuilds and real partially stripped input export.
+The table-driven target and architecture-boundary guards, relocation-section
+rejection, and `.debug_aranges` absence checks also passed.
+
 The required workflow now also assembles the Linux/Windows native release ZIP
 twice, compares it byte for byte, verifies every embedded SHA-256 manifest,
 and installs that aggregate artifact for real exports on both host operating
@@ -116,14 +123,14 @@ the hosted runner.
 
 ```bash
 GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC \
-  ./gradlew clean addressNormalizerSmoke outputPathPolicySmoke \
+  ./gradlew clean addressNormalizerSmoke dwarfTargetSmoke outputPathPolicySmoke \
     exportReportSmoke syntheticSourceSmoke typeGraphSmoke variableStorageSmoke \
     dwarfInfoRepairSmoke dwarfLineTableSmoke \
     dwarfRangeListsSmoke dwarfLocationListsSmoke artifactPairPublisherSmoke \
     packagedNativeLibrariesSmoke buildExtension
 ```
 
-Result: PASS. All twelve native-independent smoke tests passed and the
+Result: PASS. All thirteen native-independent smoke tests passed and the
 installable artifact was generated under `dist/`. `unzip -t` accepted the ZIP,
 and inspection confirmed that the local `.ghidra-test` directory was not
 packaged.
@@ -144,6 +151,14 @@ LLVM, independent libdwarf, and GDB checks. A mismatched-input preflight emits
 `FATAL` and publishes neither output. Validator state is explicitly `NOT_RUN`
 inside the export report because the development harness validates the final
 artifact after the report is produced.
+
+`dwarfTargetSmoke` checks the table-driven ELF-machine, class, byte-order, and
+libdwarf ISA/flag mapping. It accepts only the validated profiles, including
+MIPS32 in both byte orders, and fails closed for MIPS64 and unsupported
+big-endian x86-64, AArch64, or ARM inputs. The companion
+`src/test/integration/architecture-neutrality.sh` guard rejects architecture
+names and register spellings outside `DwarfTarget`, `TargetRegisterMap`, and
+the host-only packaged-native selector.
 
 ## Packaged headless wrapper
 
@@ -174,10 +189,24 @@ GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC \
   ./gradlew nativeProducerSmoke \
   -PlibdwarfPath=<audit-build>/libdwarf.so.2.3.2 \
   -PlibdwarfpPath=<audit-build>/libdwarfp.so.2.3.2 \
-  -PtargetProfile=<x86_64|arm64|arm32|mips32be|mips32le>
+  -PtargetProfile=<x86_64|arm64|arm32|mips32be|mips32le> \
+  -PnativeIterations=64
+
+GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC \
+  ./gradlew packagedNativeProducerSmoke \
+  -PpackagedModuleRoot=<installed-GhidraDwarfForge-module> \
+  -PpackagedPlatform=<linux_x86_64|win_x86_64> \
+  -PtargetProfile=x86_64 \
+  -PnativeIterations=2
 ```
 
-Result: PASS for all five profiles in separate JVM processes. Each run
+Result: PASS for all five profiles in separate JVM processes. The x86-64
+Linux process also completed 64 full producer lifetimes and remained below
+the 32 MiB post-warmup RSS-growth bound. A previous installed artifact's old
+native demonstrated the cross-lifetime output defect which the updated patch
+fixes. GitHub Actions run 33824105805 passed 64 explicit-native lifetimes on
+Linux and Windows and resolved the checksum-verified pair from the clean
+installed release artifact on both hosts. Each run
 created a DWARF 5 CU and subprogram, retrieved `.debug_info`,
 `.debug_abbrev`, and `.debug_str`, validated a version-2 symbolic relocation
 buffer, checked target-address and string-table relocations, and finished
@@ -189,7 +218,11 @@ guards the producer/consumer `Dwarf_Error_s` layout mismatch.
 
 The local audit build applies
 `native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch` to the
-pinned v2.3.2 source. A clean second Linux build produced functionally
+pinned v2.3.2 source. Besides preserving AArch64 relocation types, the patch
+makes producer string tables handle-local and frees them at finish. Without
+that fix, the repetition test observed `.debug_str` grow by 95 bytes per
+identical producer lifetime; with it, all 64 lifetimes emitted the same
+95-byte section. A clean second Linux build produced functionally
 equivalent library file sets, ELF identity, exports, SONAME/dependencies, and
 normalized RUNPATH. The exact binary hashes differed because the compiler
 embedded distinct build paths/build IDs; both sets are recorded rather than
@@ -202,6 +235,8 @@ and 24-byte relocation record layout.
 
 ```bash
 make -C src/test/fixtures all
+src/test/integration/fixture-reproducibility.sh x86_64
+src/test/integration/fixture-reproducibility.sh aarch64
 src/test/integration/headless-preflight.sh \
   /home/ziggy/ghidra_12.0.3_PUBLIC
 FIXTURE_SUFFIX=exec.no-sections.stripped \
@@ -211,6 +246,12 @@ FIXTURE_SUFFIX=pie.stripped \
   src/test/integration/headless-preflight.sh \
   /home/ziggy/ghidra_12.0.3_PUBLIC
 ```
+
+The reproducibility harness builds each selected target twice, requires
+byte-identical outputs, records SHA-256 and `readelf -h -l -S -n` metadata,
+and proves the partially stripped artifact retains symbols while containing no
+compiler DWARF. Local x86-64 and AArch64 runs pass; hosted confirmation for all
+five profiles passed in GitHub Actions run 33824105805.
 
 Result: PASS for x86-64, AArch64, MIPS32 big-endian, and MIPS32 little-endian.
 Ghidra selected the expected processor, byte order, address size, and pointer
@@ -223,7 +264,7 @@ GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC \
   ./gradlew sectionlessSidecarSmoke
 ```
 
-Result: PASS for all four architectures and three variants per architecture:
+Result: PASS for all five target profiles and three variants per profile:
 ordinary ET_EXEC, PIE, and ET_EXEC with no input section-header table. The
 writer preserved class, byte order, type, machine, flags, note/build-ID data,
 and original input hashes. It created a new `SHT_STRTAB` `.shstrtab` and
@@ -479,7 +520,9 @@ The x86-64 fixture's recovered `FUN_00401090` has real intervals
 both addresses to `FUN_00401090` and reports no line information at the gap
 address `0x4010ae`. The CU has its own merged, non-gap-covering `DW_AT_ranges`.
 `.debug_aranges` is intentionally absent because it is an optional accelerator,
-not required for the validated GDB lookup path.
+not required for the validated GDB lookup path. Every real-export role now
+asserts that it remains absent; the x86-64 discontiguous-range oracle verifies
+the authoritative CU/subprogram `DW_AT_ranges` intervals and gap behavior.
 
 Global extraction is deliberately narrower than “every address with a name”:
 the symbol must be a primary, non-default, non-external Ghidra label with

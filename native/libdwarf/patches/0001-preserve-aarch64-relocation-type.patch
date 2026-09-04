@@ -1,10 +1,16 @@
 From: GhidraDwarfForge maintainers
-Subject: [PATCH] Preserve AArch64 producer relocation types
+Subject: [PATCH] Preserve relocation types and isolate producer string tables
 
 R_AARCH64_ABS32 is 258 and R_AARCH64_ABS64 is 257. Storing either value in
 Dwarf_Ubyte truncates it, causing DW_FORM_strp validation to reject an
 otherwise valid producer attribute. This is a private producer structure;
 widen the field to the same int type used by de_offset_reloc/de_ptr_reloc.
+
+Producer initialization also points every handle at the same mutable static
+.debug_str and .debug_line_str descriptors. Their allocated data survives
+producer finish, so sequential exports append prior strings and leak memory.
+Allocate those descriptors per producer and release their separate buffers at
+finish.
 
 --- a/src/lib/libdwarfp/dwarf_pro_opaque.h
 +++ b/src/lib/libdwarfp/dwarf_pro_opaque.h
@@ -17,3 +23,37 @@ widen the field to the same int type used by de_offset_reloc/de_ptr_reloc.
      Dwarf_Unsigned ar_rel_offset; /* Offset of reloc within block */
      char ar_reloc_len; /* Number of bytes that relocation
          applies to. 4 or 8. Unused and may
+--- a/src/lib/libdwarfp/dwarf_pro_init.c
++++ b/src/lib/libdwarfp/dwarf_pro_init.c
+@@ -134,6 +133,0 @@
+-static struct Dwarf_P_Section_Data_s init_sect_debug_str = {
+-    MAGIC_SECT_NO, 0, 0, 0, 0
+-};
+-static struct Dwarf_P_Section_Data_s init_sect_debug_line_str = {
+-    MAGIC_SECT_NO, 0, 0, 0, 0
+-};
+@@ -302,0 +297,10 @@
++    Dwarf_P_Section_Data string_sections = 0;
++
++    string_sections = (Dwarf_P_Section_Data)_dwarf_p_get_alloc(dbg,
++        2 * sizeof(struct Dwarf_P_Section_Data_s));
++    if (!string_sections) {
++        *err_ret = DW_DLE_ALLOC_FAIL;
++        return DW_DLV_ERROR;
++    }
++    string_sections[0].ds_elf_sect_no = MAGIC_SECT_NO;
++    string_sections[1].ds_elf_sect_no = MAGIC_SECT_NO;
+@@ -307,2 +311,2 @@
+-    dbg->de_debug_str = &init_sect_debug_str;
+-    dbg->de_debug_line_str = &init_sect_debug_line_str;
++    dbg->de_debug_str = &string_sections[0];
++    dbg->de_debug_line_str = &string_sections[1];
+--- a/src/lib/libdwarfp/dwarf_pro_finish.c
++++ b/src/lib/libdwarfp/dwarf_pro_finish.c
+@@ -42,0 +43 @@
++#include "dwarf_pro_section.h"
+@@ -59,0 +61,4 @@
++    free(dbg->de_debug_str->ds_data);
++    dbg->de_debug_str->ds_data = 0;
++    free(dbg->de_debug_line_str->ds_data);
++    dbg->de_debug_line_str->ds_data = 0;

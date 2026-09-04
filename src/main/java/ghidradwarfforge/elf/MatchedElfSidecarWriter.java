@@ -26,7 +26,10 @@ public final class MatchedElfSidecarWriter {
     private static final long SHT_NULL = 0;
     private static final long SHT_PROGBITS = 1;
     private static final long SHT_STRTAB = 3;
+    private static final long SHT_RELA = 4;
     private static final long SHT_NOTE = 7;
+    private static final long SHT_NOBITS = 8;
+    private static final long SHT_REL = 9;
     private static final long SHF_ALLOC = 0x2;
     private static final long PT_NOTE = 4;
     private static final int SHN_LORESERVE = 0xff00;
@@ -85,7 +88,10 @@ public final class MatchedElfSidecarWriter {
         else {
             for (Section section : image.sections()) {
                 Section copy = section.copy();
-                if (section.originalIndex == image.sectionNameIndex()) {
+                if (copy.type == SHT_REL || copy.type == SHT_RELA) {
+                    omitRelocationSection(copy);
+                }
+                else if (section.originalIndex == image.sectionNameIndex()) {
                     copy.name = ".shstrtab.old";
                 }
                 else if ((copy.name.startsWith(".debug_") ||
@@ -176,6 +182,19 @@ public final class MatchedElfSidecarWriter {
             header.putShort(50, (short) (sections.size() - 1));
         }
         return result;
+    }
+
+    private static void omitRelocationSection(Section section) {
+        section.name = ".forge.omitted" + section.name;
+        section.type = SHT_NOBITS;
+        section.flags = 0;
+        section.address = 0;
+        section.offset = 0;
+        section.size = 0;
+        section.link = 0;
+        section.info = 0;
+        section.alignment = 1;
+        section.entrySize = 0;
     }
 
     private static void addIdentityNoteSections(ElfImage image, List<Section> sections) {
