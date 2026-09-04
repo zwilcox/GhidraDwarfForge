@@ -227,8 +227,13 @@ run_emulated() {
             -ex "ptype union word_view" -ex "ptype enum operation")
         print_before=(-ex "print fixture_sink" -ex "print scoped_counter")
         print_after=(-ex "print fixture_sink")
-        composite_break=(-ex "break recovered_composite")
-        composite_print=(-ex "print/x analyst_composite" -ex continue)
+        # ARM32 deliberately omits this location because recovered_composite
+        # overwrites one of its incoming register pieces. The export log
+        # verifies that omission; do not ask GDB to print an unavailable DIE.
+        if [[ "$target" != "arm32" ]]; then
+            composite_break=(-ex "break recovered_composite")
+            composite_print=(-ex "print/x analyst_composite" -ex continue)
+        fi
         local normal_offset changed_offset
         normal_offset=$(symbol_offset "$target" forge_stack_normal recovered_add)
         changed_offset=$(symbol_offset "$target" forge_stack_changed recovered_add)
