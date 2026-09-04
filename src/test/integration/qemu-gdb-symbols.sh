@@ -240,16 +240,12 @@ run_emulated() {
         location_break=(-ex "break *$function+$normal_offset" \
             -ex "break *$function+$changed_offset")
     fi
-    if [[ "$target:$fixture_role" == arm32:pie ]]; then
-        execution_flow=(-ex frame -ex list -ex step \
-            -ex 'printf "analyst_stack=%d\n", analyst_stack' \
-            "${print_after[@]}" -ex frame -ex continue \
-            -ex 'printf "analyst_stack_shifted=%d\n", analyst_stack' \
-            -ex frame -ex continue)
-    elif [[ "$target:$fixture_role" == arm32:exec ||
-            "$target:$fixture_role" == arm32:partial ||
-            "$target:$fixture_role" == arm32:exec.no-build-id ]]; then
-        execution_flow=(-ex continue -ex frame -ex list -ex step \
+    if [[ "$target" == arm32 && "$fixture_role" != "exec.no-sections" ]]; then
+        # A retained ELF symbol table changes where GDB resolves the initial
+        # function breakpoint. After proving both user-facing breakpoints can
+        # be created and the function breakpoint is hit, disable them and use
+        # the fixture's exact marker breakpoints for stable location checks.
+        execution_flow=(-ex "disable 1 2" -ex continue -ex frame -ex list \
             -ex 'printf "analyst_stack=%d\n", analyst_stack' \
             "${print_after[@]}" -ex frame -ex continue \
             -ex 'printf "analyst_stack_shifted=%d\n", analyst_stack' \
