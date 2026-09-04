@@ -73,6 +73,13 @@ merge commit `c698153` successfully. Issues #1, #2, #3, #5, #6, #7, and #9
 were then closed as completed. Issue #8 was closed as not planned for the
 current ELF milestone under ADR-0002's evidence requirement.
 
+**CONFIRMED:** GitHub Actions run 33824105805 passed all 12 jobs after the
+release-hardening additions. Linux and Windows passed repeated producer
+lifetimes and clean installed-extension native loading; all five target lanes
+passed reproducible fixture rebuilds and real partially stripped input export.
+The table-driven target and architecture-boundary guards, relocation-section
+rejection, and `.debug_aranges` absence checks also passed.
+
 The required workflow now also assembles the Linux/Windows native release ZIP
 twice, compares it byte for byte, verifies every embedded SHA-256 manifest,
 and installs that aggregate artifact for real exports on both host operating
@@ -195,11 +202,11 @@ GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC \
 
 Result: PASS for all five profiles in separate JVM processes. The x86-64
 Linux process also completed 64 full producer lifetimes and remained below
-the 32 MiB post-warmup RSS-growth bound. The packaged-library smoke resolved a
-previous installed artifact's checksum-verified Linux pair; that old native
-then demonstrated the cross-lifetime output defect which the updated patch
-fixes. Clean rebuilt-package confirmation on Linux and Windows is pending in
-hosted CI. Each run
+the 32 MiB post-warmup RSS-growth bound. A previous installed artifact's old
+native demonstrated the cross-lifetime output defect which the updated patch
+fixes. GitHub Actions run 33824105805 passed 64 explicit-native lifetimes on
+Linux and Windows and resolved the checksum-verified pair from the clean
+installed release artifact on both hosts. Each run
 created a DWARF 5 CU and subprogram, retrieved `.debug_info`,
 `.debug_abbrev`, and `.debug_str`, validated a version-2 symbolic relocation
 buffer, checked target-address and string-table relocations, and finished
@@ -244,7 +251,7 @@ The reproducibility harness builds each selected target twice, requires
 byte-identical outputs, records SHA-256 and `readelf -h -l -S -n` metadata,
 and proves the partially stripped artifact retains symbols while containing no
 compiler DWARF. Local x86-64 and AArch64 runs pass; hosted confirmation for all
-five profiles is pending.
+five profiles passed in GitHub Actions run 33824105805.
 
 Result: PASS for x86-64, AArch64, MIPS32 big-endian, and MIPS32 little-endian.
 Ghidra selected the expected processor, byte order, address size, and pointer
@@ -257,7 +264,7 @@ GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC \
   ./gradlew sectionlessSidecarSmoke
 ```
 
-Result: PASS for all four architectures and three variants per architecture:
+Result: PASS for all five target profiles and three variants per profile:
 ordinary ET_EXEC, PIE, and ET_EXEC with no input section-header table. The
 writer preserved class, byte order, type, machine, flags, note/build-ID data,
 and original input hashes. It created a new `SHT_STRTAB` `.shstrtab` and

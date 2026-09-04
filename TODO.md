@@ -250,18 +250,19 @@ Additional required work:
 
 ## P0.6 Create an isolated native producer smoke-test executable
 
-**Status:** `[~]` — explicit-native isolated JVM coverage passes for every
-target profile and packaged-native resolution plus bounded repetition coverage
-is **PRESENT, UNVERIFIED** on hosted Linux/Windows. The repetition test exposed
-and now guards a patched upstream cross-export string-table state leak.
+**Status:** `[x]` — explicit-native isolated JVM coverage passes for every
+target profile. Packaged-native resolution and bounded repetition coverage pass
+on hosted Linux and Windows. The repetition test exposed and now guards a
+patched upstream cross-export string-table state leak. GitHub Actions run
+33824105805 passed the complete matrix.
 **Dependency:** P0.4 and P0.5.
 
 ### Work
 
 Create a small Java command-line test that does not depend on Ghidra and that:
 
-1. `[~]` Loads explicit pinned native libraries and the checksummed native pair
-   from an installed extension; hosted confirmation of the packaged path remains.
+1. `[x]` Loads explicit pinned native libraries and the checksummed native pair
+   from an installed extension.
 2. `[x]` Calls `dwarf_producer_init`.
 3. `[x]` Creates a compile-unit DIE and one subprogram DIE.
 4. `[x]` Transforms to disk form.
@@ -276,17 +277,17 @@ Run it in a separate process so a native fault produces a test failure rather th
 
 - [x] Exit code is zero on supported Linux/Windows hosts.
 - [x] A crash or signal is surfaced as a failed test.
-- [~] A 64-lifetime process test samples Linux RSS and enforces a bounded-growth
-  threshold; hosted Linux/Windows confirmation remains.
+- [x] A 64-lifetime process test samples Linux RSS and enforces a bounded-growth
+  threshold; Linux and Windows both repeat the complete producer lifecycle.
 - [x] Section callback indices and relocation data are internally consistent.
 - [x] Test output records the pinned libdwarf revision and native checksum.
 
 ## P0.7 Add source-built ELF fixtures and a test harness
 
-**Status:** `[~]` — a redistributable semantic source builds ET_EXEC, PIE,
+**Status:** `[x]` — a redistributable semantic source builds ET_EXEC, PIE,
 shared-object, partially stripped, and program-header-only variants for all
 five target profiles. Reproducibility/metadata capture and the real partial
-export role are **PRESENT, UNVERIFIED** across the hosted matrix.
+export role passed across the hosted matrix in GitHub Actions run 33824105805.
 **Blocks:** meaningful validation of all exporter work.
 
 ### Work
@@ -302,10 +303,9 @@ Create small redistributable C/C++ fixtures covering:
 - [x] Source-built PIE reference/stripped fixtures with real headless symbol
   export and runtime assertions.
 - [x] Shared object built from a dedicated source without `main`.
-- [x] x86-64, AArch64, MIPS32 big-endian, and MIPS32 little-endian builds from
-  the same semantic fixture source.
-- [~] Stripped and partially stripped variants; hosted confirmation of the new
-  partial role remains.
+- [x] x86-64, AArch64, ARM32, MIPS32 big-endian, and MIPS32 little-endian builds
+  from the same semantic fixture source.
+- [x] Stripped and partially stripped variants.
 - [x] Program-header-only variants with no ELF section-header table.
 - [x] A fixture/function that the decompiler cannot complete or a controlled mock failure.
 
@@ -314,10 +314,10 @@ Retain original compiler DWARF in a reference build for expected addresses/types
 ### Completion criteria
 
 - [x] Current non-PIE fixtures build through one documented command.
-- [~] Stripped, partially stripped, and reference variants are rebuilt twice
-  and compared byte for byte; hosted confirmation remains.
-- [~] Original, stripped, and partially stripped hashes plus ELF metadata are
-  recorded as CI diagnostics; hosted confirmation remains.
+- [x] Stripped, partially stripped, and reference variants are rebuilt twice
+  and compared byte for byte.
+- [x] Original, stripped, and partially stripped hashes plus ELF metadata are
+  recorded as CI diagnostics.
 - [x] Test harness imports/analyzes/exports every current fixture using Ghidra
   12.0.3 and validates the resulting symbol sidecar.
 - [x] No proprietary firmware is needed for CI.
@@ -871,8 +871,8 @@ storage cases and release support remain.
   storage classes remain.
 - [x] AArch64 PIE/shared cases pass in hosted CI; packaged release evidence
   remains.
-- [~] A repository guard confines architecture identifiers/register spellings
-  to target-description boundaries; hosted confirmation remains.
+- [x] A repository guard confines architecture identifiers/register spellings
+  to target-description boundaries.
 
 ## P2.3a Add MIPS target support
 
@@ -906,8 +906,8 @@ packaged release evidence remain.
   source/type behavior checks pass for the current artifacts.
 - [x] QEMU runtime addresses/load bias agree with emitted DWARF for non-PIE,
   PIE, and shared objects.
-- [~] A repository guard confines MIPS-specific code to target descriptions and
-  register maps; hosted confirmation remains.
+- [x] A repository guard confines MIPS-specific code to target descriptions and
+  register maps.
 
 ## P2.3b Add ARM32/AArch32 target support
 
@@ -971,9 +971,9 @@ including explicit Windows file-lock contention and rollback.
 
 ## P2.5 Add ELF32 support
 
-**Status:** `[~]` — ELF32 container, DWARF, line mapping, locations, validators,
-and GDB source/type behavior pass for ARM32 and MIPS32 big/little endian. A
-table-driven target-profile regression is **PRESENT, UNVERIFIED** in hosted CI.
+**Status:** `[x]` — ELF32 container, DWARF, line mapping, locations, validators,
+and GDB source/type behavior pass for ARM32 and MIPS32 big/little endian. The
+table-driven target-profile regression passed in GitHub Actions run 33824105805.
 
 ### Work
 
@@ -990,9 +990,9 @@ table-driven target-profile regression is **PRESENT, UNVERIFIED** in hosted CI.
 
 ## P2.6 Add big-endian support
 
-**Status:** `[~]` — MIPS32 big-endian container, DWARF 5 line/type/location
+**Status:** `[x]` — MIPS32 big-endian container, DWARF 5 line/type/location
 serialization, validators, and QEMU/GDB pass. Fail-closed rejection for
-unsupported big-endian target profiles is **PRESENT, UNVERIFIED** in hosted CI.
+unsupported big-endian target profiles passed in GitHub Actions run 33824105805.
 
 ### Work
 
@@ -1004,8 +1004,8 @@ unsupported big-endian target profiles is **PRESENT, UNVERIFIED** in hosted CI.
 
 - [x] Big-endian fixture artifact passes validators.
 - [x] GDB resolves expected symbols/source mappings under QEMU.
-- [~] Unsupported big-endian targets fail explicitly rather than producing
-  little-endian output; hosted confirmation remains.
+- [x] Unsupported big-endian targets fail explicitly rather than producing
+  little-endian output.
 
 ---
 

@@ -1624,7 +1624,8 @@ host-provided dependencies, not redistributed payloads.
 
 ### 16.22 Release-hardening coverage
 
-**PRESENT, UNVERIFIED (2026-09-03):** the isolated producer smoke can repeat a
+**CONFIRMED (2026-09-03, GitHub Actions run 33824105805):** the isolated
+producer smoke can repeat a
 complete init/DIE/transform/relocation/finish lifetime in one JVM. The Linux
 path samples post-warmup RSS and rejects growth above 32 MiB over 64 lifetimes;
 the Windows path repeats the same native lifecycle without claiming a
@@ -1637,17 +1638,21 @@ prior native: identical lifetimes grew
 from 95 to 190 bytes and onward. The bundled source patch now allocates the
 string-section descriptors per producer and releases their buffers at finish;
 the rebuilt local producer emitted identical 95-byte output for all 64
-lifetimes. Hosted Linux/Windows confirmation remains.
+lifetimes. Hosted Linux and Windows passed 64 explicit-native lifetimes and
+loaded the checksummed native pair from the clean installed release artifact.
 
-**PRESENT, UNVERIFIED (2026-09-03):** every target fixture now includes a
+**CONFIRMED (2026-09-03, GitHub Actions run 33824105805):** every target
+fixture now includes a
 partially stripped, symbol-retaining variant. A source-inventory and
 reproducibility harness builds each target twice, requires byte-identical file
 sets, and records artifact hashes plus ELF header/program-header/section/note
 metadata. Local x86-64, AArch64, and both MIPS32 byte-order rebuilds passed;
-ARM32 awaits its hosted toolchain. A real x86-64 partial input completed
-export, structural validation, and GDB behavior checks.
+the hosted x86-64, AArch64, ARM32, MIPS32 big-endian, and MIPS32 little-endian
+lanes all passed rebuild, real partial-input export, structural validation, and
+native/QEMU GDB behavior checks.
 
-**PRESENT, UNVERIFIED (2026-09-03):** target selection is table-driven and
+**CONFIRMED (2026-09-03, GitHub Actions run 33824105805):** target selection is
+table-driven and
 fails closed for unvalidated class/byte-order combinations. A source guard
 confines architecture identifiers and register spellings to the audited target
 description/register-map boundary. The matched sidecar writer neutralizes all
