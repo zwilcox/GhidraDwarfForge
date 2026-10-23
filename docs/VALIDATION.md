@@ -11,6 +11,40 @@ export. Export remains explicit: installed wrappers request checksum-verified
 packaged natives by default, while source-tree audit runs may supply explicit
 library paths.
 
+## Alpha release validation (2026-10-22)
+
+**CONFIRMED:** work resumed from clean commit
+`f4a01992deb5b2e65736c573cc3e6d2cbe59ce75`, matching remote `main`. The
+documented clean extension build and all thirteen native-independent smoke
+tests passed locally with `GHIDRA_INSTALL_DIR` explicitly set to Ghidra
+12.0.3. An initial invocation without that variable stopped at configuration
+and did not run tests.
+
+**CONFIRMED:** fresh [GitHub Actions run 39892474892](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/39892474892)
+built the native-inclusive `0.1.0-alpha.1` candidate from that commit and
+passed byte-identical repeated assembly. Independent inspection of the
+downloaded candidate verified the ZIP, whole-release and both platform
+manifests, nested corresponding-source/runtime manifests, pinned source/patch
+digests, version metadata, and executable wrapper permissions.
+
+Candidate artifact: `GhidraDwarfForge-0.1.0-alpha.1-ghidra-12.0.3.zip`
+(8,083,141 bytes). SHA-256:
+
+```text
+27ad36e575ad410df475d2ec45c0fac03287dab19515fcbe39ffc6dd69bfc502
+```
+
+**CONFIRMED:** the fresh run passed all twelve jobs, including x86-64,
+AArch64, ARM32, MIPS32 big/little endian, Windows-hosted export, and the
+aggregate `required-validation` gate. The verified bundle and `SHA256SUMS`
+were published as [v0.1.0-alpha.1](https://github.com/zwilcox/GhidraDwarfForge/releases/tag/v0.1.0-alpha.1)
+on 2026-10-22 America/Chicago (2026-10-23 UTC). The public tag resolves to the
+tested commit. Downloading the published assets passed `sha256sum -c`; the
+downloaded ZIP was byte-identical to the verified CI candidate, and the public
+checksum URL was accessible without authentication. This is a prerelease with
+the profile and feature limitations listed in its release notes; it does not
+close unrelated scope gaps.
+
 ## Ancillary local checks
 
 ```bash

@@ -1192,10 +1192,14 @@ an integration pass.
 
 ## P2.13 Produce installable releases
 
-**Status:** `[~]` — deterministic CI artifacts, packaged Linux/Windows natives,
+**Status:** `[x]` — deterministic CI artifacts, packaged Linux/Windows natives,
 clean-install exports, checksums, operating documentation, third-party
 notices, corresponding-source packaging, and hosted verification are
-implemented. Official GitHub Release publication remains separate.
+implemented. Fresh run `39892474892` passed all twelve jobs. The verified
+native-inclusive bundle and checksum file were published as
+[v0.1.0-alpha.1](https://github.com/zwilcox/GhidraDwarfForge/releases/tag/v0.1.0-alpha.1)
+on 2026-10-22 America/Chicago, targeting tested commit `f4a0199`. This closes
+alpha release packaging/publication, not the remaining feature-scope items.
 
 ### Work
 

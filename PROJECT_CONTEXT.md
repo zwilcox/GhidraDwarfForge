@@ -1661,6 +1661,28 @@ and regression tests reject published `SHT_REL`/`SHT_RELA` sections. The real
 export harness explicitly requires `.debug_aranges` to remain absent and uses
 CU/subprogram `DW_AT_ranges` as the tested lookup authority.
 
+### 16.23 Alpha release resumption
+
+**CONFIRMED (2026-10-22):** the user resumed release work and authorized the
+proposed fresh full CI validation and publication of `0.1.0-alpha.1`. This
+supersedes the publication deferral recorded in Section 16.20. The repository
+and remote `main` both identify commit
+`f4a01992deb5b2e65736c573cc3e6d2cbe59ce75`.
+
+The clean local extension build and thirteen native-independent smoke tests
+passed. Fresh GitHub Actions run `39892474892` produced the native-inclusive
+release candidate; independent ZIP, nested manifest, source/patch digest,
+version, and wrapper-permission checks passed. Its SHA-256 is
+`27ad36e575ad410df475d2ec45c0fac03287dab19515fcbe39ffc6dd69bfc502`.
+All twelve jobs passed, including the five architecture lanes, Windows-hosted
+export, and the aggregate `required-validation` gate. The verified bundle and
+checksum file were published as
+[v0.1.0-alpha.1](https://github.com/zwilcox/GhidraDwarfForge/releases/tag/v0.1.0-alpha.1)
+on 2026-10-22 America/Chicago (2026-10-23 UTC), with the public tag pointing to
+the tested commit. Architecture scope and alpha limitations remain as
+documented in the release notes; publication does not imply completion of
+unrelated scope gaps.
+
 ## 17. Open questions
 
 Codex should not silently answer these through implementation choices. Investigate, document, and obtain user direction when the answer materially changes compatibility or scope.
