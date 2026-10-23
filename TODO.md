@@ -47,8 +47,9 @@ are on the development branch; the published alpha remains affected.
 - [x] Retire inherited `.gdb_index` with replaced debug data (post-alpha PR #16).
 - [x] Resolve synthetic source from an unrelated GDB CWD without `directory`
   commands, including output paths with spaces and deterministic reruns.
-- [~] Pass the strengthened complete hosted matrix, including ARM32 bit-field
-  values and native Windows log identity checks. **PRESENT, UNVERIFIED.**
+- [x] Pass the strengthened complete hosted matrix, including ARM32 bit-field
+  values and native Windows log identity checks. **CONFIRMED:** all twelve
+  jobs passed in run `40041110549` for implementation commit `cd906de`.
 - [ ] Merge reviewed fixes and publish a separately validated replacement
   release when authorized; do not replace the existing release artifact.
 

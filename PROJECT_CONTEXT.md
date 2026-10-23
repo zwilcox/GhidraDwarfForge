@@ -1750,8 +1750,13 @@ on AArch64 and MIPS32 LE. Bash and portable PowerShell collision tests reject
 the operation before launch and preserve protected hashes. Tests and evidence
 are recorded in `docs/VALIDATION.md`.
 
-**PRESENT, UNVERIFIED:** the new ARM32 bit-field and native Windows wrapper
-tests are wired into CI; their hosted results are pending. The published
+**CONFIRMED:** hosted run `40041110549` passed all twelve jobs for implementation
+commit `cd906de`, including the new ARM32 bit-field values, native Windows
+wrapper safety (without skipped cases), all five architecture lanes, and
+Windows-hosted export. The first run exposed a known QEMU synthetic-vDSO
+warning in the ARM32 compiler oracle; its narrow handling now matches AArch64
+and still requires the same warning in the independent compiler oracle before
+accepting it for Forge. No value assertions were relaxed. The published
 `0.1.0-alpha.1` bundle has not changed and still contains the reviewed defects.
 
 ## 17. Open questions

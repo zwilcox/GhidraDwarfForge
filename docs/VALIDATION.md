@@ -27,7 +27,9 @@ published `0.1.0-alpha.1` artifact.
   and through wildcard expansion. Provider-based path resolution and literal
   log I/O now pass regressions with mixed absolute/relative paths and bracket
   filenames. Windows alternate-stream log rejection has preventive CI coverage.
-  **PRESENT, UNVERIFIED:** native Windows identity checks await hosted CI.
+  **CONFIRMED:** native Windows checks pass in run `40041110549` without
+  skipped cases; the downloaded transcript is retained under
+  `build/correctness-review/windows-native-second/headless-wrapper.log`.
 - Nonzero load file offset: a source-built x86-64 ET_EXEC places its first
   PT_LOAD at file offset `0x1000`, VA `0x401000`. Before the fix, Ghidra
   reported success but exported function `0x40000e` instead of `0x40100e`
@@ -52,10 +54,12 @@ published `0.1.0-alpha.1` artifact.
   retained. Hosted run `40040274616` stopped before the ARM32 export because
   this warning was initially allowlisted only for AArch64. Its retained ARM32
   compiler oracle has the correct values and sizes and exits normally; the
-  narrow warning guard now covers both ARM targets. **PRESENT, UNVERIFIED:**
-  the full ARM32 bit-field export awaits the next hosted run because its cross
-  compiler is unavailable locally. Earlier `ptype` checks alone did not prove
-  bit-field values.
+  narrow warning guard now covers both ARM targets. **CONFIRMED:** the full
+  ARM32 bit-field export passes in run `40041110549`. Downloaded compiler and
+  Forge transcripts both report `{a=5,b=17}`, aggregate sizes 4/1, and the
+  identical vDSO warning; see `build/correctness-review/hosted-arm32/`.
+  Its cross compiler remains unavailable locally, so this is hosted evidence.
+  Earlier `ptype` checks alone did not prove bit-field values.
 - Inherited `.gdb_index`: already fixed and validated by the post-alpha work
   below, including a real `gdb-add-index` input and GDB symbol lookup. The fix
   remains absent from reviewed `main` and the published alpha.
@@ -89,6 +93,16 @@ validators and native/QEMU GDB for ET_EXEC, PIE and section-header-free
 ET_EXEC (12 target/role combinations). The GDB harness now asserts the recorded
 absolute source path and no longer supplies a `directory` workaround. Logs:
 `build/correctness-review/build-final.log` and `matrix-*.log`.
+
+**CONFIRMED hosted:** [run 40041110549](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40041110549)
+passed all twelve jobs for implementation commit `cd906de`: the five target
+lanes, Windows wrapper safety and hosted export, native builds, extension build,
+package assembly, workflow lint and aggregate gate. The earlier run
+`40040274616` hit the ARM32 warning check described above; after its x86-64,
+AArch64 and MIPS32 LE lanes passed, it was superseded and cancelled while MIPS32
+BE was still installing its toolchain. The replacement run completed every
+required lane. PR #17 contains these fixes and depends on PR #16 for inherited
+index retirement; neither changes the published alpha artifact.
 
 ## Alpha release validation (2026-10-22)
 
