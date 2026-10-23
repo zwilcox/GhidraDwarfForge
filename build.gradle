@@ -98,6 +98,18 @@ tasks.register("existingDebugSidecarSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.elf.ExistingDebugSidecarSmoke"
 }
 
+tasks.register("extendedSectionNumberingSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks extended ELF section numbering and optionally builds target fixtures"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.ExtendedSectionNumberingSmoke"
+    if (project.hasProperty("fixtureTarget")) {
+        args layout.buildDirectory.dir("fixtures").get().asFile.absolutePath,
+            project.property("fixtureTarget")
+    }
+}
+
 tasks.register("minimalDwarfSidecarSmoke", JavaExec) {
     group = "verification"
     description = "Runs the production symbol-only sidecar exporter in an isolated JVM"

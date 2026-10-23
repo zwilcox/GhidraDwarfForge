@@ -35,6 +35,7 @@ public final class MatchedElfSidecarWriter {
     private static final long SHF_ALLOC = 0x2;
     private static final long PT_NOTE = 4;
     private static final int SHN_LORESERVE = 0xff00;
+    private static final int SHN_XINDEX = 0xffff;
 
     public void write(Path input, Path output, Map<String, byte[]> debugSections)
             throws IOException {
@@ -91,7 +92,13 @@ public final class MatchedElfSidecarWriter {
             Set<String> replacementNames = new HashSet<>();
             for (Section section : image.sections()) {
                 Section copy = section.copy();
-                if (copy.type == SHT_REL || copy.type == SHT_RELA) {
+                if (section.originalIndex == 0) {
+                    // Section zero belongs to the output header's numbering
+                    // scheme, not the input's section/program-header counts.
+                    copy = new Section();
+                    copy.type = SHT_NULL;
+                }
+                else if (copy.type == SHT_REL || copy.type == SHT_RELA) {
                     omitRelocationSection(copy);
                 }
                 else if (section.originalIndex == image.sectionNameIndex()) {
@@ -132,9 +139,14 @@ public final class MatchedElfSidecarWriter {
         newNameTable.type = SHT_STRTAB;
         newNameTable.alignment = 1;
         sections.add(newNameTable);
-        if (sections.size() >= SHN_LORESERVE) {
-            throw new IllegalArgumentException("extended ELF section numbering not supported yet");
-        }
+        int sectionCount = sections.size();
+        int nameTableIndex = sectionCount - 1;
+        int encodedSectionCount = sectionCount >= SHN_LORESERVE ? 0 : sectionCount;
+        int encodedNameTableIndex = nameTableIndex >= SHN_LORESERVE
+                ? SHN_XINDEX : nameTableIndex;
+        Section sectionZero = sections.get(0);
+        sectionZero.size = encodedSectionCount == 0 ? sectionCount : 0;
+        sectionZero.link = encodedNameTableIndex == SHN_XINDEX ? nameTableIndex : 0;
 
         ByteArrayOutputStream names = new ByteArrayOutputStream();
         names.write(0);
@@ -168,8 +180,8 @@ public final class MatchedElfSidecarWriter {
             header.putShort(54, (short) 0);
             header.putShort(56, (short) 0);
             header.putShort(58, (short) entrySize);
-            header.putShort(60, (short) sections.size());
-            header.putShort(62, (short) (sections.size() - 1));
+            header.putShort(60, (short) encodedSectionCount);
+            header.putShort(62, (short) encodedNameTableIndex);
         }
         else {
             if (sectionTableOffset > 0xffff_ffffL) {
@@ -180,8 +192,8 @@ public final class MatchedElfSidecarWriter {
             header.putShort(42, (short) 0);
             header.putShort(44, (short) 0);
             header.putShort(46, (short) entrySize);
-            header.putShort(48, (short) sections.size());
-            header.putShort(50, (short) (sections.size() - 1));
+            header.putShort(48, (short) encodedSectionCount);
+            header.putShort(50, (short) encodedNameTableIndex);
         }
         return result;
     }

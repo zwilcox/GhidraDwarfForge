@@ -11,6 +11,7 @@ import java.util.List;
 
 /** Strict ELF32/ELF64 metadata reader used by the matched-copy sidecar writer. */
 public final class ElfImage {
+    private static final int SHT_NULL = 0;
     static final int SHT_NOBITS = 8;
     private static final long PT_LOAD = 1;
     private static final int SHN_XINDEX = 0xffff;
@@ -114,7 +115,7 @@ public final class ElfImage {
     }
 
     public byte[] sectionData(Section section) {
-        if (section.type == SHT_NOBITS) {
+        if (section.type == SHT_NULL || section.type == SHT_NOBITS) {
             return new byte[0];
         }
         requireRange(section.offset, section.size, "section " + section.name);

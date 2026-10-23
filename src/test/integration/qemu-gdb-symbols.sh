@@ -7,6 +7,7 @@ result_dir="$repository_dir/build/test-results/qemu-gdb-symbols"
 base_port=$((24000 + ($$ % 16000)))
 active_emulator_pid=""
 fixture_role=${FIXTURE_ROLE:-exec}
+fixture_input_suffix=${FIXTURE_INPUT_SUFFIX:-stripped}
 name_rebase_delta=${GHIDRA_NAME_REBASE_DELTA:-0}
 name_rebase_delta=$((name_rebase_delta))
 if [[ $# -eq 0 ]]; then
@@ -175,7 +176,7 @@ run_native() {
     timeout 30s gdb-multiarch -q -nx -batch \
         -ex "set debuginfod enabled off" \
         -ex "set auto-solib-add off" \
-        -ex "file $fixture_dir/$target/semantic.$fixture_role.stripped" \
+        -ex "file $fixture_dir/$target/semantic.$fixture_role.$fixture_input_suffix" \
         -ex "symbol-file $fixture_dir/$target/semantic.$fixture_role.ghidra-forge.dbg" \
         "${type_commands[@]}" \
         -ex "info functions $function" \
@@ -261,14 +262,14 @@ run_emulated() {
             -ex frame -ex nexti -ex continue)
     fi
     "$emulator" -L "$sysroot" -g "$port" \
-        "$fixture_dir/$target/semantic.$fixture_role.stripped" &
+        "$fixture_dir/$target/semantic.$fixture_role.$fixture_input_suffix" &
     active_emulator_pid=$!
     sleep 0.2
     timeout 30s gdb-multiarch -q -nx -batch \
         -ex "set debuginfod enabled off" \
         -ex "set auto-solib-add off" \
         -ex "set sysroot $sysroot" \
-        -ex "file $fixture_dir/$target/semantic.$fixture_role.stripped" \
+        -ex "file $fixture_dir/$target/semantic.$fixture_role.$fixture_input_suffix" \
         -ex "symbol-file $fixture_dir/$target/semantic.$fixture_role.ghidra-forge.dbg" \
         -ex "target remote :$port" \
         "${type_commands[@]}" \

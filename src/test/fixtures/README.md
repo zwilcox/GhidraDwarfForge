@@ -66,6 +66,7 @@ and debugs this partially stripped input as a distinct regression.
 | `semantic.exec.no-build-id.*` | `semantic.c` | Explicit loading when no build identity exists |
 | `semantic.exec.no-sections.stripped` | derived from `semantic.exec.stripped` | Program-header-only input and new output section table |
 | `semantic.pie.*` | `semantic.c` | PIE load bias and ASLR behavior |
+| `semantic.{exec,pie}.extended-sections` | derived from the corresponding stripped fixture | Genuine extended section count and high section-name-table index |
 | `libsemantic.so.*` | `shared_semantic.c` | PIC shared object without `main` |
 | `semantic.shared-driver.*` | `shared_driver.c` | Runtime loading and calls into the stripped shared object |
 
@@ -87,6 +88,26 @@ ELF section-header table has been removed (`e_shoff`, `e_shnum`, and
 loadable from program headers alone. The Forge sidecar writer must create a
 fresh section table and section-name string table for this case; an absent
 input section table is not an error.
+
+The extended-section fixtures are generated separately after the regular
+source build:
+
+```bash
+./gradlew extendedSectionNumberingSmoke -PfixtureTarget=x86_64
+src/test/integration/extended-sections-export.sh "$GHIDRA_INSTALL_DIR" \
+    /path/to/libdwarf.so.2.3.2 /path/to/libdwarfp.so.2.3.2 x86_64
+```
+
+The generator appends enough inactive section headers to require real extended
+numbering and puts a copied section-name table at a high index. It preserves
+the original section indexes, load segments, code, and build identity. A shared
+nonempty padding name avoids quadratic unnamed-section handling in Ghidra.
+The integration harness imports and executes the modified input itself,
+validates the emitted sidecar with GNU/LLVM/libdwarf tools, and runs the full
+native/QEMU GDB semantic oracle for both ET_EXEC and PIE. Diagnostics and
+artifacts are retained under `build/test-results/extended-sections-export/`.
+These few-megabyte fixtures test large section counts, not multi-gigabyte
+input-file memory scalability or extended program-header counts.
 
 The Makefile requires the corresponding GNU cross-compilers and binutils.
 Runtime integration for non-host targets additionally requires QEMU user-mode

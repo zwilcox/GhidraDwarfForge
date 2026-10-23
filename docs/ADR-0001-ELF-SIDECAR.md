@@ -60,6 +60,23 @@ The input itself, build identity, and unrelated sections such as `.eh_frame`
 remain unchanged. This does not add optional debuglink attachment to the
 original executable.
 
+### Extended section numbering (2026-10-23)
+
+Recompute both section-count and section-name-table encodings after appending
+the Forge sections. The thresholds are independent: at 65,280 (`0xff00`)
+sections, `e_shnum` becomes zero and section zero's `sh_size` stores the count.
+Only when the section-name-table index itself reaches `0xff00` does
+`e_shstrndx` become `SHN_XINDEX` (`0xffff`), with that index in section zero's
+`sh_link`. These are the [gABI extended-numbering rules](https://gabi.xinuos.com/elf/02-eheader.html).
+
+Rebuild section zero as canonical `SHT_NULL`, setting only the required count
+and name-index overflow fields. In particular, its old `sh_info` cannot be
+retained because the sidecar has no program-header table. Section zero has no
+payload; its count metadata is not a byte length to read from the input.
+Preserve all original physical section indexes, including inactive entries,
+so symbol-table and other section references remain valid. This is separate
+from support for extended program-header counts (`PN_XNUM`).
+
 The initial explicit GDB workflow is:
 
 ```gdb
@@ -107,6 +124,7 @@ semantic DIE/line/type/location content.
 - PIE relocation is handled by GDB using the original executable mapping.
 - Sidecars contain copied bytes that are not described as loadable segments;
   this favors correctness and target identity over minimal file size.
-- Very large/extended-numbering ELFs remain follow-up work. Shared-object
-  runtime tests and build-ID discovery were subsequently validated; see
-  `VALIDATION.md` for that evidence and the existing-DWARF replacement tests.
+- Very large files, extended program-header counts, and inputs with section
+  tables but no section-name table remain follow-up work. See `VALIDATION.md`
+  for extended section-numbering, shared-object runtime, build-ID discovery,
+  and existing-DWARF replacement evidence.

@@ -501,6 +501,13 @@ Implement:
 - [x] Existing compiler DWARF is replaced, not merged. Stale compressed DWARF,
   indexes, debug links, and mini-debug data are retired in the sidecar while
   the original remains unchanged; see ADR 0001 and the validation record.
+- [ ] Accept valid section tables with `e_shstrndx == SHN_UNDEF`; the current
+  reader incorrectly treats section zero as the section-name string table.
+  Preserve unknown section names honestly and validate MIPS dynamic loading
+  before claiming this input profile.
+- [ ] Decode `PN_XNUM` program-header counts from section zero's `sh_info`.
+  The current reader treats `0xffff` as a literal count; large program-header
+  tables are not a validated input profile.
 
 ## P0.10 Deliver the first validated symbol-only milestone
 
