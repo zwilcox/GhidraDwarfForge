@@ -858,7 +858,7 @@ AArch64, ARM32, and MIPS32 big/little endian.
 **Status:** `[~]` — the symbol/source-line/type/signature milestone passes in
 hosted CI for ET_EXEC, PIE, shared objects, and no-section inputs. Stack-local
 locations pass; overwritten input registers are honestly omitted. Additional
-storage cases and release support remain.
+storage cases remain beyond the validated alpha profile.
 
 ### Work
 
@@ -873,8 +873,8 @@ storage cases and release support remain.
 - [x] Symbol/source-line milestone passes for AArch64 non-PIE and PIE.
 - [~] Type/signature and stack-local milestones pass; additional variable
   storage classes remain.
-- [x] AArch64 PIE/shared cases pass in hosted CI; packaged release evidence
-  remains.
+- [x] AArch64 PIE/shared cases pass in hosted CI, including the fresh alpha
+  release validation run recorded under P2.13.
 - [x] A repository guard confines architecture identifiers/register spellings
   to target-description boundaries.
 
@@ -883,8 +883,8 @@ storage cases and release support remain.
 **Status:** `[~]` — hosted real headless symbol export, structural validation,
 and QEMU/GDB runtime breakpoints pass for MIPS32 big/little endian ET_EXEC,
 PIE, shared-object, and no-section-table inputs; `ptype`, stable register
-parameters, and stack locals pass, while additional variable storage and
-packaged release evidence remain.
+parameters, and stack locals pass. The alpha release validation includes both
+MIPS lanes; additional variable storage cases remain.
 
 ### Work
 
@@ -1017,11 +1017,12 @@ unsupported big-endian target profiles passed in GitHub Actions run 33824105805.
 
 ## P2.7 Add output selection, fallback, and atomic pair commit
 
-**Status:** `[x]` locally — deterministic default and explicit paths, stale-path input
+**Status:** `[x]` for the validated paths — deterministic default and explicit paths, stale-path input
 override with imported-file hash verification, preflight collision/write
 checks, staged pair rollback, and final hashes pass locally. Automated Linux
-GUI fallback selection/cancellation now passes in a genuine non-headless
-Ghidra 12.0.3 process under Xvfb, including validators and GDB source stepping.
+GUI fallback selection/cancellation passes locally and in hosted run
+`39896787460`, in a genuine non-headless Ghidra 12.0.3 process under Xvfb,
+including validators and GDB source stepping.
 Manual Script Manager navigation and Windows GUI behavior remain untested.
 
 ### Work

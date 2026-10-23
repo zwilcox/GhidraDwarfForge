@@ -1717,7 +1717,9 @@ directory when the input directory is read-only, and publishes nothing after
 cancellation. Hash preservation, validators, and GDB source stepping pass.
 Manual Script Manager navigation and Windows GUI behavior remain untested.
 The three new integration harnesses are wired into the x86-64 CI lane; hosted
-results for this post-alpha change are recorded separately in `VALIDATION.md`.
+run `39896787460` passed all twelve jobs for implementation commit `3cdc3f8`,
+including these three tests, the five target lanes, Windows-hosted export,
+and the aggregate gate. Detailed evidence is recorded in `VALIDATION.md`.
 These changes do not alter the already published alpha artifact.
 
 ## 17. Open questions

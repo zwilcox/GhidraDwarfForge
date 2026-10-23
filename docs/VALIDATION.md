@@ -117,10 +117,13 @@ compiler types may share a name with curated types, so the enum oracle also
 uses `ptype OP_INVALID` to select the uniquely identified analyst enum. These
 are not evidence of an extra inherited compiler CU in the emitted sidecar.
 
-**PRESENT, UNVERIFIED:** the new existing-DWARF, real-world, and GUI checks are
-wired into the hosted x86-64 lane; a new hosted run is still required for this
-change. The published alpha's earlier twelve-job pass does not validate these
-new changes.
+**CONFIRMED:** [GitHub Actions run 39896787460](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/39896787460)
+passed all twelve jobs for implementation commit
+`3cdc3f851772c9c876952473b7504932de826925` in PR #16. The new existing-DWARF,
+real-world, and GUI checks passed in the hosted x86-64 lane. AArch64, ARM32,
+both MIPS byte orders, Windows-hosted export, native builds, release assembly,
+and the aggregate gate also passed. This is fresh evidence for the post-alpha
+implementation, separate from the already published alpha's earlier run.
 
 ## Ancillary local checks
 
