@@ -19,6 +19,166 @@ function Exit-Usage([string] $Message) {
     exit 64
 }
 
+function Get-AbsoluteFilesystemPath([string] $Path) {
+    $provider = $null
+    $drive = $null
+    # Set-Location does not update Environment.CurrentDirectory. Resolve with
+    # PowerShell's filesystem provider, just as Tee-Object resolves its path.
+    $full = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath(
+        $Path, [ref] $provider, [ref] $drive)
+    if ($provider.Name -ne 'FileSystem') {
+        throw "path must use the filesystem provider: $Path"
+    }
+    return $full
+}
+
+function Get-CanonicalPath([string] $Path, [int] $LinkDepth = 0) {
+    if ($LinkDepth -gt 40) {
+        throw "too many symbolic links while resolving $Path"
+    }
+    $full = Get-AbsoluteFilesystemPath $Path
+    $parent = [IO.Path]::GetDirectoryName($full)
+    if ([string]::IsNullOrEmpty($parent)) {
+        return $full
+    }
+    $canonicalParent = Get-CanonicalPath $parent $LinkDepth
+    $candidate = Join-Path $canonicalParent ([IO.Path]::GetFileName($full))
+    $item = Get-Item -LiteralPath $candidate -Force -ErrorAction SilentlyContinue
+    if ($null -ne $item -and $item.LinkType -in @('SymbolicLink', 'Junction')) {
+        $target = @($item.Target)[0]
+        if (-not [IO.Path]::IsPathRooted($target)) {
+            $target = Join-Path $canonicalParent $target
+        }
+        return Get-CanonicalPath $target ($LinkDepth + 1)
+    }
+    return $candidate
+}
+
+function Get-FileIdentity([string] $Path) {
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        return $null
+    }
+    if ($env:OS -ne 'Windows_NT') {
+        # Enables the same collision regression on PowerShell's Unix runtime.
+        $stat = (Get-Item -LiteralPath $Path -Force).UnixStat
+        if ($null -eq $stat) {
+            throw "file identity is unavailable for $Path"
+        }
+        return "$($stat.DeviceId):$($stat.Inode)"
+    }
+    return [GhidraDwarfForge.LogFileIdentity]::Get($Path)
+}
+
+function Assert-LogNotAlias([string] $ProtectedPath) {
+    if ([string]::IsNullOrWhiteSpace($ProtectedPath)) {
+        return
+    }
+    $canonical = Get-CanonicalPath $ProtectedPath
+    $identity = Get-FileIdentity $canonical
+    if ([string]::Equals($script:canonicalLog, $canonical, $script:pathComparison) -or
+            ($null -ne $script:logIdentity -and $script:logIdentity -eq $identity)) {
+        Exit-Usage "log path aliases a protected input/output file: $ProtectedPath"
+    }
+}
+
+function Assert-LogNotInTree([string] $ProtectedDirectory) {
+    $canonical = Get-CanonicalPath $ProtectedDirectory
+    $prefix = $canonical.TrimEnd([IO.Path]::DirectorySeparatorChar) +
+        [IO.Path]::DirectorySeparatorChar
+    if ([string]::Equals($script:canonicalLog, $canonical, $script:pathComparison) -or
+            $script:canonicalLog.StartsWith($prefix, $script:pathComparison)) {
+        Exit-Usage "log path is inside a protected library/project directory: $ProtectedDirectory"
+    }
+    if ($null -ne $script:logIdentity -and
+            (Test-Path -LiteralPath $canonical -PathType Container)) {
+        foreach ($file in Get-ChildItem -LiteralPath $canonical -File -Recurse -Force) {
+            Assert-LogNotAlias $file.FullName
+        }
+    }
+}
+
+function Assert-SafeLogPath {
+    if ($projectMode -and [string]::IsNullOrWhiteSpace($OriginalElf)) {
+        Exit-Usage '-Log in existing-project mode requires -OriginalElf so the original and default outputs can be protected; otherwise omit -Log to use a private temporary log'
+    }
+    if ($env:OS -eq 'Windows_NT') {
+        $absoluteLog = Get-AbsoluteFilesystemPath $Log
+        $root = [IO.Path]::GetPathRoot($absoluteLog)
+        if ($absoluteLog.Substring($root.Length).Contains(':')) {
+            Exit-Usage 'log path must not name an alternate data stream'
+        }
+    }
+    if ($env:OS -eq 'Windows_NT' -and
+            $null -eq ('GhidraDwarfForge.LogFileIdentity' -as [type])) {
+        Add-Type -TypeDefinition @'
+using System;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
+namespace GhidraDwarfForge {
+    public static class LogFileIdentity {
+        [StructLayout(LayoutKind.Sequential)]
+        private struct FileInformation {
+            public uint Attributes;
+            public System.Runtime.InteropServices.ComTypes.FILETIME CreationTime;
+            public System.Runtime.InteropServices.ComTypes.FILETIME AccessTime;
+            public System.Runtime.InteropServices.ComTypes.FILETIME WriteTime;
+            public uint VolumeSerial, SizeHigh, SizeLow, Links, IndexHigh, IndexLow;
+        }
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern SafeFileHandle CreateFile(string path, uint access,
+            uint share, IntPtr security, uint creation, uint flags, IntPtr template);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool GetFileInformationByHandle(SafeFileHandle handle,
+            out FileInformation information);
+        public static string Get(string path) {
+            using (var handle = CreateFile(path, 0, 7, IntPtr.Zero, 3, 0, IntPtr.Zero)) {
+                if (handle.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error());
+                FileInformation info;
+                if (!GetFileInformationByHandle(handle, out info))
+                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                return info.VolumeSerial + ":" + info.IndexHigh + ":" + info.IndexLow;
+            }
+        }
+    }
+}
+'@
+    }
+    $script:pathComparison = if ($env:OS -eq 'Windows_NT') {
+        [StringComparison]::OrdinalIgnoreCase
+    } else {
+        [StringComparison]::Ordinal
+    }
+    $script:canonicalLog = Get-CanonicalPath $Log
+    $script:logIdentity = Get-FileIdentity $script:canonicalLog
+    if ((Test-Path -LiteralPath $Log) -and
+            -not (Test-Path -LiteralPath $Log -PathType Leaf)) {
+        Exit-Usage "log path is not a regular file: $Log"
+    }
+    $selectedInput = if ([string]::IsNullOrWhiteSpace($OriginalElf)) { $Import } else { $OriginalElf }
+    $selectedOutput = $Output
+    if ([string]::IsNullOrWhiteSpace($selectedOutput) -and
+            -not [string]::IsNullOrWhiteSpace($selectedInput)) {
+        $selectedOutput = "$selectedInput.dbg"
+    }
+    foreach ($protected in @($Import, $OriginalElf, $selectedOutput,
+            $Libdwarf, $Libdwarfp, $headless, $PSCommandPath)) {
+        Assert-LogNotAlias $protected
+    }
+    if (-not [string]::IsNullOrWhiteSpace($selectedOutput)) {
+        Assert-LogNotAlias "$selectedOutput.c"
+    }
+    if ($projectMode) {
+        Assert-LogNotAlias (Join-Path $ProjectDirectory "$ProjectName.gpr")
+        Assert-LogNotAlias (Join-Path $ProjectDirectory "$ProjectName.lock")
+        Assert-LogNotInTree (Join-Path $ProjectDirectory "$ProjectName.rep")
+    }
+    Assert-LogNotInTree (Join-Path $PSScriptRoot '..\os')
+    Assert-LogNotInTree (Join-Path $PSScriptRoot '..\lib')
+    Assert-LogNotInTree (Join-Path $GhidraDirectory 'Ghidra\Extensions\GhidraDwarfForge\os')
+    Assert-LogNotInTree (Join-Path $GhidraDirectory 'Ghidra\Extensions\GhidraDwarfForge\lib')
+}
+
 if ([string]::IsNullOrWhiteSpace($GhidraDirectory)) {
     Exit-Usage '-GhidraDirectory or GHIDRA_INSTALL_DIR is required'
 }
@@ -46,7 +206,7 @@ if (-not [string]::IsNullOrWhiteSpace($Libdwarf)) {
     $requiredFiles += @($Libdwarf, $Libdwarfp)
 }
 foreach ($required in $requiredFiles) {
-    if (-not (Test-Path $required -PathType Leaf)) {
+    if (-not (Test-Path -LiteralPath $required -PathType Leaf)) {
         Exit-Usage "required file does not exist: $required"
     }
 }
@@ -59,9 +219,15 @@ if ([string]::IsNullOrWhiteSpace($Log)) {
     $temporaryLog = $true
 }
 else {
-    $logParent = Split-Path -Parent ([IO.Path]::GetFullPath($Log))
-    if (-not (Test-Path $logParent -PathType Container)) {
-        Exit-Usage "log directory does not exist: $logParent"
+    try {
+        $logParent = Split-Path -Parent (Get-AbsoluteFilesystemPath $Log)
+        if (-not (Test-Path -LiteralPath $logParent -PathType Container)) {
+            Exit-Usage "log directory does not exist: $logParent"
+        }
+        Assert-SafeLogPath
+    }
+    catch {
+        Exit-Usage "cannot validate log path: $($_.Exception.Message)"
     }
 }
 
@@ -84,7 +250,7 @@ try {
     }
 
     if ($importMode) {
-        if (-not (Test-Path $Import -PathType Leaf)) {
+        if (-not (Test-Path -LiteralPath $Import -PathType Leaf)) {
             Exit-Usage "import ELF does not exist: $Import"
         }
         if ([string]::IsNullOrWhiteSpace($OriginalElf)) {
@@ -100,7 +266,7 @@ try {
         ) + $exportOptions
     }
     else {
-        if (-not (Test-Path $ProjectDirectory -PathType Container)) {
+        if (-not (Test-Path -LiteralPath $ProjectDirectory -PathType Container)) {
             Exit-Usage "project directory does not exist: $ProjectDirectory"
         }
         $headlessArguments = @(
@@ -109,9 +275,9 @@ try {
         ) + $exportOptions
     }
 
-    & $headless @headlessArguments 2>&1 | Tee-Object -FilePath $Log
+    & $headless @headlessArguments 2>&1 | Tee-Object -LiteralPath $Log
     $headlessStatus = $LASTEXITCODE
-    $reportLines = @(Get-Content $Log | Where-Object {
+    $reportLines = @(Get-Content -LiteralPath $Log | Where-Object {
         $_ -match 'GhidraDwarfForge report: '
     })
     if ($reportLines.Count -ne 1) {

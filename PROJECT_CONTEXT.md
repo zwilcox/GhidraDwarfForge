@@ -1722,6 +1722,38 @@ including these three tests, the five target lanes, Windows-hosted export,
 and the aggregate gate. Detailed evidence is recorded in `VALIDATION.md`.
 These changes do not alter the already published alpha artifact.
 
+### 16.25 Correctness review of the published alpha
+
+**CONFIRMED (2026-10-23):** all six review findings against `f4a0199`
+are valid. Explicit wrapper logs could truncate the input before export;
+nonzero first-load file offsets shifted exported addresses; bit fields used
+conflicting location attributes and, on big-endian targets, the wrong storage
+width; inherited `.gdb_index` could hide replacement symbols; and source
+lookup depended on GDB's working directory. The index fix is already in the
+post-alpha development branch described above, not in the published alpha.
+
+The current development fixes reject log aliases before launching Ghidra,
+including symlink/hardlink aliases; translate against the minimum PT_LOAD
+virtual address used by Ghidra; emit exclusively `DW_AT_data_bit_offset` for
+bit fields using their actual component storage width; and record the absolute
+artifact directory in the source line table. An explicit log in existing-project
+mode now requires the original ELF argument because the wrapper cannot safely
+infer that path before opening the project. Private temporary logs remain the
+default. Absolute source paths make lookup independent of debugger CWD;
+moving the artifact pair still requires GDB source-path remapping. Byte
+determinism is assessed at the same output destination.
+
+**CONFIRMED locally:** real Ghidra/GDB reproductions fail before these fixes
+and pass afterward for nonzero load offsets, x86-64/MIPS32 BE bit-field values,
+and source lookup from an unrelated directory. The bit-field oracle also passes
+on AArch64 and MIPS32 LE. Bash and portable PowerShell collision tests reject
+the operation before launch and preserve protected hashes. Tests and evidence
+are recorded in `docs/VALIDATION.md`.
+
+**PRESENT, UNVERIFIED:** the new ARM32 bit-field and native Windows wrapper
+tests are wired into CI; their hosted results are pending. The published
+`0.1.0-alpha.1` bundle has not changed and still contains the reviewed defects.
+
 ## 17. Open questions
 
 Codex should not silently answer these through implementation choices. Investigate, document, and obtain user direction when the answer materially changes compatibility or scope.

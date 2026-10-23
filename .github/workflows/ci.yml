@@ -414,7 +414,7 @@ jobs:
           {
             src/test/integration/headless-wrapper.sh
             src/test/integration/architecture-neutrality.sh
-            ./gradlew addressNormalizerSmoke dwarfTargetSmoke outputPathPolicySmoke \
+            ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke outputPathPolicySmoke \
               exportReportSmoke \
               syntheticSourceSmoke typeGraphSmoke variableStorageSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke \
@@ -728,6 +728,19 @@ jobs:
             fi
           done
 
+      - name: Bit-field values through the real exporter and GDB
+        env:
+          TARGET: ${{ matrix.target }}
+        run: src/test/integration/bitfield-values-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
+
+      - name: Nonzero load-segment file offset and explicit rebase
+        if: matrix.target == 'x86_64'
+        run: |
+          src/test/integration/nonzero-load-offset-export.sh \
+            "$GHIDRA_INSTALL_DIR" \
+            "$PWD/native-integration/libdwarf.so.2.3.2" \
+            "$PWD/native-integration/libdwarfp.so.2.3.2"
+
       - name: Existing compiler DWARF replacement
         if: matrix.target == 'x86_64'
         run: |
@@ -924,6 +937,15 @@ jobs:
             Tee-Object -FilePath "$resultDirectory\native-independent.log"
           if ($LASTEXITCODE -ne 0) {
             throw "native-independent Windows checks failed with exit code $LASTEXITCODE"
+          }
+
+      - name: Windows wrapper log-collision safety
+        shell: pwsh
+        run: |
+          & pwsh -NoLogo -NoProfile -File .\src\test\integration\headless-wrapper.ps1 2>&1 |
+            Tee-Object -FilePath 'build\test-results\windows-host\headless-wrapper.log'
+          if ($LASTEXITCODE -ne 0) {
+            throw "PowerShell wrapper safety checks failed with exit code $LASTEXITCODE"
           }
 
       - name: Windows file-lock publication rollback

@@ -39,8 +39,17 @@ public final class Dwarf5LineTable {
 
     public static byte[] build(String fileName, int addressBytes, ByteOrder byteOrder,
             List<FunctionSymbol> functions, List<SourceLine> sourceLines) {
+        return build(fileName, ".", addressBytes, byteOrder, functions, sourceLines);
+    }
+
+    public static byte[] build(String fileName, String sourceDirectory, int addressBytes,
+            ByteOrder byteOrder, List<FunctionSymbol> functions, List<SourceLine> sourceLines) {
         if (fileName == null || fileName.isBlank() || fileName.indexOf('\0') >= 0) {
             throw new IllegalArgumentException("invalid line-table file name");
+        }
+        if (sourceDirectory == null || sourceDirectory.isBlank() ||
+                sourceDirectory.indexOf('\0') >= 0) {
+            throw new IllegalArgumentException("invalid line-table source directory");
         }
         if (addressBytes != 4 && addressBytes != 8) {
             throw new IllegalArgumentException("unsupported address size " + addressBytes);
@@ -93,7 +102,7 @@ public final class Dwarf5LineTable {
         writeUleb(header, DW_LNCT_PATH);
         writeUleb(header, DW_FORM_STRING);
         writeUleb(header, 1); // directories_count
-        header.write('.');
+        header.writeBytes(sourceDirectory.getBytes(StandardCharsets.UTF_8));
         header.write(0);
         header.write(2); // file_name_entry_format_count
         writeUleb(header, DW_LNCT_PATH);

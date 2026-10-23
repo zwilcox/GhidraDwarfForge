@@ -66,10 +66,11 @@ symbol_offset() {
 validate_transcript() {
     local transcript=$1
     local function=$2
+    local source_file=$3
     grep -q "Breakpoint 1," "$transcript"
     grep -q "Breakpoint 2 at" "$transcript"
     grep -q "$function" "$transcript"
-    grep -Eq "at ./semantic[.].*[.]ghidra-forge[.]dbg[.]c:[0-9]+" "$transcript"
+    grep -F "at $source_file:" "$transcript" | grep -Eq ':[0-9]+'
     if grep -F "No line number information" "$transcript" |
             grep -Fvq "address 0x4010ae"; then
         return 1
@@ -174,7 +175,6 @@ run_native() {
     timeout 30s gdb-multiarch -q -nx -batch \
         -ex "set debuginfod enabled off" \
         -ex "set auto-solib-add off" \
-        -ex "directory $fixture_dir/$target" \
         -ex "file $fixture_dir/$target/semantic.$fixture_role.stripped" \
         -ex "symbol-file $fixture_dir/$target/semantic.$fixture_role.ghidra-forge.dbg" \
         "${type_commands[@]}" \
@@ -202,7 +202,7 @@ run_native() {
         -ex nexti \
         -ex continue \
         "${composite_print[@]}" 2>&1 | tee "$transcript"
-    validate_transcript "$transcript" "$function"
+    validate_transcript "$transcript" "$function" "$source_file"
 }
 
 run_emulated() {
@@ -268,7 +268,6 @@ run_emulated() {
         -ex "set debuginfod enabled off" \
         -ex "set auto-solib-add off" \
         -ex "set sysroot $sysroot" \
-        -ex "directory $fixture_dir/$target" \
         -ex "file $fixture_dir/$target/semantic.$fixture_role.stripped" \
         -ex "symbol-file $fixture_dir/$target/semantic.$fixture_role.ghidra-forge.dbg" \
         -ex "target remote :$port" \
@@ -288,7 +287,7 @@ run_emulated() {
         "${composite_print[@]}" 2>&1 | tee "$transcript"
     wait "$active_emulator_pid"
     active_emulator_pid=""
-    validate_transcript "$transcript" "$function"
+    validate_transcript "$transcript" "$function" "$source_file"
 }
 
 for target in "${targets[@]}"; do

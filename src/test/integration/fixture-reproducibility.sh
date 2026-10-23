@@ -36,7 +36,11 @@ trap cleanup EXIT
 expected_sources=(
     Makefile
     README.md
+    bitfield-values.c
     minimal.c
+    nonzero_load_offset.c
+    nonzero_load_offset.ld
+    nonzero_load_offset_start.S
     semantic.c
     shared_driver.c
     shared_semantic.c

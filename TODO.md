@@ -30,6 +30,28 @@ No project-level milestone is complete unless all applicable conditions hold:
   MIPS behavior lane before claiming MIPS support.
 - [ ] Updates `PROJECT_CONTEXT.md`, this file, and user-facing documentation when decisions or support claims change.
 
+## 0.1 Published-alpha correctness review (2026-10-23)
+
+**CONFIRMED:** the six findings against `f4a0199` are reproducible. Fixes
+are on the development branch; the published alpha remains affected.
+
+- [x] Reject explicit log aliases before launch/truncation, including direct,
+  normalized, symlink and hardlink input/output paths; preserve hashes and
+  prove the fake launcher was not invoked on rejection.
+- [x] Match Ghidra's minimum PT_LOAD VA image-base convention; real headless
+  export and GDB must retain function/global addresses, with and without an
+  explicit Ghidra rebase.
+- [x] Emit mutually exclusive byte/bit member location attributes and retain
+  component storage width; compiler-oracle and Forge GDB values must agree
+  for four-byte integer bit fields stored in one byte, including MIPS32 BE.
+- [x] Retire inherited `.gdb_index` with replaced debug data (post-alpha PR #16).
+- [x] Resolve synthetic source from an unrelated GDB CWD without `directory`
+  commands, including output paths with spaces and deterministic reruns.
+- [~] Pass the strengthened complete hosted matrix, including ARM32 bit-field
+  values and native Windows log identity checks. **PRESENT, UNVERIFIED.**
+- [ ] Merge reviewed fixes and publish a separately validated replacement
+  release when authorized; do not replace the existing release artifact.
+
 ## 1. Milestone ordering
 
 Do not bypass this dependency order:

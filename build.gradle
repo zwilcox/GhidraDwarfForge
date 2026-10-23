@@ -133,6 +133,14 @@ tasks.register("addressNormalizerSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.AddressNormalizerSmoke"
 }
 
+tasks.register("elfImageBaseSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks ELF image-base conventions across widths, byte orders, and load offsets"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.ElfImageBaseSmoke"
+}
+
 tasks.register("dwarfTargetSmoke", JavaExec) {
     group = "verification"
     description = "Checks table-driven target selection and unsupported-target rejection"
