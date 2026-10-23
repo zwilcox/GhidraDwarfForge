@@ -47,9 +47,13 @@ published `0.1.0-alpha.1` artifact.
   exclusivity, validators and input hashes pass on x86-64, AArch64, MIPS32 BE
   and MIPS32 LE. Evidence: `build/test-results/bitfield-values/run.0LBNa3y4/`
   and `run.rF7wLLEx/`; pre-fix runs are `run.9jN1IZAM/` and `run.iiXbxCeP/`.
-  A known QEMU AArch64 synthetic-vDSO warning is accepted only when the exact
+  A known QEMU ARM32/AArch64 synthetic-vDSO warning is accepted only when the exact
   same diagnostic appears with the independent compiler oracle; stderr is
-  retained. **PRESENT, UNVERIFIED:** ARM32 awaits hosted CI because its cross
+  retained. Hosted run `40040274616` stopped before the ARM32 export because
+  this warning was initially allowlisted only for AArch64. Its retained ARM32
+  compiler oracle has the correct values and sizes and exits normally; the
+  narrow warning guard now covers both ARM targets. **PRESENT, UNVERIFIED:**
+  the full ARM32 bit-field export awaits the next hosted run because its cross
   compiler is unavailable locally. Earlier `ptype` checks alone did not prove
   bit-field values.
 - Inherited `.gdb_index`: already fixed and validated by the post-alpha work

@@ -64,11 +64,12 @@ run_gdb() {
         emulator_pid=
     fi
     if [[ -s "$log.stderr" ]]; then
-        # Some QEMU AArch64/GDB combinations diagnose QEMU's synthetic vDSO even
+        # Some QEMU ARM32/AArch64/GDB combinations diagnose QEMU's synthetic vDSO even
         # with the original compiler DWARF. Retain it, and only accept the exact
         # known diagnostic when the independent compiler oracle agrees.
         local vdso_warning='^warning: BFD: warning: system-supplied DSO at 0x[0-9a-f]+ has a corrupt string table index$'
-        if [[ "$target" != aarch64 ]] || grep -Ev "$vdso_warning" "$log.stderr" ||
+        if [[ "$target" != aarch64 && "$target" != arm32 ]] ||
+                grep -Ev "$vdso_warning" "$log.stderr" ||
                 { [[ -n "$sidecar" ]] &&
                     ! grep -Eq "$vdso_warning" "$(dirname "$log")/compiler-gdb.txt.stderr"; }; then
             cat "$log.stderr" >&2

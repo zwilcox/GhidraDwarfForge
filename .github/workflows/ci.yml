@@ -178,6 +178,16 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Windows wrapper log-collision safety
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force 'build\test-results\native-windows' | Out-Null
+          & pwsh -NoLogo -NoProfile -File .\src\test\integration\headless-wrapper.ps1 2>&1 |
+            Tee-Object -FilePath 'build\test-results\native-windows\headless-wrapper.log'
+          if ($LASTEXITCODE -ne 0) {
+            throw "PowerShell wrapper safety checks failed with exit code $LASTEXITCODE"
+          }
+
       - name: Install MSYS2 MinGW64 build dependencies
         uses: msys2/setup-msys2@v2
         with:
@@ -937,15 +947,6 @@ jobs:
             Tee-Object -FilePath "$resultDirectory\native-independent.log"
           if ($LASTEXITCODE -ne 0) {
             throw "native-independent Windows checks failed with exit code $LASTEXITCODE"
-          }
-
-      - name: Windows wrapper log-collision safety
-        shell: pwsh
-        run: |
-          & pwsh -NoLogo -NoProfile -File .\src\test\integration\headless-wrapper.ps1 2>&1 |
-            Tee-Object -FilePath 'build\test-results\windows-host\headless-wrapper.log'
-          if ($LASTEXITCODE -ne 0) {
-            throw "PowerShell wrapper safety checks failed with exit code $LASTEXITCODE"
           }
 
       - name: Windows file-lock publication rollback
