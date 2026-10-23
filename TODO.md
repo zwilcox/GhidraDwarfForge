@@ -380,7 +380,8 @@ For at least one x86-64 non-PIE fixture, construct candidate sidecars and prove:
 
 **Status:** `[~]` — the pure-Java matched sidecar writer passes both
 compiler-oracle and real Forge symbol tests, including no-section-table inputs;
-existing-DWARF policy, large files, and complete DWARF sections remain.
+existing-DWARF replacement now has an explicit policy and regression tests;
+large files and extended ELF numbering remain.
 **Dependency:** P0.8.
 
 ### Work
@@ -420,6 +421,9 @@ Implement:
   current contiguous-function fixture coverage.
 - [x] Original target hash is unchanged.
 - [x] Invalid/unsupported target combinations fail before output is published.
+- [x] Existing compiler DWARF is replaced, not merged. Stale compressed DWARF,
+  indexes, debug links, and mini-debug data are retired in the sidecar while
+  the original remains unchanged; see ADR 0001 and the validation record.
 
 ## P0.10 Deliver the first validated symbol-only milestone
 
@@ -1013,10 +1017,12 @@ unsupported big-endian target profiles passed in GitHub Actions run 33824105805.
 
 ## P2.7 Add output selection, fallback, and atomic pair commit
 
-**Status:** `[~]` — deterministic default and explicit paths, stale-path input
+**Status:** `[x]` locally — deterministic default and explicit paths, stale-path input
 override with imported-file hash verification, preflight collision/write
-checks, staged pair rollback, and final hashes pass locally. GUI fallback is
-implemented but remains unverified in an interactive Ghidra process.
+checks, staged pair rollback, and final hashes pass locally. Automated Linux
+GUI fallback selection/cancellation now passes in a genuine non-headless
+Ghidra 12.0.3 process under Xvfb, including validators and GDB source stepping.
+Manual Script Manager navigation and Windows GUI behavior remain untested.
 
 ### Work
 
@@ -1024,8 +1030,8 @@ implemented but remains unverified in an interactive Ghidra process.
 - [x] Detect missing, stale, or unwritable `Program.getExecutablePath()`;
   inaccessible remote paths follow the same explicit-input/output failure
   policy rather than receiving guessed behavior.
-- [~] Offer/select an output directory in GUI mode; code is present but the
-  interactive chooser has not been exercised manually.
+- [x] Offer/select an output directory in GUI mode; the production chooser is
+  exercised automatically with real Swing controls and mouse clicks.
 - [x] Accept explicit input/output paths in headless mode.
 - [x] Write `.dbg` and `.dbg.c` to temporary files.
 - [x] Commit the pair atomically as far as the host filesystem permits.
@@ -1034,8 +1040,8 @@ implemented but remains unverified in an interactive Ghidra process.
 ### Completion criteria
 
 - [x] Default path behavior satisfies issues #1–#3 for a normal local file.
-- [x] Unwritable-path policy fails before writing; GUI prompting remains
-  PRESENT, UNVERIFIED.
+- [x] Unwritable-path policy fails before writing in headless mode; GUI
+  selection publishes to the chosen directory and cancellation publishes nothing.
 - [x] Headless path is deterministic and non-interactive.
 - [x] Cancellation/failure leaves no mismatched final pair.
 
@@ -1271,6 +1277,10 @@ Potential features:
 - Static locals.
 - Artificial variables.
 - Declaration-only DIEs.
+- Disambiguation of same-named types from different Ghidra categories: the
+  existing-DWARF regression retains both imported and analyst-defined
+  `operation` enums, and uses the unique `OP_INVALID` enumerator to query the
+  curated type in GDB. Do not discard one based on name alone.
 
 Do not begin until the type/location core is stable.
 
@@ -1309,8 +1319,8 @@ Use the following acceptance gates before updating the original GitHub issues:
 
 - [x] Production export defaults next to `Program.getExecutablePath()`.
 - [x] Missing/stale/unwritable paths fail before publication or use an explicit
-  headless input/output path; the GUI chooser is present but separately tracked
-  as an interactive verification item under P2.7.
+  headless input/output path; Linux GUI chooser selection/cancellation is
+  covered by the automated non-headless test under P2.7.
 - [x] Atomic pair behavior is tested on Linux and Windows.
 - [x] GUI and headless path behavior is documented.
 

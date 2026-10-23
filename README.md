@@ -26,6 +26,10 @@ execution remains in Linux native/QEMU lanes. PE/PDB is out of scope. Imports
 and thunks are diagnosed and omitted, and distinct linkage-name emission
 remains unresolved.
 
+The development exporter replaces existing compiler DWARF rather than merging
+it with the recovered view. Old compressed debug sections, indexes, and debug
+file links are retired inside the sidecar; the original ELF stays unchanged.
+
 ## Build
 
 Ghidra 12.0.3 requires Java 21-compatible bytecode and Gradle 8.5 or newer.
@@ -99,6 +103,10 @@ instruction when that location is unavailable; an opt-in GUI invocation offers
 a directory chooser. An explicit `--input` must match the executable SHA-256
 recorded at Ghidra import. The original executable is never modified by this
 workflow.
+
+When debugging from another working directory, add the artifact directory to
+GDB's source search path with `directory /path/to/artifacts` so it can find the
+companion `.dbg.c` file.
 
 For automatic GDB association without modifying the executable, a sidecar may
 be installed under the standard `.build-id/xx/rest.debug` tree for its copied

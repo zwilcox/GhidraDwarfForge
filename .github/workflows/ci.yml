@@ -419,7 +419,7 @@ jobs:
               syntheticSourceSmoke typeGraphSmoke variableStorageSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
-              packagedNativeLibrariesSmoke buildExtension
+              packagedNativeLibrariesSmoke existingDebugSidecarSmoke buildExtension
             src/test/integration/release-package.sh
             zipinfo -l dist/*.zip | grep -Eq \
               '^-rwxr-xr-x.*GhidraDwarfForge/support/ghidra-dwarf-forge-headless$'
@@ -526,7 +526,7 @@ jobs:
           packages=(gdb-multiarch llvm dwarfdump)
           case "$TARGET" in
             x86_64)
-              packages+=(gcc binutils)
+              packages+=(gcc binutils gdb xvfb libxtst6 libxi6 libxrender1)
               ;;
             aarch64)
               packages+=(gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
@@ -727,6 +727,27 @@ jobs:
                 "$GHIDRA_INSTALL_DIR" "$consumer" "$producer"
             fi
           done
+
+      - name: Existing compiler DWARF replacement
+        if: matrix.target == 'x86_64'
+        run: |
+          src/test/integration/existing-debug-export.sh \
+            "$GHIDRA_INSTALL_DIR" \
+            "$PWD/native-integration/libdwarf.so.2.3.2" \
+            "$PWD/native-integration/libdwarfp.so.2.3.2"
+
+      - name: Real-world distro binary export and debugging
+        if: matrix.target == 'x86_64'
+        run: src/test/integration/real-world-export.sh "$GHIDRA_INSTALL_DIR"
+
+      - name: GUI output chooser selection and cancellation
+        if: matrix.target == 'x86_64'
+        run: |
+          src/test/integration/gui-output-fallback.sh \
+            "$GHIDRA_INSTALL_DIR" \
+            "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
+            "$PWD/build/fixtures/x86_64/semantic.exec.stripped" \
+            "$PWD/build/fixtures/x86_64/semantic.exec.reference"
 
       - name: Clean installed-release export without external natives
         if: matrix.target == 'x86_64'
