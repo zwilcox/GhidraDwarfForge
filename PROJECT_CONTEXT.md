@@ -1945,17 +1945,29 @@ so successful invocation/CRC alone cannot establish target identity.
 **PLANNED:** the product operation in `docs/ADR-0004-DEBUGLINK-ATTACHMENT.md`
 requires an explicit post-export choice, independently verified identity,
 exclusive original backup, supported host metadata, atomic replacement and
-tested rollback. A configured staged `objcopy` is the first proposed backend;
+tested rollback. Preflight includes receipt, temporary receipt and log paths
+before any write. Refresh exports directly to a new final pair basename,
+retains the old pair/receipt, and creates a separate backup of the prior
+attached image. Rollback must restore that image's still-valid debug
+association, not merely a runnable pristine binary. The old byte-identical
+re-export experiment does not validate changed-CRC refresh or this transaction.
+A configured staged `objcopy` is the first proposed backend;
 the non-loadable sidecar writer must not be reused as an executable writer.
 Neither a product attachment command nor native Windows attachment validation
 was added. P2.8 remains incomplete.
 
 The existing imported-executable SHA guard stays strict after attachment.
 Re-export the current curated Program using explicit `--input=<original-backup>`
-and `--output=<intended-sidecar>`; do not silently update its imported identity.
-The private saved-Program experiment retains an analyst name and proves this
-workflow. Genuine curation changes require an explicit CRC refresh independently
+and `--output=<fresh-final-sidecar>` for refresh; do not silently update its
+imported identity.
+The private saved-Program experiment retains an analyst name and proves
+backup-based, same-path, byte-identical re-export. Fresh-generation export,
+changed-CRC refresh and rollback remain design acceptance, not measured results.
+Genuine curation changes require an explicit CRC refresh independently
 of the separate type-ordering issue below.
+The historical research scripts' bare `dwarfdump` checks did not enforce
+complete summaries and are not current libdwarf acceptance evidence. These
+design refinements add no product operation or new runtime validation.
 
 **CONFIRMED, bounded determinism finding:** Ghidra 12.0.3's generic
 `DefaultDataType` inherits a new process-local universal ID. Forge currently

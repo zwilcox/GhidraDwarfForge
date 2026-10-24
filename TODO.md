@@ -1205,6 +1205,13 @@ the full original/backup/rollback contract below remains required.
 - Compute/store the required CRC correctly.
 - Retain a verified independent original backup and atomically replace the
   modified target; test rollback without overwriting an existing backup.
+- Preflight receipt, temporary receipt, log and backend-output paths against
+  every input, pair and backup before writes; test identity aliases and
+  preservation even when rejection reporting fails.
+- For refresh, export directly to a fresh final sidecar/source basename;
+  retain the previous pair/receipt and back up the prior attached image.
+  Test changed-CRC refresh and full prior-association rollback, not merely
+  byte-identical re-export. Reject a lost or overwritten prior pair.
 - Verify automatic GDB discovery.
 
 ### Completion criteria
@@ -1219,7 +1226,9 @@ the full original/backup/rollback contract below remains required.
 The Linux research probes cover GNU 2.42 tools for x86-64, AArch64 and MIPS32
 both byte orders, including backend rejection of unsupported layouts. These
 results do not claim a product transaction, Windows attachment, or narrower
-ordinary-export input support. A separate save/reopen investigation found
+ordinary-export input support. Their historical bare-libdwarf result predates
+strict summary enforcement and is not current validator acceptance. A separate
+save/reopen investigation found
 generic `undefined` uses a transient Ghidra UID that changes type DIE ordering;
 the normalized model and source remain identical. Record/fix that bounded
 byte-determinism issue separately, without weakening imported-input SHA checks.

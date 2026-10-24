@@ -4,6 +4,14 @@ Date: 2026-10-23. Product baseline: `ddad598`. This record supports
 [ADR-0004](../ADR-0004-DEBUGLINK-ATTACHMENT.md); it is not a product attachment
 implementation or a Windows attachment support claim.
 
+**Historical validator limitation:** these research scripts predate the strict
+libdwarf summary gate. Their bare `dwarfdump` exit status and diagnostic-text
+checks do not establish complete zero-error checking. The historical clean
+libdwarf claim below is withdrawn; GNU/LLVM, hash, backend and GDB observations
+remain separate evidence. Any implementation acceptance run must use the
+current strict checker and its pinned test configuration. No new exporter or
+target-mutating test was run for the design refinement on 2026-10-24.
+
 ## Reproduce the bounded backend experiment
 
 On Linux with JDK 21, GNU binutils 2.42 and the indicated target tools:
@@ -65,12 +73,23 @@ are preserved. GDB with debuginfod disabled and an empty global debug directory
 loads that exact `.dbg` via debuglink and resolves the analyst name with empty
 stderr. This is lookup evidence, not an additional post-attachment runtime test.
 
-Final clean exact-baseline run: `run.8RvlttQW`. Its full GNU ELF/DWARF dumps,
-LLVM verification and independent `dwarfdump` also pass without diagnostic
-output. The private package is the `ddad598` native-inclusive baseline with
+Final exact-baseline run: `run.8RvlttQW`. Its full GNU ELF/DWARF dumps and
+LLVM verification pass. The historical bare `dwarfdump` invocation returned
+zero without matching its warning/error filter, but did not enforce complete
+check summaries; it is not current libdwarf acceptance evidence. The private
+package is the `ddad598` native-inclusive baseline with
 ZIP SHA-256 `fb6cb0b096c4627171d2d67c91548bb50b3c0a68dd2405ebd1985e734bb67ab3`
 and Java JAR SHA-256
 `eeba82ac7112cf33f745170d751242a43c8fc2cb36c11b51eac89ca3bb467a10`.
+
+The script re-exports unchanged analysis to the same output path and proves
+identical sidecar/source bytes. It performs no later analyst edit, changed-CRC
+refresh, fault-injected transaction or rollback. Those paths remain
+**PLANNED**. ADR-0004's refined refresh contract instead exports changed
+analysis directly to a fresh final basename, preserves the previous pair and
+receipt, and backs up the previous attached image separately from the pristine
+original. This makes the previous debug association available for rollback;
+the current script is not a prototype of that transaction.
 
 ## Separate save/reopen determinism finding
 

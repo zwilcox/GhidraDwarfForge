@@ -2,6 +2,7 @@
 
 - Status: Accepted design; product attachment remains **PLANNED**
 - Date: 2026-10-23
+- Refined: 2026-10-24 (output ownership and refresh recovery contract)
 - Scope: P2.8, separate from default export and the corrective alpha.2 release
 
 ## Decision
@@ -48,7 +49,9 @@ behavior were not tested in this investigation. See the reproducible
 ## Proposed operation contract
 
 1. Require an explicit attach action with the final target and sidecar paths,
-   an export receipt, and a new backup path. Explain that the target changes.
+   an export receipt, and new backup and transaction-receipt paths. Explain
+   that the target changes. A refresh also supplies its previous committed
+   attachment receipt and a separate prior-attached-image backup path.
    A completed `PARTIAL` export can be eligible if its artifacts and diagnostics
    satisfy the ordinary export contract; fatal/cancelled exports cannot.
 2. For initial attachment, verify the current files against the receipt's
@@ -67,11 +70,23 @@ behavior were not tested in this investigation. See the reproducible
    backend returns. Reject an existing association unless explicit replacement
    was requested; a different previous association is never silently replaced.
 4. Resolve actual filesystem traversal, including symlink/`..` ancestors,
-   before comparing paths. Reject a symlink/reparse-point target leaf, existing
-   backup, nonregular file, alternate data stream, and target with multiple hard
-   links in the initial operation. Compare file identity as well as paths among
-   input, sidecar, source, backup and stage. Fail closed if the host cannot
-   establish identity/link count. Path normalization alone is insufficient.
+   before comparing paths. Reject a symlink/reparse-point target leaf, nonregular
+   file, alternate data stream, and target with multiple hard links in the
+   initial implementation, including refresh. A newly requested backup
+   destination must not exist; the retained original backup required for
+   refresh is instead read and verified without replacement.
+   Compare file identity as well as paths among
+   input, sidecar, source, original backup, prior-attached-image backup, both
+   input receipts (new export receipt and previous committed attachment
+   receipt), the new transaction receipt, stages, temporary receipts and every
+   file log/backend-output destination. Include all of these in preflight before
+   opening any output, including failure diagnostics. An unsafe requested log
+   must not be truncated to report its own rejection; report that on stderr. New
+   receipts and backups are exclusively created regular files; reject existing
+   paths, dangling links, reparse points and alternate streams. Private temporary
+   outputs must be exclusively created in an owned directory. Fail closed if
+   the host cannot establish identity/link count. Path normalization alone is
+   insufficient; compare canonical traversal and existing file identity.
 5. Create the candidate in the target directory and run the configured backend
    against a verified private snapshot. Preserve all program-header bytes and
    loaded bytes except the ELF header's section-table fields. Validate every
@@ -90,14 +105,21 @@ behavior were not tested in this investigation. See the reproducible
    and artifact hashes before commitment. Publish the candidate with a single
    atomic replacement in the target directory; unsupported atomic replacement
    is a failure, not permission to copy over the live executable.
-8. Retain a transaction receipt recording the original, backup, attached image,
-   sidecar/source hashes, CRC, tool identity and result. Define host-specific
+8. Retain a versioned transaction receipt recording the operation ID and phase,
+   previous receipt hash when applicable, all canonical artifact/backup paths,
+   original/prior-target/candidate/backup/sidecar/source hashes, CRC and tool
+   identity. Persist a prepared record and verified recovery material before
+   target replacement, then record its committed or recovery outcome. Existing
+   committed receipts are immutable. Only this operation's own new record may
+   advance through staged atomic updates, after verifying its expected identity
+   and hash; never overwrite a different record at that path. Define host-specific
    flush/directory durability and recovery behavior before claiming crash
    recovery. The backup, receipt and target are not one atomic filesystem
    transaction. An interrupted operation must identify a complete original or
    complete attached image and a recoverable verified backup.
-9. On an observed post-replacement failure, restore from the verified backup
-   through another staged atomic replacement. Do not overwrite an unrelated
+9. On an observed post-replacement failure, restore the pre-operation target
+   from its verified independent backup through another staged atomic
+   replacement. Do not overwrite an unrelated
    concurrent target change during rollback. Report the retained backup and
    recovery state if restoration is blocked. Windows sharing locks and access
    failures must leave a complete target and recoverable backup.
@@ -112,27 +134,62 @@ the retained backup or publishing a partial target.
 The current imported-executable SHA guard correctly rejects the modified
 target. Keep that guard unchanged and do not silently update the curated
 Program's recorded import identity. Re-export from the mandatory original
-backup while retaining the intended output path:
+backup. For refresh, choose a fresh generation-specific output path beside
+the target or in its `.debug` directory, leaving the attached pair unchanged:
 
 ```bash
 ghidra-dwarf-forge-headless --ghidra-dir=/path/to/ghidra \
     --project-dir=/path/to/project --project-name=Analysis --program=app \
-    --input=/path/to/app.pre-debuglink --output=/path/to/app.dbg
+    --input=/path/to/app.pre-debuglink --output=/path/to/app.rev2.dbg
 ```
 
 This existing-project operation uses the current curated Program, not a new
 import. The research fixture proves preservation of an analyst-applied name,
-strict rejection of the attached original, and re-export using the unchanged
-backup. A sidecar change after genuine analyst edits requires a fresh CRC and
-an explicit attachment refresh. Preserve the first original backup; refresh
-must not replace it with already-modified bytes. A new transaction may also
-retain its own prior-attached-image backup.
+strict rejection of the attached original, and byte-identical re-export using
+the unchanged backup. It does not prove changed-content refresh or rollback.
+A sidecar change after genuine analyst edits requires a fresh CRC and an
+explicit attachment refresh. Preserve the first original backup; refresh
+must not replace it with already-modified bytes.
 
 The investigation separately found transient `undefined` type IDs can change
 DIE ordering between initial import and reopening the same saved Program.
 Normalized model/source equality and repeated-reopen byte identity were proved;
 this is a bounded determinism follow-up, not target corruption or a reason to
 relax CRC/identity checks. See the evidence record.
+
+### Refresh transaction boundary
+
+The attachment operation changes only the target's association after the new
+pair has been successfully exported at its final generation-specific paths.
+It rejects a refresh whose new sidecar or source aliases the currently
+attached pair. It does not rename an already-generated source pair to create
+a new generation, because DWARF records the source path. The new pair is
+selected explicitly; ordinary export keeps its existing output policy.
+
+Before refresh, verify the previous receipt, current attached target, original
+backup and previous sidecar/source hashes. Require the previous debuglink CRC
+to match its retained pair. If the old pair has already been overwritten by
+an independent export or edited, fail without modifying the target; report
+that the previous association cannot be treated as a verified rollback state.
+Do not infer or fabricate the missing previous bytes.
+
+Refresh retains the old pair and committed receipt unchanged and exclusively
+creates a verified independent backup of the prior attached target. The
+staged candidate points to the new sidecar basename. A single atomic target
+replacement switches the association; it is not a transaction that atomically
+replaces an executable, sidecar and source. Failure before replacement leaves
+the old association intact. After replacement, rollback restores the prior
+attached image, whose untouched sidecar/source still satisfy its CRC and source
+paths. Verify that complete association after rollback. Preserve both pairs,
+the original backup and prior-target backup on success or recovery failure;
+automatic generation deletion is outside this first operation.
+
+Cancellation and injected faults must be checked around the prepared receipt,
+target replacement and final receipt update. Recovery compares the live target
+with the recorded prior and candidate hashes before deciding its state; an
+unrelated concurrent change must never be overwritten. A complete runtime
+image alone does not prove recovery of its debug association. Crash/durability
+claims still require the host-specific tests above and below.
 
 ## Host feasibility and acceptance before implementation is complete
 
@@ -153,15 +210,29 @@ The first implementation is complete only after all of the following pass:
   automatic GDB lookup and actual `.dbg` objfile selection. Build-ID fallback
   and debuginfod are disabled or removed in negative controls.
 - Wrong target/sidecar/report hashes and corrupted or stale CRCs are rejected;
-  genuine curation followed by backup-based re-export and refresh works.
+  genuine curation followed by backup-based re-export to a fresh generation
+  and changed-CRC refresh works. GDB selects that exact new objfile and source;
+  rollback selects the unchanged old pair, with build-ID/debuginfod fallback
+  disabled. Re-exporting identical bytes alone is not this test.
 - Symlink/`..`, hard links, path aliases, literal special characters/spaces,
   existing backups, missing/read-only directories, Windows reparse points,
   streams and sharing locks either work under the documented contract or fail
   without mutation. Test identity and bytes, not only return status.
+- Direct, relative, symlink/`..` and hard-link aliases from transaction
+  receipts, staged receipts and logs to any protected input, pair or backup
+  fail before writes/backend launch. Preserve sentinel contents and metadata;
+  rejection diagnostics must not corrupt a protected file. Existing previous
+  receipts stay immutable, and interrupted owned receipt updates are tested.
 - Fault injection before/after backup, backend failure/diagnostics, failed
   metadata application, failed atomic replacement, cancellation and rollback
   proves preservation/recovery. The previous target and backup are never
   silently overwritten by a partial or unrelated image.
+- Refresh faults before/after target replacement and receipt publication prove
+  either the previous or new complete association with exact target/pair hashes,
+  retained original and prior-target backups, and an explicit receipt/recovery
+  state. Reject an overwritten old pair, attempted reuse of a retained pair or
+  transaction destination, and unrelated concurrent modifications without
+  hiding an invalid association.
 - All accepted target layouts pass GNU/LLVM and applicable independent DWARF
   checks plus GDB behavior. Unsupported attachment layouts still export normally.
 - Native Linux and Windows jobs exercise their actual filesystem contracts;
