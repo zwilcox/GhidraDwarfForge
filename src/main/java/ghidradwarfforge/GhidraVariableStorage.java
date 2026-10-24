@@ -1,6 +1,7 @@
 package ghidradwarfforge;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import ghidra.app.cmd.function.CallDepthChangeInfo;
@@ -92,7 +93,8 @@ public final class GhidraVariableStorage {
     /**
      * Refines only an otherwise rejected simple register parameter. The value
      * exists at the first writing instruction (before it executes), and becomes
-     * unavailable at its fall-through address. No move tracking is inferred.
+     * unavailable at its fall-through address unless a separate ordered p-code
+     * proof establishes one completed register backup before that instruction.
      * An empty result leaves the original conservative rejection unchanged.
      */
     public static List<StorageInterval> parameterPrefix(Program program, Function function,
@@ -114,24 +116,46 @@ public final class GhidraVariableStorage {
             return List.of();
         }
         List<Instruction> instructions = new ArrayList<>();
+        var instructionsByAddress = new HashMap<ghidra.program.model.address.Address, Instruction>();
         var iterator = program.getListing().getInstructions(function.getBody(), true);
         while (iterator.hasNext()) {
             monitor.checkCancelled();
             Instruction instruction = iterator.next();
-            // A second entry into the linear body would bypass its incoming
-            // parameter state. Ordinary fall-through references are harmless.
-            if (!instruction.getAddress().equals(function.getEntryPoint())) {
-                var references = program.getReferenceManager()
-                    .getReferencesTo(instruction.getAddress());
-                while (references.hasNext()) {
-                    monitor.checkCancelled();
-                    var type = references.next().getReferenceType();
-                    if (type.isFlow() && type != ghidra.program.model.symbol.RefType.FALL_THROUGH) {
+            for (PcodeOp operation : instruction.getPcode()) {
+                monitor.checkCancelled();
+                if (unprovenStore(program, operation)) {
+                    return List.of();
+                }
+            }
+            instructions.add(instruction);
+            instructionsByAddress.put(instruction.getAddress(), instruction);
+        }
+        // A second entry can target an offcut byte inside a listed instruction,
+        // not just an instruction start. Inspect every referenced destination.
+        var destinations = program.getReferenceManager()
+            .getReferenceDestinationIterator(function.getBody(), true);
+        while (destinations.hasNext()) {
+            monitor.checkCancelled();
+            var destination = destinations.next();
+            if (destination.equals(function.getEntryPoint())) {
+                continue;
+            }
+            var references = program.getReferenceManager().getReferencesTo(destination);
+            while (references.hasNext()) {
+                monitor.checkCancelled();
+                var reference = references.next();
+                var type = reference.getReferenceType();
+                if (type.isFlow()) {
+                    Instruction predecessor = instructionsByAddress.get(reference.getFromAddress());
+                    boolean ordinaryFallthrough = type == ghidra.program.model.symbol.RefType.FALL_THROUGH &&
+                        predecessor != null && instructionsByAddress.containsKey(destination) &&
+                        destination.equals(predecessor.getFallThrough()) &&
+                        destination.equals(predecessor.getMaxAddress().next());
+                    if (!ordinaryFallthrough) {
                         return List.of();
                     }
                 }
             }
-            instructions.add(instruction);
         }
         long start = function.getEntryPoint().getOffset();
         long end = Math.addExact(function.getBody().getMaxAddress().getOffset(), 1);
@@ -142,10 +166,24 @@ public final class GhidraVariableStorage {
         }
         List<StorageInterval> result = new ArrayList<>();
         result.add(new StorageInterval(start, boundary, mapped));
+        var formalType = parameter.getFormalDataType();
+        var storage = parameter.getVariableStorage();
+        // A storage-width copy is not evidence for a differently sized formal
+        // value. Keep the established prefix when this narrower proof fails.
+        RegisterCopyLifetime.Backup backup = formalType != null &&
+                formalType.getLength() == parameter.getLength() &&
+                storage.size() == parameter.getLength()
+            ? RegisterCopyLifetime.prove(program, start, end, instructions,
+                storage.getFirstVarnode(), parameter.getLength(), registers, monitor)
+            : null;
+        if (backup != null) {
+            result.add(new StorageInterval(boundary, backup.end(), backup.storage()));
+            boundary = backup.end();
+        }
         if (boundary < end) {
             result.add(new StorageInterval(boundary, end, unavailable(
                 OmissionReason.REGISTER_MODIFIED,
-                "incoming parameter register was overwritten before address 0x" +
+                "proven parameter register storage was overwritten before address 0x" +
                     Long.toHexString(boundary) + "; later storage is not established")));
         }
         return List.copyOf(result);
@@ -259,7 +297,7 @@ public final class GhidraVariableStorage {
                     "function writes " + description + " register " + base.getName() +
                         " at " + instruction.getAddress());
             }
-            if (opaqueInstruction == null && hasOpaqueRegisterEffects(instruction)) {
+            if (opaqueInstruction == null && hasOpaqueRegisterEffects(program, instruction)) {
                 opaqueInstruction = instruction;
             }
         }
@@ -274,11 +312,11 @@ public final class GhidraVariableStorage {
         return mapped;
     }
 
-    private static boolean hasOpaqueRegisterEffects(Instruction instruction) {
+    private static boolean hasOpaqueRegisterEffects(Program program, Instruction instruction) {
         PcodeOp[] operations = instruction.getPcode();
         boolean opaque = false;
         for (PcodeOp operation : operations) {
-            if (operation.getOpcode() == PcodeOp.UNIMPLEMENTED) {
+            if (operation.getOpcode() == PcodeOp.UNIMPLEMENTED || unprovenStore(program, operation)) {
                 return true;
             }
             if (operation.getOpcode() == PcodeOp.CALLOTHER) {
@@ -294,6 +332,29 @@ public final class GhidraVariableStorage {
         }
         return opaque && !ordinaryTerminalReturn(instruction, operations);
     }
+
+    static boolean unprovenStore(Program program, PcodeOp operation) {
+        if (operation.getOpcode() != PcodeOp.STORE) {
+            return false;
+        }
+        if (operation.getNumInputs() != 3 || operation.getOutput() != null ||
+                operation.getInput(0) == null || operation.getInput(1) == null ||
+                operation.getInput(2) == null || !operation.getInput(0).isConstant() ||
+                operation.getInput(2).getSize() <= 0) {
+            return true;
+        }
+        long id = operation.getInput(0).getOffset();
+        if (id != (int) id && id != Integer.toUnsignedLong((int) id)) {
+            return true;
+        }
+        var space = program.getAddressFactory().getAddressSpace((int) id);
+        // STORE's destination selector is an address-space ID, not an address.
+        // Only a well-formed store into known memory can leave register facts
+        // intact. It never establishes a memory location for the parameter.
+        return space == null || !space.isMemorySpace() ||
+            operation.getInput(1).getSize() != space.getPointerSize();
+    }
+
 
     private static boolean ordinaryTerminalReturn(Instruction instruction,
             PcodeOp[] operations) {
@@ -490,7 +551,15 @@ public final class GhidraVariableStorage {
     }
 
     private static boolean overlaps(Register first, Register second) {
-        return first.contains(second) || second.contains(first);
+        // Some listing result registers overlap storage without sharing a
+        // named parent tree. Use the same physical-byte rule as raw outputs so
+        // stable, original-prefix and backup proofs agree on every write.
+        return first.contains(second) || second.contains(first) ||
+            (first.getAddress().getAddressSpace().equals(second.getAddress().getAddressSpace()) &&
+                first.getAddress().getOffset() < Math.addExact(second.getAddress().getOffset(),
+                    second.getMinimumByteSize()) &&
+                second.getAddress().getOffset() < Math.addExact(first.getAddress().getOffset(),
+                    first.getMinimumByteSize()));
     }
 
     private static UnavailableStorage unavailable(OmissionReason reason,

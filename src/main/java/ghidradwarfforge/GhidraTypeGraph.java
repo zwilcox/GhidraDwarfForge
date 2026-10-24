@@ -146,7 +146,9 @@ public final class GhidraTypeGraph {
                         parameterName, VariableKind.PARAMETER, logicalLength, ranges));
                     if (storage instanceof UnavailableStorage unavailable) {
                         diagnostic.accept((prefix.isEmpty() ? "Omitted location for " :
-                            "Limited location to proven incoming-register lifetime for ") +
+                            prefix.stream().filter(interval -> interval.storage().available())
+                                .count() > 1 ? "Limited location to proven register-copy lifetime for " :
+                                "Limited location to proven incoming-register lifetime for ") +
                             symbol.name() + "::" + parameterName + ": " +
                             unavailable.diagnostic());
                     }
@@ -341,9 +343,9 @@ public final class GhidraTypeGraph {
         return intervals.stream().map(interval -> {
             var confidence = evidence(source, interval.storage()).confidence();
             Evidence evidence = new Evidence(confidence,
-                "Ghidra listing parameter storage (" + source + "); incoming register " +
-                    "preserved only through the first write in a fully decoded " +
-                    "straight-line leaf; later value storage is not established");
+                "Ghidra listing parameter storage (" + source + "); fully decoded " +
+                    "straight-line leaf with incoming register and, where proven, one " +
+                    "completed exact-bit register copy; unproven intervals are unavailable");
             return new LocationRange(AddressNormalizer.toElfAddress(interval.start(), rebaseDelta),
                 AddressNormalizer.toElfAddress(interval.end(), rebaseDelta),
                 interval.storage(), evidence);
