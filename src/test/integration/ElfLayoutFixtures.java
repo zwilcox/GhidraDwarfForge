@@ -163,18 +163,38 @@ public final class ElfLayoutFixtures {
                     "invented original section name at index " + index);
                 int type = before.data.getInt(oldOffset + 4);
                 if (type == 4 || type == 9) {
-                    byte[] neutral = new byte[after.sectionSize];
+                    boolean allocated = (before.word(oldOffset + 8) & 2) != 0;
+                    byte[] neutral = allocated ? Arrays.copyOfRange(before.bytes,
+                        oldOffset, oldOffset + before.sectionSize) : new byte[after.sectionSize];
                     ByteBuffer header = ByteBuffer.wrap(neutral).order(after.data.order());
                     header.putInt(4, 8);
                     if (after.elf64) {
-                        header.putLong(48, 1);
+                        header.putLong(8, allocated ? 2 : 0);
+                        header.putInt(40, 0);
+                        header.putInt(44, 0);
+                        header.putLong(56, 0);
+                        if (!allocated) {
+                            header.putLong(48, 1);
+                        }
                     }
                     else {
-                        header.putInt(32, 1);
+                        header.putInt(8, allocated ? 2 : 0);
+                        header.putInt(24, 0);
+                        header.putInt(28, 0);
+                        header.putInt(36, 0);
+                        if (!allocated) {
+                            header.putInt(32, 1);
+                        }
                     }
                     require(Arrays.equals(neutral, Arrays.copyOfRange(after.bytes,
                         newOffset, newOffset + after.sectionSize)),
                         "inherited relocation section was not canonically neutralized");
+                    int payload = Math.toIntExact(before.word(oldOffset + (before.elf64 ? 24 : 16)));
+                    int length = Math.toIntExact(before.word(oldOffset + (before.elf64 ? 32 : 20)));
+                    require(Arrays.equals(Arrays.copyOfRange(before.bytes, payload,
+                        Math.addExact(payload, length)), Arrays.copyOfRange(after.bytes,
+                        payload, Math.addExact(payload, length))),
+                        "retired relocation payload bytes changed at " + index);
                     continue;
                 }
                 require(Arrays.equals(Arrays.copyOfRange(before.bytes, oldOffset + 4,

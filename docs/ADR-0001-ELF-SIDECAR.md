@@ -39,8 +39,28 @@ Create `<original>.dbg` as a matched, non-loadable ELF sidecar:
    and `.shstrtab` from scratch.
 7. Resolve producer relocation records before publication. Do not copy or emit
    unresolved `SHT_REL`/`SHT_RELA` sections; inherited relocation headers are
-   represented as zero-length `SHT_NOBITS` placeholders with no link or target.
+   represented as `SHT_NOBITS` placeholders with no link or target. Allocated
+   relocation sections retain their names, addresses, sizes, offsets and
+   alignment, with only `SHF_ALLOC` retained, so automatic GDB association can
+   match them to the original image. Nonallocated relocation sections are
+   retired under `.forge.omitted` names with zero size/address/flags.
 8. Publish by atomic replacement only after the complete sidecar validates.
+
+### Automatic association and allocated relocations (2026-10-23)
+
+GDB's [separate-debug-file contract](https://sourceware.org/gdb/current/onlinedocs/gdb.html/Separate-Debug-Files.html)
+expects matching section names, addresses and sizes, while section contents may
+be omitted. Renaming and zeroing allocated relocation sections violated this
+contract: automatic association warned that sections such as `.rela.dyn` were
+missing. Explicit `symbol-file` loading did not exercise that check, and the
+previous build-ID regression did not reject warnings.
+
+Preserving allocated relocation extents as `SHT_NOBITS` satisfies that matching
+requirement without retaining active relocation records. Only `SHF_ALLOC`
+survives; `sh_link`, `sh_info` and `sh_entsize` are zero. Original bytes remain
+copied unchanged, but the section has no logical payload. Nonallocated
+relocations remain retired. This is a sidecar compatibility fix, not a product
+option to modify the original with `.gnu_debuglink`.
 
 ### Existing debug metadata policy (2026-10-22)
 
