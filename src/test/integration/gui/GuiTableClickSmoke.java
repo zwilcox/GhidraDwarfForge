@@ -4,6 +4,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -13,6 +15,12 @@ import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+
+import docking.event.mouse.GMouseListenerAdapter;
+import docking.widgets.table.AbstractGTableModel;
+import docking.widgets.table.GTable;
+import docking.widgets.table.GTableFilterPanel;
+import ghidra.util.table.GhidraTableFilterPanel;
 
 /** Exercises real table clicks with filter focus and a modal action listener. */
 public final class GuiTableClickSmoke {
@@ -147,6 +155,97 @@ public final class GuiTableClickSmoke {
         }
         finally {
             GuiTestSupport.onSwing(() -> { modal.dispose(); frame.dispose(); return null; });
+        }
+    }
+
+    static void runPendingFilter(Path results) throws Exception {
+        AtomicInteger launches = new AtomicInteger();
+        AtomicInteger clearedSelections = new AtomicInteger();
+        AbstractGTableModel<String> model = new AbstractGTableModel<>() {
+            private final List<String> data = new ArrayList<>(
+                List.of("Other.java", "GhidraDwarfForge.java"));
+            @Override public String getName() { return "Pending script filter control"; }
+            @Override public int getColumnCount() { return 1; }
+            @Override public String getColumnName(int column) { return "Name"; }
+            @Override public List<String> getModelData() {
+                return data;
+            }
+            @Override public Object getColumnValueForRow(String value, int column) {
+                return value;
+            }
+        };
+        GTable table = GuiTestSupport.onSwing(() -> new GTable(model));
+        GTableFilterPanel<String> filter = GuiTestSupport.onSwing(() ->
+            new GhidraTableFilterPanel<>(table, model));
+        JFrame frame = GuiTestSupport.onSwing(() -> {
+            JFrame created = new JFrame("Pending Script Manager filter control");
+            table.addMouseListener(new GMouseListenerAdapter() {
+                @Override
+                public void doubleClickTriggered(MouseEvent event) {
+                    if (table.getSelectedRow() == 0 && "GhidraDwarfForge.java".equals(
+                            table.getValueAt(0, 0))) {
+                        launches.incrementAndGet();
+                    }
+                }
+            });
+            table.getSelectionModel().addListSelectionListener(event -> {
+                if (table.getSelectedRow() < 0) {
+                    clearedSelections.incrementAndGet();
+                }
+            });
+            created.add(new JScrollPane(table), BorderLayout.CENTER);
+            created.add(filter, BorderLayout.SOUTH);
+            created.setBounds(120, 120, 600, 260);
+            created.setVisible(true);
+            return created;
+        });
+        try {
+            Robot robot = new Robot();
+            robot.setAutoDelay(80);
+            GuiTestSupport.foregroundWindow(table);
+            GuiScriptManagerSmoke.awaitTableReady(table);
+            GuiTestSupport.onSwing(() -> {
+                table.setRowSelectionInterval(1, 1);
+                filter.setFilterText("GhidraDwarfForge");
+                GuiTestSupport.require(table.getSelectedRow() == 1 &&
+                    table.getVisibleRect().contains(table.getCellRect(1, 0, true)) &&
+                    "GhidraDwarfForge.java".equals(table.getValueAt(1, 0)) &&
+                    !GuiScriptManagerSmoke.isTableReady(table),
+                    "pending filter did not reproduce the old readiness false positive");
+                return null;
+            });
+            GuiScriptManagerSmoke.awaitTableReady(table);
+            GuiTestSupport.require(GuiTestSupport.onSwing(() ->
+                table.getRowCount() == 1 && table.getSelectedRow() == 0 &&
+                    GuiScriptManagerSmoke.isTableReady(table)) && clearedSelections.get() > 0,
+                "pending filter/selection repair did not complete before mouse dispatch");
+            int beforeGesture = clearedSelections.get();
+            GuiTestSupport.screenshot(robot, frame, results.resolve("ready.png"));
+            GuiTestSupport.doubleClickCell(robot, table, 0, 0, "GhidraDwarfForge.java");
+            GuiTestSupport.require(launches.get() == 1 &&
+                clearedSelections.get() == beforeGesture,
+                "selection changed during the single real Ghidra double-click");
+            Files.writeString(results.resolve("result.txt"),
+                "old-visible-selected-row-precondition=ACCEPTED-WHILE-FILTER-PENDING\n" +
+                "pending-filter-clears-selection=CONFIRMED\n" +
+                "filter-and-selection-repair-before-mouse-dispatch=PASS\n" +
+                "target-invocations=1\n");
+            System.out.println("pending-filter-mouse-dispatch=PASS");
+        }
+        catch (Exception | Error failure) {
+            GuiTestSupport.captureDesktop(results);
+            throw failure;
+        }
+        finally {
+            GuiTestSupport.onSwing(() -> {
+                try {
+                    filter.dispose();
+                }
+                finally {
+                    frame.dispose();
+                }
+                return null;
+            });
         }
     }
 }

@@ -2090,6 +2090,75 @@ input; zero remain unexplained. Openbox and validator/GDB stderr logs are
 empty, and no WM/Xvfb/Java test process remains. Full hosted verification of
 the updated branch, including native Windows, is still required.
 
+### Script Manager pending-filter readiness (2026-10-24)
+
+The first combined-product managed-display run, `run.yI7ooUik`, passed all 100
+geometry cases and delivered the intended table double-click, but timed out
+waiting for preflight Console output. The original failure is retained under
+`build/native-geometry-review/combined-full-gui.log`. Five fresh diagnostic
+runs passed; they did not resolve that failure. The subsequent buffered
+selection-stack reproduction `run.3HcGrt32` failed the same Console assertion
+and records the actual cause in
+`build/native-geometry-review/event-probe/selection-stack-gui.log`:
+
+- Ghidra's `GTableFilterPanel` timer calls `TableModelWrapper.setTableFilter`,
+  which causes `JTable.tableChanged` to clear the selection after mouse press 2.
+- The real second click is unconsumed, has previous/current left-button state,
+  and reaches the correct Name cell, but `getSelectedScript()` is null.
+  `lastRunScript` remains null. Selection is restored only afterward.
+- Pinned Ghidra 12.0.3 queues this restoration through
+  `RowObjectSelectionManager.repairSelection` using `invokeLater`.
+
+The harness observes the known initial refresh/category/filter/sort work and
+drains queued selection repair before selecting the final row. It reads the
+pinned private update-manager fields because Ghidra exposes no public filter
+or ScriptList busy query; missing fields fail the test. It never flushes,
+disables or replaces those updates. A final idle check precedes the unchanged
+single real double-click and all existing Console/chooser/export assertions.
+
+The new control uses actual `GTable`, `GhidraTableFilterPanel`, and
+`GMouseListenerAdapter`. A public filter-text change proves the old
+selected-visible-row predicate accepts pending work. The test observes real
+selection clearing/restoration, waits for completion, and requires exactly one
+action with no selection change during its gesture. Development checks caught
+and corrected immutable control-data cleanup and declaring-class reflection
+errors; those failed runs are retained (`run.HSMGcl7Q`, `run.XSKtqHhL`).
+No production exporter, script launch path, timeout or retry policy changed.
+Fresh combined hosted acceptance, including native Windows, remains required.
+
+**PASS locally:** `build/test-results/gui-script-manager/run.LFXUdxrq/` and
+`build/native-geometry-review/combined-filter-readiness-reviewed.log`, using
+OpenJDK 21.0.12.1 and the final managed-display wrapper. All three controls,
+100 independent geometry cases, actual installed preflight/export, chooser
+selection/cancellation, original hashes, GNU/LLVM and GDB pass. The configured
+strict checker reports three exactly corroborated inherited frame diagnostics
+and zero unexplained errors. GNU/GDB/checker stderr and the Openbox log are empty.
+
+This run uses the combined production build supplied by the integration branch
+with audited release-native bytes, installed only in a fresh private Ghidra
+copy. Its entire release manifest verifies and all 33 packaged production
+source/script files match that combined tree. Recorded SHA-256 values are:
+
+- Combined ZIP: `1348d100f7dd0508929726039313444419d551d7bf794838cdd8bf29ce62d8dd`.
+- Production JAR: `d6e94336652ddc2cc3a14f9bc2971f58d1ca7cb1dcbd980fb713bd058779470e`.
+- Production source ZIP: `890f2d4a95a3ede4e4c42c44def06a48beda4bb427c914416f6b3a6a4d22ea4b`.
+
+The retained local command uses extracted display dependencies, not installed
+user-desktop packages (`$PWD` is the GUI worktree):
+
+```bash
+export XVFB_BIN=/home/ziggy/GhidraDwarfForge/build/gui-validation/dependencies/extracted/usr/bin/Xvfb
+export OPENBOX_BIN="$PWD/build/native-geometry-review/openbox-local.sh"
+export JAVA_BIN=/usr/lib/jvm/java-21-openjdk-amd64/bin/java
+export DWARFDUMP=/home/ziggy/GhidraDwarfForge-worktrees/line-table-index/build/line-profile/validation-tool-config-final/bin/dwarfdump
+export PATH="$(dirname "$DWARFDUMP"):$PATH"
+src/test/integration/gui-script-manager.sh \
+    "$PWD/build/native-geometry-review/combined-ghidra" \
+    "$PWD/build/native-geometry-review/combined-ghidra/Ghidra/Extensions/GhidraDwarfForge" \
+    /home/ziggy/GhidraDwarfForge/build/fixtures/x86_64/semantic.exec.stripped \
+    /home/ziggy/GhidraDwarfForge/build/fixtures/x86_64/semantic.exec.reference
+```
+
 ## Native patch checkout and provenance consistency (2026-10-23)
 
 Prepublication audit of candidate `ddad598` in run `40055176326` verified the
@@ -2477,12 +2546,19 @@ selection stops at `GuiScriptManagerSmoke.awaitConsole` with:
 `timed out waiting for console text: Symbol export was not requested.`
 No preflight script start was observed. Correct geometry and observed click
 delivery do not establish execution of the script action. Console/window/
-desktop diagnostics and logs remain retained; investigation is active, and no
-combined GUI/export/validator/GDB pass is claimed from this failed run.
+desktop diagnostics and logs remain retained. No combined GUI/export/validator/
+GDB pass is claimed from this failed run.
 
 The earlier managed-display `run.KPdcV6p3` pass used the isolated GUI component
 and its verified hosted production package. It remains useful component
-evidence, but is not promoted to a combined pass. The combined source must
-resolve this failure and pass the complete exact-head hosted matrix before
-main integration. Published alpha.2 stays immutable at `2f88c4a`; its verified
+evidence, but is not promoted to a combined pass. The later causal reproduction
+`run.3HcGrt32` identifies the deferred-filter selection race recorded above.
+The readiness fix, pending-filter control and fresh actual combined-product run
+`run.LFXUdxrq` pass on Java 21 with the unchanged production JAR. That run proves
+100 native geometry cases, all three controls, preflight/export, both chooser
+outcomes, original preservation, GNU/LLVM/strict-libdwarf (three exactly matched
+inherited diagnostics, zero unexplained errors), and GDB stepping/normal exit.
+Diagnostic replays were not substituted for this post-fix run. The complete
+exact-head hosted matrix, including Windows GUI, remains required before main
+integration. Published alpha.2 stays immutable at `2f88c4a`; its verified
 release artifacts exclude these subsequent features.

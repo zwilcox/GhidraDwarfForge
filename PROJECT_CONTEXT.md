@@ -2062,6 +2062,24 @@ GNU/LLVM/strict-libdwarf and GDB; its Openbox log is empty. Process cleanup,
 mouse dispatch and production oracles remain intact. Windows code is unchanged
 and the new full hosted gate remains required.
 
+The combined-production follow-up `run.yI7ooUik` passed native geometry and
+delivered the real double-click, but did not launch the preflight script.
+Buffered diagnostic reproduction `run.3HcGrt32` identifies a separate harness
+readiness race: Ghidra's pending table-filter timer clears selection after the
+second mouse press; the second click reaches `runScript()` with no selected
+`ResourceFile`, and selection restoration runs afterward. The harness now
+observes completion of the pinned ScriptList refresh, category-tree work and
+filter timer, table-filter timer and sorting, drains queued selection repair,
+then selects the final row and performs one ordinary double-click. It does
+not flush or modify those production updates. A real Ghidra table/filter
+control verifies the former selected/visible predicate accepts pending work,
+then verifies filtering and selection repair finish before the single action.
+Full Java 21 combined-product run `run.LFXUdxrq` passes all three controls,
+100 geometry cases, select/cancel, GNU/LLVM/strict-libdwarf and GDB, using
+production JAR SHA-256 `d6e94336652ddc2cc3a14f9bc2971f58d1ca7cb1dcbd980fb713bd058779470e`.
+These shared harness changes still require renewed Linux and native Windows
+hosted validation; earlier component runs remain historical evidence.
+
 ### 16.33 Shared-object QEMU debugger endpoint isolation
 
 **CONFIRMED:** combined GUI run `40055880742`, MIPS32LE job `120759663719`,

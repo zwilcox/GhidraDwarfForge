@@ -101,7 +101,7 @@ opens a chooser; cancellation publishes neither artifact. The existing
 Both scripts are required by release assembly and covered by the release
 checksum manifest. Linux actual Script Manager launch, output selection and
 cancellation are tested; native Windows GUI behavior remains unverified.
-This development addition is outside the corrective alpha.2 candidate.
+This development addition is outside the published corrective alpha.2 release.
 
 On Windows PowerShell:
 
