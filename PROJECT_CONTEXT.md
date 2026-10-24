@@ -1858,6 +1858,13 @@ profiles. They explicitly retain the direct-`PN_XNUM` runtime restriction,
 metadata limits, conservative location policy and remaining feature work.
 Later feature branches are excluded from this candidate.
 
+Source inspection of the pinned Script Manager confirms that its ordinary Run
+action supplies no script arguments. The existing no-argument production
+script performs preflight only. Release notes therefore direct alpha.2 users
+to the tested headless wrappers and distinguish the programmatically invoked
+GUI fallback test from a full Script Manager export journey; later launcher
+work remains outside this corrective candidate.
+
 The Ghidra-generated `extension.properties` still uses `version=12.0.3` for
 host compatibility. The packaged `VERSION` and assembly-derived
 `RELEASE-MANIFEST.txt` identify alpha.2. No native library was rebuilt for the
