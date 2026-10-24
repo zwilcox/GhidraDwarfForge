@@ -1,12 +1,13 @@
 # TODO.md — GhidraDwarfForge
 
 This plan began at prototype commit `7a39a186538c7aec3f7dbdc4a6e396125b5d63ea`.
-The current assessment covers implementation commit `3e47589`, whose complete
-[hosted validation run](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40047390539)
-passed all twelve jobs. PRs #16/#17/#18 track integration; consult GitHub for
-their live state. The published alpha remains `f4a0199`. Use Sections 1.1 and 4
-for the next work; do not restart the
-completed prototype bring-up sequence.
+The integration head is `680ecd6`, including PRs #16–#19. Its corrective
+candidate `bfc2712` passed all twelve hosted jobs in run `40057428382`, but a
+subsequent retained-log audit found nonzero libdwarf check summaries that the
+harness missed because `dwarfdump` returned zero. The independent-validator
+gate is reopened under Section 0.2; a green historical run is not proof of a
+clean libdwarf result. Alpha.1 remains `f4a0199`; alpha.2 is unpublished.
+Use Sections 1.1 and 4 for the next work; do not restart prototype bring-up.
 
 Status vocabulary:
 
@@ -20,10 +21,11 @@ Status vocabulary:
 
 No project-level milestone is complete unless all applicable conditions hold:
 
-**CONFIRMED:** these gates pass for the currently documented development
-profiles in run `40047390539`. This is a tested-profile assessment, not a claim
-that every feature below or every possible ELF/ABI is supported. Reapply the
-gates to each implementation change and the exact versioned release commit.
+**CONFIRMED:** historical hosted jobs passed, including the native/GDB
+behavior checks for the documented profiles. The independent-validator gate
+below is reopened after the summary-reporting audit in Section 0.2. Resolve
+that gap and reapply all gates to the exact versioned release commit; neither
+a passing job nor acceptance of one profile proves every ELF/ABI is supported.
 
 - [x] Builds from a clean checkout using documented commands.
 - [x] Uses a pinned Ghidra compatibility baseline.
@@ -31,7 +33,8 @@ gates to each implementation change and the exact versioned release commit.
 - [x] Does not crash or corrupt the Ghidra JVM.
 - [x] Preserves the original target byte-for-byte in default mode.
 - [x] Produces deterministic `.dbg.c` for an unchanged Ghidra program.
-- [x] Produces structurally valid ELF and DWARF accepted by independent validators.
+- [~] Produces structurally valid ELF and DWARF accepted by independent validators;
+  resolve the libdwarf summary findings in Section 0.2 before publication.
 - [x] Passes scripted GDB behavior checks, not only `readelf -S`.
 - [x] Is honest about unavailable types, variables, locations, and source mappings.
 - [x] Has tests for every claimed architecture/host combination.
@@ -85,6 +88,53 @@ are merged into `main`; the published alpha.1 remains affected.
   metadata; equivalent patched source does not excuse mismatched provenance.
   Checkout-conversion and malformed-metadata regressions pass; fresh complete
   candidate CI, including native Windows, remains required before publication.
+
+## 0.2 Validator summary enforcement — release blocker (2026-10-23)
+
+**CONFIRMED:** `dwarfdump -ka -ks` can exit zero while reporting nonzero
+checker counts. A digest-verified audit of all five target artifacts from
+`40057428382` found affected logs in every lane. Ordinary x86-64/AArch64 cases,
+unnamed sections, and section-header-free inputs need separate explanations.
+GNU/LLVM and GDB results remain recorded; they do not erase another tool's
+reported errors. Historical claims of zero libdwarf errors are withdrawn for
+these affected artifacts pending the analysis below.
+
+- [x] Make check summaries and completion evidence mandatory; reject nonzero
+  counters even when process status is zero, and reject incomplete logs.
+- [x] Establish the exact cause of each diagnostic against emitted ranges,
+  executable mappings and inherited original sections. Compare the pinned
+  consumer implementation; do not change correct output to satisfy a checker
+  assumption or suppress unexplained diagnostics.
+- [x] Prove the chosen validation policy with deliberately invalid artifacts
+  and strict positive controls, retaining original hashes and all raw logs.
+- [x] Preserve original load extents as inert metadata for sectionless inputs;
+  verify exact `PT_LOAD` correspondence and reject out-of-image mutations.
+- [x] Correct the standalone consumer's rejection of valid `PN_XNUM` originals
+  before using them to corroborate inherited frame diagnostics; retain rejecting
+  malformed-count/table controls in both ELF widths and byte orders.
+- [ ] Update integration callers and documentation, rerun the full target/host
+  matrix, and audit the exact final main package before publishing alpha.2.
+
+**CONFIRMED locally:** complete-report enforcement and malformed-report,
+line-sequence and CU/function-range controls pass with the independently built
+2.3.2 checker. Its narrow line-sequence correction does not alter shipped
+native libraries. Exact original/frame identity is required for inherited
+frame diagnostics; they are reported, not called absent. Twenty-five fresh
+non-sectionless target/role cases pass strict validation and GDB. The five
+corrected sectionless cases also pass, including exact original-load metadata,
+all emitted location intervals, corrupted-artifact rejection and byte-identical
+repeats. Complete corrected hosted validation and the final package audit remain
+pending; local successes do not close the release gate.
+
+PR #22 at `bf7f2b1` passed native builds, extension/release assembly, ARM32 and
+both MIPS32 lanes in run `40061424810`. The x86-64 and AArch64 lanes failed
+because standalone libdwarf rejected the original extended program-header
+encoding before frame corroboration. Windows-hosted validation was skipped;
+the aggregate gate failed. The exact candidate package precheck passed, but
+neither that audit nor the three passing target lanes permits publication.
+The separate validation-only reader patch now passes 16 local positives,
+60 malformed-input controls and fresh x86-64/AArch64 full ELF-layout suites.
+The corrected complete hosted rerun is still required.
 
 ## 1. Milestone ordering
 

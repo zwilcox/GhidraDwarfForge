@@ -91,8 +91,8 @@ readelf --debug-dump=info --debug-dump=abbrev --debug-dump=aranges \
     2>>"$result_dir/readelf-errors.txt"
 test ! -s "$result_dir/readelf-errors.txt"
 llvm-dwarfdump --verify "$sidecar" | tee "$result_dir/llvm-verify.txt"
-dwarfdump "$sidecar" >"$result_dir/dwarfdump.txt" 2>"$result_dir/dwarfdump-errors.txt"
-test ! -s "$result_dir/dwarfdump-errors.txt"
+python3 "$repository_dir/src/test/integration/check-dwarfdump.py" \
+    "$sidecar" "$result_dir/dwarfdump.txt" --original "$input"
 gdb -q -nx -batch \
     -ex 'set pagination off' -ex 'set confirm off' -ex 'set debuginfod enabled off' \
     -ex "file $input" -ex "directory $result_dir/select/chosen" \
