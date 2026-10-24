@@ -4398,3 +4398,89 @@ is unchanged. This is a packaging review, not another runtime execution. Evidenc
 is incorporated normally as `480b6e2`; following acceptance docs are rebuilt
 and audited against their exact commit before the next PR. Full hosted
 acceptance remains pending.
+
+
+## Executable program-byte observations: local acceptance (2026-10-24)
+
+**CONFIRMED locally; exact hosted gate pending:** source
+`79dbc290eaa88578f758c64d6bed8464a900caa8` and its independent review pass.
+No existing exporter, ELF writer, parser or native binding changes. The bounded
+comparison covers the complete declared header, resolved program count, raw
+program table and all non-NULL file payloads. Section-table header fields are
+exempt; active section metadata, debuglink bytes, unmapped data and identity
+remain outside the byte predicate.
+
+Commands in the executable-program-bytes worktree:
+
+```bash
+GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC ./gradlew \
+    executableProgramBytesSmoke matchedElfPrefixSmoke \
+    matchedElfAllocationsSmoke elfImageReaderSmoke buildExtension
+/usr/lib/jvm/java-25-openjdk-amd64/bin/javac --release 21 \
+    -cp build/libs/GhidraDwarfForge.jar -d build/program-byte-review/java21/classes \
+    src/test/java/ghidradwarfforge/elf/ExecutableProgramBytesFixtures.java \
+    src/test/java/ghidradwarfforge/elf/ExecutableProgramBytesSmoke.java
+/usr/lib/jvm/java-21-openjdk-amd64/bin/java -Xmx64m \
+    -cp build/libs/GhidraDwarfForge.jar:build/program-byte-review/java21/classes \
+    ghidradwarfforge.elf.ExecutableProgramBytesSmoke --large
+bash src/test/integration/architecture-neutrality.sh
+FORGE_MODULE="$PWD/build/program-bytes-review/ghidra/Ghidra/Extensions/GhidraDwarfForge" \
+    JAVA=/usr/lib/jvm/java-21-openjdk-amd64/bin/java \
+    JAVAC=/usr/lib/jvm/java-25-openjdk-amd64/bin/javac \
+    src/test/integration/build-id-discovery.sh x86_64 aarch64 mips32be
+python3 build/program-bytes-review/root-runtime-audit.py
+```
+
+Actual Java 21.0.12.1 passes 431 default and 443 large assertions at 64 MiB;
+all four width/order combinations compare a payload ending at byte
+2,147,553,280. Related smokes/build and architecture guard pass. An additional
+read-only survey checks sixteen retained backend candidates and preserves 27
+paths. The initial boundary test incorrectly expected every pre-`e_shoff` change
+to make an ELF malformed; one valid big-endian program-table move correctly
+produced a header difference. Only the expectation changed. The survey's first
+origin comparison also expected `file:///` instead of equivalent `file:/`;
+it now compares decoded URI paths. Failed setup logs are retained in
+`build/program-byte-review/source-acceptance.json`.
+
+Initial private ZIP SHA-256 is
+`0b245ce8b528274fa4d84de10ff866cfe284a21fa14f19d151f3d825bb01fbe6`;
+installed JAR is
+`340049330c2c10f51fce63407f1bca342d84318be0b93c659bd92babe029a0e3`.
+Five manifests pass and the base Ghidra launch file remains unchanged. The
+consumer runs actual Java 21 at 64 MiB and verifies helper/parser code origins.
+`build/test-results/build-id-discovery/run.UmBq92Je` contains nine newly created
+private candidates, exact backend argv/version/tool digest/status/environment
+and quiet diagnostics. Repeated Java observations and an independent Python
+model agree. All before/after receipts match; all 36 retained original/reference/
+sidecar/source fixture snapshots remain unchanged. The no-build-ID private
+sidecar is intentionally corrupted and restored by the later GDB CRC test;
+its final bytes, rather than the helper-time mtime, are compared.
+
+Fifteen owned mutants distinguish changed loaded bytes, raw header and program
+records from complementary active-address and CRC changes outside this property.
+Three controlled NOTE payloads outside every LOAD are rejected; these metadata
+copies are not executed or asserted runtime-valid. Six malformed operands reject.
+Synthetic no-LOAD and declared-header-tail cases preserve difference precedence.
+The x86 large case has 2,149,584,913 logical bytes and a 2,097,169-byte payload
+starting above 2 GiB. Its selected header/table/payload hashes and exact final-byte
+mutation are independently reconstructed after removal; no whole-file hash or
+copied-prefix claim is inferred.
+
+All 27 existing GDB association transcripts pass: matching/mismatched build ID,
+exact debuglink discovery, explicit no-ID loading and bad-CRC rejection. GDB
+checks compiler-oracle function addresses, selected sidecar/source paths, types,
+source listing and named breakpoints. Native x86 exec additionally hits the
+build-ID and debuglink associations with arguments 19/23 and exits normally.
+These are new backend/helper/GDB executions on earlier exported fixtures, not
+new Ghidra exports, cross-target execution or structural-validator runs.
+
+Root independent runtime evidence is
+`build/program-bytes-review/root-runtime-audit.json`. Corrected research-probe
+replay `build/program-byte-review/corrected-research-probe.bfr_znzz/result.json`
+accepts an ordinary retained candidate and rejects the old escaped NOTE mutation
+at offset 14676; five inputs and three copied source paths remain unchanged.
+It uses actual Java 21/64 MiB and changes no backend files. Independent runtime
+review is clear in `build/program-bytes-oracle-review/runtime-review.json`.
+Final package review and exact hosted acceptance remain required. Native
+Windows results are pending and their conditional assertion count must be
+observed on that host, not inferred from Linux.

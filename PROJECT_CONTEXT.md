@@ -3429,3 +3429,34 @@ remains required. The next bounded program-byte observer addresses preservation
 of full headers, raw program tables and non-LOAD payloads in private backend
 candidates. It does not expose attachment or certify active section metadata,
 association CRC, file identity or a snapshot.
+
+
+### Executable program-byte preservation checkpoint (2026-10-24)
+
+**CONFIRMED locally; full hosted gate pending:** source `79dbc29` adds the
+read-only `ExecutableProgramBytes` observer. Its contract preserves the complete
+declared ELF header except section-table fields, resolved extended program
+counts, raw program headers and all non-NULL program file payloads. Phase-ordered
+issues identify differences; matching without an original file-backed LOAD
+returns a distinct no-evidence result. Raw table observations must agree with
+the metadata selecting payload ranges. Attribute checks remain best-effort;
+no immutable snapshot or identity claim is made. Ordinary export is unchanged.
+
+A bounded Linux GNU 2.42 investigation adds ARM32 hard-float exec/PIE evidence
+and an out-of-LOAD NOTE counterexample to the old research probe. The corrected
+probe now rejects that mutation and retains its positive basename/CRC control.
+PN_XNUM program-table movement and existing-link exit-zero diagnostics remain
+backend rejection cases. Native Windows backend behavior remains unproven.
+
+Actual Java 21/64 MiB passes 431 focused assertions and 443 with all four ELF
+width/order combinations above 2 GiB. Related smokes, build and independent
+source review pass. The private installed package passes nine new backend candidate checks using retained x86-64/AArch64/MIPS32 big-endian exports. The
+independent oracle separately verifies allocated metadata and exact debuglink
+bytes; all 27 existing GDB association checks pass, including native x86 argument
+values and bad-CRC rejection. All 36 selected fixture files stay unchanged.
+This replay does not claim a fresh Ghidra export or cross-target runtime run.
+
+The separate main/hosted gates remain required. The optional attachment
+transaction is still planned; byte correspondence does not approve active
+section metadata, CRC, DWARF, source association or target replacement. See
+`docs/EXECUTABLE-PROGRAM-BYTES.md`, refined ADR-0004 and `docs/VALIDATION.md`.

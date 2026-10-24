@@ -1550,6 +1550,18 @@ is clear; accepted allocation main is incorporated normally as `480b6e2`. The
 exact full hosted gate remains required.
 See `docs/EXPORT-ARTIFACT-HASH-BINDING.md`.
 
+**CONFIRMED locally; full hosted gate pending:** `ExecutableProgramBytes`
+checks the complete declared ELF header, raw program table, resolved extended
+counts and all non-NULL file payloads with exact section-table-field exceptions.
+Source `79dbc29` passes 431/443 actual-Java-21 checks under 64 MiB, including
+both widths/orders above 2 GiB, with independent source review. Nine private
+backend candidates from retained x86-64/AArch64/MIPS32 big-endian exports pass
+the installed independent oracle and all 27 existing GDB association checks.
+Original fixtures remain unchanged. The research probe now rejects the known
+out-of-LOAD NOTE mutation. This is scoped byte correspondence; active section
+metadata and debuglink CRC remain separate checks. Native Windows and exact
+full hosted acceptance are pending. See `docs/EXECUTABLE-PROGRAM-BYTES.md`.
+
 **Status:** `[ ]` — optional product operation **PLANNED**. The bounded backend
 and backup-based re-export investigation is complete; the explicit transaction
 design and remaining acceptance tests are in
@@ -2095,7 +2107,8 @@ Unless the user changes priorities:
    recorded scopes; do not invent recovered information to complete them.
    The current bounded continuation is the locally reviewed selected-file SHA
    claim binder's hosted acceptance. A separate program-byte preservation check
-   is being developed for owned backend candidates; optional attachment remains
+   passes local installed backend/GDB checks for owned candidates; its final
+   package and hosted gate are next. Optional attachment remains
    a separate transaction, with no identity/readiness claim from these helpers.
 7. For each coherent change, run appropriate validators and debugger behavior
    tests, preserve original hashes and deterministic output, and record evidence

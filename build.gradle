@@ -448,6 +448,15 @@ tasks.register("matchedElfAllocationsSmoke", JavaExec) {
     maxHeapSize = "64m"
 }
 
+tasks.register("executableProgramBytesSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks declared ELF headers and program payload preservation with bounded reads"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.ExecutableProgramBytesSmoke"
+    maxHeapSize = "64m"
+}
+
 tasks.register("outputPathPolicySmoke", JavaExec) {
     group = "verification"
     description = "Checks default, explicit, colliding, and unwritable output paths"

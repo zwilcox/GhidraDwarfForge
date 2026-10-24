@@ -2,7 +2,7 @@
 
 - Status: Accepted design; product attachment remains **PLANNED**
 - Date: 2026-10-23
-- Refined: 2026-10-24 (output ownership and refresh recovery contract)
+- Refined: 2026-10-24 (output ownership, refresh recovery and program-byte scope)
 - Scope: P2.8, separate from default export and the corrective alpha.2 release
 
 ## Decision
@@ -43,8 +43,16 @@ rejected by these tools. PN_XNUM fixtures are accepted by the tools but change
 conservative backend exclusion, not evidence that every rewritten image is
 invalid. `objcopy` also accepts a plain-text file as the debug file, proving why
 its success status alone is insufficient. ARM32 and native Windows backend
-behavior were not tested in this investigation. See the reproducible
+behavior were not tested in that initial investigation. See the reproducible
 [evidence record](research/DEBUGLINK-EVIDENCE.md).
+
+A later bounded Linux investigation adds ARM32 hard-float exec/PIE controls.
+It also proves that a changed PT_NOTE payload outside every LOAD escaped the
+old load-only probe. The read-only `ExecutableProgramBytes` observer and the
+corrected research probe compare all non-NULL program payloads, the complete
+declared ELF header and raw program table. Existing-link exit-zero diagnostics
+are another explicit rejection case. These results do not establish Windows
+backend support or a transaction; see `EXECUTABLE-PROGRAM-BYTES.md`.
 
 ## Proposed operation contract
 
@@ -88,8 +96,11 @@ behavior were not tested in this investigation. See the reproducible
    the host cannot establish identity/link count. Path normalization alone is
    insufficient; compare canonical traversal and existing file identity.
 5. Create the candidate in the target directory and run the configured backend
-   against a verified private snapshot. Preserve all program-header bytes and
-   loaded bytes except the ELF header's section-table fields. Validate every
+   against a verified private snapshot. Preserve the complete declared ELF
+   header, raw program table and every non-NULL program header's file-backed
+   payload, except the ELF header's section-table fields. Resolve and preserve
+   extended program counts; require positive file-backed LOAD evidence for
+   this initial operation. Validate every
    deliberate header change, retained build identity and section relationships;
    reject tool diagnostics and unexplained changes. Never invoke `objcopy`
    with omitted output against the live target.

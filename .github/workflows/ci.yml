@@ -475,7 +475,7 @@ jobs:
               ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke \
               exportReportSmoke exportReportClaimsSmoke exportArtifactHashBindingSmoke \
               fileDigestsSmoke elfBuildIdSmoke \
-              matchedElfPrefixSmoke matchedElfAllocationsSmoke \
+              matchedElfPrefixSmoke matchedElfAllocationsSmoke executableProgramBytesSmoke \
               syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
               variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke \
               stackFirstUseSmoke \
@@ -1145,7 +1145,9 @@ jobs:
       - name: Automatic build-ID and debuglink sidecar association
         env:
           TARGET: ${{ matrix.target }}
-        run: src/test/integration/build-id-discovery.sh "$TARGET"
+        run: |
+          FORGE_MODULE="$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
+            src/test/integration/build-id-discovery.sh "$TARGET"
 
       - uses: actions/upload-artifact@v7
         if: always()
@@ -1276,7 +1278,7 @@ jobs:
             opaqueRegisterEffectsSmoke qualifiedFunctionNameSmoke dwarfAddressRangesSmoke `
             registerCopySmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
             elfBuildIdSmoke exportReportClaimsSmoke matchedElfPrefixSmoke `
-            matchedElfAllocationsSmoke exportArtifactHashBindingSmoke 2>&1 |
+            matchedElfAllocationsSmoke exportArtifactHashBindingSmoke executableProgramBytesSmoke 2>&1 |
             Tee-Object -FilePath "$resultDirectory\native-independent.log"
           if ($LASTEXITCODE -ne 0) {
             throw "native-independent Windows checks failed with exit code $LASTEXITCODE"
