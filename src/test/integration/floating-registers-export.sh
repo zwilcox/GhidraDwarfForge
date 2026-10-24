@@ -80,7 +80,7 @@ for target in "${targets[@]}"; do
         aarch64) cc=aarch64-linux-gnu-gcc; strip_tool=aarch64-linux-gnu-strip
             emulator=qemu-aarch64-static; sysroot=/usr/aarch64-linux-gnu ;;
         arm32) cc=arm-linux-gnueabihf-gcc; strip_tool=arm-linux-gnueabihf-strip
-            emulator=qemu-arm-static; sysroot=/usr/arm-linux-gnueabihf
+            emulator=qemu-arm-static; sysroot=${FORGE_ARM32_SYSROOT:-/usr/arm-linux-gnueabihf}
             extra=(-march=armv7-a -marm -mfpu=vfpv3-d16) ;;
         mips32be) cc=mips-linux-gnu-gcc; strip_tool=mips-linux-gnu-strip
             emulator=qemu-mips-static; sysroot=/usr/mips-linux-gnu ;;

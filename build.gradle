@@ -290,6 +290,18 @@ tasks.register("registerAliasSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/register-alias/cache").absolutePath
 }
 
+tasks.register("opaqueRegisterEffectsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks conservative register locations around unmodeled instruction effects"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.OpaqueRegisterEffectsSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/opaque-register/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/opaque-register/cache").absolutePath
+}
+
 tasks.register("floatingRegisterSliceSmoke", JavaExec) {
     group = "verification"
     description = "Emits a scalar upper-register bit piece through the isolated native producer"
