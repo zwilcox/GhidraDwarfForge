@@ -1992,14 +1992,30 @@ inert sectionless-only load extent metadata derived from original `PT_LOAD`
 headers; see ADR 0001. **CONFIRMED locally:** the corrected writer passes
 ELF32/64 in both byte orders, five real sectionless exports with zero checker
 errors, exact load/interval metadata checks, rejecting corruption controls,
-GDB runtime checks and byte-identical repeats. All 19 current CI Java smoke
-tasks, the extension build, packaging/wrapper checks and the greater-than-2-GiB
+GDB runtime checks and byte-identical repeats. All 19 strict-baseline CI Java
+smoke tasks, the extension build, packaging/wrapper checks and the greater-than-2-GiB
 and source-timestamp integrations also pass. The local build uses JDK 25 with
 Java 21 bytecode; the installed Java 21 directory contains a JRE without
 `javac`. Hosted Java 21 and the complete corrected matrix remain
 **PRESENT, UNVERIFIED**. Do not publish based only on the earlier green gates,
 including main run `40058691020`.
 See TODO Section 0.2 and `docs/VALIDATION.md`.
+
+PR #22's first hosted run `40061424810` passed the native builds, extension,
+release package and ARM32/MIPS32 target lanes, but failed x86-64 and AArch64
+at original-file frame corroboration for `PN_XNUM` fixtures. The standalone
+consumer rejects section zero's nonzero `sh_info` even when it encodes the
+valid extended program-header count. The sidecars themselves pass LLVM and
+have only their exactly inherited frame messages. A separate validation-only
+reader correction passes 16 local positives, 60 malformed-header controls,
+exact retained-original corroboration and fresh x86-64/AArch64 ELF-layout
+export/validator/GDB suites. No additional diagnostic exception or shipped
+native-library change is selected. Windows-hosted checks were skipped
+and the aggregate gate failed. The exact `bf7f2b1` package precheck passed
+source/manifests/native provenance and 20 isolated Java 21 producer lifetimes,
+but this is not a release approval. The checker completion gate additionally
+rejects missing zero-count categories, demonstrated by fifteen new controls
+and 52 unchanged retained real reports.
 
 ### 16.33 Definite ELF/Ghidra target agreement (2026-10-24)
 
@@ -2028,6 +2044,12 @@ profile ET_EXEC exports pass GNU/LLVM/strict-libdwarf and native/QEMU GDB checks
 The full hosted matrix and native Windows execution of the new metadata smoke
 remain **PRESENT, UNVERIFIED**. See the target-agreement section of
 `docs/VALIDATION.md`; this follow-up is separate from corrective alpha.2.
+
+The normal merge of strict `99845c7` into target-agreement `736d164` adds
+only the reviewed validation corrections and their documentation. Target-guard
+production and test code are unchanged. Workflow and changed-script syntax
+checks pass; prior smoke/runtime suites were not repeated. Hosted validation
+of this separate follow-up remains pending.
 
 ## 17. Open questions
 

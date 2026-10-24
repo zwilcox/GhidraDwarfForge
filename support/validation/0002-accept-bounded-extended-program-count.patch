@@ -1,0 +1,58 @@
+--- a/src/lib/libdwarf/dwarf_elf_load_headers.c
++++ b/src/lib/libdwarf/dwarf_elf_load_headers.c
+@@ -359,6 +359,35 @@
+     return FALSE;
+ }
+ 
++/*  GNU/Linux and Solaris PN_XNUM stores an extended program-header
++    count in section zero's sh_info. This reader does not consume program
++    headers, but must validate the claimed table before accepting this use
++    of sh_info. Ordinary ELF section-zero rules remain unchanged. */
++static int
++valid_section_zero_program_count(dwarf_elf_object_access_internals_t *ep,
++    struct generic_shdr *section_zero,
++    Dwarf_Unsigned header_size,
++    Dwarf_Unsigned program_entry_size)
++{
++    struct generic_ehdr *ehdr = ep->f_ehdr;
++    const Dwarf_Unsigned pn_xnum = 0xffff;
++
++    if (ehdr->ge_phnum != pn_xnum) {
++        return section_zero->gh_info == 0;
++    }
++    if (section_zero->gh_info < pn_xnum ||
++        ehdr->ge_ehsize < header_size ||
++        ehdr->ge_phoff < ehdr->ge_ehsize ||
++        ehdr->ge_phoff > ep->f_filesize ||
++        ehdr->ge_phentsize < program_entry_size) {
++        return FALSE;
++    }
++    /*  Subtraction and division avoid overflow in offset + count * size.
++        No allocation or scan is proportional to the extended count. */
++    return section_zero->gh_info <=
++        (ep->f_filesize - ehdr->ge_phoff) / ehdr->ge_phentsize;
++}
++
+ static int
+ generic_ehdr_from_32(dwarf_elf_object_access_internals_t *ep,
+     struct generic_ehdr *ehdr, dw_elf32_ehdr *e,
+@@ -590,7 +619,8 @@
+             if (!isempty || gshdr->gh_name || gshdr->gh_flags ||
+                 shnum || shstrx ||
+                 gshdr->gh_addr ||
+-                gshdr->gh_info) {
++                !valid_section_zero_program_count(ep,gshdr,
++                    sizeof(dw_elf32_ehdr),sizeof(dw_elf32_phdr))) {
+                 free(orig_psh);
+                 free(orig_gshdr);
+                 *errcode = DW_DLE_IMPROPER_SECTION_ZERO;
+@@ -708,7 +738,8 @@
+             if (!isempty || gshdr->gh_name || gshdr->gh_flags ||
+                 shnum || shstrx ||
+                 gshdr->gh_addr ||
+-                gshdr->gh_info) {
++                !valid_section_zero_program_count(ep,gshdr,
++                    sizeof(dw_elf64_ehdr),sizeof(dw_elf64_phdr))) {
+                 free(orig_psh);
+                 free(orig_gshdr);
+                 *errcode = DW_DLE_IMPROPER_SECTION_ZERO;
