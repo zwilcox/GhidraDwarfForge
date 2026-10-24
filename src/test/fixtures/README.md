@@ -142,7 +142,7 @@ Runtime integration for non-host targets additionally requires QEMU user-mode
 and a matching multi-architecture or cross GDB. Cross-compilation or headless
 Ghidra import by itself is not a complete architecture-support test.
 
-Two focused harnesses build additional fixtures independently of the Makefile:
+Focused harnesses build additional fixtures independently of the Makefile:
 
 - `bitfield-values-export.sh` uses `bitfield-values.c` on each target. Compiler
   and Forge DWARF must both read initialized `{a=5,b=17}` values from four-byte
@@ -155,6 +155,13 @@ Two focused harnesses build additional fixtures independently of the Makefile:
   segment has file offset `0x1000` and virtual address `0x401000`. Normal and
   explicitly rebased Ghidra imports must retain exact function/global addresses,
   usable source stepping, runtime values, and deterministic repeats.
+- `function-entry-export.sh` uses `function_entry_ranges.c` and its assembly
+  for x86-64 ET_EXEC/PIE functions with executable bytes below their entries.
+  One body is split around a trap-filled gap and one is contiguous. Assembler
+  labels independently establish exact entries/body bounds; fully stripped
+  inputs ensure compiler symbols/DWARF cannot mask the Forge oracle. Baseline,
+  explicit Ghidra rebase and repeat runs check exact named breakpoints, all
+  body bytes and gaps, source, stable arguments, global values and stepping.
 
 After installing the current extension, exercise import and target metadata
 detection for every fixture with:

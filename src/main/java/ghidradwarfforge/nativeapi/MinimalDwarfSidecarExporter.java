@@ -3,6 +3,7 @@ package ghidradwarfforge.nativeapi;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_HIGH_PC;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_LANGUAGE;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_LOW_PC;
+import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_ENTRY_PC;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_STMT_LIST;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_RANGES;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_LOCATION;
@@ -145,6 +146,7 @@ public final class MinimalDwarfSidecarExporter {
         }
     }
 
+    /** Address is the true entry; body ranges stay sorted by address. */
     public record FunctionSymbol(String name, long address, List<FunctionRange> ranges) {
         public FunctionSymbol(String name, long address, long size) {
             this(name, address, List.of(new FunctionRange(address, size)));
@@ -166,14 +168,20 @@ public final class MinimalDwarfSidecarExporter {
                 }
                 previousEnd = range.endExclusive();
             }
-            if (ranges.get(0).address() != address) {
+            if (ranges.stream().noneMatch(range -> range.contains(address))) {
                 throw new IllegalArgumentException(
-                    "function entry does not begin its first range for " + name);
+                    "function entry is outside its body ranges for " + name);
             }
         }
 
         public boolean contiguous() {
             return ranges.size() == 1;
+        }
+
+        public boolean usesRangeList() {
+            // A contiguous interior entry also needs entry-first intervals for
+            // consumers that do not interpret DW_AT_entry_pc.
+            return !contiguous() || address != ranges.get(0).address();
         }
 
         public long size() {
@@ -361,8 +369,9 @@ public final class MinimalDwarfSidecarExporter {
             for (FunctionSymbol function : functions) {
                 Die die = newDie(producer, consumer, debug, DW_TAG_SUBPROGRAM, unit, errorOut);
                 addName(producer, consumer, die, function.name(), errorOut);
-                if (function.contiguous()) {
-                    addAddress(producer, consumer, debug, die, function.address(), errorOut);
+                if (!function.usesRangeList()) {
+                    addAddress(producer, consumer, debug, die, DW_AT_LOW_PC,
+                        function.ranges().get(0).address(), errorOut);
                     addUnsigned(producer, consumer, debug, die, DW_AT_HIGH_PC, function.size(),
                         errorOut);
                 }
@@ -373,6 +382,13 @@ public final class MinimalDwarfSidecarExporter {
                     }
                     addSectionOffset(producer, consumer, debug, die, DW_AT_RANGES, offset,
                         errorOut);
+                }
+                // DWARF 5 section 2.18: coverage and the actual execution entry
+                // are independent. Retain the explicit entry even for readers
+                // that also derive it from our first serialized range.
+                if (function.address() != function.ranges().get(0).address()) {
+                    addAddress(producer, consumer, debug, die, DW_AT_ENTRY_PC,
+                        function.address(), errorOut);
                 }
                 FunctionLines sourceFunction = sourceFunctions.get(FunctionKey.of(function));
                 boolean sourceFailed = sourceFunction != null && !sourceFunction.decompiled();
@@ -919,9 +935,12 @@ public final class MinimalDwarfSidecarExporter {
             }
         }
         Set<Long> expected = new java.util.HashSet<>(functions.stream()
-            .filter(FunctionSymbol::contiguous)
-            .map(FunctionSymbol::address)
+            .filter(function -> !function.usesRangeList())
+            .map(function -> function.ranges().get(0).address())
             .collect(java.util.stream.Collectors.toSet()));
+        functions.stream()
+            .filter(function -> function.address() != function.ranges().get(0).address())
+            .map(FunctionSymbol::address).forEach(expected::add);
         if (typeModel != null) {
             typeModel.globals().stream().filter(global -> !global.declaration())
                 .map(ProgramTypeModel.GlobalVariable::address).forEach(expected::add);
@@ -1130,9 +1149,10 @@ public final class MinimalDwarfSidecarExporter {
     }
 
     private static void addAddress(LibDwarfProducer producer, LibDwarfConsumer consumer,
-            Debug debug, Die die, long address, PointerByReference errorOut) {
+            Debug debug, Die die, short attribute, long address,
+            PointerByReference errorOut) {
         PointerByReference result = new PointerByReference();
-        check(producer.dwarf_add_AT_targ_address_c(debug, die, DW_AT_LOW_PC, address,
+        check(producer.dwarf_add_AT_targ_address_c(debug, die, attribute, address,
             TEXT_SYMBOL_INDEX, result, errorOut), "dwarf_add_AT_targ_address_c", errorOut,
             consumer);
         pointer(result, "address attribute");

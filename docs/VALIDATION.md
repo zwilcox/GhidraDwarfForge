@@ -11,6 +11,52 @@ export. Export remains explicit: installed wrappers request checksum-verified
 packaged natives by default, while source-tree audit runs may supply explicit
 library paths.
 
+## Function entries above body ranges (2026-10-23)
+
+**CONFIRMED locally:** `functionEntrySmoke` checks valid/interior entries,
+rejection of entries outside the body, exact entry-first interval encoding,
+and preserved sorted extraction ranges in both widths and byte orders. The
+real isolated producer passes x86-64, AArch64, ARM32 and both MIPS32 byte
+orders with `readelf`, LLVM and libdwarf validators. ARM32 uses a previously
+archived source-built hosted fixture because its local compiler is unavailable.
+This producer check is structural; it is not a new ARM/MIPS runtime claim.
+Logs/artifacts: `build/test-results/function-entry-native/`.
+
+`function-entry-export.sh` builds C/assembly ET_EXEC and PIE fixtures with both
+a split body below its entry and a contiguous body with an interior entry.
+Independent assembler symbols supply expected addresses; inputs loaded by
+Ghidra/GDB are fully stripped. The real production exporter, all validators,
+and GDB 15.1 pass baseline, `+0x2000000` Ghidra rebase and deterministic repeat
+for both roles. GDB verifies each body byte belongs to the correct function,
+every gap byte has neither function nor source coverage, exact named entry
+breakpoints, source lookup below/at entry, arguments before/after the backward
+branch, global values 42, `next`, `step` and normal exit. Input hashes/build IDs
+match; repeated `.dbg` and `.dbg.c` are byte-identical.
+Evidence: `build/test-results/function-entry-export/run.QVtda8wK/`.
+
+The compatibility decision is grounded in [DWARF 5 sections 2.17.3/2.18](https://dwarfstd.org/doc/DWARF5.pdf)
+and [GDB 15.1's block entry calculation](https://gnu.googlesource.com/binutils-gdb/+/refs/tags/gdb-15.1-release/gdb/block.h):
+the body may be encoded as nonoverlapping intervals in any order. The producer
+places the true entry first and also emits `DW_AT_entry_pc`; this avoids the
+observed incorrect lower-address breakpoint when using the attribute alone.
+The new constant (`0x52`) and reused `dwarf_add_AT_targ_address_c` signature
+were checked against the pinned libdwarf 2.3.2 source archive, SHA-256
+`7992e7b9019ebfabdda5773e86243517c48cf89fafed3209e853692bc9573efd`.
+
+```bash
+./gradlew functionEntrySmoke dwarfRangeListsSmoke dwarfLineTableSmoke \
+    dwarfInfoRepairSmoke syntheticSourceSmoke variableStorageSmoke \
+    dwarfLocationListsSmoke buildExtension
+src/test/integration/function-entry-export.sh "$GHIDRA_INSTALL_DIR" \
+    /absolute/path/libdwarf.so.2.3.2 /absolute/path/libdwarfp.so.2.3.2
+```
+
+For isolated production, add `-PlibdwarfPath`, `-PlibdwarfpPath`,
+`-PsidecarInput` and `-PsidecarOutput` to `functionEntrySmoke`. CI runs that
+check in all five target lanes and the real runtime harness in x86-64.
+`actionlint`, Bash syntax and the extension build pass locally. The new hosted
+gate remains **PRESENT, UNVERIFIED** until the branch pipeline passes.
+
 ## ELF robustness development (2026-10-23)
 
 The following evidence applies to implementation `3e47589` in

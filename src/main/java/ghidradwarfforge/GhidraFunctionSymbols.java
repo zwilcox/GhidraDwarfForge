@@ -23,7 +23,7 @@ public final class GhidraFunctionSymbols {
         THUNK,
         BODYLESS,
         NON_MEMORY,
-        ENTRY_OUTSIDE_FIRST_RANGE,
+        ENTRY_OUTSIDE_BODY,
         UNSUPPORTED_RANGE,
         UNTRANSLATABLE_ADDRESS
     }
@@ -88,12 +88,12 @@ public final class GhidraFunctionSymbols {
                 diagnostic.accept("Skipped non-memory function " + function.getName());
                 continue;
             }
-            if (!first.getMinAddress().equals(function.getEntryPoint())) {
+            if (!function.getEntryPoint().isMemoryAddress() ||
+                    !body.contains(function.getEntryPoint())) {
                 skipped.add(new SkippedFunction(function.getName(),
-                    SkipReason.ENTRY_OUTSIDE_FIRST_RANGE));
-                diagnostic.accept("Skipped function whose first body range does not begin at " +
-                    "its entry point " + function.getName() +
-                    "; DW_AT_entry_pc is not implemented yet");
+                    SkipReason.ENTRY_OUTSIDE_BODY));
+                diagnostic.accept("Skipped function whose entry point is outside its " +
+                    "memory body " + function.getName());
                 continue;
             }
             List<FunctionRange> translated = new ArrayList<>();

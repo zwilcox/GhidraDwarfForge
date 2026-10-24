@@ -427,7 +427,7 @@ jobs:
             ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke outputPathPolicySmoke \
               exportReportSmoke \
               syntheticSourceSmoke typeGraphSmoke variableStorageSmoke \
-              dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke \
+              dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
               packagedNativeLibrariesSmoke existingDebugSidecarSmoke \
               extendedSectionNumberingSmoke elfImageReaderSmoke \
@@ -782,6 +782,33 @@ jobs:
         if: matrix.target == 'x86_64'
         run: |
           src/test/integration/nonzero-load-offset-export.sh \
+            "$GHIDRA_INSTALL_DIR" \
+            "$PWD/native-integration/libdwarf.so.2.3.2" \
+            "$PWD/native-integration/libdwarfp.so.2.3.2"
+
+      - name: Function entry producer and validators
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          results="$PWD/build/test-results/function-entry-native/$TARGET"
+          mkdir -p "$results"
+          src/test/integration/run-isolated-native-smoke.sh "$results" \
+            ./gradlew functionEntrySmoke \
+            -PlibdwarfPath="$PWD/native-integration/libdwarf.so.2.3.2" \
+            -PlibdwarfpPath="$PWD/native-integration/libdwarfp.so.2.3.2" \
+            -PsidecarInput="$PWD/build/fixtures/$TARGET/semantic.exec.stripped" \
+            -PsidecarOutput="$results/entry.dbg"
+          readelf --debug-dump=info "$results/entry.dbg" >"$results/info.txt" \
+            2>"$results/readelf.stderr"
+          test ! -s "$results/readelf.stderr"
+          test "$(grep -c DW_AT_entry_pc "$results/info.txt")" -eq 2
+          llvm-dwarfdump --verify "$results/entry.dbg" >"$results/llvm.txt" 2>&1
+          dwarfdump -ka -ks "$results/entry.dbg" >"$results/dwarfdump.txt" 2>&1
+
+      - name: True function entry below-entry body ranges and rebases
+        if: matrix.target == 'x86_64'
+        run: |
+          src/test/integration/function-entry-export.sh \
             "$GHIDRA_INSTALL_DIR" \
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2"
