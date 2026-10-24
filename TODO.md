@@ -59,16 +59,17 @@ published alpha.
 Do not suppress the warning. See `docs/ADDRESS-INDEX.md`.
 Evidence and exact scope are recorded in `docs/VALIDATION.md`.
 
-**CONFIRMED current main:** PRs #29–#35 are merged through normal history.
+**CONFIRMED current main:** PRs #29–#36 are merged through normal history.
 They add bounded direct-register-copy lifetimes, conservative omission of
-unsupported stack-local starts, actual filesystem traversal/alias handling,
-and read-only digest/build-ID/report/prefix/allocation foundations. Each exact
-PR gate passed all twelve jobs with independent reviews. Main-push gates through
-PR #34 also pass, including `40099669427` and both GUI reviews. PR #35 merged as
-`0f05ec8` after run `40099934709`; its separate main push `40102383229` remains
-pending. Selected-file SHA claim binding passes local source/runtime/package
-review and awaits its hosted gate. These changes do not complete general variable
-migration, the attachment transaction or a new release.
+unsupported stack-local starts, filesystem traversal/alias handling, and
+read-only digest/build-ID/report/prefix/allocation/selected-hash foundations.
+Each exact PR gate passed all twelve jobs with independent reviews. Main-push
+gates through PR #35 also pass, including `40102383229` and both GUI reviews.
+PR #36 merged as `18b3e2e` after run `40102754052`; its separate main push
+`40105363431` is pending. Program-byte preservation passes local source,
+installed backend/GDB and package review; its full hosted gate remains required.
+These changes do not complete general variable migration, the optional
+attachment transaction or a new release.
 
 Status vocabulary:
 
@@ -1539,15 +1540,18 @@ readiness. Thirty hosted pairs, 63 metadata mutations and seventeen native
 Windows focused checks pass, including 532 allocation assertions. See
 `docs/MATCHED-ELF-ALLOCATIONS.md`.
 
-**CONFIRMED locally; hosted gate pending:** the separate
+**CONFIRMED:** PR #36 head `c526102` passes all twelve jobs in exact hosted
+run `40102754052` and merged normally as `18b3e2e`. The separate
 `ExportArtifactHashBinding` composes strict report-first parsing with observed
 digests of three explicitly selected regular files. Actual Java 21/64 MiB
 focused checks and independent source/runtime reviews pass, including files
 above 2 GiB. Installed oracles pass nine retained real reports across three
 targets. Opaque reported paths remain inert; per-role SHA agreement is not provenance,
 ELF/DWARF validation, a snapshot or attachment readiness. Local package review
-is clear; accepted allocation main is incorporated normally as `480b6e2`. The
-exact full hosted gate remains required.
+is clear. All five target artifacts pass independent review: fifteen reports,
+45 retained copies, 35 mismatch subsets and forty typed failures. Native Windows
+passes eighteen focused checks, including 551 platform-applicable binder
+assertions; both GUI hosts and the x86 large-file case pass.
 See `docs/EXPORT-ARTIFACT-HASH-BINDING.md`.
 
 **CONFIRMED locally; full hosted gate pending:** `ExecutableProgramBytes`
@@ -2087,10 +2091,10 @@ Unless the user changes priorities:
 
 1. Run `git status --short`; read `AGENTS.md`, the current context/status in
    `PROJECT_CONTEXT.md`, and this file's Sections 0.1/1.1. Preserve existing work.
-2. Read the current acceptance checkpoints: PRs #25–#35 are merged. The allocation
-   observer passed `d5bd9fe` / run `40099934709` and tree-identical main merge
-   `0f05ec8`. Main-push gates through PR #34 pass; observe separate PR #35 main
-   push `40102383229` before attributing a result to it. Preserve the failed
+2. Read the current acceptance checkpoints: PRs #25–#36 are merged. The selected-file
+   binder passed `c526102` / run `40102754052` and tree-identical main merge
+   `18b3e2e`. Main-push gates through PR #35 pass; observe separate PR #36 main
+   push `40105363431` before attributing a result to it. Preserve the failed
    original PR #32 report-selection attempt and earlier feature histories.
    Require current-base checks under AGENTS.md Section 6.1; do not restart
    completed bring-up or integration.
@@ -2105,11 +2109,12 @@ Unless the user changes priorities:
 6. Extend explicitly selected target profiles and GUI journeys. Treat optional
    debuglink, inlining research and performance candidates according to their
    recorded scopes; do not invent recovered information to complete them.
-   The current bounded continuation is the locally reviewed selected-file SHA
-   claim binder's hosted acceptance. A separate program-byte preservation check
-   passes local installed backend/GDB checks for owned candidates; its final
-   package and hosted gate are next. Optional attachment remains
-   a separate transaction, with no identity/readiness claim from these helpers.
+   The current bounded continuation is the locally reviewed program-byte
+   preservation check's hosted acceptance. Its source, installed backend/GDB
+   and final local package reviews are clear. The next selected component
+   checks executable allocation metadata and exact new debuglink bytes in
+   that same private-copy consumer; implementation and acceptance remain pending.
+   Optional attachment remains a separate transaction, with no identity/readiness claim from these helpers.
 7. For each coherent change, run appropriate validators and debugger behavior
    tests, preserve original hashes and deterministic output, and record evidence
    in the handoff documents. Keep the complete supported-profile CI matrix green.

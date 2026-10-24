@@ -1,9 +1,12 @@
 # Selected files and reported SHA-256 claims
 
-**CONFIRMED locally; hosted gate pending:**
+**CONFIRMED:** PR #36 head `c526102` passes all twelve jobs in exact hosted run
+`40102754052` and merged normally as `18b3e2e`. Independent package, all five
+target and both GUI reviews pass. Fifteen reports, 45 retained copies, the x86
+large-file case and eighteen native Windows focused checks are accepted. The
+Windows binder has 551 platform-applicable assertions; Linux has 574.
 `ExportArtifactHashBinding` composes the current report reader and streamed
-digests. Actual Java 21 focused and installed-oracle checks pass, with
-independent source/runtime review.
+digests. Its separate main push `40105363431` remains pending.
 Ordinary export does not call this helper.
 
 `observe(report, original, sidecar, source[, cancelled])` reads one explicitly
