@@ -1510,6 +1510,16 @@ no file identity or independent validator result is inferred. See
 `docs/EXPORT-REPORT-CLAIMS.md`. The full host/target gate and accepted-parent
 integration remain required; this does not add attachment or its receipt chain.
 
+**CONFIRMED locally; hosted gate pending:** `MatchedElfPrefix` checks
+the bytes retained by the current matched writer through original EOF, with
+exactly the documented header exceptions and a required appended-table layout.
+Actual Java 21 focused tests cover both classes/orders and an input above 2 GiB
+with a 64 MiB heap. The installed independent oracle passes eighteen fresh
+x86-64/AArch64/MIPS32 big-endian pairs, with validators and GDB; independent
+artifact review is clear. Matching prefixes do not prove the active appended
+section addresses, DWARF, identity or attachment readiness. Final package review
+and the exact full pipeline remain required. See `docs/MATCHED-ELF-PREFIX.md`.
+
 **Status:** `[ ]` — optional product operation **PLANNED**. The bounded backend
 and backup-based re-export investigation is complete; the explicit transaction
 design and remaining acceptance tests are in

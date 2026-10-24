@@ -3240,3 +3240,37 @@ The report-claims branch incorporates accepted main normally as `bcd60ee`,
 with the same tree as its locally reviewed `ccb21a9` before this documentation
 update. Its own hosted gate remains required. No native ABI, attachment
 operation or release change is introduced by these acceptance records.
+
+
+### Current matched ELF retained-prefix observation (2026-10-24)
+
+**CONFIRMED locally; hosted gate pending:** the next bounded P2.8 foundation is
+`MatchedElfPrefix`, source commit `c676862`. It compares all original bytes
+retained by the current writer, allowing only the exact fixed-header edits
+needed for the non-loadable sidecar. Both files pass existing ELF metadata
+checks; the candidate must have zero program-table fields and a canonical,
+named section table appended beyond the original EOF. Different layout,
+shorter candidate and first differing byte are distinct observations.
+
+This is a byte relationship, not a snapshot, file identity, active allocation,
+DWARF/source validation or attachment approval. An owned changed-code control
+keeps the original metadata/build ID but is rejected; a shifted active `.text`
+address in the appended table still matches the prefix and is separately shown
+to be wrong. Never reuse the sidecar's program-table exceptions for a staged
+replacement executable. Ordinary export, native bindings and writer behavior
+remain unchanged. The initial design/research considered and rejected a trivial
+header-getter wrapper because the existing `ElfImage` already exposes those
+fields; a streamed retained-prefix comparison adds independently testable value.
+
+Four focused checks/build/architecture guard and actual Java 21 default/large
+checks pass, including a 2,147,549,185-byte original under `-Xmx64m`. Independent
+source review is clear. A preliminary installed package passes eighteen fresh
+exports across x86-64, AArch64 and MIPS32 big-endian, each covering exec, partial,
+no-build-ID, sectionless, PIE and shared roles. GNU/LLVM/strict libdwarf and GDB
+pass; strict inherited errors remain explicitly corroborated. Its installed
+Python/Java oracle passes all eighteen pairs and retains six complete reports
+and eighteen fixture byte copies per target. Local headless Ghidra uses JDK 25;
+the isolated installed-helper probes use actual Java 21. Independent artifact
+review is clear; final package review and the exact hosted gate remain required.
+See `docs/MATCHED-ELF-PREFIX.md` and `docs/VALIDATION.md`. The report-reader PR
+must integrate first; this work does not publish a release or expose attachment.

@@ -3948,3 +3948,77 @@ The report-reader branch then incorporates accepted main as `bcd60ee`, whose
 tree equals the previously reviewed local `ccb21a9` before these documentation
 updates. Its retained-prefix successor is separate work; no prefix-helper
 implementation or acceptance is attributed to this report-reader gate.
+
+
+## Matched ELF prefix local checkpoint (2026-10-24)
+
+**CONFIRMED locally; hosted gate pending:** source `c676862` adds only
+`MatchedElfPrefix` and its fixture/smoke classes. Existing `ElfImage`, matched
+writer, exporter and native declarations are unchanged. Independent source
+review is clear. The implementation has four new major-65 classes; local JAR
+SHA-256 is `650209bac834ca293a6d0f3f7aecc4abdb0b6bc5b9fa4a19b790df84b5c99060`.
+
+- `GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC ./gradlew --no-daemon
+  matchedElfPrefixSmoke elfBuildIdSmoke fileDigestsSmoke elfImageReaderSmoke
+  buildExtension` passes, including the architecture guard. Final extra stream
+  failure controls pass separately. Exact commands/logs are retained under
+  `build/prefix-review/` in the retained-prefix worktree.
+- Compiling fixtures/probe with JDK 25 `javac --release 21`, then running actual
+  Java `21.0.12.1` with `-Xmx64m`, passes both default and `--large` smokes.
+  Twenty-four writer-derived containers cover both classes/orders and named,
+  unnamed, sectionless, extended-section, `PN_XNUM` and oversized-header layouts.
+  The large original is 2,147,549,185 bytes and the first changed byte is
+  2,147,549,184. Files are cleaned after the test. Evidence:
+  `build/prefix-review/java21-final/` and `source-acceptance.json`.
+- A preliminary read-only probe also passes 27 retained historical/current
+  pairs, preserving original bytes/mtimes. This is supplementary comparison
+  evidence, not 27 new exports. See `retained-pairs.json`.
+
+Preliminary private package
+`1b996de8e4c6d05d75cd98b48f843675065de871584e27c0ae82dae9d9242d68` uses the
+JAR above and unchanged exporter script
+`3b7b0ef415e974cfcb03ee1566f3c25bab9151d7405b965a80150a8be6e53821`.
+All five manifests verify; base Ghidra launch properties remain unchanged.
+The private platform is `build/prefix-review/ghidra`. The package predates
+final acceptance docs and is not the eventual final reviewed ZIP.
+
+`make -C src/test/fixtures x86_64 aarch64 mips32be` and the retained
+`build/prefix-review/run-local-target.sh` execute six fresh roles per target:
+`exec`, `partial`, `exec.no-build-id`, `exec.no-sections`, `pie`, `shared`.
+All eighteen installed production exports pass GNU/LLVM, strict libdwarf,
+input preservation and applicable GDB checks; sectionless allocation-range
+checks also pass. Local headless Ghidra uses JDK `25.0.4.1`, not Java 21.
+Strict reported errors in that role order are x86 `3/3/3/0/1/1`, AArch64
+`5/5/5/0/5/5` and MIPS `0/0/0/0/0/0`; every nonzero error is corroborated in
+the original ELF, with no unexplained error. Local runs do not claim native
+Windows, ARM32 or MIPS32 little-endian execution.
+
+The independent installed-helper oracle uses actual Java 21 with `-Xmx64m`:
+`x86_64.g2_zsi34`, `aarch64.fe33e6gr`, `mips32be.ubeqojee` in
+`build/test-results/matched-elf-prefix/`. Each verifies six real pairs twice,
+retains six full consumed transcripts and all eighteen input/output/source byte
+copies, and checks 26 protected paths during its invocation. Matching report
+hashes and installed class/script origins bind this evidence to the selected
+production exports. Subsequent tests may reuse original fixture/log paths;
+the retained copies preserve this checkpoint.
+
+Owned controls show changed original code detected despite identical metadata
+and GNU build ID, while an appended active `.text` address change still passes
+prefix comparison and GNU structural reading. That explicit allocation mismatch
+prevents a false stronger claim. Layout/shorter-candidate observations and two
+malformed-input rejections pass. The x86 run independently constructs another
+sparse ELF above 2 GiB, checks matching and last-byte-difference results against
+Python, records reconstructible header/tail recipes and hashes, then removes
+both large inputs. None of these observations proves a snapshot, active ELF/DWARF
+correctness or attachment readiness.
+
+Independent runtime/oracle artifact review is clear:
+`build/prefix-review/independent-runtime-audit.json` rehashes all 54 retained
+byte copies and eighteen consumed transcripts, checks exact original/sidecar
+`.eh_frame` bytes/addresses and diagnostic sets, and reconstructs all three
+large-case SHA-256 values independently from the sparse recipe. Repeated prefix
+observations do not claim a fresh deterministic exporter rerun. Final docs/package
+review and the full exact hosted gate remain pending at this checkpoint. CI adds the default
+focused check on Linux/native Windows and the six-role installed oracle to all
+five target lanes before later shared-path reuse. The x86 lane adds the large
+case; native Windows has sixteen focused checks, without a large-file claim.
