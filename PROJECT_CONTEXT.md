@@ -2323,3 +2323,32 @@ commands/evidence and the bounded claim are recorded in `docs/VALIDATION.md`.
 This follow-up is based on the semantic branch `8e3fd27` and remains separate
 from corrective alpha.2. It does not canonicalize unrelated persisted types,
 promise equal output from independent imports, or change native APIs.
+
+### Semantic hosted acceptance and main integration (2026-10-24)
+
+**CONFIRMED:** semantic PR #20 head
+`b14e8109ca95358bacba6b0d11223a913d32db80` passed all twelve jobs in
+[run 40063017269](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40063017269),
+completed `2026-10-24T04:57:49Z`: workflow lint, Linux/Windows native builds,
+extension build, release packaging, all five Linux-hosted target lanes,
+Windows-hosted export and the aggregate gate. No job failed or was skipped.
+Earlier pending-hosted descriptions of these semantic features are historical;
+`docs/VALIDATION.md` records the exact job IDs and conditional-step scope.
+
+Function-owned statics and scalar FP pass their bounded all-five-target
+oracles, including ARM32 EHABI coverage, returns and scalar upper slices.
+Incoming-register prefixes pass x86-64/AArch64; advanced true-entry GDB and
+saved-program byte determinism pass x86-64. Entry producer/structural checks
+pass all five targets. P1.8 is complete within that documented acceptance;
+P1.11a, richer scopes and target-profile expansion remain partial. MIPS paired
+doubles and ARM opaque-return prefix locations remain unavailable. No broad
+vector/ABI, migration, call-crossing, Windows runtime-GDB or new Script Manager
+claim follows from this run.
+
+The normal merge of main `2f88c4a` changes no source/test/workflow/package tree:
+that main tree equals the strict `99845c7` parent already in this branch. The
+integration updates only current status/evidence documentation and preserves
+both histories. The new PR head requires current-base hosted CI before normal
+integration. Corrective alpha.2 publication status is unchanged; the semantic
+branch remains a subsequent feature change and contains neither the separate
+GUI journey nor target-language agreement/performance work.

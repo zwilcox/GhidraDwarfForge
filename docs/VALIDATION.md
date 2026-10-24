@@ -1787,3 +1787,72 @@ errors and empty stderr. Both input hashes remain unchanged. Exact paths,
 commands, hashes and reports are in `build/strict-semantic-merge/replays/`.
 These are validator replays of prior outputs, not fresh Ghidra/GDB executions
 on the merged source. The full merged target/host matrix remains pending.
+
+## Semantic hosted acceptance and main integration (2026-10-24)
+
+**CONFIRMED:** PR #20 head
+`b14e8109ca95358bacba6b0d11223a913d32db80` passed all twelve jobs in
+[run 40063017269](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40063017269),
+a `pull_request` run completed successfully at `2026-10-24T04:57:49Z`.
+This is fresh hosted execution of the combined semantic and strict-validator
+source, superseding the earlier pending-hosted statements for these bounded
+features. It is not a release-publication result.
+
+| Job | Result | Job ID |
+|---|---|---|
+| workflow-lint | PASS | `120780364456` |
+| native-linux | PASS | `120780364420` |
+| native-windows | PASS | `120780364441` |
+| extension-build | PASS | `120780364272` |
+| release-package | PASS | `120781766923` |
+| target-preflight (x86_64) | PASS | `120781815421` |
+| target-preflight (aarch64) | PASS | `120781815413` |
+| target-preflight (arm32) | PASS | `120781815523` |
+| target-preflight (mips32be) | PASS | `120781815437` |
+| target-preflight (mips32le) | PASS | `120781815513` |
+| windows-host | PASS | `120783767660` |
+| required-validation | PASS | `120784450732` |
+
+No job was skipped or failed. Target-specific conditional steps remain
+intentional; a passing lane does not mean every feature ran on every target:
+
+- Function-owned static scopes and scalar floating-register oracles ran on all
+  five Linux-hosted target profiles. ARM32 reached and passed the corrected
+  EHABI precondition, static values/returns, stable floats/doubles and the
+  upper-`s1` register slice. These tests retain strict validation, unchanged
+  originals, rebases and deterministic repeats.
+- Incoming-register prefix lifetimes ran on x86-64 and AArch64. They establish
+  the value only through the first overwrite in the bounded straight-line
+  leaf proof. ARM's opaque `setISAMode` return remains rejected, and no MIPS
+  prefix-runtime claim follows. Migration, call-crossing, later-starting and
+  more general control-flow lifetimes remain unimplemented.
+- Function-entry producer/structural checks ran on all five targets. The real
+  below-entry/interior-entry GDB fixture and explicit rebases ran on x86-64.
+  P1.8's documented acceptance is complete within that evidence boundary.
+- Saved-program type identity across fresh headless processes ran on Linux
+  x86-64; the native-independent identity smoke ran in the Linux extension
+  build. Windows ran its five selected address/path/report/source/publication
+  checks, not that identity smoke. Only the generic `DefaultDataType`
+  transient-ID case is corrected; unrelated persisted type identities are unchanged.
+- MIPS scalar floats have positive value checks, but paired doubles remain
+  unavailable in Forge. The compiler pair oracle records `UNVERIFIED` when
+  the tested QEMU/GDB register view returns zero, or accepts the exact expected
+  value. Correct memory sinks are not promoted to parameter-location proof.
+- Windows passed native-independent checks, native production, publication
+  rollback, headless ELF export and clean packaged-native export. Its structural
+  tools are GNU/LLVM; no native Windows libdwarf-checker or runtime-GDB result
+  is claimed. The newer Script Manager journey belongs to a separate branch.
+
+The strict helper remains mandatory in every semantic suite and isolated
+producer check, with the exact original ELF supplied for inherited-frame
+corroboration. No new diagnostic allowance, skipped assertion or target
+support policy was introduced by this integration.
+
+The subsequent normal merge of `main` commit
+`2f88c4a1a7dd90dfedbd8d578b27242dfb8a73b7` adds no source, test, workflow or
+packaging changes: its tree is identical to already-merged strict parent
+`99845c71954430a5105891a0e3507075e48fa41a`. Only this documentation is updated.
+The new current-base PR head still requires its own hosted checks; the passing
+run above is attributed to its exact historical head. Corrective alpha.2
+publication status is unchanged, and no GUI, target-language agreement or
+performance branch was incorporated.

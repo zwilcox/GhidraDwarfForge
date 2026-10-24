@@ -1,14 +1,17 @@
 # TODO.md — GhidraDwarfForge
 
 This plan began at prototype commit `7a39a186538c7aec3f7dbdc4a6e396125b5d63ea`.
-Main integration baseline `680ecd6` includes PRs #16–#19. Corrective candidate
-`bfc2712` passed all twelve hosted jobs in run `40057428382`, but a retained-log
+Main integration baseline `2f88c4a` includes PRs #16–#19 and strict-validation
+PR #22. Corrective candidate `bfc2712` passed all twelve hosted jobs in run `40057428382`, but a retained-log
 audit found nonzero libdwarf summaries missed when `dwarfdump` returned zero.
 The independent-validator gate is reopened under Section 0.2; a historical
 green run is not proof of a clean libdwarf result. This branch combines the
 subsequent semantic features, saved-program type identity and ARM fixture
-corrections with strict validation and sectionless load metadata. Hosted
-verification of the combined branch remains pending. Alpha.1 remains
+corrections with strict validation and sectionless load metadata. Its exact
+head `b14e8109ca95358bacba6b0d11223a913d32db80` passed all twelve hosted jobs in
+run `40063017269`. The subsequent normal merge of `main` adds no source or
+workflow changes because its tree equals strict parent `99845c7`; the updated
+PR still requires its current-base CI. Alpha.1 remains
 `f4a0199`; alpha.2 is unpublished. Use Sections 1.1 and 4 for the next work;
 do not restart prototype bring-up.
 
@@ -24,11 +27,13 @@ Status vocabulary:
 
 No project-level milestone is complete unless all applicable conditions hold:
 
-**CONFIRMED:** historical hosted jobs passed, including the native/GDB
-behavior checks for the documented profiles. The independent-validator gate
-below is reopened after the summary-reporting audit in Section 0.2. Resolve
-that gap and reapply all gates to the exact versioned release commit; neither
-a passing job nor acceptance of one profile proves every ELF/ABI is supported.
+**CONFIRMED:** semantic head `b14e810` passed the complete supported-profile
+matrix with strict independent-validator enforcement in run `40063017269`.
+The release gate in Section 0.2 still requires the exact final main package
+and release checks; this semantic result does not publish or alter alpha.2.
+Neither a passing job nor acceptance of one profile proves every ELF/ABI is
+supported. Detailed scope and intentional omissions are recorded in
+`docs/VALIDATION.md`, "Semantic hosted acceptance and main integration".
 
 - [x] Builds from a clean checkout using documented commands.
 - [x] Uses a pinned Ghidra compatibility baseline.
@@ -36,8 +41,9 @@ a passing job nor acceptance of one profile proves every ELF/ABI is supported.
 - [x] Does not crash or corrupt the Ghidra JVM.
 - [x] Preserves the original target byte-for-byte in default mode.
 - [x] Produces deterministic `.dbg.c` for an unchanged Ghidra program.
-- [~] Produces structurally valid ELF and DWARF accepted by independent validators;
-  resolve the libdwarf summary findings in Section 0.2 before publication.
+- [~] Produces structurally valid ELF and DWARF accepted by independent validators:
+  the semantic profile matrix passes strict checks; exact final main package
+  validation under Section 0.2 remains a separate publication gate.
 - [x] Passes scripted GDB behavior checks, not only `readelf -S`.
 - [x] Is honest about unavailable types, variables, locations, and source mappings.
 - [x] Has tests for every claimed architecture/host combination.
@@ -137,7 +143,10 @@ the aggregate gate failed. The exact candidate package precheck passed, but
 neither that audit nor the three passing target lanes permits publication.
 The separate validation-only reader patch now passes 16 local positives,
 60 malformed-input controls and fresh x86-64/AArch64 full ELF-layout suites.
-The corrected complete hosted rerun is still required.
+The corrected semantic head subsequently passed all twelve jobs in run
+`40063017269`, including the extended-program cases. Exact final main release
+validation and package audit remain separate requirements; this does not
+close the publication checklist.
 
 ## 1. Milestone ordering
 
@@ -176,9 +185,9 @@ items are these bounded workstreams:
 |---|---|
 | Corrective release (§0.1) | **CONFIRMED:** PRs #16/#17/#18 are merged. `0.1.0-alpha.2` version/notes, local packaging checks and the automatic-association correction are prepared. **PLANNED:** integrate and validate the exact versioned candidate, then publish it without changing alpha.1. |
 | ELF robustness (P0.9) | **CONFIRMED complete within the documented bounds:** PR #18 implements extended counts, unnamed tables, bounded file-backed I/O, correct recorded-load-base translation and cancellation. Local checks and all twelve hosted jobs pass; direct PN_XNUM execution limits are documented. |
-| Function identity and scopes (P1.7, P3.3) | **CONFIRMED locally:** explicit function-owned statics preserve duplicate-name lookup and omit failed owners under the symbol-only contract; hosted validation is pending. **PLANNED:** distinct linkage names, external-function declarations, thunks/aliases, class/lexical scopes, inferred static locals and remaining same-named type/variable cases. Existing namespace globals and external-data declarations must remain working. |
-| Additional range/location cases (P1.8, P1.11a) | **CONFIRMED locally:** below-entry bodies preserve their true entry, and proven incoming-register prefixes end after the first overwrite; hosted validation is pending. **PLANNED:** register/memory migration, call-crossing and non-entry lifetimes, stack-slot reuse, and mixed composite storage. Require GDB value checks at multiple instruction addresses and honest unavailable gaps. |
-| Target-profile coverage (P2.3/3a/3b) | Current five baseline profiles pass. **CONFIRMED locally:** scalar FP aliases pass exact values on x86-64/AArch64/ARM32 and scalar floats on both MIPS orders; unproven MIPS double pairs remain unavailable. ARM32's mode-switching-return clobber case remains wholly unavailable under the conservative prefix policy; hosted verification of the corrected ARM oracle is pending. Enumerate additional ABI/storage cases and require actual exporter/validator/GDB evidence before extending claims; this is not blanket CPU/ABI support. |
+| Function identity and scopes (P1.7, P3.3) | **CONFIRMED in hosted run `40063017269`:** explicit function-owned statics preserve duplicate-name lookup across all five targets, and the controlled failure check omits failed owners under the symbol-only contract. These workstreams remain partial. **PLANNED:** distinct linkage names, external-function declarations, thunks/aliases, class/lexical scopes, inferred static locals and remaining same-named type/variable cases. Existing namespace globals and external-data declarations must remain working. |
+| Additional range/location cases (P1.8, P1.11a) | **CONFIRMED in hosted run `40063017269`:** P1.8's bounded entry/range acceptance is complete (five-target structural checks, x86-64 advanced-entry GDB); incoming-register prefixes pass x86-64/AArch64 and end after the first overwrite. P1.11a remains partial. **PLANNED:** register/memory migration, call-crossing and non-entry lifetimes, stack-slot reuse, and mixed composite storage. Require GDB value checks at multiple instruction addresses and honest unavailable gaps. |
+| Target-profile coverage (P2.3/3a/3b) | **CONFIRMED in hosted run `40063017269`:** five baseline profiles and scalar FP aliases pass, with exact float/double values on x86-64/AArch64/ARM32 and scalar floats on both MIPS orders. Unproven MIPS double pairs and ARM32's mode-switching-return prefix case remain unavailable. Target expansion remains partial. Enumerate additional ABI/storage cases and require actual exporter/validator/GDB evidence before extending claims; this is not blanket CPU/ABI support. |
 | Remaining GUI journeys (P2.7) | **PRESENT, UNVERIFIED:** manual Script Manager launch and Windows chooser/cancellation. Linux GUI fallback already has a passing automated test. |
 | Optional debuglink (P2.8) | **PLANNED, optional:** explicit opt-in attachment and backup/rollback. Sidecar lookup/CRC compatibility is tested on private fixture copies; default export leaves the original unchanged. |
 | Inline reconstruction (P3.4) | **UNCERTAIN:** investigate defensible instance/call-site/range evidence and record a decision. Implement only if supported by that evidence. |
@@ -834,13 +843,14 @@ analyst-facing breakpoint name.
 
 ## P1.8 Represent discontiguous program/function ranges correctly
 
-**Status:** `[~]` — existing discontiguous-range coverage passes hosted CI.
-**CONFIRMED locally:** below-entry bodies now export with their true entry,
-explicit `DW_AT_entry_pc` and exact entry-first range lists. The latter also
-supports GDB 15.1, which ignores that attribute. Six real x86-64 ET_EXEC/PIE,
-rebase and deterministic-repeat cases pass validators and GDB; isolated native
-production passes all five current target profiles. The new hosted gate is
-**PRESENT, UNVERIFIED** until CI passes. See `docs/VALIDATION.md`.
+**Status:** `[x]` within the documented acceptance: discontiguous and
+below-entry bodies preserve exact coverage, true entry, explicit
+`DW_AT_entry_pc` and entry-first range lists. Hosted run `40063017269` passes
+the isolated producer/structural checks on all five current targets and six
+real x86-64 ET_EXEC/PIE, rebase and deterministic-repeat cases with GDB.
+Entry-first serialization also supports GDB 15.1, which ignores the explicit
+entry attribute. The advanced runtime fixture is x86-64; this is not a claim
+of that same runtime coverage on every target. See `docs/VALIDATION.md`.
 
 ### Work
 
@@ -860,8 +870,9 @@ production passes all five current target profiles. The new hosted gate is
   the tested lookup coverage without an optional accelerator.
 - [x] Export a function whose body includes addresses below its entry point;
   verify the true entry breakpoint, all ranges, source lookup and gap behavior
-  locally, including contiguous/interior entries and PIE/Ghidra rebasing.
-- [ ] Pass the added function-entry tests in the hosted integration pipeline.
+  including contiguous/interior entries and PIE/Ghidra rebasing on x86-64.
+- [x] Pass the added function-entry tests in the hosted integration pipeline:
+  run `40063017269`, with five-target structural and x86-64 runtime acceptance.
 
 ## P1.9 Export global variables
 
@@ -974,11 +985,11 @@ or uncertain storage remains locationless with a diagnostic.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
 
-**Status:** `[~]` — **CONFIRMED locally:** a simple incoming register parameter
-now retains its location through the first overwriting instruction in a fully
+**Status:** `[~]` — **CONFIRMED in hosted run `40063017269`:** a simple incoming
+register parameter now retains its location through the first overwriting instruction in a fully
 decoded straight-line leaf function, then becomes explicitly unavailable. The
 new x86-64/AArch64 compiler/GDB oracle covers ET_EXEC/PIE, rebases and repeated
-exports. Hosted validation is **PRESENT, UNVERIFIED** until its new gate passes.
+exports. Both target-specific hosted lifetime gates pass.
 Later first-use, calls, branches, discontiguous bodies, delay slots, storage
 migration and mixed pieces remain outside this bounded proof. The existing
 changing-stack test proves SP-relative adjustment, not value migration.
@@ -986,16 +997,18 @@ changing-stack test proves SP-relative adjustment, not value migration.
 - [~] Establish evidence-backed machine-address live ranges for register
   variables that begin after entry or whose registers are later overwritten.
   Incoming single-register parameters before a proven first overwrite pass
-  locally; later-starting variables and other control-flow shapes remain planned.
+  in the hosted x86-64/AArch64 gates; later-starting variables and other
+  control-flow shapes remain planned.
 - [ ] Track supported register-to-register and register-to-stack moves across
   calls using the selected ABI and recovered instruction evidence.
 - [ ] Test stack-local first-use and slot-reuse boundaries; record unavailable
   intervals where identity or lifetime cannot be established.
 - [ ] Support mixed register/memory composite pieces when every piece has
   defensible size, order and lifetime information.
-- [ ] Compare GDB values with compiler-oracle fixtures at multiple PCs on each
-  claimed profile, including intentionally unavailable gaps. Retain validators,
-  deterministic output, input preservation and cancellation tests.
+- [~] Compare GDB values with compiler-oracle fixtures at multiple PCs on each
+  claimed profile, including intentionally unavailable gaps. The bounded
+  x86-64/AArch64 prefix cases pass; broader lifetimes/storage remain planned.
+  Retain validators, deterministic output, input preservation and cancellation tests.
 
 Ghidra high-variable/symbol evidence is a possible input, not proof of original
 compiler lifetimes. Analyst-defined listing information retains precedence.
@@ -1076,8 +1089,10 @@ AArch64, ARM32, and MIPS32 big/little endian.
 
 **Status:** `[~]` — the symbol/source-line/type/signature milestone passes in
 hosted CI for ET_EXEC, PIE, shared objects, and no-section inputs. Stack-local
-locations pass; overwritten input registers are honestly omitted. Additional
-storage cases remain beyond the validated alpha profile.
+locations pass. Hosted run `40063017269` additionally proves scalar float/double
+aliases and bounded incoming-register prefixes; values after the proven
+prefix remain unavailable. Additional storage and ABI cases remain beyond
+this documented profile.
 
 ### Work
 
@@ -1103,7 +1118,10 @@ storage cases remain beyond the validated alpha profile.
 and QEMU/GDB runtime breakpoints pass for MIPS32 big/little endian ET_EXEC,
 PIE, shared-object, and no-section-table inputs; `ptype`, stable register
 parameters, and stack locals pass. The alpha release validation includes both
-MIPS lanes; additional variable storage cases remain.
+MIPS lanes. Hosted run `40063017269` also proves function-owned statics and
+scalar float locations in both byte orders. Paired doubles remain unavailable;
+the independent compiler-pair observation is explicitly unverified under the
+tested QEMU/GDB transport. Additional storage and ABI cases remain.
 
 ### Work
 
@@ -1140,11 +1158,12 @@ QEMU/GDB behavior matrix for ET_EXEC, PIE, shared objects, no-build-ID inputs,
 and program-header-only inputs. Thumb, big-endian ARM, and additional ABI or
 storage profiles are not claimed.
 
-**CONFIRMED locally:** six scalar-FP exec/PIE/rebase/repeat cases now pass
-stable float/double and upper-`s1` value checks with pinned 2.3.2 zero-error
-summaries. The clobbered mode-switching-return case requires explicit
-unavailability; general ARM prefix lifetimes are not completed. Corrected
-hosted verification remains pending. See `docs/VALIDATION.md`.
+**CONFIRMED in hosted run `40063017269`:** six scalar-FP
+exec/PIE/rebase/repeat cases pass stable float/double and upper-`s1` value
+checks with strict validation. Function-owned static scopes also pass with
+the native EHABI fixture precondition. The clobbered mode-switching-return
+case requires explicit unavailability; general ARM prefix lifetimes are not
+completed. See `docs/VALIDATION.md`.
 
 ### Work
 
@@ -1511,12 +1530,13 @@ after merge and post-merge validation.
 ## P3.3 Add richer scopes and declarations
 
 **Status:** `[~]` — namespace-parented globals, typed external-data
-declarations, and function-owned static memory labels are tested locally.
-The static-scope slice now also passes local ARM32 exec/PIE/rebased-PIE:
-the fixture precondition validates native ARM EHABI instead of requiring a
-DWARF FDE, with missing/malformed/unusable coverage controls and unchanged
-runtime scope/value/return checks. Hosted validation of this correction is
-pending after run `40057031192` failed the former precondition before export.
+declarations, and function-owned static memory labels pass their documented
+checks. Hosted run `40063017269` proves the static-scope slice on all five
+targets, including ARM32 exec/PIE/rebased-PIE. Its fixture precondition validates
+native ARM EHABI instead of requiring a DWARF FDE, with missing/malformed/
+unusable coverage controls and unchanged runtime scope/value/return checks.
+This supersedes run `40057031192`'s pre-export failure without weakening its
+oracle; broader scopes and declarations remain partial.
 Artificial auto-parameter
 emission is present; a
 dedicated behavior test remains. The other scope/declaration work below is
