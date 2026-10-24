@@ -2825,3 +2825,45 @@ full class/lexical/alias semantics remain planned. `docs/FUNCTION-NAMING.md`
 records quoting, tradeoffs, the research evidence and the unchanged debugger
 baseline. Published alpha.2 is unaffected. Detailed commands, package identity,
 failure history and passing directories are in `docs/VALIDATION.md`.
+
+### Opaque instruction effects and register locations (2026-10-24)
+
+**CONFIRMED:** Ghidra 12.0.3 decodes AArch64 `svc` as falling through with an
+outputless `CALLOTHER`. Its user-operation contract permits effects beyond
+explicit outputs, so an absence of register writes does not prove stability.
+The old exporter emitted a whole-function x0 parameter location; runtime GDB
+showed the process ID after `getpid`, although the compiler's saved parameter
+and stored result remained `-19`.
+
+**CONFIRMED locally:** whole-function register extraction now rejects opaque
+effects with `UNKNOWN_LIFETIME`, preserving names/types without a location.
+This applies to scalar/composite parameters and locals without target-specific
+syscall assumptions or new native calls. Existing call/write diagnostic
+precedence remains intact. An ordinary unconditional terminal return is a
+pre-instruction boundary exception for `CALLOTHER` only when raw flow, full-width RETURN,
+absence of override/delay slots/fallthrough and p-code control flow prove that
+this invocation ends; this preserves tested ARM `BX LR` scalar locations and
+does not claim user-operation purity. `UNIMPLEMENTED` always rejects the proof.
+Prefix/migration coverage is unchanged.
+
+Actual AArch64 exec/PIE/rebased-PIE exports, structural validators and GDB pass;
+four PCs show typed unavailable parameters, raw x0 changes, the global becomes
+`-19`, and execution exits normally. Fresh imports reproduce both output files
+byte-for-byte. Existing 12 x86/AArch64 prefix and six ARM scalar exports pass.
+Local headless runs use JDK 25; the final isolated native-free old/fixed smoke
+comparison runs on Java 21. Hosted Java 21 gates are added but remain pending. Published alpha.2
+is unchanged; the new guard is not included in that release.
+
+**CONFIRMED separate issue:** direct GDB `p/a` on the global's address warns
+about the address map and symtab in both old and fixed artifacts. CU address
+coverage needs its own investigation/regression. The parameter omission avoids
+the automatic formatting trigger, not the underlying warning. No exception
+was added to strict diagnostics; failed baseline runs remain failed.
+
+**CONFIRMED naming acceptance:** exact PR #26 head `d5f2521` passed all twelve
+jobs in `40071594248`; digest-verified artifacts prove all 15 qualified-name
+cases, both GUI hosts and the native Windows smoke. Normal merge `89c07ce`
+preserves the tested tree. Post-merge main run `40073445177` is a separate,
+still-pending gate. Earlier PR #25 main-push run `40070016394` also passed all
+twelve jobs. These later observations supersede the historical pending notes
+above; neither published alpha includes these features.

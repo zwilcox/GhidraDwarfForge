@@ -320,7 +320,7 @@ public final class GhidraVariableStorage {
             }
         }
         // Locations describe the state before a machine instruction executes.
-        // An ordinary unconditional return ends this invocation; no later PC
+        // An ordinary unconditional return ends this invocation; no later instruction
         // observes the user operation's effects in this function. This is a
         // control-flow boundary, not a purity claim or a userop-name whitelist.
         return true;

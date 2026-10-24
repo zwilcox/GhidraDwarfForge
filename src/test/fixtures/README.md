@@ -11,7 +11,8 @@ loads the stripped library and calls its exported `recovered_add` function.
 The integration preparation script applies explicit analyst register storage
 to `recovered_add` parameters using each target ABI's input registers. The
 exporter may emit those locations only when its instruction/p-code scan proves
-the register is not written and the function contains no calls. The current
+the register is not written, the function contains no calls, and no opaque
+instruction effects invalidate the proof. The current
 x86-64 and MIPS functions retain their input registers; AArch64 overwrites
 `x0`/`x1`, providing the negative case where locations must remain absent.
 ARM32 overwrites `r0` but retains `r1` in the executable/PIE roles; its shared
@@ -20,6 +21,18 @@ The compiler fixture also receives a fourth, otherwise-unused argument whose
 ABI input register contains 31. The preparation script models that entry-live
 storage as the analyst-defined local `analyst_register`; the same whole-function
 overwrite/call scan must prove it stable before the exporter emits a location.
+
+`opaque-register-effects.c` is a Linux AArch64 negative regression. A real
+`getpid` supervisor call changes x0 through outputless p-code while the compiler
+saves the input `-19` elsewhere. The exporter must preserve both explicit
+parameter names/types with no locations and report `UNKNOWN_LIFETIME`; it must
+not infer syscall purity or the compiler's register move. The GDB oracle checks
+entry, before the call, after the call and return, the stored global, source
+stepping and normal exit. The dedicated harness tests exec, PIE and rebased PIE
+with fresh-import deterministic repeats and strict validators. Its optional
+`baseline-reproducer` mode records the old wrong value and never counts as
+fixed acceptance. An independent direct global-address formatting warning is
+tracked separately; it is not suppressed by the harness.
 
 `recovered_composite` receives a known 64-bit value split across the third and
 fourth ABI input registers. The preparation script models those ordered
