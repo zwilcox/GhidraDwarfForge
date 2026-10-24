@@ -33,19 +33,25 @@ Ghidra namespace paths without changing the C11 CU or inventing linkage/aliases.
 See `docs/FUNCTION-NAMING.md` and `docs/VALIDATION.md`; this does not complete
 P1.7/P3.3 or belong to either published alpha.
 
-**CONFIRMED locally, hosted gate pending:** opaque instruction effects now
+**CONFIRMED:** PR #27 head `e7a289c` passed all twelve hosted jobs in
+`40073884397` and merged normally as `ce0c3a4`. Opaque instruction effects now
 invalidate otherwise-stable register locations. A real AArch64 supervisor call
 reproduced an old parameter changing from `-19` to the process ID; the fix
 retains names/types without locations and reports `UNKNOWN_LIFETIME`. Exec,
 PIE and rebased PIE pass real export, deterministic repeats, validators and
 GDB. Existing x86/AArch64 prefix and ARM scalar-register regressions also pass.
 This is a correctness guard, not register migration or syscall ABI support.
+The separate main-push run `40075761646` is pending at this checkpoint.
 
-**CONFIRMED remaining issue:** GDB `p/a` of the fixture's global address emits
-an address-map/symtab warning with both old and fixed sidecars. The fixed
-parameter omission avoids automatic argument formatting but does not resolve
-this separate CU-address coverage issue. Investigate and add a direct address
-formatting regression before another release; do not suppress the warning.
+**CONFIRMED locally; hosted gate pending:** an exact code-only `.debug_aranges`
+index resolves the global-address formatting warning in GDB. The warning
+reproduced both before and after the opaque-effect guard; omitting that
+parameter location only avoided an automatic formatting trigger. The
+production implementation, format checks, all 15 five-profile qualified cases,
+three AArch64 supervisor-call roles, six x86 advanced-entry exports and the
+MIPS32 big-endian sectionless regression pass locally. Exact hosted acceptance
+remains required before another release.
+Do not suppress the warning. See `docs/ADDRESS-INDEX.md`.
 Evidence and exact scope are recorded in `docs/VALIDATION.md`.
 
 Status vocabulary:
@@ -924,8 +930,11 @@ of that same runtime coverage on every target. See `docs/VALIDATION.md`.
 - [x] GDB associates both real ranges with one function.
 - [x] `llvm-dwarfdump --verify` passes.
 - [x] `readelf --debug-dump=ranges` or equivalent shows expected entries.
-- [x] `.debug_aranges` is deliberately not emitted; CU `DW_AT_ranges` provides
-  the tested lookup coverage without an optional accelerator.
+- [~] Emit an exact code-only `.debug_aranges` index with the correct CU header
+  offset, both widths/orders and no invented coverage. This supersedes the
+  historical absence policy after a direct GDB global-address warning exposed
+  a missing lookup path. Format and five-profile real-export/GDB checks pass;
+  hosted acceptance is pending. CU/subprogram ranges remain authoritative.
 - [x] Export a function whose body includes addresses below its entry point;
   verify the true entry breakpoint, all ranges, source lookup and gap behavior
   including contiguous/interior entries and PIE/Ghidra rebasing on x86-64.
@@ -1050,7 +1059,8 @@ locals and composites. A narrowly checked ordinary terminal-return boundary
 preserves proven ARM scalar storage. No pre-syscall prefix, syscall whitelist
 or copied-register tracking is inferred. The new AArch64 runtime regression
 and Linux/native Windows real-Ghidra smoke are required CI gates; exact hosted
-acceptance is pending for this change.
+acceptance passed in `40073884397`; normal merge `ce0c3a4` preserves that tested
+tree. This does not complete the broader lifetime/migration tasks below.
 
 **Status:** `[~]` — **CONFIRMED in hosted run `40063017269`:** a simple incoming
 register parameter now retains its location through the first overwriting instruction in a fully
@@ -1838,9 +1848,12 @@ Use the following acceptance gates before updating the original GitHub issues:
 ## Issue #4 — `.debug_aranges`
 
 - [x] Issue is historically closed and prototype calls arange generation.
-- [x] The redesigned exporter deliberately omits this optional accelerator;
-  regression tests require its absence and verify CU/subprogram
-  `DW_AT_ranges` address correctness instead.
+- [x] **HISTORICAL:** the redesigned exporter deliberately omitted the optional
+  accelerator and verified CU/subprogram `DW_AT_ranges` instead.
+- [~] The separate GDB address-map fix adds exact code-only lookup with a CU
+  header offset and independent coverage/formatting regressions; format tests
+  and five-profile runtime checks pass; hosted acceptance is pending.
+  See `docs/ADDRESS-INDEX.md`.
 
 Do not reopen/close solely from this checklist; use project/user direction.
 

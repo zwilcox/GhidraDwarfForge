@@ -742,8 +742,9 @@ gap. On x86-64, GDB associates both `[0x401090,0x4010ae)` and
 `[0x4010b0,0x4010b1)` with `FUN_00401090` and reports no line at `0x4010ae`.
 All 12 architecture/input roles pass `readelf`, LLVM, libdwarf, and GDB after
 this change, including ELF32 big-endian and no-section-table inputs.
-`.debug_aranges` is intentionally not emitted because the validated CU range
-list supplies lookup coverage; it can be added later only as an accelerator.
+**HISTORICAL:** `.debug_aranges` was intentionally not emitted for this tested
+lookup path. The later direct global-address formatting regression and exact
+code-index decision supersede that absence policy; see `docs/ADDRESS-INDEX.md`.
 
 **CONFIRMED (2026-09-02):** primary, non-default Ghidra labels backed by
 defined listing data now become canonical typed `DW_TAG_variable` DIEs.
@@ -1706,8 +1707,10 @@ confines architecture identifiers and register spellings to the audited target
 description/register-map boundary. The matched sidecar writer neutralizes all
 inherited relocation-section headers after producer relocations are resolved,
 and regression tests reject published `SHT_REL`/`SHT_RELA` sections. The real
-export harness explicitly requires `.debug_aranges` to remain absent and uses
-CU/subprogram `DW_AT_ranges` as the tested lookup authority.
+export harness at that historical checkpoint required `.debug_aranges` to
+remain absent and used CU/subprogram `DW_AT_ranges` as the lookup authority.
+The later exact code-index change preserves those authoritative ranges while
+replacing the absence assertion with a decoded coverage check.
 
 ### 16.23 Alpha release resumption
 
@@ -2867,3 +2870,38 @@ preserves the tested tree. Post-merge main run `40073445177` is a separate,
 still-pending gate. Earlier PR #25 main-push run `40070016394` also passed all
 twelve jobs. These later observations supersede the historical pending notes
 above; neither published alpha includes these features.
+
+### Exact code-address lookup (2026-10-24)
+
+**CONFIRMED locally, hosted gate pending:** a separate `.debug_aranges` fix
+resolves the demonstrated global-address formatting warning without changing
+function/CU ranges or variable locations. Exact GDB 15.1 source explains the
+mismatch: its fallback quick index includes global data addresses outside the
+expanded code symtab. A code-only index avoids that fallback; a CU range list
+alone does not set the relevant GDB flag. The table indexes the exact union of
+exported function body intervals, never globals or gaps. Both existing DIE
+coverage and runtime relocation behavior remain authoritative.
+
+`docs/ADDRESS-INDEX.md` records the standards-backed decision, single-CU header
+offset, version-2/DWARF32 encoding, both widths/orders, full ELF32 range splitting
+and explicit limitations. No native declarations or producer calls changed.
+The old absence assertion is replaced with an independent raw-table/LLVM-DIE
+coverage check and malformed-index controls, with no warning suppression.
+
+All 15 qualified-static cases pass on x86-64, AArch64, ARM32 and both MIPS orders,
+including exec/PIE/rebase, address and typed-pointer formatting, values, stepping,
+validators, original hashes and byte-identical repeats. Three AArch64 SVC roles,
+six x86 backward-entry/gap exports and generic x86/MIPS32-BE sectionless export
+and runtime checks also pass. Failed baseline pointers and the first harness
+variable-name error remain recorded separately. Exact hosted acceptance is still
+required; neither published alpha contains this fix.
+
+**CONFIRMED opaque-guard acceptance:** exact PR #27 head
+`e7a289cd3443c277ee5617076fede8b75703f83b` passed all twelve jobs in
+`40073884397`. Independent artifact reviews verify the real AArch64 regression,
+both GUI hosts and the eight native Windows smoke checks. Normal merge
+`ce0c3a4a71c2e5f9414ccd9a36878617c827818c` at `2026-10-24T07:51:07Z` retains
+the tested tree. Exact-main push `40075761646` remains pending. The preceding
+naming merge's main push `40073445177` also passed all twelve jobs. These later
+observations supersede the earlier opaque/naming pending checkpoints without
+attributing their results to the new address-index implementation.

@@ -128,7 +128,7 @@ for variant in plain zlib zlib-gnu indexed; do
     fi
     while IFS= read -r section; do
         case "$section" in
-            .debug_info|.debug_abbrev|.debug_str|.debug_line|.debug_rnglists|.debug_loclists)
+            .debug_info|.debug_abbrev|.debug_str|.debug_line|.debug_rnglists|.debug_loclists|.debug_aranges)
                 ;;
             .debug_*)
                 echo "unexpected active debug section for $variant: $section" >&2
@@ -138,6 +138,9 @@ for variant in plain zlib zlib-gnu indexed; do
     done <"$active_case/output-section-names.txt"
     test "$(grep -Fxc '.debug_info' "$active_case/output-section-names.txt")" = 1
     test "$(grep -Fxc '.debug_line' "$active_case/output-section-names.txt")" = 1
+    test "$(grep -Fxc '.debug_aranges' "$active_case/output-section-names.txt")" = 1
+    # The headless harness independently checks this new table against Forge's
+    # actual DIE coverage, including for compressed and indexed compiler inputs.
     info="$headless_results/x86_64.partial.readelf-info.txt"
     test "$(grep -c 'DW_TAG_compile_unit' "$info")" = 1
     grep -q 'DW_AT_producer.*GhidraDwarfForge' "$info"

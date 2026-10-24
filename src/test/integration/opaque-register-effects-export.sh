@@ -54,7 +54,7 @@ sha256sum "$repository/src/test/fixtures/opaque-register-effects.c" \
 run_gdb() {
     local symbols=$1 mode=$2 log=$3
     qemu_socket_start "$log.qemu" qemu-aarch64-static /usr/aarch64-linux-gnu "$input"
-    FORGE_OPAQUE_LABELS="$case_dir/labels.txt" FORGE_OPAQUE_MODE="$mode" \
+    FORGE_OPAQUE_LABELS="$case_dir/labels.txt" FORGE_OPAQUE_MODE="$mode" FORGE_OPAQUE_ROLE="$role" \
         FORGE_OPAQUE_EXPECTATION="$expectation" \
         timeout 45s gdb-multiarch -q -nx -batch \
         -ex 'set pagination off' -ex 'set confirm off' \
@@ -174,6 +174,8 @@ PY
             2>> "$case_dir/readelf.stderr"
     done
     test ! -s "$case_dir/readelf.stderr"
+    python3 "$repository/src/test/integration/check-code-address-index.py" \
+        "$output" --negative-controls > "$case_dir/address-index.json"
     if [[ "$expectation" == fixed ]]; then
         python3 - "$case_dir/info.txt" > "$case_dir/parameter-locations.txt" <<'PY'
 from pathlib import Path

@@ -55,6 +55,8 @@ run_case() {
             >"$case_dir/$section.txt" 2>>"$warnings"
     done
     test ! -s "$warnings"
+    python3 "$repository_dir/src/test/integration/check-code-address-index.py" \
+        "$output" --negative-controls > "$case_dir/address-index.json"
     llvm-dwarfdump --verify "$output" >"$case_dir/llvm.txt" 2>&1
     python3 "$repository_dir/src/test/integration/check-dwarfdump.py" \
         "$output" "$case_dir/dwarfdump.txt" --original "$input"

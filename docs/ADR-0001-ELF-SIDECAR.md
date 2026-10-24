@@ -81,6 +81,10 @@ The input itself, build identity, and unrelated sections such as `.eh_frame`
 remain unchanged. This does not add optional debuglink attachment to the
 original executable.
 
+The subsequent [code address-index policy](ADDRESS-INDEX.md) generates an exact
+`.debug_aranges` lookup table to avoid a demonstrated GDB address-map mismatch.
+It uses this same replacement policy; inherited index contents are not reused.
+
 ### Allocation metadata for inputs without section headers (2026-10-23)
 
 An input without a section table still describes its memory image through

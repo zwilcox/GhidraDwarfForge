@@ -42,6 +42,10 @@ def parameters(stage, post_opaque):
             print(stage + "-value=-19")
 
 
+# Exec has link-time addresses before any full CU is requested. PIE's runtime
+# address is checked below after GDB supplies the independently verified bias.
+if os.environ["FORGE_OPAQUE_ROLE"] == "exec":
+    gdb.execute("print/a " + hex(labels["opaque_sink"]))
 symbol = gdb.lookup_global_symbol("opaque_value") or gdb.lookup_static_symbol("opaque_value")
 assert symbol is not None and symbol.is_function and symbol.symtab is not None
 signature = symbol.type.strip_typedefs()
@@ -59,6 +63,8 @@ entry = integer("&opaque_value")
 bias = entry - labels["opaque_value"]
 sink = labels["opaque_sink"] + bias
 assert integer("&opaque_sink") == sink and integer("opaque_sink") == -1
+gdb.execute("print/a " + hex(sink))
+gdb.execute("print &opaque_sink")
 for name in ("opaque_value", "opaque_before", "opaque_store", "opaque_return"):
     breakpoint = gdb.Breakpoint("*" + hex(labels[name] + bias))
     assert len(breakpoint.locations) == 1
@@ -81,6 +87,8 @@ if mode == "forge":
 gdb.execute("next")
 assert integer("$pc") == labels["opaque_return"] + bias
 assert integer("opaque_sink") == -19 and integer("&opaque_sink") == sink
+gdb.execute("print/a &opaque_sink")
+gdb.execute("print &opaque_sink")
 parameters("return", True)
 gdb.execute("disable breakpoints")
 gdb.execute("step")

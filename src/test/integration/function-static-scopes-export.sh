@@ -103,6 +103,8 @@ validate_sidecar() {
             2>> "$case_dir/readelf.stderr"
     done
     test ! -s "$case_dir/readelf.stderr"
+    python3 "$repository_dir/src/test/integration/check-code-address-index.py" \
+        "$output" --negative-controls > "$case_dir/address-index.json"
     llvm-dwarfdump --verify "$output" > "$case_dir/llvm.txt" 2>&1
     python3 "$repository_dir/src/test/integration/check-dwarfdump.py" \
         "$output" "$case_dir/dwarfdump.txt" --original "$input"
