@@ -8,6 +8,8 @@ import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.Window;
 import java.awt.event.InputEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,6 +27,7 @@ import java.util.EnumSet;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -32,6 +35,7 @@ import java.util.function.Supplier;
 import javax.imageio.ImageIO;
 import javax.swing.AbstractButton;
 import javax.swing.JTextField;
+import javax.swing.JTable;
 import javax.swing.SwingUtilities;
 
 /** Real desktop interaction and filesystem restrictions, shared by the GUI probes. */
@@ -143,7 +147,7 @@ final class GuiTestSupport {
         click(robot, bounds(button), 1);
     }
 
-    static void focus(Component component) throws Exception {
+    static Window foregroundWindow(Component component) throws Exception {
         Window window = onSwing(() -> SwingUtilities.getWindowAncestor(component));
         require(window != null, "GUI target has no window");
         onSwing(() -> {
@@ -152,9 +156,54 @@ final class GuiTestSupport {
             return null;
         });
         await("foreground target window", () -> window.isFocused() ? window : null);
+        return window;
+    }
+
+    static void focus(Component component) throws Exception {
+        Window window = foregroundWindow(component);
         onSwing(() -> component.requestFocusInWindow());
         await("foreground target window and keyboard focus", () ->
             window.isFocused() && component.isFocusOwner() ? component : null);
+    }
+
+    static void doubleClickCell(Robot robot, JTable table, int row, int column,
+            String expectedName) throws Exception {
+        AtomicInteger delivered = new AtomicInteger();
+        AtomicReference<String> actual = new AtomicReference<>();
+        MouseAdapter listener = new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent event) {
+                if (event.getButton() == MouseEvent.BUTTON1 && event.getClickCount() == 2) {
+                    delivered.incrementAndGet();
+                    int clickedRow = table.rowAtPoint(event.getPoint());
+                    int clickedColumn = table.columnAtPoint(event.getPoint());
+                    actual.set(clickedRow + ":" + clickedColumn + ":" +
+                        (clickedRow < 0 || clickedColumn < 0 ? "<outside>" :
+                            String.valueOf(table.getValueAt(clickedRow, clickedColumn))));
+                }
+            }
+        };
+        try {
+            Rectangle target = onSwing(() -> {
+                Window window = SwingUtilities.getWindowAncestor(table);
+                Rectangle cell = table.getCellRect(row, column, true);
+                require(window != null && window.isFocused() &&
+                    table.getSelectedRow() == row && table.getVisibleRect().contains(cell) &&
+                    expectedName.equals(String.valueOf(table.getValueAt(row, column))),
+                    "target window, selected visible cell, or filename changed before mouse dispatch");
+                table.addMouseListener(listener);
+                Point point = table.getLocationOnScreen();
+                return new Rectangle(point.x + cell.x, point.y + cell.y, cell.width, cell.height);
+            });
+            click(robot, target, 2);
+            require(delivered.get() == 1 &&
+                (row + ":" + column + ":" + expectedName).equals(actual.get()),
+                "real double-click missed intended cell: delivered=" + delivered.get() +
+                    " actual=" + actual.get());
+        }
+        finally {
+            onSwing(() -> { table.removeMouseListener(listener); return null; });
+        }
     }
 
     static void captureDesktop(Path directory) throws Exception {
@@ -167,7 +216,8 @@ final class GuiTestSupport {
                     text.append(window.getClass().getName()).append(" title=").append(title)
                         .append(" bounds=").append(window.getBounds())
                         .append(" focused=").append(window.isFocused())
-                        .append(" active=").append(window.isActive()).append('\n');
+                        .append(" active=").append(window.isActive())
+                        .append(" focusOwner=").append(window.getFocusOwner()).append('\n');
                 }
             }
             return text.toString();

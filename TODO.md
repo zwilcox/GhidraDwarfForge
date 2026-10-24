@@ -126,7 +126,7 @@ items are these bounded workstreams:
 | Function identity and scopes (P1.7, P3.3) | **PLANNED:** distinct linkage names without losing analyst-name lookup; external-function declarations, thunks/aliases, function/class/lexical scopes, static locals, and same-named type/variable disambiguation. Existing namespace globals and external-data declarations must remain working. |
 | Additional range/location cases (P1.8, P1.11a) | **PLANNED:** entry points that are not the lowest body address; proven register/memory migration, call-crossing and non-entry lifetimes, stack-slot reuse, and mixed composite storage. Require GDB value checks at multiple instruction addresses and honest unavailable gaps. |
 | Target-profile coverage (P2.3/3a/3b) | Current five profiles pass. Enumerate additional ABI/storage cases, derive their target properties, and add real exporter/validator/QEMU-GDB tests before extending support claims. Completing this plan does not imply every Ghidra CPU/ABI. |
-| Remaining GUI journeys (P2.7) | **CONFIRMED locally:** actual Linux Script Manager discovery/run/Console report and chooser selection/cancellation pass with the installed Export launcher. **PRESENT, UNVERIFIED:** native Windows desktop/ACL probe and full Script Manager chooser harness are CI-wired; native Windows evidence remains pending. |
+| GUI reproducibility (P2.7) | **CONFIRMED:** Linux and native Windows Script Manager discovery/run/Console reports and chooser selection/cancellation passed in `40054563515` at `83b74a6`. A later Windows run exposed a harness pre-click focus race; the controlled regression and full Linux journey pass after correction. The current combined head still requires full hosted validation. |
 | Optional debuglink (P2.8) | **PLANNED, optional:** explicit opt-in attachment and backup/rollback. Sidecar lookup/CRC compatibility is tested on private fixture copies; default export leaves the original unchanged. |
 | Inline reconstruction (P3.4) | **UNCERTAIN:** investigate defensible instance/call-site/range evidence and record a decision. Implement only if supported by that evidence. |
 | Performance (P3.5) | **PLANNED:** establish representative large-binary benchmarks, choose optimizations with measured benefit, and prove unchanged semantics/determinism. The listed candidates are not all unconditional requirements. |
@@ -1163,7 +1163,9 @@ GUI fallback selection/cancellation passes locally and in hosted run
 including validators and GDB source stepping.
 The installed Export launcher now passes actual Linux Script Manager discovery,
 double-click Run, Console reporting and chooser selection/cancellation in
-`gui-script-manager.sh`. Native Windows GUI behavior remains untested.
+`gui-script-manager.sh`. Run `40054563515` at `83b74a6` also passed the full
+native Windows journey; this component evidence does not substitute for the
+current combined-head gate.
 
 Additional user-journey coverage:
 
@@ -1172,15 +1174,18 @@ Additional user-journey coverage:
   metadata script and the explicit Export launcher are distinct installed
   entries; this test does not directly construct either production script.
   The first hosted Script Manager run exposed a covering-window focus race;
-  foreground/Name-cell targeting now passes local `run.B4Zeob4d`, with the
-  hosted rerun still pending and failure screenshots/Console retained.
-- [ ] Exercise native Windows output selection and cancellation; verify
+  foreground/Name-cell targeting passes locally. Later Windows activation
+  intentionally focused Ghidra's filter, exposing a separate harness pre-click
+  assertion race. The correction verifies real double-click delivery instead
+  of requiring table keyboard focus; controlled and full Linux checks pass.
+- [x] Exercise native Windows output selection and cancellation; verify
   chosen paths, original preservation and no final artifacts after cancellation.
   A real desktop-click/ACL-denial probe precedes the full Windows Script Manager
   harness in CI. The latter uses packaged Windows natives, selected paths with
   spaces, input hashes, Console reports, and native GNU/LLVM validators. Both
-  native results remain pending; the feasibility probe alone cannot complete
-  the chooser journey.
+  passed in `40054563515`; independent `dwarfdump` was unavailable and Linux
+  ELF runtime GDB checks were not run on Windows. The later focus regression
+  requires a new full native Windows run before the combined change integrates.
 
 ### Work
 

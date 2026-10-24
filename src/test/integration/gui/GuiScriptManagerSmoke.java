@@ -1,6 +1,5 @@
 import java.awt.Component;
 import java.awt.GraphicsEnvironment;
-import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Robot;
 import java.nio.file.Files;
@@ -73,6 +72,7 @@ public final class GuiScriptManagerSmoke {
         Path module = Path.of(arguments[1]);
         Path fixture = Path.of(arguments[2]);
         Path results = Path.of(arguments[3]);
+        GuiTableClickSmoke.run(Files.createDirectory(results.resolve("filter-focus-control")));
         GhidraApplicationConfiguration configuration = new GhidraApplicationConfiguration();
         configuration.setShowSplashScreen(false);
         configuration.setApplicationLogFile(results.resolve("application.log").toFile());
@@ -260,21 +260,17 @@ public final class GuiScriptManagerSmoke {
         Robot robot = new Robot();
         robot.setAutoDelay(80);
         // A visible floating provider can still be covered by Console/front end.
-        // Wait for native focus, then measure after pending layout and painting.
-        GuiTestSupport.focus(table);
+        // Provider activation intentionally focuses Ghidra's filter field.
+        // Mouse dispatch needs the foreground window, not table keyboard focus.
+        GuiTestSupport.foregroundWindow(table);
         robot.waitForIdle();
         GuiTestSupport.screenshot(robot, provider.getComponent(), screenshot);
-        Rectangle row = GuiTestSupport.onSwing(() -> {
+        int[] cell = GuiTestSupport.onSwing(() -> {
             int index = findRow(table, filename);
             GuiTestSupport.require(index >= 0, "Script Manager target row disappeared");
-            Rectangle cell = table.getCellRect(index, findNameColumn(table), true);
-            GuiTestSupport.require(table.isFocusOwner() &&
-                table.getSelectedRow() == index && table.getVisibleRect().contains(cell),
-                "Script Manager target row is not focused and fully visible");
-            Point point = table.getLocationOnScreen();
-            return new Rectangle(point.x + cell.x, point.y + cell.y, cell.width, cell.height);
+            return new int[] { index, findNameColumn(table) };
         });
-        GuiTestSupport.click(robot, row, 2);
+        GuiTestSupport.doubleClickCell(robot, table, cell[0], cell[1], filename);
     }
 
     private static int findNameColumn(JTable table) {

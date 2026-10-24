@@ -1732,7 +1732,8 @@ pass in a non-headless Ghidra 12.0.3 JVM under a private Xvfb display. The test
 runs the production script and real Swing chooser, writes to the selected
 directory when the input directory is read-only, and publishes nothing after
 cancellation. Hash preservation, validators, and GDB source stepping pass.
-Manual Script Manager navigation and Windows GUI behavior remain untested.
+At that checkpoint, Script Manager navigation and Windows GUI behavior were
+untested; Section 16.31 records the later hosted component evidence.
 The three new integration harnesses are wired into the x86-64 CI lane; hosted
 run `39896787460` passed all twelve jobs for implementation commit `3cdc3f8`,
 including these three tests, the five target lanes, Windows-hosted export,
@@ -1790,8 +1791,10 @@ function/linkage identity, richer scopes/declarations, functions whose body
 starts below their entry point, and more precise variable lifetimes/storage
 migration. The current stable-register and SP-relative location profile is
 validated; it does not establish arbitrary value migration or scope/liveness.
-Additional target profiles require explicit, finite acceptance cases. Native
-Windows GUI and manual Script Manager journeys remain **PRESENT, UNVERIFIED**.
+Additional target profiles require explicit, finite acceptance cases. At that
+audit, native Windows GUI and Script Manager journeys were **PRESENT,
+UNVERIFIED**; Section 16.31 records the subsequent component passes and
+remaining combined-head reproducibility gate.
 
 **HISTORICAL:** extended-section-number emission was parked on
 `work/elf-table-robustness` at `f2884e6`. Its build/smoke checks passed, but a
@@ -1951,23 +1954,35 @@ outputs, GNU/LLVM/libdwarf validation, and GDB source lookup/stepping/normal
 exit. The native-free preflight is also executed through Script Manager.
 See `docs/VALIDATION.md` for reproduction and diagnostic scope.
 
-**PRESENT, UNVERIFIED:** `windows-desktop-acl.ps1` probes actual native Windows
-desktop interaction and write-denying ACL behavior, with cleanup and retained
-screenshots/logs. It is wired into Windows CI but has not run natively yet.
-Passing that feasibility probe will not itself prove Ghidra's Windows chooser.
-The CI lane now also invokes `windows-gui-script-manager.ps1`, reusing the same
-actual Script Manager driver with packaged Windows natives, real ACL failures,
-paths with spaces, original hashes and GNU/LLVM structural validation. Its
-native result is pending, so the Windows selection/cancellation journey stays
-open. These GUI changes are separate from the corrective alpha.2 candidate.
+**CONFIRMED:** run `40054563515` at `83b74a6` passed all twelve jobs, including
+the Linux Script Manager/validator/GDB journey and native Windows desktop/ACL
+probe plus full Script Manager selection/cancellation. The Windows journey
+uses packaged natives, real ACL denial, paths with spaces, original hashes,
+Console reports and GNU/LLVM validation. Independent `dwarfdump` was unavailable
+and Linux ELF runtime GDB was explicitly not run on Windows. These are actual
+component results, not evidence that every subsequent combined head passes.
+The GUI changes remain separate from the corrective alpha.2 release scope.
 
 The first hosted Linux Script Manager run `40053779323` exposed a harness
 focus race: the selected component was showing but covered by other windows,
 and no script executed. The driver now waits for native window focus followed
 by table focus, then clicks the actual visible Name cell using fresh bounds.
 Failure Console/window/screenshot diagnostics are retained. Controlled overlap
-reproduction and full local run `run.B4Zeob4d` pass; hosted Linux and Windows
-evidence for this correction remains pending. No timeout or CI gate was relaxed.
+reproduction and full local run `run.B4Zeob4d` pass. No timeout or CI gate was relaxed.
+
+Attempt 2 of combined run `40055880742` exposed a second harness issue on
+Windows: after successful selection/export, the cancellation case failed its
+table-keyboard-focus assertion before the preflight double-click. The retained
+desktop shows the intended selected row in the foreground Script Manager,
+with keyboard focus in its filter. Pinned Ghidra 12.0.3 deliberately requests
+that filter focus in `GhidraScriptComponentProvider.componentActivated()`.
+The test now requires a foreground window and the selected visible Name cell,
+then verifies one delivered real mouse double-click on that exact filename.
+It does not require table keyboard focus before a mouse action. A controlled
+filter-focus regression runs on both host lanes; the full Linux journey
+`run.syAI9N4O` passes with validators/GDB. The new exact-head native Windows and
+complete combined gates remain pending; no production script or launch retry
+was introduced.
 
 ### 16.32 Shared-object QEMU debugger endpoint isolation
 

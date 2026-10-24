@@ -768,8 +768,9 @@ directories, and an injected unwritable-directory result. GUI directory
 selection is implemented for a valid input whose default destination fails,
 and the automated Linux Swing chooser/cancellation test passes in a genuine
 non-headless Ghidra process (see the post-alpha GUI record above). Actual Linux
-Script Manager discovery/run/reporting is additionally validated below. Windows
-GUI behavior remains **PRESENT, UNVERIFIED**.
+Script Manager discovery/run/reporting and native Windows chooser behavior
+are additionally validated below; the current combined-head reproducibility
+gate remains separate from those component results.
 
 ## Automatic build-ID and debuglink association
 
@@ -1115,10 +1116,10 @@ Its diagnostic stream is empty. A displayed decompiler source comment saying
 Release-package tests require both script entries, reject a ZIP missing the
 Export launcher, verify their unchanged bytes in the assembled archive, and
 check deterministic archive/manifest output. Build, package regression,
-PowerShell syntax, and Java 21 compilation pass locally. Hosted results for
-this branch are pending.
+PowerShell syntax, and Java 21 compilation pass locally. Hosted component
+results and the later focus regression are recorded below.
 
-**PRESENT, UNVERIFIED on native Windows:**
+**CONFIRMED on native Windows in run `40054563515` at `83b74a6`:**
 `src/test/integration/windows-desktop-acl.ps1` compiles a standalone Java probe,
 records host/user/session evidence, denies directory writes with a real ACL,
 requires actual file creation to fail, restores the ACL, and requires a real
@@ -1151,12 +1152,22 @@ are explicitly recorded as not run there; the Linux GUI journey retains those
 checks. All Windows logs and screenshots are retained under
 `build/test-results/windows-host/gui-script-manager/`.
 
-**Available local checks only:** PowerShell syntax, workflow YAML, shared Java
+The initial local checks covered PowerShell syntax, workflow YAML, shared Java
 21 compilation, Java argument-file quoting (spaces, backslashes, quotes, and
 literal brackets), and the repeated Linux GUI/validator/GDB journey
-`run.BVL5Ysph` pass.
-The Windows filesystem, DLL loading and GUI assertions still require the
-native hosted run; this preparation does not complete that acceptance item.
+`run.BVL5Ysph`. Subsequent run `40054563515` passed all twelve jobs. Linux
+job `120756043691` passed the real Script Manager journey and GNU/LLVM/libdwarf
+plus GDB checks. Native Windows job `120758328246` passed the desktop Robot/ACL
+probe and full Script Manager journey. Downloaded artifact `12545630489` has
+verified GitHub SHA-256
+`98d50281bc7cf0a906c23739827a161b9de9b27220e27eb27bb8a59621a71f0b`.
+Its selection report is `PARTIAL`, cancellation is `CANCELLED`, actual file
+creation is denied by ACL, and recorded input/output hashes independently
+match the retained files. Native GNU/LLVM diagnostic streams are empty.
+`independent-dwarfdump=UNAVAILABLE_ON_WINDOWS_RUNNER` and
+`gdb-linux-elf-runtime=NOT_RUN_ON_WINDOWS_HOST` are explicit limitations.
+This proves that component at `83b74a6`; it does not establish reproducibility
+of later combined heads.
 
 ### Hosted Script Manager focus regression
 
@@ -1167,19 +1178,37 @@ showed other Ghidra windows covering the Script Manager component. Swing's
 table. A controlled Xvfb experiment reproduced a visible target's click being
 received by the covering window; explicit foreground activation corrected it.
 
-The driver now raises the target ancestor, waits for native window focus, then
-requests and waits for table focus. This ordering also avoids requesting child
-focus before the window's native focus event arrives. After pending layout and
-painting, it verifies the intended selected row and clicks the fully visible
-Name cell. It still uses a real double-click through Script Manager, with the
-same timeouts. On failure, Console text, a desktop screenshot, and visible
-window bounds/focus are saved before cleanup.
+The initial correction raised the target ancestor, waited for native window
+focus and then table focus, and clicked the actual visible Name cell using
+fresh bounds. It retained the real double-click, timeouts, and failure
+Console/desktop/window diagnostics.
 
 The corrected full local journey `run.B4Zeob4d` passes both chooser outcomes,
 GNU/LLVM/libdwarf checks and GDB source stepping/normal exit. Controlled focus
-evidence is under `build/hosted-gui-review/focus-probe-final/`. Hosted Linux rerun and
-native Windows execution remain pending; this local result does not close
-either hosted acceptance gate.
+evidence is under `build/hosted-gui-review/focus-probe-final/`.
+
+Attempt 2 of run `40055880742`, Windows job `120763476912`, exposed another
+pre-click harness race. Selection/export completed, but the cancellation
+case failed `Script Manager target row is not focused and fully visible`
+before its preflight script ran. Artifact `12546375795` (verified SHA-256
+`5a25475dd8a6f0ab463cfc12b90044fbe7c156e09591f0a1be7f81e199bbcea7`)
+retains the foreground Script Manager with the intended selected, visible
+row and caret in its filter. Ghidra 12.0.3's
+`GhidraScriptComponentProvider.componentActivated()` explicitly requests focus
+for that filter, so a transient table-focus assertion races ordinary activation.
+
+The corrected harness requires the foreground window, selected visible Name
+cell and matching filename, then observes exactly one real BUTTON1
+double-click delivered to that cell. Script Manager still performs the
+production launch; existing Console/chooser/report assertions remain.
+`GuiTableClickSmoke` deliberately gives keyboard focus to the filter, proves
+the former table-focus condition is false, and requires exactly one target
+invocation through Robot. Both host harnesses run this control. Full Linux
+run `run.syAI9N4O` passes the control, both chooser outcomes, original hashes,
+GNU/LLVM/libdwarf validation and GDB source lookup/stepping/normal exit.
+No timeout, debugger warning policy, script call path or production behavior
+changed. A new full native Windows run and complete exact-head matrix remain
+required before integrating the combined GUI change.
 
 ## Native patch checkout and provenance consistency (2026-10-23)
 

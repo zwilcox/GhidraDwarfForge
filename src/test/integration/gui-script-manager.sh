@@ -43,6 +43,7 @@ done < <(find -L "$ghidra/Ghidra" \( -path '*/Extensions' -o -path '*/data' \) -
     -o -type f -name '*.jar' -print0)
 javac --release 21 -cp "$classpath" -d "$work/classes" \
     "$repository/src/test/integration/gui/GuiTestSupport.java" \
+    "$repository/src/test/integration/gui/GuiTableClickSmoke.java" \
     "$repository/src/test/integration/gui/GuiScriptManagerSmoke.java"
 "$xvfb" -displayfd 3 -screen 0 1280x1024x24 -nolisten tcp \
     3>"$work/display.txt" >"$work/xvfb.log" 2>&1 &
