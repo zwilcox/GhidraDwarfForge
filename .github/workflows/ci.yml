@@ -589,7 +589,7 @@ jobs:
           packages=(gdb-multiarch llvm dwarfdump)
           case "$TARGET" in
             x86_64)
-              packages+=(gcc binutils gdb qemu-user-static xvfb libxtst6 libxi6 libxrender1)
+              packages+=(gcc binutils gdb qemu-user-static xvfb openbox x11-utils libxtst6 libxi6 libxrender1)
               ;;
             aarch64)
               packages+=(gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu

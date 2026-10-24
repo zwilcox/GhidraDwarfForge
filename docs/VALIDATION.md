@@ -2040,6 +2040,56 @@ errors. GDB resolves the renamed function and synthetic source, steps with
 journey with the corrected harness; a new full hosted run, including native
 Windows, is still required.
 
+### Managed Linux display geometry (2026-10-24)
+
+Run `40064976588` at `a977a93` passed the four cross-target lanes and the Linux
+chooser-only check, but failed the real Script Manager step. Windows was
+skipped. Artifact `12549133765` has verified GitHub SHA-256
+`68e34a584d8588aa3333986ef2d8c69c9f74b7d6c8bc018347d025c1865e16e4`.
+Its filter-focus and modal controls both pass. The screenshot instead shows
+the Apple category selected after the attempted preflight table click. Java
+window diagnostics report `(0,0)`, while the desktop places the same 684×519
+Script Manager at `(298,253)`; the pre-click crop also uses the wrong origin.
+This establishes a native/Java coordinate mismatch, not a script/native-export
+failure. Evidence is retained in `build/hosted-gui-review/run-40064976588/`.
+
+Pinned Ghidra's `DockingFrame` is a plain `JFrame`; `DetachedWindowNode` packs,
+positions and then shows a new floating window. A standalone probe of that
+creation order under bare Xvfb independently compares Java coordinates with
+`xwininfo`. It reproduces the mismatch in 7/100 exploratory cases and 2/100
+cases in the final comparison (`run.haXOAIX9`, `run.xF2sFukx` under
+`build/native-geometry-review/`). The matching Openbox comparison
+`run.UyGCVVwx` passes all 100 after accounting for normal WM decorations.
+This is observed virtual-display behavior; no general JDK regression or
+specific vendor defect is claimed.
+
+The Linux Script Manager wrapper now requires `openbox` and `x11-utils` in
+addition to Xvfb. It starts its own WM on its fresh display, supplies an owned
+XML configuration and empty menu, checks the native WM readiness property,
+and terminates the WM before Xvfb on every exit. It never manages the user's
+desktop. Locally, packages were downloaded/extracted under ignored `build/`;
+no system package or user installation changed. `OPENBOX_BIN`, alongside
+`XVFB_BIN` and `JAVA_BIN`, allows that private executable setup.
+
+`GuiWindowGeometrySmoke` checks 100 separate packed/centered/shown windows,
+comparing native X11 client coordinates with Java bounds plus decorations.
+Queries have bounded process cleanup, and failures retain native output and
+screenshots. This Linux-only control precedes the unchanged actual Script
+Manager click, Console, chooser and export checks. The shared Windows journey,
+click observation, action count, existing timeouts and validator policy are
+unchanged; no failed launch is retried.
+
+**PASS locally:** final `build/test-results/gui-script-manager/run.KPdcV6p3/`,
+using OpenJDK 21.0.12.1, Openbox 3.6.1 and the verified hosted production
+package identified above. All 100 geometry cases and both filter/modal
+controls pass. The full Ghidra journey passes installed discovery, native-free
+preflight, real selection/cancellation, input preservation, exact output counts,
+GNU/LLVM, strict libdwarf checking and GDB source lookup/stepping/normal exit.
+Three inherited frame diagnostics are exactly corroborated against the private
+input; zero remain unexplained. Openbox and validator/GDB stderr logs are
+empty, and no WM/Xvfb/Java test process remains. Full hosted verification of
+the updated branch, including native Windows, is still required.
+
 ## Native patch checkout and provenance consistency (2026-10-23)
 
 Prepublication audit of candidate `ddad598` in run `40055176326` verified the

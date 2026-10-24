@@ -1315,6 +1315,10 @@ Additional user-journey coverage:
   passes a controlled reproduction and full Java 21 Linux journey
   `run.O3SsqvwH`; no launch retries or timeouts changed. The new exact-head
   hosted gate, including native Windows, remains required.
+  Run `40064976588` then demonstrated inconsistent native/Java window
+  coordinates under bare Xvfb. An owned Openbox session and independent native
+  geometry control pass 100 cases and the full Java 21 Linux journey
+  `run.KPdcV6p3`; fresh hosted acceptance remains pending.
 - [x] Exercise native Windows output selection and cancellation; verify
   chosen paths, original preservation and no final artifacts after cancellation.
   A real desktop-click/ACL-denial probe precedes the full Windows Script Manager

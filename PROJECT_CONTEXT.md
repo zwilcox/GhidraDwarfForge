@@ -2049,6 +2049,19 @@ release package, passes select/cancel, GNU/LLVM, strict libdwarf checking with
 three exactly corroborated inherited frame diagnostics, and GDB. Hosted
 validation of this correction, including native Windows, remains required.
 
+Run `40064976588` at `a977a93` passed both click controls but exposed a separate
+Linux display problem: Java reported the floating Script Manager at `(0,0)`
+while the native desktop placed it at `(298,253)`. The coordinate click reached
+the category tree. A standalone pack/position/show probe reproduces incorrect
+Java versus `xwininfo` coordinates under bare Xvfb (2 of 100 final comparison
+cases); the same probe with Openbox matches all 100. The Linux harness now owns
+Openbox, a private configuration/menu and Xvfb, verifies WM readiness, and runs
+an independent 100-window geometry check before the genuine Ghidra journey.
+Full Java 21 run `run.KPdcV6p3` passes geometry, both chooser outcomes,
+GNU/LLVM/strict-libdwarf and GDB; its Openbox log is empty. Process cleanup,
+mouse dispatch and production oracles remain intact. Windows code is unchanged
+and the new full hosted gate remains required.
+
 ### 16.33 Shared-object QEMU debugger endpoint isolation
 
 **CONFIRMED:** combined GUI run `40055880742`, MIPS32LE job `120759663719`,
