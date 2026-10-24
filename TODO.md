@@ -1065,9 +1065,11 @@ exports, while the prior exporter reproduces the wrong earlier value in all
 six roles. Zero-offset locals remain correct. Exact hosted acceptance remains
 pending; see `docs/STACK-FIRST-USE.md`. No general slot-reuse boundary is inferred.
 
-**CONFIRMED locally; hosted gate pending:** the bounded register-copy
-implementation and independent 32/64-bit x86-64/AArch64 fixture pass final
-packaged exec/PIE/rebase exports, validators and 72 calls per debugger mode.
+**CONFIRMED in hosted run `40079317009`:** exact PR #29 head `698e939` passes
+all twelve jobs. The bounded register-copy fixture passes x86-64/AArch64
+exec/PIE/rebase exports, validators and 72 calls per debugger mode, with
+independent package and targeted runtime/host-artifact reviews. Normal merge
+`25f9830` preserves the tested tree.
 It tracks one direct saved
 register through the original overwrite, then stops at an unproved backup
 write. The whole-function flow/opaque guards remain mandatory. No call,
