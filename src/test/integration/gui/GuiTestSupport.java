@@ -1,6 +1,8 @@
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dialog;
+import java.awt.Frame;
+import java.awt.GraphicsEnvironment;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Robot;
@@ -139,6 +141,42 @@ final class GuiTestSupport {
             component instanceof AbstractButton candidate &&
                 text.equals(candidate.getText()) && candidate.isShowing() && candidate.isEnabled()));
         click(robot, bounds(button), 1);
+    }
+
+    static void focus(Component component) throws Exception {
+        Window window = onSwing(() -> SwingUtilities.getWindowAncestor(component));
+        require(window != null, "GUI target has no window");
+        onSwing(() -> {
+            window.toFront();
+            window.requestFocus();
+            return null;
+        });
+        await("foreground target window", () -> window.isFocused() ? window : null);
+        onSwing(() -> component.requestFocusInWindow());
+        await("foreground target window and keyboard focus", () ->
+            window.isFocused() && component.isFocusOwner() ? component : null);
+    }
+
+    static void captureDesktop(Path directory) throws Exception {
+        String windows = onSwing(() -> {
+            StringBuilder text = new StringBuilder();
+            for (Window window : Window.getWindows()) {
+                if (window.isShowing()) {
+                    String title = window instanceof Frame frame ? frame.getTitle() :
+                        window instanceof Dialog dialog ? dialog.getTitle() : "";
+                    text.append(window.getClass().getName()).append(" title=").append(title)
+                        .append(" bounds=").append(window.getBounds())
+                        .append(" focused=").append(window.isFocused())
+                        .append(" active=").append(window.isActive()).append('\n');
+                }
+            }
+            return text.toString();
+        });
+        Files.writeString(directory.resolve("failure-windows.txt"), windows);
+        Rectangle desktop = GraphicsEnvironment.getLocalGraphicsEnvironment()
+            .getDefaultScreenDevice().getDefaultConfiguration().getBounds();
+        ImageIO.write(new Robot().createScreenCapture(desktop), "png",
+            directory.resolve("failure-desktop.png").toFile());
     }
 
     static void click(Robot robot, Rectangle rectangle, int count) {

@@ -1024,3 +1024,26 @@ literal brackets), and the repeated Linux GUI/validator/GDB journey
 `run.BVL5Ysph` pass.
 The Windows filesystem, DLL loading and GUI assertions still require the
 native hosted run; this preparation does not complete that acceptance item.
+
+### Hosted Script Manager focus regression
+
+The first Linux hosted GUI run `40053779323` timed out before the preflight
+script started. Its empty `script.log` and retained `preflight-manager.png`
+showed other Ghidra windows covering the Script Manager component. Swing's
+`isShowing()` alone did not establish that a coordinate click would reach the
+table. A controlled Xvfb experiment reproduced a visible target's click being
+received by the covering window; explicit foreground activation corrected it.
+
+The driver now raises the target ancestor, waits for native window focus, then
+requests and waits for table focus. This ordering also avoids requesting child
+focus before the window's native focus event arrives. After pending layout and
+painting, it verifies the intended selected row and clicks the fully visible
+Name cell. It still uses a real double-click through Script Manager, with the
+same timeouts. On failure, Console text, a desktop screenshot, and visible
+window bounds/focus are saved before cleanup.
+
+The corrected full local journey `run.B4Zeob4d` passes both chooser outcomes,
+GNU/LLVM/libdwarf checks and GDB source stepping/normal exit. Controlled focus
+evidence is under `build/hosted-gui-review/focus-probe-final/`. Hosted Linux rerun and
+native Windows execution remain pending; this local result does not close
+either hosted acceptance gate.

@@ -1878,6 +1878,14 @@ paths with spaces, original hashes and GNU/LLVM structural validation. Its
 native result is pending, so the Windows selection/cancellation journey stays
 open. These GUI changes are separate from the corrective alpha.2 candidate.
 
+The first hosted Linux Script Manager run `40053779323` exposed a harness
+focus race: the selected component was showing but covered by other windows,
+and no script executed. The driver now waits for native window focus followed
+by table focus, then clicks the actual visible Name cell using fresh bounds.
+Failure Console/window/screenshot diagnostics are retained. Controlled overlap
+reproduction and full local run `run.B4Zeob4d` pass; hosted Linux and Windows
+evidence for this correction remains pending. No timeout or CI gate was relaxed.
+
 ## 17. Open questions
 
 Codex should not silently answer these through implementation choices. Investigate, document, and obtain user direction when the answer materially changes compatibility or scope.

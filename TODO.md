@@ -1150,6 +1150,9 @@ Additional user-journey coverage:
   the documented installed-extension workflow on Linux. The native-free
   metadata script and the explicit Export launcher are distinct installed
   entries; this test does not directly construct either production script.
+  The first hosted Script Manager run exposed a covering-window focus race;
+  foreground/Name-cell targeting now passes local `run.B4Zeob4d`, with the
+  hosted rerun still pending and failure screenshots/Console retained.
 - [ ] Exercise native Windows output selection and cancellation; verify
   chosen paths, original preservation and no final artifacts after cancellation.
   A real desktop-click/ACL-denial probe precedes the full Windows Script Manager

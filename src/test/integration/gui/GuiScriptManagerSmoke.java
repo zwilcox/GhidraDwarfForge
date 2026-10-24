@@ -215,6 +215,17 @@ public final class GuiScriptManagerSmoke {
                         "script-manager-action=double-click\nchooser=" + (cancel ? "cancel" : "select") +
                         "\ninput_sha256=" + originalHash + "\nresult=PASS\n");
                 }
+                catch (Exception | Error failure) {
+                    try {
+                        Files.writeString(caseDirectory.resolve("failure-console.txt"),
+                            consoleText(console));
+                        GuiTestSupport.captureDesktop(caseDirectory);
+                    }
+                    catch (Exception diagnosticFailure) {
+                        failure.addSuppressed(diagnosticFailure);
+                    }
+                    throw failure;
+                }
                 finally {
                     GuiTestSupport.onSwing(() -> { manager.closeProgram(program, true); return null; });
                 }
@@ -239,19 +250,40 @@ public final class GuiScriptManagerSmoke {
             });
             return (JTable) found;
         });
-        Rectangle row = GuiTestSupport.onSwing(() -> {
+        GuiTestSupport.onSwing(() -> {
             int index = findRow(table, filename);
             table.setRowSelectionInterval(index, index);
-            Rectangle cell = table.getCellRect(index, 0, true);
+            Rectangle cell = table.getCellRect(index, findNameColumn(table), true);
             table.scrollRectToVisible(cell);
-            Point point = table.getLocationOnScreen();
-            return new Rectangle(point.x + cell.x, point.y + cell.y,
-                Math.max(table.getWidth(), 1), cell.height);
+            return null;
         });
         Robot robot = new Robot();
         robot.setAutoDelay(80);
+        // A visible floating provider can still be covered by Console/front end.
+        // Wait for native focus, then measure after pending layout and painting.
+        GuiTestSupport.focus(table);
+        robot.waitForIdle();
         GuiTestSupport.screenshot(robot, provider.getComponent(), screenshot);
+        Rectangle row = GuiTestSupport.onSwing(() -> {
+            int index = findRow(table, filename);
+            GuiTestSupport.require(index >= 0, "Script Manager target row disappeared");
+            Rectangle cell = table.getCellRect(index, findNameColumn(table), true);
+            GuiTestSupport.require(table.isFocusOwner() &&
+                table.getSelectedRow() == index && table.getVisibleRect().contains(cell),
+                "Script Manager target row is not focused and fully visible");
+            Point point = table.getLocationOnScreen();
+            return new Rectangle(point.x + cell.x, point.y + cell.y, cell.width, cell.height);
+        });
         GuiTestSupport.click(robot, row, 2);
+    }
+
+    private static int findNameColumn(JTable table) {
+        for (int column = 0; column < table.getColumnCount(); column++) {
+            if ("Name".equals(table.getColumnName(column))) {
+                return column;
+            }
+        }
+        throw new AssertionError("Script Manager Name column disappeared");
     }
 
     private static int findRow(JTable table, String filename) {
