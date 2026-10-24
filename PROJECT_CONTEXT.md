@@ -2970,3 +2970,20 @@ acceptance is still required. Policy and pinned API evidence are in
 all twelve jobs; independent Linux and native Windows GUI artifact reviews
 also pass. This supersedes its earlier pending-main checkpoint. Neither
 published alpha nor its tag/assets changed.
+
+### Register-copy hosted acceptance (2026-10-24)
+
+**CONFIRMED:** exact PR #29 head `698e9398c382923b50274516f26e928c1d4fc738`
+passed all twelve jobs in `40079317009`, attempt 1, with none skipped. The
+independent source/gate/package audit and targeted x86-64/AArch64 runtime,
+ARM32 floating and both-host GUI artifact reviews are clear. All five target
+lanes pass; MIPS evidence for this PR is its CI conclusions, not an additional
+manual artifact review. Native Windows also passes all ten focused smokes.
+The exact package SHA-256 is
+`e147f60544a0a16cd801444000ff94109e916066e4c7a9bdd9fde37bc4a9f46e`.
+Actual Java 21 smokes, production origins and 20 native producer lifetimes pass.
+
+Normal merge `25f9830f64899a1b3ed9f45e60c3b7404f0fc67c` at
+`2026-10-24T09:16:38Z` preserves the tested tree. Its separate main-push gate
+is still pending. This supersedes earlier pending-hosted register-copy notes;
+it does not attribute acceptance to the later stack guard. No release changed.

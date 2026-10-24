@@ -3255,3 +3255,41 @@ gates while preserving the existing five target lanes. Its exact-head full
 acceptance remains pending. Broader stack identity/lifetime recovery and the
 rest of P1.11a remain partial; this guard does not infer initialization or
 original compiler scope boundaries.
+
+### PR #29 exact hosted acceptance
+
+**CONFIRMED:** run `40079317009` for head
+`698e9398c382923b50274516f26e928c1d4fc738` is a completed `pull_request`
+attempt 1 with all twelve expected jobs successful and none skipped. Independent
+source, package and final-gate review is clear. Package SHA-256
+`e147f60544a0a16cd801444000ff94109e916066e4c7a9bdd9fde37bc4a9f46e`
+and downloaded JAR `44269ecb90ef9364a0d35d148aef7568d18d70c58e7a5e10ea40abc525ecb8b1`
+pass all five manifests, exact 33 production-source checks, native provenance,
+138 Java 21 classfiles, actual Java 21 smokes, 20 producer lifetimes and
+34 verified production class origins.
+
+Digest-verified target artifacts prove all six new copy roles, 72 calls and
+432 observation checks per compiler/Forge mode, exact two-interval locations
+and kill tails, input preservation, byte-identical pairs and zero unexplained
+diagnostics. x86-64 strict inherited counts are `6/4/4`, AArch64 `8/8/8`.
+Existing x86/AArch64 prefixes and floating cases, AArch64 opaque cases and
+ARM32 floating cases also pass independent artifact review. MIPS target job
+successes are CI evidence; those PR #29 artifact contents were not separately
+reviewed. The Linux GUI `run.hktB46GC` passes its three controls, 100-window
+geometry probe, actual Script Manager/chooser/Console workflow, validators,
+runtime GDB and input preservation, with empty stderr.
+
+Windows artifact `12555336741`, SHA-256
+`9883fdb87b95a9d107e3048ecdf29ba1add52eb4b64934a86ccd06610ca90cf2`,
+proves all ten focused smokes and actual GUI
+`run.ec83bfc03c5b4a04bb47282f9c1e0b48 GUI paths`: controls, ACL rejection,
+selection/cancellation, Console, GNU/LLVM and input hashes, with empty stderr.
+Independent libdwarf and Linux-ELF runtime GDB remain unavailable on Windows.
+The GUI review evidence is retained under
+`gui-script-manager/build/hosted-gui-review/run-40079317009`; package/final-gate
+metadata is under `register-copy-lifetime/build/register-copy-package-audit`.
+
+Normal merge `25f9830f64899a1b3ed9f45e60c3b7404f0fc67c` retains the exact
+reviewed tree. Its distinct main-push gate remains pending. This accepted
+change is not in either immutable published alpha and does not validate the
+subsequent stack-first-use guard's hosted pipeline.
