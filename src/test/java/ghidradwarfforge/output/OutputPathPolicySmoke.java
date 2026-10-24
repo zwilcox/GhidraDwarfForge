@@ -34,6 +34,19 @@ public final class OutputPathPolicySmoke {
 
             assertFailure(() -> OutputPathPolicy.resolve(directory.resolve("missing"), null),
                 "supply --input");
+            Path missingParentInput = directory.resolve("missing-parent/program.elf");
+            try {
+                OutputPathPolicy.resolve(missingParentInput, null);
+                throw new AssertionError("missing input parent was accepted");
+            }
+            catch (IOException failure) {
+                if (!failure.getMessage().contains("supply --input=<path>") ||
+                        !failure.getMessage().contains(missingParentInput.getParent().toString()) ||
+                        !(failure.getCause() instanceof IOException) ||
+                        Files.exists(missingParentInput.getParent())) {
+                    throw new AssertionError("missing input parent lost its hint/cause or wrote files", failure);
+                }
+            }
             assertFailure(() -> OutputPathPolicy.resolve(input, input), "aliases");
             assertFailure(() -> OutputPathPolicy.resolve(input, directory), "cannot replace");
             Path sourceCollision = directory.resolve("collision.dbg.c");

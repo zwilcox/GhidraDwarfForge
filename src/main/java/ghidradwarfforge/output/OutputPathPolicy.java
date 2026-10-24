@@ -27,7 +27,14 @@ public final class OutputPathPolicy {
     static ExportPaths resolve(Path input, Path explicitOutput,
             Predicate<Path> writableDirectory) throws IOException {
         Objects.requireNonNull(writableDirectory, "writableDirectory");
-        Path original = FileSystemPaths.resolveLeaf(input, "original ELF path");
+        Path original;
+        try {
+            original = FileSystemPaths.resolveLeaf(input, "original ELF path");
+        }
+        catch (IOException failure) {
+            throw new IOException(failure.getMessage() +
+                "; supply --input=<path> when Ghidra's executable path is stale", failure);
+        }
         if (!Files.isRegularFile(original) || !Files.isReadable(original)) {
             throw new IOException("original ELF is missing, unreadable, or not a regular file: " +
                 original + "; supply --input=<path> when Ghidra's executable path is stale");

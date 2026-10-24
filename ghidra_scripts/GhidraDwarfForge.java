@@ -110,7 +110,8 @@ public class GhidraDwarfForge extends GhidraScript {
             if (requestedOutput != null || isRunningHeadless() ||
                     !Files.isRegularFile(requestedInput) ||
                     !Files.isReadable(requestedInput)) {
-                String hint = isRunningHeadless() && requestedOutput == null
+                String hint = isRunningHeadless() && requestedOutput == null &&
+                        Files.isRegularFile(requestedInput) && Files.isReadable(requestedInput)
                         ? "; supply --output=<writable-sidecar-path>" : "";
                 throw new IOException(defaultFailure.getMessage() + hint, defaultFailure);
             }
