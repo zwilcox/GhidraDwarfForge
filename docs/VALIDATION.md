@@ -2994,3 +2994,33 @@ The new pointer commands retain strict diagnostics, all five target gates and
 the original architecture scopes. Independent code, harness and evidence
 reviews are clear. Exact hosted acceptance and normal main integration remain
 pending; no version, tag or published alpha assets change.
+
+### Opaque-guard hosted acceptance and integration (2026-10-24)
+
+**CONFIRMED:** exact PR #27 head `e7a289cd3443c277ee5617076fede8b75703f83b`
+passed all twelve expected jobs in `40073884397` (`pull_request`, attempt 1),
+with none skipped. Hosted AArch64 `run.mCwg0Cpm` independently proves all three
+roles and six deterministic exports on Java 21, with the two typed locationless
+parameters, multi-address GDB assertions, hashes and six exactly corroborated
+frame diagnostics per role. Linux GUI `run.SMCbkEa2` and Windows GUI
+`run.f9e72d7f394642d4b7eaa5c2c8ea49a2 GUI paths` pass their real Script Manager
+journeys, three controls, Console, chooser selection/cancellation and preservation.
+Windows also passes all eight smoke checks including opaque effects and naming.
+Its previously documented validator/runtime limitations remain explicit.
+
+Exact candidate package SHA-256 is
+`ab7545fd3b00da7aaeac6e3fc0c1dafc65a68d7b34942d49d63a348a691012ce`.
+The source/provenance/manifests/135-Java-21-class audit, actual Java 21 opaque and
+naming smokes, 20 native producer lifetimes and verified production class origins
+pass. Evidence is in opaque-register-effects at
+`build/opaque-package-audit/run-40073884397.BkMdIvb0` and
+`build/opaque-package-audit/final-{run,jobs,gate}.json`; digest-verified target/GUI
+evidence is in the GUI worktree under `build/hosted-gui-review/run-40073884397`.
+
+PR #27 merged normally at `2026-10-24T07:51:07Z` as
+`ce0c3a4a71c2e5f9414ccd9a36878617c827818c`, whose tree equals the tested head.
+Separate exact-main push `40075761646` is pending at this checkpoint. Naming
+merge `89c07ce` also passed its separate main push `40073445177`; its earlier
+pending notes are historical. These results close the opaque-guard feature's
+hosted gate but do not validate the subsequent address-index implementation.
+Published alpha.2 and alpha.1 remain unchanged.

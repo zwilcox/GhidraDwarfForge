@@ -33,13 +33,15 @@ Ghidra namespace paths without changing the C11 CU or inventing linkage/aliases.
 See `docs/FUNCTION-NAMING.md` and `docs/VALIDATION.md`; this does not complete
 P1.7/P3.3 or belong to either published alpha.
 
-**CONFIRMED locally, hosted gate pending:** opaque instruction effects now
+**CONFIRMED:** PR #27 head `e7a289c` passed all twelve hosted jobs in
+`40073884397` and merged normally as `ce0c3a4`. Opaque instruction effects now
 invalidate otherwise-stable register locations. A real AArch64 supervisor call
 reproduced an old parameter changing from `-19` to the process ID; the fix
 retains names/types without locations and reports `UNKNOWN_LIFETIME`. Exec,
 PIE and rebased PIE pass real export, deterministic repeats, validators and
 GDB. Existing x86/AArch64 prefix and ARM scalar-register regressions also pass.
 This is a correctness guard, not register migration or syscall ABI support.
+The separate main-push run `40075761646` is pending at this checkpoint.
 
 **CONFIRMED locally; hosted gate pending:** an exact code-only `.debug_aranges`
 index resolves the global-address formatting warning in GDB. The warning
@@ -1057,7 +1059,8 @@ locals and composites. A narrowly checked ordinary terminal-return boundary
 preserves proven ARM scalar storage. No pre-syscall prefix, syscall whitelist
 or copied-register tracking is inferred. The new AArch64 runtime regression
 and Linux/native Windows real-Ghidra smoke are required CI gates; exact hosted
-acceptance is pending for this change.
+acceptance passed in `40073884397`; normal merge `ce0c3a4` preserves that tested
+tree. This does not complete the broader lifetime/migration tasks below.
 
 **Status:** `[~]` — **CONFIRMED in hosted run `40063017269`:** a simple incoming
 register parameter now retains its location through the first overwriting instruction in a fully

@@ -2895,3 +2895,13 @@ six x86 backward-entry/gap exports and generic x86/MIPS32-BE sectionless export
 and runtime checks also pass. Failed baseline pointers and the first harness
 variable-name error remain recorded separately. Exact hosted acceptance is still
 required; neither published alpha contains this fix.
+
+**CONFIRMED opaque-guard acceptance:** exact PR #27 head
+`e7a289cd3443c277ee5617076fede8b75703f83b` passed all twelve jobs in
+`40073884397`. Independent artifact reviews verify the real AArch64 regression,
+both GUI hosts and the eight native Windows smoke checks. Normal merge
+`ce0c3a4a71c2e5f9414ccd9a36878617c827818c` at `2026-10-24T07:51:07Z` retains
+the tested tree. Exact-main push `40075761646` remains pending. The preceding
+naming merge's main push `40073445177` also passed all twelve jobs. These later
+observations supersede the earlier opaque/naming pending checkpoints without
+attributing their results to the new address-index implementation.
