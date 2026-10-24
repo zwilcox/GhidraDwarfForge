@@ -370,7 +370,7 @@ public final class GhidraVariableStorage {
         return List.copyOf(result);
     }
 
-    private static boolean writesRegister(Instruction instruction,
+    static boolean writesRegister(Instruction instruction,
             Register parameter) {
         for (Object result : instruction.getResultObjects()) {
             if (result instanceof Register register && overlaps(parameter, register)) {
@@ -378,6 +378,18 @@ public final class GhidraVariableStorage {
             }
         }
         for (PcodeOp operation : instruction.getPcode()) {
+            // STORE has no output varnode: input zero identifies its target
+            // address space. Ghidra permits register-space stores, including
+            // indirect offsets; conservatively kill the incoming value rather
+            // than guessing an alias. Ordinary memory stores remain admissible.
+            if (operation.getOpcode() == PcodeOp.STORE &&
+                    (operation.getNumInputs() != 3 || operation.getOutput() != null ||
+                        operation.getInput(0) == null || operation.getInput(1) == null ||
+                        operation.getInput(2) == null || !operation.getInput(0).isConstant() ||
+                        (int) operation.getInput(0).getOffset() ==
+                            parameter.getAddress().getAddressSpace().getSpaceID())) {
+                return true;
+            }
             Varnode output = operation.getOutput();
             if (output == null || !output.isRegister()) {
                 continue;

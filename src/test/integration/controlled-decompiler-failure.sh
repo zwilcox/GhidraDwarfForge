@@ -57,13 +57,17 @@ scoped_global_address=$(readelf -Ws "$reference" |
         "$noreturn_address" recovered_add "$global_address" "$composite_address" \
         "$scoped_global_address" \
     -postScript ControlledDecompilerFailureExport.java "$consumer" "$producer" \
-        "$output" recovered_add 2>&1 | tee "$result_dir/headless.log"
+        "$output" recovered_add "$global_address" "$scoped_global_address" \
+        2>&1 | tee "$result_dir/headless.log"
 
 test "$before" = "$(sha256sum "$input" | cut -d' ' -f1)"
 grep -q 'controlled-decompiler-failure-export=PASS' "$result_dir/headless.log"
 grep -Fq 'GhidraDwarfForge report: {"schemaVersion":1,"status":"PARTIAL"' \
     "$result_dir/headless.log"
 grep -Fq '"functionsFailed":1' "$result_dir/headless.log"
+grep -Fq '"functionStaticVariables":1' "$result_dir/headless.log"
+grep -Fq 'Omitted function-owned static variable failed_private' "$result_dir/headless.log"
+grep -Fq 'failed decompilation and remains symbol-only' "$result_dir/headless.log"
 grep -Fq '"failedFunctions":[{"name":"recovered_add"' "$result_dir/headless.log"
 grep -Fq '"diagnostic":"IllegalStateException: controlled integration failure"' \
     "$result_dir/headless.log"
@@ -74,6 +78,11 @@ grep -Fq 'recovered_composite' "$source"
 readelf --debug-dump=info --wide "$output" >"$result_dir/readelf-info.txt"
 readelf --debug-dump=decodedline "$output" >"$result_dir/readelf-lines.txt"
 grep -q 'DW_AT_name.*recovered_add' "$result_dir/readelf-info.txt"
+grep -q 'DW_AT_name.*successful_private' "$result_dir/readelf-info.txt"
+if grep -q 'DW_AT_name.*failed_private' "$result_dir/readelf-info.txt"; then
+    echo "failed owner's static was emitted" >&2
+    exit 1
+fi
 if perl -0777 -ne '
     while (/(<1><[0-9a-f]+>: Abbrev Number: .*?\(DW_TAG_subprogram\).*?)(?=<1><|$)/sg) {
         my $die = $1;
@@ -97,10 +106,14 @@ gdb -q -nx -batch \
     -ex "symbol-file $output" \
     -ex 'info address recovered_add' \
     -ex 'info line recovered_add' \
-    -ex 'info line recovered_composite' >"$result_dir/gdb.txt" 2>&1
+    -ex 'info line recovered_composite' \
+    -ex 'python assert int(gdb.parse_and_eval("recovered_composite::successful_private")) == 7' \
+    -ex 'python print("successful-owner-static-value=PASS")' \
+    >"$result_dir/gdb.txt" 2>&1
 grep -q 'Symbol "recovered_add" is a function at address' "$result_dir/gdb.txt"
 grep -q 'No line number information available for address.*recovered_add' \
     "$result_dir/gdb.txt"
 grep -q 'Line .*recovered_composite' "$result_dir/gdb.txt"
+grep -Fxq 'successful-owner-static-value=PASS' "$result_dir/gdb.txt"
 
 echo controlled-decompiler-failure=PASS

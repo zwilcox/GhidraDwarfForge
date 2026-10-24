@@ -1983,6 +1983,27 @@ Only the already-audited target-address producer call is used; no JNA signatures
 were added. The added hosted gate is **PRESENT, UNVERIFIED** until CI passes.
 Commands, limitations and evidence are recorded in `docs/VALIDATION.md`.
 
+## 17.2 Combined semantic review (2026-10-23)
+
+The below-entry range, function-owned static and incoming-register lifetime
+changes are combined separately from the corrective alpha2 release. Their
+new hosted gates remain **PRESENT, UNVERIFIED** until the combined pipeline
+passes; individual local results do not substitute for that gate.
+
+Review preserved the established symbol-only decompilation-failure contract:
+an owned static is omitted when its owner fails decompilation. One shared
+selection policy controls emitted DIEs, native address-relocation validation,
+omission diagnostics and exported-static counts. Successfully decompiled owners
+retain their curated statics. The controlled failure fixture now includes both
+owners and verifies that only the successful owner's object survives.
+
+The register proof also treats p-code `STORE` to the register address space
+as a possible clobber, including indirect offsets. Pinned Ghidra 12.0.3
+documents this opcode's destination space in its first input; it has no output
+varnode and therefore requires a separate check. Malformed stores fail closed;
+ordinary stores to memory retain their existing behavior. This shared check
+protects stable locations as well as bounded incoming-register prefixes.
+
 ## 18. Immediate strategic direction
 
 **CONFIRMED:** the previous prototype bring-up sequence is complete for the

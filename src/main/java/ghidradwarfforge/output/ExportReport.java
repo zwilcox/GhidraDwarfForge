@@ -9,6 +9,7 @@ import ghidradwarfforge.GhidraFunctionSymbols.SkippedFunction;
 import ghidradwarfforge.locations.VariableStorageModel.UnavailableStorage;
 import ghidradwarfforge.nativeapi.DwarfTarget;
 import ghidradwarfforge.source.SyntheticSourceFile;
+import ghidradwarfforge.source.FunctionStaticPolicy;
 import ghidradwarfforge.types.ProgramTypeModel;
 import ghidradwarfforge.types.TypeGraph.OpaqueType;
 
@@ -186,7 +187,9 @@ public final class ExportReport {
                 .thenComparing(UnsupportedConstruct::name)
                 .thenComparing(UnsupportedConstruct::diagnostic))
             .toList();
-        List<String> diagnostics = diagnosticMessages.stream().distinct().sorted().toList();
+        var functionStatics = FunctionStaticPolicy.select(typeModel, source);
+        List<String> diagnostics = java.util.stream.Stream.concat(diagnosticMessages.stream(),
+            functionStatics.diagnostics().stream()).distinct().sorted().toList();
         int decompiled = Math.toIntExact(source.functions().stream()
             .filter(SyntheticSourceFile.FunctionLines::decompiled).count());
         int parameters = typeModel.functions().stream()
@@ -197,7 +200,7 @@ public final class ExportReport {
             .stream().filter(variable -> variable.hasDefensibleLocation()).count());
         Counts reportCounts = new Counts(functionCount, decompiled, failures.size(),
             skippedFunctions.size(), typeModel.functions().size(), parameters, locals,
-            typeModel.globals().size(), typeModel.functionStatics().size(),
+            typeModel.globals().size(), functionStatics.exported().size(),
             typeModel.types().nodes().size(), defensibleLocations,
             omitted.size(), source.mappedLines().size(), unsupported.size(), diagnostics.size());
         Status reportStatus = failures.isEmpty() && skippedFunctions.isEmpty() &&

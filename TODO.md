@@ -102,8 +102,8 @@ items are these bounded workstreams:
 |---|---|
 | Corrective release (§0.1) | **PLANNED:** integrate reviewed PRs under the standing authorization and required checks. For the separate release task, bump `VERSION`, validate the exact release commit/package, and publish a corrective alpha without replacing the existing artifact. |
 | ELF robustness (P0.9) | **CONFIRMED complete within the documented bounds:** PR #18 implements extended counts, unnamed tables, bounded file-backed I/O, correct recorded-load-base translation and cancellation. Local checks and all twelve hosted jobs pass; direct PN_XNUM execution limits are documented. |
-| Function identity and scopes (P1.7, P3.3) | **PLANNED:** distinct linkage names without losing analyst-name lookup; external-function declarations, thunks/aliases, function/class/lexical scopes, static locals, and same-named type/variable disambiguation. Existing namespace globals and external-data declarations must remain working. |
-| Additional range/location cases (P1.8, P1.11a) | **PLANNED:** entry points that are not the lowest body address; proven register/memory migration, call-crossing and non-entry lifetimes, stack-slot reuse, and mixed composite storage. Require GDB value checks at multiple instruction addresses and honest unavailable gaps. |
+| Function identity and scopes (P1.7, P3.3) | **CONFIRMED locally:** explicit function-owned statics preserve duplicate-name lookup and omit failed owners under the symbol-only contract; hosted validation is pending. **PLANNED:** distinct linkage names, external-function declarations, thunks/aliases, class/lexical scopes, inferred static locals and remaining same-named type/variable cases. Existing namespace globals and external-data declarations must remain working. |
+| Additional range/location cases (P1.8, P1.11a) | **CONFIRMED locally:** below-entry bodies preserve their true entry, and proven incoming-register prefixes end after the first overwrite; hosted validation is pending. **PLANNED:** register/memory migration, call-crossing and non-entry lifetimes, stack-slot reuse, and mixed composite storage. Require GDB value checks at multiple instruction addresses and honest unavailable gaps. |
 | Target-profile coverage (P2.3/3a/3b) | Current five profiles pass. Enumerate additional ABI/storage cases, derive their target properties, and add real exporter/validator/QEMU-GDB tests before extending support claims. Completing this plan does not imply every Ghidra CPU/ABI. |
 | Remaining GUI journeys (P2.7) | **PRESENT, UNVERIFIED:** manual Script Manager launch and Windows chooser/cancellation. Linux GUI fallback already has a passing automated test. |
 | Optional debuglink (P2.8) | **PLANNED, optional:** explicit opt-in attachment, backup/rollback, CRC, automatic lookup and mismatch tests, while default export leaves the original unchanged. |
@@ -1419,7 +1419,9 @@ Potential features:
 - Thunks/aliases with specification/origin relationships.
 - [~] Static locals: explicit Function-owned typed memory labels retain their
   owner, type, and normalized absolute location. Duplicate private names in
-  different functions remain distinct from a same-named global. Lexical-block
+  different functions remain distinct from a same-named global. Failed
+  decompilation keeps the owner symbol-only, omitting its statics with a
+  diagnostic and an accurate exported-static count. Lexical-block
   ownership and inferred/decompiler-only static locals remain unimplemented.
 - Artificial variables.
 - Declaration-only DIEs.

@@ -22,6 +22,8 @@ public final class RegisterPrefixSmoke {
         new GenericAddressSpace("ram", 64, AddressSpace.TYPE_RAM, 0);
     private static final AddressSpace REGISTERS =
         new GenericAddressSpace("register", 64, AddressSpace.TYPE_REGISTER, 1);
+    private static final AddressSpace CONSTANTS =
+        new GenericAddressSpace("constant", 64, AddressSpace.TYPE_CONSTANT, 2);
     private static final Register PARAMETER =
         new Register("incoming", "test incoming register", REGISTERS.getAddress(0x100),
             8, false, 0);
@@ -41,6 +43,30 @@ public final class RegisterPrefixSmoke {
         // Adjacent registers are not aliases.
         expect(-1, List.of(initial, instruction(0x1003, PcodeOp.COPY,
             new Varnode(REGISTERS.getAddress(0x108), 8)), terminal), 0x1009);
+        Varnode dynamicOffset = new Varnode(REGISTERS.getAddress(0x200), 8);
+        Varnode value = new Varnode(CONSTANTS.getAddress(19), 1);
+        for (Varnode offset : List.of(dynamicOffset,
+                new Varnode(CONSTANTS.getAddress(0x103), 8))) {
+            Instruction store = store(0x1003,
+                new Varnode(CONSTANTS.getAddress(REGISTERS.getSpaceID()), 4), offset, value);
+            expect(0x1006, List.of(initial, store, terminal), 0x1009);
+            if (!GhidraVariableStorage.writesRegister(store, PARAMETER)) {
+                throw new AssertionError("register-space STORE retained a stable location");
+            }
+        }
+        Instruction memoryStore = store(0x1003,
+            new Varnode(CONSTANTS.getAddress(RAM.getSpaceID()), 4), dynamicOffset, value);
+        expect(-1, List.of(initial, memoryStore, terminal), 0x1009);
+        if (GhidraVariableStorage.writesRegister(memoryStore, PARAMETER)) {
+            throw new AssertionError("ordinary RAM STORE clobbered an incoming register");
+        }
+        for (Instruction malformed : List.of(instruction(0x1003, PcodeOp.STORE, null),
+                store(0x1003, dynamicOffset, dynamicOffset, value),
+                store(0x1003, null, dynamicOffset, value))) {
+            if (!GhidraVariableStorage.writesRegister(malformed, PARAMETER)) {
+                throw new AssertionError("malformed STORE retained a stable location");
+            }
+        }
         for (int opcode : new int[] { PcodeOp.CALL, PcodeOp.CALLIND, PcodeOp.BRANCH,
                 PcodeOp.CBRANCH, PcodeOp.BRANCHIND, PcodeOp.CALLOTHER,
                 PcodeOp.UNIMPLEMENTED }) {
@@ -108,5 +134,13 @@ public final class RegisterPrefixSmoke {
         return (Instruction) Proxy.newProxyInstance(Instruction.class.getClassLoader(),
             new Class<?>[] { Instruction.class }, (proxy, method, args) ->
                 method.getName().equals(name) ? value : method.invoke(original, args));
+    }
+
+    private static Instruction store(long address, Varnode space, Varnode offset,
+            Varnode value) {
+        PcodeOp operation = new PcodeOp(RAM.getAddress(address), 0, PcodeOp.STORE,
+            new Varnode[] { space, offset, value }, null);
+        return decorate(instruction(address, PcodeOp.COPY, null), "getPcode",
+            new PcodeOp[] { operation });
     }
 }

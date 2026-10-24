@@ -96,6 +96,23 @@ public final class ExportReportSmoke {
         requireContains(json, "\"validation\":{\"status\":\"NOT_RUN\"}");
         requireContains(json, "\"native\":{\"libdwarfVersion\":\"2.3.2\"}");
 
+        ProgramTypeModel failedStaticModel = new ProgramTypeModel(types,
+            List.of(signature, new FunctionSignature("failed", 0x2000, signedInt,
+                List.of(), List.of(), false, false, "default", "USER_DEFINED")),
+            typeModel.globals(), typeModel.variableStorage(), List.of(
+                typeModel.functionStatics().get(0),
+                new ProgramTypeModel.FunctionStaticVariable("failed_private", 0x3004, 4,
+                    signedInt, 0x2000, "USER_DEFINED")));
+        String failedStaticJson = report(failedStaticModel, source, skipped, diagnostics).toJson();
+        requireContains(failedStaticJson, "\"functionStaticVariables\":1");
+        requireContains(failedStaticJson, "Omitted function-owned static variable " +
+            "failed_private at 0x3004; owning function at 0x2000 failed decompilation " +
+            "and remains symbol-only");
+        if (ghidradwarfforge.source.FunctionStaticPolicy.select(failedStaticModel, null)
+                .exported().size() != 2) {
+            throw new AssertionError("absent source was treated as a decompilation failure");
+        }
+
         ExportReport fatal = ExportReport.terminal(ExportReport.Status.FATAL,
             new IllegalStateException("unsafe \"value\"\nline"));
         String expectedFatal = "{\"schemaVersion\":1,\"status\":\"FATAL\"," +

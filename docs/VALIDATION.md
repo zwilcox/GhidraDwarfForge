@@ -11,6 +11,63 @@ export. Export remains explicit: installed wrappers request checksum-verified
 packaged natives by default, while source-tree audit runs may supply explicit
 library paths.
 
+## Combined semantic branch validation (2026-10-23)
+
+The `semantic-todo-completion` worktree combines the independently committed
+below-entry ranges, function-owned statics and incoming-register prefixes.
+It uses a separate Ghidra copy with the combined JAR/script and the existing
+checksum-verified packaged native pair. Neither the user's installation nor
+the corrective alpha2 branch was changed.
+
+**CONFIRMED locally:** all 21 native-independent smoke tasks and the extension
+build pass, together with the architecture guard, `actionlint`, shell syntax
+and whitespace checks. The isolated function-entry producer passes all five
+current profiles and GNU/LLVM/libdwarf validation. ARM32 uses the archived
+source-built hosted `bitfield.stripped` fixture; no local ARM32 compiler/runtime
+claim is added. Final build evidence is `build/combined-review/final-build.txt`
+and `build/test-results/function-entry-native/`.
+
+The real exporter and GDB pass these combined-source suites:
+
+| Suite | Cases and retained evidence |
+|---|---|
+| Function entry | Six x86-64 ET_EXEC/PIE baseline, rebase and repeat cases; `build/test-results/function-entry-export/run.68uWJurK/` |
+| Incoming-register prefix | Twelve x86-64/AArch64 ET_EXEC/PIE baseline, rebase and repeat cases; `build/test-results/register-prefix-export/run.MgtMLaEv/` |
+| Function statics | Twelve x86-64/AArch64/MIPS32 BE/LE ET_EXEC/PIE/rebased-PIE cases, each exported twice; `build/test-results/function-static-scopes/run.LY3BBQCr/` |
+| Existing semantic coverage | Four local profiles across ET_EXEC, partial stripping, absent build ID, absent section table, PIE and shared library; `build/combined-review/final-existing-*-{headless,gdb}.txt` |
+
+These suites retain their exact address/value/source/range checks, independent
+GNU/LLVM/libdwarf validators, original hashes and deterministic-repeat checks.
+The five target CI lanes now all invoke the static-scope harness against their
+installed packaged native pair. Hosted combined validation and new ARM32
+static-scope behavior remain **PRESENT, UNVERIFIED** until that pipeline passes.
+
+Review found and fixed two additional bounded safety cases. Shared register
+clobber detection now handles p-code `STORE` to the register address space,
+which has no output varnode; dynamic offsets, partial writes and malformed
+inputs are conservative kills. Explicit RAM stores remain allowed. This uses
+the pinned Ghidra 12.0.3 `pcodedescription.html` STORE contract and
+`PcodeExecutor.getLoadStoreSpace`/`executeStore` semantics. `registerPrefixSmoke`
+checks both outcomes without adding a target-specific rule.
+
+`controlled-decompiler-failure.sh` now curates two function-owned statics before
+forcing one owner's failure. GNU/LLVM/libdwarf and GDB pass: the failed function
+has no variable children or source/type claims, its static is absent, the later
+successful owner's static remains typed and reads as 7, and the JSON inventory
+counts exactly one exported static with a precise omission diagnostic.
+Evidence: `build/test-results/controlled-decompiler-failure/` and
+`build/combined-review/controlled-failure.txt`. One shared selection policy
+keeps DIE emission, native relocation checks, diagnostics and counts aligned.
+
+```bash
+src/test/integration/function-entry-export.sh "$GHIDRA_INSTALL_DIR" "$consumer" "$producer"
+src/test/integration/register-prefix-export.sh "$GHIDRA_INSTALL_DIR" "$consumer" "$producer" x86_64 aarch64
+src/test/integration/function-static-scopes-export.sh "$GHIDRA_INSTALL_DIR" x86_64 aarch64 mips32be mips32le
+src/test/integration/controlled-decompiler-failure.sh "$GHIDRA_INSTALL_DIR" "$consumer" "$producer"
+# Existing roles: exec, partial, exec.no-build-id, exec.no-sections, pie, shared.
+# Use headless-symbol-export.sh and qemu-gdb-symbols.sh (shared-object-gdb.sh for shared).
+```
+
 ## Function entries above body ranges (2026-10-23)
 
 **CONFIRMED locally:** `functionEntrySmoke` checks valid/interior entries,
@@ -63,6 +120,10 @@ The development static-scope slice preserves primary, defined memory labels
 whose immediate Ghidra namespace parent is an exported `Function`. Each object
 retains its actual type/address and is emitted beneath its owner. An absent
 owner is diagnosed and omitted; it is never silently promoted to a global.
+An owner whose decompilation fails remains symbol-only: its static objects are
+also omitted, diagnosed and excluded from the exported-static count. The
+controlled failure fixture proves this while retaining a successful owner's
+static object and checking its value in GDB.
 Datatype categories and decompiler formatting do not imply source scopes.
 
 ```bash

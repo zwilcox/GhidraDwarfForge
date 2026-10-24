@@ -778,6 +778,11 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: src/test/integration/bitfield-values-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
 
+      - name: Function-owned statics and duplicate-name lookup
+        env:
+          TARGET: ${{ matrix.target }}
+        run: src/test/integration/function-static-scopes-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
+
       - name: Incoming register lifetime before overwrite
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
         env:

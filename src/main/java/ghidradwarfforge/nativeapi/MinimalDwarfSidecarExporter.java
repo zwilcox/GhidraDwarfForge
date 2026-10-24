@@ -103,6 +103,7 @@ import ghidradwarfforge.nativeapi.DwarfNativeTypes.Die;
 import ghidradwarfforge.nativeapi.DwarfNativeTypes.Error;
 import ghidradwarfforge.nativeapi.DwarfNativeTypes.Expr;
 import ghidradwarfforge.source.SyntheticSourceFile;
+import ghidradwarfforge.source.FunctionStaticPolicy;
 import ghidradwarfforge.source.SyntheticSourceFile.FunctionLines;
 import ghidradwarfforge.types.ProgramTypeModel;
 import ghidradwarfforge.types.TypeGraph;
@@ -358,6 +359,8 @@ public final class MinimalDwarfSidecarExporter {
             Map<VariableKey, VariableLocation> variableLocations =
                 variableLocations(typeModel);
             Map<Long, Die> functionDies = new HashMap<>();
+            var functionStatics = FunctionStaticPolicy.select(typeModel, syntheticSource)
+                .exported();
             long fileIndex = 0;
             if (lineTable.length != 0) {
                 addSectionOffset(producer, consumer, debug, unit, DW_AT_STMT_LIST, 0,
@@ -450,7 +453,7 @@ public final class MinimalDwarfSidecarExporter {
             }
             if (typeModel != null) {
                 for (ProgramTypeModel.FunctionStaticVariable variable :
-                        typeModel.functionStatics()) {
+                        functionStatics) {
                     Die owner = functionDies.get(variable.ownerAddress());
                     if (owner == null) {
                         throw new IllegalArgumentException("missing exported owner for static " +
@@ -490,7 +493,7 @@ public final class MinimalDwarfSidecarExporter {
             Map<Long, byte[]> bytes = collect(producer, consumer, debug, errorOut,
                 bufferCount.getValue(), sections);
             validateRelocations(producer, consumer, debug, errorOut, sections, bytes,
-                functions, typeModel, target.addressBytes(), byteOrder);
+                functions, typeModel, functionStatics, target.addressBytes(), byteOrder);
 
             Map<String, byte[]> result = new LinkedHashMap<>();
             sections.forEach((index, section) -> {
@@ -903,7 +906,8 @@ public final class MinimalDwarfSidecarExporter {
     private static void validateRelocations(LibDwarfProducer producer,
             LibDwarfConsumer consumer, Debug debug, PointerByReference errorOut,
             Map<Long, SectionRecord> sections, Map<Long, byte[]> sectionData,
-            List<FunctionSymbol> functions, ProgramTypeModel typeModel, int addressBytes,
+            List<FunctionSymbol> functions, ProgramTypeModel typeModel,
+            List<ProgramTypeModel.FunctionStaticVariable> functionStatics, int addressBytes,
             ByteOrder byteOrder) {
         LongByReference groupCount = new LongByReference();
         IntByReference version = new IntByReference();
@@ -960,7 +964,7 @@ public final class MinimalDwarfSidecarExporter {
         if (typeModel != null) {
             typeModel.globals().stream().filter(global -> !global.declaration())
                 .map(ProgramTypeModel.GlobalVariable::address).forEach(expected::add);
-            typeModel.functionStatics().stream()
+            functionStatics.stream()
                 .map(ProgramTypeModel.FunctionStaticVariable::address).forEach(expected::add);
         }
         if (!expected.containsAll(relocatedAddresses) ||
