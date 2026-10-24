@@ -1057,13 +1057,14 @@ or uncertain storage remains locationless with a diagnostic.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
 
-**CONFIRMED locally; hosted gate pending:** a nonzero first-use field on an
+**CONFIRMED in hosted run `40081385807`:** a nonzero first-use field on an
 already stored stack local is diagnosed and its location omitted, retaining
 name/type/offset. Five-profile extraction and actual Java 21 tests pass.
-Packaged x86-64/AArch64 exec/PIE/rebase compiler/GDB cases pass all twelve
-exports, while the prior exporter reproduces the wrong earlier value in all
-six roles. Zero-offset locals remain correct. Exact hosted acceptance remains
-pending; see `docs/STACK-FIRST-USE.md`. No general slot-reuse boundary is inferred.
+All twelve jobs, exact package and independent x86-64/AArch64 twelve-export
+and both-host reviews pass for PR #30 head `fb2fa406`; normal merge `74a7466`
+preserves the tested tree. The prior exporter reproduces the wrong earlier
+value in all six roles; zero-offset locals remain correct. See
+`docs/STACK-FIRST-USE.md`; no general slot-reuse boundary is inferred.
 
 **CONFIRMED in hosted run `40079317009`:** exact PR #29 head `698e939` passes
 all twelve jobs. The bounded register-copy fixture passes x86-64/AArch64
@@ -1103,8 +1104,8 @@ changing-stack test proves SP-relative adjustment, not value migration.
   calls using the selected ABI and recovered instruction evidence.
 - [~] Test stack-local first-use and slot-reuse boundaries; record unavailable
   intervals where identity or lifetime cannot be established. The bounded
-  nonzero-stack-first-use omission passes local compiler/GDB tests; exact
-  hosted acceptance and general identity/lifetime recovery remain pending.
+  nonzero-stack-first-use omission passes exact hosted compiler/GDB tests in
+  `40081385807`; general identity/lifetime recovery remains pending.
 - [ ] Support mixed register/memory composite pieces when every piece has
   defensible size, order and lifetime information.
 - [~] Compare GDB values with compiler-oracle fixtures at multiple PCs on each

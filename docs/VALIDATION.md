@@ -3395,3 +3395,51 @@ Workflow lint, wrapper log-collision regressions, Python syntax and whitespace
 checks pass. The pipeline adds one Linux x86 runtime fixture and a focused smoke
 on Linux/native Windows while retaining all existing architecture and host
 lanes. Its exact-head full gate and candidate-package audit are still required.
+
+### PR #30 exact hosted acceptance
+
+**CONFIRMED:** exact head `fb2fa406908822fe4ced131da843ad5dc31df1b7`, run
+`40081385807`, is a completed pull-request attempt 1 with all twelve expected
+jobs successful and none skipped. Package artifact `12555706337` has archive
+SHA-256 `2dabdd729904feeef583c1ddcb03d0cbf1a8844170af9e066089ba1f8f3d2991`;
+release ZIP `f307eecf89a2869a7df42ee7f54f224232e1bd2dbf011748376363121c94a47b`
+and JAR `3af84d8eff21cf2d0c5f01776c04a679f82bad3eba25a173d11ce39290595f04`
+pass exact 33-source/two-script checks, five manifests, native provenance,
+138 Java 21 classfiles, guarded Java 21 smokes and 20 producer lifetimes.
+
+Independent artifact review verifies all six new stack roles/twelve exports,
+exact local DIE/report policy, compiler/Forge observations and zero-offset
+values, preserved hashes and identical repeats. Related copy/prefix/floating,
+AArch64 opaque and ARM32 floating cases pass. Forty-six relevant strict reports
+were independently reparsed with exact inherited-section/message corroboration
+and zero unexplained errors. MIPS target jobs pass; their PR #30 artifacts were
+not separately manually reviewed. Runtime exporter hashes match the audited JAR.
+
+Linux GUI `run.7JrIbn7v` passes controls/geometry, actual Script Manager,
+selection/cancellation/Console, validators and GDB with empty diagnostic
+streams. Windows artifact `12555644141`, SHA-256
+`86470a62247e4d0d920c18e0c95b5001810872d887b2457880e573653c17a715`,
+proves all eleven focused smokes and actual GUI
+`run.4531e95ac2374eb79cd026e997c3ce10 GUI paths`: controls/ACL,
+selection/cancellation/Console, GNU/LLVM, original hashes and empty stderr.
+Independent libdwarf and Linux ELF runtime remain unavailable on Windows.
+
+Source/gate/package review and runtime/GUI review are clear. Evidence is in
+`stack-first-use-guard/build/stack-first-use-package-audit/` and
+`gui-script-manager/build/hosted-gui-review/run-40081385807/`. Normal merge
+`74a7466a6ff03f44b143bad0e764d65c1e11d521` preserves the exact tested tree;
+its distinct main-push gate remains pending. Earlier main run `40081314935`
+for PR #29's merge now also passes all twelve jobs and both GUI artifact
+reviews. Neither published alpha changes.
+
+The path candidate's first local exact-package audit rejected
+`dcf310f1f278073a047ef9200a4500236e4640a10f476884deadfe08aff68868` because
+its base extension ZIP preceded two documentation precision edits. Rebuilding
+the extension before assembly produced
+`06ec77fe4c0c2f62b8ae4dbf4acecfdc110d66235cdfa1c94a68ca2ee64bab1a`,
+which exactly matches then-frozen commit `83adf3c` across 34 sources, two scripts,
+support/docs, five manifests and 139 Java 21 classfiles. JAR/script/native bytes
+were unchanged, so no runtime retest was attributed to this docs-only rebuild.
+Both audit outcomes are retained under `output-path-traversal/build/path-package-audit/`.
+That local audit does not substitute for the path PR's forthcoming exact hosted
+package, which also includes this later acceptance record.

@@ -44,12 +44,13 @@ known-value oracle and are not treated as a demonstrated exporter defect here.
 
 ## Acceptance
 
-**CONFIRMED locally; hosted gate pending:** final packaged run `run.zHNit33c`
-passes all six x86-64/AArch64 roles and twelve fresh exports. The unchanged
-previous exporter reproduces the wrong location in all six roles of
-`run.R6pJS512`. Focused five-profile extraction and actual Java 21 checks pass.
-Exact hosted acceptance remains required; these local results do not complete
-the broader lifetime work.
+**CONFIRMED in exact hosted run `40081385807`:** PR #30 head `fb2fa406` passes
+all twelve jobs, package/source audit and independent x86-64/AArch64 runtime
+and both-host GUI reviews. Normal merge `74a7466` preserves that tested tree.
+Local final run `run.zHNit33c` also passes six roles/twelve exports; unchanged
+previous-exporter run `run.R6pJS512` reproduces the wrong location in all six
+roles. Five-profile extraction and actual Java 21 checks pass, including the
+native Windows stack smoke. This does not complete broader lifetime work.
 
 `StackFirstUseSmoke` exercises actual Ghidra languages for x86-64, AArch64,
 ARM32 and MIPS32 in both byte orders. It checks insertion restrictions,

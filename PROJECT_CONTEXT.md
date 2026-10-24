@@ -3018,3 +3018,21 @@ Independent code and runtime review is clear. Full hosted/native Windows gates
 remain pending. `docs/FILESYSTEM-PATHS.md` defines the scope; this is not an
 attachment transaction or a new crash/concurrency guarantee. Releases stay
 unchanged.
+
+### Stack-first-use hosted acceptance (2026-10-24)
+
+**CONFIRMED:** PR #30 head `fb2fa406908822fe4ced131da843ad5dc31df1b7` passes
+all twelve jobs in exact pull-request run `40081385807`, attempt 1, none
+skipped. Package/source/native-provenance and Java 21/lifetime audits pass.
+Digest-verified artifacts independently prove the six x86-64/AArch64 stack
+roles/twelve exports, related location regressions, both actual GUI journeys
+and all eleven native Windows focused smokes. The five target job conclusions
+pass; MIPS artifacts were not separately reviewed for this PR. Strict reports
+have zero unexplained diagnostics and preserve their exact inherited errors.
+
+Normal merge `74a7466a6ff03f44b143bad0e764d65c1e11d521` at
+`2026-10-24T09:47:17Z` retains the tested tree. Its separate main-push gate is
+pending. PR #29's earlier main-push `40081314935` now passes all twelve jobs
+and both GUI artifact reviews. This supersedes those historical pending notes,
+without attributing acceptance to the later path correction. Releases remain
+unchanged; P1.11a is still partial.
