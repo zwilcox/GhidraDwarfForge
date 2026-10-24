@@ -47,6 +47,8 @@ expected_sources=(
     function_entry_ranges.S
     function_entry_ranges.c
     minimal.c
+    mips-truncated-space-start.S
+    mips-truncated-space.c
     nonzero_load_offset.c
     nonzero_load_offset.ld
     nonzero_load_offset_start.S

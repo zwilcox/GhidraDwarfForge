@@ -1296,6 +1296,20 @@ scalar float locations in both byte orders. Paired doubles remain unavailable;
 the independent compiler-pair observation is explicitly unverified under the
 tested QEMU/GDB transport. Additional storage and ABI cases remain.
 
+**CONFIRMED locally; hosted acceptance pending:** four owned O32/N32
+freestanding cases in both byte orders identify an honest N32 omission caused
+by eight-byte STORE address operands targeting an explicitly truncated
+four-byte RAM space. O32 dynamic stack arguments have correct observed values;
+its wide pair remains modified. The selected follow-up proves only that a
+well-framed STORE into matching declared RAM cannot redirect its wider offset
+to a different space; the separate tracked-register clobber check also protects
+memory-mapped registers. No ABI classifier, register map or broad N32 support change
+is selected. Actual Java 21 decoded/malformed-space controls and four packaged compiler/
+Forge runtime comparisons pass locally, including N32 entry values, O32 stack
+arguments and the retained wide-pair omission. Validators, repeats and independent
+raw review pass; the complete hosted pipeline remains required before integration.
+See [the bounded contract](docs/TRUNCATED-MEMORY-STORES.md).
+
 ### Work
 
 - Add source-built MIPS ELF32 big-endian fixtures from the shared semantic

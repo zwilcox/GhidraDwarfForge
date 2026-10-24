@@ -5698,3 +5698,74 @@ root independently rehashed all 547 bound files. The subsequent normal merge
 of accepted main `f359d18` preserves that source tree. Documentation now records
 PR #44 acceptance; final package rebinding and the dynamic fix's own fresh
 hosted gate remain required before its integration.
+
+### Explicitly truncated memory stores: local acceptance (2026-10-24)
+
+**CONFIRMED locally; full hosted gate pending:** the correction preserves
+incoming register facts across well-framed STOREs into an explicitly truncated
+SLEIGH RAM space. It requires exact physical-space identity and bounds the wider
+offset to `Long.BYTES`. Equal-width behavior, register/memory-mapped clobber checks,
+call/write/opaque precedence, local assignment policy and cancellation remain
+unchanged. It does not establish a memory location, address validity or an ABI
+classifier. See `docs/TRUNCATED-MEMORY-STORES.md` for the pinned semantic proof.
+
+`GHIDRA_INSTALL_DIR=... ./gradlew --no-daemon truncatedSpaceStoreSmoke
+ dynamicParameterStorageSmoke variableStorageSmoke registerPrefixSmoke
+ registerAliasSmoke registerCopySmoke stackFirstUseSmoke opaqueRegisterEffectsSmoke
+ buildExtension` passes all eight focused tasks and the extension build.
+The workflow linter, architecture guard and exact 25-file fixture inventory pass;
+all 13 existing x86-64 Makefile outputs remain reproducible. Actual Java 21 at
+256 MiB separately passes 182 focused checks, including both real N32 languages.
+The old `2fb0d5e4...` production JAR fails the intended actual-decoded positive
+assertion. One initial test control accidentally used equal OTHER-space widths;
+its failure is retained and the corrected mismatch control passes.
+
+Initial ZIP SHA-256
+`b34cfc4114eb489ef1b80d6f63f93d2fc0a0f094fef883f189aa1248f07da16b`
+contains production JAR
+`325926ee3bc06a6e270015512ac3c830f8187212270f54abb307f449eff2d42d`.
+The author's package verification binds 49 production sources, two scripts, 220
+Java-21-compatible classes, five manifests and pinned native provenance. All
+28 runtime payloads equal the private installation; the 27 non-JAR payloads
+are unchanged from the dynamic-parameter parent. The packaged JAR itself passes
+the 182 checks on actual Java 21 with production class origins verified.
+Package review SHA-256 is
+`5bba1f51ebefda069b10d05116b5c6a17ed78fb82b93ccbf1c4b4ddb914b58ae`.
+Separate independent package peer review has SHA-256
+`ec406146c69c4aae6425a1ed141ddbcf1c0accf9cadc9bca091620ab407e2347`.
+Two audit-footer assumptions were corrected using the retained successful
+execution evidence; no Java run was silently replaced.
+
+The new harness runs O32 and N32 for each MIPS byte order. Cases under
+`build/test-results/mips-truncated-space/` are
+`mips32be.o32.4ZmdzQq2`, `mips32be.n32.TmzpyLFH`,
+`mips32le.o32.7JC13t89` and `mips32le.n32.1Nwblikq`.
+All eight exports, four plain QEMU runs and eight compiler/Forge GDB sessions
+pass. GNU/LLVM and all four strict libdwarf checks report zero unexplained errors
+(strict totals are zero). Source/sidecar/report pairs repeat deterministically.
+At 194 actually visited Forge PCs, 864 typed observations have correct values
+and 30 are explicitly unavailable. Both N32 cases expose all seven parameters
+at entry; O32 preserves six integer values including stack arguments five/six,
+while the overwritten wide pair remains `REGISTER_MODIFIED` and unavailable.
+Normal returns, global results and all program exits pass. No claim covers
+unvisited delay slots, debugger-injected calls or new source-next/step semantics.
+
+The current fixture C/startup sources and all four stripped executables match
+the earlier `2fb0d5e4...` contrast byte-for-byte. That retained old evidence shows
+N32's exact former `UNKNOWN_LIFETIME` omissions without another old-runtime run.
+Forty unique case-protected files and eleven additional global records retain
+their recorded bytes; all QEMU children/sockets are cleaned up. The ignored
+launcher initially failed on a missing configuration key before executing a
+compiler/JVM; its source/error are retained. All four actual harness runs pass
+on their first execution. Headless Java 25 is distinct from the Java 21 checks.
+
+Author runtime receipt SHA-256 is
+`7f8bab70170b2f9fcc90ff4f741919838bd1d65ee8c92491a5c8249c9ee573c5`;
+independent raw review SHA-256 is
+`34252ee04fbf5113786bfc2a70fe6e82941b251a6ab3de1b072e20f761426337`.
+Root rehashed 348 referenced current/runtime evidence files. Independent final
+production/focused review SHA-256 is
+`3796ee04524b9f001ff7ba56fa6410870b418fe816749afafab38d2f538acad8`.
+Final committed-document packaging and full hosted acceptance remain required.
+The bounded freestanding tests do not establish libc, floating/aggregate,
+PIE/shared, O64/N64 or broad N32 support.

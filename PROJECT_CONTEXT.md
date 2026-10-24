@@ -3951,3 +3951,25 @@ two honest modified-register omissions and deterministic validator-clean
 exports. Whole-file ELF attributes do not determine per-function conventions;
 this is not a broad ABI classifier. See
 [`docs/DYNAMIC-PARAMETER-STORAGE.md`](docs/DYNAMIC-PARAMETER-STORAGE.md).
+
+### Explicitly truncated memory-space stores (2026-10-24)
+
+**CONFIRMED locally; hosted acceptance pending:** same-source
+freestanding O32/N32 comparisons in both byte orders pass plain QEMU, compiler
+GDB, real export, deterministic repeat and independent validators. With the
+preceding exporter, all seven N32 parameter locations are honestly omitted:
+Ghidra's full-width SLEIGH model produces eight-byte STORE address operands,
+while its explicit RAM truncation reports four-byte pointers. The lifetime
+proof rejects that width mismatch. No incorrect register mapping is observed.
+
+A bounded generic correction recognizes the loaded SLEIGH language's explicit
+RAM truncation and exact physical-space identity. It preserves existing framing,
+nontruncated mismatch rejection, call/write/opaque checks and cancellation.
+Widened offsets are bounded by Java's long-offset domain; this is not a guess
+about the original SLEIGH space width or a claim that every address executes.
+Compiler-relative N32 values and O32 controls now pass locally: eight exports,
+eight GDB sessions, four plain QEMU exits, deterministic repeats, preserved
+inputs and four strict-zero sidecars. Independent raw review confirms 194 visited
+PCs, 864 correct available values and 30 honest omissions. The old/current stripped
+inputs are byte-identical. Packaged actual Java 21 passes 182 focused checks;
+the complete hosted gate remains pending before integration. See `docs/TRUNCATED-MEMORY-STORES.md`.

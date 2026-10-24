@@ -481,7 +481,7 @@ jobs:
               variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke \
               stackFirstUseSmoke \
               opaqueRegisterEffectsSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
-              arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke \
+              arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke truncatedSpaceStoreSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfAddressRangesSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
@@ -1039,6 +1039,12 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: src/test/integration/dynamic-parameter-storage-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
 
+      - name: MIPS ordinary and truncated memory-space stores
+        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: src/test/integration/mips-truncated-space-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
+
       - name: ARM per-function dynamic base and VFP parameters
         if: matrix.target == 'arm32'
         run: src/test/integration/arm-dynamic-pcs-export.sh "$GHIDRA_INSTALL_DIR"
@@ -1327,7 +1333,7 @@ jobs:
           & .\gradlew.bat addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
-            arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke `
+            arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke truncatedSpaceStoreSmoke `
             registerCopySmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
             elfBuildIdSmoke exportReportClaimsSmoke matchedElfPrefixSmoke `
             matchedElfAllocationsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke executableProgramBytesSmoke `
