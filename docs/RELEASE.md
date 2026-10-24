@@ -99,8 +99,11 @@ report appear in **Window → Console**. An unavailable default output directory
 opens a chooser; cancellation publishes neither artifact. The existing
 `GhidraDwarfForge.java` Run action remains a native-free metadata preflight.
 Both scripts are required by release assembly and covered by the release
-checksum manifest. Linux actual Script Manager launch, output selection and
-cancellation are tested; native Windows GUI behavior remains unverified.
+checksum manifest. Actual Linux and native Windows Script Manager launch,
+output selection and cancellation pass the
+[combined hosted matrix](VALIDATION.md#combined-hosted-acceptance-and-main-integration-2026-10-24).
+Windows uses available native GNU/LLVM validators; independent libdwarf is
+unavailable and Linux-ELF runtime GDB is not run on that host.
 This development addition is outside the published corrective alpha.2 release.
 
 On Windows PowerShell:

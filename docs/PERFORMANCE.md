@@ -228,7 +228,8 @@ replay retains all 10,002 messages in
 line/extended-program negative controls, release-package regression, workflow
 lint and architecture-isolation checks also pass locally.
 
-The complete merged hosted matrix, including Windows, remains **PLANNED**.
+The complete merged hosted matrix was pending at this local checkpoint; its
+subsequent acceptance is recorded below.
 Representative complex application/firmware workloads and finer phase
 profiling remain **PLANNED**; the index has no general speed or memory guarantee.
 
@@ -246,6 +247,25 @@ The follow-up packages the pinned upstream config and an explicit-path launcher,
 with separate real-executable and launcher/config provenance. Its relocation,
 hostile-CWD, missing/altered config and option-alias controls are described in
 `support/validation/README.md`. Full capacity/allocation tests remain mandatory;
-no thresholds, frame assertions or diagnostic rules are weakened. A corrected
-hosted run is required before this feature branch can be integrated. The
+no thresholds, frame assertions or diagnostic rules are weakened. The corrected
+hosted runs below close this configuration defect. The
 corrective alpha.2 branch and shipped native libraries are unaffected.
+
+## Hosted acceptance and main integration (2026-10-24)
+
+**CONFIRMED:** component head `b0bcdb8` passed all twelve jobs in run
+`40065823442`. Combined head `9612655` then passed all twelve jobs in
+[run 40068401197](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40068401197),
+including native Linux configuration/capacity/allocation controls, all five
+target lanes and the Windows host. PR #25 merged normally as tree-identical
+`befce2c`. The separate main-push run was still pending at the documentation
+checkpoint; [VALIDATION.md](VALIDATION.md#combined-hosted-acceptance-and-main-integration-2026-10-24)
+records the exact source, job set and scope.
+
+These runs establish integrated planner/tool acceptance without repeating the
+timed 10,000-function experiment. The earlier local timings, byte equality and
+fresh strict replay retain their original measurement boundaries; no new
+hosted timing or general memory/speed claim follows. The missing-config failure
+and previously incomplete diagnostic evidence remain recorded above.
+Representative complex-binary workloads and further phase profiling remain
+**PLANNED**. This feature is in main but excluded from published alpha.2.
