@@ -528,6 +528,8 @@ jobs:
           echo "$LIBDWARF_PATCH_SHA256  $module/third_party/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch" |
             sha256sum -c -
           test -s "$module/THIRD_PARTY_NOTICES.md"
+          test -s "$module/ghidra_scripts/GhidraDwarfForge.java"
+          test -s "$module/ghidra_scripts/ExportGhidraDwarfForge.java"
           test -s "$module/third_party/CORRESPONDING_SOURCE.md"
           test -s "$module/third_party/libdwarf/licenses/LGPL-2.1.txt"
           test -s "$module/third_party/windows-runtime/zlib/licenses/LICENSE"
@@ -573,7 +575,7 @@ jobs:
           packages=(gdb-multiarch llvm dwarfdump)
           case "$TARGET" in
             x86_64)
-              packages+=(gcc binutils gdb xvfb libxtst6 libxi6 libxrender1)
+              packages+=(gcc binutils gdb qemu-user-static xvfb libxtst6 libxi6 libxrender1)
               ;;
             aarch64)
               packages+=(gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
@@ -822,7 +824,11 @@ jobs:
                 --tool "$DWARFDUMP"
             fi
             if [[ "$role" == "shared" ]]; then
-              src/test/integration/shared-object-gdb.sh "$TARGET"
+              if [[ "$TARGET" == mips32le ]]; then
+                src/test/integration/shared-object-port-collision.py "$TARGET"
+              else
+                src/test/integration/shared-object-gdb.sh "$TARGET"
+              fi
             else
               FIXTURE_ROLE="$role" src/test/integration/qemu-gdb-symbols.sh "$TARGET"
             fi
@@ -841,6 +847,10 @@ jobs:
                 "$GHIDRA_INSTALL_DIR" "$consumer" "$producer"
             fi
           done
+
+      - name: QEMU private socket startup and failure cleanup
+        if: matrix.target == 'x86_64'
+        run: src/test/integration/qemu-socket-startup.sh
 
       - name: Validate line sequences and reject malformed range artifacts
         if: matrix.target == 'x86_64'
@@ -882,6 +892,15 @@ jobs:
         if: matrix.target == 'x86_64'
         run: |
           src/test/integration/gui-output-fallback.sh \
+            "$GHIDRA_INSTALL_DIR" \
+            "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
+            "$PWD/build/fixtures/x86_64/semantic.exec.stripped" \
+            "$PWD/build/fixtures/x86_64/semantic.exec.reference"
+
+      - name: Installed Script Manager discovery, export, console, and cancellation
+        if: matrix.target == 'x86_64'
+        run: |
+          src/test/integration/gui-script-manager.sh \
             "$GHIDRA_INSTALL_DIR" \
             "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
             "$PWD/build/fixtures/x86_64/semantic.exec.stripped" \
@@ -1049,6 +1068,10 @@ jobs:
             & llvm-dwarfdump.exe --version
           } 2>&1 | Tee-Object -FilePath "$resultDirectory\tool-versions.txt"
 
+      - name: Probe native Windows desktop interaction and actual ACL denial
+        shell: pwsh
+        run: ./src/test/integration/windows-desktop-acl.ps1
+
       - name: Install extension and run native-independent Windows checks
         shell: pwsh
         run: |
@@ -1171,6 +1194,20 @@ jobs:
             -ProducerDll $producer.FullName `
             -LinuxReferenceDirectory (Resolve-Path linux-reference)
 
+      - name: Native Windows Script Manager export, console, and chooser cancellation
+        shell: pwsh
+        timeout-minutes: 15
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+        run: |
+          $mingwBin = Join-Path $env:MSYS2_LOCATION 'mingw64\bin'
+          $env:PATH = "$mingwBin;$env:PATH"
+          .\src\test\integration\windows-gui-script-manager.ps1 `
+            -GhidraDirectory $env:GHIDRA_INSTALL_DIR `
+            -ModuleDirectory (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions\GhidraDwarfForge') `
+            -Fixture (Resolve-Path 'linux-reference\semantic.exec.stripped').Path `
+            -Reference (Resolve-Path 'linux-reference\semantic.exec.reference').Path
+
       - name: Clean Windows installed-release export without external natives
         shell: pwsh
         env:
@@ -1218,7 +1255,9 @@ jobs:
         if: always()
         with:
           name: windows-host-validation
-          path: build/test-results/windows-host/
+          path: |
+            build/test-results/windows-host/
+            build/test-results/windows-desktop-acl/
           if-no-files-found: warn
           retention-days: 14
 

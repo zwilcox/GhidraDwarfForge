@@ -971,8 +971,10 @@ naming, missing input, original-file alias rejection, nonexistent output
 directories, and an injected unwritable-directory result. GUI directory
 selection is implemented for a valid input whose default destination fails,
 and the automated Linux Swing chooser/cancellation test passes in a genuine
-non-headless Ghidra process (see the post-alpha GUI record above). Manual
-Script Manager navigation and Windows GUI behavior remain **PRESENT, UNVERIFIED**.
+non-headless Ghidra process (see the post-alpha GUI record above). Actual Linux
+Script Manager discovery/run/reporting and native Windows chooser behavior
+are additionally validated below; the current combined-head reproducibility
+gate remains separate from those component results.
 
 ## Automatic build-ID and debuglink association
 
@@ -1020,6 +1022,57 @@ a product `.gnu_debuglink` attachment option, and default export remains
 non-mutating.
 
 ## Shared-object export and runtime loading
+
+The shared-object QEMU harness uses a unique UNIX socket in a short private
+`/tmp/ghidra-forge-qemu.*` directory (mode 0700). QEMU 8.2.2's
+[`gdbstub/user.c`](https://github.com/qemu/qemu/blob/v8.2.2/gdbstub/user.c)
+and [GDB's connection contract](https://sourceware.org/gdb/current/onlinedocs/gdb.html/Connecting.html)
+support this transport. The helper checks child liveness and Linux
+`/proc/net/unix` listener state for 100 polls at 50 ms intervals without opening a
+connection, which would consume QEMU's single debugger client. It retains
+stdout/stderr/endpoint/exit evidence and removes/reaps its own socket/child on
+success, startup failure, timeout and caller failure. GDB and validator
+failures are not retried or filtered.
+
+This addresses run `40055880742`, MIPS32LE job `120759663719`: QEMU reported
+`bind: Address already in use` on the PID-derived TCP port `40514`, then GDB
+timed out. Local `shared-object-port-collision.py mips32le` deliberately holds
+the exact historical port for the launched harness PID while the actual
+shared-object GDB type/value/source/load-bias/step/normal-exit checks pass over
+the private socket. The startup suite also proves a real QEMU missing-input
+failure is not retried, a child without a listener times out, and a ready
+emulator is terminated on cleanup. No processes or socket directories survive
+these cases. The pipeline runs the collision control in the MIPS32LE shared
+lane and the startup/failure suite in the x86-64 lane.
+
+```bash
+src/test/integration/qemu-socket-startup.sh
+src/test/integration/shared-object-port-collision.py mips32le
+```
+
+Local evidence: startup `run.DwftsTvR` and final collision `run.7c6sr2ei`; the latter
+holds TCP port `31527` for harness PID `286525`. QEMU and GDB diagnostics are
+empty, recovered parameters are 19/23, global values are 0/7/42 as expected,
+and the inferior exits normally. This change is limited to shared-object
+startup. Other QEMU harnesses still use TCP and are not claimed to be migrated;
+the exact updated hosted matrix remains pending.
+
+Attempt 2 of GUI run `40058560162` stopped at the x86-64 startup suite with
+`/usr/bin/qemu-x86_64-static: No such file or directory` (child exit 127).
+Only cross-target lanes installed `qemu-user-static`; the x86-64 dependency
+list now includes it because the startup control runs real native QEMU.
+This failure preceded GUI testing. The native Windows dependency mirror
+retry succeeded, but its GUI job was skipped by the failed prerequisite.
+It is not a GUI product failure or a new Windows GUI pass. `actionlint`, shell
+syntax checks and the local real-QEMU startup/failure/cleanup regression
+`run.1XeKubtJ` pass for this dependency correction. The complete corrected
+hosted gate remains pending.
+
+An additional MIPS32BE shared-object run passes with empty QEMU diagnostics.
+AArch64 reaches normal exit using the same socket transport but retains the
+existing synthetic-vDSO `corrupt string table index` warning in its GDB log;
+that run is not counted as clean diagnostic evidence. No new warning filter
+or acceptance exception was introduced.
 
 ```bash
 FIXTURE_ROLE=shared src/test/integration/headless-symbol-export.sh \
@@ -1221,6 +1274,227 @@ reproduction establish the cause without claiming those lost timestamps.
 The x86 CI lane now runs the deterministic GDB regression; the existing
 publisher smoke also runs on native Windows. Local build and focused checks
 pass. The next exact versioned candidate still requires full hosted validation.
+
+## Installed Script Manager export journey (2026-10-23)
+
+The explicit `ExportGhidraDwarfForge.java` launcher is needed because Ghidra
+12.0.3's `GhidraScriptComponentProvider.runScript(ResourceFile)` constructs a
+`RunScriptTask` without setting script arguments. The original
+`GhidraDwarfForge.java` intentionally remains native-free with no arguments.
+The Export launcher delegates to it using the verified packaged native pair.
+
+```bash
+export GHIDRA_INSTALL_DIR=/path/to/isolated/ghidra_12.0.3_PUBLIC
+./gradlew buildExtension
+support/assemble-release.sh dist/*.zip /path/to/verified-linux-natives \
+    /path/to/verified-windows-natives /path/to/gui-candidate.zip
+# Extract into an isolated Ghidra installation, then:
+module="$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge"
+src/test/integration/gui-script-manager.sh "$GHIDRA_INSTALL_DIR" "$module" \
+    "$PWD/build/fixtures/x86_64/semantic.exec.stripped" \
+    "$PWD/build/fixtures/x86_64/semantic.exec.reference"
+```
+
+**PASS locally:** `build/test-results/gui-script-manager/run.5CZSfnND/` in
+`work/gui-script-manager`, using Ghidra 12.0.3, GUI OpenJDK 21, Xvfb, and the
+existing verified Linux native package. The private installation links the
+unmodified Ghidra platform and contains its own assembled extension; no user's
+installed extension or original fixture is changed. The wrapper supports
+`JAVA_BIN` and `XVFB_BIN` for locally extracted tools.
+
+The harness compiles only its own GUI driver/support classes. It creates a
+real Ghidra front end and Script Manager plugin, discovers both installed
+script source paths, and launches them by double-clicking their visible table
+rows. It does not instantiate either production script. A known fixture
+function is renamed in the current Program to `gui_recovered_add`; GDB then
+resolves that analyst name from the output. Each selection/cancellation case:
+
+- Proves the default directory denies an actual file creation, preserving its
+  original permissions for cleanup.
+- Runs native-free preflight through Script Manager and observes Console.
+- Runs the Export launcher, verifies packaged-native selection, and drives the
+  real Swing chooser with Robot clicks.
+- Records screenshots and Console transcripts, checks the final JSON report,
+  verifies the input hash, and requires exactly the selected artifact pair or
+  no artifacts after cancellation, with no staging files left behind.
+
+Selection emits a `PARTIAL` report because the fixture's uncurated thunk and
+undefined-type information is diagnosed. Cancellation emits `CANCELLED` and
+Script Manager's cancellation message. Ghidra's loader also logs its existing
+GNU-hash markup limitation and missing external libraries during fixture
+import; those are retained in `gui.log`, not hidden or counted as validator
+success. The emitted sidecar passes GNU headers/sections/notes/DWARF dumps,
+`llvm-dwarfdump --verify`, and `dwarfdump` with empty diagnostic streams. GDB
+finds the synthetic source without a directory workaround, resolves the renamed
+function/signature, breaks, lists, executes `next` and `step`, and exits normally.
+Its diagnostic stream is empty. A displayed decompiler source comment saying
+`WARNING` is retained as source text, not treated as a debugger warning.
+
+Release-package tests require both script entries, reject a ZIP missing the
+Export launcher, verify their unchanged bytes in the assembled archive, and
+check deterministic archive/manifest output. Build, package regression,
+PowerShell syntax, and Java 21 compilation pass locally. Hosted component
+results and the later focus regression are recorded below.
+
+**CONFIRMED on native Windows in run `40054563515` at `83b74a6`:**
+`src/test/integration/windows-desktop-acl.ps1` compiles a standalone Java probe,
+records host/user/session evidence, denies directory writes with a real ACL,
+requires actual file creation to fail, restores the ACL, and requires a real
+Robot click on a visible button. The Windows CI lane retains its screenshots,
+ACLs and logs. Native execution is required; portable PowerShell syntax or
+Linux execution cannot establish Windows GUI support.
+
+The same Windows CI lane runs the full journey after feasibility and isolated
+packaged-native checks:
+
+```powershell
+./src/test/integration/windows-gui-script-manager.ps1 `
+    -GhidraDirectory $env:GHIDRA_INSTALL_DIR `
+    -ModuleDirectory "$env:GHIDRA_INSTALL_DIR\Ghidra\Extensions\GhidraDwarfForge" `
+    -Fixture C:\fixtures\semantic.exec.stripped `
+    -Reference C:\fixtures\semantic.exec.reference
+```
+
+This harness verifies the installed release hashes, compiles only the shared
+GUI driver, uses Java argument files to avoid Windows command-line limits, and
+selects a directory whose path contains spaces. It runs both real Script Manager
+entries and both chooser outcomes using packaged Windows natives. The Java
+driver verifies actual ACL denial, current-Program analyst rename, Console
+reports, input preservation, and artifact counts; it restores the saved ACL
+and propagates restoration failures. Native GNU readelf
+and LLVM validate the resulting artifact, including target header and build-ID
+agreement. Independent `dwarfdump` is used if available and otherwise recorded
+as unavailable. Linux ELF runtime GDB checks cannot run natively on Windows and
+are explicitly recorded as not run there; the Linux GUI journey retains those
+checks. All Windows logs and screenshots are retained under
+`build/test-results/windows-host/gui-script-manager/`.
+
+The initial local checks covered PowerShell syntax, workflow YAML, shared Java
+21 compilation, Java argument-file quoting (spaces, backslashes, quotes, and
+literal brackets), and the repeated Linux GUI/validator/GDB journey
+`run.BVL5Ysph`. Subsequent run `40054563515` passed all twelve jobs. Linux
+job `120756043691` passed the real Script Manager journey and GNU/LLVM/libdwarf
+plus GDB checks. Native Windows job `120758328246` passed the desktop Robot/ACL
+probe and full Script Manager journey. Downloaded artifact `12545630489` has
+verified GitHub SHA-256
+`98d50281bc7cf0a906c23739827a161b9de9b27220e27eb27bb8a59621a71f0b`.
+Its selection report is `PARTIAL`, cancellation is `CANCELLED`, actual file
+creation is denied by ACL, and recorded input/output hashes independently
+match the retained files. Native GNU/LLVM diagnostic streams are empty.
+`independent-dwarfdump=UNAVAILABLE_ON_WINDOWS_RUNNER` and
+`gdb-linux-elf-runtime=NOT_RUN_ON_WINDOWS_HOST` are explicit limitations.
+This proves that component at `83b74a6`; it does not establish reproducibility
+of later combined heads.
+
+### Hosted Script Manager focus regression
+
+The first Linux hosted GUI run `40053779323` timed out before the preflight
+script started. Its empty `script.log` and retained `preflight-manager.png`
+showed other Ghidra windows covering the Script Manager component. Swing's
+`isShowing()` alone did not establish that a coordinate click would reach the
+table. A controlled Xvfb experiment reproduced a visible target's click being
+received by the covering window; explicit foreground activation corrected it.
+
+The initial correction raised the target ancestor, waited for native window
+focus and then table focus, and clicked the actual visible Name cell using
+fresh bounds. It retained the real double-click, timeouts, and failure
+Console/desktop/window diagnostics.
+
+The corrected full local journey `run.B4Zeob4d` passes both chooser outcomes,
+GNU/LLVM/libdwarf checks and GDB source stepping/normal exit. Controlled focus
+evidence is under `build/hosted-gui-review/focus-probe-final/`.
+
+Attempt 2 of run `40055880742`, Windows job `120763476912`, exposed another
+pre-click harness race. Selection/export completed, but the cancellation
+case failed `Script Manager target row is not focused and fully visible`
+before its preflight script ran. Artifact `12546375795` (verified SHA-256
+`5a25475dd8a6f0ab463cfc12b90044fbe7c156e09591f0a1be7f81e199bbcea7`)
+retains the foreground Script Manager with the intended selected, visible
+row and caret in its filter. Ghidra 12.0.3's
+`GhidraScriptComponentProvider.componentActivated()` explicitly requests focus
+for that filter, so a transient table-focus assertion races ordinary activation.
+
+The corrected harness requires the foreground window, selected visible Name
+cell and matching filename, then observes exactly one real BUTTON1
+double-click delivered to that cell. Script Manager still performs the
+production launch; existing Console/chooser/report assertions remain.
+`GuiTableClickSmoke` deliberately gives keyboard focus to the filter, proves
+the former table-focus condition is false, and requires exactly one target
+invocation through Robot. Both host harnesses run this control. Full Linux
+run `run.syAI9N4O` passes the control, both chooser outcomes, original hashes,
+GNU/LLVM/libdwarf validation and GDB source lookup/stepping/normal exit.
+No timeout, debugger warning policy, script call path or production behavior
+changed. A new full native Windows run and complete exact-head matrix remain
+required before integrating the combined GUI change.
+
+The merge of strict-validator commit `bf7f2b1` preserves both GUI host journeys,
+the filter-focus control, private QEMU sockets and their x86 package dependency.
+The Linux Script Manager validator now uses the strict helper with its actual
+private input copy. Rechecking retained GUI result `run.V2OaAzmR` passes with
+three inherited frame diagnostics exactly corroborated against that input and
+zero uncorroborated errors. This is a validator replay, not a fresh GUI journey
+on the merged source. Workflow/shell/Python checks and the release-package
+regression, including both required launchers and provenance rejection cases,
+pass; the full merged hosted gate remains pending.
+
+### Modal Script Manager compilation dispatch (2026-10-24)
+
+Run `40062946718` at `cec4b5b` failed the x86 Script Manager step; its Windows
+job was skipped. Downloaded target artifact `12548841209` matches GitHub SHA-256
+`8816a64fedbb1c60bb41916c35c9c7f389f89219043248aa7a09d4316de292d1`.
+The retained screenshot shows the intended preflight row and Ghidra's real
+"Compiling Script Directory" modal dialog. Nevertheless, the harness reported
+`real double-click missed intended cell: delivered=0 actual=null`. Evidence is
+under `build/hosted-gui-review/run-40062946718/` in the GUI worktree.
+
+Pinned Ghidra 12.0.3's `GhidraScriptComponentProvider.doGetScriptInstance()`
+starts `TaskBuilder.launchModal()` synchronously inside its mouse listener.
+An observer appended after that listener cannot run until the modal action
+returns. Meanwhile, Swing's nested event loop can process `Robot.waitForIdle()`.
+This was an observation race, not evidence that the real click missed the row.
+The failure's subsequent Swing timeout is also retained; no exporter or
+native-producer failure is inferred from this run.
+
+`GuiTableClickSmoke` now opens a real modal dialog inside its table listener.
+With the old helper, the control fails with the exact hosted assertion
+(`build/modal-click-review/baseline/control.log`). The correction uses a
+Toolkit `AWTEventListener`, which observes the mouse event before component
+dispatch, filtering its exact table, event kind, button, click count, row,
+column and filename. It never consumes or substitutes the event. Cleanup
+removes the observer, and the production listener still launches the script.
+The control proves one real action while the late component observer remains
+pending, then one late observation after the modal dialog closes. Both host
+harnesses execute this control; no timeout, retry or production path changed.
+
+**PASS locally:** `build/test-results/gui-script-manager/run.O3SsqvwH/` uses
+OpenJDK 21.0.12.1, Xvfb and the exact hosted `cec4b5b` package, downloaded from
+artifact `12548278023` with verified outer SHA-256
+`014721f8bde1fa28943260d173e0f93b6eda83391bef469419f43c54ac5deea8`.
+All release manifest entries pass, and both installed script sources match the
+checkout. The private Ghidra platform uses actual directories with hardlinked
+unmodified files; it contains no symlinked platform roots or user extensions.
+The package JAR SHA-256 is
+`89011edf2e6b47c8445a9b47d9662739a05d97e5188e0a77895c2d42ae13e9bc`.
+
+```bash
+export JAVA_BIN=/usr/lib/jvm/java-21-openjdk-amd64/bin/java
+export XVFB_BIN=/path/to/Xvfb
+export DWARFDUMP=/path/to/verified-validation-tool/bin/dwarfdump
+export PATH="$(dirname "$DWARFDUMP"):$PATH"
+src/test/integration/gui-script-manager.sh /path/to/private-ghidra \
+    /path/to/private-ghidra/Ghidra/Extensions/GhidraDwarfForge \
+    /path/to/semantic.exec.stripped /path/to/semantic.exec.reference
+```
+
+The fresh run passes both focus/modal controls, installed discovery and
+native-free preflight, real chooser selection/cancellation, Console reports,
+original hashes and exact artifact counts. GNU and LLVM validation pass.
+Strict libdwarf checking retains three inherited frame diagnostics, each
+exactly corroborated against the actual private input, with zero uncorroborated
+errors. GDB resolves the renamed function and synthetic source, steps with
+`next`/`step`, and exits normally with empty stderr. This is a fresh Linux
+journey with the corrected harness; a new full hosted run, including native
+Windows, is still required.
 
 ## Native patch checkout and provenance consistency (2026-10-23)
 

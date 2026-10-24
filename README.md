@@ -98,9 +98,20 @@ option to use its private temporary capture when the original path is unknown.
 PowerShell log paths are literal filesystem paths; Windows alternate data
 streams are rejected.
 
-The underlying `GhidraDwarfForge.java` script remains available from Ghidra's
-Script Manager or directly through `analyzeHeadless`. With no arguments it
-reports target metadata without loading native code. Its opt-in export accepts:
+In CodeBrowser, open the analyzed program and choose **Window → Script Manager**.
+Under **DWARF**, run **ExportGhidraDwarfForge.java** to export the current program
+using the verified packaged native libraries. Open **Window → Console** for
+the output paths, coverage diagnostics, hashes, and final JSON report. If the
+original directory is unwritable, choose a writable directory when prompted;
+Cancel leaves no output pair. Linux Script Manager selection/cancellation is
+tested. Native Windows GUI interaction remains under validation; the Windows
+headless wrapper is already covered by CI.
+
+The underlying `GhidraDwarfForge.java` script remains available from Script
+Manager for native-free metadata preflight, or directly through
+`analyzeHeadless` for argument-driven export. Script Manager's ordinary Run
+action supplies no script arguments, so use the separate **Export** launcher
+for GUI export. The underlying script's opt-in export accepts:
 
 ```text
 --libdwarf=/absolute/path/libdwarf.so.2.3.2

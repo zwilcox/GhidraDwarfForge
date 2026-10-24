@@ -52,6 +52,13 @@ module="$stage/GhidraDwarfForge"
     echo "base ZIP does not contain corresponding-source instructions" >&2
     exit 1
 }
+for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java; do
+    [[ -s "$module/ghidra_scripts/$entry_point" ]] || {
+        echo "base ZIP is missing required script: $entry_point" >&2
+        exit 1
+    }
+done
+
 for bundled_directory in os third_party/libdwarf third_party/windows-runtime; do
     if [[ -e "$module/$bundled_directory" || -L "$module/$bundled_directory" ]]; then
         echo "base ZIP already contains $bundled_directory; supply the unbundled Gradle extension ZIP" >&2

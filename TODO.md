@@ -176,7 +176,7 @@ items are these bounded workstreams:
 | Function identity and scopes (P1.7, P3.3) | **PLANNED:** distinct linkage names without losing analyst-name lookup; external-function declarations, thunks/aliases, function/class/lexical scopes, static locals, and same-named type/variable disambiguation. Existing namespace globals and external-data declarations must remain working. |
 | Additional range/location cases (P1.8, P1.11a) | **PLANNED:** entry points that are not the lowest body address; proven register/memory migration, call-crossing and non-entry lifetimes, stack-slot reuse, and mixed composite storage. Require GDB value checks at multiple instruction addresses and honest unavailable gaps. |
 | Target-profile coverage (P2.3/3a/3b) | Current five profiles pass. Enumerate additional ABI/storage cases, derive their target properties, and add real exporter/validator/QEMU-GDB tests before extending support claims. Completing this plan does not imply every Ghidra CPU/ABI. |
-| Remaining GUI journeys (P2.7) | **PRESENT, UNVERIFIED:** manual Script Manager launch and Windows chooser/cancellation. Linux GUI fallback already has a passing automated test. |
+| GUI reproducibility (P2.7) | **CONFIRMED:** Linux and native Windows Script Manager discovery/run/Console reports and chooser selection/cancellation passed in `40054563515` at `83b74a6`. A later Windows run exposed a harness pre-click focus race; the controlled regression and full Linux journey pass after correction. The current combined head still requires full hosted validation. |
 | Optional debuglink (P2.8) | **PLANNED, optional:** explicit opt-in attachment and backup/rollback. Sidecar lookup/CRC compatibility is tested on private fixture copies; default export leaves the original unchanged. |
 | Inline reconstruction (P3.4) | **UNCERTAIN:** investigate defensible instance/call-site/range evidence and record a decision. Implement only if supported by that evidence. |
 | Performance (P3.5) | **PLANNED:** establish representative large-binary benchmarks, choose optimizations with measured benefit, and prove unchanged semantics/determinism. The listed candidates are not all unconditional requirements. |
@@ -1219,14 +1219,36 @@ checks, staged pair rollback, and final hashes pass locally. Automated Linux
 GUI fallback selection/cancellation passes locally and in hosted run
 `39896787460`, in a genuine non-headless Ghidra 12.0.3 process under Xvfb,
 including validators and GDB source stepping.
-Manual Script Manager navigation and Windows GUI behavior remain untested.
+The installed Export launcher now passes actual Linux Script Manager discovery,
+double-click Run, Console reporting and chooser selection/cancellation in
+`gui-script-manager.sh`. Run `40054563515` at `83b74a6` also passed the full
+native Windows journey; this component evidence does not substitute for the
+current combined-head gate.
 
 Additional user-journey coverage:
 
-- [ ] Verify Script Manager discovery, launch and report presentation using
-  the documented installed-extension workflow.
-- [ ] Exercise native Windows output selection and cancellation; verify
+- [x] Verify Script Manager discovery, launch and report presentation using
+  the documented installed-extension workflow on Linux. The native-free
+  metadata script and the explicit Export launcher are distinct installed
+  entries; this test does not directly construct either production script.
+  The first hosted Script Manager run exposed a covering-window focus race;
+  foreground/Name-cell targeting passes locally. Later Windows activation
+  intentionally focused Ghidra's filter, exposing a separate harness pre-click
+  assertion race. The correction verifies real double-click delivery instead
+  of requiring table keyboard focus; controlled and full Linux checks pass.
+  Run `40062946718` then exposed delayed observation while Ghidra's mouse
+  handler compiled scripts in a modal loop. Pre-dispatch event observation
+  passes a controlled reproduction and full Java 21 Linux journey
+  `run.O3SsqvwH`; no launch retries or timeouts changed. The new exact-head
+  hosted gate, including native Windows, remains required.
+- [x] Exercise native Windows output selection and cancellation; verify
   chosen paths, original preservation and no final artifacts after cancellation.
+  A real desktop-click/ACL-denial probe precedes the full Windows Script Manager
+  harness in CI. The latter uses packaged Windows natives, selected paths with
+  spaces, input hashes, Console reports, and native GNU/LLVM validators. Both
+  passed in `40054563515`; independent `dwarfdump` was unavailable and Linux
+  ELF runtime GDB checks were not run on Windows. The later focus regression
+  requires a new full native Windows run before the combined change integrates.
 
 ### Work
 
@@ -1408,6 +1430,15 @@ an integration pass.
 - [x] Test logs expose exact Ghidra/libdwarf/tool versions.
 - [x] Native crashes are clearly reported as failures.
 - [x] Artifacts/transcripts are retained for failed runs.
+
+**CONFIRMED local reliability follow-up:** hosted GUI/combined run `40055880742`
+hit an occupied PID-derived QEMU TCP port in the MIPS32LE shared-object test.
+That harness now uses a private UNIX socket with bounded startup/liveness and
+cleanup checks. A controlled occupied historical port still permits the full
+shared-object GDB oracle to pass; startup failure/timeout cleanup also passes.
+Both regressions are wired into CI, with exact-head hosted validation pending.
+Other TCP-based QEMU harnesses remain unchanged; this does not claim a general
+emulator retry policy or excuse debugger/validator failures.
 
 ## P2.13 Produce installable releases
 

@@ -14,6 +14,7 @@ cleanup() {
 trap cleanup EXIT
 
 mkdir -p "$work/base/GhidraDwarfForge/support" \
+    "$work/base/GhidraDwarfForge/ghidra_scripts" \
     "$work/base/GhidraDwarfForge/third_party" \
     "$work/linux/compliance/libdwarf/licenses" \
     "$work/linux/compliance/libdwarf/patches" \
@@ -27,6 +28,10 @@ printf 'corresponding source instructions\n' \
     > "$work/base/GhidraDwarfForge/third_party/CORRESPONDING_SOURCE.md"
 printf '#!/usr/bin/env bash\n' > "$work/base/GhidraDwarfForge/support/wrapper"
 chmod 755 "$work/base/GhidraDwarfForge/support/wrapper"
+for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java; do
+    printf '// fixture %s\n' "$entry_point" \
+        > "$work/base/GhidraDwarfForge/ghidra_scripts/$entry_point"
+done
 (
     cd "$work/base"
     find GhidraDwarfForge -print | LC_ALL=C sort | zip -X -q "$work/base.zip" -@
@@ -62,6 +67,16 @@ printf 'source archive\n' \
         LC_ALL=C sort -z | xargs -0 sha256sum \
         > SOURCE-SHA256SUMS
 )
+
+cp "$work/base.zip" "$work/no-launcher.zip"
+zip -dq "$work/no-launcher.zip" 'GhidraDwarfForge/ghidra_scripts/ExportGhidraDwarfForge.java'
+if "$assembler" "$work/no-launcher.zip" "$work/linux" "$work/windows" \
+        "$work/no-launcher-release.zip" > "$work/no-launcher.log" 2>&1; then
+    echo "release assembly accepted a missing GUI export launcher" >&2
+    exit 1
+fi
+grep -Fq 'base ZIP is missing required script: ExportGhidraDwarfForge.java' \
+    "$work/no-launcher.log"
 printf 'mingw-w64-x86_64-zlib 1.3.1-1\nmingw-w64-x86_64-zstd 1.5.7-1\n' \
     > "$work/windows/compliance/windows-runtime/PACKAGE-VERSIONS.txt"
 printf 'zlib license\n' \
@@ -207,6 +222,10 @@ grep -Fxq 'consumer=libdwarf.so.2.3.2' \
 grep -Fxq 'producer=libdwarfp-2.dll' \
     "$module/os/win_x86_64/NATIVE-PAIR.properties"
 test -s "$module/THIRD_PARTY_NOTICES.md"
+for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java; do
+    cmp "$work/base/GhidraDwarfForge/ghidra_scripts/$entry_point" \
+        "$module/ghidra_scripts/$entry_point"
+done
 test -s "$module/third_party/CORRESPONDING_SOURCE.md"
 test -s "$module/third_party/libdwarf/licenses/LGPL-2.1.txt"
 test -s "$module/third_party/libdwarf/source/libdwarf-2.3.2.tar.xz"

@@ -1732,7 +1732,8 @@ pass in a non-headless Ghidra 12.0.3 JVM under a private Xvfb display. The test
 runs the production script and real Swing chooser, writes to the selected
 directory when the input directory is read-only, and publishes nothing after
 cancellation. Hash preservation, validators, and GDB source stepping pass.
-Manual Script Manager navigation and Windows GUI behavior remain untested.
+At that checkpoint, Script Manager navigation and Windows GUI behavior were
+untested; Section 16.31 records the later hosted component evidence.
 The three new integration harnesses are wired into the x86-64 CI lane; hosted
 run `39896787460` passed all twelve jobs for implementation commit `3cdc3f8`,
 including these three tests, the five target lanes, Windows-hosted export,
@@ -1790,8 +1791,10 @@ function/linkage identity, richer scopes/declarations, functions whose body
 starts below their entry point, and more precise variable lifetimes/storage
 migration. The current stable-register and SP-relative location profile is
 validated; it does not establish arbitrary value migration or scope/liveness.
-Additional target profiles require explicit, finite acceptance cases. Native
-Windows GUI and manual Script Manager journeys remain **PRESENT, UNVERIFIED**.
+Additional target profiles require explicit, finite acceptance cases. At that
+audit, native Windows GUI and Script Manager journeys were **PRESENT,
+UNVERIFIED**; Section 16.31 records the subsequent component passes and
+remaining combined-head reproducibility gate.
 
 **HISTORICAL:** extended-section-number emission was parked on
 `work/elf-table-robustness` at `f2884e6`. Its build/smoke checks passed, but a
@@ -1931,7 +1934,97 @@ source edit still warns in GDB; no warning filter was added. Deterministic unit,
 source-built GDB/runtime, and retained AArch64 Forge-artifact checks pass locally.
 See `docs/VALIDATION.md`; the next exact versioned CI remains required.
 
-### 16.31 Native patch checkout and provenance consistency
+### 16.31 Installed Script Manager export journey
+
+**CONFIRMED locally:** Ghidra 12.0.3's Script Manager Run action creates and
+executes a script without supplying arguments. Running the existing
+`GhidraDwarfForge.java` therefore correctly performs native-free preflight,
+but did not provide the documented ordinary GUI export journey.
+`ExportGhidraDwarfForge.java` is now an explicit DWARF-category launcher that
+delegates to that same production script with `--packaged-natives`. It leaves
+the native-free contract and headless wrappers unchanged. Release assembly
+requires both installed scripts.
+
+`gui-script-manager.sh` creates a real Ghidra front end and Script Manager
+plugin in a private installation. It discovers the installed script sources,
+double-clicks their table entries, checks Console output, and selects/cancels
+the production output chooser with real mouse events under Xvfb. Linux run
+`run.5CZSfnND` passes input preservation, exact output pair/no cancellation
+outputs, GNU/LLVM/libdwarf validation, and GDB source lookup/stepping/normal
+exit. The native-free preflight is also executed through Script Manager.
+See `docs/VALIDATION.md` for reproduction and diagnostic scope.
+
+**CONFIRMED:** run `40054563515` at `83b74a6` passed all twelve jobs, including
+the Linux Script Manager/validator/GDB journey and native Windows desktop/ACL
+probe plus full Script Manager selection/cancellation. The Windows journey
+uses packaged natives, real ACL denial, paths with spaces, original hashes,
+Console reports and GNU/LLVM validation. Independent `dwarfdump` was unavailable
+and Linux ELF runtime GDB was explicitly not run on Windows. These are actual
+component results, not evidence that every subsequent combined head passes.
+The GUI changes remain separate from the corrective alpha.2 release scope.
+
+The first hosted Linux Script Manager run `40053779323` exposed a harness
+focus race: the selected component was showing but covered by other windows,
+and no script executed. The driver now waits for native window focus followed
+by table focus, then clicks the actual visible Name cell using fresh bounds.
+Failure Console/window/screenshot diagnostics are retained. Controlled overlap
+reproduction and full local run `run.B4Zeob4d` pass. No timeout or CI gate was relaxed.
+
+Attempt 2 of combined run `40055880742` exposed a second harness issue on
+Windows: after successful selection/export, the cancellation case failed its
+table-keyboard-focus assertion before the preflight double-click. The retained
+desktop shows the intended selected row in the foreground Script Manager,
+with keyboard focus in its filter. Pinned Ghidra 12.0.3 deliberately requests
+that filter focus in `GhidraScriptComponentProvider.componentActivated()`.
+The test now requires a foreground window and the selected visible Name cell,
+then verifies one delivered real mouse double-click on that exact filename.
+It does not require table keyboard focus before a mouse action. A controlled
+filter-focus regression runs on both host lanes; the full Linux journey
+`run.syAI9N4O` passes with validators/GDB. The new exact-head native Windows and
+complete combined gates remain pending; no production script or launch retry
+was introduced.
+
+Run `40062946718` at `cec4b5b` exposed a third harness observation error on
+Linux. The real double-click had entered Ghidra's modal "Compiling Script
+Directory" action, but an appended component mouse listener had not yet run.
+The nested Swing event loop let `Robot.waitForIdle()` return before that late
+observer, causing a false missed-click assertion. A controlled modal-dialog
+case reproduces the exact failure with the previous helper. The observer now
+uses the Toolkit event listener before component dispatch, filters the exact
+table/left double-click/Name cell, and is always removed afterward. It neither
+consumes the event nor invokes the script. Both host harnesses run the new
+control. Full local Java 21 journey `run.O3SsqvwH`, using that run's verified
+release package, passes select/cancel, GNU/LLVM, strict libdwarf checking with
+three exactly corroborated inherited frame diagnostics, and GDB. Hosted
+validation of this correction, including native Windows, remains required.
+
+### 16.32 Shared-object QEMU debugger endpoint isolation
+
+**CONFIRMED:** combined GUI run `40055880742`, MIPS32LE job `120759663719`,
+failed before debugger attachment because TCP port `40514` was already in use.
+The old shared-object harness derived this port from its PID. The failure is
+an observed test-infrastructure collision, not evidence of an exporter defect.
+
+The shared-object harness now launches QEMU with a unique short UNIX socket in
+a mode-0700 directory, supported by the tested QEMU 8.2.2 and GDB. Bounded
+child/listener readiness does not consume the debugger connection. Startup
+failure, timeout and caller failure retain diagnostics and clean up the owned
+child/socket. No GDB execution or diagnostic is retried or waived. Real
+MIPS32LE shared-object debugging passes while its exact old TCP port is held
+open; native QEMU/GDB startup and failure-cleanup controls also pass locally.
+The two controls are wired into CI; exact-head hosted validation is pending.
+Other QEMU scripts still using TCP are a separate, evidence-driven follow-up.
+See `docs/VALIDATION.md` for commands and retained evidence.
+
+Attempt 2 of GUI run `40058560162` failed this startup control before GUI
+testing: the x86-64 lane did not install `qemu-user-static`, so
+`/usr/bin/qemu-x86_64-static` was missing. The cross-target lanes already
+installed it. The x86-64 toolchain step now declares the same dependency.
+The native Windows dependency mirror retry succeeded, but its GUI job was
+skipped after the x86-64 failure. This run supplies no new GUI product result;
+the corrected complete hosted gate remains pending.
+
+### 16.33 Native patch checkout and provenance consistency
 
 **CONFIRMED:** prepublication audit of candidate run `40055176326` found that
 Windows `BUILD-METADATA.txt` recorded patch hash `733405d03e2fd34f7bba971e6bbfe534d72ee9b3c1856879a7652f4eff17bc2a`,
@@ -1954,7 +2047,7 @@ Checkout-conversion and package regressions pass
 locally; exact native Windows and complete candidate CI remain required before
 publication. See `docs/VALIDATION.md` for retained evidence.
 
-### 16.32 Independent-validator reporting gap
+### 16.34 Independent-validator reporting gap
 
 **CONFIRMED:** PR #19 merged as `680ecd6` after candidate run `40057428382`
 passed all twelve jobs and its native-inclusive package passed independent
