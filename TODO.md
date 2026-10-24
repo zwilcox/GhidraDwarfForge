@@ -731,7 +731,13 @@ Define precedence among analyst-applied listing/signature types and decompiler g
 - [x] Signedness, size, member offset, array bound, and enum values validate.
 - [x] `ptype` in GDB matches expected fixture shape.
 - [x] Unsupported types produce a documented fallback/diagnostic.
-- [x] Type output is deterministic.
+- [x] Type output is deterministic for the validated unchanged-program paths.
+  The generic `DefaultDataType` singleton now uses a stable built-in key instead
+  of its process-local ID. Initial export, save, and two fresh read-only reopen
+  exports have byte-identical DWARF/source and raw extraction models; persisted
+  analyst/imported IDs remain authoritative. See the saved-program regression
+  in `docs/VALIDATION.md`. This does not promise equality for independently
+  imported or subsequently changed programs.
 
 ## P1.7 Emit complete function signatures
 

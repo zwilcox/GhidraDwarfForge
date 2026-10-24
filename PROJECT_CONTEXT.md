@@ -2160,3 +2160,26 @@ until the final commit passes its required matrix. This branch prepares the
 subsequent semantic PR; it does not add features to the corrective alpha.2
 release. No remote action, release or shared installation change occurred in
 this local integration.
+
+### Stable generic undefined identity across save/reopen (2026-10-23)
+
+**CONFIRMED locally:** Ghidra 12.0.3's `DefaultDataType` singleton inherits a
+new per-process `UniversalID` from `DataTypeImpl`, unlike the normal `BuiltIn`
+null-ID policy. Sorting by that transient ID changed type DIE order between a
+settled initial export and a fresh read-only reopen even when the normalized
+model and synthetic source were unchanged. This was a byte-determinism defect,
+not a demonstrated target-address or debugger-value defect.
+
+Only the exact `DefaultDataType` class now bypasses that transient ID and uses
+the existing class/path/length fallback key. All other UID and collision rules
+remain unchanged, including analyst/imported types named `undefined`. Real
+Ghidra identity controls and a saved-program integration regression cover that
+boundary. The latter compares complete raw extraction models independently of
+DWARF serialization, as well as actual `.dbg`/`.dbg.c` bytes across three fresh
+processes, validators and GDB types, addresses, values and source stepping.
+The baseline reproduces the byte difference; the fixed artifact passes. Exact
+commands/evidence and the bounded claim are recorded in `docs/VALIDATION.md`.
+
+This follow-up is based on the semantic branch `8e3fd27` and remains separate
+from corrective alpha.2. It does not canonicalize unrelated persisted types,
+promise equal output from independent imports, or change native APIs.

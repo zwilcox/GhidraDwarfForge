@@ -11,6 +11,72 @@ export. Export remains explicit: installed wrappers request checksum-verified
 packaged natives by default, while source-tree audit runs may supply explicit
 library paths.
 
+## Saved-program generic type identity (2026-10-23)
+
+**CONFIRMED locally:** an unchanged, settled program now exports byte-identical
+DWARF and synthetic source before saving and after two fresh read-only reopen
+processes. The fix is limited to Ghidra's exact `DefaultDataType` class; every
+other type's UniversalID and the existing collision policy remain unchanged.
+No new native signature or target profile is involved.
+
+The pinned Ghidra `SoftwareModeling-src.zip` SHA-256 is
+`ae94f7ede157d57b865eaa7caefd72c9f98bfed04e122db6909dface0bd22748`.
+`DefaultDataType` has a private constructor and a generic singleton, inherits
+`DataTypeImpl`'s generated UniversalID, and returns itself from clone/copy.
+`BuiltIn` overrides that accessor to return null, but this class does not.
+The stable class/path/length fallback is therefore used only for this exact
+generic type. The native-independent `defaultTypeIdentitySmoke` uses actual
+Ghidra classes and verifies that analyst types named `undefined`, typedefs and
+explicit imported/persisted IDs retain their distinct original identities.
+
+The new `saved-program-determinism.sh` uses the existing source-built x86-64
+semantic reference/stripped pair. It derives function/global addresses from
+compiler symbols, applies a signature and analyst structure, settles analysis,
+and saves a real Ghidra project. Both reopens use `-noanalysis -readOnly` in
+separate JVMs with identical input/output paths and export options. Before and
+after each export, a script fingerprints the complete extracted type, function,
+global, static, location, range and diagnostic model without serializing DWARF.
+It requires the generic undefined type and UID-bearing analyst/imported types
+to be present. A fixture-specific normalized comparison rejects ambiguous type
+labels; the fixed success gate additionally requires raw model and artifact
+byte equality, so normalization cannot conceal an identity regression.
+
+All three artifacts pass GNU readelf, LLVM verification, libdwarf checks and
+GDB. The debugger requires full function/type/source DIEs, the compiler-derived
+function entry, four integer parameters, the analyst/imported structure layouts,
+`left=19`, `right=23`, analyst-global `value=7`, `fixture_sink=42`, source
+`next`/`step`, function return and normal exit. Original target, compiler
+reference and source hashes remain unchanged. Fresh result directories retain
+commands, exporter hash, tool versions, model snapshots and validator/GDB logs.
+
+```bash
+make -C src/test/fixtures x86_64
+GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC \
+    ./gradlew defaultTypeIdentitySmoke typeGraphSmoke buildExtension
+# Install that build only into a private Ghidra copy with packaged natives.
+src/test/integration/saved-program-determinism.sh "$PWD/build/ghidra"
+```
+
+Evidence in this worktree:
+
+| Check | Result |
+|---|---|
+| Old semantic artifact, `run.JbcC1Hjs` | `FORGE_EXPECT_DEFAULT_UID_DRIFT=1` explicitly reproduced initial/reopen byte difference; models match after normalization, sources and both reopen artifacts match; all three validators/GDB checks pass |
+| Fixed artifact, `run.LUvQfGxu` | Initial/reopened/repeat `.dbg` SHA-256 `c7cafd6065ae73f192e37851f7906129448cfd18bd9f5471d498afdda786f367`; all three raw models and sources also match exactly |
+| Source in fixed run | All three SHA-256 `e591061441b813ffad29e1c5160882d2e42ef3be491f8ae3ee972de5916080ac` |
+| Actual extension | Baseline JAR `170f9d68a39e86831af622c197f455f9a17b3092621276739b22139c4ea5b897`; fixed JAR `366f3b40f52ade1e194be3c3d8dbd32794469bff30b1eb8e12e64e4555bc82a3` |
+| Build | All 23 native-independent smokes and `buildExtension` pass; `build/default-type-review/all-smokes.txt` |
+| Existing type/location behavior | All eight x86-64/AArch64/MIPS32 BE/LE ET_EXEC/PIE real export, validator and native/QEMU GDB cases pass; `build/default-type-review/<target>-<role>-{headless,gdb}.txt` |
+| Repository guards | Architecture isolation, `actionlint`, whitespace and shell/Python syntax checks pass; no fixture sources were added or changed |
+
+The runs live under `build/test-results/saved-program-determinism/`; supporting
+commands and baseline/fixed logs are under `build/default-type-review/`.
+CI now runs the identity smoke and the real save/reopen case in its existing
+x86-64 lane. Hosted validation of this follow-up remains **PRESENT, UNVERIFIED**.
+These results establish the unchanged saved-program case, not equality between
+independent imports, edited programs, or arbitrary other transient type classes.
+The user's installation and corrective alpha.2 candidate were unchanged.
+
 ## Combined semantic and corrective validation (2026-10-23)
 
 **CONFIRMED locally:** normal merges `493983d` and `4a4ce38` add reviewed scalar

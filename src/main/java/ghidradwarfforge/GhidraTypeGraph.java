@@ -19,6 +19,7 @@ import ghidra.program.model.data.CharDataType;
 import ghidra.program.model.data.Composite;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.DataTypeComponent;
+import ghidra.program.model.data.DefaultDataType;
 import ghidra.program.model.data.Dynamic;
 import ghidra.program.model.data.Enum;
 import ghidra.program.model.data.FunctionDefinition;
@@ -514,7 +515,11 @@ public final class GhidraTypeGraph {
         }
 
         private static String stableKey(DataType type) {
-            UniversalID id = type.getUniversalID();
+            // Ghidra's generic undefined singleton inherits a process-local ID,
+            // unlike persisted analyst/imported types. Use its existing built-in
+            // fallback identity so saving and reopening cannot reorder the graph.
+            UniversalID id = type.getClass() == DefaultDataType.class ? null :
+                type.getUniversalID();
             if (id != null) {
                 return "uid:" + Long.toUnsignedString(id.getValue(), 16);
             }

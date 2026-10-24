@@ -426,7 +426,8 @@ jobs:
             src/test/integration/architecture-neutrality.sh
             ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke outputPathPolicySmoke \
               exportReportSmoke \
-              syntheticSourceSmoke typeGraphSmoke variableStorageSmoke registerPrefixSmoke registerAliasSmoke \
+              syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
+              variableStorageSmoke registerPrefixSmoke registerAliasSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
               packagedNativeLibrariesSmoke existingDebugSidecarSmoke \
@@ -772,6 +773,10 @@ jobs:
                 "$GHIDRA_INSTALL_DIR" "$consumer" "$producer"
             fi
           done
+
+      - name: Saved-program type identity across fresh headless processes
+        if: matrix.target == 'x86_64'
+        run: src/test/integration/saved-program-determinism.sh "$GHIDRA_INSTALL_DIR"
 
       - name: Bit-field values through the real exporter and GDB
         env:

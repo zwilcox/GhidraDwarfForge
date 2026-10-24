@@ -214,6 +214,14 @@ tasks.register("typeGraphSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.types.TypeGraphSmoke"
 }
 
+tasks.register("defaultTypeIdentitySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks stable generic undefined identity and persistent type ID controls."
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.DefaultTypeIdentitySmoke"
+}
+
 tasks.register("dwarfInfoRepairSmoke", JavaExec) {
     group = "verification"
     description = "Checks DWARF32 section-offset and CU-reference width repair"
