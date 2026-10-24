@@ -1,9 +1,9 @@
 # TODO.md — GhidraDwarfForge
 
 This plan began at prototype commit `7a39a186538c7aec3f7dbdc4a6e396125b5d63ea`.
-The current assessment covers development head `b313e32`, whose complete
-[hosted validation run](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40042631047)
-passed all twelve jobs. PRs #16/#17 remain unmerged and the published alpha
+The current assessment covers implementation commit `3e47589`, whose complete
+[hosted validation run](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40047390539)
+passed all twelve jobs. PRs #16/#17/#18 remain unmerged and the published alpha
 remains `f4a0199`. Use Sections 1.1 and 4 for the next work; do not restart the
 completed prototype bring-up sequence.
 
@@ -20,7 +20,7 @@ Status vocabulary:
 No project-level milestone is complete unless all applicable conditions hold:
 
 **CONFIRMED:** these gates pass for the currently documented development
-profiles in run `40042631047`. This is a tested-profile assessment, not a claim
+profiles in run `40047390539`. This is a tested-profile assessment, not a claim
 that every feature below or every possible ELF/ABI is supported. Reapply the
 gates to each implementation change and the exact versioned release commit.
 
@@ -99,7 +99,7 @@ items are these bounded workstreams:
 | Workstream | Status and acceptance needed |
 |---|---|
 | Corrective release (§0.1) | **PLANNED:** merge the reviewed changes when authorized, bump `VERSION`, validate the exact release commit/package, and publish a separate corrective alpha. The existing alpha artifact must not be replaced. |
-| ELF robustness (P0.9) | **PRESENT, UNVERIFIED:** completion branch implements extended counts, unnamed tables, bounded file-backed I/O and cancellation. Local format/large-file and strengthened late-header/rebase tests pass; the complete hosted acceptance gate is pending. |
+| ELF robustness (P0.9) | **CONFIRMED complete within the documented bounds:** PR #18 implements extended counts, unnamed tables, bounded file-backed I/O, correct recorded-load-base translation and cancellation. Local checks and all twelve hosted jobs pass; direct PN_XNUM execution limits are documented. |
 | Function identity and scopes (P1.7, P3.3) | **PLANNED:** distinct linkage names without losing analyst-name lookup; external-function declarations, thunks/aliases, function/class/lexical scopes, static locals, and same-named type/variable disambiguation. Existing namespace globals and external-data declarations must remain working. |
 | Additional range/location cases (P1.8, P1.11a) | **PLANNED:** entry points that are not the lowest body address; proven register/memory migration, call-crossing and non-entry lifetimes, stack-slot reuse, and mixed composite storage. Require GDB value checks at multiple instruction addresses and honest unavailable gaps. |
 | Target-profile coverage (P2.3/3a/3b) | Current five profiles pass. Enumerate additional ABI/storage cases, derive their target properties, and add real exporter/validator/QEMU-GDB tests before extending support claims. Completing this plan does not imply every Ghidra CPU/ABI. |
@@ -436,13 +436,13 @@ For at least one x86-64 non-PIE fixture, construct candidate sidecars and prove:
 
 ## P0.9 Replace or correct the ELF writer for the minimal path
 
-**Status:** `[~]` — the matched sidecar reader/writer now implements the
-remaining layout/size cases, with explicit resource limits and cancellation.
-Local format, large-file, extended-section and late-load/rebase tests pass;
-the complete hosted matrix gate remains in progress.
+**Status:** `[x]` — the matched sidecar reader/writer implements the scoped
+layout/size cases with explicit resource limits and cancellation. Local tests
+and all twelve hosted jobs pass for implementation `3e47589` in run
+`40047390539`, including all five target profiles and Windows-hosted export.
 **Dependency:** P0.8.
 
-**Current follow-up:** `work/elf-robustness-completion` continues the preserved
+**Completed implementation:** PR #18 (`work/elf-robustness-completion`) continues the preserved
 `f2884e6` checkpoint on top of PR #17's corrected exporter. The large-output
 pipefail is fixed; real extended-section export/GDB passes. Source bytes are
 streamed, metadata bounds are documented in ADR 0001, and a >2 GiB input passes
@@ -461,7 +461,7 @@ Additional acceptance criteria:
 - [x] Define supported input/output size and resource bounds. Replace whole-file
   buffering where needed, test large inputs, and reject unsupported sizes
   without changing the original or publishing a partial artifact pair.
-- [ ] Pass real headless export, structural validators, GDB behavior,
+- [x] Pass real headless export, structural validators, GDB behavior,
   deterministic reruns and input-hash checks for the added layouts.
 
 ### Work
@@ -1214,7 +1214,7 @@ targets.
 **Status:** `[x]` — schema-versioned deterministic JSON reports distinguish
 success, partial semantic coverage, cancellation, and fatal failure. Real headless
 success, controlled decompiler failure, fatal preflight and Windows-hosted
-assertions pass under P2.12. Current evidence is run `40042631047`.
+assertions pass under P2.12. Current evidence is run `40047390539`.
 
 ### Work
 
@@ -1248,7 +1248,7 @@ Produce a structured final report with:
 production exporter in temporary-import or read-only existing-project mode.
 The Bash contract, real Ghidra completion/fatal behavior, deterministic rerun,
 validators and native Windows PowerShell checks pass in hosted CI. Run
-`40042631047` also passes the expanded log-alias safety suite without skipped cases.
+`40047390539` also passes the expanded log-alias safety suite.
 **Dependency:** exporter core separated from GUI/script state.
 
 ### Work
@@ -1568,15 +1568,16 @@ Unless the user changes priorities:
 
 1. Run `git status --short`; read `AGENTS.md`, the current context/status in
    `PROJECT_CONTEXT.md`, and this file's Sections 0.1/1.1. Preserve existing work.
-2. Check PRs #16/#17 and current CI/release state. At this assessment, both are
-   unmerged; development head `b313e32` passed all twelve jobs in run
-   `40042631047`, while published alpha.1 remains `f4a0199`.
+2. Check PRs #16/#17/#18 and current CI/release state. At this assessment, all
+   three are unmerged; implementation `3e47589` passed all twelve jobs in run
+   `40047390539`, while published alpha.1 remains `f4a0199`.
 3. When release work is authorized, integrate the reviewed fixes, set the next
    version, update notes/limitations, validate the exact release commit and
    package, then publish a new artifact without replacing alpha.1.
-4. For implementation work, resume P0.9 in an isolated branch. Preserve the
-   parked `f2884e6` checkpoint, review it against the corrected exporter, fix
-   its integration harness and complete the ELF layout/size acceptance gates.
+4. P0.9 is complete within ADR 0001's resource/layout bounds in PR #18;
+   implementation `3e47589` passes all twelve jobs in run `40047390539`.
+   Preserve the stacked PR order (#16, #17, #18) and the unchanged published
+   alpha when integrating the reviewed changes under separate release authorization.
 5. Address P1.7/P1.8/P3.3 identity, entry-point and scope cases with focused
    compiler-oracle/GDB fixtures, then P1.11a lifetime/storage migration.
 6. Extend explicitly selected target profiles and GUI journeys. Treat optional

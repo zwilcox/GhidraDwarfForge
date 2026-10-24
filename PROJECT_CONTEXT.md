@@ -1819,12 +1819,15 @@ missing/invalid metadata fails explicitly. Real MIPS `main` changed from the
 incorrect `0x800874` to `0x400874`; the ordinary nonzero-offset/rebased fixture
 still passes. ADR 0001 and `docs/VALIDATION.md` record limits and evidence.
 
-**CONFIRMED locally:** final strengthened-layout runtime/rebase checks pass
-on x86-64/MIPS32 BE, and real mid-copy cancellation reports `CANCELLED` while
-preserving both prior artifacts. **PRESENT, UNVERIFIED:** the complete hosted
-five-target/Linux/Windows matrix is pending at this checkpoint.
-Do not confuse the passing prior PR #17 run `40045186898` with
-validation of this new branch. Native Linux/QEMU cannot directly execute the
+**CONFIRMED:** final strengthened-layout runtime/rebase checks pass locally
+on x86-64, AArch64 and both MIPS byte orders. Real mid-copy cancellation reports
+`CANCELLED` while preserving both prior artifacts. Implementation `3e47589` in
+[PR #18](https://github.com/zwilcox/GhidraDwarfForge/pull/18) passes all twelve
+jobs in [run 40047390539](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40047390539),
+including ARM32 and Windows-hosted export. ARM32 artifact inspection independently
+confirms the late-header, rebase, value, source, validator and hash assertions.
+P0.9 is complete within ADR 0001's documented bounds; these changes remain
+unmerged and the published alpha is unchanged. Native Linux/QEMU cannot directly execute the
 large-program-table fixture; its exact-input static checks and runtime checks
 against the proven-equivalent ordinary load image are explicitly distinguished.
 
@@ -1906,10 +1909,11 @@ documented profiles. The project has an extension build, pinned/audited natives,
 real source/type/location export and a passing Linux/Windows integration matrix.
 
 1. Preserve the working tree and inspect current PR/CI/release state.
-2. When authorized, integrate PRs #16/#17 and ship a separately versioned,
+2. When authorized, integrate PRs #16/#17/#18 in order and ship a separately versioned,
    fully validated corrective alpha; the existing public alpha is unchanged.
-3. Resume the isolated P0.9 ELF robustness work and complete its tests before
-   including the parked checkpoint in a release.
+3. Preserve completed P0.9's layout/resource bounds and regression matrix;
+   implementation `3e47589` is validated by all twelve hosted jobs. Do not
+   redo the parked checkpoint or treat direct PN_XNUM execution as supported.
 4. Implement focused identity/scope/entry-point cases and evidence-backed
    lifetime/storage migration with compiler-oracle and GDB tests.
 5. Extend selected target/GUI coverage; give optional debuglink, inlining and

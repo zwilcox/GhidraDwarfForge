@@ -13,8 +13,9 @@ library paths.
 
 ## ELF robustness development (2026-10-23)
 
-The following evidence applies to `work/elf-robustness-completion`, stacked
-on the unmerged correctness fixes. The published alpha is unchanged.
+The following evidence applies to implementation `3e47589` in
+[PR #18](https://github.com/zwilcox/GhidraDwarfForge/pull/18), stacked on the
+unmerged correctness fixes. The published alpha is unchanged.
 
 **CONFIRMED locally:** file-backed ELF parsing and streamed sidecar writing
 pass independent ELF32/64 × little/big-endian tests for count/index escape
@@ -79,6 +80,10 @@ exceed the old reader's limit. Exact function/global addresses match the
 compiler oracle; recorded import base zero, ordinary and `+0x2000000` rebased
 exports, full runtime values/source/type checks, deterministic reruns and
 input hashes pass. Evidence: `build/test-results/elf-layout-export/run.9sEGM71z/`.
+The same final layout and extended-section suites also pass AArch64 and
+MIPS32 LE, including rebases, deterministic repeats and runtime GDB under
+QEMU: `build/test-results/elf-layout-export/run.XHkZz1YZ/` and
+`build/test-results/extended-sections-export/run.IVAWyHe8/`.
 
 Direct execution of this `PN_XNUM` fixture fails in native Linux and QEMU
 8.2.2. The harness uses the actual extended input for import/export and static
@@ -104,9 +109,24 @@ replacement and through the artifact-pair publisher under `-Xmx64m`.
 The extension build and all nineteen native-independent smoke tasks pass;
 logs are in `build/test-results/elf-robustness/final-build-smokes.txt`.
 
-**PRESENT, UNVERIFIED:** the complete hosted Linux/Windows/five-target run is
-pending at this checkpoint. Local ARM32 compilation is unavailable; its new
-layout tests must pass in CI before this work is marked complete.
+**CONFIRMED:** the five hosted target lanes pass in run `40047390539`.
+ARM32 artifacts were downloaded to `build/elf-robustness-hosted/arm32/` and
+independently inspected: all ten archived sidecars pass LLVM/libdwarf again,
+hashes/build IDs/deterministic comparisons match, and actual LOAD/NOTE headers
+lie after 65,535 null entries. Compiler-oracle function/global addresses are
+`0x10464`/`0x12034` for ET_EXEC and `0x578`/`0x2028` for PIE, including the
+rebased export. Runtime transcripts confirm `right=23`, stack/global value 42,
+source stepping and normal exit with uncertain locations honestly unavailable.
+Local ARM32 compilation remains unavailable; this is hosted evidence.
+**CONFIRMED:** [run 40047390539](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40047390539)
+completed all twelve jobs successfully, including Windows-hosted export and
+the aggregate gate. Hosted x86-64 transcripts also confirm the constrained-heap
+writer, >2 GiB real export and actual cancellation after 16 MiB; compact
+artifacts are retained in `build/elf-robustness-hosted/x86_64/`.
+Windows transcripts are under `build/elf-robustness-hosted/windows/` and
+confirm original preservation, real export and locked-file publication safety.
+That runner uses GNU readelf and LLVM; the standalone libdwarf `dwarfdump`
+command is explicitly unavailable there. All five Linux target lanes run it.
 
 Reproduction commands, after building fixtures and installing the current
 extension:
