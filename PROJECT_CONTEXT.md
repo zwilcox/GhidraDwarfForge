@@ -1826,10 +1826,27 @@ on x86-64, AArch64 and both MIPS byte orders. Real mid-copy cancellation reports
 jobs in [run 40047390539](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40047390539),
 including ARM32 and Windows-hosted export. ARM32 artifact inspection independently
 confirms the late-header, rebase, value, source, validator and hash assertions.
-P0.9 is complete within ADR 0001's documented bounds; these changes remain
-unmerged and the published alpha is unchanged. Native Linux/QEMU cannot directly execute the
+P0.9 is complete within ADR 0001's documented bounds. Integration is tracked
+by PRs #16/#17/#18; the published alpha is unchanged. Native Linux/QEMU cannot directly execute the
 large-program-table fixture; its exact-input static checks and runtime checks
 against the proven-equivalent ordinary load image are explicitly distinguished.
+
+### 16.28 PR approval authority clarification
+
+**CONFIRMED (2026-10-23):** the user reminded the agent that PR approval was
+already delegated. The authenticated `zwilcox` account has admin/merge access.
+`main` enforces an up-to-date `required-validation` check, including for admins,
+and does not require a separate approving review. GitHub's own-author approval
+restriction does not prevent normal integration after review and passing CI.
+
+The previous handoff wording combined routine merges with new release
+publication and caused an unnecessary stop. Routine reviewed PR integration
+now proceeds under the standing authorization without another confirmation.
+Independent review found no outstanding findings or review threads in the
+three-PR stack. PR #16 was merged at `5f8d07a`; subsequent PRs are retargeted
+and validated against the updated `main` in order. Use GitHub for live merge
+and CI state. No protection rule was weakened, no admin bypass was used, and
+this integration does not replace the published alpha artifact.
 
 ## 17. Open questions
 
@@ -1909,8 +1926,9 @@ documented profiles. The project has an extension build, pinned/audited natives,
 real source/type/location export and a passing Linux/Windows integration matrix.
 
 1. Preserve the working tree and inspect current PR/CI/release state.
-2. When authorized, integrate PRs #16/#17/#18 in order and ship a separately versioned,
-   fully validated corrective alpha; the existing public alpha is unchanged.
+2. Integrate reviewed PRs under the standing authorization and enforced checks;
+   check GitHub for the current state of #16/#17/#18. A corrective release is a
+   separate versioned publication task; preserve the existing public alpha.
 3. Preserve completed P0.9's layout/resource bounds and regression matrix;
    implementation `3e47589` is validated by all twelve hosted jobs. Do not
    redo the parked checkpoint or treat direct PN_XNUM execution as supported.

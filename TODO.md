@@ -3,8 +3,9 @@
 This plan began at prototype commit `7a39a186538c7aec3f7dbdc4a6e396125b5d63ea`.
 The current assessment covers implementation commit `3e47589`, whose complete
 [hosted validation run](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40047390539)
-passed all twelve jobs. PRs #16/#17/#18 remain unmerged and the published alpha
-remains `f4a0199`. Use Sections 1.1 and 4 for the next work; do not restart the
+passed all twelve jobs. PRs #16/#17/#18 track integration; consult GitHub for
+their live state. The published alpha remains `f4a0199`. Use Sections 1.1 and 4
+for the next work; do not restart the
 completed prototype bring-up sequence.
 
 Status vocabulary:
@@ -60,8 +61,9 @@ are on the development branch; the published alpha remains affected.
 - [x] Pass the strengthened complete hosted matrix, including ARM32 bit-field
   values and native Windows log identity checks. **CONFIRMED:** all twelve
   jobs passed in run `40041110549` for implementation commit `cd906de`.
-- [ ] Merge reviewed fixes and publish a separately validated replacement
-  release when authorized; do not replace the existing release artifact.
+- [ ] Complete reviewed-PR integration under the standing authorization and
+  required checks, then publish a separately validated replacement release
+  when release work is requested; do not replace the existing artifact.
 
 ## 1. Milestone ordering
 
@@ -98,7 +100,7 @@ items are these bounded workstreams:
 
 | Workstream | Status and acceptance needed |
 |---|---|
-| Corrective release (§0.1) | **PLANNED:** merge the reviewed changes when authorized, bump `VERSION`, validate the exact release commit/package, and publish a separate corrective alpha. The existing alpha artifact must not be replaced. |
+| Corrective release (§0.1) | **PLANNED:** integrate reviewed PRs under the standing authorization and required checks. For the separate release task, bump `VERSION`, validate the exact release commit/package, and publish a corrective alpha without replacing the existing artifact. |
 | ELF robustness (P0.9) | **CONFIRMED complete within the documented bounds:** PR #18 implements extended counts, unnamed tables, bounded file-backed I/O, correct recorded-load-base translation and cancellation. Local checks and all twelve hosted jobs pass; direct PN_XNUM execution limits are documented. |
 | Function identity and scopes (P1.7, P3.3) | **PLANNED:** distinct linkage names without losing analyst-name lookup; external-function declarations, thunks/aliases, function/class/lexical scopes, static locals, and same-named type/variable disambiguation. Existing namespace globals and external-data declarations must remain working. |
 | Additional range/location cases (P1.8, P1.11a) | **PLANNED:** entry points that are not the lowest body address; proven register/memory migration, call-crossing and non-entry lifetimes, stack-slot reuse, and mixed composite storage. Require GDB value checks at multiple instruction addresses and honest unavailable gaps. |
@@ -1568,16 +1570,17 @@ Unless the user changes priorities:
 
 1. Run `git status --short`; read `AGENTS.md`, the current context/status in
    `PROJECT_CONTEXT.md`, and this file's Sections 0.1/1.1. Preserve existing work.
-2. Check PRs #16/#17/#18 and current CI/release state. At this assessment, all
-   three are unmerged; implementation `3e47589` passed all twelve jobs in run
-   `40047390539`, while published alpha.1 remains `f4a0199`.
-3. When release work is authorized, integrate the reviewed fixes, set the next
-   version, update notes/limitations, validate the exact release commit and
-   package, then publish a new artifact without replacing alpha.1.
+2. Check PRs #16/#17/#18 and current CI/release state. Routine reviewed merges
+   are authorized after required checks pass; see AGENTS.md Section 6.1.
+   Implementation `3e47589` passed all twelve jobs in run `40047390539`, while
+   published alpha.1 remains `f4a0199`.
+3. For release work, set the next version, update notes/limitations, validate
+   the exact release commit and package, then publish a new artifact without
+   replacing alpha.1. Do not invent a separate approval gate for routine merges.
 4. P0.9 is complete within ADR 0001's resource/layout bounds in PR #18;
    implementation `3e47589` passes all twelve jobs in run `40047390539`.
-   Preserve the stacked PR order (#16, #17, #18) and the unchanged published
-   alpha when integrating the reviewed changes under separate release authorization.
+   Preserve the stacked PR order (#16, #17, #18), enforce current-base checks,
+   and leave the existing published alpha intact during integration.
 5. Address P1.7/P1.8/P3.3 identity, entry-point and scope cases with focused
    compiler-oracle/GDB fixtures, then P1.11a lifetime/storage migration.
 6. Extend explicitly selected target profiles and GUI journeys. Treat optional
