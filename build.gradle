@@ -290,6 +290,18 @@ tasks.register("registerAliasSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/register-alias/cache").absolutePath
 }
 
+tasks.register("qualifiedFunctionNameSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks qualified analyst display names without changing lexical identity"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.QualifiedFunctionNameSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/qualified-function/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/qualified-function/cache").absolutePath
+}
+
 tasks.register("floatingRegisterSliceSmoke", JavaExec) {
     group = "verification"
     description = "Emits a scalar upper-register bit piece through the isolated native producer"
