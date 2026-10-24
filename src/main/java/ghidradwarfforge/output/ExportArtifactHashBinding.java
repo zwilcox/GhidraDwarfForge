@@ -24,7 +24,10 @@ import java.util.function.BooleanSupplier;
  * Observations occur sequentially, not as an immutable cross-file snapshot.
  *
  * ExportReportClaims' bounded parsing and FileDigests' 64 KiB streaming buffer
- * apply. No inventories or whole artifacts are retained. Cancellation is checked
+ * apply. Lightweight methods retain no inventories or whole artifacts. Opt-in
+ * detailed methods also return the five bounded inventories from the SAME
+ * strict parse as their binding; no second report read or severity inference.
+ * Cancellation is checked
  * around each step and inside the reused readers, including before returning;
  * it cannot interrupt an operating-system call already blocked. Every opened
  * stream is owned and closed by the reused reader. Failure returns no Result.
@@ -52,6 +55,14 @@ public final class ExportArtifactHashBinding {
             requireAgreement(original, claims.artifacts().inputSha256());
             requireAgreement(sidecar, claims.artifacts().outputSha256());
             requireAgreement(source, claims.artifacts().sourceSha256());
+        }
+    }
+
+    /** Reported diagnostics accompany the binding; PARTIAL/NOT_RUN are not approvals. */
+    public record DetailedResult(Result binding, ExportReportClaims.Inventories inventories) {
+        public DetailedResult {
+            Objects.requireNonNull(binding, "binding");
+            Objects.requireNonNull(inventories, "inventories").requireConsistentWith(binding.claims());
         }
     }
 
@@ -88,15 +99,47 @@ public final class ExportArtifactHashBinding {
 
     static Result observe(Path report, Path original, Path sidecar, Path source,
             BooleanSupplier cancelled, FileAccess access) throws IOException {
+        requireArguments(report, original, sidecar, source, cancelled, access);
+        requireRegular(report, "report", cancelled, access);
+        ExportReportClaims claims = ExportReportClaims.read(report, cancelled,
+            access::open, ReportJsonReader.DEFAULT_LIMITS);
+        return bind(claims, original, sidecar, source, cancelled, access);
+    }
+
+    public static DetailedResult observeDetailed(Path report, Path original, Path sidecar, Path source)
+            throws IOException {
+        return observeDetailed(report, original, sidecar, source, () -> false);
+    }
+
+    public static DetailedResult observeDetailed(Path report, Path original, Path sidecar, Path source,
+            BooleanSupplier cancelled) throws IOException {
+        return observeDetailed(report, original, sidecar, source, cancelled, FILES);
+    }
+
+    static DetailedResult observeDetailed(Path report, Path original, Path sidecar, Path source,
+            BooleanSupplier cancelled, FileAccess access) throws IOException {
+        requireArguments(report, original, sidecar, source, cancelled, access);
+        requireRegular(report, "report", cancelled, access);
+        var detailed = ExportReportClaims.readDetailed(report, cancelled, access::open,
+            ReportJsonReader.DEFAULT_LIMITS, ExportReportClaims.DEFAULT_RETENTION);
+        var binding = bind(detailed.claims(), original, sidecar, source, cancelled, access);
+        var result = new DetailedResult(binding, detailed.inventories());
+        checkCancelled(cancelled);
+        return result;
+    }
+
+    private static void requireArguments(Path report, Path original, Path sidecar, Path source,
+            BooleanSupplier cancelled, FileAccess access) {
         Objects.requireNonNull(report, "report");
         Objects.requireNonNull(original, "original");
         Objects.requireNonNull(sidecar, "sidecar");
         Objects.requireNonNull(source, "source");
         Objects.requireNonNull(cancelled, "cancelled");
         Objects.requireNonNull(access, "access");
-        requireRegular(report, "report", cancelled, access);
-        ExportReportClaims claims = ExportReportClaims.read(report, cancelled,
-            access::open, ReportJsonReader.DEFAULT_LIMITS);
+    }
+
+    private static Result bind(ExportReportClaims claims, Path original, Path sidecar, Path source,
+            BooleanSupplier cancelled, FileAccess access) throws IOException {
         requireRegular(original, "original", cancelled, access);
         requireRegular(sidecar, "sidecar", cancelled, access);
         requireRegular(source, "source", cancelled, access);

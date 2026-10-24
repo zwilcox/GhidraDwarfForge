@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -23,7 +24,7 @@ import java.util.function.BooleanSupplier;
  * The reader accepts the current schema-one shape, including the required
  * functionStaticVariables count. Older schema-one shapes are unsupported;
  * version/field presence cannot attest exporter version or count semantics.
- * Inventories are validated and discarded. Their five explicit cardinalities
+ * The lightweight read methods validate and discard inventories. Their five explicit cardinalities
  * and SUCCESS/PARTIAL status rule are checked without inferring relationships
  * between independently supplied function, type, or variable counts.
  *
@@ -33,12 +34,66 @@ import java.util.function.BooleanSupplier;
  * are bounded before Gson can grow an unbounded token. Cancellation is checked
  * before opening, around reads, per character/value and after EOF; it cannot
  * interrupt a blocked filesystem read. The owned stream always closes.
+ * The opt-in detailed methods retain the five diagnostic inventories with
+ * additional limits of 16384 total entries and 1048576 UTF-16 string units.
+ * They preserve order/text without assigning severity, and return no partial
+ * inventory on failure. Retention does not upgrade PARTIAL or NOT_RUN.
  */
 public record ExportReportClaims(int schemaVersion, ExportReport.Status status,
         ExportReport.TargetInfo target, ExportReport.Artifacts artifacts,
         ExportReport.Counts counts, ExportReport.ValidationStatus validationStatus,
         String libdwarfVersion) {
     private static final int CURRENT_SCHEMA = 1;
+
+    /** Reported inventory values in input order, without classification or normalization. */
+    public record Inventories(List<ExportReport.FunctionFailure> failedFunctions,
+            List<ExportReport.SkippedFunctionInfo> skippedFunctions,
+            List<ExportReport.OmittedLocation> omittedLocations,
+            List<ExportReport.UnsupportedConstruct> unsupportedConstructs,
+            List<String> diagnostics) {
+        public Inventories {
+            failedFunctions = List.copyOf(failedFunctions);
+            skippedFunctions = List.copyOf(skippedFunctions);
+            omittedLocations = List.copyOf(omittedLocations);
+            unsupportedConstructs = List.copyOf(unsupportedConstructs);
+            diagnostics = List.copyOf(diagnostics);
+        }
+
+        void requireConsistentWith(ExportReportClaims claims) {
+            Objects.requireNonNull(claims, "claims");
+            var counts = claims.counts();
+            if (counts.functionsFailed() != failedFunctions.size() ||
+                    counts.functionsSkipped() != skippedFunctions.size() ||
+                    counts.omittedLocationRanges() != omittedLocations.size() ||
+                    counts.unsupportedConstructs() != unsupportedConstructs.size() ||
+                    counts.diagnostics() != diagnostics.size()) {
+                throw new IllegalArgumentException("detailed inventories disagree with reported counts");
+            }
+            boolean partial = !failedFunctions.isEmpty() || !skippedFunctions.isEmpty() ||
+                !omittedLocations.isEmpty() || !unsupportedConstructs.isEmpty() || !diagnostics.isEmpty();
+            if (partial != (claims.status() == ExportReport.Status.PARTIAL)) {
+                throw new IllegalArgumentException("detailed inventories disagree with reported status");
+            }
+        }
+    }
+
+    /** Claims and inventories from the same complete parse, not a validation receipt. */
+    public record Detailed(ExportReportClaims claims, Inventories inventories) {
+        public Detailed {
+            Objects.requireNonNull(inventories, "inventories").requireConsistentWith(claims);
+        }
+    }
+
+    static final RetentionLimits DEFAULT_RETENTION = new RetentionLimits(16384, 1048576);
+
+    /** Reader-only bounds; numeric address fields are not retained string units. */
+    record RetentionLimits(int entries, int stringUnits) {
+        RetentionLimits {
+            if (entries < 0 || stringUnits < 0) {
+                throw new IllegalArgumentException("negative detailed retention limit");
+            }
+        }
+    }
 
     public ExportReportClaims {
         if (schemaVersion != CURRENT_SCHEMA ||
@@ -91,9 +146,34 @@ public record ExportReportClaims(int schemaVersion, ExportReport.Status status,
         return read(report, cancelled, Files::newInputStream, ReportJsonReader.DEFAULT_LIMITS);
     }
 
+    public static Detailed readDetailed(Path report) throws IOException {
+        return readDetailed(report, () -> false);
+    }
+
+    public static Detailed readDetailed(Path report, BooleanSupplier cancelled) throws IOException {
+        return readDetailed(report, cancelled, Files::newInputStream,
+            ReportJsonReader.DEFAULT_LIMITS, DEFAULT_RETENTION);
+    }
+
+    static Detailed readDetailed(Path report, BooleanSupplier cancelled, InputOpener opener,
+            ReportJsonReader.Limits limits, RetentionLimits retentionLimits) throws IOException {
+        Retention retained = new Retention(Objects.requireNonNull(retentionLimits, "retentionLimits"));
+        ExportReportClaims claims = parse(report, cancelled, opener, limits, retained);
+        // Nothing escapes until the complete strict parse AND owned stream close.
+        ReportJsonReader.checkCancelled(cancelled);
+        Detailed detailed = new Detailed(claims, retained.inventories());
+        ReportJsonReader.checkCancelled(cancelled);
+        return detailed;
+    }
+
     /** Test seam: this method owns a successfully opened input; no artifact is accessed. */
     static ExportReportClaims read(Path report, BooleanSupplier cancelled, InputOpener opener,
             ReportJsonReader.Limits limits) throws IOException {
+        return parse(report, cancelled, opener, limits, null);
+    }
+
+    private static ExportReportClaims parse(Path report, BooleanSupplier cancelled, InputOpener opener,
+            ReportJsonReader.Limits limits, Retention retained) throws IOException {
         Objects.requireNonNull(report, "report");
         Objects.requireNonNull(cancelled, "cancelled");
         Objects.requireNonNull(opener, "opener");
@@ -102,7 +182,39 @@ public record ExportReportClaims(int schemaVersion, ExportReport.Status status,
         try (JsonReader json = new JsonReader(new ReportJsonReader(
                 Objects.requireNonNull(opener.open(report), "opened report"), cancelled, limits))) {
             json.setLenient(false);
-            return new Parser(json, cancelled, limits).read();
+            return new Parser(json, cancelled, limits, retained).read();
+        }
+    }
+
+    private static final class Retention {
+        private final RetentionLimits limits;
+        private int entries;
+        private int stringUnits;
+        private final List<ExportReport.FunctionFailure> failed = new ArrayList<>();
+        private final List<ExportReport.SkippedFunctionInfo> skipped = new ArrayList<>();
+        private final List<ExportReport.OmittedLocation> omitted = new ArrayList<>();
+        private final List<ExportReport.UnsupportedConstruct> unsupported = new ArrayList<>();
+        private final List<String> diagnostics = new ArrayList<>();
+
+        Retention(RetentionLimits limits) {
+            this.limits = limits;
+        }
+
+        void reserve(String... strings) throws IOException {
+            if (entries == limits.entries()) {
+                throw new IOException("detailed report inventory exceeds entry limit " + limits.entries());
+            }
+            long additional = 0;
+            for (String text : strings) { additional += text.length(); }
+            if (additional > (long) limits.stringUnits() - stringUnits) {
+                throw new IOException("detailed report inventory exceeds UTF-16 string-unit limit " + limits.stringUnits());
+            }
+            entries++;
+            stringUnits += (int) additional;
+        }
+
+        Inventories inventories() {
+            return new Inventories(failed, skipped, omitted, unsupported, diagnostics);
         }
     }
 
@@ -120,6 +232,7 @@ public record ExportReportClaims(int schemaVersion, ExportReport.Status status,
         private final JsonReader json;
         private final BooleanSupplier cancelled;
         private final ReportJsonReader.Limits limits;
+        private final Retention retained;
         private int values;
         private int schema;
         private ExportReport.Status status;
@@ -135,10 +248,12 @@ public record ExportReportClaims(int schemaVersion, ExportReport.Status status,
         private int unsupported;
         private int diagnostics;
 
-        private Parser(JsonReader json, BooleanSupplier cancelled, ReportJsonReader.Limits limits) {
+        private Parser(JsonReader json, BooleanSupplier cancelled, ReportJsonReader.Limits limits,
+                Retention retained) {
             this.json = json;
             this.cancelled = cancelled;
             this.limits = limits;
+            this.retained = retained;
         }
 
         private ExportReportClaims read() throws IOException {
@@ -164,12 +279,10 @@ public record ExportReportClaims(int schemaVersion, ExportReport.Status status,
                     case "counts" -> counts = nullable(this::counts);
                     case "sections" -> sections = array(() -> text(false));
                     case "failedFunctions" -> failed = array(this::failedFunction);
-                    case "skippedFunctions" -> skipped = array(() -> textObject("skipped function",
-                        Set.of("name", "reason")));
+                    case "skippedFunctions" -> skipped = array(this::skippedFunction);
                     case "omittedLocations" -> omitted = array(this::omittedLocation);
-                    case "unsupportedConstructs" -> unsupported = array(() -> textObject("unsupported construct",
-                        Set.of("kind", "name", "diagnostic")));
-                    case "diagnostics" -> diagnostics = array(() -> text(false));
+                    case "unsupportedConstructs" -> unsupported = array(this::unsupportedConstruct);
+                    case "diagnostics" -> diagnostics = array(this::diagnostic);
                     case "validation" -> object("validation", Set.of("status"), ignored -> {
                         if (!text(true).equals("NOT_RUN")) {
                             throw invalid("report validation status must remain NOT_RUN");
@@ -253,28 +366,86 @@ public record ExportReportClaims(int schemaVersion, ExportReport.Status status,
         }
 
         private void failedFunction() throws IOException {
+            String[] fields = retained == null ? null : new String[2];
+            long[] at = new long[1];
             object("failed function", Set.of("name", "address", "diagnostic"), name -> {
                 if (name.equals("address")) {
-                    address(); // Any long's unsigned hex spelling is writer-valid here.
+                    at[0] = address(); // Any long's unsigned hex spelling is writer-valid here.
                 }
                 else {
-                    text(true);
+                    String value = text(true);
+                    if (fields != null) { fields[name.equals("name") ? 0 : 1] = value; }
                 }
             });
+            if (retained != null) {
+                retained.reserve(fields);
+                retained.failed.add(new ExportReport.FunctionFailure(fields[0], at[0], fields[1]));
+            }
+        }
+
+        private void skippedFunction() throws IOException {
+            String[] fields = retained == null ? null : new String[2];
+            object("skipped function", Set.of("name", "reason"), name -> {
+                String value = text(true);
+                if (fields != null) { fields[name.equals("name") ? 0 : 1] = value; }
+            });
+            if (retained != null) {
+                retained.reserve(fields);
+                retained.skipped.add(new ExportReport.SkippedFunctionInfo(fields[0], fields[1]));
+            }
+        }
+
+        private void unsupportedConstruct() throws IOException {
+            String[] fields = retained == null ? null : new String[3];
+            object("unsupported construct", Set.of("kind", "name", "diagnostic"), name -> {
+                String value = text(true);
+                if (fields != null) {
+                    fields[switch (name) { case "kind" -> 0; case "name" -> 1; default -> 2; }] = value;
+                }
+            });
+            if (retained != null) {
+                retained.reserve(fields);
+                retained.unsupported.add(new ExportReport.UnsupportedConstruct(fields[0], fields[1], fields[2]));
+            }
+        }
+
+        private void diagnostic() throws IOException {
+            String value = text(false);
+            if (retained != null) {
+                retained.reserve(value);
+                retained.diagnostics.add(value);
+            }
         }
 
         private void omittedLocation() throws IOException {
             long[] bounds = new long[2];
+            String[] fields = retained == null ? null : new String[5];
             object("omitted location", Set.of("function", "variable", "kind", "startAddress",
                 "endAddress", "reason", "diagnostic"), name -> {
                     switch (name) {
                         case "startAddress" -> bounds[0] = address();
                         case "endAddress" -> bounds[1] = address();
-                        default -> text(true);
+                        default -> {
+                            String value = text(true);
+                            if (fields != null) {
+                                fields[switch (name) {
+                                    case "function" -> 0;
+                                    case "variable" -> 1;
+                                    case "kind" -> 2;
+                                    case "reason" -> 3;
+                                    default -> 4;
+                                }] = value;
+                            }
+                        }
                     }
                 });
             if (bounds[0] < 0 || bounds[1] <= bounds[0]) {
                 throw invalid("invalid omitted-location range");
+            }
+            if (retained != null) {
+                retained.reserve(fields);
+                retained.omitted.add(new ExportReport.OmittedLocation(fields[0], fields[1], fields[2],
+                    bounds[0], bounds[1], fields[3], fields[4]));
             }
         }
 
