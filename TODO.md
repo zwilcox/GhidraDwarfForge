@@ -41,16 +41,20 @@ retains names/types without locations and reports `UNKNOWN_LIFETIME`. Exec,
 PIE and rebased PIE pass real export, deterministic repeats, validators and
 GDB. Existing x86/AArch64 prefix and ARM scalar-register regressions also pass.
 This is a correctness guard, not register migration or syscall ABI support.
-The separate main-push run `40075761646` is pending at this checkpoint.
+The separate main-push run `40075761646` also passed all twelve jobs, with
+independently verified Linux and Windows GUI artifacts.
 
-**CONFIRMED locally; hosted gate pending:** an exact code-only `.debug_aranges`
+**CONFIRMED:** PR #28 head `a5f7910` passed all twelve jobs in `40076025207`
+and merged normally as `b4d7869`, with the tested tree. An exact code-only `.debug_aranges`
 index resolves the global-address formatting warning in GDB. The warning
 reproduced both before and after the opaque-effect guard; omitting that
 parameter location only avoided an automatic formatting trigger. The
 production implementation, format checks, all 15 five-profile qualified cases,
 three AArch64 supervisor-call roles, six x86 advanced-entry exports and the
-MIPS32 big-endian sectionless regression pass locally. Exact hosted acceptance
-remains required before another release.
+MIPS32 big-endian sectionless regression pass locally. Independent hosted
+reviews additionally verify all five target artifacts, both GUI hosts and nine
+native Windows smoke checks. Exact-main push `40077843290` remains pending;
+this does not change either published alpha.
 Do not suppress the warning. See `docs/ADDRESS-INDEX.md`.
 Evidence and exact scope are recorded in `docs/VALIDATION.md`.
 
@@ -1052,6 +1056,15 @@ or uncertain storage remains locationless with a diagnostic.
 - [x] x86-64 register-number mapping has explicit tests.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
+
+**CONFIRMED locally; hosted gate pending:** the bounded register-copy
+implementation and independent 32/64-bit x86-64/AArch64 fixture pass final
+packaged exec/PIE/rebase exports, validators and 72 calls per debugger mode.
+It tracks one direct saved
+register through the original overwrite, then stops at an unproved backup
+write. The whole-function flow/opaque guards remain mandatory. No call,
+memory, arbitrary-chain or later-local recovery is implemented. See
+`docs/REGISTER-COPY-LIFETIMES.md`; the broader criteria below remain partial.
 
 **CONFIRMED locally:** the opaque-effect guard rejects `CALLOTHER` and
 `UNIMPLEMENTED` in the whole-function register proof, shared by parameters,

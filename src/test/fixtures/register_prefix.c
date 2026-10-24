@@ -1,6 +1,6 @@
 /* Compiler-DWARF oracle for an incoming value whose original register is
- * overwritten. The compiler retains it elsewhere; Forge's narrow prefix
- * proof intentionally does not claim that later storage. */
+ * overwritten. Its direct saved-register copy is now covered by Forge's
+ * bounded copy proof; register-copy.c also tests destruction of that copy. */
 volatile int prefix_sink = -1;
 
 __attribute__((noinline)) int prefix_value(int value)

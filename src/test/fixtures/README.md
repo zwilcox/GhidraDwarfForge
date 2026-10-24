@@ -31,8 +31,10 @@ entry, before the call, after the call and return, the stored global, source
 stepping and normal exit. The dedicated harness tests exec, PIE and rebased PIE
 with fresh-import deterministic repeats and strict validators. Its optional
 `baseline-reproducer` mode records the old wrong value and never counts as
-fixed acceptance. An independent direct global-address formatting warning is
-tracked separately; it is not suppressed by the harness.
+fixed acceptance. The current harness also requires the exact code-address
+index, so historical packages predating that index need their retained
+historical harness to replay the old wrong-value case. The direct
+global-address formatting regression is now checked without warning suppression.
 
 `recovered_composite` receives a known 64-bit value split across the third and
 fourth ABI input registers. The preparation script models those ordered
@@ -178,10 +180,20 @@ Focused harnesses build additional fixtures independently of the Makefile:
 
 - `register-prefix-export.sh` uses `register_prefix.c` for x86-64/AArch64
   ET_EXEC/PIE incoming parameters. Compiler references preserve value 19 after
-  an explicit partial/alias register overwrite; Forge retains only the proven
-  initial register lifetime and reports the later interval unavailable. Exact
+  an explicit partial/alias register overwrite; Forge now retains the proven
+  direct saved-register copy across that write. Exact
   instruction markers, source stepping, values, rebases and repeats are checked
   using fully stripped Ghidra/runtime inputs.
+
+- `register-copy-export.sh` uses `register-copy.c` for signed 32/64-bit values
+  on x86-64/AArch64. Each keep/kill function receives positive, negative and
+  high-bit inputs. Exact compiler labels and raw location-list checks require
+  incoming-register coverage followed by the one proved backup, then an
+  unavailable tail when that backup is overwritten. The compiler retains
+  entry-value recovery after the kill; Forge deliberately has no such location.
+  Exec, PIE and explicit rebase cases include fresh-import repeats, unchanged
+  originals, strict validators, source stepping and runtime values. See
+  `docs/REGISTER-COPY-LIFETIMES.md` for the bounded proof.
 
 - `floating-registers-export.sh` uses `fp_register_aliases.c` with `-Og` and
   fully stripped runtime/export inputs. Compiler references establish scalar
