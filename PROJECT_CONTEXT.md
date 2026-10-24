@@ -66,6 +66,14 @@ A representative target experience is:
 
 ## 3. Goals
 
+**CONFIRMED assessment:** `docs/TARGET-PROFILES.md` records the five tested
+ELF/ABI profiles and separates machine/class acceptance from actual storage
+behavior. A bounded audit of current code, retained fixture metadata and
+Ghidra 12.0.3 register aliases found that ABI classification is incomplete
+and larger base-register aliases can hide otherwise mapped scalar FP storage.
+The document defines focused follow-ups; it adds no architecture support claim
+and does not mark those implementation gaps complete.
+
 ### 3.1 Primary goals
 
 **CONFIRMED REQUIREMENT:**
@@ -2143,6 +2151,53 @@ only the reviewed validation corrections and their documentation. Target-guard
 production and test code are unchanged. Workflow and changed-script syntax
 checks pass; prior smoke/runtime suites were not repeated. Hosted validation
 of this separate follow-up remains pending.
+### P3.4 bounded inline-evidence investigation (2026-10-23)
+
+**CONFIRMED:** ADR 0003 records the completed investigation and the conditions
+for implementing inline-instance export. The installed Ghidra 12.0.3 source
+and help distinguish the function-level decompiler inline flag from compiler
+inline instances. The DWARF importer can retain inline children as locals of
+the containing function and preserve source rows/optional comments; this is
+not evidence that all inline information is discarded. Its inline processing
+also flattens the body's disjoint ranges for comments/child handling.
+
+The reproducible `src/test/research/inline/run.sh` probe builds its own GCC
+optimized-inline fixture, validates its compiler DWARF and demonstrates an
+actual GDB inline frame with argument 4/local 11. A real Ghidra import retains
+two `IMPORTED` inline locals, 20 source rows and two comments; a debug-stripped
+counterpart loses those compiler identities. Independently marking an ordinary
+callee inline removes its high-pcode call while its real machine call remains.
+Original hashes match. Exact source hashes and observations are committed at
+`docs/research/inline-evidence-12.0.3.txt`; full logs are retained under the
+isolated inline worktree's `build/test-results/inline-evidence/run.tB61GBSm/`.
+
+The probe's Ghidra importer reports three unrecoverable `DW_OP_reg5`
+expressions for other optimized locals; this limitation is recorded, not
+suppressed. This is research evidence, not a Forge inline-export validation or
+a new architecture support claim. No production exporter code changes.
+Inline DIE emission remains deferred pending an explicit provenance-bearing
+instance model and the compiler/analyst-evidence GDB checks in ADR 0003.
+
+### Performance scaling baseline (P3.5)
+
+**CONFIRMED locally (2026-10-23):** a standalone benchmark harness now builds
+synthetic named-function ELF workloads, measures import separately from saved
+project export, and retains commands/tool versions/module hashes/metrics.
+Three repeated fresh-JVM exports of 100, 1,000 and 10,000 generated functions
+have medians of 2.52, 3.27 and 10.62 seconds on the recorded host. All artifacts
+pass GNU/LLVM, full GDB DWARF symbol/address/source checks, runtime
+entry/stepping/exit, original hashes and byte-identical reruns. Their historical
+exit-zero libdwarf checks did not enforce numeric summaries; those pass labels
+are withdrawn pending the strict evidence recorded below.
+Independent review strengthened the oracle so inherited minimal ELF symbols
+cannot mask missing function DIEs, and timeout cleanup kills descendants even
+when the wrapper exits first. The adversarial cleanup probe passes.
+
+The harness changes no production code and excludes validators from timing.
+Its whole-process measurements include JVM startup and do not identify which
+export phase dominates. **PLANNED:** representative complex-binary and phase
+profiling before choosing an optimization; P3.5 remains partially complete.
+See `docs/PERFORMANCE.md` for commands, retained evidence and limits.
 
 ## 17. Open questions
 
@@ -2193,7 +2248,10 @@ Codex should not silently answer these through implementation choices. Investiga
 16. **RESOLVED for the initial extern/import policy:** external-data declarations
     may omit locations; imported functions/thunks are diagnosed and skipped.
     Expanded declaration/linkage handling remains under P1.7/P3.3.
-17. **Inlining:** Is reconstructed inline information a later goal, or explicitly out of scope?
+17. **RESOLVED for the current exporter — inline evidence:** ADR 0003 completes
+    the bounded Ghidra 12.0.3 investigation. Inline DIE emission remains
+    deferred until explicit instance/origin/range evidence and behavioral
+    acceptance exist; it is not inferred from the decompiler inline flag.
 18. **RESOLVED — `.debug_frame`:** the current ELF milestone relies on unwind
     information in the original target and does not synthesize unsupported
     CFI. See `docs/ADR-0002-DEBUG-FRAME.md`.
@@ -2238,3 +2296,81 @@ real source/type/location export and a passing Linux/Windows integration matrix.
 The bounded backlog and next-session sequence are in `TODO.md` Sections 1.1
 and 4. Historical prototype observations elsewhere in this file remain useful
 history, not instructions to redo completed implementation.
+
+### P3.5 measured line-table address index (2026-10-23)
+
+**CONFIRMED locally:** an actual 10,000-function saved-project export profile
+identified repeated source-address scans in `Dwarf5LineTable.plan` (131/516 Java
+execution samples). The resulting bounded change builds a sorted global
+address-to-earliest-line map once and takes half-open submaps for each original
+body range. Range/sequence order, overlapping bodies and earliest-row policy
+are unchanged; focused boundary assertions and the existing width/endian tests
+pass. No native signature or decompilation behavior changes.
+
+Five alternating baseline/indexed pairs reduce median whole-process export
+time from 10.86 to 9.18 seconds on this local workload, with every sidecar/source
+pair byte-identical. GNU/LLVM, all 10,000 full DWARF symbols, runtime GDB,
+input/historical-artifact hashes and the saved-project file manifest pass.
+The old libdwarf report contains 11,833 errors despite exit zero, so its clean
+validation claim is withdrawn. The earlier indexed build passed nineteen
+smoke tasks and the four-profile ET_EXEC/PIE/shared GDB matrix; those historical
+runs predate strict libdwarf summary enforcement. `docs/PERFORMANCE.md` records the complete
+samples, hashes, methodology and limits. This does not establish a speed or
+memory bound for arbitrary firmware or another host.
+
+The benchmark/inline/target-profile research branch was normally merged into
+`work/line-table-index` at `5bc72f1`, retaining its history and additive evidence.
+The only runtime change remains the small line-table index. Larger application/
+firmware profiling and hosted validation remain **PLANNED**; timing thresholds,
+caching, parallel decompilation and compression are not introduced.
+
+### Line-index integration and complete diagnostic evidence (2026-10-23)
+
+**CONFIRMED locally:** normal integration of strict `99845c7` into the isolated
+line-index branch preserves the measured planner without changes. The merged
+line/source/range smokes and extension build pass. New ARM32 ARMv7 hard-float
+exec/PIE/shared exports pass GNU/LLVM/strict checks and QEMU/GDB runtime oracles;
+all three strict summaries are zero, and a fresh exec repeat is byte-identical.
+A ten-function/two-export rehearsal proves the migrated benchmark harness.
+
+Strict replay correctly rejected the retained 10,000-function artifact when
+the original and sidecar each reported 10,002 inherited frame errors but the
+consumer printed only 49 messages. The performance branch adds a third pinned
+validation-only patch with capacity 65,536, checked heap retrieval and
+all-or-nothing buffer allocation. Allocation failure, over-capacity and
+incomplete evidence fail explicitly; prior buffers/messages/counters survive
+failed resizing. Shipped producer/consumer libraries and public APIs are
+unchanged. Exact Counter equality still precedes the helper's set-membership
+optimization; missing or duplicated messages cannot pass on counts alone.
+
+The retained result now passes full GNU/LLVM/strict/GDB replay with all 10,002
+messages matched to unchanged original frame bytes, identity and same-version
+diagnostics; no other errors remain. All ten recorded output hashes and the
+saved-project manifest are unchanged. No timed 10,000-function export was
+rerun, and historical timing remains baseline evidence rather than a new
+merged measurement. `docs/PERFORMANCE.md` and `support/validation/README.md`
+record limits, failure controls and retained paths. The complete combined
+hosted matrix and representative complex workloads remain **PLANNED**.
+
+### Standalone checker configuration packaging (2026-10-24)
+
+PR #24 run `40064815083` exposed a hidden host dependency in the validation
+bundle: native Linux had no `dwarfdump.conf`, so the consumer suppressed frame
+checks after printing an error and exiting zero. Strict validation correctly
+failed the first capacity positive. Local distro config had masked this.
+The digest-verified failure remains in `build/hosted-capacity-review/`.
+
+The bounded correction includes the unchanged pinned upstream configuration,
+a relocatable explicit-path launcher and hashes for both launcher and real
+ELF. Configuration absence/corruption or override fails closed; no ABI policy,
+shipped native patch, validator exception or test threshold changes. Relocation
+and negative controls join the full capacity/allocation regression. This is a
+performance-branch validation-packaging follow-up; corrected hosted CI remains
+required and the separate corrective release is unchanged.
+
+The configured bundle passes local relocation/configuration controls, the
+full 50/65,536/65,537 diagnostic boundary and allocation/resize-failure suite,
+strict parser/line/range/extended-program rejection tests, and exact 10,002-message
+retained-benchmark corroboration. Source/manifest checks and independent review
+pass. `docs/VALIDATION.md` records exact bundle hashes and result directories;
+no Ghidra/benchmark export was repeated for this validation-only packaging fix.

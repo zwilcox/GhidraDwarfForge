@@ -153,11 +153,16 @@ def main():
 
     raw = proof.read_text()
     original_raw = proof.with_name(proof.name + ".original.txt").read_text()
+    frame_lines = re.findall(r"^\*\*\* DWARF CHECK: DW_DLE_DEBUG_FRAME_LENGTH_NOT_MULTIPLE.*$",
+        raw, re.MULTILINE)
+    assert len(set(frame_lines)) >= 2, "multiplicity control needs distinct frame records"
     replay = work / "inherited-replay.txt"
     reference_replay = work / "original-replay.txt"
     for name, side_text, original_text in (
             ("different-diagnostic-offset", raw,
                 re.sub(r"offset 0x[0-9a-f]+\.", "offset 0xdeadbeef.", original_raw, count=1)),
+            ("duplicate-diagnostic-same-count", raw.replace(frame_lines[1], frame_lines[0], 1),
+                original_raw),
             ("extra-emitted-line-error", re.sub(r"(line_table\s+\d+\s+)0", r"\g<1>1", raw, count=1),
                 original_raw)):
         replay.write_text(side_text)

@@ -215,6 +215,53 @@ export. Export remains explicit: installed wrappers request checksum-verified
 packaged natives by default, while source-tree audit runs may supply explicit
 library paths.
 
+## Measured line-table address index (2026-10-23)
+
+**CONFIRMED locally:** `Dwarf5LineTable.plan` builds one earliest-line address
+index and queries each half-open function range. The focused smoke preserves
+starts, excludes ends/gaps, keeps overlapping bodies independent and retains
+the earliest line for repeated addresses. Width/byte-order and deterministic
+ordering checks continue to pass.
+
+**HISTORICAL:** five alternating `ddad598` baseline/indexed exports of the same
+saved 10,000-function project produced byte-identical `.dbg` and `.dbg.c` files
+in all ten runs, with whole-process medians of 10.86 and 9.18 seconds. GNU,
+LLVM and full GDB symbol/source/type/address/runtime checks passed. The old
+libdwarf log reports 11,833 errors despite exit zero; its clean-validator claim
+is withdrawn. Exact timings, hashes and workload limits remain in
+`docs/PERFORMANCE.md` and `build/line-profile/paired.8k_6dt_w/`.
+
+The historical indexed build passed nineteen native-independent smokes and
+x86-64, AArch64, MIPS32 BE/LE ET_EXEC/PIE/shared-object GDB cases. Those runs
+predate strict summary enforcement; their old libdwarf pass labels are not
+current validation evidence. Logs remain under `build/line-profile/verification/`.
+The prior benchmark/research branch was merged normally at `5bc72f1`.
+
+**CONFIRMED locally after merging strict `99845c7`:** the planner source is
+unchanged, and the line-table/source/range smokes and extension build pass.
+Fresh ARM32 ARMv7 hard-float ET_EXEC, PIE and shared-object exports pass GNU,
+LLVM, strict libdwarf (zero errors) and QEMU/GDB runtime assertions. A repeated
+fresh ET_EXEC import/export is byte-identical; originals remain unchanged.
+A fresh ten-function, two-export benchmark rehearsal also passes strict
+validation, byte equality and GDB. These are functional checks, not new timing
+comparisons. Evidence: `build/line-profile/merged-verification/` and
+`build/test-results/export-benchmark/run.3h1im338`.
+
+A retained 10,000-function artifact initially failed strict validation because
+the standalone consumer printed only 49 of 10,002 reported inherited frame
+messages. A separately pinned validation-only capacity patch now retains up to
+65,536 messages with checked allocation and explicit overflow/failure exits.
+The full GNU/LLVM/strict/GDB replay passes: all 10,002 errors are exactly
+corroborated against the unchanged original's identity/frame bytes and
+same-version diagnostics; every other category is zero. Recorded artifact
+hashes and the complete saved-project manifest remain unchanged. No timed
+10,000-function export was rerun. Boundary, missing/duplicated diagnostic and
+allocation-failure controls are documented in `support/validation/README.md`.
+
+The only exporter runtime optimization is the line-table index. There is no
+new native interface or timing threshold. Broader workloads and the combined
+hosted matrix, including Windows, remain **PLANNED**.
+
 ## ELF robustness development (2026-10-23)
 
 The following evidence applies to implementation `3e47589` in
@@ -698,9 +745,10 @@ inside the export report because the development harness validates the final
 artifact after the report is produced.
 
 `dwarfTargetSmoke` checks the table-driven ELF-machine, class, byte-order, and
-libdwarf ISA/flag mapping. It accepts only the validated profiles, including
-MIPS32 in both byte orders, and fails closed for MIPS64 and unsupported
-big-endian x86-64, AArch64, or ARM inputs. The companion
+libdwarf ISA/flag mapping, including MIPS32 in both byte orders. It fails closed
+for MIPS64 and unsupported big-endian x86-64, AArch64, or ARM inputs. It does
+not classify every ARM/MIPS ABI or validate every accepted storage convention;
+see [the exact tested profiles and remaining gaps](TARGET-PROFILES.md). The companion
 `src/test/integration/architecture-neutrality.sh` guard rejects architecture
 names and register spellings outside `DwarfTarget`, `TargetRegisterMap`, and
 the host-only packaged-native selector.
@@ -1611,3 +1659,38 @@ All installations and fixture copies are private; the user installation and
 the supplied originals are unchanged. Existing CI retains every target/role
 and host gate, and adds the rejection controls plus Windows metadata smoke.
 The complete new hosted matrix remains pending.
+## Performance-branch validator configuration incident (2026-10-24)
+
+**CONFIRMED:** [run 40064815083](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40064815083)
+at `d12be10bc93d9096042ca620f712fc0baf8063db` failed native Linux job
+`120785718398` in the first diagnostic-capacity positive. The actual checker
+returned zero but emitted `ERROR: dwarfdump found no dwarfdump.conf` and
+suppressed frame access; strict validation rejected the result. Artifact
+`12548957019` matches GitHub digest
+`7ea4ad1d70bc7a1a512977a73293708e6c28b3f27ba5e0918fb8f284e1944ba7`.
+
+The standalone bundle now includes its unchanged pinned upstream config and a
+relocatable launcher selecting it explicitly. It has no dependency on an
+installed distro, CWD or HOME configuration. Missing/altered config and option
+aliases fail closed, and raw allocation-injection controls keep the same
+explicit config. See `support/validation/README.md` for source hashes and
+reproducible controls. The failure does not change historical timing results
+or the indexed planner; no performance export was rerun. Corrected hosted
+acceptance remains pending, and this feature branch stays outside alpha.2.
+
+**PASS locally:** the final configured bundle is
+`line-table-index/build/line-profile/validation-tool-config-final/`.
+Its complete manifest and bundled-source comparisons pass. Launcher SHA-256:
+`cb6c594b13fa18d0e30339390d3985ba594eb0fafa597ec1845c14dde940aaaa`;
+ELF executable SHA-256:
+`94435663cf53fafea90c40db053b90bd5bff77d3974de4471548df0cd88b37fd`.
+Configuration controls pass in `build/test-results/dwarfdump-configuration/run.1n891ve7`;
+full capacity/allocation/static-rollback controls pass in
+`build/test-results/dwarfdump-diagnostic-capacity/run.yfxuwuz0`.
+Strict parser, line/range and extended-program negatives also pass, and the
+retained 10,000-function sidecar again matches all 10,002 original frame
+messages with zero uncorroborated errors. Commands/results are retained under
+`build/hosted-capacity-review/run-40064815083/`. The developer build's initial
+override control caught the older grouped-option filter before correction;
+that failing evidence is preserved. A reviewer independently verified source,
+manifest and controls. Corrected hosted acceptance remains pending.

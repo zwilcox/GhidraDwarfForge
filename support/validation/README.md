@@ -1,7 +1,7 @@
 # Standalone DWARF validation corrections
 
 These patches apply only to the independently built **validation executable**
-from libdwarf 2.3.2, including its statically linked ELF consumer. Neither may
+from libdwarf 2.3.2, including its statically linked ELF consumer. None may
 enter the shipped producer/consumer library builds, their source patch set,
 or release-native provenance manifests.
 
@@ -15,6 +15,89 @@ or release-native provenance manifests.
   `8468426396e6a28f755077681eec78d326744a535c7aade9d17d9a1acef73b46`.
 - Second patch modifies `src/lib/libdwarf/dwarf_elf_load_headers.c` only, in
   the validation executable's private static dependency.
+- `0003-preserve-bounded-harmless-diagnostics.patch` SHA-256:
+  `e9f7eb0e613b4a4e859377ad12563ad514d24f7ee81b04378a30b8e99e403139`.
+- Third patch changes `src/bin/dwarfdump/dwarfdump.c` and the validation-only
+  static consumer's `src/lib/libdwarf/dwarf_harmless.c`; public APIs and shipped
+  producer/consumer sources remain unchanged.
+
+## Self-contained configuration
+
+The standalone consumer also requires upstream `dwarfdump.conf`, even without
+an explicit ABI selection. Missing configuration makes libdwarf 2.3.2 print
+an error and suppress frame access while returning zero. PR #24 run
+`40064815083`, native Linux job `120785718398`, exposed this before the first
+50-frame capacity positive. Its verified diagnostic artifact is `12548957019`
+(SHA-256 `7ea4ad1d70bc7a1a512977a73293708e6c28b3f27ba5e0918fb8f284e1944ba7`).
+The strict helper correctly rejected it; local distro configuration had masked
+the incomplete packaging. The earlier standalone bundle was not self-contained.
+
+The builder now retains the ELF executable at `libexec/dwarfdump` and places
+the unchanged pinned source configuration at `share/dwarfdump/dwarfdump.conf`,
+SHA-256 `842bba9230de82059dfcef1485114cf3c33eae8be2973c649d176f4ad18972ef`.
+The relocatable `bin/dwarfdump` Bash launcher verifies that hash and passes the
+absolute path through upstream `--file-name`. It preserves the existing ABI
+selection behavior; no target ABI is guessed. Missing/altered bundled config
+and file-selection overrides fail before the checker runs. CWD, HOME and
+system config files cannot replace this explicit selection. Coreutils and Bash
+are Linux validation dependencies, not additions to the shipped extension.
+
+`SHA256SUMS` covers launcher, real executable and configuration; metadata
+identifies the configuration hash and both entry-point paths. The corresponding
+source includes the launcher, builder, source archive and all patches. After
+artifact download, CI restores executable permission on both executable files.
+The existing GNU/LLVM/libdwarf diagnostic policy is unchanged.
+
+`dwarfdump-configuration.py` exercises a relocated bundle in a path containing
+spaces from a directory with an invalid host configuration. It reproduces the
+old missing-config/frame-suppression error, proves complete strict frame checks
+through the launcher, and rejects missing/altered bundled configuration and
+upstream option aliases, including grouped short options. Capacity positives
+use the launcher; allocation-failure tests invoke the real ELF with the same
+explicit config so `LD_PRELOAD` does not instrument the shell/hash utilities.
+Both test suites retain executable/config hashes and original fixture hashes.
+
+## Complete bounded diagnostic evidence
+
+The retained 10,000-function benchmark and its original each report 10,002
+inherited frame-length errors. Upstream configures a 50-message circular list,
+then retrieves it through a 50-pointer array whose final slot must be NULL.
+Only 49 diagnostic texts survive in the output. The strict checker correctly
+rejects the resulting incomplete evidence even when the two total counts match.
+No configurable capacity option exists; suppressing harmless errors would hide
+the evidence and is not used.
+
+The third patch retains at most 65,536 messages and retrieves them through a
+checked heap allocation of 65,537 pointers. It verifies the effective capacity
+after requesting it and exits unsuccessfully on allocation failure, any count
+above the bound, or any mismatch between reported and printed diagnostics.
+The underlying fixed 300-byte message slots are allocated all-or-nothing;
+failed resizing restores the previous buffer, ownership and counters.
+This requires about 20 MiB per `Dwarf_Debug`, plus about 512 KiB for retrieval
+on a 64-bit host; a tied object has its own bounded allocation. It is not an
+unbounded diagnostic collector. Truncated message text or incomplete reports
+still fail strict parsing. The limit applies to standalone validation only.
+
+`dwarfdump-diagnostic-capacity.py` exercises real assembler-generated frame
+records at and beyond the capacity, checks complete original/sidecar diagnostic
+corroboration, and injects allocation failures in isolated subprocesses.
+The helper compares exact diagnostic multiplicities before using a set for
+efficient removal of already corroborated lines. A same-count duplicate control
+ensures this optimization cannot reduce evidence to set equality.
+
+Local regression `build/test-results/dwarfdump-diagnostic-capacity/run.16qkvtxf`
+passes complete 50- and 65,536-message original/sidecar checks, rejects 65,537
+with normal exit 1, and rejects missing/same-count duplicated diagnostics.
+Isolated `calloc` failures for the internal pointer array, the 100th string and
+the retrieval array fail normally. The static C API control preserves capacity
+3, counter 5 and the last three messages after failed resizing. Original hashes
+are unchanged. The Linux builder runs the full test, including this static API
+control; no target code executes in these assembler fixture controls.
+
+The retained paired 10,000-function benchmark independently passes with all
+10,002 original diagnostics corroborated and every other category zero, plus
+GNU/LLVM and full GDB behavior checks. This revalidation does not repeat or
+change the historical timing measurements. See `docs/PERFORMANCE.md`.
 
 ## Line-sequence checks
 
@@ -130,6 +213,7 @@ For example, after extracting the verified archive into a private directory:
 ```bash
 patch -d /private/libdwarf-2.3.2 -p1 < support/validation/0001-check-line-sequences.patch
 patch -d /private/libdwarf-2.3.2 -p1 < support/validation/0002-accept-bounded-extended-program-count.patch
+patch -d /private/libdwarf-2.3.2 -p1 < support/validation/0003-preserve-bounded-harmless-diagnostics.patch
 cd /private/libdwarf-2.3.2
 ./configure --enable-static --disable-shared --disable-dwarfgen
 make -j4

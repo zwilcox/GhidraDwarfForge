@@ -139,17 +139,17 @@ public final class Dwarf5LineTable {
         List<FunctionSymbol> ordered = new ArrayList<>(functions);
         ordered.sort(Comparator.comparingLong(FunctionSymbol::address)
             .thenComparing(FunctionSymbol::name));
+        TreeMap<Long, Integer> sourceRows = new TreeMap<>();
+        for (SourceLine sourceLine : sourceLines) {
+            for (long address : sourceLine.addresses()) {
+                sourceRows.merge(address, sourceLine.line(), Math::min);
+            }
+        }
         List<LineSequence> sequences = new ArrayList<>();
         for (FunctionSymbol function : ordered) {
             for (FunctionRange range : function.ranges()) {
-                TreeMap<Long, Integer> rows = new TreeMap<>();
-                for (SourceLine sourceLine : sourceLines) {
-                    for (long address : sourceLine.addresses()) {
-                        if (range.contains(address)) {
-                            rows.merge(address, sourceLine.line(), Math::min);
-                        }
-                    }
-                }
+                var rows = sourceRows.subMap(range.address(), true,
+                    range.endExclusive(), false);
                 if (!rows.isEmpty()) {
                     sequences.add(new LineSequence(range.address(), range.endExclusive(),
                         rows.entrySet().stream()

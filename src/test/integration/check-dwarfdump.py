@@ -47,7 +47,11 @@ def validate_output(text, inherited=(), original=False):
     require(text.strip(), "checker output is empty")
     require(Counter(frame_diagnostics(text)) == Counter(inherited),
         "uncorroborated inherited frame diagnostics")
-    remaining = "\n".join(line for line in text.splitlines() if line.strip() not in inherited)
+    # Multiplicity is established above; membership filtering need not rescan
+    # thousands of independently corroborated frame messages for every line.
+    inherited_messages = set(inherited)
+    remaining = "\n".join(line for line in text.splitlines()
+        if line.strip() not in inherited_messages)
     require(not re.search(r"\*\*\* DWARF CHECK:|\bDW_DLE_|\b(?:warning|error|fatal):",
         remaining, re.IGNORECASE), "checker reported a diagnostic")
     inherited_count = len(inherited)

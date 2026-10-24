@@ -161,6 +161,10 @@ target. Architecture-specific ABI and register mappings remain isolated and
 table-driven so additional Ghidra-supported ELF processors can follow. Thumb,
 big-endian ARM, and other ARM ABI profiles are not yet claimed.
 
+[The target-profile contract](docs/TARGET-PROFILES.md) records the exact tested
+ABIs and storage cases, the difference between accepted ELF metadata and
+validated behavior, and the next bounded coverage additions.
+
 CI has Linux lanes for x86-64, AArch64, ARM32, and both MIPS byte orders, plus
 a Windows-hosted x86-64 ELF export lane. Linux runs real headless export,
 independent DWARF validators, input-hash preservation, deterministic reruns,

@@ -178,8 +178,8 @@ items are these bounded workstreams:
 | Target-profile coverage (P2.3/3a/3b) | Current five profiles pass. Enumerate additional ABI/storage cases, derive their target properties, and add real exporter/validator/QEMU-GDB tests before extending support claims. Completing this plan does not imply every Ghidra CPU/ABI. |
 | GUI reproducibility (P2.7) | **CONFIRMED:** Linux and native Windows Script Manager discovery/run/Console reports and chooser selection/cancellation passed in `40054563515` at `83b74a6`. A later Windows run exposed a harness pre-click focus race; the controlled regression and full Linux journey pass after correction. The current combined head still requires full hosted validation. |
 | Optional debuglink (P2.8) | **PLANNED, optional:** explicit opt-in attachment and backup/rollback. Sidecar lookup/CRC compatibility is tested on private fixture copies; default export leaves the original unchanged. |
-| Inline reconstruction (P3.4) | **UNCERTAIN:** investigate defensible instance/call-site/range evidence and record a decision. Implement only if supported by that evidence. |
-| Performance (P3.5) | **PLANNED:** establish representative large-binary benchmarks, choose optimizations with measured benefit, and prove unchanged semantics/determinism. The listed candidates are not all unconditional requirements. |
+| Inline reconstruction (P3.4) | **CONFIRMED investigation complete:** ADR 0003 and a reproducible compiler/Ghidra probe distinguish real inline instances from Ghidra's decompiler flag and record surviving locals/source information. Inline emission remains deferred until explicit instance/origin/range evidence and GDB acceptance exist. |
+| Performance (P3.5) | **CONFIRMED locally:** synthetic scaling and a JFR-selected line-table index are measured. Historical paired 10,000-function exports reduce median process time by 15.5% with byte-identical artifacts; a fresh strict/GDB replay validates the retained result without rerunning timing. Representative complex-binary and further phase-level profiling remain **PLANNED**; no blanket speed or memory claim. See `docs/PERFORMANCE.md`. |
 
 The optional/research items need an explicit recorded outcome; they are not
 silently complete merely because they are outside the current alpha scope.
@@ -1051,6 +1051,13 @@ AArch64, ARM32, and MIPS32 big/little endian.
 
 ## P2.3 Add AArch64 target support
 
+The shared [target-profile contract](docs/TARGET-PROFILES.md) records the
+existing five profiles and a finite follow-up order for P2.3/3a/3b. The
+read-only audit is **CONFIRMED**; ABI classification/diagnostics, scalar FP,
+stack-passed parameters and real aggregates remain **PLANNED** until their
+specific runtime gates pass. Accepted machine/class metadata is not proof of
+all calling conventions for that processor.
+
 **Status:** `[~]` — the symbol/source-line/type/signature milestone passes in
 hosted CI for ET_EXEC, PIE, shared objects, and no-section inputs. Stack-local
 locations pass; overwritten input registers are honestly omitted. Additional
@@ -1539,13 +1546,58 @@ ranges. Category paths are not automatically original source namespaces.
 
 ## P3.4 Investigate reconstructed inlining
 
-**Status:** `[ ]` — **UNCERTAIN**.
+**Status:** `[x]` — **CONFIRMED**, bounded investigation complete; inline
+emission is not implemented.
 
-Do not emit `DW_TAG_inlined_subroutine` based on weak guesses. Establish whether Ghidra provides defensible inline-call reconstruction and whether GDB behavior improves.
+See `docs/ADR-0003-INLINE-EVIDENCE.md` and the durable transcript under
+`docs/research/`. Ghidra 12.0.3's inline flag controls decompilation and can
+remove a high-pcode call while the machine call remains. The compiler-DWARF
+import path preserves qualifying inline locals in their containing function,
+source rows and optional comments; this does not retain the complete instance/
+origin/call-site/range model required by the current exporter.
+
+The Linux x86-64 GCC 13.3/GDB 15.1 probe passes compiler DWARF validation,
+actual inline-frame/local-value checks, debug/no-debug Ghidra comparisons,
+ordinary-call flag toggling and original-hash preservation. Its recorded
+importer location limitations are not counted as a clean Forge export.
+
+**PLANNED, conditional:** implement inline DIEs only after ADR 0003's explicit
+evidence-provider/model and multiple/nested-instance GDB acceptance conditions
+are met. Do not infer compiler inlining from the flag or comments, discard
+surviving knowledge, or describe inline export as complete.
 
 ## P3.5 Add optional size/performance features
 
-**Status:** `[ ]`.
+**Status:** `[~]` — synthetic scaling measurements and one measured line-table
+index are complete locally; representative complex application/firmware and
+further per-phase profiling remain **PLANNED**. The bounded 10,000-function
+comparison improves median whole-process time from 10.86 to 9.18 seconds over
+five alternating pairs, with every output pair byte-identical. It does not
+establish speed or memory effects for other workloads/hosts.
+
+`src/test/performance/export-benchmark.py` separates one saved-project import
+from repeated fresh-JVM exports. The historical 100/1,000/10,000-function cases
+pass GNU/LLVM, full DWARF function/address/source checks, runtime GDB, original
+hashes and byte-identical reruns; their old exit-zero libdwarf checks were
+insufficient and are not clean-validator evidence. The corresponding
+export medians were 2.52/3.27/10.62 seconds on the recorded local host; these
+small synthetic cases do not predict arbitrary firmware behavior. Commands,
+measurement boundaries, evidence and next profiling questions are in
+`docs/PERFORMANCE.md`.
+
+After merging strict `99845c7`, focused source/line/range smokes and a fresh
+ARM32 exec/PIE/shared export/validator/GDB matrix pass, including byte-identical
+exec reruns. The retained paired 10,000-function artifact passes a fresh full
+strict/LLVM/GNU/GDB replay, with all 10,002 inherited frame messages precisely
+corroborated using the separately bounded validation-only capacity patch.
+No timed 10,000-function export was rerun. Combined hosted/Windows validation
+and representative complex-binary profiling remain **PLANNED**.
+
+**CONFIRMED:** performance PR #24 run `40064815083` failed its validator
+capacity gate because the standalone bundle omitted `dwarfdump.conf`. The
+follow-up packages the pinned config with an explicit-path launcher and
+rejecting relocation/configuration controls. Strict error checks remain intact;
+a corrected full hosted run is required. See `support/validation/README.md`.
 
 Potential features only after correctness:
 
@@ -1558,9 +1610,9 @@ Potential features only after correctness:
 
 ### Completion criteria
 
-- [ ] No optimization changes semantic output.
-- [ ] Determinism and validators remain passing.
-- [ ] Benchmark demonstrates a measured benefit.
+- [x] The implemented line-table index preserves byte-identical semantic output.
+- [x] Local determinism and strict validators pass for the documented index fixtures; combined hosted validation remains planned.
+- [x] A paired benchmark demonstrates its measured benefit on the documented workload.
 
 ---
 
