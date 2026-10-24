@@ -430,6 +430,15 @@ tasks.register("matchedElfPrefixSmoke", JavaExec) {
     maxHeapSize = "64m"
 }
 
+tasks.register("matchedElfAllocationsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks indexed matched ELF allocation metadata and conservative unsupported cases"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.MatchedElfAllocationsSmoke"
+    maxHeapSize = "64m"
+}
+
 tasks.register("outputPathPolicySmoke", JavaExec) {
     group = "verification"
     description = "Checks default, explicit, colliding, and unwritable output paths"
