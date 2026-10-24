@@ -4706,3 +4706,64 @@ alignment mutation rejects in new-link `sh_addr` at candidate index 28. All
 eleven protected input/source/old-evidence files remain unchanged. This adds no
 backend, GDB or saved-program export execution. Final independent integration/docs
 review is `build/candidate-content-review/independent-doc-replay-review.json`.
+
+
+## Corrected executable program bytes: hosted acceptance (2026-10-24)
+
+**CONFIRMED:** exact PR #37 head `89fa8b7e1a2540f562028c59c2390021343b33da`,
+pull-request run `40107222339`, attempt 1, passes all twelve expected jobs with
+none skipped. Independent final gate checks the current base, clean tree, zero
+unresolved review threads and source/native/version scope. Package artifact
+`12565198088` has outer SHA-256
+`04e119ac74f39240e3eeaca13f6af54e4ddfadbc1b24559c9543af22154635ac`,
+ZIP SHA-256 `e28030d7cb9b4e62151dabe771b8ffde405983f6aceac49c1957bd0c261f54cc`
+and JAR SHA-256 `890fc267bbcfe6573d1e6724e124545a4d5f5c26c1b15102fc73559839bec017`.
+It contains the exact 43 production sources, two scripts, 192 Java21 classes,
+five verified manifests and pinned native provenance. Actual Java21/64MiB
+program434, corrected prefix and prior smokes pass, with twenty native producer
+lifetimes and 141 production-origin checks.
+
+All five target artifacts pass independent program-byte review: fifteen cases
+and repeats, fixed mutation controls, quiet backend records, retained byte
+copies and GDB evidence. The x86 sparse recipe reconstructs only the selected
+program ranges above 2 GiB. Linux artifact `12565886519`, SHA-256
+`00f41f8a64f7e3746f1b8d7650f2e806443253f0e9dba9d8298cad1fcf36023a`,
+contains association `run.O5LoloJB`, GUI `run.MurNQFOz` and 24 strict reports
+with zero unexplained errors. Windows artifact `12566320977`, SHA-256
+`da2d9d9cc3bf6a9183a99266f38c8aaf3ec96c367374632fb49b0471516588cf`,
+contains GUI `run.d87be02251fb453897b4d4e92a0c0d2a GUI paths`, nineteen native
+focused checks, program431 and binder551 actually observed, with alias/link/
+rollback protection markers. Both real GUI journeys pass.
+
+Artifact uploads exclude hidden `.build-id` payload files. The first new artifact
+auditor correctly stopped when its path-only lookup expected those omitted
+files. The corrected audit derives the unique matching build ID independently
+from retained original/sidecar GNU notes, including target-endian note framing,
+and checks the exact warning path. It does not claim the missing payload bytes
+were verified. GDB transcripts retain runtime discovery evidence. Strict warning
+policy is unchanged. The initial audit failure is retained. Windows independent
+dwarfdump, Linux ELF runtime, POSIX FIFO and large-file results remain unavailable
+on that host; archive mtimes do not prove original invocation nanoseconds.
+
+Evidence in the program-byte worktree:
+`build/program-bytes-package-audit/run-40107222339.VWoO5LIv` and
+`build/program-bytes-package-audit/final-gate-40107222339.json`. The final gate
+binds four GUI-worktree artifact receipts by SHA; detailed target, Windows and
+GUI evidence is under `build/hosted-gui-review/run-40107222339/`. An initial
+final-gate receipt-schema assumption stopped before merge; its corrected binding
+uses the actual receipt schema and preserves the failed invocation.
+
+Normal merge `29055f6c81755761c3bbc7257f7460e21af43e6c` at
+`2026-10-24T16:09:38Z` is tree-identical to the tested head. Distinct main push
+`40110261306` remains pending. Earlier `e25c148` / `40105620219` remains
+intermediate; no result is transferred to the corrected build.
+
+Candidate-content local integration `5ee38af` also has an independently reviewed
+exact package: ZIP SHA-256
+`330413824c3381324f1fb179367c201f7c8f11c879e57f381f455c5c4397ad7f`,
+44 production sources, two scripts, 201 Java21 classes and five verified
+manifests. All 28 runtime/native/script payloads equal the installed private
+package; this docs/package check adds no runtime claim. Evidence:
+`build/candidate-content-package-audit/local-5ee38af.05ymbvo5/result.json`.
+Normal parent incorporation `d2eadf2` changes no tree bytes. Candidate-content's
+own full hosted gate remains required.

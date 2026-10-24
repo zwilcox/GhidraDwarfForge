@@ -3543,3 +3543,29 @@ intermediate. Candidate-content package and full hosted acceptance follow that
 parent. Independently, PR #36 main push `40105363431` now passes all twelve jobs
 and both GUI artifact reviews, superseding its earlier pending checkpoint.
 No published release or optional attachment transaction changes.
+
+
+### Corrected program-byte hosted acceptance (2026-10-24)
+
+**CONFIRMED:** PR #37 head `89fa8b7e1a2540f562028c59c2390021343b33da`
+passes all twelve jobs in exact pull-request run `40107222339`, attempt 1,
+with none skipped. Independent package/source, all five target artifact and
+both GUI reviews are clear. Fifteen installed program cases/repeats, mutation
+controls, quiet backend records and GDB transcripts pass; the x86 large fixture
+proves selected program ranges above 2 GiB. Windows passes nineteen focused
+checks, with 431 program assertions actually observed, distinct from Linux434.
+Normal merge `29055f6c81755761c3bbc7257f7460e21af43e6c` at
+`2026-10-24T16:09:38Z` preserves the tested tree. Its separate main push
+`40110261306` remains pending. Initial `e25c148` stays intermediate evidence.
+
+Hosted upload omits hidden `.build-id` payloads. Their bytes cannot be audited
+from the archive; exact warning paths are derived independently from retained
+GNU notes and runtime discovery is evidenced by GDB transcripts. Windows still
+has no independent dwarfdump or Linux ELF runtime claim. See `docs/VALIDATION.md`.
+
+Candidate-content integration `5ee38af` and its exact local package pass
+independent review. Accepted main is incorporated normally as `d2eadf2`, with
+no source-tree change from that merge. Its own full hosted acceptance remains
+required. Candidate preparation is under investigation; no new backend or
+append-only writer has been selected. Optional attachment and published releases
+remain unchanged.

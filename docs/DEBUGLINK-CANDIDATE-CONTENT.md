@@ -131,8 +131,9 @@ SHA/CRC/count recipe reconstructed independently after cleanup, including the
 one-byte mutation that invalidates the candidate's CRC. This is a content fixture;
 it is not a DWARF sidecar or a debugger-discovery claim for the large file.
 No new Ghidra export, structural-validator or cross-target execution is attributed
-to this retained-fixture replay. Final package and exact hosted acceptance remain
-required after the corrected program-byte parent is accepted.
+to this retained-fixture replay. Independent exact local package review is
+clear. The accepted program-byte main is incorporated normally as `d2eadf2`;
+the candidate-content full hosted gate remains required.
 
 Attachment still needs receipt/diagnostic policy, selected export relationships,
 external validation, backend process control, host identity/metadata handling,

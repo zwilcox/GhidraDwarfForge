@@ -1,6 +1,6 @@
 # ELF header and program-byte observations
 
-**CONFIRMED locally; full hosted gate pending:** `ExecutableProgramBytes` is a
+**CONFIRMED:** `ExecutableProgramBytes` is a
 read-only comparison of two explicitly selected ELF files. Its purpose is to
 check bytes that a future debuglink backend must preserve. It does not create
 a candidate, attach anything or change ordinary export behavior.
@@ -120,8 +120,11 @@ runs are not attributed to this retained-fixture replay. The corrected research
 probe separately accepts its retained ordinary candidate and now rejects the
 historical out-of-LOAD NOTE mutation at byte 14676.
 
-Full exact hosted acceptance, including native Windows focused tests, remains
-pending. See `VALIDATION.md` for commands and retained evidence.
+Corrected PR #37 head `89fa8b7` passes all twelve jobs in exact run
+`40107222339`, all five target artifact audits and both GUI reviews. Windows
+passes nineteen focused checks with 431 program assertions; Linux has 434.
+Normal merge `29055f6` preserves the tested tree. Its distinct main-push gate
+remains pending. See `VALIDATION.md` for commands and retained evidence.
 
 ### Callback exception correction
 
@@ -140,4 +143,4 @@ prefix default/large checks and related smokes/build. Corrected installed JAR
 passes the same nine private-candidate and 27 GDB checks in `run.7eQn9koH`;
 all 36 retained fixture snapshots remain unchanged. The initial PR head `e25c148`
 and run `40105620219` are intermediate evidence, not final acceptance. The
-corrected exact hosted gate remains required.
+corrected exact hosted gate above is accepted.

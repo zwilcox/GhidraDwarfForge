@@ -59,14 +59,17 @@ published alpha.
 Do not suppress the warning. See `docs/ADDRESS-INDEX.md`.
 Evidence and exact scope are recorded in `docs/VALIDATION.md`.
 
-**CONFIRMED current main:** PRs #29–#36 are merged through normal history.
+**CONFIRMED current main:** PRs #29–#37 are merged through normal history.
 They add bounded direct-register-copy lifetimes, conservative omission of
 unsupported stack-local starts, filesystem traversal/alias handling, and
 read-only digest/build-ID/report/prefix/allocation/selected-hash foundations.
 Each exact PR gate passed all twelve jobs with independent reviews. Main-push
 gates through PR #36 also pass, including `40105363431` and both GUI reviews.
-PR #36 merged as `18b3e2e` after exact run `40102754052`. Program-byte preservation passes local source,
-installed backend/GDB and package review; its full hosted gate remains required.
+PR #37 merged as `29055f6` after corrected exact run `40107222339`; all five
+target artifacts, both GUI hosts and nineteen native Windows checks pass. Its
+distinct main push `40110261306` remains pending. Candidate-content checks pass
+local source, installed backend/GDB and package review; their hosted gate remains
+required.
 These changes do not complete general variable migration, the optional
 attachment transaction or a new release.
 
@@ -256,7 +259,7 @@ combined run `40068401197`; its conditional-step scope is recorded in
 | Additional range/location cases (P1.8, P1.11a) | **CONFIRMED:** bounded entry/ranges, code-only address indexing and incoming-register prefixes pass. PR #29 adds one proven direct-register backup; PR #30 omits unsupported nonzero stack-local starts. Their exact hosted gates pass. P1.11a remains partial: general register/memory migration, call-crossing and non-entry lifetimes, stack-slot reuse and mixed composite storage still require instruction-specific GDB values and honest unavailable gaps. |
 | Target-profile coverage (P2.3/3a/3b) | **CONFIRMED in hosted runs `40063017269` and `40068401197`:** five baseline profiles and scalar FP aliases pass, with exact float/double values on x86-64/AArch64/ARM32 and scalar floats on both MIPS orders. The combined run also proves rejection of definite ELF/Ghidra processor, width or byte-order contradictions; nondefault variants/compiler specifications alone are not rejected. Unproven MIPS double pairs and ARM32's mode-switching-return prefix case remain unavailable. Target expansion and ABI classification remain partial; this is not blanket CPU/ABI support. |
 | GUI and output paths (P2.7) | **CONFIRMED:** both hosts' real Script Manager/chooser journeys pass. PR #31 adds actual parent traversal, complete publisher alias preflight and native Windows short-parent/trailing-dot controls; its exact PR/main gates and artifact reviews pass. Geometry/GDB run on Linux; Windows uses native GNU/LLVM, with independent libdwarf unavailable and Linux-ELF runtime GDB not run. |
-| Optional debuglink (P2.8) | **PLANNED transaction:** opt-in attachment, identity/receipt chain and backup/rollback remain unimplemented. PRs #32/#33's digests, typed build-ID observations and report reader pass the full matrix. PRs #34/#35's prefix and indexed allocation observers also pass the full matrix. PR #36 selected-file SHA binding also passes the full matrix. Program/candidate content checks pass locally and await their hosted gates. Default export leaves the original unchanged. |
+| Optional debuglink (P2.8) | **PLANNED transaction:** opt-in attachment, identity/receipt chain and backup/rollback remain unimplemented. PRs #32/#33's digests, typed build-ID observations and report reader pass the full matrix. PRs #34/#35's prefix and indexed allocation observers also pass the full matrix. PR #36 selected-file SHA binding also passes the full matrix. PR #37 program-byte preservation passes the full matrix. Candidate-content checks pass locally and await their hosted gate. Default export leaves the original unchanged. |
 | Inline reconstruction (P3.4) | **CONFIRMED investigation complete:** ADR 0003 and a reproducible compiler/Ghidra probe distinguish real inline instances from Ghidra's decompiler flag and record surviving locals/source information. Inline emission remains deferred until explicit instance/origin/range evidence and GDB acceptance exist. |
 | Performance (P3.5) | **CONFIRMED:** the indexed planner and configured-checker gates pass component run `40065823442` and combined run `40068401197`. Historical local paired 10,000-function exports reduce median process time by 15.5% with byte-identical artifacts; a fresh strict/GDB replay validates the retained result without rerunning timing. Hosted CI is not a new timing measurement. Representative complex-binary and further phase-level profiling remain **PLANNED**; no blanket speed or memory claim. See `docs/PERFORMANCE.md`. |
 
@@ -1553,7 +1556,8 @@ passes eighteen focused checks, including 551 platform-applicable binder
 assertions; both GUI hosts and the x86 large-file case pass.
 See `docs/EXPORT-ARTIFACT-HASH-BINDING.md`.
 
-**CONFIRMED locally; full hosted gate pending:** `ExecutableProgramBytes`
+**CONFIRMED:** PR #37 head `89fa8b7` passes all twelve jobs in corrected exact
+run `40107222339` and merged normally as `29055f6`. `ExecutableProgramBytes`
 checks the complete declared ELF header, raw program table, resolved extended
 counts and all non-NULL file payloads with exact section-table-field exceptions.
 Callback corrections `c38cd98`/`791631f` preserve supplier exception identity
@@ -1565,8 +1569,10 @@ the installed independent oracle and all 27 existing GDB association checks.
 The corrected installed run also passes; original fixtures remain unchanged.
 The research probe now rejects the known
 out-of-LOAD NOTE mutation. This is scoped byte correspondence; active section
-metadata and debuglink CRC remain separate checks. Native Windows and exact
-full hosted acceptance are pending. See `docs/EXECUTABLE-PROGRAM-BYTES.md`.
+metadata and debuglink CRC remain separate checks. All five target artifact
+audits and both GUI reviews pass; native Windows passes nineteen focused
+checks, including 431 program assertions applicable to that host. See
+`docs/EXECUTABLE-PROGRAM-BYTES.md`.
 
 **CONFIRMED locally; full hosted gate pending:** `DebuglinkCandidateContent`
 adds separate indexed executable-allocation and exact new-link observations
@@ -1576,8 +1582,8 @@ attachment approval is exposed. Source `e30fae3` passes 970/972 actual-Java-21
 checks under 64 MiB. The corrected parent is incorporated, and nine new private
 candidates pass both installed oracles and all 27 GDB association checks.
 Independent source/runtime review verifies 72 controls, 27 input copies, 135
-parent evidence files and a full sparse sidecar digest above 2 GiB. Final
-package and hosted acceptance remain required. See
+parent evidence files and a full sparse sidecar digest above 2 GiB. Independent
+exact local package review is clear; the full hosted gate remains required. See
 `docs/DEBUGLINK-CANDIDATE-CONTENT.md`.
 
 **Status:** `[ ]` — optional product operation **PLANNED**. The bounded backend
@@ -2105,10 +2111,10 @@ Unless the user changes priorities:
 
 1. Run `git status --short`; read `AGENTS.md`, the current context/status in
    `PROJECT_CONTEXT.md`, and this file's Sections 0.1/1.1. Preserve existing work.
-2. Read the current acceptance checkpoints: PRs #25–#36 are merged. The selected-file
-   binder passed `c526102` / run `40102754052` and tree-identical main merge
-   `18b3e2e`. Main-push gates through PR #36 pass, including exact push `40105363431`
-   and both independent GUI reviews. Preserve the failed
+2. Read the current acceptance checkpoints: PRs #25–#37 are merged. Corrected
+   program-byte head `89fa8b7` passed run `40107222339` and tree-identical main
+   merge `29055f6`. Main-push gates through PR #36 pass; PR #37 main push
+   `40110261306` remains pending. Preserve the failed
    original PR #32 report-selection attempt and earlier feature histories.
    Require current-base checks under AGENTS.md Section 6.1; do not restart
    completed bring-up or integration.
@@ -2123,16 +2129,14 @@ Unless the user changes priorities:
 6. Extend explicitly selected target profiles and GUI journeys. Treat optional
    debuglink, inlining research and performance candidates according to their
    recorded scopes; do not invent recovered information to complete them.
-   The current bounded continuation is the locally reviewed program-byte
-   preservation check's corrected hosted acceptance. Preserve the intermediate
-   PR #37 head `e25c148` / run `40105620219`: late review found a callback
-   exception-classification bug, now corrected in the program/prefix readers
-   with old-JAR negatives and passing installed replay. Corrected head `89fa8b7`
-   has a reviewed exact package and is running fresh gate `40107222339`.
-   The candidate-content continuation passes local source/installed/GDB review
-   in the same private-copy consumer; its package and full hosted acceptance
-   follow parent acceptance. Optional attachment remains a separate transaction,
-   with no identity/readiness claim from these helpers.
+   The current bounded continuation is the candidate-content observer's hosted
+   acceptance. Local source, installed consumer/GDB and exact package reviews
+   pass, and accepted program-byte main is incorporated normally as `d2eadf2`.
+   Preserve intermediate PR #37 head `e25c148` / run `40105620219`: its callback
+   classification defect was corrected before the accepted `89fa8b7` gate.
+   Candidate preparation remains under investigation; no new backend or writer
+   is selected. Optional attachment remains a separate transaction, with no
+   identity/readiness claim from these helpers.
 7. For each coherent change, run appropriate validators and debugger behavior
    tests, preserve original hashes and deterministic output, and record evidence
    in the handoff documents. Keep the complete supported-profile CI matrix green.
