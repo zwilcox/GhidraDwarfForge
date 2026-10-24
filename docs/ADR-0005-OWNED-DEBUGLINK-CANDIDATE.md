@@ -1,6 +1,6 @@
 # ADR-0005: Prepare an owned append-only executable candidate
 
-- Status: **CONFIRMED locally**; exact package/full hosted acceptance pending
+- Status: **CONFIRMED** at PR #39 (`a190026` / `40116314882`); private candidate only
 - Date: 2026-10-24
 - Scope: P2.8 private candidate preparation, not attachment or publication
 - Baseline: Ghidra 12.0.3, Java 21; no native ABI or release changes

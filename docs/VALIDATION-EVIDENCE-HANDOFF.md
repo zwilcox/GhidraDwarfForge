@@ -141,6 +141,7 @@ validator output has zero unexplained diagnostics; the named strict24 subset
 remains separate from the primary captures. No report status is upgraded.
 
 Normal merge `fdebe181` preserves the tested tree. Separate main push
-`40126173922` is pending; see `VALIDATION.md` for package, review and scope records.
+`40126173922` passes all twelve jobs and separate both-GUI/native Windows 22
+review; see `VALIDATION.md` for package, review and scope records.
 This acceptance does not complete the optional attachment transaction or change
 published releases.

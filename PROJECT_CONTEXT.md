@@ -3805,7 +3805,8 @@ detailed432 and both retention caps, plus the existing platform checks.
 Normal merge `fdebe181185ffe7fa5a454252261f070a3099a3c` at
 `2026-10-24T19:37:50Z` preserves the tested tree. Fresh protection/head/base/review
 checks and independent final source/package/receipt review passed before the
-normal merge. Distinct main push `40126173922` remains pending. This is trusted
+normal merge. Distinct main push `40126173922` passes all twelve jobs and separate
+both-GUI/native Windows 22 review. This is trusted
 pipeline evidence continuity; the optional attachment transaction, source
 semantics, authenticated identity and product process supervision remain separate.
 Published releases are unchanged.
@@ -3833,9 +3834,11 @@ nine report-checker rejection controls, and five fresh primary exec exports with
 validators/native-or-QEMU GDB pass. The old/fixed/repeat saved-program sidecar and
 source hashes are identical, with nine definitions/signatures/decompilations
 unchanged; skipped counts change from five to nine and diagnostics from six to
-ten. Exact local package `0804b46` also passes review; the combined final package
-and complete hosted gate remain required after normal parent integration
-`e3d0709` imports accepted PR #41. See
+ten. Exact local package `0804b46` also passes review. Final head `296395e`
+passes all twelve jobs in `40126794530`, exact hosted package review, all five
+target inventories, both GUI hosts and 23 native Windows suites. Normal merge
+`0d2cbc5` preserves the tested tree; its separate main push `40129499500` is
+pending. Parent integration `e3d0709` incorporated accepted PR #41. See
 `docs/VALIDATION.md` for retained evidence and the four project-index mtime-only
 exceptions to the original overbroad preservation assertion.
 
@@ -3847,18 +3850,21 @@ are selected by this correction. See `docs/FUNCTION-NAMING.md`.
 
 ### Attachment host feasibility research (2026-10-24)
 
-**CONFIRMED locally; native Windows PRESENT, UNVERIFIED:** a separate research
-probe on accepted main `fdebe18` inspects only new owned fixtures before any
-attachment transaction implementation. Actual Java 21/64 MiB Linux acceptance
+**CONFIRMED inspection scope:** separate Linux and native Windows probes pass
+manual run `40129632540` and independent artifact reviews. Sources `8e9809f`
+start from accepted main `fdebe18`; accepted main `0d2cbc5` is incorporated
+without changing those executable sources. The probes inspect only new owned
+fixtures before any attachment transaction implementation. Actual Java 21/64 MiB Linux acceptance
 covers ten entries, four identity pairs, eight malformed manifests, native
 opened-file identity/link counts and a real inherited ACL contrast. Exact
 selected bytes and observed metadata remain unchanged; access-time changes are
 recorded separately. The retained FIFO failure demonstrates that a Java DOS
 metadata query can block while opening a special file; the bounded probe now
 excludes such entries from optional provider views, without claiming race or
-general cancellation safety. Windows syntax/managed-layout checks do not establish
-native acceptance; a separate typed-variable provisioner failure is retained.
-Native Windows is **NOT_RUN**. See
+general cancellation safety. The earlier Windows typed-variable provisioner
+failure is retained; its correction passes portable controls and actual Windows
+execution. Windows covers twelve entries, six pairs and nine retained byte copies,
+including stream identity, ACL inheritance and sharing-lock contrasts. See
 [`docs/research/ATTACHMENT-HOST-OBSERVATIONS.md`](docs/research/ATTACHMENT-HOST-OBSERVATIONS.md)
 for exact sources, retained failures and evidence. No production binding, public
 option, original-target mutation or backup transaction is introduced. Complete

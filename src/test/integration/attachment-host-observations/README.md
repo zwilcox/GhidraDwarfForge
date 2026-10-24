@@ -103,7 +103,7 @@ alone do not establish native Windows behavior. Unavailable required fixtures
 fail the research run; they are not silently skipped. Upload explicit evidence
 files, not live junctions/symlinks. See the
 [current research record](../../../../docs/research/ATTACHMENT-HOST-OBSERVATIONS.md)
-for exact local acceptance and pending host evidence.
+for exact local and independently reviewed native Linux/Windows evidence.
 
 ## Primary API basis and limits
 
@@ -128,3 +128,23 @@ host metadata envelope, independent backup, file/namespace flush policy, atomic
 replacement and conditional recovery tests on both native Linux and Windows.
 Unknown facts remain blockers for that future policy. Current ordinary export is
 unchanged; no live target has been selected for attachment.
+
+
+## Manual two-host workflow
+
+The separate `attachment-host-observations.yml` workflow uses explicit Linux and
+native Windows runners with actual Java 21. It has only a manual trigger and
+read-only repository permission. Its artifact upload selects regular evidence
+files; live FIFO, symlink and junction fixture entries are excluded. It does not
+replace or relax the production `required-validation` workflow.
+
+```sh
+gh workflow run attachment-host-observations.yml --ref <reviewed-ref>
+```
+
+Before this workflow exists on the default branch, the identical workflow was
+manually dispatched through the registered `ci.yml` path on the separate
+`research/attachment-host-trial` branch. That trial branch must never be merged;
+only the research sources and this separately named workflow belong in the
+integration branch. Exact source/run/artifact acceptance is recorded in
+`docs/research/ATTACHMENT-HOST-OBSERVATIONS.md`.

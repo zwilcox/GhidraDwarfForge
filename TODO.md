@@ -82,9 +82,13 @@ main push `40121995458` passes all twelve jobs and independent both-GUI/native
 Windows review. PR #41 captures and consumes existing validator evidence before
 private preparation: exact head `f52361a` passes all twelve jobs in `40123518106`,
 exact package, all-five-target and both-GUI/native Windows 22 reviews, and merged
-normally as `fdebe181`. Its distinct main push `40126173922` is pending. See
-`docs/VALIDATION-EVIDENCE-HANDOFF.md`. The next bounded external-function inventory
-correction passes local acceptance at `0804b46`; its hosted gate remains required.
+normally as `fdebe181`. Its distinct main push `40126173922` passes all twelve
+jobs and separate both-GUI/native Windows 22 review. See
+`docs/VALIDATION-EVIDENCE-HANDOFF.md`. External-function inventory head `296395e`
+passes all twelve jobs in `40126794530`, exact package/all-five-target/both-GUI
+review and 23 native Windows suites; PR #42 merged normally as `0d2cbc5`.
+Its separate main push `40129499500` is pending. Host identity/metadata research
+is the next bounded prerequisite for the optional attachment transaction.
 These changes do not complete general variable migration, the optional
 attachment transaction or a new release.
 
@@ -274,7 +278,7 @@ combined run `40068401197`; its conditional-step scope is recorded in
 | Additional range/location cases (P1.8, P1.11a) | **CONFIRMED:** bounded entry/ranges, code-only address indexing and incoming-register prefixes pass. PR #29 adds one proven direct-register backup; PR #30 omits unsupported nonzero stack-local starts. Their exact hosted gates pass. P1.11a remains partial: general register/memory migration, call-crossing and non-entry lifetimes, stack-slot reuse and mixed composite storage still require instruction-specific GDB values and honest unavailable gaps. |
 | Target-profile coverage (P2.3/3a/3b) | **CONFIRMED in hosted runs `40063017269` and `40068401197`:** five baseline profiles and scalar FP aliases pass, with exact float/double values on x86-64/AArch64/ARM32 and scalar floats on both MIPS orders. The combined run also proves rejection of definite ELF/Ghidra processor, width or byte-order contradictions; nondefault variants/compiler specifications alone are not rejected. Unproven MIPS double pairs and ARM32's mode-switching-return prefix case remain unavailable. Target expansion and ABI classification remain partial; this is not blanket CPU/ABI support. |
 | GUI and output paths (P2.7) | **CONFIRMED:** both hosts' real Script Manager/chooser journeys pass. PR #31 adds actual parent traversal, complete publisher alias preflight and native Windows short-parent/trailing-dot controls; its exact PR/main gates and artifact reviews pass. Geometry/GDB run on Linux; Windows uses native GNU/LLVM, with independent libdwarf unavailable and Linux-ELF runtime GDB not run. |
-| Optional debuglink (P2.8) | **PLANNED transaction:** opt-in attachment, identity/receipt chain and backup/rollback remain unimplemented. PRs #32/#33's digests, typed build-ID observations and report reader pass the full matrix. PRs #34/#35's prefix and indexed allocation observers also pass the full matrix. PR #36 selected-file SHA binding also passes the full matrix. PR #37 program-byte preservation passes the full matrix. PR #38 candidate-content checks also pass the full matrix. PR #39 owned append-only preparation also passes the full matrix. PR #40 detailed report binding/private preparation also passes the full matrix. Captured validator evidence passes focused/local connected acceptance and awaits its exact package/hosted gate. Default export leaves the original unchanged. |
+| Optional debuglink (P2.8) | **PLANNED transaction:** opt-in attachment, identity/receipt chain and backup/rollback remain unimplemented. PRs #32/#33's digests, typed build-ID observations and report reader pass the full matrix. PRs #34/#35's prefix and indexed allocation observers also pass the full matrix. PR #36 selected-file SHA binding also passes the full matrix. PR #37 program-byte preservation passes the full matrix. PR #38 candidate-content checks also pass the full matrix. PR #39 owned append-only preparation also passes the full matrix. PR #40 detailed report binding/private preparation also passes the full matrix. PR #41 captured validator evidence passes its exact PR and main gates. Default export leaves the original unchanged. |
 | Inline reconstruction (P3.4) | **CONFIRMED investigation complete:** ADR 0003 and a reproducible compiler/Ghidra probe distinguish real inline instances from Ghidra's decompiler flag and record surviving locals/source information. Inline emission remains deferred until explicit instance/origin/range evidence and GDB acceptance exist. |
 | Performance (P3.5) | **CONFIRMED:** the indexed planner and configured-checker gates pass component run `40065823442` and combined run `40068401197`. Historical local paired 10,000-function exports reduce median process time by 15.5% with byte-identical artifacts; a fresh strict/GDB replay validates the retained result without rerunning timing. Hosted CI is not a new timing measurement. Representative complex-binary and further phase-level profiling remain **PLANNED**; no blanket speed or memory claim. See `docs/PERFORMANCE.md`. |
 
@@ -936,8 +940,9 @@ breakpoint name.
   `break recovered_add`.
 - [~] Distinguish definitions, declarations, imports, thunks, and aliases under
   a documented initial policy: only real definitions emit. Memory thunks are
-  diagnosed; separate external-function inventory passes local acceptance and
-  awaits the exact hosted gate. Declaration/linkage and alias modeling remain
+  diagnosed; separate external-function inventory passes PR #42
+  (`296395e` / `40126794530`) across all five targets and both hosts.
+  Declaration/linkage and alias modeling remain
   separate work.
 
 ### Completion criteria
@@ -1685,7 +1690,8 @@ runtime reviews pass. Final head `f52361a` passes all twelve jobs, exact package
 and independent all-five-target/both-GUI/native Windows 22 review: hosted97
 focused checks, fifteen fresh captured pairs and thirty entry-point rejections.
 The separate raw130 controls remain intact. Normal merge `fdebe181` preserves
-that tree; distinct main push `40126173922` is pending. See
+that tree; distinct main push `40126173922` passes all twelve jobs and separate
+both-GUI/native Windows review. See
 `docs/VALIDATION-EVIDENCE-HANDOFF.md`.
 
 **Status:** `[ ]` — optional product operation **PLANNED**. The bounded backend
@@ -1693,11 +1699,12 @@ and backup-based re-export investigation is complete; the explicit transaction
 design and remaining acceptance tests are in
 [`ADR-0004`](docs/ADR-0004-DEBUGLINK-ATTACHMENT.md). No attachment option exists.
 
-**CONFIRMED locally; native Windows PRESENT, UNVERIFIED:** inspection-only host
-research passes actual Java 21/64 MiB on ten new Linux fixtures, four identity
-pairs and eight malformed manifests. Native Windows remains **NOT_RUN**; portable
-syntax/managed-layout checks are not native acceptance. The retained FIFO block,
-ACL inheritance and access-time observations expose host limits without claiming
+**CONFIRMED inspection scope:** manual run `40129632540` and independent
+Linux/native Windows artifact reviews pass on actual Java 21/64 MiB. Linux covers
+ten entries, four pairs and eight malformed manifests; Windows covers twelve
+entries, six pairs and nine retained byte copies. Retained FIFO and PowerShell
+failures remain separate from the corrected runs. ACL inheritance, access times,
+stream identity and sharing-lock observations expose host limits without claiming
 preservation, durability or a transaction. See the
 [host research record](docs/research/ATTACHMENT-HOST-OBSERVATIONS.md). Both native
 host contracts and ADR-0004's remaining transaction gates stay incomplete.
@@ -2239,7 +2246,10 @@ Unless the user changes priorities:
    review. Captured-validation head `f52361a` passes all twelve jobs in
    `40123518106`, all-five-target captures/entry controls, exact package and both
    GUI/native Windows 22 review; normal merge `fdebe181` retains its tree.
-   Distinct main push `40126173922` is pending. Preserve
+   Distinct main push `40126173922` passes all twelve jobs and separate
+   both-GUI/native Windows 22 review. PR #42 head `296395e` passes all twelve
+   jobs in `40126794530`, exact package/all-five-target/both-GUI/native Windows
+   23 review, and merged as `0d2cbc5`; main push `40129499500` is pending. Preserve
    the first writer run's compiler-oracle TCP collision and the failed
    original PR #32 report-selection attempt and earlier feature histories.
    Require current-base checks under AGENTS.md Section 6.1; do not restart
@@ -2259,9 +2269,11 @@ Unless the user changes priorities:
    merged as `4e050609`; detailed report binding/private preparation is accepted
    at PR #40 head `13e706e5`, merged as `25845418`. Captured-validation continuity
    is accepted in PR #41 at `f52361a`, merged as `fdebe181`, as described in
-   `docs/VALIDATION-EVIDENCE-HANDOFF.md`. The next bounded external-function
-   inventory correction at `0804b46` passes local source/runtime/package review;
-   complete hosted acceptance remains required. Preserve the explicit captured-report handoff
+   `docs/VALIDATION-EVIDENCE-HANDOFF.md`. The external-function inventory
+   correction is accepted at PR #42; external declaration emission remains
+   deferred. Continue the inspection-only host research in
+   `docs/research/ATTACHMENT-HOST-OBSERVATIONS.md` before an owned-fixture
+   transaction. Preserve the explicit captured-report handoff
    and separate fresh/retained installation scopes. ADR-0005 selects the writer;
    GNU remains a separate test oracle.
    Preserve PR #37's intermediate callback failure evidence and all research/test
