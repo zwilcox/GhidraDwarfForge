@@ -243,6 +243,7 @@ public final class GhidraVariableStorage {
             return mapped;
         }
         Register base = register.getBaseRegister();
+        Instruction opaqueInstruction = null;
         InstructionIterator instructions = program.getListing()
             .getInstructions(function.getBody(), true);
         while (instructions.hasNext()) {
@@ -258,8 +259,71 @@ public final class GhidraVariableStorage {
                     "function writes " + description + " register " + base.getName() +
                         " at " + instruction.getAddress());
             }
+            if (opaqueInstruction == null && hasOpaqueRegisterEffects(instruction)) {
+                opaqueInstruction = instruction;
+            }
+        }
+        // Retain the existing call/modeled-write diagnostic precedence even
+        // when an earlier instruction also has opaque effects.
+        if (opaqueInstruction != null) {
+            return unavailable(OmissionReason.UNKNOWN_LIFETIME,
+                "opaque instruction effects prevent proving the " + description +
+                    " register " + base.getName() + " stable at " +
+                    opaqueInstruction.getAddress());
         }
         return mapped;
+    }
+
+    private static boolean hasOpaqueRegisterEffects(Instruction instruction) {
+        PcodeOp[] operations = instruction.getPcode();
+        boolean opaque = false;
+        for (PcodeOp operation : operations) {
+            if (operation.getOpcode() == PcodeOp.UNIMPLEMENTED) {
+                return true;
+            }
+            if (operation.getOpcode() == PcodeOp.CALLOTHER) {
+                opaque = true;
+                // A user operation may change registers beyond its explicit
+                // output (Ghidra's USERDEFINED p-code contract). Its selector
+                // must still be present even for the terminal-boundary case.
+                if (operation.getNumInputs() == 0 || operation.getInput(0) == null ||
+                        !operation.getInput(0).isConstant()) {
+                    return true;
+                }
+            }
+        }
+        return opaque && !ordinaryTerminalReturn(instruction, operations);
+    }
+
+    private static boolean ordinaryTerminalReturn(Instruction instruction,
+            PcodeOp[] operations) {
+        var flow = instruction.getFlowType();
+        if (instruction.getFlowOverride() != FlowOverride.NONE ||
+                instruction.isInDelaySlot() || instruction.getDelaySlotDepth() != 0 ||
+                !flow.isTerminal() || flow.isCall() || flow.isConditional() ||
+                flow.isJump() || flow.isOverride() || flow.hasFallthrough() ||
+                instruction.getFallThrough() != null || operations.length == 0) {
+            return false;
+        }
+        PcodeOp last = operations[operations.length - 1];
+        if (last.getOpcode() != PcodeOp.RETURN || last.getOutput() != null ||
+                last.getNumInputs() != 1 || last.getInput(0) == null ||
+                last.getInput(0).getSize() !=
+                    instruction.getAddress().getAddressSpace().getPointerSize()) {
+            return false;
+        }
+        for (int index = 0; index < operations.length - 1; index++) {
+            switch (operations[index].getOpcode()) {
+                case PcodeOp.BRANCH, PcodeOp.CBRANCH, PcodeOp.BRANCHIND,
+                    PcodeOp.CALL, PcodeOp.CALLIND, PcodeOp.RETURN -> { return false; }
+                default -> { }
+            }
+        }
+        // Locations describe the state before a machine instruction executes.
+        // An ordinary unconditional return ends this invocation; no later instruction
+        // observes the user operation's effects in this function. This is a
+        // control-flow boundary, not a purity claim or a userop-name whitelist.
+        return true;
     }
 
     static Storage mappedRegister(Register register, int byteSize,

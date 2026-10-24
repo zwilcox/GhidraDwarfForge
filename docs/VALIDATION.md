@@ -2740,8 +2740,12 @@ missing strip/objcopy wrappers before export. Those failures are retained;
 only `run.7BXiMlNg` supplies complete ARM/MIPS acceptance. No user installation
 or shared Ghidra tree was modified. Exact tool versions, command transcripts,
 15-case retained-evidence/hash audit and package assembly log are in
-`build/qualified-integration/`; runtime Java is 21.0.12.1, GDB 15.1 and the
-cross-runtime QEMU version is 8.2.2.
+`build/qualified-integration/`. **Correction:** that toolchain JSON queried
+Java 21.0.12.1 directly, but the retained headless logs show JDK 25.0.4.1;
+the local Java 21 installation lacks `javac`, so Ghidra's JDK launcher selected
+25. The isolated smoke/package checks use Java 21, and hosted CI uses a full
+Java 21 JDK. GDB is 15.1 and QEMU is 8.2.2. This does not change the supported
+Ghidra 12.0.3 / Java 21 bytecode baseline.
 
 The actual private package SHA-256 is
 `a32ccc4ea0acb2d008fec7689297b5c4919a1cda14257280aeb22e85a3d4bc97`;
@@ -2767,3 +2771,128 @@ tests. Independent reviews cover code, fixtures/workflow and the retained eviden
 [FUNCTION-NAMING.md](FUNCTION-NAMING.md) records quoting and limitations. Full
 namespace/class/lexical/alias semantics and external-function declarations stay
 partial/planned, and published alpha.2 remains unchanged.
+
+### Qualified-name hosted acceptance (2026-10-24)
+
+**CONFIRMED:** head `d5f2521e09b3920c3d7408cfe503f02fec59562f` passed all twelve
+expected jobs in pull-request run `40071594248`, attempt 1. Independent artifact
+review confirms all 15 qualified-name cases, the native Windows naming smoke,
+and the actual Linux/native Windows GUI journeys. PR #26 merged normally at
+`2026-10-24T07:15:49Z` as `89c07cec086e35bdbecb9809f5e9c3fe893a82eb`; its tree
+matches the tested head. Separate post-merge main push `40073445177` is pending
+at this checkpoint. The prior PR #25 main push `40070016394` finished with all
+twelve jobs successful, superseding its earlier pending checkpoint.
+
+The naming package audit verified artifact `12550999990`, outer SHA-256
+`d0c3a6c1dfb9feb3d4ea32848a846fb11e97a421af03433130c269e1931ec56f`, and package
+SHA-256 `560a1f5b62e3026069a62830b246f4af7250cb585970bf7f5343186c9d05a3ac`.
+All five manifests, native provenance, 31 production sources, two scripts and
+135 Java 21 classfiles pass. The downloaded production JAR passes the actual
+Ghidra naming smoke and 20 producer lifetimes with verified class origins.
+Evidence is retained in the qualified-function-names worktree at
+`build/qualified-package-audit/run-40071594248.ofwYwpWq` and
+`build/qualified-integration/final-{run,jobs}.json`. Independent hosted evidence
+is in the GUI worktree at `build/hosted-gui-review/run-40071594248`.
+Neither published alpha is changed by this acceptance.
+
+### Opaque instruction effects: wrong-register-location regression (2026-10-24)
+
+**CONFIRMED locally, hosted gate pending:** `GhidraVariableStorage` now treats
+raw `CALLOTHER`/`UNIMPLEMENTED` effects as invalidating otherwise-stable register
+locations. This shared proof covers scalar/composite parameters and locals.
+Existing call/modeled-write diagnostic precedence remains intact. The only
+`CALLOTHER` exception is a proven ordinary terminal-return boundary:
+unconditional non-call/non-jump flow, no override/delay slot/fallthrough,
+well-formed full-width final RETURN, and no preceding p-code control transfer.
+The location describes state before that instruction; this is not a purity
+assumption; `UNIMPLEMENTED` always rejects the proof. No target identifiers,
+syscall ABI whitelist, inferred register
+migration, pre-syscall prefix or native calls were added.
+
+The source-built Linux AArch64 fixture takes `-19` and a destination pointer,
+copies the value, executes `getpid` through `svc`, then stores the original
+value. Pinned Ghidra decodes SVC as outputless falling-through `CALLOTHER`.
+Old Forge reports a positive process ID as the parameter after SVC, while the
+compiler oracle and stored global retain `-19`. Negative input cannot equal
+the returned positive PID. The fixed artifact retains both parameter names
+and types without `DW_AT_location`, and reports two `UNKNOWN_LIFETIME` omissions.
+The GDB oracle checks entry, before SVC, after SVC and return, raw registers,
+global address/value, synthetic source, `next`, `step` and normal exit.
+
+Acceptance commands, using an isolated installed package and private settings:
+
+```bash
+GHIDRA_INSTALL_DIR=/path/to/ghidra_12.0.3_PUBLIC ./gradlew \
+    opaqueRegisterEffectsSmoke qualifiedFunctionNameSmoke registerPrefixSmoke \
+    registerAliasSmoke variableStorageSmoke buildExtension
+DWARFDUMP=/path/to/pinned/bin/dwarfdump \
+    src/test/integration/opaque-register-effects-export.sh /private/ghidra
+DWARFDUMP=/path/to/pinned/bin/dwarfdump \
+    src/test/integration/register-prefix-export.sh /private/ghidra \
+    /path/to/libdwarf.so.2.3.2 /path/to/libdwarfp.so.2.3.2 x86_64 aarch64
+FORGE_ARM32_SYSROOT=/private/arm/sysroot DWARFDUMP=/path/to/pinned/bin/dwarfdump \
+    src/test/integration/floating-registers-export.sh /private/ghidra \
+    /path/to/libdwarf.so.2.3.2 /path/to/libdwarfp.so.2.3.2 arm32
+src/test/integration/fixture-reproducibility.sh aarch64
+src/test/integration/release-package.sh
+src/test/integration/architecture-neutrality.sh
+```
+
+All evidence below is in the opaque-register-effects worktree:
+
+- `build/test-results/opaque-register-effects/run.vxhBWrdr`: exec, PIE and
+  `+0x2000000` Ghidra-rebased PIE pass, with six fresh-import exports, identical
+  repeated output pairs, original/build-ID preservation, GNU/LLVM and strict
+  libdwarf checks. Each role has six exactly corroborated inherited frame
+  diagnostics and zero unexplained errors. GDB has only the exact same QEMU
+  vDSO message as its compiler oracle. `build/opaque-validation/acceptance.json`
+  records hashes, reports and diagnostics. Local headless runtime is JDK 25.0.4.1.
+- `build/test-results/register-prefix-export/run.ROeouQv6`: all twelve
+  x86-64/AArch64 exec/PIE baseline/rebased/repeat exports pass validators and
+  runtime GDB; values become unavailable after the proven first overwrite.
+- `build/test-results/floating-registers/run.Ml4wk7yJ`: all six ARM32 scalar
+  exec/PIE baseline/rebased/repeat exports pass with zero checker errors. Proven
+  terminal-return float/double locations remain correct; unproven prefix
+  cases remain unavailable. `build/opaque-validation/positive-regressions.json`
+  records these two suites. The sysroot override changes only local setup;
+  CI retains its default path.
+- `build/opaque-proof/final-java21.dh0zlsu7/result.json`: the same test compiled
+  with `--release 21` reproduces the old JAR's incorrect available storage and
+  passes the fixed JAR on actual Java 21.0.12.1. Class origins and JAR hashes
+  are checked. Real decoded SVC and ARM returns, parameters/locals/composites,
+  malformed/overridden/delayed/control-flow returns, cancellation and existing
+  diagnostic precedence are covered. All five combined focused tasks, build,
+  package regression, source-inventory reproducibility and workflow lint pass.
+
+The first fixed local package SHA-256 is
+`55489152cc8c7a12782989b8129f791b0a2427ccf84e4caa80d4c2c1b2bd5175`; its JAR is
+`29036f0e3255acf83fe4926ddccbfde197cfb5cdbc9d310d814be6351b8a49a8`.
+This predates the normal merge of naming changes from main. The combined build
+passes both new smokes. CI preserves both gates, adds the AArch64 real SVC test
+and runs the new smoke on Linux and native Windows; no hosted acceptance is
+claimed yet. The architecture-isolation check initially flagged the comment
+word `PC` as a register spelling; replacing it with `instruction` passes without
+changing the guard or weakening that check.
+
+**CONFIRMED combined local acceptance:** after normal merge `73eb0e5` of the
+accepted naming changes, `build/test-results/opaque-register-effects/run.NZ60WkMr`
+passes all three roles and six fresh exports again. The production JAR is
+`73bf512060dbd7cac9b0c105ba3388e145ec0c34672c2a365dfe6e3aab46c99d` and its
+private test package is
+`294291e44944b75dfc71253c0981b2e94de58e64dc77f3c7965f8ef08d32d9a5`.
+All previous fixed acceptance assertions remain enforced, including strict
+diagnostics and byte-identical repeats. `build/opaque-validation/combined`
+retains assembly/identity/runtime evidence. Independent merged source, CI and
+fixture reviews found no blocker; the exact hosted matrix is still required.
+
+**CONFIRMED separate issue, not fixed here:** baseline runs `run.Q8z14rHD` and
+`run.7D4Odl05` reproduce the wrong parameter value but fail strict GDB diagnostics
+on additional data-address symtab warnings; neither is counted as a passing
+test. Direct `p/a 0x420028` against both the old and fixed exec sidecars reproduces
+the warning without executing the program. Logs are retained under
+`build/opaque-pointer-review`. Fixed location omission avoids automatic pointer
+argument formatting, but does not resolve this CU-address-map issue. It needs
+its own standards-backed coverage change and direct GDB regression before a
+future release. No warning allowance was added. A private Java-home setup
+failure (`run.XAmnFSC7`) is also retained; both successful negative probes used
+JDK 25 despite an attempted Java 21 selection, as explained above.

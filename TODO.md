@@ -14,8 +14,7 @@ runs as clean libdwarf evidence. Alpha.1 remains unchanged and affected.
 `40068401197`, including the five target lanes and Linux/native Windows Script
 Manager journeys. PR #25 merged normally as `befce2c` at
 `2026-10-24T06:23:24Z`; its tree equals the tested head. The separate main-push
-run `40070016394` was still running when this checkpoint was recorded; it is
-not reported as passed. Component results and the failed GUI attempts
+run `40070016394` subsequently passed all twelve jobs. Component results and the failed GUI attempts
 `run.yI7ooUik`/`run.3HcGrt32` remain historical evidence, followed by the
 readiness fix and passing local/hosted regressions.
 
@@ -26,12 +25,28 @@ features. Optional attachment and inline emission remain unimplemented. See
 [combined acceptance](docs/VALIDATION.md#combined-hosted-acceptance-and-main-integration-2026-10-24).
 Use Sections 1.1 and 4 for the next work; do not restart prototype bring-up.
 
-**CONFIRMED locally, hosted gate pending:** the subsequent qualified-function
-display slice passes 15 real exporter/compiler/GDB cases across all five target
-profiles, plus the original x86 static-scope cases. It preserves ordinary
+**CONFIRMED:** qualified-function head `d5f2521` passed all twelve jobs in
+`40071594248`, including 15 real exporter/compiler/GDB cases across all five
+target profiles and both GUI hosts. PR #26 merged normally as `89c07ce` with
+the tested tree. It preserves ordinary
 Ghidra namespace paths without changing the C11 CU or inventing linkage/aliases.
 See `docs/FUNCTION-NAMING.md` and `docs/VALIDATION.md`; this does not complete
 P1.7/P3.3 or belong to either published alpha.
+
+**CONFIRMED locally, hosted gate pending:** opaque instruction effects now
+invalidate otherwise-stable register locations. A real AArch64 supervisor call
+reproduced an old parameter changing from `-19` to the process ID; the fix
+retains names/types without locations and reports `UNKNOWN_LIFETIME`. Exec,
+PIE and rebased PIE pass real export, deterministic repeats, validators and
+GDB. Existing x86/AArch64 prefix and ARM scalar-register regressions also pass.
+This is a correctness guard, not register migration or syscall ABI support.
+
+**CONFIRMED remaining issue:** GDB `p/a` of the fixture's global address emits
+an address-map/symtab warning with both old and fixed sidecars. The fixed
+parameter omission avoids automatic argument formatting but does not resolve
+this separate CU-address coverage issue. Investigate and add a direct address
+formatting regression before another release; do not suppress the warning.
+Evidence and exact scope are recorded in `docs/VALIDATION.md`.
 
 Status vocabulary:
 
@@ -49,7 +64,7 @@ No project-level milestone is complete unless all applicable conditions hold:
 matrix with strict independent-validator enforcement in run `40068401197`.
 All twelve jobs passed, including the actual Linux/native Windows GUI journeys;
 the normal main merge `befce2c` preserves that exact tree. This acceptance is
-separate from the still-running main-push run recorded above.
+also confirmed by the separate main-push run recorded above.
 The separate corrective release gate in Section 0.2 is complete: exact-main
 CI, the final package audit and public-asset verification passed for alpha.2.
 That release does not include these subsequent features.
@@ -1028,6 +1043,14 @@ or uncertain storage remains locationless with a diagnostic.
 - [x] x86-64 register-number mapping has explicit tests.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
+
+**CONFIRMED locally:** the opaque-effect guard rejects `CALLOTHER` and
+`UNIMPLEMENTED` in the whole-function register proof, shared by parameters,
+locals and composites. A narrowly checked ordinary terminal-return boundary
+preserves proven ARM scalar storage. No pre-syscall prefix, syscall whitelist
+or copied-register tracking is inferred. The new AArch64 runtime regression
+and Linux/native Windows real-Ghidra smoke are required CI gates; exact hosted
+acceptance is pending for this change.
 
 **Status:** `[~]` — **CONFIRMED in hosted run `40063017269`:** a simple incoming
 register parameter now retains its location through the first overwriting instruction in a fully
