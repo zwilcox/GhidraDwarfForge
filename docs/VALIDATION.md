@@ -5084,7 +5084,9 @@ twelve jobs in exact pull-request run `40119714272`, attempt 1. Normal merge
 `2584541849ffd4c7d6a9ab3933e2d3ec3d89ed4b` at `2026-10-24T18:43:12Z`
 preserves the tested tree. Exact-head/base/protection and zero unresolved review
 threads were checked before normal merge. Native ABI and VERSION are unchanged.
-The separate exact-main push `40121995458` remains pending.
+The separate exact-main push `40121995458` subsequently passes all twelve jobs
+on attempt 1. Digest-verified Linux/Windows GUI and native Windows 22 checks pass;
+main target-job conclusions remain CI scope, distinct from the prior PR audits.
 
 Hosted package artifact `12571071079` has outer SHA-256
 `b993006870372a218eb2dbab5afb2f723c4cb06d130c90fcbb09398b88a67b2f`,
@@ -5228,6 +5230,60 @@ the normal evidence gate. Fresh-export workflow integration, exact final package
 and full hosted acceptance remain required. No production API/native ABI, public
 validator supervisor, attachment, source-authenticity or release claim follows.
 
+### Captured validation hosted acceptance and normal merge (2026-10-24)
+
+**CONFIRMED:** PR #41 exact head `f52361a374fbf62fd7168eb8e8a8c4e8be0d7b4c`
+passes all twelve jobs in pull-request run `40123518106`, attempt 1. Normal merge
+`fdebe181185ffe7fa5a454252261f070a3099a3c` at `2026-10-24T19:37:50Z`
+preserves the tested tree. The separate exact-main push `40126173922` is pending.
+
+Hosted package artifact `12572202938` has outer SHA-256
+`de909dbfd111ae3fb105af6f2c85f01b177579b4dd3f3660a78e03acac050d9a`,
+ZIP `76728eccb3ca54a6bb69a6fd552851c77ddbe41fc89f29ee6385938f193d9411`
+and JAR `3c4d4100812b5b1be3f668f531527c4d5ea566b4ab3d78c50e83b2c07d070099`.
+Exact 45 production sources/two scripts, 212 major-65 classes, five manifests,
+current docs/support and pinned native provenance pass. Actual Java 21 detailed432,
+both retention caps, inherited focused checks, twenty native producer lifetimes
+and 161 production origins pass. Production Java/native/script bytes are unchanged
+by this test-harness change.
+
+All five target artifacts pass independent review: fifteen fresh cases/captured
+validator pairs, thirty actual entry-point sentinel rejections, raw130 limitation
+controls, thirty ordinary plus twenty counterexample candidate reconstructions,
+45 report sets, 135 earlier copies and 75 current input copies. Fifteen ordinary
+GDB transcripts and thirty plain native/QEMU processes pass. Full retained tool/
+configuration/output/source and selected-file bytes are independently rebound.
+Reports retain unclassified PARTIAL/NOT_RUN; malformed DWARF and missing-source
+counterexamples remain explicit in the separate raw controls.
+
+The hosted focused result `run.g1kmmtxk` records 97 actual checks, with exact core/
+test hashes and all six tiny compiler inputs independently verified. This is
+separate from local100, which includes three optional retained native-corpus
+checks. Existing named-suite strict24 replay is separate from the fifteen primary
+captures. Complete output has zero unexplained diagnostics; exact inherited frame
+counts stay visible. No optional local capacity replay is inferred from hosted97.
+
+Both GUI artifacts pass independent digest review. Linux run `run.wWYTJ9vi` is
+in artifact `12573555669`, SHA-256
+`a392892d617181061f3a73bf34ca1b1a05a82569dd5720d84e43281d6de8c869`.
+Windows run `run.2cc954bed9214bdaa76bd69163802a11 GUI paths` is in artifact
+`12572637140`, SHA-256
+`17b0e757994b54e96bc56a30705ecec534b633e5d50e7a24a039f656c43af36e`.
+Windows actually observes 22 focused checks under Java21.0.12.1, including
+detailed432 with both caps, owned1140/content965/program431/binder551 and real
+alias/sentinel/link/rollback controls. Linux-only runtime/FIFO/large behavior is
+not inferred on Windows; independent libdwarf dwarfdump remains unavailable there.
+
+Final independent source/package/artifact receipt SHA-256
+`74d270179107eb769be68b2a1da2f5b78d7481ba64898baa1048d63a66a0799f`
+is retained under `validation-evidence-handoff/build/validation-evidence-package-audit/`.
+It binds the exact package plus eight peer receipts, including acceptance scope
+SHA-256 `9e35d6d06eaa6fd0d225642298de3611093a018d37154e7bf4c75112fe918fe7`.
+Root separately checked fresh exact head/base, strict required-validation, all
+jobs and unresolved reviews before the normal matched-head merge. Empty negative
+archive directories and invocation-time mtimes retain their documented limits.
+The attachment transaction and published releases remain unchanged.
+
 ### External-function inventory local acceptance (2026-10-24)
 
 **CONFIRMED locally; full hosted gate pending:** the ordinary Ghidra iterator
@@ -5293,3 +5349,16 @@ checker output and the exact four project-mtime exceptions. This read-only
 review does not rerun any exporter, validator or inferior. The exact final
 package, all hosted roles including PIE/no-ID, and native Windows remain pending. No Ghidra,
 Java, GDB baseline, release or optional attachment operation changes.
+
+**CONFIRMED exact local inventory package:** source `0804b46`, ZIP SHA-256
+`32d6dcfaca87db85dafbb22dff457d6bf3f4b4106fafeb08bf4084000790f582`,
+passes 45-source/two-script/212-major-65/five-manifest review. All 28 runtime
+payloads match the tested private installation; comparison to the prior accepted
+package finds only the `GhidraFunctionSymbols.class` JAR member changed. Actual
+Java 21 five-language inventory and inherited checks, twenty producer lifetimes
+and 163 production origins pass. A copied hosted-only audit footer subsequently
+failed on an unset mode; the failed wrapper/stderr are retained. Independent
+post-run output/hash review closes that audit without repeating JVM/native tests.
+Normal merge `e3d0709` incorporates accepted PR #41; only two appended document
+histories conflicted, and both were retained. Refreshed combined package review
+and full hosted acceptance remain required.
