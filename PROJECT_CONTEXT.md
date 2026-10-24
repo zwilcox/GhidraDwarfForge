@@ -2078,6 +2078,22 @@ Java 21 bytecode; the installed Java 21 directory contains a JRE without
 including main run `40058691020`.
 See TODO Section 0.2 and `docs/VALIDATION.md`.
 
+PR #22's first hosted run `40061424810` passed the native builds, extension,
+release package and ARM32/MIPS32 target lanes, but failed x86-64 and AArch64
+at original-file frame corroboration for `PN_XNUM` fixtures. The standalone
+consumer rejects section zero's nonzero `sh_info` even when it encodes the
+valid extended program-header count. The sidecars themselves pass LLVM and
+have only their exactly inherited frame messages. A separate validation-only
+reader correction passes 16 local positives, 60 malformed-header controls,
+exact retained-original corroboration and fresh x86-64/AArch64 ELF-layout
+export/validator/GDB suites. No additional diagnostic exception or shipped
+native-library change is selected. Windows-hosted checks were skipped
+and the aggregate gate failed. The exact `bf7f2b1` package precheck passed
+source/manifests/native provenance and 20 isolated Java 21 producer lifetimes,
+but this is not a release approval. The checker completion gate additionally
+rejects missing zero-count categories, demonstrated by fifteen new controls
+and 52 unchanged retained real reports.
+
 **CONFIRMED locally:** the normal merge of strict-validator `bf7f2b1` into
 semantic `0b754078` retains the function-entry/static-scope, register-prefix,
 scalar-FP, saved-program identity and ARM fixture corrections. Five semantic
@@ -2090,6 +2106,13 @@ passes with only exactly corroborated inherited frame diagnostics; this is
 a validator replay, not a fresh merged export/runtime matrix. No complete
 cross-target rerun was performed locally for this merge. Hosted verification
 of the combined source remains **PRESENT, UNVERIFIED**.
+
+The subsequent normal merge of strict `99845c7` into semantic `cc8dd8b`
+adds complete-category enforcement and the validation-only extended-program
+reader correction without changing semantic production sources. Workflow and
+changed-script syntax checks pass; the previously passing Java/runtime suites
+were not repeated for this validation-only merge. The combined hosted matrix
+remains pending.
 
 ## 17. Open questions
 

@@ -61,6 +61,17 @@ def main():
     run_case("nonzero-category", re.sub(r"(line_table\s+\d+\s+)0", r"\g<1>4", clean, count=1), False)
     run_case("nonzero-total", re.sub(r"(\*\* Summarize \*\*\s+\d+\s+)0", r"\g<1>1", clean, count=1), False)
     run_case("malformed-counter", re.sub(r"(line_table\s+)\d+", r"\g<1>unknown", clean, count=1), False)
+    # Removing a zero-valued category preserves the arithmetic, so completion
+    # must require its presence in both the compiler and total tables.
+    zero_categories = set(re.findall(r"^([a-z_]+)\s+0\s+0$", clean, re.MULTILINE))
+    assert {"locations", "frames", "fde_table", "type_offset"} <= zero_categories
+    for category in sorted(zero_categories):
+        matches = list(re.finditer(r"^" + category + r"\s+0\s+0\n", clean, re.MULTILINE))
+        assert len(matches) == 2, category
+        for table, match in enumerate(matches):
+            incomplete = clean[:match.start()] + clean[match.end():]
+            run_case("missing-zero-" + category + "-table-" + str(table), incomplete, False)
+    run_case("unknown-zero-category", clean.replace("locations", "unknown_category", 1), False)
     run_case("empty", "", False)
     run_case("truncated-table", clean.split("** Summarize **", 1)[0], False)
     run_case("truncated-final-record", clean[:clean.rfind("[    3]")], False)

@@ -112,6 +112,9 @@ these affected artifacts pending the analysis below.
   and strict positive controls, retaining original hashes and all raw logs.
 - [x] Preserve original load extents as inert metadata for sectionless inputs;
   verify exact `PT_LOAD` correspondence and reject out-of-image mutations.
+- [x] Correct the standalone consumer's rejection of valid `PN_XNUM` originals
+  before using them to corroborate inherited frame diagnostics; retain rejecting
+  malformed-count/table controls in both ELF widths and byte orders.
 - [ ] Update integration callers and documentation, rerun the full target/host
   matrix, and audit the exact final main package before publishing alpha.2.
 
@@ -125,6 +128,16 @@ corrected sectionless cases also pass, including exact original-load metadata,
 all emitted location intervals, corrupted-artifact rejection and byte-identical
 repeats. Complete corrected hosted validation and the final package audit remain
 pending; local successes do not close the release gate.
+
+PR #22 at `bf7f2b1` passed native builds, extension/release assembly, ARM32 and
+both MIPS32 lanes in run `40061424810`. The x86-64 and AArch64 lanes failed
+because standalone libdwarf rejected the original extended program-header
+encoding before frame corroboration. Windows-hosted validation was skipped;
+the aggregate gate failed. The exact candidate package precheck passed, but
+neither that audit nor the three passing target lanes permits publication.
+The separate validation-only reader patch now passes 16 local positives,
+60 malformed-input controls and fresh x86-64/AArch64 full ELF-layout suites.
+The corrected complete hosted rerun is still required.
 
 ## 1. Milestone ordering
 

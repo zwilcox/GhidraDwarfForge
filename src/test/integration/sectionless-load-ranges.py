@@ -205,6 +205,9 @@ def main():
         r"valid \.text range:.* final lowpc 0x([0-9a-f]+)\s+final hipc 0x([0-9a-f]+)", re.MULTILINE)
     endpoints = [(int(low, 16), int(high, 16)) for low, high in diagnostic.findall(text)]
     require(status != 0 and negative_metadata["status"] == "FAILED" and
+        negative_metadata["exit_status"] == 0 and
+        Path(negative_metadata["stderr_log"]).stat().st_size == 0 and
+        negative_metadata["failure"] == "checker reported a diagnostic" and
         (outside, outside + 0x10) in endpoints, "strict checker missed corrupted location interval")
 
     inflated = bytearray(sidecar.data)
