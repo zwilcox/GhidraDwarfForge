@@ -3165,3 +3165,34 @@ JAR. Final package/source matching and the complete hosted matrix, including
 native Windows and both GUI hosts, remain required. Read-only observations do
 not establish snapshot/file identity or attachment eligibility. No report
 reader, attachment operation, native binding or release change is introduced.
+
+### Current-shape report claims, local acceptance (2026-10-24)
+
+**CONFIRMED locally; hosted gate pending:** production `3d1c62c` adds a bounded
+read-only `ExportReportClaims` reader. It opens only its supplied JSON report,
+preserves exporting-host path/hash spelling and returns immutable reported
+values. Inventories are validated and discarded. Successful parsing retains
+`NOT_RUN`; it does not attest artifact identity, ELF compatibility, validation
+or eligibility for attachment. The ordinary report writer/exporter is unchanged.
+
+The current schema-one shape requires `functionStaticVariables`. Historical
+reports omitted that field without a schema increment; they receive an explicit
+unsupported-shape rejection, not a guessed default. Field presence cannot prove
+which historical count semantics or exporter revision produced the report.
+Valid cancelled/fatal shapes receive a distinct no-completed-claims exception.
+
+Ghidra's provided Gson 2.9 remains the grammar/decoding dependency. A bounded
+schema-specific lexical guard handles the strictness and allocation gaps found
+in the earlier source/research audit; no private Gson or generic replacement
+parser is added. Four focused checks pass on actual Java 21 with a 64 MiB heap,
+including 429 malformed controls and the default resource boundaries. Independent
+source/test review is clear. The installed reader oracle passes on nine retained
+reports from the previously audited combined exporter; this is not fresh
+ordinary-export execution. The first adapter attempt lost Unicode on ASCII
+stdout; explicit UTF-8/Base64 transport fixes the oracle without a reader change.
+Final package matching and native Windows/full hosted acceptance remain required.
+
+Separately, PR #31's main-push `40089265777` now passes all twelve jobs and both
+independent GUI artifact reviews, superseding its earlier pending-main record.
+The digest/build-ID PR #32 gate remains pending at this checkpoint. Published
+alpha.2 and P2.8's attachment transaction remain unchanged.

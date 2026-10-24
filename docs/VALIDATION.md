@@ -3725,3 +3725,98 @@ hosted matrix remain required: fourteen Windows focused checks, both installed
 helper oracles in all five target lanes, and both GUI hosts. This is a read-only
 foundation; attachment, receipt parsing, stable file identity and readiness
 remain unimplemented. Published alpha.2 remains unchanged.
+
+## Read-only current report claims (2026-10-24)
+
+**CONFIRMED locally; exact hosted gate pending:** production commit
+`3d1c62c3a9b0182f9670d672e4627d49731ab415` adds the immutable claims reader
+and a bounded lexical guard ahead of supplied Gson 2.9. The current writer and
+ordinary exporter are unchanged. The reader opens only the supplied report;
+path/hash/target/count/native-version values remain reported claims, and
+validation remains `NOT_RUN`. Valid terminal reports are distinguished from
+malformed reports and unsupported historical schema-one shapes. See
+`EXPORT-REPORT-CLAIMS.md` for the exact scope and limits.
+
+The provided dependency is Ghidra 12.0.3's
+`Framework/Generic/lib/gson-2.9.0.jar`, SHA-256
+`c96d60551331a196dac54b745aa642cd078ef89b6f267146b705f2c2cbef052d`.
+The earlier read-only research audited the pinned upstream `JsonReader.java`,
+SHA-256 `1fd32e5161484c3a05f9e88b35dc63082bfdd487bc56cf354cfe1c10bf552cb5`.
+Nonlenient mode alone accepts some invalid literal/string forms and cannot
+bound token growth. The new guard checks lexical/UTF-8 bounds while Gson retains
+object/array grammar and decoding responsibility; no private dependency is added.
+
+| Check | Result and evidence |
+| --- | --- |
+| Writer-derived focused smoke | All four statuses, reordered fields, uppercase hashes, opaque paths, independent count semantics, unsigned failure addresses and empty allowed strings pass. Every object/field receives missing/unknown/duplicate/type/nullability controls; 429 malformed controls pass. |
+| Default resource boundaries | Exact/over 64 MiB bytes, 65,536 UTF-16 string units, 250,000 array entries, one million values and depth eight pass under `-Xmx64m`. Large inputs stream; tests do not build a large JSON tree to satisfy the reader. |
+| Failure and cancellation | Cancel before open/during reads/after EOF, supplier failure, zero/invalid read counts, open/read/close failures and primary/suppressed ordering pass with exactly one owned-stream close. Only the supplied report path reaches the opening seam. |
+| Build and actual Java 21 | Reader, existing report, output-policy and digest smokes plus `buildExtension` and architecture guard pass. Tests separately compile with JDK 25 `--release 21`, then all four run on actual Java 21.0.12.1 with `-Xmx64m`. Exact commands/logs are under `build/report-claims-review/java21/`; source hashes and peer review are in `source-acceptance.json`. |
+
+The preliminary packaged JAR is
+`37a37df922014cf0716e980f90e63689a0aafaee0dc5d21afaa5c00437d754b8`, unchanged
+through the final focused tests. Package SHA-256 is
+`17a47a196b794bf08e5965ce6eb10699a87a64d43e56062a566c3eb11aa114cb`.
+It is installed in `build/report-claims-review/ghidra`, with all five manifests
+checked and the original Ghidra launch configuration unchanged. This package
+predates the final documentation and is runtime evidence, not a final source/
+documentation package match.
+
+Installed-reader oracle runs `x86_64.tw9tn8ig`, `aarch64.l4i0tlia` and
+`mips32be.0l8b__ra` each read three actual retained exporter reports twice,
+compare all returned fields with independently decoded JSON, and exercise two
+opaque/reordered positives plus 23 rejection controls. They verify installed
+reader and provided-Gson origins, actual Java 21/64 MiB, exact ELF fixture
+profiles, all sixteen protected file hashes/mtimes, extracted-report bytes and
+producer package provenance. Valid terminal/status and unsupported-shape
+exception types are asserted separately from malformed-terminal rejection.
+FIFO/foreign/nonexistent artifact paths and uppercase hashes remain literal;
+no referenced artifact is opened. The owned FIFO is removed in `finally`, also
+on failure, so artifact upload cannot block reading a retained special file.
+
+These runs explicitly name the earlier combined exporter installation and its
+`04398abf...` JAR; `same_reader_export_installation` is false. The reports come
+from that previously audited nine-export run. No new headless/GDB execution is
+claimed for this read-only parser. Independent source, smoke and oracle review
+is clear, including rehashed protected files, repeated claims and Unicode values.
+
+**Historical failed oracle controls:** the initial x86/AArch64/MIPS attempts
+successfully read the real reports but failed the opaque Unicode comparison.
+Java's standard output under `LC_ALL=C` substituted `?` for `é` and the emoji in
+the adapter's JSON output. The reader preserved the values. Encoding the adapter
+payload explicitly as UTF-8/Base64 fixes the transport; the same installed
+production JAR passes. Initial transcripts and the corrected transcripts remain
+under `build/report-claims-review/`. No production parser fix or silent
+diagnostic suppression was attributed to this harness failure.
+
+After the separate PR #32 run exposed reuse of primary log names by a later
+default-output regression, this reader oracle was also placed beside both
+read-only helpers immediately after primary exports. It now retains all three
+consumed full transcripts and all nine independently checked fixture byte
+copies, alongside its extracted reports. Preservation snapshots describe this
+invocation, not a promise that later tests never reuse original paths. Final
+retention runs `x86_64.fmhmew9m`, `aarch64.ccvr7mki` and `mips32be.yh95ftq5`
+pass the same actual-Java-21 comparisons and 23 rejection controls with the
+unchanged `37a37df9...` reader JAR. Earlier runs remain separately attributed.
+
+Final documentation/package matching, accepted-parent integration and the
+complete hosted gate remain required. CI adds the focused reader smoke to both
+hosts and the installed oracle to all five target lanes; the Windows focused
+list grows to fifteen. Existing exporter/GDB/GUI checks remain required. P2.8's
+attachment/receipt/identity transaction and published alpha.2 are unchanged.
+
+### PR #31 post-merge main confirmation
+
+Exact main `00aaba161c5663556302c10da658ddab88b96d92` push `40089265777`,
+attempt 1, subsequently passes exactly all twelve jobs. Independent Linux
+artifact `12559350094`, SHA-256
+`070d6026a5273a4f306891a34f6a8aed78bf794730f46b002bddbba7b0061241`, verifies
+GUI `run.DQaHs2E2`, path `run.533ev5__` (eight exports/three negatives/eleven
+project checks), timestamp `run.Jt1S3CrH` and 24 strict report replays. Native
+Windows artifact `12558414467`, SHA-256
+`4e94f1890bddd6500204670e3f80f9186dea47da20d934ab431e1055dfc15ea0`, verifies
+all twelve focused checks, actual short-parent/dot-alias/both-API/order/six-hash
+controls and GUI `run.fa24221a64f84c9a87e67fef8e799444 GUI paths`. Both host
+reviews are clear; cross-target claims here remain CI conclusions. Evidence is
+retained in the GUI worktree's `build/hosted-gui-review/run-40089265777/`.
+This supersedes the earlier pending-main checkpoint for PR #31 only.

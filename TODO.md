@@ -1477,6 +1477,16 @@ Native Windows and the full five-target hosted gate remain required. Observed
 hashes or matching IDs do not establish file identity, parse receipts or expose
 attachment; the full transaction remains planned.
 
+**CONFIRMED locally; hosted gate pending:** `ExportReportClaims` adds a separate
+bounded reader for the current report shape. It preserves opaque path/hash/count
+claims and opens only the report. Actual Java 21 focused checks, 429 malformed
+controls, default resource boundaries and an installed-JAR oracle on nine
+retained x86-64/AArch64/MIPS32 big-endian reports pass with independent review.
+Valid terminal reports and unsupported historical shapes are distinguished;
+no file identity or independent validator result is inferred. See
+`docs/EXPORT-REPORT-CLAIMS.md`. The full host/target gate and accepted-parent
+integration remain required; this does not add attachment or its receipt chain.
+
 **Status:** `[ ]` — optional product operation **PLANNED**. The bounded backend
 and backup-based re-export investigation is complete; the explicit transaction
 design and remaining acceptance tests are in

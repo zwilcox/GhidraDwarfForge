@@ -403,6 +403,15 @@ tasks.register("fileDigestsSmoke", JavaExec) {
     maxHeapSize = "64m"
 }
 
+tasks.register("exportReportClaimsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded read-only current report claims and strict JSON rejection"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.ExportReportClaimsSmoke"
+    maxHeapSize = "64m"
+}
+
 tasks.register("elfBuildIdSmoke", JavaExec) {
     group = "verification"
     description = "Checks typed ELF build-ID notes, relationships, bounds and cancellation"
