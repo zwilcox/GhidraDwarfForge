@@ -87,17 +87,24 @@ public final class DwarfAddressRangesSmoke {
         require(decode(DwarfAddressRanges.build(List.of(new FunctionSymbol(
             "large_length", 1, 0xffff_ffffL)), width, order), width, order)
             .equals(List.of(new Interval(1, 0xffff_ffffL))), "unsigned32 length truncated");
+        byte[] fullSpace = DwarfAddressRanges.build(List.of(new FunctionSymbol(
+            "full_32_bit_space", 0, 0x1_0000_0000L)), width, order);
+        List<Interval> expectedFullSpace = width == 4 ?
+            List.of(new Interval(0, 0xffff_ffffL), new Interval(0xffff_ffffL, 1)) :
+            List.of(new Interval(0, 0x1_0000_0000L));
+        require(decode(fullSpace, width, order).equals(expectedFullSpace),
+            "full ELF32 space must be partitioned only when its length needs two words");
+        require(Arrays.equals(fullSpace, DwarfAddressRanges.build(List.of(
+            new FunctionSymbol("last", 0xffff_ffffL, 1),
+            new FunctionSymbol("almost_all", 0, 0xffff_ffffL)), width, order)),
+            "merged full address space must match direct full-range encoding");
         if (width == 4) {
             rejects(() -> DwarfAddressRanges.build(List.of(new FunctionSymbol(
                 "large_address", 0x1_0000_0000L, 1)), width, order));
             rejects(() -> DwarfAddressRanges.build(List.of(new FunctionSymbol(
                 "end_overflow", 0xffff_ffffL, 2)), width, order));
             rejects(() -> DwarfAddressRanges.build(List.of(new FunctionSymbol(
-                "length_overflow", 0, 0x1_0000_0000L)), width, order));
-            // Individually valid words can merge into an unencodable 2^32 length.
-            rejects(() -> DwarfAddressRanges.build(List.of(
-                new FunctionSymbol("almost_all", 0, 0xffff_ffffL),
-                new FunctionSymbol("last", 0xffff_ffffL, 1)), width, order));
+                "length_overflow", 0, 0x1_0000_0001L)), width, order));
         }
         else {
             List<FunctionSymbol> wide = List.of(
