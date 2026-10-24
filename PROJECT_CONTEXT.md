@@ -1997,6 +1997,40 @@ Checkout-conversion and package regressions pass
 locally; exact native Windows and complete candidate CI remain required before
 publication. See `docs/VALIDATION.md` for retained evidence.
 
+### ARM32 static-scope fixture unwind correction
+
+**CONFIRMED:** semantic run `40057031192` at `8e3fd27` failed only the ARM32
+target's static-scope fixture precondition: it required a DWARF FDE, but the
+stripped compiler output has native `.ARM.exidx`/`.ARM.extab` rules and only
+an `.eh_frame` terminator. It stopped before Ghidra export or the later
+floating-register tests. This is a target-specific harness assumption, not
+an observed exporter failure.
+
+The ARM precondition now verifies independent `readelf` decoding and usable
+native-index coverage for both owner functions and main; other targets keep
+the FDE requirement. Actual absent/truncated/cantunwind/Refuse-to-unwind ELF
+copies are rejected without changing supplied originals. ARM32 exec, PIE and
+rebased PIE now pass the unchanged compiler/Forge GDB scope/value/source/return
+oracles, GNU/LLVM checks, input hashes and repeated-export comparison
+locally using an isolated GCC 13.3/sysroot and exact hosted semantic package.
+The old distro checker returned zero despite four summary errors; independent
+review caught the false clean claim. Rechecking these exact three artifacts
+with pinned consumer 2.3.2 produces completed zero-error summaries. The
+separate strict-validator investigation covers the broader matrix.
+The evidence establishes unwind availability plus successful return behavior,
+not which GDB unwinder was selected. No producer/runtime implementation or
+warning allowance changed. See `docs/VALIDATION.md`; corrected hosted ARM
+validation remains pending.
+
+The subsequently reached ARM scalar-FP cases now pass exact stable float and
+double values across exec/PIE/rebase/repeat, including `s1`'s upper `d0` slice.
+The clobbered parameter stays unavailable: actual `bx lr` p-code includes
+opaque `setISAMode`, which deliberately fails the existing whole-body prefix
+proof. Preparation verifies this evidence; report and GDB checks require the
+explicit omission. x86/AArch64 positive prefix tests are unchanged. Pinned
+2.3.2 reports zero errors for all six ARM FP samples. No ARM mode-switching
+return prefix support is claimed.
+
 ## 17. Open questions
 
 Codex should not silently answer these through implementation choices. Investigate, document, and obtain user direction when the answer materially changes compatibility or scope.

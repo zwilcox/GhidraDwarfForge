@@ -56,7 +56,13 @@ for function in functions:
         assert gdb.selected_frame().find_sal().symtab.filename.endswith("floating.dbg.c")
     bias = entry - labels[function]
     omitted = not compiler and (baseline or
-        (target.startswith("mips") and function == "fp_double"))
+        (target.startswith("mips") and function == "fp_double") or
+        (target == "arm32" and function == "fp_clobbered"))
+    if not compiler and target == "arm32" and function == "fp_clobbered":
+        # The actual ARM return contains opaque setISAMode p-code. The bounded
+        # straight-line prefix proof deliberately rejects it; stable scalar
+        # locations above still require their exact values at every marker.
+        print("floating-register-omission=arm32 opaque-return PASS")
     compiler_pair = compiler and target.startswith("mips") and function == "fp_double"
     if compiler_pair:
         gdb.execute("show mipsfpu")

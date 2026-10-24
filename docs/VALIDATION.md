@@ -196,9 +196,24 @@ only when an untouched compiler ELF loaded as separate symbols reproduces the
 exact warning text, address and count. Direct compiler-symbol loading remains
 strict, as do all other diagnostics and the ARM compiler-corroborated vDSO rule.
 
-ARM32 unit and native structural checks pass locally. Its new runtime case,
-including the second float in `s1`/upper `d0`, is **PRESENT, UNVERIFIED** until
-the five-lane hosted job runs; the local ARM compiler/sysroot is absent.
+**CONFIRMED locally:** ARM32 now passes all six exec/PIE baseline/rebase/repeat
+cases, including exact float values `19.25`/`-7.5` in `s0` and the upper `s1`
+slice of `d0`, and double values `21.5`/`-9.25` in `d0`/`d1`. Evidence is
+`arm-unwind-fixture/build/test-results/floating-registers/run.MuSy5PDD/`.
+The compiler, global sinks, source/stepping, normal exit, input hashes and
+byte-identical repeats pass. Rechecking every emitted sample with the pinned
+consumer 2.3.2 using `-ka -ki -kd` reports completed zero-error summaries;
+GNU and LLVM checks also pass. Hosted verification remains pending.
+
+The first reached ARM clobber test (`run.tD6kRvdC`) exposed an overbroad test
+expectation: the final `bx lr` has raw `CALLOTHER setISAMode` followed by
+`RETURN`, so the existing whole-body prefix proof rejects its opaque p-code.
+Preparation now verifies that exact return evidence, and the report/GDB oracle
+requires `REGISTER_MODIFIED` and an unavailable `fp_clobbered::value` at entry
+and every marker. The independent compiler still proves value `13.75`, and
+the stored sink must equal `13.75`. x86/AArch64 positive prefix and overwrite
+checks are unchanged. ARM prefix lifetimes for this mode-switching return
+remain unsupported; stable scalar locations do not imply that broader proof.
 No new ISA/ABI, aggregate/variadic passing, migration or call-crossing support
 is claimed.
 
@@ -370,6 +385,62 @@ Every case retains input hashes and requires byte-identical `.dbg`/`.dbg.c`
 reruns. Each target has ET_EXEC, PIE, and PIE after a Ghidra `+0x2000000`
 rebase. Compiler unwind tables are retained in the original executable; Forge
 does not synthesize CFI.
+
+**ARM32 fixture correction (2026-10-23):** hosted run `40057031192` at
+`8e3fd27`, job `120763742547`, stopped before export because this harness
+unconditionally required a DWARF FDE in the stripped compiler input. Its
+`.eh_frame` contains only a terminator, while `.ARM.exidx`/`.ARM.extab` retain
+valid native unwind rules. The [ARM EHABI index format](https://github.com/ARM-software/abi-aa/blob/2025Q4/ehabi32/ehabi32.rst)
+permits an ordered index range to cover adjacent functions with the same
+rules. Here `first_scope` and `second_scope` share one decoded compact entry;
+`main` has a separate entry.
+
+The ARM-only precondition now uses independent GNU `readelf` decoding, requires
+a correctly sized/ordered native index, and verifies usable compact entries
+cover the complete compiler-symbol ranges of all three functions. It accepts
+merged entries and implicit Finish, and rejects missing tables, malformed
+length/order/count, `cantunwind`, and compact Refuse-to-unwind. Other targets
+retain their FDE check. The original compiler/Forge runtime oracle, warning
+policy and exporter are unchanged. This establishes present/decoded coverage
+and observed successful returns; it does not establish whether GDB selected
+EHABI rather than frame-pointer unwinding for a particular step.
+
+```bash
+src/test/integration/arm-ehabi-regression.sh <arm32-stripped> <compiler-reference>
+src/test/integration/function-static-scopes-export.sh /path/to/isolated-ghidra arm32
+```
+
+The negative regression runs automatically with the ARM32 exec fixture. It
+proves the old FDE-only check rejects valid input, then checks actual private
+ELF copies with an absent index, truncated index, `cantunwind` coverage and
+compact Refuse-to-unwind. All reject; supplied originals remain unchanged.
+Exact hosted artifact `12545114957` has SHA-256
+`3dedac03799a187938bfb15416361ea28f3fad52df0491d59ead1a72936c06cf`;
+its original failure is retained under `build/hosted-failure-review/`.
+
+**CONFIRMED locally:** ARM32 exec/PIE/rebased-PIE pass all existing compiler and
+Forge scope/value/address/source/stepping/return checks, GNU/LLVM,
+input preservation and byte-identical repeated exports in
+`arm-unwind-fixture/build/test-results/function-static-scopes/run.mAHnsuSk`.
+The distro `dwarfdump` 20210528 returned zero but reported four line-table
+errors in each summary; the former harness failed to detect them. They must
+not be described as a clean validator run. Rechecking the exact three
+artifacts with unmodified pinned libdwarf/dwarfdump 2.3.2 (`-ka -ki -kd`)
+reports zero errors, with retained full summaries under
+`arm-unwind-fixture/build/dwarfdump-2.3.2/comparison/`. Its source archive
+SHA-256 is `7992e7b9019ebfabdda5773e86243517c48cf89fafed3209e853692bc9573efd`.
+The broader checker-policy and strict-summary correction is tracked separately;
+these local results do not establish that every existing artifact is clean.
+Negative evidence is `run.hqFNiphI` (retained hosted input) and `run.adZ1Pf3X`
+(fresh compiler input) under `build/test-results/arm-ehabi-regression/`.
+Testing uses Ubuntu GCC 13.3/binutils 2.42 and ARM libc 2.39 extracted under
+the worktree's `build/arm-toolchain`, with local wrappers redirecting only
+compiler/sysroot paths. The exact hosted `8e3fd27` package is installed in a
+private Ghidra tree; artifact `12545313779` SHA-256 is
+`2b6ad3c49bdb203d2f948b7dd855f17ce71b8ebb1bcfc0fc60ee74d8fe21fa3f`.
+No system installation or shared Ghidra module was changed. Hosted verification
+of the corrected ARM path remains pending; the old hosted run never reached
+its floating-register tests.
 
 **Observed debugger limitation:** local GDB 15.1 with QEMU MIPS PIE can emit
 `warning: GDB can't find the start of the function at 0x2b321c03.` while

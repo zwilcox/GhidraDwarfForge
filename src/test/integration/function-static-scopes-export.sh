@@ -167,7 +167,7 @@ for target in "${targets[@]}"; do
             rebase=(-postScript RebaseFixtureProgram.java 0x2000000)
         fi
         # Keep real compiler unwind information in the stripped original. MIPS
-        # defaults otherwise place its useful CFI only in stripped .debug_frame.
+        # otherwise loses useful .debug_frame; ARM32 uses native EHABI tables.
         "$compiler" "${compile_flags[@]}" -O0 -g -gdwarf-5 \
             -fno-omit-frame-pointer -fasynchronous-unwind-tables \
             "${executable_flags[@]}" \
@@ -177,7 +177,16 @@ for target in "${targets[@]}"; do
         readelf --debug-dump=frames "$input" > "$case_dir/input-frames.txt" \
             2> "$case_dir/input-frames.stderr"
         test ! -s "$case_dir/input-frames.stderr"
-        grep -Fq ' FDE ' "$case_dir/input-frames.txt"
+        if [[ "$target" == arm32 ]]; then
+            "$repository_dir/src/test/integration/verify-arm-ehabi.py" \
+                "$input" "$reference" "$case_dir/ehabi"
+            if [[ "$role" == exec ]]; then
+                "$repository_dir/src/test/integration/arm-ehabi-regression.sh" \
+                    "$input" "$reference"
+            fi
+        else
+            grep -Fq ' FDE ' "$case_dir/input-frames.txt"
+        fi
         sha256sum "$input" > "$case_dir/input.sha256"
         gdb-multiarch -q -nx -batch -ex 'set debuginfod enabled off' \
             -ex "file \"$reference\"" \

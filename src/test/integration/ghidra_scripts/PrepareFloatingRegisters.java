@@ -13,6 +13,7 @@ import ghidra.program.model.data.DoubleDataType;
 import ghidra.program.model.data.FloatDataType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.ParameterImpl;
+import ghidra.program.model.pcode.PcodeOp;
 import ghidra.program.model.symbol.SourceType;
 import ghidradwarfforge.AddressNormalizer;
 import ghidradwarfforge.GhidraImageBase;
@@ -57,6 +58,9 @@ public class PrepareFloatingRegisters extends GhidraScript {
         if (labels.containsKey("fp_clobbered")) {
             function("fp_clobbered", floatType, new String[] { single[0] },
                 new String[] { "value" });
+            if (args[0].equals("arm32")) {
+                verifyArmOpaqueReturn();
+            }
         }
         for (String name : new String[] { "fp_float_first", "fp_float_second",
                 "fp_double_first", "fp_double_second", "fp_clobber_sink" }) {
@@ -68,6 +72,35 @@ public class PrepareFloatingRegisters extends GhidraScript {
                 SourceType.USER_DEFINED).setPrimary();
         }
         println("floating-register-preparation=PASS");
+    }
+
+    private void verifyArmOpaqueReturn() {
+        Function function = getFunctionAt(toAddr(labels.get("fp_clobbered")));
+        var instruction = currentProgram.getListing()
+            .getInstructionContaining(function.getBody().getMaxAddress());
+        if (instruction == null || !instruction.getFlowType().isTerminal() ||
+                instruction.getFallThrough() != null) {
+            throw new IllegalStateException("expected terminal ARM floating fixture return");
+        }
+        boolean opaque = false;
+        boolean returns = false;
+        for (var operation : instruction.getPcode()) {
+            if (operation.getOpcode() == PcodeOp.CALLOTHER &&
+                    operation.getNumInputs() == 1 && operation.getInput(0).isConstant()) {
+                String name = currentProgram.getLanguage().getUserDefinedOpName(
+                    Math.toIntExact(operation.getInput(0).getOffset()));
+                if ("setISAMode".equals(name)) {
+                    opaque = true;
+                    println("floating-register-arm-return=" + instruction.getAddress() +
+                        " CALLOTHER " + name);
+                }
+            }
+            returns |= operation.getOpcode() == PcodeOp.RETURN;
+        }
+        if (!opaque || !returns) {
+            throw new IllegalStateException("ARM omission oracle requires setISAMode and RETURN");
+        }
+        println("floating-register-arm-opaque-return=PASS");
     }
 
     private void function(String name, DataType type, String[] registers, String[] names)

@@ -127,7 +127,7 @@ items are these bounded workstreams:
 | ELF robustness (P0.9) | **CONFIRMED complete within the documented bounds:** PR #18 implements extended counts, unnamed tables, bounded file-backed I/O, correct recorded-load-base translation and cancellation. Local checks and all twelve hosted jobs pass; direct PN_XNUM execution limits are documented. |
 | Function identity and scopes (P1.7, P3.3) | **CONFIRMED locally:** explicit function-owned statics preserve duplicate-name lookup and omit failed owners under the symbol-only contract; hosted validation is pending. **PLANNED:** distinct linkage names, external-function declarations, thunks/aliases, class/lexical scopes, inferred static locals and remaining same-named type/variable cases. Existing namespace globals and external-data declarations must remain working. |
 | Additional range/location cases (P1.8, P1.11a) | **CONFIRMED locally:** below-entry bodies preserve their true entry, and proven incoming-register prefixes end after the first overwrite; hosted validation is pending. **PLANNED:** register/memory migration, call-crossing and non-entry lifetimes, stack-slot reuse, and mixed composite storage. Require GDB value checks at multiple instruction addresses and honest unavailable gaps. |
-| Target-profile coverage (P2.3/3a/3b) | Current five baseline profiles pass. **CONFIRMED locally:** scalar FP aliases now pass exact values on x86-64/AArch64 and scalar floats on both MIPS orders; unproven MIPS double pairs remain unavailable. The new ARM32 FP runtime gate is **PRESENT, UNVERIFIED** pending hosted CI. Enumerate additional ABI/storage cases and require actual exporter/validator/GDB evidence before extending claims; this is not blanket CPU/ABI support. |
+| Target-profile coverage (P2.3/3a/3b) | Current five baseline profiles pass. **CONFIRMED locally:** scalar FP aliases pass exact values on x86-64/AArch64/ARM32 and scalar floats on both MIPS orders; unproven MIPS double pairs remain unavailable. ARM32's mode-switching-return clobber case remains wholly unavailable under the conservative prefix policy; hosted verification of the corrected ARM oracle is pending. Enumerate additional ABI/storage cases and require actual exporter/validator/GDB evidence before extending claims; this is not blanket CPU/ABI support. |
 | Remaining GUI journeys (P2.7) | **PRESENT, UNVERIFIED:** manual Script Manager launch and Windows chooser/cancellation. Linux GUI fallback already has a passing automated test. |
 | Optional debuglink (P2.8) | **PLANNED, optional:** explicit opt-in attachment and backup/rollback. Sidecar lookup/CRC compatibility is tested on private fixture copies; default export leaves the original unchanged. |
 | Inline reconstruction (P3.4) | **UNCERTAIN:** investigate defensible instance/call-site/range evidence and record a decision. Implement only if supported by that evidence. |
@@ -1089,6 +1089,12 @@ QEMU/GDB behavior matrix for ET_EXEC, PIE, shared objects, no-build-ID inputs,
 and program-header-only inputs. Thumb, big-endian ARM, and additional ABI or
 storage profiles are not claimed.
 
+**CONFIRMED locally:** six scalar-FP exec/PIE/rebase/repeat cases now pass
+stable float/double and upper-`s1` value checks with pinned 2.3.2 zero-error
+summaries. The clobbered mode-switching-return case requires explicit
+unavailability; general ARM prefix lifetimes are not completed. Corrected
+hosted verification remains pending. See `docs/VALIDATION.md`.
+
 ### Work
 
 - Add a source-built `arm-linux-gnueabihf` fixture using the shared semantic
@@ -1455,7 +1461,12 @@ after merge and post-merge validation.
 
 **Status:** `[~]` — namespace-parented globals, typed external-data
 declarations, and function-owned static memory labels are tested locally.
-The new static-scope slice awaits hosted validation. Artificial auto-parameter
+The static-scope slice now also passes local ARM32 exec/PIE/rebased-PIE:
+the fixture precondition validates native ARM EHABI instead of requiring a
+DWARF FDE, with missing/malformed/unusable coverage controls and unchanged
+runtime scope/value/return checks. Hosted validation of this correction is
+pending after run `40057031192` failed the former precondition before export.
+Artificial auto-parameter
 emission is present; a
 dedicated behavior test remains. The other scope/declaration work below is
 **PLANNED**.
