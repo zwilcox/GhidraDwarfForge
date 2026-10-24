@@ -66,13 +66,16 @@ A representative target experience is:
 
 ## 3. Goals
 
-**CONFIRMED assessment:** `docs/TARGET-PROFILES.md` records the five tested
+**HISTORICAL assessment, with bounded follow-ups now accepted:**
+`docs/TARGET-PROFILES.md` records the five tested
 ELF/ABI profiles and separates machine/class acceptance from actual storage
-behavior. A bounded audit of current code, retained fixture metadata and
+behavior. An audit of the earlier code, retained fixture metadata and
 Ghidra 12.0.3 register aliases found that ABI classification is incomplete
 and larger base-register aliases can hide otherwise mapped scalar FP storage.
-The document defines focused follow-ups; it adds no architecture support claim
-and does not mark those implementation gaps complete.
+The scalar-alias correction and definite ELF/Ghidra identity guard now pass
+combined run `40068401197`; the final acceptance record below states their
+exact scope. ABI classification and additional storage/profile cases remain
+partial; the old audit is not a new blanket architecture support claim.
 
 ### 3.1 Primary goals
 
@@ -2743,8 +2746,53 @@ CI, final-audit and downloaded-asset evidence.
 This combined tree now retains the separately reviewed semantic, Script Manager,
 target-language agreement, line-table/performance and inline/debuglink research
 histories. The component evidence above remains attributed to its exact tested
-head; it does not establish that the new combined head passes. Current-base
-combined hosted validation remains required before normal main integration.
+head; it does not by itself establish that the new combined head passes. The
+separate combined gate and observed normal merge are recorded immediately below.
 The published alpha.2 tag and assets remain unchanged and exclude these
 subsequent features. The optional debuglink operation and inline DIE emission
 remain unimplemented under their recorded design/evidence conditions.
+
+### Reviewed TODO integration accepted (2026-10-24)
+
+**CONFIRMED:** PR #25 head
+`961265543762e96fa6e9a80a9b06210b5d9397e9` passed
+[run 40068401197](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40068401197)
+(`pull_request`, attempt 1). All twelve expected jobs succeeded, with none
+failed or skipped; the aggregate completed at `2026-10-24T06:22:06Z`. The job
+set comprises workflow lint, both native builds, extension build, release
+packaging, five target lanes, Windows host and the required aggregate gate.
+Conditional steps keep their documented target/host scope.
+
+The independent package precheck verified artifact `12550562112`, exact
+31 production Java sources plus two scripts, nested manifests/native
+provenance, 135 Java 21 classfiles and 20 packaged Linux producer lifetimes.
+Package SHA-256:
+`a1ea4069dce1ea66aee8ecb59751b690a069bada19dea348306e0c9243aa412f`.
+This is an accepted integration artifact, not a new published release.
+
+Actual Script Manager discovery/preflight/export, Console reporting and both
+chooser outcomes pass on Linux and native Windows. Linux additionally passes
+the managed-display 100-window geometry control, strict independent libdwarf
+checks and runtime GDB; Windows passes the shared filter/modal/readiness
+controls, real ACL denial and available native GNU/LLVM checks. Independent
+libdwarf is unavailable and Linux-ELF runtime GDB is not run on Windows. The
+earlier failed GUI attempts remain recorded; only the final corrected run is
+accepted. `docs/VALIDATION.md` records the digest-verified GUI artifacts and
+the exact conditional semantic/target/performance coverage.
+
+PR #25 merged normally at `2026-10-24T06:23:24Z` as
+`befce2c5aa621d7c72a1803a3bbcfd566db6d31b`; its tree equals the tested head.
+Component PRs #20/#21/#23/#24 are observed merged. The distinct main-push run
+`40070016394` was still running at this checkpoint and is not claimed passed.
+The local final API evidence is retained in the `reviewed-todo-integration`
+worktree at `build/review-preparation/final-{run,jobs}.json`.
+
+This supersedes earlier pending-hosted/integration descriptions for these
+bounded changes. P1.8's tested entry/range acceptance is complete; richer
+function/class/lexical scopes, P1.11a lifetimes and target-profile expansion
+remain partial. External-function declaration research is not an implemented
+feature here. MIPS paired doubles and ARM opaque-return prefixes remain
+unavailable. Inline emission and optional debuglink attachment/refresh/rollback
+remain unimplemented. Performance CI supplies acceptance, not new timing data
+or a general speed/memory guarantee. Published alpha.2 stays immutable at
+`2f88c4a`, excluding these features; no version, tag or release assets changed.
