@@ -66,6 +66,14 @@ A representative target experience is:
 
 ## 3. Goals
 
+**CONFIRMED assessment:** `docs/TARGET-PROFILES.md` records the five tested
+ELF/ABI profiles and separates machine/class acceptance from actual storage
+behavior. A bounded audit of current code, retained fixture metadata and
+Ghidra 12.0.3 register aliases found that ABI classification is incomplete
+and larger base-register aliases can hide otherwise mapped scalar FP storage.
+The document defines focused follow-ups; it adds no architecture support claim
+and does not mark those implementation gaps complete.
+
 ### 3.1 Primary goals
 
 **CONFIRMED REQUIREMENT:**

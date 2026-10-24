@@ -494,9 +494,10 @@ inside the export report because the development harness validates the final
 artifact after the report is produced.
 
 `dwarfTargetSmoke` checks the table-driven ELF-machine, class, byte-order, and
-libdwarf ISA/flag mapping. It accepts only the validated profiles, including
-MIPS32 in both byte orders, and fails closed for MIPS64 and unsupported
-big-endian x86-64, AArch64, or ARM inputs. The companion
+libdwarf ISA/flag mapping, including MIPS32 in both byte orders. It fails closed
+for MIPS64 and unsupported big-endian x86-64, AArch64, or ARM inputs. It does
+not classify every ARM/MIPS ABI or validate every accepted storage convention;
+see [the exact tested profiles and remaining gaps](TARGET-PROFILES.md). The companion
 `src/test/integration/architecture-neutrality.sh` guard rejects architecture
 names and register spellings outside `DwarfTarget`, `TargetRegisterMap`, and
 the host-only packaged-native selector.

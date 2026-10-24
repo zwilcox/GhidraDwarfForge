@@ -972,6 +972,13 @@ AArch64, ARM32, and MIPS32 big/little endian.
 
 ## P2.3 Add AArch64 target support
 
+The shared [target-profile contract](docs/TARGET-PROFILES.md) records the
+existing five profiles and a finite follow-up order for P2.3/3a/3b. The
+read-only audit is **CONFIRMED**; ABI classification/diagnostics, scalar FP,
+stack-passed parameters and real aggregates remain **PLANNED** until their
+specific runtime gates pass. Accepted machine/class metadata is not proof of
+all calling conventions for that processor.
+
 **Status:** `[~]` — the symbol/source-line/type/signature milestone passes in
 hosted CI for ET_EXEC, PIE, shared objects, and no-section inputs. Stack-local
 locations pass; overwritten input registers are honestly omitted. Additional
