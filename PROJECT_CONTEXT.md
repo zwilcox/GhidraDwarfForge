@@ -3460,3 +3460,31 @@ The separate main/hosted gates remain required. The optional attachment
 transaction is still planned; byte correspondence does not approve active
 section metadata, CRC, DWARF, source association or target replacement. See
 `docs/EXECUTABLE-PROGRAM-BYTES.md`, refined ADR-0004 and `docs/VALIDATION.md`.
+
+
+### Selected SHA binding hosted acceptance (2026-10-24)
+
+**CONFIRMED:** PR #36 head `c52610204f99ad8914a0f44cf0616e16cdb02256`
+passes all twelve jobs in exact pull-request run `40102754052`, attempt 1,
+with no skipped jobs. Independent source/package, all five target artifacts,
+x86 large-file and both GUI reviews pass. The artifact review rehashes 45
+retained copies and fifteen full reports/producer transcripts, with 35 mismatch
+subsets and forty typed failures. Windows passes eighteen focused checks,
+including 551 binder assertions applicable to that host. Linux's 574 count is
+separate. Normal merge `18b3e2e4b7899052424e438108191412178d72ef` at
+`2026-10-24T15:05:08Z` preserves the tested tree. Its distinct main push
+`40105363431` remains pending.
+
+PR #35's distinct main push `40102383229` now passes all twelve jobs and both
+independent GUI artifact reviews. This supersedes its earlier pending state;
+its detailed all-target helper audit still belongs to the accepted PR run.
+Neither result changes published alpha.1 or alpha.2.
+
+The program-byte observer's integration `36b5ea9` passes independent source,
+installed consumer/GDB and exact local package review. Accepted binder main is
+incorporated normally; its own exact hosted gate remains required. The next
+selected candidate-content component will move indexed executable allocation
+and exact new-link creation checks into the packaged private-copy consumer.
+Those predicates remain separate from byte observations, report claims and
+host transaction requirements. Implementation is underway in isolation; no
+candidate readiness or optional attachment operation is accepted yet.

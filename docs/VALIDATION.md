@@ -4484,3 +4484,68 @@ review is clear in `build/program-bytes-oracle-review/runtime-review.json`.
 Final package review and exact hosted acceptance remain required. Native
 Windows results are pending and their conditional assertion count must be
 observed on that host, not inferred from Linux.
+
+
+## Selected-file SHA binding hosted acceptance (2026-10-24)
+
+**CONFIRMED:** PR #36 head
+`c52610204f99ad8914a0f44cf0616e16cdb02256` passes exact pull-request run
+`40102754052`, attempt 1, all twelve expected jobs with no skips or unresolved
+review threads. Normal merge `18b3e2e4b7899052424e438108191412178d72ef` at
+`2026-10-24T15:05:08Z` preserves its tested tree. Distinct main-push run
+`40105363431` remains pending.
+
+Package artifact `12563512220` has download SHA-256
+`8003971fab9ee425d8166432c5dbf05534a2acbbaede784cd16bde8405f0121e`;
+release ZIP SHA-256 is
+`fa57fcc29bb50bc0a8382fa884d13d3c7ffe9f0f4622fe8b01f60a6536c32a5f`.
+The package includes 42 production sources; hosted JAR
+`260142092f03bee75680fe0ffb0ddac88caf5fc3b5fc15e5da246784d95d4224`
+contains 183 major-65 classes. Exact docs/support,
+five manifests and both native provenance records pass. Actual Java 21/64 MiB
+passes binder 574, prior smokes, twenty native producer lifetimes and 132
+production-class origin checks.
+
+All five target artifacts pass independent review: 45 retained byte copies,
+fifteen exact reports/full producer logs, 35 mismatch subsets and forty typed
+failures. Repeated installed observations preserve opaque reported paths and
+selected-file semantics. The x86 sparse-file recipe is independently rebuilt
+and cleanup verified. Linux GUI `run.AyYtHmZZ` and 24 strict reports pass with
+zero unexplained errors. Native Windows artifact `12564307419`, SHA-256
+`25da374f4ec42701783f96c34592a5b79c810a47ce8dcdbbc1f11ce870cc4fb1`,
+passes eighteen focused checks, including the observed platform-applicable
+binder count 551, path protections and GUI
+`run.d4c589e23297461fb3a0350f6e77e35b GUI paths`. Independent dwarfdump is
+unavailable on Windows; no Linux-ELF runtime GDB, native Windows large-file or
+FIFO claim follows from that host's result.
+
+The binder worktree retains `build/hash-binding-package-audit/final-gate.json`,
+which binds the three independent target/Windows/GUI evidence records by hash;
+`run-40102754052.MTqrKKQV` holds the package audit. The GUI worktree retains
+`build/hosted-gui-review/run-40102754052/acceptance-scope.json`. These are exact
+PR evidence; unchanged older checks have CI acceptance without a claim that
+every historical transcript was manually audited again.
+
+Separately, PR #35 main push `40102383229` at `0f05ec8` passes all twelve jobs
+and both GUI artifact reviews. Linux artifact `12564067245`, SHA-256
+`858736c7b8640c09f341a021a2a42fd294aeec7b49c2f340c1fe16acbf8f95b5`,
+contains GUI `run.e4hJ4OOT` and 24 strict reports with zero unexplained errors.
+Windows artifact `12564595019`, SHA-256
+`9c4a1644f9e9ab92e98f1c2b39cee5f94818af590e3b7d26075d4a3b37a0c3ca`,
+passes seventeen focused checks and GUI
+`run.896ef9cf3c4f4eb4925c46dba736f505 GUI paths`. This supersedes the earlier
+pending main-push checkpoint and preserves the same host limitations.
+
+### Program-byte package before hosted acceptance
+
+**CONFIRMED locally:** integration `36b5ea9` package SHA-256
+`4b06489f1ae9d063033a0b87203b2b89e33495a98c98feb0fd8a1287e8f91dd0`
+passes independent exact-source/docs/support review: 43 production sources,
+two scripts, 192 major-65 classes, five manifests and both native provenance
+records. All 28 runtime/native/script files match initial installed package
+`0b245ce8b528274fa4d84de10ff866cfe284a21fa14f19d151f3d825bb01fbe6`;
+The production JAR is unchanged. Evidence:
+`build/program-bytes-package-audit/local-36b5ea9.i17dsktq/result.json`.
+This is a packaging audit, not repeated runtime execution. Accepted binder main
+is integrated normally; the following acceptance-docs build is independently
+audited against its exact commit before its own hosted gate.

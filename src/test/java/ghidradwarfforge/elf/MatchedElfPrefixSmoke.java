@@ -226,6 +226,21 @@ public final class MatchedElfPrefixSmoke {
         expect(CancellationException.class, () -> MatchedElfPrefix.compare(Path.of("unopened-missing"), pair.candidate(),
             () -> true, path -> { opens.incrementAndGet(); throw new AssertionError(); }));
         require(opens.get() == 0, "cancel-before-open touched the opener");
+        IllegalArgumentException parserCallback = new IllegalArgumentException("supplier after parser");
+        AtomicInteger metadataPolls = new AtomicInteger();
+        require(expect(IllegalArgumentException.class, () -> MatchedElfPrefix.compare(pair.original(), pair.candidate(),
+            () -> {
+                boolean inRead = StackWalker.getInstance().walk(frames -> frames.anyMatch(frame ->
+                    frame.getClassName().equals(MatchedElfPrefix.class.getName()) &&
+                    frame.getMethodName().equals("readMetadata")));
+                if (inRead && metadataPolls.incrementAndGet() == 2) {
+                    throw parserCallback;
+                }
+                return false;
+            }, path -> { opens.incrementAndGet(); throw new AssertionError(); })) == parserCallback,
+            "supplier failure was relabeled malformed ELF");
+        require(metadataPolls.get() == 2 && opens.get() == 0,
+            "post-parser callback control did not precede comparison streams");
         byte[] a = Files.readAllBytes(pair.original()), b = Files.readAllBytes(pair.candidate());
         IOException firstOpen = new IOException("first open sentinel");
         AtomicInteger firstAttempts = new AtomicInteger();

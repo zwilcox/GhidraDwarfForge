@@ -333,6 +333,20 @@ public final class ExecutableProgramBytesSmoke {
             return false;
         }, callback)) == callbackError, "supplier exception was replaced");
         callback.closedExactly();
+        Tracking afterParse = new Tracking();
+        IllegalArgumentException parserCallback = new IllegalArgumentException("supplier after parser");
+        int[] readPolls = {0};
+        require(expect(IllegalArgumentException.class, () -> compare(pair, () -> {
+            boolean inRead = StackWalker.getInstance().walk(frames -> frames.anyMatch(frame ->
+                frame.getClassName().equals(ExecutableProgramBytes.class.getName()) &&
+                frame.getMethodName().equals("read")));
+            if (inRead && ++readPolls[0] == 2) {
+                throw parserCallback;
+            }
+            return false;
+        }, afterParse)) == parserCallback, "supplier failure was relabeled malformed ELF");
+        require(readPolls[0] == 2 && afterParse.opened.isEmpty(),
+            "post-parser callback control did not precede comparison channels");
         Tracking cancelClose = new Tracking();
         cancelClose.failCloses = true;
         CancellationException cancelled = expect(CancellationException.class,

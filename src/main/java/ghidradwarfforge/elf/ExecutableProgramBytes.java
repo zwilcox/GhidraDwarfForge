@@ -390,14 +390,15 @@ public final class ExecutableProgramBytes {
 
     private static ElfImage read(Path path, BooleanSupplier cancelled) throws IOException {
         checkCancelled(cancelled);
+        ElfImage elf;
         try {
-            ElfImage elf = ElfImage.read(path);
-            checkCancelled(cancelled);
-            return elf;
+            elf = ElfImage.read(path);
         }
         catch (IllegalArgumentException malformed) {
             throw new IOException("invalid ELF metadata for program-byte observation", malformed);
         }
+        checkCancelled(cancelled);
+        return elf;
     }
 
     private static SeekableByteChannel open(Path path, BooleanSupplier cancelled, ChannelOpener opener)
