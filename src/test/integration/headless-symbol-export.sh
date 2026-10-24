@@ -21,6 +21,7 @@ fixture_dir="$repository_dir/build/fixtures"
 result_dir="$repository_dir/build/test-results/headless-symbol-export"
 temporary_projects=$(mktemp -d -t ghidra-dwarf-forge-symbols.XXXXXXXX)
 fixture_role=${FIXTURE_ROLE:-exec}
+fixture_input_suffix=${FIXTURE_INPUT_SUFFIX:-stripped}
 project_rebase_delta=${GHIDRA_REBASE_DELTA:-0}
 project_rebase_delta=$((project_rebase_delta))
 stale_executable_path=${GHIDRA_STALE_EXECUTABLE_PATH:-}
@@ -72,7 +73,7 @@ mkdir -p "$result_dir"
 
 for target in "${targets[@]}"; do
     stem=$(fixture_stem "$fixture_role")
-    input="$fixture_dir/$target/$stem.stripped"
+    input="$fixture_dir/$target/$stem.$fixture_input_suffix"
     if [[ "$use_default_output" == 1 ]]; then
         output="$input.dbg"
     else
@@ -184,7 +185,7 @@ for target in "${targets[@]}"; do
     warnings="$result_dir/$target.$fixture_role.readelf.stderr"
     : >"$warnings"
     readelf -h "$output" >/dev/null 2>>"$warnings"
-    readelf -S "$output" \
+    readelf -SW "$output" \
         >"$result_dir/$target.$fixture_role.readelf-sections.txt" 2>>"$warnings"
     readelf -n "$output" >/dev/null 2>>"$warnings"
     readelf --debug-dump=info "$output" \
@@ -210,7 +211,7 @@ for target in "${targets[@]}"; do
     fi
     grep -q '[.]debug_str' \
         "$result_dir/$target.$fixture_role.readelf-sections.txt"
-    if grep -q '[.]debug_aranges' \
+    if grep -Eq '[[:space:]][.]debug_aranges[[:space:]]' \
             "$result_dir/$target.$fixture_role.readelf-sections.txt"; then
         echo "sidecar unexpectedly contains .debug_aranges; CU ranges are authoritative" >&2
         exit 1

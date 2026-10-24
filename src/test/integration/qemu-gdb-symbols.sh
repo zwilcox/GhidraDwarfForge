@@ -147,6 +147,8 @@ run_native() {
     local type_commands=() print_before=() print_after=() range_commands=()
     local composite_break=() composite_print=() location_break=()
     if [[ "$fixture_role" != "exec.no-sections" ]]; then
+        # Compiler imports may add another enum operation. Its unique analyst
+        # enumerator selects the curated type without relying on name ambiguity.
         type_commands=(-ex "ptype $function" -ex "ptype binary_operation" \
             -ex "ptype recovered_variadic" -ex "ptype recovered_spin" \
             -ex "ptype fixture_sink" -ex 'echo EXTERNAL_DECLARATION\n' \
@@ -154,7 +156,7 @@ run_native() {
             -ex 'echo SCOPED_GLOBAL\n' -ex "ptype scoped_counter" \
             -ex "ptype struct fixture_state" -ex "ptype struct list_node" \
             -ex "ptype struct packed_flags" \
-            -ex "ptype union word_view" -ex "ptype enum operation")
+            -ex "ptype union word_view" -ex "ptype enum operation" -ex "ptype OP_INVALID")
         print_before=(-ex "print fixture_sink" -ex "print scoped_counter")
         print_after=(-ex "print fixture_sink")
         composite_break=(-ex "break recovered_composite")
@@ -217,6 +219,7 @@ run_emulated() {
     local composite_break=() composite_print=() location_break=()
     local execution_flow=()
     if [[ "$fixture_role" != "exec.no-sections" ]]; then
+        # Keep the same unambiguous curated-enum check as the native oracle.
         type_commands=(-ex "ptype $function" -ex "ptype binary_operation" \
             -ex "ptype recovered_variadic" -ex "ptype recovered_spin" \
             -ex "ptype fixture_sink" -ex 'echo EXTERNAL_DECLARATION\n' \
@@ -224,7 +227,7 @@ run_emulated() {
             -ex 'echo SCOPED_GLOBAL\n' -ex "ptype scoped_counter" \
             -ex "ptype struct fixture_state" -ex "ptype struct list_node" \
             -ex "ptype struct packed_flags" \
-            -ex "ptype union word_view" -ex "ptype enum operation")
+            -ex "ptype union word_view" -ex "ptype enum operation" -ex "ptype OP_INVALID")
         print_before=(-ex "print fixture_sink" -ex "print scoped_counter")
         print_after=(-ex "print fixture_sink")
         # ARM32 deliberately omits this location because recovered_composite

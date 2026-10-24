@@ -11,6 +11,120 @@ export. Export remains explicit: installed wrappers request checksum-verified
 packaged natives by default, while source-tree audit runs may supply explicit
 library paths.
 
+## Alpha release validation (2026-10-22)
+
+**CONFIRMED:** work resumed from clean commit
+`f4a01992deb5b2e65736c573cc3e6d2cbe59ce75`, matching remote `main`. The
+documented clean extension build and all thirteen native-independent smoke
+tests passed locally with `GHIDRA_INSTALL_DIR` explicitly set to Ghidra
+12.0.3. An initial invocation without that variable stopped at configuration
+and did not run tests.
+
+**CONFIRMED:** fresh [GitHub Actions run 39892474892](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/39892474892)
+built the native-inclusive `0.1.0-alpha.1` candidate from that commit and
+passed byte-identical repeated assembly. Independent inspection of the
+downloaded candidate verified the ZIP, whole-release and both platform
+manifests, nested corresponding-source/runtime manifests, pinned source/patch
+digests, version metadata, and executable wrapper permissions.
+
+Candidate artifact: `GhidraDwarfForge-0.1.0-alpha.1-ghidra-12.0.3.zip`
+(8,083,141 bytes). SHA-256:
+
+```text
+27ad36e575ad410df475d2ec45c0fac03287dab19515fcbe39ffc6dd69bfc502
+```
+
+**CONFIRMED:** the fresh run passed all twelve jobs, including x86-64,
+AArch64, ARM32, MIPS32 big/little endian, Windows-hosted export, and the
+aggregate `required-validation` gate. The verified bundle and `SHA256SUMS`
+were published as [v0.1.0-alpha.1](https://github.com/zwilcox/GhidraDwarfForge/releases/tag/v0.1.0-alpha.1)
+on 2026-10-22 America/Chicago (2026-10-23 UTC). The public tag resolves to the
+tested commit. Downloading the published assets passed `sha256sum -c`; the
+downloaded ZIP was byte-identical to the verified CI candidate, and the public
+checksum URL was accessible without authentication. This is a prerelease with
+the profile and feature limitations listed in its release notes; it does not
+close unrelated scope gaps.
+
+## Post-alpha existing-DWARF and GUI checks (2026-10-22)
+
+**CONFIRMED:** the development writer fixes a reproduced GDB warning from the
+published alpha: `/usr/bin/true` carried `.gnu_debugaltlink` into its sidecar,
+causing GDB to search for obsolete supplementary debug data. Inherited debug
+metadata is now retired according to ADR 0001; the original is unchanged.
+
+The extension build and fourteen native-independent smoke tests passed,
+including `existingDebugSidecarSmoke`. Its ELF32/64 by little/big-endian
+matrix checks replacement payloads/flags, duplicate section names, preserved
+bytes/build identity/unwind sections, and deterministic output. The local
+development JAR was installed into an isolated copy of Ghidra 12.0.3 with the
+verified alpha native package. The user's installed extension was not changed.
+
+The new end-to-end commands are:
+
+```bash
+module="$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge"
+src/test/integration/existing-debug-export.sh "$GHIDRA_INSTALL_DIR" \
+    "$module/os/linux_x86_64/libdwarf.so.2.3.2" \
+    "$module/os/linux_x86_64/libdwarfp.so.2.3.2"
+src/test/integration/real-world-export.sh "$GHIDRA_INSTALL_DIR"
+src/test/integration/gui-output-fallback.sh "$GHIDRA_INSTALL_DIR" "$module" \
+    "$PWD/build/fixtures/x86_64/semantic.exec.stripped" \
+    "$PWD/build/fixtures/x86_64/semantic.exec.reference"
+```
+
+- **PASS:** plain compiler DWARF, SHF_COMPRESSED zlib, GNU `.zdebug_*`, and a
+  real `gdb-add-index` fixture. Each exports through production headless Ghidra,
+  contains exactly one Forge CU, passes GNU/LLVM/libdwarf validators, and runs
+  the full type/global/local/source-stepping GDB oracle against a debugless
+  runtime binary. Input and runtime hashes stay unchanged. Logs/artifacts:
+  `build/test-results/existing-debug-export/run.C2v11Pb5/`.
+- **PASS:** unmodified GNU coreutils `/usr/bin/true` and `/usr/bin/basename`.
+  Two independent imports per binary produce byte-identical `.dbg`/`.dbg.c`.
+  Validators and GDB entry/application breakpoints, signatures, source listing,
+  `next`, `step`, and exit status pass without warnings; basename prints
+  `path` for `/alpha/path`. No analyst preparation or variable expectations
+  are injected. Logs: `build/test-results/real-world-export/run.i996N8bM/`.
+- **PASS:** Linux GUI chooser selection/cancellation with a read-only input
+  directory. The production script runs in a genuine non-headless Ghidra
+  process and the test drives real Swing controls and mouse events. Selection
+  emits exactly the artifact pair; cancellation emits `CANCELLED` and no
+  output. Input hashes, GNU/LLVM/libdwarf validators, GDB source lookup and
+  stepping pass. Screenshots/logs from the rebuilt module:
+  `build/test-results/gui-output-fallback/run.NZvz59Sx/`.
+
+The GUI check requires Xvfb and a GUI-enabled Java 21+. Locally, Xvfb packages
+were downloaded/extracted below `build/gui-validation/dependencies/` without
+system installation; the run set `XVFB_BIN` to that extracted binary and
+`JAVA_BIN=/usr/lib/jvm/java-21-openjdk-amd64/bin/java`. The default Java 25
+installation is headless-only. This does not prove manual Script Manager
+navigation or Windows GUI behavior.
+
+**CONFIRMED:** the rebuilt writer also passes fresh real-export, GNU/LLVM/
+libdwarf, and native/QEMU GDB runs for x86-64, AArch64, MIPS32 big-endian, and
+MIPS32 little-endian across `exec`, `pie`, and `exec.no-sections` (twelve
+target/role cases). Commands use `FIXTURE_ROLE=<role>` with
+`headless-symbol-export.sh` and `qemu-gdb-symbols.sh`; aggregate transcripts are
+under `build/real-world-validation/final-<role>-{export,gdb}.log`. Shell syntax,
+architecture-neutrality, wrapper, and actionlint checks pass. Local ARM32
+rebuild was unavailable because `arm-linux-gnueabihf-gcc` is not installed;
+the hosted lane remains required. One intermediate run was interrupted by a
+concurrent edit to its shell harness and was rerun after edits stopped; only
+the final stable-script runs are counted as passing.
+
+Two test-harness issues were corrected during validation: GDB must search the
+artifact directory to resolve the relative synthetic-source path; and imported
+compiler types may share a name with curated types, so the enum oracle also
+uses `ptype OP_INVALID` to select the uniquely identified analyst enum. These
+are not evidence of an extra inherited compiler CU in the emitted sidecar.
+
+**CONFIRMED:** [GitHub Actions run 39896787460](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/39896787460)
+passed all twelve jobs for implementation commit
+`3cdc3f851772c9c876952473b7504932de826925` in PR #16. The new existing-DWARF,
+real-world, and GUI checks passed in the hosted x86-64 lane. AArch64, ARM32,
+both MIPS byte orders, Windows-hosted export, native builds, release assembly,
+and the aggregate gate also passed. This is fresh evidence for the post-alpha
+implementation, separate from the already published alpha's earlier run.
+
 ## Ancillary local checks
 
 ```bash

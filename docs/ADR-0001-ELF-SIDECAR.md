@@ -42,6 +42,24 @@ Create `<original>.dbg` as a matched, non-loadable ELF sidecar:
    represented as zero-length `SHT_NOBITS` placeholders with no link or target.
 8. Publish by atomic replacement only after the complete sidecar validates.
 
+### Existing debug metadata policy (2026-10-22)
+
+The Forge sidecar describes the current Ghidra program; it does not merge the
+original compiler's DWARF with the new export. Replace matching `.debug_*`
+sections with the new uncompressed payloads and clear their old section flags.
+Retire unmatched `.debug_*`, GNU-compressed `.zdebug_*`, `.gdb_index`,
+`.gnu_debuglink`, `.gnu_debugaltlink`, and `.gnu_debugdata` under
+`.forge.stale`-prefixed names. Only one matching section can receive a new
+payload; duplicate original names are retired too. Existing relocation
+sections continue to follow the neutralization rule above.
+
+This prevents consumers from following the old debug file links or using
+indexes/compressed data that describe a different debug view. Original payload
+bytes remain in the copied sidecar, but are no longer active debug metadata.
+The input itself, build identity, and unrelated sections such as `.eh_frame`
+remain unchanged. This does not add optional debuglink attachment to the
+original executable.
+
 The initial explicit GDB workflow is:
 
 ```gdb
@@ -89,6 +107,6 @@ semantic DIE/line/type/location content.
 - PIE relocation is handled by GDB using the original executable mapping.
 - Sidecars contain copied bytes that are not described as loadable segments;
   this favors correctness and target identity over minimal file size.
-- Shared-object timing/load tests, automatic build-ID discovery, existing
-  partial-DWARF replacement, and very large/extended-numbering ELFs remain
-  follow-up work.
+- Very large/extended-numbering ELFs remain follow-up work. Shared-object
+  runtime tests and build-ID discovery were subsequently validated; see
+  `VALIDATION.md` for that evidence and the existing-DWARF replacement tests.

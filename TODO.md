@@ -380,7 +380,8 @@ For at least one x86-64 non-PIE fixture, construct candidate sidecars and prove:
 
 **Status:** `[~]` — the pure-Java matched sidecar writer passes both
 compiler-oracle and real Forge symbol tests, including no-section-table inputs;
-existing-DWARF policy, large files, and complete DWARF sections remain.
+existing-DWARF replacement now has an explicit policy and regression tests;
+large files and extended ELF numbering remain.
 **Dependency:** P0.8.
 
 ### Work
@@ -420,6 +421,9 @@ Implement:
   current contiguous-function fixture coverage.
 - [x] Original target hash is unchanged.
 - [x] Invalid/unsupported target combinations fail before output is published.
+- [x] Existing compiler DWARF is replaced, not merged. Stale compressed DWARF,
+  indexes, debug links, and mini-debug data are retired in the sidecar while
+  the original remains unchanged; see ADR 0001 and the validation record.
 
 ## P0.10 Deliver the first validated symbol-only milestone
 
@@ -854,7 +858,7 @@ AArch64, ARM32, and MIPS32 big/little endian.
 **Status:** `[~]` — the symbol/source-line/type/signature milestone passes in
 hosted CI for ET_EXEC, PIE, shared objects, and no-section inputs. Stack-local
 locations pass; overwritten input registers are honestly omitted. Additional
-storage cases and release support remain.
+storage cases remain beyond the validated alpha profile.
 
 ### Work
 
@@ -869,8 +873,8 @@ storage cases and release support remain.
 - [x] Symbol/source-line milestone passes for AArch64 non-PIE and PIE.
 - [~] Type/signature and stack-local milestones pass; additional variable
   storage classes remain.
-- [x] AArch64 PIE/shared cases pass in hosted CI; packaged release evidence
-  remains.
+- [x] AArch64 PIE/shared cases pass in hosted CI, including the fresh alpha
+  release validation run recorded under P2.13.
 - [x] A repository guard confines architecture identifiers/register spellings
   to target-description boundaries.
 
@@ -879,8 +883,8 @@ storage cases and release support remain.
 **Status:** `[~]` — hosted real headless symbol export, structural validation,
 and QEMU/GDB runtime breakpoints pass for MIPS32 big/little endian ET_EXEC,
 PIE, shared-object, and no-section-table inputs; `ptype`, stable register
-parameters, and stack locals pass, while additional variable storage and
-packaged release evidence remain.
+parameters, and stack locals pass. The alpha release validation includes both
+MIPS lanes; additional variable storage cases remain.
 
 ### Work
 
@@ -1013,10 +1017,13 @@ unsupported big-endian target profiles passed in GitHub Actions run 33824105805.
 
 ## P2.7 Add output selection, fallback, and atomic pair commit
 
-**Status:** `[~]` — deterministic default and explicit paths, stale-path input
+**Status:** `[x]` for the validated paths — deterministic default and explicit paths, stale-path input
 override with imported-file hash verification, preflight collision/write
-checks, staged pair rollback, and final hashes pass locally. GUI fallback is
-implemented but remains unverified in an interactive Ghidra process.
+checks, staged pair rollback, and final hashes pass locally. Automated Linux
+GUI fallback selection/cancellation passes locally and in hosted run
+`39896787460`, in a genuine non-headless Ghidra 12.0.3 process under Xvfb,
+including validators and GDB source stepping.
+Manual Script Manager navigation and Windows GUI behavior remain untested.
 
 ### Work
 
@@ -1024,8 +1031,8 @@ implemented but remains unverified in an interactive Ghidra process.
 - [x] Detect missing, stale, or unwritable `Program.getExecutablePath()`;
   inaccessible remote paths follow the same explicit-input/output failure
   policy rather than receiving guessed behavior.
-- [~] Offer/select an output directory in GUI mode; code is present but the
-  interactive chooser has not been exercised manually.
+- [x] Offer/select an output directory in GUI mode; the production chooser is
+  exercised automatically with real Swing controls and mouse clicks.
 - [x] Accept explicit input/output paths in headless mode.
 - [x] Write `.dbg` and `.dbg.c` to temporary files.
 - [x] Commit the pair atomically as far as the host filesystem permits.
@@ -1034,8 +1041,8 @@ implemented but remains unverified in an interactive Ghidra process.
 ### Completion criteria
 
 - [x] Default path behavior satisfies issues #1–#3 for a normal local file.
-- [x] Unwritable-path policy fails before writing; GUI prompting remains
-  PRESENT, UNVERIFIED.
+- [x] Unwritable-path policy fails before writing in headless mode; GUI
+  selection publishes to the chosen directory and cancellation publishes nothing.
 - [x] Headless path is deterministic and non-interactive.
 - [x] Cancellation/failure leaves no mismatched final pair.
 
@@ -1192,10 +1199,14 @@ an integration pass.
 
 ## P2.13 Produce installable releases
 
-**Status:** `[~]` — deterministic CI artifacts, packaged Linux/Windows natives,
+**Status:** `[x]` — deterministic CI artifacts, packaged Linux/Windows natives,
 clean-install exports, checksums, operating documentation, third-party
 notices, corresponding-source packaging, and hosted verification are
-implemented. Official GitHub Release publication remains separate.
+implemented. Fresh run `39892474892` passed all twelve jobs. The verified
+native-inclusive bundle and checksum file were published as
+[v0.1.0-alpha.1](https://github.com/zwilcox/GhidraDwarfForge/releases/tag/v0.1.0-alpha.1)
+on 2026-10-22 America/Chicago, targeting tested commit `f4a0199`. This closes
+alpha release packaging/publication, not the remaining feature-scope items.
 
 ### Work
 
@@ -1267,6 +1278,10 @@ Potential features:
 - Static locals.
 - Artificial variables.
 - Declaration-only DIEs.
+- Disambiguation of same-named types from different Ghidra categories: the
+  existing-DWARF regression retains both imported and analyst-defined
+  `operation` enums, and uses the unique `OP_INVALID` enumerator to query the
+  curated type in GDB. Do not discard one based on name alone.
 
 Do not begin until the type/location core is stable.
 
@@ -1305,8 +1320,8 @@ Use the following acceptance gates before updating the original GitHub issues:
 
 - [x] Production export defaults next to `Program.getExecutablePath()`.
 - [x] Missing/stale/unwritable paths fail before publication or use an explicit
-  headless input/output path; the GUI chooser is present but separately tracked
-  as an interactive verification item under P2.7.
+  headless input/output path; Linux GUI chooser selection/cancellation is
+  covered by the automated non-headless test under P2.7.
 - [x] Atomic pair behavior is tested on Linux and Windows.
 - [x] GUI and headless path behavior is documented.
 

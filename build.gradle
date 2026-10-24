@@ -90,6 +90,14 @@ tasks.register("sectionlessSidecarSmoke", JavaExec) {
     }
 }
 
+tasks.register("existingDebugSidecarSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks replacement of inherited ELF debug metadata in both widths and byte orders"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.ExistingDebugSidecarSmoke"
+}
+
 tasks.register("minimalDwarfSidecarSmoke", JavaExec) {
     group = "verification"
     description = "Runs the production symbol-only sidecar exporter in an isolated JVM"

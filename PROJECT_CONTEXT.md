@@ -1661,6 +1661,67 @@ and regression tests reject published `SHT_REL`/`SHT_RELA` sections. The real
 export harness explicitly requires `.debug_aranges` to remain absent and uses
 CU/subprogram `DW_AT_ranges` as the tested lookup authority.
 
+### 16.23 Alpha release resumption
+
+**CONFIRMED (2026-10-22):** the user resumed release work and authorized the
+proposed fresh full CI validation and publication of `0.1.0-alpha.1`. This
+supersedes the publication deferral recorded in Section 16.20. The repository
+and remote `main` both identify commit
+`f4a01992deb5b2e65736c573cc3e6d2cbe59ce75`.
+
+The clean local extension build and thirteen native-independent smoke tests
+passed. Fresh GitHub Actions run `39892474892` produced the native-inclusive
+release candidate; independent ZIP, nested manifest, source/patch digest,
+version, and wrapper-permission checks passed. Its SHA-256 is
+`27ad36e575ad410df475d2ec45c0fac03287dab19515fcbe39ffc6dd69bfc502`.
+All twelve jobs passed, including the five architecture lanes, Windows-hosted
+export, and the aggregate `required-validation` gate. The verified bundle and
+checksum file were published as
+[v0.1.0-alpha.1](https://github.com/zwilcox/GhidraDwarfForge/releases/tag/v0.1.0-alpha.1)
+on 2026-10-22 America/Chicago (2026-10-23 UTC), with the public tag pointing to
+the tested commit. Architecture scope and alpha limitations remain as
+documented in the release notes; publication does not imply completion of
+unrelated scope gaps.
+
+### 16.24 Post-alpha input and GUI validation
+
+**CONFIRMED (2026-10-22):** testing the published alpha on `/usr/bin/true`
+exposed a stale `.gnu_debugaltlink` warning in GDB. The development writer now
+replaces, rather than merges, the original debug view: matching `.debug_*`
+sections receive new uncompressed payloads, while unmatched DWARF, GNU
+compressed DWARF, indexes, debug links, and mini-debug data are retired under
+`.forge.stale` names. Duplicate matching section names leave only one active
+replacement. Original bytes and target identity are retained; the executable
+is never changed. ADR 0001 records this policy.
+
+All four width/byte-order combinations pass the native-independent writer
+test. Real x86-64 compiler-DWARF inputs (plain, SHF_COMPRESSED zlib, GNU zlib,
+and a genuine `.gdb_index`) pass headless export, structural validators, and
+GDB against the debugless runtime fixture. Each resulting sidecar contains one
+Forge CU. Importing compiler types can create equal names in distinct Ghidra
+categories; the enum oracle now also uses the unique `OP_INVALID` enumerator
+to select the curated type. General type-name disambiguation remains a scope
+limitation, not a reason to discard valid types.
+
+Two unmodified distro PIEs, `/usr/bin/true` and `/usr/bin/basename`, pass
+independent double imports with byte-identical sidecar/source output, unchanged
+input hashes, validators, and warning-free GDB entry/application breakpoints,
+source listing, stepping, and normal exit. These tests use naturally recovered
+analysis with no fixture renames. This is narrow real-world evidence, not a
+claim that arbitrary firmware is validated.
+
+**CONFIRMED:** actual Linux GUI output-directory selection and cancellation
+pass in a non-headless Ghidra 12.0.3 JVM under a private Xvfb display. The test
+runs the production script and real Swing chooser, writes to the selected
+directory when the input directory is read-only, and publishes nothing after
+cancellation. Hash preservation, validators, and GDB source stepping pass.
+Manual Script Manager navigation and Windows GUI behavior remain untested.
+The three new integration harnesses are wired into the x86-64 CI lane; hosted
+run `39896787460` passed all twelve jobs for implementation commit `3cdc3f8`,
+including these three tests, the five target lanes, Windows-hosted export,
+and the aggregate gate. Detailed evidence is recorded in `VALIDATION.md`.
+These changes do not alter the already published alpha artifact.
+
 ## 17. Open questions
 
 Codex should not silently answer these through implementation choices. Investigate, document, and obtain user direction when the answer materially changes compatibility or scope.

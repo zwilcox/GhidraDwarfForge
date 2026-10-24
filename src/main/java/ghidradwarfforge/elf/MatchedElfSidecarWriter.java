@@ -10,9 +10,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import ghidradwarfforge.elf.ElfImage.Section;
 import ghidradwarfforge.elf.ElfImage.Segment;
@@ -86,6 +88,7 @@ public final class MatchedElfSidecarWriter {
             addIdentityNoteSections(image, sections);
         }
         else {
+            Set<String> replacementNames = new HashSet<>();
             for (Section section : image.sections()) {
                 Section copy = section.copy();
                 if (copy.type == SHT_REL || copy.type == SHT_RELA) {
@@ -94,10 +97,9 @@ public final class MatchedElfSidecarWriter {
                 else if (section.originalIndex == image.sectionNameIndex()) {
                     copy.name = ".shstrtab.old";
                 }
-                else if ((copy.name.startsWith(".debug_") ||
-                        copy.name.startsWith(".rel.debug_") ||
-                        copy.name.startsWith(".rela.debug_")) &&
-                        !debugSections.containsKey(copy.name)) {
+                else if (isInheritedDebugMetadata(copy.name) &&
+                        (!debugSections.containsKey(copy.name) ||
+                            !replacementNames.add(copy.name))) {
                     copy.name = ".forge.stale" + copy.name;
                 }
                 sections.add(copy);
@@ -182,6 +184,16 @@ public final class MatchedElfSidecarWriter {
             header.putShort(50, (short) (sections.size() - 1));
         }
         return result;
+    }
+
+    private static boolean isInheritedDebugMetadata(String name) {
+        // The current export replaces the original debug view. Old indexes,
+        // compressed DWARF, and separate-debug references must not remain active
+        // alongside the newly generated sections. Their bytes are still retained.
+        return name.startsWith(".debug_") || name.startsWith(".zdebug_") ||
+            name.startsWith(".rel.debug_") || name.startsWith(".rela.debug_") ||
+            name.equals(".gdb_index") || name.equals(".gnu_debuglink") ||
+            name.equals(".gnu_debugaltlink") || name.equals(".gnu_debugdata");
     }
 
     private static void omitRelocationSection(Section section) {
