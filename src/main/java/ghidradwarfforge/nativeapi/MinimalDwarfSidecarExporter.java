@@ -87,6 +87,8 @@ import com.sun.jna.ptr.PointerByReference;
 
 import ghidradwarfforge.elf.ElfImage;
 import ghidradwarfforge.elf.MatchedElfSidecarWriter;
+import ghidradwarfforge.elf.ElfFunctionModeCue;
+import ghidradwarfforge.elf.ElfLocalFunctionSymbol;
 import ghidradwarfforge.dwarf.Dwarf5LineTable;
 import ghidradwarfforge.dwarf.Dwarf5LocationLists;
 import ghidradwarfforge.dwarf.Dwarf5RangeLists;
@@ -301,7 +303,18 @@ public final class MinimalDwarfSidecarExporter {
             Path producerLibrary, List<FunctionSymbol> functions,
             SyntheticSourceFile syntheticSource, ProgramTypeModel typeModel,
             String sourceFileName, BooleanSupplier cancelled) throws IOException {
+        return export(input, output, consumerLibrary, producerLibrary, functions,
+            syntheticSource, typeModel, sourceFileName, cancelled, List.of(), ignored -> { });
+    }
+
+    public ExportResult export(Path input, Path output, Path consumerLibrary,
+            Path producerLibrary, List<FunctionSymbol> functions,
+            SyntheticSourceFile syntheticSource, ProgramTypeModel typeModel,
+            String sourceFileName, BooleanSupplier cancelled, List<ElfFunctionModeCue> modeCues,
+            java.util.function.Consumer<String> diagnostic) throws IOException {
         Objects.requireNonNull(cancelled, "cancelled");
+        Objects.requireNonNull(modeCues, "modeCues");
+        Objects.requireNonNull(diagnostic, "diagnostic");
         if (cancelled.getAsBoolean()) {
             throw new CancellationException("DWARF export cancelled");
         }
@@ -319,6 +332,8 @@ public final class MinimalDwarfSidecarExporter {
 
         ElfImage elf = ElfImage.read(source);
         DwarfTarget target = DwarfTarget.fromElf(elf);
+        List<ElfLocalFunctionSymbol> modeSymbols = target.planFunctionModeSymbols(
+            elf, modeCues, cancelled, diagnostic);
         byte[] addressRanges = DwarfAddressRanges.build(ordered,
             target.addressBytes(), elf.byteOrder());
         LibDwarfConsumer consumer = Native.load(consumerPath.toString(), LibDwarfConsumer.class);
@@ -358,7 +373,7 @@ public final class MinimalDwarfSidecarExporter {
         if (sections.putIfAbsent(".debug_aranges", addressRanges) != null) {
             throw new IllegalStateException("producer supplied an unexpected address lookup");
         }
-        new MatchedElfSidecarWriter().write(source, destination, sections, cancelled);
+        new MatchedElfSidecarWriter().write(elf, destination, sections, modeSymbols, cancelled);
         return new ExportResult(target, ordered.size(), List.copyOf(sections.keySet()),
             version);
     }

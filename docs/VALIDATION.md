@@ -5398,5 +5398,69 @@ limits remain explicit; artifact inspection is not fresh execution.
 Root independently rehashed the reviewed sources and receipts and checked live
 head/base, strict required-validation protection and unresolved reviews. Normal
 merge `0d2cbc5ad1ca10eb98077f67675bfc8a1927c11d` at `2026-10-24T20:22:37Z`
-has the tested tree. Separate main push `40129499500` remains pending.
+has the tested tree. Separate main push `40129499500` passes all twelve jobs
+and independent both-GUI/native Windows 23 review. Its target job conclusions
+are a separate CI scope from the detailed PR artifact reviews above.
 Published releases and optional attachment remain unchanged.
+
+### Host-observation research integration (2026-10-24)
+
+**CONFIRMED:** PR #43 head `bdc3502059beb2e91180293dfcb5abd0cabc2ad0`
+passes all twelve jobs in `40130322553`. Exact source/package review, the
+separate two-host inspection trial, both GUI journeys and native Windows 23
+checks pass. The production runtime payloads equal the accepted PR #42 package;
+five target job successes are CI evidence, not newly attributed detailed target
+artifact audits. Normal merge `0f1abdc1cadeae5ffc17ca5a732a26fe766bd7f7`
+preserves the tested tree. Its distinct main push `40132729633` passes all twelve
+jobs and fresh independent both-GUI/native Windows 23 review. Acceptance receipt
+`294de8d9908c5028c4a28c94e0ca288abad6bcda0913f0e8dab179546d8e83ff`
+binds that separate push; target job conclusions remain CI scope.
+The probes do not implement optional attachment or publish a release.
+
+### Bounded ARM/Thumb mode symbols: local acceptance (2026-10-24)
+
+**CONFIRMED locally; hosted gate pending:** the new production path restores
+ELF function-mode cues for a mixed ARM/Thumb ET_EXEC whose static symbol table
+was stripped. It leaves DWARF code addresses even, emits exact-size synthetic
+local ELF symbols, and checks actual instruction coverage/context and original
+code bytes. Existing symbol tables and uncertain cases receive conservative
+omission diagnostics. See [the scope and initial failure](research/ARM-THUMB-MODE.md).
+
+The local interim runtime ZIP has SHA-256
+`1794aa0724786bdb8605ddb509608af76099c49ee0edb58cc89a3891e50b3ba3`,
+with JAR `e0888311f678f281f9288a7cb4c09213b8717bf04197e3a520052ebbd2bd684b`
+and production script
+`eb636d3abc2c3f43aac6a4593b1c25ef53dcbe05a1cdb190d75d44550ec068b6`.
+Its 49 production sources, 220 Java-21-compatible classes, five manifests and
+native provenance pass author verification. Only JAR/script differ among the
+28 earlier runtime payloads. Documents changed after that interim assembly;
+the initial exact-document audit failure is retained and final package equality
+remains required.
+
+Actual Java 21 focused checks pass: 132 planner/serializer assertions with a
+64 MiB heap and 38 Ghidra extraction assertions. The extraction test is compiled
+with JDK 25 `--release 21`; the local Gradle run's test classes are Java 25. Existing
+ELF inherited-debug, extended-numbering, reader and cancellation regressions
+also pass. Independent GNU readelf checks accept ordinary, extended and mixed
+symbol section indexes. Source/focused evidence review
+`build/thumb-mode-review/gui-frozen-source-review.json` has SHA-256
+`04daeb0df067a52badc35028cbb40e408c9268aa3de1bf4a04b38a760845280b`.
+
+Final installed run `build/test-results/arm-thumb-mode/run.nkBwUuYA` uses the
+real packaged exporter on a stripped, source-built three-unit fixture. GNU,
+LLVM and strict libdwarf checks pass with zero unexplained errors. Two exports
+of the same saved program produce identical sidecar/source/report bytes.
+Four compiler/Forge GDB sessions prove static Thumb disassembly, an adjacent ARM
+function in the same section, direct and indirect calls, source stepping,
+typed global values and an exact-entry stop from an ARM caller. The report
+remains `PARTIAL`/`NOT_RUN`; four parameter location omissions remain explicit.
+Eleven protected source/input/installed paths remain unchanged. This headless
+run uses Java 25.0.4.1, separately from the focused Java 21 tests.
+
+The old accepted exporter fails the same static-disassembly assertion after
+passing GNU/LLVM/strict checks, establishing a nonvacuous regression. Retained
+setup failures include an initially incorrect focused-test guard expectation,
+an inclusive GDB disassembly endpoint, and a tracing file descriptor inherited
+by a child shell. Their corrected runs are separate. This is not broad Thumb,
+PIE/rebase/shared-object, sectionless-mode, or native breakpoint-encoding
+acceptance; the current supported ARM-state profile remains unchanged.

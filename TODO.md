@@ -87,8 +87,12 @@ jobs and separate both-GUI/native Windows 22 review. See
 `docs/VALIDATION-EVIDENCE-HANDOFF.md`. External-function inventory head `296395e`
 passes all twelve jobs in `40126794530`, exact package/all-five-target/both-GUI
 review and 23 native Windows suites; PR #42 merged normally as `0d2cbc5`.
-Its separate main push `40129499500` is pending. Host identity/metadata research
-is the next bounded prerequisite for the optional attachment transaction.
+Its separate main push `40129499500` passes all twelve jobs and independent
+both-GUI/native Windows 23 review. Host identity/metadata inspection research
+passes its two-host manual trial and PR #43's exact run `40130322553`; normal
+merge `0f1abdc` preserves the tested tree. Its distinct main push `40132729633`
+passes all twelve jobs and independent both-GUI/native Windows 23 review.
+The optional attachment transaction remains planned.
 These changes do not complete general variable migration, the optional
 attachment transaction or a new release.
 
@@ -1317,6 +1321,16 @@ the hosted producer, real headless exporter, structural-validator, and
 QEMU/GDB behavior matrix for ET_EXEC, PIE, shared objects, no-build-ID inputs,
 and program-header-only inputs. Thumb, big-endian ARM, and additional ABI or
 storage profiles are not claimed.
+
+**CONFIRMED old-exporter reproduction:** a mixed ARM/Thumb ET_EXEC fixture imports and
+exports with correct Ghidra instruction context and clean validators, but GDB
+15.1 disassembles the stripped input's recovered Thumb function as ARM before
+execution. Runtime success can depend on the current CPSR and does not establish
+static mode support. A separate saved-project repeat is deterministic.
+**CONFIRMED locally; hosted gate pending:** the bounded correction restores
+defensible ELF mode cues and passes the compiler-relative regression, including
+neighboring ARM code, validators, calls, stepping and repeatability. This does
+not complete Thumb profile support; see [the scope](docs/research/ARM-THUMB-MODE.md).
 
 **CONFIRMED in hosted run `40063017269`:** six scalar-FP
 exec/PIE/rebase/repeat cases pass stable float/double and upper-`s1` value

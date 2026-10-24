@@ -358,6 +358,26 @@ tasks.register("externalFunctionInventorySmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/external-function/cache").absolutePath
 }
 
+tasks.register("arm32ModeSymbolsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded instruction-mode symbols and preserved ELF metadata"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.Arm32ModeSymbolsSmoke"
+}
+
+tasks.register("ghidraArm32FunctionModesSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks evidence-backed instruction-mode extraction from Ghidra programs"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.GhidraArm32FunctionModesSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/function-modes/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/function-modes/cache").absolutePath
+}
+
 tasks.register("floatingRegisterSliceSmoke", JavaExec) {
     group = "verification"
     description = "Emits a scalar upper-register bit piece through the isolated native producer"

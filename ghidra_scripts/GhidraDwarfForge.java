@@ -4,6 +4,7 @@
 import ghidra.app.script.GhidraScript;
 import ghidradwarfforge.AddressNormalizer;
 import ghidradwarfforge.ExporterPreflight;
+import ghidradwarfforge.GhidraArm32FunctionModes;
 import ghidradwarfforge.GhidraFunctionSymbols;
 import ghidradwarfforge.GhidraImageBase;
 import ghidradwarfforge.GhidraSyntheticSource;
@@ -152,6 +153,8 @@ public class GhidraDwarfForge extends GhidraScript {
         var extraction = GhidraFunctionSymbols.extractDetailed(currentProgram, monitor,
             diagnostic, rebaseDelta);
         var functions = extraction.functions();
+        var modeCues = GhidraArm32FunctionModes.extract(currentProgram, functions,
+            target, rebaseDelta, monitor, diagnostic);
         monitor.checkCancelled();
         var source = GhidraSyntheticSource.decompile(currentProgram, functions,
             rebaseDelta, monitor);
@@ -164,7 +167,8 @@ public class GhidraDwarfForge extends GhidraScript {
             stagedOutput -> resultHolder[0] = new MinimalDwarfSidecarExporter().export(
                 input, stagedOutput,
                 consumer, producer, functions, source, typeModel,
-                sourceOutput.getFileName().toString(), monitor::isCancelled),
+                sourceOutput.getFileName().toString(), monitor::isCancelled,
+                modeCues, diagnostic),
             source::writeAtomically, monitor::checkCancelled);
         MinimalDwarfSidecarExporter.ExportResult result = resultHolder[0];
         String outputHash = sha256(output);
