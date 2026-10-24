@@ -2429,3 +2429,60 @@ research is resolved here by semantic commit `3070e95`. The saved-program
 regression above and hosted semantic run `40063017269` prove raw-model and
 DWARF/source byte equality for that bounded singleton case. This does not
 implement optional attachment/refresh/rollback or replace other type identities.
+
+
+## Combined local checks and component hosted status (2026-10-24)
+
+**CONFIRMED locally:** combined production source
+`a328a15f625331d17c7c7e45d62d4645e9a1e4b0` compiles and passes all 24
+native-independent Java smoke tasks plus `buildExtension`. The package and
+headless-wrapper regressions, workflow lint and architecture-neutrality guard
+also pass. Independent source review found no material production conflict;
+the workflow composition review confirms all 61 distinct named component CI
+steps are retained. These review results do not replace execution of the
+combined pipeline.
+
+Build, package, wrapper and assembly transcripts are retained in the
+`reviewed-todo-integration` worktree's `build/integration-review/` as
+`build.log`, `package.log`, `wrapper.log` and `combined-assembly.log`.
+The locally assembled package SHA-256 is
+`1348d100f7dd0508929726039313444419d551d7bf794838cdd8bf29ce62d8dd`.
+It is a private integration artifact, not a new published release. Subsequent
+merge `c1c7485a8518a048fc5f798ac0cc249a412baf28` changes only managed Linux GUI
+harness/control sources, CI and documentation; its production source matches
+the tested `a328a15` tree. The full combined runtime/host matrix is still pending.
+
+Fresh GitHub queries confirm the following exact component `pull_request`
+runs are completed successfully. Each has exactly twelve successful jobs, with
+no failed or skipped job: lint, both native builds, extension, release package,
+all five target lanes, Windows host and the aggregate gate.
+
+| Component | Exact head | Hosted run | Aggregate completion (UTC) |
+|---|---|---|---|
+| Target-language agreement | `96e6972f64f6e47e8f37dc2c99f72990a8768bf7` | [40064731597](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40064731597) | `2026-10-24T05:22:37Z` |
+| Semantic features | `2d47e122add294dcd50e4fb0820855be19cb6f39` | [40066078653](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40066078653) | `2026-10-24T05:43:27Z` |
+| Line index and validation-tool packaging | `b0bcdb83e23bc09bc1efc79d9f2b02e3e6f3b1a7` | [40065823442](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40065823442) | `2026-10-24T05:41:26Z` |
+
+Full API metadata, job IDs and conditional step results are retained as
+`build/integration-review/component-run-<run-id>.json`. These supersede the
+respective component's earlier pending-hosted statements. Target-conditional
+coverage and existing limitations remain unchanged; the performance run does
+not create a new timing measurement. None of these runs validates this combined
+head or the newer managed-display GUI change.
+
+**FAILED combined GUI attempt:** the actual combined-artifact run is
+`gui-script-manager/build/test-results/gui-script-manager/run.yI7ooUik/`
+in the worktree collection. Its 100 native-window geometry checks pass, but
+selection stops at `GuiScriptManagerSmoke.awaitConsole` with:
+`timed out waiting for console text: Symbol export was not requested.`
+No preflight script start was observed. Correct geometry and observed click
+delivery do not establish execution of the script action. Console/window/
+desktop diagnostics and logs remain retained; investigation is active, and no
+combined GUI/export/validator/GDB pass is claimed from this failed run.
+
+The earlier managed-display `run.KPdcV6p3` pass used the isolated GUI component
+and its verified hosted production package. It remains useful component
+evidence, but is not promoted to a combined pass. The combined source must
+resolve this failure and pass the complete exact-head hosted matrix before
+main integration. Published alpha.2 stays immutable at `2f88c4a`; its verified
+release artifacts exclude these subsequent features.

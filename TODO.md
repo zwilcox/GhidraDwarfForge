@@ -10,15 +10,19 @@ passed verification before and after publication on 2026-10-24 UTC. Section
 0.2 records the resolved validator incident without treating earlier green
 runs as clean libdwarf evidence. Alpha.1 remains unchanged and affected.
 
-This subsequent semantic branch combines function-entry, static-scope,
-register-lifetime/alias, saved-program type identity and ARM fixture work with
-the corrective baseline. Semantic head `b14e8109ca95358bacba6b0d11223a913d32db80`
-passed all twelve hosted jobs in run `40063017269`. The normal merge of main
-adds no source or workflow changes because its tree equals strict parent
-`99845c7`; documentation head `5f524e05` records that integration. The updated
-PR still requires its current-base CI. These semantic features are not in
-alpha.2. Use Sections 1.1 and 4 for the next work; do not restart prototype
-bring-up.
+This subsequent combined branch retains the reviewed semantic, Script Manager,
+target-language agreement and line-table/performance changes plus inline and
+debuglink research. Component heads `2d47e12`, `96e6972` and `b0bcdb8` passed
+all twelve jobs in runs `40066078653`, `40064731597` and `40065823442`,
+respectively. Those are component results, not combined-head acceptance.
+Combined production source `a328a15` passes 24 native-independent Java smokes,
+the extension build and local repository/package checks; `c1c7485` adds only
+managed GUI harness/CI/documentation changes. The actual combined managed-GUI
+run `run.yI7ooUik` fails before the preflight script starts, despite passing
+native geometry checks. Investigation and full combined hosted CI remain
+pending. Alpha.2 is unchanged and excludes these subsequent features. See
+`docs/VALIDATION.md`, "Combined local checks and component hosted status".
+Use Sections 1.1 and 4 for the next work; do not restart prototype bring-up.
 
 Status vocabulary:
 
@@ -32,8 +36,10 @@ Status vocabulary:
 
 No project-level milestone is complete unless all applicable conditions hold:
 
-**CONFIRMED:** semantic head `b14e810` passed the complete supported-profile
-matrix with strict independent-validator enforcement in run `40063017269`.
+**CONFIRMED:** semantic head `2d47e12` passed the complete supported-profile
+matrix with strict independent-validator enforcement in run `40066078653`.
+The current combined tree still requires its own hosted matrix and resolution
+of the managed-GUI preflight failure; component passes do not close that gate.
 The separate corrective release gate in Section 0.2 is complete: exact-main
 CI, the final package audit and public-asset verification passed for alpha.2.
 That release does not include this subsequent semantic result.
@@ -198,7 +204,7 @@ items are these bounded workstreams:
 | Function identity and scopes (P1.7, P3.3) | **CONFIRMED in hosted run `40063017269`:** explicit function-owned statics preserve duplicate-name lookup across all five targets, and the controlled failure check omits failed owners under the symbol-only contract. These workstreams remain partial. **PLANNED:** distinct linkage names, external-function declarations, thunks/aliases, class/lexical scopes, inferred static locals and remaining same-named type/variable cases. Existing namespace globals and external-data declarations must remain working. |
 | Additional range/location cases (P1.8, P1.11a) | **CONFIRMED in hosted run `40063017269`:** P1.8's bounded entry/range acceptance is complete (five-target structural checks, x86-64 advanced-entry GDB); incoming-register prefixes pass x86-64/AArch64 and end after the first overwrite. P1.11a remains partial. **PLANNED:** register/memory migration, call-crossing and non-entry lifetimes, stack-slot reuse, and mixed composite storage. Require GDB value checks at multiple instruction addresses and honest unavailable gaps. |
 | Target-profile coverage (P2.3/3a/3b) | **CONFIRMED in hosted run `40063017269`:** five baseline profiles and scalar FP aliases pass, with exact float/double values on x86-64/AArch64/ARM32 and scalar floats on both MIPS orders. Unproven MIPS double pairs and ARM32's mode-switching-return prefix case remain unavailable. Target expansion remains partial. Enumerate additional ABI/storage cases and require actual exporter/validator/GDB evidence before extending claims; this is not blanket CPU/ABI support. |
-| GUI reproducibility (P2.7) | **CONFIRMED:** Linux and native Windows Script Manager discovery/run/Console reports and chooser selection/cancellation passed in `40054563515` at `83b74a6`. Later focus and modal-observer harness failures have reproducible controls; the corrected Java 21 Linux journey passes. The latest exact combined tree still requires full hosted validation, including Windows. |
+| GUI reproducibility (P2.7) | **CONFIRMED component evidence:** Linux/native Windows passed `40054563515` at `83b74a6`; the later managed Linux display passes in isolated `run.KPdcV6p3`. **Not accepted on the combined tree:** `run.yI7ooUik` passes all 100 geometry cases but fails waiting for preflight Console output, with no script start observed. Investigation and complete combined hosted validation, including Windows, remain required. |
 | Optional debuglink (P2.8) | **PLANNED, optional:** explicit opt-in attachment and backup/rollback. Sidecar lookup/CRC compatibility is tested on private fixture copies; default export leaves the original unchanged. |
 | Inline reconstruction (P3.4) | **CONFIRMED investigation complete:** ADR 0003 and a reproducible compiler/Ghidra probe distinguish real inline instances from Ghidra's decompiler flag and record surviving locals/source information. Inline emission remains deferred until explicit instance/origin/range evidence and GDB acceptance exist. |
 | Performance (P3.5) | **CONFIRMED locally:** synthetic scaling and a JFR-selected line-table index are measured. Historical paired 10,000-function exports reduce median process time by 15.5% with byte-identical artifacts; a fresh strict/GDB replay validates the retained result without rerunning timing. Representative complex-binary and further phase-level profiling remain **PLANNED**; no blanket speed or memory claim. See `docs/PERFORMANCE.md`. |
