@@ -2124,7 +2124,9 @@ action with no selection change during its gesture. Development checks caught
 and corrected immutable control-data cleanup and declaring-class reflection
 errors; those failed runs are retained (`run.HSMGcl7Q`, `run.XSKtqHhL`).
 No production exporter, script launch path, timeout or retry policy changed.
-Fresh combined hosted acceptance, including native Windows, remains required.
+Fresh combined hosted acceptance, including native Windows, was required at
+this local checkpoint; it subsequently passed in the final combined acceptance
+record below. The failed attempts remain historical evidence.
 
 **PASS locally:** `build/test-results/gui-script-manager/run.LFXUdxrq/` and
 `build/native-geometry-review/combined-filter-readiness-reviewed.log`, using
@@ -2490,7 +2492,7 @@ This combined tree contains the semantic, Script Manager, target-agreement and
 line-table changes plus the inline/debuglink research records. The preceding
 component results remain scoped to their exact commits and tool bundles. No
 combined-head acceptance is inferred from those independent passes; the full
-current-base hosted matrix remains required. The published corrective alpha.2
+current-base hosted result is recorded below. The published corrective alpha.2
 artifact is unchanged and excludes these subsequent features.
 
 The historical generic-undefined type-ordering observation in the debuglink
@@ -2519,7 +2521,8 @@ The locally assembled package SHA-256 is
 It is a private integration artifact, not a new published release. Subsequent
 merge `c1c7485a8518a048fc5f798ac0cc249a412baf28` changes only managed Linux GUI
 harness/control sources, CI and documentation; its production source matches
-the tested `a328a15` tree. The full combined runtime/host matrix is still pending.
+the tested `a328a15` tree. The full combined runtime/host matrix was still
+pending at this local checkpoint; the final result is recorded below.
 
 Fresh GitHub queries confirm the following exact component `pull_request`
 runs are completed successfully. Each has exactly twelve successful jobs, with
@@ -2559,6 +2562,208 @@ The readiness fix, pending-filter control and fresh actual combined-product run
 outcomes, original preservation, GNU/LLVM/strict-libdwarf (three exactly matched
 inherited diagnostics, zero unexplained errors), and GDB stepping/normal exit.
 Diagnostic replays were not substituted for this post-fix run. The complete
-exact-head hosted matrix, including Windows GUI, remains required before main
-integration. Published alpha.2 stays immutable at `2f88c4a`; its verified
+exact-head hosted matrix, including Windows GUI, was still required before main
+integration; it subsequently passed as recorded below. Published alpha.2 stays
+immutable at `2f88c4a`; its verified
 release artifacts exclude these subsequent features.
+
+## Combined hosted acceptance and main integration (2026-10-24)
+
+**CONFIRMED:** PR #25 exact head
+`961265543762e96fa6e9a80a9b06210b5d9397e9` passed
+[run 40068401197](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40068401197)
+(`pull_request`, attempt 1). All twelve expected jobs succeeded; no job failed
+or was skipped. The required aggregate completed at `2026-10-24T06:22:06Z`.
+
+| Job | Result | Job ID |
+|---|---|---|
+| workflow-lint | PASS | `120796384505` |
+| native-linux | PASS | `120796384526` |
+| native-windows | PASS | `120796384363` |
+| extension-build | PASS | `120796384531` |
+| release-package | PASS | `120797864090` |
+| target-preflight (x86_64) | PASS | `120797907707` |
+| target-preflight (aarch64) | PASS | `120797907489` |
+| target-preflight (arm32) | PASS | `120797907499` |
+| target-preflight (mips32be) | PASS | `120797907712` |
+| target-preflight (mips32le) | PASS | `120797907508` |
+| windows-host | PASS | `120800293230` |
+| required-validation | PASS | `120800933558` |
+
+This is combined-source acceptance, independently of the component results
+above. The 24 native-independent smokes run in the Linux extension job; the
+Windows host runs its selected six smokes plus native producer, wrapper,
+file-lock/publication, headless and actual Script Manager checks. Conditional
+skipped steps retain their intended scope; this is not every test on every
+host or target:
+
+- All five Linux-hosted target lanes pass the ordinary executable, PIE,
+  shared-object, rebase and special-layout exporter/validator/GDB checks,
+  function-owned static lookup, scalar FP oracles and entry producer checks.
+  Exact float/double values are proved on x86-64/AArch64/ARM32; both MIPS orders
+  prove scalar floats and conservative double-pair omission. ARM's opaque
+  mode-switching-return prefix remains unavailable at the checked PCs.
+- Positive incoming-register prefixes and first-overwrite boundaries are
+  exercised on x86-64/AArch64. Advanced/interior function-entry GDB behavior,
+  saved-program fresh-process byte determinism and greater-than-2-GiB/copy-
+  cancellation tests run on x86-64. Five-profile metadata tests and actual
+  forced x86-as-AArch64/MIPSLE-as-ARM imports cover definite target disagreement;
+  nondefault language variants/compiler specifications alone are not rejected.
+- QEMU private-socket startup/failure controls run on x86-64, with the occupied
+  historical TCP-port control on MIPS32LE. Shared-object runtime checks pass on
+  all five targets. Other TCP-based harnesses are unchanged.
+- The configured standalone checker, bounded complete-diagnostic capacity,
+  allocation/resize rollback and parser corruption controls pass on Linux.
+  Precisely corroborated inherited frame diagnostics remain visible; acceptance
+  requires matching original bytes/identity and the exact diagnostic multiset,
+  with zero unexplained errors. The validation-only patches do not alter the
+  shipped native libraries. Passing CI does not create a new performance timing.
+
+The independent package precheck downloaded artifact `12550562112` and verified
+its GitHub digest/outer SHA-256
+`1fa7f0046e39ad7179f820e379d6ca2cd147aeb7fdb0f0b9800ca4a58494f3d4`.
+The native-inclusive package SHA-256 is
+`a1ea4069dce1ea66aee8ecb59751b690a069bada19dea348306e0c9243aa412f`.
+The audit compares all 31 production Java sources and two installed scripts
+with the exact head, verifies nested manifests and native provenance, checks
+135 Java 21 classfiles, and passes 20 packaged Linux producer lifetimes with
+verified class/native origins. Evidence is retained in the
+`reviewed-todo-integration` worktree at
+`build/combined-package-audit/run-40068401197.43nKQbGP/`.
+This precheck validates an integration package; it is not publication of a new
+release. Full run/job/conditional-step API evidence is retained at
+`build/review-preparation/final-{run,jobs}.json` in the same worktree.
+
+Both actual GUI journeys use the installed launcher and packaged natives,
+verify input preservation, and exercise discovery, native-free preflight,
+export, Console reports, chooser selection and cancellation. The shared three
+click/filter/modal controls pass on both hosts. Independent artifact review
+confirms:
+
+| Host | Artifact ID and SHA-256 | Retained GUI run |
+|---|---|---|
+| Linux | `12550497695`; `72ef62bb0ddb0f76bbdbaa25df27d1bbca52a823f2bbe129a221f961aba6f4d0` | `artifact/gui-script-manager/run.N0EhE52D/` |
+| Windows | `12551006258`; `27a2d6064d3f85e8eb8ebc1a99f1e615c9b3f1572b12e20401d793543b6e14dc` | `windows-artifact/windows-host/gui-script-manager/run.c8c18a94b260448eaa51197cc5887425 GUI paths/` |
+
+These paths are relative to the `gui-script-manager` worktree's
+`build/hosted-gui-review/run-40068401197/`; the downloaded artifacts, API digest
+records and `x86-job.log`/`windows-job.log` are retained there. Linux also passes
+100 independent native/Java window-geometry comparisons, GNU/LLVM, the strict
+checker (three exactly matched inherited frame diagnostics, zero unexplained),
+and runtime GDB source/value/stepping/normal-exit checks. Validator/GDB stderr
+and the Openbox log are empty; inherited checker diagnostics remain explicit
+in its stdout/report. Windows proves real ACL denial, selected paths and
+available native GNU/LLVM validation with empty stderr. Independent libdwarf
+is unavailable and Linux-ELF runtime GDB is not run on Windows. The 100-window
+Openbox geometry control is Linux-only. Neither the earlier failed runs nor
+the diagnostic replays are promoted to passing acceptance.
+
+PR #25 merged normally as
+`befce2c5aa621d7c72a1803a3bbcfd566db6d31b` at `2026-10-24T06:23:24Z`.
+Its tree equals the tested `9612655` tree, and component PRs #20/#21/#23/#24
+are observed merged. The separate
+[main-push run 40070016394](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40070016394)
+targets `befce2c` and was still running when this checkpoint was recorded;
+no passing result is attributed to it here.
+
+This closes the combined integration gate for the documented profiles. It
+does not complete richer scopes, external-function declarations, general
+storage migration/call-crossing, additional ABIs, vector/composite FP cases,
+optional debuglink transactions or inline DIE emission. P3.5 retains its
+historical local timing boundaries and open complex-workload/phase profiling.
+Existing PN_XNUM direct-execution and resource/layout limits still apply.
+Published alpha.2 remains immutable at `2f88c4a`, excluding these later
+features; no version, tag, published package or release assets changed.
+
+## Qualified analyst function display names (2026-10-24)
+
+**CONFIRMED locally; exact hosted acceptance pending.** Production commit
+`fd56d74` retains plain Ghidra namespace paths separately from lexical function
+identity and emits qualified CU-owned display names under C11. Fixture commit
+`17bab25` checks two nested scopes sharing `curated_same`, their separate
+`private_count` values 37/83, a global `private_count` of 19, and a real global
+`curated_same` returning 29. Namespace-global value 61 and the existing typed
+external-data declaration remain intact. No native signature, language,
+linkage-name, alias, global-data scope or source-key policy changed.
+
+Five focused Java checks (`qualifiedFunctionNameSmoke`, `syntheticSourceSmoke`,
+`dwarfRangeListsSmoke`, `dwarfLineTableSmoke`, `typeGraphSmoke`) and the extension
+build pass. The new smoke uses actual Ghidra ProgramDB namespaces, verifies
+rebased bodies/entry, immutable paths and lexical source declaration mapping,
+diagnoses class fallback, and rejects real literal-delimiter collisions. A
+public-export negative uses regular invalid ELF/native files: collision
+rejection wins before parsing/loading, leaving all inputs and an existing
+destination unchanged with no temporary residue. Existing file preflight order
+is preserved. Independent production and fixture/workflow reviews are clear.
+
+The real installed exporter passes all **15** target/role cases below. Every
+case performs two fresh imports/exports with byte-identical `.dbg` and `.dbg.c`,
+unchanged original hashes, GNU/LLVM and strict libdwarf checks. Compiler-reference,
+compiler separate-symbol, and Forge GDB oracles require exact function/static
+addresses, initial types, one-location named breakpoints, owner-local shadowing,
+separate global lookup, stepping/returns and normal exit zero. The Forge oracle
+additionally lists the synthetic source and requires that association on full
+function symbols; inherited minimal ELF symbols cannot satisfy it. Runtime ASLR
+bias is checked consistently.
+
+| Target | Roles | Retained run |
+|---|---|---|
+| x86-64 | exec, PIE, rebased PIE | `run.uEbWkHrg` |
+| AArch64 | exec, PIE, rebased PIE | `run.gMpe6aQp` (three completed cases) |
+| ARM32 ARMv7 hard-float | exec, PIE, rebased PIE | `run.7BXiMlNg` |
+| MIPS32 big-endian O32 | exec, PIE, rebased PIE | `run.7BXiMlNg` |
+| MIPS32 little-endian O32 | exec, PIE, rebased PIE | `run.7BXiMlNg` |
+
+Paths are under the `qualified-function-names` worktree's
+`build/test-results/qualified-function-names/`. Strict reports retain two
+exactly corroborated inherited frame diagnostics for x86 exec, seven for each
+AArch64 role, and zero errors for the other eleven cases; unexplained errors
+are zero throughout. ARM EHABI positive/rejecting controls and the existing
+operation/address/count-matched MIPS return diagnostic policy remain unchanged.
+The original x86 static-scope mode also passes all three roles in
+`build/test-results/function-static-scopes/run.Ssk77Ote`.
+
+Commands use the real installed private extension:
+
+```bash
+FORGE_SCOPE_QUALIFIED=1 DWARFDUMP=/path/to/pinned/validation-tool/bin/dwarfdump \
+    src/test/integration/function-static-scopes-export.sh /private/ghidra \
+    x86_64 aarch64 arm32 mips32be mips32le
+DWARFDUMP=/path/to/pinned/validation-tool/bin/dwarfdump \
+    src/test/integration/function-static-scopes-export.sh /private/ghidra x86_64
+```
+
+Local ARM compiler/binutils libraries and its runtime sysroot were supplied
+from the retained private toolchain. The first cross run completed AArch64 but
+stopped at missing ARM host-library setup. Subsequent setup attempts exposed
+missing strip/objcopy wrappers before export. Those failures are retained;
+only `run.7BXiMlNg` supplies complete ARM/MIPS acceptance. No user installation
+or shared Ghidra tree was modified. Exact tool versions, command transcripts,
+15-case retained-evidence/hash audit and package assembly log are in
+`build/qualified-integration/`; runtime Java is 21.0.12.1, GDB 15.1 and the
+cross-runtime QEMU version is 8.2.2.
+
+The actual private package SHA-256 is
+`a32ccc4ea0acb2d008fec7689297b5c4919a1cda14257280aeb22e85a3d4bc97`;
+production JAR SHA-256 is
+`e17309610a07650ace27e015179f03505c1add527d9f1d117c4801b3a5822c3b`.
+Its two production changes match `fd56d74`; native inputs are the previously
+verified unchanged integration pair. This is an unreleased local package.
+
+The old installed package (`a1ea4069...`) in `run.odZEvuXT` passes the ordinary
+validators but fails the missing-qualified-name assertion and actual GDB lookup.
+The first new-package run `run.YVyfznAh` exposed a harness parser incorrectly
+splitting GNU attribute-offset lines as DIE headers; the artifact already had
+the correct names. The corrected parser requires a full DIE header and the
+passing rerun retains CU-depth, C11, declaration-line and no-linkage assertions.
+These failed attempts are not counted as passing evidence.
+
+CI adds the qualified real-export regression to every existing target lane and
+the real-Ghidra smoke to Linux and native Windows. Hosted acceptance remains
+pending for this feature; the preceding PR #25/main runs do not exercise it.
+Final extension build, release-package regression, workflow lint and architecture
+isolation checks pass locally; the production JAR is unchanged from the runtime
+tests. Independent reviews cover code, fixtures/workflow and the retained evidence.
+[FUNCTION-NAMING.md](FUNCTION-NAMING.md) records quoting and limitations. Full
+namespace/class/lexical/alias semantics and external-function declarations stay
+partial/planned, and published alpha.2 remains unchanged.

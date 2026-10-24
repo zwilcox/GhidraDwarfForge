@@ -6,9 +6,13 @@ describes the profiles and storage cases actually tested. An ELF machine number
 or a successful import does not establish support for every ABI of that CPU.
 Windows x86-64 is a Ghidra host; it does not imply Windows target-ABI support.
 
-This assessment covers the exporter at `1f2a46b`. Subsequent feature branches
-need their own behavior evidence before extending these claims. See
-[VALIDATION.md](VALIDATION.md) for the recorded commands and hosted runs.
+The baseline audit below covers the exporter at `1f2a46b`; its scalar-alias
+finding is historical. Subsequent bounded scalar-alias corrections and the
+definite ELF/Ghidra processor/width/endian agreement guard pass combined run
+`40068401197`, normally merged as `befce2c`. See
+[current acceptance](VALIDATION.md#combined-hosted-acceptance-and-main-integration-2026-10-24)
+for exact value/omission tests and conditional scope. This does not complete
+ABI classification or expand the five profile definitions below.
 
 ## Current fixture profiles
 
@@ -49,7 +53,7 @@ homogeneous floating-point aggregates, or hidden return-value pointers. A
 variadic signature test does not exercise `va_arg`. Functions containing calls
 do not currently establish a live register location across those calls.
 
-**CONFIRMED limitation at this assessment:** scalar floating-point locations
+**HISTORICAL limitation at the baseline assessment:** scalar floating-point locations
 can be omitted because extraction looks up the largest Ghidra base register.
 Pinned Ghidra 12.0.3 reports XMM0's base as ZMM0, AArch64 s0/d0/q0's base as z0,
 ARM s0/d0's base as q0, and MIPS f12's base as f12_13. Those bases are absent

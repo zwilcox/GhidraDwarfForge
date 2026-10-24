@@ -10,20 +10,28 @@ passed verification before and after publication on 2026-10-24 UTC. Section
 0.2 records the resolved validator incident without treating earlier green
 runs as clean libdwarf evidence. Alpha.1 remains unchanged and affected.
 
-This subsequent combined branch retains the reviewed semantic, Script Manager,
-target-language agreement and line-table/performance changes plus inline and
-debuglink research. Component heads `2d47e12`, `96e6972` and `b0bcdb8` passed
-all twelve jobs in runs `40066078653`, `40064731597` and `40065823442`,
-respectively. Those are component results, not combined-head acceptance.
-Combined production source `a328a15` passes 24 native-independent Java smokes,
-the extension build and local repository/package checks; `c1c7485` adds only
-managed GUI harness/CI/documentation changes. The failed combined managed-GUI
-run `run.yI7ooUik` exposed a delayed-filter selection race, causally reproduced
-in `run.3HcGrt32`. The readiness correction and controlled regression now pass
-with the actual combined exporter in `run.LFXUdxrq`, including validators and
-GDB. Full combined hosted CI, including Windows GUI, remains pending. Alpha.2 is unchanged and excludes these subsequent features. See
-`docs/VALIDATION.md`, "Combined local checks and component hosted status".
+**CONFIRMED:** combined head `9612655` passed all twelve jobs in hosted run
+`40068401197`, including the five target lanes and Linux/native Windows Script
+Manager journeys. PR #25 merged normally as `befce2c` at
+`2026-10-24T06:23:24Z`; its tree equals the tested head. The separate main-push
+run `40070016394` was still running when this checkpoint was recorded; it is
+not reported as passed. Component results and the failed GUI attempts
+`run.yI7ooUik`/`run.3HcGrt32` remain historical evidence, followed by the
+readiness fix and passing local/hosted regressions.
+
+Main now includes the reviewed semantic, GUI, target-language agreement and
+line-table/performance changes plus inline/debuglink research. This is no new
+release: published alpha.2 remains unchanged and excludes these subsequent
+features. Optional attachment and inline emission remain unimplemented. See
+[combined acceptance](docs/VALIDATION.md#combined-hosted-acceptance-and-main-integration-2026-10-24).
 Use Sections 1.1 and 4 for the next work; do not restart prototype bring-up.
+
+**CONFIRMED locally, hosted gate pending:** the subsequent qualified-function
+display slice passes 15 real exporter/compiler/GDB cases across all five target
+profiles, plus the original x86 static-scope cases. It preserves ordinary
+Ghidra namespace paths without changing the C11 CU or inventing linkage/aliases.
+See `docs/FUNCTION-NAMING.md` and `docs/VALIDATION.md`; this does not complete
+P1.7/P3.3 or belong to either published alpha.
 
 Status vocabulary:
 
@@ -37,17 +45,17 @@ Status vocabulary:
 
 No project-level milestone is complete unless all applicable conditions hold:
 
-**CONFIRMED:** semantic head `2d47e12` passed the complete supported-profile
-matrix with strict independent-validator enforcement in run `40066078653`.
-The current combined tree still requires its own hosted matrix, including
-Windows GUI validation of the readiness fix; component passes do not close
-that gate.
+**CONFIRMED:** combined head `9612655` passed the complete supported-profile
+matrix with strict independent-validator enforcement in run `40068401197`.
+All twelve jobs passed, including the actual Linux/native Windows GUI journeys;
+the normal main merge `befce2c` preserves that exact tree. This acceptance is
+separate from the still-running main-push run recorded above.
 The separate corrective release gate in Section 0.2 is complete: exact-main
 CI, the final package audit and public-asset verification passed for alpha.2.
-That release does not include this subsequent semantic result.
+That release does not include these subsequent features.
 Neither a passing job nor acceptance of one profile proves every ELF/ABI is
 supported. Detailed scope and intentional omissions are recorded in
-`docs/VALIDATION.md`, "Semantic hosted acceptance and main integration".
+`docs/VALIDATION.md`, "Combined hosted acceptance and main integration".
 
 - [x] Builds from a clean checkout using documented commands.
 - [x] Uses a pinned Ghidra compatibility baseline.
@@ -56,7 +64,7 @@ supported. Detailed scope and intentional omissions are recorded in
 - [x] Preserves the original target byte-for-byte in default mode.
 - [x] Produces deterministic `.dbg.c` for an unchanged Ghidra program.
 - [x] Produces structurally valid ELF and DWARF accepted by independent validators
-  within the documented profiles and bounds: strict semantic CI passes, and
+  within the documented profiles and bounds: strict combined CI passes, and
   exact-main release CI/package validation passed under Section 0.2. Precisely
   corroborated inherited frame diagnostics remain visible in the reports.
 - [x] Passes scripted GDB behavior checks, not only `readelf -S`.
@@ -199,17 +207,21 @@ The baseline exporter, source/type/location machinery, five target lanes,
 Windows headless host, and release packaging already exist. The remaining
 items are these bounded workstreams:
 
+The semantic component evidence in the table is also exercised by the accepted
+combined run `40068401197`; its conditional-step scope is recorded in
+`docs/VALIDATION.md`. Passing that matrix does not complete the partial items.
+
 | Workstream | Status and acceptance needed |
 |---|---|
 | Corrective release (§0.1/0.2) | **CONFIRMED complete within the documented profiles:** alpha.2 is published from `2f88c4a` after exact-main CI `40064204515`, the final package audit and public-asset verification. Alpha.1 remains unchanged and affected; subsequent semantic/GUI/target/performance work is excluded. |
 | ELF robustness (P0.9) | **CONFIRMED complete within the documented bounds:** PR #18 implements extended counts, unnamed tables, bounded file-backed I/O, correct recorded-load-base translation and cancellation. Local checks and all twelve hosted jobs pass; direct PN_XNUM execution limits are documented. |
 | Function identity and scopes (P1.7, P3.3) | **CONFIRMED in hosted run `40063017269`:** explicit function-owned statics preserve duplicate-name lookup across all five targets, and the controlled failure check omits failed owners under the symbol-only contract. These workstreams remain partial. **PLANNED:** distinct linkage names, external-function declarations, thunks/aliases, class/lexical scopes, inferred static locals and remaining same-named type/variable cases. Existing namespace globals and external-data declarations must remain working. |
 | Additional range/location cases (P1.8, P1.11a) | **CONFIRMED in hosted run `40063017269`:** P1.8's bounded entry/range acceptance is complete (five-target structural checks, x86-64 advanced-entry GDB); incoming-register prefixes pass x86-64/AArch64 and end after the first overwrite. P1.11a remains partial. **PLANNED:** register/memory migration, call-crossing and non-entry lifetimes, stack-slot reuse, and mixed composite storage. Require GDB value checks at multiple instruction addresses and honest unavailable gaps. |
-| Target-profile coverage (P2.3/3a/3b) | **CONFIRMED in hosted run `40063017269`:** five baseline profiles and scalar FP aliases pass, with exact float/double values on x86-64/AArch64/ARM32 and scalar floats on both MIPS orders. Unproven MIPS double pairs and ARM32's mode-switching-return prefix case remain unavailable. Target expansion remains partial. Enumerate additional ABI/storage cases and require actual exporter/validator/GDB evidence before extending claims; this is not blanket CPU/ABI support. |
-| GUI reproducibility (P2.7) | **CONFIRMED locally on the combined product:** `run.LFXUdxrq` passes geometry, pending-filter readiness, real Script Manager preflight/export, chooser select/cancel, validators and GDB. The failed `run.yI7ooUik` and causal `run.3HcGrt32` remain recorded. Complete combined hosted validation, including native Windows, is still required; older component passes do not establish this result. |
+| Target-profile coverage (P2.3/3a/3b) | **CONFIRMED in hosted runs `40063017269` and `40068401197`:** five baseline profiles and scalar FP aliases pass, with exact float/double values on x86-64/AArch64/ARM32 and scalar floats on both MIPS orders. The combined run also proves rejection of definite ELF/Ghidra processor, width or byte-order contradictions; nondefault variants/compiler specifications alone are not rejected. Unproven MIPS double pairs and ARM32's mode-switching-return prefix case remain unavailable. Target expansion and ABI classification remain partial; this is not blanket CPU/ABI support. |
+| GUI reproducibility (P2.7) | **CONFIRMED in combined run `40068401197`:** actual Linux/native Windows Script Manager preflight/export, Console reports, chooser select/cancel and preservation pass. The pending-filter control runs on both hosts; the 100-window geometry control and GDB run on Linux. Windows uses native GNU/LLVM validators, with independent libdwarf unavailable and Linux-ELF runtime GDB not run. Earlier failed attempts remain recorded. |
 | Optional debuglink (P2.8) | **PLANNED, optional:** explicit opt-in attachment and backup/rollback. Sidecar lookup/CRC compatibility is tested on private fixture copies; default export leaves the original unchanged. |
 | Inline reconstruction (P3.4) | **CONFIRMED investigation complete:** ADR 0003 and a reproducible compiler/Ghidra probe distinguish real inline instances from Ghidra's decompiler flag and record surviving locals/source information. Inline emission remains deferred until explicit instance/origin/range evidence and GDB acceptance exist. |
-| Performance (P3.5) | **CONFIRMED locally:** synthetic scaling and a JFR-selected line-table index are measured. Historical paired 10,000-function exports reduce median process time by 15.5% with byte-identical artifacts; a fresh strict/GDB replay validates the retained result without rerunning timing. Representative complex-binary and further phase-level profiling remain **PLANNED**; no blanket speed or memory claim. See `docs/PERFORMANCE.md`. |
+| Performance (P3.5) | **CONFIRMED:** the indexed planner and configured-checker gates pass component run `40065823442` and combined run `40068401197`. Historical local paired 10,000-function exports reduce median process time by 15.5% with byte-identical artifacts; a fresh strict/GDB replay validates the retained result without rerunning timing. Hosted CI is not a new timing measurement. Representative complex-binary and further phase-level profiling remain **PLANNED**; no blanket speed or memory claim. See `docs/PERFORMANCE.md`. |
 
 The optional/research items need an explicit recorded outcome; they are not
 silently complete merely because they are outside the current alpha scope.
@@ -847,6 +859,11 @@ analyst-facing breakpoint name.
 - Add `DW_TAG_formal_parameter` DIEs.
 - Preserve parameter names.
 - Preserve variadic signatures when known.
+- [~] Preserve plain/nested analyst function namespace identity as a qualified
+  display name while retaining lexical source/signature keys. The fifteen
+  local exec/PIE/rebased-PIE cases pass across all five targets, with distinct
+  owned statics and a same-named global definition. Exact hosted acceptance is
+  pending. This is not full namespace, class, linkage or alias semantics.
 - [x] Preserve calling-convention information where DWARF/GDB can use it:
   recognized conventional subroutines emit `DW_CC_normal`; unknown convention
   state and unproven vendor codes remain absent.
@@ -1305,7 +1322,10 @@ The installed Export launcher now passes actual Linux Script Manager discovery,
 double-click Run, Console reporting and chooser selection/cancellation in
 `gui-script-manager.sh`. Run `40054563515` at `83b74a6` also passed the full
 native Windows journey; this component evidence does not substitute for the
-current combined-head gate.
+combined-head gate. That gate subsequently passed in run `40068401197` at
+`9612655`, including both hosts' real Script Manager/chooser journeys and the
+shared pending-filter control. The independent 100-window/Openbox geometry
+control is Linux-only. See the combined acceptance record in `docs/VALIDATION.md`.
 
 Additional user-journey coverage:
 
@@ -1321,28 +1341,29 @@ Additional user-journey coverage:
   Run `40062946718` then exposed delayed observation while Ghidra's mouse
   handler compiled scripts in a modal loop. Pre-dispatch event observation
   passes a controlled reproduction and full Java 21 Linux journey
-  `run.O3SsqvwH`; no launch retries or timeouts changed. The new exact-head
-  hosted gate, including native Windows, remains required.
+  `run.O3SsqvwH`; no launch retries or timeouts changed. These were local
+  results pending the subsequently completed combined gate above.
   Run `40064976588` then demonstrated inconsistent native/Java window
   coordinates under bare Xvfb. An owned Openbox session and independent native
   geometry control pass 100 cases and the full Java 21 Linux journey
-  `run.KPdcV6p3`; fresh hosted acceptance remains pending.
+  `run.KPdcV6p3`; hosted acceptance was still pending at that checkpoint.
   A subsequent combined-product run exposed a pending Ghidra table-filter
   update that cleared selection during the double-click. Buffered event and
   selection-stack evidence reproduces the null selected script; the harness
   now waits for the actual refresh/filter/sort work and queued selection repair.
   A real Ghidra filter control covers that readiness boundary without launch
   retries; final combined-product Linux run `run.LFXUdxrq` passes all controls,
-  chooser outcomes, validators and GDB. The combined Linux/native Windows
-  hosted gate remains open.
+  chooser outcomes, validators and GDB. Run `40068401197` then passed the
+  combined Linux/native Windows hosted gate without retrying the launch action.
 - [x] Exercise native Windows output selection and cancellation; verify
   chosen paths, original preservation and no final artifacts after cancellation.
   A real desktop-click/ACL-denial probe precedes the full Windows Script Manager
   harness in CI. The latter uses packaged Windows natives, selected paths with
   spaces, input hashes, Console reports, and native GNU/LLVM validators. Both
   passed in `40054563515`; independent `dwarfdump` was unavailable and Linux
-  ELF runtime GDB checks were not run on Windows. The later focus regression
-  requires a new full native Windows run before the combined change integrates.
+  ELF runtime GDB checks were not run on Windows. The final readiness correction
+  also passed the full native Windows journey in run `40068401197`, with the
+  same explicit validator/runtime limitations.
 
 ### Work
 
@@ -1409,9 +1430,10 @@ results do not claim a product transaction, Windows attachment, or narrower
 ordinary-export input support. Their historical bare-libdwarf result predates
 strict summary enforcement and is not current validator acceptance. A separate
 save/reopen investigation found
-generic `undefined` uses a transient Ghidra UID that changes type DIE ordering;
-the normalized model and source remain identical. Record/fix that bounded
-byte-determinism issue separately, without weakening imported-input SHA checks.
+generic `undefined` used a transient Ghidra UID that changed type DIE ordering;
+the normalized model and source remained identical. The separate bounded fix
+and fresh-process saved-program regression now pass the combined matrix,
+without weakening imported-input SHA checks; this does not implement attachment.
 See [reproduction/evidence](docs/research/DEBUGLINK-EVIDENCE.md).
 
 ## P2.9 Add build-ID association where applicable
@@ -1554,7 +1576,9 @@ hit an occupied PID-derived QEMU TCP port in the MIPS32LE shared-object test.
 That harness now uses a private UNIX socket with bounded startup/liveness and
 cleanup checks. A controlled occupied historical port still permits the full
 shared-object GDB oracle to pass; startup failure/timeout cleanup also passes.
-Both regressions are wired into CI, with exact-head hosted validation pending.
+Combined run `40068401197` passes the startup/failure controls on x86-64 and
+the occupied-port control on MIPS32LE; all five shared-object target oracles
+also pass with the private-socket transport.
 Other TCP-based QEMU harnesses remain unchanged; this does not claim a general
 emulator retry policy or excuse debugger/validator failures.
 
@@ -1678,6 +1702,15 @@ static locals and distinct same-named types. GDB must preserve analyst-facing
 lookup, distinguish the objects, and resolve only defensible addresses/live
 ranges. Category paths are not automatically original source namespaces.
 
+**CONFIRMED locally:** the qualified display-name slice preserves nested plain
+function paths and duplicate short names with real GDB address/source/type,
+single-breakpoint and owner-static checks on five profiles. Hosted validation
+is pending. C11 namespace-parented function DIEs do not provide the required
+qualified lookup in the tested GDB 15.1, so definitions remain CU-owned and use
+the recorded qualified display string. External-function declarations, classes,
+lexical blocks and qualified namespace-global lookup remain outside this slice.
+The naming policy documents exact quoting and conservative collision rejection.
+
 ## P3.4 Investigate reconstructed inlining
 
 **Status:** `[x]` — **CONFIRMED**, bounded investigation complete; inline
@@ -1724,14 +1757,17 @@ ARM32 exec/PIE/shared export/validator/GDB matrix pass, including byte-identical
 exec reruns. The retained paired 10,000-function artifact passes a fresh full
 strict/LLVM/GNU/GDB replay, with all 10,002 inherited frame messages precisely
 corroborated using the separately bounded validation-only capacity patch.
-No timed 10,000-function export was rerun. Combined hosted/Windows validation
-and representative complex-binary profiling remain **PLANNED**.
+No timed 10,000-function export was rerun. Component run `40065823442` and
+combined run `40068401197` subsequently passed all twelve jobs, including the
+Windows host. Representative complex-binary profiling remains **PLANNED**.
 
 **CONFIRMED:** performance PR #24 run `40064815083` failed its validator
 capacity gate because the standalone bundle omitted `dwarfdump.conf`. The
 follow-up packages the pinned config with an explicit-path launcher and
 rejecting relocation/configuration controls. Strict error checks remain intact;
-a corrected full hosted run is required. See `support/validation/README.md`.
+the corrected component and combined hosted runs above pass. This closes the
+configuration defect without erasing the failed run or changing measured
+planner timings. See `support/validation/README.md`.
 
 Potential features only after correctness:
 
@@ -1745,7 +1781,7 @@ Potential features only after correctness:
 ### Completion criteria
 
 - [x] The implemented line-table index preserves byte-identical semantic output.
-- [x] Local determinism and strict validators pass for the documented index fixtures; combined hosted validation remains planned.
+- [x] Local determinism and strict validators pass for the documented index fixtures; the complete combined hosted matrix also passes.
 - [x] A paired benchmark demonstrates its measured benefit on the documented workload.
 
 ---
@@ -1874,10 +1910,12 @@ Unless the user changes priorities:
 
 1. Run `git status --short`; read `AGENTS.md`, the current context/status in
    `PROJECT_CONTEXT.md`, and this file's Sections 0.1/1.1. Preserve existing work.
-2. Check the subsequent semantic, GUI, target-agreement and performance PRs
-   and their current-base CI. Routine reviewed merges are authorized after
-   required checks pass; see AGENTS.md Section 6.1. Preserve their histories
-   and require the complete combined matrix before main integration.
+2. Read the combined acceptance checkpoint: PR #25 passed run `40068401197`
+   at `9612655` and merged normally as the tree-identical `befce2c`; component
+   PRs #20/#21/#23/#24 are merged. Observe the separate main-push run
+   `40070016394` before attributing a result to it. Preserve the feature/failure
+   histories and require current-base checks for new changes under AGENTS.md
+   Section 6.1; do not repeat already completed integration.
 3. Preserve published alpha.2 at `2f88c4a` and alpha.1 at `f4a0199`. Future
    releases need their own version/notes, exact-commit CI and package/asset
    verification; do not replace or retag either published artifact.

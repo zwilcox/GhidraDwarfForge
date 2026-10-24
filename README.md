@@ -41,6 +41,15 @@ infer lexical blocks from datatype categories or decompiler formatting.
 See [the focused validation record](docs/VALIDATION.md#function-owned-static-data-2026-10-23)
 for tested profiles and debugger limitations.
 
+Development builds retain plain analyst function namespaces as qualified display
+names, such as `analysis_left::nested::curated_same`. Use the full name for a
+breakpoint and quote it in C11 type/value expressions; a static variable uses
+`print 'analysis_left::nested::curated_same'::private_count`. Global short names
+remain unchanged. This is a display policy, not reconstructed C++ scope or
+linkage. See [function naming](docs/FUNCTION-NAMING.md) and its
+[validation status](docs/VALIDATION.md#qualified-analyst-function-display-names-2026-10-24).
+This behavior is not in published alpha.2.
+
 Development scalar floating locations now use audited logical register aliases.
 Hosted GDB tests cover float/double arguments on x86-64, AArch64 and ARM32,
 including ARM32 upper register slices, and float arguments on MIPS32 in both
