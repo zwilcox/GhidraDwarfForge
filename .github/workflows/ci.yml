@@ -473,7 +473,7 @@ jobs:
             src/test/integration/architecture-neutrality.sh
             ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke \
               ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke \
-              exportReportSmoke exportReportClaimsSmoke exportArtifactHashBindingSmoke \
+              exportReportSmoke exportReportClaimsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke \
               fileDigestsSmoke elfBuildIdSmoke \
               matchedElfPrefixSmoke matchedElfAllocationsSmoke executableProgramBytesSmoke \
               debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke \
@@ -894,7 +894,8 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: |
           python3 src/test/integration/export-report-claims.py \
-            "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" "$TARGET"
+            "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" "$TARGET" \
+            --handoff-manifest "$PWD/build/test-results/report-handoff/$TARGET.json"
 
       - name: Retained ELF prefix observations and independent byte oracle
         env:
@@ -1148,6 +1149,7 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: |
           FORGE_MODULE="$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
+            FORGE_REPORT_MANIFEST="$PWD/build/test-results/report-handoff/$TARGET.json" \
             src/test/integration/build-id-discovery.sh "$TARGET"
 
       - uses: actions/upload-artifact@v7
@@ -1279,7 +1281,7 @@ jobs:
             opaqueRegisterEffectsSmoke qualifiedFunctionNameSmoke dwarfAddressRangesSmoke `
             registerCopySmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
             elfBuildIdSmoke exportReportClaimsSmoke matchedElfPrefixSmoke `
-            matchedElfAllocationsSmoke exportArtifactHashBindingSmoke executableProgramBytesSmoke `
+            matchedElfAllocationsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke executableProgramBytesSmoke `
             debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke 2>&1 |
             Tee-Object -FilePath "$resultDirectory\native-independent.log"
           if ($LASTEXITCODE -ne 0) {

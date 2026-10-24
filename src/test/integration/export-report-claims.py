@@ -134,6 +134,76 @@ def encoded(value):
     return json.dumps(value, ensure_ascii=True, separators=(",", ":")).encode("utf-8")
 
 
+def validate_handoff_parent(path, target):
+    """Validate retained producer evidence without reopening old mutable source paths."""
+    path = path.resolve(strict=True)
+    before = {str(path): snapshot(path)}
+    parent = json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=unique_object)
+    roles = ("exec", "pie", "exec.no-build-id")
+    require(parent["status"] == "PASS" and parent["target"] == target and target in PROFILES and
+            len(parent["sources"]) == 3 and {item["role"] for item in parent["sources"]} == set(roles) and
+            len(parent["retained_artifacts"]) == 9, "incomplete explicit reader result")
+    producer, reader = Path(parent["producer_module"]), Path(parent["reader_module"])
+    require(producer.is_absolute() and reader.is_absolute(), "reader/producer module paths must be explicit")
+    script = producer / "ghidra_scripts/GhidraDwarfForge.java"
+    for selected in (producer / "lib/GhidraDwarfForge.jar", reader / "lib/GhidraDwarfForge.jar", script):
+        require(re.fullmatch(r"[0-9a-f]{64}", parent["protected"][str(selected)]["sha256"]) is not None,
+                "missing recorded installation identity")
+    used = set()
+    for role in roles:
+        entry, = [item for item in parent["sources"] if item["role"] == role]
+        log, report_path = Path(entry["retained_log"]), Path(entry["report"])
+        require(log.resolve(strict=True) == path.parent / (role + ".export.log") and
+                report_path.resolve(strict=True) == path.parent / (role + ".json"),
+                "retained producer evidence escapes explicit result directory")
+        before[str(log)], before[str(report_path)] = snapshot(log), snapshot(report_path)
+        require(before[str(log)]["sha256"] == entry["retained_log_snapshot"]["sha256"] ==
+                entry["log_snapshot"]["sha256"] == parent["protected"][entry["log"]]["sha256"] and
+                before[str(report_path)]["sha256"] == entry["report_snapshot"]["sha256"],
+                "retained producer log/report digest mismatch")
+        transcript = log.read_bytes().decode("utf-8", errors="strict")
+        require(transcript.count("SCRIPT: " + str(script)) == 1, "producer script origin differs")
+        bodies = [line.split("GhidraDwarfForge report: ", 1)[1] for line in transcript.splitlines()
+                  if "GhidraDwarfForge report: " in line]
+        require(len(bodies) == 1, "ambiguous retained producer report")
+        report, end = DECODER.raw_decode(bodies[0])
+        require(bodies[0][end:].strip() == "(GhidraScript)" and
+                report_path.read_bytes() == bodies[0][:end].encode("utf-8"), "retained report is not exact producer JSON")
+        claims(report)
+        require(report["target"] == dict(zip(("architecture", "addressBits", "byteOrder"), PROFILES[target][:3])),
+                "retained report target differs")
+        for kind in ("input", "output", "source"):
+            original = report["artifacts"][kind + "Path"]
+            matches = [item for item in parent["retained_artifacts"] if item["original"] == original]
+            require(len(matches) == 1, "missing or ambiguous retained producer artifact")
+            item = matches[0]
+            selected = Path(item["retained"])
+            require(selected.resolve(strict=True) == path.parent / f"{role}.{kind}.bytes" and
+                    str(selected) not in used, "retained artifact escapes or repeats")
+            used.add(str(selected))
+            before[str(selected)] = snapshot(selected)
+            require(before[str(selected)]["sha256"] == item["snapshot"]["sha256"] ==
+                    parent["protected"][original]["sha256"] == report["artifacts"][kind + "Sha256"].lower(),
+                    "retained producer artifact digest mismatch")
+    require({name: snapshot(Path(name)) for name in before} == before,
+            "retained handoff evidence changed while validating")
+    return parent, before
+
+
+def emit_handoff_manifest(result_path, target, destination):
+    """Exclusive test handoff only; this is neither a signed receipt nor approval."""
+    result_path = result_path.resolve(strict=True)
+    _, before = validate_handoff_parent(result_path, target)
+    value = {"schemaVersion": 1, "target": target,
+             "claimsResult": {"path": str(result_path), "sha256": before[str(result_path)]["sha256"]}}
+    destination = destination.absolute()
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with destination.open("xb") as stream:
+        stream.write(encoded(value) + b"\n")
+    require({name: snapshot(Path(name)) for name in before} == before, "handoff publication changed retained evidence")
+    return value
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("module", type=Path)
@@ -143,6 +213,8 @@ def main():
     parser.add_argument("--fixture-root", type=Path, default=REPOSITORY / "build/fixtures")
     parser.add_argument("--export-logs", type=Path,
                         default=REPOSITORY / "build/test-results/headless-symbol-export")
+    parser.add_argument("--handoff-manifest", type=Path,
+                        help="exclusive explicit test handoff to this completed reader result")
     args = parser.parse_args()
     module = args.module.resolve(strict=True)
     producer = (args.producer_module or args.module).resolve(strict=True)
@@ -299,7 +371,8 @@ def main():
             "reader/oracle changed protected bytes or mtimes")
     require(all(snapshot(Path(item["retained"])) == item["snapshot"] for item in retained_artifacts),
             "retained fixture evidence changed")
-    (work / "result.json").write_text(json.dumps({"status": "PASS", "target": args.target,
+    result_path = work / "result.json"
+    result_path.write_text(json.dumps({"status": "PASS", "target": args.target,
         "reader_module": str(module), "producer_module": str(producer),
         "same_reader_export_installation": module == producer,
         "fifo_no_open_control": {"path": str(fifo), "removed": not fifo.exists()},
@@ -308,6 +381,9 @@ def main():
         "opaque_positive_cases": len(positives),
         "rejections": rejected,
         "scope": "reported claims only; no artifact access, identity or attachment eligibility"}, indent=4) + "\n")
+    if args.handoff_manifest:
+        emit_handoff_manifest(result_path, args.target, args.handoff_manifest)
+        print(f"export-report-handoff={args.handoff_manifest.absolute()}", flush=True)
     print(f"export-report-claims-{args.target}=PASS", flush=True)
 
 

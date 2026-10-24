@@ -1603,6 +1603,28 @@ eighteen native/QEMU process executions. Original fixtures remain unchanged.
 The exact package and full hosted/native Windows gates remain required. Private
 candidate creation does not complete attachment or its transaction.
 
+**CONFIRMED locally; full hosted gate pending:** the existing private candidate workflow
+now connects explicitly selected report/producer evidence and all three selected artifacts.
+Opt-in same-parse detailed reader/binder methods preserve all five diagnostic
+inventories with combined limits of 16,384 entries and 1,048,576 UTF-16 string units.
+The lightweight APIs retain their existing behavior. Keep `PARTIAL`/`NOT_RUN` and
+full diagnostics visible without assigning severity, and require separate hash,
+prefix, allocation, build-ID and reported-target observations before construction.
+Acceptance includes retained real reports, malformed/mismatched evidence before
+scratch creation, and counterexamples showing that rewritten claims, invalid
+DWARF or an unresolved source path remain outside these observations. No public
+attachment, validator receipt, host-metadata preservation or backup transaction is
+introduced by this step.
+
+Source `1d80348` passes 432 actual-Java-21/64 MiB detailed checks and unchanged
+lightweight reader/binder suites. The installed retained-export replay passes
+nine cases across x86-64/AArch64/MIPS32 big-endian. Independent review reconstructs
+30 candidates (18 ordinary repeats and 12 positive controls), verifies 78 controls,
+complete diagnostics and selected provenance, and confirms all 44 globally
+protected files unchanged. Ordinary GDB/runtime checks and explicit invalid-DWARF
+and missing-source counterexamples pass. Exact package and complete hosted/native
+Windows acceptance remain required; P2.8's transaction remains incomplete.
+
 **Status:** `[ ]` — optional product operation **PLANNED**. The bounded backend
 and backup-based re-export investigation is complete; the explicit transaction
 design and remaining acceptance tests are in

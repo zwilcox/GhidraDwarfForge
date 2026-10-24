@@ -27,8 +27,9 @@ numeric coercions, invalid nullability, trailing input and unsupported versions.
 Completed `SUCCESS`/`PARTIAL` reports require target, artifact and count objects,
 a nonblank reported native version, and no failure. Each of the five diagnostic
 inventory counts must match its array; `SUCCESS` requires all five inventories
-empty, while `PARTIAL` requires at least one entry. Inventories are validated
-incrementally and discarded rather than retained in the returned claims.
+empty, while `PARTIAL` requires at least one entry. The lightweight `read()`
+methods validate inventories incrementally and discard them rather than retaining
+them in the returned claims.
 
 Validate `CANCELLED`/`FATAL` report shape before rejecting it explicitly as having
 no completed artifact claims. An arbitrary parser error must not be converted
@@ -65,6 +66,37 @@ Cancellation is checked before opening, around bounded I/O, during traversal
 and after EOF. The reader owns and closes its stream on success, failure and
 cancellation, preserving primary/suppressed failures. Cancellation cannot
 interrupt a filesystem operation already blocked in the operating system.
+
+## Opt-in diagnostic inventories
+
+**CONFIRMED locally; full hosted gate pending:** `readDetailed()` returns
+`Detailed(claims, inventories)` from the same strict parse. The five immutable
+lists retain failed functions, skipped functions, omitted locations, unsupported
+constructs and general diagnostics. Preserve their order and decoded text,
+including unknown reasons, empty general diagnostics and Unicode. Canonical
+hexadecimal addresses round-trip through the existing immutable report records.
+Neither counts nor `PARTIAL` classify an entry's severity or decide whether an
+artifact is useful. `NOT_RUN` remains unchanged.
+
+Detailed reads additionally limit the combined inventories to 16,384 entries and
+1,048,576 UTF-16 units across their retained string fields. These are separate
+retention bounds; numeric addresses are not retained strings. Check before adding
+each completed entry and reject overflow explicitly, without truncation. The
+existing input, per-string, nesting, value and array limits also apply. Lightweight
+reads keep their current limits and discard behavior.
+
+No detailed result is returned before complete EOF, cardinality and status
+validation and successful stream closure. The result constructors defensively
+copy the lists and require consistency with the associated claims. A detailed
+read adds neither report authentication nor an artifact-validation result.
+
+Source `1d80348` passes 432 focused checks on actual Java 21 with a 64 MiB heap,
+including both default retention caps reached together and independent over-cap
+rejections. Existing lightweight reader/binder checks still pass. The installed
+connected workflow preserves all five inventories for nine retained real reports
+across x86-64, AArch64 and MIPS32 big-endian, including unknown/Unicode diagnostics
+in controlled reports. This is retained-export evidence; the full hosted pipeline
+and native Windows remain required for this change.
 
 ## Validation
 

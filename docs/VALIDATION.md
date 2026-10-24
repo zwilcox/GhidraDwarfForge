@@ -4904,3 +4904,83 @@ one focused Linux/native Windows check and installed writer execution in each
 existing target association lane. Final exact package, native Windows and all-five
 hosted acceptance remain pending. No target replacement, original permission
 change, report attestation, snapshot or attachment transaction is exposed.
+
+## Detailed report binding and private preparation, 2026-10-24
+
+**CONFIRMED locally; exact package and hosted gate pending:** source `1d80348`
+adds optional diagnostic retention to the same strict parser and report-first
+binder. Actual Java 21 with `-Xmx64m` passes 432 new focused assertions, including
+16,384 combined inventory entries and 1,048,576 UTF-16 units reached together,
+independent over-limit failures, Unicode, immutable lists, cardinalities, late
+parse/close failures and ordered all-role observations. Lightweight reader 429
+and binder 574 assertions still pass. Four focused Gradle checks, extension
+build and architecture guard pass. Source/API and test-adapter reviews are clear.
+
+Private package SHA-256
+`0d6adf8fccaebda1292babc62094b8a6baa16a73f26719753a4e5ff6a76a22b3`
+installs JAR `42a4631744597a7ae160de0a39f65597716ddfd34734d855e2801b9ed5fa0408`
+with five verified manifests and an unchanged base Ghidra launch file. The JAR
+contains 212 Java 21 classes; the package includes 45 production sources plus
+two scripts. The new
+consumer is SHA-256 `99da32dc028bb1cef432d79436bc6b8265eea615f87dec3fec8d292a2e013dc5`;
+the additive reader/handoff script is
+`cff65c9faa3fb27ff398fee7ae662bd468844c5b1868eb5ab5f4e16ca486feda`.
+The prior owned-writer oracle remains unchanged at `8c24db64...`.
+
+The root command `python3 build/reported-preparation-review/run-installed.py`
+records exact commands/environment and protection snapshots under
+`build/reported-preparation-review/installed-workflow.c_iw0egr`. It invokes the
+association harness once per target with its explicit `FORGE_REPORT_MANIFEST`,
+private `FORGE_MODULE`, `FORGE_RETAINED_EXPORT=1`, actual Java 21 and `javac
+--release 21`. The three successful association directories are
+`run.h1JRL8NH` (x86-64), `run.EETVW8KW` (AArch64) and `run.cPi9NaOT`
+(MIPS32 big-endian). This is explicitly an older-producer replay, not a new
+Ghidra export by the current reader/writer installation.
+
+All nine exec/PIE/no-ID cases pass. Independent review reconstructs 18 ordinary
+repeated candidates and twelve successful control candidates byte for byte,
+checks all 78 controls, and verifies each complete inventory against its report.
+The retained evidence includes 27 report/full-transcript sets, 81 earlier
+artifact copies and 45 current input copies. Hash differences, metadata
+differences, unsupported target/allocation layouts and no allocation evidence
+prevent construction; malformed/terminal reports fail before selected-file
+access. Unknown valid diagnostic text remains unclassified with PARTIAL/NOT_RUN.
+Ten independent handoff controls check exclusive creation, provenance/digest
+failures and strict manifest version types. Separate three-profile checks prove
+default rejection of older installations and acceptance only with explicit
+retained-export mode.
+
+Ordinary candidates pass GNU header/program/section/note checks and LLVM's
+completion marker with exact tool identities. Nine ordinary GDB transcripts
+prove source/type/address lookup, including three native x86 value19/23 runs;
+the six cross-target debugger checks are static. Nine original/candidate plain
+execution pairs pass natively or under QEMU with matching output and zero exit.
+Three intentionally corrupted appended-DWARF sidecars fail LLVM with positive
+error exit codes. Three independently owned sidecars with missing recorded
+source paths still bind by hash/ELF predicates, but static GDB emits the exact
+missing-source warning despite loading the selected sidecar. These negative
+checks do not relax ordinary debugger diagnostics or invent validator approval.
+
+All 44 globally protected paths remain byte/size/mtime identical, including 36
+original fixtures. Later outer GNU CRC tests change and restore three private
+no-ID sidecar mtimes; final bytes and each component's exact before/after records
+are verified, without claiming those private final mtimes unchanged. The prior
+GNU/program/content/owned-writer oracles also pass in these same invocations.
+No repeated strict validation of unchanged sidecars is attributed to this replay.
+
+Independent runtime audit:
+`installed-workflow.c_iw0egr/independent-runtime-audit.json`, SHA-256
+`087c6d66609a30774f801e857fef13678bf7f954110ef796aa350f533f2799d9`.
+It checks 715 retained files without additional exporter/validator/GDB execution.
+Earlier test-setup failures remain retained: invalid required inventory fields
+correctly rejected by the strict parser, and GDB returning a missing-source
+warning rather than the initially expected exception. The final assertion checks
+the exact warning and loaded symtab. An earlier preliminary receipt's broad
+"no GDB" wording was inaccurate: its three static source-negative checks did
+run GDB. That wording is withdrawn here; those checks did not run an inferior.
+
+The workflow adds the detailed suite to Linux/native Windows and explicit
+report handoff plus connected preparation to all five existing target lanes.
+Exact package and full hosted/native Windows acceptance remain pending. No
+public attachment, independent validator receipt, authenticated report, generic
+source-correlation proof, immutable snapshot or host transaction is exposed.

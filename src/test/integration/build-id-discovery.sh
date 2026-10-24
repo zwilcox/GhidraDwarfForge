@@ -6,6 +6,7 @@ set -euo pipefail
 export LC_ALL=C
 repository_dir=$(realpath "$(dirname "$0")/../../..")
 : "${FORGE_MODULE:?set FORGE_MODULE to the installed extension under test}"
+: "${FORGE_REPORT_MANIFEST:?set FORGE_REPORT_MANIFEST to the captured report handoff for this target}"
 test -s "$FORGE_MODULE/lib/GhidraDwarfForge.jar"
 fixture_root="$repository_dir/build/fixtures"
 result_root="$repository_dir/build/test-results/build-id-discovery"
@@ -13,6 +14,16 @@ targets=("$@")
 if [[ ${#targets[@]} -eq 0 ]]; then
     targets=(x86_64)
 fi
+if [[ ${#targets[@]} -ne 1 ]]; then
+    echo 'run one target at a time with its explicit report handoff' >&2
+    exit 64
+fi
+retained_export=()
+case "${FORGE_RETAINED_EXPORT:-0}" in
+    0) ;;
+    1) retained_export=(--retained-export) ;;
+    *) echo 'FORGE_RETAINED_EXPORT must be 0 or 1' >&2; exit 64 ;;
+esac
 mkdir -p "$result_root"
 result_dir=$(mktemp -d "$result_root/run.XXXXXXXX")
 trap 'echo "automatic-association results: $result_dir"' EXIT
@@ -36,7 +47,8 @@ validate_diagnostics() {
 
 prepare_debuglink() {
     local original=$1 candidate=$2 debug_file=$3 case_dir=$4 role=$5
-    local source_file=$6 reference=$7
+    local source_file=$6 reference=$7 report_role=$5
+    if [[ "$report_role" == no-build-id ]]; then report_role=exec.no-build-id; fi
     local controls=() writer_controls=()
     cp "$original" "$case_dir/before-objcopy"
     if [[ "$role" == exec ]]; then
@@ -52,6 +64,11 @@ prepare_debuglink() {
     python3 "$repository_dir/src/test/integration/debuglink-candidate-content.py" \
         "$FORGE_MODULE" "$target" "$case_dir/before-objcopy" "$candidate" \
         "$debug_file" "$case_dir/candidate-content" "${controls[@]}"
+    python3 "$repository_dir/src/test/integration/reported-candidate-preparation.py" \
+        "$FORGE_MODULE" "$target" "$case_dir/before-objcopy" "$candidate" \
+        "$debug_file" "$source_file" "$reference" "$case_dir/reported-preparation" \
+        --report-manifest "$FORGE_REPORT_MANIFEST" --role "$report_role" \
+        "${writer_controls[@]}" "${retained_export[@]}"
     python3 "$repository_dir/src/test/integration/owned-debuglink-candidate.py" \
         "$FORGE_MODULE" "$target" "$case_dir/before-objcopy" "$candidate" \
         "$debug_file" "$source_file" "$reference" "$case_dir/owned-candidate" "${writer_controls[@]}"

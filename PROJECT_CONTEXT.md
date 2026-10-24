@@ -3638,3 +3638,49 @@ transcripts and eighteen native/QEMU process executions pass; shared cases do no
 claim runtime. Earlier GNU references retain their own evidence and GDB checks.
 This replay adds no Ghidra export or repeated strict sidecar-DWARF validation.
 Final exact package and hosted/native Windows acceptance remain required.
+
+### Detailed report binding for private preparation (2026-10-24)
+
+**CONFIRMED decision; acceptance PLANNED:** the next bounded continuation connects
+private candidate preparation to one explicitly captured report/producer transcript
+and three selected artifacts. Add opt-in detailed reader/binder methods sharing the
+existing strict parser, preserving five immutable inventories and the old lightweight
+APIs. Retention is limited to 16,384 combined entries and 1,048,576 UTF-16 units
+across retained string fields; overflow rejects rather than truncates. Full parse
+and successful closure precede artifact access and any returned detailed result.
+
+The retained-report survey found ordinary `PARTIAL`/`NOT_RUN` reports with skipped
+functions, omitted locations and opaque effects. Status/counts alone do not classify
+these diagnostics. Preserve their complete text/order without a severity policy.
+The connected fixture consumer will require separate selected-hash, copied-prefix,
+active-allocation, build-ID and reported-target evidence before creating scratch.
+Use the existing isolated `DwarfTarget` descriptions for producer labels; the test
+lane's spelling is not a report architecture. Explicit captured-evidence handoff
+must survive later tests reusing the exporter log filename.
+
+Reports remain unauthenticated claims. Even matching all byte/ELF observations does
+not establish valid appended DWARF or that GDB can resolve the source path recorded
+inside it. Product validator execution/receipts, generic source correlation,
+immutable file identity, host metadata, independent backups and atomic replacement
+remain separate work. The first connected tests will demonstrate those limits as
+well as the required rejection paths; they do not expose an attachment command.
+
+**CONFIRMED locally:** core commit `1d80348` passes 432 detailed checks on actual
+Java 21/64 MiB, including both default retention caps together; existing reader
+429 and binder 574 checks pass unchanged. The private installed JAR
+`42a4631744597a7ae160de0a39f65597716ddfd34734d855e2801b9ed5fa0408`
+passes nine connected exec/PIE/no-ID cases across x86-64, AArch64 and MIPS32
+big-endian. The explicit retained-export flag distinguishes the older producer
+from this reader/writer installation. The baseline GNU and owned-writer oracles
+also remain in the workflow and pass.
+
+Independent review reconstructs all 18 ordinary repeated candidates and twelve
+positive-control candidates, verifies all 78 controls, complete inventories and
+27 full report/log sets, and checks 81 historical artifact copies plus 45 current
+input copies. Nine ordinary GDB checks, eighteen native/QEMU processes, three
+static GDB missing-source controls and three expected LLVM invalid-DWARF failures
+pass. All 44 globally protected files remain unchanged. Later GNU CRC tests
+deliberately change/restore three private no-ID sidecar mtimes; final bytes and
+per-component preservation records are checked without claiming those final
+mtimes unchanged. No fresh export or repeated strict sidecar validation is
+attributed to this replay. Exact package and hosted/native Windows remain pending.

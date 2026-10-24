@@ -61,11 +61,68 @@ cannot interrupt an already blocked operating-system call. The helper makes no
 concurrent-change, locking or immutable-snapshot guarantee.
 
 The report reader keeps its documented 64 MiB input, string, nesting, value and
-array bounds. Its detailed diagnostic inventories are validated and discarded;
-the returned claims retain counts, not enough information to approve every
-diagnostic under a future attachment policy. Artifact reads use a 64 KiB buffer
+array bounds. The lightweight `observe()` methods validate and discard diagnostic
+inventories; their returned claims retain counts. Artifact reads use a 64 KiB buffer
 and checked long byte counts, independent of file size. No complete artifact is
 buffered and no report-file digest is claimed.
+
+## Detailed binding
+
+**CONFIRMED locally; full hosted gate pending:** opt-in `observeDetailed()`
+returns `DetailedResult(binding, inventories)`. It uses one complete strict report
+parse to obtain both claims and the five immutable diagnostic inventories, then
+performs the same three regular-file prechecks and ordered digest observations.
+The inventories have the additional entry/string retention bounds documented in
+[`EXPORT-REPORT-CLAIMS.md`](EXPORT-REPORT-CLAIMS.md). No second report read joins
+claims from one version with diagnostics from another. This still makes no
+same-stream report-hash or cross-file snapshot claim.
+
+All three artifact observations remain present when any SHA claim differs. Full
+diagnostics accompany `PARTIAL` and `NOT_RUN` unchanged; there is no severity
+allowlist or validation-status upgrade. The existing lightweight API and result
+shape remain unchanged.
+
+The connected acceptance workflow selects a captured report and full producer
+transcript explicitly, binds the selected original/sidecar/source, and retains
+separate prefix, allocation, build-ID and reported-target observations before
+constructing an owned private candidate. Matching or absent-both build IDs remain
+distinct outcomes. Unsupported, missing or differing evidence prevents that test
+construction. This fixture workflow is not a public attachment operation or a
+generic readiness API; independent DWARF/source correlation and the filesystem
+transaction remain separate requirements.
+
+The test handoff is explicit: the early report-claims oracle can publish a new
+`--handoff-manifest <path>` using exclusive creation. It points to that completed
+reader result by absolute path and SHA-256. Before publication and consumption,
+recheck the exact retained producer transcript, its single raw JSON report and
+the three retained artifact copies for every role. Reported artifact paths remain
+opaque lookup keys in recorded evidence; they are not opened as current files.
+This small manifest is an unsigned test handoff, not a product validation receipt.
+
+Run the association harness once per target with its `FORGE_REPORT_MANIFEST` and
+`FORGE_MODULE`. A normal run requires the recorded reader and producer installation
+paths and JAR/script hashes to match the current installation. An explicitly
+retained-export replay uses `FORGE_RETAINED_EXPORT=1`; the underlying consumer
+receives `--retained-export` and records that distinction. There is no latest-run,
+directory-glob or mutable-export-log fallback. Historical multi-target commands
+describe the older harness, before this explicit evidence handoff.
+
+The installed Java 21/64 MiB workflow passes nine retained exec/PIE/no-build-ID
+cases across x86-64, AArch64 and MIPS32 big-endian. Independent review reconstructs
+18 repeated ordinary candidates and 12 positive control candidates, verifies all
+78 controls and the complete unclassified inventories, and checks 27 retained
+report/transcript sets, 81 earlier artifact copies and 45 current input copies.
+Nine ordinary GDB checks, eighteen plain native/QEMU process executions, three
+static GDB source-path failures and three expected LLVM DWARF failures pass.
+The ordinary candidates pass GNU ELF and LLVM checks. All 36 original fixtures
+and eight protected source/module/base-installation files remain unchanged.
+
+These are new private candidates using retained exports. No fresh Ghidra export
+or repeated strict validation of unchanged sidecars is claimed. The source-path
+and corrupt-DWARF controls deliberately demonstrate unresolved association
+requirements; passing the content observations does not hide either failure.
+The exact package, all-five-target pipeline and native Windows acceptance for
+this change remain pending. See `VALIDATION.md` for retained commands and scope.
 
 ## What agreement leaves unproved
 
