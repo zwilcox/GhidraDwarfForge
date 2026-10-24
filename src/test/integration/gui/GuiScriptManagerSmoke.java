@@ -10,6 +10,11 @@ import java.util.concurrent.TimeUnit;
 import javax.swing.JTable;
 
 import docking.ComponentProvider;
+import docking.widgets.table.AbstractSortedTableModel;
+import docking.widgets.table.GTable;
+import docking.widgets.table.GTableFilterPanel;
+import docking.widgets.table.RowObjectTableModel;
+import docking.widgets.tree.GTree;
 import ghidra.GhidraApplicationLayout;
 import ghidra.app.script.GhidraScriptUtil;
 import ghidra.app.services.ConsoleService;
@@ -26,6 +31,7 @@ import ghidra.program.flatapi.FlatProgramAPI;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.util.task.TaskMonitor;
+import ghidra.util.task.SwingUpdateManager;
 
 /** Uses the installed Script Manager table and Run task, not direct script construction. */
 public final class GuiScriptManagerSmoke {
@@ -78,6 +84,8 @@ public final class GuiScriptManagerSmoke {
         configuration.setApplicationLogFile(results.resolve("application.log").toFile());
         configuration.setScriptLogFile(results.resolve("script.log").toFile());
         Application.initializeApplication(new GhidraApplicationLayout(ghidra.toFile()), configuration);
+        GuiTableClickSmoke.runPendingFilter(
+            Files.createDirectory(results.resolve("pending-filter-control")));
 
         Path projectDirectory = Files.createDirectory(results.resolve("project"));
         GhidraProject project = GhidraProject.createProject(projectDirectory.toString(),
@@ -250,27 +258,78 @@ public final class GuiScriptManagerSmoke {
             });
             return (JTable) found;
         });
-        GuiTestSupport.onSwing(() -> {
-            int index = findRow(table, filename);
-            table.setRowSelectionInterval(index, index);
-            Rectangle cell = table.getCellRect(index, findNameColumn(table), true);
-            table.scrollRectToVisible(cell);
-            return null;
-        });
         Robot robot = new Robot();
         robot.setAutoDelay(80);
         // A visible floating provider can still be covered by Console/front end.
         // Provider activation intentionally focuses Ghidra's filter field.
         // Mouse dispatch needs the foreground window, not table keyboard focus.
         GuiTestSupport.foregroundWindow(table);
+        GuiTestSupport.require(table instanceof GTable, "Script Manager no longer uses GTable");
+        GTable scriptTable = (GTable) table;
+        Object scriptList = readField(provider, "scriptList");
+        SwingUpdateManager refresh = (SwingUpdateManager) readField(
+            scriptList, "refreshUpdateManager");
+        GTree categories = (GTree) readField(provider, "scriptCategoryTree");
+        SwingUpdateManager treeFilter = (SwingUpdateManager) readField(
+            categories, GTree.class, "filterUpdateManager");
+        GuiTestSupport.await("Script Manager refresh, categories, filter and sort completion", () ->
+            Boolean.TRUE.equals(readField(provider, "hasBeenRefreshed")) &&
+                !refresh.isBusy() && !categories.isBusy() && !treeFilter.isBusy() &&
+                isTableReady(scriptTable) ?
+                    scriptTable : null);
+        awaitTableReady(scriptTable);
+        GuiTestSupport.onSwing(() -> {
+            int index = findRow(table, filename);
+            GuiTestSupport.require(index >= 0, "Script Manager target row disappeared");
+            table.setRowSelectionInterval(index, index);
+            table.scrollRectToVisible(table.getCellRect(index, findNameColumn(table), true));
+            return null;
+        });
         robot.waitForIdle();
         GuiTestSupport.screenshot(robot, provider.getComponent(), screenshot);
         int[] cell = GuiTestSupport.onSwing(() -> {
             int index = findRow(table, filename);
-            GuiTestSupport.require(index >= 0, "Script Manager target row disappeared");
+            GuiTestSupport.require(index >= 0 && !refresh.isBusy() && !categories.isBusy() &&
+                !treeFilter.isBusy() && isTableReady(scriptTable),
+                "Script Manager model changed before launch");
             return new int[] { index, findNameColumn(table) };
         });
         GuiTestSupport.doubleClickCell(robot, table, cell[0], cell[1], filename);
+    }
+
+    static void awaitTableReady(GTable table) throws Exception {
+        GuiTestSupport.await("table filter and sort completion", () ->
+            isTableReady(table) ? table : null);
+        // Ghidra repairs row-object selection with invokeLater after filtering.
+        // Drain that queued repair before selecting the final visible row.
+        GuiTestSupport.onSwing(() -> null);
+    }
+
+    static boolean isTableReady(GTable table) {
+        GTableFilterPanel<?> filter = table.getTableFilterPanel();
+        GuiTestSupport.require(filter != null, "expected the real Ghidra table filter");
+        SwingUpdateManager updater = (SwingUpdateManager) readField(
+            filter, GTableFilterPanel.class, "filterUpdater");
+        Object model = RowObjectTableModel.unwrap(table.getModel());
+        return !updater.isBusy() && (!(model instanceof AbstractSortedTableModel<?> sorted) ||
+            !sorted.isSortPending());
+    }
+
+    private static Object readField(Object owner, String name) {
+        return readField(owner, owner.getClass(), name);
+    }
+
+    private static Object readField(Object owner, Class<?> ownerClass, String name) {
+        // Pinned Ghidra 12.0.3 exposes no public filter/ScriptList busy query.
+        // Observe their actual update managers; never flush or change their work.
+        try {
+            var field = ownerClass.getDeclaredField(name);
+            field.setAccessible(true);
+            return field.get(owner);
+        }
+        catch (ReflectiveOperationException failure) {
+            throw new AssertionError("Ghidra readiness field changed: " + name, failure);
+        }
     }
 
     private static int findNameColumn(JTable table) {

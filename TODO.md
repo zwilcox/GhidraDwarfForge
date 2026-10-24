@@ -1237,6 +1237,14 @@ Additional user-journey coverage:
   coordinates under bare Xvfb. An owned Openbox session and independent native
   geometry control pass 100 cases and the full Java 21 Linux journey
   `run.KPdcV6p3`; fresh hosted acceptance remains pending.
+  A subsequent combined-product run exposed a pending Ghidra table-filter
+  update that cleared selection during the double-click. Buffered event and
+  selection-stack evidence reproduces the null selected script; the harness
+  now waits for the actual refresh/filter/sort work and queued selection repair.
+  A real Ghidra filter control covers that readiness boundary without launch
+  retries; final combined-product Linux run `run.LFXUdxrq` passes all controls,
+  chooser outcomes, validators and GDB. The combined Linux/native Windows
+  hosted gate remains open.
 - [x] Exercise native Windows output selection and cancellation; verify
   chosen paths, original preservation and no final artifacts after cancellation.
   A real desktop-click/ACL-denial probe precedes the full Windows Script Manager
