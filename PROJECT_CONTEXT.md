@@ -66,6 +66,14 @@ A representative target experience is:
 
 ## 3. Goals
 
+**CONFIRMED assessment:** `docs/TARGET-PROFILES.md` records the five tested
+ELF/ABI profiles and separates machine/class acceptance from actual storage
+behavior. A bounded audit of current code, retained fixture metadata and
+Ghidra 12.0.3 register aliases found that ABI classification is incomplete
+and larger base-register aliases can hide otherwise mapped scalar FP storage.
+The document defines focused follow-ups; it adds no architecture support claim
+and does not mark those implementation gaps complete.
+
 ### 3.1 Primary goals
 
 **CONFIRMED REQUIREMENT:**
@@ -1931,6 +1939,52 @@ source edit still warns in GDB; no warning filter was added. Deterministic unit,
 source-built GDB/runtime, and retained AArch64 Forge-artifact checks pass locally.
 See `docs/VALIDATION.md`; the next exact versioned CI remains required.
 
+### P3.4 bounded inline-evidence investigation (2026-10-23)
+
+**CONFIRMED:** ADR 0003 records the completed investigation and the conditions
+for implementing inline-instance export. The installed Ghidra 12.0.3 source
+and help distinguish the function-level decompiler inline flag from compiler
+inline instances. The DWARF importer can retain inline children as locals of
+the containing function and preserve source rows/optional comments; this is
+not evidence that all inline information is discarded. Its inline processing
+also flattens the body's disjoint ranges for comments/child handling.
+
+The reproducible `src/test/research/inline/run.sh` probe builds its own GCC
+optimized-inline fixture, validates its compiler DWARF and demonstrates an
+actual GDB inline frame with argument 4/local 11. A real Ghidra import retains
+two `IMPORTED` inline locals, 20 source rows and two comments; a debug-stripped
+counterpart loses those compiler identities. Independently marking an ordinary
+callee inline removes its high-pcode call while its real machine call remains.
+Original hashes match. Exact source hashes and observations are committed at
+`docs/research/inline-evidence-12.0.3.txt`; full logs are retained under the
+isolated inline worktree's `build/test-results/inline-evidence/run.tB61GBSm/`.
+
+The probe's Ghidra importer reports three unrecoverable `DW_OP_reg5`
+expressions for other optimized locals; this limitation is recorded, not
+suppressed. This is research evidence, not a Forge inline-export validation or
+a new architecture support claim. No production exporter code changes.
+Inline DIE emission remains deferred pending an explicit provenance-bearing
+instance model and the compiler/analyst-evidence GDB checks in ADR 0003.
+
+### Performance scaling baseline (P3.5)
+
+**CONFIRMED locally (2026-10-23):** a standalone benchmark harness now builds
+synthetic named-function ELF workloads, measures import separately from saved
+project export, and retains commands/tool versions/module hashes/metrics.
+Three repeated fresh-JVM exports of 100, 1,000 and 10,000 generated functions
+have medians of 2.52, 3.27 and 10.62 seconds on the recorded host. All artifacts
+pass structural validators, full GDB DWARF symbol/address/source checks,
+runtime entry/stepping/exit, original hashes and byte-identical reruns.
+Independent review strengthened the oracle so inherited minimal ELF symbols
+cannot mask missing function DIEs, and timeout cleanup kills descendants even
+when the wrapper exits first. The adversarial cleanup probe passes.
+
+The harness changes no production code and excludes validators from timing.
+Its whole-process measurements include JVM startup and do not identify which
+export phase dominates. **PLANNED:** representative complex-binary and phase
+profiling before choosing an optimization; P3.5 remains partially complete.
+See `docs/PERFORMANCE.md` for commands, retained evidence and limits.
+
 ## 17. Open questions
 
 Codex should not silently answer these through implementation choices. Investigate, document, and obtain user direction when the answer materially changes compatibility or scope.
@@ -1980,7 +2034,10 @@ Codex should not silently answer these through implementation choices. Investiga
 16. **RESOLVED for the initial extern/import policy:** external-data declarations
     may omit locations; imported functions/thunks are diagnosed and skipped.
     Expanded declaration/linkage handling remains under P1.7/P3.3.
-17. **Inlining:** Is reconstructed inline information a later goal, or explicitly out of scope?
+17. **RESOLVED for the current exporter — inline evidence:** ADR 0003 completes
+    the bounded Ghidra 12.0.3 investigation. Inline DIE emission remains
+    deferred until explicit instance/origin/range evidence and behavioral
+    acceptance exist; it is not inferred from the decompiler inline flag.
 18. **RESOLVED — `.debug_frame`:** the current ELF milestone relies on unwind
     information in the original target and does not synthesize unsupported
     CFI. See `docs/ADR-0002-DEBUG-FRAME.md`.
