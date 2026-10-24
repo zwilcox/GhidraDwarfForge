@@ -105,7 +105,7 @@ items are these bounded workstreams:
 | Function identity and scopes (P1.7, P3.3) | **PLANNED:** distinct linkage names without losing analyst-name lookup; external-function declarations, thunks/aliases, function/class/lexical scopes, static locals, and same-named type/variable disambiguation. Existing namespace globals and external-data declarations must remain working. |
 | Additional range/location cases (P1.8, P1.11a) | **PLANNED:** entry points that are not the lowest body address; proven register/memory migration, call-crossing and non-entry lifetimes, stack-slot reuse, and mixed composite storage. Require GDB value checks at multiple instruction addresses and honest unavailable gaps. |
 | Target-profile coverage (P2.3/3a/3b) | Current five profiles pass. Enumerate additional ABI/storage cases, derive their target properties, and add real exporter/validator/QEMU-GDB tests before extending support claims. Completing this plan does not imply every Ghidra CPU/ABI. |
-| Remaining GUI journeys (P2.7) | **CONFIRMED locally:** actual Linux Script Manager discovery/run/Console report and chooser selection/cancellation pass with the installed Export launcher. **PRESENT, UNVERIFIED:** Windows desktop/ACL probe; native Windows chooser/cancellation remains open. |
+| Remaining GUI journeys (P2.7) | **CONFIRMED locally:** actual Linux Script Manager discovery/run/Console report and chooser selection/cancellation pass with the installed Export launcher. **PRESENT, UNVERIFIED:** native Windows desktop/ACL probe and full Script Manager chooser harness are CI-wired; native Windows evidence remains pending. |
 | Optional debuglink (P2.8) | **PLANNED, optional:** explicit opt-in attachment, backup/rollback, CRC, automatic lookup and mismatch tests, while default export leaves the original unchanged. |
 | Inline reconstruction (P3.4) | **UNCERTAIN:** investigate defensible instance/call-site/range evidence and record a decision. Implement only if supported by that evidence. |
 | Performance (P3.5) | **PLANNED:** establish representative large-binary benchmarks, choose optimizations with measured benefit, and prove unchanged semantics/determinism. The listed candidates are not all unconditional requirements. |
@@ -1152,9 +1152,11 @@ Additional user-journey coverage:
   entries; this test does not directly construct either production script.
 - [ ] Exercise native Windows output selection and cancellation; verify
   chosen paths, original preservation and no final artifacts after cancellation.
-  A real desktop-click/ACL-denial probe is present and wired into Windows CI;
-  its native result is pending and would establish feasibility, not complete
-  this chooser journey by itself.
+  A real desktop-click/ACL-denial probe precedes the full Windows Script Manager
+  harness in CI. The latter uses packaged Windows natives, selected paths with
+  spaces, input hashes, Console reports, and native GNU/LLVM validators. Both
+  native results remain pending; the feasibility probe alone cannot complete
+  the chooser journey.
 
 ### Work
 

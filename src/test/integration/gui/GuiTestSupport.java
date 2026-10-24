@@ -127,7 +127,7 @@ final class GuiTestSupport {
             await("chosen directory", () -> {
                 JTextField path = (JTextField) find(dialog, component ->
                     component instanceof JTextField && "Path".equals(component.getName()));
-                return path != null && selected.toString().equals(path.getText()) ? path : null;
+                return path != null && selected.equals(Path.of(path.getText())) ? path : null;
             });
         }
         screenshot(robot, dialog, results.resolve("chooser.png"));

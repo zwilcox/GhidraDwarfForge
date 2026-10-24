@@ -1104,6 +1104,20 @@ jobs:
             -ProducerDll $producer.FullName `
             -LinuxReferenceDirectory (Resolve-Path linux-reference)
 
+      - name: Native Windows Script Manager export, console, and chooser cancellation
+        shell: pwsh
+        timeout-minutes: 15
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+        run: |
+          $mingwBin = Join-Path $env:MSYS2_LOCATION 'mingw64\bin'
+          $env:PATH = "$mingwBin;$env:PATH"
+          .\src\test\integration\windows-gui-script-manager.ps1 `
+            -GhidraDirectory $env:GHIDRA_INSTALL_DIR `
+            -ModuleDirectory (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions\GhidraDwarfForge') `
+            -Fixture (Resolve-Path 'linux-reference\semantic.exec.stripped').Path `
+            -Reference (Resolve-Path 'linux-reference\semantic.exec.reference').Path
+
       - name: Clean Windows installed-release export without external natives
         shell: pwsh
         env:

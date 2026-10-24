@@ -1871,9 +1871,12 @@ See `docs/VALIDATION.md` for reproduction and diagnostic scope.
 **PRESENT, UNVERIFIED:** `windows-desktop-acl.ps1` probes actual native Windows
 desktop interaction and write-denying ACL behavior, with cleanup and retained
 screenshots/logs. It is wired into Windows CI but has not run natively yet.
-Passing that feasibility probe will not itself prove Ghidra's Windows chooser;
-the full Windows selection/cancellation journey remains open. These GUI
-changes are separate from the corrective alpha.2 candidate.
+Passing that feasibility probe will not itself prove Ghidra's Windows chooser.
+The CI lane now also invokes `windows-gui-script-manager.ps1`, reusing the same
+actual Script Manager driver with packaged Windows natives, real ACL failures,
+paths with spaces, original hashes and GNU/LLVM structural validation. Its
+native result is pending, so the Windows selection/cancellation journey stays
+open. These GUI changes are separate from the corrective alpha.2 candidate.
 
 ## 17. Open questions
 

@@ -991,6 +991,36 @@ records host/user/session evidence, denies directory writes with a real ACL,
 requires actual file creation to fail, restores the ACL, and requires a real
 Robot click on a visible button. The Windows CI lane retains its screenshots,
 ACLs and logs. Native execution is required; portable PowerShell syntax or
-Linux execution cannot establish Windows GUI support. After this feasibility
-probe passes, the actual Ghidra chooser selection/cancellation journey still
-requires native Windows evidence.
+Linux execution cannot establish Windows GUI support.
+
+The same Windows CI lane runs the full journey after feasibility and isolated
+packaged-native checks:
+
+```powershell
+./src/test/integration/windows-gui-script-manager.ps1 `
+    -GhidraDirectory $env:GHIDRA_INSTALL_DIR `
+    -ModuleDirectory "$env:GHIDRA_INSTALL_DIR\Ghidra\Extensions\GhidraDwarfForge" `
+    -Fixture C:\fixtures\semantic.exec.stripped `
+    -Reference C:\fixtures\semantic.exec.reference
+```
+
+This harness verifies the installed release hashes, compiles only the shared
+GUI driver, uses Java argument files to avoid Windows command-line limits, and
+selects a directory whose path contains spaces. It runs both real Script Manager
+entries and both chooser outcomes using packaged Windows natives. The Java
+driver verifies actual ACL denial, current-Program analyst rename, Console
+reports, input preservation, and artifact counts; it restores the saved ACL
+and propagates restoration failures. Native GNU readelf
+and LLVM validate the resulting artifact, including target header and build-ID
+agreement. Independent `dwarfdump` is used if available and otherwise recorded
+as unavailable. Linux ELF runtime GDB checks cannot run natively on Windows and
+are explicitly recorded as not run there; the Linux GUI journey retains those
+checks. All Windows logs and screenshots are retained under
+`build/test-results/windows-host/gui-script-manager/`.
+
+**Available local checks only:** PowerShell syntax, workflow YAML, shared Java
+21 compilation, Java argument-file quoting (spaces, backslashes, quotes, and
+literal brackets), and the repeated Linux GUI/validator/GDB journey
+`run.BVL5Ysph` pass.
+The Windows filesystem, DLL loading and GUI assertions still require the
+native hosted run; this preparation does not complete that acceptance item.
