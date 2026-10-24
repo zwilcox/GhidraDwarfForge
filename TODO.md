@@ -1477,6 +1477,15 @@ Native Windows and the full five-target hosted gate remain required. Observed
 hashes or matching IDs do not establish file identity, parse receipts or expose
 attachment; the full transaction remains planned.
 
+The first combined hosted run `40089908416` failed its x86 digest report binding:
+a later default-output test reused the primary log filename for a different
+output pair. Java/Python digests agreed; the path/hash assertion correctly
+rejected the mismatched report. Both helper oracles now run directly after the
+primary export/GDB step, with exact consumed transcripts retained. Three local
+profile replays and a stale-report negative pass; the full updated gate remains
+required. The failed run did not reach x86's large-file/build-ID checks or
+native Windows and is not accepted integration evidence.
+
 **Status:** `[ ]` — optional product operation **PLANNED**. The bounded backend
 and backup-based re-export investigation is complete; the explicit transaction
 design and remaining acceptance tests are in

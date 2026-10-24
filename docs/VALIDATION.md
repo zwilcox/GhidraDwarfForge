@@ -3725,3 +3725,58 @@ hosted matrix remain required: fourteen Windows focused checks, both installed
 helper oracles in all five target lanes, and both GUI hosts. This is a read-only
 foundation; attachment, receipt parsing, stable file identity and readiness
 remain unimplemented. Published alpha.2 remains unchanged.
+
+## Combined-oracle report-generation isolation (2026-10-24)
+
+**Failed initial hosted gate:** PR #32 head
+`65f5bb8723ca0461af5cc973b649ba9a0e358468`, run `40089908416`, attempt 1,
+has nine successful jobs, failed x86/aggregate and skipped Windows. Its package
+precheck is independently clear: artifact `12558697497`, download SHA-256
+`d7152317b4a0aabb3c2eb16409598c2e119840a32bdfa6d51af0464f6c239bc5`, release ZIP
+`dd8146d43ca90e38ee622be215519d7cc281e2962dc841da0a8b7a10a19523a3`, JAR
+`f3b123fa4693eda94d9b84a99b6148d1cdbbefdd418539d5cf6ffeeea0a81307` and script
+`3b7b0ef415e974cfcb03ee1566f3c25bab9151d7405b965a80150a8be6e53821`.
+All 37 sources, 153 Java 21-compatible classes, manifests and native provenance
+match; actual Java 21 focused checks, twenty producer lifetimes and 83 class
+origins pass. This package result does not accept the failing integration head.
+
+The four cross-target jobs and both new helper oracles in each artifact pass
+independent review. The x86 artifact `12559112653`, SHA-256
+`90acd9294fab51fbc77843230d48b3ae94599e412aab773e33380c1760cd4f48`, proves the
+failure: repeated Java digests agree with Python, but the shared exec report
+names `semantic.exec.stripped.dbg`, SHA-256
+`4651382fed80e9a045d05003b07e1c717b6969d5e6c8a1f9dcf24d66349c9428`.
+The ordinary pair is `semantic.exec.ghidra-forge.dbg`, SHA-256
+`cbf02d77c03b32f8aeb42bb04baf262138f3fbc98c6a946cc37f21fae96e3eac`.
+The source bytes agree but their paths differ. PIE/no-build-ID report bindings
+match. `output-path-policy.sh` invokes the shared exporter with default output
+and overwrites `headless-symbol-export/x86_64.exec.log` after the ordinary pair
+was produced/restored. The digest oracle correctly rejects that report mismatch.
+
+The x86 large-file digest and build-ID oracle were not reached; Windows was
+skipped. Earlier Linux GUI `run.XGnQjNXL`, traversal and 24 strict reports pass
+as component evidence only. Full failure metadata, downloaded artifact and
+diagnosis are retained in `build/build-id-package-audit/failed-target-40089908416/`
+and the GUI worktree's `build/hosted-gui-review/run-40089908416/`. No missing or
+skipped check is counted as passing.
+
+**CONFIRMED local correction; new hosted gate pending:** move both helper
+oracles immediately after the six-role primary export/GDB step, preserving
+every later gate and assertion. The digest oracle reads each transcript once,
+retains its exact UTF-8 bytes as `<role>.export.log`, and records its source,
+retained path and SHA-256. Later tests can reuse their own shared paths without
+changing the evidence consumed by these checks. Production Java, native code,
+export behavior and report schema are unchanged.
+
+Independent source review, workflow lint and Python syntax pass. Local replay
+against the unchanged installed `04398abf...` JAR passes on actual Java 21:
+`x86_64.seo92nr6`, `aarch64.7_jd4j7p`, `mips32be.lckj930j`. All nine retained
+transcripts match the original validated logs. An owned derived control changes
+only exec report output names to the default-output spellings; the unchanged
+path/hash assertion rejects it. Overwriting that owned source-log copy leaves
+the earlier retained transcripts intact. All original evidence logs and fixture
+bytes/mtimes remain unchanged. Reproduction and result are
+`build/report-order-review/check-retention.py` and
+`retention.40kvd6hd/result.json` beneath that directory. This is a harness
+selection/retention replay on already audited exports, not new export/GDB or
+large-file execution. The full updated hosted gate remains required.

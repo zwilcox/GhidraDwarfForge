@@ -40,6 +40,11 @@ Forge fixture pairs per target cover executable, PIE and absent build ID. Their
 SHA/CRC/counts must match an independent streaming Python oracle twice; GNU
 debuglink basename, padding and target-endian CRC bytes must match exactly.
 The original executable, source and sidecar contents/mtimes remain unchanged.
+Run the read-only helper oracles immediately after the primary exports, before
+later regression harnesses reuse their log names. Retain the exact consumed
+transcripts and hashes in the digest oracle's result directory, so a later default-
+output report cannot replace the evidence for the ordinary pair. Path/hash and
+installed-script-origin checks remain mandatory.
 
 Linux x86 additionally uses an owned sparse input of 2,147,614,787 bytes, with
 nonzero markers around buffer and signed-32-bit boundaries and at EOF. Both
