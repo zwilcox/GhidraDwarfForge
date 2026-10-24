@@ -90,6 +90,7 @@ import ghidradwarfforge.elf.MatchedElfSidecarWriter;
 import ghidradwarfforge.dwarf.Dwarf5LineTable;
 import ghidradwarfforge.dwarf.Dwarf5LocationLists;
 import ghidradwarfforge.dwarf.Dwarf5RangeLists;
+import ghidradwarfforge.dwarf.DwarfAddressRanges;
 import ghidradwarfforge.dwarf.Dwarf32InfoRepair;
 import ghidradwarfforge.dwarf.DwarfLocationExpression;
 import ghidradwarfforge.dwarf.DwarfLocationExpression.AddressOperation;
@@ -316,6 +317,8 @@ public final class MinimalDwarfSidecarExporter {
 
         ElfImage elf = ElfImage.read(source);
         DwarfTarget target = DwarfTarget.fromElf(elf);
+        byte[] addressRanges = DwarfAddressRanges.build(ordered,
+            target.addressBytes(), elf.byteOrder());
         LibDwarfConsumer consumer = Native.load(consumerPath.toString(), LibDwarfConsumer.class);
         LibDwarfProducer producer = Native.load(producerPath.toString(), LibDwarfProducer.class);
         String version = consumer.dwarf_package_version();
@@ -350,6 +353,9 @@ public final class MinimalDwarfSidecarExporter {
         Map<String, byte[]> sections = produce(producer, consumer, target, ordered,
             unitName, syntheticSource, typeModel, lineTable, rangeLists, locationLists,
             elf.byteOrder());
+        if (sections.putIfAbsent(".debug_aranges", addressRanges) != null) {
+            throw new IllegalStateException("producer supplied an unexpected address lookup");
+        }
         new MatchedElfSidecarWriter().write(source, output, sections, cancelled);
         return new ExportResult(target, ordered.size(), List.copyOf(sections.keySet()),
             version);

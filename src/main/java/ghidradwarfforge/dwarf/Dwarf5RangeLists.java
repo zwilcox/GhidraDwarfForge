@@ -99,7 +99,7 @@ public final class Dwarf5RangeLists {
         return List.copyOf(result);
     }
 
-    private static List<FunctionRange> mergedCompilationUnitRanges(
+    static List<FunctionRange> mergedCompilationUnitRanges(
             List<FunctionSymbol> functions) {
         List<FunctionRange> ordered = functions.stream()
             .flatMap(function -> function.ranges().stream())
