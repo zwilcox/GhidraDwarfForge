@@ -396,7 +396,9 @@ public final class ElfImage {
         }
     }
 
-    private byte[] readSourceRange(long offset, long size, String description) throws IOException {
+    // Package readers share the same bounded reads and source-change checks;
+    // each call owns and closes its channel. This is not a snapshot guarantee.
+    byte[] readSourceRange(long offset, long size, String description) throws IOException {
         try (FileChannel input = FileChannel.open(source, StandardOpenOption.READ)) {
             requireUnchanged(input);
             byte[] data = readRange(input, offset, size, MAX_TABLE_BYTES, description);
