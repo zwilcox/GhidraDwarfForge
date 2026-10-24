@@ -1204,3 +1204,73 @@ wrapper permissions and two byte-identical assemblies. Logs are in
 `native-patch-provenance/build/provenance-review/`. Native Windows and the full
 exact-candidate matrix remain pending; this audit does not authorize publishing
 the earlier mismatched package.
+
+## Definite ELF/Ghidra target agreement (2026-10-24)
+
+The isolated `target-language-agreement` worktree starts from strict baseline
+`bf7f2b1`. A fresh build of that baseline reproduces two semantic preflight
+gaps: x86-64 imported as `AARCH64:LE:64:v8A` and MIPS32 little-endian imported
+as `ARM:LE:32:v8` both produce `PARTIAL` sidecars and pass LLVM verification.
+Both imports use `-loader ElfLoader -processor <language> -cspec default
+-noanalysis` on private copies of source-built reference ELFs, so imported
+symbols suffice to reach the exporter. Original hashes remain unchanged.
+Evidence is `build/target-agreement/baseline/{x86_64,mips32le}/`, the exact
+baseline package is `build/target-agreement/baseline.zip`, and its installed
+JAR SHA-256 is `4f1fede9f6a9b298902a289c81ee27d8be750930aef70d3955c635dd3e77c20a`.
+This replaces the earlier research's older-JAR reproduction with a current
+baseline observation.
+
+The expected processor strings come from Ghidra 12.0.3's installed
+`Processors/{x86,AARCH64,ARM,MIPS}/data/languages/*.opinion` and `*.ldefs` files.
+The adapter reads `Language.getProcessor`, `Language.isBigEndian`,
+`Program.getDefaultPointerSize`, `Language.getLanguageID`, and
+`CompilerSpec.getCompilerSpecID`; pinned source is in
+`Framework/SoftwareModeling/lib/SoftwareModeling-src.zip`. Source hashes are
+recorded in `build/target-agreement/pinned-api-sources.sha256`. The check uses
+the Program's data-pointer size, preserving the existing width policy; it
+does not infer that instruction/register width equals pointer width. Compiler
+and variant IDs are diagnostic only. Passing this guard does not establish
+ABI, ISA-variant, calling-convention or ELF-flag support beyond the tested
+profiles.
+
+```bash
+GHIDRA_INSTALL_DIR=/path/to/ghidra_12.0.3_PUBLIC ./gradlew \
+    dwarfTargetSmoke ghidraTargetAgreementSmoke exportReportSmoke buildExtension
+python3 src/test/integration/target-language-agreement.py "$private_ghidra" x86_64
+python3 src/test/integration/target-language-agreement.py "$private_ghidra" mips32le
+```
+
+**PASS locally:** the metadata smoke covers five expected profiles, both
+same-width processor families, pointer-width/endian contradictions, unsupported
+ELF machines, and acceptance of nondefault variant/compiler metadata without
+Program mutations. All twenty native-independent CI smoke tasks, extension
+build, architecture guard, `actionlint`, Python syntax and release-package
+regression pass. Build logs are `build/target-agreement/{fixed-build,final-build,
+architecture,actionlint,package}.log`. Local JDK 25 produces Java 21 bytecode;
+native Windows execution is pending.
+
+The real mismatch harness passes all four absent/existing-pair controls in
+`build/test-results/target-language-agreement/run.bsu5k34q/` and
+`run.k9c5fhqg/`. It requires a structured `FATAL` report naming the expected
+and actual processors, ELF machine/class/endian/flags, pointer width and full
+language/compiler identity. Explicit native paths deliberately do not exist;
+the mismatch must be reported before loading them. Input and prior-output
+hashes/mtimes are unchanged and the output directory has no new files.
+The analyzer itself must exit normally without a JVM crash; Ghidra 12.0.3
+reports the expected post-script failure in its log rather than its exit code.
+
+**PASS locally:** correct x86-64, AArch64, ARM32, MIPS32 BE and MIPS32 LE
+ET_EXEC imports run through the installed production exporter and the existing
+GNU/LLVM/strict-libdwarf plus GDB type/source/value/stepping/normal-exit oracles.
+The strict checker reports three x86 and five AArch64 inherited frame-length
+diagnostics, each exactly corroborated against the matching unchanged original;
+the other three profiles have zero reported errors. Every profile has zero
+uncorroborated errors. Commands follow `headless-symbol-export.sh` and
+`qemu-gdb-symbols.sh` with `DWARFDUMP` set to the pinned patched consumer and
+`FORGE_ARM32_SYSROOT` pointing to the previously extracted ARM sysroot.
+Evidence is `build/target-agreement/positive-*-{export,gdb}.log`,
+`positive-identities.json`, and `build/test-results/headless-symbol-export/`.
+All installations and fixture copies are private; the user installation and
+the supplied originals are unchanged. Existing CI retains every target/role
+and host gate, and adds the rejection controls plus Windows metadata smoke.
+The complete new hosted matrix remains pending.

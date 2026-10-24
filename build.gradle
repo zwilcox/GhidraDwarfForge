@@ -187,6 +187,14 @@ tasks.register("dwarfTargetSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.nativeapi.DwarfTargetSmoke"
 }
 
+tasks.register("ghidraTargetAgreementSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks ELF/Ghidra processor, pointer width and byte order agreement"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.GhidraTargetAgreementSmoke"
+}
+
 tasks.register("typeGraphSmoke", JavaExec) {
     group = "verification"
     description = "Checks deterministic canonical and recursive type modeling"

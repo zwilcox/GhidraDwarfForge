@@ -130,7 +130,7 @@ public final class ExportReportSmoke {
     private static ExportReport report(ProgramTypeModel typeModel,
             SyntheticSourceFile source, List<SkippedFunction> skipped,
             List<String> diagnostics) {
-        return ExportReport.completed(new DwarfTarget("x86_64", "x86_64", 8, true),
+        return ExportReport.completed(new DwarfTarget("x86_64", "x86_64", 8, true, "x86"),
             "2.3.2", Path.of("fixture.elf"), A_HASH, Path.of("fixture.elf.dbg"), B_HASH,
             Path.of("fixture.elf.dbg.c"), C_HASH, source.functions().size(),
             List.of(".debug_line", ".debug_abbrev", ".debug_info"), source, typeModel,

@@ -457,7 +457,8 @@ jobs:
           {
             src/test/integration/headless-wrapper.sh
             src/test/integration/architecture-neutrality.sh
-            ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke outputPathPolicySmoke \
+            ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke \
+              ghidraTargetAgreementSmoke outputPathPolicySmoke \
               exportReportSmoke \
               syntheticSourceSmoke typeGraphSmoke variableStorageSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke \
@@ -793,6 +794,12 @@ jobs:
             "$PWD/native-integration/libdwarfp.so.2.3.2"
           src/test/integration/copy-cancellation-export.sh "$GHIDRA_INSTALL_DIR"
 
+      - name: Reject definite ELF and Ghidra processor disagreement
+        if: matrix.target == 'x86_64' || matrix.target == 'mips32le'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: python3 src/test/integration/target-language-agreement.py "$GHIDRA_INSTALL_DIR" "$TARGET"
+
       - name: Headless Forge symbol export and GDB integration
         env:
           TARGET: ${{ matrix.target }}
@@ -1048,7 +1055,7 @@ jobs:
           Expand-Archive -Path $extension.FullName `
             -DestinationPath (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions') -Force
           & .\gradlew.bat addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
-            syntheticSourceSmoke artifactPairPublisherSmoke 2>&1 |
+            syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke 2>&1 |
             Tee-Object -FilePath "$resultDirectory\native-independent.log"
           if ($LASTEXITCODE -ne 0) {
             throw "native-independent Windows checks failed with exit code $LASTEXITCODE"

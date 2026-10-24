@@ -2001,6 +2001,34 @@ Java 21 bytecode; the installed Java 21 directory contains a JRE without
 including main run `40058691020`.
 See TODO Section 0.2 and `docs/VALIDATION.md`.
 
+### 16.33 Definite ELF/Ghidra target agreement (2026-10-24)
+
+**CONFIRMED locally:** the strict baseline `bf7f2b1`, rebuilt and installed in
+an isolated Ghidra copy, still exported an ELF64 x86 target deliberately imported
+as AArch64 and an ELF32 MIPS little-endian target imported as ARM. Both shared
+pointer width/byte order with their forced language; both produced `PARTIAL`
+sidecars accepted by LLVM. A structural checker cannot establish that Ghidra
+decoded the original processor correctly.
+
+The isolated target table now records the processor names from pinned Ghidra
+12.0.3 ELF opinions/language definitions. A small Program adapter compares
+processor, data-pointer width and byte order before image-base handling,
+function extraction, decompilation or native production. Mismatch diagnostics
+identify both ELF and Program metadata, including language/compiler IDs.
+The guard reads metadata only. It neither changes the Program nor rejects a
+compiler specification or language variant merely because it is nondefault.
+ISA/register width is not substituted for data-pointer width; broader ABI and
+ELF-flag agreement remains separate work.
+
+All five supported metadata profiles, same-width processor contradictions,
+width/endian contradictions and nondefault-choice controls pass. Real forced
+imports reject with both absent and existing output pairs, preserving original
+and prior-pair hashes/mtimes and leaving no output temporaries. Correct five-
+profile ET_EXEC exports pass GNU/LLVM/strict-libdwarf and native/QEMU GDB checks.
+The full hosted matrix and native Windows execution of the new metadata smoke
+remain **PRESENT, UNVERIFIED**. See the target-agreement section of
+`docs/VALIDATION.md`; this follow-up is separate from corrective alpha.2.
+
 ## 17. Open questions
 
 Codex should not silently answer these through implementation choices. Investigate, document, and obtain user direction when the answer materially changes compatibility or scope.

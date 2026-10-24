@@ -560,7 +560,15 @@ Implement:
 - [x] Function symbols/DIE addresses match the original executable for the
   current contiguous-function fixture coverage.
 - [x] Original target hash is unchanged.
-- [x] Invalid/unsupported target combinations fail before output is published.
+- [x] Invalid/unsupported ELF machine/class/byte-order combinations fail before
+  output is published.
+- [~] Reject definite ELF/Ghidra processor, pointer-width and byte-order
+  disagreements before extraction/native production. **CONFIRMED locally:**
+  metadata controls, real same-width wrong-processor imports with prior-pair
+  preservation, and correct five-profile ET_EXEC exporter/validator/GDB cases
+  pass. The new rejection gates and native Windows metadata smoke still need
+  hosted verification. Compiler specifications, language variants and further
+  ELF ABI-flag policy remain separate; agreement alone does not prove a new ABI.
 - [x] Existing compiler DWARF is replaced, not merged. Stale compressed DWARF,
   indexes, debug links, and mini-debug data are retired in the sidecar while
   the original remains unchanged; see ADR 0001 and the validation record.
