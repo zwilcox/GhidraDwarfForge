@@ -11,6 +11,55 @@ export. Export remains explicit: installed wrappers request checksum-verified
 packaged natives by default, while source-tree audit runs may supply explicit
 library paths.
 
+## Combined semantic and corrective validation (2026-10-23)
+
+**CONFIRMED locally:** normal merges `493983d` and `4a4ce38` add reviewed scalar
+FP aliases (`1f52431`) and the corrective alpha.2 code (`ddad598`) to the earlier
+combined semantic branch (`23d2a63`). Only additive project-context prose
+conflicted; both narratives were retained. The final writer and publisher are
+byte-for-byte identical to the corrective branch, and all other production
+code matches the tested scalar-FP branch. No native signatures changed.
+
+The combined extension ZIP was installed into this worktree's isolated Ghidra
+copy at `build/combined-validation/ghidra`. The installed and built JAR hashes
+match (`170f9d68a39e86831af622c197f455f9a17b3092621276739b22139c4ea5b897`).
+Neither the user's installation nor any other worktree's installation changed.
+The following tests use that actual combined artifact:
+
+| Check | Result and evidence |
+|---|---|
+| Native-independent checks/build | All 22 smokes and `buildExtension` pass; `build/combined-final-review/build.txt` |
+| Publication timestamp regression | Original mismatch warns, published pair does not, later source edit still warns; input bytes/mtime and cleanup pass; `build/test-results/artifact-pair-timestamps/run.wMxUHsgD/` |
+| Scalar FP | All 24 x86-64/AArch64/MIPS32 BE/LE ET_EXEC/PIE baseline/rebase/repeat cases pass their bounded typed-value/omission oracles; `build/test-results/floating-registers/run.3suVpXM4/` |
+| Existing semantic matrix | Four profiles across ET_EXEC, partial stripping, absent build ID, absent section table, PIE and shared library: all 24 real export/validator/GDB cases pass; `build/combined-final-review/existing-*-{headless,gdb}.txt` |
+| Strict automatic association | Build-ID and debuglink positive/negative paths, CRC/mismatch checks and exact function/source/type checks pass on all four local profiles and native runtime where applicable; `build/test-results/build-id-discovery/run.GMGl9oDu/` |
+| ARM scalar upper slice | Isolated producer plus GNU/LLVM/libdwarf validators pass again on archived source-built ARM input; `build/combined-final-review/arm-slice-*` |
+| Repository guards | Architecture isolation, `actionlint`, whitespace and shell/Python syntax checks pass |
+
+The existing matrix preserves integer, stack and composite values. The FP
+suite preserves exact source/address/value checks, input hashes, build IDs and
+byte-identical repeats. MIPS paired doubles remain unavailable, with the
+compiler-GDB transport limitation recorded below; stored globals are not
+misrepresented as positive parameter-location evidence. The earlier dedicated
+entry, static-owner/failure and register-prefix suites remain the evidence for
+those unchanged extraction/emission paths rather than being counted as newly
+rerun here.
+
+All additive CI gates survive the merge: function-owned statics, entry ranges,
+incoming prefixes, scalar FP, strict association and timestamp publication.
+New ARM32 static/FP runtime behavior and the complete combined hosted run remain
+**PRESENT, UNVERIFIED** until CI passes the final commit. This is the follow-on
+semantic feature branch, not part of the corrective alpha.2 release.
+
+```bash
+src/test/integration/artifact-pair-timestamps.sh
+src/test/integration/floating-registers-export.sh "$GHIDRA_INSTALL_DIR" \
+    "$consumer" "$producer" x86_64 aarch64 mips32be mips32le
+# Run headless-symbol-export.sh then qemu-gdb-symbols.sh for each fixture role;
+# use shared-object-gdb.sh for shared. Retain all four local target arguments.
+src/test/integration/build-id-discovery.sh x86_64 aarch64 mips32be mips32le
+```
+
 ## Scalar floating register aliases (2026-10-23)
 
 **CONFIRMED locally:** the old real exporter omitted scalar floating arguments

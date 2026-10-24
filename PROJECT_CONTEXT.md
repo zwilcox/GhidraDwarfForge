@@ -2137,3 +2137,26 @@ floats, including `s1` as the upper 32 bits of `d0`, plus doubles and explicit
 clobber unavailability. This bounded scalar work does not add vector, aggregate,
 calling-convention, migration or new CPU/ABI claims, and remains separate from
 the corrective alpha2 release.
+
+### Combined semantic features after corrective alpha.2 (2026-10-23)
+
+**CONFIRMED locally:** `work/semantic-todo-completion` retains normal merge
+history for scalar FP aliases (`493983d`, from `1f52431`) and corrective
+sidecar identity/publication fixes (`4a4ce38`, through `ddad598`). The only
+conflict was additive context prose, and both histories were retained. The
+writer and publisher match the reviewed corrective branch exactly; the other
+production paths match the independently tested FP/semantic branch.
+
+The actual combined extension was installed only into the worktree's private
+Ghidra copy. All 22 native-independent checks/build, timestamp regression,
+24 scalar-FP cases, the existing four-profile six-role real export/validator/GDB
+matrix, strict build-ID/debuglink association and ARM isolated upper-slice
+producer/validators pass. Evidence and precise limits are in the new combined
+section of `docs/VALIDATION.md` and `build/combined-final-review/`.
+
+All feature and corrective CI gates remain present. Hosted combined validation,
+including new ARM static/FP runtime behavior, remains **PRESENT, UNVERIFIED**
+until the final commit passes its required matrix. This branch prepares the
+subsequent semantic PR; it does not add features to the corrective alpha.2
+release. No remote action, release or shared installation change occurred in
+this local integration.
