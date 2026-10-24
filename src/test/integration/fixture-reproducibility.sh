@@ -45,6 +45,7 @@ expected_sources=(
     nonzero_load_offset.c
     nonzero_load_offset.ld
     nonzero_load_offset_start.S
+    opaque-register-effects.c
     register_prefix.c
     semantic.c
     shared_driver.c

@@ -475,7 +475,7 @@ jobs:
               ghidraTargetAgreementSmoke outputPathPolicySmoke \
               exportReportSmoke \
               syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
-              variableStorageSmoke registerPrefixSmoke registerAliasSmoke \
+              variableStorageSmoke registerPrefixSmoke registerAliasSmoke opaqueRegisterEffectsSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
               packagedNativeLibrariesSmoke existingDebugSidecarSmoke \
@@ -897,6 +897,10 @@ jobs:
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
 
+      - name: Opaque supervisor-call register effects remain unavailable
+        if: matrix.target == 'aarch64'
+        run: src/test/integration/opaque-register-effects-export.sh "$GHIDRA_INSTALL_DIR"
+
       - name: Nonzero load-segment file offset and explicit rebase
         if: matrix.target == 'x86_64'
         run: |
@@ -1174,7 +1178,8 @@ jobs:
           Expand-Archive -Path $extension.FullName `
             -DestinationPath (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions') -Force
           & .\gradlew.bat addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
-            syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke 2>&1 |
+            syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
+            opaqueRegisterEffectsSmoke 2>&1 |
             Tee-Object -FilePath "$resultDirectory\native-independent.log"
           if ($LASTEXITCODE -ne 0) {
             throw "native-independent Windows checks failed with exit code $LASTEXITCODE"
