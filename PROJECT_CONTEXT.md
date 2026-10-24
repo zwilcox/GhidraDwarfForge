@@ -3780,3 +3780,23 @@ and the separate 78 raw-probe controls pass; 225 global paths remain unchanged.
 Independent review reconstructs thirty candidate outputs and verifies actual
 GDB/native/QEMU evidence. No fresh Ghidra export is attributed to this replay.
 Exact final package and complete hosted gates remain required.
+
+### Attachment host feasibility research (2026-10-24)
+
+**CONFIRMED locally; native Windows PRESENT, UNVERIFIED:** a separate research
+probe on accepted main `fdebe18` inspects only new owned fixtures before any
+attachment transaction implementation. Actual Java 21/64 MiB Linux acceptance
+covers ten entries, four identity pairs, eight malformed manifests, native
+opened-file identity/link counts and a real inherited ACL contrast. Exact
+selected bytes and observed metadata remain unchanged; access-time changes are
+recorded separately. The retained FIFO failure demonstrates that a Java DOS
+metadata query can block while opening a special file; the bounded probe now
+excludes such entries from optional provider views, without claiming race or
+general cancellation safety. Windows syntax/managed-layout checks do not establish
+native acceptance; a separate typed-variable provisioner failure is retained.
+Native Windows is **NOT_RUN**. See
+[`docs/research/ATTACHMENT-HOST-OBSERVATIONS.md`](docs/research/ATTACHMENT-HOST-OBSERVATIONS.md)
+for exact sources, retained failures and evidence. No production binding, public
+option, original-target mutation or backup transaction is introduced. Complete
+metadata visibility remains unknown; ADR-0004's Linux/Windows preservation,
+durability, conditional recovery and refresh gates remain required.

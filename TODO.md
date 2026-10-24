@@ -1671,6 +1671,15 @@ and backup-based re-export investigation is complete; the explicit transaction
 design and remaining acceptance tests are in
 [`ADR-0004`](docs/ADR-0004-DEBUGLINK-ATTACHMENT.md). No attachment option exists.
 
+**CONFIRMED locally; native Windows PRESENT, UNVERIFIED:** inspection-only host
+research passes actual Java 21/64 MiB on ten new Linux fixtures, four identity
+pairs and eight malformed manifests. Native Windows remains **NOT_RUN**; portable
+syntax/managed-layout checks are not native acceptance. The retained FIFO block,
+ACL inheritance and access-time observations expose host limits without claiming
+preservation, durability or a transaction. See the
+[host research record](docs/research/ATTACHMENT-HOST-OBSERVATIONS.md). Both native
+host contracts and ADR-0004's remaining transaction gates stay incomplete.
+
 **CONFIRMED at the compatibility layer:** automatic debuglink lookup and CRC
 mismatch rejection now have strict local tests on private copies made with
 target `objcopy`. No-build-ID negative controls prevent fallback from masking
