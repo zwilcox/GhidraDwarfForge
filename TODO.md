@@ -1522,6 +1522,17 @@ artifact review is clear. Matching prefixes do not prove the active appended
 section addresses, DWARF, identity or attachment readiness. Final local package
 review is clear; the exact full pipeline remains required. See `docs/MATCHED-ELF-PREFIX.md`.
 
+**CONFIRMED locally; hosted gate pending:** `MatchedElfAllocations` complements
+the copied-prefix check with indexed active-metadata correspondence. Target
+fields, retained sections, inert relocation placeholders and sectionless
+LOAD/note reconstruction are checked; ambiguous note mappings, allocated debug
+transformations and non-round-tripping allocated names stay explicitly unsupported.
+Actual Java 21 focused/default-limit checks and an installed oracle on eighteen
+retained real-export pairs pass, with independent source/runtime review. These
+are metadata observations, not proof of copied code, a snapshot or attachment
+readiness. Final package review and the exact host/target pipeline remain required;
+the preceding prefix PR must integrate first. See `docs/MATCHED-ELF-ALLOCATIONS.md`.
+
 **Status:** `[ ]` — optional product operation **PLANNED**. The bounded backend
 and backup-based re-export investigation is complete; the explicit transaction
 design and remaining acceptance tests are in

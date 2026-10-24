@@ -3302,3 +3302,40 @@ required. Conservative indexed allocated-metadata comparison is a separate
 bounded continuation: names, relocation placeholders, sectionless loads and
 note views need explicit correspondence or unsupported outcomes. Ordinary export
 and P2.8's unimplemented attachment transaction remain unchanged.
+
+
+### Indexed active allocation metadata local checkpoint (2026-10-24)
+
+**CONFIRMED locally; hosted gate pending:** source `bdd6bef` adds the separate
+`MatchedElfAllocations` observer and dedicated fixtures. It compares exact target
+fields and indexed active allocation metadata under the current matched-writer
+rules. Preserved sections, inert REL/RELA placeholders and sectionless LOAD/note
+reconstruction have explicit expectations. Extra or changed allocations differ;
+allocated debug/name-table transformations, non-round-tripping allocated names
+and ambiguous overlaps involving PT_NOTE are unsupported. Two original section
+notes remain independently indexed. No allocation evidence is a distinct outcome,
+not empty successful proof. Ordinary export and native bindings are unchanged.
+
+This component was selected after a read-only survey of 45 retained pairs and
+35 owned metadata mutants that still matched the copied prefix. Independent
+probes also established raw-name replacement and note-address ambiguity; decoded
+String equality or range-union equality was insufficient. The result carries
+one bounded issue, without ambiguous partial-total counters or an identity/
+readiness flag. Source metadata is not certified as a complete runtime map.
+
+Actual Java 21/64 MiB checks pass with 532 default assertions and 535 including
+large metadata; 45 retained pairs preserve ninety input snapshots. Root review
+required direct per-name/aggregate bounds on each separately read raw name table.
+Owned between-read rewrites restore size/mtime yet now fail the specific bounds;
+this protects resources without promising a snapshot. Independent source review
+is clear. A private installed package passes the independent oracle on eighteen
+retained six-role exports across x86-64/AArch64/MIPS32 big-endian. All 54 copied
+inputs, eighteen full producer transcripts, 38 metadata mutations, three opposite
+code-only controls and six malformed operands pass independent runtime review.
+The x86 sparse test verifies metadata above 2 GiB, not a full-file hash or prefix.
+
+These are explicit replays of earlier validated exports; no new exporter/GDB
+execution is attributed to this helper. Final docs/package review and the full
+hosted gate remain required after the prefix PR integrates. See
+`docs/MATCHED-ELF-ALLOCATIONS.md` and `docs/VALIDATION.md`. P2.8's mutating
+attachment transaction and published releases remain unchanged.

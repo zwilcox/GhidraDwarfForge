@@ -4108,3 +4108,80 @@ separate raw runtime corroboration: `build/prefix-review/release-review-runtime.
 That ZIP predates these new acceptance docs. Accepted-main merge `7513236` keeps
 the same tree before this docs update; the next exact package and hosted gate
 remain required. No additional unchanged exporter/native executions are claimed.
+
+
+## Active allocation metadata local checkpoint (2026-10-24)
+
+**CONFIRMED locally; hosted gate pending:** source commit
+`bdd6befff1ae876dae7d995aeb6f50f3f827637a` adds only the new allocation helper,
+fixtures and smoke. `ElfImage`, matched writer, exporter and native bindings
+are unchanged. Eight new helper classes are major version 65; final local JAR
+SHA-256 is `136407474e48c6f6251a8d0c7a9f39a4843f33558ef278ecf32ae7ff5ac32e58`.
+Source and narrow raw-name-resource reviews are clear.
+
+The new focused check, prefix/build-ID/ELF-reader regression checks,
+`buildExtension` and architecture guard pass. Tests compiled by JDK 25
+`javac --release 21` run on actual Java `21.0.12.1` with `-Xmx64m`: 532 default
+assertions and 535 with `--large`. The latter uses a 2,147,549,185-byte original
+without scanning its sparse payload. Twenty-four writer-derived class/order/
+shape cases, target/indexed field mutations, raw-name collisions, relocation/
+LOAD/note boundaries, unsupported outcomes, cancellation and source-change checks
+pass. Exact 65,536-note-view acceptance and 65,537 rejection pass. Separately
+reread used names enforce 65,536-byte per-name and 16 MiB aggregate limits;
+two owned same-size rewrites restore exact mtime but fail the intended direct
+resource checks. Inputs are restored and the valid result rechecked.
+
+The initial focused build failed because its note-overflow fixture changed an
+existing original note address without updating the candidate; the earlier
+indexed mismatch correctly took precedence. That test was corrected and its
+failed log retained, not counted as acceptance. Pre-reread-guard checks are
+superseded by the final evidence. Exact commands, hashes and outcomes:
+`build/allocation-review/source-acceptance.json`, `raw-reread-build.log`,
+`java21-raw-reread/` and `retained-pairs-raw-reread.json` in the allocation
+worktree. The final retained-pair probe matches 45 historical/current pairs
+with ninety selected file hashes/mtimes unchanged; it is not 45 new exports.
+
+Preliminary private package SHA-256
+`6eba89b188597008c7303a1f91500f7be8dbd475fe842f9d6f5b3b4fec6d689c`
+installs the JAR above at `build/allocation-review/ghidra`. Its five manifests
+verify and base Ghidra launch properties remain unchanged. The exporter script
+remains `3b7b0ef415e974cfcb03ee1566f3c25bab9151d7405b965a80150a8be6e53821`.
+This ZIP predates final acceptance docs and is not the final reviewed package.
+
+With `JAVA=/usr/lib/jvm/java-21-openjdk-amd64/bin/java` and
+`JAVAC=/usr/lib/jvm/java-25-openjdk-amd64/bin/javac`, run
+`python3 src/test/integration/matched-elf-allocations.py <installed-module>
+<target> --prefix-result <retained-prefix-result>` (plus `--large` for x86).
+Passing runs are `x86_64.nukedp8z`, `aarch64.oyot1wwe`, `mips32be.u3see4zt`
+under `build/test-results/matched-elf-allocations/`; commands/outcomes are in
+`build/allocation-oracle-review/acceptance.json` and per-target logs.
+
+All eighteen six-role pairs and repeated results pass the independent indexed
+Python model on the installed JAR. All 54 copied input/output/source files and
+eighteen consumed transcripts are rehashed and bound to their original reports.
+Each run preserves 27 protected paths. The 13/13/12 metadata mutants retain a
+matching copied prefix yet return precise indexed differences; the three
+changed-code controls retain matching allocation metadata while their prefixes
+differ. Six malformed-operand checks return IOException. Explicit replay records
+`same_export_installation=false`: the earlier producer JAR is distinct. Path
+equality alone cannot override different recorded JAR/script hashes. No fresh
+ordinary export, validators, GDB execution or exporter determinism claim is made
+for this read-only replay; its backing exports have their separate prior records.
+
+The x86 sparse original/candidate are 2,147,487,952 / 2,147,488,240 logical bytes,
+using 8,192 disk bytes each. Their active tables and names lie above 2 GiB.
+Matching NOBITS metadata passes; changing index 1's address from `0x500000` to
+`0x600000` returns that exact `sh_addr` difference. All nine selected metadata
+range hashes are independently reconstructed from the recipe; both sparse files
+are removed. This is explicitly not a whole-file hash or large-prefix proof.
+
+Independent source/runtime reviews are clear:
+`build/allocation-review/root-runtime-audit.json` and
+`build/allocation-review/release-review-evidence.json`. Root additionally derives
+normal retained/relocation/sectionless load/note records from the retained bytes
+and checks all transcript/protocol origins, input snapshots, index swaps, opposite
+code controls and sparse recipes. All command stderr is empty. Final package
+review and the exact hosted gate remain pending. CI schedules all five six-role
+oracles after the prefix step, the sparse case on x86 and seventeen default
+focused Windows checks. No new native Windows/ARM32/MIPS32LE runtime result is
+inferred from this local subset, and no attachment operation is introduced.
