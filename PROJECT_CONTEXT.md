@@ -3166,6 +3166,25 @@ native Windows and both GUI hosts, remain required. Read-only observations do
 not establish snapshot/file identity or attachment eligibility. No report
 reader, attachment operation, native binding or release change is introduced.
 
+### Combined-oracle report-generation isolation (2026-10-24)
+
+**CONFIRMED failure; updated hosted acceptance pending:** PR #32's initial
+head `65f5bb8`, run `40089908416`, passed nine jobs but failed x86 and the
+aggregate; native Windows was skipped. The digest helper's Java/Python values
+agreed. An x86-only default-output regression reused the primary exec log name,
+so its report described `semantic.exec.stripped.dbg` while the oracle inspected
+`semantic.exec.ghidra-forge.dbg`. The unchanged path/hash assertion rejected
+that mismatched generation before the large-file case or build-ID oracle.
+
+Both read-only helper steps now immediately follow the primary six-role
+export/GDB loop. The digest oracle also retains all three exact consumed
+transcripts with hashes, because later tests still reuse the shared log paths.
+No production helper or assertion changes. Independent source review and local
+three-profile replays pass; an owned derived stale-report control is rejected,
+and retained evidence remains intact after its source-log copy is overwritten.
+No original fixture/evidence bytes change. The complete new exact-head matrix,
+including Windows and x86's previously unreached checks, remains required.
+
 ### Current-shape report claims, local acceptance (2026-10-24)
 
 **CONFIRMED locally; hosted gate pending:** production `3d1c62c` adds a bounded

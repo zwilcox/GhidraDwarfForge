@@ -120,10 +120,19 @@ def main():
     require(java_digests(paths, jar, classes, work / "repeat") == expected,
             "repeat digest mismatch")
     cases = []
+    export_reports = []
     for index, role in enumerate(("exec", "pie", "exec.no-build-id")):
         original, sidecar = paths[index * 3:index * 3 + 2]
         log = args.export_logs / f"{args.target}.{role}.log"
-        transcript = log.read_text()
+        # Later regression helpers reuse the primary log names. Retain the
+        # exact report generation whose paths/hashes this oracle checks.
+        transcript_bytes = log.read_bytes()
+        retained_log = work / f"{role}.export.log"
+        retained_log.write_bytes(transcript_bytes)
+        transcript = transcript_bytes.decode("utf-8", errors="strict")
+        export_reports.append({"role": role, "source_log": str(log),
+            "retained_log": str(retained_log),
+            "sha256": hashlib.sha256(transcript_bytes).hexdigest()})
         reports = [json.JSONDecoder().raw_decode(line.split("GhidraDwarfForge report: ", 1)[1])[0]
                    for line in transcript.splitlines() if "GhidraDwarfForge report: " in line]
         require(len(reports) == 1 and reports[0]["status"] in ("SUCCESS", "PARTIAL") and
@@ -197,7 +206,7 @@ def main():
     require(python_digests(jar) == jar_hash, "installed JAR changed")
     (work / "result.json").write_text(json.dumps({"status": "PASS", "target": args.target,
         "jar": str(jar), "jar_digests": jar_hash, "cases": cases, "inputs": list(map(str, paths)),
-        "input_digests": expected, "large": large_result,
+        "input_digests": expected, "large": large_result, "export_reports": export_reports,
         "scope": "observed bytes only; no identity, snapshot or attachment transaction"},
         indent=4) + "\n")
     print(f"file-digests-{args.target}=PASS", flush=True)
