@@ -54,7 +54,12 @@ the layout, hashes and logs are retained. This bounds digest memory, not Ghidra
 analysis or export-model memory. Large-file results are attributed only to the
 host where they run.
 
-**CONFIRMED locally; hosted gate pending:** six focused checks pass on actual
+**CONFIRMED:** PR #32 at `c94158b`, hosted run `40091937766`, passes all twelve
+jobs. Both new helper oracles pass in all five target lanes, native Windows
+passes fourteen focused checks, and both GUI artifact reviews are clear.
+The exact consumed report transcripts and x86 large-file layout receive
+independent artifact review. Earlier local evidence also remains recorded:
+six focused checks pass on actual
 Java 21, including packaged-native checksum rejection and report/path/publisher
 regressions. Installed-JAR oracle runs pass on x86-64, AArch64 and MIPS32
 big-endian, including the x86 large input. Nine fresh real exports pass GNU,
@@ -63,5 +68,5 @@ deterministic reruns also pass. A fresh combined digest/build-ID package repeats
 the nine semantic exports, eight saved-program path exports and three rejection
 cases, and reruns both installed helper oracles including the large-file case.
 See `VALIDATION.md` for exact component/combined evidence and
-inherited diagnostics. The five-profile hosted matrix and native Windows are
-still required. P2.8 remains incomplete and published releases are unchanged.
+inherited diagnostics. The normal merge `7f9c0d2` preserves the tested tree.
+P2.8 remains incomplete and published releases are unchanged.
