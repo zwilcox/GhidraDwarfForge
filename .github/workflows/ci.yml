@@ -426,7 +426,7 @@ jobs:
             src/test/integration/architecture-neutrality.sh
             ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke outputPathPolicySmoke \
               exportReportSmoke \
-              syntheticSourceSmoke typeGraphSmoke variableStorageSmoke registerPrefixSmoke \
+              syntheticSourceSmoke typeGraphSmoke variableStorageSmoke registerPrefixSmoke registerAliasSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
               packagedNativeLibrariesSmoke existingDebugSidecarSmoke \
@@ -800,6 +800,33 @@ jobs:
             "$GHIDRA_INSTALL_DIR" \
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2"
+
+      - name: Isolated scalar register bit-piece producer
+        if: matrix.target == 'arm32'
+        run: |
+          results="$PWD/build/test-results/floating-register-slice-native"
+          mkdir -p "$results"
+          src/test/integration/run-isolated-native-smoke.sh "$results" \
+            ./gradlew floatingRegisterSliceSmoke \
+            -PlibdwarfPath="$PWD/native-integration/libdwarf.so.2.3.2" \
+            -PlibdwarfpPath="$PWD/native-integration/libdwarfp.so.2.3.2" \
+            -PsidecarInput="$PWD/build/fixtures/arm32/semantic.exec.stripped" \
+            -PsidecarOutput="$results/slice.dbg"
+          readelf --debug-dump=info "$results/slice.dbg" >"$results/info.txt" \
+            2>"$results/readelf.stderr"
+          test ! -s "$results/readelf.stderr"
+          grep -Fq 'DW_OP_bit_piece: size: 32 offset: 32' "$results/info.txt"
+          llvm-dwarfdump --verify "$results/slice.dbg" >"$results/llvm.txt" 2>&1
+          dwarfdump -ka -ks "$results/slice.dbg" >"$results/dwarfdump.txt" 2>&1
+
+      - name: Scalar floating registers and conservative paired omissions
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          src/test/integration/floating-registers-export.sh \
+            "$GHIDRA_INSTALL_DIR" \
+            "$PWD/native-integration/libdwarf.so.2.3.2" \
+            "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
 
       - name: Function entry producer and validators
         env:

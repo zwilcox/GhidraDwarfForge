@@ -262,7 +262,7 @@ public final class GhidraVariableStorage {
         return mapped;
     }
 
-    private static Storage mappedRegister(Register register, int byteSize,
+    static Storage mappedRegister(Register register, int byteSize,
             TargetRegisterMap registers, String description) {
         if (register == null) {
             return unavailable(OmissionReason.UNSUPPORTED_STORAGE,
@@ -274,6 +274,23 @@ public final class GhidraVariableStorage {
                 requiredBits > Integer.MAX_VALUE) {
             return unavailable(OmissionReason.UNSUPPORTED_STORAGE,
                 description + " size does not fit its Ghidra register");
+        }
+        // The physical base may be a wider, unmapped vector or paired register.
+        // Describe the value through a mapped logical register that contains it;
+        // write detection still checks the entire base alias in the caller.
+        for (Register candidate = register; candidate != null;
+                candidate = candidate.getParentRegister()) {
+            if (registers.dwarfNumbers().containsKey(candidate.getName())) {
+                int offset = Math.subtractExact(register.getLeastSignificantBitInBaseRegister(),
+                    candidate.getLeastSignificantBitInBaseRegister());
+                if (offset < 0 || Math.addExact((long) offset, requiredBits) >
+                        candidate.getBitLength()) {
+                    return unavailable(OmissionReason.UNSUPPORTED_STORAGE,
+                        description + " does not fit its mapped enclosing register");
+                }
+                return registers.register(candidate.getName(), offset,
+                    Math.toIntExact(requiredBits));
+            }
         }
         return registers.register(base.getName(),
             register.getLeastSignificantBitInBaseRegister(), Math.toIntExact(requiredBits));

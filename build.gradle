@@ -262,6 +262,35 @@ tasks.register("registerPrefixSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.RegisterPrefixSmoke"
 }
 
+tasks.register("registerAliasSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks mapped scalar slices against pinned Ghidra register hierarchies"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.RegisterAliasSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/register-alias/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/register-alias/cache").absolutePath
+}
+
+tasks.register("floatingRegisterSliceSmoke", JavaExec) {
+    group = "verification"
+    description = "Emits a scalar upper-register bit piece through the isolated native producer"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.nativeapi.FloatingRegisterSliceSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+    doFirst {
+        def required = ["libdwarfPath", "libdwarfpPath", "sidecarInput", "sidecarOutput"]
+        def missing = required.findAll { !project.hasProperty(it) }
+        if (!missing.isEmpty()) {
+            throw new GradleException("Missing Gradle properties: " + missing.join(", "))
+        }
+        args required.collect { project.property(it) }
+    }
+}
+
 tasks.register("artifactPairPublisherSmoke", JavaExec) {
     group = "verification"
     description = "Checks staged sidecar/source publication and rollback"

@@ -14,7 +14,8 @@ import ghidradwarfforge.locations.VariableStorageModel.UnavailableStorage;
 
 /**
  * Isolated target register-number descriptions. Values mirror the named
- * Ghidra 12.0.3 {@code *.dwarf} mapping resource; generic storage code never
+ * Ghidra 12.0.3 {@code *.dwarf} mapping resource, using the canonical ARM
+ * double-register subset required by AADWARF32; generic storage code never
  * infers a DWARF number from a register name or ordinal.
  */
 public record TargetRegisterMap(String target, String provenance,
@@ -121,10 +122,12 @@ public record TargetRegisterMap(String target, String provenance,
         put(result, 15, "pc");
         put(result, 16, "fpsr");
         put(result, 17, "cpsr");
-        putRange(result, 64, 32, "s", 0);
+        // Arm's DWARF ABI describes scalar single-precision slices through
+        // canonical double-precision registers; 64..95 are legacy numbering.
         putRange(result, 256, 32, "d", 0);
         return new TargetRegisterMap("arm",
-            GHIDRA_MAPPING_ROOT + "Processors/ARM/data/languages/ARMneon.dwarf",
+            GHIDRA_MAPPING_ROOT + "Processors/ARM/data/languages/ARMneon.dwarf; " +
+                "canonical D-register subset: ARM AADWARF32 2025Q4",
             result);
     }
 

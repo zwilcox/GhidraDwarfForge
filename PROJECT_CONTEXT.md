@@ -2027,3 +2027,30 @@ real source/type/location export and a passing Linux/Windows integration matrix.
 The bounded backlog and next-session sequence are in `TODO.md` Sections 1.1
 and 4. Historical prototype observations elsewhere in this file remain useful
 history, not instructions to redo completed implementation.
+
+### Scalar FP logical-register selection (2026-10-23)
+
+**CONFIRMED locally:** the follow-on `fp-register-aliases` branch selects the
+first audited covering register on the actual Ghidra parent chain, with a
+relative least-significant-bit offset. Wider unmapped physical bases no longer
+force omission of defensible scalar aliases. Stable and entry-prefix proofs
+still reject writes through the full physical base, including partial aliases
+and register-space STORE. Scalar upper slices use the existing audited
+`DW_OP_bit_piece` producer path; no native signature changed.
+
+x86-64/AArch64 scalar float/double parameters and both MIPS32 O32 scalar floats
+pass real exporter/GDB values through RAM stores, PIE and explicit rebases.
+MIPS paired doubles remain unavailable. The independent compiler oracle also
+reports zero pair values on the tested QEMU8.2.2/GDB15.1 transport even though
+executed double stores and exit are correct; those memory checks are not a
+positive double-parameter location claim. The exact evidence and likely QEMU
+register-width cause are recorded in `docs/VALIDATION.md`.
+
+ARM's mapping now uses canonical AADWARF32 D registers and scalar bit slices.
+The real-language alias smoke and isolated native upper-slice validators pass;
+ARM runtime values remain **PRESENT, UNVERIFIED** until hosted CI, because the
+local cross-compiler/sysroot is absent. The new CI fixture exercises both
+floats, including `s1` as the upper 32 bits of `d0`, plus doubles and explicit
+clobber unavailability. This bounded scalar work does not add vector, aggregate,
+calling-convention, migration or new CPU/ABI claims, and remains separate from
+the corrective alpha2 release.

@@ -170,6 +170,17 @@ Focused harnesses build additional fixtures independently of the Makefile:
   instruction markers, source stepping, values, rebases and repeats are checked
   using fully stripped Ghidra/runtime inputs.
 
+- `floating-registers-export.sh` uses `fp_register_aliases.c` with `-Og` and
+  fully stripped runtime/export inputs. Compiler references establish scalar
+  float/double arguments across stores on x86-64/AArch64, and scalar floats on
+  MIPS32 BE/LE. ARM32's CI case includes the second float in `s1`, encoded as
+  the upper 32 bits of canonical `d0`; its local runtime is unavailable.
+  Explicit register overwrites on x86/ARM targets require Forge values to become
+  unavailable after the instruction. MIPS double pairs stay unavailable:
+  the current compiler-GDB pair oracle reports zero despite exact stored
+  globals, and those globals do not validate parameter locations. Each target
+  runs ET_EXEC/PIE, `+0x2000000` Ghidra rebases and deterministic repeats.
+
 After installing the current extension, exercise import and target metadata
 detection for every fixture with:
 
