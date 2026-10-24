@@ -3508,3 +3508,64 @@ passes nine backend-candidate observations and 27 existing GDB checks in
 run `40105620219` remain intermediate evidence and must not be used as final
 acceptance for the corrected source. Its fresh exact package and full hosted
 gate remain required. No ordinary exporter/native or published release changes.
+
+
+### Connected candidate-content local checkpoint (2026-10-24)
+
+**CONFIRMED locally; full hosted gate pending:** source `e30fae3` adds
+`DebuglinkCandidateContent`, consumed by the existing private-copy integration
+and research workflows. It retains separate program-byte, indexed executable
+allocation, exact new GNU debuglink and streamed selected-sidecar digest
+observations. There is no aggregate readiness flag. Allocation rules preserve
+executable REL/RELA and raw used names; sidecar reconstruction rules do not apply.
+Uncovered allocated file extents and unsupported tables stay explicit. Literal
+basename bytes are caller-supplied, not inferred from Java path encoding.
+
+The previous Java research probe accepted changed `.text` address or debuglink
+address/alignment while the Python oracle rejected them. The packaged content
+checks now close those gaps. Source tests pass 970/972 on actual Java 21/64 MiB,
+including both widths/orders and a large selected-sidecar digest. Independent
+source review is clear. The corrected program/prefix callback parent is merged
+normally and combined build/default tests pass.
+
+The corrected private installed JAR passes nine new backend-candidate checks using
+retained x86-64/AArch64/MIPS32 big-endian exports, both independent observers and
+all 27 GDB association checks. Root and peer audits rehash 27 input copies and
+135 parent evidence files, verify 72 controls plus typed failures, independently
+reconstruct the sparse full-sidecar digest and confirm all 36 original fixtures
+are unchanged. This is new backend/helper/GDB execution, not a new Ghidra export,
+structural-validator run or cross-target execution. See
+`docs/DEBUGLINK-CANDIDATE-CONTENT.md` and `docs/VALIDATION.md`.
+
+The parent callback correction still requires its exact hosted gate
+at PR #37 head `89fa8b7` / run `40107222339`; its old `e25c148` head is
+intermediate. Candidate-content package and full hosted acceptance follow that
+parent. Independently, PR #36 main push `40105363431` now passes all twelve jobs
+and both GUI artifact reviews, superseding its earlier pending checkpoint.
+No published release or optional attachment transaction changes.
+
+
+### Corrected program-byte hosted acceptance (2026-10-24)
+
+**CONFIRMED:** PR #37 head `89fa8b7e1a2540f562028c59c2390021343b33da`
+passes all twelve jobs in exact pull-request run `40107222339`, attempt 1,
+with none skipped. Independent package/source, all five target artifact and
+both GUI reviews are clear. Fifteen installed program cases/repeats, mutation
+controls, quiet backend records and GDB transcripts pass; the x86 large fixture
+proves selected program ranges above 2 GiB. Windows passes nineteen focused
+checks, with 431 program assertions actually observed, distinct from Linux434.
+Normal merge `29055f6c81755761c3bbc7257f7460e21af43e6c` at
+`2026-10-24T16:09:38Z` preserves the tested tree. Its separate main push
+`40110261306` remains pending. Initial `e25c148` stays intermediate evidence.
+
+Hosted upload omits hidden `.build-id` payloads. Their bytes cannot be audited
+from the archive; exact warning paths are derived independently from retained
+GNU notes and runtime discovery is evidenced by GDB transcripts. Windows still
+has no independent dwarfdump or Linux ELF runtime claim. See `docs/VALIDATION.md`.
+
+Candidate-content integration `5ee38af` and its exact local package pass
+independent review. Accepted main is incorporated normally as `d2eadf2`, with
+no source-tree change from that merge. Its own full hosted acceptance remains
+required. Candidate preparation is under investigation; no new backend or
+append-only writer has been selected. Optional attachment and published releases
+remain unchanged.

@@ -6,7 +6,8 @@ target and both GUI reviews pass. Fifteen reports, 45 retained copies, the x86
 large-file case and eighteen native Windows focused checks are accepted. The
 Windows binder has 551 platform-applicable assertions; Linux has 574.
 `ExportArtifactHashBinding` composes the current report reader and streamed
-digests. Its separate main push `40105363431` remains pending.
+digests. Separate main push `40105363431` also passes all twelve jobs and
+independent Linux/Windows GUI reviews.
 Ordinary export does not call this helper.
 
 `observe(report, original, sidecar, source[, cancelled])` reads one explicitly

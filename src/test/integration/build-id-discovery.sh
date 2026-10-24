@@ -47,6 +47,9 @@ prepare_debuglink() {
     python3 "$repository_dir/src/test/integration/executable-program-bytes.py" \
         "$FORGE_MODULE" "$target" "$case_dir/before-objcopy" "$candidate" \
         "$debug_file" "$case_dir/program-bytes" --objcopy "$objcopy_tool" "${controls[@]}"
+    python3 "$repository_dir/src/test/integration/debuglink-candidate-content.py" \
+        "$FORGE_MODULE" "$target" "$case_dir/before-objcopy" "$candidate" \
+        "$debug_file" "$case_dir/candidate-content" "${controls[@]}"
 }
 
 lookup() {

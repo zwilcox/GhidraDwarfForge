@@ -43,9 +43,12 @@ objcopy "--add-gnu-debuglink=$output" "$input" "$work/attached.stage"
 javac --release 21 -d "$work/classes" \
     "$repository/src/main/java/ghidradwarfforge/elf/ElfImage.java" \
     "$repository/src/main/java/ghidradwarfforge/elf/ExecutableProgramBytes.java" \
+    "$repository/src/main/java/ghidradwarfforge/elf/DebuglinkCandidateContent.java" \
+    "$repository/src/main/java/ghidradwarfforge/output/FileDigests.java" \
     "$repository/src/test/research/debuglink/DebuglinkToolProbe.java"
 java -cp "$work/classes" ghidradwarfforge.elf.DebuglinkToolProbe \
-    "$input" "$work/attached.stage" "$output" > "$work/attachment-probe.txt"
+    "$input" "$work/attached.stage" "$output" \
+    "$(python3 -c 'import base64,os,sys; print(base64.b64encode(os.fsencode(os.path.basename(sys.argv[1]))).decode("ascii"))' "$output")" > "$work/attachment-probe.txt"
 mv "$work/attached.stage" "$input"
 attached_hash=$(sha256sum "$input" | cut -d' ' -f1)
 test "$attached_hash" != "$input_hash"
