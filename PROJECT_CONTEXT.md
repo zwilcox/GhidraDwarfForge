@@ -3036,3 +3036,22 @@ pending. PR #29's earlier main-push `40081314935` now passes all twelve jobs
 and both GUI artifact reviews. This supersedes those historical pending notes,
 without attributing acceptance to the later path correction. Releases remain
 unchanged; P1.11a is still partial.
+
+### Windows ambiguous file-leaf follow-up (2026-10-24)
+
+**UNCERTAIN on the native runner:** review of pinned OpenJDK and Windows naming
+rules identified absent final spellings such as `out` and `out.` that can name
+the same entry after a Win32 creation. Existing-identity checks cannot establish
+that relationship while both paths are absent. PR #31's first candidate `50e0a4`
+remains intermediate evidence and must not be merged on its checks alone.
+
+**CONFIRMED locally; native gate pending:** the Windows profile now rejects
+trailing-dot/space file leaves without trimming them; Unix legal dotted names
+remain distinct. The native Windows smoke must first prove the actual short-path
+alias, then prove both publication APIs and both target orders reject before
+callbacks, timestamps, staging or cleanup. Unexpected native behavior fails;
+there is no capability skip or speculative 8.3 restriction. The five focused
+checks/build and actual Java 21 tests pass on Linux. New JAR SHA-256 is
+`125d6753d0f16e97af04c2c99d5d70ee1740f671d580ffda24c90bd2b4b1447b`;
+production script/native ABI are unchanged. Exact new-head hosted package,
+Windows alias evidence and the complete gate remain required.

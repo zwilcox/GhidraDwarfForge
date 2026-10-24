@@ -12,6 +12,13 @@ Resolve the existing parent using the host filesystem before appending the
 literal filename. Do not create missing parents. Reject root, empty, `.` and
 `..` leaves. Windows traversal semantics can differ from POSIX, so tests compare
 the selected file with actual host lookup rather than imposing Unix behavior.
+The Windows profile additionally rejects file leaves ending in a dot or space,
+including extended-path spellings; these ambiguous names are not silently
+trimmed. Unix filenames ending in a dot remain supported. A native Windows
+probe must demonstrate the short `out`/`out.` alias and both publisher APIs'
+pre-mutation rejection before this refinement is accepted. Actual runner
+confirmation is still **UNCERTAIN** at this checkpoint; this is not an 8.3
+alias or arbitrary-filesystem normalization guarantee.
 
 Keep the final directory entry intact. If an input leaf `friendly.elf` points
 to `elsewhere/real.elf`, its defaults remain `friendly.elf.dbg` and
@@ -53,10 +60,13 @@ does not become the optional executable-modifying debuglink transaction.
 
 ## Validation contract
 
-**CONFIRMED locally; hosted gate pending:** final packaged run `run.ua6ucr7i`
+**CONFIRMED locally; hosted gate pending:** packaged run `run.ua6ucr7i`
 passes eight exports and three rejection cases, with independent review.
 Focused tests, actual Java 21 checks and the direct native exporter probe also
-pass. Exact hosted package and native Windows acceptance remain required.
+pass. A later Windows-only leaf refinement passes all five focused checks on
+Linux/Java 21, including preservation of distinct legal dotted names, but its
+native Windows probe remains pending. The original PR candidate is intermediate
+evidence only; exact updated-head package and host acceptance remain required.
 
 `PathTraversalSmoke` uses actual file/directory links and hard links, with no
 silent capability skip. It checks host traversal, input-link naming, literal

@@ -26,6 +26,7 @@ public final class PathTraversalSmoke {
         try {
             traversal(root.resolve("traversal"));
             aliases(root.resolve("aliases"));
+            dottedLeaves(root.resolve("dotted-leaves"));
             nonFileDestinations(root.resolve("non-files"));
             stageLinks(root.resolve("stage-links"));
             outputLinks(root.resolve("output-links"));
@@ -37,6 +38,100 @@ public final class PathTraversalSmoke {
                     Files.delete(path);
                 }
             }
+        }
+    }
+
+    private static void dottedLeaves(Path root) throws Exception {
+        Files.createDirectory(root);
+        if (java.io.File.separatorChar != '\\') {
+            Path plain = root.resolve("out");
+            Path dotted = root.resolve("out.");
+            ArtifactPairPublisher.stageAndPublish(plain, dotted,
+                stage -> Files.writeString(stage, "plain artifact"),
+                stage -> Files.writeString(stage, "dotted source"), () -> { });
+            text(plain, "plain artifact");
+            text(dotted, "dotted source");
+            require(!Files.isSameFile(plain, dotted), "legal Unix dotted leaves were merged");
+            require(FileSystemPaths.resolveLeaf(dotted, "test path").equals(dotted),
+                "legal Unix dotted leaf was changed");
+            System.out.println("unix-distinct-dotted-leaves=PASS");
+            return;
+        }
+
+        Path plain = root.resolve("out");
+        Path dotted = root.resolve("out.");
+        require(plain.isAbsolute() && dotted.toString().length() < 247,
+            "Windows alias probe requires an owned short absolute path: " + dotted);
+        System.out.println("windows-dot-probe-java=" + System.getProperty("java.version"));
+        System.out.println("windows-dot-probe-os=" + System.getProperty("os.name") + " " +
+            System.getProperty("os.version"));
+        System.out.println("windows-dot-probe-path=" + plain);
+        require(!plain.equals(dotted) && !Files.exists(plain) && !Files.exists(dotted),
+            "Windows alias probe did not start with distinct absent spellings");
+        Files.writeString(plain, "owned native alias sentinel",
+            java.nio.file.StandardOpenOption.CREATE_NEW);
+        // Establish real provider behavior independently of our path policy.
+        require(Files.isSameFile(plain, dotted), "Windows out/out. did not alias");
+        text(plain, "owned native alias sentinel");
+        text(dotted, "owned native alias sentinel");
+        try (var entries = Files.list(root)) {
+            require(entries.count() == 1, "Windows dot probe created multiple entries");
+        }
+        System.out.println("windows-native-trailing-dot-alias=CONFIRMED");
+        Files.delete(plain);
+        require(!Files.exists(dotted), "Windows dot alias survived removal of its entry");
+
+        // Path construction itself rejects spaces on the pinned Windows JDK.
+        // Keep construction inside the rejection check rather than in setup.
+        try {
+            FileSystemPaths.resolveLeaf(root.resolve("space "), "test path");
+            throw new AssertionError("Windows trailing-space leaf was accepted");
+        }
+        catch (java.nio.file.InvalidPathException rejectedByProvider) {
+            System.out.println("windows-trailing-space-provider-rejection=PASS");
+        }
+        catch (IOException rejectedByPolicy) {
+            require(rejectedByPolicy.getMessage().contains("must not end in a dot or space"),
+                "unexpected trailing-space policy failure: " + rejectedByPolicy);
+            System.out.println("windows-trailing-space-policy-rejection=PASS");
+        }
+
+        for (boolean reversed : new boolean[] { false, true }) {
+            Path directory = Files.createDirectory(root.resolve("order-" + reversed));
+            Path artifactStage = Files.writeString(directory.resolve("artifact.stage"),
+                "artifact stage sentinel");
+            Path sourceStage = Files.writeString(directory.resolve("source.stage"),
+                "source stage sentinel");
+            Path sentinel = Files.writeString(directory.resolve("unrelated"),
+                "unrelated sentinel");
+            Path[] protectedFiles = { artifactStage, sourceStage, sentinel };
+            byte[][] before = contents(protectedFiles);
+            FileTime[] beforeTimes = times(protectedFiles);
+            Path first = directory.resolve(reversed ? "out." : "out");
+            Path second = directory.resolve(reversed ? "out" : "out.");
+            require(!Files.exists(first) && !Files.exists(second),
+                "Windows final aliases must initially be absent");
+            reject(() -> ArtifactPairPublisher.publish(artifactStage, first,
+                sourceStage, second), "must not end in a dot or space");
+            unchanged(protectedFiles, before, beforeTimes);
+            reject(() -> ArtifactPairPublisher.stageAndPublish(first, second,
+                stage -> { throw new AssertionError("artifact callback ran for ambiguous leaf"); },
+                stage -> { throw new AssertionError("source callback ran for ambiguous leaf"); },
+                () -> { throw new AssertionError("publication check ran for ambiguous leaf"); }),
+                "must not end in a dot or space");
+            unchanged(protectedFiles, before, beforeTimes);
+            require(!Files.exists(first) && !Files.exists(second),
+                "ambiguous-leaf rejection installed a final artifact");
+            try (var entries = Files.list(directory)) {
+                require(entries.count() == 3,
+                    "ambiguous-leaf rejection created or removed a directory entry");
+            }
+            for (Path file : protectedFiles) {
+                System.out.println("windows-dot-preserved-sha256=" +
+                    HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                        .digest(Files.readAllBytes(file))) + " " + file);
+            }
+            System.out.println("windows-dot-both-publish-apis=PASS reversed=" + reversed);
         }
     }
 

@@ -3443,3 +3443,35 @@ were unchanged, so no runtime retest was attributed to this docs-only rebuild.
 Both audit outcomes are retained under `output-path-traversal/build/path-package-audit/`.
 That local audit does not substitute for the path PR's forthcoming exact hosted
 package, which also includes this later acceptance record.
+
+### Windows trailing-dot candidate refinement
+
+PR #31 head `50e0a4` and run `40083416513` are intermediate evidence only.
+Its exact package audit passes (release ZIP
+`5ee1205f7080a89fc993b71f841f94a6c33a5514db4bb0236bdf0cb9276da82f`,
+JAR `ceb60af72366cfb2da9e0c6076b54af5fd5080a78b76a6409847a3d02f70cfb1`),
+but late review identified an untested native Windows absent-leaf alias.
+No earlier passing package/target/GUI result is attributed to the updated head.
+
+The bounded follow-up changes only `FileSystemPaths` and its focused smoke:
+Windows file leaves ending in dot/space are unsupported rather than trimmed;
+Unix legal dotted filenames remain distinct. The native Windows test requires
+one actual short-path `out`/`out.` entry with identical sentinel bytes/file
+identity, records Java/OS/path evidence, then checks both target orders and both
+publisher APIs. Existing staged files and unrelated sentinel hashes/timestamps
+must remain intact, callbacks must not run, and no output/temporary entry may
+appear. The current Windows JDK may reject a trailing-space path at construction;
+that explicit provider rejection or the policy rejection is checked. There is
+no silent skip or new 8.3/arbitrary-filesystem alias claim.
+
+All five configured focused smokes/build and explicit `--release 21` tests on
+actual Java 21.0.12.1 pass on Linux. The final candidate JAR is
+`125d6753d0f16e97af04c2c99d5d70ee1740f671d580ffda24c90bd2b4b1447b`;
+all 139 packaged classes match the tested bytes and major version 65. Evidence:
+`build/path-traversal-review/windows-dot-java21/result.json` and
+`windows-dot-configured-build.log`. An initial invocation without
+`GHIDRA_INSTALL_DIR` failed before compilation and remains in
+`windows-dot-build.log`. Native Windows behavior is still **UNCERTAIN** until
+the new hosted probe succeeds. The preceding eight Linux exports remain
+recorded for their exact pre-refinement JAR; updated-head CI will run the full
+runtime fixture again. Script bytes and native bindings/provenance are unchanged.

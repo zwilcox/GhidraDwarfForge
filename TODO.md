@@ -1379,7 +1379,9 @@ dangling links during rollback, and keeps stale-input guidance accurate.
 Eight final packaged exports and three rejection cases pass independent
 review, validators, GDB and original/program-database preservation. See
 `docs/FILESYSTEM-PATHS.md`; native Windows acceptance is still required and
-this does not implement the separate P2.8 attachment transaction.
+this does not implement the separate P2.8 attachment transaction. A later
+Windows trailing-dot/space leaf guard and actual native alias probe require
+updated-head CI; earlier PR #31 candidate results are intermediate evidence.
 
 **Status:** `[x]` for the validated paths — deterministic default and explicit paths, stale-path input
 override with imported-file hash verification, preflight collision/write

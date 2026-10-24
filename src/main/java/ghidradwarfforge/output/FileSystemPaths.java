@@ -23,6 +23,13 @@ public final class FileSystemPaths {
                 leaf.toString().equals("..")) {
             throw new IOException(description + " must name a file, not a directory component");
         }
+        if (java.io.File.separatorChar == '\\' &&
+                (leaf.toString().endsWith(".") || leaf.toString().endsWith(" "))) {
+            // Short Win32 paths can select another directory entry after these
+            // suffixes are removed. Reject the spelling even before it exists.
+            throw new IOException(description +
+                " Windows file leaf must not end in a dot or space: " + leaf);
+        }
         Path absolute = path.toAbsolutePath();
         Path parent = absolute.getParent();
         if (parent == null || !Files.isDirectory(parent)) {
