@@ -103,6 +103,7 @@ import ghidradwarfforge.nativeapi.DwarfNativeTypes.Debug;
 import ghidradwarfforge.nativeapi.DwarfNativeTypes.Die;
 import ghidradwarfforge.nativeapi.DwarfNativeTypes.Error;
 import ghidradwarfforge.nativeapi.DwarfNativeTypes.Expr;
+import ghidradwarfforge.output.FileSystemPaths;
 import ghidradwarfforge.source.SyntheticSourceFile;
 import ghidradwarfforge.source.FunctionStaticPolicy;
 import ghidradwarfforge.source.SyntheticSourceFile.FunctionLines;
@@ -285,7 +286,7 @@ public final class MinimalDwarfSidecarExporter {
             throws IOException {
         return export(input, output, consumerLibrary, producerLibrary, functions,
             syntheticSource, typeModel,
-            output.toAbsolutePath().normalize().getFileName() + ".c");
+            output.getFileName() + ".c");
     }
 
     public ExportResult export(Path input, Path output, Path consumerLibrary,
@@ -314,6 +315,7 @@ public final class MinimalDwarfSidecarExporter {
         ordered.sort(Comparator.comparingLong(FunctionSymbol::address)
             .thenComparing(FunctionSymbol::name));
         FunctionSymbol.validateDisplayNames(ordered);
+        Path destination = FileSystemPaths.resolveLeaf(output, "DWARF sidecar path");
 
         ElfImage elf = ElfImage.read(source);
         DwarfTarget target = DwarfTarget.fromElf(elf);
@@ -334,7 +336,7 @@ public final class MinimalDwarfSidecarExporter {
         String unitName = sourceFileName;
         // Staging and final artifacts share their parent directory. Record that
         // directory, not the random staging filename or the debugger's CWD.
-        Path sourceDirectory = output.toAbsolutePath().normalize().getParent();
+        Path sourceDirectory = destination.getParent();
         if (sourceDirectory == null) {
             throw new IllegalArgumentException("synthetic source directory is missing");
         }
@@ -356,7 +358,7 @@ public final class MinimalDwarfSidecarExporter {
         if (sections.putIfAbsent(".debug_aranges", addressRanges) != null) {
             throw new IllegalStateException("producer supplied an unexpected address lookup");
         }
-        new MatchedElfSidecarWriter().write(source, output, sections, cancelled);
+        new MatchedElfSidecarWriter().write(source, destination, sections, cancelled);
         return new ExportResult(target, ordered.size(), List.copyOf(sections.keySet()),
             version);
     }
@@ -1252,8 +1254,8 @@ public final class MinimalDwarfSidecarExporter {
         return value;
     }
 
-    private static Path requireFile(Path value, String description) {
-        Path path = value.toAbsolutePath().normalize();
+    private static Path requireFile(Path value, String description) throws IOException {
+        Path path = FileSystemPaths.resolveLeaf(value, description);
         if (!Files.isRegularFile(path)) {
             throw new IllegalArgumentException(description + " does not exist: " + path);
         }

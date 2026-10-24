@@ -3,9 +3,12 @@ package ghidradwarfforge.output;
 import java.io.IOException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
+import java.nio.file.attribute.BasicFileAttributes;
 
 /** Publishes an already-staged sidecar/source pair with rollback on failure. */
 public final class ArtifactPairPublisher {
@@ -31,8 +34,8 @@ public final class ArtifactPairPublisher {
     public static void stageAndPublish(Path artifact, Path source,
             StagedWriter artifactWriter, StagedWriter sourceWriter,
             PrePublishCheck prePublishCheck) throws Exception {
-        Path artifactTarget = normalize(artifact);
-        Path sourceTarget = normalize(source);
+        Path artifactTarget = resolve(artifact);
+        Path sourceTarget = resolve(source);
         Path artifactParent = artifactTarget.getParent();
         Path sourceParent = sourceTarget.getParent();
         if (artifactParent == null || !Files.isDirectory(artifactParent) ||
@@ -42,6 +45,9 @@ public final class ArtifactPairPublisher {
         if (artifactWriter == null || sourceWriter == null || prePublishCheck == null) {
             throw new IllegalArgumentException("artifact pair callbacks are required");
         }
+        requireDistinct(artifactTarget, sourceTarget);
+        requireDestination(artifactTarget);
+        requireDestination(sourceTarget);
         Path stagedArtifact = Files.createTempFile(artifactParent,
             "." + artifactTarget.getFileName() + "-", ".staged");
         Path stagedSource = null;
@@ -70,16 +76,17 @@ public final class ArtifactPairPublisher {
 
     static void publish(Path stagedArtifact, Path artifact, Path stagedSource,
             Path source, PublishHook hook) throws IOException {
-        Path artifactStage = normalize(stagedArtifact);
-        Path artifactTarget = normalize(artifact);
-        Path sourceStage = normalize(stagedSource);
-        Path sourceTarget = normalize(source);
-        if (artifactStage.equals(artifactTarget) || sourceStage.equals(sourceTarget) ||
-                artifactTarget.equals(sourceTarget)) {
-            throw new IllegalArgumentException("artifact pair paths must be distinct");
-        }
+        Path artifactStage = resolve(stagedArtifact);
+        Path artifactTarget = resolve(artifact);
+        Path sourceStage = resolve(stagedSource);
+        Path sourceTarget = resolve(source);
+        // This precedes timestamps and cleanup: a caller-owned target must never
+        // be mistaken for a disposable stage, including cross-pair aliases.
+        requireDistinct(artifactStage, artifactTarget, sourceStage, sourceTarget);
         requireStagedFile(artifactStage, artifactTarget);
         requireStagedFile(sourceStage, sourceTarget);
+        requireDestination(artifactTarget);
+        requireDestination(sourceTarget);
         if (hook == null) {
             throw new IllegalArgumentException("publish hook is required");
         }
@@ -98,7 +105,7 @@ public final class ArtifactPairPublisher {
             if (Files.getLastModifiedTime(artifactStage).compareTo(sourceTime) < 0) {
                 Files.setLastModifiedTime(artifactStage, sourceTime);
             }
-            if (Files.exists(artifactTarget)) {
+            if (Files.exists(artifactTarget, LinkOption.NOFOLLOW_LINKS)) {
                 artifactBackup = backupPath(artifactTarget);
                 moveAtomically(artifactTarget, artifactBackup);
             }
@@ -106,7 +113,7 @@ public final class ArtifactPairPublisher {
             artifactInstalled = true;
             hook.afterArtifactInstall();
 
-            if (Files.exists(sourceTarget)) {
+            if (Files.exists(sourceTarget, LinkOption.NOFOLLOW_LINKS)) {
                 sourceBackup = backupPath(sourceTarget);
                 moveAtomically(sourceTarget, sourceBackup);
             }
@@ -133,21 +140,43 @@ public final class ArtifactPairPublisher {
         }
     }
 
-    private static Path normalize(Path path) {
-        if (path == null) {
-            throw new IllegalArgumentException("artifact path is required");
+    private static Path resolve(Path path) throws IOException {
+        return FileSystemPaths.resolveLeaf(path, "artifact path");
+    }
+
+    private static void requireDistinct(Path... paths) throws IOException {
+        for (int first = 0; first < paths.length; first++) {
+            for (int second = first + 1; second < paths.length; second++) {
+                if (FileSystemPaths.aliases(paths[first], paths[second])) {
+                    throw new IllegalArgumentException("artifact pair paths must be distinct: " +
+                        paths[first] + " aliases " + paths[second]);
+                }
+            }
         }
-        return path.toAbsolutePath().normalize();
     }
 
     private static void requireStagedFile(Path stage, Path target) throws IOException {
-        if (!Files.isRegularFile(stage)) {
+        if (!Files.isRegularFile(stage, LinkOption.NOFOLLOW_LINKS)) {
             throw new IOException("staged artifact is missing: " + stage);
         }
         Path parent = target.getParent();
         if (parent == null || !Files.isDirectory(parent) ||
                 !parent.equals(stage.getParent())) {
             throw new IOException("staged and final artifacts must share a directory");
+        }
+    }
+
+    private static void requireDestination(Path target) throws IOException {
+        try {
+            var attributes = Files.readAttributes(target, BasicFileAttributes.class,
+                LinkOption.NOFOLLOW_LINKS);
+            if (!attributes.isRegularFile() && !attributes.isSymbolicLink()) {
+                throw new IOException("artifact destination must be a regular file or symbolic link: " +
+                    target);
+            }
+        }
+        catch (NoSuchFileException missing) {
+            // A new output leaf is allowed; its parent was resolved already.
         }
     }
 
@@ -161,7 +190,7 @@ public final class ArtifactPairPublisher {
     private static void rollback(Path target, Path backup, boolean installed,
             IOException failure) {
         try {
-            if (backup != null && Files.exists(backup)) {
+            if (backup != null && Files.exists(backup, LinkOption.NOFOLLOW_LINKS)) {
                 moveAtomically(backup, target);
             }
             else if (installed) {

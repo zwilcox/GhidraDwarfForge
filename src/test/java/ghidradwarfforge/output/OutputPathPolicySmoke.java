@@ -41,7 +41,7 @@ public final class OutputPathPolicySmoke {
             assertFailure(() -> OutputPathPolicy.resolve(sourceCollision,
                 directory.resolve("collision.dbg")), "aliases");
             assertFailure(() -> OutputPathPolicy.resolve(input,
-                directory.resolve("missing").resolve("chosen.dbg")), "not writable");
+                directory.resolve("missing").resolve("chosen.dbg")), "directory");
             assertFailure(() -> OutputPathPolicy.resolve(input, explicit, ignored -> false),
                 "not writable");
         }

@@ -145,6 +145,16 @@ public final class ExportReportSmoke {
                 !cancelled.toJson().contains("\"message\":\"cancelled by user\"")) {
             throw new AssertionError("cancellation report is incomplete");
         }
+        // Reports serialize path spelling without filesystem access or lexical
+        // changes: a parent may no longer exist when an export is reported.
+        Path unresolved = Path.of("unresolved-parent", "..", "fixture.elf");
+        String pathReport = ExportReport.completed(
+            new DwarfTarget("x86_64", "x86_64", 8, true, "x86"), "2.3.2",
+            unresolved, A_HASH, unresolved, B_HASH, unresolved, C_HASH,
+            source.functions().size(), List.of(".debug_info"), source, typeModel,
+            skipped, diagnostics).toJson();
+        requireContains(pathReport, "\"inputPath\":\"" +
+            unresolved.toAbsolutePath().toString().replace("\\", "\\\\") + "\"");
         System.out.println("export-report-smoke=PASS");
     }
 
