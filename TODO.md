@@ -3,8 +3,10 @@
 This plan began at prototype commit `7a39a186538c7aec3f7dbdc4a6e396125b5d63ea`.
 The current assessment covers implementation commit `3e47589`, whose complete
 [hosted validation run](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40047390539)
-passed all twelve jobs. PRs #16/#17/#18 track integration; consult GitHub for
-their live state. The published alpha remains `f4a0199`. Use Sections 1.1 and 4
+passed all twelve jobs. PRs #16/#17/#18 are merged. PR #19 is the corrective
+release candidate; PR #20 contains the subsequent semantic features. Its local
+combined validation passes; hosted validation remains pending after fixing a
+fixture-inventory omission. The published alpha remains `f4a0199`. Use Sections 1.1 and 4
 for the next work; do not restart the
 completed prototype bring-up sequence.
 

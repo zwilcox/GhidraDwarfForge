@@ -51,6 +51,15 @@ New ARM32 static/FP runtime behavior and the complete combined hosted run remain
 **PRESENT, UNVERIFIED** until CI passes the final commit. This is the follow-on
 semantic feature branch, not part of the corrective alpha.2 release.
 
+The first PR #20 hosted run, `40056330176`, stopped all five target lanes at
+the explicit fixture source inventory: the five new reviewed fixture files
+had not been added to its allowlist. No new hosted semantic test ran in that
+attempt. The allowlist now names those exact files and still rejects unknown
+files. `fixture-reproducibility.sh` passes on all four locally available
+targets, including byte-identical rebuilds and the partial-symbol check;
+logs are `build/combined-review/fixture-reproducibility-*.log`. ARM32 and the
+remaining hosted steps still require a new passing run.
+
 ```bash
 src/test/integration/artifact-pair-timestamps.sh
 src/test/integration/floating-registers-export.sh "$GHIDRA_INSTALL_DIR" \
