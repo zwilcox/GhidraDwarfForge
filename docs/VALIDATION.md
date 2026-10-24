@@ -1,10 +1,12 @@
 # Validation record
 
-> **Release validation reopened (2026-10-23):** historical green jobs did not
-> enforce libdwarf's nonzero check summaries when its process returned zero.
-> The affected libdwarf results below are not clean-validation evidence. GNU,
-> LLVM, native-safety and GDB outcomes remain separately recorded. Alpha.2 is
-> unpublished while the diagnostic causes and strict checks are resolved.
+> **Corrective release gate closed (2026-10-24):** alpha.2 was published from
+> exact main `2f88c4a` after all twelve push-CI jobs, the final package audit and
+> downloaded-asset verification passed. See [the final publication record](#corrective-alpha2-official-publication-2026-10-24).
+> The earlier missed libdwarf summaries remain invalid clean-validation evidence;
+> the incident and failed runs below are retained. Pending statements in the
+> dated investigation checkpoints describe their state at that time, not the
+> later publication result.
 
 ## Exit-zero libdwarf check summaries
 
@@ -1856,3 +1858,81 @@ The new current-base PR head still requires its own hosted checks; the passing
 run above is attributed to its exact historical head. Corrective alpha.2
 publication status is unchanged, and no GUI, target-language agreement or
 performance branch was incorporated.
+
+## Corrective alpha.2 official publication (2026-10-24)
+
+**CONFIRMED:** [v0.1.0-alpha.2](https://github.com/zwilcox/GhidraDwarfForge/releases/tag/v0.1.0-alpha.2)
+was published at `2026-10-24T05:15:20Z` from
+`2f88c4a1a7dd90dfedbd8d578b27242dfb8a73b7`. Corrected PR #22 run
+`40062747733` passed before normal merge. The exact-main
+[push run 40064204515](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40064204515)
+then passed its exact twelve-job set, with no failed or skipped job:
+
+| Job | Result | Job ID |
+|---|---|---|
+| native-linux | PASS | `120783901405` |
+| native-windows | PASS | `120783901516` |
+| extension-build | PASS | `120783901546` |
+| workflow-lint | PASS | `120783901553` |
+| release-package | PASS | `120785341821` |
+| target-preflight (x86_64) | PASS | `120785394884` |
+| target-preflight (aarch64) | PASS | `120785394875` |
+| target-preflight (arm32) | PASS | `120785394952` |
+| target-preflight (mips32be) | PASS | `120785394861` |
+| target-preflight (mips32le) | PASS | `120785394901` |
+| windows-host | PASS | `120786949510` |
+| required-validation | PASS | `120787583460` |
+
+The aggregate completed at `2026-10-24T05:13:58Z`. Target-conditional steps
+retain their documented scope: this is the corrective baseline's matrix, not
+the later semantic-feature matrix. Linux lanes enforce the pinned standalone
+checker and its narrow corrections, GNU/LLVM checks and native/QEMU GDB
+oracles. The Windows lane proves headless export, native safety, publication
+rollback and GNU/LLVM validation; it does not claim native Windows runtime GDB
+or a Windows standalone libdwarf checker.
+
+The independent final audit used `mode=final`, requiring the exact `push`
+event, head and twelve successful jobs. It downloaded artifact `12549365222`
+and verified its outer ZIP SHA-256
+`37b88a94b9f0a5e8497ea4b4c5dc6db587b46482fb8af30e850d2dcb41f49309`.
+All five manifests passed (53 release files, 5 Linux native files, 6 Windows
+native files, 6 source records and 3 Windows-runtime records). The 29 embedded
+production sources matched the exact commit; all 131 classfiles use Java 21
+bytecode. Version/compatibility/scripts/docs, absence of private JNA, Linux
+RUNPATH, Windows exports and canonical native-patch provenance on both hosts
+passed. The later GUI launcher is absent, as required for this release scope.
+
+Using the downloaded production JAR/native pair, class-origin checks and 20
+isolated producer lifetimes passed on Java 21, including deterministic output.
+Measured resident growth was 7,221,248 bytes against the smoke's 33,554,432-byte
+limit; this is bounded smoke evidence, not a general memory guarantee. Audit
+compilation used `javac --release 21` from JDK 25; execution used Java 21.
+No shared or user installation was modified.
+
+Final-audit evidence is retained at
+`corrective-alpha2/build/exact-release-verification/run-40064204515.nbGbxUuA/`
+in the worktree collection (`result.txt`, `package-verification.txt`,
+`production-class-origin.txt`, `packaged-producer.txt`, `run.json` and digests).
+The main checkout's `build/alpha2-publication/final-audit.json` links this exact
+result; `exact-main-ci.json` retains the full final job/step record.
+
+The published ZIP is `GhidraDwarfForge-0.1.0-alpha.2-ghidra-12.0.3.zip`, SHA-256
+`0ae14cf8f4760703d4778d5b414fd14b9c8a68414edc89dcf8cb58a21669ade6`.
+Release `422532694` is a published prerelease, with ZIP asset `671345358` and
+`SHA256SUMS` asset `671345364`. Both draft and public downloads match the
+audited ZIP and checksum text; the checksum asset SHA-256 is
+`a0c935e1553f0b458d117dee55d29747690489a5415afafd2ca09e00e3e3a0f5`.
+The public tag resolves directly to the tested commit. Each phase also checks
+alpha.1's tag, release identity and asset digests against the retained baseline.
+Both record `release-assets=PASS` and `alpha1-unchanged=PASS` in
+`build/alpha2-publication/{draft-verification,published-verification}/`, with
+the downloaded assets and API metadata retained alongside those results.
+
+Alpha.1 remains unchanged and affected by its documented correctness findings.
+The earlier failed runs and hidden-summary incident are not erased by this
+release. Exact inherited frame diagnostics remain visible and strictly
+corroborated; profile/ABI, PN_XNUM runtime, missing-location and synthetic-source
+limits remain as documented. The semantic additions in this branch and the
+separate GUI/target-agreement/performance work are excluded from alpha.2. The
+tagged documents are the immutable prepublication snapshot; this subsequent
+handoff record does not modify the release tag or assets.

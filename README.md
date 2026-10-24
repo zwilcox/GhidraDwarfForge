@@ -8,6 +8,13 @@ synthetic C source. The original executable remains unchanged by default.
 
 ## Current status
 
+The published corrective release is
+[v0.1.0-alpha.2](https://github.com/zwilcox/GhidraDwarfForge/releases/tag/v0.1.0-alpha.2),
+from exact-main commit `2f88c4a`, with verified Linux/Windows bundles. Alpha.1
+remains unchanged and affected by the recorded correctness findings. The
+function-static and scalar-floating additions below are subsequent development
+work, separate from alpha.2.
+
 The installable extension now exports deterministic synthetic C and DWARF 5
 functions, source rows, canonical recursive types, signatures, globals,
 namespaces, discontiguous ranges, and evidence-backed variable locations.
@@ -35,17 +42,17 @@ See [the focused validation record](docs/VALIDATION.md#function-owned-static-dat
 for tested profiles and debugger limitations.
 
 Development scalar floating locations now use audited logical register aliases.
-Local GDB tests cover float/double arguments on x86-64 and AArch64 and float
-arguments on MIPS32 in both byte orders, before and after memory stores.
-Unproven MIPS double-register pairs remain unavailable. ARM32 canonical register
-slices have structural tests; their new runtime checks await hosted CI. See
+Hosted GDB tests cover float/double arguments on x86-64, AArch64 and ARM32,
+including ARM32 upper register slices, and float arguments on MIPS32 in both
+byte orders, before and after memory stores. Unproven MIPS double-register
+pairs and ARM32 opaque-return prefix locations remain unavailable. See
 [the bounded FP validation record](docs/VALIDATION.md#scalar-floating-register-aliases-2026-10-23).
 
-The development exporter replaces existing compiler DWARF rather than merging
+The exporter replaces existing compiler DWARF rather than merging
 it with the recovered view. Old compressed debug sections, indexes, and debug
 file links are retired inside the sidecar; the original ELF stays unchanged.
 
-Development ELF handling also covers extended section/program counts and
+ELF handling also covers extended section/program counts and
 section tables without names. Original bytes are streamed, with explicit
 [metadata and size bounds](docs/ADR-0001-ELF-SIDECAR.md); inputs larger than
 2 GiB have compiler-oracle and real-export tests. Import-mode wrappers select

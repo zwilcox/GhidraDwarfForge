@@ -2234,9 +2234,9 @@ documented profiles. The project has an extension build, pinned/audited natives,
 real source/type/location export and a passing Linux/Windows integration matrix.
 
 1. Preserve the working tree and inspect current PR/CI/release state.
-2. Integrate reviewed PRs under the standing authorization and enforced checks;
-   check GitHub for the current state of #16/#17/#18. A corrective release is a
-   separate versioned publication task; preserve the existing public alpha.
+2. Integrate the subsequent reviewed semantic/GUI/target/performance work under
+   the standing authorization and enforced current-base checks. Alpha.2 is
+   published from `2f88c4a`; preserve both public alpha tags and their assets.
 3. Preserve completed P0.9's layout/resource bounds and regression matrix;
    implementation `3e47589` is validated by all twelve hosted jobs. Do not
    redo the parked checkpoint or treat direct PN_XNUM execution as supported.
@@ -2352,3 +2352,36 @@ both histories. The new PR head requires current-base hosted CI before normal
 integration. Corrective alpha.2 publication status is unchanged; the semantic
 branch remains a subsequent feature change and contains neither the separate
 GUI journey nor target-language agreement/performance work.
+
+### Corrective alpha.2 official publication (2026-10-24)
+
+**CONFIRMED:** [v0.1.0-alpha.2](https://github.com/zwilcox/GhidraDwarfForge/releases/tag/v0.1.0-alpha.2)
+was published at `2026-10-24T05:15:20Z` (`00:15:20` America/Chicago), from exact
+main commit `2f88c4a1a7dd90dfedbd8d578b27242dfb8a73b7`. PR #22's corrected
+head passed all twelve jobs in run `40062747733` before normal merge; the
+exact-main `push` run `40064204515` also passed all twelve jobs. The final
+release audit then enforced that event/head/job set, compared the packaged
+source and metadata against the commit, verified all nested manifests and both
+native provenance records, and passed 20 Linux packaged-producer lifetimes on
+Java 21 using the downloaded production JAR.
+
+The native-inclusive release ZIP SHA-256 is
+`0ae14cf8f4760703d4778d5b414fd14b9c8a68414edc89dcf8cb58a21669ade6`.
+Draft and published ZIP/checksum assets were downloaded and compared with the
+audited bytes. The public tag resolves to the exact tested commit. Alpha.1's
+tag, release identity and asset digests remain unchanged; alpha.1 remains
+affected by the previously recorded correctness findings.
+
+This closes the corrective release and strict-validator gates within the
+published target/host profiles. Earlier failed runs and missed-summary findings
+remain historical evidence, not retroactively clean validation. Exact inherited
+frame diagnostics remain visible and require matching original bytes/identity
+and same-tool diagnostics; no new generic exception was introduced.
+
+The tag and its packaged documents remain the immutable prepublication
+snapshot. This later handoff update does not retag or replace them. Semantic
+features in this branch, the separate Script Manager journey, target-language
+agreement and measured line-table optimization are subsequent work and are
+excluded from alpha.2. Their own current-base/combined acceptance gates remain.
+See `docs/VALIDATION.md`, "Corrective alpha.2 official publication", for exact
+CI, final-audit and downloaded-asset evidence.

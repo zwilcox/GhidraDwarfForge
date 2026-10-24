@@ -16,9 +16,15 @@ GhidraDwarfForge-<version>-ghidra-12.0.3.zip
 Ghidra compatibility remains recorded separately in `extension.properties`:
 its generated `version=12.0.3` identifies the required Ghidra version, not the
 project version. The packaged `VERSION` and `RELEASE-MANIFEST.txt` identify the
-GhidraDwarfForge release. The corrective alpha is described in
-[`releases/0.1.0-alpha.2.md`](releases/0.1.0-alpha.2.md); the published alpha.1
-tag and assets remain unchanged.
+GhidraDwarfForge release. The published corrective release is
+[v0.1.0-alpha.2](https://github.com/zwilcox/GhidraDwarfForge/releases/tag/v0.1.0-alpha.2),
+from commit `2f88c4a1a7dd90dfedbd8d578b27242dfb8a73b7`. Its exact-main CI,
+final package audit and downloaded public assets passed verification; see
+[the publication record](VALIDATION.md#corrective-alpha2-official-publication-2026-10-24)
+and [release notes](releases/0.1.0-alpha.2.md). Alpha.1's tag/assets remain
+unchanged and affected by the documented correctness findings. The alpha.2
+tag is the immutable prepublication documentation snapshot; later handoff
+updates do not change its source or assets.
 
 The initial host packages are Linux x86-64 and Windows x86-64. The required
 target release lanes are x86-64 and AArch64 ELF; ARM32 and MIPS32 big/little
