@@ -2905,3 +2905,38 @@ the tested tree. Exact-main push `40075761646` remains pending. The preceding
 naming merge's main push `40073445177` also passed all twelve jobs. These later
 observations supersede the earlier opaque/naming pending checkpoints without
 attributing their results to the new address-index implementation.
+
+### Address-index hosted acceptance and next bounded lifetime work (2026-10-24)
+
+**CONFIRMED:** exact PR #28 head `a5f79109f5cb345dff789938f2b41741967f47ad`
+passed all twelve jobs in `40076025207` (attempt 1, none skipped). Independent
+reviews verified all five target artifacts, including 30 core/index roles,
+all five sectionless inputs, 30 ordinary/qualified pointer cases, six advanced
+entry cases and three opaque-effect cases. Exact strict diagnostics, original
+hashes and applicable deterministic repeats pass. Actual Linux and native
+Windows GUI journeys pass, including all nine native Windows smoke checks.
+The exact package/source/native-provenance audit and actual Java 21 smoke and
+20-lifetime native tests pass; the package SHA-256 is
+`a6edcb42cee25a81b598ad01703b34445394ccb0a829827b6172773a7d6459f3`.
+
+Normal merge `b4d786947ab49902c2fa86da73ba7e03c043f05d` at
+`2026-10-24T08:23:21Z` preserves the tested tree. The separate main-push run
+`40077843290` remains pending. PR #27's preceding main-push run `40075761646`
+also passed all twelve jobs and independently reviewed host artifacts. These
+observations supersede the corresponding historical pending checkpoints.
+No published version, tag or asset changed.
+
+**CONFIRMED locally; hosted gate pending:** the next P1.11a slice tracks one proven direct register
+copy of an incoming parameter. It keeps the existing complete straight-line
+eligibility gate, exact low-slice/width checks and ordered p-code proof, and
+does not follow memory, calls, arbitrary chains or lost values. The new fixture
+uses both widths, signed/high-bit values and explicit backup destruction; a
+raw location-list oracle compares exact intervals with compiler labels.
+The final reviewed production commit `5ba6f39` passes actual Java 21 focused
+checks and private packaged run `run.V0gUehki`: six roles, twelve exports and
+72 compiler/Forge calls per mode, with exact raw location intervals, signed
+values, backup-kill omissions, strict validators, preserved inputs and
+byte-identical pairs. Independent review also closes physical alias, offcut
+entry, fallthrough provenance and unknown-store proof gaps. The complete
+hosted gate remains required. The policy and evidence boundaries are in
+`docs/REGISTER-COPY-LIFETIMES.md`.

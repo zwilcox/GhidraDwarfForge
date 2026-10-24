@@ -3024,3 +3024,147 @@ merge `89c07ce` also passed its separate main push `40073445177`; its earlier
 pending notes are historical. These results close the opaque-guard feature's
 hosted gate but do not validate the subsequent address-index implementation.
 Published alpha.2 and alpha.1 remain unchanged.
+
+## Exact code-address index hosted acceptance (2026-10-24)
+
+**CONFIRMED:** PR #28 head `a5f79109f5cb345dff789938f2b41741967f47ad`
+passed all twelve jobs in
+[run 40076025207](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40076025207),
+`pull_request`, attempt 1, with no job failed or skipped. Normal merge
+`b4d786947ab49902c2fa86da73ba7e03c043f05d` at `2026-10-24T08:23:21Z` retains
+the tested tree. Its separate main-push run `40077843290` is pending. The prior
+opaque-guard main push `40075761646` also passed all twelve jobs and independent
+Linux/Windows artifact checks, superseding its earlier pending checkpoint.
+
+The digest-verified five target artifacts pass 30 core address-index cases,
+including all five sectionless inputs, and 30 ordinary/qualified static-pointer
+cases. Each applicable index check rejects ten malformed controls. Six x86
+advanced-entry cases and three AArch64 opaque-effect cases retain their exact
+range/value/omission and pointer-formatting expectations. Structural checks
+report zero unexplained errors; precisely corroborated inherited frame counts
+remain visible. Recomputed input hashes and applicable byte-identical repeats
+pass. Actual Linux and native Windows GUI journeys pass; Windows runs all nine
+native-independent smokes, including address ranges, opaque effects and naming.
+The documented Windows independent-libdwarf/runtime-GDB limits remain.
+
+Candidate artifact `12553008801` has archive SHA-256
+`8e1a529ef9f32812047329d6994dc836d1a2a57458432581d5a84591e73596ef`;
+its package SHA-256 is
+`a6edcb42cee25a81b598ad01703b34445394ccb0a829827b6172773a7d6459f3`.
+All five manifests, exact 32 production sources/two scripts, native provenance
+and 136 Java 21 classfiles pass. Actual Java 21 address/opaque/naming smokes and
+20 packaged producer lifetimes pass with all 31 loaded production class origins
+verified against the downloaded JAR. Evidence is retained in the code-index
+worktree at `build/address-package-audit/run-40076025207.GWY1Pu8C` and
+`build/address-package-audit/final-{run,jobs,pr,review-threads,gate}.json`.
+The GUI worktree's `build/hosted-gui-review/run-40076025207` contains final run,
+host, all-target index/pointer, advanced-entry and opaque-effect audit records.
+
+This closes the code-index integration gate within its recorded profile. It is
+not a new release and does not alter either published alpha. The optional
+opaque baseline-reproducer mode now also requires the code index; historical
+pre-index packages need their retained historical harness, and are not claimed
+to pass the current harness unchanged.
+
+## Bounded register-copy lifetimes, final local acceptance (2026-10-24)
+
+**CONFIRMED locally; hosted gate pending:** independently reviewed production
+commit `5ba6f39c5c862ee4cf8bf22b70231cbc9dd5840c` tracks one completed direct
+register backup for an incoming parameter in a fully decoded straight-line
+leaf. It retains the original through its writing instruction, then the
+backup, and no location after an unproved backup write. No native call, memory
+migration, call preservation, arbitrary copy chain, later-local or entry-value
+recovery is added. `REGISTER-COPY-LIFETIMES.md` defines the exact proof.
+
+The shared checks also close physical result-register overlap, referenced
+instruction interiors and external fallthrough-reference gaps. Only an actual
+preceding decoded instruction's ordinary fallthrough is exempt. Unproven STORE
+destinations invalidate stable locations and reject the whole prefix fallback;
+known RAM stores retain their behavior. The new proof separately rejects
+length/fallthrough overrides and mixed code address spaces. Controlled tests
+verify these conditions without pretending that every malformed proxy is an
+observed machine-code defect. Tests assert reference setup explicitly because
+the pinned database can remove invalid fallthrough references automatically.
+
+The final private installed JAR SHA-256 is
+`70514244380b83df22644bc8ea4c5c73a504f5ba87cb2e21ed3f6cdf7ee3457c`;
+the native-inclusive private package SHA-256 is
+`823699e9d7cceba1b35b35a6dc0b56657e7249e61678346321c0d9ca8fc6acf4`.
+All five manifests and exact 33 production sources/two scripts pass. The shared
+Ghidra installation and launch settings remain unchanged; each test platform
+uses separate real directories and private settings/cache/temp locations.
+
+The `register-copy-lifetime` worktree retains the exact commands and results:
+
+```bash
+GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC \
+JAVA_HOME=/usr/lib/jvm/java-25-openjdk-amd64 ./gradlew \
+    registerCopySmoke registerPrefixSmoke opaqueRegisterEffectsSmoke \
+    registerAliasSmoke variableStorageSmoke dwarfLocationListsSmoke buildExtension
+
+DWARFDUMP=/path/to/verified-standalone-validator/bin/dwarfdump \
+    src/test/integration/register-copy-export.sh \
+    "$PWD/build/register-copy-review/ghidra-closure"
+```
+
+The final run is `build/test-results/register-copy/run.V0gUehki`: six
+x86-64/AArch64 exec/PIE/rebased-PIE roles, twelve fresh exports and 72 calls per
+compiler/Forge debugger mode. Four functions per role cover signed 32/64-bit
+`19`, `-19` and high-bit negative patterns, saved-register survival and backup
+destruction. Raw low bits, parameter types/values, globals, exact PCs, source
+lookup, stepping and normal exit pass. Compiler entry-value recovery remains
+an exact original-value oracle after destruction; Forge reports unavailable.
+
+Independent raw `.debug_loclists` parsing matches the two exact intervals for
+each parameter to compiler symbol boundaries. Both exporter reports per role
+contain exactly the two expected kill-tail omissions. GNU, LLVM, code-index
+coverage, original hashes and byte-identical output/source repeats pass. Strict
+libdwarf reports exactly 6/4/4 inherited frame diagnostics for x86 exec/PIE/
+rebase and 8/8/8 for AArch64, with zero unexplained errors; same-tool original
+diagnostic multisets corroborate them. GDB stderr is empty on x86 and exactly
+matches the compiler's established QEMU-vDSO diagnostic on AArch64. Evidence:
+`build/register-copy-review/{closure-runtime-acceptance,independent-closure-audit}.json`.
+
+All six focused Gradle smokes, build and architecture isolation pass. Actual
+Java 21.0.12.1 separately runs copy, prefix, opaque and alias smokes after test
+compilation with `--release 21`; production and test class versions are 65.
+`build/register-copy-review/java21-closure/{commands,result}.json` records this
+execution. Local headless runs use Java 25.0.4.1; they are not Java 21 headless
+evidence. Isolated hierarchy-only and instruction-start-only predicate replays
+fail their exact new assertions. Workflow lint, shell/Python checks and the
+x86/AArch64 fixture inventory/reproducibility checks pass, including thirteen
+byte-identical semantic artifacts per target.
+
+The same final JAR separately passes 36 regression exports in three isolated
+platforms: updated x86/AArch64 prefixes (`run.45p8qA6r`, twelve exports), AArch64
+opaque effects (`run.3OW60qMl`, three roles/two fresh imports), and scalar FP
+on x86/AArch64/ARM32 (`run.Io71toGI`, eighteen exports). The prefix now retains
+the directly copied `19`; the supervisor-call parameters remain unavailable.
+ARM scalar/double RAM stores, upper slices and ordinary terminal-return values
+pass, while its clobbered opaque-return parameter stays omitted. Exact original
+and artifact diagnostic Counters, zero unexplained errors, GNU/LLVM, runtime
+values, source, preserved inputs and deterministic pairs pass. Source/script
+origins and all manifests remain verified. Evidence and exact invocation:
+`build/register-regression-closure/{results.json,run-suite.sh,audit-results.py}`.
+Together with the new suite, this is 48 final-build fresh exports. The earlier
+preliminary ARM toolchain setup failed before export because a private binutils
+library path was missing; owned compiler/strip wrappers now scope that path
+only to those child tools, and the final six ARM exports pass. No global
+Ghidra/GDB/QEMU library path was changed.
+
+Earlier runs remain explicitly separate: old package `run.XYn8f8Rr` fails the
+new interval oracle because it has no backup range; `run.ZKip4EFg` accidentally
+selected the system checker using the wrong environment variable and fails
+strict validation. The retained GDB harness failures are `run.ma7S3IdX`
+(Ghidra's `longlong` spelling), `run.xF3usUMa` (an unsupported integer-type range
+query) and `run.4T5PpKuf` (a numeric pre-load PIE breakpoint, after passing x86
+exec). Final tests use semantic width/signedness checks and symbolic entry
+breakpoints that relocate. Intermediate JARs `4f2c8d`/`83471f` pass their
+recorded full runtime suites but predate the final shared guards; they do not
+substitute for final `70514244` acceptance. No validator exception or value
+expectation was relaxed to turn a failed run into a pass.
+
+The new runtime gate is required for x86-64/AArch64, and the focused copy smoke
+is added to Linux and native Windows CI. All five existing target gates and
+strict diagnostics remain enforced. Exact-head hosted acceptance and package
+audit are still required before normal merge. Neither published alpha changes.

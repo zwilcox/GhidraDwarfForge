@@ -109,7 +109,7 @@ for target in "${targets[@]}"; do
                 "--output=$output" >"$sample/headless.txt" 2>&1
             grep -Fq 'register-prefix-preparation=PASS' "$sample/headless.txt"
             grep -Fq 'GhidraDwarfForge symbol export PASS' "$sample/headless.txt"
-            grep -Fq 'Limited location to proven incoming-register lifetime for prefix_value::value' \
+            grep -Fq 'Limited location to proven register-copy lifetime for prefix_value::value' \
                 "$sample/headless.txt"
             if [[ "$name" == rebased ]]; then
                 grep -Eq 'Rebased fixture image from .* by 0x2000000 ' "$sample/headless.txt"

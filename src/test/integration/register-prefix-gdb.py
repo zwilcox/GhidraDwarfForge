@@ -1,4 +1,4 @@
-"""Compare compiler and Forge values at the exact instruction lifetime boundary."""
+"""Compare compiler and Forge values through the proven direct register copy."""
 
 import os
 
@@ -31,12 +31,8 @@ for marker in ["prefix_before", "prefix_write", "prefix_after"]:
     gdb.execute("continue")
     assert int(gdb.parse_and_eval("$pc")) == address
     value = gdb.parse_and_eval("value")
-    if marker != "prefix_after" or compiler:
-        assert not value.is_optimized_out and int(value) == 19
-        print(marker + "-value=19")
-    else:
-        assert value.is_optimized_out, str(value)
-        print("prefix_after-value=unavailable")
+    assert not value.is_optimized_out and int(value) == 19
+    print(marker + "-value=19")
 gdb.execute("disable breakpoints")
 return_address = entry + labels["prefix_return"] - labels["prefix_value"]
 gdb.Breakpoint("*" + hex(return_address))
@@ -47,11 +43,8 @@ if int(gdb.parse_and_eval("$pc")) != return_address:
     gdb.execute("continue")
 assert int(gdb.parse_and_eval("$pc")) == return_address
 value = gdb.parse_and_eval("value")
-if compiler:
-    assert not value.is_optimized_out and int(value) == 19
-else:
-    assert value.is_optimized_out
-print("prefix_return-value=" + ("19" if compiler else "unavailable"))
+assert not value.is_optimized_out and int(value) == 19
+print("prefix_return-value=19")
 assert int(gdb.parse_and_eval("prefix_sink")) == 19
 print("sink-value=19")
 gdb.execute("continue")

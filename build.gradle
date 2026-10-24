@@ -298,6 +298,18 @@ tasks.register("registerAliasSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/register-alias/cache").absolutePath
 }
 
+tasks.register("registerCopySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded incoming-parameter register copies and unavailable tails"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.RegisterCopySmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/register-copy/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/register-copy/cache").absolutePath
+}
+
 tasks.register("opaqueRegisterEffectsSmoke", JavaExec) {
     group = "verification"
     description = "Checks conservative register locations around unmodeled instruction effects"
