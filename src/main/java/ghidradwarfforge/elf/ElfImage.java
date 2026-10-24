@@ -164,6 +164,10 @@ public final class ElfImage {
         return fileSize;
     }
 
+    Path sourcePath() {
+        return source;
+    }
+
     /** Bounded convenience API; use copyTo for original images larger than 64 MiB. */
     public byte[] bytes() throws IOException {
         return readSourceRange(0, fileSize, "whole ELF byte-array read");
@@ -422,7 +426,7 @@ public final class ElfImage {
         return data.array();
     }
 
-    private void requireUnchanged(FileChannel input) throws IOException {
+    void requireUnchanged(FileChannel input) throws IOException {
         BasicFileAttributes current = Files.readAttributes(source, BasicFileAttributes.class);
         if (!current.isRegularFile() || input.size() != fileSize || current.size() != fileSize ||
                 !current.lastModifiedTime().equals(identity.lastModifiedTime()) ||

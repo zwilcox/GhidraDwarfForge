@@ -3837,8 +3837,9 @@ unchanged; skipped counts change from five to nine and diagnostics from six to
 ten. Exact local package `0804b46` also passes review. Final head `296395e`
 passes all twelve jobs in `40126794530`, exact hosted package review, all five
 target inventories, both GUI hosts and 23 native Windows suites. Normal merge
-`0d2cbc5` preserves the tested tree; its separate main push `40129499500` is
-pending. Parent integration `e3d0709` incorporated accepted PR #41. See
+`0d2cbc5` preserves the tested tree; its separate main push `40129499500`
+passes all twelve jobs and independent both-GUI/native Windows 23 review.
+Parent integration `e3d0709` incorporated accepted PR #41. See
 `docs/VALIDATION.md` for retained evidence and the four project-index mtime-only
 exceptions to the original overbroad preservation assertion.
 
@@ -3870,3 +3871,61 @@ for exact sources, retained failures and evidence. No production binding, public
 option, original-target mutation or backup transaction is introduced. Complete
 metadata visibility remains unknown; ADR-0004's Linux/Windows preservation,
 durability, conditional recovery and refresh gates remain required.
+
+PR #43's exact head `bdc3502` passes all twelve jobs in `40130322553`, with
+source/package/two-host-trial and both-GUI/native Windows 23 review. Normal
+merge `0f1abdc` preserves the tested tree; separate main push `40132729633`
+also passes all twelve jobs and fresh both-GUI/native Windows 23 review. Target
+job conclusions remain a separate CI scope from earlier detailed target
+artifact reviews. The production runtime payloads are unchanged by this research.
+
+### Mixed ARM/Thumb consumer investigation (2026-10-24)
+
+**CONFIRMED locally:** the first owned mixed ARM/Thumb ET_EXEC comparison finds
+a static disassembly gap despite validator-clean export and passing runtime
+breakpoint/call/stepping checks. Ghidra correctly decodes the Thumb function;
+its even code addresses reach DWARF unchanged. The stripped input lacks the ELF
+mode symbols used by the inspected GDB 15.1 consumer, so static disassembly
+defaults to ARM. A running target's CPSR can hide the missing static evidence.
+The saved-program repeat produces identical artifacts and preserves the input.
+
+**CONFIRMED owned-copy experiment:** an exact-size tagged ELF function symbol
+repairs the static failure while preserving all existing DWARF bytes and a
+following ARM function in the same section. **CONFIRMED locally; hosted gate pending:**
+the bounded production correction checks stored/current instruction context,
+complete instruction coverage, original code-byte digests and unique section
+mapping before adding synthetic local symbols. Synthesis is restricted to
+ET_EXEC without named defined dynamic symbols, whose GDB resolution a partial
+static table would otherwise suppress. Existing tables and uncertain
+cases are preserved with omission diagnostics. Focused actual-Java-21 checks,
+ELF regression checks and the extension build pass. The installed production
+exporter passes validators, deterministic reruns and compiler-relative GDB
+static/runtime checks; the old exporter fails the same static assertion.
+Hosted acceptance remains pending. No debugger or Ghidra baseline change, forced mode
+or broad Thumb support claim follows. The current ARM-state profile remains
+the accepted scope. See
+[`docs/research/ARM-THUMB-MODE.md`](docs/research/ARM-THUMB-MODE.md) for exact
+versions, retained failures and evidence.
+
+The first hosted run `40135704323` at `02a4bfa` stops in the fixture inventory
+before target export: the three new C sources were missing from its explicit
+reviewed list. The bounded correction registers those names and retains the
+strict guard. Local x86-64 reproducibility passes; a fresh full gate is required.
+The failed logs/artifacts and successful component package checks remain distinct.
+
+**CONFIRMED:** the second gate (`40136340620`, head `5c4f14c`) passes the
+fixture inventory but fails the standalone large-ELF compilation and ARM shared
+GDB oracle. The standalone list omitted the new local-symbol record dependency.
+The ARM failure is a real consumer regression: a partial SHT_SYMTAB suppresses
+ordinary dynamic minimal symbols in GDB 15.1, allowing a breakpoint to stop at
+the driver's PLT entry. An exact owned-copy comparison isolates that table's
+presence as the cause; all other bytes, including DWARF/dynsym, are unchanged.
+The correction adds the missing build dependency and bounds mode synthesis to
+ET_EXEC without named defined dynamic symbols. It does not weaken shared-object
+behavior tests. Bounded end-of-job primary-fixture capture now preserves exact
+small diagnostic inputs/outputs even if a target job fails early; its receipt
+is explicitly not invocation-time provenance. The corrected package now passes
+actual Java 21 planner231/extraction38, the 2 GiB/64 MiB large-file oracle,
+the original Thumb harness, an owned export-dynamic variant and the unchanged
+shared-library GDB script using a clone of the saved program. Original selected
+inputs/evidence remain unchanged. Fresh full hosted acceptance is required.

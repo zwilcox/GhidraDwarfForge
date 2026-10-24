@@ -481,6 +481,7 @@ jobs:
               variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke \
               stackFirstUseSmoke \
               opaqueRegisterEffectsSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
+              arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfAddressRangesSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
@@ -1029,6 +1030,10 @@ jobs:
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2"
 
+      - name: Recovered ARM and Thumb instruction modes
+        if: matrix.target == 'arm32'
+        run: src/test/integration/arm-thumb-mode-export.sh "$GHIDRA_INSTALL_DIR"
+
       - name: Isolated scalar register bit-piece producer
         if: matrix.target == 'arm32'
         run: |
@@ -1180,6 +1185,12 @@ jobs:
             FORGE_REPORT_MANIFEST="$PWD/build/test-results/report-handoff/$TARGET.json" \
             src/test/integration/build-id-discovery.sh "$TARGET"
 
+      - name: Retain bounded primary fixture diagnostics
+        if: always()
+        env:
+          TARGET: ${{ matrix.target }}
+        run: python3 src/test/integration/capture-primary-fixtures.py "$TARGET"
+
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -1307,6 +1318,7 @@ jobs:
           & .\gradlew.bat addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
+            arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke `
             registerCopySmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
             elfBuildIdSmoke exportReportClaimsSmoke matchedElfPrefixSmoke `
             matchedElfAllocationsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke executableProgramBytesSmoke `

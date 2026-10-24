@@ -7,10 +7,17 @@ import static ghidradwarfforge.nativeapi.DwarfConstants.DW_DLC_SYMBOLIC_RELOCATI
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_DLC_TARGET_BIGENDIAN;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_DLC_TARGET_LITTLEENDIAN;
 
+import java.io.IOException;
 import java.nio.ByteOrder;
+import java.util.List;
 import java.util.Map;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 
+import ghidradwarfforge.elf.Arm32ModeSymbols;
+import ghidradwarfforge.elf.ElfFunctionModeCue;
 import ghidradwarfforge.elf.ElfImage;
+import ghidradwarfforge.elf.ElfLocalFunctionSymbol;
 
 /** Table-driven libdwarf target description derived from the original ELF. */
 public record DwarfTarget(String name, String producerIsa, int addressBytes,
@@ -84,6 +91,24 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
                 ? DW_DLC_TARGET_LITTLEENDIAN : DW_DLC_TARGET_BIGENDIAN;
         return pointerFlag | DW_DLC_OFFSET32 | DW_DLC_SYMBOLIC_RELOCATIONS |
             byteOrderFlag;
+    }
+
+    /** Target-specific ELF symbol semantics stay outside generic DWARF/address handling. */
+    public List<ElfLocalFunctionSymbol> planFunctionModeSymbols(ElfImage image,
+            List<ElfFunctionModeCue> cues, BooleanSupplier cancelled,
+            Consumer<String> diagnostic) throws IOException {
+        if (cues.isEmpty()) {
+            return List.of();
+        }
+        if (!equals(fromElf(image))) {
+            throw new IllegalArgumentException("function-mode target disagrees with ELF");
+        }
+        if (image.machine() == EM_ARM) {
+            return Arm32ModeSymbols.plan(image, cues, cancelled, diagnostic);
+        }
+        diagnostic.accept("Omitted function-mode symbols: target " + name +
+            " has no audited mode-symbol planner");
+        return List.of();
     }
 
 }

@@ -33,11 +33,13 @@ import ghidradwarfforge.elf.ElfImage.Segment;
 public final class MatchedElfSidecarWriter {
     private static final long SHT_NULL = 0;
     private static final long SHT_PROGBITS = 1;
+    private static final long SHT_SYMTAB = 2;
     private static final long SHT_STRTAB = 3;
     private static final long SHT_RELA = 4;
     private static final long SHT_NOTE = 7;
     private static final long SHT_NOBITS = 8;
     private static final long SHT_REL = 9;
+    private static final long SHT_SYMTAB_SHNDX = 18;
     private static final long SHF_WRITE = 0x1;
     private static final long SHF_ALLOC = 0x2;
     private static final long SHF_EXECINSTR = 0x4;
@@ -48,7 +50,8 @@ public final class MatchedElfSidecarWriter {
     private static final int SHN_LORESERVE = 0xff00;
     private static final int SHN_XINDEX = 0xffff;
 
-    private record Layout(List<Section> sections, byte[] names, byte[] header,
+    private record Layout(List<Section> sections, List<byte[]> symbolPayloads,
+            byte[] names, byte[] header,
             long sectionTableOffset, long fileSize) {
     }
 
@@ -61,7 +64,17 @@ public final class MatchedElfSidecarWriter {
             BooleanSupplier cancelled) throws IOException {
         Objects.requireNonNull(cancelled, "cancelled");
         checkCancelled(cancelled);
-        Path original = input.toRealPath();
+        write(ElfImage.read(input), output, debugSections, List.of(), cancelled);
+    }
+
+    /** Serialize target-planned local symbols against the same image used for planning. */
+    public void write(ElfImage image, Path output, Map<String, byte[]> debugSections,
+            List<ElfLocalFunctionSymbol> symbols, BooleanSupplier cancelled) throws IOException {
+        Objects.requireNonNull(image, "image");
+        Objects.requireNonNull(cancelled, "cancelled");
+        symbols = List.copyOf(symbols);
+        checkCancelled(cancelled);
+        Path original = image.sourcePath();
         Path absoluteOutput = output.toAbsolutePath();
         Path parent = absoluteOutput.getParent();
         if (parent == null || !Files.isDirectory(parent)) {
@@ -83,8 +96,7 @@ public final class MatchedElfSidecarWriter {
             }
         }
 
-        ElfImage image = ElfImage.read(original);
-        Layout layout = prepare(image, debugSections);
+        Layout layout = prepare(image, debugSections, symbols, cancelled);
         Path temporary = Files.createTempFile(parent, ".ghidra-dwarf-forge-", ".tmp");
         boolean moved = false;
         try {
@@ -95,6 +107,9 @@ public final class MatchedElfSidecarWriter {
                     throw new IOException("original ELF copy has an unexpected size");
                 }
                 for (byte[] bytes : debugSections.values()) {
+                    writeBytes(destination, bytes, cancelled);
+                }
+                for (byte[] bytes : layout.symbolPayloads()) {
                     writeBytes(destination, bytes, cancelled);
                 }
                 writeBytes(destination, layout.names(), cancelled);
@@ -130,7 +145,8 @@ public final class MatchedElfSidecarWriter {
     }
 
     /** Plan and validate the append-only layout before copying any input bytes. */
-    private Layout prepare(ElfImage image, Map<String, byte[]> debugSections) {
+    private Layout prepare(ElfImage image, Map<String, byte[]> debugSections,
+            List<ElfLocalFunctionSymbol> symbols, BooleanSupplier cancelled) {
         long offset = image.fileSize();
         List<Section> sections = new ArrayList<>();
         if (image.sections().isEmpty()) {
@@ -184,6 +200,9 @@ public final class MatchedElfSidecarWriter {
             target.alignment = 1;
             target.entrySize = 0;
         }
+
+        List<byte[]> symbolPayloads = new ArrayList<>();
+        offset = addFunctionSymbols(image, sections, symbols, symbolPayloads, offset, cancelled);
 
         Section newNameTable = new Section();
         newNameTable.name = ".shstrtab";
@@ -259,8 +278,114 @@ public final class MatchedElfSidecarWriter {
             header.putShort(48, (short) encodedSectionCount);
             header.putShort(50, (short) encodedNameTableIndex);
         }
-        return new Layout(sections, names.toByteArray(), headerBytes, sectionTableOffset,
+        return new Layout(sections, List.copyOf(symbolPayloads), names.toByteArray(),
+            headerBytes, sectionTableOffset,
             fileSize);
+    }
+
+    private static long addFunctionSymbols(ElfImage image, List<Section> sections,
+            List<ElfLocalFunctionSymbol> symbols, List<byte[]> payloads, long offset,
+            BooleanSupplier cancelled) {
+        if (symbols.isEmpty()) {
+            return offset;
+        }
+        if (symbols.size() > 65536) {
+            throw new IllegalArgumentException("local function symbol count exceeds safety limit");
+        }
+        for (Section section : sections) {
+            checkCancelled(cancelled);
+            if (section.type == SHT_SYMTAB || section.name.equals(".symtab") ||
+                    section.name.equals(".strtab") || section.name.equals(".symtab_shndx")) {
+                throw new IllegalArgumentException("local function symbols conflict with existing sections");
+            }
+        }
+        int count = symbols.size() + 1;
+        int width = image.is64Bit() ? 24 : 16;
+        ByteBuffer table = ByteBuffer.allocate(Math.multiplyExact(count, width)).order(image.byteOrder());
+        ByteBuffer indices = ByteBuffer.allocate(Math.multiplyExact(count, 4)).order(image.byteOrder());
+        ByteArrayOutputStream strings = new ByteArrayOutputStream();
+        strings.write(0);
+        Set<String> names = new HashSet<>();
+        boolean extended = false;
+        for (int index = 0; index < symbols.size(); index++) {
+            checkCancelled(cancelled);
+            ElfLocalFunctionSymbol symbol = symbols.get(index);
+            if (symbol.sectionIndex() >= sections.size() ||
+                    (sections.get(symbol.sectionIndex()).flags & (SHF_ALLOC | SHF_EXECINSTR)) !=
+                        (SHF_ALLOC | SHF_EXECINSTR) || !names.add(symbol.name())) {
+                throw new IllegalArgumentException("invalid or duplicate planned local function symbol");
+            }
+            byte[] name = symbol.name().getBytes(StandardCharsets.UTF_8);
+            if (name.length > ElfImage.MAX_NAME_BYTES ||
+                    (long) strings.size() + name.length + 1 > ElfImage.MAX_NAME_TABLE_BYTES) {
+                throw new IllegalArgumentException("local symbol names exceed safety limit");
+            }
+            int nameOffset = strings.size();
+            strings.writeBytes(name);
+            strings.write(0);
+            boolean escaped = symbol.sectionIndex() >= SHN_LORESERVE;
+            int encoded = escaped ? SHN_XINDEX : symbol.sectionIndex();
+            extended |= escaped;
+            indices.putInt((index + 1) * 4, escaped ? symbol.sectionIndex() : 0);
+            table.position((index + 1) * width);
+            putUnsignedInt(table, nameOffset);
+            if (image.is64Bit()) {
+                table.put((byte) 2); // STB_LOCAL | STT_FUNC; no original linkage assertion.
+                table.put((byte) 0);
+                table.putShort((short) encoded);
+                table.putLong(symbol.value());
+                table.putLong(symbol.size());
+            }
+            else {
+                putUnsignedInt(table, symbol.value());
+                putUnsignedInt(table, symbol.size());
+                table.put((byte) 2);
+                table.put((byte) 0);
+                table.putShort((short) encoded);
+            }
+        }
+        Section namesSection = new Section();
+        namesSection.name = ".strtab";
+        namesSection.type = SHT_STRTAB;
+        namesSection.alignment = 1;
+        namesSection.offset = offset;
+        namesSection.size = strings.size();
+        int namesIndex = sections.size();
+        sections.add(namesSection);
+        payloads.add(strings.toByteArray());
+        offset = addOffset(offset, namesSection.size);
+
+        int alignment = image.is64Bit() ? 8 : 4;
+        int padding = (int) ((alignment - offset % alignment) % alignment);
+        payloads.add(new byte[padding]);
+        offset = addOffset(offset, padding);
+        Section tableSection = new Section();
+        tableSection.name = ".symtab";
+        tableSection.type = SHT_SYMTAB;
+        tableSection.offset = offset;
+        tableSection.size = table.capacity();
+        tableSection.link = namesIndex;
+        tableSection.info = count;
+        tableSection.alignment = alignment;
+        tableSection.entrySize = width;
+        int tableIndex = sections.size();
+        sections.add(tableSection);
+        payloads.add(table.array());
+        offset = addOffset(offset, table.capacity());
+        if (extended) {
+            Section extendedSection = new Section();
+            extendedSection.name = ".symtab_shndx";
+            extendedSection.type = SHT_SYMTAB_SHNDX;
+            extendedSection.offset = offset;
+            extendedSection.size = indices.capacity();
+            extendedSection.link = tableIndex;
+            extendedSection.alignment = 4;
+            extendedSection.entrySize = 4;
+            sections.add(extendedSection);
+            payloads.add(indices.array());
+            offset = addOffset(offset, indices.capacity());
+        }
+        return offset;
     }
 
     private static boolean isInheritedDebugMetadata(String name) {

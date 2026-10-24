@@ -36,6 +36,9 @@ trap cleanup EXIT
 expected_sources=(
     Makefile
     README.md
+    arm-thumb-after.c
+    arm-thumb-caller.c
+    arm-thumb-leaf.c
     bitfield-values.c
     fp_register_aliases.c
     function-static-scopes.c

@@ -37,6 +37,19 @@ functions are compiled in ARM state. Ghidra's generic ARM v8 language name does
 not establish ARMv8 instruction coverage. Similarly, readelf's generic MIPS
 machine label does not replace the MIPS32r2 ISA flags/attributes.
 
+**CONFIRMED locally; hosted validation pending:** a separate mixed ARM/Thumb
+ET_EXEC regression now checks restored static instruction-mode information for
+a fully stripped input. Only contiguous, fully decoded homogeneous functions
+with matching original bytes receive generated local ELF mode symbols. Existing
+symbol tables, uncertain bodies, any named defined dynamic symbol and sectionless mode
+cues remain outside this correction. The compiler-relative GDB test checks the
+following ARM function as well as the Thumb body, calls, values and source
+stepping. This does not broaden the ARM-state profile above to arbitrary Thumb
+ABIs, PIE/shared objects or mixed-mode function bodies. See
+[the mode-symbol investigation](research/ARM-THUMB-MODE.md).
+The supplemental cue planner explicitly rejects ET_DYN; the existing ARM-state
+PIE/shared export support remains subject to its original behavior tests.
+
 ## What the variable tests prove
 
 **CONFIRMED:** the common tests cover curated integer signatures, types and
