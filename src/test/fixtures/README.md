@@ -66,6 +66,9 @@ and debugs this partially stripped input as a distinct regression.
 | `semantic.exec.no-build-id.*` | `semantic.c` | Explicit loading when no build identity exists |
 | `semantic.exec.no-sections.stripped` | derived from `semantic.exec.stripped` | Program-header-only input and new output section table |
 | `semantic.pie.*` | `semantic.c` | PIE load bias and ASLR behavior |
+| `semantic.{exec,pie}.extended-sections` | derived from the corresponding stripped fixture | Genuine extended section count and high section-name-table index |
+| `semantic.{exec,pie}.no-section-names` | derived from the corresponding stripped fixture | Present section table with `e_shstrndx == 0` |
+| `semantic.{exec,pie}.extended-programs` | derived from the corresponding stripped fixture | `PN_XNUM` count in section zero's `sh_info` |
 | `libsemantic.so.*` | `shared_semantic.c` | PIC shared object without `main` |
 | `semantic.shared-driver.*` | `shared_driver.c` | Runtime loading and calls into the stripped shared object |
 
@@ -87,6 +90,52 @@ ELF section-header table has been removed (`e_shoff`, `e_shnum`, and
 loadable from program headers alone. The Forge sidecar writer must create a
 fresh section table and section-name string table for this case; an absent
 input section table is not an error.
+
+The extended-section fixtures are generated separately after the regular
+source build:
+
+```bash
+./gradlew extendedSectionNumberingSmoke -PfixtureTarget=x86_64
+src/test/integration/extended-sections-export.sh "$GHIDRA_INSTALL_DIR" \
+    /path/to/libdwarf.so.2.3.2 /path/to/libdwarfp.so.2.3.2 x86_64
+```
+
+The generator appends enough inactive section headers to require real extended
+numbering and puts a copied section-name table at a high index. It preserves
+the original section indexes, load segments, code, and build identity. A shared
+nonempty padding name avoids quadratic unnamed-section handling in Ghidra.
+The integration harness imports and executes the modified input itself,
+validates the emitted sidecar with GNU/LLVM/libdwarf tools, and runs the full
+native/QEMU GDB semantic oracle for both ET_EXEC and PIE. Diagnostics and
+artifacts are retained under `build/test-results/extended-sections-export/`.
+These few-megabyte fixtures test large section counts. Other layout and size
+cases have separate harnesses:
+
+```bash
+java src/test/integration/ElfLayoutFixtures.java build/fixtures x86_64 mips32be
+src/test/integration/elf-layout-export.sh "$GHIDRA_INSTALL_DIR" \
+    /path/to/libdwarf.so.2.3.2 /path/to/libdwarfp.so.2.3.2 x86_64 mips32be
+src/test/integration/large-elf-sidecar.sh
+src/test/integration/large-headless-export.sh "$GHIDRA_INSTALL_DIR" \
+    /path/to/libdwarf.so.2.3.2 /path/to/libdwarfp.so.2.3.2
+```
+
+The layout harness exports unnamed-section and extended-program-header inputs
+through Ghidra, checks target identity/build ID and actual-input static GDB
+lookup, and runs the existing runtime semantic oracle. Linux/QEMU cannot
+execute the extended-program fixture used here: that case explicitly uses
+the unchanged ordinary fixture for runtime checks after proving the original
+load image is equivalent. It does not claim native execution of `PN_XNUM`.
+Known GNU input-reader diagnostics are allowed only for the exact fixture
+condition; generated sidecar validators remain strict. ARM QEMU vDSO warnings
+need corroboration from the independent compiler-DWARF runtime oracle.
+
+The two large-file harnesses create disposable source-built inputs over 2 GiB.
+The container oracle uses a 64 MiB Java heap and compiler DWARF; the headless
+test runs real Ghidra analysis/export and the full GDB semantic oracle, then
+repeats a fresh import to check byte-identical artifacts. Both retain compact
+logs/hashes and remove their multi-gigabyte scratch files. These checks bound
+source-file buffering, not generated DWARF or Ghidra's analysis memory.
 
 The Makefile requires the corresponding GNU cross-compilers and binutils.
 Runtime integration for non-host targets additionally requires QEMU user-mode

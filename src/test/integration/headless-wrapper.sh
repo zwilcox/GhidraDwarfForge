@@ -46,6 +46,8 @@ run_status 0 SUCCESS 0 --import="$input" --output="$output" \
 grep -Fxq -- '-deleteProject' "$argument_log"
 grep -Fxq -- '-import' "$argument_log"
 grep -Fxq -- "$input" "$argument_log"
+awk '$0 == "-loader" { getline; if ($0 == "ElfLoader") found = 1 }
+    END { exit !found }' "$argument_log"
 grep -Fxq -- '-analysisTimeoutPerFile' "$argument_log"
 grep -Fxq -- '45' "$argument_log"
 grep -Fxq -- "--input=$input" "$argument_log"
@@ -68,6 +70,10 @@ grep -Fxq -- '-process' "$argument_log"
 grep -Fxq -- '/folder/program' "$argument_log"
 if grep -Fxq -- '-deleteProject' "$argument_log"; then
     echo "existing-project wrapper would delete the project" >&2
+    exit 1
+fi
+if grep -Fxq -- '-loader' "$argument_log"; then
+    echo "existing-project wrapper would select an import loader" >&2
     exit 1
 fi
 

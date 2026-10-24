@@ -74,6 +74,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
+import java.util.function.BooleanSupplier;
 
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
@@ -240,6 +242,18 @@ public final class MinimalDwarfSidecarExporter {
             Path producerLibrary, List<FunctionSymbol> functions,
             SyntheticSourceFile syntheticSource, ProgramTypeModel typeModel,
             String sourceFileName) throws IOException {
+        return export(input, output, consumerLibrary, producerLibrary, functions,
+            syntheticSource, typeModel, sourceFileName, () -> false);
+    }
+
+    public ExportResult export(Path input, Path output, Path consumerLibrary,
+            Path producerLibrary, List<FunctionSymbol> functions,
+            SyntheticSourceFile syntheticSource, ProgramTypeModel typeModel,
+            String sourceFileName, BooleanSupplier cancelled) throws IOException {
+        Objects.requireNonNull(cancelled, "cancelled");
+        if (cancelled.getAsBoolean()) {
+            throw new CancellationException("DWARF export cancelled");
+        }
         Path source = requireFile(input, "input ELF");
         Path consumerPath = requireFile(consumerLibrary, "libdwarf");
         Path producerPath = requireFile(producerLibrary, "libdwarfp");
@@ -286,7 +300,7 @@ public final class MinimalDwarfSidecarExporter {
         Map<String, byte[]> sections = produce(producer, consumer, target, ordered,
             unitName, syntheticSource, typeModel, lineTable, rangeLists, locationLists,
             elf.byteOrder());
-        new MatchedElfSidecarWriter().write(source, output, sections);
+        new MatchedElfSidecarWriter().write(source, output, sections, cancelled);
         return new ExportResult(target, ordered.size(), List.copyOf(sections.keySet()),
             version);
     }

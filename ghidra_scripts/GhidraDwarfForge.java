@@ -5,6 +5,7 @@ import ghidra.app.script.GhidraScript;
 import ghidradwarfforge.AddressNormalizer;
 import ghidradwarfforge.ExporterPreflight;
 import ghidradwarfforge.GhidraFunctionSymbols;
+import ghidradwarfforge.GhidraImageBase;
 import ghidradwarfforge.GhidraSyntheticSource;
 import ghidradwarfforge.GhidraTypeGraph;
 import ghidradwarfforge.elf.ElfImage;
@@ -26,6 +27,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
 import java.util.function.Consumer;
 
 public class GhidraDwarfForge extends GhidraScript {
@@ -35,7 +37,7 @@ public class GhidraDwarfForge extends GhidraScript {
         try {
             runExport();
         }
-        catch (CancelledException cancelled) {
+        catch (CancelledException | CancellationException cancelled) {
             printerr("GhidraDwarfForge report: " +
                 ExportReport.terminal(ExportReport.Status.CANCELLED, cancelled).toJson());
             throw cancelled;
@@ -140,9 +142,13 @@ public class GhidraDwarfForge extends GhidraScript {
             throw new IllegalStateException(
                 "Ghidra program language does not match the original ELF class/byte order");
         }
+        long elfLoadBase = originalElf.preferredImageBase();
+        long importedImageBase = GhidraImageBase.originalImageBase(currentProgram);
         long rebaseDelta = AddressNormalizer.rebaseDelta(
-            currentProgram.getImageBase().getOffset(), originalElf.preferredImageBase());
+            currentProgram.getImageBase().getOffset(), importedImageBase);
         DwarfTarget target = DwarfTarget.fromElf(originalElf);
+        println("  ELF minimum PT_LOAD VA: 0x" + Long.toHexString(elfLoadBase));
+        println("  Ghidra original ELF image base: 0x" + Long.toHexString(importedImageBase));
         println("  Ghidra-to-ELF address delta: 0x" + Long.toHexString(rebaseDelta));
         List<String> diagnostics = new ArrayList<>();
         Consumer<String> diagnostic = message -> {
@@ -164,7 +170,7 @@ public class GhidraDwarfForge extends GhidraScript {
             stagedOutput -> resultHolder[0] = new MinimalDwarfSidecarExporter().export(
                 input, stagedOutput,
                 consumer, producer, functions, source, typeModel,
-                sourceOutput.getFileName().toString()),
+                sourceOutput.getFileName().toString(), monitor::isCancelled),
             source::writeAtomically, monitor::checkCancelled);
         MinimalDwarfSidecarExporter.ExportResult result = resultHolder[0];
         String outputHash = sha256(output);

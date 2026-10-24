@@ -98,6 +98,36 @@ tasks.register("existingDebugSidecarSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.elf.ExistingDebugSidecarSmoke"
 }
 
+tasks.register("extendedSectionNumberingSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks extended ELF section numbering and optionally builds target fixtures"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.ExtendedSectionNumberingSmoke"
+    if (project.hasProperty("fixtureTarget")) {
+        args layout.buildDirectory.dir("fixtures").get().asFile.absolutePath,
+            project.property("fixtureTarget")
+    }
+}
+
+tasks.register("elfImageReaderSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded file-backed ELF metadata, absent names and extended program counts"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.ElfImageReaderSmoke"
+    maxHeapSize = "256m"
+}
+
+tasks.register("elfCopyCancellationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks cancellation during streamed copy and before atomic publication"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.ElfCopyCancellationSmoke"
+    maxHeapSize = "64m"
+}
+
 tasks.register("minimalDwarfSidecarSmoke", JavaExec) {
     group = "verification"
     description = "Runs the production symbol-only sidecar exporter in an isolated JVM"
@@ -139,6 +169,14 @@ tasks.register("elfImageBaseSmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.elf.ElfImageBaseSmoke"
+}
+
+tasks.register("ghidraImageBaseSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks Ghidra-recorded ELF import bases and explicit rebases"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.GhidraImageBaseSmoke"
 }
 
 tasks.register("dwarfTargetSmoke", JavaExec) {

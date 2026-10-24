@@ -216,7 +216,7 @@ if ((import_mode)); then
         "$temporary_base/ghidra-dwarf-forge-headless-wrapper.XXXXXXXX") || exit 12
     headless_arguments=(
         "$temporary_root" GhidraDwarfForgeHeadless -deleteProject
-        -import "$import_path" -analysisTimeoutPerFile "$analysis_timeout"
+        -import "$import_path" -loader ElfLoader -analysisTimeoutPerFile "$analysis_timeout"
         -postScript GhidraDwarfForge.java "${export_options[@]}"
     )
 else

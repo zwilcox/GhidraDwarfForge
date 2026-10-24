@@ -164,6 +164,20 @@ Makefile recipe lines.
 
 Do not use `git reset --hard`, force-push, delete branches, rewrite history, or remove user data unless the user explicitly directs it.
 
+### 6.1 Standing PR authority
+
+The user clarified on 2026-10-23 that routine PR approval is delegated to the
+agent. Review and integrate changes within the authorized task when their
+required checks pass; do not add a fresh user-confirmation gate merely because
+the agent opened the PR as a draft. Preserve the enforced, up-to-date
+`required-validation` check and normal merge history; never use an admin bypass.
+
+GitHub prevents an account from formally approving its own PR. When the
+connected account is also the author, record independent review evidence and
+follow the repository's actual protection rules. Do not confuse this platform
+limitation with missing user authorization. Treat release publication according
+to its task scope rather than bundling it into routine PR integration.
+
 ## 7. Native/JNA rules
 
 Native ABI mistakes can terminate the entire Ghidra JVM. Native stability is a P0 release blocker.

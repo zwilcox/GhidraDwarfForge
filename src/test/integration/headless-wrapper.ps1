@@ -116,8 +116,14 @@ exit /b %FAKE_HEADLESS_EXIT%
 
     $null = Invoke-Wrapper 0 ($importOptions + @('-Log', (Join-Path $work 'success.log')))
     Assert-Condition (Test-Path -LiteralPath $argumentLog) 'valid log did not launch Ghidra'
+    $launchedArguments = Get-Content -LiteralPath $argumentLog -Raw
+    Assert-Condition ($launchedArguments -match '(?:^|\s)"?-loader"?\s+"?ElfLoader"?(?:\s|$)') `
+        'import wrapper did not select the ELF loader'
     $null = Invoke-Wrapper 0 $importOptions
     $null = Invoke-Wrapper 0 $projectOptions
+    $launchedArguments = Get-Content -LiteralPath $argumentLog -Raw
+    Assert-Condition ($launchedArguments -notmatch '(?:^|\s)"?-loader"?(?:\s|$)') `
+        'existing-project wrapper would select an import loader'
 
     Remove-Item -LiteralPath $argumentLog -Force
     $unknownProjectOptions = @('-ProjectDirectory', $project, '-ProjectName', 'Existing',

@@ -1768,7 +1768,7 @@ they have been replaced with a current sequence and an evidence-based backlog.
 Existing build/native ABI/source/type/location/CI machinery must not be
 reimplemented merely because older snapshot prose describes it as absent.
 
-**PLANNED:** remaining core work includes ELF layout/size robustness, distinct
+**HISTORICAL at that audit:** remaining core work included ELF layout/size robustness, distinct
 function/linkage identity, richer scopes/declarations, functions whose body
 starts below their entry point, and more precise variable lifetimes/storage
 migration. The current stable-register and SP-relative location profile is
@@ -1776,7 +1776,7 @@ validated; it does not establish arbitrary value migration or scope/liveness.
 Additional target profiles require explicit, finite acceptance cases. Native
 Windows GUI and manual Script Manager journeys remain **PRESENT, UNVERIFIED**.
 
-**PRESENT, UNVERIFIED:** extended-section-number emission is parked on
+**HISTORICAL:** extended-section-number emission was parked on
 `work/elf-table-robustness` at `f2884e6`. Its build/smoke checks passed, but a
 large-output shell-pipeline failure stopped the integration harness before GDB;
 it has no complete hosted validation and is outside PRs #16/#17. That checkpoint
@@ -1787,6 +1787,66 @@ Optional debuglink remains unimplemented. Inlining remains an **UNCERTAIN**
 evidence investigation, and performance work must begin with benchmarks and
 explicitly selected improvements. The accepted no-synthetic-CFI decision is
 already complete. No optional item was marked implemented by this audit.
+
+### 16.27 ELF robustness continuation
+
+**CONFIRMED:** the user selected P0.9 on 2026-10-23. Work is isolated on
+`work/elf-robustness-completion`, based on PR #17, retaining the old checkpoint
+and the earlier correctness fixes. Ghidra 12.0.3/Java 21 and pinned libdwarf
+2.3.2 remain the baseline; no JNA/native ABI changes were needed.
+
+**CONFIRMED locally:** the reader/writer now uses bounded metadata buffers and
+file channels for original bytes. Extended section and program counts,
+unnamed section tables, high file offsets and metadata limits have ELF32/64 ×
+both-byte-order regressions. Partial `PT_NOTE` coverage preserves build ID
+without duplicate note records. Physical symlink traversal and input/output
+alias rejection are tested. Cancellation during copy and before publication
+preserves prior outputs and removes staging files.
+
+The >2 GiB compiler oracle passes with a 64 MiB Java heap. Real >2 GiB
+Ghidra export, validators, GDB values/source stepping, input hashes and
+byte-identical fresh-import repeats also pass. Import wrappers explicitly
+select `ElfLoader`: automatic format detection exhausted Ghidra's heap inside
+an unrelated SOM probe before ELF import. These tests bound source-file I/O,
+not the memory required for arbitrarily large recovered program models.
+
+The stronger extended-program fixture found an additional silent address
+error: Ghidra searches only its first 20 headers for an initial base, then
+records the base actually used to map ELF addresses. With all load headers
+later, recomputing a minimum load VA produced a false delta. Production now
+uses the loader's recorded original base, matching Ghidra's own DWARF importer;
+missing/invalid metadata fails explicitly. Real MIPS `main` changed from the
+incorrect `0x800874` to `0x400874`; the ordinary nonzero-offset/rebased fixture
+still passes. ADR 0001 and `docs/VALIDATION.md` record limits and evidence.
+
+**CONFIRMED:** final strengthened-layout runtime/rebase checks pass locally
+on x86-64, AArch64 and both MIPS byte orders. Real mid-copy cancellation reports
+`CANCELLED` while preserving both prior artifacts. Implementation `3e47589` in
+[PR #18](https://github.com/zwilcox/GhidraDwarfForge/pull/18) passes all twelve
+jobs in [run 40047390539](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40047390539),
+including ARM32 and Windows-hosted export. ARM32 artifact inspection independently
+confirms the late-header, rebase, value, source, validator and hash assertions.
+P0.9 is complete within ADR 0001's documented bounds. Integration is tracked
+by PRs #16/#17/#18; the published alpha is unchanged. Native Linux/QEMU cannot directly execute the
+large-program-table fixture; its exact-input static checks and runtime checks
+against the proven-equivalent ordinary load image are explicitly distinguished.
+
+### 16.28 PR approval authority clarification
+
+**CONFIRMED (2026-10-23):** the user reminded the agent that PR approval was
+already delegated. The authenticated `zwilcox` account has admin/merge access.
+`main` enforces an up-to-date `required-validation` check, including for admins,
+and does not require a separate approving review. GitHub's own-author approval
+restriction does not prevent normal integration after review and passing CI.
+
+The previous handoff wording combined routine merges with new release
+publication and caused an unnecessary stop. Routine reviewed PR integration
+now proceeds under the standing authorization without another confirmation.
+Independent review found no outstanding findings or review threads in the
+three-PR stack. PR #16 was merged at `5f8d07a`; subsequent PRs are retargeted
+and validated against the updated `main` in order. Use GitHub for live merge
+and CI state. No protection rule was weakened, no admin bypass was used, and
+this integration does not replace the published alpha artifact.
 
 ## 17. Open questions
 
@@ -1866,10 +1926,12 @@ documented profiles. The project has an extension build, pinned/audited natives,
 real source/type/location export and a passing Linux/Windows integration matrix.
 
 1. Preserve the working tree and inspect current PR/CI/release state.
-2. When authorized, integrate PRs #16/#17 and ship a separately versioned,
-   fully validated corrective alpha; the existing public alpha is unchanged.
-3. Resume the isolated P0.9 ELF robustness work and complete its tests before
-   including the parked checkpoint in a release.
+2. Integrate reviewed PRs under the standing authorization and enforced checks;
+   check GitHub for the current state of #16/#17/#18. A corrective release is a
+   separate versioned publication task; preserve the existing public alpha.
+3. Preserve completed P0.9's layout/resource bounds and regression matrix;
+   implementation `3e47589` is validated by all twelve hosted jobs. Do not
+   redo the parked checkpoint or treat direct PN_XNUM execution as supported.
 4. Implement focused identity/scope/entry-point cases and evidence-backed
    lifetime/storage migration with compiler-oracle and GDB tests.
 5. Extend selected target/GUI coverage; give optional debuglink, inlining and

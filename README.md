@@ -30,6 +30,14 @@ The development exporter replaces existing compiler DWARF rather than merging
 it with the recovered view. Old compressed debug sections, indexes, and debug
 file links are retired inside the sidecar; the original ELF stays unchanged.
 
+Development ELF handling also covers extended section/program counts and
+section tables without names. Original bytes are streamed, with explicit
+[metadata and size bounds](docs/ADR-0001-ELF-SIDECAR.md); inputs larger than
+2 GiB have compiler-oracle and real-export tests. Import-mode wrappers select
+Ghidra's ELF loader explicitly to avoid unrelated format probes. Large
+program-header tables can be imported and exported even when Linux/QEMU
+cannot execute that layout directly; see the exact validation limits below.
+
 ## Build
 
 Ghidra 12.0.3 requires Java 21-compatible bytecode and Gradle 8.5 or newer.
