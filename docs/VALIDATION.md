@@ -818,6 +818,46 @@ non-mutating.
 
 ## Shared-object export and runtime loading
 
+The shared-object QEMU harness uses a unique UNIX socket in a short private
+`/tmp/ghidra-forge-qemu.*` directory (mode 0700). QEMU 8.2.2's
+[`gdbstub/user.c`](https://github.com/qemu/qemu/blob/v8.2.2/gdbstub/user.c)
+and [GDB's connection contract](https://sourceware.org/gdb/current/onlinedocs/gdb.html/Connecting.html)
+support this transport. The helper checks child liveness and Linux
+`/proc/net/unix` listener state for 100 polls at 50 ms intervals without opening a
+connection, which would consume QEMU's single debugger client. It retains
+stdout/stderr/endpoint/exit evidence and removes/reaps its own socket/child on
+success, startup failure, timeout and caller failure. GDB and validator
+failures are not retried or filtered.
+
+This addresses run `40055880742`, MIPS32LE job `120759663719`: QEMU reported
+`bind: Address already in use` on the PID-derived TCP port `40514`, then GDB
+timed out. Local `shared-object-port-collision.py mips32le` deliberately holds
+the exact historical port for the launched harness PID while the actual
+shared-object GDB type/value/source/load-bias/step/normal-exit checks pass over
+the private socket. The startup suite also proves a real QEMU missing-input
+failure is not retried, a child without a listener times out, and a ready
+emulator is terminated on cleanup. No processes or socket directories survive
+these cases. The pipeline runs the collision control in the MIPS32LE shared
+lane and the startup/failure suite in the x86-64 lane.
+
+```bash
+src/test/integration/qemu-socket-startup.sh
+src/test/integration/shared-object-port-collision.py mips32le
+```
+
+Local evidence: startup `run.DwftsTvR` and final collision `run.7c6sr2ei`; the latter
+holds TCP port `31527` for harness PID `286525`. QEMU and GDB diagnostics are
+empty, recovered parameters are 19/23, global values are 0/7/42 as expected,
+and the inferior exits normally. This change is limited to shared-object
+startup. Other QEMU harnesses still use TCP and are not claimed to be migrated;
+the exact updated hosted matrix remains pending.
+
+An additional MIPS32BE shared-object run passes with empty QEMU diagnostics.
+AArch64 reaches normal exit using the same socket transport but retains the
+existing synthetic-vDSO `corrupt string table index` warning in its GDB log;
+that run is not counted as clean diagnostic evidence. No new warning filter
+or acceptance exception was introduced.
+
 ```bash
 FIXTURE_ROLE=shared src/test/integration/headless-symbol-export.sh \
   /home/ziggy/ghidra_12.0.3_PUBLIC \

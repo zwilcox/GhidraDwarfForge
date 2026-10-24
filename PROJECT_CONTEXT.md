@@ -1969,6 +1969,24 @@ Failure Console/window/screenshot diagnostics are retained. Controlled overlap
 reproduction and full local run `run.B4Zeob4d` pass; hosted Linux and Windows
 evidence for this correction remains pending. No timeout or CI gate was relaxed.
 
+### 16.32 Shared-object QEMU debugger endpoint isolation
+
+**CONFIRMED:** combined GUI run `40055880742`, MIPS32LE job `120759663719`,
+failed before debugger attachment because TCP port `40514` was already in use.
+The old shared-object harness derived this port from its PID. The failure is
+an observed test-infrastructure collision, not evidence of an exporter defect.
+
+The shared-object harness now launches QEMU with a unique short UNIX socket in
+a mode-0700 directory, supported by the tested QEMU 8.2.2 and GDB. Bounded
+child/listener readiness does not consume the debugger connection. Startup
+failure, timeout and caller failure retain diagnostics and clean up the owned
+child/socket. No GDB execution or diagnostic is retried or waived. Real
+MIPS32LE shared-object debugging passes while its exact old TCP port is held
+open; native QEMU/GDB startup and failure-cleanup controls also pass locally.
+The two controls are wired into CI; exact-head hosted validation is pending.
+Other QEMU scripts still using TCP are a separate, evidence-driven follow-up.
+See `docs/VALIDATION.md` for commands and retained evidence.
+
 ## 17. Open questions
 
 Codex should not silently answer these through implementation choices. Investigate, document, and obtain user direction when the answer materially changes compatibility or scope.

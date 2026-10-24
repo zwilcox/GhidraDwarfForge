@@ -755,7 +755,11 @@ jobs:
             FIXTURE_ROLE="$role" src/test/integration/headless-symbol-export.sh \
               "$GHIDRA_INSTALL_DIR" "$consumer" "$producer" "$TARGET"
             if [[ "$role" == "shared" ]]; then
-              src/test/integration/shared-object-gdb.sh "$TARGET"
+              if [[ "$TARGET" == mips32le ]]; then
+                src/test/integration/shared-object-port-collision.py "$TARGET"
+              else
+                src/test/integration/shared-object-gdb.sh "$TARGET"
+              fi
             else
               FIXTURE_ROLE="$role" src/test/integration/qemu-gdb-symbols.sh "$TARGET"
             fi
@@ -774,6 +778,10 @@ jobs:
                 "$GHIDRA_INSTALL_DIR" "$consumer" "$producer"
             fi
           done
+
+      - name: QEMU private socket startup and failure cleanup
+        if: matrix.target == 'x86_64'
+        run: src/test/integration/qemu-socket-startup.sh
 
       - name: Bit-field values through the real exporter and GDB
         env:

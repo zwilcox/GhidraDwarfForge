@@ -4,21 +4,14 @@ set -euo pipefail
 repository_dir=$(realpath "$(dirname "$0")/../../..")
 fixture_dir="$repository_dir/build/fixtures"
 result_dir="$repository_dir/build/test-results/shared-object-gdb"
-base_port=$((30000 + ($$ % 15000)))
-active_emulator_pid=""
+source "$repository_dir/src/test/integration/qemu-socket.sh"
 if [[ $# -eq 0 ]]; then
     targets=(x86_64 aarch64 arm32 mips32be mips32le)
 else
     targets=("$@")
 fi
 
-cleanup() {
-    if [[ -n "$active_emulator_pid" ]] && kill -0 "$active_emulator_pid" 2>/dev/null; then
-        kill "$active_emulator_pid" 2>/dev/null || true
-        wait "$active_emulator_pid" 2>/dev/null || true
-    fi
-}
-trap cleanup EXIT
+trap qemu_socket_cleanup EXIT
 mkdir -p "$result_dir"
 
 symbol_address() {
@@ -117,7 +110,7 @@ validate_transcript() {
 
 gdb_commands() {
     local target=$1 main_address=$2 text_link_address=$3 sidecar=$4
-    local sysroot=${5:-} port=${6:-}
+    local sysroot=${5:-} socket=${6:-}
     cat <<EOF
 set debuginfod enabled off
 set auto-solib-add off
@@ -128,7 +121,7 @@ EOF
         cat <<EOF
 set sysroot $sysroot
 set solib-search-path $fixture_dir/$target
-target remote :$port
+target remote $socket
 EOF
     else
         echo starti
@@ -183,7 +176,7 @@ run_native() {
 }
 
 run_emulated() {
-    local target=$1 emulator=$2 sysroot=$3 port=$4
+    local target=$1 emulator=$2 sysroot=$3
     local sidecar="$fixture_dir/$target/libsemantic.so.ghidra-forge.dbg"
     local main_address text_link_address transcript command_file
     local main_load_start main_load_end
@@ -192,14 +185,12 @@ run_emulated() {
     read -r main_load_start main_load_end < <(main_load_bounds "$target")
     transcript="$result_dir/$target.txt"
     command_file="$result_dir/$target.gdb"
+    qemu_socket_start "$result_dir/$target.qemu" "$emulator" "$sysroot" \
+        "$fixture_dir/$target/semantic.shared-driver.stripped"
     gdb_commands "$target" "$main_address" "$text_link_address" "$sidecar" \
-        "$sysroot" "$port" >"$command_file"
-    "$emulator" -L "$sysroot" -g "$port" \
-        "$fixture_dir/$target/semantic.shared-driver.stripped" &
-    active_emulator_pid=$!
+        "$sysroot" "$qemu_socket_path" >"$command_file"
     timeout 30s gdb-multiarch -q -nx -batch -x "$command_file" 2>&1 | tee "$transcript"
-    wait "$active_emulator_pid"
-    active_emulator_pid=""
+    qemu_socket_wait
     validate_transcript "$target" "$transcript" "$main_load_start" "$main_load_end"
 }
 
@@ -207,13 +198,13 @@ for target in "${targets[@]}"; do
     case "$target" in
         x86_64) run_native ;;
         aarch64) run_emulated "$target" /usr/bin/qemu-aarch64-static \
-            /usr/aarch64-linux-gnu "$base_port" ;;
+            /usr/aarch64-linux-gnu ;;
         arm32) run_emulated "$target" /usr/bin/qemu-arm-static \
-            /usr/arm-linux-gnueabihf "$((base_port + 3))" ;;
+            /usr/arm-linux-gnueabihf ;;
         mips32be) run_emulated "$target" /usr/bin/qemu-mips-static \
-            /usr/mips-linux-gnu "$((base_port + 1))" ;;
+            /usr/mips-linux-gnu ;;
         mips32le) run_emulated "$target" /usr/bin/qemu-mipsel-static \
-            /usr/mipsel-linux-gnu "$((base_port + 2))" ;;
+            /usr/mipsel-linux-gnu ;;
         *) echo "unknown target: $target" >&2; exit 2 ;;
     esac
 done

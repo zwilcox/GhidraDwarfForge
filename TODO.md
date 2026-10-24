@@ -1357,6 +1357,15 @@ an integration pass.
 - [x] Native crashes are clearly reported as failures.
 - [x] Artifacts/transcripts are retained for failed runs.
 
+**CONFIRMED local reliability follow-up:** hosted GUI/combined run `40055880742`
+hit an occupied PID-derived QEMU TCP port in the MIPS32LE shared-object test.
+That harness now uses a private UNIX socket with bounded startup/liveness and
+cleanup checks. A controlled occupied historical port still permits the full
+shared-object GDB oracle to pass; startup failure/timeout cleanup also passes.
+Both regressions are wired into CI, with exact-head hosted validation pending.
+Other TCP-based QEMU harnesses remain unchanged; this does not claim a general
+emulator retry policy or excuse debugger/validator failures.
+
 ## P2.13 Produce installable releases
 
 **Status:** `[x]` — deterministic CI artifacts, packaged Linux/Windows natives,
