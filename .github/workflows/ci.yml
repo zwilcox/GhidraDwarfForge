@@ -473,7 +473,7 @@ jobs:
             src/test/integration/architecture-neutrality.sh
             ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke \
               ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke \
-              exportReportSmoke fileDigestsSmoke \
+              exportReportSmoke fileDigestsSmoke elfBuildIdSmoke \
               syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
               variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke \
               stackFirstUseSmoke \
@@ -1091,6 +1091,13 @@ jobs:
             "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
             "$TARGET" "${extra[@]}"
 
+      - name: Typed ELF build-ID observations and independent GNU note oracle
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/elf-build-id.py \
+            "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" "$TARGET"
+
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -1218,7 +1225,8 @@ jobs:
           & .\gradlew.bat addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke qualifiedFunctionNameSmoke dwarfAddressRangesSmoke `
-            registerCopySmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke 2>&1 |
+            registerCopySmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
+            elfBuildIdSmoke 2>&1 |
             Tee-Object -FilePath "$resultDirectory\native-independent.log"
           if ($LASTEXITCODE -ne 0) {
             throw "native-independent Windows checks failed with exit code $LASTEXITCODE"

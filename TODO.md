@@ -1471,6 +1471,13 @@ exports, GDB and the installed digest oracle pass locally; native Windows and
 the complete hosted gate remain required. See `docs/FILE-DIGESTS.md`. This does not establish identity,
 parse receipts or expose attachment; the full transaction remains planned.
 
+**CONFIRMED locally; hosted gate pending:** a subsequent read-only `ElfBuildId`
+observer handles typed note views, unique values/provenance, missing/conflicting
+IDs, explicit format/resource exclusions and cancellation. Java 21 focused
+tests and an installed-JAR GNU oracle on existing x86-64/AArch64/MIPS32 big-endian
+pairs pass. See `docs/ELF-BUILD-ID-OBSERVATIONS.md`. Matching observed IDs are
+not sufficient identity or attachment checks; ordinary export does not call it.
+
 **Status:** `[ ]` — optional product operation **PLANNED**. The bounded backend
 and backup-based re-export investigation is complete; the explicit transaction
 design and remaining acceptance tests are in

@@ -3546,3 +3546,57 @@ installed CRC oracle to all five target lanes; only Linux x86 runs the large
 case. Native Windows and full exact-head package/hosted acceptance remain
 pending. P2.8's receipt/identity/backup/refresh transaction and all published
 release artifacts remain unchanged.
+
+## Read-only build-ID observation foundation (2026-10-24)
+
+**CONFIRMED locally; hosted gate pending:** production commit `72d41da` adds
+the observer and isolated note-format table; the only `ElfImage` change exposes
+its existing bounded source read within the package. Ordinary export has no
+call to the observer. JAR SHA-256:
+`04398abf04201525fcfeffcf31485ae11fded7b1f9909c199e234f1db8c7cd8c`.
+Initial private ZIP `d87eadc05c7d3b67cc32a381c56708aa78eea9caed4567fa42d755163efa2f88`
+predates this documentation; final package review must use a fresh build.
+
+Pinned GNU 2.42 source/provenance and tool probes establish eight positive
+width/endian/alignment cases with nonzero padding and sixteen malformed-padding
+controls. GNU exits zero for these warnings; the oracle treats the diagnostics
+as failures. Peer review additionally reproduced a real ID displayed from an
+IA-64/OpenVMS 24-byte header while the first observer returned absent. The
+final isolated format exclusion rejects that exact case, with both-endian and
+paired-discriminator controls. No unsupported architecture is advertised.
+
+`elfBuildIdSmoke`, `elfImageReaderSmoke`, `fileDigestsSmoke`, extension build,
+architecture guard and whitespace checks pass. The new smoke separately passes
+on actual Java 21.0.12.1 using `javac --release 21` and `-Xmx64m`: immutable
+provenance, exact/over-limit cases, overlapping views, conflicting IDs, extended
+section/string/program counts, late/high-offset notes, cancellation, ordinary
+source-change detection and closed channels. These are observations rather
+than atomic snapshots or a stronger file-identity guarantee.
+
+Final independent installed-JAR oracle runs are `x86_64.o3ne2_54`,
+`aarch64.uefa5721` and `mips32be.hxwxg8jf` under
+`build/test-results/elf-build-id/`. Each consumes three previously validated
+executable/PIE/no-build-ID pairs from the digest worktree, checks exact target
+class/byte order/machine, loads observer and ELF-reader classes from the private
+release JAR, and runs on actual Java 21 under a 64 MiB heap. ID values, physical
+duplicate counts and all five relationship outcomes match independent GNU
+observations. Typed nameless sidecars, sectionless originals, renamed sections,
+vendor decoys, repeated identical IDs and conflicting/malformed owned variants
+pass their required positive or rejection checks. Every probe preserves input
+bytes/mtime, and all original pairs, sources and the installed JAR stay unchanged.
+This does not reattribute the earlier artifacts' DWARF/GDB acceptance to a new
+export from the observer package.
+
+Initial `x86_64.0p8v1jtt`, `aarch64.54rkrphf` and `mips32be.61gb2tdi`
+stopped on GNU's `no .dynamic section in the dynamic segment` diagnostic for
+nameless dynamic originals, despite displaying their correct note IDs. The
+nameless positive now uses the actual sidecar, which has no program headers;
+GNU diagnostics remain strict. Intermediate successful runs before per-probe
+mtime checks are retained separately. No diagnostic was silently ignored.
+
+Source/provenance and focused evidence are in `build/build-id-review/`.
+The pipeline adds the observer smoke on both hosts and the installed GNU oracle
+to all five existing target lanes. Native Windows and full exact-head hosted
+acceptance remain pending. The earlier path-parent test correction must also
+be integrated from its accepted parent before this candidate's hosted gate.
+No attachment option, executable rewrite or release publication is added.

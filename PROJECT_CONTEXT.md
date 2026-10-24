@@ -3089,3 +3089,24 @@ Java 21 heap, also matching GNU SHA-256; the owned large file is removed.
 Eight saved-program packaged exports and three rejection cases additionally
 pass path/report/hash/original-database preservation and byte-identical repeats.
 No native Windows or full hosted acceptance is inferred from these local tests.
+
+### Bounded ELF build-ID observation foundation (2026-10-24)
+
+**CONFIRMED locally; hosted gate pending:** `ElfBuildId` reads typed note
+sections/segments independently of names and compares observed values without
+asserting file identity or attachment eligibility. It handles both widths and
+byte orders, compatible duplicate views, sectionless/nameless metadata and
+explicit absence; malformed/ambiguous data fails. GNU 2.42 source and tool
+probes establish four/eight-byte layouts and padding. Review found the separate
+IA-64/OpenVMS header format could otherwise be misread as absent; an isolated
+format table now rejects its nonempty notes. Ordinary export is unchanged.
+
+Source review and actual Java 21 focused checks pass, including bounded reads,
+extended tables, late/high-offset notes, limits, cancellation and source-change
+controls. The installed helper agrees with GNU on existing validated x86-64,
+AArch64 and MIPS32 big-endian pairs and owned renamed/unnamed/sectionless,
+duplicate/conflict/decoy/malformed variants. Initial nameless dynamic-original
+oracle runs exposed GNU readelf's name-based `.dynamic` lookup diagnostic; the
+quiet nameless positive uses the real non-loadable sidecar instead, retaining
+the failed attempts. Native Windows/full hosted acceptance remains pending.
+See `docs/ELF-BUILD-ID-OBSERVATIONS.md`; P2.8's transaction is still planned.
