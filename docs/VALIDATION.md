@@ -632,7 +632,9 @@ input/output/source SHA-256 values are reported.
 naming, missing input, original-file alias rejection, nonexistent output
 directories, and an injected unwritable-directory result. GUI directory
 selection is implemented for a valid input whose default destination fails,
-but is **PRESENT, UNVERIFIED** in an interactive Ghidra process.
+and the automated Linux Swing chooser/cancellation test passes in a genuine
+non-headless Ghidra process (see the post-alpha GUI record above). Manual
+Script Manager navigation and Windows GUI behavior remain **PRESENT, UNVERIFIED**.
 
 ## Build-ID discovery
 
