@@ -2940,3 +2940,33 @@ byte-identical pairs. Independent review also closes physical alias, offcut
 entry, fallthrough provenance and unknown-store proof gaps. The complete
 hosted gate remains required. The policy and evidence boundaries are in
 `docs/REGISTER-COPY-LIFETIMES.md`.
+
+### Unsupported stack-local starts (2026-10-24)
+
+**CONFIRMED:** Ghidra 12.0.3 rejects nonzero stack first-use during ordinary
+construction/insertion, but its public stored-variable setter persists it.
+Its decompiler stack-symbol mapping ignores that field and supplies no
+complete lifetime end. The old Forge output nevertheless located such a
+local throughout the body; in a real shared-slot fixture, the later variable
+showed the earlier object's `11` before becoming `22` in its own scope.
+Uninitialized compiler variables are a separate case and are not treated as
+proof of incorrect locations.
+
+**CONFIRMED locally; hosted gate pending:** the bounded fix preserves the
+curated name/type/offset but omits any nonzero stack-local first-use location
+with `UNKNOWN_LIFETIME` and an explicit diagnostic. It does not clip a guessed
+interval, change zero-offset/parameter behavior or claim general slot-reuse
+support. Actual Ghidra five-profile extraction and Java 21 tests pass,
+including saved/reopened metadata and guard-absent negative controls.
+Final packaged run `run.zHNit33c` passes twelve exports across x86-64/AArch64
+exec/PIE/rebase roles; old-exporter run `run.R6pJS512` reproduces the wrong
+value in all six roles. The fixed variable is typed but unavailable at all
+four observations, while the zero-offset local stays correct. Structural
+checks, exact reports, input hashes and byte-identical repeats pass. Hosted
+acceptance is still required. Policy and pinned API evidence are in
+`docs/STACK-FIRST-USE.md`; detailed commands are in `docs/VALIDATION.md`.
+
+**CONFIRMED prior acceptance:** PR #28's exact-main run `40077843290` passed
+all twelve jobs; independent Linux and native Windows GUI artifact reviews
+also pass. This supersedes its earlier pending-main checkpoint. Neither
+published alpha nor its tag/assets changed.

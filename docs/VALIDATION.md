@@ -3168,3 +3168,90 @@ The new runtime gate is required for x86-64/AArch64, and the focused copy smoke
 is added to Linux and native Windows CI. All five existing target gates and
 strict diagnostics remain enforced. Exact-head hosted acceptance and package
 audit are still required before normal merge. Neither published alpha changes.
+
+## Unsupported nonzero stack-local first-use (2026-10-24)
+
+**CONFIRMED locally; exact hosted gate pending.** Production commit
+`27d47dcf00077785fd7f9b7eaf6b5905397004ee` adds the conservative local-storage
+guard and real-Ghidra smoke. The local runtime JAR SHA-256 is
+`0bffbe24632d077f9c25a8e6f2f17e8cae9b84ac0c7884d3e93a01ea264ef181`.
+The private runtime package SHA-256 is
+`4ccb391a62b069bbe5a4f8b47a93f35a5ba0fab27e8404a6e429b97171b89c35`;
+all five nested manifests pass. It was installed into an owned Ghidra clone,
+preserving the original installation's launch-properties hash. Native source,
+bindings, target mappings and DWARF encoding are unchanged. Published alpha.2
+remains immutable and does not contain this guard.
+
+Commands from the `stack-first-use-guard` worktree:
+
+```bash
+GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC \
+    ./gradlew stackFirstUseSmoke variableStorageSmoke dwarfLocationListsSmoke buildExtension
+src/test/integration/architecture-neutrality.sh
+src/test/integration/fixture-reproducibility.sh x86_64
+src/test/integration/fixture-reproducibility.sh aarch64
+DWARFDUMP=/path/to/verified-pinned-dwarfdump \
+    src/test/integration/stack-first-use-export.sh /path/to/private-fixed-ghidra x86_64 aarch64
+FORGE_STACK_EXPECTATION=baseline-reproducer \
+    DWARFDUMP=/path/to/verified-pinned-dwarfdump \
+    src/test/integration/stack-first-use-export.sh /path/to/private-pr29-ghidra x86_64 aarch64
+```
+
+The strict checker is the compression-capable pinned build retained at
+`cu-address-index/build/address-index-review/hosted-validator/tool/bin/dwarfdump`,
+whose artifact archive SHA-256 is
+`977737f22ec4e18471dbdef211445a44b05454c3f4d6836fb5ec0783076c9683`.
+The local complete headless runtime is JDK 25.0.4.1. Actual Java 21.0.12.1
+standalone tests compile with `--release 21`; their classfile major version is
+65. Do not attribute local headless runs to Java 21.
+
+Focused checks pass for x86-64, AArch64, ARM32 and MIPS32 BE/LE, including actual
+ProgramDB save/reopen, immutable snapshot preservation, constructor/insertion
+restrictions, positive/negative/offcut/outside/extreme offsets, name/type/offset
+retention, zero/parameter positives and cancellation. The isolated guard-absent
+Java 21 replay fails the new location assertion as required. Existing copy,
+opaque, storage and location-list checks also pass. These are five-language
+extraction checks; the new runtime fixture covers only x86-64/AArch64.
+
+Final fixed `build/test-results/stack-first-use/run.zHNit33c` passes six roles,
+two fresh imports each. Compiler GDB proves disjoint scopes, measures a shared
+entry-SP-relative slot, and observes raw `11,11,22,22`. Forge keeps `second`
+typed but unavailable at all four PCs, emits no location or guessed scope
+start, and records the exact `UNKNOWN_LIFETIME` omission for both exports.
+The zero-first-use local remains `37`. Independent DIE/type/report checks,
+source lookup, next/step, global pointer formatting and normal exit pass.
+Original hashes, exact build IDs, code-address index/negative controls and
+byte-identical `.dbg`/`.dbg.c` pairs pass. Native GDB/GNU/LLVM stderr is empty;
+AArch64 GDB has only the exact compiler-matched QEMU vDSO warning.
+
+GNU/LLVM validation passes. Strict libdwarf reports only the exactly
+corroborated inherited frame diagnostics: x86-64 exec/PIE/rebase `5/3/3` and
+AArch64 `4/4/4`, with zero unexplained diagnostics. These visible inherited
+errors are not described as absent. The structural/report oracle additionally
+rejects 21 deliberately malformed location/type/preparation/report/hash cases.
+
+Baseline `run.R6pJS512` uses unchanged PR #29 JAR
+`70514244380b83df22644bc8ea4c5c73a504f5ba87cb2e21ed3f6cdf7ee3457c`
+and package `823699e9d7cceba1b35b35a6dc0b56657e7249e61678346321c0d9ca8fc6acf4`
+in a separate owned installation. All six roles reproduce the earlier
+object's `11` as `second`, then `22`; the compiler says `second` is out of scope
+at the first two observations. Its twelve baseline exports validate/repeat,
+but the result is explicitly `BASELINE-REPRODUCED`, not an accepted correction.
+The old behavior is rejected by the fixed structural oracle.
+
+Evidence is retained under `build/stack-first-use-review/`: runtime and baseline
+logs, platform manifests, Java 21/baseline replay results, checker controls,
+compiler probes, lint and fixture-inventory logs. Both inventory lanes retain
+13 byte-identical standard fixture artifacts; the new fixture is compiled by
+its dedicated harness. Initial `run.PaItIwFG` stopped after its first repeated
+x86 export because the independent checker had not yet been created; it is
+not a passing suite. A private baseline-install filename typo and initial
+architecture-check path typo failed before validation, were retained, and
+were corrected. No source policy was weakened. Workflow lint, shell/Python
+syntax and whitespace checks pass.
+
+CI adds required Linux/native-Windows focused checks and x86-64/AArch64 runtime
+gates while preserving the existing five target lanes. Its exact-head full
+acceptance remains pending. Broader stack identity/lifetime recovery and the
+rest of P1.11a remain partial; this guard does not infer initialization or
+original compiler scope boundaries.

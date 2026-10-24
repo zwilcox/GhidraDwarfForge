@@ -51,6 +51,7 @@ expected_sources=(
     semantic.c
     shared_driver.c
     shared_semantic.c
+    stack-first-use.c
 )
 mapfile -t actual_sources < <(
     cd "$fixture_source_dir"

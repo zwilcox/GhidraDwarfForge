@@ -195,6 +195,17 @@ Focused harnesses build additional fixtures independently of the Makefile:
   originals, strict validators, source stepping and runtime values. See
   `docs/REGISTER-COPY-LIFETIMES.md` for the bounded proof.
 
+- `stack-first-use-export.sh` uses `stack-first-use.c` with disjoint compiler
+  scopes that reuse one stack slot, plus an ordinary zero-offset local.
+  Compiler GDB measures the entry-relative slots; the preparation script
+  persists explicit nonzero first-use on the stored `second` local. Forge
+  must retain its signed type but report/omit the unsupported location at
+  every observation, while `zero` remains `37`. Exec, PIE and rebase roles
+  on x86-64/AArch64 require validators, exact reports/DIEs, source stepping,
+  unchanged inputs and byte-identical pairs. A separate baseline mode must
+  reproduce the old wrong `11` before `second` is in scope. This does not
+  establish general stack-slot lifetimes; see `docs/STACK-FIRST-USE.md`.
+
 - `floating-registers-export.sh` uses `fp_register_aliases.c` with `-Og` and
   fully stripped runtime/export inputs. Compiler references establish scalar
   float/double arguments across stores on x86-64/AArch64, and scalar floats on
