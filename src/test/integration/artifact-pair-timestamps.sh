@@ -55,6 +55,7 @@ grep -Fq "$original'" "$work/before.txt"
 test "$(cat "$work/before.stderr")" = 'warning: Source file is more recent than executable.'
 
 javac --release 21 -d "$work/classes" \
+    "$repository/src/main/java/ghidradwarfforge/output/FileSystemPaths.java" \
     "$repository/src/main/java/ghidradwarfforge/output/ArtifactPairPublisher.java" \
     "$repository/src/test/java/ghidradwarfforge/output/ArtifactPairTimestampFixture.java"
 java -cp "$work/classes" ghidradwarfforge.output.ArtifactPairTimestampFixture \

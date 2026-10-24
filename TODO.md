@@ -1382,6 +1382,10 @@ review, validators, GDB and original/program-database preservation. See
 this does not implement the separate P2.8 attachment transaction. A later
 Windows trailing-dot/space leaf guard and actual native alias probe require
 updated-head CI; earlier PR #31 candidate results are intermediate evidence.
+The initial hosted timestamp harness omitted the new helper from its explicit
+`javac` source list. That dependency is corrected and the full local timestamp
+regression passes; both earlier heads remain intermediate, pending the new
+exact-head gate.
 
 **Status:** `[x]` for the validated paths — deterministic default and explicit paths, stale-path input
 override with imported-file hash verification, preflight collision/write

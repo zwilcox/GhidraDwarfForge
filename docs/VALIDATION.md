@@ -3475,3 +3475,16 @@ all 139 packaged classes match the tested bytes and major version 65. Evidence:
 the new hosted probe succeeds. The preceding eight Linux exports remain
 recorded for their exact pre-refinement JAR; updated-head CI will run the full
 runtime fixture again. Script bytes and native bindings/provenance are unchanged.
+
+The intermediate `50e0a4` run `40083416513` failed at the standalone timestamp
+harness's `javac` step: its explicit source list omitted the publisher's new
+`FileSystemPaths` dependency. The same omission exists in candidate `ffe6c81`;
+neither run is accepted as the final gate. Adding the helper to that source
+list passes the full local timestamp regression in `run.n90Mvxpa`, using
+`DWARFDUMP` set to the pinned compression-capable checker. GNU/LLVM and GDB
+pass, with two corroborated inherited frame diagnostics and zero unexplained
+strict errors. The publication warning disappears, a later source edit still
+warns, typed values/stepping work, and original bytes/mtime remain unchanged.
+Exact updated-head package, native Windows alias and complete CI evidence are
+still required; the implementation and packaged production bytes are unchanged
+by this harness-only correction.

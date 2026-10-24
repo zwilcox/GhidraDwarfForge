@@ -3055,3 +3055,15 @@ checks/build and actual Java 21 tests pass on Linux. New JAR SHA-256 is
 `125d6753d0f16e97af04c2c99d5d70ee1740f671d580ffda24c90bd2b4b1447b`;
 production script/native ABI are unchanged. Exact new-head hosted package,
 Windows alias evidence and the complete gate remain required.
+
+### Standalone timestamp harness dependency (2026-10-24)
+
+**CONFIRMED:** intermediate run `40083416513` failed its x86 timestamp check
+because that harness compiled `ArtifactPairPublisher` directly without its new
+`FileSystemPaths` dependency. This was a compilation failure, not passing
+runtime evidence. The standalone source list now includes the helper. Local
+`run.n90Mvxpa` passes GNU/LLVM, strict libdwarf with two exactly corroborated
+inherited frame diagnostics and zero unexplained errors, and GDB freshness,
+typed-value/stepping and later-edit controls. Original bytes and timestamps
+remain unchanged. Candidate `ffe6c81` has the same omission and is also
+intermediate only; a new exact-head full gate and package review are required.
