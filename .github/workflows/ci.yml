@@ -476,7 +476,7 @@ jobs:
               exportReportSmoke exportReportClaimsSmoke exportArtifactHashBindingSmoke \
               fileDigestsSmoke elfBuildIdSmoke \
               matchedElfPrefixSmoke matchedElfAllocationsSmoke executableProgramBytesSmoke \
-              debuglinkCandidateContentSmoke \
+              debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke \
               syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
               variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke \
               stackFirstUseSmoke \
@@ -1280,7 +1280,7 @@ jobs:
             registerCopySmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
             elfBuildIdSmoke exportReportClaimsSmoke matchedElfPrefixSmoke `
             matchedElfAllocationsSmoke exportArtifactHashBindingSmoke executableProgramBytesSmoke `
-            debuglinkCandidateContentSmoke 2>&1 |
+            debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke 2>&1 |
             Tee-Object -FilePath "$resultDirectory\native-independent.log"
           if ($LASTEXITCODE -ne 0) {
             throw "native-independent Windows checks failed with exit code $LASTEXITCODE"

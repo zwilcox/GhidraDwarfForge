@@ -3588,3 +3588,53 @@ attachment CLI, target replacement, snapshot, metadata or recovery claim. The
 existing GNU path remains an independent test oracle. Receipt/validator/host/
 backup/transaction prerequisites remain open. PR #38's exact candidate-content
 hosted gate is still running; the new writer is isolated from that reviewed head.
+
+
+### Candidate-content hosted acceptance (2026-10-24)
+
+**CONFIRMED:** PR #38 head `b269ec56e03598f5a132caecb9ec0bb344cb841f`
+passes all twelve jobs in exact pull-request run `40110565271`, attempt 1,
+with none skipped. Independent package/source, all five content/program artifact
+and both GUI reviews are clear. Fifteen cases/repeats, 120 reconstructed controls,
+45 input copies, 225 parent records and the x86 full sparse sidecar recipe pass.
+Native Windows passes twenty focused checks, content965/program431/binder551
+actually observed; Linux content970 is separate. Normal merge
+`2bd673900198c00de90f6adfa5079dd21e2f3d2d` at `2026-10-24T16:48:24Z`
+preserves the tested tree. Distinct main push `40113254401` remains pending.
+Hidden build-ID payload bytes remain unavailable in hosted archives; Windows
+independent dwarfdump/Linux ELF runtime limitations remain explicit.
+
+PR #37's distinct main push `40110261306` now also passes all twelve jobs and
+independent Linux/Windows GUI reviews, superseding its earlier pending state.
+The detailed all-five program artifact audits belong to its accepted PR run.
+Published releases remain unchanged.
+
+### Owned append-only candidate local acceptance (2026-10-24)
+
+**CONFIRMED locally; full hosted gate pending:** source `1763ebd` implements the
+ADR-0005 writer, consumed by the private-copy association harness. It creates a
+fresh owned directory and candidate, preserves raw original bytes/indexes except
+three explicit header fields, appends two records, and checks separate content
+postconditions and selected-sidecar digest agreement. Failure/cancellation closes
+resources and attempts exact-path cleanup with original exception identity and
+suppressed cleanup diagnostics. Successful scratch ownership transfers to the
+caller. No source/sidecar snapshot, permission preservation or attachment approval
+is promised; ordinary export and native bindings are unchanged.
+
+Peer review required explicit zero padding and conservative rejection of unused
+nonzero section-zero bookkeeping. An isolated variant removing only the two pad
+writes fails at the first pad assertion. Initial test-oracle/setup mistakes remain
+retained. Actual Java21/64MiB passes 1,142 default checks and 1,148 with one large
+ELF32 big-endian original/sidecar pair. Five focused suites, build and architecture
+guard pass. The exact 4GiB boundary is arithmetic-only, not an executed artifact.
+
+Private installed JAR `780909c106fd72a5c5b055a5c8af0c416b849518c3088f5a27c1fdfc2ce3d9e9`
+passes nine exec/PIE/no-ID cases and three shared lookups across x86-64, AArch64
+and MIPS32 big-endian. Independent root/peer reviews reconstruct 24 deterministic
+outputs and three plaintext counterexamples, verify nine mutations, 24 typed
+failures, sixty input copies and 264 parent records, and confirm all 48 selected
+original fixtures unchanged. Candidate GNU/LLVM checks, eighteen writer GDB
+transcripts and eighteen native/QEMU process executions pass; shared cases do not
+claim runtime. Earlier GNU references retain their own evidence and GDB checks.
+This replay adds no Ghidra export or repeated strict sidecar-DWARF validation.
+Final exact package and hosted/native Windows acceptance remain required.

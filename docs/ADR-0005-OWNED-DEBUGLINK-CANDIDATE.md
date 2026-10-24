@@ -1,6 +1,6 @@
 # ADR-0005: Prepare an owned append-only executable candidate
 
-- Status: Accepted direction; implementation **PLANNED**, validation required
+- Status: **CONFIRMED locally**; exact package/full hosted acceptance pending
 - Date: 2026-10-24
 - Scope: P2.8 private candidate preparation, not attachment or publication
 - Baseline: Ghidra 12.0.3, Java 21; no native ABI or release changes
@@ -35,7 +35,9 @@ The first envelope requires ET_EXEC/ET_DYN, canonical-width named section tables
 a nonempty NUL-bounded raw name table, positive file-backed LOAD and allocated
 section evidence, and no existing raw `.gnu_debuglink` name. Unsupported inputs
 are rejected without narrowing ordinary Forge export's wider ELF contract.
-Resource limits and malformed/unsupported distinctions must be explicit.
+Resource limits and malformed/unsupported distinctions are explicit. Nonzero
+unused section-zero count/name/program bookkeeping is unsupported, rather than
+silently reset. Alignment padding is written explicitly as zero bytes.
 
 ## Owned lifecycle
 
@@ -125,3 +127,28 @@ The [string-table specification](https://gabi.xinuos.com/elf/04-strtab.html)
 defines raw indexes, duplicate/suffix references and NUL boundaries.
 The [GDB separate-debug-file contract](https://sourceware.org/gdb/current/onlinedocs/gdb.html/Separate-Debug-Files.html)
 defines the basename, padding and target-endian whole-file CRC payload.
+
+
+## Local implementation checkpoint
+
+Source `1763ebd` implements the owned writer without changing the ordinary
+exporter or native bindings. Actual Java21/64MiB checks pass 1,142 default and
+1,148 including one ELF32 big-endian large case. The original is 2,147,549,185
+bytes, selected sidecar 2,147,483,665 bytes and candidate 2,147,549,672 bytes.
+Full masked-prefix comparison and input/digest preservation pass; an exact
+high-offset mutation is detected. Exact 4GiB end is a planner test only.
+
+The private installed package passes twelve real retained-fixture cases with
+24 byte-identical deterministic outputs, nine mutation controls, 24 typed
+rejections and three plaintext counterexamples. Independent reviews reconstruct
+all output bytes and confirm 48 original fixture snapshots unchanged. The
+real fixture candidates pass GNU header/program/section/note checks and LLVM completion.
+Eighteen GDB transcripts cover automatic lookup and no-ID CRC rejection/restoration;
+three native x86 runs check values 19/23. Nine original/candidate execution pairs
+pass natively or under QEMU. Shared-object cases prove lookup only.
+
+This replay creates new candidates; it does not create new Ghidra exports or
+repeat strict DWARF checks on unchanged sidecars. Source and installed-consumer
+reviews are clear. Final exact package and all-five-target/native Windows hosted
+acceptance remain required. Commands, hashes, limits and retained failures are
+in `VALIDATION.md`; no attachment or metadata-preservation claim follows.

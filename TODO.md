@@ -59,17 +59,18 @@ published alpha.
 Do not suppress the warning. See `docs/ADDRESS-INDEX.md`.
 Evidence and exact scope are recorded in `docs/VALIDATION.md`.
 
-**CONFIRMED current main:** PRs #29–#37 are merged through normal history.
+**CONFIRMED current main:** PRs #29–#38 are merged through normal history.
 They add bounded direct-register-copy lifetimes, conservative omission of
 unsupported stack-local starts, filesystem traversal/alias handling, and
-read-only digest/build-ID/report/prefix/allocation/selected-hash foundations.
-Each exact PR gate passed all twelve jobs with independent reviews. Main-push
-gates through PR #36 also pass, including `40105363431` and both GUI reviews.
-PR #37 merged as `29055f6` after corrected exact run `40107222339`; all five
-target artifacts, both GUI hosts and nineteen native Windows checks pass. Its
-distinct main push `40110261306` remains pending. Candidate-content checks pass
-local source, installed backend/GDB and package review; their hosted gate remains
-required.
+read-only digest/build-ID/report/prefix/allocation/selected-hash and candidate
+content foundations. Each exact PR gate passed all twelve jobs with independent
+reviews.
+PR #38 merged as `2bd6739` after exact run `40110565271`; all five target
+artifacts, both GUI hosts and twenty native Windows checks pass. Main-push
+gates through PR #37 also pass, including `40110261306`; PR #38 push
+`40113254401` remains pending. Owned append-only candidate creation passes
+local source, installed consumer/GDB/QEMU and independent runtime review; its
+exact package and full hosted gates remain required.
 These changes do not complete general variable migration, the optional
 attachment transaction or a new release.
 
@@ -259,7 +260,7 @@ combined run `40068401197`; its conditional-step scope is recorded in
 | Additional range/location cases (P1.8, P1.11a) | **CONFIRMED:** bounded entry/ranges, code-only address indexing and incoming-register prefixes pass. PR #29 adds one proven direct-register backup; PR #30 omits unsupported nonzero stack-local starts. Their exact hosted gates pass. P1.11a remains partial: general register/memory migration, call-crossing and non-entry lifetimes, stack-slot reuse and mixed composite storage still require instruction-specific GDB values and honest unavailable gaps. |
 | Target-profile coverage (P2.3/3a/3b) | **CONFIRMED in hosted runs `40063017269` and `40068401197`:** five baseline profiles and scalar FP aliases pass, with exact float/double values on x86-64/AArch64/ARM32 and scalar floats on both MIPS orders. The combined run also proves rejection of definite ELF/Ghidra processor, width or byte-order contradictions; nondefault variants/compiler specifications alone are not rejected. Unproven MIPS double pairs and ARM32's mode-switching-return prefix case remain unavailable. Target expansion and ABI classification remain partial; this is not blanket CPU/ABI support. |
 | GUI and output paths (P2.7) | **CONFIRMED:** both hosts' real Script Manager/chooser journeys pass. PR #31 adds actual parent traversal, complete publisher alias preflight and native Windows short-parent/trailing-dot controls; its exact PR/main gates and artifact reviews pass. Geometry/GDB run on Linux; Windows uses native GNU/LLVM, with independent libdwarf unavailable and Linux-ELF runtime GDB not run. |
-| Optional debuglink (P2.8) | **PLANNED transaction:** opt-in attachment, identity/receipt chain and backup/rollback remain unimplemented. PRs #32/#33's digests, typed build-ID observations and report reader pass the full matrix. PRs #34/#35's prefix and indexed allocation observers also pass the full matrix. PR #36 selected-file SHA binding also passes the full matrix. PR #37 program-byte preservation passes the full matrix. Candidate-content checks pass locally and await their hosted gate. Default export leaves the original unchanged. |
+| Optional debuglink (P2.8) | **PLANNED transaction:** opt-in attachment, identity/receipt chain and backup/rollback remain unimplemented. PRs #32/#33's digests, typed build-ID observations and report reader pass the full matrix. PRs #34/#35's prefix and indexed allocation observers also pass the full matrix. PR #36 selected-file SHA binding also passes the full matrix. PR #37 program-byte preservation passes the full matrix. PR #38 candidate-content checks also pass the full matrix. Owned append-only preparation passes local source/installed/GDB/QEMU review and awaits its hosted gate. Default export leaves the original unchanged. |
 | Inline reconstruction (P3.4) | **CONFIRMED investigation complete:** ADR 0003 and a reproducible compiler/Ghidra probe distinguish real inline instances from Ghidra's decompiler flag and record surviving locals/source information. Inline emission remains deferred until explicit instance/origin/range evidence and GDB acceptance exist. |
 | Performance (P3.5) | **CONFIRMED:** the indexed planner and configured-checker gates pass component run `40065823442` and combined run `40068401197`. Historical local paired 10,000-function exports reduce median process time by 15.5% with byte-identical artifacts; a fresh strict/GDB replay validates the retained result without rerunning timing. Hosted CI is not a new timing measurement. Representative complex-binary and further phase-level profiling remain **PLANNED**; no blanket speed or memory claim. See `docs/PERFORMANCE.md`. |
 
@@ -657,12 +658,12 @@ Implement:
 - [x] Original target hash is unchanged.
 - [x] Invalid/unsupported ELF machine/class/byte-order combinations fail before
   output is published.
-- [~] Reject definite ELF/Ghidra processor, pointer-width and byte-order
-  disagreements before extraction/native production. **CONFIRMED locally:**
-  metadata controls, real same-width wrong-processor imports with prior-pair
-  preservation, and correct five-profile ET_EXEC exporter/validator/GDB cases
-  pass. The new rejection gates and native Windows metadata smoke still need
-  hosted verification. Compiler specifications, language variants and further
+- [x] Reject definite ELF/Ghidra processor, pointer-width and byte-order
+  disagreements before extraction/native production. **CONFIRMED:** component
+  run `40064731597` and combined run `40068401197` pass metadata controls,
+  same-width wrong-processor imports with prior-pair preservation, five-profile
+  ET_EXEC exporter/validator/GDB checks and the native Windows metadata smoke.
+  Compiler specifications, language variants and further
   ELF ABI-flag policy remain separate; agreement alone does not prove a new ABI.
 - [x] Existing compiler DWARF is replaced, not merged. Stale compressed DWARF,
   indexes, debug links, and mini-debug data are retired in the sidecar while
@@ -899,11 +900,12 @@ analyst-facing breakpoint name.
 - Add `DW_TAG_formal_parameter` DIEs.
 - Preserve parameter names.
 - Preserve variadic signatures when known.
-- [~] Preserve plain/nested analyst function namespace identity as a qualified
-  display name while retaining lexical source/signature keys. The fifteen
-  local exec/PIE/rebased-PIE cases pass across all five targets, with distinct
-  owned statics and a same-named global definition. Exact hosted acceptance is
-  pending. This is not full namespace, class, linkage or alias semantics.
+- [x] Preserve plain/nested analyst function namespace identity as a qualified
+  display name while retaining lexical source/signature keys. PR #26 head
+  `d5f2521` / run `40071594248` passes fifteen exec/PIE/rebased-PIE cases across
+  all five targets, with distinct owned statics and a same-named global.
+  This bounded display-name acceptance is not full namespace, class, linkage
+  or alias semantics; the broader signature task remains partial.
 - [x] Preserve calling-convention information where DWARF/GDB can use it:
   recognized conventional subroutines emit `DW_CC_normal`; unknown convention
   state and unproven vendor codes remain absent.
@@ -949,11 +951,12 @@ of that same runtime coverage on every target. See `docs/VALIDATION.md`.
 - [x] GDB associates both real ranges with one function.
 - [x] `llvm-dwarfdump --verify` passes.
 - [x] `readelf --debug-dump=ranges` or equivalent shows expected entries.
-- [~] Emit an exact code-only `.debug_aranges` index with the correct CU header
+- [x] Emit an exact code-only `.debug_aranges` index with the correct CU header
   offset, both widths/orders and no invented coverage. This supersedes the
   historical absence policy after a direct GDB global-address warning exposed
-  a missing lookup path. Format and five-profile real-export/GDB checks pass;
-  hosted acceptance is pending. CU/subprogram ranges remain authoritative.
+  a missing lookup path. PR #28 head `a5f7910` / run `40076025207` passes the
+  format and five-profile real-export/GDB checks; normal merge `b4d7869` and
+  main push `40077843290` are accepted. CU/subprogram ranges remain authoritative.
 - [x] Export a function whose body includes addresses below its entry point;
   verify the true entry breakpoint, all ranges, source lookup and gap behavior
   including contiguous/interior entries and PIE/Ghidra rebasing on x86-64.
@@ -1574,7 +1577,8 @@ audits and both GUI reviews pass; native Windows passes nineteen focused
 checks, including 431 program assertions applicable to that host. See
 `docs/EXECUTABLE-PROGRAM-BYTES.md`.
 
-**CONFIRMED locally; full hosted gate pending:** `DebuglinkCandidateContent`
+**CONFIRMED:** PR #38 head `b269ec5` passes all twelve jobs in exact run
+`40110565271` and merged normally as `2bd6739`. `DebuglinkCandidateContent`
 adds separate indexed executable-allocation and exact new-link observations
 alongside the program-byte result and streamed selected-sidecar digest. It is
 used in the existing private-copy integration/research consumers; no aggregate
@@ -1583,13 +1587,21 @@ checks under 64 MiB. The corrected parent is incorporated, and nine new private
 candidates pass both installed oracles and all 27 GDB association checks.
 Independent source/runtime review verifies 72 controls, 27 input copies, 135
 parent evidence files and a full sparse sidecar digest above 2 GiB. Independent
-exact local package review is clear; the full hosted gate remains required. See
+exact package, all-five-target and both-GUI reviews are clear. Native Windows
+passes twenty focused checks with 965 content assertions actually observed;
+Linux has 970. See
 `docs/DEBUGLINK-CANDIDATE-CONTENT.md`.
 
-**PLANNED candidate preparation:** ADR-0005 explicitly selects a separate
-native-free append-only writer after a reviewed layout experiment. The owned
-writer, connected installed consumer and full hosted acceptance remain to be
-implemented. This does not complete attachment or its transaction.
+**CONFIRMED locally; full hosted gate pending:** ADR-0005 selects separate
+native-free `OwnedDebuglinkCandidate` after a reviewed layout experiment. Source
+`1763ebd` passes 1,142 actual-Java-21 checks and 1,148 with one large ELF32
+big-endian case under 64 MiB. The installed writer passes twelve retained-fixture
+cases across x86-64/AArch64/MIPS32 big-endian: exec/PIE/no-ID plus shared lookup.
+Independent reviews reconstruct 24 deterministic outputs and three plaintext
+counterexamples, with candidate GNU/LLVM checks, eighteen GDB transcripts and
+eighteen native/QEMU process executions. Original fixtures remain unchanged.
+The exact package and full hosted/native Windows gates remain required. Private
+candidate creation does not complete attachment or its transaction.
 
 **Status:** `[ ]` — optional product operation **PLANNED**. The bounded backend
 and backup-based re-export investigation is complete; the explicit transaction
@@ -1905,10 +1917,10 @@ static locals and distinct same-named types. GDB must preserve analyst-facing
 lookup, distinguish the objects, and resolve only defensible addresses/live
 ranges. Category paths are not automatically original source namespaces.
 
-**CONFIRMED locally:** the qualified display-name slice preserves nested plain
+**CONFIRMED:** the qualified display-name slice preserves nested plain
 function paths and duplicate short names with real GDB address/source/type,
-single-breakpoint and owner-static checks on five profiles. Hosted validation
-is pending. C11 namespace-parented function DIEs do not provide the required
+single-breakpoint and owner-static checks on five profiles in PR #26 run
+`40071594248`; normal merge `89c07ce` and main push `40073445177` are accepted. C11 namespace-parented function DIEs do not provide the required
 qualified lookup in the tested GDB 15.1, so definitions remain CU-owned and use
 the recorded qualified display string. External-function declarations, classes,
 lexical blocks and qualified namespace-global lookup remain outside this slice.
@@ -1938,8 +1950,9 @@ surviving knowledge, or describe inline export as complete.
 
 ## P3.5 Add optional size/performance features
 
-**Status:** `[~]` — synthetic scaling measurements and one measured line-table
-index are complete locally; representative complex application/firmware and
+**Status:** `[~]` — synthetic scaling measurements are complete locally, and
+the indexed line planner passes component run `40065823442` and combined run
+`40068401197`; representative complex application/firmware and
 further per-phase profiling remain **PLANNED**. The bounded 10,000-function
 comparison improves median whole-process time from 10.86 to 9.18 seconds over
 five alternating pairs, with every output pair byte-identical. It does not
@@ -2020,9 +2033,10 @@ Use the following acceptance gates before updating the original GitHub issues:
 - [x] Issue is historically closed and prototype calls arange generation.
 - [x] **HISTORICAL:** the redesigned exporter deliberately omitted the optional
   accelerator and verified CU/subprogram `DW_AT_ranges` instead.
-- [~] The separate GDB address-map fix adds exact code-only lookup with a CU
-  header offset and independent coverage/formatting regressions; format tests
-  and five-profile runtime checks pass; hosted acceptance is pending.
+- [x] The separate GDB address-map fix adds exact code-only lookup with a CU
+  header offset and independent coverage/formatting regressions. PR #28 exact
+  run `40076025207` and main push `40077843290` pass the required matrix;
+  detailed five-profile artifact reviews belong to the accepted PR run.
   See `docs/ADDRESS-INDEX.md`.
 
 Do not reopen/close solely from this checklist; use project/user direction.
@@ -2116,10 +2130,10 @@ Unless the user changes priorities:
 
 1. Run `git status --short`; read `AGENTS.md`, the current context/status in
    `PROJECT_CONTEXT.md`, and this file's Sections 0.1/1.1. Preserve existing work.
-2. Read the current acceptance checkpoints: PRs #25–#37 are merged. Corrected
-   program-byte head `89fa8b7` passed run `40107222339` and tree-identical main
-   merge `29055f6`. Main-push gates through PR #36 pass; PR #37 main push
-   `40110261306` remains pending. Preserve the failed
+2. Read the current acceptance checkpoints: PRs #25–#38 are merged. Candidate
+   content head `b269ec5` passed run `40110565271` and tree-identical main merge
+   `2bd6739`. Main-push gates through PR #37 pass; PR #38 main push
+   `40113254401` remains pending. Preserve the failed
    original PR #32 report-selection attempt and earlier feature histories.
    Require current-base checks under AGENTS.md Section 6.1; do not restart
    completed bring-up or integration.
@@ -2134,14 +2148,14 @@ Unless the user changes priorities:
 6. Extend explicitly selected target profiles and GUI journeys. Treat optional
    debuglink, inlining research and performance candidates according to their
    recorded scopes; do not invent recovered information to complete them.
-   The current bounded continuation is the candidate-content observer's hosted
-   acceptance. Local source, installed consumer/GDB and exact package reviews
-   pass, and accepted program-byte main is incorporated normally as `d2eadf2`.
-   Preserve intermediate PR #37 head `e25c148` / run `40105620219`: its callback
-   classification defect was corrected before the accepted `89fa8b7` gate.
-   ADR-0005 selects an owned append-only candidate writer after the reviewed
-   feasibility experiment; implementation and its acceptance gates remain planned. Optional attachment remains a separate transaction, with no
-   identity/readiness claim from these helpers.
+   The current bounded continuation is owned candidate preparation's exact
+   package and hosted acceptance. Source `1763ebd`, connected installed consumer,
+   GDB/QEMU checks and independent byte/runtime reviews pass locally. ADR-0005
+   explicitly selects the append-only writer; GNU remains a separate test oracle.
+   Preserve PR #37's intermediate callback failure evidence and all research/test
+   setup failures. Optional attachment remains a separate transaction with receipt,
+   validation, host metadata, backup and recovery requirements; these helpers do
+   not establish identity or readiness.
 7. For each coherent change, run appropriate validators and debugger behavior
    tests, preserve original hashes and deterministic output, and record evidence
    in the handoff documents. Keep the complete supported-profile CI matrix green.

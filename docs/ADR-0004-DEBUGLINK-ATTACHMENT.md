@@ -16,8 +16,8 @@ P2.8. The research harness modifies only its own disposable fixture copies.
 Use the separate native-free append-only candidate direction selected in
 [ADR-0005](ADR-0005-OWNED-DEBUGLINK-CANDIDATE.md). This explicitly supersedes
 the initial GNU backend selection below. GNU-created private candidates remain
-independent test references, with no silent fallback. The writer is planned;
-its own acceptance gates precede any transaction. Ordinary export continues
+independent test references, with no silent fallback. The writer passes local
+source/installed checks; its full hosted gates still precede any transaction. Ordinary export continues
 supporting its wider ELF input contract.
 
 Do not reuse `MatchedElfSidecarWriter`: its deliberate removal of program
