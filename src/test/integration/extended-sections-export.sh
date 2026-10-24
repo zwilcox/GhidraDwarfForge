@@ -9,6 +9,7 @@ fi
 
 export LC_ALL=C
 repository_dir=$(realpath "$(dirname "$0")/../../..")
+source "$repository_dir/src/test/integration/elf-layout-gdb-oracle.sh"
 ghidra_dir=$(realpath "$1")
 consumer=$(realpath "$2")
 producer=$(realpath "$3")
@@ -121,6 +122,8 @@ for target in "${targets[@]}"; do
     for role in exec pie; do
         case_dir="$result_dir/$target/$role"
         mkdir -p "$case_dir"
+        layout_compiler_oracle "$target" "$fixture_dir/$target/semantic.$role.reference" \
+            "$case_dir/compiler-gdb.txt"
         input="$fixture_dir/$target/semantic.$role.extended-sections"
         output="$fixture_dir/$target/semantic.$role.ghidra-forge.dbg"
         cp -- "$input" "$case_dir/input.elf"
@@ -159,11 +162,8 @@ for target in "${targets[@]}"; do
             FIXTURE_ROLE="$role" FIXTURE_INPUT_SUFFIX=extended-sections \
                 "$repository_dir/src/test/integration/qemu-gdb-symbols.sh" "$target" \
                 >"$active_case/gdb-console.txt" 2>&1
-            if grep -Eiq 'warning:|error:|malformed|corrupt|could not find' \
-                    "$gdb_results/$target.$role.txt"; then
-                echo "unexpected GDB diagnostic for $target $role $iteration" >&2
-                exit 1
-            fi
+            layout_validate_gdb_diagnostics "$gdb_results/$target.$role.txt" \
+                "$input" extended-sections "$target" "$case_dir/compiler-gdb.txt"
             test "$input_hash" = "$(sha256sum "$input" | cut -d' ' -f1)"
             sha256sum "$output" "$output.c" >"$active_case/artifacts.sha256"
             {

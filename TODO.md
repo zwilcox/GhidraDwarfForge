@@ -99,7 +99,7 @@ items are these bounded workstreams:
 | Workstream | Status and acceptance needed |
 |---|---|
 | Corrective release (§0.1) | **PLANNED:** merge the reviewed changes when authorized, bump `VERSION`, validate the exact release commit/package, and publish a separate corrective alpha. The existing alpha artifact must not be replaced. |
-| ELF robustness (P0.9) | **PRESENT, UNVERIFIED:** extended-section emission is parked at `f2884e6`. Finish its integration tests. **PLANNED:** section tables without names, extended program-header counts, and a defined large-file/resource bound with safe failure outside it. |
+| ELF robustness (P0.9) | **PRESENT, UNVERIFIED:** completion branch implements extended counts, unnamed tables, bounded file-backed I/O and cancellation. Local format/large-file and strengthened late-header/rebase tests pass; the complete hosted acceptance gate is pending. |
 | Function identity and scopes (P1.7, P3.3) | **PLANNED:** distinct linkage names without losing analyst-name lookup; external-function declarations, thunks/aliases, function/class/lexical scopes, static locals, and same-named type/variable disambiguation. Existing namespace globals and external-data declarations must remain working. |
 | Additional range/location cases (P1.8, P1.11a) | **PLANNED:** entry points that are not the lowest body address; proven register/memory migration, call-crossing and non-entry lifetimes, stack-slot reuse, and mixed composite storage. Require GDB value checks at multiple instruction addresses and honest unavailable gaps. |
 | Target-profile coverage (P2.3/3a/3b) | Current five profiles pass. Enumerate additional ABI/storage cases, derive their target properties, and add real exporter/validator/QEMU-GDB tests before extending support claims. Completing this plan does not imply every Ghidra CPU/ABI. |
@@ -436,26 +436,29 @@ For at least one x86-64 non-PIE fixture, construct candidate sidecars and prove:
 
 ## P0.9 Replace or correct the ELF writer for the minimal path
 
-**Status:** `[~]` — the pure-Java matched sidecar writer passes both
-compiler-oracle and real Forge symbol tests, including no-section-table inputs;
-existing-DWARF replacement now has an explicit policy and regression tests;
-large files and extended ELF numbering remain.
+**Status:** `[~]` — the matched sidecar reader/writer now implements the
+remaining layout/size cases, with explicit resource limits and cancellation.
+Local format, large-file, extended-section and late-load/rebase tests pass;
+the complete hosted matrix gate remains in progress.
 **Dependency:** P0.8.
 
-**Current follow-up:** `work/elf-table-robustness` commit `f2884e6` is a parked
-WIP for extended section numbering. Build/smoke checks passed, but the real
-integration harness stopped before GDB on a `readelf | grep -q` pipefail issue;
-it has no passing complete hosted matrix. It is not part of PRs #16/#17.
+**Current follow-up:** `work/elf-robustness-completion` continues the preserved
+`f2884e6` checkpoint on top of PR #17's corrected exporter. The large-output
+pipefail is fixed; real extended-section export/GDB passes. Source bytes are
+streamed, metadata bounds are documented in ADR 0001, and a >2 GiB input passes
+real headless export plus GDB and deterministic reruns. The discovered Ghidra
+bounded image-base scan is handled using its recorded original import base.
+See `docs/VALIDATION.md` for exact evidence and external loader restrictions.
 
 Additional acceptance criteria:
 
-- [ ] Read/write extended section counts and section-name indexes with valid
+- [x] Read/write extended section counts and section-name indexes with valid
   section-zero metadata; test boundary cases across ELF32/64 and both byte orders.
-- [ ] Handle a present section table without a section-name table, separately
+- [x] Handle a present section table without a section-name table, separately
   from the already tested completely absent section table.
-- [ ] Decode extended program-header counts and test address/build-ID metadata
+- [x] Decode extended program-header counts and test address/build-ID metadata
   from entries beyond the ordinary count limit.
-- [ ] Define supported input/output size and resource bounds. Replace whole-file
+- [x] Define supported input/output size and resource bounds. Replace whole-file
   buffering where needed, test large inputs, and reject unsupported sizes
   without changing the original or publishing a partial artifact pair.
 - [ ] Pass real headless export, structural validators, GDB behavior,
@@ -501,13 +504,13 @@ Implement:
 - [x] Existing compiler DWARF is replaced, not merged. Stale compressed DWARF,
   indexes, debug links, and mini-debug data are retired in the sidecar while
   the original remains unchanged; see ADR 0001 and the validation record.
-- [ ] Accept valid section tables with `e_shstrndx == SHN_UNDEF`; the current
-  reader incorrectly treats section zero as the section-name string table.
-  Preserve unknown section names honestly and validate MIPS dynamic loading
-  before claiming this input profile.
-- [ ] Decode `PN_XNUM` program-header counts from section zero's `sh_info`.
-  The current reader treats `0xffff` as a literal count; large program-header
-  tables are not a validated input profile.
+- [x] Accept valid section tables with `e_shstrndx == SHN_UNDEF`; preserve
+  unknown names and physical indexes. Actual nameless MIPS inputs pass dynamic
+  loading and GDB value/source tests locally.
+- [x] Decode `PN_XNUM` from section zero's `sh_info`, including load and note
+  metadata beyond the ordinary count limit. Direct native/QEMU execution of
+  the large-program-table fixture is an external loader limitation, recorded
+  separately from import/export and runtime checks on its unchanged load image.
 
 ## P0.10 Deliver the first validated symbol-only milestone
 

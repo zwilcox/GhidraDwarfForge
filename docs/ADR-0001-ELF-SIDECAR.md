@@ -74,8 +74,68 @@ and name-index overflow fields. In particular, its old `sh_info` cannot be
 retained because the sidecar has no program-header table. Section zero has no
 payload; its count metadata is not a byte length to read from the input.
 Preserve all original physical section indexes, including inactive entries,
-so symbol-table and other section references remain valid. This is separate
-from support for extended program-header counts (`PN_XNUM`).
+so symbol-table and other section references remain valid.
+
+### Unnamed sections and extended program counts (2026-10-23)
+
+`e_shstrndx == SHN_UNDEF` means a present section table has no section names.
+Preserve those sections at their original indexes with empty names; do not
+interpret section zero as a string table or guess names from contents. Append
+named Forge DWARF and a new `.shstrtab`. Existing typed note sections and
+program-header note ranges remain evidence for build identity. Reconstruct
+only the portions of `PT_NOTE` not already covered by typed note sections,
+so a partially described segment does not duplicate the build ID. A short or
+misaligned uncovered interval fails explicitly instead of inventing note data.
+
+For `e_phnum == PN_XNUM` (`0xffff`), read the actual program-header count from
+section zero's `sh_info` before iterating the program table. A missing section
+zero or an invalid count is an error. See the [ELF header definitions in
+elf(5)](https://man7.org/linux/man-pages/man5/elf.5.html). Input decoding and the ability of an OS
+or emulator to execute that layout are separate acceptance questions; record
+loader restrictions explicitly. The sidecar still has no program headers and
+therefore clears section zero's `sh_info`.
+
+Address translation reverses the loader's actual mapping: current Ghidra
+image base minus `ElfLoader.getElfOriginalImageBase(program)`. Ghidra 12.0.3
+records this original base during import, and its own DWARF importer uses the
+same property. Its initial base search examines only the first 20 program
+headers; with all load headers later in the table, the recorded base may be
+zero while mapped function addresses retain their link-time values. Computing
+the delta from the true minimum `PT_LOAD` address would then corrupt every
+exported address. Missing or malformed loader metadata fails with a diagnostic
+instead of guessing. `ElfImage.preferredImageBase()` still reports the actual
+minimum load-segment VA as ELF metadata.
+
+### File-backed I/O and resource bounds (2026-10-23)
+
+Read ELF metadata through short-lived file channels and copy original bytes
+to a temporary output through bounded transfers. Plan the complete output
+layout, including overflow and resource checks, before creating the temporary
+file. Append generated DWARF, names and individual section headers, rewrite
+the ELF header, close the channel, then atomically replace the destination.
+This removes the original image's Java-array/2 GiB size constraint. Generated
+DWARF and extraction models remain memory-resident; this is not a claim of
+constant-memory whole-program decompilation.
+
+The reader and writer deliberately impose these resource limits:
+
+| Resource | Supported bound |
+|---|---|
+| Program or section header count | 262,144 entries per table |
+| Raw metadata table | 64 MiB |
+| Section-name table and aggregate decoded names | 16 MiB each |
+| Individual section name | 65,536 bytes, excluding NUL |
+| Convenience `bytes()` / `sectionData()` allocation | 64 MiB |
+| File sizes and offsets | Nonnegative signed 64-bit values |
+| ELF32 output | Fields fit unsigned 32 bits; file end at most 4 GiB |
+
+These are implementation limits, not ELF format restrictions. Output metadata
+must also fit the reader's limits. Out-of-range metadata, truncated tables,
+unrepresentable layouts and input/output aliases fail without replacing an
+existing destination. Reopened source reads/copies check file identity, size
+and modification time to detect ordinary concurrent changes. This check is
+not a lock or a defense against a writer deliberately restoring metadata.
+ELF64 values outside the signed 64-bit model remain unsupported.
 
 The initial explicit GDB workflow is:
 
@@ -124,7 +184,6 @@ semantic DIE/line/type/location content.
 - PIE relocation is handled by GDB using the original executable mapping.
 - Sidecars contain copied bytes that are not described as loadable segments;
   this favors correctness and target identity over minimal file size.
-- Very large files, extended program-header counts, and inputs with section
-  tables but no section-name table remain follow-up work. See `VALIDATION.md`
-  for extended section-numbering, shared-object runtime, build-ID discovery,
-  and existing-DWARF replacement evidence.
+- Metadata has explicit resource bounds, and large input bytes are streamed.
+  See `VALIDATION.md` for layout/large-file evidence, external loader limits,
+  shared-object runtime, build-ID discovery and existing-DWARF replacement.

@@ -11,6 +11,120 @@ export. Export remains explicit: installed wrappers request checksum-verified
 packaged natives by default, while source-tree audit runs may supply explicit
 library paths.
 
+## ELF robustness development (2026-10-23)
+
+The following evidence applies to `work/elf-robustness-completion`, stacked
+on the unmerged correctness fixes. The published alpha is unchanged.
+
+**CONFIRMED locally:** file-backed ELF parsing and streamed sidecar writing
+pass independent ELF32/64 × little/big-endian tests for count/index escape
+fields, absent names, sparse offsets above 2 GiB, malformed/truncated metadata,
+resource limits, changed input files and physical symlink traversal. Output
+limits fail before publication; existing output bytes and input hashes remain
+unchanged. Late `PT_LOAD`/`PT_NOTE` entries are read beyond the ordinary count
+limit. Partial note coverage preserves each note once, with the original build
+ID and section indexes intact. See `elfImageReaderSmoke`,
+`extendedSectionNumberingSmoke`, and ADR 0001 for exact bounds.
+
+**CONFIRMED locally:** `large-elf-sidecar.sh` runs the writer with `-Xmx64m`
+on a 2,147,487,745-byte source-built input. The 2,147,491,192-byte sidecar
+passes GNU/LLVM/libdwarf validators and GDB function/type/source lookup,
+breakpoints, argument/global values, `next`, `step` and normal exit. Original
+payload bytes outside the rewritten ELF header match, the original hash is
+unchanged, and repeated output is byte-identical. ELF32 output overflow and
+atomic-publication failure preserve prior destinations and leave no temporary
+files. Evidence: `build/test-results/large-elf-sidecar/run.tohmsekL/`.
+
+**CONFIRMED locally:** `large-headless-export.sh` imports and exports an
+actual 2,147,487,744-byte x86-64 fixture with the production Ghidra exporter,
+then runs the existing full GDB semantic oracle. GNU/LLVM/libdwarf validation,
+input preservation and byte-identical fresh-import reruns pass:
+`build/test-results/large-headless-export/run.e1Vg0Q3x/`. The source-tree
+production Bash wrapper also passes large import/export using packaged native
+selection: `build/test-results/large-wrapper-export/run.KGWoLV9K/`.
+Multi-gigabyte scratch artifacts are removed; compact logs, source and hashes
+remain. This proves bounded source-file I/O, not bounded decompilation/model
+memory for programs with billions of instructions.
+
+The first large Ghidra import failed before ELF loading: automatic format
+detection exhausted the heap inside Ghidra's unrelated `SomLoader`. Explicit
+`-loader ElfLoader` fixes this; both production wrappers now select it in
+import mode. The failed transcript is retained at
+`build/test-results/large-headless-export/run.lMsNrGay/`. It is not counted as
+a passing test.
+
+**CONFIRMED locally:** moving all MIPS load headers beyond the ordinary count
+limit exposed a separate address bug. Ghidra 12.0.3 records import base zero
+after scanning only its first 20 headers, while functions retain link-time
+addresses. The previous exporter reported success but placed `main` at
+`0x800874` instead of `0x400874`. Reversing the actual loader mapping with
+`ElfLoader.getElfOriginalImageBase` fixes it; the before/after artifacts and
+GDB transcripts are under `build/elf-layout-probe/{before,after}/`. The fixed
+artifact passes GNU/LLVM/libdwarf validators. The independent nonzero-load
+file-offset fixture still passes normal/rebased/repeated export, values and
+source stepping at function `0x40100e`, global `0x402000`:
+`build/test-results/nonzero-load-offset-export/run.YaZrFgCK/`.
+
+**CONFIRMED locally:** the real extended-section-count/index matrix passes on
+x86-64 and MIPS32 BE for ET_EXEC and PIE, including exact-input runtime GDB,
+validators, identity/build-ID preservation and deterministic repeats:
+`build/test-results/extended-sections-export/run.yBMDsFt7/`. The old
+`readelf -S | grep -q` pipefail was a test-harness SIGPIPE; assertions now read
+the retained complete section dump.
+
+**CONFIRMED locally:** the final layout matrix passes x86-64/MIPS32 BE ×
+ET_EXEC/PIE × unnamed sections/extended program counts. All original program
+headers follow 65,535 `PT_NULL` entries, so meaningful load/note headers truly
+exceed the old reader's limit. Exact function/global addresses match the
+compiler oracle; recorded import base zero, ordinary and `+0x2000000` rebased
+exports, full runtime values/source/type checks, deterministic reruns and
+input hashes pass. Evidence: `build/test-results/elf-layout-export/run.9sEGM71z/`.
+
+Direct execution of this `PN_XNUM` fixture fails in native Linux and QEMU
+8.2.2. The harness uses the actual extended input for import/export and static
+GDB, then the unchanged ordinary fixture for runtime checks after independently
+proving unchanged original load bytes/addresses. Every case records that policy;
+it is not a claim that the extended input executed. Direct-loader probes are
+retained in `build/elf-layout-probe/final-pn-runtime-limits.txt`.
+
+GNU tools emit known diagnostics on the unusual *inputs*: nameless tables
+trigger readelf's name-based `.dynamic` lookup and a BFD string-table-index
+warning; valid section-zero extended program counts trigger readelf's generic
+`sh_info` warning. Allowances match the exact input condition/path/count.
+Generated sidecars must remain clean. ARM QEMU vDSO warnings require a matching
+independent compiler-DWARF oracle diagnostic; no symbol/value assertions are
+relaxed.
+
+**CONFIRMED locally:** cancellation during an actual 128 MiB source copy
+stops after the first 16 MiB transfer. The installed production script reports
+`CANCELLED`, preserves the original and both previous output files, and leaves
+no staging files: `build/test-results/copy-cancellation-export/run.TfMRs1tH/`.
+`elfCopyCancellationSmoke` also tests cancellation immediately before atomic
+replacement and through the artifact-pair publisher under `-Xmx64m`.
+The extension build and all nineteen native-independent smoke tasks pass;
+logs are in `build/test-results/elf-robustness/final-build-smokes.txt`.
+
+**PRESENT, UNVERIFIED:** the complete hosted Linux/Windows/five-target run is
+pending at this checkpoint. Local ARM32 compilation is unavailable; its new
+layout tests must pass in CI before this work is marked complete.
+
+Reproduction commands, after building fixtures and installing the current
+extension:
+
+```bash
+./gradlew elfImageReaderSmoke extendedSectionNumberingSmoke ghidraImageBaseSmoke
+./gradlew extendedSectionNumberingSmoke -PfixtureTarget=x86_64
+java src/test/integration/ElfLayoutFixtures.java build/fixtures x86_64 mips32be
+src/test/integration/extended-sections-export.sh "$GHIDRA_INSTALL_DIR" \
+    /path/to/libdwarf.so.2.3.2 /path/to/libdwarfp.so.2.3.2 x86_64
+src/test/integration/elf-layout-export.sh "$GHIDRA_INSTALL_DIR" \
+    /path/to/libdwarf.so.2.3.2 /path/to/libdwarfp.so.2.3.2 x86_64 mips32be
+src/test/integration/large-elf-sidecar.sh
+src/test/integration/large-headless-export.sh "$GHIDRA_INSTALL_DIR" \
+    /path/to/libdwarf.so.2.3.2 /path/to/libdwarfp.so.2.3.2
+src/test/integration/copy-cancellation-export.sh "$GHIDRA_INSTALL_DIR"
+```
+
 ## Published-alpha correctness review (2026-10-23)
 
 **CONFIRMED:** all six findings against `f4a0199` were validated. The

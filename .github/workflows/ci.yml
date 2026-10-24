@@ -430,7 +430,8 @@ jobs:
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
               packagedNativeLibrariesSmoke existingDebugSidecarSmoke \
-              extendedSectionNumberingSmoke buildExtension
+              extendedSectionNumberingSmoke elfImageReaderSmoke \
+              elfCopyCancellationSmoke ghidraImageBaseSmoke buildExtension
             src/test/integration/release-package.sh
             zipinfo -l dist/*.zip | grep -Eq \
               '^-rwxr-xr-x.*GhidraDwarfForge/support/ghidra-dwarf-forge-headless$'
@@ -718,6 +719,28 @@ jobs:
             "$GHIDRA_INSTALL_DIR" \
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
+
+      - name: Unnamed sections and extended program tables through export and GDB
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          java src/test/integration/ElfLayoutFixtures.java build/fixtures "$TARGET"
+          src/test/integration/elf-layout-export.sh \
+            "$GHIDRA_INSTALL_DIR" \
+            "$PWD/native-integration/libdwarf.so.2.3.2" \
+            "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
+
+      - name: Large ELF bounded-memory container and real exporter
+        if: matrix.target == 'x86_64'
+        run: |
+          set -euo pipefail
+          src/test/integration/large-elf-sidecar.sh
+          src/test/integration/large-headless-export.sh \
+            "$GHIDRA_INSTALL_DIR" \
+            "$PWD/native-integration/libdwarf.so.2.3.2" \
+            "$PWD/native-integration/libdwarfp.so.2.3.2"
+          src/test/integration/copy-cancellation-export.sh "$GHIDRA_INSTALL_DIR"
 
       - name: Headless Forge symbol export and GDB integration
         env:

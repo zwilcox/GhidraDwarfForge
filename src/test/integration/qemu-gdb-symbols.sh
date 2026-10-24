@@ -35,7 +35,7 @@ function_name() {
         fi
         local link_hex
         link_hex=$(readelf -Ws "$fixture_dir/$1/semantic.exec.reference" |
-            awk -v symbol="$symbol" '$4 == "FUNC" && $8 == symbol { print $2; exit }')
+            awk -v symbol="$symbol" '$4 == "FUNC" && $8 == symbol && !found { print $2; found = 1 }')
         if [[ -z "$link_hex" ]]; then
             echo "missing fixture symbol $symbol for $1" >&2
             return 1
@@ -54,9 +54,9 @@ symbol_offset() {
     local reference="$fixture_dir/$target/semantic.$fixture_role.reference"
     local symbol_hex base_hex
     symbol_hex=$(readelf -Ws "$reference" |
-        awk -v name="$symbol" '$8 == name { print $2; exit }')
+        awk -v name="$symbol" '$8 == name && !found { print $2; found = 1 }')
     base_hex=$(readelf -Ws "$reference" |
-        awk -v name="$base" '$8 == name { print $2; exit }')
+        awk -v name="$base" '$8 == name && !found { print $2; found = 1 }')
     if [[ -z "$symbol_hex" || -z "$base_hex" ]]; then
         echo "missing fixture symbol $symbol or $base in $reference" >&2
         return 1
@@ -244,7 +244,16 @@ run_emulated() {
         location_break=(-ex "break *$function+$normal_offset" \
             -ex "break *$function+$changed_offset")
     fi
-    if [[ "$target" == arm32 && "$fixture_role" != "exec.no-sections" ]]; then
+    if [[ "$target" == mips32* && "$fixture_input_suffix" == no-section-names ]]; then
+        # Without section names GDB cannot recognize the normal MIPS prologue,
+        # so the named breakpoint stops at entry. Exercise next, then use the
+        # existing exact marker before inspecting initialized stack storage.
+        execution_flow=(-ex frame -ex list -ex next -ex frame -ex 'disable 1 2' \
+            -ex continue -ex 'printf "analyst_stack=%d\n", analyst_stack' \
+            "${print_after[@]}" -ex frame -ex step \
+            -ex 'printf "analyst_stack_shifted=%d\n", analyst_stack' \
+            -ex frame -ex nexti -ex continue)
+    elif [[ "$target" == arm32 && "$fixture_role" != "exec.no-sections" ]]; then
         # A retained ELF symbol table changes where GDB resolves the initial
         # function breakpoint. After proving both user-facing breakpoints can
         # be created and the function breakpoint is hit, disable them and use

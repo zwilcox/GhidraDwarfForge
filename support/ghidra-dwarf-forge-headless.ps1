@@ -261,7 +261,8 @@ try {
         New-Item -ItemType Directory -Path $temporaryRoot | Out-Null
         $headlessArguments = @(
             $temporaryRoot, 'GhidraDwarfForgeHeadless', '-deleteProject',
-            '-import', $Import, '-analysisTimeoutPerFile', "$AnalysisTimeout",
+            '-import', $Import, '-loader', 'ElfLoader',
+            '-analysisTimeoutPerFile', "$AnalysisTimeout",
             '-postScript', 'GhidraDwarfForge.java'
         ) + $exportOptions
     }

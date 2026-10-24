@@ -26,6 +26,10 @@ project_rebase_delta=${GHIDRA_REBASE_DELTA:-0}
 project_rebase_delta=$((project_rebase_delta))
 stale_executable_path=${GHIDRA_STALE_EXECUTABLE_PATH:-}
 use_default_output=${GHIDRA_USE_DEFAULT_OUTPUT:-0}
+loader_options=()
+if [[ "${GHIDRA_FORCE_ELF_LOADER:-0}" == 1 ]]; then
+    loader_options=(-loader ElfLoader)
+fi
 
 fixture_stem() {
     local role=$1
@@ -41,7 +45,7 @@ analysis_address() {
     local reference="$fixture_dir/$target/$(fixture_stem "$role").reference"
     local link_hex
     link_hex=$(readelf -Ws "$reference" | awk -v symbol="$symbol" \
-        '$8 == symbol { print $2; exit }')
+        '$8 == symbol && !found { print $2; found = 1 }')
     if [[ -z "$link_hex" ]]; then
         echo "missing fixture symbol $symbol in $reference" >&2
         return 1
@@ -117,6 +121,7 @@ for target in "${targets[@]}"; do
 
     "$ghidra_dir/support/analyzeHeadless" \
         "$temporary_projects" "GhidraDwarfForgeSymbols_$target" \
+        "${loader_options[@]}" \
         -deleteProject \
         -import "$input" \
         -analysisTimeoutPerFile 120 \
@@ -197,11 +202,11 @@ for target in "${targets[@]}"; do
     readelf --debug-dump=aranges "$output" >/dev/null 2>>"$warnings"
     readelf --debug-dump=decodedline "$output" \
         >"$result_dir/$target.$fixture_role.readelf-decodedline.txt" 2>>"$warnings"
-    if readelf -S "$output" | grep -q '[.]debug_rnglists'; then
+    if grep -q '[.]debug_rnglists' "$result_dir/$target.$fixture_role.readelf-sections.txt"; then
         readelf --debug-dump=Ranges "$output" \
             >"$result_dir/$target.$fixture_role.readelf-ranges.txt" 2>>"$warnings"
     fi
-    if readelf -S "$output" | grep -q '[.]debug_loclists'; then
+    if grep -q '[.]debug_loclists' "$result_dir/$target.$fixture_role.readelf-sections.txt"; then
         readelf --debug-dump=loc "$output" \
             >"$result_dir/$target.$fixture_role.readelf-locations.txt" 2>>"$warnings"
     fi
@@ -284,7 +289,7 @@ for target in "${targets[@]}"; do
             "$result_dir/$target.$fixture_role.readelf-info.txt"
         grep -q "DW_AT_name.*analyst_composite" \
             "$result_dir/$target.$fixture_role.readelf-info.txt"
-        readelf -S "$output" | grep -q '[.]debug_loclists'
+        grep -q '[.]debug_loclists' "$result_dir/$target.$fixture_role.readelf-sections.txt"
         locations="$result_dir/$target.$fixture_role.readelf-locations.txt"
         case "$target" in
             x86_64)
