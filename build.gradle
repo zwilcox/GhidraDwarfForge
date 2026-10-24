@@ -235,6 +235,14 @@ tasks.register("variableStorageSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.locations.VariableStorageSmoke"
 }
 
+tasks.register("registerPrefixSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded register-parameter lifetimes and conservative instruction proof"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.RegisterPrefixSmoke"
+}
+
 tasks.register("artifactPairPublisherSmoke", JavaExec) {
     group = "verification"
     description = "Checks staged sidecar/source publication and rollback"

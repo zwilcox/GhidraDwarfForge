@@ -879,12 +879,19 @@ or uncertain storage remains locationless with a diagnostic.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
 
-**Status:** `[ ]` — **PLANNED** follow-on to the completed conservative P1.11
-profile. The existing changing-stack test proves adjustment of an SP-relative
-expression, not arbitrary movement of a value between registers and memory.
+**Status:** `[~]` — **CONFIRMED locally:** a simple incoming register parameter
+now retains its location through the first overwriting instruction in a fully
+decoded straight-line leaf function, then becomes explicitly unavailable. The
+new x86-64/AArch64 compiler/GDB oracle covers ET_EXEC/PIE, rebases and repeated
+exports. Hosted validation is **PRESENT, UNVERIFIED** until its new gate passes.
+Later first-use, calls, branches, discontiguous bodies, delay slots, storage
+migration and mixed pieces remain outside this bounded proof. The existing
+changing-stack test proves SP-relative adjustment, not value migration.
 
-- [ ] Establish evidence-backed machine-address live ranges for register
+- [~] Establish evidence-backed machine-address live ranges for register
   variables that begin after entry or whose registers are later overwritten.
+  Incoming single-register parameters before a proven first overwrite pass
+  locally; later-starting variables and other control-flow shapes remain planned.
 - [ ] Track supported register-to-register and register-to-stack moves across
   calls using the selected ABI and recovered instruction evidence.
 - [ ] Test stack-local first-use and slot-reuse boundaries; record unavailable

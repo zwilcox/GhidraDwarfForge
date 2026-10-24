@@ -6,6 +6,7 @@ import java.util.List;
 import ghidra.app.cmd.function.CallDepthChangeInfo;
 import ghidra.program.model.lang.Register;
 import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.FlowOverride;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.InstructionIterator;
 import ghidra.program.model.listing.Parameter;
@@ -88,6 +89,115 @@ public final class GhidraVariableStorage {
             parameter.getLength(), registers, monitor, "parameter");
     }
 
+    /**
+     * Refines only an otherwise rejected simple register parameter. The value
+     * exists at the first writing instruction (before it executes), and becomes
+     * unavailable at its fall-through address. No move tracking is inferred.
+     * An empty result leaves the original conservative rejection unchanged.
+     */
+    public static List<StorageInterval> parameterPrefix(Program program, Function function,
+            Parameter parameter, TargetRegisterMap registers, Storage rejected,
+            TaskMonitor monitor) throws CancelledException {
+        if (!(rejected instanceof UnavailableStorage unavailable) ||
+                unavailable.reason() != OmissionReason.REGISTER_MODIFIED ||
+                parameter.getVariableStorage().getVarnodeCount() != 1 ||
+                !parameter.getVariableStorage().isRegisterStorage()) {
+            return List.of();
+        }
+        Register register = parameter.getRegister();
+        if (register == null || function.getBody().getNumAddressRanges() != 1 ||
+                !function.getEntryPoint().equals(function.getBody().getMinAddress())) {
+            return List.of();
+        }
+        Storage mapped = mappedRegister(register, parameter.getLength(), registers, "parameter");
+        if (!mapped.available()) {
+            return List.of();
+        }
+        List<Instruction> instructions = new ArrayList<>();
+        var iterator = program.getListing().getInstructions(function.getBody(), true);
+        while (iterator.hasNext()) {
+            monitor.checkCancelled();
+            Instruction instruction = iterator.next();
+            // A second entry into the linear body would bypass its incoming
+            // parameter state. Ordinary fall-through references are harmless.
+            if (!instruction.getAddress().equals(function.getEntryPoint())) {
+                var references = program.getReferenceManager()
+                    .getReferencesTo(instruction.getAddress());
+                while (references.hasNext()) {
+                    monitor.checkCancelled();
+                    var type = references.next().getReferenceType();
+                    if (type.isFlow() && type != ghidra.program.model.symbol.RefType.FALL_THROUGH) {
+                        return List.of();
+                    }
+                }
+            }
+            instructions.add(instruction);
+        }
+        long start = function.getEntryPoint().getOffset();
+        long end = Math.addExact(function.getBody().getMaxAddress().getOffset(), 1);
+        long boundary = registerPrefixEnd(start, end, instructions, register.getBaseRegister(),
+            monitor);
+        if (boundary <= start) {
+            return List.of();
+        }
+        List<StorageInterval> result = new ArrayList<>();
+        result.add(new StorageInterval(start, boundary, mapped));
+        if (boundary < end) {
+            result.add(new StorageInterval(boundary, end, unavailable(
+                OmissionReason.REGISTER_MODIFIED,
+                "incoming parameter register was overwritten before address 0x" +
+                    Long.toHexString(boundary) + "; later storage is not established")));
+        }
+        return List.copyOf(result);
+    }
+
+    /** Exact fully decoded, ordinary straight-line leaf proof; -1 rejects it. */
+    static long registerPrefixEnd(long start, long end, List<Instruction> instructions,
+            Register register, TaskMonitor monitor) throws CancelledException {
+        long expected = start;
+        long firstWriteEnd = -1;
+        boolean returned = false;
+        for (Instruction instruction : instructions) {
+            monitor.checkCancelled();
+            if (returned || instruction.getAddress().getOffset() != expected ||
+                    instruction.isInDelaySlot() || instruction.getDelaySlotDepth() != 0 ||
+                    instruction.getFlowOverride() != FlowOverride.NONE) {
+                return -1;
+            }
+            long next = Math.addExact(instruction.getMaxAddress().getOffset(), 1);
+            if (next <= expected || next > end) {
+                return -1;
+            }
+            boolean returns = false;
+            for (PcodeOp operation : instruction.getPcode()) {
+                switch (operation.getOpcode()) {
+                    case PcodeOp.BRANCH, PcodeOp.CBRANCH, PcodeOp.BRANCHIND,
+                        PcodeOp.CALL, PcodeOp.CALLIND, PcodeOp.CALLOTHER,
+                        PcodeOp.UNIMPLEMENTED -> { return -1; }
+                    case PcodeOp.RETURN -> returns = true;
+                    default -> { }
+                }
+            }
+            var flow = instruction.getFlowType();
+            if (returns) {
+                if (!flow.isTerminal() || flow.isCall() || next != end ||
+                        instruction.getFallThrough() != null) {
+                    return -1;
+                }
+                returned = true;
+            }
+            else if (!flow.isFallthrough() || instruction.getFallThrough() == null ||
+                    instruction.getFallThrough().getOffset() != next) {
+                return -1;
+            }
+            if (firstWriteEnd == -1 && writesRegister(instruction, register)) {
+                firstWriteEnd = next;
+            }
+            expected = next;
+        }
+        return returned && expected == end ? firstWriteEnd : -1;
+    }
+
     /** Returns one exact stack or provably stable register local. */
     public static Storage stableLocal(Program program, Function function,
             Variable variable, TargetRegisterMap registers, TaskMonitor monitor)
@@ -128,6 +238,32 @@ public final class GhidraVariableStorage {
     private static Storage stableRegister(Program program, Function function,
             Register register, int byteSize, TargetRegisterMap registers,
             TaskMonitor monitor, String description) throws CancelledException {
+        Storage mapped = mappedRegister(register, byteSize, registers, description);
+        if (!mapped.available()) {
+            return mapped;
+        }
+        Register base = register.getBaseRegister();
+        InstructionIterator instructions = program.getListing()
+            .getInstructions(function.getBody(), true);
+        while (instructions.hasNext()) {
+            monitor.checkCancelled();
+            Instruction instruction = instructions.next();
+            if (instruction.getFlowType().isCall()) {
+                return unavailable(OmissionReason.CALL_CLOBBERED,
+                    "function contains a call that may clobber " + description +
+                        " register " + base.getName());
+            }
+            if (writesRegister(instruction, base)) {
+                return unavailable(OmissionReason.REGISTER_MODIFIED,
+                    "function writes " + description + " register " + base.getName() +
+                        " at " + instruction.getAddress());
+            }
+        }
+        return mapped;
+    }
+
+    private static Storage mappedRegister(Register register, int byteSize,
+            TargetRegisterMap registers, String description) {
         if (register == null) {
             return unavailable(OmissionReason.UNSUPPORTED_STORAGE,
                 "Ghidra did not resolve the " + description + " register");
@@ -139,28 +275,8 @@ public final class GhidraVariableStorage {
             return unavailable(OmissionReason.UNSUPPORTED_STORAGE,
                 description + " size does not fit its Ghidra register");
         }
-        Storage mapped = registers.register(base.getName(),
+        return registers.register(base.getName(),
             register.getLeastSignificantBitInBaseRegister(), Math.toIntExact(requiredBits));
-        if (!mapped.available()) {
-            return mapped;
-        }
-        InstructionIterator instructions = program.getListing()
-            .getInstructions(function.getBody(), true);
-        while (instructions.hasNext()) {
-            monitor.checkCancelled();
-            Instruction instruction = instructions.next();
-            if (instruction.getFlowType().isCall()) {
-                return unavailable(OmissionReason.CALL_CLOBBERED,
-                    "function contains a call that may clobber " + description +
-                        " register " + base.getName());
-            }
-            if (writesRegister(program, instruction, base)) {
-                return unavailable(OmissionReason.REGISTER_MODIFIED,
-                    "function writes " + description + " register " + base.getName() +
-                        " at " + instruction.getAddress());
-            }
-        }
-        return mapped;
     }
 
     private static Storage stableComposite(Program program, Function function,
@@ -254,7 +370,7 @@ public final class GhidraVariableStorage {
         return List.copyOf(result);
     }
 
-    private static boolean writesRegister(Program program, Instruction instruction,
+    private static boolean writesRegister(Instruction instruction,
             Register parameter) {
         for (Object result : instruction.getResultObjects()) {
             if (result instanceof Register register && overlaps(parameter, register)) {
@@ -266,8 +382,14 @@ public final class GhidraVariableStorage {
             if (output == null || !output.isRegister()) {
                 continue;
             }
-            Register register = program.getRegister(output);
-            if (register != null && overlaps(parameter, register)) {
+            // Compare storage bytes as well as named register aliases: a raw
+            // p-code output may cover a partial register without a named alias.
+            long start = parameter.getAddress().getOffset();
+            long end = Math.addExact(start, parameter.getMinimumByteSize());
+            if (output.getAddress().getAddressSpace().equals(
+                    parameter.getAddress().getAddressSpace()) &&
+                    output.getOffset() < end &&
+                    Math.addExact(output.getOffset(), output.getSize()) > start) {
                 return true;
             }
         }

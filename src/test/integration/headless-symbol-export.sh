@@ -318,9 +318,9 @@ for target in "${targets[@]}"; do
         grep -q "DW_AT_location" \
             "$result_dir/$target.$fixture_role.readelf-info.txt"
         if [[ "$target" == "aarch64" ]]; then
-            grep -q "Omitted location for recovered_add::left: function writes parameter register x0" \
+            grep -q "Limited location to proven incoming-register lifetime for recovered_add::left: function writes parameter register x0" \
                 "$log"
-            grep -q "Omitted location for recovered_add::right: function writes parameter register x1" \
+            grep -q "Limited location to proven incoming-register lifetime for recovered_add::right: function writes parameter register x1" \
                 "$log"
         elif [[ "$target" == "arm32" ]]; then
             grep -q "Omitted location for recovered_add::left: function writes parameter register r0" \

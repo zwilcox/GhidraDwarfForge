@@ -11,6 +11,52 @@ export. Export remains explicit: installed wrappers request checksum-verified
 packaged natives by default, while source-tree audit runs may supply explicit
 library paths.
 
+## Incoming-register lifetime before overwrite (2026-10-23)
+
+**CONFIRMED locally:** `registerPrefixSmoke` checks the exact boundary after
+the first writing instruction, raw unnamed/partial register aliases, adjacent
+nonoverlapping registers, hazards before/after the overwrite, decoding gaps,
+missing returns, delay slots, flow overrides and cancellation. No prefix is
+accepted until the whole body passes the conservative straight-line proof.
+
+`register-prefix-export.sh` builds independent compiler-DWARF references and
+fully stripped Ghidra/runtime inputs for x86-64 and AArch64. The x86 fixture
+overwrites the low 16-bit argument register; AArch64 overwrites its 32-bit
+alias. Compiler DWARF verifies value 19 before/at/after the overwrite. Forge
+verifies 19 at entry, before the write and at the writing instruction, then
+`<optimized out>` from the next instruction onward. Later restored register
+bits are not treated as recovered storage. Both oracles check source stepping,
+global value 19 and normal exit. The post-clobber assembly marker is a separate
+C statement so the compiler itself updates its location information at that
+boundary rather than describing the entry to an opaque inline-assembly block.
+
+The dedicated x86-64/AArch64 ET_EXEC/PIE baseline, `+0x2000000` Ghidra rebase
+and repeat matrix passes real exports, readelf/LLVM/libdwarf, GDB values,
+input SHA-256/build-ID checks and byte-identical `.dbg`/`.dbg.c` repeats.
+Evidence: `build/test-results/register-prefix-export/run.jx2DfFhQ/`, including
+the final return-instruction checks, and
+`build/register-prefix-review/final-integration.txt`.
+
+The ordinary AArch64 semantic breakpoint remains after its overwrite and still
+reports unavailable arguments there; headless checks now require its limited
+prefix diagnostic. An archived ARM32 semantic input remains wholly unavailable
+under this proof. The existing x86-64/AArch64/MIPS32 BE/LE × ET_EXEC/PIE/shared
+matrix also passes all production exports, validators and native/QEMU GDB
+oracles; logs are `build/register-prefix-review/existing-*-{headless,gdb}.txt`.
+No new ARM32 or MIPS lifetime claim is made by these probes.
+
+```bash
+./gradlew registerPrefixSmoke variableStorageSmoke dwarfLocationListsSmoke buildExtension
+src/test/integration/register-prefix-export.sh "$GHIDRA_INSTALL_DIR" \
+    /absolute/path/libdwarf.so.2.3.2 /absolute/path/libdwarfp.so.2.3.2 x86_64 aarch64
+```
+
+The harness needs the existing GNU target toolchains, QEMU AArch64/GDB and
+validators. The exact known QEMU synthetic-vDSO warning is allowed only when
+also seen in the independent compiler oracle; other diagnostics fail. CI runs
+the new smoke and both real target lanes. Hosted validation remains
+**PRESENT, UNVERIFIED** until that pipeline passes.
+
 ## ELF robustness development (2026-10-23)
 
 The following evidence applies to implementation `3e47589` in
