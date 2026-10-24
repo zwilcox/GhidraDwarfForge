@@ -3,8 +3,8 @@
 **CONFIRMED locally; hosted gate pending:** `MatchedElfAllocations` implements
 a conservative, read-only comparison of active allocated metadata. Actual Java
 21 focused checks and installed comparisons against eighteen retained exporter
-pairs pass. Independent source/runtime reviews are clear; final package review
-and the complete hosted gate remain required.
+pairs pass. Independent source/runtime and local package reviews are clear;
+the complete hosted gate remains required.
 Ordinary export does not call this helper and gains no additional restrictions.
 
 A copied original prefix cannot establish the addresses in an appended section
