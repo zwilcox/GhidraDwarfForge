@@ -5076,3 +5076,69 @@ A refreshed final package and full hosted/native Windows acceptance remain
 pending. No
 public attachment, independent validator receipt, authenticated report, generic
 source-correlation proof, immutable snapshot or host transaction is exposed.
+
+### External-function inventory local acceptance (2026-10-24)
+
+**CONFIRMED locally; full hosted gate pending:** the ordinary Ghidra iterator
+excludes genuine external functions. The production correction enumerates them
+separately, retains qualified diagnostic names and one skipped row per function,
+and leaves memory-thunk multiplicity distinct. The former external-or-thunk log
+assertion passed without proving this inventory. External declaration/signature
+emission remains deferred; no target address, type, source or serializer path
+is expanded by this correction.
+
+Evidence is retained in
+`/home/ziggy/GhidraDwarfForge-worktrees/external-function-research/build/external-function-review/`.
+The implementation directory records exact commands, versions, before/after
+snapshots and full outputs. The tested private JAR is
+`d983a2989178cdc8503b90d92dbcf1bbddd1251fed5b7805ab6e2a31f5a5e395`.
+
+- `./gradlew externalFunctionInventorySmoke qualifiedFunctionNameSmoke
+  exportReportSmoke buildExtension` passes. The new focused test exercises real
+  ProgramDB iterators for all five language models, same-leaf/different-library
+  and duplicate-qualified-name functions, unreferenced and unknown signatures,
+  typed external-data exclusion, separate memory thunks, deterministic report
+  order and cancellation. Its source-selection callback returns null for the
+  sole real definition; no external/thunk reaches it, and no actual decompilation
+  or DWARF producer is invoked by that callback.
+- Actual Java `21.0.12.1` passes the same focused check. Compilation uses
+  `javac 25 --release 21` because the local Java 21 installation has no compiler.
+  Running against prior JAR `42a46317` rejects at the intended missing-inventory
+  assertion. Nine checker controls reject missing/duplicate external rows,
+  thunk-only inventories, mismatched counts, missing diagnostics, duplicate
+  markers and unexpected trailing logger text. The parser accepts the exact
+  GhidraScript suffix; the initial whole-tail JSON parsing error is retained.
+- The original saved project exports under the old, fixed and repeated fixed
+  exporter to byte-identical `.dbg` SHA-256
+  `008fda823bf2031c48a35a53553a94c5f398548b0ed9d71d52ae498ac60c938a`
+  and `.dbg.c` SHA-256
+  `5800c8fbf780258c51564b4a1b376283014d4ec372f3f17955904dc694d9eb5c`.
+  All nine definitions/decompilations/signatures and all other counts remain
+  unchanged. Only skipped/diagnostic inventories and their counts change:
+  five to nine skipped rows, six to ten diagnostics. All fifteen protected
+  files retain bytes and sizes. Four Ghidra project index files
+  (`idata`/`versioned` `~index.dat`/`~index.bak`) change mtimes only; their bytes
+  and the actual program database remain unchanged. The failed assertion that
+  every project mtime would remain unchanged is retained and superseded only
+  by this precise post-run observation.
+- Five fresh primary ET_EXEC fixtures are built, imported, analyzed and exported
+  through `headless-symbol-export.sh`, then checked by `qemu-gdb-symbols.sh` for
+  x86-64, AArch64, ARM32, MIPS32 big-endian and MIPS32 little-endian. All commands
+  pass. Exact external rows/counts and both unreferenced curated functions are
+  required by the shared fixture. GNU/LLVM validation passes; strict libdwarf
+  preserves inherited-frame counts 3/5/0/0/0 with zero unexplained errors.
+  Existing GDB type, source, parameter/value and stepping checks pass natively
+  or under QEMU. AArch64 and ARM32 GDB logs retain the existing system-supplied
+  DSO corrupt-string-table-index warnings; the established harness assertions
+  pass without a new warning exception. Twelve fixture/module paths preserve
+  SHA-256, size and mtime.
+  Headless execution uses Java `25.0.4.1`, separately from the actual-21 smoke.
+
+Retained setup failures include the omitted packaged-native flag, an unavailable
+`javac` under the Java 21 runtime and the overbroad project-mtime assertion; they
+are not counted as passing invocations. Independent source and retained-runtime
+reviews pass, including all artifact hashes, original frame bytes, complete
+checker output and the exact four project-mtime exceptions. This read-only
+review does not rerun any exporter, validator or inferior. The exact final
+package, all hosted roles including PIE/no-ID, and native Windows remain pending. No Ghidra,
+Java, GDB baseline, release or optional attachment operation changes.

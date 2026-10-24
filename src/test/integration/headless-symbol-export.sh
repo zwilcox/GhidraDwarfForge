@@ -162,7 +162,6 @@ for target in "${targets[@]}"; do
     grep -Eq "omitted variable locations: [0-9]+" "$log"
     grep -Eq "canonical types: [1-9][0-9]*" "$log"
     grep -Eq "global variables: [0-9]+" "$log"
-    grep -Eq "Skipped (external/import|thunk) function" "$log"
     test -s "$source"
     grep -q "This is decompiler output, not recovered original source" "$source"
     if LC_ALL=C grep -q $'\r' "$source"; then
@@ -170,6 +169,7 @@ for target in "${targets[@]}"; do
         exit 1
     fi
     if [[ "$fixture_role" != "exec.no-sections" ]]; then
+        python3 "$repository_dir/src/test/integration/check-external-function-inventory.py" "$log"
         grep -q "Renamed fixture function .* to recovered_add" "$log"
         grep -q "Applied USER_DEFINED int recovered_add(int left, int right) in" "$log"
         grep -q "Applied default calling convention to recovered_add" "$log"
@@ -185,6 +185,9 @@ for target in "${targets[@]}"; do
         grep -q "Applied favorite recursive fixture type" "$log"
         grep -q "Applied favorite bit-field fixture type" "$log"
         grep -Eq "canonical types: ([8-9]|[1-9][0-9]+)" "$log"
+    else
+        # No analyst-preparation script runs for the sectionless fixture.
+        grep -Eq "Skipped (external/import|thunk) function" "$log"
     fi
 
     warnings="$result_dir/$target.$fixture_role.readelf.stderr"

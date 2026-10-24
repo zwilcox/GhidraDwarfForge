@@ -894,10 +894,17 @@ Define precedence among analyst-applied listing/signature types and decompiler g
 **Status:** `[~]` — return/parameter DIEs, names,
 prototype/no-return/variadic flags, a user-defined signature, and
 standards-backed `DW_CC_normal` pass locally. Unrepresentable vendor ABI
-distinctions retain their model string without invented DWARF codes. External
-functions and thunks are diagnosed and omitted under the tested initial
-policy. Distinct linkage-name emission remains because GDB must retain the
-analyst-facing breakpoint name.
+distinctions retain their model string without invented DWARF codes. Memory
+thunks are diagnosed and omitted. **HISTORICAL correction:** the earlier claim
+that genuine external functions were also inventoried was not established:
+Ghidra's ordinary function iterator excludes them, and the integration assertion
+accepted a thunk diagnostic alone. **CONFIRMED locally:** the dedicated external
+inventory now passes five real Ghidra language models, five fresh primary exports
+with native/QEMU GDB checks, and identical old/fixed/repeat saved-program sidecar
+and source bytes. Exact hosted acceptance remains required. External
+declaration/signature emission remains unimplemented. Distinct
+linkage-name emission remains because GDB must retain the analyst-facing
+breakpoint name.
 
 ### Work
 
@@ -918,9 +925,11 @@ analyst-facing breakpoint name.
   was rejected because GDB 16.3 used `DW_AT_linkage_name` instead of the
   analyst-facing `DW_AT_name` in the honest C11 CU, breaking
   `break recovered_add`.
-- [x] Distinguish definitions, declarations, imports, thunks, and aliases under
-  a documented initial policy: only real definitions emit; imports/thunks are
-  diagnosed and omitted until declaration/linkage modeling exists.
+- [~] Distinguish definitions, declarations, imports, thunks, and aliases under
+  a documented initial policy: only real definitions emit. Memory thunks are
+  diagnosed; separate external-function inventory passes local acceptance and
+  awaits the exact hosted gate. Declaration/linkage and alias modeling remain
+  separate work.
 
 ### Completion criteria
 
@@ -928,8 +937,12 @@ analyst-facing breakpoint name.
 - [x] `ptype <function>` or equivalent output reflects return/parameter types.
 - [x] Analyst-applied signature overrides are preserved.
 - [x] Variadic and no-return cases are represented correctly or diagnosed.
-- [x] External/import policy has tests (imports/thunks are diagnosed and
-  omitted until declaration/linkage emission exists).
+- [~] External/import policy has independent inventory tests. Exact external
+  rows/counts, qualified diagnostic names, unreferenced imports, duplicate names,
+  separate memory-thunk multiplicity and cancellation pass locally. The former
+  external-or-thunk log assertion did not establish external enumeration.
+  The corrected shared fixture and both host smoke lists are wired; full hosted
+  acceptance remains required. See `docs/FUNCTION-NAMING.md`.
 
 ## P1.8 Represent discontiguous program/function ranges correctly
 

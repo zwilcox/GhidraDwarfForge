@@ -724,10 +724,13 @@ function pointer. PIE `ptype` also passes under ASLR. Curated variadic and
 no-return functions emit `DW_TAG_unspecified_parameters` and `DW_AT_noreturn`;
 GDB displays `int (int, ...)` and `void (int)` in every ET_EXEC/PIE lane.
 Supported stable register, stack, and composite parameter/local storage now
-has validated locations; uncertain storage remains optimized out. External
-and thunk functions are deliberately omitted with diagnostics instead of
-being misrepresented as addressed definitions; every integration lane
-exercises this policy. Standard calling-convention and external-data
+has validated locations; uncertain storage remains optimized out. Memory thunks
+are deliberately omitted with diagnostics instead of being misrepresented as
+addressed definitions. **HISTORICAL correction:** the external-or-thunk assertion
+established thunk coverage, not genuine external-function enumeration. Those
+functions were silently excluded by Ghidra's ordinary iterator; the later
+external-function inventory correction addresses this gap. Standard
+calling-convention and external-data
 declaration attributes now pass. Distinct function linkage-name, thunk, and
 alias emission remain incomplete. Later P2.12 hosted runs confirm this same
 semantic path on Linux and Windows where applicable; release packaging remains
@@ -2437,9 +2440,12 @@ Codex should not silently answer these through implementation choices. Investiga
     proven stack-depth intervals and supported register composites may receive
     locations; uncertain storage remains locationless with diagnostics. Broader
     live-range evidence and migration are tracked under P1.11a.
-16. **RESOLVED for the initial extern/import policy:** external-data declarations
-    may omit locations; imported functions/thunks are diagnosed and skipped.
-    Expanded declaration/linkage handling remains under P1.7/P3.3.
+16. **CONFIRMED for external data and memory thunks:** external-data declarations
+    may omit locations, and memory thunks are diagnosed and skipped.
+    **HISTORICAL correction:** genuine external functions were omitted silently
+    because the ordinary Ghidra iterator excludes them. Dedicated inventory
+    correction passes local checks and awaits hosted acceptance; declaration/
+    signature and linkage emission remain under P1.7/P3.3.
 17. **RESOLVED for the current exporter — inline evidence:** ADR 0003 completes
     the bounded Ghidra 12.0.3 investigation. Inline DIE emission remains
     deferred until explicit instance/origin/range evidence and behavioral
@@ -3737,3 +3743,36 @@ script payloads identical to the tested private installation. Normal merge
 `c76d851` incorporates accepted PR #39, preserving both documentation histories
 and importing only its compiler-oracle helper correction. A refreshed exact
 package and complete hosted/native Windows gate remain required.
+
+### External-function inventory correction (2026-10-24)
+
+**CONFIRMED:** the pinned Ghidra 12.0.3 API separates ordinary definitions from
+`getExternalFunctions()`. An owned headless reproduction on accepted main
+`25845418`, using installed JAR `42a46317`, finds four real external functions
+but no `EXTERNAL_IMPORT` inventory rows. Five memory-thunk rows include two
+separate thunks to one curated imported function. Nine real definitions export.
+The former external-or-thunk log check could pass from those thunk rows alone;
+it did not prove the documented external-function diagnostic policy. The
+reproduction retains an initial missing-`--packaged-natives` setup failure and
+the corrected successful export, with two corroborated inherited frame
+diagnostics and no unexplained strict errors. Headless Java was 25.0.4.1.
+
+The selected bounded correction inventories external functions separately, uses
+Ghidra's qualified name only for diagnostics, and keeps one skipped row per
+function. Memory-thunk multiplicity remains separate. External pseudo-addresses
+never enter normalization, source generation or type/location serialization.
+External-data declarations retain their existing path. **CONFIRMED locally:**
+actual Java 21 five-language focused controls, the intended old-JAR negative,
+nine report-checker rejection controls, and five fresh primary exec exports with
+validators/native-or-QEMU GDB pass. The old/fixed/repeat saved-program sidecar and
+source hashes are identical, with nine definitions/signatures/decompilations
+unchanged; skipped counts change from five to nine and diagnostics from six to
+ten. The complete hosted gate and exact final package remain required. See
+`docs/VALIDATION.md` for retained evidence and the four project-index mtime-only
+exceptions to the original overbroad preservation assertion.
+
+External signature/declaration emission remains deferred. The retained real GCC
+DWARF 5 oracle already has a typed declaration without invented PCs, but GDB
+15.1 does not expose its prototype. The upstream patch discussion does not
+establish a released consumer baseline; no Ghidra, Java or GDB baseline changes
+are selected by this correction. See `docs/FUNCTION-NAMING.md`.

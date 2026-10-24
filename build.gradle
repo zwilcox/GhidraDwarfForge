@@ -346,6 +346,18 @@ tasks.register("qualifiedFunctionNameSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/qualified-function/cache").absolutePath
 }
 
+tasks.register("externalFunctionInventorySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks complete external-function omission inventories in actual Ghidra programs"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.ExternalFunctionInventorySmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/external-function/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/external-function/cache").absolutePath
+}
+
 tasks.register("floatingRegisterSliceSmoke", JavaExec) {
     group = "verification"
     description = "Emits a scalar upper-register bit piece through the isolated native producer"
