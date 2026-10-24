@@ -93,6 +93,20 @@ Runtime integration for non-host targets additionally requires QEMU user-mode
 and a matching multi-architecture or cross GDB. Cross-compilation or headless
 Ghidra import by itself is not a complete architecture-support test.
 
+Two focused harnesses build additional fixtures independently of the Makefile:
+
+- `bitfield-values-export.sh` uses `bitfield-values.c` on each target. Compiler
+  and Forge DWARF must both read initialized `{a=5,b=17}` values from four-byte
+  and packed one-byte structures. The applied Ghidra types use four-byte bases
+  with one-byte component storage, exercising the big-endian offset calculation
+  as well as mutually exclusive member-location attributes. Checking `ptype`
+  alone would not catch the previous incorrect values.
+- `nonzero-load-offset-export.sh` uses `nonzero_load_offset.c`, its startup
+  assembly, and linker script for a static x86-64 executable whose first load
+  segment has file offset `0x1000` and virtual address `0x401000`. Normal and
+  explicitly rebased Ghidra imports must retain exact function/global addresses,
+  usable source stepping, runtime values, and deterministic repeats.
+
 After installing the current extension, exercise import and target metadata
 detection for every fixture with:
 

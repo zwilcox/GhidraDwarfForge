@@ -33,6 +33,8 @@ done
 result_root="$repository_dir/build/test-results/real-world-export"
 mkdir -p "$result_root"
 result_dir=$(mktemp -d "$result_root/run.XXXXXXXX")
+debugger_cwd="$result_dir/unrelated debugger cwd"
+mkdir -p "$debugger_cwd"
 sha256sum "${inputs[@]}" > "$result_dir/inputs.sha256"
 finish() {
     local status=$?
@@ -97,7 +99,7 @@ validate_sidecar() {
 
 for input in "${inputs[@]}"; do
     name=${input##*/}
-    case_dir="$result_dir/$name"
+    case_dir="$result_dir/source files/$name"
     mkdir -p "$case_dir"
     output="$case_dir/$name.dbg"
     "$input" --version > "$case_dir/coreutils-version.txt"
@@ -150,12 +152,14 @@ for input in "${inputs[@]}"; do
         run_arguments=(/alpha/path)
     fi
     (
-        cd "$case_dir"
+        # Absolute sidecar loading must locate its source without a directory
+        # command, substitute-path rule, or a convenient debugger CWD.
+        cd "$debugger_cwd"
         timeout 120 gdb-multiarch -q -nx -batch \
             -ex 'set pagination off' -ex 'set confirm off' \
             -ex 'set debuginfod enabled off' -ex 'set auto-solib-add off' \
             -ex 'set disable-randomization off' -ex 'set startup-with-shell off' \
-            -ex "file $input" -ex "symbol-file $output" \
+            -ex "file $input" -ex "symbol-file \"$output\"" \
             -ex 'info functions' -ex 'ptype entry' -ex 'list entry' \
             -ex "python assert int(gdb.parse_and_eval('&entry')) == $entry_address, 'entry differs from ELF e_entry'" \
             -ex 'break *entry' -ex "break $application_entry" \

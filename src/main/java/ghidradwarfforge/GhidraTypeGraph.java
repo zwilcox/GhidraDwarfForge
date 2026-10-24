@@ -443,17 +443,25 @@ public final class GhidraTypeGraph {
                 DataType memberType = component.getDataType();
                 int bitSize = 0;
                 int storageBitOffset = 0;
+                int storageByteSize = 0;
                 if (memberType instanceof BitFieldDataType bitField) {
                     memberType = bitField.getBaseDataType();
                     bitSize = bitField.getBitSize();
+                    if (bitSize == 0) {
+                        // A zero-width bit field imposes alignment; it has no
+                        // readable value. Subsequent component offsets retain
+                        // its layout effect without inventing an ordinary member.
+                        continue;
+                    }
                     storageBitOffset = bitField.getBitOffset();
+                    storageByteSize = bitField.getStorageSize();
                 }
                 String fieldName = component.getFieldName();
                 if (fieldName == null || fieldName.isBlank()) {
                     fieldName = component.getDefaultFieldName();
                 }
                 members.add(new Member(fieldName, reserve(memberType), component.getOffset(),
-                    bitSize, storageBitOffset));
+                    bitSize, storageBitOffset, storageByteSize));
             }
             return new AggregateType(key, name, nonNegativeSize(composite), kind, members);
         }

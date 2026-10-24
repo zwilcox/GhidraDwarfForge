@@ -1722,6 +1722,72 @@ including these three tests, the five target lanes, Windows-hosted export,
 and the aggregate gate. Detailed evidence is recorded in `VALIDATION.md`.
 These changes do not alter the already published alpha artifact.
 
+### 16.25 Correctness review of the published alpha
+
+**CONFIRMED (2026-10-23):** all six review findings against `f4a0199`
+are valid. Explicit wrapper logs could truncate the input before export;
+nonzero first-load file offsets shifted exported addresses; bit fields used
+conflicting location attributes and, on big-endian targets, the wrong storage
+width; inherited `.gdb_index` could hide replacement symbols; and source
+lookup depended on GDB's working directory. The index fix is already in the
+post-alpha development branch described above, not in the published alpha.
+
+The current development fixes reject log aliases before launching Ghidra,
+including symlink/hardlink aliases; translate against the minimum PT_LOAD
+virtual address used by Ghidra; emit exclusively `DW_AT_data_bit_offset` for
+bit fields using their actual component storage width; and record the absolute
+artifact directory in the source line table. An explicit log in existing-project
+mode now requires the original ELF argument because the wrapper cannot safely
+infer that path before opening the project. Private temporary logs remain the
+default. Absolute source paths make lookup independent of debugger CWD;
+moving the artifact pair still requires GDB source-path remapping. Byte
+determinism is assessed at the same output destination.
+
+**CONFIRMED locally:** real Ghidra/GDB reproductions fail before these fixes
+and pass afterward for nonzero load offsets, x86-64/MIPS32 BE bit-field values,
+and source lookup from an unrelated directory. The bit-field oracle also passes
+on AArch64 and MIPS32 LE. Bash and portable PowerShell collision tests reject
+the operation before launch and preserve protected hashes. Tests and evidence
+are recorded in `docs/VALIDATION.md`.
+
+**CONFIRMED:** hosted run `40041110549` passed all twelve jobs for implementation
+commit `cd906de`, including the new ARM32 bit-field values, native Windows
+wrapper safety (without skipped cases), all five architecture lanes, and
+Windows-hosted export. The first run exposed a known QEMU synthetic-vDSO
+warning in the ARM32 compiler oracle; its narrow handling now matches AArch64
+and still requires the same warning in the independent compiler oracle before
+accepting it for Forge. No value assertions were relaxed. The published
+`0.1.0-alpha.1` bundle has not changed and still contains the reviewed defects.
+
+### 16.26 Current handoff and remaining-work audit
+
+**CONFIRMED:** the documentation-only head `b313e32` subsequently passed all
+twelve jobs in run `40042631047`. PRs #16/#17 are still unmerged. The original
+eight-step prototype bring-up instructions at the end of `TODO.md` were stale;
+they have been replaced with a current sequence and an evidence-based backlog.
+Existing build/native ABI/source/type/location/CI machinery must not be
+reimplemented merely because older snapshot prose describes it as absent.
+
+**PLANNED:** remaining core work includes ELF layout/size robustness, distinct
+function/linkage identity, richer scopes/declarations, functions whose body
+starts below their entry point, and more precise variable lifetimes/storage
+migration. The current stable-register and SP-relative location profile is
+validated; it does not establish arbitrary value migration or scope/liveness.
+Additional target profiles require explicit, finite acceptance cases. Native
+Windows GUI and manual Script Manager journeys remain **PRESENT, UNVERIFIED**.
+
+**PRESENT, UNVERIFIED:** extended-section-number emission is parked on
+`work/elf-table-robustness` at `f2884e6`. Its build/smoke checks passed, but a
+large-output shell-pipeline failure stopped the integration harness before GDB;
+it has no complete hosted validation and is outside PRs #16/#17. That checkpoint
+does not complete missing section-name tables, extended program-header counts,
+or large-file/resource handling.
+
+Optional debuglink remains unimplemented. Inlining remains an **UNCERTAIN**
+evidence investigation, and performance work must begin with benchmarks and
+explicitly selected improvements. The accepted no-synthetic-CFI decision is
+already complete. No optional item was marked implemented by this audit.
+
 ## 17. Open questions
 
 Codex should not silently answer these through implementation choices. Investigate, document, and obtain user direction when the answer materially changes compatibility or scope.
@@ -1738,24 +1804,47 @@ Codex should not silently answer these through implementation choices. Investiga
    reviewed job artifacts.
 5. **RESOLVED — JNA ownership:** the extension uses Ghidra's bundled JNA. The
    obsolete shaded private copy and unpacked JAR tree were removed.
-6. **ELF packaging:** What precise separate-debug container does GDB accept most reliably across non-PIE, PIE, and shared objects?
-7. **Association:** Is explicit `symbol-file`/`add-symbol-file` sufficient for the first milestone, or is automatic build-ID association required immediately?
-8. **Build ID:** Should the sidecar copy the target build ID, and how should targets without a build ID be handled?
+6. **RESOLVED for the current ELF profile — packaging:** matched non-loadable
+   sidecars are specified in ADR-0001 and validated for executable, PIE and
+   shared-object inputs. Remaining layout/size cases are tracked under P0.9.
+7. **RESOLVED for the current milestone — association:** explicit loading is
+   supported; standard build-ID discovery is also validated. Automatic
+   installation into a debugger's build-ID directory remains a separate convenience.
+8. **RESOLVED — build ID:** preserve an existing identity; do not invent one
+   when absent. Both cases have integration tests under P2.9.
 9. **Optional debuglink:** Should the extension offer a safe “attach `.gnu_debuglink`” mode, and what backup/CRC behavior is required?
-10. **Output path:** What UI/headless option should replace the default path when `Program.getExecutablePath()` is unavailable or unwritable?
-11. **Synthetic source language:** Should the CU language remain C89, use a newer C language code, or use another convention to reflect decompiler output?
-12. **Line granularity:** Should rows map statements, expressions, p-code operations, or selected decompiler token groups?
+10. **RESOLVED for the implemented path policy — output path:** explicit
+    input/output overrides, imported-input hash verification, headless failure
+    and GUI directory selection are implemented. Remaining GUI journeys are
+    tracked under P2.7.
+11. **RESOLVED for current output — synthetic source language:** the producer
+    emits `DW_LANG_C11`. Richer scope/linkage work must preserve honest source
+    language and analyst-facing GDB lookup.
+12. **RESOLVED for current line mapping — granularity:** decompiler token/line
+    address evidence supplies deterministic executable rows; no addresses are
+    assigned merely to fill formatting or declaration lines.
 13. **RESOLVED for the current line granularity — overlapping mappings:** one
     instruction address emits one row for the earliest generated source line.
     Revisit this if statement/expression granularity changes.
-14. **Type precedence:** What exact ordering applies among analyst-applied signature types, listing types, high-function types, and decompiler guesses?
-15. **Variable confidence:** What evidence threshold permits emitting `DW_AT_location` versus name/type only?
-16. **Extern/import policy:** Should imported functions receive declarations only, symbol DIEs, PLT/thunk DIEs, or a combination?
+14. **RESOLVED for current extraction — type precedence:** current listing and
+    signature data supply exported types, including analyst edits. Any future
+    high-function evidence must preserve that precedence; it is not currently
+    a substitute source of unproven variable lifetimes.
+15. **RESOLVED for the conservative location profile:** exact stable registers,
+    proven stack-depth intervals and supported register composites may receive
+    locations; uncertain storage remains locationless with diagnostics. Broader
+    live-range evidence and migration are tracked under P1.11a.
+16. **RESOLVED for the initial extern/import policy:** external-data declarations
+    may omit locations; imported functions/thunks are diagnosed and skipped.
+    Expanded declaration/linkage handling remains under P1.7/P3.3.
 17. **Inlining:** Is reconstructed inline information a later goal, or explicitly out of scope?
 18. **RESOLVED — `.debug_frame`:** the current ELF milestone relies on unwind
     information in the original target and does not synthesize unsupported
     CFI. See `docs/ADR-0002-DEBUG-FRAME.md`.
-19. **ELF implementation library:** Continue a hand-written emitter, use Ghidra ELF classes, use another Java ELF library, or derive metadata through an external tool? Licensing and portability matter.
+19. **RESOLVED for current packaging — ELF implementation:** repository-owned
+    Java reader/writer follows ADR-0001 without a runtime `objcopy` dependency.
+    P0.9 may revise buffering/layout handling without changing the identity and
+    original-preservation requirements.
 20. **RESOLVED — distribution license:** GhidraDwarfForge uses MIT. Required
     notices and exact corresponding source for bundled libdwarf plus the
     Windows runtime notices are included and verified under P0.3. Ghidra/JNA
@@ -1772,16 +1861,22 @@ Codex should not silently answer these through implementation choices. Investiga
 
 ## 18. Immediate strategic direction
 
-The safest next move is not to add more DWARF features to the monolithic prototype. The immediate sequence should be:
+**CONFIRMED:** the previous prototype bring-up sequence is complete for the
+documented profiles. The project has an extension build, pinned/audited natives,
+real source/type/location export and a passing Linux/Windows integration matrix.
 
-1. Restore a reproducible extension build and select compatibility baselines.
-2. Pin libdwarf and repair the complete JNA ABI in an isolated smoke test.
-3. Establish small ELF fixtures and automated validators.
-4. Decide and prove the sidecar ELF/GDB-loading model.
-5. Deliver one narrow, fully validated x86-64 non-PIE symbol-only milestone.
-6. Add deterministic source/line mapping.
-7. Add types and variable locations with architecture-neutral models.
-8. Expand to PIE/shared objects, AArch64, ARM32, Windows host, and QEMU-backed
-   MIPS32 cases; keep additional architectures table-driven.
+1. Preserve the working tree and inspect current PR/CI/release state.
+2. When authorized, integrate PRs #16/#17 and ship a separately versioned,
+   fully validated corrective alpha; the existing public alpha is unchanged.
+3. Resume the isolated P0.9 ELF robustness work and complete its tests before
+   including the parked checkpoint in a release.
+4. Implement focused identity/scope/entry-point cases and evidence-backed
+   lifetime/storage migration with compiler-oracle and GDB tests.
+5. Extend selected target/GUI coverage; give optional debuglink, inlining and
+   performance items explicit scoped outcomes without inventing recovered facts.
+6. Preserve the complete supported-profile validation matrix and update current
+   handoff status as each acceptance gate is actually met.
 
-The prioritized, testable work breakdown is in `TODO.md`.
+The bounded backlog and next-session sequence are in `TODO.md` Sections 1.1
+and 4. Historical prototype observations elsewhere in this file remain useful
+history, not instructions to redo completed implementation.

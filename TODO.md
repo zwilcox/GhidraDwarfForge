@@ -1,6 +1,11 @@
 # TODO.md — GhidraDwarfForge
 
-This file is the prioritized execution plan for the repository state captured at commit `7a39a186538c7aec3f7dbdc4a6e396125b5d63ea`.
+This plan began at prototype commit `7a39a186538c7aec3f7dbdc4a6e396125b5d63ea`.
+The current assessment covers development head `b313e32`, whose complete
+[hosted validation run](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40042631047)
+passed all twelve jobs. PRs #16/#17 remain unmerged and the published alpha
+remains `f4a0199`. Use Sections 1.1 and 4 for the next work; do not restart the
+completed prototype bring-up sequence.
 
 Status vocabulary:
 
@@ -14,21 +19,49 @@ Status vocabulary:
 
 No project-level milestone is complete unless all applicable conditions hold:
 
-- [ ] Builds from a clean checkout using documented commands.
-- [ ] Uses a pinned Ghidra compatibility baseline.
-- [ ] Uses a pinned, provenance-recorded libdwarf revision.
-- [ ] Does not crash or corrupt the Ghidra JVM.
-- [ ] Preserves the original target byte-for-byte in default mode.
-- [ ] Produces deterministic `.dbg.c` for an unchanged Ghidra program.
-- [ ] Produces structurally valid ELF and DWARF accepted by independent validators.
-- [ ] Passes scripted GDB behavior checks, not only `readelf -S`.
-- [ ] Is honest about unavailable types, variables, locations, and source mappings.
-- [ ] Has tests for every claimed architecture/host combination.
-- [ ] Runs mandatory end-to-end integration lanes for x86-64 and AArch64
+**CONFIRMED:** these gates pass for the currently documented development
+profiles in run `40042631047`. This is a tested-profile assessment, not a claim
+that every feature below or every possible ELF/ABI is supported. Reapply the
+gates to each implementation change and the exact versioned release commit.
+
+- [x] Builds from a clean checkout using documented commands.
+- [x] Uses a pinned Ghidra compatibility baseline.
+- [x] Uses a pinned, provenance-recorded libdwarf revision.
+- [x] Does not crash or corrupt the Ghidra JVM.
+- [x] Preserves the original target byte-for-byte in default mode.
+- [x] Produces deterministic `.dbg.c` for an unchanged Ghidra program.
+- [x] Produces structurally valid ELF and DWARF accepted by independent validators.
+- [x] Passes scripted GDB behavior checks, not only `readelf -S`.
+- [x] Is honest about unavailable types, variables, locations, and source mappings.
+- [x] Has tests for every claimed architecture/host combination.
+- [x] Runs mandatory end-to-end integration lanes for x86-64 and AArch64
   targets in the pipeline.
-- [ ] Keeps target handling extensible beyond x86/ARM and adds a QEMU-backed
+- [x] Keeps target handling extensible beyond x86/ARM and adds a QEMU-backed
   MIPS behavior lane before claiming MIPS support.
-- [ ] Updates `PROJECT_CONTEXT.md`, this file, and user-facing documentation when decisions or support claims change.
+- [x] Updates `PROJECT_CONTEXT.md`, this file, and user-facing documentation when decisions or support claims change.
+
+## 0.1 Published-alpha correctness review (2026-10-23)
+
+**CONFIRMED:** the six findings against `f4a0199` are reproducible. Fixes
+are on the development branch; the published alpha remains affected.
+
+- [x] Reject explicit log aliases before launch/truncation, including direct,
+  normalized, symlink and hardlink input/output paths; preserve hashes and
+  prove the fake launcher was not invoked on rejection.
+- [x] Match Ghidra's minimum PT_LOAD VA image-base convention; real headless
+  export and GDB must retain function/global addresses, with and without an
+  explicit Ghidra rebase.
+- [x] Emit mutually exclusive byte/bit member location attributes and retain
+  component storage width; compiler-oracle and Forge GDB values must agree
+  for four-byte integer bit fields stored in one byte, including MIPS32 BE.
+- [x] Retire inherited `.gdb_index` with replaced debug data (post-alpha PR #16).
+- [x] Resolve synthetic source from an unrelated GDB CWD without `directory`
+  commands, including output paths with spaces and deterministic reruns.
+- [x] Pass the strengthened complete hosted matrix, including ARM32 bit-field
+  values and native Windows log identity checks. **CONFIRMED:** all twelve
+  jobs passed in run `40041110549` for implementation commit `cd906de`.
+- [ ] Merge reviewed fixes and publish a separately validated replacement
+  release when authorized; do not replace the existing release artifact.
 
 ## 1. Milestone ordering
 
@@ -53,6 +86,31 @@ M7: headless/release productization
 ```
 
 Feature work that calls new libdwarfp functions is blocked until M1.
+
+**CONFIRMED:** M1 is complete; every new native declaration still requires its
+own pinned-header audit and isolated-process test.
+
+## 1.1 Current remaining work
+
+The baseline exporter, source/type/location machinery, five target lanes,
+Windows headless host, and release packaging already exist. The remaining
+items are these bounded workstreams:
+
+| Workstream | Status and acceptance needed |
+|---|---|
+| Corrective release (§0.1) | **PLANNED:** merge the reviewed changes when authorized, bump `VERSION`, validate the exact release commit/package, and publish a separate corrective alpha. The existing alpha artifact must not be replaced. |
+| ELF robustness (P0.9) | **PRESENT, UNVERIFIED:** extended-section emission is parked at `f2884e6`. Finish its integration tests. **PLANNED:** section tables without names, extended program-header counts, and a defined large-file/resource bound with safe failure outside it. |
+| Function identity and scopes (P1.7, P3.3) | **PLANNED:** distinct linkage names without losing analyst-name lookup; external-function declarations, thunks/aliases, function/class/lexical scopes, static locals, and same-named type/variable disambiguation. Existing namespace globals and external-data declarations must remain working. |
+| Additional range/location cases (P1.8, P1.11a) | **PLANNED:** entry points that are not the lowest body address; proven register/memory migration, call-crossing and non-entry lifetimes, stack-slot reuse, and mixed composite storage. Require GDB value checks at multiple instruction addresses and honest unavailable gaps. |
+| Target-profile coverage (P2.3/3a/3b) | Current five profiles pass. Enumerate additional ABI/storage cases, derive their target properties, and add real exporter/validator/QEMU-GDB tests before extending support claims. Completing this plan does not imply every Ghidra CPU/ABI. |
+| Remaining GUI journeys (P2.7) | **PRESENT, UNVERIFIED:** manual Script Manager launch and Windows chooser/cancellation. Linux GUI fallback already has a passing automated test. |
+| Optional debuglink (P2.8) | **PLANNED, optional:** explicit opt-in attachment, backup/rollback, CRC, automatic lookup and mismatch tests, while default export leaves the original unchanged. |
+| Inline reconstruction (P3.4) | **UNCERTAIN:** investigate defensible instance/call-site/range evidence and record a decision. Implement only if supported by that evidence. |
+| Performance (P3.5) | **PLANNED:** establish representative large-binary benchmarks, choose optimizations with measured benefit, and prove unchanged semantics/determinism. The listed candidates are not all unconditional requirements. |
+
+The optional/research items need an explicit recorded outcome; they are not
+silently complete merely because they are outside the current alpha scope.
+Do not fabricate source, scope, or location evidence to satisfy a checkbox.
 
 ---
 
@@ -295,8 +353,8 @@ export role passed across the hosted matrix in GitHub Actions run 33824105805.
 Create small redistributable C/C++ fixtures covering:
 
 - [x] One global and one static function.
-- [x] Source constructs for parameters and locals; storage cases remain to be
-  asserted after analysis/export.
+- [x] Source constructs for parameters and locals; the supported storage cases
+  have value-based GDB assertions under P1.11.
 - [x] Struct, union, enum, array, typedef, qualifier, recursive pointer type, and function pointer.
 - [x] Contiguous and intentionally discontiguous/partitioned function ranges.
 - [x] Non-PIE `ET_EXEC`.
@@ -373,7 +431,7 @@ For at least one x86-64 non-PIE fixture, construct candidate sidecars and prove:
 - [x] Build-ID and `.gnu_debuglink` behavior are specified.
 - [x] Original-file modification remains optional.
 - [x] The chosen design is proven for PIE and ELF32/ELF64; shared-object load
-  timing remains a P2 behavior test.
+  timing is validated under P2.2.
 - [x] Test harness encodes the selected behavior.
 
 ## P0.9 Replace or correct the ELF writer for the minimal path
@@ -383,6 +441,25 @@ compiler-oracle and real Forge symbol tests, including no-section-table inputs;
 existing-DWARF replacement now has an explicit policy and regression tests;
 large files and extended ELF numbering remain.
 **Dependency:** P0.8.
+
+**Current follow-up:** `work/elf-table-robustness` commit `f2884e6` is a parked
+WIP for extended section numbering. Build/smoke checks passed, but the real
+integration harness stopped before GDB on a `readelf | grep -q` pipefail issue;
+it has no passing complete hosted matrix. It is not part of PRs #16/#17.
+
+Additional acceptance criteria:
+
+- [ ] Read/write extended section counts and section-name indexes with valid
+  section-zero metadata; test boundary cases across ELF32/64 and both byte orders.
+- [ ] Handle a present section table without a section-name table, separately
+  from the already tested completely absent section table.
+- [ ] Decode extended program-header counts and test address/build-ID metadata
+  from entries beyond the ordinary count limit.
+- [ ] Define supported input/output size and resource bounds. Replace whole-file
+  buffering where needed, test large inputs, and reject unsupported sizes
+  without changing the original or publishing a partial artifact pair.
+- [ ] Pass real headless export, structural validators, GDB behavior,
+  deterministic reruns and input-hash checks for the added layouts.
 
 ### Work
 
@@ -452,7 +529,8 @@ Loading: exact strategy selected in P0.8
 - [x] `readelf --debug-dump=info` shows valid CU/subprogram DIEs.
 - [x] GDB `info functions` includes expected recovered names.
 - [x] GDB `break <function>` resolves to the correct link-time/runtime address.
-- [x] Discontiguous functions are rejected with a diagnostic; they are never flattened silently.
+- [x] The initial symbol-only milestone rejected discontiguous functions with
+  a diagnostic; P1.8 subsequently added range-list support without flattening gaps.
 - [x] Automated test records all commands/results.
 
 ---
@@ -461,10 +539,10 @@ Loading: exact strategy selected in P0.8
 
 ## P1.1 Refactor extraction away from the monolithic script
 
-**Status:** `[x]` locally — Ghidra extraction, immutable project-owned models,
+**Status:** `[x]` — Ghidra extraction, immutable project-owned models,
 synthetic-source generation, native DWARF production, and ELF packaging are
-separate. Native-independent model smokes and the full local GDB matrix pass;
-hosted integration remains tracked by P2.12.
+separate. Native-independent model smokes and the supported-profile hosted
+GDB matrix pass under P2.12.
 **Dependency:** P0 minimal path should remain working throughout refactor.
 
 ### Work
@@ -516,10 +594,9 @@ byte identity pass in hosted CI.
 
 ## P1.3 Build a structured address-to-source map
 
-**Status:** `[x]` locally — Ghidra line/token evidence is represented
+**Status:** `[x]` — Ghidra line/token evidence is represented
 independently of native production. Focused overlap/discontiguous-range tests
-and the 12-case local exporter/validator/GDB matrix pass; hosted integration
-remains tracked by P2.12.
+and the supported-profile exporter/validator/GDB matrix pass under P2.12.
 
 ### Work
 
@@ -545,9 +622,9 @@ remains tracked by P2.12.
 
 ## P1.4 Emit a valid DWARF 5 `.debug_line`
 
-**Status:** `[x]` locally — valid DWARF 5 line programs, including independent
-sequences for discontiguous function ranges, pass all local targets/input
-roles; hosted integration remains tracked by P2.12.
+**Status:** `[x]` — valid DWARF 5 line programs, including independent
+sequences for discontiguous function ranges and source lookup from another
+working directory, pass the hosted target/input matrix under P2.12.
 **Corresponds to:** issue #7.
 
 ### Work
@@ -572,8 +649,8 @@ roles; hosted integration remains tracked by P2.12.
 
 ## P1.5 Complete source-level GDB milestone
 
-**Status:** `[x]` locally for the required x86-64 non-PIE fixture; hosted CI
-remains tracked by P2.12.
+**Status:** `[x]` for the required x86-64 non-PIE fixture, with hosted
+source/line debugger behavior across the P2.12 target matrix.
 **Dependencies:** P1.2–P1.4.
 
 ### Completion criteria
@@ -594,10 +671,11 @@ For x86-64 non-PIE fixture:
 
 ## P1.6 Implement a canonical, cycle-safe type graph
 
-**Status:** `[x]` locally — native-independent qualifier/reference modeling and
-emission pass focused tests; real Ghidra extraction and DIE emission pass local
-x86-64/AArch64/MIPS BE/MIPS LE validators and `ptype`, including endian-aware
-bit fields. Ghidra 12.0.3's public listing `DataType` model has no qualifier or
+**Status:** `[x]` — native-independent qualifier/reference modeling and
+emission pass focused tests; real Ghidra extraction and DIE emission pass hosted
+validators and `ptype` on all five targets. The new bit-field regressions also
+verify actual values against compiler DWARF. Ghidra 12.0.3's public listing
+`DataType` model has no qualifier or
 C++ reference datatype to extract, so those are not fabricated.
 
 ### Work
@@ -664,8 +742,11 @@ analyst-facing breakpoint name.
 
 ## P1.8 Represent discontiguous program/function ranges correctly
 
-**Status:** `[x]` — Ghidra address sets, deterministic DWARF 5 range lists,
-split line sequences, validators, and GDB gap behavior pass locally.
+**Status:** `[~]` — Ghidra address sets, deterministic DWARF 5 range lists,
+split line sequences, validators, and GDB gap behavior pass in hosted CI for
+the current fixtures. Extraction still skips a function whose first body range
+does not begin at its entry point; that remaining case needs `DW_AT_entry_pc`
+or another validated representation.
 
 ### Work
 
@@ -683,6 +764,8 @@ split line sequences, validators, and GDB gap behavior pass locally.
 - [x] `readelf --debug-dump=ranges` or equivalent shows expected entries.
 - [x] `.debug_aranges` is deliberately not emitted; CU `DW_AT_ranges` provides
   the tested lookup coverage without an optional accelerator.
+- [ ] Export a function whose body includes addresses below its entry point;
+  verify the true entry breakpoint, all ranges, source lookup and gap behavior.
 
 ## P1.9 Export global variables
 
@@ -711,8 +794,9 @@ curated namespace is retained as `DW_TAG_namespace` parentage.
 
 **Status:** `[x]` — native-independent storage/live-range types and isolated
 Ghidra 12.0.3 x86-64, AArch64, and MIPS register maps pass focused tests.
-Production register and stack extraction plus DWARF emission are implemented
-under P1.11; composite pieces and additional storage classes remain there.
+Production register, stack and register-composite extraction plus DWARF
+emission are implemented under P1.11. General lifetime and migration work is
+tracked separately under P1.11a.
 **Blocks:** P1.11.
 
 ### Work
@@ -781,10 +865,31 @@ or uncertain storage remains locationless with a diagnostic.
   stack-location-list lane.
 - [x] x86-64 register-number mapping has explicit tests.
 
+## P1.11a Extend proven variable lifetimes and storage migration
+
+**Status:** `[ ]` — **PLANNED** follow-on to the completed conservative P1.11
+profile. The existing changing-stack test proves adjustment of an SP-relative
+expression, not arbitrary movement of a value between registers and memory.
+
+- [ ] Establish evidence-backed machine-address live ranges for register
+  variables that begin after entry or whose registers are later overwritten.
+- [ ] Track supported register-to-register and register-to-stack moves across
+  calls using the selected ABI and recovered instruction evidence.
+- [ ] Test stack-local first-use and slot-reuse boundaries; record unavailable
+  intervals where identity or lifetime cannot be established.
+- [ ] Support mixed register/memory composite pieces when every piece has
+  defensible size, order and lifetime information.
+- [ ] Compare GDB values with compiler-oracle fixtures at multiple PCs on each
+  claimed profile, including intentionally unavailable gaps. Retain validators,
+  deterministic output, input preservation and cancellation tests.
+
+Ghidra high-variable/symbol evidence is a possible input, not proof of original
+compiler lifetimes. Analyst-defined listing information retains precedence.
+
 ## P1.12 Complete semantic GDB milestone
 
-**Status:** `[x]` locally for the required x86-64 non-PIE fixture; hosted CI
-remains tracked by P2.12.
+**Status:** `[x]` for the required x86-64 non-PIE fixture and its documented
+semantic checks; hosted evidence is recorded under P2.12.
 **Dependencies:** P1.6–P1.11.
 
 ### Completion criteria
@@ -806,7 +911,7 @@ For the initial x86-64 non-PIE fixture:
 
 ## P2.1 Implement and validate PIE address/load-bias behavior
 
-**Status:** `[x]` locally — symbol addresses are normalized from Ghidra's image
+**Status:** `[x]` — symbol addresses are normalized from Ghidra's image
 base to ELF link-time VAs. Runtime breakpoints, source/type behavior, globals,
 stable registers, and stack location lists pass under ASLR. A Ghidra project
 rebased by `0x2000000` produces link-time DWARF that passes validators and the
@@ -1025,6 +1130,13 @@ GUI fallback selection/cancellation passes locally and in hosted run
 including validators and GDB source stepping.
 Manual Script Manager navigation and Windows GUI behavior remain untested.
 
+Additional user-journey coverage:
+
+- [ ] Verify Script Manager discovery, launch and report presentation using
+  the documented installed-extension workflow.
+- [ ] Exercise native Windows output selection and cancellation; verify
+  chosen paths, original preservation and no final artifacts after cancellation.
+
 ### Work
 
 - [x] Default to the executable directory when valid/writable.
@@ -1069,10 +1181,10 @@ Manual Script Manager navigation and Windows GUI behavior remain untested.
 
 ## P2.9 Add build-ID association where applicable
 
-**Status:** `[x]` locally — matched sidecars preserve the original build ID and GDB
-automatic discovery plus mismatched-image rejection pass locally using the
+**Status:** `[x]` — matched sidecars preserve the original build ID and GDB
+automatic discovery plus mismatched-image rejection pass in hosted CI using the
 standard `.build-id/xx/rest.debug` layout. Sidecars for inputs without build
-IDs retain that absence and pass the explicit GDB loading workflow on all four
+IDs retain that absence and pass the explicit GDB loading workflow on all five
 targets.
 
 ### Work
@@ -1089,10 +1201,10 @@ targets.
 
 ## P2.10 Add exporter diagnostics/reporting
 
-**Status:** `[x]` locally — schema-versioned deterministic JSON reports distinguish
+**Status:** `[x]` — schema-versioned deterministic JSON reports distinguish
 success, partial semantic coverage, cancellation, and fatal failure. Real headless
-success, controlled decompiler failure, and fatal preflight paths pass locally;
-the Windows-hosted assertions remain PRESENT, UNVERIFIED under P2.12.
+success, controlled decompiler failure, fatal preflight and Windows-hosted
+assertions pass under P2.12. Current evidence is run `40042631047`.
 
 ### Work
 
@@ -1122,11 +1234,11 @@ Produce a structured final report with:
 
 ## P2.11 Add a headless exporter entry point
 
-**Status:** `[x]` locally — packaged Bash and PowerShell wrappers drive the same
+**Status:** `[x]` — packaged Bash and PowerShell wrappers drive the same
 production exporter in temporary-import or read-only existing-project mode.
 The Bash contract, real Ghidra completion/fatal behavior, deterministic rerun,
-and validators pass locally; the PowerShell wrapper remains PRESENT, UNVERIFIED
-until P2.12 runs on a Windows host.
+validators and native Windows PowerShell checks pass in hosted CI. Run
+`40042631047` also passes the expanded log-alias safety suite without skipped cases.
 **Dependency:** exporter core separated from GUI/script state.
 
 ### Work
@@ -1191,8 +1303,9 @@ an integration pass.
 - [x] Both jobs exercise the same production exporter entry point.
 - [x] The AArch64 job proves runtime address behavior under a native runner or
   documented emulation setup.
-- [x] MIPS is not advertised as release-supported; its hosted QEMU lanes perform
-  headless export, validation, and GDB behavior checks.
+- [x] MIPS32 big/little-endian profiles have hosted QEMU exporter, validator
+  and GDB evidence. Release notes retain those narrow profiles and do not
+  claim every MIPS ABI or processor variant.
 - [x] Test logs expose exact Ghidra/libdwarf/tool versions.
 - [x] Native crashes are clearly reported as failures.
 - [x] Artifacts/transcripts are retained for failed runs.
@@ -1246,7 +1359,8 @@ the original ELF's unwind metadata and must not synthesize unsupported CFI.
 - [x] Written decision explains why `.debug_frame` is not required for the
   current ELF milestone.
 - [x] No synthetic CFI is emitted without an evidence-backed generation model.
-- [ ] If implemented, unwind tests across call stacks pass on every supported architecture.
+- **NOT APPLICABLE to the accepted design:** if synthetic unwind generation
+  is introduced later, it must pass call-stack tests on every claimed architecture.
 
 ## P3.2 Improve string/form policy
 
@@ -1268,7 +1382,10 @@ after merge and post-merge validation.
 
 ## P3.3 Add richer scopes and declarations
 
-**Status:** `[ ]`.
+**Status:** `[~]` — namespace-parented globals and typed external-data
+declarations are tested. Artificial auto-parameter emission is present; a
+dedicated behavior test remains. The other scope/declaration work below is
+**PLANNED**.
 
 Potential features:
 
@@ -1284,6 +1401,11 @@ Potential features:
   curated type in GDB. Do not discard one based on name alone.
 
 Do not begin until the type/location core is stable.
+
+Completion requires fixtures for scoped functions/classes, shadowed locals,
+static locals and distinct same-named types. GDB must preserve analyst-facing
+lookup, distinguish the objects, and resolve only defensible addresses/live
+ranges. Category paths are not automatically original source namespaces.
 
 ## P3.4 Investigate reconstructed inlining
 
@@ -1426,15 +1548,30 @@ Add target-specific load/run commands and machine-checkable expectations for add
 
 # 4. The next Codex session should start here
 
-Unless the user changes priorities, begin with this bounded sequence:
+**CONFIRMED:** the former eight-step prototype bring-up sequence is complete.
+Ghidra 12.0.3, Java 21-compatible bytecode, Gradle 9.3.1, pinned libdwarf 2.3.2,
+the audited native bindings, isolated smoke tests, source-built fixtures and
+ADR-0001 are established. Do not select new baselines or repeat initial
+implementation unless new evidence requires it.
 
-1. Inspect `git status`, all three handoff files, current source, workflow, and historical crash log.
-2. Propose/select the exact Ghidra and Java baseline; do not silently choose one if compatibility consequences are material.
-3. Pin a specific libdwarf revision and capture its headers.
-4. Generate or manually audit a fixed-width JNA binding in a standalone module.
-5. Build the isolated producer smoke test.
-6. Prove producer init/create/transform/get-sections/finish on Linux before invoking corrected bindings inside Ghidra.
-7. Add the first tiny x86-64 non-PIE fixture and validator harness.
-8. Produce an ELF packaging experiment/decision record before adding `.debug_line`, types, or variables.
+Unless the user changes priorities:
 
-The first valuable checkpoint is a safe, reproducible, validator-clean symbol-only sidecar—not a broad but unverified feature set.
+1. Run `git status --short`; read `AGENTS.md`, the current context/status in
+   `PROJECT_CONTEXT.md`, and this file's Sections 0.1/1.1. Preserve existing work.
+2. Check PRs #16/#17 and current CI/release state. At this assessment, both are
+   unmerged; development head `b313e32` passed all twelve jobs in run
+   `40042631047`, while published alpha.1 remains `f4a0199`.
+3. When release work is authorized, integrate the reviewed fixes, set the next
+   version, update notes/limitations, validate the exact release commit and
+   package, then publish a new artifact without replacing alpha.1.
+4. For implementation work, resume P0.9 in an isolated branch. Preserve the
+   parked `f2884e6` checkpoint, review it against the corrected exporter, fix
+   its integration harness and complete the ELF layout/size acceptance gates.
+5. Address P1.7/P1.8/P3.3 identity, entry-point and scope cases with focused
+   compiler-oracle/GDB fixtures, then P1.11a lifetime/storage migration.
+6. Extend explicitly selected target profiles and GUI journeys. Treat optional
+   debuglink, inlining research and performance candidates according to their
+   recorded scopes; do not invent recovered information to complete them.
+7. For each coherent change, run appropriate validators and debugger behavior
+   tests, preserve original hashes and deterministic output, and record evidence
+   in the handoff documents. Keep the complete supported-profile CI matrix green.

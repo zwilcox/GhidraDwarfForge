@@ -52,7 +52,7 @@ public final class TypeGraphSmoke {
             new AggregateType(node.key(), "node", 16, AggregateKind.STRUCTURE,
                 List.of(new Member("value", signedInt, 0),
                     new Member("next", nodePointer, 8),
-                    new Member("flags", signedInt, 12, 3, 1))),
+                    new Member("flags", signedInt, 12, 3, 1, 1))),
             new ArrayType("fixture:int[3]", "int[3]", 12, signedInt, 3),
             new EnumType("fixture:mode", "mode", 4, true,
                 List.of(new Enumerator("MODE_NEGATIVE", -1),
@@ -77,6 +77,7 @@ public final class TypeGraphSmoke {
         if (!recursive.members().get(1).type().equals(nodePointer) ||
                 recursive.members().get(2).bitSize() != 3 ||
                 recursive.members().get(2).storageBitOffset() != 1 ||
+                recursive.members().get(2).storageByteSize() != 1 ||
                 first.nodes().stream().map(TypeNode::key).distinct().count() !=
                     first.nodes().size()) {
             throw new AssertionError("recursive/canonical type identity failed");
@@ -121,6 +122,13 @@ public final class TypeGraphSmoke {
         }
         catch (IllegalArgumentException expected) {
             // Expected validation path.
+        }
+        try {
+            new Member("invalid_bits", signedInt, 0, 5, 4, 1);
+            throw new AssertionError("bit field exceeded its actual component storage");
+        }
+        catch (IllegalArgumentException expected) {
+            // The four-byte base type cannot justify a one-byte storage overflow.
         }
         System.out.println("type-graph-smoke=PASS");
     }

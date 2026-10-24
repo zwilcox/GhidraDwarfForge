@@ -11,6 +11,99 @@ export. Export remains explicit: installed wrappers request checksum-verified
 packaged natives by default, while source-tree audit runs may supply explicit
 library paths.
 
+## Published-alpha correctness review (2026-10-23)
+
+**CONFIRMED:** all six findings against `f4a0199` were validated. The
+following evidence refers to the development fixes, not the unchanged
+published `0.1.0-alpha.1` artifact.
+
+- Wrapper collision: historical Bash and PowerShell wrappers overwrote
+  disposable input copies with a fake-headless transcript. The fixed
+  `src/test/integration/headless-wrapper.sh` and `headless-wrapper.ps1`
+  reject aliases before launch and assert hashes for inputs, outputs, native
+  libraries and project files. Direct, normalized, symlink, hardlink, dangling
+  output-link and parent-symlink/`..` cases pass on Linux (PowerShell 7.6.8).
+  Independent review also reproduced PowerShell collisions after `Set-Location`
+  and through wildcard expansion. Provider-based path resolution and literal
+  log I/O now pass regressions with mixed absolute/relative paths and bracket
+  filenames. Windows alternate-stream log rejection has preventive CI coverage.
+  **CONFIRMED:** native Windows checks pass in run `40041110549` without
+  skipped cases; the downloaded transcript is retained under
+  `build/correctness-review/windows-native-second/headless-wrapper.log`.
+- Nonzero load file offset: a source-built x86-64 ET_EXEC places its first
+  PT_LOAD at file offset `0x1000`, VA `0x401000`. Before the fix, Ghidra
+  reported success but exported function `0x40000e` instead of `0x40100e`
+  and global `0x401000` instead of `0x402000`; GDB could not insert the
+  breakpoint. The fixed normal, explicitly rebased (`+0x2000000`), and fresh
+  repeat exports pass readelf, LLVM, libdwarf and GDB address/value/source
+  checks. Arguments are 19/23; the global changes from -1 to 42; `list`,
+  `next`, `step`, normal exit, input preservation and byte-identical reruns
+  pass. Evidence: `build/test-results/nonzero-load-offset-baseline/run.WsbQolmY/`
+  and `build/test-results/nonzero-load-offset-export/run.KzJjsmJB/`.
+- Bit-field values: the compiler oracle returns `{a=5,b=17}` for both
+  four-byte and packed one-byte aggregates. The old Forge artifact returned
+  `{a=5,b=13}` on x86-64 and `{a=5,b=22}` on MIPS32 BE. The fixed real Ghidra
+  extraction retains one-byte component storage independently of the
+  four-byte base type and emits only `DW_AT_data_bit_offset` for bit fields.
+  MIPS32 BE offsets are 0/3 instead of 24/27. Values, sizes, attribute
+  exclusivity, validators and input hashes pass on x86-64, AArch64, MIPS32 BE
+  and MIPS32 LE. Evidence: `build/test-results/bitfield-values/run.0LBNa3y4/`
+  and `run.rF7wLLEx/`; pre-fix runs are `run.9jN1IZAM/` and `run.iiXbxCeP/`.
+  A known QEMU ARM32/AArch64 synthetic-vDSO warning is accepted only when the exact
+  same diagnostic appears with the independent compiler oracle; stderr is
+  retained. Hosted run `40040274616` stopped before the ARM32 export because
+  this warning was initially allowlisted only for AArch64. Its retained ARM32
+  compiler oracle has the correct values and sizes and exits normally; the
+  narrow warning guard now covers both ARM targets. **CONFIRMED:** the full
+  ARM32 bit-field export passes in run `40041110549`. Downloaded compiler and
+  Forge transcripts both report `{a=5,b=17}`, aggregate sizes 4/1, and the
+  identical vDSO warning; see `build/correctness-review/hosted-arm32/`.
+  Its cross compiler remains unavailable locally, so this is hosted evidence.
+  Earlier `ptype` checks alone did not prove bit-field values.
+- Inherited `.gdb_index`: already fixed and validated by the post-alpha work
+  below, including a real `gdb-add-index` input and GDB symbol lookup. The fix
+  remains absent from reviewed `main` and the published alpha.
+- Source lookup: the pre-fix `/usr/bin/true` export resolves functions but
+  cannot list `./true.dbg.c` from an unrelated directory (transcript
+  `build/correctness-review/source-before/gdb-before.txt`). The strengthened
+  `real-world-export.sh` uses output paths with spaces, starts GDB elsewhere,
+  and supplies no source-directory workaround. True and basename both pass
+  source listing, stepping, validators, input preservation and deterministic
+  fresh imports: `build/test-results/real-world-export/run.V4rS12HT/`.
+
+Reproduction commands (installed development extension with packaged natives):
+
+```bash
+src/test/integration/headless-wrapper.sh
+pwsh -NoLogo -NoProfile -File src/test/integration/headless-wrapper.ps1
+module="$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge"
+src/test/integration/nonzero-load-offset-export.sh "$GHIDRA_INSTALL_DIR" \
+    "$module/os/linux_x86_64/libdwarf.so.2.3.2" \
+    "$module/os/linux_x86_64/libdwarfp.so.2.3.2"
+src/test/integration/bitfield-values-export.sh "$GHIDRA_INSTALL_DIR" \
+    x86_64 aarch64 arm32 mips32be mips32le
+src/test/integration/real-world-export.sh "$GHIDRA_INSTALL_DIR"
+```
+
+**CONFIRMED locally:** the extension build and all fifteen native-independent
+smoke checks pass, as do wrapper checks, architecture-boundary enforcement,
+release assembly checks and workflow lint. The existing x86-64, AArch64,
+MIPS32 BE and MIPS32 LE matrix passes real headless export, structural
+validators and native/QEMU GDB for ET_EXEC, PIE and section-header-free
+ET_EXEC (12 target/role combinations). The GDB harness now asserts the recorded
+absolute source path and no longer supplies a `directory` workaround. Logs:
+`build/correctness-review/build-final.log` and `matrix-*.log`.
+
+**CONFIRMED hosted:** [run 40041110549](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40041110549)
+passed all twelve jobs for implementation commit `cd906de`: the five target
+lanes, Windows wrapper safety and hosted export, native builds, extension build,
+package assembly, workflow lint and aggregate gate. The earlier run
+`40040274616` hit the ARM32 warning check described above; after its x86-64,
+AArch64 and MIPS32 LE lanes passed, it was superseded and cancelled while MIPS32
+BE was still installing its toolchain. The replacement run completed every
+required lane. PR #17 contains these fixes and depends on PR #16 for inherited
+index retirement; neither changes the published alpha artifact.
+
 ## Alpha release validation (2026-10-22)
 
 **CONFIRMED:** work resumed from clean commit
@@ -539,7 +632,9 @@ input/output/source SHA-256 values are reported.
 naming, missing input, original-file alias rejection, nonexistent output
 directories, and an injected unwritable-directory result. GUI directory
 selection is implemented for a valid input whose default destination fails,
-but is **PRESENT, UNVERIFIED** in an interactive Ghidra process.
+and the automated Linux Swing chooser/cancellation test passes in a genuine
+non-headless Ghidra process (see the post-alpha GUI record above). Manual
+Script Manager navigation and Windows GUI behavior remain **PRESENT, UNVERIFIED**.
 
 ## Build-ID discovery
 
@@ -662,7 +757,8 @@ paths must retain the same regression.
 libdwarf 2.3.2 does not generate producer `.debug_line` for DWARF 5. The Forge
 path therefore writes its deterministic DWARF 5 line program in Java and uses
 the audited producer for CU/subprogram DIEs. The file table includes an
-explicit `.` directory: GNU `readelf` and LLVM accept an empty directory table,
+explicit directory (historically `.`, now the absolute artifact directory):
+GNU `readelf` and LLVM accept an empty directory table,
 but Ubuntu's older libdwarf consumer crashes while resolving source paths when
 it is empty.
 

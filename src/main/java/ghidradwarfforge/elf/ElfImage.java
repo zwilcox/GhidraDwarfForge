@@ -135,20 +135,21 @@ public final class ElfImage {
         return unsignedInt(elf64 ? 48 : 36);
     }
 
-    /** Link-time base used to translate a rebased Ghidra address back to ELF VA. */
+    /**
+     * Link-time base in Ghidra's image-base convention: the lowest PT_LOAD VA.
+     * A segment's file offset is not part of this database-address translation.
+     */
     public long preferredImageBase() {
         long result = Long.MAX_VALUE;
+        boolean foundLoad = false;
         for (Segment segment : segments) {
             if (segment.type != PT_LOAD) {
                 continue;
             }
-            if (segment.virtualAddress < segment.offset) {
-                throw new IllegalArgumentException(
-                    "PT_LOAD virtual address is below its file offset");
-            }
-            result = Math.min(result, segment.virtualAddress - segment.offset);
+            foundLoad = true;
+            result = Math.min(result, segment.virtualAddress);
         }
-        if (result == Long.MAX_VALUE) {
+        if (!foundLoad) {
             throw new IllegalArgumentException("ELF has no PT_LOAD image base");
         }
         return result;

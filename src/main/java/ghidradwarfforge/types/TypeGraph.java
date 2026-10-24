@@ -166,21 +166,25 @@ public record TypeGraph(List<TypeNode> nodes) {
     /**
      * Aggregate member layout as reported by Ghidra. A zero {@code bitSize}
      * denotes an ordinary (non-bit-field) member. For a bit field,
-     * {@code storageBitOffset} is retained separately from the byte offset so a
-     * target-aware DWARF writer can apply the correct endian convention.
+     * {@code storageBitOffset} is the LSB offset within {@code storageByteSize}
+     * bytes at {@code byteOffset}. This component storage can be smaller than
+     * the declared base type and must not be inferred from that type's size.
      */
     public record Member(String name, TypeRef type, long byteOffset, int bitSize,
-            int storageBitOffset) {
+            int storageBitOffset, int storageByteSize) {
         public Member {
             requireText(name, "member name");
             if (type == null || byteOffset < 0 || bitSize < 0 ||
-                    storageBitOffset < 0 || (bitSize == 0 && storageBitOffset != 0)) {
+                    storageBitOffset < 0 || storageByteSize < 0 ||
+                    (bitSize == 0 && (storageBitOffset != 0 || storageByteSize != 0)) ||
+                    (bitSize > 0 && (storageByteSize == 0 ||
+                        (long) storageBitOffset + bitSize > 8L * storageByteSize))) {
                 throw new IllegalArgumentException("invalid aggregate member");
             }
         }
 
         public Member(String name, TypeRef type, long byteOffset) {
-            this(name, type, byteOffset, 0, 0);
+            this(name, type, byteOffset, 0, 0, 0);
         }
     }
 

@@ -265,8 +265,18 @@ public final class MinimalDwarfSidecarExporter {
             throw new IllegalArgumentException("synthetic source filename is invalid");
         }
         String unitName = sourceFileName;
+        // Staging and final artifacts share their parent directory. Record that
+        // directory, not the random staging filename or the debugger's CWD.
+        Path sourceDirectory = output.toAbsolutePath().normalize().getParent();
+        if (sourceDirectory == null) {
+            throw new IllegalArgumentException("synthetic source directory is missing");
+        }
+        String directoryName = sourceDirectory.toString();
+        if (sourceDirectory.getFileSystem().getSeparator().equals("\\")) {
+            directoryName = directoryName.replace('\\', '/');
+        }
         byte[] lineTable = syntheticSource == null ? new byte[0] : Dwarf5LineTable.build(
-            unitName, target.addressBytes(), elf.byteOrder(), ordered,
+            unitName, directoryName, target.addressBytes(), elf.byteOrder(), ordered,
             syntheticSource.mappedLines());
         Dwarf5RangeLists.Result rangeLists = Dwarf5RangeLists.build(ordered,
             target.addressBytes(), elf.byteOrder());
@@ -605,7 +615,6 @@ public final class MinimalDwarfSidecarExporter {
         if (model == null) {
             return;
         }
-        Map<String, TypeNode> nodes = model.types().byKey();
         for (TypeNode node : model.types().nodes()) {
             if (node instanceof VoidType) {
                 continue;
@@ -684,14 +693,16 @@ public final class MinimalDwarfSidecarExporter {
                     addName(producer, consumer, memberDie, member.name(), errorOut);
                     addTypeReference(producer, consumer, debug, memberDie, member.type(),
                         model.types(), allocated, errorOut);
-                    addUnsigned(producer, consumer, debug, memberDie,
-                        DW_AT_DATA_MEMBER_LOCATION, member.byteOffset(), errorOut);
                     if (member.bitSize() > 0) {
                         addUnsigned(producer, consumer, debug, memberDie, DW_AT_BIT_SIZE,
                             member.bitSize(), errorOut);
                         addUleb(producer, consumer, memberDie,
                             DW_AT_DATA_BIT_OFFSET,
-                            dataBitOffset(member, nodes, byteOrder), errorOut);
+                            dataBitOffset(member, byteOrder), errorOut);
+                    }
+                    else {
+                        addUnsigned(producer, consumer, debug, memberDie,
+                            DW_AT_DATA_MEMBER_LOCATION, member.byteOffset(), errorOut);
                     }
                 }
             }
@@ -778,17 +789,15 @@ public final class MinimalDwarfSidecarExporter {
     }
 
     private static long dataBitOffset(TypeGraph.Member member,
-            Map<String, TypeNode> nodes, ByteOrder byteOrder) {
+            ByteOrder byteOrder) {
         long memberStart = Math.multiplyExact(member.byteOffset(), 8L);
         if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
             return Math.addExact(memberStart, member.storageBitOffset());
         }
-        TypeNode storageType = Objects.requireNonNull(nodes.get(member.type().key()),
-            "bit-field storage type");
-        long storageBits = Math.multiplyExact(storageType.byteSize(), 8L);
+        long storageBits = Math.multiplyExact(member.storageByteSize(), 8L);
         long fromHighEnd = Math.addExact(member.storageBitOffset(), member.bitSize());
         if (fromHighEnd > storageBits) {
-            throw new IllegalArgumentException("bit field exceeds its storage type");
+            throw new IllegalArgumentException("bit field exceeds its component storage");
         }
         return Math.addExact(memberStart, storageBits - fromHighEnd);
     }

@@ -81,6 +81,15 @@ the schema-versioned JSON report for semantic omissions. Exit `10` means
 report, and `64` means invalid wrapper arguments. Existing-project mode always
 uses `-readOnly -noanalysis` and never deletes or saves the project.
 
+Explicit log paths must not alias the input, either output artifact, native
+libraries, or project data (including symlinks and hard links). In existing-
+project mode, `--log` additionally requires `--input` (`-Log` requires
+`-OriginalElf`/`-Input` in PowerShell), because the wrapper cannot discover the
+project's recorded original path safely before starting Ghidra. Omit the log
+option to use its private temporary capture when the original path is unknown.
+PowerShell log paths are literal filesystem paths; Windows alternate data
+streams are rejected.
+
 The underlying `GhidraDwarfForge.java` script remains available from Ghidra's
 Script Manager or directly through `analyzeHeadless`. With no arguments it
 reports target metadata without loading native code. Its opt-in export accepts:
@@ -104,9 +113,12 @@ a directory chooser. An explicit `--input` must match the executable SHA-256
 recorded at Ghidra import. The original executable is never modified by this
 workflow.
 
-When debugging from another working directory, add the artifact directory to
-GDB's source search path with `directory /path/to/artifacts` so it can find the
-companion `.dbg.c` file.
+The development exporter records the absolute artifact directory in its line
+table, so loading the sidecar from another working directory finds `.dbg.c`
+without extra GDB commands. Moving the files to another machine/directory, or
+using the older alpha, may require `directory /path/to/artifacts` or a GDB
+`set substitute-path` rule. Output is deterministic for the same destination;
+changing the destination changes the recorded source directory.
 
 For automatic GDB association without modifying the executable, a sidecar may
 be installed under the standard `.build-id/xx/rest.debug` tree for its copied

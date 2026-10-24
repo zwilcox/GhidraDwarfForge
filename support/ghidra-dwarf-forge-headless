@@ -19,6 +19,8 @@ Common options:
 
 Existing-project mode is read-only and disables analysis. The project and
 program are never deleted or saved by this wrapper.
+An explicit --log in existing-project mode also requires --input so log
+preflight can protect the original executable and its default output paths.
 
 Exit codes:
   0   Export completed (SUCCESS or PARTIAL; inspect the JSON report)
@@ -33,6 +35,76 @@ die_usage() {
     echo "ghidra-dwarf-forge-headless: $1" >&2
     usage
     exit 64
+}
+
+# Resolve existing symlink components even when the destination does not exist.
+# The inode comparison also catches hard links whose canonical names differ.
+reject_log_alias() {
+    local protected=$1 canonical lexical candidate
+    [[ -n "$protected" ]] || return 0
+    lexical=$(realpath -m -s -- "$protected") ||
+        die_usage "cannot resolve protected path: $protected"
+    # Ghidra's Java policy normalizes '..' lexically before opening files;
+    # shell/native consumers may instead traverse a symlink before '..'.
+    for candidate in "$protected" "$lexical"; do
+        canonical=$(realpath -m -- "$candidate") ||
+            die_usage "cannot resolve protected path: $protected"
+        if [[ "$canonical_log" == "$canonical" || "$log_path" -ef "$candidate" ]]; then
+            die_usage "log path aliases a protected input/output file: $protected"
+        fi
+    done
+}
+
+reject_log_in_tree() {
+    local protected=$1 canonical linked lexical candidate
+    lexical=$(realpath -m -s -- "$protected") ||
+        die_usage "cannot resolve protected directory: $protected"
+    for candidate in "$protected" "$lexical"; do
+        canonical=$(realpath -m -- "$candidate") ||
+            die_usage "cannot resolve protected directory: $protected"
+        if [[ "$canonical_log" == "$canonical" || "$canonical_log" == "$canonical/"* ]]; then
+            die_usage "log path is inside a protected library/project directory: $protected"
+        fi
+        if [[ -f "$log_path" && -d "$candidate" ]]; then
+            linked=$(find -L "$canonical" -type f -samefile "$log_path" -print -quit) ||
+                die_usage "cannot check log aliases in protected directory: $protected"
+            [[ -z "$linked" ]] || die_usage "log path aliases a protected file: $linked"
+        fi
+    done
+}
+
+validate_log_path() {
+    local selected_input selected_output script_directory protected
+    if ((project_mode)) && [[ -z "$input" ]]; then
+        die_usage "--log in existing-project mode requires --input so the original and default outputs can be protected; otherwise omit --log to use a private temporary log"
+    fi
+    canonical_log=$(realpath -m -- "$log_path") ||
+        die_usage "cannot resolve log path: $log_path"
+    if [[ -e "$log_path" && ( ! -f "$log_path" || ! -w "$log_path" ) ]]; then
+        die_usage "log path is not a writable regular file: $log_path"
+    fi
+    selected_input=${input:-$import_path}
+    selected_output=$output
+    if [[ -z "$selected_output" && -n "$selected_input" ]]; then
+        selected_output="$selected_input.dbg"
+    fi
+    for protected in "$import_path" "$input" "$selected_output" \
+            "$consumer" "$producer" "$headless" "$0"; do
+        reject_log_alias "$protected"
+    done
+    if [[ -n "$selected_output" ]]; then
+        reject_log_alias "$selected_output.c"
+    fi
+    if ((project_mode)); then
+        reject_log_alias "$project_dir/$project_name.gpr"
+        reject_log_alias "$project_dir/$project_name.lock"
+        reject_log_in_tree "$project_dir/$project_name.rep"
+    fi
+    script_directory=$(cd "$(dirname -- "$0")" && pwd -P) || exit 64
+    reject_log_in_tree "$script_directory/../os"
+    reject_log_in_tree "$script_directory/../lib"
+    reject_log_in_tree "$ghidra_dir/Ghidra/Extensions/GhidraDwarfForge/os"
+    reject_log_in_tree "$ghidra_dir/Ghidra/Extensions/GhidraDwarfForge/lib"
 }
 
 ghidra_dir=${GHIDRA_INSTALL_DIR:-}
@@ -121,9 +193,10 @@ if [[ -z "$log_path" ]]; then
     log_path=$(mktemp -t ghidra-dwarf-forge-headless-report.XXXXXXXX.log) || exit 12
     temporary_log=1
 else
-    log_parent=$(dirname "$log_path")
+    log_parent=$(dirname -- "$log_path")
     [[ -d "$log_parent" && -w "$log_parent" ]] ||
         die_usage "log directory is not writable: $log_parent"
+    validate_log_path
 fi
 
 if [[ -n "$consumer" ]]; then
@@ -155,11 +228,11 @@ else
 fi
 
 set +e
-"$headless" "${headless_arguments[@]}" 2>&1 | tee "$log_path"
+"$headless" "${headless_arguments[@]}" 2>&1 | tee -- "$log_path"
 headless_status=${PIPESTATUS[0]}
 set -e
 
-mapfile -t report_lines < <(grep -F 'GhidraDwarfForge report: ' "$log_path" || true)
+mapfile -t report_lines < <(grep -F -- 'GhidraDwarfForge report: ' "$log_path" || true)
 if [[ ${#report_lines[@]} -ne 1 ]]; then
     echo "ghidra-dwarf-forge-headless: expected one export report, found ${#report_lines[@]}" >&2
     exit 12
