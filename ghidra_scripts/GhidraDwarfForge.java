@@ -15,6 +15,7 @@ import ghidradwarfforge.nativeapi.DwarfTarget;
 import ghidradwarfforge.nativeapi.PackagedNativeLibraries;
 import ghidradwarfforge.output.ArtifactPairPublisher;
 import ghidradwarfforge.output.ExportReport;
+import ghidradwarfforge.output.FileDigests;
 import ghidradwarfforge.output.OutputPathPolicy;
 import ghidra.util.exception.CancelledException;
 
@@ -22,8 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.util.HexFormat;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -255,14 +254,9 @@ public class GhidraDwarfForge extends GhidraScript {
         return Path.of(normalized);
     }
 
-    private static String sha256(Path path) throws Exception {
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        try (var input = Files.newInputStream(path)) {
-            byte[] buffer = new byte[64 * 1024];
-            for (int count; (count = input.read(buffer)) >= 0;) {
-                digest.update(buffer, 0, count);
-            }
-        }
-        return HexFormat.of().formatHex(digest.digest());
+    private static String sha256(Path path) throws IOException {
+        // Preserve caller behavior, including hashing after pair publication:
+        // this existing path does not introduce a new cancellation point.
+        return FileDigests.read(path).sha256();
     }
 }
