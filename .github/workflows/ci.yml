@@ -473,7 +473,7 @@ jobs:
             src/test/integration/architecture-neutrality.sh
             ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke \
               ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke \
-              exportReportSmoke \
+              exportReportSmoke fileDigestsSmoke \
               syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
               variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke \
               stackFirstUseSmoke \
@@ -1078,6 +1078,19 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: src/test/integration/build-id-discovery.sh "$TARGET"
 
+      - name: Streamed file digests and target-endian GNU debuglink CRC
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          extra=()
+          if [[ "$TARGET" == x86_64 ]]; then
+            extra+=(--large)
+          fi
+          python3 src/test/integration/file-digests.py \
+            "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
+            "$TARGET" "${extra[@]}"
+
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -1205,7 +1218,7 @@ jobs:
           & .\gradlew.bat addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke qualifiedFunctionNameSmoke dwarfAddressRangesSmoke `
-            registerCopySmoke stackFirstUseSmoke pathTraversalSmoke 2>&1 |
+            registerCopySmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke 2>&1 |
             Tee-Object -FilePath "$resultDirectory\native-independent.log"
           if ($LASTEXITCODE -ne 0) {
             throw "native-independent Windows checks failed with exit code $LASTEXITCODE"

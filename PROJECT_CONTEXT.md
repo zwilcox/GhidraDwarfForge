@@ -3067,3 +3067,25 @@ inherited frame diagnostics and zero unexplained errors, and GDB freshness,
 typed-value/stepping and later-edit controls. Original bytes and timestamps
 remain unchanged. Candidate `ffe6c81` has the same omission and is also
 intermediate only; a new exact-head full gate and package review are required.
+
+### Read-only digest foundation (2026-10-24)
+
+**CONFIRMED locally; hosted gate pending:** the next bounded P2.8 slice centralizes the two existing
+SHA loops in a native-free `FileDigests` helper and computes GNU debuglink CRC32
+plus the actual byte count in the same bounded-memory pass. Its optional
+cancellation API owns and closes the stream; existing callers retain their
+previous cancellation behavior. Results describe observed bytes, not stable
+snapshots or file identity. No report parser, ELF matching or executable
+attachment is added. The Windows JDK's null `fileKey` cannot establish identity.
+`docs/FILE-DIGESTS.md` records the API limits and independent acceptance tests;
+P2.8's backup/receipt/refresh/recovery transaction remains planned.
+
+Six focused checks pass both through Gradle and on actual Java 21 against the
+packaged JAR. Nine fresh x86-64/AArch64/MIPS32 big-endian exports pass GNU/LLVM,
+strict libdwarf and GDB, with all inherited frame errors explicitly corroborated.
+Installed-JAR SHA/CRC/counts match Python and target GNU debuglink payloads in
+all nine cases. A 2,147,614,787-byte sparse input passes twice under a 64 MiB
+Java 21 heap, also matching GNU SHA-256; the owned large file is removed.
+Eight saved-program packaged exports and three rejection cases additionally
+pass path/report/hash/original-database preservation and byte-identical repeats.
+No native Windows or full hosted acceptance is inferred from these local tests.

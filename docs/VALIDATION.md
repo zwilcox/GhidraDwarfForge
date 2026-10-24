@@ -3488,3 +3488,61 @@ warns, typed values/stepping work, and original bytes/mtime remain unchanged.
 Exact updated-head package, native Windows alias and complete CI evidence are
 still required; the implementation and packaged production bytes are unchanged
 by this harness-only correction.
+
+## Streamed digest foundation (2026-10-24)
+
+**CONFIRMED locally; hosted gate pending:** production commit `e74b1b7` adds
+`FileDigests` and replaces the two private SHA loops with thin callers. The
+JAR SHA-256 is `25becac3eec70ff1c9c405a74dd98b7ea9eda232406ae1593c577566eff94644`;
+production script SHA-256 is
+`3b7b0ef415e974cfcb03ee1566f3c25bab9151d7405b965a80150a8be6e53821`.
+The private runtime ZIP is
+`2744ff2573b63f42131feb1455527fe52f6f5ce06650b6f876bde27cb7e09323`.
+It predates this acceptance text; final package review must use a fresh build.
+All five manifests pass and the source Ghidra installation is unchanged.
+
+`fileDigestsSmoke`, native-library checksum/tamper, export-report, output-policy,
+path-traversal and pair-publication checks pass through Gradle and separately
+on actual Java 21.0.12.1 using `javac --release 21`. All 142 packaged classes
+match the tested bytes and have major version 65. Initial compilation tried
+the local runtime-only Java 21 directory and failed because it lacks `javac`;
+that setup failure is retained. The completed checks compile with JDK 25 and
+execute with Java 21, rather than attributing the Gradle runtime to Java 21.
+
+Nine fresh headless exports cover executable, PIE and absent build ID on
+x86-64, AArch64 and MIPS32 big-endian. GNU/LLVM, exact code-address-index controls
+and QEMU/GDB behavior pass. Strict libdwarf reports x86 inherited error counts
+3/1/3 (exec/PIE/no-build-ID), AArch64 5/5/5 and MIPS 0/0/0, all exactly
+corroborated with original frame bytes/diagnostics and zero unexplained errors.
+Local headless uses the complete JDK 25. Packaged-native path tests additionally
+pass eight saved-program exports and three negatives, exact output/report
+hashes, source lookup, typed values/stepping, preserved input/program databases
+and identical pair reruns, retaining only the two documented Ghidra backup-file
+exceptions. These exercise the shared native checksum caller in a real export.
+
+The installed-JAR digest oracle passes in `x86_64.7u0baef5`,
+`aarch64.av6bgmlu` and `mips32be.cqscp2f6` under
+`build/test-results/file-digests/`. Each requires the actual production class
+origin and installed script transcript, then checks report paths/hashes against
+independent Python observations for all nine original/sidecar/source files.
+GNU `objcopy` uses explicit owned output paths. Its exact debuglink basename,
+padding and target-endian CRC match the helper and Python `zlib`; explicit
+class/endianness/machine assertions prevent a mislabeled fixture from counting
+as another target. All protected bytes/mtimes and the installed JAR are unchanged.
+
+The x86 sparse input has 2,147,614,787 bytes and nonzero boundary/tail markers.
+Two actual Java 21 runs use a maximum heap of 67,108,864 bytes and agree with
+Python `hashlib`/`zlib` and GNU `sha256sum`: SHA-256
+`48da45d2cb6bfe6de79a3a91613cddfe7b892c019514168c7a89fb5c251723ed`,
+CRC32 `f00f4493`. The large file was removed; layout, hashes and commands remain.
+Automatic-association run `run.azEoJZMi` independently passes the existing
+three-target build-ID/debuglink/CRC-rejection GDB tests, including x86 runtime.
+This is compatibility evidence on private copies, not a product attachment.
+
+Source and oracle reviews are clear. Evidence lives under `build/digest-review/`
+and the named `build/test-results/` directories. Workflow lint, architecture
+guard and syntax checks pass. CI adds the focused smoke to both hosts and the
+installed CRC oracle to all five target lanes; only Linux x86 runs the large
+case. Native Windows and full exact-head package/hosted acceptance remain
+pending. P2.8's receipt/identity/backup/refresh transaction and all published
+release artifacts remain unchanged.

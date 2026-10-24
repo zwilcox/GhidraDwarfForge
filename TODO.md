@@ -1463,6 +1463,14 @@ Additional user-journey coverage:
 
 ## P2.8 Add optional `.gnu_debuglink` attachment
 
+**CONFIRMED locally; hosted gate pending:** a bounded `FileDigests` foundation streams SHA-256,
+GNU CRC32 and byte count with cancellation/resource handling. Existing SHA
+callers share it; its tests include installed-JAR/Python/GNU comparisons and a
+large-file oracle. Actual Java 21, nine x86-64/AArch64/MIPS32 big-endian real
+exports, GDB and the installed digest oracle pass locally; native Windows and
+the complete hosted gate remain required. See `docs/FILE-DIGESTS.md`. This does not establish identity,
+parse receipts or expose attachment; the full transaction remains planned.
+
 **Status:** `[ ]` — optional product operation **PLANNED**. The bounded backend
 and backup-based re-export investigation is complete; the explicit transaction
 design and remaining acceptance tests are in
