@@ -1,0 +1,219 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -lt 1 ]]; then
+    echo "usage: $0 <ghidra-dir-with-packaged-natives> [target ...]" >&2
+    exit 64
+fi
+export LC_ALL=C
+repository_dir=$(realpath "$(dirname "$0")/../../..")
+ghidra_dir=$(realpath "$1")
+shift
+targets=("$@")
+if [[ ${#targets[@]} -eq 0 ]]; then
+    targets=(x86_64 mips32be)
+fi
+source "$repository_dir/src/test/integration/elf-layout-gdb-oracle.sh"
+result_root="$repository_dir/build/test-results/function-static-scopes"
+mkdir -p "$result_root"
+result_dir=$(mktemp -d "$result_root/run.XXXXXXXX")
+emulator_pid=
+port=$((29000 + ($$ % 10000)))
+cleanup() {
+    if [[ -n "$emulator_pid" ]]; then
+        kill "$emulator_pid" 2>/dev/null || true
+        wait "$emulator_pid" 2>/dev/null || true
+    fi
+    echo "function-static-scopes results: $result_dir"
+}
+trap cleanup EXIT
+
+run_gdb() {
+    local executable=$1 sidecar=$2 kind=$3 log=$4
+    local load_symbols=() connect=() run_command=run
+    if [[ -n "$sidecar" ]]; then
+        load_symbols=(-ex "symbol-file \"$sidecar\"")
+    fi
+    if [[ -n "$emulator" ]]; then
+        "$emulator" -L "$sysroot" -g "$port" "$executable" \
+            > "$log.emulator" 2>&1 &
+        emulator_pid=$!
+        sleep 0.2
+        connect=(-ex "set sysroot $sysroot" -ex "target remote :$port")
+        run_command=continue
+    fi
+    FORGE_SCOPE_ADDRESSES="$addresses" FORGE_SCOPE_KIND="$kind" \
+        FORGE_SCOPE_RUN="$run_command" \
+        timeout 45 gdb-multiarch -q -nx -batch \
+        -ex 'set pagination off' -ex 'set confirm off' \
+        -ex 'set debuginfod enabled off' -ex 'set auto-solib-add off' \
+        -ex 'set disable-randomization off' \
+        -ex "file \"$executable\"" "${load_symbols[@]}" "${connect[@]}" \
+        -x "$repository_dir/src/test/integration/function-static-scopes-gdb.py" \
+        > "$log" 2>&1
+    if [[ -n "$emulator_pid" ]]; then
+        wait "$emulator_pid"
+        emulator_pid=
+    fi
+    local oracle="$case_dir/compiler-gdb.txt" diagnostics="$log.diagnostics"
+    if [[ "$kind" != forge ]]; then
+        oracle=$log
+    fi
+    if [[ ( "$target" == mips32be || "$target" == mips32le ) &&
+            "$role" != exec && -n "$sidecar" ]]; then
+        # GDB 15.1 can warn while returning to main in this MIPS PIE fixture
+        # under file <stripped>; symbol-file <separate ELF>. The full, untouched
+        # compiler ELF reproduces it as the symbol file. Match both the exact
+        # diagnostic (including its address) and its count within that same
+        # owner-return operation; reference-only loading remains a strict check.
+        awk '
+            /SCOPE_RETURN_BEGIN/ { returning = 1 }
+            /SCOPE_RETURN_END/ { returning = 0 }
+            NR == FNR {
+                if (returning && $0 ~ /^warning: GDB can\047t find the start of the function at 0x[[:xdigit:]]+\.$/) {
+                    known[$0]++
+                }
+                next
+            }
+            returning && known[$0] > 0 { known[$0]--; next }
+            { print }
+        ' "$oracle" "$log" > "$diagnostics"
+    else
+        cp "$log" "$diagnostics"
+    fi
+    layout_validate_gdb_diagnostics "$diagnostics" "$executable" static-scopes \
+        "$target" "$oracle"
+    grep -Fxq "function-static-scopes-gdb=$kind PASS" "$log"
+    grep -Fq 'exited normally' "$log"
+}
+
+validate_sidecar() {
+    readelf -h -SW -n "$output" > "$case_dir/elf.txt" 2> "$case_dir/readelf.stderr"
+    for dump in info abbrev aranges decodedline Ranges loc; do
+        readelf "--debug-dump=$dump" "$output" > "$case_dir/$dump.txt" \
+            2>> "$case_dir/readelf.stderr"
+    done
+    test ! -s "$case_dir/readelf.stderr"
+    llvm-dwarfdump --verify "$output" > "$case_dir/llvm.txt" 2>&1
+    dwarfdump -ka -ks "$output" > "$case_dir/dwarfdump.txt" 2>&1
+    if grep -Ei '(^|[[:space:]])(warning|error):' \
+            "$case_dir/llvm.txt" "$case_dir/dwarfdump.txt"; then
+        echo "function-static-scopes validator reported a warning or error" >&2
+        return 1
+    fi
+    awk '
+        function finish() {
+            if (external) {
+                declarations++
+                if (!declaration || !external_flag || location) bad = 1
+            }
+        }
+        /Abbrev Number:.*DW_TAG_/ {
+            finish()
+            depth = $1
+            sub(/^</, "", depth)
+            sub(/>.*/, "", depth)
+            variable = /DW_TAG_variable/
+            external = declaration = external_flag = location = 0
+        }
+        /DW_AT_name.*private_count$/ {
+            if (variable && depth == 2) private++
+            else if (variable && depth == 1) global++
+            else bad = 1
+        }
+        /DW_AT_name.*declared_external$/ { external = 1 }
+        /DW_AT_name.*analyst_scope$/ { namespaces++ }
+        /DW_AT_declaration/ { declaration = 1 }
+        /DW_AT_external/ { external_flag = 1 }
+        /DW_AT_location/ { location = 1 }
+        END {
+            finish()
+            exit bad || private != 2 || global != 1 || declarations != 1 || namespaces != 1
+        }
+    ' "$case_dir/info.txt"
+}
+
+for target in "${targets[@]}"; do
+    compiler= strip_tool= emulator= sysroot=
+    compile_flags=()
+    case "$target" in
+        x86_64) compiler=gcc; strip_tool=strip ;;
+        aarch64)
+            compiler=aarch64-linux-gnu-gcc; strip_tool=aarch64-linux-gnu-strip
+            emulator=qemu-aarch64-static; sysroot=/usr/aarch64-linux-gnu ;;
+        arm32)
+            compiler=arm-linux-gnueabihf-gcc; strip_tool=arm-linux-gnueabihf-strip
+            emulator=qemu-arm-static; sysroot=/usr/arm-linux-gnueabihf
+            compile_flags=(-march=armv7-a -marm -mfpu=vfpv3-d16) ;;
+        mips32be)
+            compiler=mips-linux-gnu-gcc; strip_tool=mips-linux-gnu-strip
+            emulator=qemu-mips-static; sysroot=/usr/mips-linux-gnu ;;
+        mips32le)
+            compiler=mipsel-linux-gnu-gcc; strip_tool=mipsel-linux-gnu-strip
+            emulator=qemu-mipsel-static; sysroot=/usr/mipsel-linux-gnu ;;
+        *) echo "unsupported fixture target: $target" >&2; exit 64 ;;
+    esac
+    for role in exec pie pie-rebased; do
+        case_dir="$result_dir/$target/$role"
+        mkdir -p "$case_dir/project"
+        reference="$case_dir/scopes.reference"
+        input="$case_dir/scopes.stripped"
+        output="$case_dir/scopes.dbg"
+        executable_flags=(-fPIE -pie)
+        rebase=()
+        if [[ "$role" == exec ]]; then
+            executable_flags=(-fno-pie -no-pie)
+        elif [[ "$role" == pie-rebased ]]; then
+            rebase=(-postScript RebaseFixtureProgram.java 0x2000000)
+        fi
+        # Keep real compiler unwind information in the stripped original. MIPS
+        # defaults otherwise place its useful CFI only in stripped .debug_frame.
+        "$compiler" "${compile_flags[@]}" -O0 -g -gdwarf-5 \
+            -fno-omit-frame-pointer -fasynchronous-unwind-tables \
+            "${executable_flags[@]}" \
+            "$repository_dir/src/test/fixtures/function-static-scopes.c" -o "$reference"
+        cp "$reference" "$input"
+        "$strip_tool" --strip-all "$input"
+        readelf --debug-dump=frames "$input" > "$case_dir/input-frames.txt" \
+            2> "$case_dir/input-frames.stderr"
+        test ! -s "$case_dir/input-frames.stderr"
+        grep -Fq ' FDE ' "$case_dir/input-frames.txt"
+        sha256sum "$input" > "$case_dir/input.sha256"
+        gdb-multiarch -q -nx -batch -ex 'set debuginfod enabled off' \
+            -ex "file \"$reference\"" \
+            -ex 'python print("SCOPE_ADDRESSES " + " ".join(hex(int(gdb.parse_and_eval("&" + name))) for name in ["first_scope", "second_scope", "first_scope::private_count", "second_scope::private_count", "private_count", "scoped_value"]))' \
+            > "$case_dir/compiler-addresses.txt" 2>&1
+        addresses=$(sed -n 's/^SCOPE_ADDRESSES //p' "$case_dir/compiler-addresses.txt")
+        read -r -a address_arguments <<< "$addresses"
+        test "${#address_arguments[@]}" -eq 6
+        run_gdb "$reference" "" compiler-reference "$case_dir/compiler-reference-gdb.txt"
+        run_gdb "$input" "$reference" compiler "$case_dir/compiler-gdb.txt"
+        for iteration in first repeat; do
+            "$ghidra_dir/support/analyzeHeadless" "$case_dir/project" StaticScopes \
+                -deleteProject -import "$input" -analysisTimeoutPerFile 120 \
+                -scriptPath "$repository_dir/src/test/integration/ghidra_scripts" \
+                "${rebase[@]}" \
+                -postScript PrepareFunctionStaticScopes.java "$target" \
+                "${address_arguments[@]}" \
+                -postScript GhidraDwarfForge.java --packaged-natives "--output=$output" \
+                > "$case_dir/export-$iteration.log" 2>&1
+            grep -Fq 'GhidraDwarfForge symbol export PASS' "$case_dir/export-$iteration.log"
+            grep -Fq 'function-static-scopes preparation PASS; missing owner diagnosed' \
+                "$case_dir/export-$iteration.log"
+            grep -Fq '"functionStaticVariables":2' "$case_dir/export-$iteration.log"
+            if [[ "$iteration" == first ]]; then
+                cp "$output" "$case_dir/first.dbg"
+                cp "$output.c" "$case_dir/first.dbg.c"
+            else
+                cmp "$output" "$case_dir/first.dbg"
+                cmp "$output.c" "$case_dir/first.dbg.c"
+            fi
+            sha256sum -c "$case_dir/input.sha256" > "$case_dir/input-preservation.txt"
+        done
+        validate_sidecar
+        run_gdb "$input" "$output" forge "$case_dir/forge-gdb.txt"
+        sha256sum -c "$case_dir/input.sha256" > "$case_dir/input-preservation.txt"
+        echo "function-static-scopes-$target-$role=PASS"
+    done
+done
+echo 'function-static-scopes=PASS'

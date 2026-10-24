@@ -178,6 +178,10 @@ public final class GhidraTypeGraph {
                 missing.name());
         }
         List<ProgramTypeModel.GlobalVariable> globals = new ArrayList<>();
+        List<ProgramTypeModel.FunctionStaticVariable> functionStatics = new ArrayList<>();
+        java.util.Set<Long> functionOwners = signatures.stream()
+            .map(ProgramTypeModel.FunctionSignature::address)
+            .collect(java.util.stream.Collectors.toSet());
         SymbolIterator symbols = program.getSymbolTable().getAllSymbols(true);
         while (symbols.hasNext()) {
             monitor.checkCancelled();
@@ -206,6 +210,28 @@ public final class GhidraTypeGraph {
                 diagnostic.accept("Skipped unsupported global address " + symbol.getName());
                 continue;
             }
+            if (symbol.getParentNamespace() instanceof Function owner) {
+                long ownerAddress;
+                try {
+                    ownerAddress = AddressNormalizer.toElfAddress(
+                        owner.getEntryPoint().getOffset(), rebaseDelta);
+                }
+                catch (ArithmeticException overflow) {
+                    diagnostic.accept("Skipped function-owned static variable " +
+                        symbol.getName(true) + "; untranslatable owner address");
+                    continue;
+                }
+                if (!functionOwners.contains(ownerAddress)) {
+                    diagnostic.accept("Skipped function-owned static variable " +
+                        symbol.getName(true) + "; owning function was not exported");
+                    continue;
+                }
+                functionStatics.add(new ProgramTypeModel.FunctionStaticVariable(
+                    symbol.getName(), address, data.getLength(),
+                    extractor.reserve(data.getDataType()), ownerAddress,
+                    symbol.getSource().name()));
+                continue;
+            }
             globals.add(new ProgramTypeModel.GlobalVariable(symbol.getName(), address,
                 data.getLength(), extractor.reserve(data.getDataType()), false,
                 symbol.getSource().name(),
@@ -232,7 +258,7 @@ public final class GhidraTypeGraph {
         }
         extractor.drain(monitor);
         return new ProgramTypeModel(new TypeGraph(new ArrayList<>(extractor.nodes.values())),
-            signatures, globals, new VariableStorageModel(variableLocations));
+            signatures, globals, new VariableStorageModel(variableLocations), functionStatics);
     }
 
     private static List<String> namespacePath(Namespace namespace) {

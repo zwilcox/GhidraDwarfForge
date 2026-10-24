@@ -48,13 +48,15 @@ public final class ExportReport {
 
     public record Counts(int functionsExported, int functionsDecompiled,
             int functionsFailed, int functionsSkipped, int functionSignatures,
-            int parameters, int localVariables, int globalVariables, int canonicalTypes,
+            int parameters, int localVariables, int globalVariables, int functionStaticVariables,
+            int canonicalTypes,
             int defensibleVariableLocations, int omittedLocationRanges,
             int mappedSourceLines, int unsupportedConstructs, int diagnostics) {
         public Counts {
             if (functionsExported < 0 || functionsDecompiled < 0 || functionsFailed < 0 ||
                     functionsSkipped < 0 || functionSignatures < 0 || parameters < 0 ||
-                    localVariables < 0 || globalVariables < 0 || canonicalTypes < 0 ||
+                    localVariables < 0 || globalVariables < 0 || functionStaticVariables < 0 ||
+                    canonicalTypes < 0 ||
                     defensibleVariableLocations < 0 || omittedLocationRanges < 0 ||
                     mappedSourceLines < 0 || unsupportedConstructs < 0 || diagnostics < 0) {
                 throw new IllegalArgumentException("export counts must be nonnegative");
@@ -195,7 +197,8 @@ public final class ExportReport {
             .stream().filter(variable -> variable.hasDefensibleLocation()).count());
         Counts reportCounts = new Counts(functionCount, decompiled, failures.size(),
             skippedFunctions.size(), typeModel.functions().size(), parameters, locals,
-            typeModel.globals().size(), typeModel.types().nodes().size(), defensibleLocations,
+            typeModel.globals().size(), typeModel.functionStatics().size(),
+            typeModel.types().nodes().size(), defensibleLocations,
             omitted.size(), source.mappedLines().size(), unsupported.size(), diagnostics.size());
         Status reportStatus = failures.isEmpty() && skippedFunctions.isEmpty() &&
             omitted.isEmpty() && unsupported.isEmpty() && diagnostics.isEmpty()
@@ -334,6 +337,7 @@ public final class ExportReport {
         numberField(json, "parameters", counts.parameters());
         numberField(json, "localVariables", counts.localVariables());
         numberField(json, "globalVariables", counts.globalVariables());
+        numberField(json, "functionStaticVariables", counts.functionStaticVariables());
         numberField(json, "canonicalTypes", counts.canonicalTypes());
         numberField(json, "defensibleVariableLocations", counts.defensibleVariableLocations());
         numberField(json, "omittedLocationRanges", counts.omittedLocationRanges());

@@ -26,6 +26,14 @@ execution remains in Linux native/QEMU lanes. PE/PDB is out of scope. Imports
 and thunks are diagnosed and omitted, and distinct linkage-name emission
 remains unresolved.
 
+Development exports also preserve typed memory labels explicitly owned by a
+Ghidra function as function-scoped static variables. GDB can distinguish
+`first_scope::private_count`, `second_scope::private_count`, and a same-named
+global. This uses the recorded function owner and memory address; it does not
+infer lexical blocks from datatype categories or decompiler formatting.
+See [the focused validation record](docs/VALIDATION.md#function-owned-static-data-2026-10-23)
+for tested profiles and debugger limitations.
+
 The development exporter replaces existing compiler DWARF rather than merging
 it with the recovered view. Old compressed debug sections, indexes, and debug
 file links are retired inside the sidecar; the original ELF stays unchanged.

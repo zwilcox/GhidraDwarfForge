@@ -951,6 +951,26 @@ with an evidence-backed distinct `DW_AT_linkage_name` was not retained: GDB
 C11 CU, which broke `break recovered_add`. Linkage-name work therefore remains
 open until both names can stay useful without inventing the source language.
 
+**CONFIRMED locally (2026-10-23):** defined, primary typed memory labels whose
+immediate Ghidra parent is a `Function` now retain that owner instead of being
+flattened into CU globals. The model stores the owner's normalized ELF entry
+address; DWARF places each variable under that function with its existing
+absolute-address location encoding. An owner omitted from the export produces
+a diagnostic and the private object is omitted, rather than promoted to global
+scope. The structured report adds `counts.functionStaticVariables` while
+retaining the meanings of its existing local/global counts. Namespace globals
+and external-data declarations retain their previous behavior.
+
+The dedicated compiler/real-export oracle covers two functions with the same
+private spelling plus a global of that spelling, exact runtime addresses and
+values, non-PIE/PIE, an explicit Ghidra rebase, deterministic reruns and input
+preservation. This is a bounded P3.3 slice: datatype categories, decompiler
+braces, lexical lifetimes, class scopes and aliases supply no new inferred
+facts. Distinct linkage names are unchanged. A MIPS PIE `next`/unwind warning
+also reproduces using the untouched compiler ELF as the separate symbol file;
+the harness corroborates the precise warning independently and does not claim
+general unwind correctness. See `docs/VALIDATION.md` for commands and limits.
+
 ## 9. Handoff-baseline prototype architecture
 
 Sections 9–13 describe the historical `7a39a18` prototype unless a paragraph

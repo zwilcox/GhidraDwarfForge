@@ -55,7 +55,9 @@ public final class ExportReportSmoke {
                     "lifetime is unknown"),
                 new Evidence(Confidence.ANALYSIS, "fixture"))));
         ProgramTypeModel typeModel = new ProgramTypeModel(types, List.of(signature),
-            List.of(), new VariableStorageModel(List.of(unavailable)));
+            List.of(), new VariableStorageModel(List.of(unavailable)), List.of(
+                new ProgramTypeModel.FunctionStaticVariable("private_count", 0x3000, 4,
+                    signedInt, 0x1000, "USER_DEFINED")));
         SyntheticSourceFile source = SyntheticSourceFile.build("fixture", "x86:LE:64",
             List.of(
                 new FunctionText("failed", 0x2000, null, "bad \"decompile\"\nresult"),
@@ -82,6 +84,8 @@ public final class ExportReportSmoke {
         requireContains(json, "\"functionsFailed\":1");
         requireContains(json, "\"functionsSkipped\":2");
         requireContains(json, "\"omittedLocationRanges\":1");
+        requireContains(json, "\"functionStaticVariables\":1");
+        requireContains(json, "\"globalVariables\":0");
         requireContains(json, "\"name\":\"failed\",\"address\":\"0x2000\"," +
             "\"diagnostic\":\"bad \\\"decompile\\\"\\nresult\"");
         requireContains(json, "\"name\":\"alpha\",\"reason\":\"EXTERNAL_IMPORT\"");
