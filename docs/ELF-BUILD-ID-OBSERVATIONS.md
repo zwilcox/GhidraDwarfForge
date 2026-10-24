@@ -69,7 +69,10 @@ not require reading the intervening file contents.
 
 ## Acceptance
 
-**CONFIRMED locally; hosted gate pending:** native-free tests cover ELF32/64,
+**CONFIRMED:** PR #32 at `c94158b` passes all twelve jobs in exact hosted run
+`40091937766`, including both helper oracles in all five target lanes, fourteen
+native Windows focused checks and both GUI hosts. Independent source/package
+and downloaded artifact reviews are clear. Native-free tests cover ELF32/64,
 both byte orders, four/eight-byte layouts, nonzero padding, partial/repeated
 container views, absence and owner/type/name decoys. Extended section counts,
 extended string-table indices, late `PN_XNUM` notes and offsets above 2 GiB
@@ -88,5 +91,5 @@ validated artifacts; the final combined local check uses nine freshly exported
 pairs from the exact combined JAR. Eight additional saved-program path exports,
 three rejection cases and both helper oracles pass on that package. This is
 ordinary-export regression evidence, not new exporter integration of the
-observer. Native Windows and the complete five-target hosted gate remain
-required. P2.8 remains incomplete. See `VALIDATION.md` for exact evidence.
+observer. The normal merge `7f9c0d2` preserves the accepted tree. P2.8 remains
+incomplete. See `VALIDATION.md` for exact local/hosted evidence and limits.

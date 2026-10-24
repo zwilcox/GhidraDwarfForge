@@ -3215,3 +3215,28 @@ Separately, PR #31's main-push `40089265777` now passes all twelve jobs and both
 independent GUI artifact reviews, superseding its earlier pending-main record.
 The digest/build-ID PR #32 gate remains pending at this checkpoint. Published
 alpha.2 and P2.8's attachment transaction remain unchanged.
+
+### Read-only foundations hosted acceptance (2026-10-24)
+
+**CONFIRMED:** corrected PR #32 head
+`c94158b34bfd8e848b89eecae553fe9255198e48` passes exactly all twelve jobs in
+run `40091937766`, attempt 1, with no skips. Independent source/package,
+all-five-target helper artifact and both-host GUI reviews are clear. Each
+target's digest oracle retains three exact consumed transcripts, so later
+default-output tests cannot replace its report evidence. The x86 large-file
+digest and all fourteen native Windows focused checks pass. The old `65f5bb8`
+report-selection failure remains historical; its skipped/unreached checks are
+not counted toward this acceptance.
+
+Normal merge `7f9c0d2606a8f7db0007b256d256e6edb49dd473` at
+`2026-10-24T12:27:43Z` preserves the tested tree. Separate main-push
+`40094022212` remains pending at this checkpoint. Artifact-review limits remain
+explicit: eight of nine raw digest inputs per target were separately retained
+and rehashed; the no-build-ID original is corroborated by its report, Python
+and two Java digest records. Independent libdwarf is unavailable on Windows;
+Linux-ELF runtime GDB is not run there. Native GNU/LLVM and GUI/focused checks pass.
+
+The report-claims branch incorporates accepted main normally as `bcd60ee`,
+with the same tree as its locally reviewed `ccb21a9` before this documentation
+update. Its own hosted gate remains required. No native ABI, attachment
+operation or release change is introduced by these acceptance records.

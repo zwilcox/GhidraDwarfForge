@@ -53,10 +53,21 @@ production implementation, format checks, all 15 five-profile qualified cases,
 three AArch64 supervisor-call roles, six x86 advanced-entry exports and the
 MIPS32 big-endian sectionless regression pass locally. Independent hosted
 reviews additionally verify all five target artifacts, both GUI hosts and nine
-native Windows smoke checks. Exact-main push `40077843290` remains pending;
-this does not change either published alpha.
+native Windows smoke checks. Exact-main push `40077843290` subsequently passed
+all twelve jobs and both GUI artifact reviews; this does not change either
+published alpha.
 Do not suppress the warning. See `docs/ADDRESS-INDEX.md`.
 Evidence and exact scope are recorded in `docs/VALIDATION.md`.
+
+**CONFIRMED current main:** PRs #29–#32 are also merged through normal history.
+They add bounded direct-register-copy lifetimes, conservative omission of
+unsupported stack-local starts, actual filesystem traversal/alias handling,
+and read-only digest/build-ID foundations. Each exact PR gate passed all twelve
+jobs with independent reviews. The corresponding main-push gates through
+PR #31 also pass; PR #32's separate main push `40094022212` remains pending at
+this checkpoint. The report-claims reader is locally validated and awaits its
+own hosted gate. These changes do not complete general variable migration,
+the attachment transaction or a new release. See the detailed acceptance records.
 
 Status vocabulary:
 
@@ -241,10 +252,10 @@ combined run `40068401197`; its conditional-step scope is recorded in
 | Corrective release (§0.1/0.2) | **CONFIRMED complete within the documented profiles:** alpha.2 is published from `2f88c4a` after exact-main CI `40064204515`, the final package audit and public-asset verification. Alpha.1 remains unchanged and affected; subsequent semantic/GUI/target/performance work is excluded. |
 | ELF robustness (P0.9) | **CONFIRMED complete within the documented bounds:** PR #18 implements extended counts, unnamed tables, bounded file-backed I/O, correct recorded-load-base translation and cancellation. Local checks and all twelve hosted jobs pass; direct PN_XNUM execution limits are documented. |
 | Function identity and scopes (P1.7, P3.3) | **CONFIRMED in hosted run `40063017269`:** explicit function-owned statics preserve duplicate-name lookup across all five targets, and the controlled failure check omits failed owners under the symbol-only contract. These workstreams remain partial. **PLANNED:** distinct linkage names, external-function declarations, thunks/aliases, class/lexical scopes, inferred static locals and remaining same-named type/variable cases. Existing namespace globals and external-data declarations must remain working. |
-| Additional range/location cases (P1.8, P1.11a) | **CONFIRMED in hosted run `40063017269`:** P1.8's bounded entry/range acceptance is complete (five-target structural checks, x86-64 advanced-entry GDB); incoming-register prefixes pass x86-64/AArch64 and end after the first overwrite. P1.11a remains partial. **PLANNED:** register/memory migration, call-crossing and non-entry lifetimes, stack-slot reuse, and mixed composite storage. Require GDB value checks at multiple instruction addresses and honest unavailable gaps. |
+| Additional range/location cases (P1.8, P1.11a) | **CONFIRMED:** bounded entry/ranges, code-only address indexing and incoming-register prefixes pass. PR #29 adds one proven direct-register backup; PR #30 omits unsupported nonzero stack-local starts. Their exact hosted gates pass. P1.11a remains partial: general register/memory migration, call-crossing and non-entry lifetimes, stack-slot reuse and mixed composite storage still require instruction-specific GDB values and honest unavailable gaps. |
 | Target-profile coverage (P2.3/3a/3b) | **CONFIRMED in hosted runs `40063017269` and `40068401197`:** five baseline profiles and scalar FP aliases pass, with exact float/double values on x86-64/AArch64/ARM32 and scalar floats on both MIPS orders. The combined run also proves rejection of definite ELF/Ghidra processor, width or byte-order contradictions; nondefault variants/compiler specifications alone are not rejected. Unproven MIPS double pairs and ARM32's mode-switching-return prefix case remain unavailable. Target expansion and ABI classification remain partial; this is not blanket CPU/ABI support. |
-| GUI reproducibility (P2.7) | **CONFIRMED in combined run `40068401197`:** actual Linux/native Windows Script Manager preflight/export, Console reports, chooser select/cancel and preservation pass. The pending-filter control runs on both hosts; the 100-window geometry control and GDB run on Linux. Windows uses native GNU/LLVM validators, with independent libdwarf unavailable and Linux-ELF runtime GDB not run. Earlier failed attempts remain recorded. |
-| Optional debuglink (P2.8) | **PLANNED, optional:** explicit opt-in attachment and backup/rollback. Sidecar lookup/CRC compatibility is tested on private fixture copies; default export leaves the original unchanged. |
+| GUI and output paths (P2.7) | **CONFIRMED:** both hosts' real Script Manager/chooser journeys pass. PR #31 adds actual parent traversal, complete publisher alias preflight and native Windows short-parent/trailing-dot controls; its exact PR/main gates and artifact reviews pass. Geometry/GDB run on Linux; Windows uses native GNU/LLVM, with independent libdwarf unavailable and Linux-ELF runtime GDB not run. |
+| Optional debuglink (P2.8) | **PLANNED transaction:** opt-in attachment, identity/receipt chain and backup/rollback remain unimplemented. PR #32's streamed digests and typed build-ID observations pass the full matrix; the separate report-claims reader passes local review but awaits hosted acceptance. Default export leaves the original unchanged. |
 | Inline reconstruction (P3.4) | **CONFIRMED investigation complete:** ADR 0003 and a reproducible compiler/Ghidra probe distinguish real inline instances from Ghidra's decompiler flag and record surviving locals/source information. Inline emission remains deferred until explicit instance/origin/range evidence and GDB acceptance exist. |
 | Performance (P3.5) | **CONFIRMED:** the indexed planner and configured-checker gates pass component run `40065823442` and combined run `40068401197`. Historical local paired 10,000-function exports reduce median process time by 15.5% with byte-identical artifacts; a fresh strict/GDB replay validates the retained result without rerunning timing. Hosted CI is not a new timing measurement. Representative complex-binary and further phase-level profiling remain **PLANNED**; no blanket speed or memory claim. See `docs/PERFORMANCE.md`. |
 
@@ -1463,7 +1474,8 @@ Additional user-journey coverage:
 
 ## P2.8 Add optional `.gnu_debuglink` attachment
 
-**CONFIRMED locally; combined hosted gate pending:** the read-only foundations
+**CONFIRMED:** PR #32 head `c94158b` passes all twelve jobs in exact hosted run
+`40091937766` and merged normally as `7f9c0d2`. The read-only foundations
 combine streamed SHA-256/GNU CRC32/byte count (`FileDigests`) with bounded typed
 GNU build-ID observations (`ElfBuildId`). Existing SHA callers share the digest
 helper; ordinary export does not call the build-ID observer. Actual Java 21
@@ -1473,7 +1485,9 @@ semantic cases and eight saved-program path exports, plus three rejection
 cases, validators and GDB. The digest oracle also passes a file above 2 GiB
 under a 64 MiB heap. See `docs/FILE-DIGESTS.md`,
 `docs/ELF-BUILD-ID-OBSERVATIONS.md` and the combined local validation record.
-Native Windows and the full five-target hosted gate remain required. Observed
+Both helper oracles pass all five target lanes, including independent artifact
+review, x86's large-file case, fourteen native Windows focused checks and both
+GUI hosts. Observed
 hashes or matching IDs do not establish file identity, parse receipts or expose
 attachment; the full transaction remains planned.
 
@@ -1482,9 +1496,9 @@ a later default-output test reused the primary log filename for a different
 output pair. Java/Python digests agreed; the path/hash assertion correctly
 rejected the mismatched report. Both helper oracles now run directly after the
 primary export/GDB step, with exact consumed transcripts retained. Three local
-profile replays and a stale-report negative pass; the full updated gate remains
-required. The failed run did not reach x86's large-file/build-ID checks or
-native Windows and is not accepted integration evidence.
+profile replays and a stale-report negative pass; the corrected full gate above
+subsequently passed. The failed initial run did not reach x86's large-file/
+build-ID checks or native Windows and remains historical failure evidence.
 
 **CONFIRMED locally; hosted gate pending:** `ExportReportClaims` adds a separate
 bounded reader for the current report shape. It preserves opaque path/hash/count
@@ -2021,12 +2035,13 @@ Unless the user changes priorities:
 
 1. Run `git status --short`; read `AGENTS.md`, the current context/status in
    `PROJECT_CONTEXT.md`, and this file's Sections 0.1/1.1. Preserve existing work.
-2. Read the combined acceptance checkpoint: PR #25 passed run `40068401197`
-   at `9612655` and merged normally as the tree-identical `befce2c`; component
-   PRs #20/#21/#23/#24 are merged. Observe the separate main-push run
-   `40070016394` before attributing a result to it. Preserve the feature/failure
-   histories and require current-base checks for new changes under AGENTS.md
-   Section 6.1; do not repeat already completed integration.
+2. Read the current acceptance checkpoints: PRs #25–#32 are merged, including
+   the corrected read-only foundations at `c94158b` / run `40091937766` and
+   tree-identical main merge `7f9c0d2`. Main-push gates through PR #31 pass;
+   observe separate PR #32 main push `40094022212` before attributing a result
+   to it. Preserve the failed original PR #32 report-selection attempt and all
+   earlier feature histories. Require current-base checks under AGENTS.md
+   Section 6.1; do not restart completed bring-up or integration.
 3. Preserve published alpha.2 at `2f88c4a` and alpha.1 at `f4a0199`. Future
    releases need their own version/notes, exact-commit CI and package/asset
    verification; do not replace or retag either published artifact.
@@ -2038,6 +2053,8 @@ Unless the user changes priorities:
 6. Extend explicitly selected target profiles and GUI journeys. Treat optional
    debuglink, inlining research and performance candidates according to their
    recorded scopes; do not invent recovered information to complete them.
+   The current bounded continuation is the locally reviewed report-claims
+   reader's hosted acceptance; optional attachment remains a separate transaction.
 7. For each coherent change, run appropriate validators and debugger behavior
    tests, preserve original hashes and deterministic output, and record evidence
    in the handoff documents. Keep the complete supported-profile CI matrix green.
