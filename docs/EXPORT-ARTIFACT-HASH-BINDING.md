@@ -173,3 +173,15 @@ all five target lanes, its large case on x86 and the focused suite on native
 Windows. Independent local package review is clear; the complete hosted gate
 remains required. See
 `VALIDATION.md` for commands, evidence and limitations.
+
+## Detailed binding hosted acceptance
+
+**CONFIRMED:** PR #40 head `13e706e5` passes exact run `40119714272`, all twelve
+jobs, exact package/source review and all five fresh installed preparation
+artifacts. Both GUI hosts and 22 native Windows checks pass; detailed432 and
+the combined 16,384-entry/1,048,576-UTF-16 boundary are actually observed on
+Windows. Merge `25845418` preserves that tree. The earlier local replays remain
+separate evidence; the distinct main push is tracked in `VALIDATION.md`.
+
+The next captured-validator handoff is test-only and not yet accepted; see
+`VALIDATION-EVIDENCE-HANDOFF.md`. It preserves this API and PARTIAL/NOT_RUN.
