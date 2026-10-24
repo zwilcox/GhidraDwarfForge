@@ -88,8 +88,12 @@ reject existing instructions; clearing them before a patch removes the coverage
 required by this check. The byte digest describes current instruction bytes,
 not an immutable decoding snapshot.
 
-The isolated ARM planner requires the original file bytes to match that digest,
-one unambiguous executable section, and no intersecting dynamic code symbol.
+The isolated ARM planner requires ET_EXEC, the original file bytes to match that
+digest, one unambiguous executable section, and no named defined dynamic symbol.
+GDB 15.1 suppresses ordinary dynamic symbols whenever a static symbol table
+exists, so even a nonoverlapping function or data definition prevents synthesis.
+Undefined imports remain supported. Anonymous dynamic code extents also receive
+conservative overlap checks.
 It preserves existing static symbol tables, diagnoses unsupported or conflicting
 cases, and omits mode cues for sectionless inputs. Ordinary sectionless export
 continues through its existing path. Synthetic local names are
@@ -101,10 +105,10 @@ extended section-index records without interpreting ARM mode bits.
 Only selections with a known Thumb entry enable this additional extraction.
 This avoids new instruction scanning or diagnostics for ordinary ARM-only
 exports; it does not claim to detect every possible mixed-mode body. Relocatable
-objects are excluded from the cue planner because their symbol values have
-different address semantics.
+objects, PIE and shared objects are excluded from this supplemental cue planner.
+Their existing DWARF export path remains available.
 
-The focused planner/serializer suite passes 132 checks on actual Java 21 with
+The initial focused planner/serializer suite passes 132 checks on actual Java 21 with
 a 64 MiB heap. The Ghidra extraction suite passes 38 checks on actual Java 21;
 its Gradle execution also passes. GNU readelf independently accepts the emitted
 ordinary, extended and mixed section-index symbol tables. Existing inherited
@@ -126,6 +130,33 @@ negative control. Hosted acceptance remains pending.
 No broader Thumb support is accepted yet. PIE,
 rebasing, shared objects, mixed state within one function, literal pools and
 sectionless Thumb inputs require separate evidence.
+
+### Shared-object regression found by the hosted gate
+
+**CONFIRMED:** the second PR #44 run (`40136340620`, head `5c4f14c`)
+exposes a regression in the existing ARM shared-object oracle. Adding a partial
+static symbol table for startup-function modes suppresses the shared library's
+ordinary dynamic minimal symbols in GDB 15.1. A named breakpoint then also selects
+the driver's PLT trampoline, where source stepping fails. Avoiding only dynamic
+code overlaps is insufficient.
+
+An owned local export reproduces the failure. A diagnostic copy changes only
+the new 40-byte SHT_SYMTAB section-header row to SHT_NULL; every payload byte,
+including DWARF and the dynamic symbol table, remains identical. The same driver
+and unchanged GDB script then pass. GDB's minimal-symbol dump confirms that the
+global `recovered_add` definition returns. This copy is a causal experiment,
+not a production artifact. The inspected distro GDB 15.1 source explains the
+behavior in `elfread.c`'s stripped/static-table precedence and `linespec.c`'s
+PLT filtering.
+
+The correction restricts synthesis to ET_EXEC and rejects all named defined
+dynamic rows, including data and absolute symbols outside the selected code.
+PIE/shared mode support requires a separately validated design. The corrected
+package passes 231 planner checks on actual Java 21, the original Thumb harness,
+an owned export-dynamic variant and the unchanged shared-library oracle. Its
+exact local evidence and pending hosted acceptance are recorded in
+`docs/VALIDATION.md`; earlier positive
+Thumb evidence does not establish this correction's acceptance.
 
 ## Retained local evidence
 

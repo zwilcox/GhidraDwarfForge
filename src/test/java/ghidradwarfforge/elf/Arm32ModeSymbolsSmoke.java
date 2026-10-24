@@ -82,7 +82,15 @@ public final class Arm32ModeSymbolsSmoke {
         reject(root, sectionless, List.of(thumb), "sectionless");
         byte[] relocatable = ordinary.clone();
         half(relocatable, 16, 1);
-        reject(root, relocatable, List.of(thumb), "absolute symbol semantics");
+        reject(root, relocatable, List.of(thumb), "only ET_EXEC");
+        byte[] shared = ordinary.clone();
+        half(shared, 16, 3);
+        reject(root, shared, List.of(thumb), "only ET_EXEC");
+        Files.write(input, shared);
+        diagnostics.clear();
+        require(Arm32ModeSymbols.plan(ElfImage.read(input), List.of(arm), () -> false,
+            diagnostics::add).isEmpty() && diagnostics.isEmpty(),
+            "ARM-only shared object keeps the existing no-cue path");
         byte[] noBits = ordinary.clone();
         put(noBits, sectionOffset(noBits, 1) + 4, 8);
         reject(root, noBits, List.of(thumb), "backed by original code bytes");
@@ -96,9 +104,9 @@ public final class Arm32ModeSymbolsSmoke {
 
         // A defined dynamic function, an untyped code label, and a zero-sized
         // earlier label can all supply competing minimal-symbol information.
-        reject(root, dynamic(ordinary, TEXT + 1, 16, 2, 1), List.of(thumb), "dynamic code symbol");
-        reject(root, dynamic(ordinary, TEXT + 8, 4, 0, 1), List.of(thumb), "dynamic code symbol");
-        reject(root, dynamic(ordinary, TEXT, 0, 0, 1), List.of(thumb), "dynamic code symbol");
+        reject(root, dynamic(ordinary, TEXT + 1, 16, 2, 1), List.of(thumb), "defined dynamic symbols");
+        reject(root, dynamic(ordinary, TEXT + 8, 4, 0, 1), List.of(thumb), "defined dynamic symbols");
+        reject(root, dynamic(ordinary, TEXT, 0, 0, 1), List.of(thumb), "defined dynamic symbols");
         reject(root, dynamic(ordinary, TEXT + 1, 16, 2, 0xfff1), List.of(thumb), "reserved index");
         reject(root, dynamic(ordinary, TEXT + 1, 16, 10, 0xff02), List.of(thumb), "reserved index");
         reject(root, dynamic(ordinary, TEXT + 1, 16, 2, 0xffff), List.of(thumb), "missing dynamic");
@@ -109,14 +117,32 @@ public final class Arm32ModeSymbolsSmoke {
         malformed = dynamic(ordinary, 0, 0, 0, 0);
         malformed[0x180] = 1;
         reject(root, malformed, List.of(thumb), "row zero");
+        // Even a nonoverlapping function or data/absolute definition would be
+        // hidden by GDB's static-table precedence. Binding does not rescue it.
+        for (int type : List.of(0, 1, 2, 3, 4, 6, 10)) {
+            for (int binding : List.of(0, 1, 2, 10)) {
+                byte[] defined = dynamic(ordinary, TEXT + 32, 16, type, 1);
+                defined[0x19c] = (byte) ((binding << 4) | type);
+                reject(root, defined, List.of(thumb), "defined dynamic symbols");
+            }
+        }
+        reject(root, dynamic(ordinary, TEXT, 16, 1, 0xfff1), List.of(thumb),
+            "defined dynamic symbols");
+        reject(root, dynamic(ordinary, 0, 4, 1, 3), List.of(thumb),
+            "defined dynamic symbols");
         for (byte[] harmless : List.of(dynamic(ordinary, 0, 0, 2, 0),
-                dynamic(ordinary, TEXT, 16, 1, 0xfff1),
-                dynamic(ordinary, TEXT + 32, 16, 2, 1))) {
+                dynamic(ordinary, TEXT + 32, 0, 2, 0))) {
             Files.write(input, harmless);
             diagnostics.clear();
             require(Arm32ModeSymbols.plan(ElfImage.read(input), List.of(thumb), () -> false,
-                diagnostics::add).size() == 1, "nonoverlapping/undefined/absolute-data dynamic row");
+                diagnostics::add).size() == 1, "undefined dynamic function remains available to GDB");
         }
+        byte[] unnamed = dynamic(ordinary, TEXT + 8, 4, 0, 1);
+        put(unnamed, 0x190, 0);
+        reject(root, unnamed, List.of(thumb), "dynamic code symbol");
+        unnamed = dynamic(ordinary, TEXT + 1, 80, 2, 1);
+        put(unnamed, 0x190, 0);
+        reject(root, unnamed, List.of(thumb), "exceeds its section");
 
         // Extended section counts and a high referenced index need SHNDX entries;
         // this is metadata-only scale, well below the actual 64 MiB smoke heap.
@@ -134,7 +160,7 @@ public final class Arm32ModeSymbolsSmoke {
         byte[] dynamicExtended = dynamic(extended, TEXT + 1, 16, 2, 0xffff);
         row(dynamicExtended, 5, ".opaque", 18, 0, 0, 0x220, 8, 2, 0, 4, 4);
         put(dynamicExtended, 0x224, 0xff00);
-        reject(root, dynamicExtended, List.of(cue(extended, 0, 16, true)), "dynamic code symbol");
+        reject(root, dynamicExtended, List.of(cue(extended, 0, 16, true)), "defined dynamic symbols");
         byte[] badExtended = dynamicExtended.clone();
         put(badExtended, 0x224, 1);
         reject(root, badExtended, List.of(cue(extended, 0, 16, true)), "invalid dynamic extended");

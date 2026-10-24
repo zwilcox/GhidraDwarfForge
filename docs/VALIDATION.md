@@ -5423,7 +5423,8 @@ The probes do not implement optional attachment or publish a release.
 ELF function-mode cues for a mixed ARM/Thumb ET_EXEC whose static symbol table
 was stripped. It leaves DWARF code addresses even, emits exact-size synthetic
 local ELF symbols, and checks actual instruction coverage/context and original
-code bytes. Existing symbol tables and uncertain cases receive conservative
+code bytes. Synthesis is restricted to ET_EXEC without named defined dynamic
+symbols. Existing symbol tables and uncertain cases receive conservative
 omission diagnostics. See [the scope and initial failure](research/ARM-THUMB-MODE.md).
 
 The local interim runtime ZIP has SHA-256
@@ -5478,3 +5479,68 @@ the exact guard and existing Makefile behavior. Local x86-64 fixture inventory
 and all thirteen byte-identical rebuild checks pass. A fresh complete hosted
 gate remains required; the successful component package checks do not substitute
 for it.
+
+### PR #44 shared-object correction (2026-10-24)
+
+**CONFIRMED:** the second run `40136340620` at `5c4f14c` is not accepted.
+The x86-64 job fails standalone compilation because `large-elf-sidecar.sh`
+omits the new `ElfLocalFunctionSymbol.java` dependency. The ARM job reaches its
+existing shared-library GDB oracle, where a partial SHT_SYMTAB suppresses
+dynamic minimal symbols and `break recovered_add` also selects the driver's
+PLT entry. AArch64 and both MIPS jobs pass; Windows is skipped and the required
+gate fails. The failed-run independent receipt has SHA-256
+`c5c9072749254b8ab0bdc1cbc566d0a8b67b253cdac9a628fae99d9b0288120e`.
+
+Owned reproduction `build/thumb-mode-review/arm-shared-regression/run.2k3c1bhy`
+uses the installed interim `e0888311...` JAR, distinct from hosted `f0670a27...`.
+The unchanged shared GDB script fails with its generated artifact and passes
+with a diagnostic copy that nulls only the added 40-byte SYMTAB section-header
+row. All other bytes, including every DWARF/dynsym payload, are identical.
+Minimal-symbol dumps prove loss/restoration of the global `recovered_add`.
+Independent causal review SHA-256 is
+`03d1434f455e50935f7109ead0d09b1106cae4c6e5f1d7ae6eee6baa7fe777dc`;
+eight source/module and four fixture hash/size/mtime observations remain equal.
+This is a diagnostic experiment, not an accepted production sidecar.
+
+The correction restricts synthesis to ET_EXEC without named defined dynamic
+symbols, including nonoverlapping code, data and absolute definitions. Undefined
+imports keep their existing handling. The standalone build lists the new record.
+Gradle passes 231 planner/serializer and 38 extraction checks and builds the
+extension. The corrected standalone large-ELF oracle passes on a 2,147,487,745-byte
+input with a 64 MiB heap, GNU/LLVM verification, strict libdwarf and actual GDB
+values/source/stepping/exit checks. Strict validation records two corroborated
+inherited frame diagnostics and zero unexplained errors. Its evidence is
+`build/test-results/large-elf-sidecar/run.wR6fH7ii`.
+
+An always-run capture step retains only the explicit primary fixture/output
+allowlist, at most 16 MiB each, with streamed hashes and missing/error states.
+Local controls cover actual fixture copies, all-missing output, preserved old
+receipts, rejected links/FIFO/oversize files, an exact-limit file and exclusion
+of an unlisted 40 GiB sparse file. These are end-of-job diagnostic snapshots,
+not invocation-time provenance.
+
+**CONFIRMED corrected local runtime:** interim ZIP SHA-256
+`6008d117ed3bd4a4374e1e2808d0010c27eee66abf07c1a51883ecd589a2c96d`
+contains JAR `5faafc7397d101308bd68742ec25309b307169a765e6d8fa1a9081d03df0d292`
+and the unchanged production script. Independent JAR-first actual Java 21
+checks pass planner231 at 64 MiB and extraction38 at 256 MiB. All 49 production
+sources, 220 Java-21-compatible classes, five inventories and unchanged native
+payloads match; review SHA-256 is
+`906d9ebaa5f559e84392b5ff31f90ed5818fb41145f0c1f69655484560fbd19d`.
+
+The private installed exporter passes three real cases. The checked-in Thumb
+harness (`run.dVVInSY5`) retains its static and four compiler/Forge runtime GDB
+checks, validators and deterministic repeat. An owned copy adding only the
+linker's `--export-dynamic` switch (`run.Tq1um02E`) passes those same GDB checks
+with original dynamic symbol/string bytes preserved, an explicit omission and
+no synthesized static table. A clone of the saved shared-library program now
+passes the unchanged shared GDB oracle and GNU/LLVM/strict validation through
+the corrected production exporter. The latter two are local controls, separate
+from the checked-in CI Thumb harness. Their receipt is
+`build/thumb-mode-review/arm-shared-regression/corrected.0zon9mad/result.json`,
+SHA-256 `442cdcb96b6a728323d6c6e3ce4bc9ba4cb3f7de9a73241ec5083e3d1629fba3`.
+All 74 selected earlier evidence/project files and four shared inputs retain
+their observed bytes/size/mtime. Headless execution uses Java 25; actual Java 21
+focused checks are separate. Initial package-auditor layout assumptions stopped
+before runtime and remain retained. Final exact-document packaging and a fresh
+full hosted gate are still required.

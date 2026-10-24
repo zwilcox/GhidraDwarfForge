@@ -3894,7 +3894,9 @@ repairs the static failure while preserving all existing DWARF bytes and a
 following ARM function in the same section. **CONFIRMED locally; hosted gate pending:**
 the bounded production correction checks stored/current instruction context,
 complete instruction coverage, original code-byte digests and unique section
-mapping before adding synthetic local symbols. Existing tables and uncertain
+mapping before adding synthetic local symbols. Synthesis is restricted to
+ET_EXEC without named defined dynamic symbols, whose GDB resolution a partial
+static table would otherwise suppress. Existing tables and uncertain
 cases are preserved with omission diagnostics. Focused actual-Java-21 checks,
 ELF regression checks and the extension build pass. The installed production
 exporter passes validators, deterministic reruns and compiler-relative GDB
@@ -3910,3 +3912,20 @@ before target export: the three new C sources were missing from its explicit
 reviewed list. The bounded correction registers those names and retains the
 strict guard. Local x86-64 reproducibility passes; a fresh full gate is required.
 The failed logs/artifacts and successful component package checks remain distinct.
+
+**CONFIRMED:** the second gate (`40136340620`, head `5c4f14c`) passes the
+fixture inventory but fails the standalone large-ELF compilation and ARM shared
+GDB oracle. The standalone list omitted the new local-symbol record dependency.
+The ARM failure is a real consumer regression: a partial SHT_SYMTAB suppresses
+ordinary dynamic minimal symbols in GDB 15.1, allowing a breakpoint to stop at
+the driver's PLT entry. An exact owned-copy comparison isolates that table's
+presence as the cause; all other bytes, including DWARF/dynsym, are unchanged.
+The correction adds the missing build dependency and bounds mode synthesis to
+ET_EXEC without named defined dynamic symbols. It does not weaken shared-object
+behavior tests. Bounded end-of-job primary-fixture capture now preserves exact
+small diagnostic inputs/outputs even if a target job fails early; its receipt
+is explicitly not invocation-time provenance. The corrected package now passes
+actual Java 21 planner231/extraction38, the 2 GiB/64 MiB large-file oracle,
+the original Thumb harness, an owned export-dynamic variant and the unchanged
+shared-library GDB script using a clone of the saved program. Original selected
+inputs/evidence remain unchanged. Fresh full hosted acceptance is required.

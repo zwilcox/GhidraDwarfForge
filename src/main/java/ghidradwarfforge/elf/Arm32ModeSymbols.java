@@ -67,8 +67,8 @@ public final class Arm32ModeSymbols {
         if (cues.stream().noneMatch(cue -> (cue.symbolValue() & 1) != 0)) {
             return List.of();
         }
-        if (image.type() != 2 && image.type() != 3) {
-            diagnostic.accept("Omitted ARM32 mode symbols: ELF type has no audited absolute symbol semantics");
+        if (image.type() != 2) {
+            diagnostic.accept("Omitted ARM32 mode symbols: only ET_EXEC mode cues are audited");
             return List.of();
         }
         if (image.sections().isEmpty()) {
@@ -276,11 +276,13 @@ public final class Arm32ModeSymbols {
                     if (type == 2 || type == 10) {
                         throw new UnsupportedSymbols("dynamic code symbol uses unsupported reserved index");
                     }
+                    rejectHiddenDynamicSymbol(rows, at);
                     continue;
                 }
                 if (sectionIndex >= image.sections().size()) {
                     throw new UnsupportedSymbols("invalid dynamic symbol section index");
                 }
+                rejectHiddenDynamicSymbol(rows, at);
                 Extent extent = code.get((int) sectionIndex);
                 if (extent == null) {
                     continue;
@@ -301,6 +303,16 @@ public final class Arm32ModeSymbols {
             }
         }
         return result;
+    }
+
+    private static void rejectHiddenDynamicSymbol(ByteBuffer rows, int at) {
+        // GDB 15.1 skips ordinary dynamic symbols once any static symbol table
+        // exists. A partial table would hide definitions even outside our cues,
+        // including data and absolute symbols. Undefined imports are handled
+        // separately by the consumer and have already been skipped above.
+        if (rows.getInt(at) != 0) {
+            throw new UnsupportedSymbols("defined dynamic symbols would be hidden by a partial SHT_SYMTAB");
+        }
     }
 
     private static void addRange(TreeMap<Long, Long> ranges, long start, long end) {

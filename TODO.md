@@ -1329,8 +1329,12 @@ execution. Runtime success can depend on the current CPSR and does not establish
 static mode support. A separate saved-project repeat is deterministic.
 **CONFIRMED locally; hosted gate pending:** the bounded correction restores
 defensible ELF mode cues and passes the compiler-relative regression, including
-neighboring ARM code, validators, calls, stepping and repeatability. This does
-not complete Thumb profile support; see [the scope](docs/research/ARM-THUMB-MODE.md).
+neighboring ARM code, validators, calls, stepping and repeatability. Synthesis
+is restricted to ET_EXEC without named defined dynamic symbols; the shared-object
+failure found by PR #44's second gate is corrected locally, with fresh full
+hosted acceptance still required.
+This does not complete Thumb profile support; see
+[the scope](docs/research/ARM-THUMB-MODE.md).
 
 **CONFIRMED in hosted run `40063017269`:** six scalar-FP
 exec/PIE/rebase/repeat cases pass stable float/double and upper-`s1` value
