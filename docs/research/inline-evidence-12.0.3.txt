@@ -1,0 +1,143 @@
+P3.4 inline evidence: Ghidra 12.0.3 / Linux x86-64 / 2026-10-23
+Command: src/test/research/inline/run.sh /path/to/ghidra_12.0.3_PUBLIC
+Recorded run: run.tB61GBSm
+This is a compiler/Ghidra research probe, not a Forge inline export.
+Normalization: result directory -> ${RESULT}; process ID -> <PID>; tabs -> four spaces.
+Complete local compiler dumps and Ghidra logs are retained in the recorded run.
+fixture-source-sha256=06683cc704c204f911d4539b04d4ca001536c91c09bf4efed6862e3f6b657a44
+
+--- gcc-version.txt (first line) ---
+gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+
+--- gdb-version.txt (first line) ---
+GNU gdb (Ubuntu 15.1-1ubuntu1~24.04.1) 15.1
+
+--- llvm-version.txt (first line) ---
+Ubuntu LLVM version 18.1.3
+
+--- result.txt ---
+compiler-inline-dwarf-and-gdb=PASS
+debug-and-no-debug-ghidra-probes=PASS
+ordinary-call-versus-decompiler-inline-flag=PASS
+original-input-preservation=PASS
+inline-evidence=PASS
+
+--- compiler-gdb.txt ---
+Breakpoint 1 at 0x401161: ${RESULT}/inline-evidence.c:7. (2 locations)
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+
+Breakpoint 1.1, compiler_inline (value=4) at ${RESULT}/inline-evidence.c:7
+7        return inline_local * 3; /* INLINE_BREAK */
+#0  compiler_inline (value=4) at ${RESULT}/inline-evidence.c:7
+#1  inline_caller (value=value@entry=4) at ${RESULT}/inline-evidence.c:12
+#2  0x0000000000401032 in main () at ${RESULT}/inline-evidence.c:31
+compiler-inline-value=4
+compiler-inline-local=11
+[Inferior 1 (process <PID>) exited normally]
+
+--- debug/observations.txt ---
+mode=debug
+compiler-inline-listing-functions=0
+function=inline_caller entry=00401150 body=[[00401150, 00401170]] inline-flag=false
+local parent=inline_caller name=inline_local first-use=0 storage=Stack[-0xc]:4 source=IMPORTED
+local parent=inline_caller name=inline_local_1 first-use=0 storage=Stack[-0x10]:4 source=IMPORTED
+function=ordinary_caller entry=00401190 body=[[00401190, 004011a1]] inline-flag=false
+function=ordinary_callee entry=00401180 body=[[00401180, 00401188]] inline-flag=false
+imported-inline-locals-in-parent=2
+source-row file=${RESULT}/inline-evidence.c line=4 base=00401154 length=1
+source-row file=${RESULT}/inline-evidence.c line=4 base=00401164 length=3
+source-row file=${RESULT}/inline-evidence.c line=6 base=00401154 length=1
+source-row file=${RESULT}/inline-evidence.c line=6 base=00401155 length=6
+source-row file=${RESULT}/inline-evidence.c line=6 base=0040115b length=3
+source-row file=${RESULT}/inline-evidence.c line=6 base=0040115e length=3
+source-row file=${RESULT}/inline-evidence.c line=6 base=00401164 length=3
+source-row file=${RESULT}/inline-evidence.c line=7 base=00401161 length=3
+source-row file=${RESULT}/inline-evidence.c line=7 base=00401164 length=3
+source-row file=${RESULT}/inline-evidence.c line=7 base=00401167 length=3
+source-row file=${RESULT}/inline-evidence.c line=7 base=0040116a length=2
+source-row file=${RESULT}/inline-evidence.c line=11 base=00401150 length=4
+source-row file=${RESULT}/inline-evidence.c line=11 base=00401154 length=1
+source-row file=${RESULT}/inline-evidence.c line=11 base=0040115b length=3
+source-row file=${RESULT}/inline-evidence.c line=12 base=00401154 length=1
+source-row file=${RESULT}/inline-evidence.c line=13 base=00401164 length=3
+source-row file=${RESULT}/inline-evidence.c line=14 base=0040116a length=2
+source-row file=${RESULT}/inline-evidence.c line=14 base=0040116c length=3
+source-row file=${RESULT}/inline-evidence.c line=15 base=0040116c length=3
+source-row file=${RESULT}/inline-evidence.c line=15 base=0040116f length=17
+inline-caller-source-rows=20
+comment address=00401150 type=PRE text=Unresolved local var: int first@[???]|Unresolved local var: int second@[???]
+comment address=00401154 type=PRE text=Begin: inline int compiler_inline(int value)
+comment address=00401158 type=PRE text=Begin: inline int compiler_inline(int value)
+compiler-inline-comments=2
+decompile=compiler-inline.c clang-kinds={ClangBreak=11, ClangCommentToken=14, ClangFuncNameToken=1, ClangFuncProto=1, ClangFunction=1, ClangOpToken=4, ClangReturnType=1, ClangStatement=1, ClangSyntaxToken=46, ClangTokenGroup=1, ClangTypeToken=4, ClangVariableDecl=3, ClangVariableToken=7}
+decompile=ordinary-before.c clang-kinds={ClangBreak=9, ClangFuncNameToken=2, ClangFuncProto=1, ClangFunction=1, ClangOpToken=3, ClangReturnType=1, ClangStatement=2, ClangSyntaxToken=32, ClangTokenGroup=1, ClangTypeToken=3, ClangVariableDecl=2, ClangVariableToken=6}
+decompile=ordinary-after.c clang-kinds={ClangBreak=8, ClangCommentToken=6, ClangFuncNameToken=1, ClangFuncProto=1, ClangFunction=1, ClangOpToken=3, ClangReturnType=1, ClangStatement=1, ClangSyntaxToken=27, ClangTokenGroup=1, ClangTypeToken=2, ClangVariableDecl=1, ClangVariableToken=4}
+ordinary-raw-calls-before-and-after=1
+ordinary-high-calls-before=1
+ordinary-high-calls-after=0
+inline-evidence-probe=PASS
+
+--- no-debug/observations.txt ---
+mode=no-debug
+compiler-inline-listing-functions=0
+function=inline_caller entry=00401150 body=[[00401150, 00401170]] inline-flag=false
+local parent=inline_caller name=local_c first-use=0 storage=Stack[-0xc]:4 source=DEFAULT
+local parent=inline_caller name=local_10 first-use=0 storage=Stack[-0x10]:4 source=DEFAULT
+function=ordinary_caller entry=00401190 body=[[00401190, 004011a1]] inline-flag=false
+function=ordinary_callee entry=00401180 body=[[00401180, 00401188]] inline-flag=false
+imported-inline-locals-in-parent=0
+inline-caller-source-rows=0
+compiler-inline-comments=0
+decompile=compiler-inline.c clang-kinds={ClangBreak=6, ClangFuncNameToken=1, ClangFuncProto=1, ClangFunction=1, ClangOpToken=4, ClangReturnType=1, ClangStatement=1, ClangSyntaxToken=27, ClangTokenGroup=1, ClangTypeToken=2, ClangVariableDecl=1, ClangVariableToken=5}
+decompile=ordinary-before.c clang-kinds={ClangBreak=9, ClangFuncNameToken=2, ClangFuncProto=1, ClangFunction=1, ClangOpToken=3, ClangReturnType=1, ClangStatement=2, ClangSyntaxToken=31, ClangTokenGroup=1, ClangTypeToken=2, ClangVariableDecl=1, ClangVariableToken=4}
+decompile=ordinary-after.c clang-kinds={ClangBreak=8, ClangCommentToken=6, ClangFuncNameToken=1, ClangFuncProto=1, ClangFunction=1, ClangOpToken=3, ClangReturnType=1, ClangStatement=1, ClangSyntaxToken=27, ClangTokenGroup=1, ClangTypeToken=2, ClangVariableDecl=1, ClangVariableToken=4}
+ordinary-raw-calls-before-and-after=1
+ordinary-high-calls-before=1
+ordinary-high-calls-after=0
+inline-evidence-probe=PASS
+
+--- debug/ordinary-before.c ---
+
+int ordinary_caller(int value)
+
+{
+  int iVar1;
+  
+  iVar1 = ordinary_callee(value);
+  return iVar1 + 1;
+}
+
+
+--- debug/ordinary-after.c ---
+
+/* WARNING: Inlined function: ordinary_callee */
+
+int ordinary_caller(int value)
+
+{
+  return value * 5 + 3;
+}
+
+
+--- pinned-source-sha256.txt ---
+bdd9ec371c5eb83e0437e0df96db9d338392ef1dc69f71f24c9799a6bd0049a9  Framework/SoftwareModeling/lib/SoftwareModeling-src.zip!/ghidra/program/model/listing/Function.java
+565d9d3bcc61f377d64434bbc5d25790a923463a5cae03e106c80abb88fe5b66  Framework/SoftwareModeling/lib/SoftwareModeling-src.zip!/ghidra/program/database/function/FunctionDB.java
+63ff13ca226e090db19ceae611ba17471eac64ff12afdff936ec4c5f3c2e69bb  Framework/SoftwareModeling/lib/SoftwareModeling-src.zip!/ghidra/program/model/pcode/HighFunction.java
+c90af0fd935785125e7e1bb6f9d5b9598f58e2fe67bf709383417787ddb1047f  Framework/SoftwareModeling/lib/SoftwareModeling-src.zip!/ghidra/program/model/sourcemap/SourceMapEntry.java
+83f77e0e1303e881c10f0e638efc25e3f31aaea7d4c2459cd9d62f23326b0555  Features/Base/lib/Base-src.zip!/ghidra/app/util/bin/format/dwarf/DWARFFunction.java
+0ad3fc65063cdd064b5ce455443c47e833619638cc5eb6048c797c7d7361e7f4  Features/Base/lib/Base-src.zip!/ghidra/app/util/bin/format/dwarf/DWARFFunctionImporter.java
+aff93ace915a9399799972cda175a0631be2bc62bffcf04aaf9985ef888be3c5  Features/Base/lib/Base-src.zip!/ghidra/app/util/bin/format/dwarf/DWARFImportOptions.java
+e3846ba2fa202a09b3938ee2464787b94c3a28aadfaee1a45a59b3969a7db474  Features/Decompiler/lib/Decompiler-src.zip!/ghidra/app/decompiler/ClangFunction.java
+8babd38464998656496ddd4ca381184886cf1ef143afb35e8a0653a32920006b  Features/Decompiler/lib/Decompiler-src.zip!/ghidra/app/decompiler/ClangNode.java
+7575007c8185ea73b08a59757f8a1a111d6e1a5c0cd64474212d0fb15d1b1052  Features/Base/lib/Base.jar!/help/topics/FunctionPlugin/Variables.htm
+951cdad1cd2b2e787a2621feec1ae02a011128f9b22fdc2e86a306ca88f874d8  Features/Decompiler/lib/Decompiler.jar!/help/topics/DecompilePlugin/DecompilerAnnotations.html
+
+--- input-preservation.txt ---
+${RESULT}/inline.debug: OK
+${RESULT}/inline.no-debug: OK
+
+--- Retained Ghidra DWARF import diagnostic ---
+ERROR DWARF un-recoverable expressions: (DWARFImportSummary)  
+ERROR   DW_OP_reg5 -> 3 (DWARFImportSummary)  
+Both Ghidra JVM launches also report the existing Felix/sun.misc.Unsafe deprecation warning.
