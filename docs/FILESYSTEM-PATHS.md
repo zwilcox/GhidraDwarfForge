@@ -15,10 +15,11 @@ the selected file with actual host lookup rather than imposing Unix behavior.
 The Windows profile additionally rejects file leaves ending in a dot or space,
 including extended-path spellings; these ambiguous names are not silently
 trimmed. Unix filenames ending in a dot remain supported. A native Windows
-probe must demonstrate the short `out`/`out.` alias and both publisher APIs'
-pre-mutation rejection before this refinement is accepted. Actual runner
-confirmation is still **UNCERTAIN** at this checkpoint; this is not an 8.3
-alias or arbitrary-filesystem normalization guarantee.
+probe demonstrates the short `out`/`out.` alias and both publisher APIs'
+pre-mutation rejection in both target orders. **CONFIRMED:** exact hosted run
+`40087258846` passes on Windows Server 2025 with Java 21.0.12.1, including actual
+`RUNNER~1` parent resolution and sentinel preservation. This does not establish
+an 8.3 alias or arbitrary-filesystem normalization guarantee.
 
 Keep the final directory entry intact. If an input leaf `friendly.elf` points
 to `elsewhere/real.elf`, its defaults remain `friendly.elf.dbg` and
@@ -60,13 +61,16 @@ does not become the optional executable-modifying debuglink transaction.
 
 ## Validation contract
 
-**CONFIRMED locally; hosted gate pending:** packaged run `run.ua6ucr7i`
-passes eight exports and three rejection cases, with independent review.
-Focused tests, actual Java 21 checks and the direct native exporter probe also
-pass. A later Windows-only leaf refinement passes all five focused checks on
-Linux/Java 21, including preservation of distinct legal dotted names, but its
-native Windows probe remains pending. The original PR candidate is intermediate
-evidence only; exact updated-head package and host acceptance remain required.
+**CONFIRMED:** PR #31 at `3632f2b` passes all twelve jobs in exact hosted run
+`40087258846`, with independent package and Linux/Windows artifact review.
+Linux packaged run `run._lvr55m0` passes eight exports and three rejection cases;
+both GUI hosts pass. Native Windows passes all twelve focused checks, real
+trailing-dot alias and short-parent controls, and trailing-space rejection,
+without skipped link/rollback tests. The earlier local direct native exporter
+probe also passes. The normal merge `00aaba1` preserves the tested tree.
+Earlier candidates remain historical, including the missing timestamp-harness
+dependency and stale Windows parent-spelling expectation. See `VALIDATION.md`
+for their failure records and the final exact artifact hashes.
 
 `PathTraversalSmoke` uses actual file/directory links and hard links, with no
 silent capability skip. It checks host traversal, input-link naming, literal

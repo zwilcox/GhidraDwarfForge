@@ -3515,3 +3515,268 @@ artifacts are unchanged. Configured Linux and actual Java 21 checks pass in
 `build/path-traversal-review/windows-parent-configured.log` and
 `windows-parent-java21/`; independent source review is clear. The updated exact
 package, native Windows alias/GUI evidence and full twelve-job gate remain required.
+
+## Streamed digest foundation (2026-10-24)
+
+**CONFIRMED locally; hosted gate pending:** production commit `e74b1b7` adds
+`FileDigests` and replaces the two private SHA loops with thin callers. The
+JAR SHA-256 is `25becac3eec70ff1c9c405a74dd98b7ea9eda232406ae1593c577566eff94644`;
+production script SHA-256 is
+`3b7b0ef415e974cfcb03ee1566f3c25bab9151d7405b965a80150a8be6e53821`.
+The private runtime ZIP is
+`2744ff2573b63f42131feb1455527fe52f6f5ce06650b6f876bde27cb7e09323`.
+It predates this acceptance text; final package review must use a fresh build.
+All five manifests pass and the source Ghidra installation is unchanged.
+
+`fileDigestsSmoke`, native-library checksum/tamper, export-report, output-policy,
+path-traversal and pair-publication checks pass through Gradle and separately
+on actual Java 21.0.12.1 using `javac --release 21`. All 142 packaged classes
+match the tested bytes and have major version 65. Initial compilation tried
+the local runtime-only Java 21 directory and failed because it lacks `javac`;
+that setup failure is retained. The completed checks compile with JDK 25 and
+execute with Java 21, rather than attributing the Gradle runtime to Java 21.
+
+Nine fresh headless exports cover executable, PIE and absent build ID on
+x86-64, AArch64 and MIPS32 big-endian. GNU/LLVM, exact code-address-index controls
+and QEMU/GDB behavior pass. Strict libdwarf reports x86 inherited error counts
+3/1/3 (exec/PIE/no-build-ID), AArch64 5/5/5 and MIPS 0/0/0, all exactly
+corroborated with original frame bytes/diagnostics and zero unexplained errors.
+Local headless uses the complete JDK 25. Packaged-native path tests additionally
+pass eight saved-program exports and three negatives, exact output/report
+hashes, source lookup, typed values/stepping, preserved input/program databases
+and identical pair reruns, retaining only the two documented Ghidra backup-file
+exceptions. These exercise the shared native checksum caller in a real export.
+
+The installed-JAR digest oracle passes in `x86_64.7u0baef5`,
+`aarch64.av6bgmlu` and `mips32be.cqscp2f6` under
+`build/test-results/file-digests/`. Each requires the actual production class
+origin and installed script transcript, then checks report paths/hashes against
+independent Python observations for all nine original/sidecar/source files.
+GNU `objcopy` uses explicit owned output paths. Its exact debuglink basename,
+padding and target-endian CRC match the helper and Python `zlib`; explicit
+class/endianness/machine assertions prevent a mislabeled fixture from counting
+as another target. All protected bytes/mtimes and the installed JAR are unchanged.
+
+The x86 sparse input has 2,147,614,787 bytes and nonzero boundary/tail markers.
+Two actual Java 21 runs use a maximum heap of 67,108,864 bytes and agree with
+Python `hashlib`/`zlib` and GNU `sha256sum`: SHA-256
+`48da45d2cb6bfe6de79a3a91613cddfe7b892c019514168c7a89fb5c251723ed`,
+CRC32 `f00f4493`. The large file was removed; layout, hashes and commands remain.
+Automatic-association run `run.azEoJZMi` independently passes the existing
+three-target build-ID/debuglink/CRC-rejection GDB tests, including x86 runtime.
+This is compatibility evidence on private copies, not a product attachment.
+
+Source and oracle reviews are clear. Evidence lives under `build/digest-review/`
+and the named `build/test-results/` directories. Workflow lint, architecture
+guard and syntax checks pass. CI adds the focused smoke to both hosts and the
+installed CRC oracle to all five target lanes; only Linux x86 runs the large
+case. Native Windows and full exact-head package/hosted acceptance remain
+pending. P2.8's receipt/identity/backup/refresh transaction and all published
+release artifacts remain unchanged.
+
+## Read-only build-ID observation foundation (2026-10-24)
+
+**CONFIRMED locally; hosted gate pending:** production commit `72d41da` adds
+the observer and isolated note-format table; the only `ElfImage` change exposes
+its existing bounded source read within the package. Ordinary export has no
+call to the observer. JAR SHA-256:
+`04398abf04201525fcfeffcf31485ae11fded7b1f9909c199e234f1db8c7cd8c`.
+Initial private ZIP `d87eadc05c7d3b67cc32a381c56708aa78eea9caed4567fa42d755163efa2f88`
+predates this documentation; final package review must use a fresh build.
+
+Pinned GNU 2.42 source/provenance and tool probes establish eight positive
+width/endian/alignment cases with nonzero padding and sixteen malformed-padding
+controls. GNU exits zero for these warnings; the oracle treats the diagnostics
+as failures. Peer review additionally reproduced a real ID displayed from an
+IA-64/OpenVMS 24-byte header while the first observer returned absent. The
+final isolated format exclusion rejects that exact case, with both-endian and
+paired-discriminator controls. No unsupported architecture is advertised.
+
+`elfBuildIdSmoke`, `elfImageReaderSmoke`, `fileDigestsSmoke`, extension build,
+architecture guard and whitespace checks pass. The new smoke separately passes
+on actual Java 21.0.12.1 using `javac --release 21` and `-Xmx64m`: immutable
+provenance, exact/over-limit cases, overlapping views, conflicting IDs, extended
+section/string/program counts, late/high-offset notes, cancellation, ordinary
+source-change detection and closed channels. These are observations rather
+than atomic snapshots or a stronger file-identity guarantee.
+
+Final independent installed-JAR oracle runs are `x86_64.o3ne2_54`,
+`aarch64.uefa5721` and `mips32be.hxwxg8jf` under
+`build/test-results/elf-build-id/`. Each consumes three previously validated
+executable/PIE/no-build-ID pairs from the digest worktree, checks exact target
+class/byte order/machine, loads observer and ELF-reader classes from the private
+release JAR, and runs on actual Java 21 under a 64 MiB heap. ID values, physical
+duplicate counts and all five relationship outcomes match independent GNU
+observations. Typed nameless sidecars, sectionless originals, renamed sections,
+vendor decoys, repeated identical IDs and conflicting/malformed owned variants
+pass their required positive or rejection checks. Every probe preserves input
+bytes/mtime, and all original pairs, sources and the installed JAR stay unchanged.
+This does not reattribute the earlier artifacts' DWARF/GDB acceptance to a new
+export from the observer package.
+
+Initial `x86_64.0p8v1jtt`, `aarch64.54rkrphf` and `mips32be.61gb2tdi`
+stopped on GNU's `no .dynamic section in the dynamic segment` diagnostic for
+nameless dynamic originals, despite displaying their correct note IDs. The
+nameless positive now uses the actual sidecar, which has no program headers;
+GNU diagnostics remain strict. Intermediate successful runs before per-probe
+mtime checks are retained separately. No diagnostic was silently ignored.
+
+Source/provenance and focused evidence are in `build/build-id-review/`.
+The pipeline adds the observer smoke on both hosts and the installed GNU oracle
+to all five existing target lanes. Native Windows and full exact-head hosted
+acceptance remain pending. The earlier path-parent test correction must also
+be integrated from its accepted parent before this candidate's hosted gate.
+No attachment option, executable rewrite or release publication is added.
+
+## PR #31 exact hosted acceptance (2026-10-24)
+
+**CONFIRMED:** head `3632f2b581e3080e92567b0e00479c4f38b00cdb` passes all
+twelve expected jobs in pull-request run `40087258846`, attempt 1, without
+skipped jobs. Independent source/package and Linux/native Windows artifact
+reviews are clear. Normal merge `00aaba161c5663556302c10da658ddab88b96d92`
+at `2026-10-24T11:16:51Z` preserves the tested tree. Its separate main-push run
+`40089265777` is pending at this checkpoint.
+
+The exact package artifact `12557528240` has download SHA-256
+`7c3e395ba21a2edc791de2ab669bad3070f26a35b0095740cdfb1f89b3b72974`.
+Its release ZIP hashes to
+`8dfc572c70ddb8dead8813ad8aaced4998c292148f0f002ff216f80235a3ea9f`,
+JAR to `11d98a42591196b3aac0760648e479539ebc10c70cc59d4ad7f8cd369537289f`,
+and production script to
+`73c11b45f6f87cd93df7e011964699cf2172638bafc5bc2a2f0333433c51a1c2`.
+All 34 production sources, two scripts, support/docs, 139 Java 21-compatible
+classes, five manifests and pinned native provenance match the exact source.
+Actual Java 21 checks, twenty isolated producer lifetimes and 67 class-origin
+checks pass. Evidence: the path worktree's
+`build/path-package-audit/run-40087258846.Wm5FGOa6/` and final gate records.
+
+- Linux artifact `12557807726`, SHA-256
+  `6e659525bacf483dbbdc0f5029b87eb9e7519dd4f2b61c1b1f7c1e29e19c640c`:
+  path run `run._lvr55m0` passes four cases with two exports each and three
+  rejection controls; timestamp `run.m26PftBW` and GUI `run.8xu20lvD` pass.
+  All eleven path invocations bind the exact protected JAR/script and report
+  their installed origins. Independently reparsed strict reports have zero
+  unexplained errors. All eleven saved-project inventories and final database,
+  live-index and property bytes match except the documented two exact backup
+  files. GUI control/100-window geometry, Script Manager, chooser select/cancel,
+  Console, validators/GDB and input preservation pass.
+- Windows artifact `12557934070`, SHA-256
+  `1205197f68ec10264c5665d97220a4bdffefab39fa3149d4a6f4b170cf3c8613`:
+  actual Java 21.0.12.1 on Windows Server 2025 passes all twelve focused checks.
+  Requested `RUNNER~1` and actual `runneradmin` parents resolve to the same file
+  with literal expected filenames. The real trailing-dot alias is confirmed;
+  both publisher APIs reject both target orders before callbacks, timestamps
+  or cleanup, retaining all six sentinel hashes. Trailing-space rejection and
+  all link/rollback controls pass without skips. GUI
+  `run.bb9d10050d9b4f90adeff51dbbf8f433 GUI paths` passes discovery, native-free
+  preflight, export/select/cancel, Console, ACL/input preservation and GNU/LLVM.
+  Independent libdwarf and Linux-ELF runtime remain unavailable in this host
+  lane; no Windows GDB runtime claim is made.
+
+All five target jobs pass CI. Their cross-target archives were not separately
+inspected in this PR review. Both GUI artifact reviews are retained at the GUI
+worktree's `build/hosted-gui-review/run-40087258846/acceptance-scope.json`.
+No review thread remains unresolved. This supersedes the earlier missing-helper
+and stale-parent-oracle candidates; their failures remain recorded above.
+PR #30's distinct main-push `40083338151` also subsequently passed all twelve
+jobs and both GUI artifact reviews, superseding its pending-main checkpoint.
+No release asset changes.
+
+## Combined read-only foundations, fresh local regression (2026-10-24)
+
+**CONFIRMED locally; exact hosted gate pending:** digest and build-ID components
+are tested together, using frozen source `40aa249` and reviewed package
+SHA-256 `8b17d98136c348258e3c7770709c2b54b5bf189b188f9bdf0aa57d16e4b47e34`.
+The installed JAR is
+`04398abf04201525fcfeffcf31485ae11fded7b1f9909c199e234f1db8c7cd8c`; the
+script is `3b7b0ef415e974cfcb03ee1566f3c25bab9151d7405b965a80150a8be6e53821`.
+The package audit matches 37 production sources, two scripts, support/docs,
+153 Java 21-compatible classes, five manifests and pinned native provenance.
+It contains no private JNA. The fresh runtime installation is
+`build/build-id-review/ghidra-combined`; original Ghidra launch configuration
+SHA-256 remains `7704bd03868adab49901de813d62b0f4c6ebc52372e0fe505112c5617fc665e8`.
+
+| Check | Observed result |
+| --- | --- |
+| Fresh semantic exports | Nine source-built cases: ET_EXEC, PIE and absent build ID on x86-64, AArch64 and MIPS32 big-endian. GNU, LLVM, strict libdwarf, code-address controls and native/QEMU GDB pass. |
+| Strict inherited diagnostics | Exec/PIE/no-build-ID counts are x86 `3/1/3`, AArch64 `5/5/5`, MIPS `0/0/0`. Each permitted frame diagnostic matches original bytes and exact messages; zero unexplained errors. The GDB oracle permits only its exact known AArch64 vDSO warning. |
+| Saved-program path workflow | `run.kpaqvews`: eight fresh exports, four byte-identical pairs, three fatal rejection controls, exact paths/hashes, source/value/step behavior and original preservation pass. Four inherited frame diagnostics per positive case; zero unexplained. All eleven database inventories plus final state preserve everything except the two documented backup files. |
+| Installed digest oracle | Fresh-pair runs `x86_64.jyoltydc`, `aarch64._hxp695z`, `mips32be.bppyhu2q` pass independent Python/GNU comparisons, repeated reads and input bytes/mtimes. |
+| Large digest case | x86 repeats the 2,147,614,787-byte input under actual Java 21 and `-Xmx64m`. Full Python/GNU SHA agrees with `48da45d2cb6bfe6de79a3a91613cddfe7b892c019514168c7a89fb5c251723ed`; CRC32 `f00f4493`. Marker layout and removal of the temporary input are independently checked. |
+| Installed build-ID oracle | Fresh-pair runs `x86_64.f9navmv_`, `aarch64.ebsya__2`, `mips32be.loeg8vpp` pass GNU ID comparisons, all five relationship outcomes, typed/nameless/sectionless/duplicate controls, exact negative diagnostics and protected bytes/mtimes. |
+| Existing association harness | `run.rhUIWr0G` passes all three roles on all three targets. Runtime checks here are x86 executable build-ID/debuglink and no-ID explicit loading; other association cases prove strict symbol/type/source/address lookup. The nine semantic tests separately cover target runtime. |
+
+Headless Ghidra uses the complete local JDK 25. Actual Java 21/64 MiB evidence
+is attributed to the standalone helper and focused checks, not to that headless
+process. Commands/transcripts are the `combined-export-*`, `combined-gdb-*`,
+`combined-path-runtime.log` and `combined-association.log` records under
+`build/build-id-review/`, with the corresponding oracle result directories.
+The final independent audit `combined-runtime-audit.json` accounts for all
+seventeen fresh exports and three rejections, checks exact package/origins,
+manifests, diagnostics, database snapshots and both independent oracles, and is
+clear. Earlier component results remain tied to their original packages.
+
+Normal merge `409c029` then incorporates accepted PR #31. Relative to `40aa249`,
+production Java, Ghidra scripts, build and workflow files are unchanged; only
+the corrected Windows parent oracle and additive incident records arrive.
+That oracle passes actual Java 21 against the combined JAR in
+`combined-parent-java21/`. Final documentation/package matching and the full
+hosted matrix remain required: fourteen Windows focused checks, both installed
+helper oracles in all five target lanes, and both GUI hosts. This is a read-only
+foundation; attachment, receipt parsing, stable file identity and readiness
+remain unimplemented. Published alpha.2 remains unchanged.
+
+## Combined-oracle report-generation isolation (2026-10-24)
+
+**Failed initial hosted gate:** PR #32 head
+`65f5bb8723ca0461af5cc973b649ba9a0e358468`, run `40089908416`, attempt 1,
+has nine successful jobs, failed x86/aggregate and skipped Windows. Its package
+precheck is independently clear: artifact `12558697497`, download SHA-256
+`d7152317b4a0aabb3c2eb16409598c2e119840a32bdfa6d51af0464f6c239bc5`, release ZIP
+`dd8146d43ca90e38ee622be215519d7cc281e2962dc841da0a8b7a10a19523a3`, JAR
+`f3b123fa4693eda94d9b84a99b6148d1cdbbefdd418539d5cf6ffeeea0a81307` and script
+`3b7b0ef415e974cfcb03ee1566f3c25bab9151d7405b965a80150a8be6e53821`.
+All 37 sources, 153 Java 21-compatible classes, manifests and native provenance
+match; actual Java 21 focused checks, twenty producer lifetimes and 83 class
+origins pass. This package result does not accept the failing integration head.
+
+The four cross-target jobs and both new helper oracles in each artifact pass
+independent review. The x86 artifact `12559112653`, SHA-256
+`90acd9294fab51fbc77843230d48b3ae94599e412aab773e33380c1760cd4f48`, proves the
+failure: repeated Java digests agree with Python, but the shared exec report
+names `semantic.exec.stripped.dbg`, SHA-256
+`4651382fed80e9a045d05003b07e1c717b6969d5e6c8a1f9dcf24d66349c9428`.
+The ordinary pair is `semantic.exec.ghidra-forge.dbg`, SHA-256
+`cbf02d77c03b32f8aeb42bb04baf262138f3fbc98c6a946cc37f21fae96e3eac`.
+The source bytes agree but their paths differ. PIE/no-build-ID report bindings
+match. `output-path-policy.sh` invokes the shared exporter with default output
+and overwrites `headless-symbol-export/x86_64.exec.log` after the ordinary pair
+was produced/restored. The digest oracle correctly rejects that report mismatch.
+
+The x86 large-file digest and build-ID oracle were not reached; Windows was
+skipped. Earlier Linux GUI `run.XGnQjNXL`, traversal and 24 strict reports pass
+as component evidence only. Full failure metadata, downloaded artifact and
+diagnosis are retained in `build/build-id-package-audit/failed-target-40089908416/`
+and the GUI worktree's `build/hosted-gui-review/run-40089908416/`. No missing or
+skipped check is counted as passing.
+
+**CONFIRMED local correction; new hosted gate pending:** move both helper
+oracles immediately after the six-role primary export/GDB step, preserving
+every later gate and assertion. The digest oracle reads each transcript once,
+retains its exact UTF-8 bytes as `<role>.export.log`, and records its source,
+retained path and SHA-256. Later tests can reuse their own shared paths without
+changing the evidence consumed by these checks. Production Java, native code,
+export behavior and report schema are unchanged.
+
+Independent source review, workflow lint and Python syntax pass. Local replay
+against the unchanged installed `04398abf...` JAR passes on actual Java 21:
+`x86_64.seo92nr6`, `aarch64.7_jd4j7p`, `mips32be.lckj930j`. All nine retained
+transcripts match the original validated logs. An owned derived control changes
+only exec report output names to the default-output spellings; the unchanged
+path/hash assertion rejects it. Overwriting that owned source-log copy leaves
+the earlier retained transcripts intact. All original evidence logs and fixture
+bytes/mtimes remain unchanged. Reproduction and result are
+`build/report-order-review/check-retention.py` and
+`retention.40kvd6hd/result.json` beneath that directory. This is a harness
+selection/retention replay on already audited exports, not new export/GDB or
+large-file execution. The full updated hosted gate remains required.

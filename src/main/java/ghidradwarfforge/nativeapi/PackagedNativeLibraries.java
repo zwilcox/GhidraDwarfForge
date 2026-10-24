@@ -3,16 +3,13 @@ package ghidradwarfforge.nativeapi;
 import generic.jar.ResourceFile;
 import ghidra.framework.Application;
 import ghidra.framework.Platform;
+import ghidradwarfforge.output.FileDigests;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
-import java.util.HexFormat;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -118,19 +115,6 @@ public final class PackagedNativeLibraries {
     }
 
     private static String sha256(Path file) throws IOException {
-        final MessageDigest digest;
-        try {
-            digest = MessageDigest.getInstance("SHA-256");
-        }
-        catch (NoSuchAlgorithmException impossible) {
-            throw new IllegalStateException("SHA-256 is unavailable", impossible);
-        }
-        try (InputStream input = Files.newInputStream(file)) {
-            byte[] buffer = new byte[64 * 1024];
-            for (int count; (count = input.read(buffer)) >= 0;) {
-                digest.update(buffer, 0, count);
-            }
-        }
-        return HexFormat.of().formatHex(digest.digest());
+        return FileDigests.read(file).sha256();
     }
 }

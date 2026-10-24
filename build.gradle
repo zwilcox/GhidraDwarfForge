@@ -394,6 +394,24 @@ tasks.register("pathTraversalSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.output.PathTraversalSmoke"
 }
 
+tasks.register("fileDigestsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks streamed SHA-256 and GNU debuglink CRC with cancellation and I/O failures"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.FileDigestsSmoke"
+    maxHeapSize = "64m"
+}
+
+tasks.register("elfBuildIdSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks typed ELF build-ID notes, relationships, bounds and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.ElfBuildIdSmoke"
+    maxHeapSize = "64m"
+}
+
 tasks.register("outputPathPolicySmoke", JavaExec) {
     group = "verification"
     description = "Checks default, explicit, colliding, and unwritable output paths"

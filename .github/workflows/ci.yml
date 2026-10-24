@@ -473,7 +473,7 @@ jobs:
             src/test/integration/architecture-neutrality.sh
             ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke \
               ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke \
-              exportReportSmoke \
+              exportReportSmoke fileDigestsSmoke elfBuildIdSmoke \
               syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
               variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke \
               stackFirstUseSmoke \
@@ -865,6 +865,27 @@ jobs:
             fi
           done
 
+      # Consume primary export reports before later x86 regressions reuse their log paths.
+      - name: Streamed file digests and target-endian GNU debuglink CRC
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          extra=()
+          if [[ "$TARGET" == x86_64 ]]; then
+            extra+=(--large)
+          fi
+          python3 src/test/integration/file-digests.py \
+            "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
+            "$TARGET" "${extra[@]}"
+
+      - name: Typed ELF build-ID observations and independent GNU note oracle
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/elf-build-id.py \
+            "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" "$TARGET"
+
       - name: QEMU private socket startup and failure cleanup
         if: matrix.target == 'x86_64'
         run: src/test/integration/qemu-socket-startup.sh
@@ -1205,7 +1226,8 @@ jobs:
           & .\gradlew.bat addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke qualifiedFunctionNameSmoke dwarfAddressRangesSmoke `
-            registerCopySmoke stackFirstUseSmoke pathTraversalSmoke 2>&1 |
+            registerCopySmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
+            elfBuildIdSmoke 2>&1 |
             Tee-Object -FilePath "$resultDirectory\native-independent.log"
           if ($LASTEXITCODE -ne 0) {
             throw "native-independent Windows checks failed with exit code $LASTEXITCODE"

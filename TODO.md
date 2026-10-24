@@ -1371,26 +1371,21 @@ unsupported big-endian target profiles passed in GitHub Actions run 33824105805.
 
 ## P2.7 Add output selection, fallback, and atomic pair commit
 
-**CONFIRMED locally; hosted gate pending:** a follow-up corrects actual parent
+**CONFIRMED:** PR #31 at `3632f2b` passed all twelve jobs in exact hosted run
+`40087258846` and merged normally as `00aaba1`. The follow-up corrects actual parent
 traversal through directory links without renaming input-link defaults or
 following replaceable output leaves. Public pair publication now rejects all
 stage/final aliases and non-file final entries before mutation, preserves
 dangling links during rollback, and keeps stale-input guidance accurate.
 Eight final packaged exports and three rejection cases pass independent
-review, validators, GDB and original/program-database preservation. See
-`docs/FILESYSTEM-PATHS.md`; native Windows acceptance is still required and
-this does not implement the separate P2.8 attachment transaction. A later
-Windows trailing-dot/space leaf guard and actual native alias probe require
-updated-head CI; earlier PR #31 candidate results are intermediate evidence.
-The initial hosted timestamp harness omitted the new helper from its explicit
-`javac` source list. That dependency is corrected and the full local timestamp
-regression passes; both earlier heads remain intermediate, pending the new
-exact-head gate.
-The next candidate passed all five target lanes, then Windows exposed a stale
-short-parent spelling expectation before the new alias test. The corrected
-oracle retains the raw request and checks the canonical directory with literal
-filenames and file identity. Local Java 21 passes; the full updated native gate
-is still required.
+review, validators, GDB and original/program-database preservation. Native
+Windows Java 21 passes all twelve focused checks, actual short-parent lookup,
+the real trailing-dot alias control, both publisher APIs in both target orders,
+and the GUI journey. Linux GUI and exact package audits also pass. See
+`docs/FILESYSTEM-PATHS.md` and the final acceptance record in `docs/VALIDATION.md`.
+Earlier missing-helper and short-parent test-oracle failures remain historical
+evidence, superseded by this exact gate. This does not implement the separate
+P2.8 attachment transaction or guarantee arbitrary filesystem alias handling.
 
 **Status:** `[x]` for the validated paths — deterministic default and explicit paths, stale-path input
 override with imported-file hash verification, preflight collision/write
@@ -1467,6 +1462,29 @@ Additional user-journey coverage:
 - [x] Cancellation/failure leaves no mismatched final pair.
 
 ## P2.8 Add optional `.gnu_debuglink` attachment
+
+**CONFIRMED locally; combined hosted gate pending:** the read-only foundations
+combine streamed SHA-256/GNU CRC32/byte count (`FileDigests`) with bounded typed
+GNU build-ID observations (`ElfBuildId`). Existing SHA callers share the digest
+helper; ordinary export does not call the build-ID observer. Actual Java 21
+focused checks and both installed-JAR independent oracles pass. The combined
+package passes seventeen fresh exports: nine x86-64/AArch64/MIPS32 big-endian
+semantic cases and eight saved-program path exports, plus three rejection
+cases, validators and GDB. The digest oracle also passes a file above 2 GiB
+under a 64 MiB heap. See `docs/FILE-DIGESTS.md`,
+`docs/ELF-BUILD-ID-OBSERVATIONS.md` and the combined local validation record.
+Native Windows and the full five-target hosted gate remain required. Observed
+hashes or matching IDs do not establish file identity, parse receipts or expose
+attachment; the full transaction remains planned.
+
+The first combined hosted run `40089908416` failed its x86 digest report binding:
+a later default-output test reused the primary log filename for a different
+output pair. Java/Python digests agreed; the path/hash assertion correctly
+rejected the mismatched report. Both helper oracles now run directly after the
+primary export/GDB step, with exact consumed transcripts retained. Three local
+profile replays and a stale-report negative pass; the full updated gate remains
+required. The failed run did not reach x86's large-file/build-ID checks or
+native Windows and is not accepted integration evidence.
 
 **Status:** `[ ]` — optional product operation **PLANNED**. The bounded backend
 and backup-based re-export investigation is complete; the explicit transaction

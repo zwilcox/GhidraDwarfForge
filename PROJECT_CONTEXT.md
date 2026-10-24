@@ -3082,3 +3082,105 @@ directory, and requires exact expected filenames below that directory plus
 input file identity. Actual Java 21 and configured Linux checks pass. Production
 bytes are unchanged; native Windows acceptance and the full updated-head gate
 remain pending. No skipped Windows alias/GUI test is counted as passed.
+
+### Read-only digest foundation (2026-10-24)
+
+**CONFIRMED locally; hosted gate pending:** the next bounded P2.8 slice centralizes the two existing
+SHA loops in a native-free `FileDigests` helper and computes GNU debuglink CRC32
+plus the actual byte count in the same bounded-memory pass. Its optional
+cancellation API owns and closes the stream; existing callers retain their
+previous cancellation behavior. Results describe observed bytes, not stable
+snapshots or file identity. No report parser, ELF matching or executable
+attachment is added. The Windows JDK's null `fileKey` cannot establish identity.
+`docs/FILE-DIGESTS.md` records the API limits and independent acceptance tests;
+P2.8's backup/receipt/refresh/recovery transaction remains planned.
+
+Six focused checks pass both through Gradle and on actual Java 21 against the
+packaged JAR. Nine fresh x86-64/AArch64/MIPS32 big-endian exports pass GNU/LLVM,
+strict libdwarf and GDB, with all inherited frame errors explicitly corroborated.
+Installed-JAR SHA/CRC/counts match Python and target GNU debuglink payloads in
+all nine cases. A 2,147,614,787-byte sparse input passes twice under a 64 MiB
+Java 21 heap, also matching GNU SHA-256; the owned large file is removed.
+Eight saved-program packaged exports and three rejection cases additionally
+pass path/report/hash/original-database preservation and byte-identical repeats.
+No native Windows or full hosted acceptance is inferred from these local tests.
+
+### Bounded ELF build-ID observation foundation (2026-10-24)
+
+**CONFIRMED locally; hosted gate pending:** `ElfBuildId` reads typed note
+sections/segments independently of names and compares observed values without
+asserting file identity or attachment eligibility. It handles both widths and
+byte orders, compatible duplicate views, sectionless/nameless metadata and
+explicit absence; malformed/ambiguous data fails. GNU 2.42 source and tool
+probes establish four/eight-byte layouts and padding. Review found the separate
+IA-64/OpenVMS header format could otherwise be misread as absent; an isolated
+format table now rejects its nonempty notes. Ordinary export is unchanged.
+
+Source review and actual Java 21 focused checks pass, including bounded reads,
+extended tables, late/high-offset notes, limits, cancellation and source-change
+controls. The installed helper agrees with GNU on existing validated x86-64,
+AArch64 and MIPS32 big-endian pairs and owned renamed/unnamed/sectionless,
+duplicate/conflict/decoy/malformed variants. Initial nameless dynamic-original
+oracle runs exposed GNU readelf's name-based `.dynamic` lookup diagnostic; the
+quiet nameless positive uses the real non-loadable sidecar instead, retaining
+the failed attempts. Native Windows/full hosted acceptance remains pending.
+See `docs/ELF-BUILD-ID-OBSERVATIONS.md`; P2.8's transaction is still planned.
+
+### Filesystem-path hosted acceptance (2026-10-24)
+
+**CONFIRMED:** PR #31 head `3632f2b581e3080e92567b0e00479c4f38b00cdb`
+passes all twelve jobs in hosted run `40087258846`. Independent package and
+Linux/native Windows artifact reviews are clear. Linux repeats eight saved-
+program exports and three rejection cases, timestamp handling and its real
+GUI journey. Windows Java 21 passes twelve focused checks, actual short-parent
+resolution, real trailing-dot alias rejection through both publisher APIs in
+both target orders, and its GUI journey. Original files and program databases
+remain preserved within the documented two-backup-file exception. Cross-target
+lanes pass CI; their artifact archives were not separately reviewed for this PR.
+
+Normal merge `00aaba161c5663556302c10da658ddab88b96d92` preserves the tested
+tree. Its separate main-push run `40089265777` is pending at this checkpoint.
+PR #30's earlier main-push `40083338151` now passes all twelve jobs and both
+GUI artifact reviews. These observations supersede the corresponding earlier
+pending notes, including the failed intermediate PR #31 candidates. Published
+alpha.2 is unchanged; this does not complete the P2.8 attachment transaction.
+
+### Combined read-only foundations, local acceptance (2026-10-24)
+
+**CONFIRMED locally; exact hosted gate pending:** the digest and build-ID
+foundations form one reviewed change. The combined JAR `04398abf...` passes
+seventeen fresh exports: executable/PIE/no-build-ID cases on x86-64, AArch64 and
+MIPS32 big-endian, plus four saved-program path cases repeated twice. Three
+path rejection controls, GNU/LLVM/strict validators, native/QEMU GDB behavior,
+unchanged inputs and deterministic path repeats pass. Both installed helper
+oracles rerun against the fresh pairs; the digest oracle again verifies an
+input above 2 GiB under an actual Java 21 64 MiB heap. Independent final audit
+`build/build-id-review/combined-runtime-audit.json` is clear. The existing
+association harness also passes with its documented narrower runtime scope.
+
+The earlier component results remain attributed to their respective packages.
+Merge `409c029` incorporates accepted PR #31 without production source changes;
+the corrected parent oracle also passes on actual Java 21 against the combined
+JAR. Final package/source matching and the complete hosted matrix, including
+native Windows and both GUI hosts, remain required. Read-only observations do
+not establish snapshot/file identity or attachment eligibility. No report
+reader, attachment operation, native binding or release change is introduced.
+
+### Combined-oracle report-generation isolation (2026-10-24)
+
+**CONFIRMED failure; updated hosted acceptance pending:** PR #32's initial
+head `65f5bb8`, run `40089908416`, passed nine jobs but failed x86 and the
+aggregate; native Windows was skipped. The digest helper's Java/Python values
+agreed. An x86-only default-output regression reused the primary exec log name,
+so its report described `semantic.exec.stripped.dbg` while the oracle inspected
+`semantic.exec.ghidra-forge.dbg`. The unchanged path/hash assertion rejected
+that mismatched generation before the large-file case or build-ID oracle.
+
+Both read-only helper steps now immediately follow the primary six-role
+export/GDB loop. The digest oracle also retains all three exact consumed
+transcripts with hashes, because later tests still reuse the shared log paths.
+No production helper or assertion changes. Independent source review and local
+three-profile replays pass; an owned derived stale-report control is rejected,
+and retained evidence remains intact after its source-log copy is overwritten.
+No original fixture/evidence bytes change. The complete new exact-head matrix,
+including Windows and x86's previously unreached checks, remains required.
