@@ -176,6 +176,7 @@ jobs:
           path: |
             build/test-results/validation-tool-build/**/configure.log
             build/test-results/validation-tool-build/**/patch.log
+            build/test-results/validation-tool-build/**/reader-patch.log
             build/test-results/validation-tool-build/**/config.log
             build/test-results/validation-tool-build/**/make.log
             build/test-results/validation-tool-build/**/dependencies.txt
@@ -638,6 +639,10 @@ jobs:
       - name: Reject incomplete and exit-zero failing validator reports
         if: matrix.target == 'x86_64'
         run: python3 src/test/integration/check-dwarfdump-test.py
+
+      - name: Validate extended program counts and reject malformed ELF tables
+        if: matrix.target == 'x86_64'
+        run: python3 src/test/integration/dwarfdump-extended-programs.py "$DWARFDUMP"
 
       - name: Record exact toolchain versions
         env:
