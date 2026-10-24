@@ -457,6 +457,15 @@ tasks.register("executableProgramBytesSmoke", JavaExec) {
     maxHeapSize = "64m"
 }
 
+tasks.register("debuglinkCandidateContentSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks indexed executable allocations and exact initial debuglink contents"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.DebuglinkCandidateContentSmoke"
+    maxHeapSize = "64m"
+}
+
 tasks.register("outputPathPolicySmoke", JavaExec) {
     group = "verification"
     description = "Checks default, explicit, colliding, and unwritable output paths"

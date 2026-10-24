@@ -4595,3 +4595,114 @@ Initial PR #37 head `e25c148` and run `40105620219` are intermediate evidence,
 not final acceptance. Their package audit and completed component evidence are
 retained. The corrected source requires a fresh exact package audit and full
 hosted gate before merge; no result is transferred between different JARs.
+
+
+## Candidate content: local installed acceptance (2026-10-24)
+
+**CONFIRMED locally; final package/full hosted gate pending:** source
+`e30fae38568e65ac16e2ce84da29f65372090c4f` adds the three owned implementation/
+fixture/smoke files. Independent source review is clear. Source acceptance
+`build/candidate-content-review/source-acceptance.json` records actual Java
+21.0.12.1/64 MiB default 970 and large 972 assertions; the large selected sidecar
+has 2,147,549,185 bytes and CRC32 1024963657. The tests cover all four ELF
+width/order combinations and preserve separate predicate outcomes. Review added
+indexed ALLOC demotion/removal and long-common-prefix raw-name diagnostics.
+No original exporter, writer, native binding or existing helper was changed by
+that scoped commit.
+
+After incorporating the parent callback corrections, the combined build passes:
+
+```bash
+GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC ./gradlew --no-daemon \
+    debuglinkCandidateContentSmoke executableProgramBytesSmoke \
+    matchedElfPrefixSmoke buildExtension
+/usr/lib/jvm/java-21-openjdk-amd64/bin/java -Xmx64m \
+    -cp build/libs/GhidraDwarfForge.jar:build/candidate-content-review/java21/final-classes \
+    ghidradwarfforge.elf.DebuglinkCandidateContentSmoke
+FORGE_MODULE="$PWD/build/candidate-content-review/ghidra/Ghidra/Extensions/GhidraDwarfForge" \
+    JAVA=/usr/lib/jvm/java-21-openjdk-amd64/bin/java \
+    JAVAC=/usr/lib/jvm/java-25-openjdk-amd64/bin/javac \
+    src/test/integration/build-id-discovery.sh x86_64 aarch64 mips32be
+python3 build/candidate-content-review/root-parent-runtime-audit.py
+python3 build/candidate-content-review/root-runtime-audit.py
+```
+
+The unchanged dedicated smoke classes were compiled with `javac25 --release 21`
+as recorded in source acceptance. Actual Java 21 default 970 passes again with
+the corrected parent. The initial source JAR
+`19659462d780b44a5cfd26ae42bfbe935cb45e4f147d541e4f74a6ee6352f3c2`
+is distinct from the installed combined JAR below; no acceptance is silently transferred between them.
+The earlier standalone large test is source evidence; the installed large test
+is independently repeated on the combined implementation.
+
+Private ZIP SHA-256:
+`9655d10a4eb11f49dac503d044e3ee0ccb97ca98911d4e7397c7070ac34e1c41`.
+Installed JAR SHA-256:
+`4dd5f62a3d8fc5d5792e800c2e9ba45895b797147f3bb7f62d6e9c5b60bf3414`.
+Five manifests and the unchanged base Ghidra launch-file hash pass. Actual helper,
+program, ELF and digest classes load from that installed JAR on Java 21 at 64 MiB.
+`build/test-results/build-id-discovery/run.EB9Gq9mR` contains nine new private
+GNU candidates for exec/PIE/no-build-ID across x86-64, AArch64 and MIPS32
+big-endian, with both observer passes before the existing GDB checks.
+
+Independent root and peer runtime audits verify 27 retained input copies, 135
+exact parent receipt/tool/log copies, repeated observations and 72 content
+controls. Program bytes, allocation metadata, new-link fields/payload and sidecar
+digests are compared separately. Controls include complementary code/address/CRC
+changes, every link field, duplicate/missing links, padding/trailers, literal raw
+names, existing associations, uncovered allocation and plain-data CRC matches.
+Six malformed ELF operands and eighteen invalid basename arguments reject with
+the expected exception types. A source review found a test-only hex display
+mismatch (`NN` versus `0xNN`); byte issue values are now compared semantically,
+with both raw values retained. The corrected adapter parsing has an independent
+protocol-only control; no production check was weakened.
+
+The x86 sparse sidecar has 2,147,614,795 bytes. Its full recipe is independently
+reconstructed after file cleanup: initial SHA-256
+`85f08b2604c993ee278b2546339222fea6307c0b67a1ba99039d8e7101976216`,
+CRC32 1053664050; after the final-byte XOR, SHA-256
+`603462f17ee52cf08eeefe87da01073bb24b9afb462c15a56a7c1c5f3dc0ca2c`,
+CRC32 1238012836. Exact pre-invocation digests and size/mtime are bound to each
+Java observation. The candidate's unchanged CRC then differs as expected. This
+synthetic content fixture is not claimed to be valid DWARF or automatically
+discoverable under its supplied literal basename.
+
+All 36 selected original/reference/sidecar/source fixture snapshots remain
+unchanged. The existing 27 GDB transcripts pass, including original/candidate
+compiler addresses, selected debug/source paths, types, source listing,
+breakpoints, mismatched build ID and no-ID CRC rejection. Native x86 exec hits
+both automatic associations with argument values 19/23 and exits normally.
+No new Ghidra export, structural-validator or cross-target execution is attributed
+to this replay. The later CRC rejection test intentionally changes/restores a
+private debug copy's mtime; final byte equality is required for that copy.
+
+Evidence: `build/candidate-content-review/{root-parent-runtime-audit,root-runtime-audit}.json`
+and `build/content-oracle-review/{runtime-review,parent-runtime-review}.json`.
+Final exact package review and the full hosted/native Windows gate remain
+required after corrected PR #37 acceptance. The optional attachment transaction
+and its receipt/metadata/backup/recovery prerequisites remain unimplemented.
+
+### Distinct PR #36 main-push acceptance
+
+**CONFIRMED:** main push `40105363431`, exact head `18b3e2e`, event `push`,
+attempt 1, passes all twelve expected jobs and both independent GUI reviews.
+Linux artifact `12565465043`, SHA-256
+`fe5fbf527905a5152a81b1d9d50062d3f7180beb81e78cd581ff1eb3d7fef00d`,
+contains GUI `run.mDYSWCws` and 24 strict reports with zero unexplained errors.
+Windows artifact `12564798916`, SHA-256
+`4383118197d8f8f43eaf230e58cb523246a0853a1bb0fa7ac04286ada9dc08c2`,
+passes eighteen focused checks (binder 551 actually observed), preserved alias/
+link/rollback markers and GUI
+`run.bcf351c64b5c437c89ee2814e7c5cd80 GUI paths`. Cross-target results on this
+separate push are CI evidence; detailed all-five binder audits belong to the
+accepted PR run. Evidence: GUI worktree
+`build/hosted-gui-review/run-40105363431/acceptance-scope.json`.
+
+The corrected five-source research probe also passes actual Java 21/64 MiB
+replay in `build/candidate-content-review/corrected-research-replay.rf2sc_90/result.json`:
+the retained GNU positive is accepted, while the historical `.text` address
+mutation rejects in allocation `sh_addr` at index 15 and the link address/
+alignment mutation rejects in new-link `sh_addr` at candidate index 28. All
+eleven protected input/source/old-evidence files remain unchanged. This adds no
+backend, GDB or saved-program export execution. Final independent integration/docs
+review is `build/candidate-content-review/independent-doc-replay-review.json`.

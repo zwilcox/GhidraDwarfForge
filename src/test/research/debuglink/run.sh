@@ -21,8 +21,10 @@ echo "debuglink-research-results=$work"
 javac --release 21 -d "$work/classes" \
     "$repository/src/main/java/ghidradwarfforge/elf/ElfImage.java" \
     "$repository/src/main/java/ghidradwarfforge/elf/ExecutableProgramBytes.java" \
+    "$repository/src/main/java/ghidradwarfforge/elf/DebuglinkCandidateContent.java" \
+    "$repository/src/main/java/ghidradwarfforge/output/FileDigests.java" \
     "$repository/src/test/research/debuglink/DebuglinkToolProbe.java"
-printf 'target\trole\ttool_exit\tload_crc_probe\n' > "$work/summary.tsv"
+printf 'target\trole\ttool_exit\tcandidate_content_probe\n' > "$work/summary.tsv"
 for target in "${targets[@]}"; do
     case "$target" in
         x86_64) tool=objcopy ;;
@@ -56,6 +58,7 @@ for target in "${targets[@]}"; do
             probe=PASS
             java -cp "$work/classes" ghidradwarfforge.elf.DebuglinkToolProbe \
                 "$case_dir/original" "$case_dir/candidate" "$case_dir/fixture.debug" \
+                "$(python3 -c 'import base64,os,sys; print(base64.b64encode(os.fsencode(os.path.basename(sys.argv[1]))).decode("ascii"))' "$case_dir/fixture.debug")" \
                 > "$case_dir/probe.txt" 2>&1 || probe=REJECTED
         fi
         printf '%s\t%s\t%s\t%s\n' "$target" "$role" "$status" "$probe" >> "$work/summary.tsv"
@@ -70,7 +73,8 @@ printf 'not an ELF debug artifact\n' > "$case_dir/unrelated.debug"
 objcopy "--add-gnu-debuglink=$case_dir/unrelated.debug" "$case_dir/original" \
     "$case_dir/candidate" > "$case_dir/objcopy.stdout" 2> "$case_dir/objcopy.stderr"
 java -cp "$work/classes" ghidradwarfforge.elf.DebuglinkToolProbe \
-    "$case_dir/original" "$case_dir/candidate" "$case_dir/unrelated.debug" > "$case_dir/probe.txt"
+    "$case_dir/original" "$case_dir/candidate" "$case_dir/unrelated.debug" \
+    "$(python3 -c 'import base64,os,sys; print(base64.b64encode(os.fsencode(os.path.basename(sys.argv[1]))).decode("ascii"))' "$case_dir/unrelated.debug")" > "$case_dir/probe.txt"
 sha256sum -c "$work/originals.sha256" > "$work/original-preservation.txt"
 cat "$work/summary.tsv"
 echo 'wrong-debug-file-accepted-by-objcopy=CONFIRMED (product must reject independently)'
