@@ -57,6 +57,63 @@ check in all five target lanes and the real runtime harness in x86-64.
 `actionlint`, Bash syntax and the extension build pass locally. The new hosted
 gate remains **PRESENT, UNVERIFIED** until the branch pipeline passes.
 
+## Function-owned static data (2026-10-23)
+
+The development static-scope slice preserves primary, defined memory labels
+whose immediate Ghidra namespace parent is an exported `Function`. Each object
+retains its actual type/address and is emitted beneath its owner. An absent
+owner is diagnosed and omitted; it is never silently promoted to a global.
+Datatype categories and decompiler formatting do not imply source scopes.
+
+```bash
+GHIDRA_INSTALL_DIR=/path/to/ghidra_12.0.3_PUBLIC \
+    ./gradlew buildExtension typeGraphSmoke exportReportSmoke
+# Install the resulting JAR/script in an isolated installation containing the
+# packaged, checksum-verified native pair before running the real exporter.
+src/test/integration/function-static-scopes-export.sh \
+    /path/to/isolated-ghidra x86_64 aarch64 mips32be mips32le
+```
+
+**CONFIRMED locally:** build, type-model/report smoke tests, and all twelve
+target/layout cases pass on x86-64, AArch64, MIPS32 big-endian and MIPS32
+little-endian. Twenty-four fresh imports prove deterministic repeated exports.
+Evidence: `build/test-results/function-static-scopes/run.mwlnRbH7/` in the
+isolated `static-scopes` worktree. The harness also accepts the existing ARM32
+profile; that target and Windows-hosted behavior await hosted validation.
+
+The source-built fixture has two `private_count` objects owned by different
+functions (37 and 83), a global of the same name (19), and a namespace global
+(61). Compiler DWARF independently supplies addresses and behavior. Ghidra
+imports only the stripped original; an analyst-style preparation script sets
+the names, types and explicit owners and exercises missing-owner diagnosis.
+The real exporter runs twice from fresh imports at each unchanged output path.
+
+Checks include GNU ELF/DWARF dumps, LLVM verification, independent libdwarf,
+function/namespace parentage, locationless external-data declarations, exact
+GDB owner-qualified and shadowing lookup, runtime addresses and values, source
+lookup, breakpoints, `next` until leaving the first owner, and normal exit.
+Every case retains input hashes and requires byte-identical `.dbg`/`.dbg.c`
+reruns. Each target has ET_EXEC, PIE, and PIE after a Ghidra `+0x2000000`
+rebase. Compiler unwind tables are retained in the original executable; Forge
+does not synthesize CFI.
+
+**Observed debugger limitation:** local GDB 15.1 with QEMU MIPS PIE can emit
+`warning: GDB can't find the start of the function at 0x2b321c03.` while
+stepping from the first function back to `main`. The untouched compiler ELF
+is clean when loaded directly, but reproduces the same warning under
+`file <stripped-original>` followed by `symbol-file <compiler-reference>`.
+No Forge DWARF or sidecar container is needed to reproduce it. The compiler
+line table needs two `next` operations to leave the function, whereas the
+synthetic line table may need one; comparing only one operation was insufficient.
+
+Both compiler loading transcripts are retained beside each Forge transcript.
+Only MIPS PIE cases may corroborate this precise warning, including its
+address and occurrence count, within the same owner-return operation in the
+independent separate-symbol-file oracle. Other diagnostics still fail, apart
+from the previously documented compiler-corroborated ARM/QEMU vDSO warning.
+This proves scoped-variable behavior, not general MIPS stack-unwind accuracy.
+Hosted validation of this new slice remains pending.
+
 ## ELF robustness development (2026-10-23)
 
 The following evidence applies to implementation `3e47589` in

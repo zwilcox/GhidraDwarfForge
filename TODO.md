@@ -1398,8 +1398,10 @@ after merge and post-merge validation.
 
 ## P3.3 Add richer scopes and declarations
 
-**Status:** `[~]` — namespace-parented globals and typed external-data
-declarations are tested. Artificial auto-parameter emission is present; a
+**Status:** `[~]` — namespace-parented globals, typed external-data
+declarations, and function-owned static memory labels are tested locally.
+The new static-scope slice awaits hosted validation. Artificial auto-parameter
+emission is present; a
 dedicated behavior test remains. The other scope/declaration work below is
 **PLANNED**.
 
@@ -1408,7 +1410,10 @@ Potential features:
 - Lexical blocks.
 - Namespaces/classes.
 - Thunks/aliases with specification/origin relationships.
-- Static locals.
+- [~] Static locals: explicit Function-owned typed memory labels retain their
+  owner, type, and normalized absolute location. Duplicate private names in
+  different functions remain distinct from a same-named global. Lexical-block
+  ownership and inferred/decompiler-only static locals remain unimplemented.
 - Artificial variables.
 - Declaration-only DIEs.
 - Disambiguation of same-named types from different Ghidra categories: the

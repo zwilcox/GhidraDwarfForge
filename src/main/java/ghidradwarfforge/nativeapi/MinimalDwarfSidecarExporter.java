@@ -357,6 +357,7 @@ public final class MinimalDwarfSidecarExporter {
                 functionSignatures(typeModel);
             Map<VariableKey, VariableLocation> variableLocations =
                 variableLocations(typeModel);
+            Map<Long, Die> functionDies = new HashMap<>();
             long fileIndex = 0;
             if (lineTable.length != 0) {
                 addSectionOffset(producer, consumer, debug, unit, DW_AT_STMT_LIST, 0,
@@ -368,6 +369,7 @@ public final class MinimalDwarfSidecarExporter {
             }
             for (FunctionSymbol function : functions) {
                 Die die = newDie(producer, consumer, debug, DW_TAG_SUBPROGRAM, unit, errorOut);
+                functionDies.put(function.address(), die);
                 addName(producer, consumer, die, function.name(), errorOut);
                 if (!function.usesRangeList()) {
                     addAddress(producer, consumer, debug, die, DW_AT_LOW_PC,
@@ -447,6 +449,20 @@ public final class MinimalDwarfSidecarExporter {
                 }
             }
             if (typeModel != null) {
+                for (ProgramTypeModel.FunctionStaticVariable variable :
+                        typeModel.functionStatics()) {
+                    Die owner = functionDies.get(variable.ownerAddress());
+                    if (owner == null) {
+                        throw new IllegalArgumentException("missing exported owner for static " +
+                            variable.name());
+                    }
+                    Die die = newDie(producer, consumer, debug, DW_TAG_VARIABLE, owner, errorOut);
+                    addName(producer, consumer, die, variable.name(), errorOut);
+                    addTypeReference(producer, consumer, debug, die, variable.type(),
+                        typeModel.types(), allocatedTypes, errorOut);
+                    addAddressLocation(producer, consumer, debug, die, variable.address(),
+                        errorOut);
+                }
                 for (ProgramTypeModel.GlobalVariable global : typeModel.globals()) {
                     Die die = newDie(producer, consumer, debug, DW_TAG_VARIABLE,
                         namespaceParent(global.namespace(), namespaceDies, unit), errorOut);
@@ -944,6 +960,8 @@ public final class MinimalDwarfSidecarExporter {
         if (typeModel != null) {
             typeModel.globals().stream().filter(global -> !global.declaration())
                 .map(ProgramTypeModel.GlobalVariable::address).forEach(expected::add);
+            typeModel.functionStatics().stream()
+                .map(ProgramTypeModel.FunctionStaticVariable::address).forEach(expected::add);
         }
         if (!expected.containsAll(relocatedAddresses) ||
                 expected.stream().anyMatch(address -> !relocatedAddresses.contains(address))) {
