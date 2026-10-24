@@ -163,6 +163,13 @@ Focused harnesses build additional fixtures independently of the Makefile:
   explicit Ghidra rebase and repeat runs check exact named breakpoints, all
   body bytes and gaps, source, stable arguments, global values and stepping.
 
+- `register-prefix-export.sh` uses `register_prefix.c` for x86-64/AArch64
+  ET_EXEC/PIE incoming parameters. Compiler references preserve value 19 after
+  an explicit partial/alias register overwrite; Forge retains only the proven
+  initial register lifetime and reports the later interval unavailable. Exact
+  instruction markers, source stepping, values, rebases and repeats are checked
+  using fully stripped Ghidra/runtime inputs.
+
 After installing the current extension, exercise import and target metadata
 detection for every fixture with:
 

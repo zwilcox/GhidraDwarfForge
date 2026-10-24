@@ -1868,6 +1868,29 @@ and validated against the updated `main` in order. Use GitHub for live merge
 and CI state. No protection rule was weakened, no admin bypass was used, and
 this integration does not replace the published alpha artifact.
 
+### 16.29 Incoming-register parameter lifetimes
+
+**CONFIRMED locally (2026-10-23):** an incoming parameter can retain its exact
+register location before that register is overwritten. The new proof accepts
+only one ordinary contiguous body beginning at the function entry, complete
+decoded instruction coverage, linear fall-through and a final actual return.
+It rejects branches, calls, opaque p-code, delay slots, flow overrides, secondary
+incoming flows and decoding gaps. Register writes are checked against both
+named output registers and raw p-code byte ranges, including partial aliases.
+
+The value remains valid at the first writing instruction, before execution,
+and is unavailable from its fall-through address onward. No later move or
+restoration is inferred. Existing name/type information and analyst storage
+precedence remain intact. Locals, composites and other rejected storage retain
+the conservative path; the existing location-list representation supplies the
+available prefix and honest unavailable remainder without new native calls.
+
+Real compiler-DWARF and production Ghidra/GDB tests pass on x86-64 and AArch64
+for normal/PIE/rebased inputs, including partial-register writes, exact boundary
+values, unavailable later values, deterministic artifacts and preserved inputs.
+The feature is a bounded entry-lifetime improvement, not general storage
+migration. See `docs/VALIDATION.md`; its hosted gate remains pending.
+
 ## 17. Open questions
 
 Codex should not silently answer these through implementation choices. Investigate, document, and obtain user direction when the answer materially changes compatibility or scope.

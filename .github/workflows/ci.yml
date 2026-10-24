@@ -426,7 +426,7 @@ jobs:
             src/test/integration/architecture-neutrality.sh
             ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke outputPathPolicySmoke \
               exportReportSmoke \
-              syntheticSourceSmoke typeGraphSmoke variableStorageSmoke \
+              syntheticSourceSmoke typeGraphSmoke variableStorageSmoke registerPrefixSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
               packagedNativeLibrariesSmoke existingDebugSidecarSmoke \
@@ -777,6 +777,16 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
         run: src/test/integration/bitfield-values-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
+
+      - name: Incoming register lifetime before overwrite
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          src/test/integration/register-prefix-export.sh \
+            "$GHIDRA_INSTALL_DIR" \
+            "$PWD/native-integration/libdwarf.so.2.3.2" \
+            "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
 
       - name: Nonzero load-segment file offset and explicit rebase
         if: matrix.target == 'x86_64'

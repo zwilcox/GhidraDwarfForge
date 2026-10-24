@@ -135,13 +135,19 @@ public final class GhidraTypeGraph {
                 if (!parameterName.isBlank() && logicalLength > 0) {
                     Storage storage = GhidraVariableStorage.stableParameter(program, function,
                         parameter, registerMap, monitor);
-                    List<LocationRange> ranges = locationRanges(symbol, storage, stackDepths,
-                        registerMap, rebaseDelta, parameter.getSource());
+                    var prefix = GhidraVariableStorage.parameterPrefix(program, function,
+                        parameter, registerMap, storage, monitor);
+                    List<LocationRange> ranges = prefix.isEmpty()
+                        ? locationRanges(symbol, storage, stackDepths, registerMap, rebaseDelta,
+                            parameter.getSource())
+                        : parameterPrefixRanges(prefix, rebaseDelta, parameter.getSource());
                     variableLocations.add(new VariableLocation(symbol.name(), address,
                         parameterName, VariableKind.PARAMETER, logicalLength, ranges));
                     if (storage instanceof UnavailableStorage unavailable) {
-                        diagnostic.accept("Omitted location for " + symbol.name() + "::" +
-                            parameterName + ": " + unavailable.diagnostic());
+                        diagnostic.accept((prefix.isEmpty() ? "Omitted location for " :
+                            "Limited location to proven incoming-register lifetime for ") +
+                            symbol.name() + "::" + parameterName + ": " +
+                            unavailable.diagnostic());
                     }
                 }
             }
@@ -326,6 +332,21 @@ public final class GhidraTypeGraph {
             .map(range -> new LocationRange(range.address(), range.endExclusive(),
                 unavailable, evidence(source, unavailable)))
             .toList();
+    }
+
+    private static List<LocationRange> parameterPrefixRanges(
+            List<GhidraVariableStorage.StorageInterval> intervals, long rebaseDelta,
+            SourceType source) {
+        return intervals.stream().map(interval -> {
+            var confidence = evidence(source, interval.storage()).confidence();
+            Evidence evidence = new Evidence(confidence,
+                "Ghidra listing parameter storage (" + source + "); incoming register " +
+                    "preserved only through the first write in a fully decoded " +
+                    "straight-line leaf; later value storage is not established");
+            return new LocationRange(AddressNormalizer.toElfAddress(interval.start(), rebaseDelta),
+                AddressNormalizer.toElfAddress(interval.end(), rebaseDelta),
+                interval.storage(), evidence);
+        }).toList();
     }
 
     private static String safeParameterName(Parameter parameter) {
