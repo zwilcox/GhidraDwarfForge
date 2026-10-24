@@ -132,14 +132,15 @@ public final class MatchedElfPrefix {
     private static ElfImage readMetadata(Path path, String description, BooleanSupplier cancelled)
             throws IOException {
         checkCancelled(cancelled);
+        ElfImage image;
         try {
-            ElfImage image = ElfImage.read(path);
-            checkCancelled(cancelled);
-            return image;
+            image = ElfImage.read(path);
         }
         catch (IllegalArgumentException malformed) {
             throw new IOException("invalid " + description + " ELF metadata", malformed);
         }
+        checkCancelled(cancelled);
+        return image;
     }
 
     private static InputStream open(Path path, BooleanSupplier cancelled, InputOpener opener)
