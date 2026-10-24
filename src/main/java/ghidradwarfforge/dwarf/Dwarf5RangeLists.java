@@ -41,7 +41,7 @@ public final class Dwarf5RangeLists {
         if (addressBytes != 4 && addressBytes != 8) {
             throw new IllegalArgumentException("unsupported address size " + addressBytes);
         }
-        if (functions.stream().allMatch(FunctionSymbol::contiguous)) {
+        if (functions.stream().noneMatch(FunctionSymbol::usesRangeList)) {
             return new Result(new byte[0], 0, Map.of());
         }
 
@@ -51,12 +51,12 @@ public final class Dwarf5RangeLists {
 
         Map<FunctionSymbol, Long> offsets = new LinkedHashMap<>();
         for (FunctionSymbol function : functions) {
-            if (function.contiguous()) {
+            if (!function.usesRangeList()) {
                 continue;
             }
             long offset = Math.addExact(unitOffset, lists.size());
             offsets.put(function, offset);
-            writeList(lists, function.ranges(), addressBytes, order);
+            writeList(lists, entryFirstRanges(function), addressBytes, order);
         }
 
         ByteArrayOutputStream body = new ByteArrayOutputStream();
@@ -70,6 +70,33 @@ public final class Dwarf5RangeLists {
         writeUnsigned(section, body.size(), 4, order);
         section.writeBytes(body.toByteArray());
         return new Result(section.toByteArray(), unitOffset, offsets);
+    }
+
+    /**
+     * DWARF 5 section 2.17.3 permits any order of nonoverlapping ranges.
+     * GDB 15.1 derives the entry from the first range instead of
+     * DW_AT_entry_pc. Put the true entry first without adding or losing code:
+     * split its containing interval there, then retain all remaining intervals.
+     * The extraction model and CU coverage remain in address order.
+     */
+    private static List<FunctionRange> entryFirstRanges(FunctionSymbol function) {
+        List<FunctionRange> result = new ArrayList<>();
+        FunctionRange containing = function.ranges().stream()
+            .filter(range -> range.contains(function.address())).findFirst().orElseThrow();
+        result.add(new FunctionRange(function.address(),
+            Math.subtractExact(containing.endExclusive(), function.address())));
+        for (FunctionRange range : function.ranges()) {
+            if (range.equals(containing)) {
+                if (range.address() != function.address()) {
+                    result.add(new FunctionRange(range.address(),
+                        Math.subtractExact(function.address(), range.address())));
+                }
+            }
+            else {
+                result.add(range);
+            }
+        }
+        return List.copyOf(result);
     }
 
     private static List<FunctionRange> mergedCompilationUnitRanges(

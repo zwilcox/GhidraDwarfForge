@@ -2,6 +2,7 @@
 // @category DWARF.Tests
 
 import ghidra.app.script.GhidraScript;
+import ghidra.program.model.symbol.SourceType;
 import ghidradwarfforge.GhidraFunctionSymbols;
 import ghidradwarfforge.AddressNormalizer;
 import ghidradwarfforge.GhidraSyntheticSource;
@@ -24,10 +25,11 @@ public class ControlledDecompilerFailureExport extends GhidraScript {
     @Override
     protected void run() throws Exception {
         String[] arguments = getScriptArgs();
-        if (arguments.length != 4) {
+        if (arguments.length != 6) {
             throw new IllegalArgumentException(
                 "usage: ControlledDecompilerFailureExport <libdwarf> <libdwarfp> " +
-                    "<output> <failed-function>");
+                    "<output> <failed-function> <failed-static-address> " +
+                    "<successful-static-address>");
         }
         Path consumer = Path.of(arguments[0]).toAbsolutePath().normalize();
         Path producer = Path.of(arguments[1]).toAbsolutePath().normalize();
@@ -46,6 +48,12 @@ public class ControlledDecompilerFailureExport extends GhidraScript {
         var extraction = GhidraFunctionSymbols.extractDetailed(currentProgram, monitor,
             diagnostic, rebaseDelta);
         var functions = extraction.functions();
+        var failedOwner = functions.stream().filter(function ->
+            function.name().equals(failedName)).findFirst().orElseThrow();
+        var successfulOwner = functions.stream().filter(function ->
+            function.name().equals("recovered_composite")).findFirst().orElseThrow();
+        ownedStatic(arguments[4], "failed_private", failedOwner.address() + rebaseDelta);
+        ownedStatic(arguments[5], "successful_private", successfulOwner.address() + rebaseDelta);
         var source = GhidraSyntheticSource.decompile(currentProgram, functions,
             rebaseDelta, monitor, (decompiler, function, timeoutSeconds, taskMonitor) -> {
                 if (function.getName().equals(failedName)) {
@@ -65,6 +73,9 @@ public class ControlledDecompilerFailureExport extends GhidraScript {
         }
         var typeModel = GhidraTypeGraph.extract(currentProgram, functions, target.name(),
             rebaseDelta, monitor, diagnostic);
+        if (typeModel.functionStatics().size() != 2) {
+            throw new AssertionError("controlled owned statics were not extracted");
+        }
         Path sourceOutput = Path.of(output + ".c");
         var resultHolder = new MinimalDwarfSidecarExporter.ExportResult[1];
         ArtifactPairPublisher.stageAndPublish(output, sourceOutput,
@@ -80,6 +91,16 @@ public class ControlledDecompilerFailureExport extends GhidraScript {
             extraction.skippedFunctions(), diagnostics);
         println("GhidraDwarfForge report: " + report.toJson());
         println("controlled-decompiler-failure-export=PASS");
+    }
+
+    private void ownedStatic(String address, String name, long owner) throws Exception {
+        var location = toAddr(Long.decode(address));
+        if (getDataAt(location) == null || !getDataAt(location).isDefined()) {
+            throw new AssertionError("controlled static lacks defined data");
+        }
+        var symbol = currentProgram.getSymbolTable().createLabel(location, name,
+            getFunctionAt(toAddr(owner)), SourceType.USER_DEFINED);
+        symbol.setPrimary();
     }
 
     private static String sha256(Path path) throws Exception {

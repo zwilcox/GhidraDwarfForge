@@ -155,6 +155,25 @@ tasks.register("syntheticSourceSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.source.SyntheticSourceSmoke"
 }
 
+tasks.register("functionEntrySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks function entries independent of their lowest body address"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.nativeapi.FunctionEntrySmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+    doFirst {
+        def properties = ["libdwarfPath", "libdwarfpPath", "sidecarInput", "sidecarOutput"]
+        def configured = properties.findAll { project.hasProperty(it) }
+        if (!configured.isEmpty() && configured.size() != properties.size()) {
+            throw new GradleException("Set all native smoke properties: " + properties)
+        }
+        if (!configured.isEmpty()) {
+            args properties.collect { project.property(it) }
+        }
+    }
+}
+
 tasks.register("addressNormalizerSmoke", JavaExec) {
     group = "verification"
     description = "Checks Ghidra-rebase to ELF link-time address conversion"
@@ -203,6 +222,14 @@ tasks.register("typeGraphSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.types.TypeGraphSmoke"
 }
 
+tasks.register("defaultTypeIdentitySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks stable generic undefined identity and persistent type ID controls."
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.DefaultTypeIdentitySmoke"
+}
+
 tasks.register("dwarfInfoRepairSmoke", JavaExec) {
     group = "verification"
     description = "Checks DWARF32 section-offset and CU-reference width repair"
@@ -241,6 +268,43 @@ tasks.register("variableStorageSmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.locations.VariableStorageSmoke"
+}
+
+tasks.register("registerPrefixSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded register-parameter lifetimes and conservative instruction proof"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.RegisterPrefixSmoke"
+}
+
+tasks.register("registerAliasSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks mapped scalar slices against pinned Ghidra register hierarchies"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.RegisterAliasSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/register-alias/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/register-alias/cache").absolutePath
+}
+
+tasks.register("floatingRegisterSliceSmoke", JavaExec) {
+    group = "verification"
+    description = "Emits a scalar upper-register bit piece through the isolated native producer"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.nativeapi.FloatingRegisterSliceSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+    doFirst {
+        def required = ["libdwarfPath", "libdwarfpPath", "sidecarInput", "sidecarOutput"]
+        def missing = required.findAll { !project.hasProperty(it) }
+        if (!missing.isEmpty()) {
+            throw new GradleException("Missing Gradle properties: " + missing.join(", "))
+        }
+        args required.collect { project.property(it) }
+    }
 }
 
 tasks.register("artifactPairPublisherSmoke", JavaExec) {

@@ -976,6 +976,26 @@ with an evidence-backed distinct `DW_AT_linkage_name` was not retained: GDB
 C11 CU, which broke `break recovered_add`. Linkage-name work therefore remains
 open until both names can stay useful without inventing the source language.
 
+**CONFIRMED locally (2026-10-23):** defined, primary typed memory labels whose
+immediate Ghidra parent is a `Function` now retain that owner instead of being
+flattened into CU globals. The model stores the owner's normalized ELF entry
+address; DWARF places each variable under that function with its existing
+absolute-address location encoding. An owner omitted from the export produces
+a diagnostic and the private object is omitted, rather than promoted to global
+scope. The structured report adds `counts.functionStaticVariables` while
+retaining the meanings of its existing local/global counts. Namespace globals
+and external-data declarations retain their previous behavior.
+
+The dedicated compiler/real-export oracle covers two functions with the same
+private spelling plus a global of that spelling, exact runtime addresses and
+values, non-PIE/PIE, an explicit Ghidra rebase, deterministic reruns and input
+preservation. This is a bounded P3.3 slice: datatype categories, decompiler
+braces, lexical lifetimes, class scopes and aliases supply no new inferred
+facts. Distinct linkage names are unchanged. A MIPS PIE `next`/unwind warning
+also reproduces using the untouched compiler ELF as the separate symbol file;
+the harness corroborates the precise warning independently and does not claim
+general unwind correctness. See `docs/VALIDATION.md` for commands and limits.
+
 ## 9. Handoff-baseline prototype architecture
 
 Sections 9–13 describe the historical `7a39a18` prototype unless a paragraph
@@ -1741,7 +1761,7 @@ runs the production script and real Swing chooser, writes to the selected
 directory when the input directory is read-only, and publishes nothing after
 cancellation. Hash preservation, validators, and GDB source stepping pass.
 At that checkpoint, Script Manager navigation and Windows GUI behavior were
-untested; Section 16.31 records the later hosted component evidence.
+untested; Section 16.32 records the later hosted component evidence.
 The three new integration harnesses are wired into the x86-64 CI lane; hosted
 run `39896787460` passed all twelve jobs for implementation commit `3cdc3f8`,
 including these three tests, the five target lanes, Windows-hosted export,
@@ -1801,7 +1821,7 @@ migration. The current stable-register and SP-relative location profile is
 validated; it does not establish arbitrary value migration or scope/liveness.
 Additional target profiles require explicit, finite acceptance cases. At that
 audit, native Windows GUI and Script Manager journeys were **PRESENT,
-UNVERIFIED**; Section 16.31 records the subsequent component passes and
+UNVERIFIED**; Section 16.32 records the subsequent component passes and
 remaining combined-head reproducibility gate.
 
 **HISTORICAL:** extended-section-number emission was parked on
@@ -1876,7 +1896,30 @@ and validated against the updated `main` in order. Use GitHub for live merge
 and CI state. No protection rule was weakened, no admin bypass was used, and
 this integration does not replace the published alpha artifact.
 
-### 16.29 Corrective alpha.2 preparation
+### 16.29 Incoming-register parameter lifetimes
+
+**CONFIRMED locally (2026-10-23):** an incoming parameter can retain its exact
+register location before that register is overwritten. The new proof accepts
+only one ordinary contiguous body beginning at the function entry, complete
+decoded instruction coverage, linear fall-through and a final actual return.
+It rejects branches, calls, opaque p-code, delay slots, flow overrides, secondary
+incoming flows and decoding gaps. Register writes are checked against both
+named output registers and raw p-code byte ranges, including partial aliases.
+
+The value remains valid at the first writing instruction, before execution,
+and is unavailable from its fall-through address onward. No later move or
+restoration is inferred. Existing name/type information and analyst storage
+precedence remain intact. Locals, composites and other rejected storage retain
+the conservative path; the existing location-list representation supplies the
+available prefix and honest unavailable remainder without new native calls.
+
+Real compiler-DWARF and production Ghidra/GDB tests pass on x86-64 and AArch64
+for normal/PIE/rebased inputs, including partial-register writes, exact boundary
+values, unavailable later values, deterministic artifacts and preserved inputs.
+The feature is a bounded entry-lifetime improvement, not general storage
+migration. See `docs/VALIDATION.md`; its hosted gate remains pending.
+
+### 16.30 Corrective alpha.2 preparation
 
 **CONFIRMED integration:** PRs #16/#17/#18 are merged through their enforced,
 up-to-date checks; `main` is `1f2a46b`. The final ELF robustness PR head passed
@@ -1923,7 +1966,7 @@ Local assembly is a packaging rehearsal, not final hosted release validation.
 No alpha.2 tag or release was created during preparation; alpha.1 and its
 assets remain unchanged.
 
-### 16.30 Source/sidecar publication timestamps
+### 16.31 Source/sidecar publication timestamps
 
 **CONFIRMED:** main run `40053041949` failed the AArch64 rebased extended-program
 layout's static GDB check with a source-freshness warning. GDB 15.1 compares the
@@ -1942,7 +1985,7 @@ source edit still warns in GDB; no warning filter was added. Deterministic unit,
 source-built GDB/runtime, and retained AArch64 Forge-artifact checks pass locally.
 See `docs/VALIDATION.md`; the next exact versioned CI remains required.
 
-### 16.31 Installed Script Manager export journey
+### 16.32 Installed Script Manager export journey
 
 **CONFIRMED locally:** Ghidra 12.0.3's Script Manager Run action creates and
 executes a script without supplying arguments. Running the existing
@@ -2006,7 +2049,7 @@ release package, passes select/cancel, GNU/LLVM, strict libdwarf checking with
 three exactly corroborated inherited frame diagnostics, and GDB. Hosted
 validation of this correction, including native Windows, remains required.
 
-### 16.32 Shared-object QEMU debugger endpoint isolation
+### 16.33 Shared-object QEMU debugger endpoint isolation
 
 **CONFIRMED:** combined GUI run `40055880742`, MIPS32LE job `120759663719`,
 failed before debugger attachment because TCP port `40514` was already in use.
@@ -2032,7 +2075,7 @@ The native Windows dependency mirror retry succeeded, but its GUI job was
 skipped after the x86-64 failure. This run supplies no new GUI product result;
 the corrected complete hosted gate remains pending.
 
-### 16.33 Native patch checkout and provenance consistency
+### 16.34 Native patch checkout and provenance consistency
 
 **CONFIRMED:** prepublication audit of candidate run `40055176326` found that
 Windows `BUILD-METADATA.txt` recorded patch hash `733405d03e2fd34f7bba971e6bbfe534d72ee9b3c1856879a7652f4eff17bc2a`,
@@ -2055,11 +2098,45 @@ Checkout-conversion and package regressions pass
 locally; exact native Windows and complete candidate CI remain required before
 publication. See `docs/VALIDATION.md` for retained evidence.
 
-### 16.34 Independent-validator reporting gap
+### ARM32 static-scope fixture unwind correction
+
+**CONFIRMED:** semantic run `40057031192` at `8e3fd27` failed only the ARM32
+target's static-scope fixture precondition: it required a DWARF FDE, but the
+stripped compiler output has native `.ARM.exidx`/`.ARM.extab` rules and only
+an `.eh_frame` terminator. It stopped before Ghidra export or the later
+floating-register tests. This is a target-specific harness assumption, not
+an observed exporter failure.
+
+The ARM precondition now verifies independent `readelf` decoding and usable
+native-index coverage for both owner functions and main; other targets keep
+the FDE requirement. Actual absent/truncated/cantunwind/Refuse-to-unwind ELF
+copies are rejected without changing supplied originals. ARM32 exec, PIE and
+rebased PIE now pass the unchanged compiler/Forge GDB scope/value/source/return
+oracles, GNU/LLVM checks, input hashes and repeated-export comparison
+locally using an isolated GCC 13.3/sysroot and exact hosted semantic package.
+The old distro checker returned zero despite four summary errors; independent
+review caught the false clean claim. Rechecking these exact three artifacts
+with pinned consumer 2.3.2 produces completed zero-error summaries. The
+separate strict-validator investigation covers the broader matrix.
+The evidence establishes unwind availability plus successful return behavior,
+not which GDB unwinder was selected. No producer/runtime implementation or
+warning allowance changed. See `docs/VALIDATION.md`; corrected hosted ARM
+validation remains pending.
+
+The subsequently reached ARM scalar-FP cases now pass exact stable float and
+double values across exec/PIE/rebase/repeat, including `s1`'s upper `d0` slice.
+The clobbered parameter stays unavailable: actual `bx lr` p-code includes
+opaque `setISAMode`, which deliberately fails the existing whole-body prefix
+proof. Preparation verifies this evidence; report and GDB checks require the
+explicit omission. x86/AArch64 positive prefix tests are unchanged. Pinned
+2.3.2 reports zero errors for all six ARM FP samples. No ARM mode-switching
+return prefix support is claimed.
+
+### 16.35 Independent-validator reporting gap
 
 **CONFIRMED:** PR #19 merged as `680ecd6` after candidate run `40057428382`
 passed all twelve jobs and its native-inclusive package passed independent
-provenance/source/producer checks. Alpha.2 remains unpublished. A subsequent
+provenance/source/producer checks. Alpha.2 was still unpublished at that checkpoint. A subsequent
 review of a new ARM static-scope test exposed a broader existing harness gap:
 libdwarf `dwarfdump -ka -ks` exits zero while printing nonzero check summaries.
 The shell tests did not enforce those summary counts.
@@ -2238,16 +2315,44 @@ The historical research scripts' bare `dwarfdump` checks did not enforce
 complete summaries and are not current libdwarf acceptance evidence. These
 design refinements add no product operation or new runtime validation.
 
-**CONFIRMED, bounded determinism finding:** Ghidra 12.0.3's generic
-`DefaultDataType` inherits a new process-local universal ID. Forge currently
-sorts that key with persistent type IDs, so a newly imported versus reopened
-saved Program can produce different type DIE ordering. Settled-analysis,
-identical-option/output-path probes show unchanged normalized type/function/
-global/location/body models and byte-identical source; repeated reopened
-exports are byte-identical. This is not evidence of target corruption or changed
-DWARF semantics. A narrow stable-key follow-up is separate from the corrective
-release and must not replace all type-identity rules. Reproduction and evidence
-are in `docs/research/DEBUGLINK-EVIDENCE.md`.
+**HISTORICAL, resolved bounded determinism finding:** Ghidra 12.0.3's generic
+`DefaultDataType` inherits a new process-local universal ID. The research
+baseline sorted that key with persistent type IDs, so a newly imported versus
+reopened saved Program could produce different type DIE ordering. Settled-
+analysis, identical-option/output-path probes showed unchanged normalized
+type/function/global/location/body models and byte-identical source; repeated
+reopened exports were byte-identical. This was not evidence of target corruption
+or changed DWARF semantics. Reproduction and evidence remain in
+`docs/research/DEBUGLINK-EVIDENCE.md`.
+
+Semantic commit `3070e95` resolves that finding with a stable fallback key only
+for the exact generic `DefaultDataType` class. All other persisted/analyst type
+identity rules remain unchanged. The initial/save/two-fresh-reopen regression
+compares raw models and actual DWARF/source bytes and passes hosted semantic run
+`40063017269`. The fix is included in this combined tree, but not in corrective
+alpha.2. See "Stable generic undefined identity across save/reopen" below.
+
+### Semantic and strict-validator integration checkpoints
+
+**CONFIRMED locally:** the normal merge of strict-validator `bf7f2b1` into
+semantic `0b754078` retains the function-entry/static-scope, register-prefix,
+scalar-FP, saved-program identity and ARM fixture corrections. Five semantic
+integration scripts and both isolated semantic producer checks now use the
+strict helper with their exact original ELF; the existing LLVM and GDB
+oracles remain in place. All 23 semantic Java smoke tasks, extension build,
+workflow/architecture checks, package regression and strict-parser controls
+pass. Rechecking one retained artifact from each of the five semantic suites
+passes with only exactly corroborated inherited frame diagnostics; this is
+a validator replay, not a fresh merged export/runtime matrix. No complete
+cross-target rerun was performed locally for this merge. Hosted verification
+of the combined source remains **PRESENT, UNVERIFIED**.
+
+The subsequent normal merge of strict `99845c7` into semantic `cc8dd8b`
+adds complete-category enforcement and the validation-only extended-program
+reader correction without changing semantic production sources. Workflow and
+changed-script syntax checks pass; the previously passing Java/runtime suites
+were not repeated for this validation-only merge. The combined hosted matrix
+remains pending.
 
 ## 17. Open questions
 
@@ -2323,6 +2428,48 @@ Codex should not silently answer these through implementation choices. Investiga
     advertised broadly; the validated ARM32 and MIPS profiles remain narrower
     claims documented in the release notes.
 
+## 17.1 Function entries above their lowest body address
+
+**CONFIRMED locally (2026-10-23):** extraction accepts an entry in any real
+body range rather than dropping functions with earlier instructions. The
+canonical body remains sorted and retains every gap. Such functions emit
+`DW_AT_entry_pc` plus a range list whose first interval starts at that entry;
+an interval containing the entry is split there when necessary, with exactly
+the same covered bytes. Contiguous bodies with interior entries use that same
+representation. Existing ordinary low/high-PC output remains unchanged.
+
+This representation is deliberate: local GDB 15.1 ignores `DW_AT_entry_pc`
+and takes the entry from the first range. DWARF 5 sections 2.17.3 and 2.18
+permit unordered nonoverlapping range intervals and an explicit entry address.
+An attribute-only attempt passed validators but resolved GDB names and
+breakpoints to the wrong lower address. The final representation passes real
+named-breakpoint, all-body-byte, excluded-gap, source, value and stepping checks
+for x86-64 ET_EXEC/PIE, including explicit rebases and deterministic repeats.
+Only the already-audited target-address producer call is used; no JNA signatures
+were added. The added hosted gate is **PRESENT, UNVERIFIED** until CI passes.
+Commands, limitations and evidence are recorded in `docs/VALIDATION.md`.
+
+## 17.2 Combined semantic review (2026-10-23)
+
+The below-entry range, function-owned static and incoming-register lifetime
+changes are combined separately from the corrective alpha2 release. Their
+new hosted gates remain **PRESENT, UNVERIFIED** until the combined pipeline
+passes; individual local results do not substitute for that gate.
+
+Review preserved the established symbol-only decompilation-failure contract:
+an owned static is omitted when its owner fails decompilation. One shared
+selection policy controls emitted DIEs, native address-relocation validation,
+omission diagnostics and exported-static counts. Successfully decompiled owners
+retain their curated statics. The controlled failure fixture now includes both
+owners and verifies that only the successful owner's object survives.
+
+The register proof also treats p-code `STORE` to the register address space
+as a possible clobber, including indirect offsets. Pinned Ghidra 12.0.3
+documents this opcode's destination space in its first input; it has no output
+varnode and therefore requires a separate check. Malformed stores fail closed;
+ordinary stores to memory retain their existing behavior. This shared check
+protects stable locations as well as bounded incoming-register prefixes.
+
 ## 18. Immediate strategic direction
 
 **CONFIRMED:** the previous prototype bring-up sequence is complete for the
@@ -2330,9 +2477,9 @@ documented profiles. The project has an extension build, pinned/audited natives,
 real source/type/location export and a passing Linux/Windows integration matrix.
 
 1. Preserve the working tree and inspect current PR/CI/release state.
-2. Integrate reviewed PRs under the standing authorization and enforced checks;
-   check GitHub for the current state of #16/#17/#18. A corrective release is a
-   separate versioned publication task; preserve the existing public alpha.
+2. Integrate the subsequent reviewed semantic/GUI/target/performance work under
+   the standing authorization and enforced current-base checks. Alpha.2 is
+   published from `2f88c4a`; preserve both public alpha tags and their assets.
 3. Preserve completed P0.9's layout/resource bounds and regression matrix;
    implementation `3e47589` is validated by all twelve hosted jobs. Do not
    redo the parked checkpoint or treat direct PN_XNUM execution as supported.
@@ -2424,3 +2571,149 @@ strict parser/line/range/extended-program rejection tests, and exact 10,002-mess
 retained-benchmark corroboration. Source/manifest checks and independent review
 pass. `docs/VALIDATION.md` records exact bundle hashes and result directories;
 no Ghidra/benchmark export was repeated for this validation-only packaging fix.
+
+### Scalar FP logical-register selection (2026-10-23)
+
+**CONFIRMED locally:** the follow-on `fp-register-aliases` branch selects the
+first audited covering register on the actual Ghidra parent chain, with a
+relative least-significant-bit offset. Wider unmapped physical bases no longer
+force omission of defensible scalar aliases. Stable and entry-prefix proofs
+still reject writes through the full physical base, including partial aliases
+and register-space STORE. Scalar upper slices use the existing audited
+`DW_OP_bit_piece` producer path; no native signature changed.
+
+x86-64/AArch64 scalar float/double parameters and both MIPS32 O32 scalar floats
+pass real exporter/GDB values through RAM stores, PIE and explicit rebases.
+MIPS paired doubles remain unavailable. The independent compiler oracle also
+reports zero pair values on the tested QEMU8.2.2/GDB15.1 transport even though
+executed double stores and exit are correct; those memory checks are not a
+positive double-parameter location claim. The exact evidence and likely QEMU
+register-width cause are recorded in `docs/VALIDATION.md`.
+
+ARM's mapping now uses canonical AADWARF32 D registers and scalar bit slices.
+The real-language alias smoke and isolated native upper-slice validators pass;
+ARM runtime values remain **PRESENT, UNVERIFIED** until hosted CI, because the
+local cross-compiler/sysroot is absent. The new CI fixture exercises both
+floats, including `s1` as the upper 32 bits of `d0`, plus doubles and explicit
+clobber unavailability. This bounded scalar work does not add vector, aggregate,
+calling-convention, migration or new CPU/ABI claims, and remains separate from
+the corrective alpha2 release.
+
+### Combined semantic features after corrective alpha.2 (2026-10-23)
+
+**CONFIRMED locally:** `work/semantic-todo-completion` retains normal merge
+history for scalar FP aliases (`493983d`, from `1f52431`) and corrective
+sidecar identity/publication fixes (`4a4ce38`, through `ddad598`). The only
+conflict was additive context prose, and both histories were retained. The
+writer and publisher match the reviewed corrective branch exactly; the other
+production paths match the independently tested FP/semantic branch.
+
+The actual combined extension was installed only into the worktree's private
+Ghidra copy. All 22 native-independent checks/build, timestamp regression,
+24 scalar-FP cases, the existing four-profile six-role real export/validator/GDB
+matrix, strict build-ID/debuglink association and ARM isolated upper-slice
+producer/validators pass. Evidence and precise limits are in the new combined
+section of `docs/VALIDATION.md` and `build/combined-final-review/`.
+
+All feature and corrective CI gates remain present. Hosted combined validation,
+including new ARM static/FP runtime behavior, remains **PRESENT, UNVERIFIED**
+until the final commit passes its required matrix. This branch prepares the
+subsequent semantic PR; it does not add features to the corrective alpha.2
+release. No remote action, release or shared installation change occurred in
+this local integration.
+
+### Stable generic undefined identity across save/reopen (2026-10-23)
+
+**CONFIRMED locally:** Ghidra 12.0.3's `DefaultDataType` singleton inherits a
+new per-process `UniversalID` from `DataTypeImpl`, unlike the normal `BuiltIn`
+null-ID policy. Sorting by that transient ID changed type DIE order between a
+settled initial export and a fresh read-only reopen even when the normalized
+model and synthetic source were unchanged. This was a byte-determinism defect,
+not a demonstrated target-address or debugger-value defect.
+
+Only the exact `DefaultDataType` class now bypasses that transient ID and uses
+the existing class/path/length fallback key. All other UID and collision rules
+remain unchanged, including analyst/imported types named `undefined`. Real
+Ghidra identity controls and a saved-program integration regression cover that
+boundary. The latter compares complete raw extraction models independently of
+DWARF serialization, as well as actual `.dbg`/`.dbg.c` bytes across three fresh
+processes, validators and GDB types, addresses, values and source stepping.
+The baseline reproduces the byte difference; the fixed artifact passes. Exact
+commands/evidence and the bounded claim are recorded in `docs/VALIDATION.md`.
+
+This follow-up is based on the semantic branch `8e3fd27` and remains separate
+from corrective alpha.2. It does not canonicalize unrelated persisted types,
+promise equal output from independent imports, or change native APIs.
+
+### Semantic hosted acceptance and main integration (2026-10-24)
+
+**CONFIRMED:** semantic PR #20 head
+`b14e8109ca95358bacba6b0d11223a913d32db80` passed all twelve jobs in
+[run 40063017269](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40063017269),
+completed `2026-10-24T04:57:49Z`: workflow lint, Linux/Windows native builds,
+extension build, release packaging, all five Linux-hosted target lanes,
+Windows-hosted export and the aggregate gate. No job failed or was skipped.
+Earlier pending-hosted descriptions of these semantic features are historical;
+`docs/VALIDATION.md` records the exact job IDs and conditional-step scope.
+
+Function-owned statics and scalar FP pass their bounded all-five-target
+oracles, including ARM32 EHABI coverage, returns and scalar upper slices.
+Incoming-register prefixes pass x86-64/AArch64; advanced true-entry GDB and
+saved-program byte determinism pass x86-64. Entry producer/structural checks
+pass all five targets. P1.8 is complete within that documented acceptance;
+P1.11a, richer scopes and target-profile expansion remain partial. MIPS paired
+doubles and ARM opaque-return prefix locations remain unavailable. No broad
+vector/ABI, migration, call-crossing, Windows runtime-GDB or new Script Manager
+claim follows from this run.
+
+The normal merge of main `2f88c4a` changes no source/test/workflow/package tree:
+that main tree equals the strict `99845c7` parent already in this branch. The
+integration updates only current status/evidence documentation and preserves
+both histories. The new PR head requires current-base hosted CI before normal
+integration. Corrective alpha.2 publication status is unchanged; the semantic
+branch remains a subsequent feature change and contains neither the separate
+GUI journey nor target-language agreement/performance work.
+
+### Corrective alpha.2 official publication (2026-10-24)
+
+**CONFIRMED:** [v0.1.0-alpha.2](https://github.com/zwilcox/GhidraDwarfForge/releases/tag/v0.1.0-alpha.2)
+was published at `2026-10-24T05:15:20Z` (`00:15:20` America/Chicago), from exact
+main commit `2f88c4a1a7dd90dfedbd8d578b27242dfb8a73b7`. PR #22's corrected
+head passed all twelve jobs in run `40062747733` before normal merge; the
+exact-main `push` run `40064204515` also passed all twelve jobs. The final
+release audit then enforced that event/head/job set, compared the packaged
+source and metadata against the commit, verified all nested manifests and both
+native provenance records, and passed 20 Linux packaged-producer lifetimes on
+Java 21 using the downloaded production JAR.
+
+The native-inclusive release ZIP SHA-256 is
+`0ae14cf8f4760703d4778d5b414fd14b9c8a68414edc89dcf8cb58a21669ade6`.
+Draft and published ZIP/checksum assets were downloaded and compared with the
+audited bytes. The public tag resolves to the exact tested commit. Alpha.1's
+tag, release identity and asset digests remain unchanged; alpha.1 remains
+affected by the previously recorded correctness findings.
+
+This closes the corrective release and strict-validator gates within the
+published target/host profiles. Earlier failed runs and missed-summary findings
+remain historical evidence, not retroactively clean validation. Exact inherited
+frame diagnostics remain visible and require matching original bytes/identity
+and same-tool diagnostics; no new generic exception was introduced.
+
+The tag and its packaged documents remain the immutable prepublication
+snapshot. This later handoff update does not retag or replace them. Semantic
+features in this branch, the separate Script Manager journey, target-language
+agreement and measured line-table optimization are subsequent work and are
+excluded from alpha.2. Their own current-base/combined acceptance gates remain.
+See `docs/VALIDATION.md`, "Corrective alpha.2 official publication", for exact
+CI, final-audit and downloaded-asset evidence.
+
+### Reviewed TODO integration scope (2026-10-24)
+
+This combined tree now retains the separately reviewed semantic, Script Manager,
+target-language agreement, line-table/performance and inline/debuglink research
+histories. The component evidence above remains attributed to its exact tested
+head; it does not establish that the new combined head passes. Current-base
+combined hosted validation remains required before normal main integration.
+The published alpha.2 tag and assets remain unchanged and exclude these
+subsequent features. The optional debuglink operation and inline DIE emission
+remain unimplemented under their recorded design/evidence conditions.

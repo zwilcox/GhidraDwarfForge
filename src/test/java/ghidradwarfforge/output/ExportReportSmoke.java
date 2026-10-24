@@ -55,7 +55,9 @@ public final class ExportReportSmoke {
                     "lifetime is unknown"),
                 new Evidence(Confidence.ANALYSIS, "fixture"))));
         ProgramTypeModel typeModel = new ProgramTypeModel(types, List.of(signature),
-            List.of(), new VariableStorageModel(List.of(unavailable)));
+            List.of(), new VariableStorageModel(List.of(unavailable)), List.of(
+                new ProgramTypeModel.FunctionStaticVariable("private_count", 0x3000, 4,
+                    signedInt, 0x1000, "USER_DEFINED")));
         SyntheticSourceFile source = SyntheticSourceFile.build("fixture", "x86:LE:64",
             List.of(
                 new FunctionText("failed", 0x2000, null, "bad \"decompile\"\nresult"),
@@ -82,6 +84,8 @@ public final class ExportReportSmoke {
         requireContains(json, "\"functionsFailed\":1");
         requireContains(json, "\"functionsSkipped\":2");
         requireContains(json, "\"omittedLocationRanges\":1");
+        requireContains(json, "\"functionStaticVariables\":1");
+        requireContains(json, "\"globalVariables\":0");
         requireContains(json, "\"name\":\"failed\",\"address\":\"0x2000\"," +
             "\"diagnostic\":\"bad \\\"decompile\\\"\\nresult\"");
         requireContains(json, "\"name\":\"alpha\",\"reason\":\"EXTERNAL_IMPORT\"");
@@ -91,6 +95,23 @@ public final class ExportReportSmoke {
         requireContains(json, "\"diagnostics\":[\"a diagnostic\",\"z diagnostic\"]");
         requireContains(json, "\"validation\":{\"status\":\"NOT_RUN\"}");
         requireContains(json, "\"native\":{\"libdwarfVersion\":\"2.3.2\"}");
+
+        ProgramTypeModel failedStaticModel = new ProgramTypeModel(types,
+            List.of(signature, new FunctionSignature("failed", 0x2000, signedInt,
+                List.of(), List.of(), false, false, "default", "USER_DEFINED")),
+            typeModel.globals(), typeModel.variableStorage(), List.of(
+                typeModel.functionStatics().get(0),
+                new ProgramTypeModel.FunctionStaticVariable("failed_private", 0x3004, 4,
+                    signedInt, 0x2000, "USER_DEFINED")));
+        String failedStaticJson = report(failedStaticModel, source, skipped, diagnostics).toJson();
+        requireContains(failedStaticJson, "\"functionStaticVariables\":1");
+        requireContains(failedStaticJson, "Omitted function-owned static variable " +
+            "failed_private at 0x3004; owning function at 0x2000 failed decompilation " +
+            "and remains symbol-only");
+        if (ghidradwarfforge.source.FunctionStaticPolicy.select(failedStaticModel, null)
+                .exported().size() != 2) {
+            throw new AssertionError("absent source was treated as a decompilation failure");
+        }
 
         ExportReport fatal = ExportReport.terminal(ExportReport.Status.FATAL,
             new IllegalStateException("unsafe \"value\"\nline"));

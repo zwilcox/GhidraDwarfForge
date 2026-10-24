@@ -194,6 +194,9 @@ public class GhidraDwarfForge extends GhidraScript {
             .stream().filter(variable -> !variable.hasDefensibleLocation()).count());
         println("  canonical types: " + typeModel.types().nodes().size());
         println("  global variables: " + typeModel.globals().size());
+        println("  function-owned static variables: " +
+            ghidradwarfforge.source.FunctionStaticPolicy.select(typeModel, source)
+                .exported().size());
         println("GhidraDwarfForge report: " + report.toJson());
     }
 

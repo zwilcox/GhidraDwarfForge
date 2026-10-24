@@ -19,6 +19,7 @@ import ghidra.program.model.data.CharDataType;
 import ghidra.program.model.data.Composite;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.DataTypeComponent;
+import ghidra.program.model.data.DefaultDataType;
 import ghidra.program.model.data.Dynamic;
 import ghidra.program.model.data.Enum;
 import ghidra.program.model.data.FunctionDefinition;
@@ -135,13 +136,19 @@ public final class GhidraTypeGraph {
                 if (!parameterName.isBlank() && logicalLength > 0) {
                     Storage storage = GhidraVariableStorage.stableParameter(program, function,
                         parameter, registerMap, monitor);
-                    List<LocationRange> ranges = locationRanges(symbol, storage, stackDepths,
-                        registerMap, rebaseDelta, parameter.getSource());
+                    var prefix = GhidraVariableStorage.parameterPrefix(program, function,
+                        parameter, registerMap, storage, monitor);
+                    List<LocationRange> ranges = prefix.isEmpty()
+                        ? locationRanges(symbol, storage, stackDepths, registerMap, rebaseDelta,
+                            parameter.getSource())
+                        : parameterPrefixRanges(prefix, rebaseDelta, parameter.getSource());
                     variableLocations.add(new VariableLocation(symbol.name(), address,
                         parameterName, VariableKind.PARAMETER, logicalLength, ranges));
                     if (storage instanceof UnavailableStorage unavailable) {
-                        diagnostic.accept("Omitted location for " + symbol.name() + "::" +
-                            parameterName + ": " + unavailable.diagnostic());
+                        diagnostic.accept((prefix.isEmpty() ? "Omitted location for " :
+                            "Limited location to proven incoming-register lifetime for ") +
+                            symbol.name() + "::" + parameterName + ": " +
+                            unavailable.diagnostic());
                     }
                 }
             }
@@ -178,6 +185,10 @@ public final class GhidraTypeGraph {
                 missing.name());
         }
         List<ProgramTypeModel.GlobalVariable> globals = new ArrayList<>();
+        List<ProgramTypeModel.FunctionStaticVariable> functionStatics = new ArrayList<>();
+        java.util.Set<Long> functionOwners = signatures.stream()
+            .map(ProgramTypeModel.FunctionSignature::address)
+            .collect(java.util.stream.Collectors.toSet());
         SymbolIterator symbols = program.getSymbolTable().getAllSymbols(true);
         while (symbols.hasNext()) {
             monitor.checkCancelled();
@@ -206,6 +217,28 @@ public final class GhidraTypeGraph {
                 diagnostic.accept("Skipped unsupported global address " + symbol.getName());
                 continue;
             }
+            if (symbol.getParentNamespace() instanceof Function owner) {
+                long ownerAddress;
+                try {
+                    ownerAddress = AddressNormalizer.toElfAddress(
+                        owner.getEntryPoint().getOffset(), rebaseDelta);
+                }
+                catch (ArithmeticException overflow) {
+                    diagnostic.accept("Skipped function-owned static variable " +
+                        symbol.getName(true) + "; untranslatable owner address");
+                    continue;
+                }
+                if (!functionOwners.contains(ownerAddress)) {
+                    diagnostic.accept("Skipped function-owned static variable " +
+                        symbol.getName(true) + "; owning function was not exported");
+                    continue;
+                }
+                functionStatics.add(new ProgramTypeModel.FunctionStaticVariable(
+                    symbol.getName(), address, data.getLength(),
+                    extractor.reserve(data.getDataType()), ownerAddress,
+                    symbol.getSource().name()));
+                continue;
+            }
             globals.add(new ProgramTypeModel.GlobalVariable(symbol.getName(), address,
                 data.getLength(), extractor.reserve(data.getDataType()), false,
                 symbol.getSource().name(),
@@ -232,7 +265,7 @@ public final class GhidraTypeGraph {
         }
         extractor.drain(monitor);
         return new ProgramTypeModel(new TypeGraph(new ArrayList<>(extractor.nodes.values())),
-            signatures, globals, new VariableStorageModel(variableLocations));
+            signatures, globals, new VariableStorageModel(variableLocations), functionStatics);
     }
 
     private static List<String> namespacePath(Namespace namespace) {
@@ -300,6 +333,21 @@ public final class GhidraTypeGraph {
             .map(range -> new LocationRange(range.address(), range.endExclusive(),
                 unavailable, evidence(source, unavailable)))
             .toList();
+    }
+
+    private static List<LocationRange> parameterPrefixRanges(
+            List<GhidraVariableStorage.StorageInterval> intervals, long rebaseDelta,
+            SourceType source) {
+        return intervals.stream().map(interval -> {
+            var confidence = evidence(source, interval.storage()).confidence();
+            Evidence evidence = new Evidence(confidence,
+                "Ghidra listing parameter storage (" + source + "); incoming register " +
+                    "preserved only through the first write in a fully decoded " +
+                    "straight-line leaf; later value storage is not established");
+            return new LocationRange(AddressNormalizer.toElfAddress(interval.start(), rebaseDelta),
+                AddressNormalizer.toElfAddress(interval.end(), rebaseDelta),
+                interval.storage(), evidence);
+        }).toList();
     }
 
     private static String safeParameterName(Parameter parameter) {
@@ -467,7 +515,11 @@ public final class GhidraTypeGraph {
         }
 
         private static String stableKey(DataType type) {
-            UniversalID id = type.getUniversalID();
+            // Ghidra's generic undefined singleton inherits a process-local ID,
+            // unlike persisted analyst/imported types. Use its existing built-in
+            // fallback identity so saving and reopening cannot reorder the graph.
+            UniversalID id = type.getClass() == DefaultDataType.class ? null :
+                type.getUniversalID();
             if (id != null) {
                 return "uid:" + Long.toUnsignedString(id.getValue(), 16);
             }

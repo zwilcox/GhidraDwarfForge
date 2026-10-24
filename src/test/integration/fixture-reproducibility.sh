@@ -37,10 +37,15 @@ expected_sources=(
     Makefile
     README.md
     bitfield-values.c
+    fp_register_aliases.c
+    function-static-scopes.c
+    function_entry_ranges.S
+    function_entry_ranges.c
     minimal.c
     nonzero_load_offset.c
     nonzero_load_offset.ld
     nonzero_load_offset_start.S
+    register_prefix.c
     semantic.c
     shared_driver.c
     shared_semantic.c
