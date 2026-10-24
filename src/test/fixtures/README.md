@@ -259,3 +259,14 @@ names and a global function with the same short name. Every case repeats export
 and compares both output files, preserves input hashes and runs GNU/LLVM/strict
 validators. `FORGE_ARM32_SYSROOT` optionally selects an existing private ARM32
 runtime sysroot; CI retains the installed `/usr/arm-linux-gnueabihf` default.
+
+
+`path-traversal-export.py` reuses `minimal.c` for a Linux x86-64 saved-program
+fixture. It checks real directory-link/`..` input/output selection, input-leaf
+default names, output-link replacement, original/source alias rejection and
+missing-input guidance. Exact paths/hashes, byte-identical pairs, preserved
+program databases, validators and GDB values/source lookup from an unrelated
+working directory are required. `--expectation baseline-reproducer` requires
+the old wrong-path behavior and never counts as a passing correction. See
+`docs/FILESYSTEM-PATHS.md` for host semantics and the two explicitly recorded
+Ghidra index-backup files.

@@ -1057,13 +1057,14 @@ or uncertain storage remains locationless with a diagnostic.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
 
-**CONFIRMED locally; hosted gate pending:** a nonzero first-use field on an
+**CONFIRMED in hosted run `40081385807`:** a nonzero first-use field on an
 already stored stack local is diagnosed and its location omitted, retaining
 name/type/offset. Five-profile extraction and actual Java 21 tests pass.
-Packaged x86-64/AArch64 exec/PIE/rebase compiler/GDB cases pass all twelve
-exports, while the prior exporter reproduces the wrong earlier value in all
-six roles. Zero-offset locals remain correct. Exact hosted acceptance remains
-pending; see `docs/STACK-FIRST-USE.md`. No general slot-reuse boundary is inferred.
+All twelve jobs, exact package and independent x86-64/AArch64 twelve-export
+and both-host reviews pass for PR #30 head `fb2fa406`; normal merge `74a7466`
+preserves the tested tree. The prior exporter reproduces the wrong earlier
+value in all six roles; zero-offset locals remain correct. See
+`docs/STACK-FIRST-USE.md`; no general slot-reuse boundary is inferred.
 
 **CONFIRMED in hosted run `40079317009`:** exact PR #29 head `698e939` passes
 all twelve jobs. The bounded register-copy fixture passes x86-64/AArch64
@@ -1103,8 +1104,8 @@ changing-stack test proves SP-relative adjustment, not value migration.
   calls using the selected ABI and recovered instruction evidence.
 - [~] Test stack-local first-use and slot-reuse boundaries; record unavailable
   intervals where identity or lifetime cannot be established. The bounded
-  nonzero-stack-first-use omission passes local compiler/GDB tests; exact
-  hosted acceptance and general identity/lifetime recovery remain pending.
+  nonzero-stack-first-use omission passes exact hosted compiler/GDB tests in
+  `40081385807`; general identity/lifetime recovery remains pending.
 - [ ] Support mixed register/memory composite pieces when every piece has
   defensible size, order and lifetime information.
 - [~] Compare GDB values with compiler-oracle fixtures at multiple PCs on each
@@ -1369,6 +1370,27 @@ unsupported big-endian target profiles passed in GitHub Actions run 33824105805.
 # P2 — Product behavior and integration
 
 ## P2.7 Add output selection, fallback, and atomic pair commit
+
+**CONFIRMED locally; hosted gate pending:** a follow-up corrects actual parent
+traversal through directory links without renaming input-link defaults or
+following replaceable output leaves. Public pair publication now rejects all
+stage/final aliases and non-file final entries before mutation, preserves
+dangling links during rollback, and keeps stale-input guidance accurate.
+Eight final packaged exports and three rejection cases pass independent
+review, validators, GDB and original/program-database preservation. See
+`docs/FILESYSTEM-PATHS.md`; native Windows acceptance is still required and
+this does not implement the separate P2.8 attachment transaction. A later
+Windows trailing-dot/space leaf guard and actual native alias probe require
+updated-head CI; earlier PR #31 candidate results are intermediate evidence.
+The initial hosted timestamp harness omitted the new helper from its explicit
+`javac` source list. That dependency is corrected and the full local timestamp
+regression passes; both earlier heads remain intermediate, pending the new
+exact-head gate.
+The next candidate passed all five target lanes, then Windows exposed a stale
+short-parent spelling expectation before the new alias test. The corrected
+oracle retains the raw request and checks the canonical directory with literal
+filenames and file identity. Local Java 21 passes; the full updated native gate
+is still required.
 
 **Status:** `[x]` for the validated paths — deterministic default and explicit paths, stale-path input
 override with imported-file hash verification, preflight collision/write

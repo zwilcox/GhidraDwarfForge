@@ -428,7 +428,9 @@ public final class ExportReport {
     }
 
     private static String normalize(Path path) {
-        return path.toAbsolutePath().normalize().toString();
+        // Reporting must not reinterpret traversal or require files to remain
+        // accessible after export. Production supplies already-resolved paths.
+        return path.toAbsolutePath().toString();
     }
 
     private static String requireText(String value, String description) {

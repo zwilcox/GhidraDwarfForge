@@ -46,7 +46,7 @@ public final class PackagedNativeLibraries {
             throw new IOException("packaged libdwarf is unavailable for host platform " +
                 platformDirectory + "; use explicit --libdwarf and --libdwarfp paths");
         }
-        Path directory = moduleRoot.toAbsolutePath().normalize()
+        Path directory = moduleRoot.toRealPath()
             .resolve("os").resolve(platformDirectory);
         Path pairFile = directory.resolve(PAIR_FILE);
         Path checksumFile = directory.resolve(CHECKSUM_FILE);

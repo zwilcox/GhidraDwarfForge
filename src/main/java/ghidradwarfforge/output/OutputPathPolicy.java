@@ -27,7 +27,14 @@ public final class OutputPathPolicy {
     static ExportPaths resolve(Path input, Path explicitOutput,
             Predicate<Path> writableDirectory) throws IOException {
         Objects.requireNonNull(writableDirectory, "writableDirectory");
-        Path original = normalize(input, "original ELF path");
+        Path original;
+        try {
+            original = FileSystemPaths.resolveLeaf(input, "original ELF path");
+        }
+        catch (IOException failure) {
+            throw new IOException(failure.getMessage() +
+                "; supply --input=<path> when Ghidra's executable path is stale", failure);
+        }
         if (!Files.isRegularFile(original) || !Files.isReadable(original)) {
             throw new IOException("original ELF is missing, unreadable, or not a regular file: " +
                 original + "; supply --input=<path> when Ghidra's executable path is stale");
@@ -39,8 +46,8 @@ public final class OutputPathPolicy {
         boolean useDefault = explicitOutput == null;
         Path artifact = useDefault
                 ? original.resolveSibling(original.getFileName() + ".dbg")
-                : normalize(explicitOutput, "DWARF sidecar path");
-        Path source = Path.of(artifact + ".c").toAbsolutePath().normalize();
+                : FileSystemPaths.resolveLeaf(explicitOutput, "DWARF sidecar path");
+        Path source = artifact.resolveSibling(artifact.getFileName() + ".c");
         validateDestination(original, artifact, "DWARF sidecar", writableDirectory);
         validateDestination(original, source, "synthetic source", writableDirectory);
         if (!artifact.getParent().equals(source.getParent())) {
@@ -51,8 +58,7 @@ public final class OutputPathPolicy {
 
     private static void validateDestination(Path input, Path destination, String description,
             Predicate<Path> writableDirectory) throws IOException {
-        if (destination.equals(input) ||
-                (Files.exists(destination) && Files.isSameFile(destination, input))) {
+        if (FileSystemPaths.aliases(destination, input)) {
             throw new IOException(description + " path aliases the original ELF: " + destination);
         }
         Path parent = destination.getParent();
@@ -66,10 +72,4 @@ public final class OutputPathPolicy {
         }
     }
 
-    private static Path normalize(Path path, String description) {
-        if (path == null) {
-            throw new IllegalArgumentException(description + " is required");
-        }
-        return path.toAbsolutePath().normalize();
-    }
 }

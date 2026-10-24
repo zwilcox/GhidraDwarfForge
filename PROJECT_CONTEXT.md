@@ -2987,3 +2987,98 @@ Normal merge `25f9830f64899a1b3ed9f45e60c3b7404f0fc67c` at
 `2026-10-24T09:16:38Z` preserves the tested tree. Its separate main-push gate
 is still pending. This supersedes earlier pending-hosted register-copy notes;
 it does not attribute acceptance to the later stack guard. No release changed.
+
+### Actual filesystem paths and publication preflight (2026-10-24)
+
+**CONFIRMED:** the old output policy lexically reduced `symlink/..` before
+opening a file. A Linux compiler fixture reproduces both a wrong-input hash
+rejection and an independently misdirected output. Separate public-publisher
+controls reproduce cross-stage cleanup deleting a newly published source and
+a directory destination being moved before a cleanup failure. The script's
+ordinary path policy already rejected directory destinations; that finding
+is specific to the public API, not a new default-export regression.
+
+**CONFIRMED locally; hosted gate pending:** production commits `a0b75fb` and
+`821808a` resolve existing parents with host filesystem semantics while keeping
+literal file leaves, check all stage/final aliases before mutation, reject
+stage symlinks and unsupported final objects, and preserve dangling-leaf
+rollback. Input-link default naming and unrelated output-link referents remain
+intact. Standalone exporter/source/native paths share the policy; report
+formatting does not introduce filesystem I/O. Missing-input-parent guidance
+keeps `--input` and avoids unrelated `--output` advice.
+
+Final package run `run.ua6ucr7i` passes eight real saved-program exports and
+three rejection cases, with exact paths/reports, source lookup from another
+working directory, typed values/stepping, validators, immutable inputs and
+identical repeats. Every program database/live index/property is unchanged;
+only two explicitly recorded Ghidra index backup paths may rotate. Actual
+Java 21 focused checks and an isolated direct-native raw-path probe pass.
+The final JAR is `14c6fb2e4a89a98888570873e27790761ea3785c543dc1fc6fa4f43dd19f47f3`.
+Independent code and runtime review is clear. Full hosted/native Windows gates
+remain pending. `docs/FILESYSTEM-PATHS.md` defines the scope; this is not an
+attachment transaction or a new crash/concurrency guarantee. Releases stay
+unchanged.
+
+### Stack-first-use hosted acceptance (2026-10-24)
+
+**CONFIRMED:** PR #30 head `fb2fa406908822fe4ced131da843ad5dc31df1b7` passes
+all twelve jobs in exact pull-request run `40081385807`, attempt 1, none
+skipped. Package/source/native-provenance and Java 21/lifetime audits pass.
+Digest-verified artifacts independently prove the six x86-64/AArch64 stack
+roles/twelve exports, related location regressions, both actual GUI journeys
+and all eleven native Windows focused smokes. The five target job conclusions
+pass; MIPS artifacts were not separately reviewed for this PR. Strict reports
+have zero unexplained diagnostics and preserve their exact inherited errors.
+
+Normal merge `74a7466a6ff03f44b143bad0e764d65c1e11d521` at
+`2026-10-24T09:47:17Z` retains the tested tree. Its separate main-push gate is
+pending. PR #29's earlier main-push `40081314935` now passes all twelve jobs
+and both GUI artifact reviews. This supersedes those historical pending notes,
+without attributing acceptance to the later path correction. Releases remain
+unchanged; P1.11a is still partial.
+
+### Windows ambiguous file-leaf follow-up (2026-10-24)
+
+**UNCERTAIN on the native runner:** review of pinned OpenJDK and Windows naming
+rules identified absent final spellings such as `out` and `out.` that can name
+the same entry after a Win32 creation. Existing-identity checks cannot establish
+that relationship while both paths are absent. PR #31's first candidate `50e0a4`
+remains intermediate evidence and must not be merged on its checks alone.
+
+**CONFIRMED locally; native gate pending:** the Windows profile now rejects
+trailing-dot/space file leaves without trimming them; Unix legal dotted names
+remain distinct. The native Windows smoke must first prove the actual short-path
+alias, then prove both publication APIs and both target orders reject before
+callbacks, timestamps, staging or cleanup. Unexpected native behavior fails;
+there is no capability skip or speculative 8.3 restriction. The five focused
+checks/build and actual Java 21 tests pass on Linux. New JAR SHA-256 is
+`125d6753d0f16e97af04c2c99d5d70ee1740f671d580ffda24c90bd2b4b1447b`;
+production script/native ABI are unchanged. Exact new-head hosted package,
+Windows alias evidence and the complete gate remain required.
+
+### Standalone timestamp harness dependency (2026-10-24)
+
+**CONFIRMED:** intermediate run `40083416513` failed its x86 timestamp check
+because that harness compiled `ArtifactPairPublisher` directly without its new
+`FileSystemPaths` dependency. This was a compilation failure, not passing
+runtime evidence. The standalone source list now includes the helper. Local
+`run.n90Mvxpa` passes GNU/LLVM, strict libdwarf with two exactly corroborated
+inherited frame diagnostics and zero unexplained errors, and GDB freshness,
+typed-value/stepping and later-edit controls. Original bytes and timestamps
+remain unchanged. Candidate `ffe6c81` has the same omission and is also
+intermediate only; a new exact-head full gate and package review are required.
+
+### Windows short-parent test oracle correction (2026-10-24)
+
+**CONFIRMED:** candidate `e465e07`, run `40085186824`, passes all five target
+lanes, including the corrected timestamp check and eight real path exports with
+three rejection cases. Exact package and Linux GUI/runtime reviews pass. Its
+Windows focused job fails before the new alias probe: `OutputPathPolicySmoke`
+expects the raw `RUNNER~1` temporary-parent spelling, while the intended policy
+returns the actual `runneradmin` parent. This is a stale test expectation.
+
+The test now retains the raw request, independently resolves its existing
+directory, and requires exact expected filenames below that directory plus
+input file identity. Actual Java 21 and configured Linux checks pass. Production
+bytes are unchanged; native Windows acceptance and the full updated-head gate
+remain pending. No skipped Windows alias/GUI test is counted as passed.

@@ -3293,3 +3293,225 @@ Normal merge `25f9830f64899a1b3ed9f45e60c3b7404f0fc67c` retains the exact
 reviewed tree. Its distinct main-push gate remains pending. This accepted
 change is not in either immutable published alpha and does not validate the
 subsequent stack-first-use guard's hosted pipeline.
+
+## Filesystem traversal and public pair identity (2026-10-24)
+
+**CONFIRMED locally; hosted acceptance pending.** Production `a0b75fb` corrects
+actual parent traversal and public publication preflight; `821808a` restores
+stale-input guidance and avoids unrelated output advice. The final JAR is
+`14c6fb2e4a89a98888570873e27790761ea3785c543dc1fc6fa4f43dd19f47f3`;
+the production script SHA-256 is
+`73c11b45f6f87cd93df7e011964699cf2172638bafc5bc2a2f0333433c51a1c2`.
+Private package `df4c89e2261187a7176932ea777274714998df578a1dc97c444c4fa6ea6654b1`
+passes all five manifests and is installed in an owned Ghidra clone. The base
+installation's launch-properties hash remains unchanged. No native mapping,
+producer-source patch, release version, tag or published asset changes.
+
+The six focused traversal/output/publisher/source/report/native-resolver checks,
+architecture guard and extension build pass. Focused checks also pass on actual Java 21.0.12.1 using test classes compiled
+with `--release 21`. Publication/report checks passed before the diagnostic-only
+follow-up; the changed policy/traversal checks were rerun against the exact
+final JAR. All 139 production classfiles match that JAR and are Java 21-compatible. Local
+headless uses the complete JDK 25.0.4.1. A reviewer's initial attempt to run
+Gradle's Java 25 test classes on Java 21 failed correctly and is retained;
+the explicit release-21 recompilation then passed. Do not conflate those runs.
+
+Meaningful baseline controls reproduce wrong traversal, cross-stage publication
+cleanup deleting the new source, and a directory final target being moved before
+cleanup throws. Fixed controls reject before mutation, preserving all sentinels,
+stages and the directory child. Real links/hard links, all six path-pair aliases,
+NOFOLLOW stage checks, dangling output links/rollback, missing/invalid parents,
+nonregular targets and cancellation/failure regressions pass. Windows tests use
+host lookup as their oracle and do not silently skip missing link capability.
+Native Windows acceptance remains pending.
+
+Final real fixture `build/test-results/path-traversal/run.ua6ucr7i` uses the
+installed wrapper and saved curated Program. All four cases pass two exports:
+traversed input, traversed output, input-leaf default names and output-leaf
+replacement. The artifact-bound reports select exact intended paths and hashes;
+input/reference/lookalikes and link referents remain unchanged. Both `.dbg` and
+`.dbg.c` repeat byte-for-byte. GDB from an unrelated directory resolves the exact
+source fullname and analyst signature, prints `19`/`23`, observes return `42`,
+executes next/step and exits normally. Installed production-script origin is
+verified in all eleven export/rejection transcripts. Two alias negatives and a
+missing-input-parent negative pass with no published artifact or sentinel
+changes; the latter has `--input` and no misleading `--output` hint.
+
+GNU/LLVM pass with empty stderr; GDB stderr is empty. Exact code-index and its
+negative controls pass. Strict libdwarf retains four exactly corroborated
+inherited frame diagnostics per case, with zero unexplained errors. The same
+verified pinned checker used for the preceding stack regression is required
+through `DWARFDUMP`, not a system-tool fallback.
+
+The saved-program oracle inventories every file and requires a real `.gbf`.
+Only `PathTraversal.rep/idata/~index.bak` and `~journal.bak` may differ; every
+other addition/removal/change fails. Final `.gbf`, live indexes and properties
+remain byte-identical through all eight exports and three negatives. Initial
+`run.9timcjtk`/`run.7myq952c` failed an overbroad whole-project assertion. The
+latter records only replacement of the index backup and removal of the journal
+backup; pinned `IndexedLocalFileSystem` explicitly rotates those files. Its
+source digest/excerpt is retained in
+`build/path-traversal-review/project-housekeeping-source.txt`. This is precise
+program-database preservation, not unchanged project-directory bytes.
+
+Baseline `run.hiu23mk3` uses unchanged stack-guard JAR `0bffbe24632d077f9c25a8e6f2f17e8cae9b84ac0c7884d3e93a01ea264ef181` and requires
+two wrong-input FATAL results plus two wrong-directory exports. Its exported
+artifact still validates and works in GDB, demonstrating why artifact validity
+alone does not prove correct destination selection. It is explicitly a
+`BASELINE-REPRODUCED` outcome, not a successful fix. Intermediate fixed JAR
+`bd090c67e803c38f7ea2545ad54a6549416c10a9cfd8d1add370f5b1f9ac7b49` run `run.r1m2kptu` passed before the diagnostic follow-up; final
+acceptance above is tied to JAR `14c6fb2e4a89a98888570873e27790761ea3785c543dc1fc6fa4f43dd19f47f3` and the final installed script.
+
+The isolated direct-native probe
+`build/path-traversal-review/direct-native-yd0wje9q` independently supplies raw
+traversed input, library and output paths to the public exporter/source APIs.
+Final-JAR native runs preserve original bytes and repeat validator-inspected
+outputs exactly. GNU/LLVM/strict checks and GDB exact source fullname/list,
+entry breakpoint and normal exit pass. The directory lives in the DWARF 5
+line table, not a CU `DW_AT_comp_dir`; an initial info-only assertion was wrong,
+was retained, and was corrected to check the actual line table. Full signature
+and value acceptance belongs to the separate headless fixture above. Exact final provenance is in
+`build/path-traversal-review/final-hint-java21-result.json` and the probe's
+`final-hint-{first,repeat,llvm,gdb}` logs. The probe's older `result.json`
+intentionally names intermediate JAR `bd090c67...`; it is retained historical
+evidence, not the final-JAR record.
+
+Representative commands:
+
+```bash
+GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC \
+    ./gradlew pathTraversalSmoke outputPathPolicySmoke artifactPairPublisherSmoke \
+    syntheticSourceSmoke exportReportSmoke packagedNativeLibrariesSmoke buildExtension
+src/test/integration/headless-wrapper.sh
+src/test/integration/architecture-neutrality.sh
+DWARFDUMP=/path/to/verified-pinned-dwarfdump \
+    python3 src/test/integration/path-traversal-export.py /path/to/private-fixed-ghidra
+```
+
+Independent source/fixture reviews and final runtime audit are clear. Evidence:
+`build/path-traversal-review/independent-closure-audit.json`, the standalone
+results, final Java 21 results and `build/path-independent-review/` controls.
+Workflow lint, wrapper log-collision regressions, Python syntax and whitespace
+checks pass. The pipeline adds one Linux x86 runtime fixture and a focused smoke
+on Linux/native Windows while retaining all existing architecture and host
+lanes. Its exact-head full gate and candidate-package audit are still required.
+
+### PR #30 exact hosted acceptance
+
+**CONFIRMED:** exact head `fb2fa406908822fe4ced131da843ad5dc31df1b7`, run
+`40081385807`, is a completed pull-request attempt 1 with all twelve expected
+jobs successful and none skipped. Package artifact `12555706337` has archive
+SHA-256 `2dabdd729904feeef583c1ddcb03d0cbf1a8844170af9e066089ba1f8f3d2991`;
+release ZIP `f307eecf89a2869a7df42ee7f54f224232e1bd2dbf011748376363121c94a47b`
+and JAR `3af84d8eff21cf2d0c5f01776c04a679f82bad3eba25a173d11ce39290595f04`
+pass exact 33-source/two-script checks, five manifests, native provenance,
+138 Java 21 classfiles, guarded Java 21 smokes and 20 producer lifetimes.
+
+Independent artifact review verifies all six new stack roles/twelve exports,
+exact local DIE/report policy, compiler/Forge observations and zero-offset
+values, preserved hashes and identical repeats. Related copy/prefix/floating,
+AArch64 opaque and ARM32 floating cases pass. Forty-six relevant strict reports
+were independently reparsed with exact inherited-section/message corroboration
+and zero unexplained errors. MIPS target jobs pass; their PR #30 artifacts were
+not separately manually reviewed. Runtime exporter hashes match the audited JAR.
+
+Linux GUI `run.7JrIbn7v` passes controls/geometry, actual Script Manager,
+selection/cancellation/Console, validators and GDB with empty diagnostic
+streams. Windows artifact `12555644141`, SHA-256
+`86470a62247e4d0d920c18e0c95b5001810872d887b2457880e573653c17a715`,
+proves all eleven focused smokes and actual GUI
+`run.4531e95ac2374eb79cd026e997c3ce10 GUI paths`: controls/ACL,
+selection/cancellation/Console, GNU/LLVM, original hashes and empty stderr.
+Independent libdwarf and Linux ELF runtime remain unavailable on Windows.
+
+Source/gate/package review and runtime/GUI review are clear. Evidence is in
+`stack-first-use-guard/build/stack-first-use-package-audit/` and
+`gui-script-manager/build/hosted-gui-review/run-40081385807/`. Normal merge
+`74a7466a6ff03f44b143bad0e764d65c1e11d521` preserves the exact tested tree;
+its distinct main-push gate remains pending. Earlier main run `40081314935`
+for PR #29's merge now also passes all twelve jobs and both GUI artifact
+reviews. Neither published alpha changes.
+
+The path candidate's first local exact-package audit rejected
+`dcf310f1f278073a047ef9200a4500236e4640a10f476884deadfe08aff68868` because
+its base extension ZIP preceded two documentation precision edits. Rebuilding
+the extension before assembly produced
+`06ec77fe4c0c2f62b8ae4dbf4acecfdc110d66235cdfa1c94a68ca2ee64bab1a`,
+which exactly matches then-frozen commit `83adf3c` across 34 sources, two scripts,
+support/docs, five manifests and 139 Java 21 classfiles. JAR/script/native bytes
+were unchanged, so no runtime retest was attributed to this docs-only rebuild.
+Both audit outcomes are retained under `output-path-traversal/build/path-package-audit/`.
+That local audit does not substitute for the path PR's forthcoming exact hosted
+package, which also includes this later acceptance record.
+
+### Windows trailing-dot candidate refinement
+
+PR #31 head `50e0a4` and run `40083416513` are intermediate evidence only.
+Its exact package audit passes (release ZIP
+`5ee1205f7080a89fc993b71f841f94a6c33a5514db4bb0236bdf0cb9276da82f`,
+JAR `ceb60af72366cfb2da9e0c6076b54af5fd5080a78b76a6409847a3d02f70cfb1`),
+but late review identified an untested native Windows absent-leaf alias.
+No earlier passing package/target/GUI result is attributed to the updated head.
+
+The bounded follow-up changes only `FileSystemPaths` and its focused smoke:
+Windows file leaves ending in dot/space are unsupported rather than trimmed;
+Unix legal dotted filenames remain distinct. The native Windows test requires
+one actual short-path `out`/`out.` entry with identical sentinel bytes/file
+identity, records Java/OS/path evidence, then checks both target orders and both
+publisher APIs. Existing staged files and unrelated sentinel hashes/timestamps
+must remain intact, callbacks must not run, and no output/temporary entry may
+appear. The current Windows JDK may reject a trailing-space path at construction;
+that explicit provider rejection or the policy rejection is checked. There is
+no silent skip or new 8.3/arbitrary-filesystem alias claim.
+
+All five configured focused smokes/build and explicit `--release 21` tests on
+actual Java 21.0.12.1 pass on Linux. The final candidate JAR is
+`125d6753d0f16e97af04c2c99d5d70ee1740f671d580ffda24c90bd2b4b1447b`;
+all 139 packaged classes match the tested bytes and major version 65. Evidence:
+`build/path-traversal-review/windows-dot-java21/result.json` and
+`windows-dot-configured-build.log`. An initial invocation without
+`GHIDRA_INSTALL_DIR` failed before compilation and remains in
+`windows-dot-build.log`. Native Windows behavior is still **UNCERTAIN** until
+the new hosted probe succeeds. The preceding eight Linux exports remain
+recorded for their exact pre-refinement JAR; updated-head CI will run the full
+runtime fixture again. Script bytes and native bindings/provenance are unchanged.
+
+The intermediate `50e0a4` run `40083416513` failed at the standalone timestamp
+harness's `javac` step: its explicit source list omitted the publisher's new
+`FileSystemPaths` dependency. The same omission exists in candidate `ffe6c81`;
+neither run is accepted as the final gate. Adding the helper to that source
+list passes the full local timestamp regression in `run.n90Mvxpa`, using
+`DWARFDUMP` set to the pinned compression-capable checker. GNU/LLVM and GDB
+pass, with two corroborated inherited frame diagnostics and zero unexplained
+strict errors. The publication warning disappears, a later source edit still
+warns, typed values/stepping work, and original bytes/mtime remain unchanged.
+Exact updated-head package, native Windows alias and complete CI evidence are
+still required; the implementation and packaged production bytes are unchanged
+by this harness-only correction.
+
+### Windows short-parent oracle follow-up
+
+**CONFIRMED:** `e465e07` / run `40085186824` passes all five target lanes and
+the exact package audit. The corrected timestamp check, new path fixture and
+Linux Script Manager journey pass. Independent x86 artifact `12557765728`,
+SHA-256 `bc2a4193fb6e8e1594bc1da805211b543eb252cbdd79c046e4ac0e7639e50329`,
+proves path `run.iepckxq7` (eight exports, three rejection cases), timestamp
+`run.23cF4CZi` and GUI `run.dBhFyP46`; 24 relevant strict reports have zero
+unexplained errors. JAR/script hashes match the exact audited package.
+
+The complete run nevertheless fails native Windows before `PathTraversalSmoke`.
+Failure artifact `12556703937`, SHA-256
+`a15aac78efa714cec8ea55cfe99bab4f1c97158f99596296414bbe53ca7b8b01`,
+records `OutputPathPolicySmoke` expecting a short `RUNNER~1` temporary parent
+while production correctly returns its canonical `runneradmin` spelling.
+Only the preceding address-normalizer smoke passed; the new alias controls and
+Windows GUI did not run. This candidate is intermediate evidence, not acceptance.
+
+The correction keeps the raw temporary/input paths as production arguments,
+derives the real directory independently, and checks all five exact literal
+filenames plus `Files.isSameFile` for the input. It records both parent spellings
+and an `output-policy-existing-parent=PASS` marker. Production and published
+artifacts are unchanged. Configured Linux and actual Java 21 checks pass in
+`build/path-traversal-review/windows-parent-configured.log` and
+`windows-parent-java21/`; independent source review is clear. The updated exact
+package, native Windows alias/GUI evidence and full twelve-job gate remain required.

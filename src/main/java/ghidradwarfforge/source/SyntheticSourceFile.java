@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import ghidradwarfforge.output.FileSystemPaths;
+
 /** Deterministic UTF-8/LF synthetic source and its function line boundaries. */
 public record SyntheticSourceFile(byte[] utf8, List<FunctionLines> functions,
         List<SourceLine> mappedLines) {
@@ -138,7 +140,7 @@ public record SyntheticSourceFile(byte[] utf8, List<FunctionLines> functions,
     }
 
     public void writeAtomically(Path output) throws IOException {
-        Path target = output.toAbsolutePath().normalize();
+        Path target = FileSystemPaths.resolveLeaf(output, "source output path");
         Path parent = target.getParent();
         if (parent == null || !Files.isDirectory(parent)) {
             throw new IOException("source output directory does not exist: " + parent);
