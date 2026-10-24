@@ -3891,7 +3891,7 @@ The saved-program repeat produces identical artifacts and preserves the input.
 
 **CONFIRMED owned-copy experiment:** an exact-size tagged ELF function symbol
 repairs the static failure while preserving all existing DWARF bytes and a
-following ARM function in the same section. **CONFIRMED locally; hosted gate pending:**
+following ARM function in the same section. **CONFIRMED in PR #44 hosted validation:**
 the bounded production correction checks stored/current instruction context,
 complete instruction coverage, original code-byte digests and unique section
 mapping before adding synthetic local symbols. Synthesis is restricted to
@@ -3901,7 +3901,8 @@ cases are preserved with omission diagnostics. Focused actual-Java-21 checks,
 ELF regression checks and the extension build pass. The installed production
 exporter passes validators, deterministic reruns and compiler-relative GDB
 static/runtime checks; the old exporter fails the same static assertion.
-Hosted acceptance remains pending. No debugger or Ghidra baseline change, forced mode
+Exact run `40138005382` now passes all twelve jobs and independent reviews.
+No debugger or Ghidra baseline change, forced mode
 or broad Thumb support claim follows. The current ARM-state profile remains
 the accepted scope. See
 [`docs/research/ARM-THUMB-MODE.md`](docs/research/ARM-THUMB-MODE.md) for exact
@@ -3928,7 +3929,11 @@ is explicitly not invocation-time provenance. The corrected package now passes
 actual Java 21 planner231/extraction38, the 2 GiB/64 MiB large-file oracle,
 the original Thumb harness, an owned export-dynamic variant and the unchanged
 shared-library GDB script using a clone of the saved program. Original selected
-inputs/evidence remain unchanged. Fresh full hosted acceptance is required.
+inputs/evidence remain unchanged. PR #44 subsequently passes all twelve jobs in
+`40138005382` and independent package, ARM/shared, both-GUI and native Windows
+25-suite reviews. It merged normally as `f359d1831f9a6923d0a60c07fc4c7bd1fa2a32ba`
+with the tested tree. The distinct main-push gate `40140510117` remains pending;
+this does not publish a new release. See `docs/VALIDATION.md` for exact evidence.
 
 ### Effective dynamic parameter storage (2026-10-24)
 

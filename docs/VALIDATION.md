@@ -5545,6 +5545,44 @@ focused checks are separate. Initial package-auditor layout assumptions stopped
 before runtime and remain retained. Final exact-document packaging and a fresh
 full hosted gate are still required.
 
+### PR #44 hosted acceptance and integration (2026-10-24)
+
+**CONFIRMED:** exact head `c16628574dbb7546f70fd666187f8f1a522686d3`
+passes all twelve jobs in pull-request run `40138005382`, attempt 1. Normal
+merge `f359d1831f9a6923d0a60c07fc4c7bd1fa2a32ba` preserves tested tree
+`e79d012213dba9c7a5208fab53acd055d33d000c`. Distinct main-push run
+`40140510117` is pending; PR acceptance is not substituted for that run.
+
+The fresh downloaded extension ZIP has SHA-256
+`eca4dae30812df5239915d2ba699cc30cbc587f4dd0eeb73249754cc5ae959fa`;
+its production JAR has SHA-256
+`58defbacc721af249ca0ce27dddcf2864e15e2a31e19ad576ab208ab866178e6`.
+The package audit binds all 49 Java sources, two scripts, 220 Java-21-compatible
+classes, current documents/support files, five manifests and both native
+provenance records. Downloaded-JAR-first actual Java 21 passes 231 planner
+checks at 64 MiB and 38 extraction checks at 256 MiB.
+
+Independent artifact review verifies both actual GUI journeys, native Windows
+25 suites, the five-language external-function inventory, the exact ARM/Thumb
+regression, and the unchanged shared-library GDB oracle. The retained primary
+fixture capture has all 28 requested files and no errors. The shared sidecar
+has no synthetic SHT_SYMTAB, preserves dynamic symbol/string metadata and bytes,
+and resolves the real recovered function with the expected value and normal
+exit. A named 24-case x86 strict-validation subset also passes. Other target
+suites have CI-execution evidence; they were not all independently re-audited
+at artifact level in this gate. Windows lacks independent libdwarf and does not
+run Linux ELF GDB or the Linux large-file/FIFO cases.
+
+Final acceptance receipt
+`gui-script-manager/build/hosted-gui-review/run-40138005382/acceptance-scope.json`
+has SHA-256 `7a9c8eab00ebcc9f008203f95a79b9755a335c3eeb4e487c527cc406dbc4da96`.
+The independent package receipt SHA-256 is
+`fe3567aba8e84871eb45e0aaa6eba0005b5b4142c62842afcf402c315b1416c5`.
+The root integration gate freshly checked all job conclusions, protected-branch
+requirements and exact head/base, and rehashed the retained evidence before
+normal integration. The failed earlier gates remain historical failures.
+No general Thumb PIE/shared/rebase or new release claim follows.
+
 ### Effective dynamic parameter storage: local controls (2026-10-24)
 
 **CONFIRMED locally; hosted acceptance pending:** the correction changes only
@@ -5649,3 +5687,14 @@ LOCAL mode symbols and static adjacent ARM boundary; mixed PCS retains four
 float values and two honest omissions. Independent final-pair review SHA-256 is
 `abcc7cccf93757761b9473186ae018400d817f80c13e79f7a6d73689c4596a64`.
 The initial passing/failed receipts remain historical exact-source evidence.
+
+Final local commit `ad2b556073c3996ab9c9b5be25cbdf11c62ed2ce` is packaged in
+ZIP SHA-256 `c8f9a07fd0115f33fd6592a65215a057b4b00cca59e3bf763b391a53e7f1928c`.
+Its exact source/document/native review binds all 28 runtime payloads as
+byte-identical to the installed `2fb0d5e4...` JAR package used above. Independent
+final evidence review SHA-256 is
+`929a41af3eeec6d25f12596a683e6d3b1fbd2a818af575b31b81e4d3ae20ccdf`;
+root independently rehashed all 547 bound files. The subsequent normal merge
+of accepted main `f359d18` preserves that source tree. Documentation now records
+PR #44 acceptance; final package rebinding and the dynamic fix's own fresh
+hosted gate remain required before its integration.

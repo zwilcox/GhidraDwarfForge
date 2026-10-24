@@ -77,7 +77,7 @@ encoding result. GDB's `&function` expression is even in the compiler and Forge
 controls, while the stored typed function pointer is odd; these observations
 must not be conflated.
 
-**CONFIRMED locally; hosted validation pending:** the production correction adds synthetic
+**CONFIRMED in hosted run `40138005382`:** the production correction adds synthetic
 local ELF function symbols only when an input without a static symbol table
 has defensible Thumb evidence. Extraction requires an entry-first contiguous
 body, fully known homogeneous instruction context, exact instruction-byte
@@ -125,7 +125,8 @@ disassembly, the same-section ARM boundary, direct and indirect calls, source
 stepping, typed global values and an exact-entry breakpoint from a stopped ARM
 caller. The unchanged accepted exporter fails the same static-disassembly
 assertion after passing its independent validators, providing the regression's
-negative control. Hosted acceptance remains pending.
+negative control. PR #44 subsequently passes its exact hosted gate and independent
+reviews; the distinct main-push gate is tracked separately in `docs/VALIDATION.md`.
 
 No broader Thumb support is accepted yet. PIE,
 rebasing, shared objects, mixed state within one function, literal pools and
@@ -154,7 +155,7 @@ dynamic rows, including data and absolute symbols outside the selected code.
 PIE/shared mode support requires a separately validated design. The corrected
 package passes 231 planner checks on actual Java 21, the original Thumb harness,
 an owned export-dynamic variant and the unchanged shared-library oracle. Its
-exact local evidence and pending hosted acceptance are recorded in
+exact local evidence and subsequent hosted acceptance are recorded in
 `docs/VALIDATION.md`; earlier positive
 Thumb evidence does not establish this correction's acceptance.
 

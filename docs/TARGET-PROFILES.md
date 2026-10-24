@@ -37,7 +37,7 @@ functions are compiled in ARM state. Ghidra's generic ARM v8 language name does
 not establish ARMv8 instruction coverage. Similarly, readelf's generic MIPS
 machine label does not replace the MIPS32r2 ISA flags/attributes.
 
-**CONFIRMED locally; hosted validation pending:** a separate mixed ARM/Thumb
+**CONFIRMED in hosted run `40138005382`:** a separate mixed ARM/Thumb
 ET_EXEC regression now checks restored static instruction-mode information for
 a fully stripped input. Only contiguous, fully decoded homogeneous functions
 with matching original bytes receive generated local ELF mode symbols. Existing

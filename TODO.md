@@ -1336,12 +1336,13 @@ exports with correct Ghidra instruction context and clean validators, but GDB
 15.1 disassembles the stripped input's recovered Thumb function as ARM before
 execution. Runtime success can depend on the current CPSR and does not establish
 static mode support. A separate saved-project repeat is deterministic.
-**CONFIRMED locally; hosted gate pending:** the bounded correction restores
-defensible ELF mode cues and passes the compiler-relative regression, including
-neighboring ARM code, validators, calls, stepping and repeatability. Synthesis
-is restricted to ET_EXEC without named defined dynamic symbols; the shared-object
-failure found by PR #44's second gate is corrected locally, with fresh full
-hosted acceptance still required.
+**CONFIRMED in hosted run `40138005382`:** PR #44's bounded correction restores
+defensible ELF mode cues and passes all twelve jobs plus independent package,
+ARM/shared and both-GUI/native-Windows reviews. It merged normally as `f359d18`
+with the tested tree. Synthesis is restricted to ET_EXEC without named defined
+dynamic symbols; the shared-object regression found by the second gate is
+corrected without weakening its GDB oracle. Distinct main-push run `40140510117`
+is pending and is tracked separately.
 This does not complete Thumb profile support; see
 [the scope](docs/research/ARM-THUMB-MODE.md).
 
