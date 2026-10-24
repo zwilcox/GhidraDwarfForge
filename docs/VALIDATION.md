@@ -5076,3 +5076,154 @@ A refreshed final package and full hosted/native Windows acceptance remain
 pending. No
 public attachment, independent validator receipt, authenticated report, generic
 source-correlation proof, immutable snapshot or host transaction is exposed.
+
+## Detailed preparation hosted acceptance and normal merge, 2026-10-24
+
+**CONFIRMED:** PR #40 head `13e706e5cc11011f11576958940303fe0d0c213a` passes all
+twelve jobs in exact pull-request run `40119714272`, attempt 1. Normal merge
+`2584541849ffd4c7d6a9ab3933e2d3ec3d89ed4b` at `2026-10-24T18:43:12Z`
+preserves the tested tree. Exact-head/base/protection and zero unresolved review
+threads were checked before normal merge. Native ABI and VERSION are unchanged.
+The separate exact-main push `40121995458` remains pending.
+
+Hosted package artifact `12571071079` has outer SHA-256
+`b993006870372a218eb2dbab5afb2f723c4cb06d130c90fcbb09398b88a67b2f`,
+ZIP `561d737161556e292f038f3bf5afc380544428c7a92b632b752f484082394ebe`,
+and JAR `3c4d4100812b5b1be3f668f531527c4d5ea566b4ab3d78c50e83b2c07d070099`.
+Independent review verifies 45 production sources plus two scripts, 212 Java 21
+classes, five manifests, exact packaged docs/support and pinned native provenance.
+Actual Java 21 passes detailed432, both retention caps reached together, prior
+focused checks and twenty producer lifetimes; 161 production class origins are
+bound to the downloaded package. Hosted JAR identity is separate from local42a.
+
+All five installed target artifacts pass independent review. Fifteen fresh cases
+produce thirty ordinary repeated candidates and twenty positive-control candidates,
+all independently reconstructed. Review verifies 130 controls, 45 complete report/
+producer-log sets, 135 earlier byte copies and 75 current input copies. Fifteen
+ordinary GDB transcripts pass (three native x86 value checks, twelve static cross
+checks), and thirty plain original/candidate processes pass natively or under QEMU.
+The prior GNU/program/content/owned audit chains remain separately bound. Reports
+retain PARTIAL/NOT_RUN and complete unclassified diagnostics.
+
+Linux artifact `12571726025` is SHA-256
+`a42cda157fbbc6d5dab760224c6a474397e1dba94032640cfb27d85e53b3b85d`,
+association `run.XR94fa2L`, GUI `run.AjhVwB4E`. Its 24 strict reports have zero
+unexplained errors; three exactly corroborated inherited GUI frame diagnostics
+remain visible. Windows artifact `12570898973` is SHA-256
+`8da3cc9097613c5dc32147915b699d3795fd7e3c5122eb2dbeb4fc89e46bf10d`,
+GUI `run.923e87944dca4e5d941544ccdba0156a GUI paths`. All 22 native focused suites
+pass on Java 21.0.12.1, with detailed432, owned1140, content965, program431 and
+binder551 actually observed. The combined 16,384-entry/1,048,576-UTF-16 boundary,
+real aliases/sentinels/link/rollback cases and both GUI journeys pass without skips.
+
+The initial MIPSBE artifact audit assumed empty negative workspace directories
+would survive upload. Its ZIP contains 2,400 files and zero directory entries.
+The corrected, independently reviewed auditor requires no retained descendants
+for an absent negative workspace, while preserving all positive path/ownership/
+byte reconstruction checks. That first auditor failure is retained. Runtime
+assertions are unchanged; negative-directory existence cannot be independently
+recovered from the archive. Remote tool hashes remain recorded invocation facts;
+hidden `.build-id` payloads and invocation-time nanosecond mtimes are not retained.
+Windows independent libdwarf/Linux ELF runtime, Linux FIFO/large and hosted shared
+writer coverage are not inferred.
+
+Evidence is under the reported-preparation worktree's
+`build/reported-preparation-package-audit/run-40119714272.pSzdTK5H`,
+`independent-final-gate-40119714272.json`, `root-final-*.stdout`, and
+`watch-40119714272/windows-focused-review.json`. The eight peer aggregate/GUI/
+Windows receipts and exact artifact hashes are under the GUI worktree's
+`build/hosted-gui-review/run-40119714272`. Independent audits ran no new exporter,
+validator, GDB or inferior processes. No attachment transaction or release follows.
+
+## Separate PR #38 and #39 main-push acceptance, 2026-10-24
+
+**CONFIRMED:** exact-main run `40113254401` at `2bd6739`, attempt 2, passes all
+twelve effective jobs. Native Linux, extension build and workflow lint explicitly
+reuse successful attempt-1 results; the other jobs and both GUI journeys ran again.
+Independent Linux/Windows GUI and native Windows20 evidence passes. Attempt 1's
+runner communication loss, absent Windows logs and skipped dependents are retained.
+Linux artifact `12570464772` / GUI `run.D9Zrhoax` and Windows `12570921782` /
+GUI `run.67b2302f93b446cfa9ea6ab7bebe8843 GUI paths` are bound in the exact receipt.
+
+Exact-main run `40118899783` at `4e050609`, attempt 1, also passes all twelve jobs.
+Independent Linux artifact `12571655098` / GUI `run.HqxTXfrA` and Windows
+`12571500634` / GUI `run.0166695351a14e19be6c1170aee1cd23 GUI paths` pass. Native
+Windows21 observes owned1140/content965/program431/binder551. These receipts are
+`build/hosted-gui-review/run-<run>/acceptance-scope.json` in the GUI worktree.
+The four main cross-target conclusions are CI evidence, separate from each PR's
+already accepted detailed target artifact audits. Neither retry nor main success
+changes the published releases.
+
+## Captured validator evidence and connected local acceptance, 2026-10-24
+
+**CONFIRMED locally; full hosted integration PRESENT, UNVERIFIED:** source
+`93905654b11b10b3bdbaa5a616d72eedec524002` introduces the test-only capture/reader
+and focused controls. Core SHA-256 is
+`6cb11a1ec2d4071eddf1a8dae82c66278f066a6b7138b42d2c077902167a3647`;
+test `e6b0c2c5766ef1e30d0efaf718d1fc907418e5b180b7280de5ad5cd03831c491`.
+Final focused `run.4k9nvpm6` passes 100 checks: 97 core cases plus three additional
+read-only checks of the actual retained native 65,536-message corpus. Core cases
+include generated complete capacity output, real compiler exec/PIE/no-ID captures,
+zero and exactly inherited diagnostics, typed high-bit ELF64 frame metadata,
+rewritten-SHA frame rejection, bounded parsing/I/O, aliases and failure cleanup.
+The three size-only 128 MiB sparse placeholders retain recipe/sizes/hash-call
+counterproof before exact owned cleanup. Older prototype/test runs remain retained.
+Independent source/test review is `independent-core-review.json`, SHA-256
+`28ce0de09d9bf572eb7140b3baac5cb04efa6147ba5476380643009f503990ec`.
+
+Root command `python3 -B build/validation-evidence-review/capture-retained.py`
+produces `live-capture.esjs8pj1`: nine new LLVM/strict pairs on explicit older
+x86-64/AArch64/MIPS32BE exec/PIE/no-ID exports. It makes no Ghidra export.
+Each job-local toolset retains 28 tool/source/configuration/version-output files.
+Independent streamed rehash and complete-output review verifies exact selected
+bytes, invocation arguments and frame correspondence. Strict reported counts
+are x86 3/1/3, AArch64 5/5/5, MIPSBE 0/0/0; all 22 diagnostics are exactly
+corroborated against the originals and unexplained errors are zero. LLVM passes.
+The current libdwarf checker binary is SHA-256
+`cac5a7a3a0d2e82326a4f8a6cc9b8f5b9ca356630b846c7215592bd2f9cf4afc`;
+LLVM binary is `07cf5eb367dcf51a8f462e046b08409fbe4a6fe60506fb0d4e5604db024873a1`.
+Their retained bytes, configuration, parser and provenance are actually rehashed;
+dynamic dependencies and ambient process state are not authenticated.
+Capture audit: `independent-capture-audit.json`, SHA-256
+`c78e9d5d2bdee74d703bc0a6ea7dc1c1f773d67fcb0feb9776ea1fa799f74a4d`.
+
+Root command `python3 -B build/validation-evidence-review/run-installed.py
+build/validation-evidence-review/live-capture.esjs8pj1/selection.json` runs the
+existing association workflow through the unchanged installed Java-21 JAR
+`42a4631744597a7ae160de0a39f65597716ddfd34734d855e2801b9ed5fa0408` with explicit
+retained-export mode. All nine cases pass in `installed-workflow.o5o8aav8`:
+x86 `run.LqI25sJt`, AArch64 `run.U8QRCmt2`, MIPSBE `run.GqDXrfAW`.
+Independent review reconstructs eighteen ordinary repeats and twelve successful
+raw-control candidates, verifies 78 raw controls/45 mutant inputs, 27 report sets,
+81 earlier byte copies and 45 current input copies. Nine ordinary GDB transcripts
+include three native x86 value runs and six static cross checks; eighteen plain
+original/candidate processes pass natively or under QEMU. Three deliberately bad
+DWARF controls fail LLVM, and three missing-source checks are static GDB only.
+The existing GNU/program/content/owned oracles pass separately in the same runs.
+
+Six malformed/legacy handoffs per primary exec call the actual connected entry
+point with Java/compiler sentinels: eighteen normal nonzero rejections, no sentinel
+invocation, and no classes/workspace/candidate/success result. Rejection evidence
+distinguishes NOT_CAPTURED from NOT_VERIFIED. Normal cases bind their current
+selected bytes to schema2's explicit index before Java preparation. All 40 capture
+protected and 225 runtime globally protected paths retain SHA/size/mtime. The three
+later private no-ID CRC tests change then restore bytes, with changed private
+mtime documented separately. PARTIAL/NOT_RUN and raw-probe limitations remain.
+
+Runtime audit `installed-workflow.o5o8aav8/independent-runtime-audit.json` is
+SHA-256 `4fbccbc565cc58651f3c3287d5166d680768cfa9c87adb4409523fb087f8b3ca`;
+independent raw recipes are `independent-control-recipes.json`, SHA-256
+`315999d0293daa5208668bd6189e2c0aed2f374d80aec499a777fa37ae065570`.
+Connected capture/gate audit is `independent-capture-and-gates.json`, SHA-256
+`ac6217f1bc59419a29b30697e17f9b332cb974b5793e3f12e09d6046c18eb6af`.
+These paths are under the validation-evidence worktree's
+`build/validation-evidence-review`. Auditors execute no new tools/targets. An
+initial audit-only raw-versus-resolved fixture-spelling assertion is retained;
+corrected argv checks use the explicit spelling and separately bind resolved bytes.
+
+Workflow/shell/Python syntax and source reviews pass. The pipeline captures its
+three selected primary roles once each, then passes the exact index through the
+early report handoff. Focused controls run in x86 CI; all five target lanes use
+the normal evidence gate. Fresh-export workflow integration, exact final package
+and full hosted acceptance remain required. No production API/native ABI, public
+validator supervisor, attachment, source-authenticity or release claim follows.

@@ -5,6 +5,7 @@ import argparse
 import base64
 import copy
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -37,8 +38,11 @@ def require(condition, message):
 
 
 def snapshot(path):
-    return {"sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
-            "mtime_ns": path.stat().st_mtime_ns}
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(65536), b""):
+            digest.update(block)
+    return {"sha256": digest.hexdigest(), "mtime_ns": path.stat().st_mtime_ns}
 
 
 def unique_object(pairs):
@@ -190,12 +194,38 @@ def validate_handoff_parent(path, target):
     return parent, before
 
 
-def emit_handoff_manifest(result_path, target, destination):
+def validation_module():
+    spec = importlib.util.spec_from_file_location("validation_evidence",
+        Path(__file__).with_name("validation-evidence.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def emit_handoff_manifest(result_path, target, destination, validation_index=None):
     """Exclusive test handoff only; this is neither a signed receipt nor approval."""
     result_path = result_path.resolve(strict=True)
     _, before = validate_handoff_parent(result_path, target)
     value = {"schemaVersion": 1, "target": target,
              "claimsResult": {"path": str(result_path), "sha256": before[str(result_path)]["sha256"]}}
+    if validation_index is not None:
+        validation = validation_module()
+        index = validation_index.resolve(strict=True)
+        evidence = validation.read_capture_index(index, target)
+        for role in ("exec", "pie", "exec.no-build-id"):
+            validation.verify_selection(index, target, role,
+                result_path.parent / (role + ".input.bytes"),
+                result_path.parent / (role + ".output.bytes"))
+        for name, fact in evidence["files"].items():
+            current = snapshot(Path(name))
+            require(current["sha256"] == fact["sha256"] and
+                    current["mtime_ns"] == fact["mtime_ns"] and
+                    Path(name).stat().st_size == fact["bytes"],
+                    "validated evidence changed before report handoff")
+            before[name] = current
+        before[str(index)] = snapshot(index)
+        value.update(schemaVersion=2, validationEvidence={"path": str(index),
+            "sha256": before[str(index)]["sha256"]})
     destination = destination.absolute()
     destination.parent.mkdir(parents=True, exist_ok=True)
     with destination.open("xb") as stream:
@@ -215,7 +245,11 @@ def main():
                         default=REPOSITORY / "build/test-results/headless-symbol-export")
     parser.add_argument("--handoff-manifest", type=Path,
                         help="exclusive explicit test handoff to this completed reader result")
+    parser.add_argument("--validation-evidence", type=Path,
+                        help="explicit captured validator index bound to the retained original/sidecar bytes")
     args = parser.parse_args()
+    require(args.validation_evidence is None or args.handoff_manifest is not None,
+            "validation evidence requires an explicit handoff destination")
     module = args.module.resolve(strict=True)
     producer = (args.producer_module or args.module).resolve(strict=True)
     jar = (module / "lib/GhidraDwarfForge.jar").resolve(strict=True)
@@ -382,7 +416,8 @@ def main():
         "rejections": rejected,
         "scope": "reported claims only; no artifact access, identity or attachment eligibility"}, indent=4) + "\n")
     if args.handoff_manifest:
-        emit_handoff_manifest(result_path, args.target, args.handoff_manifest)
+        emit_handoff_manifest(result_path, args.target, args.handoff_manifest,
+                              args.validation_evidence)
         print(f"export-report-handoff={args.handoff_manifest.absolute()}", flush=True)
     print(f"export-report-claims-{args.target}=PASS", flush=True)
 

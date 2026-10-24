@@ -34,6 +34,8 @@ binder = load("binding_oracle", "export-artifact-hash-binding.py")
 allocation = load("allocation_oracle", "matched-elf-allocations.py")
 reader, prefix = binder.READER, allocation.PREFIX
 content, program = owned.content, owned.program
+validation = load("validation_evidence", "validation-evidence.py")
+gate_controls = load("validation_handoff_controls", "validation-handoff-controls.py")
 require, record, snapshot = owned.require, owned.record, binder.snapshot
 INVENTORIES = tuple(reader.CARDINALITIES.values())
 ORIGINS = ("binding", "claims", "digests", "prefix", "allocations", "build-id", "elf", "target",
@@ -230,8 +232,14 @@ def handoff(manifest, target, module, jar, script, work, protected, retained_exp
     manifest = manifest.resolve(strict=True)
     state = snapshot(manifest)
     value = json.loads(manifest.read_text(encoding="utf-8"), object_pairs_hook=reader.unique_object)
-    require(set(value) == {"schemaVersion", "target", "claimsResult"} and type(value["schemaVersion"]) is int and value["schemaVersion"] == 1 and
-            value["target"] == target and set(value["claimsResult"]) == {"path", "sha256"}, "invalid explicit handoff")
+    require(type(value) is dict, "invalid explicit handoff")
+    version = value.get("schemaVersion")
+    expected_fields = {"schemaVersion", "target", "claimsResult"}
+    if type(version) is int and version == 2:
+        expected_fields.add("validationEvidence")
+    require(set(value) == expected_fields and type(version) is int and version in (1, 2) and
+            value["target"] == target and type(value["claimsResult"]) is dict and
+            set(value["claimsResult"]) == {"path", "sha256"}, "invalid explicit handoff")
     selected = Path(value["claimsResult"]["path"])
     require(selected.is_absolute() and ".." not in selected.parts and selected.resolve(strict=True) == selected,
             "handoff result path must be explicit and real")
@@ -247,13 +255,47 @@ def handoff(manifest, target, module, jar, script, work, protected, retained_exp
     same_reader = binder.same_installation(module, parent, current, reader=True)
     require(retained_export or (same_producer and same_reader),
             "default connected consumer requires current producer/reader identities; explicit retained replay required")
+    validation_evidence = {"status": "NOT_CAPTURED"}
+    if version == 2:
+        reference = value["validationEvidence"]
+        require(type(reference) is dict and set(reference) == {"path", "sha256"} and
+                type(reference["path"]) is str and type(reference["sha256"]) is str and
+                re.fullmatch(r"[0-9a-f]{64}", reference["sha256"]) is not None,
+                "invalid explicit validation evidence reference")
+        index = Path(reference["path"])
+        require(index.is_absolute() and ".." not in index.parts and index.resolve(strict=True) == index,
+                "validation index path must be explicit and real")
+        evidence = validation.read_capture_index(index, target)
+        require(snapshot(index)["sha256"] == reference["sha256"], "validation index digest differs")
+        protect_validation_files(evidence, protected)
+        validation_evidence = {"status": "CAPTURED", "index": reference, "summary": evidence}
     return groups, {"manifest": str(manifest), "snapshot": state, "retained_manifest": str(folder / "handoff.json"),
         "claims_result": str(selected), "claims_result_sha256": value["claimsResult"]["sha256"],
         "producer_module": parent["producer_module"], "reader_module": parent["reader_module"],
         "same_export_installation": same_producer, "same_reader_installation": same_reader,
         "explicit_retained_export": retained_export,
+        "validation_evidence": validation_evidence,
         "reports": reports, "copies": copies,
         "scope": "Explicit retained completed export; same installation requires module path plus JAR and script SHA. No fresh export, authenticated receipt or atomic file snapshot is inferred."}
+
+
+def protect_validation_files(evidence, protected):
+    for name, fact in evidence["files"].items():
+        current = snapshot(Path(name))
+        require(current["sha256"] == fact["sha256"] and current["bytes"] == fact["bytes"] and
+                current["mtime_ns"] == fact["mtime_ns"],
+                "validated evidence changed before candidate preparation")
+        protected[name] = current
+
+
+def validate_before_preparation(parent_report, target, role, original, sidecar):
+    evidence = parent_report["validation_evidence"]
+    require(evidence["status"] == "CAPTURED",
+            "validation evidence NOT_CAPTURED; explicit fresh capture is required before private preparation")
+    index = Path(evidence["index"]["path"])
+    require(snapshot(index)["sha256"] == evidence["index"]["sha256"],
+            "selected validation index changed after report handoff")
+    return validation.verify_selection(index, target, role, original, sidecar)
 
 
 def controls(group, name, work, jar, gson, classes):
@@ -473,7 +515,7 @@ def controls(group, name, work, jar, gson, classes):
           missing_parent=True)
     require(all(not path.exists() for path in missing), "rejection controls created advertised missing files")
     return {"records": records,
-        "scope": "No inferior execution on control candidates. Separate expected LLVM rejection proves invalid DWARF, and one static GDB lookup/list control proves a missing recorded source path. Rewritten reports can bind invalid appended DWARF or unrelated source; matching observations never authenticate reports or approve attachment."}
+        "scope": "Ungated raw Java-probe limitation controls, separate from the captured-evidence gate on ordinary preparation. No inferior execution on control candidates. Separate expected LLVM rejection proves invalid DWARF, and one static GDB lookup/list control proves a missing recorded source path. Rewritten reports can bind invalid appended DWARF or unrelated source; matching observations never authenticate reports or approve attachment."}
 
 
 def main():
@@ -500,16 +542,28 @@ def main():
     work = work.resolve(strict=True)
     print("reported-candidate-preparation-results=" + str(work), flush=True)
     protected = {str(path): snapshot(path) for path in (jar, script, gson, adapter, original, gnu, sidecar, source, reference)}
-    groups, parent_report = handoff(args.report_manifest, args.target, module, jar, script, work, protected,
-                                    args.retained_export)
-    group = [groups[binder.ROLES.index(args.role)][0], original, sidecar, source]
-    report = reader.DECODER.decode(group[0].read_text(encoding="utf-8"))
-    require(all(binder.digests(path)["sha256"] == report["artifacts"][kind + "Sha256"].lower()
-                for kind, path in zip(binder.KINDS, group[1:])), "selected current files differ from explicit producer report")
+    parent_report = None
+    try:
+        groups, parent_report = handoff(args.report_manifest, args.target, module, jar, script, work, protected,
+                                        args.retained_export)
+        group = [groups[binder.ROLES.index(args.role)][0], original, sidecar, source]
+        report = reader.DECODER.decode(group[0].read_text(encoding="utf-8"))
+        require(all(binder.digests(path)["sha256"] == report["artifacts"][kind + "Sha256"].lower()
+                    for kind, path in zip(binder.KINDS, group[1:])), "selected current files differ from explicit producer report")
+        validated = validate_before_preparation(parent_report, args.target, args.role, original, sidecar)
+        protect_validation_files(validated, protected)
+    except Exception as failure:
+        record(work / "validation-gate.json", {"status": "REJECTED", "writer_invoked": False,
+            "evidence_status": (parent_report["validation_evidence"]["status"]
+                                if parent_report is not None else "NOT_VERIFIED"),
+            "exception": type(failure).__name__, "diagnostic": str(failure)})
+        raise
+    record(work / "validation-gate.json", validated)
     parent_gnu = owned.parent_evidence(args, module, jar, script, original, gnu, sidecar, work)
     for item in parent_gnu["program_reference"]["records"] + parent_gnu["content_records"]:
         protected[item["source"]] = snapshot(Path(item["source"]))
     for path in (Path(__file__), Path(owned.__file__), Path(binder.__file__), Path(reader.__file__),
+                 Path(validation.__file__), Path(gate_controls.__file__),
                  REPOSITORY / "src/test/integration/automatic-association-gdb.py"):
         protected[str(path)] = snapshot(path)
     with program.preserve(tuple(map(Path, protected)), work):
@@ -564,17 +618,20 @@ def main():
         debugger = owned.lookup(candidate, adjacent, source, addresses.pop(), empty_root, work / "connected-gdb",
                                 runtime=args.target == "x86_64")
         tests = controls(group, name, work, jar, gson, classes) if args.controls else None
+        captured_gate_tests = gate_controls.run_controls(args, work) if args.controls else None
         require(snapshot(candidate) == candidate_before and content.digest(adjacent) == content.digest(sidecar),
                 "connected runtime/controls changed successful output bytes")
         require({path: snapshot(Path(path)) for path in protected} == protected, "connected invocation changed protected evidence")
         result = {"status": "PASS", "target": args.target, "role": args.role, "module": str(module),
             "jar": snapshot(jar), "script": snapshot(script), "gson": snapshot(gson), "adapter": snapshot(adapter),
             "report_handoff": parent_report, "parent_gnu_reference": parent_gnu, "selected": list(map(str, group)),
+            "validation_evidence": validated,
             "input_copies": copies,
             "observations": observations, "layouts": layouts, "colocated_debug_file": str(adjacent),
             "colocated_digest": content.digest(adjacent), "tools": tools, "candidate_validators": validators,
             "runtime": runtime, "debugger": debugger, "controls": tests, "protected_before_after": protected,
-            "scope": "One connected fixture probe uses the captured report before actual private creation. Separate observations retain PARTIAL/NOT_RUN and full unclassified inventories. GNU reference evidence remains separate. No public attachment, source/DWARF authenticity, validator receipt, snapshot or host-metadata promise."}
+            "validation_gate_controls": captured_gate_tests,
+            "scope": "One connected fixture probe uses the captured report and complete hash-bound independent validation evidence before actual private creation. Separate observations retain PARTIAL/NOT_RUN and full unclassified inventories. Raw probe controls and GNU reference evidence remain separate. No public attachment, source/DWARF authenticity, authenticated receipt, snapshot or host-metadata promise."}
     record(work / "result.json", result)
     print("reported-candidate-preparation=PASS", flush=True)
 

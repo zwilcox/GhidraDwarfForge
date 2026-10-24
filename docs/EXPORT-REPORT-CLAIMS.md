@@ -95,8 +95,11 @@ including both default retention caps reached together and independent over-cap
 rejections. Existing lightweight reader/binder checks still pass. The installed
 connected workflow preserves all five inventories for nine retained real reports
 across x86-64, AArch64 and MIPS32 big-endian, including unknown/Unicode diagnostics
-in controlled reports. This is retained-export evidence; the full hosted pipeline
-and native Windows remain required for this change.
+in controlled reports. This local replay remains retained-export evidence. PR #40 head `13e706e5`
+subsequently passes all twelve jobs in `40119714272`, all five fresh installed
+target artifact reviews, both GUI hosts and 22 native Windows checks. Windows
+observes all 432 detailed assertions and the combined retention boundary.
+Normal merge `25845418` preserves the tested tree.
 
 ## Validation
 

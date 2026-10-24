@@ -59,7 +59,7 @@ published alpha.
 Do not suppress the warning. See `docs/ADDRESS-INDEX.md`.
 Evidence and exact scope are recorded in `docs/VALIDATION.md`.
 
-**CONFIRMED current main:** PRs #29–#39 are merged through normal history.
+**CONFIRMED current main:** PRs #29–#40 are merged through normal history.
 They add bounded direct-register-copy lifetimes, conservative omission of
 unsupported stack-local starts, filesystem traversal/alias handling, and
 read-only digest/build-ID/report/prefix/allocation/selected-hash and candidate
@@ -68,14 +68,19 @@ reviews.
 PR #38 merged as `2bd6739` after exact run `40110565271`; all five target
 artifacts, both GUI hosts and twenty native Windows checks pass. Main-push
 gates through PR #37 also pass, including `40110261306`; PR #38 push
-`40113254401` attempt 1 lost its Windows runner; attempt 2 remains pending,
-with three earlier successful jobs reused explicitly. PR #39 corrected head
+`40113254401` attempt 1 lost its Windows runner; attempt 2 now passes all twelve
+effective jobs, with three earlier successful jobs reused explicitly. Both GUI
+hosts and twenty native Windows checks were independently reviewed. PR #39 corrected head
 `a190026` passes all twelve jobs in `40116314882`, independent exact package,
 all-five-target and both-GUI reviews, and merged as `4e050609`. Native Windows
 passes 21 focused checks with 1,140 owned-writer assertions. Its distinct main
-push `40118899783` remains pending. Detailed report binding/private preparation
-passes local source, installed GDB/QEMU and independent review; its hosted gate
-remains required.
+push `40118899783` also passes all twelve jobs and independent both-GUI/native
+Windows review. PR #40 detailed report binding/private preparation at `13e706e5`
+passes all twelve jobs in `40119714272`, exact package/all-five-target/both-GUI
+reviews and 22 native Windows checks, and merged as `25845418`. Its separate
+main push `40121995458` remains pending. The next bounded continuation captures and consumes
+existing validator evidence before private preparation; see
+`docs/VALIDATION-EVIDENCE-HANDOFF.md`. Its focused and local connected checks pass; exact package/hosted acceptance remains required.
 These changes do not complete general variable migration, the optional
 attachment transaction or a new release.
 
@@ -265,7 +270,7 @@ combined run `40068401197`; its conditional-step scope is recorded in
 | Additional range/location cases (P1.8, P1.11a) | **CONFIRMED:** bounded entry/ranges, code-only address indexing and incoming-register prefixes pass. PR #29 adds one proven direct-register backup; PR #30 omits unsupported nonzero stack-local starts. Their exact hosted gates pass. P1.11a remains partial: general register/memory migration, call-crossing and non-entry lifetimes, stack-slot reuse and mixed composite storage still require instruction-specific GDB values and honest unavailable gaps. |
 | Target-profile coverage (P2.3/3a/3b) | **CONFIRMED in hosted runs `40063017269` and `40068401197`:** five baseline profiles and scalar FP aliases pass, with exact float/double values on x86-64/AArch64/ARM32 and scalar floats on both MIPS orders. The combined run also proves rejection of definite ELF/Ghidra processor, width or byte-order contradictions; nondefault variants/compiler specifications alone are not rejected. Unproven MIPS double pairs and ARM32's mode-switching-return prefix case remain unavailable. Target expansion and ABI classification remain partial; this is not blanket CPU/ABI support. |
 | GUI and output paths (P2.7) | **CONFIRMED:** both hosts' real Script Manager/chooser journeys pass. PR #31 adds actual parent traversal, complete publisher alias preflight and native Windows short-parent/trailing-dot controls; its exact PR/main gates and artifact reviews pass. Geometry/GDB run on Linux; Windows uses native GNU/LLVM, with independent libdwarf unavailable and Linux-ELF runtime GDB not run. |
-| Optional debuglink (P2.8) | **PLANNED transaction:** opt-in attachment, identity/receipt chain and backup/rollback remain unimplemented. PRs #32/#33's digests, typed build-ID observations and report reader pass the full matrix. PRs #34/#35's prefix and indexed allocation observers also pass the full matrix. PR #36 selected-file SHA binding also passes the full matrix. PR #37 program-byte preservation passes the full matrix. PR #38 candidate-content checks also pass the full matrix. PR #39 owned append-only preparation also passes the full matrix. Detailed report binding/private preparation passes local source/installed/GDB/QEMU review and awaits its hosted gate. Default export leaves the original unchanged. |
+| Optional debuglink (P2.8) | **PLANNED transaction:** opt-in attachment, identity/receipt chain and backup/rollback remain unimplemented. PRs #32/#33's digests, typed build-ID observations and report reader pass the full matrix. PRs #34/#35's prefix and indexed allocation observers also pass the full matrix. PR #36 selected-file SHA binding also passes the full matrix. PR #37 program-byte preservation passes the full matrix. PR #38 candidate-content checks also pass the full matrix. PR #39 owned append-only preparation also passes the full matrix. PR #40 detailed report binding/private preparation also passes the full matrix. Captured validator evidence passes focused/local connected acceptance and awaits its exact package/hosted gate. Default export leaves the original unchanged. |
 | Inline reconstruction (P3.4) | **CONFIRMED investigation complete:** ADR 0003 and a reproducible compiler/Ghidra probe distinguish real inline instances from Ghidra's decompiler flag and record surviving locals/source information. Inline emission remains deferred until explicit instance/origin/range evidence and GDB acceptance exist. |
 | Performance (P3.5) | **CONFIRMED:** the indexed planner and configured-checker gates pass component run `40065823442` and combined run `40068401197`. Historical local paired 10,000-function exports reduce median process time by 15.5% with byte-identical artifacts; a fresh strict/GDB replay validates the retained result without rerunning timing. Hosted CI is not a new timing measurement. Representative complex-binary and further phase-level profiling remain **PLANNED**; no blanket speed or memory claim. See `docs/PERFORMANCE.md`. |
 
@@ -1621,7 +1626,7 @@ exec/PIE checks across all five targets pass with unchanged input hashes/mtimes;
 the corrected head subsequently passed the full gate above. The failed artifact is retained,
 and its port owner remains **UNCERTAIN**.
 
-**CONFIRMED locally; full hosted gate pending:** the existing private candidate workflow
+**CONFIRMED at PR #40's complete hosted gate:** the existing private candidate workflow
 now connects explicitly selected report/producer evidence and all three selected artifacts.
 Opt-in same-parse detailed reader/binder methods preserve all five diagnostic
 inventories with combined limits of 16,384 entries and 1,048,576 UTF-16 string units.
@@ -1640,8 +1645,26 @@ nine cases across x86-64/AArch64/MIPS32 big-endian. Independent review reconstru
 30 candidates (18 ordinary repeats and 12 positive controls), verifies 78 controls,
 complete diagnostics and selected provenance, and confirms all 44 globally
 protected files unchanged. Ordinary GDB/runtime checks and explicit invalid-DWARF
-and missing-source counterexamples pass. Exact package and complete hosted/native
-Windows acceptance remain required; P2.8's transaction remains incomplete.
+and missing-source counterexamples pass. Final head `13e706e5` passes all twelve
+jobs in `40119714272`, exact package/source review and all five target artifact
+audits: fifteen fresh cases, thirty ordinary plus twenty positive-control candidate
+reconstructions, 130 controls, 45 report sets, 135 earlier and 75 current byte
+copies. Both GUI hosts and 22 native Windows checks pass, including 432 detailed
+assertions and both retention caps reached together. Normal merge `25845418`
+preserves that tree; separate main push `40121995458` remains pending. The archive
+omits empty negative workspace directories; runtime assertions and absence of
+unexpected files are distinguished from fully reconstructed positive outputs.
+P2.8's transaction remains incomplete.
+
+**CONFIRMED locally; hosted integration PRESENT, UNVERIFIED:** capture the existing primary LLVM/strict
+checks once and consume their full selected-file/tool/output evidence through
+the explicit report handoff before normal preparation. Preserve NOT_RUN and the
+existing inherited-frame exception; legacy absence is NOT_CAPTURED, with no
+automatic fallback. The raw Java-probe limitation controls remain ungated and
+separate. Source `9390565` passes 100 focused checks and nine fresh validator pairs;
+nine installed cases, eighteen entry-point rejections and independent byte/GDB/
+runtime reviews pass. See `docs/VALIDATION-EVIDENCE-HANDOFF.md`; exact package
+and full hosted acceptance remain required.
 
 **Status:** `[ ]` — optional product operation **PLANNED**. The bounded backend
 and backup-based re-export investigation is complete; the explicit transaction
@@ -2170,13 +2193,18 @@ Unless the user changes priorities:
 
 1. Run `git status --short`; read `AGENTS.md`, the current context/status in
    `PROJECT_CONTEXT.md`, and this file's Sections 0.1/1.1. Preserve existing work.
-2. Read the current acceptance checkpoints: PRs #25–#39 are merged. Candidate
+2. Read the current acceptance checkpoints: PRs #25–#40 are merged. Candidate
    content head `b269ec5` passed run `40110565271` and tree-identical main merge
    `2bd6739`. Main-push gates through PR #37 pass; PR #38 main push
-   `40113254401` attempt 2 remains pending after attempt 1's runner loss.
+   `40113254401` attempt 2 passes after attempt 1's runner loss, with three
+   successful earlier jobs explicitly reused.
    Owned writer head `a190026` passed `40116314882`, including exact package,
    all five target artifacts, native Windows 21 and both GUI hosts, and merged
-   as `4e050609`. Its separate main push `40118899783` remains pending. Preserve
+   as `4e050609`. Its separate main push `40118899783` passes all twelve jobs
+   and independent GUI/native Windows review. Reported preparation `13e706e5`
+   passes exact run `40119714272`, independent package/all-five/both-GUI and
+   Windows 22 review, and merged as `25845418`. Its distinct main push
+   `40121995458` remains pending. Preserve
    the first writer run's compiler-oracle TCP collision and the failed
    original PR #32 report-selection attempt and earlier feature histories.
    Require current-base checks under AGENTS.md Section 6.1; do not restart
@@ -2193,10 +2221,11 @@ Unless the user changes priorities:
    debuglink, inlining research and performance candidates according to their
    recorded scopes; do not invent recovered information to complete them.
    Owned candidate preparation is accepted at PR #39 corrected head `a190026`,
-   merged as `4e050609`. The current bounded continuation is detailed report
-   binding/private preparation's exact package and hosted acceptance. Source
-   `1d80348`, integration `de4f68f`, nine installed cases and independent byte/
-   runtime reviews pass locally. Preserve the explicit captured-report handoff
+   merged as `4e050609`; detailed report binding/private preparation is accepted
+   at PR #40 head `13e706e5`, merged as `25845418`. The current bounded
+   continuation captures and consumes existing validator evidence, described
+   in `docs/VALIDATION-EVIDENCE-HANDOFF.md`. Its complete acceptance is still
+   required. Preserve the explicit captured-report handoff
    and separate fresh/retained installation scopes. ADR-0005 selects the writer;
    GNU remains a separate test oracle.
    Preserve PR #37's intermediate callback failure evidence and all research/test
