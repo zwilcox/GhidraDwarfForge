@@ -11,6 +11,7 @@ import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionIterator;
 import ghidra.program.model.listing.Program;
+import ghidra.program.model.symbol.Namespace;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
@@ -134,8 +135,28 @@ public final class GhidraFunctionSymbols {
                 diagnostic.accept("Skipped untranslatable function " + function.getName());
                 continue;
             }
-            result.add(new FunctionSymbol(function.getName(), entry, translated));
+            result.add(new FunctionSymbol(function.getName(), entry, translated,
+                plainNamespacePath(function, diagnostic)));
         }
+        FunctionSymbol.validateDisplayNames(result);
         return new ExtractionResult(result, skipped);
+    }
+
+    private static List<String> plainNamespacePath(Function function,
+            Consumer<String> diagnostic) {
+        List<String> path = new ArrayList<>();
+        for (Namespace scope = function.getParentNamespace();
+                scope != null && !scope.isGlobal(); scope = scope.getParentNamespace()) {
+            if (scope.getType() != Namespace.Type.NAMESPACE) {
+                // Preserve the existing lexical-name behavior for scopes whose
+                // semantics are not covered by this display-only policy.
+                diagnostic.accept("Omitted function display namespace for " +
+                    function.getName(true) + "; " + scope.getType().friendlyName() +
+                    " scope is unsupported; retained lexical name " + function.getName());
+                return List.of();
+            }
+            path.add(0, scope.getName());
+        }
+        return List.copyOf(path);
     }
 }

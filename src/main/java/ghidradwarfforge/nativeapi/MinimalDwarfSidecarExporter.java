@@ -147,16 +147,30 @@ public final class MinimalDwarfSidecarExporter {
         }
     }
 
-    /** Address is the true entry; body ranges stay sorted by address. */
-    public record FunctionSymbol(String name, long address, List<FunctionRange> ranges) {
+    /**
+     * Address is the true entry; body ranges stay sorted by address. The lexical
+     * name remains the source/signature/location key. A recorded plain namespace
+     * path supplies an analyst-facing display name, not original C++ identity.
+     */
+    public record FunctionSymbol(String name, long address, List<FunctionRange> ranges,
+            List<String> namespacePath) {
         public FunctionSymbol(String name, long address, long size) {
-            this(name, address, List.of(new FunctionRange(address, size)));
+            this(name, address, List.of(new FunctionRange(address, size)), List.of());
+        }
+
+        public FunctionSymbol(String name, long address, List<FunctionRange> ranges) {
+            this(name, address, ranges, List.of());
         }
 
         public FunctionSymbol {
             if (name == null || name.isBlank()) {
                 throw new IllegalArgumentException("function name is required");
             }
+            if (namespacePath == null || namespacePath.stream().anyMatch(
+                    part -> part == null || part.isBlank())) {
+                throw new IllegalArgumentException("invalid function namespace path for " + name);
+            }
+            namespacePath = List.copyOf(namespacePath);
             if (address < 0 || ranges == null || ranges.isEmpty()) {
                 throw new IllegalArgumentException("function ranges are required for " + name);
             }
@@ -172,6 +186,32 @@ public final class MinimalDwarfSidecarExporter {
             if (ranges.stream().noneMatch(range -> range.contains(address))) {
                 throw new IllegalArgumentException(
                     "function entry is outside its body ranges for " + name);
+            }
+        }
+
+        public String qualifiedDisplayName() {
+            return namespacePath.isEmpty() ? name : String.join("::", namespacePath) +
+                "::" + name;
+        }
+
+        /**
+         * Ghidra permits literal delimiters in names. Preserve their spelling,
+         * but never silently flatten distinct recorded identities to one name.
+         * Same-path/name functions at different addresses remain valid duplicates.
+         */
+        public static void validateDisplayNames(List<FunctionSymbol> functions) {
+            Map<String, FunctionSymbol> identities = new HashMap<>();
+            for (FunctionSymbol function : functions) {
+                FunctionSymbol previous = identities.putIfAbsent(
+                    function.qualifiedDisplayName(), function);
+                if (previous != null && (!previous.name().equals(function.name()) ||
+                        !previous.namespacePath().equals(function.namespacePath()))) {
+                    throw new IllegalArgumentException("ambiguous qualified function display " +
+                        "name '" + function.qualifiedDisplayName() + "': namespace " +
+                        previous.namespacePath() + " / lexical name '" + previous.name() +
+                        "' conflicts with namespace " + function.namespacePath() +
+                        " / lexical name '" + function.name() + "'");
+                }
             }
         }
 
@@ -272,6 +312,7 @@ public final class MinimalDwarfSidecarExporter {
         List<FunctionSymbol> ordered = new ArrayList<>(functions);
         ordered.sort(Comparator.comparingLong(FunctionSymbol::address)
             .thenComparing(FunctionSymbol::name));
+        FunctionSymbol.validateDisplayNames(ordered);
 
         ElfImage elf = ElfImage.read(source);
         DwarfTarget target = DwarfTarget.fromElf(elf);
@@ -373,7 +414,10 @@ public final class MinimalDwarfSidecarExporter {
             for (FunctionSymbol function : functions) {
                 Die die = newDie(producer, consumer, debug, DW_TAG_SUBPROGRAM, unit, errorOut);
                 functionDies.put(function.address(), die);
-                addName(producer, consumer, die, function.name(), errorOut);
+                // C11 stays truthful. Plain analyst scopes are a flat display
+                // name on the CU-owned definition, not guessed language scopes,
+                // linkage names or duplicate alias DIEs.
+                addName(producer, consumer, die, function.qualifiedDisplayName(), errorOut);
                 if (!function.usesRangeList()) {
                     addAddress(producer, consumer, debug, die, DW_AT_LOW_PC,
                         function.ranges().get(0).address(), errorOut);
