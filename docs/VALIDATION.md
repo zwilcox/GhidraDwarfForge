@@ -11,6 +11,95 @@ export. Export remains explicit: installed wrappers request checksum-verified
 packaged natives by default, while source-tree audit runs may supply explicit
 library paths.
 
+## Scalar floating register aliases (2026-10-23)
+
+**CONFIRMED locally:** the old real exporter omitted scalar floating arguments
+whose logical register had an unmapped physical base. The preserved x86
+baseline (`build/test-results/floating-registers/run.Do3jbKMI/`) checks compiler
+values and Forge unavailability explicitly. Production now walks the actual
+Ghidra parent chain to a mapped covering register and computes the value's bit
+offset relative to that register. Whole-base alias clobber checks remain
+conservative. No vector/pair register number is guessed and no native API is
+added.
+
+`registerAliasSmoke` uses the real pinned language descriptions: XMM within
+ZMM, AArch64 scalar registers within Q/Z, ARM single registers within D/Q,
+and MIPS scalar registers within pairs. It checks ARM `s1 -> d0` at bit 32,
+`s3 -> d1` at bit 32, and x86 `AH -> RAX` at bit 8, while broad unmapped vectors
+and MIPS double pairs remain unavailable. `floatingRegisterSliceSmoke` emits
+the ARM scalar upper slice in an isolated producer process; readelf confirms
+`DW_OP_regx 256; DW_OP_bit_piece 32,32`, and GNU/LLVM/libdwarf validators pass.
+That test uses an archived source-built ARM ELF and establishes structure,
+not new ARM runtime support.
+
+The canonical ARM D-register mapping follows
+[AADWARF32 2025Q4](https://github.com/ARM-software/abi-aa/blob/2025Q4/aadwarf32/aadwarf32.rst#vfp-v3-and-neon-register-descriptions):
+D0–D31 use numbers 256–287; scalar single registers are slices of these
+registers. Legacy S64–95 numbering is excluded from the chosen mapping.
+
+The real `floating-registers-export.sh` runs six cases per target: ET_EXEC and
+PIE, each with baseline, `+0x2000000` Ghidra rebase and byte-identical repeat.
+Fully stripped inputs prevent compiler debug information from masking Forge
+behavior. Compiler symbols establish independent exact addresses, and GDB
+checks parameter types/widths, source, values at entry and before/after stores,
+global sinks, `next`, `step` and normal exit. The x86/AArch64 explicit clobber
+also requires the incoming value before the write and unavailability afterward.
+All artifacts pass strict GNU/LLVM/libdwarf validation, unchanged original
+hashes, build-ID preservation and deterministic repeats.
+
+Positive local parameter values are float/double on x86-64/AArch64 and float
+on MIPS32 BE/LE. MIPS double pairs are explicitly unavailable in Forge.
+The current compiler double-parameter oracle is **PRESENT, UNVERIFIED** on
+QEMU 8.2.2/GDB 15.1: `first=0`, `second=0`, and raw `f12..f15=0` at the checked
+PCs despite correct stored globals `21.5`/`-9.25` and normal exit. Those globals
+prove machine execution, not parameter locations. The harness records this
+exact zero observation separately from positive checks and rejects other
+unexpected observations; it also accepts exact values if a later debugger
+corrects its register view.
+
+A separate probe found status `0x24000010` (FR set), four-byte GDB FP registers,
+and no target XML. Forcing `set mipsfpu double` did not change the result.
+The likely cause is the QEMU 8.2.2
+[MIPS stub](https://github.com/qemu/qemu/blob/v8.2.2/target/mips/gdbstub.c), which
+passes the FR-mode 64-bit FP value through `gdb_get_regl`; its
+[helper](https://github.com/qemu/qemu/blob/v8.2.2/include/gdbstub/helpers.h)
+uses a 32-bit transfer for this target. This source-based inference explains
+the missing high halves; emulator repair is outside this change.
+
+MIPS PIE return stepping can also produce GDB's known “can't find the start”
+warning. The harness permits it only during the marked return operation and
+only when an untouched compiler ELF loaded as separate symbols reproduces the
+exact warning text, address and count. Direct compiler-symbol loading remains
+strict, as do all other diagnostics and the ARM compiler-corroborated vDSO rule.
+
+ARM32 unit and native structural checks pass locally. Its new runtime case,
+including the second float in `s1`/upper `d0`, is **PRESENT, UNVERIFIED** until
+the five-lane hosted job runs; the local ARM compiler/sysroot is absent.
+No new ISA/ABI, aggregate/variadic passing, migration or call-crossing support
+is claimed.
+
+```bash
+./gradlew registerAliasSmoke registerPrefixSmoke variableStorageSmoke buildExtension
+src/test/integration/floating-registers-export.sh "$GHIDRA_INSTALL_DIR" \
+    "$consumer" "$producer" x86_64 aarch64 mips32be mips32le
+./gradlew floatingRegisterSliceSmoke -PlibdwarfPath="$consumer" \
+    -PlibdwarfpPath="$producer" -PsidecarInput=/path/to/ARM-fixture \
+    -PsidecarOutput="$PWD/build/arm-slice.dbg"
+```
+
+Initial retained positive runs: `run.eJVfeqB1` (x86), `run.tF2IBGna` (AArch64;
+the subsequent MIPS compiler-pair assertion intentionally failed during the
+investigation), and `run.AD3qEszr` (both MIPS orders). Final evidence and
+regression commands are under `build/fp-review/`; the branch uses only its
+own copied Ghidra installation. Final `run.SrcqG8RO` passes all 24 typed-value
+cases on the four local profiles. All 22 native-independent smokes and the
+extension build pass (`final-build.txt`), together with architecture, workflow,
+shell syntax and whitespace checks. The existing four-target ET_EXEC/PIE/shared
+semantic matrix passes with integer, stack and composite values
+(`existing-{exec,pie,shared}-{headless,gdb}.txt`). All 12 incoming-register
+prefix cases pass in `build/test-results/register-prefix-export/run.Hj0zJfh0/`.
+ARM isolated native evidence is `build/fp-review/arm-slice-*`.
+
 ## Combined semantic branch validation (2026-10-23)
 
 The `semantic-todo-completion` worktree combines the independently committed

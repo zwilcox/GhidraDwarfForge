@@ -838,6 +838,17 @@ Map Ghidra registers to target DWARF register numbers using isolated architectur
 
 ## P1.11 Emit parameters/locals with accurate locations
 
+**CONFIRMED locally (2026-10-23):** mapped logical FP aliases preserve scalar
+float/double arguments on x86-64/AArch64 and scalar floats on both MIPS O32
+byte orders through stores, PIE and explicit rebases. First-overwrite prefix
+checks still make later values unavailable. ARM32 uses canonical D-register
+numbering and upper/lower scalar slices; unit/native structural checks pass,
+but the new ARM runtime oracle is **PRESENT, UNVERIFIED** pending hosted CI.
+MIPS paired doubles remain explicitly unavailable; compiler-GDB pair values
+are also unverified on the tested emulator/debugger. These cases do not prove
+vector, aggregate-passing, call-crossing or new ABI support. See
+`docs/VALIDATION.md` for exact evidence and the independent compiler limitation.
+
 **Status:** `[x]` — parameters and recovered locals have canonical name/type
 DIEs. A curated locationless local is proven in all ET_EXEC/PIE lanes and GDB
 reports it optimized out. A native-independent planner and audited libdwarf

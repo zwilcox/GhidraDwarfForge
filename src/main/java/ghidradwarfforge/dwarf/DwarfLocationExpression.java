@@ -89,9 +89,15 @@ public final class DwarfLocationExpression {
         }
         long expectedBits = Math.multiplyExact(variable.byteSize(), 8L);
         if (first instanceof RegisterStorage register) {
-            if (register.valueBitOffset() != 0 || register.bitSize() != expectedBits) {
+            if (register.bitSize() != expectedBits) {
                 return omitted("register slice does not exactly cover variable " +
                     variable.name());
+            }
+            if (register.valueBitOffset() != 0) {
+                return new Expression(List.of(new GenericOperation(DW_OP_REGX,
+                    register.register().dwarfNumber(), 0),
+                    new GenericOperation(DW_OP_BIT_PIECE, expectedBits,
+                        register.valueBitOffset())));
             }
             return expression(new GenericOperation(DW_OP_REGX,
                 register.register().dwarfNumber(), 0));

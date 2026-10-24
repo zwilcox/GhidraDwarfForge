@@ -34,6 +34,13 @@ infer lexical blocks from datatype categories or decompiler formatting.
 See [the focused validation record](docs/VALIDATION.md#function-owned-static-data-2026-10-23)
 for tested profiles and debugger limitations.
 
+Development scalar floating locations now use audited logical register aliases.
+Local GDB tests cover float/double arguments on x86-64 and AArch64 and float
+arguments on MIPS32 in both byte orders, before and after memory stores.
+Unproven MIPS double-register pairs remain unavailable. ARM32 canonical register
+slices have structural tests; their new runtime checks await hosted CI. See
+[the bounded FP validation record](docs/VALIDATION.md#scalar-floating-register-aliases-2026-10-23).
+
 The development exporter replaces existing compiler DWARF rather than merging
 it with the recovered view. Old compressed debug sections, indexes, and debug
 file links are retired inside the sidecar; the original ELF stays unchanged.

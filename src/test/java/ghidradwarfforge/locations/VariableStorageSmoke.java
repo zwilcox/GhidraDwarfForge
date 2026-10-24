@@ -36,7 +36,7 @@ public final class VariableStorageSmoke {
         TargetRegisterMap mipsBe = TargetRegisterMap.forTarget("mips");
         TargetRegisterMap mipsLe = TargetRegisterMap.forTarget("mipsel");
         if (x86.dwarfNumbers().size() != 59 || arm.dwarfNumbers().size() != 64 ||
-                arm32.dwarfNumbers().size() != 82 ||
+                arm32.dwarfNumbers().size() != 50 ||
                 mipsBe.dwarfNumbers().size() != 64 ||
                 !mipsBe.dwarfNumbers().equals(mipsLe.dwarfNumbers())) {
             throw new AssertionError("target mapping table is incomplete");
@@ -130,9 +130,16 @@ public final class VariableStorageSmoke {
                 secondPiece.operand1() != 32 || secondPiece.operand2() != 0) {
             throw new AssertionError("composite register expression planning failed");
         }
-        assertOmitted(new VariableLocation("function_a", 0x1000, "register-slice",
+        var slice = DwarfLocationExpression.planStable(new VariableLocation("function_a",
+            0x1000, "register-slice",
             VariableKind.LOCAL, 4, List.of(new LocationRange(0x1000, 0x1010,
-                x86.register("RAX", 8, 32), analyst))), "does not exactly cover");
+                x86.register("RAX", 8, 32), analyst))));
+        if (!(slice instanceof Expression sliceExpression) ||
+                !sliceExpression.operations().equals(List.of(
+                    new GenericOperation(DwarfLocationExpression.DW_OP_REGX, 0, 0),
+                    new GenericOperation(DwarfLocationExpression.DW_OP_BIT_PIECE, 32, 8)))) {
+            throw new AssertionError("mapped register slice lost its relative bit offset");
+        }
 
         List<VariableLocation> input = new ArrayList<>(List.of(changing, omitted,
             pieces, relativeVariable, memory));
