@@ -3488,3 +3488,23 @@ and exact new-link creation checks into the packaged private-copy consumer.
 Those predicates remain separate from byte observations, report claims and
 host transaction requirements. Implementation is underway in isolation; no
 candidate readiness or optional attachment operation is accepted yet.
+
+
+### Program/prefix callback classification correction (2026-10-24)
+
+**CONFIRMED locally; corrected hosted gate pending:** while reviewing the next
+candidate-content component, independent review found that program/prefix
+metadata readers caught a cancellation supplier's `IllegalArgumentException`
+as malformed ELF. The operation failed closed, but the supplier's original
+exception identity/type was lost. Commits `c38cd98` and `791631f` narrow the
+parser catches; exact post-parse identity regressions fail the prior hosted JAR
+and pass on actual Java 21. Existing malformed input wrapping and byte predicates
+are unchanged. Allocation and build-ID readers already had the correct boundary.
+
+Program default/large checks now pass 434/446 at 64 MiB; prefix default/large,
+related focused checks and the build pass. Corrected private package/JAR also
+passes nine backend-candidate observations and 27 existing GDB checks in
+`run.7eQn9koH`, preserving all 36 selected fixtures. PR #37 head `e25c148` and
+run `40105620219` remain intermediate evidence and must not be used as final
+acceptance for the corrected source. Its fresh exact package and full hosted
+gate remain required. No ordinary exporter/native or published release changes.
