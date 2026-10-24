@@ -56,7 +56,8 @@ run_case() {
     done
     test ! -s "$warnings"
     llvm-dwarfdump --verify "$output" >"$case_dir/llvm.txt" 2>&1
-    dwarfdump -ka -ks "$output" >"$case_dir/dwarfdump.txt" 2>&1
+    python3 "$repository_dir/src/test/integration/check-dwarfdump.py" \
+        "$output" "$case_dir/dwarfdump.txt" --original "$input"
     local symbol address
     for symbol in below_entry middle_entry; do
         address=$(awk -v name="$symbol" '$1 == name { print $2 }' "$labels")

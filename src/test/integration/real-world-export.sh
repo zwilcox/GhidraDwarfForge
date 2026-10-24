@@ -64,7 +64,7 @@ require_empty() {
 }
 
 validate_sidecar() {
-    local output=$1 validation_dir=$2
+    local output=$1 validation_dir=$2 original=$3
     mkdir -p "$validation_dir"
     local readelf_stderr="$validation_dir/readelf.stderr"
     readelf -h "$output" > "$validation_dir/header.txt" 2> "$readelf_stderr"
@@ -87,9 +87,8 @@ validate_sidecar() {
     llvm-dwarfdump --verify "$output" \
         > "$validation_dir/llvm-dwarfdump.txt" 2> "$validation_dir/llvm-dwarfdump.stderr"
     require_empty "$validation_dir/llvm-dwarfdump.stderr"
-    dwarfdump -ka -ks "$output" \
-        > "$validation_dir/dwarfdump.txt" 2> "$validation_dir/dwarfdump.stderr"
-    require_empty "$validation_dir/dwarfdump.stderr"
+    python3 "$repository_dir/src/test/integration/check-dwarfdump.py" \
+        "$output" "$validation_dir/dwarfdump.txt" --original "$original"
     if grep -Ei '(^|[[:space:]])(warning|error):' \
             "$validation_dir/llvm-dwarfdump.txt" "$validation_dir/dwarfdump.txt"; then
         echo "independent DWARF validator reported a warning or error" >&2
@@ -128,7 +127,7 @@ for input in "${inputs[@]}"; do
         grep -Fq 'This is decompiler output, not recovered original source' "$output.c"
         grep -Eq '"status":"(SUCCESS|PARTIAL)"' "$case_dir/$iteration.export.log"
         grep -Fq '"failure":null' "$case_dir/$iteration.export.log"
-        validate_sidecar "$output" "$case_dir/$iteration.validation"
+        validate_sidecar "$output" "$case_dir/$iteration.validation" "$input"
         sha256sum "$output" "$output.c" > "$case_dir/$iteration.sha256"
         sha256sum -c "$result_dir/inputs.sha256" \
             > "$case_dir/$iteration.input-preservation.txt"

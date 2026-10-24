@@ -95,7 +95,8 @@ validate_sidecar() {
     done
     test ! -s "$case_dir/readelf.stderr"
     llvm-dwarfdump --verify "$output" > "$case_dir/llvm.txt" 2>&1
-    dwarfdump -ka -ks "$output" > "$case_dir/dwarfdump.txt" 2>&1
+    python3 "$repository_dir/src/test/integration/check-dwarfdump.py" \
+        "$output" "$case_dir/dwarfdump.txt" --original "$input"
     if grep -Ei '(^|[[:space:]])(warning|error):' \
             "$case_dir/llvm.txt" "$case_dir/dwarfdump.txt"; then
         echo "function-static-scopes validator reported a warning or error" >&2

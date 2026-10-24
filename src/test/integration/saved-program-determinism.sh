@@ -60,7 +60,8 @@ for phase in initial reopened repeat; do
     done
     test ! -s "$work/$phase.readelf.stderr"
     llvm-dwarfdump --verify "$output" > "$work/$phase.llvm.txt" 2>&1
-    dwarfdump -ka -ks "$output" > "$work/$phase.dwarfdump.txt" 2>&1
+    python3 "$repository/src/test/integration/check-dwarfdump.py" \
+        "$output" "$work/$phase.dwarfdump.txt" --original "$input"
     FORGE_SAVED_ADD="$add" FORGE_SAVED_SOURCE="$output.c" \
         timeout 45s gdb-multiarch -q -nx -batch -ex 'set pagination off' \
         -ex 'set confirm off' -ex 'set debuginfod enabled off' \

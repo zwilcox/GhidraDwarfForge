@@ -159,7 +159,8 @@ PY
             done
             test ! -s "$case_dir/readelf.stderr"
             llvm-dwarfdump --verify "$output" >"$case_dir/llvm.txt" 2>&1
-            dwarfdump -ka -ks "$output" >"$case_dir/dwarfdump.txt" 2>&1
+            python3 "$repository/src/test/integration/check-dwarfdump.py" \
+                "$output" "$case_dir/dwarfdump.txt" --original "$input"
             diff <(awk '/Build ID:/ {print $3}' "$case_root/input-elf.txt") \
                 <(awk '/Build ID:/ {print $3}' "$case_dir/elf.txt")
             run_gdb "$input" "$output" forge "$case_dir/gdb.txt"

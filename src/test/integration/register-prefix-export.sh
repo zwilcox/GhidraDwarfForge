@@ -120,7 +120,8 @@ for target in "${targets[@]}"; do
             done
             test ! -s "$sample/readelf.stderr"
             llvm-dwarfdump --verify "$output" >"$sample/llvm.txt" 2>&1
-            dwarfdump -ka -ks "$output" >"$sample/dwarfdump.txt" 2>&1
+            python3 "$repository/src/test/integration/check-dwarfdump.py" \
+                "$output" "$sample/dwarfdump.txt" --original "$input"
             diff <(awk '/Build ID:/ {print $3}' "$case_root/input-elf.txt") \
                 <(awk '/Build ID:/ {print $3}' "$sample/elf.txt")
             run_gdb "$input" "$output" forge "$sample/gdb.txt"

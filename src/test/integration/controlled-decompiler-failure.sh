@@ -99,7 +99,8 @@ else
 fi
 
 llvm-dwarfdump --verify "$output" >"$result_dir/llvm.txt"
-dwarfdump -ka -ks "$output" >"$result_dir/dwarfdump.txt" 2>&1
+python3 "$repository_dir/src/test/integration/check-dwarfdump.py" \
+    "$output" "$result_dir/dwarfdump.txt" --original "$input"
 gdb -q -nx -batch \
     -ex "file $input" \
     -ex 'set auto-solib-add off' \

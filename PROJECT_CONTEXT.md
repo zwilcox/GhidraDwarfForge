@@ -2031,6 +2031,66 @@ explicit omission. x86/AArch64 positive prefix tests are unchanged. Pinned
 2.3.2 reports zero errors for all six ARM FP samples. No ARM mode-switching
 return prefix support is claimed.
 
+### 16.33 Independent-validator reporting gap
+
+**CONFIRMED:** PR #19 merged as `680ecd6` after candidate run `40057428382`
+passed all twelve jobs and its native-inclusive package passed independent
+provenance/source/producer checks. Alpha.2 remains unpublished. A subsequent
+review of a new ARM static-scope test exposed a broader existing harness gap:
+libdwarf `dwarfdump -ka -ks` exits zero while printing nonzero check summaries.
+The shell tests did not enforce those summary counts.
+
+The five corrective-run target artifacts were downloaded and checked against
+GitHub's artifact digests. The audit inspected 201 dwarfdump/LLVM result logs
+and found nonzero libdwarf summaries in 25 x86-64, 14 AArch64, and four logs
+in each ARM32/MIPS32 lane. These are log counts, including repeated cases, not
+counts of distinct defects. The older checker mishandles DWARF 5 ranges and
+unnamed sections. The validation executable is now built separately from the
+pinned libdwarf 2.3.2 source, with a checksum-pinned correction to its line
+sequence check: sequence boundaries are not function boundaries. The shipped
+native libraries and their patch/provenance contract are unchanged.
+
+**CONFIRMED locally:** the strict runner enforces full numeric summaries and
+completion, exit status and empty stderr. It accepts an inherited frame-length
+diagnostic only when the original ELF produces the exact same diagnostic and
+has identical target metadata and `.eh_frame` address, size and bytes. Raw
+diagnostics remain visible. Malformed reports, input/log aliases, corrupted
+line programs and corrupted range relationships have rejecting controls.
+The checker artifact includes its source, patch, build instructions, manifests
+and GPL/LGPL notices; it is excluded from release-native inputs.
+
+A fresh five-target matrix passed 25 non-sectionless export/validator/GDB
+cases. The five sectionless cases exposed missing image-bound evidence:
+their sidecars contain allocated identity notes but no load extents, causing
+the checker to mistake note addresses for the image limits. Independent ARM32
+and MIPS32 inspection found all emitted location intervals inside the original
+executable segments and their owning functions. The selected correction adds
+inert sectionless-only load extent metadata derived from original `PT_LOAD`
+headers; see ADR 0001. **CONFIRMED locally:** the corrected writer passes
+ELF32/64 in both byte orders, five real sectionless exports with zero checker
+errors, exact load/interval metadata checks, rejecting corruption controls,
+GDB runtime checks and byte-identical repeats. All 19 strict-baseline CI Java
+smoke tasks, the extension build, packaging/wrapper checks and the greater-than-2-GiB
+and source-timestamp integrations also pass. The local build uses JDK 25 with
+Java 21 bytecode; the installed Java 21 directory contains a JRE without
+`javac`. Hosted Java 21 and the complete corrected matrix remain
+**PRESENT, UNVERIFIED**. Do not publish based only on the earlier green gates,
+including main run `40058691020`.
+See TODO Section 0.2 and `docs/VALIDATION.md`.
+
+**CONFIRMED locally:** the normal merge of strict-validator `bf7f2b1` into
+semantic `0b754078` retains the function-entry/static-scope, register-prefix,
+scalar-FP, saved-program identity and ARM fixture corrections. Five semantic
+integration scripts and both isolated semantic producer checks now use the
+strict helper with their exact original ELF; the existing LLVM and GDB
+oracles remain in place. All 23 semantic Java smoke tasks, extension build,
+workflow/architecture checks, package regression and strict-parser controls
+pass. Rechecking one retained artifact from each of the five semantic suites
+passes with only exactly corroborated inherited frame diagnostics; this is
+a validator replay, not a fresh merged export/runtime matrix. No complete
+cross-target rerun was performed locally for this merge. Hosted verification
+of the combined source remains **PRESENT, UNVERIFIED**.
+
 ## 17. Open questions
 
 Codex should not silently answer these through implementation choices. Investigate, document, and obtain user direction when the answer materially changes compatibility or scope.
