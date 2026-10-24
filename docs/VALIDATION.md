@@ -1659,6 +1659,7 @@ All installations and fixture copies are private; the user installation and
 the supplied originals are unchanged. Existing CI retains every target/role
 and host gate, and adds the rejection controls plus Windows metadata smoke.
 The complete new hosted matrix remains pending.
+
 ## Performance-branch validator configuration incident (2026-10-24)
 
 **CONFIRMED:** [run 40064815083](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40064815083)

@@ -1280,7 +1280,10 @@ Additional user-journey coverage:
 
 ## P2.8 Add optional `.gnu_debuglink` attachment
 
-**Status:** `[ ]` — optional feature; exact scope **UNCERTAIN**.
+**Status:** `[ ]` — optional product operation **PLANNED**. The bounded backend
+and backup-based re-export investigation is complete; the explicit transaction
+design and remaining acceptance tests are in
+[`ADR-0004`](docs/ADR-0004-DEBUGLINK-ATTACHMENT.md). No attachment option exists.
 
 **CONFIRMED at the compatibility layer:** automatic debuglink lookup and CRC
 mismatch rejection now have strict local tests on private copies made with
@@ -1293,7 +1296,15 @@ the full original/backup/rollback contract below remains required.
 - Keep default export non-mutating.
 - Add an explicit user option to attach `.gnu_debuglink` only after sidecar success.
 - Compute/store the required CRC correctly.
-- Back up or atomically replace the modified target.
+- Retain a verified independent original backup and atomically replace the
+  modified target; test rollback without overwriting an existing backup.
+- Preflight receipt, temporary receipt, log and backend-output paths against
+  every input, pair and backup before writes; test identity aliases and
+  preservation even when rejection reporting fails.
+- For refresh, export directly to a fresh final sidecar/source basename;
+  retain the previous pair/receipt and back up the prior attached image.
+  Test changed-CRC refresh and full prior-association rollback, not merely
+  byte-identical re-export. Reject a lost or overwritten prior pair.
 - Verify automatic GDB discovery.
 
 ### Completion criteria
@@ -1304,6 +1315,17 @@ the full original/backup/rollback contract below remains required.
 - [ ] GDB automatically discovers the sidecar.
 - [ ] CRC mismatch test fails as expected.
 - [ ] Default-mode original hash test remains unchanged.
+
+The Linux research probes cover GNU 2.42 tools for x86-64, AArch64 and MIPS32
+both byte orders, including backend rejection of unsupported layouts. These
+results do not claim a product transaction, Windows attachment, or narrower
+ordinary-export input support. Their historical bare-libdwarf result predates
+strict summary enforcement and is not current validator acceptance. A separate
+save/reopen investigation found
+generic `undefined` uses a transient Ghidra UID that changes type DIE ordering;
+the normalized model and source remain identical. Record/fix that bounded
+byte-determinism issue separately, without weakening imported-input SHA checks.
+See [reproduction/evidence](docs/research/DEBUGLINK-EVIDENCE.md).
 
 ## P2.9 Add build-ID association where applicable
 

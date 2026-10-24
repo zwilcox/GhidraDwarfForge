@@ -2118,7 +2118,7 @@ but this is not a release approval. The checker completion gate additionally
 rejects missing zero-count categories, demonstrated by fifteen new controls
 and 52 unchanged retained real reports.
 
-### 16.33 Definite ELF/Ghidra target agreement (2026-10-24)
+### Definite ELF/Ghidra target agreement (2026-10-24)
 
 **CONFIRMED locally:** the strict baseline `bf7f2b1`, rebuilt and installed in
 an isolated Ghidra copy, still exported an ELF64 x86 target deliberately imported
@@ -2151,6 +2151,7 @@ only the reviewed validation corrections and their documentation. Target-guard
 production and test code are unchanged. Workflow and changed-script syntax
 checks pass; prior smoke/runtime suites were not repeated. Hosted validation
 of this separate follow-up remains pending.
+
 ### P3.4 bounded inline-evidence investigation (2026-10-23)
 
 **CONFIRMED:** ADR 0003 records the completed investigation and the conditions
@@ -2198,6 +2199,55 @@ Its whole-process measurements include JVM startup and do not identify which
 export phase dominates. **PLANNED:** representative complex-binary and phase
 profiling before choosing an optimization; P3.5 remains partially complete.
 See `docs/PERFORMANCE.md` for commands, retained evidence and limits.
+
+### Optional debuglink transaction design and re-export evidence
+
+**CONFIRMED:** bounded Linux probes of GNU 2.42 `objcopy` on disposable
+source-built x86-64/AArch64/MIPS32 big/little-endian copies preserve program
+headers/load bytes for standard exec/PIE inputs and encode the correct
+target-endian debuglink CRC. The tested tools reject no-section-header and
+unnamed-section inputs; their PN_XNUM rewrites change `e_phoff` and fail the
+proposed strict preservation check. These attachment-backend limitations do
+not narrow ordinary export support. `objcopy` accepts a non-ELF debug file,
+so successful invocation/CRC alone cannot establish target identity.
+
+**PLANNED:** the product operation in `docs/ADR-0004-DEBUGLINK-ATTACHMENT.md`
+requires an explicit post-export choice, independently verified identity,
+exclusive original backup, supported host metadata, atomic replacement and
+tested rollback. Preflight includes receipt, temporary receipt and log paths
+before any write. Refresh exports directly to a new final pair basename,
+retains the old pair/receipt, and creates a separate backup of the prior
+attached image. Rollback must restore that image's still-valid debug
+association, not merely a runnable pristine binary. The old byte-identical
+re-export experiment does not validate changed-CRC refresh or this transaction.
+A configured staged `objcopy` is the first proposed backend;
+the non-loadable sidecar writer must not be reused as an executable writer.
+Neither a product attachment command nor native Windows attachment validation
+was added. P2.8 remains incomplete.
+
+The existing imported-executable SHA guard stays strict after attachment.
+Re-export the current curated Program using explicit `--input=<original-backup>`
+and `--output=<fresh-final-sidecar>` for refresh; do not silently update its
+imported identity.
+The private saved-Program experiment retains an analyst name and proves
+backup-based, same-path, byte-identical re-export. Fresh-generation export,
+changed-CRC refresh and rollback remain design acceptance, not measured results.
+Genuine curation changes require an explicit CRC refresh independently
+of the separate type-ordering issue below.
+The historical research scripts' bare `dwarfdump` checks did not enforce
+complete summaries and are not current libdwarf acceptance evidence. These
+design refinements add no product operation or new runtime validation.
+
+**CONFIRMED, bounded determinism finding:** Ghidra 12.0.3's generic
+`DefaultDataType` inherits a new process-local universal ID. Forge currently
+sorts that key with persistent type IDs, so a newly imported versus reopened
+saved Program can produce different type DIE ordering. Settled-analysis,
+identical-option/output-path probes show unchanged normalized type/function/
+global/location/body models and byte-identical source; repeated reopened
+exports are byte-identical. This is not evidence of target corruption or changed
+DWARF semantics. A narrow stable-key follow-up is separate from the corrective
+release and must not replace all type-identity rules. Reproduction and evidence
+are in `docs/research/DEBUGLINK-EVIDENCE.md`.
 
 ## 17. Open questions
 
