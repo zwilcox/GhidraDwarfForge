@@ -3,7 +3,7 @@ set -euo pipefail
 
 if [[ $# -ne 4 ]]; then
     echo "usage: $0 <ghidra-dir> <installed-extension-module> <fixture.stripped> <fixture.reference>" >&2
-    echo "requires Linux, Xvfb (or XVFB_BIN), GUI Java 21+ (or JAVA_BIN), javac, GNU/LLVM/libdwarf and GDB" >&2
+    echo "requires Linux, Xvfb (or XVFB_BIN), GUI Java 21+ (or JAVA_BIN), javac, Python 3, GNU/LLVM/libdwarf and GDB" >&2
     exit 64
 fi
 repository=$(realpath "$(dirname "$0")/../../..")
@@ -13,7 +13,7 @@ fixture=$(realpath "$3")
 reference=$(realpath "$4")
 xvfb=${XVFB_BIN:-Xvfb}
 java=${JAVA_BIN:-java}
-for dependency in "$xvfb" "$java" javac readelf llvm-dwarfdump dwarfdump gdb timeout; do
+for dependency in "$xvfb" "$java" javac python3 readelf llvm-dwarfdump dwarfdump gdb timeout; do
     command -v "$dependency" >/dev/null
 done
 test -s "$module/ghidra_scripts/GhidraDwarfForge.java"
@@ -75,8 +75,8 @@ readelf --debug-dump=info --debug-dump=abbrev --debug-dump=aranges \
     > "$work/readelf-dwarf.txt" 2>> "$work/readelf.stderr"
 test ! -s "$work/readelf.stderr"
 llvm-dwarfdump --verify "$sidecar" > "$work/llvm-verify.txt" 2>&1
-dwarfdump "$sidecar" > "$work/dwarfdump.txt" 2> "$work/dwarfdump.stderr"
-test ! -s "$work/dwarfdump.stderr"
+python3 "$repository/src/test/integration/check-dwarfdump.py" \
+    "$sidecar" "$work/dwarfdump.txt" --original "$input"
 gdb --nx --batch \
     -ex 'set pagination off' -ex 'set confirm off' -ex 'set debuginfod enabled off' \
     -ex "file $input" -ex 'set auto-solib-add off' -ex "symbol-file $sidecar" \

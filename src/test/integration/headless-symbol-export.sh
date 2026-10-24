@@ -352,8 +352,8 @@ for target in "${targets[@]}"; do
         "$result_dir/$target.$fixture_role.readelf-decodedline.txt"
     llvm-dwarfdump --verify "$output" \
         >"$result_dir/$target.$fixture_role.llvm-dwarfdump.txt" 2>&1
-    dwarfdump -ka -ks "$output" \
-        >"$result_dir/$target.$fixture_role.dwarfdump.txt" 2>&1
+    python3 "$repository_dir/src/test/integration/check-dwarfdump.py" \
+        "$output" "$result_dir/$target.$fixture_role.dwarfdump.txt" --original "$input"
 done
 
 echo "headless-symbol-export=PASS"

@@ -1,0 +1,195 @@
+
+1 Compilers detected:
+01: GNU C17 13.3.0 -mtune=generic -march=x86-64 -g -gdwarf-5 -fno-asynchronous-unwind-tables -fno-unwind-tables -fstack-protector-strong -fstack-clash-protection -fcf-protection
+
+1 Compilers verified:
+01: errors =     0, GNU C17 13.3.0 -mtune=generic -march=x86-64 -g -gdwarf-5 -fno-asynchronous-unwind-tables -fno-unwind-tables -fstack-protector-strong -fstack-clash-protection -fcf-protection
+
+*** ERRORS PER COMPILER ***
+
+01: GNU C17 13.3.0 -mtune=generic -march=x86-64 -g -gdwarf-5 -fno-asynchronous-unwind-tables -fno-unwind-tables -fstack-protector-strong -fstack-clash-protection -fcf-protection
+DWARF CHECK RESULT
+<item>                    <checks>    <errors>
+pubname_attr                     0           0
+attr_tag                        28           0
+attr_formclass                  28           0
+tag_tree                         4           0
+type_offset                      0           0
+decl_file                        3           0
+ranges                           2           0
+line_table                       3           0
+fde_table                        0           0
+aranges                          4           0
+names                            4           0
+frames                           0           0
+locations                        0           0
+harmless_errors                  0           0
+abbreviations                   16           0
+dwarf_constants                 49           0
+debug_info_gaps                  1           0
+forward_declarations             0           0
+self_references                  3           0
+attr_encoding                    6           0
+duplicated_attributes           28           0
+function_coverage               20           0
+** Summarize **                199           0
+
+*** TOTAL ERRORS FOR ALL COMPILERS ***
+
+DWARF CHECK RESULT
+<item>                    <checks>    <errors>
+pubname_attr                     0           0
+attr_tag                        28           0
+attr_formclass                  28           0
+tag_tree                         4           0
+type_offset                      0           0
+decl_file                        3           0
+ranges                           2           0
+line_table                       3           0
+fde_table                        0           0
+aranges                          4           0
+names                            4           0
+frames                           0           0
+locations                        0           0
+harmless_errors                  0           0
+abbreviations                   16           0
+dwarf_constants                 49           0
+debug_info_gaps                  1           0
+forward_declarations             0           0
+self_references                  3           0
+attr_encoding                    6           0
+duplicated_attributes           28           0
+function_coverage               21           0
+** Summarize **                200           0
+
+*** TAGS AND ATTRIBUTES USAGE ***
+
+Number of tag-parent/tag-child records     407
+[  100] 0x0011 DW_TAG_compile_unit                    table         count
+        0x0024 DW_TAG_base_type                       Standard          1
+        0x002e DW_TAG_subprogram                      Standard          1
+[  225] 0x002e DW_TAG_subprogram                      table         count
+        0x0005 DW_TAG_formal_parameter                Standard          1
+
+Number of tag/attr records                 953
+[   86] 0x0005 DW_TAG_formal_parameter                table      count percent
+        0x0002 DW_AT_location                         Standard          1  3.6
+        0x0003 DW_AT_name                             Standard          1  3.6
+        0x0039 DW_AT_decl_column                      Standard          1  3.6
+        0x003a DW_AT_decl_file                        Standard          1  3.6
+        0x003b DW_AT_decl_line                        Standard          1  3.6
+        0x0049 DW_AT_type                             Standard          1  3.6
+[  181] 0x0011 DW_TAG_compile_unit                    table      count percent
+        0x0003 DW_AT_name                             Standard          1  3.6
+        0x0010 DW_AT_stmt_list                        Standard          1  3.6
+        0x0011 DW_AT_low_pc                           Standard          1  3.6
+        0x0012 DW_AT_high_pc                          Standard          1  3.6
+        0x0013 DW_AT_language                         Standard          1  3.6
+        0x001b DW_AT_comp_dir                         Standard          1  3.6
+        0x0025 DW_AT_producer                         Standard          1  3.6
+[  479] 0x0024 DW_TAG_base_type                       table      count percent
+        0x0003 DW_AT_name                             Standard          1  3.6
+        0x000b DW_AT_byte_size                        Standard          1  3.6
+        0x003e DW_AT_encoding                         Standard          1  3.6
+[  587] 0x002e DW_TAG_subprogram                      table      count percent
+        0x0001 DW_AT_sibling                          Standard          1  3.6
+        0x0003 DW_AT_name                             Standard          1  3.6
+        0x0011 DW_AT_low_pc                           Standard          1  3.6
+        0x0012 DW_AT_high_pc                          Standard          1  3.6
+        0x0027 DW_AT_prototyped                       Standard          1  3.6
+        0x0039 DW_AT_decl_column                      Standard          1  3.6
+        0x003a DW_AT_decl_file                        Standard          1  3.6
+        0x003b DW_AT_decl_line                        Standard          1  3.6
+        0x003f DW_AT_external                         Standard          1  3.6
+        0x0040 DW_AT_frame_base                       Standard          1  3.6
+        0x0049 DW_AT_type                             Standard          1  3.6
+        0x007a DW_AT_call_all_calls                   Standard          1  3.6
+Number of attribute instances   :      28
+Number of standard table entries:      28
+Number of extended table entries:       0
+Number of unknown  table entries:       0
+
+*** ATTRIBUTES AND FORMS USAGE ***
+Full record count                    :      233
+Total number of objectfile attributes:       28
+[]                                                        found rate
+[  0] DW_AT_name                     DW_FORM_strp               2 7%
+[  1] DW_AT_low_pc                   DW_FORM_addr               2 7%
+[  2] DW_AT_high_pc                  DW_FORM_data8              2 7%
+[  3] DW_AT_decl_column              DW_FORM_data1              2 7%
+[  4] DW_AT_decl_file                DW_FORM_data1              2 7%
+[  5] DW_AT_decl_line                DW_FORM_data1              2 7%
+[  6] DW_AT_type                     DW_FORM_ref4               2 7%
+[  7] DW_AT_sibling                  DW_FORM_ref4               1 4%
+[  8] DW_AT_location                 DW_FORM_exprloc            1 4%
+[  9] DW_AT_name                     DW_FORM_string             1 4%
+[ 10] DW_AT_name                     DW_FORM_line_strp          1 4%
+[ 11] DW_AT_byte_size                DW_FORM_data1              1 4%
+[ 12] DW_AT_stmt_list                DW_FORM_sec_offset         1 4%
+[ 13] DW_AT_language                 DW_FORM_data1              1 4%
+[ 14] DW_AT_comp_dir                 DW_FORM_line_strp          1 4%
+[ 15] DW_AT_producer                 DW_FORM_strp               1 4%
+[ 16] DW_AT_prototyped               DW_FORM_flag_present       1 4%
+[ 17] DW_AT_encoding                 DW_FORM_data1              1 4%
+[ 18] DW_AT_external                 DW_FORM_flag_present       1 4%
+[ 19] DW_AT_frame_base               DW_FORM_exprloc            1 4%
+[ 20] DW_AT_call_all_calls           DW_FORM_flag_present       1 4%
+[233] Sum found:                                               28 100%
+
+*** COUNT BY FORMCLASS ***
+[]                                 found rate
+[ 0] DW_FORM_CLASS_ADDRESS             2 7%
+[ 1] DW_FORM_CLASS_CONSTANT           11 39%
+[ 2] DW_FORM_CLASS_EXPRLOC             2 7%
+[ 3] DW_FORM_CLASS_FLAG                3 11%
+[ 4] DW_FORM_CLASS_LINEPTR             1 4%
+[ 5] DW_FORM_CLASS_REFERENCE           3 11%
+[ 6] DW_FORM_CLASS_STRING              6 21%
+[ 7] Sum found:                       28 100%
+
+*** COUNT BY FORM ***
+[]                         found rate
+[ 0] DW_FORM_addr              2 7%
+[ 1] DW_FORM_data8             2 7%
+[ 2] DW_FORM_string            1 4%
+[ 3] DW_FORM_data1             9 32%
+[ 4] DW_FORM_strp              3 11%
+[ 5] DW_FORM_ref4              3 11%
+[ 6] DW_FORM_sec_offset        1 4%
+[ 7] DW_FORM_exprloc           2 7%
+[ 8] DW_FORM_flag_present      3 11%
+[ 9] DW_FORM_line_strp         2 7%
+[10] Sum found:               28 100%
+
+*** COUNT BY ATTRIBUTE ***
+[]                                   found rate
+[ 0] DW_AT_low_pc                        2 7%
+[ 1] DW_AT_high_pc                       2 7%
+[ 2] DW_AT_name                          1 4%
+[ 3] DW_AT_decl_column                   2 7%
+[ 4] DW_AT_decl_file                     2 7%
+[ 5] DW_AT_decl_line                     2 7%
+[ 6] DW_AT_byte_size                     1 4%
+[ 7] DW_AT_language                      1 4%
+[ 8] DW_AT_encoding                      1 4%
+[ 9] DW_AT_name                          2 7%
+[10] DW_AT_producer                      1 4%
+[11] DW_AT_type                          2 7%
+[12] DW_AT_sibling                       1 4%
+[13] DW_AT_stmt_list                     1 4%
+[14] DW_AT_location                      1 4%
+[15] DW_AT_frame_base                    1 4%
+[16] DW_AT_prototyped                    1 4%
+[17] DW_AT_external                      1 4%
+[18] DW_AT_call_all_calls                1 4%
+[19] DW_AT_name                          1 4%
+[20] DW_AT_comp_dir                      1 4%
+[21] Sum found:                         28 100%
+
+Number of TAG records                     4
+Number of distinct TAGs in object         4
+[   ]  TAG                                        use-count percent
+[    0] 0x0005 DW_TAG_formal_parameter                      1 25.0
+[    1] 0x0011 DW_TAG_compile_unit                          1 25.0
+[    2] 0x0024 DW_TAG_base_type                             1 25.0
+[    3] 0x002e DW_TAG_subprogram                            1 25.0

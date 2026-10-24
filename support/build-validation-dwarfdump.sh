@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+# Build the independent test consumer; this executable is never a release native.
+set -euo pipefail
+
+if [[ $# -ne 3 ]]; then
+    echo "usage: $0 <libdwarf-2.3.2.tar.xz> <new-output-directory> <result-directory>" >&2
+    exit 64
+fi
+archive=$(realpath "$1")
+output=$(realpath -m "$2")
+results=$(realpath -m "$3")
+support_dir=$(realpath "$(dirname "$0")")
+checker_patch="$support_dir/validation/0001-check-line-sequences.patch"
+source_hash=7992e7b9019ebfabdda5773e86243517c48cf89fafed3209e853692bc9573efd
+patch_hash=69340f63ee78c06309731a40bb1e0e9e193b5d2f659e5f050ef413138649f696
+if [[ -e "$output" || -L "$output" ]]; then
+    echo "validation-tool output already exists: $output" >&2
+    exit 1
+fi
+printf '%s  %s\n' "$source_hash" "$archive" | sha256sum -c -
+printf '%s  %s\n' "$patch_hash" "$checker_patch" | sha256sum -c -
+mkdir -p "$results" "$(dirname "$output")"
+work=$(mktemp -d "$results/build.XXXXXXXX")
+printf 'validation-tool-build=%s\n' "$work"
+tar -xf "$archive" -C "$work"
+source="$work/libdwarf-2.3.2"
+(
+    cd "$source"
+    patch -p1 < "$checker_patch" > "$work/patch.log" 2>&1
+    ./configure --enable-static --disable-shared --disable-dwarfgen \
+        > "$work/configure.log" 2>&1
+    make -j"${FORGE_BUILD_JOBS:-$(nproc)}" > "$work/make.log" 2>&1
+)
+stage="$work/output"
+mkdir -p "$stage/bin" "$stage/source/support/validation" "$stage/licenses"
+cp "$source/src/bin/dwarfdump/dwarfdump" "$stage/bin/"
+chmod 755 "$stage/bin/dwarfdump"
+cp "$archive" "$stage/source/libdwarf-2.3.2.tar.xz"
+cp "$0" "$stage/source/support/build-validation-dwarfdump.sh"
+cp "$checker_patch" "$stage/source/support/validation/"
+cp "$support_dir/../LICENSE" "$stage/source/LICENSE"
+cp "$source/COPYING" "$stage/licenses/UPSTREAM-COPYING"
+cp "$source/src/lib/libdwarf/LGPL.txt" "$stage/licenses/LGPL-2.1.txt"
+cp "$source/src/lib/libdwarf/LIBDWARFCOPYRIGHT" "$stage/licenses/"
+cp "$source/src/bin/dwarfdump/COPYING" "$stage/licenses/DWARFDUMP-COPYING"
+cp "$source/src/bin/dwarfdump/GPL.txt" "$stage/licenses/DWARFDUMP-GPL.txt"
+cp "$source/src/bin/dwarfdump/DWARFDUMPCOPYRIGHT" "$stage/licenses/"
+readelf -d "$stage/bin/dwarfdump" > "$work/dependencies.txt"
+if grep -Eq 'NEEDED.*libdwarf' "$work/dependencies.txt"; then
+    echo 'validation executable unexpectedly requires a shared libdwarf' >&2
+    exit 1
+fi
+"$stage/bin/dwarfdump" --version > "$work/version.txt"
+grep -Fq '2.3.2' "$work/version.txt"
+{
+    printf '%s\n' 'purpose=validation-only; excluded from release native inputs' \
+        'libdwarf-release=v2.3.2' \
+        'source-commit=af7b278c6aa2ae9daad94fb7f8bffdc0e9980993' \
+        "source-archive-sha256=$source_hash" \
+        "validation-checker-patch-sha256=$patch_hash" \
+        'configure=--enable-static --disable-shared --disable-dwarfgen' \
+        'producer-patch=not-applied'
+    cat "$work/version.txt"
+    cc --version
+    cat "$work/dependencies.txt"
+} > "$stage/BUILD-METADATA.txt"
+cat > "$stage/CORRESPONDING_SOURCE.md" <<'EOF'
+This validation-only executable is built from the included libdwarf 2.3.2
+archive and the explicitly identified dwarfdump line-sequence patch. It is
+excluded from GhidraDwarfForge release-native inputs. The library and producer
+sources are unchanged by this checker patch. Licenses are in licenses/ and the
+complete upstream source archive; the repository build helper is MIT licensed.
+
+On Ubuntu 24.04, install build-essential, zlib1g-dev, libzstd-dev, binutils,
+patch and xz-utils. From source/, reproduce with:
+
+    bash support/build-validation-dwarfdump.sh libdwarf-2.3.2.tar.xz NEW_OUTPUT RESULTS
+
+NEW_OUTPUT must not exist. The source/patch checksums, configure options,
+compiler, tool version and dynamic dependencies are recorded in BUILD-METADATA.txt.
+EOF
+(
+    cd "$stage"
+    find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > "$work/SHA256SUMS"
+)
+mv "$work/SHA256SUMS" "$stage/"
+mv "$stage" "$output"
+printf 'validation-tool=%s/bin/dwarfdump\n' "$output"
