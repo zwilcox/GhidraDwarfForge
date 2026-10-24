@@ -1,0 +1,2 @@
+# Native patch bytes must match the pinned digest on every checkout host.
+/native/libdwarf/patches/*.patch text eol=lf

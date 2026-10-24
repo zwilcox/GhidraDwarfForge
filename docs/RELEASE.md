@@ -45,6 +45,18 @@ The extension root contains `RELEASE-MANIFEST.txt` and
 every packaged file before native code is loaded. CI also checks all manifests
 after assembly.
 
+The pinned native patch uses LF checkout bytes on both hosts and is checked
+before every primary/comparison build. Assembly rejects missing, ambiguous or
+mismatched platform patch metadata and a bundled patch that differs from the
+pin. The release manifest and corresponding-source patch therefore identify
+the same bytes used by both native builds.
+
+Assembly takes the unbundled ZIP produced by `buildExtension`, plus separate
+native build inputs. A base that already contains `os/` or bundled native
+compliance directories is rejected; reassembling an existing release ZIP is
+not supported. Each native input must provide its own regular, nonempty
+`BUILD-METADATA.txt`, so stale base files cannot supply missing provenance.
+
 The release root also contains `THIRD_PARTY_NOTICES.md`. The
 `third_party/libdwarf/` directory contains the complete LGPL 2.1 text,
 upstream copyright/copying notices, the exact checksummed libdwarf 2.3.2 source

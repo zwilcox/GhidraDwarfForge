@@ -1987,6 +1987,29 @@ The two controls are wired into CI; exact-head hosted validation is pending.
 Other QEMU scripts still using TCP are a separate, evidence-driven follow-up.
 See `docs/VALIDATION.md` for commands and retained evidence.
 
+### 16.33 Native patch checkout and provenance consistency
+
+**CONFIRMED:** prepublication audit of candidate run `40055176326` found that
+Windows `BUILD-METADATA.txt` recorded patch hash `733405d03e2fd34f7bba971e6bbfe534d72ee9b3c1856879a7652f4eff17bc2a`,
+while the release manifest and bundled patch used the pinned
+`b98561b3e63b76546bd2f18d81d53e188b56deb637b5e145205b3b6eedadf696`.
+The former is exactly the CRLF checkout of the latter. Applying each with GNU
+patch to independent copies of the pinned source produced identical source
+trees; the CRLF application explicitly stripped trailing CRs. This explains the
+metadata discrepancy, without asserting that the original records matched.
+
+Git attributes now force LF for native patches. CI checks the pinned hash before
+all four primary/comparison patch applications. Assembly rejects a noncanonical
+bundled patch and missing, malformed, duplicate or inconsistent platform patch
+hash records before replacing the release output. Canonical hashes in escaped
+Windows/CRLF metadata remain accepted. The native version, patch contents and
+Java/native API are unchanged. Assembly explicitly accepts the unbundled Gradle
+base and rejects native/compliance directories already in that base, preventing
+stale base metadata or binaries from filling gaps in new native inputs.
+Checkout-conversion and package regressions pass
+locally; exact native Windows and complete candidate CI remain required before
+publication. See `docs/VALIDATION.md` for retained evidence.
+
 ## 17. Open questions
 
 Codex should not silently answer these through implementation choices. Investigate, document, and obtain user direction when the answer materially changes compatibility or scope.
