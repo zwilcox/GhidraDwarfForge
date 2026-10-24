@@ -627,6 +627,23 @@ also pass real export and explicit GDB/QEMU loading for `--build-id=none`
 fixtures whose sidecars correctly make no build-ID claim. Automatic
 installation into a global debug directory remains outside this slice.
 
+**CONFIRMED locally (2026-10-23):** the original x86-64 build-ID test checked
+successful lookup but did not reject GDB warnings. Automatic separate-file
+association warned about allocated relocation sections because the writer
+renamed and zeroed them. Allocated REL/RELA headers now become inert
+`SHT_NOBITS` entries retaining their original names/addresses/sizes/offsets/
+alignment and only `SHF_ALLOC`; link/info/entry-size fields are cleared.
+Nonallocated relocation retirement is unchanged.
+
+The stricter association harness checks ET_EXEC and PIE on every target lane,
+including full DWARF symbol identity, the exact debug artifact/source file,
+function address, type/source lookup, and build-ID mismatch rejection.
+Debuglink tests modify only private fixture copies with target `objcopy`;
+CRC rejection uses inputs and sidecars with no build ID so another discovery
+method cannot mask failure. All four locally available targets pass, alongside
+the existing six-role native/QEMU matrix. The optional product attachment mode
+remains unimplemented, and hosted verification of this expansion is pending.
+
 **CONFIRMED (2026-09-02):** the installed extension's opt-in headless path now
 extracts Ghidra functions into immutable name/address/size records and emits a
 DWARF 5 CU with one subprogram DIE per contiguous function. Discontiguous

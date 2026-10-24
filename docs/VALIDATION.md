@@ -770,24 +770,50 @@ and the automated Linux Swing chooser/cancellation test passes in a genuine
 non-headless Ghidra process (see the post-alpha GUI record above). Manual
 Script Manager navigation and Windows GUI behavior remain **PRESENT, UNVERIFIED**.
 
-## Build-ID discovery
+## Automatic build-ID and debuglink association
 
 ```bash
-src/test/integration/build-id-discovery.sh
+src/test/integration/build-id-discovery.sh x86_64 aarch64 mips32be mips32le
 ```
 
-Result: PASS. The harness installs the x86-64 sidecar temporarily at
-`.build-id/8c/97fca5bc3a09a3f115eb66d515c95b16f21783.debug`, points GDB's global debug
-directory at that tree, and loads only the stripped original. Without any
-`symbol-file` command, GDB discovers the sidecar, lists and types
-`recovered_add`, displays synthetic source, breaks with arguments 19/23, and
-leaves the original hash unchanged.
+**CONFIRMED locally (2026-10-23):** all four targets pass strict ET_EXEC/PIE
+automatic association with real Forge sidecars. Every target CI lane now runs
+the same harness; ARM32 and hosted verification of the fix remain pending.
+Evidence: `build/test-results/build-id-discovery/run.UxH079CS/` in the
+`automatic-debug-association` worktree. The existing four-target/six-role real
+export and native/QEMU runtime matrix also passes with this writer.
 
-As a negative control, the harness first places the PIE sidecar under the
-non-PIE build-ID path. GDB reports that it has a different build ID and skips
-it. All four target lanes also export a `--build-id=none` fixture, verify that
-its sidecar does not invent a build ID, and pass the explicit `symbol-file`
-GDB/QEMU behavior oracle.
+The old discovery test accepted successful lookup despite section-matching
+warnings. The writer now retains allocated relocation names and extents as
+inert `SHT_NOBITS`, with only `SHF_ALLOC` and no relocation linkage. GNU/LLVM/
+libdwarf validation and isolated ELF32/64 × both-byte-order writer tests pass.
+The unnamed-section regression retains physical indexes/names/payload checks
+while distinguishing allocated extents from nonallocated retirement.
+No-name/extended-program tests on x86-64 and MIPS32 big-endian pass at
+`build/test-results/elf-layout-export/run.aZ5Bd0vd/`.
+
+For positive automatic cases, GDB loads only a private copy of the stripped
+executable. Build-ID files use a private `.build-id/xx/rest.debug` tree;
+debuglink cases use target `objcopy` to attach a link to a private executable
+copy and an empty global debug directory. Tests require an actual full DWARF
+function symbol from the exact expected sidecar, the exact synthetic source
+file, compiler-oracle function address, correct prototype/type/source lookup
+and a resolved named breakpoint. A minimal linker symbol cannot satisfy these
+assertions. The x86-64 automatic runtime cases also hit `recovered_add`, read
+arguments 19/23 and exit normally.
+
+Negative controls place the opposite executable kind's sidecar under the
+requested build-ID path and deliberately corrupt a debuglink sidecar's CRC.
+The CRC case uses a `--build-id=none` executable and sidecar, eliminating
+build-ID fallback. Restoring the same copied sidecar must restore automatic
+lookup. Only each control's exact expected rejection diagnostic is accepted;
+positive cases reject every unexpected diagnostic. Existing no-build-ID
+explicit lookup remains covered. All original executables, sidecars and
+sources retain their hashes, and each run retains copies/transcripts.
+
+These are sidecar compatibility tests. The extension still does not implement
+a product `.gnu_debuglink` attachment option, and default export remains
+non-mutating.
 
 ## Shared-object export and runtime loading
 

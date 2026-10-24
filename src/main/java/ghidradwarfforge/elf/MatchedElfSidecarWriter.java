@@ -268,17 +268,25 @@ public final class MatchedElfSidecarWriter {
     }
 
     private static void omitRelocationSection(Section section) {
-        if (!section.name.isEmpty()) {
-            section.name = ".forge.omitted" + section.name;
+        if ((section.flags & SHF_ALLOC) != 0) {
+            // GDB matches allocated sections by name/address when attaching a
+            // separate debug file. Retire the relocation semantics, but keep
+            // the original allocation extent as an inert NOBITS placeholder.
+            section.flags = SHF_ALLOC;
+        }
+        else {
+            if (!section.name.isEmpty()) {
+                section.name = ".forge.omitted" + section.name;
+            }
+            section.flags = 0;
+            section.address = 0;
+            section.offset = 0;
+            section.size = 0;
+            section.alignment = 1;
         }
         section.type = SHT_NOBITS;
-        section.flags = 0;
-        section.address = 0;
-        section.offset = 0;
-        section.size = 0;
         section.link = 0;
         section.info = 0;
-        section.alignment = 1;
         section.entrySize = 0;
     }
 

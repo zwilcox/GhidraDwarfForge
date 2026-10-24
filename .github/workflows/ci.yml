@@ -853,9 +853,10 @@ jobs:
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2"
 
-      - name: Build-ID automatic sidecar discovery
-        if: matrix.target == 'x86_64'
-        run: src/test/integration/build-id-discovery.sh
+      - name: Automatic build-ID and debuglink sidecar association
+        env:
+          TARGET: ${{ matrix.target }}
+        run: src/test/integration/build-id-discovery.sh "$TARGET"
 
       - uses: actions/upload-artifact@v7
         if: always()
