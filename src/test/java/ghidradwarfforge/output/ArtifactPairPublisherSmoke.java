@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -23,10 +24,15 @@ public final class ArtifactPairPublisherSmoke {
             Path source = directory.resolve("fixture.dbg.c");
             Path artifactStage = directory.resolve("artifact.staged");
             Path sourceStage = directory.resolve("source.staged");
+            testPublicationTimestamps(directory);
             write(artifact, "old artifact");
             write(source, "old source");
+            FileTime originalArtifactTime = Files.getLastModifiedTime(artifact);
+            FileTime originalSourceTime = Files.getLastModifiedTime(source);
             write(artifactStage, "new artifact");
             write(sourceStage, "new source");
+            Files.setLastModifiedTime(artifactStage, FileTime.fromMillis(1_700_000_001_000L));
+            Files.setLastModifiedTime(sourceStage, FileTime.fromMillis(1_700_000_002_000L));
             try {
                 ArtifactPairPublisher.publish(artifactStage, artifact, sourceStage, source,
                     () -> {
@@ -41,6 +47,10 @@ public final class ArtifactPairPublisherSmoke {
             }
             assertText(artifact, "old artifact");
             assertText(source, "old source");
+            if (!originalArtifactTime.equals(Files.getLastModifiedTime(artifact)) ||
+                    !originalSourceTime.equals(Files.getLastModifiedTime(source))) {
+                throw new AssertionError("rollback changed the previous pair timestamps");
+            }
             if (Files.exists(artifactStage) || Files.exists(sourceStage)) {
                 throw new AssertionError("failed publication left staged files");
             }
@@ -108,6 +118,33 @@ public final class ArtifactPairPublisherSmoke {
         if (args.length == 2) {
             testExternallyLockedSource(Path.of(args[0]), Path.of(args[1]));
             System.out.println("windows-file-lock-rollback=PASS");
+        }
+    }
+
+    private static void testPublicationTimestamps(Path directory) throws Exception {
+        // All three values are within one second: compare full FileTime values,
+        // independently of GDB's coarser seconds-only freshness check.
+        FileTime sourceTime = FileTime.fromMillis(1_700_000_002_123L);
+        for (long artifactMillis : new long[] { 1_700_000_002_122L,
+                1_700_000_002_123L, 1_700_000_002_124L }) {
+            Path artifact = directory.resolve("time-" + artifactMillis + ".dbg");
+            Path source = Path.of(artifact + ".c");
+            FileTime artifactTime = FileTime.fromMillis(artifactMillis);
+            ArtifactPairPublisher.stageAndPublish(artifact, source,
+                stage -> {
+                    write(stage, "timestamp artifact");
+                    Files.setLastModifiedTime(stage, artifactTime);
+                }, stage -> {
+                    write(stage, "timestamp source");
+                    Files.setLastModifiedTime(stage, sourceTime);
+                }, () -> { });
+            FileTime expected = artifactTime.compareTo(sourceTime) < 0 ? sourceTime : artifactTime;
+            if (!expected.equals(Files.getLastModifiedTime(artifact)) ||
+                    !sourceTime.equals(Files.getLastModifiedTime(source))) {
+                throw new AssertionError("pair publication did not preserve monotonic timestamps");
+            }
+            assertText(artifact, "timestamp artifact");
+            assertText(source, "timestamp source");
         }
     }
 

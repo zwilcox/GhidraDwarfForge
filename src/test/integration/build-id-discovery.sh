@@ -1,108 +1,159 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Consume real exporter artifacts. Debuglink attachment mutates private test
+# copies only; the product does not offer an attachment operation in this slice.
+export LC_ALL=C
 repository_dir=$(realpath "$(dirname "$0")/../../..")
-fixture_dir="$repository_dir/build/fixtures/x86_64"
-input="$fixture_dir/semantic.exec.stripped"
-sidecar="$fixture_dir/semantic.exec.ghidra-forge.dbg"
-mismatch="$fixture_dir/semantic.pie.ghidra-forge.dbg"
-no_id_input="$fixture_dir/semantic.exec.no-build-id.stripped"
-no_id_sidecar="$fixture_dir/semantic.exec.no-build-id.ghidra-forge.dbg"
-result_dir="$repository_dir/build/test-results/build-id-discovery"
-temporary_debug_root=$(mktemp -d -t ghidra-dwarf-forge-build-id.XXXXXXXX)
+fixture_root="$repository_dir/build/fixtures"
+result_root="$repository_dir/build/test-results/build-id-discovery"
+targets=("$@")
+if [[ ${#targets[@]} -eq 0 ]]; then
+    targets=(x86_64)
+fi
+mkdir -p "$result_root"
+result_dir=$(mktemp -d "$result_root/run.XXXXXXXX")
+trap 'echo "automatic-association results: $result_dir"' EXIT
 
-cleanup() {
-    case "$temporary_debug_root" in
-        /tmp/ghidra-dwarf-forge-build-id.*)
-            rm -rf -- "$temporary_debug_root"
-            ;;
-        *)
-            echo "refusing to remove unexpected temporary path: $temporary_debug_root" >&2
-            ;;
-    esac
+build_id() {
+    readelf -n "$1" | sed -n 's/.*Build ID: //p'
 }
-trap cleanup EXIT
 
-mkdir -p "$result_dir"
-for required in "$input" "$sidecar" "$mismatch" "$no_id_input" "$no_id_sidecar"; do
-    test -s "$required"
+symbol_address() {
+    readelf -Ws "$1" | awk '$8 == "recovered_add" && !found { print "0x" $2; found = 1 }'
+}
+
+validate_diagnostics() {
+    local log=$1 expected=${2:-}
+    awk -v expected="$expected" '
+        expected != "" && $0 == expected { matched++; next }
+        tolower($0) ~ /warning:|error:|malformed|corrupt|could not find/ { print; bad = 1 }
+        END { exit bad || (expected != "" && matched < 1) }
+    ' "$log"
+}
+
+lookup() {
+    local input=$1 debug_root=$2 debug_file=$3 source=$4 address=$5 log=$6
+    local mode=${7:-present} runtime=${8:-0} explicit=${9:-0} expected_warning=${10:-}
+    local symbol_command=()
+    if [[ "$explicit" == 1 ]]; then
+        symbol_command=(-ex "symbol-file \"$debug_file\"")
+    fi
+    FORGE_ASSOCIATION_MODE="$mode" FORGE_ASSOCIATION_ADDRESS="$address" \
+        FORGE_ASSOCIATION_DEBUG_FILE="$debug_file" FORGE_ASSOCIATION_SOURCE="$source" \
+        FORGE_ASSOCIATION_RUNTIME="$runtime" \
+        timeout 45 gdb-multiarch -q -nx -batch \
+        -ex 'set pagination off' -ex 'set confirm off' \
+        -ex 'set debuginfod enabled off' -ex 'set auto-solib-add off' \
+        -ex 'set disable-randomization off' \
+        -ex "set debug-file-directory $debug_root" \
+        -ex "file \"$input\"" "${symbol_command[@]}" \
+        -x "$repository_dir/src/test/integration/automatic-association-gdb.py" \
+        > "$log" 2>&1
+    validate_diagnostics "$log" "$expected_warning"
+    grep -Fxq "automatic-association=$mode PASS" "$log"
+    if [[ "$runtime" == 1 ]]; then
+        grep -Fq 'exited normally' "$log"
+    fi
+}
+
+for target in "${targets[@]}"; do
+    case "$target" in
+        x86_64) objcopy_tool=objcopy ;;
+        aarch64) objcopy_tool=aarch64-linux-gnu-objcopy ;;
+        arm32) objcopy_tool=arm-linux-gnueabihf-objcopy ;;
+        mips32be) objcopy_tool=mips-linux-gnu-objcopy ;;
+        mips32le) objcopy_tool=mipsel-linux-gnu-objcopy ;;
+        *) echo "unknown fixture target: $target" >&2; exit 64 ;;
+    esac
+    fixture_dir="$fixture_root/$target"
+    target_dir="$result_dir/$target"
+    mkdir -p "$target_dir"
+    manifest="$target_dir/originals.sha256"
+    for role in exec pie exec.no-build-id; do
+        for suffix in stripped ghidra-forge.dbg ghidra-forge.dbg.c; do
+            original="$fixture_dir/semantic.$role.$suffix"
+            test -s "$original"
+            sha256sum "$original" >> "$manifest"
+        done
+    done
+
+    for role in exec pie; do
+        case_dir="$target_dir/$role"
+        mkdir -p "$case_dir/build-id-root" "$case_dir/empty-debug-root" "$case_dir/debuglink"
+        original="$fixture_dir/semantic.$role.stripped"
+        sidecar="$fixture_dir/semantic.$role.ghidra-forge.dbg"
+        source="$sidecar.c"
+        cp "$source" "$case_dir/expected-source.c"
+        address=$(symbol_address "$fixture_dir/semantic.$role.reference")
+        identity=$(build_id "$original")
+        test -n "$identity"
+        test "$identity" = "$(build_id "$sidecar")"
+        mismatch_role=pie
+        if [[ "$role" == pie ]]; then
+            mismatch_role=exec
+        fi
+        mismatch="$fixture_dir/semantic.$mismatch_role.ghidra-forge.dbg"
+        test "$identity" != "$(build_id "$mismatch")"
+        debug_directory="$case_dir/build-id-root/.build-id/${identity:0:2}"
+        debug_file="$debug_directory/${identity:2}.debug"
+        mkdir -p "$debug_directory"
+        cp "$original" "$case_dir/original"
+        cp "$mismatch" "$debug_file"
+        lookup "$case_dir/original" "$case_dir/build-id-root" "$debug_file" \
+            "$source" "$address" "$case_dir/mismatched-build-id.txt" absent 0 0 \
+            "warning: File \"$debug_file\" has a different build-id, file skipped"
+        cp "$sidecar" "$debug_file"
+        runtime=0
+        if [[ "$target:$role" == x86_64:exec ]]; then
+            runtime=1
+        fi
+        lookup "$case_dir/original" "$case_dir/build-id-root" "$debug_file" \
+            "$source" "$address" "$case_dir/matched-build-id.txt" present "$runtime"
+
+        # An empty private global directory prevents a successful build-ID
+        # lookup from masking a broken debuglink association.
+        linked_input="$case_dir/debuglink/original"
+        linked_debug="$case_dir/debuglink/forge.debug"
+        cp "$original" "$linked_input"
+        cp "$sidecar" "$linked_debug"
+        "$objcopy_tool" "--add-gnu-debuglink=$linked_debug" "$linked_input"
+        lookup "$linked_input" "$case_dir/empty-debug-root" "$linked_debug" \
+            "$source" "$address" "$case_dir/matched-debuglink.txt" present "$runtime"
+        sha256sum -c "$manifest" > "$case_dir/original-preservation.txt"
+        echo "automatic-association-$target-$role=PASS"
+    done
+
+    # No build ID exists in either artifact, so CRC rejection cannot fall back
+    # to a matching identity-based file anywhere in GDB's configured search.
+    case_dir="$target_dir/no-build-id"
+    mkdir -p "$case_dir/empty-debug-root" "$case_dir/debuglink"
+    original="$fixture_dir/semantic.exec.no-build-id.stripped"
+    sidecar="$fixture_dir/semantic.exec.no-build-id.ghidra-forge.dbg"
+    source="$sidecar.c"
+    cp "$source" "$case_dir/expected-source.c"
+    address=$(symbol_address "$fixture_dir/semantic.exec.no-build-id.reference")
+    test -z "$(build_id "$original")"
+    test -z "$(build_id "$sidecar")"
+    linked_input="$case_dir/debuglink/original"
+    linked_debug="$case_dir/debuglink/forge.debug"
+    cp "$original" "$linked_input"
+    cp "$sidecar" "$linked_debug"
+    "$objcopy_tool" "--add-gnu-debuglink=$linked_debug" "$linked_input"
+    printf '\0' >> "$linked_debug"
+    lookup "$linked_input" "$case_dir/empty-debug-root" "$linked_debug" \
+        "$source" "$address" "$case_dir/crc-mismatch.txt" absent 0 0 \
+        "warning: the debug information found in \"$linked_debug\" does not match \"$linked_input\" (CRC mismatch)."
+    cp "$sidecar" "$linked_debug"
+    lookup "$linked_input" "$case_dir/empty-debug-root" "$linked_debug" \
+        "$source" "$address" "$case_dir/matched-debuglink.txt"
+    runtime=0
+    if [[ "$target" == x86_64 ]]; then
+        runtime=1
+    fi
+    lookup "$original" "$case_dir/empty-debug-root" "$sidecar" "$source" \
+        "$address" "$case_dir/no-build-id-explicit.txt" present "$runtime" 1
+    sha256sum -c "$manifest" > "$target_dir/original-preservation.txt"
+    echo "automatic-association-$target-no-build-id=PASS"
 done
-before=$(sha256sum "$input" | cut -d' ' -f1)
-no_id_before=$(sha256sum "$no_id_input" | cut -d' ' -f1)
-build_id=$(readelf -n "$input" | sed -n 's/.*Build ID: //p' | head -1)
-sidecar_id=$(readelf -n "$sidecar" | sed -n 's/.*Build ID: //p' | head -1)
-mismatch_id=$(readelf -n "$mismatch" | sed -n 's/.*Build ID: //p' | head -1)
-test -n "$build_id"
-test "$build_id" = "$sidecar_id"
-test "$build_id" != "$mismatch_id"
-
-debug_directory="$temporary_debug_root/.build-id/${build_id:0:2}"
-debug_file="$debug_directory/${build_id:2}.debug"
-mkdir -p "$debug_directory"
-cp "$mismatch" "$debug_file"
-mismatch_transcript="$result_dir/mismatched-build-id.txt"
-gdb-multiarch -q -nx -batch \
-    -ex "set debuginfod enabled off" \
-    -ex "set debug-file-directory $temporary_debug_root" \
-    -ex "file $input" \
-    -ex "info functions recovered_add" >"$mismatch_transcript" 2>&1
-grep -q 'has a different build-id, file skipped' "$mismatch_transcript"
-if grep -q 'semantic[.]exec[.]ghidra-forge[.]dbg[.]c' "$mismatch_transcript"; then
-    echo "GDB accepted a mismatched build-ID sidecar" >&2
-    exit 1
-fi
-
-cp "$sidecar" "$debug_file"
-transcript="$result_dir/matched-build-id.txt"
-gdb-multiarch -q -nx -batch \
-    -ex "set debuginfod enabled off" \
-    -ex "set auto-solib-add off" \
-    -ex "set debug-file-directory $temporary_debug_root" \
-    -ex "directory $fixture_dir" \
-    -ex "file $input" \
-    -ex "info functions recovered_add" \
-    -ex "ptype recovered_add" \
-    -ex "list recovered_add" \
-    -ex "break recovered_add" \
-    -ex run \
-    -ex "info args" >"$transcript" 2>&1
-
-grep -q 'semantic[.]exec[.]ghidra-forge[.]dbg[.]c' "$transcript"
-grep -Fq 'type = int (int, int)' "$transcript"
-grep -q 'Breakpoint 1, recovered_add (left=19, right=23)' "$transcript"
-grep -Fxq 'left = 19' "$transcript"
-grep -Fxq 'right = 23' "$transcript"
-
-if readelf -n "$no_id_input" | grep -q 'Build ID:' ||
-        readelf -n "$no_id_sidecar" | grep -q 'Build ID:'; then
-    echo "no-build-ID fixture or sidecar unexpectedly carries a build ID" >&2
-    exit 1
-fi
-no_id_transcript="$result_dir/no-build-id-explicit.txt"
-gdb-multiarch -q -nx -batch \
-    -ex "set debuginfod enabled off" \
-    -ex "set auto-solib-add off" \
-    -ex "directory $fixture_dir" \
-    -ex "file $no_id_input" \
-    -ex "symbol-file $no_id_sidecar" \
-    -ex "ptype recovered_add" \
-    -ex "break recovered_add" \
-    -ex run \
-    -ex "info args" >"$no_id_transcript" 2>&1
-grep -Fq 'type = int (int, int)' "$no_id_transcript"
-grep -q 'Breakpoint 1, recovered_add (left=19, right=23)' "$no_id_transcript"
-grep -Fxq 'left = 19' "$no_id_transcript"
-grep -Fxq 'right = 23' "$no_id_transcript"
-after=$(sha256sum "$input" | cut -d' ' -f1)
-no_id_after=$(sha256sum "$no_id_input" | cut -d' ' -f1)
-test "$before" = "$after"
-test "$no_id_before" = "$no_id_after"
-
-{
-    echo "input_sha256=$after"
-    echo "build_id=$build_id"
-    echo "mismatched_build_id=$mismatch_id"
-    echo "no_build_id_input_sha256=$no_id_after"
-    echo "no_build_id_explicit_loading=PASS"
-    echo "build_id_discovery=PASS"
-} | tee "$result_dir/result.txt"
+echo 'automatic-association=PASS'

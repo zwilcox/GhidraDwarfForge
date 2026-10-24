@@ -77,6 +77,8 @@ jobs:
           echo "$LIBDWARF_ARCHIVE_SHA256  $LIBDWARF_ARCHIVE" | sha256sum -c -
           tar -xf "$LIBDWARF_ARCHIVE"
           cd libdwarf-2.3.2
+          printf '%s\n' "$LIBDWARF_PATCH_SHA256  $GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch" |
+            sha256sum -c -
           patch -p1 < "$GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch"
           ./configure --enable-shared --enable-dwarfgen --disable-static \
             --prefix="$PWD/install" 2>&1 | tee "$result_directory/configure.log"
@@ -139,6 +141,8 @@ jobs:
           mkdir native-linux-rebuild-source native-linux-rebuild
           tar -xf "$LIBDWARF_ARCHIVE" -C native-linux-rebuild-source
           cd native-linux-rebuild-source/libdwarf-2.3.2
+          printf '%s\n' "$LIBDWARF_PATCH_SHA256  $GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch" |
+            sha256sum -c -
           patch -p1 < "$GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch"
           ./configure --enable-shared --enable-dwarfgen --disable-static \
             --prefix="$PWD/install" > "$result_directory/rebuild-configure.log" 2>&1
@@ -215,6 +219,8 @@ jobs:
           echo "$LIBDWARF_ARCHIVE_SHA256  $LIBDWARF_ARCHIVE" | sha256sum -c -
           tar -xf "$LIBDWARF_ARCHIVE"
           cd libdwarf-2.3.2
+          printf '%s\n' "$LIBDWARF_PATCH_SHA256  $GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch" |
+            sha256sum -c -
           patch -p1 < "$GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch"
           ./configure --enable-shared --enable-dwarfgen --disable-static \
             --prefix="$PWD/install" 2>&1 | tee "$result_directory/configure.log"
@@ -347,6 +353,8 @@ jobs:
           mkdir native-windows-rebuild-source native-windows-rebuild
           tar -xf "$LIBDWARF_ARCHIVE" -C native-windows-rebuild-source
           cd native-windows-rebuild-source/libdwarf-2.3.2
+          printf '%s\n' "$LIBDWARF_PATCH_SHA256  $GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch" |
+            sha256sum -c -
           patch -p1 < "$GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch"
           ./configure --enable-shared --enable-dwarfgen --disable-static \
             --prefix="$PWD/install" > "$result_directory/rebuild-configure.log" 2>&1
@@ -798,6 +806,10 @@ jobs:
         if: matrix.target == 'x86_64'
         run: src/test/integration/real-world-export.sh "$GHIDRA_INSTALL_DIR"
 
+      - name: Published source and sidecar timestamp regression
+        if: matrix.target == 'x86_64'
+        run: src/test/integration/artifact-pair-timestamps.sh
+
       - name: GUI output chooser selection and cancellation
         if: matrix.target == 'x86_64'
         run: |
@@ -853,9 +865,10 @@ jobs:
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2"
 
-      - name: Build-ID automatic sidecar discovery
-        if: matrix.target == 'x86_64'
-        run: src/test/integration/build-id-discovery.sh
+      - name: Automatic build-ID and debuglink sidecar association
+        env:
+          TARGET: ${{ matrix.target }}
+        run: src/test/integration/build-id-discovery.sh "$TARGET"
 
       - uses: actions/upload-artifact@v7
         if: always()

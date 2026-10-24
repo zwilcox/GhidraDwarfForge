@@ -770,24 +770,50 @@ and the automated Linux Swing chooser/cancellation test passes in a genuine
 non-headless Ghidra process (see the post-alpha GUI record above). Manual
 Script Manager navigation and Windows GUI behavior remain **PRESENT, UNVERIFIED**.
 
-## Build-ID discovery
+## Automatic build-ID and debuglink association
 
 ```bash
-src/test/integration/build-id-discovery.sh
+src/test/integration/build-id-discovery.sh x86_64 aarch64 mips32be mips32le
 ```
 
-Result: PASS. The harness installs the x86-64 sidecar temporarily at
-`.build-id/8c/97fca5bc3a09a3f115eb66d515c95b16f21783.debug`, points GDB's global debug
-directory at that tree, and loads only the stripped original. Without any
-`symbol-file` command, GDB discovers the sidecar, lists and types
-`recovered_add`, displays synthetic source, breaks with arguments 19/23, and
-leaves the original hash unchanged.
+**CONFIRMED locally (2026-10-23):** all four targets pass strict ET_EXEC/PIE
+automatic association with real Forge sidecars. Every target CI lane now runs
+the same harness; ARM32 and hosted verification of the fix remain pending.
+Evidence: `build/test-results/build-id-discovery/run.UxH079CS/` in the
+`automatic-debug-association` worktree. The existing four-target/six-role real
+export and native/QEMU runtime matrix also passes with this writer.
 
-As a negative control, the harness first places the PIE sidecar under the
-non-PIE build-ID path. GDB reports that it has a different build ID and skips
-it. All four target lanes also export a `--build-id=none` fixture, verify that
-its sidecar does not invent a build ID, and pass the explicit `symbol-file`
-GDB/QEMU behavior oracle.
+The old discovery test accepted successful lookup despite section-matching
+warnings. The writer now retains allocated relocation names and extents as
+inert `SHT_NOBITS`, with only `SHF_ALLOC` and no relocation linkage. GNU/LLVM/
+libdwarf validation and isolated ELF32/64 × both-byte-order writer tests pass.
+The unnamed-section regression retains physical indexes/names/payload checks
+while distinguishing allocated extents from nonallocated retirement.
+No-name/extended-program tests on x86-64 and MIPS32 big-endian pass at
+`build/test-results/elf-layout-export/run.aZ5Bd0vd/`.
+
+For positive automatic cases, GDB loads only a private copy of the stripped
+executable. Build-ID files use a private `.build-id/xx/rest.debug` tree;
+debuglink cases use target `objcopy` to attach a link to a private executable
+copy and an empty global debug directory. Tests require an actual full DWARF
+function symbol from the exact expected sidecar, the exact synthetic source
+file, compiler-oracle function address, correct prototype/type/source lookup
+and a resolved named breakpoint. A minimal linker symbol cannot satisfy these
+assertions. The x86-64 automatic runtime cases also hit `recovered_add`, read
+arguments 19/23 and exit normally.
+
+Negative controls place the opposite executable kind's sidecar under the
+requested build-ID path and deliberately corrupt a debuglink sidecar's CRC.
+The CRC case uses a `--build-id=none` executable and sidecar, eliminating
+build-ID fallback. Restoring the same copied sidecar must restore automatic
+lookup. Only each control's exact expected rejection diagnostic is accepted;
+positive cases reject every unexpected diagnostic. Existing no-build-ID
+explicit lookup remains covered. All original executables, sidecars and
+sources retain their hashes, and each run retains copies/transcripts.
+
+These are sidecar compatibility tests. The extension still does not implement
+a product `.gnu_debuglink` attachment option, and default export remains
+non-mutating.
 
 ## Shared-object export and runtime loading
 
@@ -922,3 +948,116 @@ for the x86-64 fixture. The matched sidecar retains those original target
 sections byte-for-byte, and the same diagnostics occur on the original input;
 they are not emitted from Forge DWARF sections. There are zero line-table,
 abbreviation, DIE, range, or declaration-file errors.
+
+## Generated source freshness at pair publication (2026-10-23)
+
+Main commit `1f2a46b`'s [run 40053041949](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40053041949)
+failed in AArch64 `elf-layout-export`, `exec/extended-programs/rebased`, at the
+static GDB stage. Its retained `static-gdb.txt` reports only
+`warning: Source file is more recent than executable.`; function/type/source
+addresses remain correct. The failing source path is the generated
+`build/fixtures/aarch64/semantic.exec.ghidra-forge.dbg.c`.
+
+This is a publication defect, not an architecture, PIE, or fixture warning to
+suppress. [GDB 15.1 source-cache.c](https://gnu.googlesource.com/binutils-gdb/+/refs/tags/gdb-15.1-release/gdb/source-cache.c)
+uses the source compilation unit's objfile mtime when available, falling back
+to the executable only otherwise. In this workflow `symbol-file` selects the
+Forge sidecar. GDB Python confirms `gdb.find_pc_line(0x400728).symtab.objfile.filename`
+is the loaded `.dbg`, while `info files` separately names the original ELF as
+the local executable. A source newer than the `.dbg` warns even when the original
+ELF is newer than both; making only the `.dbg` newer removes that warning.
+GDB compares whole seconds, explaining the intermittent boundary condition.
+
+The publisher used to complete the sidecar writer before the source writer.
+It now preserves that cancellation-compatible order but makes the staged
+sidecar mtime at least its completed source's mtime before backing up or
+replacing either final file. Full `FileTime` comparison preserves subsecond
+ordering, does not lower an already newer sidecar timestamp, and does not
+backdate the source or modify the original ELF. An adjustment failure uses the
+existing cleanup/rollback path. No GDB diagnostic policy was weakened.
+
+Reproduction and checks:
+
+```bash
+GHIDRA_INSTALL_DIR=/path/to/ghidra_12.0.3_PUBLIC ./gradlew \
+    artifactPairPublisherSmoke elfCopyCancellationSmoke buildExtension
+src/test/integration/artifact-pair-timestamps.sh
+```
+
+- **PASS:** the new publisher test fails deterministically against the old
+  implementation, then passes after the fix. Callback timestamps cover older,
+  equal, and newer sidecars within the same second. Existing rollback now also
+  checks preservation of previous final timestamps; copy cancellation still
+  stops before the source callback and preserves the prior pair.
+- **PASS:** `build/test-results/artifact-pair-timestamps/run.DYGYC2J6/` builds a
+  small compiler-DWARF ELF symbol-file fixture and deliberately supplies
+  source/artifact timestamps on opposite sides of a second boundary. Before
+  publication GDB reports exactly the known warning. After the real publisher,
+  GNU/LLVM/libdwarf validation and GDB lookup, breakpoint, `next`, `step`, value
+  and normal-exit checks pass with empty diagnostic streams. Appending a real
+  source comment and advancing its timestamp produces the exact warning again.
+  Original ELF hash and mtime remain unchanged; no staging files remain.
+- **PASS:** the actual failed AArch64 Forge pair was downloaded and republished
+  on private copies through the fixed production publisher. Its bytes stay
+  unchanged, GNU/LLVM/libdwarf checks pass, and GDB function/type/line lookup
+  produces no diagnostics. A subsequent source edit warns again. Logs are
+  `build/timestamp-probe/forge-fixed.txt`, `forge-fixed.stderr`,
+  `forge-edited.stderr`, and `forge-{readelf,llvm,dwarfdump}.txt` in the isolated
+  timestamp worktree. The original extended-program ELF's hash and mtime remain
+  unchanged. This is a retained-artifact reproduction, not a new Ghidra import.
+
+The hosted archive contains copies made by the diagnostic collector, and
+artifact download does not preserve the original publication timestamps.
+Consequently the exact hosted nanosecond gap is unavailable. The retained
+warning/source identity, pinned GDB comparison, and deterministic same-pair
+reproduction establish the cause without claiming those lost timestamps.
+
+The x86 CI lane now runs the deterministic GDB regression; the existing
+publisher smoke also runs on native Windows. Local build and focused checks
+pass. The next exact versioned candidate still requires full hosted validation.
+
+## Native patch checkout and provenance consistency (2026-10-23)
+
+Prepublication audit of candidate `ddad598` in run `40055176326` verified the
+GitHub artifact digest, all release/native/source/runtime manifests, embedded
+source and Java 21 bytecode, and twenty packaged Linux producer lifetimes using
+the downloaded production JAR. It also found a provenance mismatch: Windows
+build metadata recorded `733405d03e2fd34f7bba971e6bbfe534d72ee9b3c1856879a7652f4eff17bc2a`,
+while the bundled patch and release pin were
+`b98561b3e63b76546bd2f18d81d53e188b56deb637b5e145205b3b6eedadf696`.
+
+The former is exactly the latter patch converted from LF to CRLF. Applying
+each with GNU patch to independently extracted copies of the pinned libdwarf
+archive produced byte-identical source trees; the CRLF application explicitly
+reported stripping trailing CRs. This establishes equivalent patched content
+locally, not that the previous raw provenance records agreed. Evidence is under
+`corrective-alpha2/build/exact-release-verification/patch-equivalence/` in the
+isolated worktree collection. No patch content, native API or version changed.
+
+The correction forces LF patch checkouts and checks the pin before all four
+Linux/Windows primary/comparison applications. Release assembly requires both
+platform metadata records to match the canonical bundled patch. It rejects
+missing, malformed, duplicate or mismatched records and a nonpinned bundled
+patch before replacing any previous output ZIP. GNU checksum escaping in
+Windows paths and CRLF metadata lines remain supported.
+
+The assembler requires an unbundled Gradle base ZIP and native inputs with
+their own nonempty regular metadata files. Native-inclusive or already-bundled
+compliance bases are rejected before copying; base contents cannot supply a
+missing native file or cause new compliance files to nest below stale ones.
+
+```bash
+git check-attr text eol -- native/libdwarf/patches/*.patch
+src/test/integration/release-package.sh
+```
+
+**PASS locally:** a temporary Git checkout with `core.autocrlf=true` reproduces
+the CRLF hash without attributes and the pinned LF hash with them. The exact
+pre-application checksum check rejects the former and accepts the latter.
+The updated package regression fails against the previous assembler, which
+accepted the inconsistent Windows hash; the fixed suite passes all rejection
+cases, previous-output preservation, escaped Windows metadata, every manifest,
+wrapper permissions and two byte-identical assemblies. Logs are in
+`native-patch-provenance/build/provenance-review/`. Native Windows and the full
+exact-candidate matrix remain pending; this audit does not authorize publishing
+the earlier mismatched package.

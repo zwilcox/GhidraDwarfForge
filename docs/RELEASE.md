@@ -13,7 +13,13 @@ The installable archive is named:
 GhidraDwarfForge-<version>-ghidra-12.0.3.zip
 ```
 
-Ghidra compatibility remains recorded separately in `extension.properties`.
+Ghidra compatibility remains recorded separately in `extension.properties`:
+its generated `version=12.0.3` identifies the required Ghidra version, not the
+project version. The packaged `VERSION` and `RELEASE-MANIFEST.txt` identify the
+GhidraDwarfForge release. The corrective alpha is described in
+[`releases/0.1.0-alpha.2.md`](releases/0.1.0-alpha.2.md); the published alpha.1
+tag and assets remain unchanged.
+
 The initial host packages are Linux x86-64 and Windows x86-64. The required
 target release lanes are x86-64 and AArch64 ELF; ARM32 and MIPS32 big/little
 endian have additional hosted validation but remain narrower, explicitly
@@ -38,6 +44,18 @@ The extension root contains `RELEASE-MANIFEST.txt` and
 `RELEASE-SHA256SUMS`. The exporter verifies the selected platform manifest and
 every packaged file before native code is loaded. CI also checks all manifests
 after assembly.
+
+The pinned native patch uses LF checkout bytes on both hosts and is checked
+before every primary/comparison build. Assembly rejects missing, ambiguous or
+mismatched platform patch metadata and a bundled patch that differs from the
+pin. The release manifest and corresponding-source patch therefore identify
+the same bytes used by both native builds.
+
+Assembly takes the unbundled ZIP produced by `buildExtension`, plus separate
+native build inputs. A base that already contains `os/` or bundled native
+compliance directories is rejected; reassembling an existing release ZIP is
+not supported. Each native input must provide its own regular, nonempty
+`BUILD-METADATA.txt`, so stale base files cannot supply missing provenance.
 
 The release root also contains `THIRD_PARTY_NOTICES.md`. The
 `third_party/libdwarf/` directory contains the complete LGPL 2.1 text,

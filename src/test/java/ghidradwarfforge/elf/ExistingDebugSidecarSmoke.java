@@ -108,6 +108,22 @@ public final class ExistingDebugSidecarSmoke {
             section.name().equals(".forge.stale.zdebug_info")).count() == 2,
             "existing stale-name collision lost a section");
 
+        for (String name : List.of(".rel.dyn", ".rela.plt")) {
+            ElfImage.Section before = exactlyOne(original, name);
+            ElfImage.Section after = exactlyOne(result, name);
+            require(after.type == 8 && after.flags == 2 &&
+                after.address == before.address && after.size == before.size &&
+                after.offset == before.offset && after.alignment == before.alignment &&
+                after.link == 0 && after.info == 0 && after.entrySize == 0,
+                "allocated relocation lost inert section association metadata: " + name);
+            require(result.sectionData(after).length == 0,
+                "relocation placeholder exposed an active payload");
+        }
+        ElfImage.Section retired = exactlyOne(result, ".forge.omitted.rela.debug_info");
+        require(retired.type == 8 && retired.flags == 0 && retired.address == 0 &&
+            retired.size == 0 && retired.link == 0 && retired.info == 0,
+            "nonallocated debug relocations remain active");
+
         // Every original section payload remains at its original file offset,
         // even when its new section header points to replacement debug data.
         for (ElfImage.Section section : original.sections()) {
@@ -152,6 +168,9 @@ public final class ExistingDebugSidecarSmoke {
             sections.add(new FixtureSection(name));
         }
         sections.add(new FixtureSection(".forge.stale.zdebug_info"));
+        sections.add(new FixtureSection(".rel.dyn", 9, 2, 0x4000, new byte[16]));
+        sections.add(new FixtureSection(".rela.plt", 4, 0x42, 0x5000, new byte[24]));
+        sections.add(new FixtureSection(".rela.debug_info", 4, 0, 0, new byte[24]));
 
         ByteArrayOutputStream names = new ByteArrayOutputStream();
         List<Integer> nameOffsets = new ArrayList<>();

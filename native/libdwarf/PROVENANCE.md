@@ -59,6 +59,12 @@ The patch allocates both descriptors per producer and frees their buffers at
 finish. CI records the complete patch SHA-256 in native build metadata and the
 release bundles the exact patch with the upstream source archive.
 
+Git attributes force the patch to LF on every checkout host. All four primary
+and comparison builds verify its pinned SHA-256 before applying it. Release
+assembly also requires the bundled patch to match that pin and each platform's
+single recorded patch hash. Windows metadata may use CRLF lines and GNU
+checksum filename escaping; those encodings do not change the required hash.
+
 The Windows CI build writes `BUILD-METADATA.txt` beside its DLL artifact with
 the pinned release/commit, configure flags, compiler version, SHA-256 for every
 bundled DLL, and each DLL's dependency names. Required consumer/producer
