@@ -3744,6 +3744,49 @@ script payloads identical to the tested private installation. Normal merge
 and importing only its compiler-oracle helper correction. A refreshed exact
 package and complete hosted/native Windows gate remain required.
 
+### Separate main acceptance and connected validation continuation (2026-10-24)
+
+**CONFIRMED:** PR #38's exact main push `40113254401` attempt 2 passes all twelve
+effective jobs. Native Linux, extension build and workflow lint reuse their
+successful attempt-1 results explicitly; the other jobs and both GUI journeys
+ran again. Independent Linux/Windows GUI and twenty native Windows focused
+checks pass. Attempt 1's runner communication loss and absent logs remain
+historical evidence. PR #39's exact main push `40118899783` also passes all twelve
+jobs on attempt 1, with independent both-GUI/native Windows 21 review. The main
+cross-target conclusions are CI evidence, separate from the detailed PR audits.
+
+**CONFIRMED:** PR #40 head `13e706e5` passes exact run `40119714272`, all twelve
+jobs, independent package and all-five-target artifact reviews, both GUI hosts
+and 22 native Windows checks. Fifteen fresh installed cases retain full unclassified
+inventories; thirty ordinary plus twenty positive-control candidates, 130 controls,
+45 report sets, 135 earlier copies and 75 current inputs are independently audited.
+Windows observes 432 detailed assertions and the combined retention boundary.
+Normal merge `2584541849ffd4c7d6a9ab3933e2d3ec3d89ed4b` preserves the tested tree;
+separate main push `40121995458` remains pending. Empty negative workspace
+directories are not retained by artifact uploads; the initial audit assumption
+failure is preserved without weakening runtime checks or positive output proofs.
+
+**CONFIRMED decision/local acceptance; hosted integration PRESENT, UNVERIFIED:** the next bounded
+P2.8 continuation captures the existing primary LLVM/strict libdwarf checks and
+consumes their complete evidence through the explicit report handoff before
+normal private preparation. The tools and three role captures are retained in
+one fresh job-owned directory; selection never uses a latest-file search. The
+reader checks selected original/sidecar bytes, complete outputs and retained tool/
+configuration/parser evidence. It retains the exact inherited-frame exception
+and preserves PARTIAL/NOT_RUN. Legacy capture absence fails explicitly; raw
+Java-probe limitation controls remain separate and ungated. See
+`docs/VALIDATION-EVIDENCE-HANDOFF.md` for bounds, acceptance and remaining limits.
+No production supervisor, authentication, source proof or attachment transaction
+is introduced. Source `9390565` passes 100 focused checks (including three
+retained native-capacity replay checks), and peer source/test review is clear.
+Nine fresh validator pairs on explicitly retained exports pass independent
+full-output/tool/selected-byte review with 22 corroborated frame diagnostics and
+zero unexplained errors. Nine installed cases, eighteen entry-point rejections
+and the separate 78 raw-probe controls pass; 225 global paths remain unchanged.
+Independent review reconstructs thirty candidate outputs and verifies actual
+GDB/native/QEMU evidence. No fresh Ghidra export is attributed to this replay.
+Exact final package and complete hosted gates remain required.
+
 ### External-function inventory correction (2026-10-24)
 
 **CONFIRMED:** the pinned Ghidra 12.0.3 API separates ordinary definitions from

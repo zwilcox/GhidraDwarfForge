@@ -350,10 +350,23 @@ for target in "${targets[@]}"; do
     fi
     grep -q "$(basename "$source")" \
         "$result_dir/$target.$fixture_role.readelf-decodedline.txt"
-    llvm-dwarfdump --verify "$output" \
-        >"$result_dir/$target.$fixture_role.llvm-dwarfdump.txt" 2>&1
-    python3 "$repository_dir/src/test/integration/check-dwarfdump.py" \
-        "$output" "$result_dir/$target.$fixture_role.dwarfdump.txt" --original "$input"
+    if [[ -n "${FORGE_VALIDATION_EVIDENCE_DIR:-}" ]]; then
+        # The caller selects a fresh case directory explicitly. Capturing replaces
+        # this invocation's existing checks; it never repeats them for a receipt.
+        : "${FORGE_VALIDATION_TOOLSET:?capture requires an explicit retained toolset}"
+        [[ ${#targets[@]} -eq 1 ]] || {
+            echo 'validation capture requires exactly one target per invocation' >&2
+            exit 2
+        }
+        python3 "$repository_dir/src/test/integration/validation-evidence.py" capture \
+            --original "$input" --sidecar "$output" \
+            --toolset "$FORGE_VALIDATION_TOOLSET" --output "$FORGE_VALIDATION_EVIDENCE_DIR"
+    else
+        llvm-dwarfdump --verify "$output" \
+            >"$result_dir/$target.$fixture_role.llvm-dwarfdump.txt" 2>&1
+        python3 "$repository_dir/src/test/integration/check-dwarfdump.py" \
+            "$output" "$result_dir/$target.$fixture_role.dwarfdump.txt" --original "$input"
+    fi
 done
 
 echo "headless-symbol-export=PASS"

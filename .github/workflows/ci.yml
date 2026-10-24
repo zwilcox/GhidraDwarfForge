@@ -663,6 +663,14 @@ jobs:
         if: matrix.target == 'x86_64'
         run: python3 src/test/integration/check-dwarfdump-test.py
 
+      - name: Capture validator evidence and reject changed or incomplete handoffs
+        if: matrix.target == 'x86_64'
+        run: |
+          python3 -B src/test/integration/validation-evidence-test.py \
+            --bundle "$PWD/validation-tool" --llvm "$(command -v llvm-dwarfdump)" \
+            --llvm-notices /usr/share/doc/llvm-18/copyright \
+            --output "$PWD/build/test-results/validation-evidence-controls"
+
       - name: Validate extended program counts and reject malformed ELF tables
         if: matrix.target == 'x86_64'
         run: python3 src/test/integration/dwarfdump-extended-programs.py "$DWARFDUMP"
@@ -834,39 +842,58 @@ jobs:
           set -euo pipefail
           consumer="$PWD/native-integration/libdwarf.so.2.3.2"
           producer="$PWD/native-integration/libdwarfp.so.2.3.2"
+          mkdir -p "$PWD/build/test-results/validation-evidence"
+          evidence_root=$(mktemp -d "$PWD/build/test-results/validation-evidence/$TARGET.XXXXXXXX")
+          python3 src/test/integration/validation-evidence.py tools \
+            --bundle "$PWD/validation-tool" --llvm "$(command -v llvm-dwarfdump)" \
+            --llvm-notices /usr/share/doc/llvm-18/copyright \
+            --output "$evidence_root/tools"
+          mkdir "$evidence_root/cases"
           for role in exec partial exec.no-build-id exec.no-sections pie shared; do
-            FIXTURE_ROLE="$role" src/test/integration/headless-symbol-export.sh \
-              "$GHIDRA_INSTALL_DIR" "$consumer" "$producer" "$TARGET"
-            if [[ "$role" == "exec.no-sections" ]]; then
-              python3 src/test/integration/sectionless-load-ranges.py \
-                "$PWD/build/fixtures/$TARGET/semantic.exec.no-sections.stripped" \
-                "$PWD/build/fixtures/$TARGET/semantic.exec.no-sections.ghidra-forge.dbg" \
-                --tool "$DWARFDUMP"
-            fi
-            if [[ "$role" == "shared" ]]; then
-              if [[ "$TARGET" == mips32le ]]; then
-                src/test/integration/shared-object-port-collision.py "$TARGET"
-              else
-                src/test/integration/shared-object-gdb.sh "$TARGET"
+              capture=()
+              case "$role" in
+                  exec|pie|exec.no-build-id)
+                      capture=("FORGE_VALIDATION_EVIDENCE_DIR=$evidence_root/cases/$role"
+                          "FORGE_VALIDATION_TOOLSET=$evidence_root/tools/toolset.json") ;;
+              esac
+              env "${capture[@]}" FIXTURE_ROLE="$role" src/test/integration/headless-symbol-export.sh \
+                  "$GHIDRA_INSTALL_DIR" "$consumer" "$producer" "$TARGET"
+              if [[ "$role" == "exec.no-sections" ]]; then
+                  python3 src/test/integration/sectionless-load-ranges.py \
+                      "$PWD/build/fixtures/$TARGET/semantic.exec.no-sections.stripped" \
+                      "$PWD/build/fixtures/$TARGET/semantic.exec.no-sections.ghidra-forge.dbg" \
+                      --tool "$DWARFDUMP"
               fi
-            else
-              FIXTURE_ROLE="$role" src/test/integration/qemu-gdb-symbols.sh "$TARGET"
-            fi
-            if [[ "$TARGET:$role" == "x86_64:exec" ]]; then
-              sidecar="build/fixtures/x86_64/semantic.exec.ghidra-forge.dbg"
-              source_file="$sidecar.c"
-              first=$(sha256sum "$sidecar" | cut -d' ' -f1)
-              first_source=$(sha256sum "$source_file" | cut -d' ' -f1)
-              FIXTURE_ROLE="exec" src/test/integration/headless-symbol-export.sh \
-                "$GHIDRA_INSTALL_DIR" "$consumer" "$producer" x86_64
-              second=$(sha256sum "$sidecar" | cut -d' ' -f1)
-              second_source=$(sha256sum "$source_file" | cut -d' ' -f1)
-              test "$first" = "$second"
-              test "$first_source" = "$second_source"
-              src/test/integration/controlled-decompiler-failure.sh \
-                "$GHIDRA_INSTALL_DIR" "$consumer" "$producer"
-            fi
+              if [[ "$role" == "shared" ]]; then
+                  if [[ "$TARGET" == mips32le ]]; then
+                      src/test/integration/shared-object-port-collision.py "$TARGET"
+                  else
+                      src/test/integration/shared-object-gdb.sh "$TARGET"
+                  fi
+              else
+                  FIXTURE_ROLE="$role" src/test/integration/qemu-gdb-symbols.sh "$TARGET"
+              fi
+              if [[ "$TARGET:$role" == "x86_64:exec" ]]; then
+                  sidecar="build/fixtures/x86_64/semantic.exec.ghidra-forge.dbg"
+                  source_file="$sidecar.c"
+                  first=$(sha256sum "$sidecar" | cut -d' ' -f1)
+                  first_source=$(sha256sum "$source_file" | cut -d' ' -f1)
+                  FIXTURE_ROLE="exec" src/test/integration/headless-symbol-export.sh \
+                      "$GHIDRA_INSTALL_DIR" "$consumer" "$producer" x86_64
+                  second=$(sha256sum "$sidecar" | cut -d' ' -f1)
+                  second_source=$(sha256sum "$source_file" | cut -d' ' -f1)
+                  test "$first" = "$second"
+                  test "$first_source" = "$second_source"
+                  src/test/integration/controlled-decompiler-failure.sh \
+                      "$GHIDRA_INSTALL_DIR" "$consumer" "$producer"
+              fi
           done
+          python3 src/test/integration/validation-evidence.py index --target "$TARGET" \
+            --capture "exec=$evidence_root/cases/exec/receipt.json" \
+            --capture "pie=$evidence_root/cases/pie/receipt.json" \
+            --capture "exec.no-build-id=$evidence_root/cases/exec.no-build-id/receipt.json" \
+            --output "$evidence_root/index.json"
+          echo "FORGE_VALIDATION_EVIDENCE_INDEX=$evidence_root/index.json" >> "$GITHUB_ENV"
 
       # Consume primary export reports before later x86 regressions reuse their log paths.
       - name: Streamed file digests and target-endian GNU debuglink CRC
@@ -895,7 +922,8 @@ jobs:
         run: |
           python3 src/test/integration/export-report-claims.py \
             "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" "$TARGET" \
-            --handoff-manifest "$PWD/build/test-results/report-handoff/$TARGET.json"
+            --handoff-manifest "$PWD/build/test-results/report-handoff/$TARGET.json" \
+            --validation-evidence "$FORGE_VALIDATION_EVIDENCE_INDEX"
 
       - name: Retained ELF prefix observations and independent byte oracle
         env:
