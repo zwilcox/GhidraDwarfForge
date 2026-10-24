@@ -16,9 +16,15 @@ GhidraDwarfForge-<version>-ghidra-12.0.3.zip
 Ghidra compatibility remains recorded separately in `extension.properties`:
 its generated `version=12.0.3` identifies the required Ghidra version, not the
 project version. The packaged `VERSION` and `RELEASE-MANIFEST.txt` identify the
-GhidraDwarfForge release. The corrective alpha is described in
-[`releases/0.1.0-alpha.2.md`](releases/0.1.0-alpha.2.md); the published alpha.1
-tag and assets remain unchanged.
+GhidraDwarfForge release. The published corrective release is
+[v0.1.0-alpha.2](https://github.com/zwilcox/GhidraDwarfForge/releases/tag/v0.1.0-alpha.2),
+from commit `2f88c4a1a7dd90dfedbd8d578b27242dfb8a73b7`. Its exact-main CI,
+final package audit and downloaded public assets passed verification; see
+[the publication record](VALIDATION.md#corrective-alpha2-official-publication-2026-10-24)
+and [release notes](releases/0.1.0-alpha.2.md). Alpha.1's tag/assets remain
+unchanged and affected by the documented correctness findings. The alpha.2
+tag is the immutable prepublication documentation snapshot; later handoff
+updates do not change its source or assets.
 
 The initial host packages are Linux x86-64 and Windows x86-64. The required
 target release lanes are x86-64 and AArch64 ELF; ARM32 and MIPS32 big/little
@@ -85,6 +91,17 @@ No local libdwarf compiler or separate native download is required. On Linux:
     --ghidra-dir=<ghidra> \
     --import=/path/to/program.elf
 ```
+
+Development builds also package `ExportGhidraDwarfForge.java`. To export from
+CodeBrowser, open the analyzed program, choose **Window → Script Manager**,
+select **DWARF → ExportGhidraDwarfForge.java**, and run it. Results and the JSON
+report appear in **Window → Console**. An unavailable default output directory
+opens a chooser; cancellation publishes neither artifact. The existing
+`GhidraDwarfForge.java` Run action remains a native-free metadata preflight.
+Both scripts are required by release assembly and covered by the release
+checksum manifest. Linux actual Script Manager launch, output selection and
+cancellation are tested; native Windows GUI behavior remains unverified.
+This development addition is outside the published corrective alpha.2 release.
 
 On Windows PowerShell:
 

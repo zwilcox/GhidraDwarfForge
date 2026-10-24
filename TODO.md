@@ -1,12 +1,28 @@
 # TODO.md — GhidraDwarfForge
 
 This plan began at prototype commit `7a39a186538c7aec3f7dbdc4a6e396125b5d63ea`.
-The integration head is `680ecd6`, including PRs #16–#19. Its corrective
-candidate `bfc2712` passed all twelve hosted jobs in run `40057428382`, but a
-subsequent retained-log audit found nonzero libdwarf check summaries that the
-harness missed because `dwarfdump` returned zero. The independent-validator
-gate is reopened under Section 0.2; a green historical run is not proof of a
-clean libdwarf result. Alpha.1 remains `f4a0199`; alpha.2 is unpublished.
+Published corrective release
+[v0.1.0-alpha.2](https://github.com/zwilcox/GhidraDwarfForge/releases/tag/v0.1.0-alpha.2)
+identifies main commit `2f88c4a1a7dd90dfedbd8d578b27242dfb8a73b7`, including
+PRs #16–#19 and strict-validation PR #22. Exact-main push run `40064204515`
+passed all twelve jobs; the final package audit and downloaded public assets
+passed verification before and after publication on 2026-10-24 UTC. Section
+0.2 records the resolved validator incident without treating earlier green
+runs as clean libdwarf evidence. Alpha.1 remains unchanged and affected.
+
+This subsequent combined branch retains the reviewed semantic, Script Manager,
+target-language agreement and line-table/performance changes plus inline and
+debuglink research. Component heads `2d47e12`, `96e6972` and `b0bcdb8` passed
+all twelve jobs in runs `40066078653`, `40064731597` and `40065823442`,
+respectively. Those are component results, not combined-head acceptance.
+Combined production source `a328a15` passes 24 native-independent Java smokes,
+the extension build and local repository/package checks; `c1c7485` adds only
+managed GUI harness/CI/documentation changes. The failed combined managed-GUI
+run `run.yI7ooUik` exposed a delayed-filter selection race, causally reproduced
+in `run.3HcGrt32`. The readiness correction and controlled regression now pass
+with the actual combined exporter in `run.LFXUdxrq`, including validators and
+GDB. Full combined hosted CI, including Windows GUI, remains pending. Alpha.2 is unchanged and excludes these subsequent features. See
+`docs/VALIDATION.md`, "Combined local checks and component hosted status".
 Use Sections 1.1 and 4 for the next work; do not restart prototype bring-up.
 
 Status vocabulary:
@@ -21,11 +37,17 @@ Status vocabulary:
 
 No project-level milestone is complete unless all applicable conditions hold:
 
-**CONFIRMED:** historical hosted jobs passed, including the native/GDB
-behavior checks for the documented profiles. The independent-validator gate
-below is reopened after the summary-reporting audit in Section 0.2. Resolve
-that gap and reapply all gates to the exact versioned release commit; neither
-a passing job nor acceptance of one profile proves every ELF/ABI is supported.
+**CONFIRMED:** semantic head `2d47e12` passed the complete supported-profile
+matrix with strict independent-validator enforcement in run `40066078653`.
+The current combined tree still requires its own hosted matrix, including
+Windows GUI validation of the readiness fix; component passes do not close
+that gate.
+The separate corrective release gate in Section 0.2 is complete: exact-main
+CI, the final package audit and public-asset verification passed for alpha.2.
+That release does not include this subsequent semantic result.
+Neither a passing job nor acceptance of one profile proves every ELF/ABI is
+supported. Detailed scope and intentional omissions are recorded in
+`docs/VALIDATION.md`, "Semantic hosted acceptance and main integration".
 
 - [x] Builds from a clean checkout using documented commands.
 - [x] Uses a pinned Ghidra compatibility baseline.
@@ -33,8 +55,10 @@ a passing job nor acceptance of one profile proves every ELF/ABI is supported.
 - [x] Does not crash or corrupt the Ghidra JVM.
 - [x] Preserves the original target byte-for-byte in default mode.
 - [x] Produces deterministic `.dbg.c` for an unchanged Ghidra program.
-- [~] Produces structurally valid ELF and DWARF accepted by independent validators;
-  resolve the libdwarf summary findings in Section 0.2 before publication.
+- [x] Produces structurally valid ELF and DWARF accepted by independent validators
+  within the documented profiles and bounds: strict semantic CI passes, and
+  exact-main release CI/package validation passed under Section 0.2. Precisely
+  corroborated inherited frame diagnostics remain visible in the reports.
 - [x] Passes scripted GDB behavior checks, not only `readelf -S`.
 - [x] Is honest about unavailable types, variables, locations, and source mappings.
 - [x] Has tests for every claimed architecture/host combination.
@@ -65,31 +89,32 @@ are merged into `main`; the published alpha.1 remains affected.
   values and native Windows log identity checks. **CONFIRMED:** all twelve
   jobs passed in run `40041110549` for implementation commit `cd906de`.
 - [x] Integrate reviewed PRs #16/#17/#18 under the standing authorization and
-  enforced checks. `main` is `1f2a46b`; PR #18's final head passed all twelve
+  enforced checks. Their merge reached `1f2a46b`; PR #18's final head passed all twelve
   jobs in run `40051501201`.
-- [ ] Publish a separately validated corrective release after exact-commit CI
-  and package checks; do not replace the existing alpha.1 artifact.
-  **CONFIRMED locally:** the isolated corrective branch prepares
-  `0.1.0-alpha.2`, release notes, verified version metadata and reproducible
-  assembly using existing verified native artifacts. Its Linux packaged
-  producer passes 20 lifetimes. The candidate also includes the independently
-  reviewed automatic-association fix and strict cross-target tests. Nineteen
-  native-independent checks, extension build and packaging regression pass on
-  the combined versioned tree. Candidate integration, full hosted release
-  validation and publication remain incomplete.
+- [x] Publish a separately validated corrective release after exact-commit CI
+  and package checks, preserving alpha.1. **CONFIRMED:** alpha.2 was published
+  from `2f88c4a` after all twelve jobs in `40064204515`, the final package/source/
+  provenance audit and 20 packaged Linux producer lifetimes passed. Draft and
+  public downloads match the audited ZIP; the public tag identifies that exact
+  commit and alpha.1's tag/assets remain unchanged. See `docs/VALIDATION.md`,
+  "Corrective alpha.2 official publication", for exact hashes and evidence.
 - [x] **CONFIRMED locally:** fix the default pair-publication timestamp ordering
   exposed by main run `40053041949`. Staged sidecar mtime is never below its
   paired source; original ELF metadata and later source-edit warnings remain
   intact. Deterministic publisher/cancellation and GDB regressions pass;
-  exact candidate CI remains required before release.
+  exact-main CI subsequently passed in `40064204515`.
 - [x] **CONFIRMED locally:** force canonical LF native patch checkouts, verify
   their pinned hash before all host/comparison builds, and reject inconsistent
   patch metadata during release assembly. Candidate audit exposed Windows CRLF
   metadata; equivalent patched source does not excuse mismatched provenance.
-  Checkout-conversion and malformed-metadata regressions pass; fresh complete
-  candidate CI, including native Windows, remains required before publication.
+  Checkout-conversion and malformed-metadata regressions pass; exact-main CI,
+  including native Windows, and the final provenance audit subsequently passed.
 
-## 0.2 Validator summary enforcement — release blocker (2026-10-23)
+## 0.2 Validator summary enforcement — resolved release blocker
+
+**CONFIRMED (closed 2026-10-24):** exact-main run `40064204515`, the final
+package audit and public-asset verification complete this gate for alpha.2
+within the documented profiles. The incident and failed-run history follow.
 
 **CONFIRMED:** `dwarfdump -ka -ks` can exit zero while reporting nonzero
 checker counts. A digest-verified audit of all five target artifacts from
@@ -97,7 +122,7 @@ checker counts. A digest-verified audit of all five target artifacts from
 unnamed sections, and section-header-free inputs need separate explanations.
 GNU/LLVM and GDB results remain recorded; they do not erase another tool's
 reported errors. Historical claims of zero libdwarf errors are withdrawn for
-these affected artifacts pending the analysis below.
+these affected artifacts; the analysis and corrected validation follow.
 
 - [x] Make check summaries and completion evidence mandatory; reject nonzero
   counters even when process status is zero, and reject incomplete logs.
@@ -112,7 +137,7 @@ these affected artifacts pending the analysis below.
 - [x] Correct the standalone consumer's rejection of valid `PN_XNUM` originals
   before using them to corroborate inherited frame diagnostics; retain rejecting
   malformed-count/table controls in both ELF widths and byte orders.
-- [ ] Update integration callers and documentation, rerun the full target/host
+- [x] Update integration callers and documentation, rerun the full target/host
   matrix, and audit the exact final main package before publishing alpha.2.
 
 **CONFIRMED locally:** complete-report enforcement and malformed-report,
@@ -123,8 +148,9 @@ frame diagnostics; they are reported, not called absent. Twenty-five fresh
 non-sectionless target/role cases pass strict validation and GDB. The five
 corrected sectionless cases also pass, including exact original-load metadata,
 all emitted location intervals, corrupted-artifact rejection and byte-identical
-repeats. Complete corrected hosted validation and the final package audit remain
-pending; local successes do not close the release gate.
+repeats. At that local checkpoint, hosted validation and the final package
+audit were still pending. The later exact-main release evidence above closes
+the gate; local results alone did not.
 
 PR #22 at `bf7f2b1` passed native builds, extension/release assembly, ARM32 and
 both MIPS32 lanes in run `40061424810`. The x86-64 and AArch64 lanes failed
@@ -134,7 +160,11 @@ the aggregate gate failed. The exact candidate package precheck passed, but
 neither that audit nor the three passing target lanes permits publication.
 The separate validation-only reader patch now passes 16 local positives,
 60 malformed-input controls and fresh x86-64/AArch64 full ELF-layout suites.
-The corrected complete hosted rerun is still required.
+Corrected PR #22 head `99845c7` passed all twelve jobs in `40062747733` and
+merged normally as `2f88c4a`. Its exact-main push run `40064204515` then passed
+all twelve jobs, followed by the final package audit and publication checks.
+Separately, semantic head `b14e810` passed all twelve jobs in `40063017269`,
+including extended-program cases; those additional features are not in alpha.2.
 
 ## 1. Milestone ordering
 
@@ -171,15 +201,15 @@ items are these bounded workstreams:
 
 | Workstream | Status and acceptance needed |
 |---|---|
-| Corrective release (§0.1) | **CONFIRMED:** PRs #16/#17/#18 are merged. `0.1.0-alpha.2` version/notes, local packaging checks and the automatic-association correction are prepared. **PLANNED:** integrate and validate the exact versioned candidate, then publish it without changing alpha.1. |
+| Corrective release (§0.1/0.2) | **CONFIRMED complete within the documented profiles:** alpha.2 is published from `2f88c4a` after exact-main CI `40064204515`, the final package audit and public-asset verification. Alpha.1 remains unchanged and affected; subsequent semantic/GUI/target/performance work is excluded. |
 | ELF robustness (P0.9) | **CONFIRMED complete within the documented bounds:** PR #18 implements extended counts, unnamed tables, bounded file-backed I/O, correct recorded-load-base translation and cancellation. Local checks and all twelve hosted jobs pass; direct PN_XNUM execution limits are documented. |
-| Function identity and scopes (P1.7, P3.3) | **PLANNED:** distinct linkage names without losing analyst-name lookup; external-function declarations, thunks/aliases, function/class/lexical scopes, static locals, and same-named type/variable disambiguation. Existing namespace globals and external-data declarations must remain working. |
-| Additional range/location cases (P1.8, P1.11a) | **PLANNED:** entry points that are not the lowest body address; proven register/memory migration, call-crossing and non-entry lifetimes, stack-slot reuse, and mixed composite storage. Require GDB value checks at multiple instruction addresses and honest unavailable gaps. |
-| Target-profile coverage (P2.3/3a/3b) | Current five profiles pass. Enumerate additional ABI/storage cases, derive their target properties, and add real exporter/validator/QEMU-GDB tests before extending support claims. Completing this plan does not imply every Ghidra CPU/ABI. |
-| Remaining GUI journeys (P2.7) | **PRESENT, UNVERIFIED:** manual Script Manager launch and Windows chooser/cancellation. Linux GUI fallback already has a passing automated test. |
+| Function identity and scopes (P1.7, P3.3) | **CONFIRMED in hosted run `40063017269`:** explicit function-owned statics preserve duplicate-name lookup across all five targets, and the controlled failure check omits failed owners under the symbol-only contract. These workstreams remain partial. **PLANNED:** distinct linkage names, external-function declarations, thunks/aliases, class/lexical scopes, inferred static locals and remaining same-named type/variable cases. Existing namespace globals and external-data declarations must remain working. |
+| Additional range/location cases (P1.8, P1.11a) | **CONFIRMED in hosted run `40063017269`:** P1.8's bounded entry/range acceptance is complete (five-target structural checks, x86-64 advanced-entry GDB); incoming-register prefixes pass x86-64/AArch64 and end after the first overwrite. P1.11a remains partial. **PLANNED:** register/memory migration, call-crossing and non-entry lifetimes, stack-slot reuse, and mixed composite storage. Require GDB value checks at multiple instruction addresses and honest unavailable gaps. |
+| Target-profile coverage (P2.3/3a/3b) | **CONFIRMED in hosted run `40063017269`:** five baseline profiles and scalar FP aliases pass, with exact float/double values on x86-64/AArch64/ARM32 and scalar floats on both MIPS orders. Unproven MIPS double pairs and ARM32's mode-switching-return prefix case remain unavailable. Target expansion remains partial. Enumerate additional ABI/storage cases and require actual exporter/validator/GDB evidence before extending claims; this is not blanket CPU/ABI support. |
+| GUI reproducibility (P2.7) | **CONFIRMED locally on the combined product:** `run.LFXUdxrq` passes geometry, pending-filter readiness, real Script Manager preflight/export, chooser select/cancel, validators and GDB. The failed `run.yI7ooUik` and causal `run.3HcGrt32` remain recorded. Complete combined hosted validation, including native Windows, is still required; older component passes do not establish this result. |
 | Optional debuglink (P2.8) | **PLANNED, optional:** explicit opt-in attachment and backup/rollback. Sidecar lookup/CRC compatibility is tested on private fixture copies; default export leaves the original unchanged. |
-| Inline reconstruction (P3.4) | **UNCERTAIN:** investigate defensible instance/call-site/range evidence and record a decision. Implement only if supported by that evidence. |
-| Performance (P3.5) | **PLANNED:** establish representative large-binary benchmarks, choose optimizations with measured benefit, and prove unchanged semantics/determinism. The listed candidates are not all unconditional requirements. |
+| Inline reconstruction (P3.4) | **CONFIRMED investigation complete:** ADR 0003 and a reproducible compiler/Ghidra probe distinguish real inline instances from Ghidra's decompiler flag and record surviving locals/source information. Inline emission remains deferred until explicit instance/origin/range evidence and GDB acceptance exist. |
+| Performance (P3.5) | **CONFIRMED locally:** synthetic scaling and a JFR-selected line-table index are measured. Historical paired 10,000-function exports reduce median process time by 15.5% with byte-identical artifacts; a fresh strict/GDB replay validates the retained result without rerunning timing. Representative complex-binary and further phase-level profiling remain **PLANNED**; no blanket speed or memory claim. See `docs/PERFORMANCE.md`. |
 
 The optional/research items need an explicit recorded outcome; they are not
 silently complete merely because they are outside the current alpha scope.
@@ -573,7 +603,15 @@ Implement:
 - [x] Function symbols/DIE addresses match the original executable for the
   current contiguous-function fixture coverage.
 - [x] Original target hash is unchanged.
-- [x] Invalid/unsupported target combinations fail before output is published.
+- [x] Invalid/unsupported ELF machine/class/byte-order combinations fail before
+  output is published.
+- [~] Reject definite ELF/Ghidra processor, pointer-width and byte-order
+  disagreements before extraction/native production. **CONFIRMED locally:**
+  metadata controls, real same-width wrong-processor imports with prior-pair
+  preservation, and correct five-profile ET_EXEC exporter/validator/GDB cases
+  pass. The new rejection gates and native Windows metadata smoke still need
+  hosted verification. Compiler specifications, language variants and further
+  ELF ABI-flag policy remain separate; agreement alone does not prove a new ABI.
 - [x] Existing compiler DWARF is replaced, not merged. Stale compressed DWARF,
   indexes, debug links, and mini-debug data are retired in the sidecar while
   the original remains unchanged; see ADR 0001 and the validation record.
@@ -785,7 +823,13 @@ Define precedence among analyst-applied listing/signature types and decompiler g
 - [x] Signedness, size, member offset, array bound, and enum values validate.
 - [x] `ptype` in GDB matches expected fixture shape.
 - [x] Unsupported types produce a documented fallback/diagnostic.
-- [x] Type output is deterministic.
+- [x] Type output is deterministic for the validated unchanged-program paths.
+  The generic `DefaultDataType` singleton now uses a stable built-in key instead
+  of its process-local ID. Initial export, save, and two fresh read-only reopen
+  exports have byte-identical DWARF/source and raw extraction models; persisted
+  analyst/imported IDs remain authoritative. See the saved-program regression
+  in `docs/VALIDATION.md`. This does not promise equality for independently
+  imported or subsequently changed programs.
 
 ## P1.7 Emit complete function signatures
 
@@ -825,11 +869,14 @@ analyst-facing breakpoint name.
 
 ## P1.8 Represent discontiguous program/function ranges correctly
 
-**Status:** `[~]` — Ghidra address sets, deterministic DWARF 5 range lists,
-split line sequences, validators, and GDB gap behavior pass in hosted CI for
-the current fixtures. Extraction still skips a function whose first body range
-does not begin at its entry point; that remaining case needs `DW_AT_entry_pc`
-or another validated representation.
+**Status:** `[x]` within the documented acceptance: discontiguous and
+below-entry bodies preserve exact coverage, true entry, explicit
+`DW_AT_entry_pc` and entry-first range lists. Hosted run `40063017269` passes
+the isolated producer/structural checks on all five current targets and six
+real x86-64 ET_EXEC/PIE, rebase and deterministic-repeat cases with GDB.
+Entry-first serialization also supports GDB 15.1, which ignores the explicit
+entry attribute. The advanced runtime fixture is x86-64; this is not a claim
+of that same runtime coverage on every target. See `docs/VALIDATION.md`.
 
 ### Work
 
@@ -847,8 +894,11 @@ or another validated representation.
 - [x] `readelf --debug-dump=ranges` or equivalent shows expected entries.
 - [x] `.debug_aranges` is deliberately not emitted; CU `DW_AT_ranges` provides
   the tested lookup coverage without an optional accelerator.
-- [ ] Export a function whose body includes addresses below its entry point;
-  verify the true entry breakpoint, all ranges, source lookup and gap behavior.
+- [x] Export a function whose body includes addresses below its entry point;
+  verify the true entry breakpoint, all ranges, source lookup and gap behavior
+  including contiguous/interior entries and PIE/Ghidra rebasing on x86-64.
+- [x] Pass the added function-entry tests in the hosted integration pipeline:
+  run `40063017269`, with five-target structural and x86-64 runtime acceptance.
 
 ## P1.9 Export global variables
 
@@ -905,6 +955,18 @@ Map Ghidra registers to target DWARF register numbers using isolated architectur
 
 ## P1.11 Emit parameters/locals with accurate locations
 
+**CONFIRMED locally (2026-10-23):** mapped logical FP aliases preserve scalar
+float/double arguments on x86-64/AArch64 and scalar floats on both MIPS O32
+byte orders through stores, PIE and explicit rebases. First-overwrite prefix
+checks still make later values unavailable. ARM32 uses canonical D-register
+numbering and upper/lower scalar slices; the subsequent hosted semantic run
+`40063017269` passes its scalar float/double and upper-slice runtime oracles.
+Its opaque-return prefix case remains explicitly unavailable.
+MIPS paired doubles remain explicitly unavailable; compiler-GDB pair values
+are also unverified on the tested emulator/debugger. These cases do not prove
+vector, aggregate-passing, call-crossing or new ABI support. See
+`docs/VALIDATION.md` for exact evidence and the independent compiler limitation.
+
 **Status:** `[x]` — parameters and recovered locals have canonical name/type
 DIEs. A curated locationless local is proven in all ET_EXEC/PIE lanes and GDB
 reports it optimized out. A native-independent planner and audited libdwarf
@@ -950,21 +1012,30 @@ or uncertain storage remains locationless with a diagnostic.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
 
-**Status:** `[ ]` — **PLANNED** follow-on to the completed conservative P1.11
-profile. The existing changing-stack test proves adjustment of an SP-relative
-expression, not arbitrary movement of a value between registers and memory.
+**Status:** `[~]` — **CONFIRMED in hosted run `40063017269`:** a simple incoming
+register parameter now retains its location through the first overwriting instruction in a fully
+decoded straight-line leaf function, then becomes explicitly unavailable. The
+new x86-64/AArch64 compiler/GDB oracle covers ET_EXEC/PIE, rebases and repeated
+exports. Both target-specific hosted lifetime gates pass.
+Later first-use, calls, branches, discontiguous bodies, delay slots, storage
+migration and mixed pieces remain outside this bounded proof. The existing
+changing-stack test proves SP-relative adjustment, not value migration.
 
-- [ ] Establish evidence-backed machine-address live ranges for register
+- [~] Establish evidence-backed machine-address live ranges for register
   variables that begin after entry or whose registers are later overwritten.
+  Incoming single-register parameters before a proven first overwrite pass
+  in the hosted x86-64/AArch64 gates; later-starting variables and other
+  control-flow shapes remain planned.
 - [ ] Track supported register-to-register and register-to-stack moves across
   calls using the selected ABI and recovered instruction evidence.
 - [ ] Test stack-local first-use and slot-reuse boundaries; record unavailable
   intervals where identity or lifetime cannot be established.
 - [ ] Support mixed register/memory composite pieces when every piece has
   defensible size, order and lifetime information.
-- [ ] Compare GDB values with compiler-oracle fixtures at multiple PCs on each
-  claimed profile, including intentionally unavailable gaps. Retain validators,
-  deterministic output, input preservation and cancellation tests.
+- [~] Compare GDB values with compiler-oracle fixtures at multiple PCs on each
+  claimed profile, including intentionally unavailable gaps. The bounded
+  x86-64/AArch64 prefix cases pass; broader lifetimes/storage remain planned.
+  Retain validators, deterministic output, input preservation and cancellation tests.
 
 Ghidra high-variable/symbol evidence is a possible input, not proof of original
 compiler lifetimes. Analyst-defined listing information retains precedence.
@@ -1043,10 +1114,19 @@ AArch64, ARM32, and MIPS32 big/little endian.
 
 ## P2.3 Add AArch64 target support
 
+The shared [target-profile contract](docs/TARGET-PROFILES.md) records the
+existing five profiles and a finite follow-up order for P2.3/3a/3b. The
+read-only audit is **CONFIRMED**; ABI classification/diagnostics, scalar FP,
+stack-passed parameters and real aggregates remain **PLANNED** until their
+specific runtime gates pass. Accepted machine/class metadata is not proof of
+all calling conventions for that processor.
+
 **Status:** `[~]` — the symbol/source-line/type/signature milestone passes in
 hosted CI for ET_EXEC, PIE, shared objects, and no-section inputs. Stack-local
-locations pass; overwritten input registers are honestly omitted. Additional
-storage cases remain beyond the validated alpha profile.
+locations pass. Hosted run `40063017269` additionally proves scalar float/double
+aliases and bounded incoming-register prefixes; values after the proven
+prefix remain unavailable. Additional storage and ABI cases remain beyond
+this documented profile.
 
 ### Work
 
@@ -1072,7 +1152,10 @@ storage cases remain beyond the validated alpha profile.
 and QEMU/GDB runtime breakpoints pass for MIPS32 big/little endian ET_EXEC,
 PIE, shared-object, and no-section-table inputs; `ptype`, stable register
 parameters, and stack locals pass. The alpha release validation includes both
-MIPS lanes; additional variable storage cases remain.
+MIPS lanes. Hosted run `40063017269` also proves function-owned statics and
+scalar float locations in both byte orders. Paired doubles remain unavailable;
+the independent compiler-pair observation is explicitly unverified under the
+tested QEMU/GDB transport. Additional storage and ABI cases remain.
 
 ### Work
 
@@ -1108,6 +1191,13 @@ the hosted producer, real headless exporter, structural-validator, and
 QEMU/GDB behavior matrix for ET_EXEC, PIE, shared objects, no-build-ID inputs,
 and program-header-only inputs. Thumb, big-endian ARM, and additional ABI or
 storage profiles are not claimed.
+
+**CONFIRMED in hosted run `40063017269`:** six scalar-FP
+exec/PIE/rebase/repeat cases pass stable float/double and upper-`s1` value
+checks with strict validation. Function-owned static scopes also pass with
+the native EHABI fixture precondition. The clobbered mode-switching-return
+case requires explicit unavailability; general ARM prefix lifetimes are not
+completed. See `docs/VALIDATION.md`.
 
 ### Work
 
@@ -1211,14 +1301,48 @@ checks, staged pair rollback, and final hashes pass locally. Automated Linux
 GUI fallback selection/cancellation passes locally and in hosted run
 `39896787460`, in a genuine non-headless Ghidra 12.0.3 process under Xvfb,
 including validators and GDB source stepping.
-Manual Script Manager navigation and Windows GUI behavior remain untested.
+The installed Export launcher now passes actual Linux Script Manager discovery,
+double-click Run, Console reporting and chooser selection/cancellation in
+`gui-script-manager.sh`. Run `40054563515` at `83b74a6` also passed the full
+native Windows journey; this component evidence does not substitute for the
+current combined-head gate.
 
 Additional user-journey coverage:
 
-- [ ] Verify Script Manager discovery, launch and report presentation using
-  the documented installed-extension workflow.
-- [ ] Exercise native Windows output selection and cancellation; verify
+- [x] Verify Script Manager discovery, launch and report presentation using
+  the documented installed-extension workflow on Linux. The native-free
+  metadata script and the explicit Export launcher are distinct installed
+  entries; this test does not directly construct either production script.
+  The first hosted Script Manager run exposed a covering-window focus race;
+  foreground/Name-cell targeting passes locally. Later Windows activation
+  intentionally focused Ghidra's filter, exposing a separate harness pre-click
+  assertion race. The correction verifies real double-click delivery instead
+  of requiring table keyboard focus; controlled and full Linux checks pass.
+  Run `40062946718` then exposed delayed observation while Ghidra's mouse
+  handler compiled scripts in a modal loop. Pre-dispatch event observation
+  passes a controlled reproduction and full Java 21 Linux journey
+  `run.O3SsqvwH`; no launch retries or timeouts changed. The new exact-head
+  hosted gate, including native Windows, remains required.
+  Run `40064976588` then demonstrated inconsistent native/Java window
+  coordinates under bare Xvfb. An owned Openbox session and independent native
+  geometry control pass 100 cases and the full Java 21 Linux journey
+  `run.KPdcV6p3`; fresh hosted acceptance remains pending.
+  A subsequent combined-product run exposed a pending Ghidra table-filter
+  update that cleared selection during the double-click. Buffered event and
+  selection-stack evidence reproduces the null selected script; the harness
+  now waits for the actual refresh/filter/sort work and queued selection repair.
+  A real Ghidra filter control covers that readiness boundary without launch
+  retries; final combined-product Linux run `run.LFXUdxrq` passes all controls,
+  chooser outcomes, validators and GDB. The combined Linux/native Windows
+  hosted gate remains open.
+- [x] Exercise native Windows output selection and cancellation; verify
   chosen paths, original preservation and no final artifacts after cancellation.
+  A real desktop-click/ACL-denial probe precedes the full Windows Script Manager
+  harness in CI. The latter uses packaged Windows natives, selected paths with
+  spaces, input hashes, Console reports, and native GNU/LLVM validators. Both
+  passed in `40054563515`; independent `dwarfdump` was unavailable and Linux
+  ELF runtime GDB checks were not run on Windows. The later focus regression
+  requires a new full native Windows run before the combined change integrates.
 
 ### Work
 
@@ -1243,7 +1367,10 @@ Additional user-journey coverage:
 
 ## P2.8 Add optional `.gnu_debuglink` attachment
 
-**Status:** `[ ]` — optional feature; exact scope **UNCERTAIN**.
+**Status:** `[ ]` — optional product operation **PLANNED**. The bounded backend
+and backup-based re-export investigation is complete; the explicit transaction
+design and remaining acceptance tests are in
+[`ADR-0004`](docs/ADR-0004-DEBUGLINK-ATTACHMENT.md). No attachment option exists.
 
 **CONFIRMED at the compatibility layer:** automatic debuglink lookup and CRC
 mismatch rejection now have strict local tests on private copies made with
@@ -1256,7 +1383,15 @@ the full original/backup/rollback contract below remains required.
 - Keep default export non-mutating.
 - Add an explicit user option to attach `.gnu_debuglink` only after sidecar success.
 - Compute/store the required CRC correctly.
-- Back up or atomically replace the modified target.
+- Retain a verified independent original backup and atomically replace the
+  modified target; test rollback without overwriting an existing backup.
+- Preflight receipt, temporary receipt, log and backend-output paths against
+  every input, pair and backup before writes; test identity aliases and
+  preservation even when rejection reporting fails.
+- For refresh, export directly to a fresh final sidecar/source basename;
+  retain the previous pair/receipt and back up the prior attached image.
+  Test changed-CRC refresh and full prior-association rollback, not merely
+  byte-identical re-export. Reject a lost or overwritten prior pair.
 - Verify automatic GDB discovery.
 
 ### Completion criteria
@@ -1268,15 +1403,28 @@ the full original/backup/rollback contract below remains required.
 - [ ] CRC mismatch test fails as expected.
 - [ ] Default-mode original hash test remains unchanged.
 
+The Linux research probes cover GNU 2.42 tools for x86-64, AArch64 and MIPS32
+both byte orders, including backend rejection of unsupported layouts. These
+results do not claim a product transaction, Windows attachment, or narrower
+ordinary-export input support. Their historical bare-libdwarf result predates
+strict summary enforcement and is not current validator acceptance. A separate
+save/reopen investigation found
+generic `undefined` uses a transient Ghidra UID that changes type DIE ordering;
+the normalized model and source remain identical. Record/fix that bounded
+byte-determinism issue separately, without weakening imported-input SHA checks.
+See [reproduction/evidence](docs/research/DEBUGLINK-EVIDENCE.md).
+
 ## P2.9 Add build-ID association where applicable
 
-**Status:** `[~]` — matched sidecars preserve the original build ID. The prior
-hosted x86-64 discovery test did not reject section-association warnings.
+**Status:** `[x]` within the documented profiles — matched sidecars preserve
+the original build ID. The prior hosted x86-64 discovery test did not reject
+section-association warnings.
 Allocated relocation metadata is now preserved as inert sections, and strict
 ET_EXEC/PIE discovery plus mismatch rejection passes locally on x86-64,
 AArch64, and both MIPS32 byte orders. All five target CI lanes now run these
-checks; hosted verification of the new fix is pending. No-build-ID sidecars
-retain that absence and the existing explicit GDB workflow remains covered.
+checks, and exact-main run `40064204515` passes all five before alpha.2
+publication. No-build-ID sidecars retain that absence and the existing explicit
+GDB workflow remains covered.
 
 ### Work
 
@@ -1401,6 +1549,15 @@ an integration pass.
 - [x] Native crashes are clearly reported as failures.
 - [x] Artifacts/transcripts are retained for failed runs.
 
+**CONFIRMED local reliability follow-up:** hosted GUI/combined run `40055880742`
+hit an occupied PID-derived QEMU TCP port in the MIPS32LE shared-object test.
+That harness now uses a private UNIX socket with bounded startup/liveness and
+cleanup checks. A controlled occupied historical port still permits the full
+shared-object GDB oracle to pass; startup failure/timeout cleanup also passes.
+Both regressions are wired into CI, with exact-head hosted validation pending.
+Other TCP-based QEMU harnesses remain unchanged; this does not claim a general
+emulator retry policy or excuse debugger/validator failures.
+
 ## P2.13 Produce installable releases
 
 **Status:** `[x]` — deterministic CI artifacts, packaged Linux/Windows natives,
@@ -1411,6 +1568,16 @@ native-inclusive bundle and checksum file were published as
 [v0.1.0-alpha.1](https://github.com/zwilcox/GhidraDwarfForge/releases/tag/v0.1.0-alpha.1)
 on 2026-10-22 America/Chicago, targeting tested commit `f4a0199`. This closes
 alpha release packaging/publication, not the remaining feature-scope items.
+
+**CONFIRMED (2026-10-24):** the corrective
+[v0.1.0-alpha.2](https://github.com/zwilcox/GhidraDwarfForge/releases/tag/v0.1.0-alpha.2)
+was published at `05:15:20Z` from `2f88c4a`, following all twelve exact-main jobs
+in `40064204515` and the final package audit. Draft and published ZIP/checksum
+assets were downloaded and verified against the audited bytes, and alpha.1's
+tag/assets remain unchanged. This closes the corrective release gate within
+the documented target/host profiles; alpha.1 remains affected by its recorded
+correctness findings. New semantic features in this branch are not released
+by that tag. Exact hashes and audit evidence are in `docs/VALIDATION.md`.
 
 ### Work
 
@@ -1473,8 +1640,16 @@ after merge and post-merge validation.
 
 ## P3.3 Add richer scopes and declarations
 
-**Status:** `[~]` — namespace-parented globals and typed external-data
-declarations are tested. Artificial auto-parameter emission is present; a
+**Status:** `[~]` — namespace-parented globals, typed external-data
+declarations, and function-owned static memory labels pass their documented
+checks. Hosted run `40063017269` proves the static-scope slice on all five
+targets, including ARM32 exec/PIE/rebased-PIE. Its fixture precondition validates
+native ARM EHABI instead of requiring a DWARF FDE, with missing/malformed/
+unusable coverage controls and unchanged runtime scope/value/return checks.
+This supersedes run `40057031192`'s pre-export failure without weakening its
+oracle; broader scopes and declarations remain partial.
+Artificial auto-parameter
+emission is present; a
 dedicated behavior test remains. The other scope/declaration work below is
 **PLANNED**.
 
@@ -1483,7 +1658,12 @@ Potential features:
 - Lexical blocks.
 - Namespaces/classes.
 - Thunks/aliases with specification/origin relationships.
-- Static locals.
+- [~] Static locals: explicit Function-owned typed memory labels retain their
+  owner, type, and normalized absolute location. Duplicate private names in
+  different functions remain distinct from a same-named global. Failed
+  decompilation keeps the owner symbol-only, omitting its statics with a
+  diagnostic and an accurate exported-static count. Lexical-block
+  ownership and inferred/decompiler-only static locals remain unimplemented.
 - Artificial variables.
 - Declaration-only DIEs.
 - Disambiguation of same-named types from different Ghidra categories: the
@@ -1500,13 +1680,58 @@ ranges. Category paths are not automatically original source namespaces.
 
 ## P3.4 Investigate reconstructed inlining
 
-**Status:** `[ ]` — **UNCERTAIN**.
+**Status:** `[x]` — **CONFIRMED**, bounded investigation complete; inline
+emission is not implemented.
 
-Do not emit `DW_TAG_inlined_subroutine` based on weak guesses. Establish whether Ghidra provides defensible inline-call reconstruction and whether GDB behavior improves.
+See `docs/ADR-0003-INLINE-EVIDENCE.md` and the durable transcript under
+`docs/research/`. Ghidra 12.0.3's inline flag controls decompilation and can
+remove a high-pcode call while the machine call remains. The compiler-DWARF
+import path preserves qualifying inline locals in their containing function,
+source rows and optional comments; this does not retain the complete instance/
+origin/call-site/range model required by the current exporter.
+
+The Linux x86-64 GCC 13.3/GDB 15.1 probe passes compiler DWARF validation,
+actual inline-frame/local-value checks, debug/no-debug Ghidra comparisons,
+ordinary-call flag toggling and original-hash preservation. Its recorded
+importer location limitations are not counted as a clean Forge export.
+
+**PLANNED, conditional:** implement inline DIEs only after ADR 0003's explicit
+evidence-provider/model and multiple/nested-instance GDB acceptance conditions
+are met. Do not infer compiler inlining from the flag or comments, discard
+surviving knowledge, or describe inline export as complete.
 
 ## P3.5 Add optional size/performance features
 
-**Status:** `[ ]`.
+**Status:** `[~]` — synthetic scaling measurements and one measured line-table
+index are complete locally; representative complex application/firmware and
+further per-phase profiling remain **PLANNED**. The bounded 10,000-function
+comparison improves median whole-process time from 10.86 to 9.18 seconds over
+five alternating pairs, with every output pair byte-identical. It does not
+establish speed or memory effects for other workloads/hosts.
+
+`src/test/performance/export-benchmark.py` separates one saved-project import
+from repeated fresh-JVM exports. The historical 100/1,000/10,000-function cases
+pass GNU/LLVM, full DWARF function/address/source checks, runtime GDB, original
+hashes and byte-identical reruns; their old exit-zero libdwarf checks were
+insufficient and are not clean-validator evidence. The corresponding
+export medians were 2.52/3.27/10.62 seconds on the recorded local host; these
+small synthetic cases do not predict arbitrary firmware behavior. Commands,
+measurement boundaries, evidence and next profiling questions are in
+`docs/PERFORMANCE.md`.
+
+After merging strict `99845c7`, focused source/line/range smokes and a fresh
+ARM32 exec/PIE/shared export/validator/GDB matrix pass, including byte-identical
+exec reruns. The retained paired 10,000-function artifact passes a fresh full
+strict/LLVM/GNU/GDB replay, with all 10,002 inherited frame messages precisely
+corroborated using the separately bounded validation-only capacity patch.
+No timed 10,000-function export was rerun. Combined hosted/Windows validation
+and representative complex-binary profiling remain **PLANNED**.
+
+**CONFIRMED:** performance PR #24 run `40064815083` failed its validator
+capacity gate because the standalone bundle omitted `dwarfdump.conf`. The
+follow-up packages the pinned config with an explicit-path launcher and
+rejecting relocation/configuration controls. Strict error checks remain intact;
+a corrected full hosted run is required. See `support/validation/README.md`.
 
 Potential features only after correctness:
 
@@ -1519,9 +1744,9 @@ Potential features only after correctness:
 
 ### Completion criteria
 
-- [ ] No optimization changes semantic output.
-- [ ] Determinism and validators remain passing.
-- [ ] Benchmark demonstrates a measured benefit.
+- [x] The implemented line-table index preserves byte-identical semantic output.
+- [x] Local determinism and strict validators pass for the documented index fixtures; combined hosted validation remains planned.
+- [x] A paired benchmark demonstrates its measured benefit on the documented workload.
 
 ---
 
@@ -1649,19 +1874,18 @@ Unless the user changes priorities:
 
 1. Run `git status --short`; read `AGENTS.md`, the current context/status in
    `PROJECT_CONTEXT.md`, and this file's Sections 0.1/1.1. Preserve existing work.
-2. Check PRs #16/#17/#18 and current CI/release state. Routine reviewed merges
-   are authorized after required checks pass; see AGENTS.md Section 6.1.
-   Implementation `3e47589` passed all twelve jobs in run `40047390539`, while
-   published alpha.1 remains `f4a0199`.
-3. For release work, set the next version, update notes/limitations, validate
-   the exact release commit and package, then publish a new artifact without
-   replacing alpha.1. Do not invent a separate approval gate for routine merges.
-4. P0.9 is complete within ADR 0001's resource/layout bounds in PR #18;
-   implementation `3e47589` passes all twelve jobs in run `40047390539`.
-   Preserve the stacked PR order (#16, #17, #18), enforce current-base checks,
-   and leave the existing published alpha intact during integration.
-5. Address P1.7/P1.8/P3.3 identity, entry-point and scope cases with focused
-   compiler-oracle/GDB fixtures, then P1.11a lifetime/storage migration.
+2. Check the subsequent semantic, GUI, target-agreement and performance PRs
+   and their current-base CI. Routine reviewed merges are authorized after
+   required checks pass; see AGENTS.md Section 6.1. Preserve their histories
+   and require the complete combined matrix before main integration.
+3. Preserve published alpha.2 at `2f88c4a` and alpha.1 at `f4a0199`. Future
+   releases need their own version/notes, exact-commit CI and package/asset
+   verification; do not replace or retag either published artifact.
+4. Preserve P0.9's documented resource/layout bounds and the resolved strict
+   validator gate. Neither direct PN_XNUM execution nor blanket processor/ABI
+   coverage follows from the passing import/export tests.
+5. Preserve P1.8's bounded acceptance and address remaining P1.7/P3.3 scope
+   cases and P1.11a lifetime/storage migration with compiler-oracle/GDB fixtures.
 6. Extend explicitly selected target profiles and GUI journeys. Treat optional
    debuglink, inlining research and performance candidates according to their
    recorded scopes; do not invent recovered information to complete them.

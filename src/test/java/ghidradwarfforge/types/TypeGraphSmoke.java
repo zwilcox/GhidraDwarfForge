@@ -32,6 +32,7 @@ import ghidradwarfforge.types.TypeGraph.TypedefType;
 import ghidradwarfforge.types.TypeGraph.VoidType;
 import ghidradwarfforge.types.ProgramTypeModel.GlobalVariable;
 import ghidradwarfforge.types.ProgramTypeModel.FunctionSignature;
+import ghidradwarfforge.types.ProgramTypeModel.FunctionStaticVariable;
 import ghidradwarfforge.types.ProgramTypeModel.LocalVariable;
 
 /** Native-free canonicalization and recursive-type smoke test. */
@@ -114,6 +115,28 @@ public final class TypeGraphSmoke {
                 !program.functions().get(0).locals().get(0).name().equals("analyst_local") ||
                 !program.variableStorage().variables().get(0).equals(analystLocation)) {
             throw new AssertionError("global variable model is not deterministic");
+        }
+        FunctionSignature otherOwner = new FunctionSignature("other", 0x900,
+            signedInt, List.of(), List.of(), false, false, "default", "USER_DEFINED");
+        List<FunctionStaticVariable> privateVariables = List.of(
+            new FunctionStaticVariable("same_name", 0x2200, 4, signedInt, 0x900,
+                "USER_DEFINED"),
+            new FunctionStaticVariable("same_name", 0x2100, 4, signedInt, 0x800,
+                "USER_DEFINED"));
+        ProgramTypeModel scoped = new ProgramTypeModel(first, List.of(signature, otherOwner),
+            program.globals(), program.variableStorage(), privateVariables);
+        if (scoped.functionStatics().size() != 2 ||
+                scoped.functionStatics().get(0).ownerAddress() != 0x800 ||
+                scoped.functionStatics().get(1).address() != 0x2200) {
+            throw new AssertionError("function static identity or ordering was lost");
+        }
+        try {
+            new ProgramTypeModel(first, List.of(signature), program.globals(),
+                program.variableStorage(), privateVariables);
+            throw new AssertionError("static variable with missing owner was accepted");
+        }
+        catch (IllegalArgumentException expected) {
+            // An omitted function must not turn its private memory into a global.
         }
         try {
             new TypeGraph(List.of(new IndirectionType("bad", "bad *", 8,

@@ -163,6 +163,16 @@ jobs:
           support/build-validation-dwarfdump.sh "$LIBDWARF_ARCHIVE" \
             "$PWD/validation-tool" "$PWD/build/test-results/validation-tool-build"
 
+      - name: Validate relocated standalone checker configuration
+        run: python3 src/test/integration/dwarfdump-configuration.py "$PWD/validation-tool"
+
+      - name: Validate complete bounded diagnostics and allocation rollback
+        run: |
+          sources=(build/test-results/validation-tool-build/build.*/libdwarf-2.3.2)
+          test "${#sources[@]}" -eq 1
+          python3 src/test/integration/dwarfdump-diagnostic-capacity.py \
+            "$PWD/validation-tool/bin/dwarfdump" --libdwarf-source "${sources[0]}"
+
       - uses: actions/upload-artifact@v7
         with:
           name: dwarfdump-linux-validation
@@ -177,10 +187,13 @@ jobs:
             build/test-results/validation-tool-build/**/configure.log
             build/test-results/validation-tool-build/**/patch.log
             build/test-results/validation-tool-build/**/reader-patch.log
+            build/test-results/validation-tool-build/**/diagnostic-patch.log
             build/test-results/validation-tool-build/**/config.log
             build/test-results/validation-tool-build/**/make.log
             build/test-results/validation-tool-build/**/dependencies.txt
             build/test-results/validation-tool-build/**/version.txt
+            build/test-results/dwarfdump-diagnostic-capacity/
+            build/test-results/dwarfdump-configuration/
           if-no-files-found: warn
           retention-days: 14
 
@@ -458,10 +471,12 @@ jobs:
           {
             src/test/integration/headless-wrapper.sh
             src/test/integration/architecture-neutrality.sh
-            ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke outputPathPolicySmoke \
+            ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke \
+              ghidraTargetAgreementSmoke outputPathPolicySmoke \
               exportReportSmoke \
-              syntheticSourceSmoke typeGraphSmoke variableStorageSmoke \
-              dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke \
+              syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
+              variableStorageSmoke registerPrefixSmoke registerAliasSmoke \
+              dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
               packagedNativeLibrariesSmoke existingDebugSidecarSmoke \
               extendedSectionNumberingSmoke elfImageReaderSmoke \
@@ -527,6 +542,8 @@ jobs:
           echo "$LIBDWARF_PATCH_SHA256  $module/third_party/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch" |
             sha256sum -c -
           test -s "$module/THIRD_PARTY_NOTICES.md"
+          test -s "$module/ghidra_scripts/GhidraDwarfForge.java"
+          test -s "$module/ghidra_scripts/ExportGhidraDwarfForge.java"
           test -s "$module/third_party/CORRESPONDING_SOURCE.md"
           test -s "$module/third_party/libdwarf/licenses/LGPL-2.1.txt"
           test -s "$module/third_party/windows-runtime/zlib/licenses/LICENSE"
@@ -572,7 +589,7 @@ jobs:
           packages=(gdb-multiarch llvm dwarfdump)
           case "$TARGET" in
             x86_64)
-              packages+=(gcc binutils gdb xvfb libxtst6 libxi6 libxrender1)
+              packages+=(gcc binutils gdb qemu-user-static xvfb openbox x11-utils libxtst6 libxi6 libxrender1)
               ;;
             aarch64)
               packages+=(gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
@@ -631,7 +648,7 @@ jobs:
         run: |
           set -euo pipefail
           (cd validation-tool && sha256sum -c SHA256SUMS)
-          chmod 755 validation-tool/bin/dwarfdump
+          chmod 755 validation-tool/bin/dwarfdump validation-tool/libexec/dwarfdump
           validation-tool/bin/dwarfdump --version
           echo "$PWD/validation-tool/bin" >> "$GITHUB_PATH"
           echo "DWARFDUMP=$PWD/validation-tool/bin/dwarfdump" >> "$GITHUB_ENV"
@@ -798,6 +815,12 @@ jobs:
             "$PWD/native-integration/libdwarfp.so.2.3.2"
           src/test/integration/copy-cancellation-export.sh "$GHIDRA_INSTALL_DIR"
 
+      - name: Reject definite ELF and Ghidra processor disagreement
+        if: matrix.target == 'x86_64' || matrix.target == 'mips32le'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: python3 src/test/integration/target-language-agreement.py "$GHIDRA_INSTALL_DIR" "$TARGET"
+
       - name: Headless Forge symbol export and GDB integration
         env:
           TARGET: ${{ matrix.target }}
@@ -815,7 +838,11 @@ jobs:
                 --tool "$DWARFDUMP"
             fi
             if [[ "$role" == "shared" ]]; then
-              src/test/integration/shared-object-gdb.sh "$TARGET"
+              if [[ "$TARGET" == mips32le ]]; then
+                src/test/integration/shared-object-port-collision.py "$TARGET"
+              else
+                src/test/integration/shared-object-gdb.sh "$TARGET"
+              fi
             else
               FIXTURE_ROLE="$role" src/test/integration/qemu-gdb-symbols.sh "$TARGET"
             fi
@@ -835,6 +862,14 @@ jobs:
             fi
           done
 
+      - name: QEMU private socket startup and failure cleanup
+        if: matrix.target == 'x86_64'
+        run: src/test/integration/qemu-socket-startup.sh
+
+      - name: Saved-program type identity across fresh headless processes
+        if: matrix.target == 'x86_64'
+        run: src/test/integration/saved-program-determinism.sh "$GHIDRA_INSTALL_DIR"
+
       - name: Validate line sequences and reject malformed range artifacts
         if: matrix.target == 'x86_64'
         run: |
@@ -847,10 +882,83 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: src/test/integration/bitfield-values-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
 
+      - name: Function-owned statics and duplicate-name lookup
+        env:
+          TARGET: ${{ matrix.target }}
+        run: src/test/integration/function-static-scopes-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
+
+      - name: Incoming register lifetime before overwrite
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          src/test/integration/register-prefix-export.sh \
+            "$GHIDRA_INSTALL_DIR" \
+            "$PWD/native-integration/libdwarf.so.2.3.2" \
+            "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
+
       - name: Nonzero load-segment file offset and explicit rebase
         if: matrix.target == 'x86_64'
         run: |
           src/test/integration/nonzero-load-offset-export.sh \
+            "$GHIDRA_INSTALL_DIR" \
+            "$PWD/native-integration/libdwarf.so.2.3.2" \
+            "$PWD/native-integration/libdwarfp.so.2.3.2"
+
+      - name: Isolated scalar register bit-piece producer
+        if: matrix.target == 'arm32'
+        run: |
+          results="$PWD/build/test-results/floating-register-slice-native"
+          mkdir -p "$results"
+          src/test/integration/run-isolated-native-smoke.sh "$results" \
+            ./gradlew floatingRegisterSliceSmoke \
+            -PlibdwarfPath="$PWD/native-integration/libdwarf.so.2.3.2" \
+            -PlibdwarfpPath="$PWD/native-integration/libdwarfp.so.2.3.2" \
+            -PsidecarInput="$PWD/build/fixtures/arm32/semantic.exec.stripped" \
+            -PsidecarOutput="$results/slice.dbg"
+          readelf --debug-dump=info "$results/slice.dbg" >"$results/info.txt" \
+            2>"$results/readelf.stderr"
+          test ! -s "$results/readelf.stderr"
+          grep -Fq 'DW_OP_bit_piece: size: 32 offset: 32' "$results/info.txt"
+          llvm-dwarfdump --verify "$results/slice.dbg" >"$results/llvm.txt" 2>&1
+          python3 src/test/integration/check-dwarfdump.py \
+            "$results/slice.dbg" "$results/dwarfdump.txt" \
+            --original "$PWD/build/fixtures/arm32/semantic.exec.stripped"
+
+      - name: Scalar floating registers and conservative paired omissions
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          src/test/integration/floating-registers-export.sh \
+            "$GHIDRA_INSTALL_DIR" \
+            "$PWD/native-integration/libdwarf.so.2.3.2" \
+            "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
+
+      - name: Function entry producer and validators
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          results="$PWD/build/test-results/function-entry-native/$TARGET"
+          mkdir -p "$results"
+          src/test/integration/run-isolated-native-smoke.sh "$results" \
+            ./gradlew functionEntrySmoke \
+            -PlibdwarfPath="$PWD/native-integration/libdwarf.so.2.3.2" \
+            -PlibdwarfpPath="$PWD/native-integration/libdwarfp.so.2.3.2" \
+            -PsidecarInput="$PWD/build/fixtures/$TARGET/semantic.exec.stripped" \
+            -PsidecarOutput="$results/entry.dbg"
+          readelf --debug-dump=info "$results/entry.dbg" >"$results/info.txt" \
+            2>"$results/readelf.stderr"
+          test ! -s "$results/readelf.stderr"
+          test "$(grep -c DW_AT_entry_pc "$results/info.txt")" -eq 2
+          llvm-dwarfdump --verify "$results/entry.dbg" >"$results/llvm.txt" 2>&1
+          python3 src/test/integration/check-dwarfdump.py \
+            "$results/entry.dbg" "$results/dwarfdump.txt" \
+            --original "$PWD/build/fixtures/$TARGET/semantic.exec.stripped"
+
+      - name: True function entry below-entry body ranges and rebases
+        if: matrix.target == 'x86_64'
+        run: |
+          src/test/integration/function-entry-export.sh \
             "$GHIDRA_INSTALL_DIR" \
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2"
@@ -875,6 +983,15 @@ jobs:
         if: matrix.target == 'x86_64'
         run: |
           src/test/integration/gui-output-fallback.sh \
+            "$GHIDRA_INSTALL_DIR" \
+            "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
+            "$PWD/build/fixtures/x86_64/semantic.exec.stripped" \
+            "$PWD/build/fixtures/x86_64/semantic.exec.reference"
+
+      - name: Installed Script Manager discovery, export, console, and cancellation
+        if: matrix.target == 'x86_64'
+        run: |
+          src/test/integration/gui-script-manager.sh \
             "$GHIDRA_INSTALL_DIR" \
             "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
             "$PWD/build/fixtures/x86_64/semantic.exec.stripped" \
@@ -1042,6 +1159,10 @@ jobs:
             & llvm-dwarfdump.exe --version
           } 2>&1 | Tee-Object -FilePath "$resultDirectory\tool-versions.txt"
 
+      - name: Probe native Windows desktop interaction and actual ACL denial
+        shell: pwsh
+        run: ./src/test/integration/windows-desktop-acl.ps1
+
       - name: Install extension and run native-independent Windows checks
         shell: pwsh
         run: |
@@ -1053,7 +1174,7 @@ jobs:
           Expand-Archive -Path $extension.FullName `
             -DestinationPath (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions') -Force
           & .\gradlew.bat addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
-            syntheticSourceSmoke artifactPairPublisherSmoke 2>&1 |
+            syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke 2>&1 |
             Tee-Object -FilePath "$resultDirectory\native-independent.log"
           if ($LASTEXITCODE -ne 0) {
             throw "native-independent Windows checks failed with exit code $LASTEXITCODE"
@@ -1164,6 +1285,20 @@ jobs:
             -ProducerDll $producer.FullName `
             -LinuxReferenceDirectory (Resolve-Path linux-reference)
 
+      - name: Native Windows Script Manager export, console, and chooser cancellation
+        shell: pwsh
+        timeout-minutes: 15
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+        run: |
+          $mingwBin = Join-Path $env:MSYS2_LOCATION 'mingw64\bin'
+          $env:PATH = "$mingwBin;$env:PATH"
+          .\src\test\integration\windows-gui-script-manager.ps1 `
+            -GhidraDirectory $env:GHIDRA_INSTALL_DIR `
+            -ModuleDirectory (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions\GhidraDwarfForge') `
+            -Fixture (Resolve-Path 'linux-reference\semantic.exec.stripped').Path `
+            -Reference (Resolve-Path 'linux-reference\semantic.exec.reference').Path
+
       - name: Clean Windows installed-release export without external natives
         shell: pwsh
         env:
@@ -1211,7 +1346,9 @@ jobs:
         if: always()
         with:
           name: windows-host-validation
-          path: build/test-results/windows-host/
+          path: |
+            build/test-results/windows-host/
+            build/test-results/windows-desktop-acl/
           if-no-files-found: warn
           retention-days: 14
 

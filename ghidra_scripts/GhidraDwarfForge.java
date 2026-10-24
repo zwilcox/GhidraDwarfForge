@@ -7,6 +7,7 @@ import ghidradwarfforge.ExporterPreflight;
 import ghidradwarfforge.GhidraFunctionSymbols;
 import ghidradwarfforge.GhidraImageBase;
 import ghidradwarfforge.GhidraSyntheticSource;
+import ghidradwarfforge.GhidraTargetAgreement;
 import ghidradwarfforge.GhidraTypeGraph;
 import ghidradwarfforge.elf.ElfImage;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter;
@@ -135,18 +136,11 @@ public class GhidraDwarfForge extends GhidraScript {
             (paths.defaultOutput() ? "default beside executable" : "explicit")));
 
         ElfImage originalElf = ElfImage.read(input);
-        int elfPointerSize = originalElf.is64Bit() ? 8 : 4;
-        boolean elfBigEndian = originalElf.byteOrder() == java.nio.ByteOrder.BIG_ENDIAN;
-        if (currentProgram.getDefaultPointerSize() != elfPointerSize ||
-                currentProgram.getLanguage().isBigEndian() != elfBigEndian) {
-            throw new IllegalStateException(
-                "Ghidra program language does not match the original ELF class/byte order");
-        }
+        DwarfTarget target = GhidraTargetAgreement.requireAgreement(currentProgram, originalElf);
         long elfLoadBase = originalElf.preferredImageBase();
         long importedImageBase = GhidraImageBase.originalImageBase(currentProgram);
         long rebaseDelta = AddressNormalizer.rebaseDelta(
             currentProgram.getImageBase().getOffset(), importedImageBase);
-        DwarfTarget target = DwarfTarget.fromElf(originalElf);
         println("  ELF minimum PT_LOAD VA: 0x" + Long.toHexString(elfLoadBase));
         println("  Ghidra original ELF image base: 0x" + Long.toHexString(importedImageBase));
         println("  Ghidra-to-ELF address delta: 0x" + Long.toHexString(rebaseDelta));
@@ -200,6 +194,9 @@ public class GhidraDwarfForge extends GhidraScript {
             .stream().filter(variable -> !variable.hasDefensibleLocation()).count());
         println("  canonical types: " + typeModel.types().nodes().size());
         println("  global variables: " + typeModel.globals().size());
+        println("  function-owned static variables: " +
+            ghidradwarfforge.source.FunctionStaticPolicy.select(typeModel, source)
+                .exported().size());
         println("GhidraDwarfForge report: " + report.toJson());
     }
 

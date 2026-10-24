@@ -8,6 +8,13 @@ synthetic C source. The original executable remains unchanged by default.
 
 ## Current status
 
+The published corrective release is
+[v0.1.0-alpha.2](https://github.com/zwilcox/GhidraDwarfForge/releases/tag/v0.1.0-alpha.2),
+from exact-main commit `2f88c4a`, with verified Linux/Windows bundles. Alpha.1
+remains unchanged and affected by the recorded correctness findings. The
+function-static and scalar-floating additions below are subsequent development
+work, separate from alpha.2.
+
 The installable extension now exports deterministic synthetic C and DWARF 5
 functions, source rows, canonical recursive types, signatures, globals,
 namespaces, discontiguous ranges, and evidence-backed variable locations.
@@ -26,11 +33,26 @@ execution remains in Linux native/QEMU lanes. PE/PDB is out of scope. Imports
 and thunks are diagnosed and omitted, and distinct linkage-name emission
 remains unresolved.
 
-The development exporter replaces existing compiler DWARF rather than merging
+Development exports also preserve typed memory labels explicitly owned by a
+Ghidra function as function-scoped static variables. GDB can distinguish
+`first_scope::private_count`, `second_scope::private_count`, and a same-named
+global. This uses the recorded function owner and memory address; it does not
+infer lexical blocks from datatype categories or decompiler formatting.
+See [the focused validation record](docs/VALIDATION.md#function-owned-static-data-2026-10-23)
+for tested profiles and debugger limitations.
+
+Development scalar floating locations now use audited logical register aliases.
+Hosted GDB tests cover float/double arguments on x86-64, AArch64 and ARM32,
+including ARM32 upper register slices, and float arguments on MIPS32 in both
+byte orders, before and after memory stores. Unproven MIPS double-register
+pairs and ARM32 opaque-return prefix locations remain unavailable. See
+[the bounded FP validation record](docs/VALIDATION.md#scalar-floating-register-aliases-2026-10-23).
+
+The exporter replaces existing compiler DWARF rather than merging
 it with the recovered view. Old compressed debug sections, indexes, and debug
 file links are retired inside the sidecar; the original ELF stays unchanged.
 
-Development ELF handling also covers extended section/program counts and
+ELF handling also covers extended section/program counts and
 section tables without names. Original bytes are streamed, with explicit
 [metadata and size bounds](docs/ADR-0001-ELF-SIDECAR.md); inputs larger than
 2 GiB have compiler-oracle and real-export tests. Import-mode wrappers select
@@ -98,9 +120,20 @@ option to use its private temporary capture when the original path is unknown.
 PowerShell log paths are literal filesystem paths; Windows alternate data
 streams are rejected.
 
-The underlying `GhidraDwarfForge.java` script remains available from Ghidra's
-Script Manager or directly through `analyzeHeadless`. With no arguments it
-reports target metadata without loading native code. Its opt-in export accepts:
+In CodeBrowser, open the analyzed program and choose **Window → Script Manager**.
+Under **DWARF**, run **ExportGhidraDwarfForge.java** to export the current program
+using the verified packaged native libraries. Open **Window → Console** for
+the output paths, coverage diagnostics, hashes, and final JSON report. If the
+original directory is unwritable, choose a writable directory when prompted;
+Cancel leaves no output pair. Linux Script Manager selection/cancellation is
+tested. Native Windows GUI interaction remains under validation; the Windows
+headless wrapper is already covered by CI.
+
+The underlying `GhidraDwarfForge.java` script remains available from Script
+Manager for native-free metadata preflight, or directly through
+`analyzeHeadless` for argument-driven export. Script Manager's ordinary Run
+action supplies no script arguments, so use the separate **Export** launcher
+for GUI export. The underlying script's opt-in export accepts:
 
 ```text
 --libdwarf=/absolute/path/libdwarf.so.2.3.2
@@ -149,6 +182,10 @@ ARM-state lane. MIPS is explicitly in scope as the first ELF32/big-endian
 target. Architecture-specific ABI and register mappings remain isolated and
 table-driven so additional Ghidra-supported ELF processors can follow. Thumb,
 big-endian ARM, and other ARM ABI profiles are not yet claimed.
+
+[The target-profile contract](docs/TARGET-PROFILES.md) records the exact tested
+ABIs and storage cases, the difference between accepted ELF metadata and
+validated behavior, and the next bounded coverage additions.
 
 CI has Linux lanes for x86-64, AArch64, ARM32, and both MIPS byte orders, plus
 a Windows-hosted x86-64 ELF export lane. Linux runs real headless export,

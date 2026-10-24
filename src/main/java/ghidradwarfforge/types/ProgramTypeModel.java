@@ -11,7 +11,13 @@ import ghidradwarfforge.types.TypeGraph.TypeRef;
 
 /** Curated function signatures and the canonical types they reference. */
 public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> functions,
-        List<GlobalVariable> globals, VariableStorageModel variableStorage) {
+        List<GlobalVariable> globals, VariableStorageModel variableStorage,
+        List<FunctionStaticVariable> functionStatics) {
+    public ProgramTypeModel(TypeGraph types, List<FunctionSignature> functions,
+            List<GlobalVariable> globals, VariableStorageModel variableStorage) {
+        this(types, functions, globals, variableStorage, List.of());
+    }
+
     public ProgramTypeModel(TypeGraph types, List<FunctionSignature> functions,
             List<GlobalVariable> globals) {
         this(types, functions, globals, new VariableStorageModel(List.of()));
@@ -31,6 +37,17 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
                 throw new IllegalArgumentException("invalid global variable");
             }
             namespace = List.copyOf(namespace);
+        }
+    }
+
+    /** A defined memory object explicitly owned by a Ghidra function namespace. */
+    public record FunctionStaticVariable(String name, long address, long size, TypeRef type,
+            long ownerAddress, String source) {
+        public FunctionStaticVariable {
+            if (name == null || name.isBlank() || address < 0 || size <= 0 ||
+                    type == null || ownerAddress < 0 || source == null || source.isBlank()) {
+                throw new IllegalArgumentException("invalid function-owned static variable");
+            }
         }
     }
 
@@ -63,9 +80,10 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
     }
 
     public ProgramTypeModel {
-        if (types == null || functions == null || globals == null || variableStorage == null) {
+        if (types == null || functions == null || globals == null || variableStorage == null ||
+                functionStatics == null) {
             throw new IllegalArgumentException(
-                "types/functions/globals/variable storage are required");
+                "types/functions/globals/variable storage/function statics are required");
         }
         functions = functions.stream()
             .sorted(Comparator.comparingLong(FunctionSignature::address)
@@ -75,6 +93,11 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
             .sorted(Comparator.comparingLong(GlobalVariable::address)
                 .thenComparing(global -> String.join("\u0000", global.namespace()))
                 .thenComparing(GlobalVariable::name))
+            .toList();
+        functionStatics = functionStatics.stream()
+            .sorted(Comparator.comparingLong(FunctionStaticVariable::ownerAddress)
+                .thenComparing(FunctionStaticVariable::name)
+                .thenComparingLong(FunctionStaticVariable::address))
             .toList();
         for (FunctionSignature function : functions) {
             if (!types.byKey().containsKey(function.returnType().key())) {
@@ -96,6 +119,17 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
         for (GlobalVariable global : globals) {
             if (!types.byKey().containsKey(global.type().key())) {
                 throw new IllegalArgumentException("missing type for global " + global.name());
+            }
+        }
+        java.util.Set<Long> owners = functions.stream().map(FunctionSignature::address)
+            .collect(java.util.stream.Collectors.toSet());
+        for (FunctionStaticVariable variable : functionStatics) {
+            if (!owners.contains(variable.ownerAddress())) {
+                throw new IllegalArgumentException("missing function owner for " + variable.name());
+            }
+            if (!types.byKey().containsKey(variable.type().key())) {
+                throw new IllegalArgumentException("missing type for function static " +
+                    variable.name());
             }
         }
         for (VariableLocation location : variableStorage.variables()) {

@@ -1,10 +1,12 @@
 # Validation record
 
-> **Release validation reopened (2026-10-23):** historical green jobs did not
-> enforce libdwarf's nonzero check summaries when its process returned zero.
-> The affected libdwarf results below are not clean-validation evidence. GNU,
-> LLVM, native-safety and GDB outcomes remain separately recorded. Alpha.2 is
-> unpublished while the diagnostic causes and strict checks are resolved.
+> **Corrective release gate closed (2026-10-24):** alpha.2 was published from
+> exact main `2f88c4a` after all twelve push-CI jobs, the final package audit and
+> downloaded-asset verification passed. See [the final publication record](#corrective-alpha2-official-publication-2026-10-24).
+> The earlier missed libdwarf summaries remain invalid clean-validation evidence;
+> the incident and failed runs below are retained. Pending statements in the
+> dated investigation checkpoints describe their state at that time, not the
+> later publication result.
 
 ## Exit-zero libdwarf check summaries
 
@@ -214,6 +216,547 @@ This record distinguishes container/oracle validation from real Forge DWARF
 export. Export remains explicit: installed wrappers request checksum-verified
 packaged natives by default, while source-tree audit runs may supply explicit
 library paths.
+
+## Measured line-table address index (2026-10-23)
+
+**CONFIRMED locally:** `Dwarf5LineTable.plan` builds one earliest-line address
+index and queries each half-open function range. The focused smoke preserves
+starts, excludes ends/gaps, keeps overlapping bodies independent and retains
+the earliest line for repeated addresses. Width/byte-order and deterministic
+ordering checks continue to pass.
+
+**HISTORICAL:** five alternating `ddad598` baseline/indexed exports of the same
+saved 10,000-function project produced byte-identical `.dbg` and `.dbg.c` files
+in all ten runs, with whole-process medians of 10.86 and 9.18 seconds. GNU,
+LLVM and full GDB symbol/source/type/address/runtime checks passed. The old
+libdwarf log reports 11,833 errors despite exit zero; its clean-validator claim
+is withdrawn. Exact timings, hashes and workload limits remain in
+`docs/PERFORMANCE.md` and `build/line-profile/paired.8k_6dt_w/`.
+
+The historical indexed build passed nineteen native-independent smokes and
+x86-64, AArch64, MIPS32 BE/LE ET_EXEC/PIE/shared-object GDB cases. Those runs
+predate strict summary enforcement; their old libdwarf pass labels are not
+current validation evidence. Logs remain under `build/line-profile/verification/`.
+The prior benchmark/research branch was merged normally at `5bc72f1`.
+
+**CONFIRMED locally after merging strict `99845c7`:** the planner source is
+unchanged, and the line-table/source/range smokes and extension build pass.
+Fresh ARM32 ARMv7 hard-float ET_EXEC, PIE and shared-object exports pass GNU,
+LLVM, strict libdwarf (zero errors) and QEMU/GDB runtime assertions. A repeated
+fresh ET_EXEC import/export is byte-identical; originals remain unchanged.
+A fresh ten-function, two-export benchmark rehearsal also passes strict
+validation, byte equality and GDB. These are functional checks, not new timing
+comparisons. Evidence: `build/line-profile/merged-verification/` and
+`build/test-results/export-benchmark/run.3h1im338`.
+
+A retained 10,000-function artifact initially failed strict validation because
+the standalone consumer printed only 49 of 10,002 reported inherited frame
+messages. A separately pinned validation-only capacity patch now retains up to
+65,536 messages with checked allocation and explicit overflow/failure exits.
+The full GNU/LLVM/strict/GDB replay passes: all 10,002 errors are exactly
+corroborated against the unchanged original's identity/frame bytes and
+same-version diagnostics; every other category is zero. Recorded artifact
+hashes and the complete saved-project manifest remain unchanged. No timed
+10,000-function export was rerun. Boundary, missing/duplicated diagnostic and
+allocation-failure controls are documented in `support/validation/README.md`.
+
+The only exporter runtime optimization is the line-table index. There is no
+new native interface or timing threshold. Broader workloads and the combined
+hosted matrix, including Windows, remain **PLANNED**.
+
+## Saved-program generic type identity (2026-10-23)
+
+**CONFIRMED locally:** an unchanged, settled program now exports byte-identical
+DWARF and synthetic source before saving and after two fresh read-only reopen
+processes. The fix is limited to Ghidra's exact `DefaultDataType` class; every
+other type's UniversalID and the existing collision policy remain unchanged.
+No new native signature or target profile is involved.
+
+The pinned Ghidra `SoftwareModeling-src.zip` SHA-256 is
+`ae94f7ede157d57b865eaa7caefd72c9f98bfed04e122db6909dface0bd22748`.
+`DefaultDataType` has a private constructor and a generic singleton, inherits
+`DataTypeImpl`'s generated UniversalID, and returns itself from clone/copy.
+`BuiltIn` overrides that accessor to return null, but this class does not.
+The stable class/path/length fallback is therefore used only for this exact
+generic type. The native-independent `defaultTypeIdentitySmoke` uses actual
+Ghidra classes and verifies that analyst types named `undefined`, typedefs and
+explicit imported/persisted IDs retain their distinct original identities.
+
+The new `saved-program-determinism.sh` uses the existing source-built x86-64
+semantic reference/stripped pair. It derives function/global addresses from
+compiler symbols, applies a signature and analyst structure, settles analysis,
+and saves a real Ghidra project. Both reopens use `-noanalysis -readOnly` in
+separate JVMs with identical input/output paths and export options. Before and
+after each export, a script fingerprints the complete extracted type, function,
+global, static, location, range and diagnostic model without serializing DWARF.
+It requires the generic undefined type and UID-bearing analyst/imported types
+to be present. A fixture-specific normalized comparison rejects ambiguous type
+labels; the fixed success gate additionally requires raw model and artifact
+byte equality, so normalization cannot conceal an identity regression.
+
+All three artifacts pass GNU readelf, LLVM verification, libdwarf checks and
+GDB. The debugger requires full function/type/source DIEs, the compiler-derived
+function entry, four integer parameters, the analyst/imported structure layouts,
+`left=19`, `right=23`, analyst-global `value=7`, `fixture_sink=42`, source
+`next`/`step`, function return and normal exit. Original target, compiler
+reference and source hashes remain unchanged. Fresh result directories retain
+commands, exporter hash, tool versions, model snapshots and validator/GDB logs.
+
+```bash
+make -C src/test/fixtures x86_64
+GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC \
+    ./gradlew defaultTypeIdentitySmoke typeGraphSmoke buildExtension
+# Install that build only into a private Ghidra copy with packaged natives.
+src/test/integration/saved-program-determinism.sh "$PWD/build/ghidra"
+```
+
+Evidence in this worktree:
+
+| Check | Result |
+|---|---|
+| Old semantic artifact, `run.JbcC1Hjs` | `FORGE_EXPECT_DEFAULT_UID_DRIFT=1` explicitly reproduced initial/reopen byte difference; models match after normalization, sources and both reopen artifacts match; all three validators/GDB checks pass |
+| Fixed artifact, `run.LUvQfGxu` | Initial/reopened/repeat `.dbg` SHA-256 `c7cafd6065ae73f192e37851f7906129448cfd18bd9f5471d498afdda786f367`; all three raw models and sources also match exactly |
+| Source in fixed run | All three SHA-256 `e591061441b813ffad29e1c5160882d2e42ef3be491f8ae3ee972de5916080ac` |
+| Actual extension | Baseline JAR `170f9d68a39e86831af622c197f455f9a17b3092621276739b22139c4ea5b897`; fixed JAR `366f3b40f52ade1e194be3c3d8dbd32794469bff30b1eb8e12e64e4555bc82a3` |
+| Build | All 23 native-independent smokes and `buildExtension` pass; `build/default-type-review/all-smokes.txt` |
+| Existing type/location behavior | All eight x86-64/AArch64/MIPS32 BE/LE ET_EXEC/PIE real export, validator and native/QEMU GDB cases pass; `build/default-type-review/<target>-<role>-{headless,gdb}.txt` |
+| Repository guards | Architecture isolation, `actionlint`, whitespace and shell/Python syntax checks pass; no fixture sources were added or changed |
+
+The runs live under `build/test-results/saved-program-determinism/`; supporting
+commands and baseline/fixed logs are under `build/default-type-review/`.
+CI now runs the identity smoke and the real save/reopen case in its existing
+x86-64 lane. Hosted validation of this follow-up remains **PRESENT, UNVERIFIED**.
+These results establish the unchanged saved-program case, not equality between
+independent imports, edited programs, or arbitrary other transient type classes.
+The user's installation and corrective alpha.2 candidate were unchanged.
+
+## Combined semantic and corrective validation (2026-10-23)
+
+**CONFIRMED locally:** normal merges `493983d` and `4a4ce38` add reviewed scalar
+FP aliases (`1f52431`) and the corrective alpha.2 code (`ddad598`) to the earlier
+combined semantic branch (`23d2a63`). Only additive project-context prose
+conflicted; both narratives were retained. The final writer and publisher are
+byte-for-byte identical to the corrective branch, and all other production
+code matches the tested scalar-FP branch. No native signatures changed.
+
+The combined extension ZIP was installed into this worktree's isolated Ghidra
+copy at `build/combined-validation/ghidra`. The installed and built JAR hashes
+match (`170f9d68a39e86831af622c197f455f9a17b3092621276739b22139c4ea5b897`).
+Neither the user's installation nor any other worktree's installation changed.
+The following tests use that actual combined artifact:
+
+| Check | Result and evidence |
+|---|---|
+| Native-independent checks/build | All 22 smokes and `buildExtension` pass; `build/combined-final-review/build.txt` |
+| Publication timestamp regression | Original mismatch warns, published pair does not, later source edit still warns; input bytes/mtime and cleanup pass; `build/test-results/artifact-pair-timestamps/run.wMxUHsgD/` |
+| Scalar FP | All 24 x86-64/AArch64/MIPS32 BE/LE ET_EXEC/PIE baseline/rebase/repeat cases pass their bounded typed-value/omission oracles; `build/test-results/floating-registers/run.3suVpXM4/` |
+| Existing semantic matrix | Four profiles across ET_EXEC, partial stripping, absent build ID, absent section table, PIE and shared library: all 24 real export/validator/GDB cases pass; `build/combined-final-review/existing-*-{headless,gdb}.txt` |
+| Strict automatic association | Build-ID and debuglink positive/negative paths, CRC/mismatch checks and exact function/source/type checks pass on all four local profiles and native runtime where applicable; `build/test-results/build-id-discovery/run.GMGl9oDu/` |
+| ARM scalar upper slice | Isolated producer plus GNU/LLVM/libdwarf validators pass again on archived source-built ARM input; `build/combined-final-review/arm-slice-*` |
+| Repository guards | Architecture isolation, `actionlint`, whitespace and shell/Python syntax checks pass |
+
+The existing matrix preserves integer, stack and composite values. The FP
+suite preserves exact source/address/value checks, input hashes, build IDs and
+byte-identical repeats. MIPS paired doubles remain unavailable, with the
+compiler-GDB transport limitation recorded below; stored globals are not
+misrepresented as positive parameter-location evidence. The earlier dedicated
+entry, static-owner/failure and register-prefix suites remain the evidence for
+those unchanged extraction/emission paths rather than being counted as newly
+rerun here.
+
+All additive CI gates survive the merge: function-owned statics, entry ranges,
+incoming prefixes, scalar FP, strict association and timestamp publication.
+New ARM32 static/FP runtime behavior and the complete combined hosted run remain
+**PRESENT, UNVERIFIED** until CI passes the final commit. This is the follow-on
+semantic feature branch, not part of the corrective alpha.2 release.
+
+The first PR #20 hosted run, `40056330176`, stopped all five target lanes at
+the explicit fixture source inventory: the five new reviewed fixture files
+had not been added to its allowlist. No new hosted semantic test ran in that
+attempt. The allowlist now names those exact files and still rejects unknown
+files. `fixture-reproducibility.sh` passes on all four locally available
+targets, including byte-identical rebuilds and the partial-symbol check;
+logs are `build/combined-review/fixture-reproducibility-*.log`. ARM32 and the
+remaining hosted steps still require a new passing run.
+
+```bash
+src/test/integration/artifact-pair-timestamps.sh
+src/test/integration/floating-registers-export.sh "$GHIDRA_INSTALL_DIR" \
+    "$consumer" "$producer" x86_64 aarch64 mips32be mips32le
+# Run headless-symbol-export.sh then qemu-gdb-symbols.sh for each fixture role;
+# use shared-object-gdb.sh for shared. Retain all four local target arguments.
+src/test/integration/build-id-discovery.sh x86_64 aarch64 mips32be mips32le
+```
+
+## Scalar floating register aliases (2026-10-23)
+
+**CONFIRMED locally:** the old real exporter omitted scalar floating arguments
+whose logical register had an unmapped physical base. The preserved x86
+baseline (`build/test-results/floating-registers/run.Do3jbKMI/`) checks compiler
+values and Forge unavailability explicitly. Production now walks the actual
+Ghidra parent chain to a mapped covering register and computes the value's bit
+offset relative to that register. Whole-base alias clobber checks remain
+conservative. No vector/pair register number is guessed and no native API is
+added.
+
+`registerAliasSmoke` uses the real pinned language descriptions: XMM within
+ZMM, AArch64 scalar registers within Q/Z, ARM single registers within D/Q,
+and MIPS scalar registers within pairs. It checks ARM `s1 -> d0` at bit 32,
+`s3 -> d1` at bit 32, and x86 `AH -> RAX` at bit 8, while broad unmapped vectors
+and MIPS double pairs remain unavailable. `floatingRegisterSliceSmoke` emits
+the ARM scalar upper slice in an isolated producer process; readelf confirms
+`DW_OP_regx 256; DW_OP_bit_piece 32,32`, and GNU/LLVM/libdwarf validators pass.
+That test uses an archived source-built ARM ELF and establishes structure,
+not new ARM runtime support.
+
+The canonical ARM D-register mapping follows
+[AADWARF32 2025Q4](https://github.com/ARM-software/abi-aa/blob/2025Q4/aadwarf32/aadwarf32.rst#vfp-v3-and-neon-register-descriptions):
+D0–D31 use numbers 256–287; scalar single registers are slices of these
+registers. Legacy S64–95 numbering is excluded from the chosen mapping.
+
+The real `floating-registers-export.sh` runs six cases per target: ET_EXEC and
+PIE, each with baseline, `+0x2000000` Ghidra rebase and byte-identical repeat.
+Fully stripped inputs prevent compiler debug information from masking Forge
+behavior. Compiler symbols establish independent exact addresses, and GDB
+checks parameter types/widths, source, values at entry and before/after stores,
+global sinks, `next`, `step` and normal exit. The x86/AArch64 explicit clobber
+also requires the incoming value before the write and unavailability afterward.
+All artifacts pass strict GNU/LLVM/libdwarf validation, unchanged original
+hashes, build-ID preservation and deterministic repeats.
+
+Positive local parameter values are float/double on x86-64/AArch64 and float
+on MIPS32 BE/LE. MIPS double pairs are explicitly unavailable in Forge.
+The current compiler double-parameter oracle is **PRESENT, UNVERIFIED** on
+QEMU 8.2.2/GDB 15.1: `first=0`, `second=0`, and raw `f12..f15=0` at the checked
+PCs despite correct stored globals `21.5`/`-9.25` and normal exit. Those globals
+prove machine execution, not parameter locations. The harness records this
+exact zero observation separately from positive checks and rejects other
+unexpected observations; it also accepts exact values if a later debugger
+corrects its register view.
+
+A separate probe found status `0x24000010` (FR set), four-byte GDB FP registers,
+and no target XML. Forcing `set mipsfpu double` did not change the result.
+The likely cause is the QEMU 8.2.2
+[MIPS stub](https://github.com/qemu/qemu/blob/v8.2.2/target/mips/gdbstub.c), which
+passes the FR-mode 64-bit FP value through `gdb_get_regl`; its
+[helper](https://github.com/qemu/qemu/blob/v8.2.2/include/gdbstub/helpers.h)
+uses a 32-bit transfer for this target. This source-based inference explains
+the missing high halves; emulator repair is outside this change.
+
+MIPS PIE return stepping can also produce GDB's known “can't find the start”
+warning. The harness permits it only during the marked return operation and
+only when an untouched compiler ELF loaded as separate symbols reproduces the
+exact warning text, address and count. Direct compiler-symbol loading remains
+strict, as do all other diagnostics and the ARM compiler-corroborated vDSO rule.
+
+**CONFIRMED locally:** ARM32 now passes all six exec/PIE baseline/rebase/repeat
+cases, including exact float values `19.25`/`-7.5` in `s0` and the upper `s1`
+slice of `d0`, and double values `21.5`/`-9.25` in `d0`/`d1`. Evidence is
+`arm-unwind-fixture/build/test-results/floating-registers/run.MuSy5PDD/`.
+The compiler, global sinks, source/stepping, normal exit, input hashes and
+byte-identical repeats pass. Rechecking every emitted sample with the pinned
+consumer 2.3.2 using `-ka -ki -kd` reports completed zero-error summaries;
+GNU and LLVM checks also pass. Hosted verification remains pending.
+
+The first reached ARM clobber test (`run.tD6kRvdC`) exposed an overbroad test
+expectation: the final `bx lr` has raw `CALLOTHER setISAMode` followed by
+`RETURN`, so the existing whole-body prefix proof rejects its opaque p-code.
+Preparation now verifies that exact return evidence, and the report/GDB oracle
+requires `REGISTER_MODIFIED` and an unavailable `fp_clobbered::value` at entry
+and every marker. The independent compiler still proves value `13.75`, and
+the stored sink must equal `13.75`. x86/AArch64 positive prefix and overwrite
+checks are unchanged. ARM prefix lifetimes for this mode-switching return
+remain unsupported; stable scalar locations do not imply that broader proof.
+No new ISA/ABI, aggregate/variadic passing, migration or call-crossing support
+is claimed.
+
+```bash
+./gradlew registerAliasSmoke registerPrefixSmoke variableStorageSmoke buildExtension
+src/test/integration/floating-registers-export.sh "$GHIDRA_INSTALL_DIR" \
+    "$consumer" "$producer" x86_64 aarch64 mips32be mips32le
+./gradlew floatingRegisterSliceSmoke -PlibdwarfPath="$consumer" \
+    -PlibdwarfpPath="$producer" -PsidecarInput=/path/to/ARM-fixture \
+    -PsidecarOutput="$PWD/build/arm-slice.dbg"
+```
+
+Initial retained positive runs: `run.eJVfeqB1` (x86), `run.tF2IBGna` (AArch64;
+the subsequent MIPS compiler-pair assertion intentionally failed during the
+investigation), and `run.AD3qEszr` (both MIPS orders). Final evidence and
+regression commands are under `build/fp-review/`; the branch uses only its
+own copied Ghidra installation. Final `run.SrcqG8RO` passes all 24 typed-value
+cases on the four local profiles. All 22 native-independent smokes and the
+extension build pass (`final-build.txt`), together with architecture, workflow,
+shell syntax and whitespace checks. The existing four-target ET_EXEC/PIE/shared
+semantic matrix passes with integer, stack and composite values
+(`existing-{exec,pie,shared}-{headless,gdb}.txt`). All 12 incoming-register
+prefix cases pass in `build/test-results/register-prefix-export/run.Hj0zJfh0/`.
+ARM isolated native evidence is `build/fp-review/arm-slice-*`.
+
+## Combined semantic branch validation (2026-10-23)
+
+The `semantic-todo-completion` worktree combines the independently committed
+below-entry ranges, function-owned statics and incoming-register prefixes.
+It uses a separate Ghidra copy with the combined JAR/script and the existing
+checksum-verified packaged native pair. Neither the user's installation nor
+the corrective alpha2 branch was changed.
+
+**CONFIRMED locally:** all 21 native-independent smoke tasks and the extension
+build pass, together with the architecture guard, `actionlint`, shell syntax
+and whitespace checks. The isolated function-entry producer passes all five
+current profiles and GNU/LLVM/libdwarf validation. ARM32 uses the archived
+source-built hosted `bitfield.stripped` fixture; no local ARM32 compiler/runtime
+claim is added. Final build evidence is `build/combined-review/final-build.txt`
+and `build/test-results/function-entry-native/`.
+
+The real exporter and GDB pass these combined-source suites:
+
+| Suite | Cases and retained evidence |
+|---|---|
+| Function entry | Six x86-64 ET_EXEC/PIE baseline, rebase and repeat cases; `build/test-results/function-entry-export/run.68uWJurK/` |
+| Incoming-register prefix | Twelve x86-64/AArch64 ET_EXEC/PIE baseline, rebase and repeat cases; `build/test-results/register-prefix-export/run.MgtMLaEv/` |
+| Function statics | Twelve x86-64/AArch64/MIPS32 BE/LE ET_EXEC/PIE/rebased-PIE cases, each exported twice; `build/test-results/function-static-scopes/run.LY3BBQCr/` |
+| Existing semantic coverage | Four local profiles across ET_EXEC, partial stripping, absent build ID, absent section table, PIE and shared library; `build/combined-review/final-existing-*-{headless,gdb}.txt` |
+
+These suites retain their exact address/value/source/range checks, independent
+GNU/LLVM/libdwarf validators, original hashes and deterministic-repeat checks.
+The five target CI lanes now all invoke the static-scope harness against their
+installed packaged native pair. Hosted combined validation and new ARM32
+static-scope behavior remain **PRESENT, UNVERIFIED** until that pipeline passes.
+
+Review found and fixed two additional bounded safety cases. Shared register
+clobber detection now handles p-code `STORE` to the register address space,
+which has no output varnode; dynamic offsets, partial writes and malformed
+inputs are conservative kills. Explicit RAM stores remain allowed. This uses
+the pinned Ghidra 12.0.3 `pcodedescription.html` STORE contract and
+`PcodeExecutor.getLoadStoreSpace`/`executeStore` semantics. `registerPrefixSmoke`
+checks both outcomes without adding a target-specific rule.
+
+`controlled-decompiler-failure.sh` now curates two function-owned statics before
+forcing one owner's failure. GNU/LLVM/libdwarf and GDB pass: the failed function
+has no variable children or source/type claims, its static is absent, the later
+successful owner's static remains typed and reads as 7, and the JSON inventory
+counts exactly one exported static with a precise omission diagnostic.
+Evidence: `build/test-results/controlled-decompiler-failure/` and
+`build/combined-review/controlled-failure.txt`. One shared selection policy
+keeps DIE emission, native relocation checks, diagnostics and counts aligned.
+
+```bash
+src/test/integration/function-entry-export.sh "$GHIDRA_INSTALL_DIR" "$consumer" "$producer"
+src/test/integration/register-prefix-export.sh "$GHIDRA_INSTALL_DIR" "$consumer" "$producer" x86_64 aarch64
+src/test/integration/function-static-scopes-export.sh "$GHIDRA_INSTALL_DIR" x86_64 aarch64 mips32be mips32le
+src/test/integration/controlled-decompiler-failure.sh "$GHIDRA_INSTALL_DIR" "$consumer" "$producer"
+# Existing roles: exec, partial, exec.no-build-id, exec.no-sections, pie, shared.
+# Use headless-symbol-export.sh and qemu-gdb-symbols.sh (shared-object-gdb.sh for shared).
+```
+
+## Function entries above body ranges (2026-10-23)
+
+**CONFIRMED locally:** `functionEntrySmoke` checks valid/interior entries,
+rejection of entries outside the body, exact entry-first interval encoding,
+and preserved sorted extraction ranges in both widths and byte orders. The
+real isolated producer passes x86-64, AArch64, ARM32 and both MIPS32 byte
+orders with `readelf`, LLVM and libdwarf validators. ARM32 uses a previously
+archived source-built hosted fixture because its local compiler is unavailable.
+This producer check is structural; it is not a new ARM/MIPS runtime claim.
+Logs/artifacts: `build/test-results/function-entry-native/`.
+
+`function-entry-export.sh` builds C/assembly ET_EXEC and PIE fixtures with both
+a split body below its entry and a contiguous body with an interior entry.
+Independent assembler symbols supply expected addresses; inputs loaded by
+Ghidra/GDB are fully stripped. The real production exporter, all validators,
+and GDB 15.1 pass baseline, `+0x2000000` Ghidra rebase and deterministic repeat
+for both roles. GDB verifies each body byte belongs to the correct function,
+every gap byte has neither function nor source coverage, exact named entry
+breakpoints, source lookup below/at entry, arguments before/after the backward
+branch, global values 42, `next`, `step` and normal exit. Input hashes/build IDs
+match; repeated `.dbg` and `.dbg.c` are byte-identical.
+Evidence: `build/test-results/function-entry-export/run.QVtda8wK/`.
+
+The compatibility decision is grounded in [DWARF 5 sections 2.17.3/2.18](https://dwarfstd.org/doc/DWARF5.pdf)
+and [GDB 15.1's block entry calculation](https://gnu.googlesource.com/binutils-gdb/+/refs/tags/gdb-15.1-release/gdb/block.h):
+the body may be encoded as nonoverlapping intervals in any order. The producer
+places the true entry first and also emits `DW_AT_entry_pc`; this avoids the
+observed incorrect lower-address breakpoint when using the attribute alone.
+The new constant (`0x52`) and reused `dwarf_add_AT_targ_address_c` signature
+were checked against the pinned libdwarf 2.3.2 source archive, SHA-256
+`7992e7b9019ebfabdda5773e86243517c48cf89fafed3209e853692bc9573efd`.
+
+```bash
+./gradlew functionEntrySmoke dwarfRangeListsSmoke dwarfLineTableSmoke \
+    dwarfInfoRepairSmoke syntheticSourceSmoke variableStorageSmoke \
+    dwarfLocationListsSmoke buildExtension
+src/test/integration/function-entry-export.sh "$GHIDRA_INSTALL_DIR" \
+    /absolute/path/libdwarf.so.2.3.2 /absolute/path/libdwarfp.so.2.3.2
+```
+
+For isolated production, add `-PlibdwarfPath`, `-PlibdwarfpPath`,
+`-PsidecarInput` and `-PsidecarOutput` to `functionEntrySmoke`. CI runs that
+check in all five target lanes and the real runtime harness in x86-64.
+`actionlint`, Bash syntax and the extension build pass locally. The new hosted
+gate remains **PRESENT, UNVERIFIED** until the branch pipeline passes.
+
+## Function-owned static data (2026-10-23)
+
+The development static-scope slice preserves primary, defined memory labels
+whose immediate Ghidra namespace parent is an exported `Function`. Each object
+retains its actual type/address and is emitted beneath its owner. An absent
+owner is diagnosed and omitted; it is never silently promoted to a global.
+An owner whose decompilation fails remains symbol-only: its static objects are
+also omitted, diagnosed and excluded from the exported-static count. The
+controlled failure fixture proves this while retaining a successful owner's
+static object and checking its value in GDB.
+Datatype categories and decompiler formatting do not imply source scopes.
+
+```bash
+GHIDRA_INSTALL_DIR=/path/to/ghidra_12.0.3_PUBLIC \
+    ./gradlew buildExtension typeGraphSmoke exportReportSmoke
+# Install the resulting JAR/script in an isolated installation containing the
+# packaged, checksum-verified native pair before running the real exporter.
+src/test/integration/function-static-scopes-export.sh \
+    /path/to/isolated-ghidra x86_64 aarch64 mips32be mips32le
+```
+
+**CONFIRMED locally:** build, type-model/report smoke tests, and all twelve
+target/layout cases pass on x86-64, AArch64, MIPS32 big-endian and MIPS32
+little-endian. Twenty-four fresh imports prove deterministic repeated exports.
+Evidence: `build/test-results/function-static-scopes/run.mwlnRbH7/` in the
+isolated `static-scopes` worktree. The harness also accepts the existing ARM32
+profile; that target and Windows-hosted behavior await hosted validation.
+
+The source-built fixture has two `private_count` objects owned by different
+functions (37 and 83), a global of the same name (19), and a namespace global
+(61). Compiler DWARF independently supplies addresses and behavior. Ghidra
+imports only the stripped original; an analyst-style preparation script sets
+the names, types and explicit owners and exercises missing-owner diagnosis.
+The real exporter runs twice from fresh imports at each unchanged output path.
+
+Checks include GNU ELF/DWARF dumps, LLVM verification, independent libdwarf,
+function/namespace parentage, locationless external-data declarations, exact
+GDB owner-qualified and shadowing lookup, runtime addresses and values, source
+lookup, breakpoints, `next` until leaving the first owner, and normal exit.
+Every case retains input hashes and requires byte-identical `.dbg`/`.dbg.c`
+reruns. Each target has ET_EXEC, PIE, and PIE after a Ghidra `+0x2000000`
+rebase. Compiler unwind tables are retained in the original executable; Forge
+does not synthesize CFI.
+
+**ARM32 fixture correction (2026-10-23):** hosted run `40057031192` at
+`8e3fd27`, job `120763742547`, stopped before export because this harness
+unconditionally required a DWARF FDE in the stripped compiler input. Its
+`.eh_frame` contains only a terminator, while `.ARM.exidx`/`.ARM.extab` retain
+valid native unwind rules. The [ARM EHABI index format](https://github.com/ARM-software/abi-aa/blob/2025Q4/ehabi32/ehabi32.rst)
+permits an ordered index range to cover adjacent functions with the same
+rules. Here `first_scope` and `second_scope` share one decoded compact entry;
+`main` has a separate entry.
+
+The ARM-only precondition now uses independent GNU `readelf` decoding, requires
+a correctly sized/ordered native index, and verifies usable compact entries
+cover the complete compiler-symbol ranges of all three functions. It accepts
+merged entries and implicit Finish, and rejects missing tables, malformed
+length/order/count, `cantunwind`, and compact Refuse-to-unwind. Other targets
+retain their FDE check. The original compiler/Forge runtime oracle, warning
+policy and exporter are unchanged. This establishes present/decoded coverage
+and observed successful returns; it does not establish whether GDB selected
+EHABI rather than frame-pointer unwinding for a particular step.
+
+```bash
+src/test/integration/arm-ehabi-regression.sh <arm32-stripped> <compiler-reference>
+src/test/integration/function-static-scopes-export.sh /path/to/isolated-ghidra arm32
+```
+
+The negative regression runs automatically with the ARM32 exec fixture. It
+proves the old FDE-only check rejects valid input, then checks actual private
+ELF copies with an absent index, truncated index, `cantunwind` coverage and
+compact Refuse-to-unwind. All reject; supplied originals remain unchanged.
+Exact hosted artifact `12545114957` has SHA-256
+`3dedac03799a187938bfb15416361ea28f3fad52df0491d59ead1a72936c06cf`;
+its original failure is retained under `build/hosted-failure-review/`.
+
+**CONFIRMED locally:** ARM32 exec/PIE/rebased-PIE pass all existing compiler and
+Forge scope/value/address/source/stepping/return checks, GNU/LLVM,
+input preservation and byte-identical repeated exports in
+`arm-unwind-fixture/build/test-results/function-static-scopes/run.mAHnsuSk`.
+The distro `dwarfdump` 20210528 returned zero but reported four line-table
+errors in each summary; the former harness failed to detect them. They must
+not be described as a clean validator run. Rechecking the exact three
+artifacts with unmodified pinned libdwarf/dwarfdump 2.3.2 (`-ka -ki -kd`)
+reports zero errors, with retained full summaries under
+`arm-unwind-fixture/build/dwarfdump-2.3.2/comparison/`. Its source archive
+SHA-256 is `7992e7b9019ebfabdda5773e86243517c48cf89fafed3209e853692bc9573efd`.
+The broader checker-policy and strict-summary correction is tracked separately;
+these local results do not establish that every existing artifact is clean.
+Negative evidence is `run.hqFNiphI` (retained hosted input) and `run.adZ1Pf3X`
+(fresh compiler input) under `build/test-results/arm-ehabi-regression/`.
+Testing uses Ubuntu GCC 13.3/binutils 2.42 and ARM libc 2.39 extracted under
+the worktree's `build/arm-toolchain`, with local wrappers redirecting only
+compiler/sysroot paths. The exact hosted `8e3fd27` package is installed in a
+private Ghidra tree; artifact `12545313779` SHA-256 is
+`2b6ad3c49bdb203d2f948b7dd855f17ce71b8ebb1bcfc0fc60ee74d8fe21fa3f`.
+No system installation or shared Ghidra module was changed. Hosted verification
+of the corrected ARM path remains pending; the old hosted run never reached
+its floating-register tests.
+
+**Observed debugger limitation:** local GDB 15.1 with QEMU MIPS PIE can emit
+`warning: GDB can't find the start of the function at 0x2b321c03.` while
+stepping from the first function back to `main`. The untouched compiler ELF
+is clean when loaded directly, but reproduces the same warning under
+`file <stripped-original>` followed by `symbol-file <compiler-reference>`.
+No Forge DWARF or sidecar container is needed to reproduce it. The compiler
+line table needs two `next` operations to leave the function, whereas the
+synthetic line table may need one; comparing only one operation was insufficient.
+
+Both compiler loading transcripts are retained beside each Forge transcript.
+Only MIPS PIE cases may corroborate this precise warning, including its
+address and occurrence count, within the same owner-return operation in the
+independent separate-symbol-file oracle. Other diagnostics still fail, apart
+from the previously documented compiler-corroborated ARM/QEMU vDSO warning.
+This proves scoped-variable behavior, not general MIPS stack-unwind accuracy.
+Hosted validation of this new slice remains pending.
+
+## Incoming-register lifetime before overwrite (2026-10-23)
+
+**CONFIRMED locally:** `registerPrefixSmoke` checks the exact boundary after
+the first writing instruction, raw unnamed/partial register aliases, adjacent
+nonoverlapping registers, hazards before/after the overwrite, decoding gaps,
+missing returns, delay slots, flow overrides and cancellation. No prefix is
+accepted until the whole body passes the conservative straight-line proof.
+
+`register-prefix-export.sh` builds independent compiler-DWARF references and
+fully stripped Ghidra/runtime inputs for x86-64 and AArch64. The x86 fixture
+overwrites the low 16-bit argument register; AArch64 overwrites its 32-bit
+alias. Compiler DWARF verifies value 19 before/at/after the overwrite. Forge
+verifies 19 at entry, before the write and at the writing instruction, then
+`<optimized out>` from the next instruction onward. Later restored register
+bits are not treated as recovered storage. Both oracles check source stepping,
+global value 19 and normal exit. The post-clobber assembly marker is a separate
+C statement so the compiler itself updates its location information at that
+boundary rather than describing the entry to an opaque inline-assembly block.
+
+The dedicated x86-64/AArch64 ET_EXEC/PIE baseline, `+0x2000000` Ghidra rebase
+and repeat matrix passes real exports, readelf/LLVM/libdwarf, GDB values,
+input SHA-256/build-ID checks and byte-identical `.dbg`/`.dbg.c` repeats.
+Evidence: `build/test-results/register-prefix-export/run.jx2DfFhQ/`, including
+the final return-instruction checks, and
+`build/register-prefix-review/final-integration.txt`.
+
+The ordinary AArch64 semantic breakpoint remains after its overwrite and still
+reports unavailable arguments there; headless checks now require its limited
+prefix diagnostic. An archived ARM32 semantic input remains wholly unavailable
+under this proof. The existing x86-64/AArch64/MIPS32 BE/LE × ET_EXEC/PIE/shared
+matrix also passes all production exports, validators and native/QEMU GDB
+oracles; logs are `build/register-prefix-review/existing-*-{headless,gdb}.txt`.
+No new ARM32 or MIPS lifetime claim is made by these probes.
+
+```bash
+./gradlew registerPrefixSmoke variableStorageSmoke dwarfLocationListsSmoke buildExtension
+src/test/integration/register-prefix-export.sh "$GHIDRA_INSTALL_DIR" \
+    /absolute/path/libdwarf.so.2.3.2 /absolute/path/libdwarfp.so.2.3.2 x86_64 aarch64
+```
+
+The harness needs the existing GNU target toolchains, QEMU AArch64/GDB and
+validators. The exact known QEMU synthetic-vDSO warning is allowed only when
+also seen in the independent compiler oracle; other diagnostics fail. CI runs
+the new smoke and both real target lanes. Hosted validation remains
+**PRESENT, UNVERIFIED** until that pipeline passes.
 
 ## ELF robustness development (2026-10-23)
 
@@ -698,9 +1241,10 @@ inside the export report because the development harness validates the final
 artifact after the report is produced.
 
 `dwarfTargetSmoke` checks the table-driven ELF-machine, class, byte-order, and
-libdwarf ISA/flag mapping. It accepts only the validated profiles, including
-MIPS32 in both byte orders, and fails closed for MIPS64 and unsupported
-big-endian x86-64, AArch64, or ARM inputs. The companion
+libdwarf ISA/flag mapping, including MIPS32 in both byte orders. It fails closed
+for MIPS64 and unsupported big-endian x86-64, AArch64, or ARM inputs. It does
+not classify every ARM/MIPS ABI or validate every accepted storage convention;
+see [the exact tested profiles and remaining gaps](TARGET-PROFILES.md). The companion
 `src/test/integration/architecture-neutrality.sh` guard rejects architecture
 names and register spellings outside `DwarfTarget`, `TargetRegisterMap`, and
 the host-only packaged-native selector.
@@ -971,8 +1515,10 @@ naming, missing input, original-file alias rejection, nonexistent output
 directories, and an injected unwritable-directory result. GUI directory
 selection is implemented for a valid input whose default destination fails,
 and the automated Linux Swing chooser/cancellation test passes in a genuine
-non-headless Ghidra process (see the post-alpha GUI record above). Manual
-Script Manager navigation and Windows GUI behavior remain **PRESENT, UNVERIFIED**.
+non-headless Ghidra process (see the post-alpha GUI record above). Actual Linux
+Script Manager discovery/run/reporting and native Windows chooser behavior
+are additionally validated below; the current combined-head reproducibility
+gate remains separate from those component results.
 
 ## Automatic build-ID and debuglink association
 
@@ -1020,6 +1566,57 @@ a product `.gnu_debuglink` attachment option, and default export remains
 non-mutating.
 
 ## Shared-object export and runtime loading
+
+The shared-object QEMU harness uses a unique UNIX socket in a short private
+`/tmp/ghidra-forge-qemu.*` directory (mode 0700). QEMU 8.2.2's
+[`gdbstub/user.c`](https://github.com/qemu/qemu/blob/v8.2.2/gdbstub/user.c)
+and [GDB's connection contract](https://sourceware.org/gdb/current/onlinedocs/gdb.html/Connecting.html)
+support this transport. The helper checks child liveness and Linux
+`/proc/net/unix` listener state for 100 polls at 50 ms intervals without opening a
+connection, which would consume QEMU's single debugger client. It retains
+stdout/stderr/endpoint/exit evidence and removes/reaps its own socket/child on
+success, startup failure, timeout and caller failure. GDB and validator
+failures are not retried or filtered.
+
+This addresses run `40055880742`, MIPS32LE job `120759663719`: QEMU reported
+`bind: Address already in use` on the PID-derived TCP port `40514`, then GDB
+timed out. Local `shared-object-port-collision.py mips32le` deliberately holds
+the exact historical port for the launched harness PID while the actual
+shared-object GDB type/value/source/load-bias/step/normal-exit checks pass over
+the private socket. The startup suite also proves a real QEMU missing-input
+failure is not retried, a child without a listener times out, and a ready
+emulator is terminated on cleanup. No processes or socket directories survive
+these cases. The pipeline runs the collision control in the MIPS32LE shared
+lane and the startup/failure suite in the x86-64 lane.
+
+```bash
+src/test/integration/qemu-socket-startup.sh
+src/test/integration/shared-object-port-collision.py mips32le
+```
+
+Local evidence: startup `run.DwftsTvR` and final collision `run.7c6sr2ei`; the latter
+holds TCP port `31527` for harness PID `286525`. QEMU and GDB diagnostics are
+empty, recovered parameters are 19/23, global values are 0/7/42 as expected,
+and the inferior exits normally. This change is limited to shared-object
+startup. Other QEMU harnesses still use TCP and are not claimed to be migrated;
+the exact updated hosted matrix remains pending.
+
+Attempt 2 of GUI run `40058560162` stopped at the x86-64 startup suite with
+`/usr/bin/qemu-x86_64-static: No such file or directory` (child exit 127).
+Only cross-target lanes installed `qemu-user-static`; the x86-64 dependency
+list now includes it because the startup control runs real native QEMU.
+This failure preceded GUI testing. The native Windows dependency mirror
+retry succeeded, but its GUI job was skipped by the failed prerequisite.
+It is not a GUI product failure or a new Windows GUI pass. `actionlint`, shell
+syntax checks and the local real-QEMU startup/failure/cleanup regression
+`run.1XeKubtJ` pass for this dependency correction. The complete corrected
+hosted gate remains pending.
+
+An additional MIPS32BE shared-object run passes with empty QEMU diagnostics.
+AArch64 reaches normal exit using the same socket transport but retains the
+existing synthetic-vDSO `corrupt string table index` warning in its GDB log;
+that run is not counted as clean diagnostic evidence. No new warning filter
+or acceptance exception was introduced.
 
 ```bash
 FIXTURE_ROLE=shared src/test/integration/headless-symbol-export.sh \
@@ -1222,6 +1819,346 @@ The x86 CI lane now runs the deterministic GDB regression; the existing
 publisher smoke also runs on native Windows. Local build and focused checks
 pass. The next exact versioned candidate still requires full hosted validation.
 
+## Installed Script Manager export journey (2026-10-23)
+
+The explicit `ExportGhidraDwarfForge.java` launcher is needed because Ghidra
+12.0.3's `GhidraScriptComponentProvider.runScript(ResourceFile)` constructs a
+`RunScriptTask` without setting script arguments. The original
+`GhidraDwarfForge.java` intentionally remains native-free with no arguments.
+The Export launcher delegates to it using the verified packaged native pair.
+
+```bash
+export GHIDRA_INSTALL_DIR=/path/to/isolated/ghidra_12.0.3_PUBLIC
+./gradlew buildExtension
+support/assemble-release.sh dist/*.zip /path/to/verified-linux-natives \
+    /path/to/verified-windows-natives /path/to/gui-candidate.zip
+# Extract into an isolated Ghidra installation, then:
+module="$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge"
+src/test/integration/gui-script-manager.sh "$GHIDRA_INSTALL_DIR" "$module" \
+    "$PWD/build/fixtures/x86_64/semantic.exec.stripped" \
+    "$PWD/build/fixtures/x86_64/semantic.exec.reference"
+```
+
+**PASS locally:** `build/test-results/gui-script-manager/run.5CZSfnND/` in
+`work/gui-script-manager`, using Ghidra 12.0.3, GUI OpenJDK 21, Xvfb, and the
+existing verified Linux native package. The private installation links the
+unmodified Ghidra platform and contains its own assembled extension; no user's
+installed extension or original fixture is changed. The wrapper supports
+`JAVA_BIN` and `XVFB_BIN` for locally extracted tools.
+
+The harness compiles only its own GUI driver/support classes. It creates a
+real Ghidra front end and Script Manager plugin, discovers both installed
+script source paths, and launches them by double-clicking their visible table
+rows. It does not instantiate either production script. A known fixture
+function is renamed in the current Program to `gui_recovered_add`; GDB then
+resolves that analyst name from the output. Each selection/cancellation case:
+
+- Proves the default directory denies an actual file creation, preserving its
+  original permissions for cleanup.
+- Runs native-free preflight through Script Manager and observes Console.
+- Runs the Export launcher, verifies packaged-native selection, and drives the
+  real Swing chooser with Robot clicks.
+- Records screenshots and Console transcripts, checks the final JSON report,
+  verifies the input hash, and requires exactly the selected artifact pair or
+  no artifacts after cancellation, with no staging files left behind.
+
+Selection emits a `PARTIAL` report because the fixture's uncurated thunk and
+undefined-type information is diagnosed. Cancellation emits `CANCELLED` and
+Script Manager's cancellation message. Ghidra's loader also logs its existing
+GNU-hash markup limitation and missing external libraries during fixture
+import; those are retained in `gui.log`, not hidden or counted as validator
+success. The emitted sidecar passes GNU headers/sections/notes/DWARF dumps,
+`llvm-dwarfdump --verify`, and `dwarfdump` with empty diagnostic streams. GDB
+finds the synthetic source without a directory workaround, resolves the renamed
+function/signature, breaks, lists, executes `next` and `step`, and exits normally.
+Its diagnostic stream is empty. A displayed decompiler source comment saying
+`WARNING` is retained as source text, not treated as a debugger warning.
+
+Release-package tests require both script entries, reject a ZIP missing the
+Export launcher, verify their unchanged bytes in the assembled archive, and
+check deterministic archive/manifest output. Build, package regression,
+PowerShell syntax, and Java 21 compilation pass locally. Hosted component
+results and the later focus regression are recorded below.
+
+**CONFIRMED on native Windows in run `40054563515` at `83b74a6`:**
+`src/test/integration/windows-desktop-acl.ps1` compiles a standalone Java probe,
+records host/user/session evidence, denies directory writes with a real ACL,
+requires actual file creation to fail, restores the ACL, and requires a real
+Robot click on a visible button. The Windows CI lane retains its screenshots,
+ACLs and logs. Native execution is required; portable PowerShell syntax or
+Linux execution cannot establish Windows GUI support.
+
+The same Windows CI lane runs the full journey after feasibility and isolated
+packaged-native checks:
+
+```powershell
+./src/test/integration/windows-gui-script-manager.ps1 `
+    -GhidraDirectory $env:GHIDRA_INSTALL_DIR `
+    -ModuleDirectory "$env:GHIDRA_INSTALL_DIR\Ghidra\Extensions\GhidraDwarfForge" `
+    -Fixture C:\fixtures\semantic.exec.stripped `
+    -Reference C:\fixtures\semantic.exec.reference
+```
+
+This harness verifies the installed release hashes, compiles only the shared
+GUI driver, uses Java argument files to avoid Windows command-line limits, and
+selects a directory whose path contains spaces. It runs both real Script Manager
+entries and both chooser outcomes using packaged Windows natives. The Java
+driver verifies actual ACL denial, current-Program analyst rename, Console
+reports, input preservation, and artifact counts; it restores the saved ACL
+and propagates restoration failures. Native GNU readelf
+and LLVM validate the resulting artifact, including target header and build-ID
+agreement. Independent `dwarfdump` is used if available and otherwise recorded
+as unavailable. Linux ELF runtime GDB checks cannot run natively on Windows and
+are explicitly recorded as not run there; the Linux GUI journey retains those
+checks. All Windows logs and screenshots are retained under
+`build/test-results/windows-host/gui-script-manager/`.
+
+The initial local checks covered PowerShell syntax, workflow YAML, shared Java
+21 compilation, Java argument-file quoting (spaces, backslashes, quotes, and
+literal brackets), and the repeated Linux GUI/validator/GDB journey
+`run.BVL5Ysph`. Subsequent run `40054563515` passed all twelve jobs. Linux
+job `120756043691` passed the real Script Manager journey and GNU/LLVM/libdwarf
+plus GDB checks. Native Windows job `120758328246` passed the desktop Robot/ACL
+probe and full Script Manager journey. Downloaded artifact `12545630489` has
+verified GitHub SHA-256
+`98d50281bc7cf0a906c23739827a161b9de9b27220e27eb27bb8a59621a71f0b`.
+Its selection report is `PARTIAL`, cancellation is `CANCELLED`, actual file
+creation is denied by ACL, and recorded input/output hashes independently
+match the retained files. Native GNU/LLVM diagnostic streams are empty.
+`independent-dwarfdump=UNAVAILABLE_ON_WINDOWS_RUNNER` and
+`gdb-linux-elf-runtime=NOT_RUN_ON_WINDOWS_HOST` are explicit limitations.
+This proves that component at `83b74a6`; it does not establish reproducibility
+of later combined heads.
+
+### Hosted Script Manager focus regression
+
+The first Linux hosted GUI run `40053779323` timed out before the preflight
+script started. Its empty `script.log` and retained `preflight-manager.png`
+showed other Ghidra windows covering the Script Manager component. Swing's
+`isShowing()` alone did not establish that a coordinate click would reach the
+table. A controlled Xvfb experiment reproduced a visible target's click being
+received by the covering window; explicit foreground activation corrected it.
+
+The initial correction raised the target ancestor, waited for native window
+focus and then table focus, and clicked the actual visible Name cell using
+fresh bounds. It retained the real double-click, timeouts, and failure
+Console/desktop/window diagnostics.
+
+The corrected full local journey `run.B4Zeob4d` passes both chooser outcomes,
+GNU/LLVM/libdwarf checks and GDB source stepping/normal exit. Controlled focus
+evidence is under `build/hosted-gui-review/focus-probe-final/`.
+
+Attempt 2 of run `40055880742`, Windows job `120763476912`, exposed another
+pre-click harness race. Selection/export completed, but the cancellation
+case failed `Script Manager target row is not focused and fully visible`
+before its preflight script ran. Artifact `12546375795` (verified SHA-256
+`5a25475dd8a6f0ab463cfc12b90044fbe7c156e09591f0a1be7f81e199bbcea7`)
+retains the foreground Script Manager with the intended selected, visible
+row and caret in its filter. Ghidra 12.0.3's
+`GhidraScriptComponentProvider.componentActivated()` explicitly requests focus
+for that filter, so a transient table-focus assertion races ordinary activation.
+
+The corrected harness requires the foreground window, selected visible Name
+cell and matching filename, then observes exactly one real BUTTON1
+double-click delivered to that cell. Script Manager still performs the
+production launch; existing Console/chooser/report assertions remain.
+`GuiTableClickSmoke` deliberately gives keyboard focus to the filter, proves
+the former table-focus condition is false, and requires exactly one target
+invocation through Robot. Both host harnesses run this control. Full Linux
+run `run.syAI9N4O` passes the control, both chooser outcomes, original hashes,
+GNU/LLVM/libdwarf validation and GDB source lookup/stepping/normal exit.
+No timeout, debugger warning policy, script call path or production behavior
+changed. A new full native Windows run and complete exact-head matrix remain
+required before integrating the combined GUI change.
+
+The merge of strict-validator commit `bf7f2b1` preserves both GUI host journeys,
+the filter-focus control, private QEMU sockets and their x86 package dependency.
+The Linux Script Manager validator now uses the strict helper with its actual
+private input copy. Rechecking retained GUI result `run.V2OaAzmR` passes with
+three inherited frame diagnostics exactly corroborated against that input and
+zero uncorroborated errors. This is a validator replay, not a fresh GUI journey
+on the merged source. Workflow/shell/Python checks and the release-package
+regression, including both required launchers and provenance rejection cases,
+pass; the full merged hosted gate remains pending.
+
+### Modal Script Manager compilation dispatch (2026-10-24)
+
+Run `40062946718` at `cec4b5b` failed the x86 Script Manager step; its Windows
+job was skipped. Downloaded target artifact `12548841209` matches GitHub SHA-256
+`8816a64fedbb1c60bb41916c35c9c7f389f89219043248aa7a09d4316de292d1`.
+The retained screenshot shows the intended preflight row and Ghidra's real
+"Compiling Script Directory" modal dialog. Nevertheless, the harness reported
+`real double-click missed intended cell: delivered=0 actual=null`. Evidence is
+under `build/hosted-gui-review/run-40062946718/` in the GUI worktree.
+
+Pinned Ghidra 12.0.3's `GhidraScriptComponentProvider.doGetScriptInstance()`
+starts `TaskBuilder.launchModal()` synchronously inside its mouse listener.
+An observer appended after that listener cannot run until the modal action
+returns. Meanwhile, Swing's nested event loop can process `Robot.waitForIdle()`.
+This was an observation race, not evidence that the real click missed the row.
+The failure's subsequent Swing timeout is also retained; no exporter or
+native-producer failure is inferred from this run.
+
+`GuiTableClickSmoke` now opens a real modal dialog inside its table listener.
+With the old helper, the control fails with the exact hosted assertion
+(`build/modal-click-review/baseline/control.log`). The correction uses a
+Toolkit `AWTEventListener`, which observes the mouse event before component
+dispatch, filtering its exact table, event kind, button, click count, row,
+column and filename. It never consumes or substitutes the event. Cleanup
+removes the observer, and the production listener still launches the script.
+The control proves one real action while the late component observer remains
+pending, then one late observation after the modal dialog closes. Both host
+harnesses execute this control; no timeout, retry or production path changed.
+
+**PASS locally:** `build/test-results/gui-script-manager/run.O3SsqvwH/` uses
+OpenJDK 21.0.12.1, Xvfb and the exact hosted `cec4b5b` package, downloaded from
+artifact `12548278023` with verified outer SHA-256
+`014721f8bde1fa28943260d173e0f93b6eda83391bef469419f43c54ac5deea8`.
+All release manifest entries pass, and both installed script sources match the
+checkout. The private Ghidra platform uses actual directories with hardlinked
+unmodified files; it contains no symlinked platform roots or user extensions.
+The package JAR SHA-256 is
+`89011edf2e6b47c8445a9b47d9662739a05d97e5188e0a77895c2d42ae13e9bc`.
+
+```bash
+export JAVA_BIN=/usr/lib/jvm/java-21-openjdk-amd64/bin/java
+export XVFB_BIN=/path/to/Xvfb
+export DWARFDUMP=/path/to/verified-validation-tool/bin/dwarfdump
+export PATH="$(dirname "$DWARFDUMP"):$PATH"
+src/test/integration/gui-script-manager.sh /path/to/private-ghidra \
+    /path/to/private-ghidra/Ghidra/Extensions/GhidraDwarfForge \
+    /path/to/semantic.exec.stripped /path/to/semantic.exec.reference
+```
+
+The fresh run passes both focus/modal controls, installed discovery and
+native-free preflight, real chooser selection/cancellation, Console reports,
+original hashes and exact artifact counts. GNU and LLVM validation pass.
+Strict libdwarf checking retains three inherited frame diagnostics, each
+exactly corroborated against the actual private input, with zero uncorroborated
+errors. GDB resolves the renamed function and synthetic source, steps with
+`next`/`step`, and exits normally with empty stderr. This is a fresh Linux
+journey with the corrected harness; a new full hosted run, including native
+Windows, is still required.
+
+### Managed Linux display geometry (2026-10-24)
+
+Run `40064976588` at `a977a93` passed the four cross-target lanes and the Linux
+chooser-only check, but failed the real Script Manager step. Windows was
+skipped. Artifact `12549133765` has verified GitHub SHA-256
+`68e34a584d8588aa3333986ef2d8c69c9f74b7d6c8bc018347d025c1865e16e4`.
+Its filter-focus and modal controls both pass. The screenshot instead shows
+the Apple category selected after the attempted preflight table click. Java
+window diagnostics report `(0,0)`, while the desktop places the same 684×519
+Script Manager at `(298,253)`; the pre-click crop also uses the wrong origin.
+This establishes a native/Java coordinate mismatch, not a script/native-export
+failure. Evidence is retained in `build/hosted-gui-review/run-40064976588/`.
+
+Pinned Ghidra's `DockingFrame` is a plain `JFrame`; `DetachedWindowNode` packs,
+positions and then shows a new floating window. A standalone probe of that
+creation order under bare Xvfb independently compares Java coordinates with
+`xwininfo`. It reproduces the mismatch in 7/100 exploratory cases and 2/100
+cases in the final comparison (`run.haXOAIX9`, `run.xF2sFukx` under
+`build/native-geometry-review/`). The matching Openbox comparison
+`run.UyGCVVwx` passes all 100 after accounting for normal WM decorations.
+This is observed virtual-display behavior; no general JDK regression or
+specific vendor defect is claimed.
+
+The Linux Script Manager wrapper now requires `openbox` and `x11-utils` in
+addition to Xvfb. It starts its own WM on its fresh display, supplies an owned
+XML configuration and empty menu, checks the native WM readiness property,
+and terminates the WM before Xvfb on every exit. It never manages the user's
+desktop. Locally, packages were downloaded/extracted under ignored `build/`;
+no system package or user installation changed. `OPENBOX_BIN`, alongside
+`XVFB_BIN` and `JAVA_BIN`, allows that private executable setup.
+
+`GuiWindowGeometrySmoke` checks 100 separate packed/centered/shown windows,
+comparing native X11 client coordinates with Java bounds plus decorations.
+Queries have bounded process cleanup, and failures retain native output and
+screenshots. This Linux-only control precedes the unchanged actual Script
+Manager click, Console, chooser and export checks. The shared Windows journey,
+click observation, action count, existing timeouts and validator policy are
+unchanged; no failed launch is retried.
+
+**PASS locally:** final `build/test-results/gui-script-manager/run.KPdcV6p3/`,
+using OpenJDK 21.0.12.1, Openbox 3.6.1 and the verified hosted production
+package identified above. All 100 geometry cases and both filter/modal
+controls pass. The full Ghidra journey passes installed discovery, native-free
+preflight, real selection/cancellation, input preservation, exact output counts,
+GNU/LLVM, strict libdwarf checking and GDB source lookup/stepping/normal exit.
+Three inherited frame diagnostics are exactly corroborated against the private
+input; zero remain unexplained. Openbox and validator/GDB stderr logs are
+empty, and no WM/Xvfb/Java test process remains. Full hosted verification of
+the updated branch, including native Windows, is still required.
+
+### Script Manager pending-filter readiness (2026-10-24)
+
+The first combined-product managed-display run, `run.yI7ooUik`, passed all 100
+geometry cases and delivered the intended table double-click, but timed out
+waiting for preflight Console output. The original failure is retained under
+`build/native-geometry-review/combined-full-gui.log`. Five fresh diagnostic
+runs passed; they did not resolve that failure. The subsequent buffered
+selection-stack reproduction `run.3HcGrt32` failed the same Console assertion
+and records the actual cause in
+`build/native-geometry-review/event-probe/selection-stack-gui.log`:
+
+- Ghidra's `GTableFilterPanel` timer calls `TableModelWrapper.setTableFilter`,
+  which causes `JTable.tableChanged` to clear the selection after mouse press 2.
+- The real second click is unconsumed, has previous/current left-button state,
+  and reaches the correct Name cell, but `getSelectedScript()` is null.
+  `lastRunScript` remains null. Selection is restored only afterward.
+- Pinned Ghidra 12.0.3 queues this restoration through
+  `RowObjectSelectionManager.repairSelection` using `invokeLater`.
+
+The harness observes the known initial refresh/category/filter/sort work and
+drains queued selection repair before selecting the final row. It reads the
+pinned private update-manager fields because Ghidra exposes no public filter
+or ScriptList busy query; missing fields fail the test. It never flushes,
+disables or replaces those updates. A final idle check precedes the unchanged
+single real double-click and all existing Console/chooser/export assertions.
+
+The new control uses actual `GTable`, `GhidraTableFilterPanel`, and
+`GMouseListenerAdapter`. A public filter-text change proves the old
+selected-visible-row predicate accepts pending work. The test observes real
+selection clearing/restoration, waits for completion, and requires exactly one
+action with no selection change during its gesture. Development checks caught
+and corrected immutable control-data cleanup and declaring-class reflection
+errors; those failed runs are retained (`run.HSMGcl7Q`, `run.XSKtqHhL`).
+No production exporter, script launch path, timeout or retry policy changed.
+Fresh combined hosted acceptance, including native Windows, remains required.
+
+**PASS locally:** `build/test-results/gui-script-manager/run.LFXUdxrq/` and
+`build/native-geometry-review/combined-filter-readiness-reviewed.log`, using
+OpenJDK 21.0.12.1 and the final managed-display wrapper. All three controls,
+100 independent geometry cases, actual installed preflight/export, chooser
+selection/cancellation, original hashes, GNU/LLVM and GDB pass. The configured
+strict checker reports three exactly corroborated inherited frame diagnostics
+and zero unexplained errors. GNU/GDB/checker stderr and the Openbox log are empty.
+
+This run uses the combined production build supplied by the integration branch
+with audited release-native bytes, installed only in a fresh private Ghidra
+copy. Its entire release manifest verifies and all 33 packaged production
+source/script files match that combined tree. Recorded SHA-256 values are:
+
+- Combined ZIP: `1348d100f7dd0508929726039313444419d551d7bf794838cdd8bf29ce62d8dd`.
+- Production JAR: `d6e94336652ddc2cc3a14f9bc2971f58d1ca7cb1dcbd980fb713bd058779470e`.
+- Production source ZIP: `890f2d4a95a3ede4e4c42c44def06a48beda4bb427c914416f6b3a6a4d22ea4b`.
+
+The retained local command uses extracted display dependencies, not installed
+user-desktop packages (`$PWD` is the GUI worktree):
+
+```bash
+export XVFB_BIN=/home/ziggy/GhidraDwarfForge/build/gui-validation/dependencies/extracted/usr/bin/Xvfb
+export OPENBOX_BIN="$PWD/build/native-geometry-review/openbox-local.sh"
+export JAVA_BIN=/usr/lib/jvm/java-21-openjdk-amd64/bin/java
+export DWARFDUMP=/home/ziggy/GhidraDwarfForge-worktrees/line-table-index/build/line-profile/validation-tool-config-final/bin/dwarfdump
+export PATH="$(dirname "$DWARFDUMP"):$PATH"
+src/test/integration/gui-script-manager.sh \
+    "$PWD/build/native-geometry-review/combined-ghidra" \
+    "$PWD/build/native-geometry-review/combined-ghidra/Ghidra/Extensions/GhidraDwarfForge" \
+    /home/ziggy/GhidraDwarfForge/build/fixtures/x86_64/semantic.exec.stripped \
+    /home/ziggy/GhidraDwarfForge/build/fixtures/x86_64/semantic.exec.reference
+```
+
 ## Native patch checkout and provenance consistency (2026-10-23)
 
 Prepublication audit of candidate `ddad598` in run `40055176326` verified the
@@ -1267,3 +2204,361 @@ wrapper permissions and two byte-identical assemblies. Logs are in
 `native-patch-provenance/build/provenance-review/`. Native Windows and the full
 exact-candidate matrix remain pending; this audit does not authorize publishing
 the earlier mismatched package.
+
+## Definite ELF/Ghidra target agreement (2026-10-24)
+
+The isolated `target-language-agreement` worktree starts from strict baseline
+`bf7f2b1`. A fresh build of that baseline reproduces two semantic preflight
+gaps: x86-64 imported as `AARCH64:LE:64:v8A` and MIPS32 little-endian imported
+as `ARM:LE:32:v8` both produce `PARTIAL` sidecars and pass LLVM verification.
+Both imports use `-loader ElfLoader -processor <language> -cspec default
+-noanalysis` on private copies of source-built reference ELFs, so imported
+symbols suffice to reach the exporter. Original hashes remain unchanged.
+Evidence is `build/target-agreement/baseline/{x86_64,mips32le}/`, the exact
+baseline package is `build/target-agreement/baseline.zip`, and its installed
+JAR SHA-256 is `4f1fede9f6a9b298902a289c81ee27d8be750930aef70d3955c635dd3e77c20a`.
+This replaces the earlier research's older-JAR reproduction with a current
+baseline observation.
+
+The expected processor strings come from Ghidra 12.0.3's installed
+`Processors/{x86,AARCH64,ARM,MIPS}/data/languages/*.opinion` and `*.ldefs` files.
+The adapter reads `Language.getProcessor`, `Language.isBigEndian`,
+`Program.getDefaultPointerSize`, `Language.getLanguageID`, and
+`CompilerSpec.getCompilerSpecID`; pinned source is in
+`Framework/SoftwareModeling/lib/SoftwareModeling-src.zip`. Source hashes are
+recorded in `build/target-agreement/pinned-api-sources.sha256`. The check uses
+the Program's data-pointer size, preserving the existing width policy; it
+does not infer that instruction/register width equals pointer width. Compiler
+and variant IDs are diagnostic only. Passing this guard does not establish
+ABI, ISA-variant, calling-convention or ELF-flag support beyond the tested
+profiles.
+
+```bash
+GHIDRA_INSTALL_DIR=/path/to/ghidra_12.0.3_PUBLIC ./gradlew \
+    dwarfTargetSmoke ghidraTargetAgreementSmoke exportReportSmoke buildExtension
+python3 src/test/integration/target-language-agreement.py "$private_ghidra" x86_64
+python3 src/test/integration/target-language-agreement.py "$private_ghidra" mips32le
+```
+
+**PASS locally:** the metadata smoke covers five expected profiles, both
+same-width processor families, pointer-width/endian contradictions, unsupported
+ELF machines, and acceptance of nondefault variant/compiler metadata without
+Program mutations. All twenty native-independent CI smoke tasks, extension
+build, architecture guard, `actionlint`, Python syntax and release-package
+regression pass. Build logs are `build/target-agreement/{fixed-build,final-build,
+architecture,actionlint,package}.log`. Local JDK 25 produces Java 21 bytecode;
+native Windows execution is pending.
+
+The real mismatch harness passes all four absent/existing-pair controls in
+`build/test-results/target-language-agreement/run.bsu5k34q/` and
+`run.k9c5fhqg/`. It requires a structured `FATAL` report naming the expected
+and actual processors, ELF machine/class/endian/flags, pointer width and full
+language/compiler identity. Explicit native paths deliberately do not exist;
+the mismatch must be reported before loading them. Input and prior-output
+hashes/mtimes are unchanged and the output directory has no new files.
+The analyzer itself must exit normally without a JVM crash; Ghidra 12.0.3
+reports the expected post-script failure in its log rather than its exit code.
+
+**PASS locally:** correct x86-64, AArch64, ARM32, MIPS32 BE and MIPS32 LE
+ET_EXEC imports run through the installed production exporter and the existing
+GNU/LLVM/strict-libdwarf plus GDB type/source/value/stepping/normal-exit oracles.
+The strict checker reports three x86 and five AArch64 inherited frame-length
+diagnostics, each exactly corroborated against the matching unchanged original;
+the other three profiles have zero reported errors. Every profile has zero
+uncorroborated errors. Commands follow `headless-symbol-export.sh` and
+`qemu-gdb-symbols.sh` with `DWARFDUMP` set to the pinned patched consumer and
+`FORGE_ARM32_SYSROOT` pointing to the previously extracted ARM sysroot.
+Evidence is `build/target-agreement/positive-*-{export,gdb}.log`,
+`positive-identities.json`, and `build/test-results/headless-symbol-export/`.
+All installations and fixture copies are private; the user installation and
+the supplied originals are unchanged. Existing CI retains every target/role
+and host gate, and adds the rejection controls plus Windows metadata smoke.
+The complete new hosted matrix remains pending.
+
+## Performance-branch validator configuration incident (2026-10-24)
+
+**CONFIRMED:** [run 40064815083](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40064815083)
+at `d12be10bc93d9096042ca620f712fc0baf8063db` failed native Linux job
+`120785718398` in the first diagnostic-capacity positive. The actual checker
+returned zero but emitted `ERROR: dwarfdump found no dwarfdump.conf` and
+suppressed frame access; strict validation rejected the result. Artifact
+`12548957019` matches GitHub digest
+`7ea4ad1d70bc7a1a512977a73293708e6c28b3f27ba5e0918fb8f284e1944ba7`.
+
+The standalone bundle now includes its unchanged pinned upstream config and a
+relocatable launcher selecting it explicitly. It has no dependency on an
+installed distro, CWD or HOME configuration. Missing/altered config and option
+aliases fail closed, and raw allocation-injection controls keep the same
+explicit config. See `support/validation/README.md` for source hashes and
+reproducible controls. The failure does not change historical timing results
+or the indexed planner; no performance export was rerun. Corrected hosted
+acceptance remains pending, and this feature branch stays outside alpha.2.
+
+**PASS locally:** the final configured bundle is
+`line-table-index/build/line-profile/validation-tool-config-final/`.
+Its complete manifest and bundled-source comparisons pass. Launcher SHA-256:
+`cb6c594b13fa18d0e30339390d3985ba594eb0fafa597ec1845c14dde940aaaa`;
+ELF executable SHA-256:
+`94435663cf53fafea90c40db053b90bd5bff77d3974de4471548df0cd88b37fd`.
+Configuration controls pass in `build/test-results/dwarfdump-configuration/run.1n891ve7`;
+full capacity/allocation/static-rollback controls pass in
+`build/test-results/dwarfdump-diagnostic-capacity/run.yfxuwuz0`.
+Strict parser, line/range and extended-program negatives also pass, and the
+retained 10,000-function sidecar again matches all 10,002 original frame
+messages with zero uncorroborated errors. Commands/results are retained under
+`build/hosted-capacity-review/run-40064815083/`. The developer build's initial
+override control caught the older grouped-option filter before correction;
+that failing evidence is preserved. A reviewer independently verified source,
+manifest and controls. Corrected hosted acceptance remains pending.
+
+## Semantic and strict-validator merge (2026-10-23)
+
+The normal merge of strict branch `bf7f2b1` into semantic branch `0b754078`
+preserves both histories, the semantic gates and the strict validator's
+independent source/provenance contract. The five semantic-only shell suites
+(function entry, static scopes, register prefix, scalar FP and saved-program
+determinism) and the isolated entry/ARM-slice producer checks now pass their
+exact original ELF to `check-dwarfdump.py`. No runtime oracle or diagnostic
+exception was relaxed.
+
+**PASS locally:** all 23 semantic CI Java smoke tasks and `buildExtension`,
+`actionlint`, the architecture-neutrality guard, changed-shell syntax checks,
+the release-package regression and the strict checker's rejecting controls.
+The build used Ghidra 12.0.3 and local JDK 25, producing Java 21 bytecode.
+Logs are retained in `build/strict-semantic-merge/`; parser controls are in
+`build/test-results/check-dwarfdump/run.kfb96j1p/`.
+
+The merged strict helper also passes five retained artifact/original pairs:
+function entry (2 inherited frame diagnostics), scalar FP (6), static scopes
+(2), register prefix (4), and saved-program determinism (3). Each diagnostic
+is exactly corroborated against its paired original, with zero uncorroborated
+errors and empty stderr. Both input hashes remain unchanged. Exact paths,
+commands, hashes and reports are in `build/strict-semantic-merge/replays/`.
+These are validator replays of prior outputs, not fresh Ghidra/GDB executions
+on the merged source. The full merged target/host matrix remains pending.
+
+## Semantic hosted acceptance and main integration (2026-10-24)
+
+**CONFIRMED:** PR #20 head
+`b14e8109ca95358bacba6b0d11223a913d32db80` passed all twelve jobs in
+[run 40063017269](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40063017269),
+a `pull_request` run completed successfully at `2026-10-24T04:57:49Z`.
+This is fresh hosted execution of the combined semantic and strict-validator
+source, superseding the earlier pending-hosted statements for these bounded
+features. It is not a release-publication result.
+
+| Job | Result | Job ID |
+|---|---|---|
+| workflow-lint | PASS | `120780364456` |
+| native-linux | PASS | `120780364420` |
+| native-windows | PASS | `120780364441` |
+| extension-build | PASS | `120780364272` |
+| release-package | PASS | `120781766923` |
+| target-preflight (x86_64) | PASS | `120781815421` |
+| target-preflight (aarch64) | PASS | `120781815413` |
+| target-preflight (arm32) | PASS | `120781815523` |
+| target-preflight (mips32be) | PASS | `120781815437` |
+| target-preflight (mips32le) | PASS | `120781815513` |
+| windows-host | PASS | `120783767660` |
+| required-validation | PASS | `120784450732` |
+
+No job was skipped or failed. Target-specific conditional steps remain
+intentional; a passing lane does not mean every feature ran on every target:
+
+- Function-owned static scopes and scalar floating-register oracles ran on all
+  five Linux-hosted target profiles. ARM32 reached and passed the corrected
+  EHABI precondition, static values/returns, stable floats/doubles and the
+  upper-`s1` register slice. These tests retain strict validation, unchanged
+  originals, rebases and deterministic repeats.
+- Incoming-register prefix lifetimes ran on x86-64 and AArch64. They establish
+  the value only through the first overwrite in the bounded straight-line
+  leaf proof. ARM's opaque `setISAMode` return remains rejected, and no MIPS
+  prefix-runtime claim follows. Migration, call-crossing, later-starting and
+  more general control-flow lifetimes remain unimplemented.
+- Function-entry producer/structural checks ran on all five targets. The real
+  below-entry/interior-entry GDB fixture and explicit rebases ran on x86-64.
+  P1.8's documented acceptance is complete within that evidence boundary.
+- Saved-program type identity across fresh headless processes ran on Linux
+  x86-64; the native-independent identity smoke ran in the Linux extension
+  build. Windows ran its five selected address/path/report/source/publication
+  checks, not that identity smoke. Only the generic `DefaultDataType`
+  transient-ID case is corrected; unrelated persisted type identities are unchanged.
+- MIPS scalar floats have positive value checks, but paired doubles remain
+  unavailable in Forge. The compiler pair oracle records `UNVERIFIED` when
+  the tested QEMU/GDB register view returns zero, or accepts the exact expected
+  value. Correct memory sinks are not promoted to parameter-location proof.
+- Windows passed native-independent checks, native production, publication
+  rollback, headless ELF export and clean packaged-native export. Its structural
+  tools are GNU/LLVM; no native Windows libdwarf-checker or runtime-GDB result
+  is claimed. The newer Script Manager journey belongs to a separate branch.
+
+The strict helper remains mandatory in every semantic suite and isolated
+producer check, with the exact original ELF supplied for inherited-frame
+corroboration. No new diagnostic allowance, skipped assertion or target
+support policy was introduced by this integration.
+
+The subsequent normal merge of `main` commit
+`2f88c4a1a7dd90dfedbd8d578b27242dfb8a73b7` adds no source, test, workflow or
+packaging changes: its tree is identical to already-merged strict parent
+`99845c71954430a5105891a0e3507075e48fa41a`. Only this documentation is updated.
+The new current-base PR head still requires its own hosted checks; the passing
+run above is attributed to its exact historical head. Corrective alpha.2
+publication status is unchanged, and no GUI, target-language agreement or
+performance branch was incorporated.
+
+## Corrective alpha.2 official publication (2026-10-24)
+
+**CONFIRMED:** [v0.1.0-alpha.2](https://github.com/zwilcox/GhidraDwarfForge/releases/tag/v0.1.0-alpha.2)
+was published at `2026-10-24T05:15:20Z` from
+`2f88c4a1a7dd90dfedbd8d578b27242dfb8a73b7`. Corrected PR #22 run
+`40062747733` passed before normal merge. The exact-main
+[push run 40064204515](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40064204515)
+then passed its exact twelve-job set, with no failed or skipped job:
+
+| Job | Result | Job ID |
+|---|---|---|
+| native-linux | PASS | `120783901405` |
+| native-windows | PASS | `120783901516` |
+| extension-build | PASS | `120783901546` |
+| workflow-lint | PASS | `120783901553` |
+| release-package | PASS | `120785341821` |
+| target-preflight (x86_64) | PASS | `120785394884` |
+| target-preflight (aarch64) | PASS | `120785394875` |
+| target-preflight (arm32) | PASS | `120785394952` |
+| target-preflight (mips32be) | PASS | `120785394861` |
+| target-preflight (mips32le) | PASS | `120785394901` |
+| windows-host | PASS | `120786949510` |
+| required-validation | PASS | `120787583460` |
+
+The aggregate completed at `2026-10-24T05:13:58Z`. Target-conditional steps
+retain their documented scope: this is the corrective baseline's matrix, not
+the later semantic-feature matrix. Linux lanes enforce the pinned standalone
+checker and its narrow corrections, GNU/LLVM checks and native/QEMU GDB
+oracles. The Windows lane proves headless export, native safety, publication
+rollback and GNU/LLVM validation; it does not claim native Windows runtime GDB
+or a Windows standalone libdwarf checker.
+
+The independent final audit used `mode=final`, requiring the exact `push`
+event, head and twelve successful jobs. It downloaded artifact `12549365222`
+and verified its outer ZIP SHA-256
+`37b88a94b9f0a5e8497ea4b4c5dc6db587b46482fb8af30e850d2dcb41f49309`.
+All five manifests passed (53 release files, 5 Linux native files, 6 Windows
+native files, 6 source records and 3 Windows-runtime records). The 29 embedded
+production sources matched the exact commit; all 131 classfiles use Java 21
+bytecode. Version/compatibility/scripts/docs, absence of private JNA, Linux
+RUNPATH, Windows exports and canonical native-patch provenance on both hosts
+passed. The later GUI launcher is absent, as required for this release scope.
+
+Using the downloaded production JAR/native pair, class-origin checks and 20
+isolated producer lifetimes passed on Java 21, including deterministic output.
+Measured resident growth was 7,221,248 bytes against the smoke's 33,554,432-byte
+limit; this is bounded smoke evidence, not a general memory guarantee. Audit
+compilation used `javac --release 21` from JDK 25; execution used Java 21.
+No shared or user installation was modified.
+
+Final-audit evidence is retained at
+`corrective-alpha2/build/exact-release-verification/run-40064204515.nbGbxUuA/`
+in the worktree collection (`result.txt`, `package-verification.txt`,
+`production-class-origin.txt`, `packaged-producer.txt`, `run.json` and digests).
+The main checkout's `build/alpha2-publication/final-audit.json` links this exact
+result; `exact-main-ci.json` retains the full final job/step record.
+
+The published ZIP is `GhidraDwarfForge-0.1.0-alpha.2-ghidra-12.0.3.zip`, SHA-256
+`0ae14cf8f4760703d4778d5b414fd14b9c8a68414edc89dcf8cb58a21669ade6`.
+Release `422532694` is a published prerelease, with ZIP asset `671345358` and
+`SHA256SUMS` asset `671345364`. Both draft and public downloads match the
+audited ZIP and checksum text; the checksum asset SHA-256 is
+`a0c935e1553f0b458d117dee55d29747690489a5415afafd2ca09e00e3e3a0f5`.
+The public tag resolves directly to the tested commit. Each phase also checks
+alpha.1's tag, release identity and asset digests against the retained baseline.
+Both record `release-assets=PASS` and `alpha1-unchanged=PASS` in
+`build/alpha2-publication/{draft-verification,published-verification}/`, with
+the downloaded assets and API metadata retained alongside those results.
+
+Alpha.1 remains unchanged and affected by its documented correctness findings.
+The earlier failed runs and hidden-summary incident are not erased by this
+release. Exact inherited frame diagnostics remain visible and strictly
+corroborated; profile/ABI, PN_XNUM runtime, missing-location and synthetic-source
+limits remain as documented. The semantic additions in this branch and the
+separate GUI/target-agreement/performance work are excluded from alpha.2. The
+tagged documents are the immutable prepublication snapshot; this subsequent
+handoff record does not modify the release tag or assets.
+
+## Reviewed TODO integration scope (2026-10-24)
+
+This combined tree contains the semantic, Script Manager, target-agreement and
+line-table changes plus the inline/debuglink research records. The preceding
+component results remain scoped to their exact commits and tool bundles. No
+combined-head acceptance is inferred from those independent passes; the full
+current-base hosted matrix remains required. The published corrective alpha.2
+artifact is unchanged and excludes these subsequent features.
+
+The historical generic-undefined type-ordering observation in the debuglink
+research is resolved here by semantic commit `3070e95`. The saved-program
+regression above and hosted semantic run `40063017269` prove raw-model and
+DWARF/source byte equality for that bounded singleton case. This does not
+implement optional attachment/refresh/rollback or replace other type identities.
+
+
+## Combined local checks and component hosted status (2026-10-24)
+
+**CONFIRMED locally:** combined production source
+`a328a15f625331d17c7c7e45d62d4645e9a1e4b0` compiles and passes all 24
+native-independent Java smoke tasks plus `buildExtension`. The package and
+headless-wrapper regressions, workflow lint and architecture-neutrality guard
+also pass. Independent source review found no material production conflict;
+the workflow composition review confirms all 61 distinct named component CI
+steps are retained. These review results do not replace execution of the
+combined pipeline.
+
+Build, package, wrapper and assembly transcripts are retained in the
+`reviewed-todo-integration` worktree's `build/integration-review/` as
+`build.log`, `package.log`, `wrapper.log` and `combined-assembly.log`.
+The locally assembled package SHA-256 is
+`1348d100f7dd0508929726039313444419d551d7bf794838cdd8bf29ce62d8dd`.
+It is a private integration artifact, not a new published release. Subsequent
+merge `c1c7485a8518a048fc5f798ac0cc249a412baf28` changes only managed Linux GUI
+harness/control sources, CI and documentation; its production source matches
+the tested `a328a15` tree. The full combined runtime/host matrix is still pending.
+
+Fresh GitHub queries confirm the following exact component `pull_request`
+runs are completed successfully. Each has exactly twelve successful jobs, with
+no failed or skipped job: lint, both native builds, extension, release package,
+all five target lanes, Windows host and the aggregate gate.
+
+| Component | Exact head | Hosted run | Aggregate completion (UTC) |
+|---|---|---|---|
+| Target-language agreement | `96e6972f64f6e47e8f37dc2c99f72990a8768bf7` | [40064731597](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40064731597) | `2026-10-24T05:22:37Z` |
+| Semantic features | `2d47e122add294dcd50e4fb0820855be19cb6f39` | [40066078653](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40066078653) | `2026-10-24T05:43:27Z` |
+| Line index and validation-tool packaging | `b0bcdb83e23bc09bc1efc79d9f2b02e3e6f3b1a7` | [40065823442](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40065823442) | `2026-10-24T05:41:26Z` |
+
+Full API metadata, job IDs and conditional step results are retained as
+`build/integration-review/component-run-<run-id>.json`. These supersede the
+respective component's earlier pending-hosted statements. Target-conditional
+coverage and existing limitations remain unchanged; the performance run does
+not create a new timing measurement. None of these runs validates this combined
+head or the newer managed-display GUI change.
+
+**FAILED combined GUI attempt:** the actual combined-artifact run is
+`gui-script-manager/build/test-results/gui-script-manager/run.yI7ooUik/`
+in the worktree collection. Its 100 native-window geometry checks pass, but
+selection stops at `GuiScriptManagerSmoke.awaitConsole` with:
+`timed out waiting for console text: Symbol export was not requested.`
+No preflight script start was observed. Correct geometry and observed click
+delivery do not establish execution of the script action. Console/window/
+desktop diagnostics and logs remain retained. No combined GUI/export/validator/
+GDB pass is claimed from this failed run.
+
+The earlier managed-display `run.KPdcV6p3` pass used the isolated GUI component
+and its verified hosted production package. It remains useful component
+evidence, but is not promoted to a combined pass. The later causal reproduction
+`run.3HcGrt32` identifies the deferred-filter selection race recorded above.
+The readiness fix, pending-filter control and fresh actual combined-product run
+`run.LFXUdxrq` pass on Java 21 with the unchanged production JAR. That run proves
+100 native geometry cases, all three controls, preflight/export, both chooser
+outcomes, original preservation, GNU/LLVM/strict-libdwarf (three exactly matched
+inherited diagnostics, zero unexplained errors), and GDB stepping/normal exit.
+Diagnostic replays were not substituted for this post-fix run. The complete
+exact-head hosted matrix, including Windows GUI, remains required before main
+integration. Published alpha.2 stays immutable at `2f88c4a`; its verified
+release artifacts exclude these subsequent features.

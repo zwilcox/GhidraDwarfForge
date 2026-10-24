@@ -52,6 +52,7 @@ public final class DwarfConstants {
     public static final short DW_AT_LOCATION = 0x02;
     public static final short DW_AT_BIT_SIZE = 0x0d;
     public static final short DW_AT_LOW_PC = 0x11;
+    public static final short DW_AT_ENTRY_PC = 0x52;
     public static final short DW_AT_HIGH_PC = 0x12;
     public static final short DW_AT_LANGUAGE = 0x13;
     public static final short DW_AT_STMT_LIST = 0x10;
