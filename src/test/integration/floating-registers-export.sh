@@ -135,6 +135,24 @@ for target in "${targets[@]}"; do
                 grep -Fq 'Omitted location for fp_double::first' "$case_dir/headless.txt"
                 grep -Fq 'no audited DWARF mapping for Ghidra register f12_13' "$case_dir/headless.txt"
             fi
+            if [[ "$target" == arm32 ]]; then
+                grep -Fq 'floating-register-arm-opaque-return=PASS' "$case_dir/headless.txt"
+                grep -Fq 'Omitted location for fp_clobbered::value: function writes parameter register q0' \
+                    "$case_dir/headless.txt"
+                python3 - "$case_dir/headless.txt" <<'PY'
+import json
+import pathlib
+import sys
+
+reports = [json.loads(line[line.index('{'):line.rindex('}') + 1])
+    for line in pathlib.Path(sys.argv[1]).read_text().splitlines()
+    if 'GhidraDwarfForge report:' in line]
+assert len(reports) == 1, 'expected one exporter report'
+entries = [item for item in reports[0]['omittedLocations']
+    if item['function'] == 'fp_clobbered' and item['variable'] == 'value']
+assert len(entries) == 1 and entries[0]['reason'] == 'REGISTER_MODIFIED', entries
+PY
+            fi
             readelf -hSWn "$output" >"$case_dir/elf.txt" 2>"$case_dir/readelf.stderr"
             for kind in info abbrev aranges decodedline Ranges loc; do
                 readelf "--debug-dump=$kind" "$output" >"$case_dir/$kind.txt" 2>>"$case_dir/readelf.stderr"
