@@ -108,7 +108,7 @@ items are these bounded workstreams:
 | Remaining GUI journeys (P2.7) | **PRESENT, UNVERIFIED:** manual Script Manager launch and Windows chooser/cancellation. Linux GUI fallback already has a passing automated test. |
 | Optional debuglink (P2.8) | **PLANNED, optional:** explicit opt-in attachment, backup/rollback, CRC, automatic lookup and mismatch tests, while default export leaves the original unchanged. |
 | Inline reconstruction (P3.4) | **UNCERTAIN:** investigate defensible instance/call-site/range evidence and record a decision. Implement only if supported by that evidence. |
-| Performance (P3.5) | **PLANNED:** establish representative large-binary benchmarks, choose optimizations with measured benefit, and prove unchanged semantics/determinism. The listed candidates are not all unconditional requirements. |
+| Performance (P3.5) | **PRESENT, partially validated:** synthetic 100/1,000/10,000-function measurements pass validators, full DWARF symbol checks and deterministic reruns. Representative complex-binary and phase-level profiling remain planned before selecting an optimization. See `docs/PERFORMANCE.md`. |
 
 The optional/research items need an explicit recorded outcome; they are not
 silently complete merely because they are outside the current alpha scope.
@@ -1427,7 +1427,18 @@ Do not emit `DW_TAG_inlined_subroutine` based on weak guesses. Establish whether
 
 ## P3.5 Add optional size/performance features
 
-**Status:** `[ ]`.
+**Status:** `[~]` — initial synthetic scaling measurements are complete;
+representative complex application/firmware and per-phase profiling remain
+**PLANNED**. No production optimization has been selected or claimed.
+
+`src/test/performance/export-benchmark.py` separates one saved-project import
+from repeated fresh-JVM exports. The 100/1,000/10,000-function cases pass
+GNU/LLVM/libdwarf validation, full DWARF function/address/source checks, a
+runtime GDB path, original hashes and byte-identical reruns. The corresponding
+export medians were 2.52/3.27/10.62 seconds on the recorded local host; these
+small synthetic cases do not predict arbitrary firmware behavior. Commands,
+measurement boundaries, evidence and next profiling questions are in
+`docs/PERFORMANCE.md`.
 
 Potential features only after correctness:
 
