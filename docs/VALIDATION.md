@@ -3948,3 +3948,163 @@ The report-reader branch then incorporates accepted main as `bcd60ee`, whose
 tree equals the previously reviewed local `ccb21a9` before these documentation
 updates. Its retained-prefix successor is separate work; no prefix-helper
 implementation or acceptance is attributed to this report-reader gate.
+
+
+## Matched ELF prefix local checkpoint (2026-10-24)
+
+**CONFIRMED locally; hosted gate pending:** source `c676862` adds only
+`MatchedElfPrefix` and its fixture/smoke classes. Existing `ElfImage`, matched
+writer, exporter and native declarations are unchanged. Independent source
+review is clear. The implementation has four new major-65 classes; local JAR
+SHA-256 is `650209bac834ca293a6d0f3f7aecc4abdb0b6bc5b9fa4a19b790df84b5c99060`.
+
+- `GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC ./gradlew --no-daemon
+  matchedElfPrefixSmoke elfBuildIdSmoke fileDigestsSmoke elfImageReaderSmoke
+  buildExtension` passes, including the architecture guard. Final extra stream
+  failure controls pass separately. Exact commands/logs are retained under
+  `build/prefix-review/` in the retained-prefix worktree.
+- Compiling fixtures/probe with JDK 25 `javac --release 21`, then running actual
+  Java `21.0.12.1` with `-Xmx64m`, passes both default and `--large` smokes.
+  Twenty-four writer-derived containers cover both classes/orders and named,
+  unnamed, sectionless, extended-section, `PN_XNUM` and oversized-header layouts.
+  The large original is 2,147,549,185 bytes and the first changed byte is
+  2,147,549,184. Files are cleaned after the test. Evidence:
+  `build/prefix-review/java21-final/` and `source-acceptance.json`.
+- A preliminary read-only probe also passes 27 retained historical/current
+  pairs, preserving original bytes/mtimes. This is supplementary comparison
+  evidence, not 27 new exports. See `retained-pairs.json`.
+
+Preliminary private package
+`1b996de8e4c6d05d75cd98b48f843675065de871584e27c0ae82dae9d9242d68` uses the
+JAR above and unchanged exporter script
+`3b7b0ef415e974cfcb03ee1566f3c25bab9151d7405b965a80150a8be6e53821`.
+All five manifests verify; base Ghidra launch properties remain unchanged.
+The private platform is `build/prefix-review/ghidra`. The package predates
+final acceptance docs and is not the eventual final reviewed ZIP.
+
+`make -C src/test/fixtures x86_64 aarch64 mips32be` and the retained
+`build/prefix-review/run-local-target.sh` execute six fresh roles per target:
+`exec`, `partial`, `exec.no-build-id`, `exec.no-sections`, `pie`, `shared`.
+All eighteen installed production exports pass GNU/LLVM, strict libdwarf,
+input preservation and applicable GDB checks; sectionless allocation-range
+checks also pass. Local headless Ghidra uses JDK `25.0.4.1`, not Java 21.
+Strict reported errors in that role order are x86 `3/3/3/0/1/1`, AArch64
+`5/5/5/0/5/5` and MIPS `0/0/0/0/0/0`; every nonzero error is corroborated in
+the original ELF, with no unexplained error. Local runs do not claim native
+Windows, ARM32 or MIPS32 little-endian execution.
+
+The independent installed-helper oracle uses actual Java 21 with `-Xmx64m`:
+`x86_64.g2_zsi34`, `aarch64.fe33e6gr`, `mips32be.ubeqojee` in
+`build/test-results/matched-elf-prefix/`. Each verifies six real pairs twice,
+retains six full consumed transcripts and all eighteen input/output/source byte
+copies, and checks 26 protected paths during its invocation. Matching report
+hashes and installed class/script origins bind this evidence to the selected
+production exports. Subsequent tests may reuse original fixture/log paths;
+the retained copies preserve this checkpoint.
+
+Owned controls show changed original code detected despite identical metadata
+and GNU build ID, while an appended active `.text` address change still passes
+prefix comparison and GNU structural reading. That explicit allocation mismatch
+prevents a false stronger claim. Layout/shorter-candidate observations and two
+malformed-input rejections pass. The x86 run independently constructs another
+sparse ELF above 2 GiB, checks matching and last-byte-difference results against
+Python, records reconstructible header/tail recipes and hashes, then removes
+both large inputs. None of these observations proves a snapshot, active ELF/DWARF
+correctness or attachment readiness.
+
+Independent runtime/oracle artifact review is clear:
+`build/prefix-review/independent-runtime-audit.json` rehashes all 54 retained
+byte copies and eighteen consumed transcripts, checks exact original/sidecar
+`.eh_frame` bytes/addresses and diagnostic sets, and reconstructs all three
+large-case SHA-256 values independently from the sparse recipe. Repeated prefix
+observations do not claim a fresh deterministic exporter rerun. Final docs/package
+review and the full exact hosted gate remain pending at this checkpoint. CI adds the default
+focused check on Linux/native Windows and the six-role installed oracle to all
+five target lanes before later shared-path reuse. The x86 lane adds the large
+case; native Windows has sixteen focused checks, without a large-file claim.
+
+
+## Report-claims reader hosted acceptance (2026-10-24)
+
+**CONFIRMED:** PR #33 exact head
+`67785a482c561cce5763248440e26f206df8e09c`, pull-request run `40094712284`,
+attempt 1, passes all twelve expected jobs with no skips. Independent source,
+package, all-five-target reader artifact and both GUI reviews are clear, with
+zero unresolved review threads. Normal merge
+`464caf7e8b71555e3a87f6d8d601a3db57215679` at `2026-10-24T13:08:47Z`
+preserves the tested tree. Separate main-push run `40096877943` remains pending;
+no result is inferred for it. Native declarations and `VERSION` are unchanged.
+
+Package artifact `12560590859` has download SHA-256
+`5c3250d00b21074aeabb43a3704b5eda68568ee34b5a006a31717ef9f1a953f0`.
+Release ZIP SHA-256 is
+`dad2624df988afa96227684d1fdfe28267b01a0c56ee7186be104fae79d749e2`; hosted JAR
+`469e3e62971512c1a42552b88dc13b964e0905255a28993c2847f92752b8a63a` and script
+`3b7b0ef415e974cfcb03ee1566f3c25bab9151d7405b965a80150a8be6e53821`
+match exact sources. All 39 production sources, two scripts, current docs/support,
+165 major-65 classes, five manifests and canonical native provenance pass review.
+Actual Java 21 reader checks include 429 malformed controls and default bounds
+under a 64 MiB heap; twenty producer lifetimes and 112 downloaded-JAR production
+class origins also pass. Provided Gson has SHA-256
+`c96d60551331a196dac54b745aa642cd078ef89b6f267146b705f2c2cbef052d`;
+no private Gson or JNA is bundled. Evidence: the report-reader worktree's
+`build/report-claims-package-audit/run-40094712284.VftAEvjY/` and final gate
+records, including hashes binding the separate runtime artifact reviews.
+
+| Target | Artifact ID | Verified download SHA-256 |
+| --- | --- | --- |
+| `x86_64` | `12560767357` | `0f717c5e4e97d27016a0d146a4b7e154f10d88af72758a910915e6e91c488c53` |
+| `aarch64` | `12561290527` | `ba1dce351a9568f96d82571557b6cc63745b6c6dd86aef9327e8698f39388746` |
+| `arm32` | `12559899096` | `37258365bf36bba13d6e453fa54ca64dd3f70114c485bbf0016f5bfd36ab8e36` |
+| `mips32be` | `12560910713` | `2214c076bec4b174ab35c89f3993aa8cd3051a99237e431e9d1ecdaaa057ffa3` |
+| `mips32le` | `12560223092` | `ce3020c1ae07d3fd892e085d51d882cba6c740ae6c00e517cf526ff92b8752ec` |
+
+All five installed reader oracles pass independent reconstruction: 45 retained
+fixture byte copies and fifteen complete consumed transcripts are rehashed,
+all returned claims agree with the original JSON, and all 115 targeted rejection
+controls pass. Two opaque-path positives per target preserve foreign/missing/FIFO
+paths as text. Actual Java 21, the 64 MiB limit, installed producer/reader JAR
+origins and pinned Gson are verified. Original before/after metadata checks apply
+to the oracle invocation; uploaded copies are verified by SHA, not archive mtimes.
+This establishes parsing behavior and evidence binding, not authenticated claims.
+
+Linux actual GUI `run.RmC1XNbi`, eight saved-program path exports/three rejection
+cases, timestamp `run.te8tSAK9` and 24 inspected strict reports pass with zero
+unexplained errors. Windows artifact `12561237271` has SHA-256
+`3c1fe4bd8e71c8b28480f0c257b6a422ac1260b89a6fd4c3289b0000d873dbb6`:
+actual Java 21, all fifteen focused checks, native short-parent/dot-alias controls,
+six preserved-input sentinels and GUI
+`run.0bb874e90f604be7baf0b8a7833a0010 GUI paths` pass. Native GNU/LLVM,
+ACL/input preservation, chooser selection/cancellation and Console reports pass.
+Independent libdwarf is unavailable on Windows; Linux-ELF runtime GDB is not run
+there. Detailed evidence is in the GUI worktree's
+`build/hosted-gui-review/run-40094712284/acceptance-scope.json` and aggregate
+`report-claims-evidence-x86_64-aarch64-arm32-mips32be-mips32le.json`.
+
+Separately, exact post-merge main `7f9c0d2606a8f7db0007b256d256e6edb49dd473`
+push run `40094022212`, attempt 1, passes all twelve jobs. Independent Linux
+artifact `12560781342` has SHA-256
+`3f8228301c2dd7f06c5c9b43310e21860db96ac955cceafe9cc17d85802b6b43`;
+actual Script Manager GUI `run.sIeKZrHa` and 24 inspected strict reports pass
+with zero unexplained errors. Windows artifact `12560633059` has SHA-256
+`30b6150fe1b131c4ce67a51f8bfad046e4735c9216bfcd941cbe7f8d9ea47060`;
+all fourteen focused checks, path protections and real GUI
+`run.32da5392128a4e069b000e443729d6ab GUI paths` pass on Java 21.0.12.1.
+Independent libdwarf remains unavailable on Windows and Linux-ELF runtime GDB
+is not run there. Cross-target results for this separate push are CI evidence;
+the detailed helper artifact reviews belong to the earlier exact PR gate.
+Evidence is retained in the GUI worktree's
+`build/hosted-gui-review/run-40094022212/`. This supersedes the earlier pending
+main-push checkpoint for PR #32, without changing either published release.
+
+
+The next prefix work's local review at `6b5e4c1` is also clear: package
+`874b549f7f7010caa0e61578f8b8fe0cd4428061b649378427d0092c7838c2cb`
+contains all forty exact production sources, 169 major-65 classes, current
+docs/support, five manifests and unchanged native provenance. Its JAR remains
+`650209bac834ca293a6d0f3f7aecc4abdb0b6bc5b9fa4a19b790df84b5c99060`.
+Evidence: `build/prefix-package-audit/local-6b5e4c1.95h18tbo/result.json`;
+separate raw runtime corroboration: `build/prefix-review/release-review-runtime.json`.
+That ZIP predates these new acceptance docs. Accepted-main merge `7513236` keeps
+the same tree before this docs update; the next exact package and hosted gate
+remain required. No additional unchanged exporter/native executions are claimed.

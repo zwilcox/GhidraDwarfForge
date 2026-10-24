@@ -421,6 +421,15 @@ tasks.register("elfBuildIdSmoke", JavaExec) {
     maxHeapSize = "64m"
 }
 
+tasks.register("matchedElfPrefixSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks current Forge copied ELF prefixes, header exceptions and resource failures"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.MatchedElfPrefixSmoke"
+    maxHeapSize = "64m"
+}
+
 tasks.register("outputPathPolicySmoke", JavaExec) {
     group = "verification"
     description = "Checks default, explicit, colliding, and unwritable output paths"
