@@ -1,6 +1,9 @@
 // Applies analyst-style names, a signature, and a recursive favorite type graph.
 // @category DWARF.Tests
 
+import java.util.ArrayList;
+
+import com.google.gson.Gson;
 import ghidra.app.script.GhidraScript;
 import ghidra.program.model.data.ArrayDataType;
 import ghidra.program.model.data.CategoryPath;
@@ -117,6 +120,29 @@ public class RenameFixtureFunction extends GhidraScript {
         var externalCounter = externalManager.addExtLocation(fixtureLibrary,
             "external_counter", null, SourceType.USER_DEFINED);
         externalCounter.setDataType(signedInt);
+
+        // Genuine, unreferenced external functions: memory thunks and external DATA
+        // cannot satisfy this inventory assertion. Equal leaf names retain libraries.
+        for (String library : new String[] { fixtureLibrary, "fixture_other_imports" }) {
+            Function external = externalManager.addExtFunction(library,
+                "curated_external_function", null, SourceType.USER_DEFINED).getFunction();
+            external.setReturnType(signedInt, SourceType.USER_DEFINED);
+            external.replaceParameters(Function.FunctionUpdateType.DYNAMIC_STORAGE_FORMAL_PARAMS,
+                true, SourceType.USER_DEFINED,
+                new ParameterImpl("analyst_argument", signedInt, currentProgram,
+                    SourceType.USER_DEFINED));
+            if (external.getSymbol().getReferenceCount() != 0) {
+                throw new IllegalStateException("curated external fixture is referenced");
+            }
+        }
+        var externalNames = new ArrayList<String>();
+        var externalFunctions = currentProgram.getFunctionManager().getExternalFunctions();
+        while (externalFunctions.hasNext()) {
+            monitor.checkCancelled();
+            externalNames.add(externalFunctions.next().getName(true));
+        }
+        externalNames.sort(String::compareTo);
+        println("External function inventory: " + new Gson().toJson(externalNames));
 
         DataType fixtureState = buildFixtureTypes(manager, signedInt);
         manager.setFavorite(fixtureState, true);

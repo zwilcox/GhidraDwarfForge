@@ -59,7 +59,7 @@ published alpha.
 Do not suppress the warning. See `docs/ADDRESS-INDEX.md`.
 Evidence and exact scope are recorded in `docs/VALIDATION.md`.
 
-**CONFIRMED current main:** PRs #29–#40 are merged through normal history.
+**CONFIRMED current main:** PRs #29–#41 are merged through normal history.
 They add bounded direct-register-copy lifetimes, conservative omission of
 unsupported stack-local starts, filesystem traversal/alias handling, and
 read-only digest/build-ID/report/prefix/allocation/selected-hash and candidate
@@ -78,9 +78,13 @@ push `40118899783` also passes all twelve jobs and independent both-GUI/native
 Windows review. PR #40 detailed report binding/private preparation at `13e706e5`
 passes all twelve jobs in `40119714272`, exact package/all-five-target/both-GUI
 reviews and 22 native Windows checks, and merged as `25845418`. Its separate
-main push `40121995458` remains pending. The next bounded continuation captures and consumes
-existing validator evidence before private preparation; see
-`docs/VALIDATION-EVIDENCE-HANDOFF.md`. Its focused and local connected checks pass; exact package/hosted acceptance remains required.
+main push `40121995458` passes all twelve jobs and independent both-GUI/native
+Windows review. PR #41 captures and consumes existing validator evidence before
+private preparation: exact head `f52361a` passes all twelve jobs in `40123518106`,
+exact package, all-five-target and both-GUI/native Windows 22 reviews, and merged
+normally as `fdebe181`. Its distinct main push `40126173922` is pending. See
+`docs/VALIDATION-EVIDENCE-HANDOFF.md`. The next bounded external-function inventory
+correction passes local acceptance at `0804b46`; its hosted gate remains required.
 These changes do not complete general variable migration, the optional
 attachment transaction or a new release.
 
@@ -899,10 +903,17 @@ Define precedence among analyst-applied listing/signature types and decompiler g
 **Status:** `[~]` — return/parameter DIEs, names,
 prototype/no-return/variadic flags, a user-defined signature, and
 standards-backed `DW_CC_normal` pass locally. Unrepresentable vendor ABI
-distinctions retain their model string without invented DWARF codes. External
-functions and thunks are diagnosed and omitted under the tested initial
-policy. Distinct linkage-name emission remains because GDB must retain the
-analyst-facing breakpoint name.
+distinctions retain their model string without invented DWARF codes. Memory
+thunks are diagnosed and omitted. **HISTORICAL correction:** the earlier claim
+that genuine external functions were also inventoried was not established:
+Ghidra's ordinary function iterator excludes them, and the integration assertion
+accepted a thunk diagnostic alone. **CONFIRMED locally:** the dedicated external
+inventory now passes five real Ghidra language models, five fresh primary exports
+with native/QEMU GDB checks, and identical old/fixed/repeat saved-program sidecar
+and source bytes. Exact hosted acceptance remains required. External
+declaration/signature emission remains unimplemented. Distinct
+linkage-name emission remains because GDB must retain the analyst-facing
+breakpoint name.
 
 ### Work
 
@@ -923,9 +934,11 @@ analyst-facing breakpoint name.
   was rejected because GDB 16.3 used `DW_AT_linkage_name` instead of the
   analyst-facing `DW_AT_name` in the honest C11 CU, breaking
   `break recovered_add`.
-- [x] Distinguish definitions, declarations, imports, thunks, and aliases under
-  a documented initial policy: only real definitions emit; imports/thunks are
-  diagnosed and omitted until declaration/linkage modeling exists.
+- [~] Distinguish definitions, declarations, imports, thunks, and aliases under
+  a documented initial policy: only real definitions emit. Memory thunks are
+  diagnosed; separate external-function inventory passes local acceptance and
+  awaits the exact hosted gate. Declaration/linkage and alias modeling remain
+  separate work.
 
 ### Completion criteria
 
@@ -933,8 +946,12 @@ analyst-facing breakpoint name.
 - [x] `ptype <function>` or equivalent output reflects return/parameter types.
 - [x] Analyst-applied signature overrides are preserved.
 - [x] Variadic and no-return cases are represented correctly or diagnosed.
-- [x] External/import policy has tests (imports/thunks are diagnosed and
-  omitted until declaration/linkage emission exists).
+- [~] External/import policy has independent inventory tests. Exact external
+  rows/counts, qualified diagnostic names, unreferenced imports, duplicate names,
+  separate memory-thunk multiplicity and cancellation pass locally. The former
+  external-or-thunk log assertion did not establish external enumeration.
+  The corrected shared fixture and both host smoke lists are wired; full hosted
+  acceptance remains required. See `docs/FUNCTION-NAMING.md`.
 
 ## P1.8 Represent discontiguous program/function ranges correctly
 
@@ -1651,20 +1668,25 @@ audits: fifteen fresh cases, thirty ordinary plus twenty positive-control candid
 reconstructions, 130 controls, 45 report sets, 135 earlier and 75 current byte
 copies. Both GUI hosts and 22 native Windows checks pass, including 432 detailed
 assertions and both retention caps reached together. Normal merge `25845418`
-preserves that tree; separate main push `40121995458` remains pending. The archive
+preserves that tree; separate main push `40121995458` passes all twelve jobs
+and independent both-GUI/native Windows review. The archive
 omits empty negative workspace directories; runtime assertions and absence of
 unexpected files are distinguished from fully reconstructed positive outputs.
 P2.8's transaction remains incomplete.
 
-**CONFIRMED locally; hosted integration PRESENT, UNVERIFIED:** capture the existing primary LLVM/strict
+**CONFIRMED in PR #41 run `40123518106`:** capture the existing primary LLVM/strict
 checks once and consume their full selected-file/tool/output evidence through
 the explicit report handoff before normal preparation. Preserve NOT_RUN and the
 existing inherited-frame exception; legacy absence is NOT_CAPTURED, with no
 automatic fallback. The raw Java-probe limitation controls remain ungated and
 separate. Source `9390565` passes 100 focused checks and nine fresh validator pairs;
 nine installed cases, eighteen entry-point rejections and independent byte/GDB/
-runtime reviews pass. See `docs/VALIDATION-EVIDENCE-HANDOFF.md`; exact package
-and full hosted acceptance remain required.
+runtime reviews pass. Final head `f52361a` passes all twelve jobs, exact package
+and independent all-five-target/both-GUI/native Windows 22 review: hosted97
+focused checks, fifteen fresh captured pairs and thirty entry-point rejections.
+The separate raw130 controls remain intact. Normal merge `fdebe181` preserves
+that tree; distinct main push `40126173922` is pending. See
+`docs/VALIDATION-EVIDENCE-HANDOFF.md`.
 
 **Status:** `[ ]` — optional product operation **PLANNED**. The bounded backend
 and backup-based re-export investigation is complete; the explicit transaction
@@ -2193,7 +2215,7 @@ Unless the user changes priorities:
 
 1. Run `git status --short`; read `AGENTS.md`, the current context/status in
    `PROJECT_CONTEXT.md`, and this file's Sections 0.1/1.1. Preserve existing work.
-2. Read the current acceptance checkpoints: PRs #25–#40 are merged. Candidate
+2. Read the current acceptance checkpoints: PRs #25–#41 are merged. Candidate
    content head `b269ec5` passed run `40110565271` and tree-identical main merge
    `2bd6739`. Main-push gates through PR #37 pass; PR #38 main push
    `40113254401` attempt 2 passes after attempt 1's runner loss, with three
@@ -2204,7 +2226,11 @@ Unless the user changes priorities:
    and independent GUI/native Windows review. Reported preparation `13e706e5`
    passes exact run `40119714272`, independent package/all-five/both-GUI and
    Windows 22 review, and merged as `25845418`. Its distinct main push
-   `40121995458` remains pending. Preserve
+   `40121995458` passes all twelve jobs and independent both-GUI/native Windows
+   review. Captured-validation head `f52361a` passes all twelve jobs in
+   `40123518106`, all-five-target captures/entry controls, exact package and both
+   GUI/native Windows 22 review; normal merge `fdebe181` retains its tree.
+   Distinct main push `40126173922` is pending. Preserve
    the first writer run's compiler-oracle TCP collision and the failed
    original PR #32 report-selection attempt and earlier feature histories.
    Require current-base checks under AGENTS.md Section 6.1; do not restart
@@ -2222,10 +2248,11 @@ Unless the user changes priorities:
    recorded scopes; do not invent recovered information to complete them.
    Owned candidate preparation is accepted at PR #39 corrected head `a190026`,
    merged as `4e050609`; detailed report binding/private preparation is accepted
-   at PR #40 head `13e706e5`, merged as `25845418`. The current bounded
-   continuation captures and consumes existing validator evidence, described
-   in `docs/VALIDATION-EVIDENCE-HANDOFF.md`. Its complete acceptance is still
-   required. Preserve the explicit captured-report handoff
+   at PR #40 head `13e706e5`, merged as `25845418`. Captured-validation continuity
+   is accepted in PR #41 at `f52361a`, merged as `fdebe181`, as described in
+   `docs/VALIDATION-EVIDENCE-HANDOFF.md`. The next bounded external-function
+   inventory correction at `0804b46` passes local source/runtime/package review;
+   complete hosted acceptance remains required. Preserve the explicit captured-report handoff
    and separate fresh/retained installation scopes. ADR-0005 selects the writer;
    GNU remains a separate test oracle.
    Preserve PR #37's intermediate callback failure evidence and all research/test

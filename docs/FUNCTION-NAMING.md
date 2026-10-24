@@ -74,6 +74,44 @@ distinct linkage names, lexical blocks and qualified namespace-global lookup
 remain outside this change. The existing failed-decompilation policy for
 function-owned statics is unchanged.
 
+## External-function omission inventory
+
+**CONFIRMED locally; hosted acceptance pending:** the separate inventory correction
+passes the checks below. Ghidra 12.0.3's `getFunctions(true)` excludes external functions. The previous
+external/import branch inside that iterator therefore missed genuine external
+functions, while the integration check accepted memory-thunk diagnostics alone.
+Earlier claims of complete external-function diagnostic coverage were incorrect.
+
+The correction reads `getExternalFunctions()` explicitly. Each external function
+receives one `EXTERNAL_IMPORT` skipped row and its diagnostic uses Ghidra's
+qualified name, including library scope. Rows retain deterministic name/reason
+ordering. An unreferenced function is included, while a typed external data
+object stays in the existing external-data declaration path. Distinct functions
+are not deduplicated by name; memory thunks remain separate `THUNK` rows even
+when several point to one imported function. Diagnostic names describe the
+current Ghidra inventory and do not assert original linkage or DWARF scopes.
+
+`functionsSkipped` includes these additional rows; exported/decompiled/function-
+signature counts still describe real exported definitions. Existing PARTIAL
+status follows the same inventory rules. The correction emits no external
+function DIE, fabricated address, variable location or synthetic declaration.
+External functions are not selected for decompilation. The saved-program comparison
+proves identical old/fixed/repeat `.dbg` and `.dbg.c` bytes, with nine exported,
+decompiled and typed definitions unchanged and skipped rows increasing from five
+to nine. External signature preservation remains separate consumer-gated work.
+
+The focused check uses real ProgramDB iterators for x86-64, AArch64, ARM32 and
+both MIPS byte orders. It also covers duplicate fully qualified names, nested
+library scope, unchanged selected types, SUCCESS-to-PARTIAL status, stable report
+ordering, and cancellation during collection and diagnostic emission. Actual
+Java 21 passes; the prior installed JAR fails the intended missing-inventory
+assertion. Five fresh primary ET_EXEC exports pass independent validators and
+existing native/QEMU GDB checks. The common fixture creates two unreferenced
+USER_DEFINED functions with the same leaf name in different libraries, then
+compares the complete API inventory to exact production report rows. Nine
+malformed-log/inventory controls reject. See the detailed local record in
+`docs/VALIDATION.md`; PIE/no-ID and both-host hosted acceptance remain required.
+
 ## Research basis and evidence
 
 The isolated x86-64 probes used Ghidra 12.0.3 APIs, GNU GDB/gdb-multiarch

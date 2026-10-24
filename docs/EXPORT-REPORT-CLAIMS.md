@@ -69,7 +69,7 @@ interrupt a filesystem operation already blocked in the operating system.
 
 ## Opt-in diagnostic inventories
 
-**CONFIRMED locally; full hosted gate pending:** `readDetailed()` returns
+**CONFIRMED in PR #40 run `40119714272`:** `readDetailed()` returns
 `Detailed(claims, inventories)` from the same strict parse. The five immutable
 lists retain failed functions, skipped functions, omitted locations, unsupported
 constructs and general diagnostics. Preserve their order and decoded text,
