@@ -1984,6 +1984,20 @@ filter-focus regression runs on both host lanes; the full Linux journey
 complete combined gates remain pending; no production script or launch retry
 was introduced.
 
+Run `40062946718` at `cec4b5b` exposed a third harness observation error on
+Linux. The real double-click had entered Ghidra's modal "Compiling Script
+Directory" action, but an appended component mouse listener had not yet run.
+The nested Swing event loop let `Robot.waitForIdle()` return before that late
+observer, causing a false missed-click assertion. A controlled modal-dialog
+case reproduces the exact failure with the previous helper. The observer now
+uses the Toolkit event listener before component dispatch, filters the exact
+table/left double-click/Name cell, and is always removed afterward. It neither
+consumes the event nor invokes the script. Both host harnesses run the new
+control. Full local Java 21 journey `run.O3SsqvwH`, using that run's verified
+release package, passes select/cancel, GNU/LLVM, strict libdwarf checking with
+three exactly corroborated inherited frame diagnostics, and GDB. Hosted
+validation of this correction, including native Windows, remains required.
+
 ### 16.32 Shared-object QEMU debugger endpoint isolation
 
 **CONFIRMED:** combined GUI run `40055880742`, MIPS32LE job `120759663719`,

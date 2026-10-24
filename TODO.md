@@ -1228,6 +1228,11 @@ Additional user-journey coverage:
   intentionally focused Ghidra's filter, exposing a separate harness pre-click
   assertion race. The correction verifies real double-click delivery instead
   of requiring table keyboard focus; controlled and full Linux checks pass.
+  Run `40062946718` then exposed delayed observation while Ghidra's mouse
+  handler compiled scripts in a modal loop. Pre-dispatch event observation
+  passes a controlled reproduction and full Java 21 Linux journey
+  `run.O3SsqvwH`; no launch retries or timeouts changed. The new exact-head
+  hosted gate, including native Windows, remains required.
 - [x] Exercise native Windows output selection and cancellation; verify
   chosen paths, original preservation and no final artifacts after cancellation.
   A real desktop-click/ACL-denial probe precedes the full Windows Script Manager

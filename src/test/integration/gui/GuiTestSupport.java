@@ -1,3 +1,4 @@
+import java.awt.AWTEvent;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dialog;
@@ -6,9 +7,10 @@ import java.awt.GraphicsEnvironment;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Robot;
+import java.awt.Toolkit;
 import java.awt.Window;
+import java.awt.event.AWTEventListener;
 import java.awt.event.InputEvent;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
@@ -170,17 +172,20 @@ final class GuiTestSupport {
             String expectedName) throws Exception {
         AtomicInteger delivered = new AtomicInteger();
         AtomicReference<String> actual = new AtomicReference<>();
-        MouseAdapter listener = new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent event) {
-                if (event.getButton() == MouseEvent.BUTTON1 && event.getClickCount() == 2) {
-                    delivered.incrementAndGet();
-                    int clickedRow = table.rowAtPoint(event.getPoint());
-                    int clickedColumn = table.columnAtPoint(event.getPoint());
-                    actual.set(clickedRow + ":" + clickedColumn + ":" +
-                        (clickedRow < 0 || clickedColumn < 0 ? "<outside>" :
-                            String.valueOf(table.getValueAt(clickedRow, clickedColumn))));
-                }
+        // Ghidra's component listener can enter a modal compilation loop. An
+        // appended MouseListener would then run only after that action returns,
+        // while Robot.waitForIdle() can complete in the nested EDT loop.
+        // Observe the real event before component dispatch without consuming it.
+        AWTEventListener listener = deliveredEvent -> {
+            if (deliveredEvent instanceof MouseEvent event && event.getSource() == table &&
+                    event.getID() == MouseEvent.MOUSE_CLICKED &&
+                    event.getButton() == MouseEvent.BUTTON1 && event.getClickCount() == 2) {
+                delivered.incrementAndGet();
+                int clickedRow = table.rowAtPoint(event.getPoint());
+                int clickedColumn = table.columnAtPoint(event.getPoint());
+                actual.set(clickedRow + ":" + clickedColumn + ":" +
+                    (clickedRow < 0 || clickedColumn < 0 ? "<outside>" :
+                        String.valueOf(table.getValueAt(clickedRow, clickedColumn))));
             }
         };
         try {
@@ -191,7 +196,7 @@ final class GuiTestSupport {
                     table.getSelectedRow() == row && table.getVisibleRect().contains(cell) &&
                     expectedName.equals(String.valueOf(table.getValueAt(row, column))),
                     "target window, selected visible cell, or filename changed before mouse dispatch");
-                table.addMouseListener(listener);
+                Toolkit.getDefaultToolkit().addAWTEventListener(listener, AWTEvent.MOUSE_EVENT_MASK);
                 Point point = table.getLocationOnScreen();
                 return new Rectangle(point.x + cell.x, point.y + cell.y, cell.width, cell.height);
             });
@@ -202,7 +207,10 @@ final class GuiTestSupport {
                     " actual=" + actual.get());
         }
         finally {
-            onSwing(() -> { table.removeMouseListener(listener); return null; });
+            onSwing(() -> {
+                Toolkit.getDefaultToolkit().removeAWTEventListener(listener);
+                return null;
+            });
         }
     }
 

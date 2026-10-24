@@ -1437,6 +1437,65 @@ on the merged source. Workflow/shell/Python checks and the release-package
 regression, including both required launchers and provenance rejection cases,
 pass; the full merged hosted gate remains pending.
 
+### Modal Script Manager compilation dispatch (2026-10-24)
+
+Run `40062946718` at `cec4b5b` failed the x86 Script Manager step; its Windows
+job was skipped. Downloaded target artifact `12548841209` matches GitHub SHA-256
+`8816a64fedbb1c60bb41916c35c9c7f389f89219043248aa7a09d4316de292d1`.
+The retained screenshot shows the intended preflight row and Ghidra's real
+"Compiling Script Directory" modal dialog. Nevertheless, the harness reported
+`real double-click missed intended cell: delivered=0 actual=null`. Evidence is
+under `build/hosted-gui-review/run-40062946718/` in the GUI worktree.
+
+Pinned Ghidra 12.0.3's `GhidraScriptComponentProvider.doGetScriptInstance()`
+starts `TaskBuilder.launchModal()` synchronously inside its mouse listener.
+An observer appended after that listener cannot run until the modal action
+returns. Meanwhile, Swing's nested event loop can process `Robot.waitForIdle()`.
+This was an observation race, not evidence that the real click missed the row.
+The failure's subsequent Swing timeout is also retained; no exporter or
+native-producer failure is inferred from this run.
+
+`GuiTableClickSmoke` now opens a real modal dialog inside its table listener.
+With the old helper, the control fails with the exact hosted assertion
+(`build/modal-click-review/baseline/control.log`). The correction uses a
+Toolkit `AWTEventListener`, which observes the mouse event before component
+dispatch, filtering its exact table, event kind, button, click count, row,
+column and filename. It never consumes or substitutes the event. Cleanup
+removes the observer, and the production listener still launches the script.
+The control proves one real action while the late component observer remains
+pending, then one late observation after the modal dialog closes. Both host
+harnesses execute this control; no timeout, retry or production path changed.
+
+**PASS locally:** `build/test-results/gui-script-manager/run.O3SsqvwH/` uses
+OpenJDK 21.0.12.1, Xvfb and the exact hosted `cec4b5b` package, downloaded from
+artifact `12548278023` with verified outer SHA-256
+`014721f8bde1fa28943260d173e0f93b6eda83391bef469419f43c54ac5deea8`.
+All release manifest entries pass, and both installed script sources match the
+checkout. The private Ghidra platform uses actual directories with hardlinked
+unmodified files; it contains no symlinked platform roots or user extensions.
+The package JAR SHA-256 is
+`89011edf2e6b47c8445a9b47d9662739a05d97e5188e0a77895c2d42ae13e9bc`.
+
+```bash
+export JAVA_BIN=/usr/lib/jvm/java-21-openjdk-amd64/bin/java
+export XVFB_BIN=/path/to/Xvfb
+export DWARFDUMP=/path/to/verified-validation-tool/bin/dwarfdump
+export PATH="$(dirname "$DWARFDUMP"):$PATH"
+src/test/integration/gui-script-manager.sh /path/to/private-ghidra \
+    /path/to/private-ghidra/Ghidra/Extensions/GhidraDwarfForge \
+    /path/to/semantic.exec.stripped /path/to/semantic.exec.reference
+```
+
+The fresh run passes both focus/modal controls, installed discovery and
+native-free preflight, real chooser selection/cancellation, Console reports,
+original hashes and exact artifact counts. GNU and LLVM validation pass.
+Strict libdwarf checking retains three inherited frame diagnostics, each
+exactly corroborated against the actual private input, with zero uncorroborated
+errors. GDB resolves the renamed function and synthetic source, steps with
+`next`/`step`, and exits normally with empty stderr. This is a fresh Linux
+journey with the corrected harness; a new full hosted run, including native
+Windows, is still required.
+
 ## Native patch checkout and provenance consistency (2026-10-23)
 
 Prepublication audit of candidate `ddad598` in run `40055176326` verified the
