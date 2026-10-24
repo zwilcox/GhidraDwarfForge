@@ -1931,6 +1931,43 @@ source edit still warns in GDB; no warning filter was added. Deterministic unit,
 source-built GDB/runtime, and retained AArch64 Forge-artifact checks pass locally.
 See `docs/VALIDATION.md`; the next exact versioned CI remains required.
 
+### 16.31 Optional debuglink transaction design and re-export evidence
+
+**CONFIRMED:** bounded Linux probes of GNU 2.42 `objcopy` on disposable
+source-built x86-64/AArch64/MIPS32 big/little-endian copies preserve program
+headers/load bytes for standard exec/PIE inputs and encode the correct
+target-endian debuglink CRC. The tested tools reject no-section-header and
+unnamed-section inputs; their PN_XNUM rewrites change `e_phoff` and fail the
+proposed strict preservation check. These attachment-backend limitations do
+not narrow ordinary export support. `objcopy` accepts a non-ELF debug file,
+so successful invocation/CRC alone cannot establish target identity.
+
+**PLANNED:** the product operation in `docs/ADR-0004-DEBUGLINK-ATTACHMENT.md`
+requires an explicit post-export choice, independently verified identity,
+exclusive original backup, supported host metadata, atomic replacement and
+tested rollback. A configured staged `objcopy` is the first proposed backend;
+the non-loadable sidecar writer must not be reused as an executable writer.
+Neither a product attachment command nor native Windows attachment validation
+was added. P2.8 remains incomplete.
+
+The existing imported-executable SHA guard stays strict after attachment.
+Re-export the current curated Program using explicit `--input=<original-backup>`
+and `--output=<intended-sidecar>`; do not silently update its imported identity.
+The private saved-Program experiment retains an analyst name and proves this
+workflow. Genuine curation changes require an explicit CRC refresh independently
+of the separate type-ordering issue below.
+
+**CONFIRMED, bounded determinism finding:** Ghidra 12.0.3's generic
+`DefaultDataType` inherits a new process-local universal ID. Forge currently
+sorts that key with persistent type IDs, so a newly imported versus reopened
+saved Program can produce different type DIE ordering. Settled-analysis,
+identical-option/output-path probes show unchanged normalized type/function/
+global/location/body models and byte-identical source; repeated reopened
+exports are byte-identical. This is not evidence of target corruption or changed
+DWARF semantics. A narrow stable-key follow-up is separate from the corrective
+release and must not replace all type-identity rules. Reproduction and evidence
+are in `docs/research/DEBUGLINK-EVIDENCE.md`.
+
 ## 17. Open questions
 
 Codex should not silently answer these through implementation choices. Investigate, document, and obtain user direction when the answer materially changes compatibility or scope.
