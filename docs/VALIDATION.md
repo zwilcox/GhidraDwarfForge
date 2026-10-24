@@ -4549,3 +4549,49 @@ The production JAR is unchanged. Evidence:
 This is a packaging audit, not repeated runtime execution. Accepted binder main
 is integrated normally; the following acceptance-docs build is independently
 audited against its exact commit before its own hosted gate.
+
+
+## Callback exception identity correction before PR #37 acceptance
+
+**CONFIRMED locally; corrected exact hosted gate pending:** independent review
+found a cancellation supplier's post-parse `IllegalArgumentException` was caught
+and wrapped as malformed ELF in `ExecutableProgramBytes.read`. Root then found
+the same pattern in `MatchedElfPrefix.readMetadata`. Both fail closed; no
+incorrect byte match, target modification or cleanup defect was found.
+
+Separate scoped commits `c38cd9821f24aac1c7fa3dadfde32a0c3b7f497c` and
+`791631ffab58854f17e5f3ba8fa5e9f2c48f0e60` narrow only the parser catches and
+add exact-identity regressions at the completed-parser/pre-comparison boundary.
+The new controls demonstrably fail the exact old hosted JAR with the wrapped
+`IOException` and pass the corrected implementation. Source review is clear;
+malformed metadata keeps its prior wrapping. The allocation/build-ID readers
+already keep supplier polls outside those catches.
+
+Four focused Gradle suites (`executableProgramBytesSmoke`, `matchedElfPrefixSmoke`,
+`matchedElfAllocationsSmoke`, `elfImageReaderSmoke`), `buildExtension` and the
+architecture guard pass. Actual Java 21.0.12.1 at 64 MiB passes program 434/446
+and prefix default/large tests. One setup command mistakenly named a nonexistent
+Python architecture guard; its failure is retained, followed by the successful
+correct shell command. Evidence is under
+`build/program-bytes-package-audit/{callback-fix,prefix-callback-fix}/result.json`,
+with exact old-JAR regression failures and independently bound source reviews.
+
+The corrected private ZIP has SHA-256
+`d6ef6f14a2992a46180fa07775c6ad6afadf10c5bfbcdf89ea12e6fea79fedc1`;
+installed JAR is
+`f1c87f29652be3148dc68bb72390f372710279e191bfb03362673e8e59402740`.
+Five manifests and unchanged base launch-file hash pass. Repeating the documented
+three-profile association command with
+`FORGE_MODULE="$PWD/build/program-bytes-review/ghidra-callback/Ghidra/Extensions/GhidraDwarfForge"`
+passes nine new private candidates, all controls/large selected-byte checks and
+27 GDB transcripts in `build/test-results/build-id-discovery/run.7eQn9koH`.
+All 36 retained fixture SHA/size/mtime snapshots remain unchanged. Root's
+independent audit is `build/program-bytes-review/root-callback-runtime-audit.json`;
+peer review is clear in `build/program-bytes-oracle-review/callback-runtime-review.json`.
+The retained-export versus fresh backend/helper/GDB scope is unchanged; this
+replay makes no new exporter, structural-validator or cross-target execution claim.
+
+Initial PR #37 head `e25c148` and run `40105620219` are intermediate evidence,
+not final acceptance. Their package audit and completed component evidence are
+retained. The corrected source requires a fresh exact package audit and full
+hosted gate before merge; no result is transferred between different JARs.

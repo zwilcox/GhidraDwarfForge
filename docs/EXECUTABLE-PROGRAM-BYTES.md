@@ -94,7 +94,7 @@ its basename/CRC check separate. This adds no product attachment command.
 
 ## Local acceptance (2026-10-24)
 
-Source `79dbc29` passes 431 focused assertions, or 443 with all four ELF
+Initial source `79dbc29` passes 431 focused assertions, or 443 with all four ELF
 class/order combinations above 2 GiB, on actual Java 21 with a 64 MiB heap.
 Related prefix/allocation/parser smokes, the extension build and architecture
 guard pass. Independent source review is clear. A retained-candidate survey
@@ -122,3 +122,22 @@ historical out-of-LOAD NOTE mutation at byte 14676.
 
 Full exact hosted acceptance, including native Windows focused tests, remains
 pending. See `VALIDATION.md` for commands and retained evidence.
+
+### Callback exception correction
+
+**CONFIRMED locally:** review of PR #37 found that the post-parser cancellation
+poll was inside the catch for malformed ELF metadata. A supplier's
+`IllegalArgumentException` was wrapped as `IOException`, changing its type and
+identity even though the operation stopped. The older prefix reader had the
+same boundary. Commits `c38cd98` and `791631f` move those polls outside the
+parser catches. Exact-identity regressions fail the old hosted JAR and pass the
+corrections. Byte comparison, malformed-ELF handling and ordinary export are
+unchanged.
+
+Actual Java 21/64 MiB now passes 434 default and 446 large program checks, plus
+prefix default/large checks and related smokes/build. Corrected installed JAR
+`f1c87f29652be3148dc68bb72390f372710279e191bfb03362673e8e59402740`
+passes the same nine private-candidate and 27 GDB checks in `run.7eQn9koH`;
+all 36 retained fixture snapshots remain unchanged. The initial PR head `e25c148`
+and run `40105620219` are intermediate evidence, not final acceptance. The
+corrected exact hosted gate remains required.

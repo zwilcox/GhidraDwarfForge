@@ -1557,11 +1557,14 @@ See `docs/EXPORT-ARTIFACT-HASH-BINDING.md`.
 **CONFIRMED locally; full hosted gate pending:** `ExecutableProgramBytes`
 checks the complete declared ELF header, raw program table, resolved extended
 counts and all non-NULL file payloads with exact section-table-field exceptions.
-Source `79dbc29` passes 431/443 actual-Java-21 checks under 64 MiB, including
-both widths/orders above 2 GiB, with independent source review. Nine private
+Callback corrections `c38cd98`/`791631f` preserve supplier exception identity
+in the program/prefix readers; program checks now pass 434/446 on actual
+Java 21 under 64 MiB, including both widths/orders above 2 GiB. Independent
+source review is clear. Nine private
 backend candidates from retained x86-64/AArch64/MIPS32 big-endian exports pass
 the installed independent oracle and all 27 existing GDB association checks.
-Original fixtures remain unchanged. The research probe now rejects the known
+The corrected installed run also passes; original fixtures remain unchanged.
+The research probe now rejects the known
 out-of-LOAD NOTE mutation. This is scoped byte correspondence; active section
 metadata and debuglink CRC remain separate checks. Native Windows and exact
 full hosted acceptance are pending. See `docs/EXECUTABLE-PROGRAM-BYTES.md`.
@@ -2110,8 +2113,11 @@ Unless the user changes priorities:
    debuglink, inlining research and performance candidates according to their
    recorded scopes; do not invent recovered information to complete them.
    The current bounded continuation is the locally reviewed program-byte
-   preservation check's hosted acceptance. Its source, installed backend/GDB
-   and final local package reviews are clear. The next selected component
+   preservation check's corrected hosted acceptance. Preserve the intermediate
+   PR #37 head `e25c148` / run `40105620219`: late review found a callback
+   exception-classification bug, now corrected in the program/prefix readers
+   with old-JAR negatives and passing installed replay. Its updated exact
+   package and full gate are required before merge. The next selected component
    checks executable allocation metadata and exact new debuglink bytes in
    that same private-copy consumer; implementation and acceptance remain pending.
    Optional attachment remains a separate transaction, with no identity/readiness claim from these helpers.
