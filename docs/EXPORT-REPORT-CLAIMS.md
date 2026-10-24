@@ -1,9 +1,9 @@
 # Read-only export report claims
 
-**CONFIRMED locally; hosted gate pending:** `ExportReportClaims` is a bounded
-reader for the current export report shape. Focused Java 21 checks and the
-installed-JAR oracle pass; native Windows and the complete hosted matrix remain
-required. See the exact evidence in `VALIDATION.md`.
+**CONFIRMED:** PR #33 head `67785a4`, exact hosted run `40094712284`, passes
+all twelve jobs. Independent package, all-five-target reader artifact and both
+GUI reviews are clear, including fifteen native Windows focused checks. Normal
+merge `464caf7` preserves the tested tree. See exact evidence in `VALIDATION.md`.
 
 The result contains reported schema/status, target text, artifact path/hash
 strings, counts, native version and validation status. It is an immutable set
@@ -72,8 +72,8 @@ Focused tests use real writer-generated examples for all four statuses and
 exercise each field's type/nullability, all object key sets, five cardinalities,
 historical shape, bounds, Unicode and stream/cancellation behavior. All 429
 malformed controls pass locally, including exact/over default resource bounds
-under a 64 MiB heap. Four focused checks pass on actual Java 21. Both supported
-hosts must also pass the hosted checks before integration.
+under a 64 MiB heap. Four focused checks pass locally on actual Java 21; the
+hosted Linux and native Windows checks also pass.
 
 The installed-JAR oracle compares returned claims with independently parsed
 real exporter reports. It checks both dependency origins, actual Java 21, a
