@@ -107,7 +107,7 @@ items are these bounded workstreams:
 | Target-profile coverage (P2.3/3a/3b) | Current five profiles pass. Enumerate additional ABI/storage cases, derive their target properties, and add real exporter/validator/QEMU-GDB tests before extending support claims. Completing this plan does not imply every Ghidra CPU/ABI. |
 | Remaining GUI journeys (P2.7) | **PRESENT, UNVERIFIED:** manual Script Manager launch and Windows chooser/cancellation. Linux GUI fallback already has a passing automated test. |
 | Optional debuglink (P2.8) | **PLANNED, optional:** explicit opt-in attachment, backup/rollback, CRC, automatic lookup and mismatch tests, while default export leaves the original unchanged. |
-| Inline reconstruction (P3.4) | **UNCERTAIN:** investigate defensible instance/call-site/range evidence and record a decision. Implement only if supported by that evidence. |
+| Inline reconstruction (P3.4) | **CONFIRMED investigation complete:** ADR 0003 and a reproducible compiler/Ghidra probe distinguish real inline instances from Ghidra's decompiler flag and record surviving locals/source information. Inline emission remains deferred until explicit instance/origin/range evidence and GDB acceptance exist. |
 | Performance (P3.5) | **PLANNED:** establish representative large-binary benchmarks, choose optimizations with measured benefit, and prove unchanged semantics/determinism. The listed candidates are not all unconditional requirements. |
 
 The optional/research items need an explicit recorded outcome; they are not
@@ -1421,9 +1421,25 @@ ranges. Category paths are not automatically original source namespaces.
 
 ## P3.4 Investigate reconstructed inlining
 
-**Status:** `[ ]` — **UNCERTAIN**.
+**Status:** `[x]` — **CONFIRMED**, bounded investigation complete; inline
+emission is not implemented.
 
-Do not emit `DW_TAG_inlined_subroutine` based on weak guesses. Establish whether Ghidra provides defensible inline-call reconstruction and whether GDB behavior improves.
+See `docs/ADR-0003-INLINE-EVIDENCE.md` and the durable transcript under
+`docs/research/`. Ghidra 12.0.3's inline flag controls decompilation and can
+remove a high-pcode call while the machine call remains. The compiler-DWARF
+import path preserves qualifying inline locals in their containing function,
+source rows and optional comments; this does not retain the complete instance/
+origin/call-site/range model required by the current exporter.
+
+The Linux x86-64 GCC 13.3/GDB 15.1 probe passes compiler DWARF validation,
+actual inline-frame/local-value checks, debug/no-debug Ghidra comparisons,
+ordinary-call flag toggling and original-hash preservation. Its recorded
+importer location limitations are not counted as a clean Forge export.
+
+**PLANNED, conditional:** implement inline DIEs only after ADR 0003's explicit
+evidence-provider/model and multiple/nested-instance GDB acceptance conditions
+are met. Do not infer compiler inlining from the flag or comments, discard
+surviving knowledge, or describe inline export as complete.
 
 ## P3.5 Add optional size/performance features
 

@@ -1848,6 +1848,33 @@ and validated against the updated `main` in order. Use GitHub for live merge
 and CI state. No protection rule was weakened, no admin bypass was used, and
 this integration does not replace the published alpha artifact.
 
+### P3.4 bounded inline-evidence investigation (2026-10-23)
+
+**CONFIRMED:** ADR 0003 records the completed investigation and the conditions
+for implementing inline-instance export. The installed Ghidra 12.0.3 source
+and help distinguish the function-level decompiler inline flag from compiler
+inline instances. The DWARF importer can retain inline children as locals of
+the containing function and preserve source rows/optional comments; this is
+not evidence that all inline information is discarded. Its inline processing
+also flattens the body's disjoint ranges for comments/child handling.
+
+The reproducible `src/test/research/inline/run.sh` probe builds its own GCC
+optimized-inline fixture, validates its compiler DWARF and demonstrates an
+actual GDB inline frame with argument 4/local 11. A real Ghidra import retains
+two `IMPORTED` inline locals, 20 source rows and two comments; a debug-stripped
+counterpart loses those compiler identities. Independently marking an ordinary
+callee inline removes its high-pcode call while its real machine call remains.
+Original hashes match. Exact source hashes and observations are committed at
+`docs/research/inline-evidence-12.0.3.txt`; full logs are retained under the
+isolated inline worktree's `build/test-results/inline-evidence/run.tB61GBSm/`.
+
+The probe's Ghidra importer reports three unrecoverable `DW_OP_reg5`
+expressions for other optimized locals; this limitation is recorded, not
+suppressed. This is research evidence, not a Forge inline-export validation or
+a new architecture support claim. No production exporter code changes.
+Inline DIE emission remains deferred pending an explicit provenance-bearing
+instance model and the compiler/analyst-evidence GDB checks in ADR 0003.
+
 ## 17. Open questions
 
 Codex should not silently answer these through implementation choices. Investigate, document, and obtain user direction when the answer materially changes compatibility or scope.
@@ -1897,7 +1924,10 @@ Codex should not silently answer these through implementation choices. Investiga
 16. **RESOLVED for the initial extern/import policy:** external-data declarations
     may omit locations; imported functions/thunks are diagnosed and skipped.
     Expanded declaration/linkage handling remains under P1.7/P3.3.
-17. **Inlining:** Is reconstructed inline information a later goal, or explicitly out of scope?
+17. **RESOLVED for the current exporter — inline evidence:** ADR 0003 completes
+    the bounded Ghidra 12.0.3 investigation. Inline DIE emission remains
+    deferred until explicit instance/origin/range evidence and behavioral
+    acceptance exist; it is not inferred from the decompiler inline flag.
 18. **RESOLVED — `.debug_frame`:** the current ELF milestone relies on unwind
     information in the original target and does not synthesize unsupported
     CFI. See `docs/ADR-0002-DEBUG-FRAME.md`.
