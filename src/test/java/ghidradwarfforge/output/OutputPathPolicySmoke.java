@@ -14,20 +14,29 @@ public final class OutputPathPolicySmoke {
     public static void main(String[] args) throws Exception {
         Path directory = Files.createTempDirectory("forge-output-policy-");
         try {
+            // Keep the supplied spelling (which may use a Windows short name)
+            // while independently establishing the actual destination directory.
+            Path actualDirectory = directory.toRealPath();
             Path input = directory.resolve("program.elf");
             Files.writeString(input, "fixture", StandardCharsets.UTF_8);
             var defaults = OutputPathPolicy.resolve(input, null);
-            assertEquals(input, defaults.input());
-            assertEquals(directory.resolve("program.elf.dbg"), defaults.artifact());
-            assertEquals(directory.resolve("program.elf.dbg.c"), defaults.source());
+            assertEquals(actualDirectory.resolve("program.elf"), defaults.input());
+            assertEquals(actualDirectory.resolve("program.elf.dbg"), defaults.artifact());
+            assertEquals(actualDirectory.resolve("program.elf.dbg.c"), defaults.source());
+            if (!Files.isSameFile(input, defaults.input())) {
+                throw new AssertionError("resolved input selected a different file");
+            }
             if (!defaults.defaultOutput()) {
                 throw new AssertionError("default output was not identified");
             }
 
             Path explicit = directory.resolve("chosen.dbg");
             var selected = OutputPathPolicy.resolve(input, explicit);
-            assertEquals(explicit, selected.artifact());
-            assertEquals(directory.resolve("chosen.dbg.c"), selected.source());
+            assertEquals(actualDirectory.resolve("chosen.dbg"), selected.artifact());
+            assertEquals(actualDirectory.resolve("chosen.dbg.c"), selected.source());
+            System.out.println("output-policy-requested-parent=" + directory);
+            System.out.println("output-policy-actual-parent=" + actualDirectory);
+            System.out.println("output-policy-existing-parent=PASS");
             if (selected.defaultOutput()) {
                 throw new AssertionError("explicit output was identified as default");
             }
@@ -69,7 +78,7 @@ public final class OutputPathPolicySmoke {
     }
 
     private static void assertEquals(Path expected, Path actual) {
-        if (!expected.toAbsolutePath().normalize().equals(actual)) {
+        if (!expected.equals(actual)) {
             throw new AssertionError("expected " + expected + " but found " + actual);
         }
     }
