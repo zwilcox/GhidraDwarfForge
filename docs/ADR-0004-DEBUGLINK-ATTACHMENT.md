@@ -17,8 +17,10 @@ Use the separate native-free append-only candidate direction selected in
 [ADR-0005](ADR-0005-OWNED-DEBUGLINK-CANDIDATE.md). This explicitly supersedes
 the initial GNU backend selection below. GNU-created private candidates remain
 independent test references, with no silent fallback. The writer passes local
-source/installed checks; its full hosted gates still precede any transaction. Ordinary export continues
-supporting its wider ELF input contract.
+source/installed checks and PR #39's complete hosted gate at `a190026` /
+`40116314882`, including all five target artifacts and both GUI hosts. This
+private constructor does not complete the transaction below. Ordinary export
+continues supporting its wider ELF input contract.
 
 Do not reuse `MatchedElfSidecarWriter`: its deliberate removal of program
 headers and retirement of relocation metadata produce a non-loadable sidecar,
@@ -252,5 +254,5 @@ The first implementation is complete only after all of the following pass:
 
 These are implementation acceptance criteria, not completed work. A product
 transaction with the above guarantees is not a small append-only prototype,
-and remains planned. ADR-0005 begins the separate private candidate component;
+and remains planned. ADR-0005 defines the accepted private candidate component;
 that component does not complete the transaction guarantees.

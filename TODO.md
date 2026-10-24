@@ -59,7 +59,7 @@ published alpha.
 Do not suppress the warning. See `docs/ADDRESS-INDEX.md`.
 Evidence and exact scope are recorded in `docs/VALIDATION.md`.
 
-**CONFIRMED current main:** PRs #29–#38 are merged through normal history.
+**CONFIRMED current main:** PRs #29–#39 are merged through normal history.
 They add bounded direct-register-copy lifetimes, conservative omission of
 unsupported stack-local starts, filesystem traversal/alias handling, and
 read-only digest/build-ID/report/prefix/allocation/selected-hash and candidate
@@ -68,9 +68,14 @@ reviews.
 PR #38 merged as `2bd6739` after exact run `40110565271`; all five target
 artifacts, both GUI hosts and twenty native Windows checks pass. Main-push
 gates through PR #37 also pass, including `40110261306`; PR #38 push
-`40113254401` remains pending. Owned append-only candidate creation passes
-local source, installed consumer/GDB/QEMU and independent runtime review; its
-exact package and full hosted gates remain required.
+`40113254401` attempt 1 lost its Windows runner; attempt 2 remains pending,
+with three earlier successful jobs reused explicitly. PR #39 corrected head
+`a190026` passes all twelve jobs in `40116314882`, independent exact package,
+all-five-target and both-GUI reviews, and merged as `4e050609`. Native Windows
+passes 21 focused checks with 1,140 owned-writer assertions. Its distinct main
+push `40118899783` remains pending. Detailed report binding/private preparation
+passes local source, installed GDB/QEMU and independent review; its hosted gate
+remains required.
 These changes do not complete general variable migration, the optional
 attachment transaction or a new release.
 
@@ -260,7 +265,7 @@ combined run `40068401197`; its conditional-step scope is recorded in
 | Additional range/location cases (P1.8, P1.11a) | **CONFIRMED:** bounded entry/ranges, code-only address indexing and incoming-register prefixes pass. PR #29 adds one proven direct-register backup; PR #30 omits unsupported nonzero stack-local starts. Their exact hosted gates pass. P1.11a remains partial: general register/memory migration, call-crossing and non-entry lifetimes, stack-slot reuse and mixed composite storage still require instruction-specific GDB values and honest unavailable gaps. |
 | Target-profile coverage (P2.3/3a/3b) | **CONFIRMED in hosted runs `40063017269` and `40068401197`:** five baseline profiles and scalar FP aliases pass, with exact float/double values on x86-64/AArch64/ARM32 and scalar floats on both MIPS orders. The combined run also proves rejection of definite ELF/Ghidra processor, width or byte-order contradictions; nondefault variants/compiler specifications alone are not rejected. Unproven MIPS double pairs and ARM32's mode-switching-return prefix case remain unavailable. Target expansion and ABI classification remain partial; this is not blanket CPU/ABI support. |
 | GUI and output paths (P2.7) | **CONFIRMED:** both hosts' real Script Manager/chooser journeys pass. PR #31 adds actual parent traversal, complete publisher alias preflight and native Windows short-parent/trailing-dot controls; its exact PR/main gates and artifact reviews pass. Geometry/GDB run on Linux; Windows uses native GNU/LLVM, with independent libdwarf unavailable and Linux-ELF runtime GDB not run. |
-| Optional debuglink (P2.8) | **PLANNED transaction:** opt-in attachment, identity/receipt chain and backup/rollback remain unimplemented. PRs #32/#33's digests, typed build-ID observations and report reader pass the full matrix. PRs #34/#35's prefix and indexed allocation observers also pass the full matrix. PR #36 selected-file SHA binding also passes the full matrix. PR #37 program-byte preservation passes the full matrix. PR #38 candidate-content checks also pass the full matrix. Owned append-only preparation passes local source/installed/GDB/QEMU review and awaits its hosted gate. Default export leaves the original unchanged. |
+| Optional debuglink (P2.8) | **PLANNED transaction:** opt-in attachment, identity/receipt chain and backup/rollback remain unimplemented. PRs #32/#33's digests, typed build-ID observations and report reader pass the full matrix. PRs #34/#35's prefix and indexed allocation observers also pass the full matrix. PR #36 selected-file SHA binding also passes the full matrix. PR #37 program-byte preservation passes the full matrix. PR #38 candidate-content checks also pass the full matrix. PR #39 owned append-only preparation also passes the full matrix. Detailed report binding/private preparation passes local source/installed/GDB/QEMU review and awaits its hosted gate. Default export leaves the original unchanged. |
 | Inline reconstruction (P3.4) | **CONFIRMED investigation complete:** ADR 0003 and a reproducible compiler/Ghidra probe distinguish real inline instances from Ghidra's decompiler flag and record surviving locals/source information. Inline emission remains deferred until explicit instance/origin/range evidence and GDB acceptance exist. |
 | Performance (P3.5) | **CONFIRMED:** the indexed planner and configured-checker gates pass component run `40065823442` and combined run `40068401197`. Historical local paired 10,000-function exports reduce median process time by 15.5% with byte-identical artifacts; a fresh strict/GDB replay validates the retained result without rerunning timing. Hosted CI is not a new timing measurement. Representative complex-binary and further phase-level profiling remain **PLANNED**; no blanket speed or memory claim. See `docs/PERFORMANCE.md`. |
 
@@ -1592,7 +1597,8 @@ passes twenty focused checks with 965 content assertions actually observed;
 Linux has 970. See
 `docs/DEBUGLINK-CANDIDATE-CONTENT.md`.
 
-**CONFIRMED locally; full hosted gate pending:** ADR-0005 selects separate
+**CONFIRMED:** PR #39 corrected head `a190026` passes all twelve jobs in exact
+run `40116314882` and merged normally as `4e050609`. ADR-0005 selects separate
 native-free `OwnedDebuglinkCandidate` after a reviewed layout experiment. Source
 `1763ebd` passes 1,142 actual-Java-21 checks and 1,148 with one large ELF32
 big-endian case under 64 MiB. The installed writer passes twelve retained-fixture
@@ -1600,15 +1606,19 @@ cases across x86-64/AArch64/MIPS32 big-endian: exec/PIE/no-ID plus shared lookup
 Independent reviews reconstruct 24 deterministic outputs and three plaintext
 counterexamples, with candidate GNU/LLVM checks, eighteen GDB transcripts and
 eighteen native/QEMU process executions. Original fixtures remain unchanged.
-The exact package and full hosted/native Windows gates remain required. Private
-candidate creation does not complete attachment or its transaction.
+Exact package and all-five-target artifact reviews pass: thirty ordinary
+deterministic candidates plus five plaintext controls, 75 copies, 330 parent
+records, fifteen mutations, forty typed failures, 25 writer GDB checks and
+fifteen original/candidate execution pairs. Native Windows passes 21 focused
+checks, with 1,140 owned-writer assertions actually observed; both GUI hosts
+pass. Private candidate creation does not complete attachment or its transaction.
 
 The first hosted head `6f1a220` / run `40114403014` is **not accepted**: ARM32's
 extended-section PIE compiler oracle could not bind TCP port 33168 and never
 reached writer checks. The shared oracle now uses the existing private-socket
 helper with readiness/cleanup. Existing startup controls and ten real compiler
 exec/PIE checks across all five targets pass with unchanged input hashes/mtimes;
-the exact-head full pipeline remains required. The failed artifact is retained,
+the corrected head subsequently passed the full gate above. The failed artifact is retained,
 and its port owner remains **UNCERTAIN**.
 
 **CONFIRMED locally; full hosted gate pending:** the existing private candidate workflow
@@ -2160,10 +2170,14 @@ Unless the user changes priorities:
 
 1. Run `git status --short`; read `AGENTS.md`, the current context/status in
    `PROJECT_CONTEXT.md`, and this file's Sections 0.1/1.1. Preserve existing work.
-2. Read the current acceptance checkpoints: PRs #25–#38 are merged. Candidate
+2. Read the current acceptance checkpoints: PRs #25–#39 are merged. Candidate
    content head `b269ec5` passed run `40110565271` and tree-identical main merge
    `2bd6739`. Main-push gates through PR #37 pass; PR #38 main push
-   `40113254401` remains pending. Preserve the failed
+   `40113254401` attempt 2 remains pending after attempt 1's runner loss.
+   Owned writer head `a190026` passed `40116314882`, including exact package,
+   all five target artifacts, native Windows 21 and both GUI hosts, and merged
+   as `4e050609`. Its separate main push `40118899783` remains pending. Preserve
+   the first writer run's compiler-oracle TCP collision and the failed
    original PR #32 report-selection attempt and earlier feature histories.
    Require current-base checks under AGENTS.md Section 6.1; do not restart
    completed bring-up or integration.
@@ -2178,10 +2192,13 @@ Unless the user changes priorities:
 6. Extend explicitly selected target profiles and GUI journeys. Treat optional
    debuglink, inlining research and performance candidates according to their
    recorded scopes; do not invent recovered information to complete them.
-   The current bounded continuation is owned candidate preparation's exact
-   package and hosted acceptance. Source `1763ebd`, connected installed consumer,
-   GDB/QEMU checks and independent byte/runtime reviews pass locally. ADR-0005
-   explicitly selects the append-only writer; GNU remains a separate test oracle.
+   Owned candidate preparation is accepted at PR #39 corrected head `a190026`,
+   merged as `4e050609`. The current bounded continuation is detailed report
+   binding/private preparation's exact package and hosted acceptance. Source
+   `1d80348`, integration `de4f68f`, nine installed cases and independent byte/
+   runtime reviews pass locally. Preserve the explicit captured-report handoff
+   and separate fresh/retained installation scopes. ADR-0005 selects the writer;
+   GNU remains a separate test oracle.
    Preserve PR #37's intermediate callback failure evidence and all research/test
    setup failures. Optional attachment remains a separate transaction with receipt,
    validation, host metadata, backup and recovery requirements; these helpers do

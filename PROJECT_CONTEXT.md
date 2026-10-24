@@ -3659,6 +3659,33 @@ do not rerun Ghidra or sidecar validators. An earlier archived-reference source
 mtime warning remains retained; the policy was not relaxed. A new exact-head full
 pipeline is required after this correction.
 
+### Corrected owned-candidate hosted acceptance (2026-10-24)
+
+**CONFIRMED:** PR #39 corrected head `a190026534c70f89d09ac807f6e755fcbcd81473`
+passes all twelve jobs in exact run `40116314882` and merged normally as
+`4e05060939ebcfdd0bf762ed6782780b7389f226`, preserving the tested tree. Exact
+package/source and all-five-target program/content/owned artifact reviews are
+clear. Independent review reconstructs thirty ordinary deterministic candidates
+and five plaintext controls, and verifies 75 copies, 330 parent records, fifteen
+mutations, forty typed failures, 25 writer GDB checks and fifteen plain original/
+candidate execution pairs. Native Windows passes 21 focused checks with 1,140
+owned assertions actually observed; Linux has 1,142. Both GUI hosts pass and
+x86's 24 strict reports have zero unexplained errors. The failed first head/run
+and all its unreached checks remain separate historical evidence.
+
+Hosted package SHA-256 is
+`ceb8a57601bbbe22c5bc43bab922bb5e6067eeb4883b2d8916b1e5db0235ac0e`;
+JAR `7bf8d7e470d2b9419a3061182fb808e059721d24e98d092bfc70439b5ba6678f`
+matches 45 production sources plus two scripts and 207 Java 21 classes. Native
+ABI and VERSION remain unchanged. Final exact-head/base/protection/thread and
+artifact checks are retained in the owned worktree's
+`build/owned-candidate-package-audit/final-gate-40116314882.json` and peer review.
+The separate main push `40118899783` remains pending; it is not inferred from
+the PR gate. PR #38's separate main push `40113254401` lost its Windows runner
+in attempt 1, without surviving Windows logs. Failed jobs/dependents were retried
+as attempt 2; three earlier successful jobs are recorded as reused. That main
+gate also remains pending. Neither event changes published releases.
+
 ### Detailed report binding for private preparation (2026-10-24)
 
 **CONFIRMED decision; acceptance PLANNED:** the next bounded continuation connects
@@ -3703,4 +3730,10 @@ pass. All 44 globally protected files remain unchanged. Later GNU CRC tests
 deliberately change/restore three private no-ID sidecar mtimes; final bytes and
 per-component preservation records are checked without claiming those final
 mtimes unchanged. No fresh export or repeated strict sidecar validation is
-attributed to this replay. Exact package and hosted/native Windows remain pending.
+attributed to this replay. Local package `de4f68f`, SHA-256
+`7db090e00a3eb7908f0cccb8c22b5c4b44a4f48d139b1f435634e3f575a038d7`,
+passes independent exact-source/docs/manifests review with all 28 runtime/native/
+script payloads identical to the tested private installation. Normal merge
+`c76d851` incorporates accepted PR #39, preserving both documentation histories
+and importing only its compiler-oracle helper correction. A refreshed exact
+package and complete hosted/native Windows gate remain required.

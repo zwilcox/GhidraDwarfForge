@@ -136,13 +136,17 @@ clear. The accepted program-byte main is incorporated normally as `d2eadf2`;
 PR #38 head `b269ec5` passes exact run `40110565271`, all twelve jobs, all five
 target artifact audits and both GUI reviews, and merged normally as `2bd6739`.
 Windows passes twenty focused checks with 965 content assertions; Linux has 970.
-Its distinct main push `40113254401` remains pending.
+Its distinct main push `40113254401` attempt 1 lost the Windows runner; attempt 2
+remains pending, with reused earlier successful jobs recorded explicitly.
 
 Attachment still needs receipt/diagnostic policy, selected export relationships,
-external validation, owned candidate preparation, host identity/metadata handling,
+external validation, host identity/metadata handling,
 exclusive backups, durable receipts, atomic replacement and tested recovery.
 See `ADR-0004-DEBUGLINK-ATTACHMENT.md` for that separate contract.
 
-ADR-0005 selects a separate native-free owned writer; its local installed
-acceptance is recorded in `VALIDATION.md`. GNU candidates remain independent
-references. Neither component exposes the optional attachment transaction.
+ADR-0005's separate native-free owned writer is accepted in PR #39 at corrected
+head `a190026` / run `40116314882`, merged as `4e050609`. Exact package, all five
+target artifacts, 21 native Windows checks and both GUI hosts pass. Its distinct
+main push `40118899783` remains pending. Detailed selected-report preparation is
+the next locally validated component. GNU candidates remain independent
+references; neither component exposes the optional attachment transaction.

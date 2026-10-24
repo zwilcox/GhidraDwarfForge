@@ -149,6 +149,10 @@ pass natively or under QEMU. Shared-object cases prove lookup only.
 
 This replay creates new candidates; it does not create new Ghidra exports or
 repeat strict DWARF checks on unchanged sidecars. Source and installed-consumer
-reviews are clear. Final exact package and all-five-target/native Windows hosted
-acceptance remain required. Commands, hashes, limits and retained failures are
-in `VALIDATION.md`; no attachment or metadata-preservation claim follows.
+reviews are clear. Corrected PR #39 head `a190026` passes exact hosted run
+`40116314882`, all twelve jobs, independent package/all-five-target/both-GUI
+reviews, and merged normally as `4e050609`. Native Windows passes 21 focused
+checks with 1,140 owned-writer assertions; Linux has 1,142. The first run's ARM32
+compiler-oracle TCP collision is retained separately; the private-socket helper
+correction passes all five targets. Commands, hashes, limits and retained
+failures are in `VALIDATION.md`; no attachment or metadata-preservation claim follows.
