@@ -2674,3 +2674,96 @@ historical local timing boundaries and open complex-workload/phase profiling.
 Existing PN_XNUM direct-execution and resource/layout limits still apply.
 Published alpha.2 remains immutable at `2f88c4a`, excluding these later
 features; no version, tag, published package or release assets changed.
+
+## Qualified analyst function display names (2026-10-24)
+
+**CONFIRMED locally; exact hosted acceptance pending.** Production commit
+`fd56d74` retains plain Ghidra namespace paths separately from lexical function
+identity and emits qualified CU-owned display names under C11. Fixture commit
+`17bab25` checks two nested scopes sharing `curated_same`, their separate
+`private_count` values 37/83, a global `private_count` of 19, and a real global
+`curated_same` returning 29. Namespace-global value 61 and the existing typed
+external-data declaration remain intact. No native signature, language,
+linkage-name, alias, global-data scope or source-key policy changed.
+
+Five focused Java checks (`qualifiedFunctionNameSmoke`, `syntheticSourceSmoke`,
+`dwarfRangeListsSmoke`, `dwarfLineTableSmoke`, `typeGraphSmoke`) and the extension
+build pass. The new smoke uses actual Ghidra ProgramDB namespaces, verifies
+rebased bodies/entry, immutable paths and lexical source declaration mapping,
+diagnoses class fallback, and rejects real literal-delimiter collisions. A
+public-export negative uses regular invalid ELF/native files: collision
+rejection wins before parsing/loading, leaving all inputs and an existing
+destination unchanged with no temporary residue. Existing file preflight order
+is preserved. Independent production and fixture/workflow reviews are clear.
+
+The real installed exporter passes all **15** target/role cases below. Every
+case performs two fresh imports/exports with byte-identical `.dbg` and `.dbg.c`,
+unchanged original hashes, GNU/LLVM and strict libdwarf checks. Compiler-reference,
+compiler separate-symbol, and Forge GDB oracles require exact function/static
+addresses, initial types, one-location named breakpoints, owner-local shadowing,
+separate global lookup, stepping/returns and normal exit zero. The Forge oracle
+additionally lists the synthetic source and requires that association on full
+function symbols; inherited minimal ELF symbols cannot satisfy it. Runtime ASLR
+bias is checked consistently.
+
+| Target | Roles | Retained run |
+|---|---|---|
+| x86-64 | exec, PIE, rebased PIE | `run.uEbWkHrg` |
+| AArch64 | exec, PIE, rebased PIE | `run.gMpe6aQp` (three completed cases) |
+| ARM32 ARMv7 hard-float | exec, PIE, rebased PIE | `run.7BXiMlNg` |
+| MIPS32 big-endian O32 | exec, PIE, rebased PIE | `run.7BXiMlNg` |
+| MIPS32 little-endian O32 | exec, PIE, rebased PIE | `run.7BXiMlNg` |
+
+Paths are under the `qualified-function-names` worktree's
+`build/test-results/qualified-function-names/`. Strict reports retain two
+exactly corroborated inherited frame diagnostics for x86 exec, seven for each
+AArch64 role, and zero errors for the other eleven cases; unexplained errors
+are zero throughout. ARM EHABI positive/rejecting controls and the existing
+operation/address/count-matched MIPS return diagnostic policy remain unchanged.
+The original x86 static-scope mode also passes all three roles in
+`build/test-results/function-static-scopes/run.Ssk77Ote`.
+
+Commands use the real installed private extension:
+
+```bash
+FORGE_SCOPE_QUALIFIED=1 DWARFDUMP=/path/to/pinned/validation-tool/bin/dwarfdump \
+    src/test/integration/function-static-scopes-export.sh /private/ghidra \
+    x86_64 aarch64 arm32 mips32be mips32le
+DWARFDUMP=/path/to/pinned/validation-tool/bin/dwarfdump \
+    src/test/integration/function-static-scopes-export.sh /private/ghidra x86_64
+```
+
+Local ARM compiler/binutils libraries and its runtime sysroot were supplied
+from the retained private toolchain. The first cross run completed AArch64 but
+stopped at missing ARM host-library setup. Subsequent setup attempts exposed
+missing strip/objcopy wrappers before export. Those failures are retained;
+only `run.7BXiMlNg` supplies complete ARM/MIPS acceptance. No user installation
+or shared Ghidra tree was modified. Exact tool versions, command transcripts,
+15-case retained-evidence/hash audit and package assembly log are in
+`build/qualified-integration/`; runtime Java is 21.0.12.1, GDB 15.1 and the
+cross-runtime QEMU version is 8.2.2.
+
+The actual private package SHA-256 is
+`a32ccc4ea0acb2d008fec7689297b5c4919a1cda14257280aeb22e85a3d4bc97`;
+production JAR SHA-256 is
+`e17309610a07650ace27e015179f03505c1add527d9f1d117c4801b3a5822c3b`.
+Its two production changes match `fd56d74`; native inputs are the previously
+verified unchanged integration pair. This is an unreleased local package.
+
+The old installed package (`a1ea4069...`) in `run.odZEvuXT` passes the ordinary
+validators but fails the missing-qualified-name assertion and actual GDB lookup.
+The first new-package run `run.YVyfznAh` exposed a harness parser incorrectly
+splitting GNU attribute-offset lines as DIE headers; the artifact already had
+the correct names. The corrected parser requires a full DIE header and the
+passing rerun retains CU-depth, C11, declaration-line and no-linkage assertions.
+These failed attempts are not counted as passing evidence.
+
+CI adds the qualified real-export regression to every existing target lane and
+the real-Ghidra smoke to Linux and native Windows. Hosted acceptance remains
+pending for this feature; the preceding PR #25/main runs do not exercise it.
+Final extension build, release-package regression, workflow lint and architecture
+isolation checks pass locally; the production JAR is unchanged from the runtime
+tests. Independent reviews cover code, fixtures/workflow and the retained evidence.
+[FUNCTION-NAMING.md](FUNCTION-NAMING.md) records quoting and limitations. Full
+namespace/class/lexical/alias semantics and external-function declarations stay
+partial/planned, and published alpha.2 remains unchanged.

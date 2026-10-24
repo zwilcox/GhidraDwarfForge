@@ -2796,3 +2796,32 @@ unavailable. Inline emission and optional debuglink attachment/refresh/rollback
 remain unimplemented. Performance CI supplies acceptance, not new timing data
 or a general speed/memory guarantee. Published alpha.2 stays immutable at
 `2f88c4a`, excluding these features; no version, tag or release assets changed.
+
+### Qualified analyst function display names (2026-10-24)
+
+**CONFIRMED locally:** the next bounded function-identity slice retains actual
+plain Ghidra namespace paths separately from lexical function names. Only the
+CU-owned subprogram's display name becomes qualified; source declaration-line,
+signature and location matching retain lexical name/address keys. The C11 CU,
+global naming, native ABI and failed-decompilation policy remain unchanged.
+Class/other unsupported parent chains retain prior lexical behavior with a
+diagnostic. Distinct path/name identities that flatten to one display are
+rejected before ELF parsing/native loading, preserving existing file preflight.
+
+The old installed exporter loses qualified identity in the real fixture; GDB
+cannot resolve the scoped name. The implementation passes 15 local real-export
+cases across x86-64, AArch64, ARM32 and both MIPS orders (exec, PIE and explicit
+Ghidra rebase), with compiler address/value oracles, source/type/stepping,
+separate owned statics, a same-named real global function, original hashes,
+byte-identical repeats and GNU/LLVM/strict validation. The original x86 static
+cases and focused real-Ghidra/model smokes also pass. Exact hosted acceptance
+remains pending; local results are not attributed to the preceding merged CI.
+
+The tested GDB 15.1 does not provide the required function lookup from ordinary
+namespace DIEs under C11, and ignores the compiler's external-function
+declaration prototype. Qualified CU-level names are an explicit analyst-display
+policy, not reconstruction of C++ scopes or linkage. External declarations and
+full class/lexical/alias semantics remain planned. `docs/FUNCTION-NAMING.md`
+records quoting, tradeoffs, the research evidence and the unchanged debugger
+baseline. Published alpha.2 is unaffected. Detailed commands, package identity,
+failure history and passing directories are in `docs/VALIDATION.md`.

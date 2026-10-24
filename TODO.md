@@ -26,6 +26,13 @@ features. Optional attachment and inline emission remain unimplemented. See
 [combined acceptance](docs/VALIDATION.md#combined-hosted-acceptance-and-main-integration-2026-10-24).
 Use Sections 1.1 and 4 for the next work; do not restart prototype bring-up.
 
+**CONFIRMED locally, hosted gate pending:** the subsequent qualified-function
+display slice passes 15 real exporter/compiler/GDB cases across all five target
+profiles, plus the original x86 static-scope cases. It preserves ordinary
+Ghidra namespace paths without changing the C11 CU or inventing linkage/aliases.
+See `docs/FUNCTION-NAMING.md` and `docs/VALIDATION.md`; this does not complete
+P1.7/P3.3 or belong to either published alpha.
+
 Status vocabulary:
 
 - `[ ]` — not complete.
@@ -852,6 +859,11 @@ analyst-facing breakpoint name.
 - Add `DW_TAG_formal_parameter` DIEs.
 - Preserve parameter names.
 - Preserve variadic signatures when known.
+- [~] Preserve plain/nested analyst function namespace identity as a qualified
+  display name while retaining lexical source/signature keys. The fifteen
+  local exec/PIE/rebased-PIE cases pass across all five targets, with distinct
+  owned statics and a same-named global definition. Exact hosted acceptance is
+  pending. This is not full namespace, class, linkage or alias semantics.
 - [x] Preserve calling-convention information where DWARF/GDB can use it:
   recognized conventional subroutines emit `DW_CC_normal`; unknown convention
   state and unproven vendor codes remain absent.
@@ -1689,6 +1701,15 @@ Completion requires fixtures for scoped functions/classes, shadowed locals,
 static locals and distinct same-named types. GDB must preserve analyst-facing
 lookup, distinguish the objects, and resolve only defensible addresses/live
 ranges. Category paths are not automatically original source namespaces.
+
+**CONFIRMED locally:** the qualified display-name slice preserves nested plain
+function paths and duplicate short names with real GDB address/source/type,
+single-breakpoint and owner-static checks on five profiles. Hosted validation
+is pending. C11 namespace-parented function DIEs do not provide the required
+qualified lookup in the tested GDB 15.1, so definitions remain CU-owned and use
+the recorded qualified display string. External-function declarations, classes,
+lexical blocks and qualified namespace-global lookup remain outside this slice.
+The naming policy documents exact quoting and conservative collision rejection.
 
 ## P3.4 Investigate reconstructed inlining
 
