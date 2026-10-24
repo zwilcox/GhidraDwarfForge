@@ -13,6 +13,7 @@ output_parent=$(realpath "$(dirname "$4")")
 output="$output_parent/$(basename "$4")"
 repository_dir=$(realpath "$(dirname "$0")/..")
 release_version=$(tr -d '\r\n' < "$repository_dir/VERSION")
+pinned_patch_sha256=b98561b3e63b76546bd2f18d81d53e188b56deb637b5e145205b3b6eedadf696
 
 [[ "$release_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$ ]] || {
     echo "invalid semantic version in VERSION: $release_version" >&2
@@ -51,10 +52,21 @@ module="$stage/GhidraDwarfForge"
     echo "base ZIP does not contain corresponding-source instructions" >&2
     exit 1
 }
+for bundled_directory in os third_party/libdwarf third_party/windows-runtime; do
+    if [[ -e "$module/$bundled_directory" || -L "$module/$bundled_directory" ]]; then
+        echo "base ZIP already contains $bundled_directory; supply the unbundled Gradle extension ZIP" >&2
+        exit 1
+    fi
+done
 
 copy_platform() {
     local platform=$1 input=$2 consumer_pattern=$3 producer_pattern=$4
     local destination="$module/os/$platform"
+    if [[ ! -f "$input/BUILD-METADATA.txt" || -L "$input/BUILD-METADATA.txt" ||
+            ! -s "$input/BUILD-METADATA.txt" ]]; then
+        echo "$platform native input requires its own nonempty regular BUILD-METADATA.txt" >&2
+        exit 1
+    fi
     mkdir -p "$destination"
     find "$input" -maxdepth 1 -type f ! -name 'SHA256SUMS' -exec cp {} "$destination/" \;
 
@@ -124,13 +136,52 @@ cp -R "$windows_runtime_compliance" "$module/third_party/windows-runtime"
     sha256sum -c RUNTIME-SHA256SUMS
 )
 
+bundled_patch_sha256=$(sha256sum < \
+    "$module/third_party/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch")
+bundled_patch_sha256=${bundled_patch_sha256%% *}
+if [[ $bundled_patch_sha256 != "$pinned_patch_sha256" ]]; then
+    echo 'bundled corresponding-source patch does not match the pinned SHA-256' >&2
+    exit 1
+fi
+for platform in linux_x86_64 win_x86_64; do
+    metadata="$module/os/$platform/BUILD-METADATA.txt"
+    # GNU sha256sum prefixes a record with '\' when its filename is escaped.
+    # Accept that encoding and CRLF metadata, but require the canonical hash.
+    if ! recorded_patch_sha256=$(awk '
+        {
+            sub(/\r$/, "")
+            if ($0 == "source patch SHA-256:") {
+                records++
+                if (getline <= 0) invalid = 1
+                sub(/\r$/, "")
+                sub(/^\\/, "")
+                hash = substr($0, 1, 64)
+                separator = substr($0, 65, 2)
+                if (length(hash) != 64 || hash ~ /[^0-9a-f]/ || length($0) <= 66 ||
+                        (separator != "  " && separator != " *")) invalid = 1
+            }
+        }
+        END {
+            if (records != 1 || invalid) exit 1
+            print hash
+        }
+    ' "$metadata"); then
+        echo "invalid source patch SHA-256 record in $platform BUILD-METADATA.txt" >&2
+        exit 1
+    fi
+    if [[ $recorded_patch_sha256 != "$bundled_patch_sha256" ]]; then
+        echo "$platform patch SHA-256 does not match bundled corresponding source" >&2
+        exit 1
+    fi
+done
+
 {
     echo "release-version=$release_version"
     echo "ghidra-version=12.0.3"
     echo "libdwarf-release=v2.3.2"
     echo "libdwarf-source-commit=af7b278c6aa2ae9daad94fb7f8bffdc0e9980993"
     echo "libdwarf-archive-sha256=7992e7b9019ebfabdda5773e86243517c48cf89fafed3209e853692bc9573efd"
-    echo "libdwarf-patch-sha256=b98561b3e63b76546bd2f18d81d53e188b56deb637b5e145205b3b6eedadf696"
+    echo "libdwarf-patch-sha256=$pinned_patch_sha256"
     echo "host-platforms=linux_x86_64,win_x86_64"
 } > "$module/RELEASE-MANIFEST.txt"
 
