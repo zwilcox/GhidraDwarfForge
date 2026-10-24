@@ -2002,6 +2002,14 @@ The two controls are wired into CI; exact-head hosted validation is pending.
 Other QEMU scripts still using TCP are a separate, evidence-driven follow-up.
 See `docs/VALIDATION.md` for commands and retained evidence.
 
+Attempt 2 of GUI run `40058560162` failed this startup control before GUI
+testing: the x86-64 lane did not install `qemu-user-static`, so
+`/usr/bin/qemu-x86_64-static` was missing. The cross-target lanes already
+installed it. The x86-64 toolchain step now declares the same dependency.
+The native Windows dependency mirror retry succeeded, but its GUI job was
+skipped after the x86-64 failure. This run supplies no new GUI product result;
+the corrected complete hosted gate remains pending.
+
 ### 16.33 Native patch checkout and provenance consistency
 
 **CONFIRMED:** prepublication audit of candidate run `40055176326` found that

@@ -853,6 +853,17 @@ and the inferior exits normally. This change is limited to shared-object
 startup. Other QEMU harnesses still use TCP and are not claimed to be migrated;
 the exact updated hosted matrix remains pending.
 
+Attempt 2 of GUI run `40058560162` stopped at the x86-64 startup suite with
+`/usr/bin/qemu-x86_64-static: No such file or directory` (child exit 127).
+Only cross-target lanes installed `qemu-user-static`; the x86-64 dependency
+list now includes it because the startup control runs real native QEMU.
+This failure preceded GUI testing. The native Windows dependency mirror
+retry succeeded, but its GUI job was skipped by the failed prerequisite.
+It is not a GUI product failure or a new Windows GUI pass. `actionlint`, shell
+syntax checks and the local real-QEMU startup/failure/cleanup regression
+`run.1XeKubtJ` pass for this dependency correction. The complete corrected
+hosted gate remains pending.
+
 An additional MIPS32BE shared-object run passes with empty QEMU diagnostics.
 AArch64 reaches normal exit using the same socket transport but retains the
 existing synthetic-vDSO `corrupt string table index` warning in its GDB log;
