@@ -1919,6 +1919,27 @@ Codex should not silently answer these through implementation choices. Investiga
     advertised broadly; the validated ARM32 and MIPS profiles remain narrower
     claims documented in the release notes.
 
+## 17.1 Function entries above their lowest body address
+
+**CONFIRMED locally (2026-10-23):** extraction accepts an entry in any real
+body range rather than dropping functions with earlier instructions. The
+canonical body remains sorted and retains every gap. Such functions emit
+`DW_AT_entry_pc` plus a range list whose first interval starts at that entry;
+an interval containing the entry is split there when necessary, with exactly
+the same covered bytes. Contiguous bodies with interior entries use that same
+representation. Existing ordinary low/high-PC output remains unchanged.
+
+This representation is deliberate: local GDB 15.1 ignores `DW_AT_entry_pc`
+and takes the entry from the first range. DWARF 5 sections 2.17.3 and 2.18
+permit unordered nonoverlapping range intervals and an explicit entry address.
+An attribute-only attempt passed validators but resolved GDB names and
+breakpoints to the wrong lower address. The final representation passes real
+named-breakpoint, all-body-byte, excluded-gap, source, value and stepping checks
+for x86-64 ET_EXEC/PIE, including explicit rebases and deterministic repeats.
+Only the already-audited target-address producer call is used; no JNA signatures
+were added. The added hosted gate is **PRESENT, UNVERIFIED** until CI passes.
+Commands, limitations and evidence are recorded in `docs/VALIDATION.md`.
+
 ## 18. Immediate strategic direction
 
 **CONFIRMED:** the previous prototype bring-up sequence is complete for the

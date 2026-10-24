@@ -754,11 +754,13 @@ analyst-facing breakpoint name.
 
 ## P1.8 Represent discontiguous program/function ranges correctly
 
-**Status:** `[~]` — Ghidra address sets, deterministic DWARF 5 range lists,
-split line sequences, validators, and GDB gap behavior pass in hosted CI for
-the current fixtures. Extraction still skips a function whose first body range
-does not begin at its entry point; that remaining case needs `DW_AT_entry_pc`
-or another validated representation.
+**Status:** `[~]` — existing discontiguous-range coverage passes hosted CI.
+**CONFIRMED locally:** below-entry bodies now export with their true entry,
+explicit `DW_AT_entry_pc` and exact entry-first range lists. The latter also
+supports GDB 15.1, which ignores that attribute. Six real x86-64 ET_EXEC/PIE,
+rebase and deterministic-repeat cases pass validators and GDB; isolated native
+production passes all five current target profiles. The new hosted gate is
+**PRESENT, UNVERIFIED** until CI passes. See `docs/VALIDATION.md`.
 
 ### Work
 
@@ -776,8 +778,10 @@ or another validated representation.
 - [x] `readelf --debug-dump=ranges` or equivalent shows expected entries.
 - [x] `.debug_aranges` is deliberately not emitted; CU `DW_AT_ranges` provides
   the tested lookup coverage without an optional accelerator.
-- [ ] Export a function whose body includes addresses below its entry point;
-  verify the true entry breakpoint, all ranges, source lookup and gap behavior.
+- [x] Export a function whose body includes addresses below its entry point;
+  verify the true entry breakpoint, all ranges, source lookup and gap behavior
+  locally, including contiguous/interior entries and PIE/Ghidra rebasing.
+- [ ] Pass the added function-entry tests in the hosted integration pipeline.
 
 ## P1.9 Export global variables
 
