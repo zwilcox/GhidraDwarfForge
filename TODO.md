@@ -44,7 +44,7 @@ gates to each implementation change and the exact versioned release commit.
 ## 0.1 Published-alpha correctness review (2026-10-23)
 
 **CONFIRMED:** the six findings against `f4a0199` are reproducible. Fixes
-are on the development branch; the published alpha remains affected.
+are merged into `main`; the published alpha.1 remains affected.
 
 - [x] Reject explicit log aliases before launch/truncation, including direct,
   normalized, symlink and hardlink input/output paths; preserve hashes and
@@ -61,9 +61,24 @@ are on the development branch; the published alpha remains affected.
 - [x] Pass the strengthened complete hosted matrix, including ARM32 bit-field
   values and native Windows log identity checks. **CONFIRMED:** all twelve
   jobs passed in run `40041110549` for implementation commit `cd906de`.
-- [ ] Complete reviewed-PR integration under the standing authorization and
-  required checks, then publish a separately validated replacement release
-  when release work is requested; do not replace the existing artifact.
+- [x] Integrate reviewed PRs #16/#17/#18 under the standing authorization and
+  enforced checks. `main` is `1f2a46b`; PR #18's final head passed all twelve
+  jobs in run `40051501201`.
+- [ ] Publish a separately validated corrective release after exact-commit CI
+  and package checks; do not replace the existing alpha.1 artifact.
+  **CONFIRMED locally:** the isolated corrective branch prepares
+  `0.1.0-alpha.2`, release notes, verified version metadata and reproducible
+  assembly using existing verified native artifacts. Its Linux packaged
+  producer passes 20 lifetimes. The candidate also includes the independently
+  reviewed automatic-association fix and strict cross-target tests. Nineteen
+  native-independent checks, extension build and packaging regression pass on
+  the combined versioned tree. Candidate integration, full hosted release
+  validation and publication remain incomplete.
+- [x] **CONFIRMED locally:** fix the default pair-publication timestamp ordering
+  exposed by main run `40053041949`. Staged sidecar mtime is never below its
+  paired source; original ELF metadata and later source-edit warnings remain
+  intact. Deterministic publisher/cancellation and GDB regressions pass;
+  exact candidate CI remains required before release.
 
 ## 1. Milestone ordering
 
@@ -100,13 +115,13 @@ items are these bounded workstreams:
 
 | Workstream | Status and acceptance needed |
 |---|---|
-| Corrective release (§0.1) | **PLANNED:** integrate reviewed PRs under the standing authorization and required checks. For the separate release task, bump `VERSION`, validate the exact release commit/package, and publish a corrective alpha without replacing the existing artifact. |
+| Corrective release (§0.1) | **CONFIRMED:** PRs #16/#17/#18 are merged. `0.1.0-alpha.2` version/notes, local packaging checks and the automatic-association correction are prepared. **PLANNED:** integrate and validate the exact versioned candidate, then publish it without changing alpha.1. |
 | ELF robustness (P0.9) | **CONFIRMED complete within the documented bounds:** PR #18 implements extended counts, unnamed tables, bounded file-backed I/O, correct recorded-load-base translation and cancellation. Local checks and all twelve hosted jobs pass; direct PN_XNUM execution limits are documented. |
 | Function identity and scopes (P1.7, P3.3) | **CONFIRMED locally:** explicit function-owned statics preserve duplicate-name lookup and omit failed owners under the symbol-only contract; hosted validation is pending. **PLANNED:** distinct linkage names, external-function declarations, thunks/aliases, class/lexical scopes, inferred static locals and remaining same-named type/variable cases. Existing namespace globals and external-data declarations must remain working. |
 | Additional range/location cases (P1.8, P1.11a) | **CONFIRMED locally:** below-entry bodies preserve their true entry, and proven incoming-register prefixes end after the first overwrite; hosted validation is pending. **PLANNED:** register/memory migration, call-crossing and non-entry lifetimes, stack-slot reuse, and mixed composite storage. Require GDB value checks at multiple instruction addresses and honest unavailable gaps. |
 | Target-profile coverage (P2.3/3a/3b) | Current five profiles pass. Enumerate additional ABI/storage cases, derive their target properties, and add real exporter/validator/QEMU-GDB tests before extending support claims. Completing this plan does not imply every Ghidra CPU/ABI. |
 | Remaining GUI journeys (P2.7) | **PRESENT, UNVERIFIED:** manual Script Manager launch and Windows chooser/cancellation. Linux GUI fallback already has a passing automated test. |
-| Optional debuglink (P2.8) | **PLANNED, optional:** explicit opt-in attachment, backup/rollback, CRC, automatic lookup and mismatch tests, while default export leaves the original unchanged. |
+| Optional debuglink (P2.8) | **PLANNED, optional:** explicit opt-in attachment and backup/rollback. Sidecar lookup/CRC compatibility is tested on private fixture copies; default export leaves the original unchanged. |
 | Inline reconstruction (P3.4) | **UNCERTAIN:** investigate defensible instance/call-site/range evidence and record a decision. Implement only if supported by that evidence. |
 | Performance (P3.5) | **PLANNED:** establish representative large-binary benchmarks, choose optimizations with measured benefit, and prove unchanged semantics/determinism. The listed candidates are not all unconditional requirements. |
 
@@ -1196,6 +1211,12 @@ Additional user-journey coverage:
 
 **Status:** `[ ]` — optional feature; exact scope **UNCERTAIN**.
 
+**CONFIRMED at the compatibility layer:** automatic debuglink lookup and CRC
+mismatch rejection now have strict local tests on private copies made with
+target `objcopy`. No-build-ID negative controls prevent fallback from masking
+a bad CRC. This does not implement the optional product attachment operation;
+the full original/backup/rollback contract below remains required.
+
 ### Work
 
 - Keep default export non-mutating.
@@ -1215,11 +1236,13 @@ Additional user-journey coverage:
 
 ## P2.9 Add build-ID association where applicable
 
-**Status:** `[x]` — matched sidecars preserve the original build ID and GDB
-automatic discovery plus mismatched-image rejection pass in hosted CI using the
-standard `.build-id/xx/rest.debug` layout. Sidecars for inputs without build
-IDs retain that absence and pass the explicit GDB loading workflow on all five
-targets.
+**Status:** `[~]` — matched sidecars preserve the original build ID. The prior
+hosted x86-64 discovery test did not reject section-association warnings.
+Allocated relocation metadata is now preserved as inert sections, and strict
+ET_EXEC/PIE discovery plus mismatch rejection passes locally on x86-64,
+AArch64, and both MIPS32 byte orders. All five target CI lanes now run these
+checks; hosted verification of the new fix is pending. No-build-ID sidecars
+retain that absence and the existing explicit GDB workflow remains covered.
 
 ### Work
 
