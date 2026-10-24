@@ -767,8 +767,9 @@ naming, missing input, original-file alias rejection, nonexistent output
 directories, and an injected unwritable-directory result. GUI directory
 selection is implemented for a valid input whose default destination fails,
 and the automated Linux Swing chooser/cancellation test passes in a genuine
-non-headless Ghidra process (see the post-alpha GUI record above). Manual
-Script Manager navigation and Windows GUI behavior remain **PRESENT, UNVERIFIED**.
+non-headless Ghidra process (see the post-alpha GUI record above). Actual Linux
+Script Manager discovery/run/reporting is additionally validated below. Windows
+GUI behavior remains **PRESENT, UNVERIFIED**.
 
 ## Build-ID discovery
 
@@ -922,3 +923,74 @@ for the x86-64 fixture. The matched sidecar retains those original target
 sections byte-for-byte, and the same diagnostics occur on the original input;
 they are not emitted from Forge DWARF sections. There are zero line-table,
 abbreviation, DIE, range, or declaration-file errors.
+
+## Installed Script Manager export journey (2026-10-23)
+
+The explicit `ExportGhidraDwarfForge.java` launcher is needed because Ghidra
+12.0.3's `GhidraScriptComponentProvider.runScript(ResourceFile)` constructs a
+`RunScriptTask` without setting script arguments. The original
+`GhidraDwarfForge.java` intentionally remains native-free with no arguments.
+The Export launcher delegates to it using the verified packaged native pair.
+
+```bash
+export GHIDRA_INSTALL_DIR=/path/to/isolated/ghidra_12.0.3_PUBLIC
+./gradlew buildExtension
+support/assemble-release.sh dist/*.zip /path/to/verified-linux-natives \
+    /path/to/verified-windows-natives /path/to/gui-candidate.zip
+# Extract into an isolated Ghidra installation, then:
+module="$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge"
+src/test/integration/gui-script-manager.sh "$GHIDRA_INSTALL_DIR" "$module" \
+    "$PWD/build/fixtures/x86_64/semantic.exec.stripped" \
+    "$PWD/build/fixtures/x86_64/semantic.exec.reference"
+```
+
+**PASS locally:** `build/test-results/gui-script-manager/run.5CZSfnND/` in
+`work/gui-script-manager`, using Ghidra 12.0.3, GUI OpenJDK 21, Xvfb, and the
+existing verified Linux native package. The private installation links the
+unmodified Ghidra platform and contains its own assembled extension; no user's
+installed extension or original fixture is changed. The wrapper supports
+`JAVA_BIN` and `XVFB_BIN` for locally extracted tools.
+
+The harness compiles only its own GUI driver/support classes. It creates a
+real Ghidra front end and Script Manager plugin, discovers both installed
+script source paths, and launches them by double-clicking their visible table
+rows. It does not instantiate either production script. A known fixture
+function is renamed in the current Program to `gui_recovered_add`; GDB then
+resolves that analyst name from the output. Each selection/cancellation case:
+
+- Proves the default directory denies an actual file creation, preserving its
+  original permissions for cleanup.
+- Runs native-free preflight through Script Manager and observes Console.
+- Runs the Export launcher, verifies packaged-native selection, and drives the
+  real Swing chooser with Robot clicks.
+- Records screenshots and Console transcripts, checks the final JSON report,
+  verifies the input hash, and requires exactly the selected artifact pair or
+  no artifacts after cancellation, with no staging files left behind.
+
+Selection emits a `PARTIAL` report because the fixture's uncurated thunk and
+undefined-type information is diagnosed. Cancellation emits `CANCELLED` and
+Script Manager's cancellation message. Ghidra's loader also logs its existing
+GNU-hash markup limitation and missing external libraries during fixture
+import; those are retained in `gui.log`, not hidden or counted as validator
+success. The emitted sidecar passes GNU headers/sections/notes/DWARF dumps,
+`llvm-dwarfdump --verify`, and `dwarfdump` with empty diagnostic streams. GDB
+finds the synthetic source without a directory workaround, resolves the renamed
+function/signature, breaks, lists, executes `next` and `step`, and exits normally.
+Its diagnostic stream is empty. A displayed decompiler source comment saying
+`WARNING` is retained as source text, not treated as a debugger warning.
+
+Release-package tests require both script entries, reject a ZIP missing the
+Export launcher, verify their unchanged bytes in the assembled archive, and
+check deterministic archive/manifest output. Build, package regression,
+PowerShell syntax, and Java 21 compilation pass locally. Hosted results for
+this branch are pending.
+
+**PRESENT, UNVERIFIED on native Windows:**
+`src/test/integration/windows-desktop-acl.ps1` compiles a standalone Java probe,
+records host/user/session evidence, denies directory writes with a real ACL,
+requires actual file creation to fail, restores the ACL, and requires a real
+Robot click on a visible button. The Windows CI lane retains its screenshots,
+ACLs and logs. Native execution is required; portable PowerShell syntax or
+Linux execution cannot establish Windows GUI support. After this feasibility
+probe passes, the actual Ghidra chooser selection/cancellation journey still
+requires native Windows evidence.

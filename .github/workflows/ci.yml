@@ -493,6 +493,8 @@ jobs:
           echo "$LIBDWARF_PATCH_SHA256  $module/third_party/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch" |
             sha256sum -c -
           test -s "$module/THIRD_PARTY_NOTICES.md"
+          test -s "$module/ghidra_scripts/GhidraDwarfForge.java"
+          test -s "$module/ghidra_scripts/ExportGhidraDwarfForge.java"
           test -s "$module/third_party/CORRESPONDING_SOURCE.md"
           test -s "$module/third_party/libdwarf/licenses/LGPL-2.1.txt"
           test -s "$module/third_party/windows-runtime/zlib/licenses/LICENSE"
@@ -807,6 +809,15 @@ jobs:
             "$PWD/build/fixtures/x86_64/semantic.exec.stripped" \
             "$PWD/build/fixtures/x86_64/semantic.exec.reference"
 
+      - name: Installed Script Manager discovery, export, console, and cancellation
+        if: matrix.target == 'x86_64'
+        run: |
+          src/test/integration/gui-script-manager.sh \
+            "$GHIDRA_INSTALL_DIR" \
+            "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
+            "$PWD/build/fixtures/x86_64/semantic.exec.stripped" \
+            "$PWD/build/fixtures/x86_64/semantic.exec.reference"
+
       - name: Clean installed-release export without external natives
         if: matrix.target == 'x86_64'
         run: |
@@ -966,6 +977,10 @@ jobs:
             '[llvm-dwarfdump]'
             & llvm-dwarfdump.exe --version
           } 2>&1 | Tee-Object -FilePath "$resultDirectory\tool-versions.txt"
+
+      - name: Probe native Windows desktop interaction and actual ACL denial
+        shell: pwsh
+        run: ./src/test/integration/windows-desktop-acl.ps1
 
       - name: Install extension and run native-independent Windows checks
         shell: pwsh
@@ -1136,7 +1151,9 @@ jobs:
         if: always()
         with:
           name: windows-host-validation
-          path: build/test-results/windows-host/
+          path: |
+            build/test-results/windows-host/
+            build/test-results/windows-desktop-acl/
           if-no-files-found: warn
           retention-days: 14
 

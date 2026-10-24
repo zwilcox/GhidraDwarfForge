@@ -1848,6 +1848,33 @@ and validated against the updated `main` in order. Use GitHub for live merge
 and CI state. No protection rule was weakened, no admin bypass was used, and
 this integration does not replace the published alpha artifact.
 
+### 16.29 Installed Script Manager export journey
+
+**CONFIRMED locally:** Ghidra 12.0.3's Script Manager Run action creates and
+executes a script without supplying arguments. Running the existing
+`GhidraDwarfForge.java` therefore correctly performs native-free preflight,
+but did not provide the documented ordinary GUI export journey.
+`ExportGhidraDwarfForge.java` is now an explicit DWARF-category launcher that
+delegates to that same production script with `--packaged-natives`. It leaves
+the native-free contract and headless wrappers unchanged. Release assembly
+requires both installed scripts.
+
+`gui-script-manager.sh` creates a real Ghidra front end and Script Manager
+plugin in a private installation. It discovers the installed script sources,
+double-clicks their table entries, checks Console output, and selects/cancels
+the production output chooser with real mouse events under Xvfb. Linux run
+`run.5CZSfnND` passes input preservation, exact output pair/no cancellation
+outputs, GNU/LLVM/libdwarf validation, and GDB source lookup/stepping/normal
+exit. The native-free preflight is also executed through Script Manager.
+See `docs/VALIDATION.md` for reproduction and diagnostic scope.
+
+**PRESENT, UNVERIFIED:** `windows-desktop-acl.ps1` probes actual native Windows
+desktop interaction and write-denying ACL behavior, with cleanup and retained
+screenshots/logs. It is wired into Windows CI but has not run natively yet.
+Passing that feasibility probe will not itself prove Ghidra's Windows chooser;
+the full Windows selection/cancellation journey remains open. These GUI
+changes are separate from the corrective alpha.2 candidate.
+
 ## 17. Open questions
 
 Codex should not silently answer these through implementation choices. Investigate, document, and obtain user direction when the answer materially changes compatibility or scope.

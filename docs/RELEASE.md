@@ -68,6 +68,17 @@ No local libdwarf compiler or separate native download is required. On Linux:
     --import=/path/to/program.elf
 ```
 
+Development builds also package `ExportGhidraDwarfForge.java`. To export from
+CodeBrowser, open the analyzed program, choose **Window → Script Manager**,
+select **DWARF → ExportGhidraDwarfForge.java**, and run it. Results and the JSON
+report appear in **Window → Console**. An unavailable default output directory
+opens a chooser; cancellation publishes neither artifact. The existing
+`GhidraDwarfForge.java` Run action remains a native-free metadata preflight.
+Both scripts are required by release assembly and covered by the release
+checksum manifest. Linux actual Script Manager launch, output selection and
+cancellation are tested; native Windows GUI behavior remains unverified.
+This development addition is outside the corrective alpha.2 candidate.
+
 On Windows PowerShell:
 
 ```powershell
