@@ -1912,6 +1912,25 @@ Local assembly is a packaging rehearsal, not final hosted release validation.
 No alpha.2 tag or release was created during preparation; alpha.1 and its
 assets remain unchanged.
 
+### 16.30 Source/sidecar publication timestamps
+
+**CONFIRMED:** main run `40053041949` failed the AArch64 rebased extended-program
+layout's static GDB check with a source-freshness warning. GDB 15.1 compares the
+source mtime with its compilation unit's loaded debug objfile, which is the
+Forge `.dbg`, rather than necessarily the original executable. Pair publication
+previously wrote the artifact first and source second, exposing a seconds-boundary
+race even for an unchanged program. The retained failed Forge pair reproduces
+that comparison independently of the original ELF's timestamp.
+
+Publication now raises the staged sidecar mtime to the staged source mtime only
+when needed, before any final target backup/replacement. It compares full
+`FileTime` values, never lowers an existing newer sidecar timestamp, and keeps
+callback/cancellation order unchanged. Original executable bytes and timestamps
+are untouched. Rollback restores the previous pair and its timestamps. A later
+source edit still warns in GDB; no warning filter was added. Deterministic unit,
+source-built GDB/runtime, and retained AArch64 Forge-artifact checks pass locally.
+See `docs/VALIDATION.md`; the next exact versioned CI remains required.
+
 ## 17. Open questions
 
 Codex should not silently answer these through implementation choices. Investigate, document, and obtain user direction when the answer materially changes compatibility or scope.

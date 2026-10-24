@@ -798,6 +798,10 @@ jobs:
         if: matrix.target == 'x86_64'
         run: src/test/integration/real-world-export.sh "$GHIDRA_INSTALL_DIR"
 
+      - name: Published source and sidecar timestamp regression
+        if: matrix.target == 'x86_64'
+        run: src/test/integration/artifact-pair-timestamps.sh
+
       - name: GUI output chooser selection and cancellation
         if: matrix.target == 'x86_64'
         run: |

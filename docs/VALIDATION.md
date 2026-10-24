@@ -948,3 +948,70 @@ for the x86-64 fixture. The matched sidecar retains those original target
 sections byte-for-byte, and the same diagnostics occur on the original input;
 they are not emitted from Forge DWARF sections. There are zero line-table,
 abbreviation, DIE, range, or declaration-file errors.
+
+## Generated source freshness at pair publication (2026-10-23)
+
+Main commit `1f2a46b`'s [run 40053041949](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40053041949)
+failed in AArch64 `elf-layout-export`, `exec/extended-programs/rebased`, at the
+static GDB stage. Its retained `static-gdb.txt` reports only
+`warning: Source file is more recent than executable.`; function/type/source
+addresses remain correct. The failing source path is the generated
+`build/fixtures/aarch64/semantic.exec.ghidra-forge.dbg.c`.
+
+This is a publication defect, not an architecture, PIE, or fixture warning to
+suppress. [GDB 15.1 source-cache.c](https://gnu.googlesource.com/binutils-gdb/+/refs/tags/gdb-15.1-release/gdb/source-cache.c)
+uses the source compilation unit's objfile mtime when available, falling back
+to the executable only otherwise. In this workflow `symbol-file` selects the
+Forge sidecar. GDB Python confirms `gdb.find_pc_line(0x400728).symtab.objfile.filename`
+is the loaded `.dbg`, while `info files` separately names the original ELF as
+the local executable. A source newer than the `.dbg` warns even when the original
+ELF is newer than both; making only the `.dbg` newer removes that warning.
+GDB compares whole seconds, explaining the intermittent boundary condition.
+
+The publisher used to complete the sidecar writer before the source writer.
+It now preserves that cancellation-compatible order but makes the staged
+sidecar mtime at least its completed source's mtime before backing up or
+replacing either final file. Full `FileTime` comparison preserves subsecond
+ordering, does not lower an already newer sidecar timestamp, and does not
+backdate the source or modify the original ELF. An adjustment failure uses the
+existing cleanup/rollback path. No GDB diagnostic policy was weakened.
+
+Reproduction and checks:
+
+```bash
+GHIDRA_INSTALL_DIR=/path/to/ghidra_12.0.3_PUBLIC ./gradlew \
+    artifactPairPublisherSmoke elfCopyCancellationSmoke buildExtension
+src/test/integration/artifact-pair-timestamps.sh
+```
+
+- **PASS:** the new publisher test fails deterministically against the old
+  implementation, then passes after the fix. Callback timestamps cover older,
+  equal, and newer sidecars within the same second. Existing rollback now also
+  checks preservation of previous final timestamps; copy cancellation still
+  stops before the source callback and preserves the prior pair.
+- **PASS:** `build/test-results/artifact-pair-timestamps/run.DYGYC2J6/` builds a
+  small compiler-DWARF ELF symbol-file fixture and deliberately supplies
+  source/artifact timestamps on opposite sides of a second boundary. Before
+  publication GDB reports exactly the known warning. After the real publisher,
+  GNU/LLVM/libdwarf validation and GDB lookup, breakpoint, `next`, `step`, value
+  and normal-exit checks pass with empty diagnostic streams. Appending a real
+  source comment and advancing its timestamp produces the exact warning again.
+  Original ELF hash and mtime remain unchanged; no staging files remain.
+- **PASS:** the actual failed AArch64 Forge pair was downloaded and republished
+  on private copies through the fixed production publisher. Its bytes stay
+  unchanged, GNU/LLVM/libdwarf checks pass, and GDB function/type/line lookup
+  produces no diagnostics. A subsequent source edit warns again. Logs are
+  `build/timestamp-probe/forge-fixed.txt`, `forge-fixed.stderr`,
+  `forge-edited.stderr`, and `forge-{readelf,llvm,dwarfdump}.txt` in the isolated
+  timestamp worktree. The original extended-program ELF's hash and mtime remain
+  unchanged. This is a retained-artifact reproduction, not a new Ghidra import.
+
+The hosted archive contains copies made by the diagnostic collector, and
+artifact download does not preserve the original publication timestamps.
+Consequently the exact hosted nanosecond gap is unavailable. The retained
+warning/source identity, pinned GDB comparison, and deterministic same-pair
+reproduction establish the cause without claiming those lost timestamps.
+
+The x86 CI lane now runs the deterministic GDB regression; the existing
+publisher smoke also runs on native Windows. Local build and focused checks
+pass. The next exact versioned candidate still requires full hosted validation.

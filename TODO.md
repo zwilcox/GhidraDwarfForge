@@ -74,6 +74,11 @@ are merged into `main`; the published alpha.1 remains affected.
   native-independent checks, extension build and packaging regression pass on
   the combined versioned tree. Candidate integration, full hosted release
   validation and publication remain incomplete.
+- [x] **CONFIRMED locally:** fix the default pair-publication timestamp ordering
+  exposed by main run `40053041949`. Staged sidecar mtime is never below its
+  paired source; original ELF metadata and later source-edit warnings remain
+  intact. Deterministic publisher/cancellation and GDB regressions pass;
+  exact candidate CI remains required before release.
 
 ## 1. Milestone ordering
 
