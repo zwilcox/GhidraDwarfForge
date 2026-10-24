@@ -3125,3 +3125,43 @@ oracle runs exposed GNU readelf's name-based `.dynamic` lookup diagnostic; the
 quiet nameless positive uses the real non-loadable sidecar instead, retaining
 the failed attempts. Native Windows/full hosted acceptance remains pending.
 See `docs/ELF-BUILD-ID-OBSERVATIONS.md`; P2.8's transaction is still planned.
+
+### Filesystem-path hosted acceptance (2026-10-24)
+
+**CONFIRMED:** PR #31 head `3632f2b581e3080e92567b0e00479c4f38b00cdb`
+passes all twelve jobs in hosted run `40087258846`. Independent package and
+Linux/native Windows artifact reviews are clear. Linux repeats eight saved-
+program exports and three rejection cases, timestamp handling and its real
+GUI journey. Windows Java 21 passes twelve focused checks, actual short-parent
+resolution, real trailing-dot alias rejection through both publisher APIs in
+both target orders, and its GUI journey. Original files and program databases
+remain preserved within the documented two-backup-file exception. Cross-target
+lanes pass CI; their artifact archives were not separately reviewed for this PR.
+
+Normal merge `00aaba161c5663556302c10da658ddab88b96d92` preserves the tested
+tree. Its separate main-push run `40089265777` is pending at this checkpoint.
+PR #30's earlier main-push `40083338151` now passes all twelve jobs and both
+GUI artifact reviews. These observations supersede the corresponding earlier
+pending notes, including the failed intermediate PR #31 candidates. Published
+alpha.2 is unchanged; this does not complete the P2.8 attachment transaction.
+
+### Combined read-only foundations, local acceptance (2026-10-24)
+
+**CONFIRMED locally; exact hosted gate pending:** the digest and build-ID
+foundations form one reviewed change. The combined JAR `04398abf...` passes
+seventeen fresh exports: executable/PIE/no-build-ID cases on x86-64, AArch64 and
+MIPS32 big-endian, plus four saved-program path cases repeated twice. Three
+path rejection controls, GNU/LLVM/strict validators, native/QEMU GDB behavior,
+unchanged inputs and deterministic path repeats pass. Both installed helper
+oracles rerun against the fresh pairs; the digest oracle again verifies an
+input above 2 GiB under an actual Java 21 64 MiB heap. Independent final audit
+`build/build-id-review/combined-runtime-audit.json` is clear. The existing
+association harness also passes with its documented narrower runtime scope.
+
+The earlier component results remain attributed to their respective packages.
+Merge `409c029` incorporates accepted PR #31 without production source changes;
+the corrected parent oracle also passes on actual Java 21 against the combined
+JAR. Final package/source matching and the complete hosted matrix, including
+native Windows and both GUI hosts, remain required. Read-only observations do
+not establish snapshot/file identity or attachment eligibility. No report
+reader, attachment operation, native binding or release change is introduced.

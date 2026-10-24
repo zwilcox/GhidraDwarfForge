@@ -3627,3 +3627,101 @@ to all five existing target lanes. Native Windows and full exact-head hosted
 acceptance remain pending. The earlier path-parent test correction must also
 be integrated from its accepted parent before this candidate's hosted gate.
 No attachment option, executable rewrite or release publication is added.
+
+## PR #31 exact hosted acceptance (2026-10-24)
+
+**CONFIRMED:** head `3632f2b581e3080e92567b0e00479c4f38b00cdb` passes all
+twelve expected jobs in pull-request run `40087258846`, attempt 1, without
+skipped jobs. Independent source/package and Linux/native Windows artifact
+reviews are clear. Normal merge `00aaba161c5663556302c10da658ddab88b96d92`
+at `2026-10-24T11:16:51Z` preserves the tested tree. Its separate main-push run
+`40089265777` is pending at this checkpoint.
+
+The exact package artifact `12557528240` has download SHA-256
+`7c3e395ba21a2edc791de2ab669bad3070f26a35b0095740cdfb1f89b3b72974`.
+Its release ZIP hashes to
+`8dfc572c70ddb8dead8813ad8aaced4998c292148f0f002ff216f80235a3ea9f`,
+JAR to `11d98a42591196b3aac0760648e479539ebc10c70cc59d4ad7f8cd369537289f`,
+and production script to
+`73c11b45f6f87cd93df7e011964699cf2172638bafc5bc2a2f0333433c51a1c2`.
+All 34 production sources, two scripts, support/docs, 139 Java 21-compatible
+classes, five manifests and pinned native provenance match the exact source.
+Actual Java 21 checks, twenty isolated producer lifetimes and 67 class-origin
+checks pass. Evidence: the path worktree's
+`build/path-package-audit/run-40087258846.Wm5FGOa6/` and final gate records.
+
+- Linux artifact `12557807726`, SHA-256
+  `6e659525bacf483dbbdc0f5029b87eb9e7519dd4f2b61c1b1f7c1e29e19c640c`:
+  path run `run._lvr55m0` passes four cases with two exports each and three
+  rejection controls; timestamp `run.m26PftBW` and GUI `run.8xu20lvD` pass.
+  All eleven path invocations bind the exact protected JAR/script and report
+  their installed origins. Independently reparsed strict reports have zero
+  unexplained errors. All eleven saved-project inventories and final database,
+  live-index and property bytes match except the documented two exact backup
+  files. GUI control/100-window geometry, Script Manager, chooser select/cancel,
+  Console, validators/GDB and input preservation pass.
+- Windows artifact `12557934070`, SHA-256
+  `1205197f68ec10264c5665d97220a4bdffefab39fa3149d4a6f4b170cf3c8613`:
+  actual Java 21.0.12.1 on Windows Server 2025 passes all twelve focused checks.
+  Requested `RUNNER~1` and actual `runneradmin` parents resolve to the same file
+  with literal expected filenames. The real trailing-dot alias is confirmed;
+  both publisher APIs reject both target orders before callbacks, timestamps
+  or cleanup, retaining all six sentinel hashes. Trailing-space rejection and
+  all link/rollback controls pass without skips. GUI
+  `run.bb9d10050d9b4f90adeff51dbbf8f433 GUI paths` passes discovery, native-free
+  preflight, export/select/cancel, Console, ACL/input preservation and GNU/LLVM.
+  Independent libdwarf and Linux-ELF runtime remain unavailable in this host
+  lane; no Windows GDB runtime claim is made.
+
+All five target jobs pass CI. Their cross-target archives were not separately
+inspected in this PR review. Both GUI artifact reviews are retained at the GUI
+worktree's `build/hosted-gui-review/run-40087258846/acceptance-scope.json`.
+No review thread remains unresolved. This supersedes the earlier missing-helper
+and stale-parent-oracle candidates; their failures remain recorded above.
+PR #30's distinct main-push `40083338151` also subsequently passed all twelve
+jobs and both GUI artifact reviews, superseding its pending-main checkpoint.
+No release asset changes.
+
+## Combined read-only foundations, fresh local regression (2026-10-24)
+
+**CONFIRMED locally; exact hosted gate pending:** digest and build-ID components
+are tested together, using frozen source `40aa249` and reviewed package
+SHA-256 `8b17d98136c348258e3c7770709c2b54b5bf189b188f9bdf0aa57d16e4b47e34`.
+The installed JAR is
+`04398abf04201525fcfeffcf31485ae11fded7b1f9909c199e234f1db8c7cd8c`; the
+script is `3b7b0ef415e974cfcb03ee1566f3c25bab9151d7405b965a80150a8be6e53821`.
+The package audit matches 37 production sources, two scripts, support/docs,
+153 Java 21-compatible classes, five manifests and pinned native provenance.
+It contains no private JNA. The fresh runtime installation is
+`build/build-id-review/ghidra-combined`; original Ghidra launch configuration
+SHA-256 remains `7704bd03868adab49901de813d62b0f4c6ebc52372e0fe505112c5617fc665e8`.
+
+| Check | Observed result |
+| --- | --- |
+| Fresh semantic exports | Nine source-built cases: ET_EXEC, PIE and absent build ID on x86-64, AArch64 and MIPS32 big-endian. GNU, LLVM, strict libdwarf, code-address controls and native/QEMU GDB pass. |
+| Strict inherited diagnostics | Exec/PIE/no-build-ID counts are x86 `3/1/3`, AArch64 `5/5/5`, MIPS `0/0/0`. Each permitted frame diagnostic matches original bytes and exact messages; zero unexplained errors. The GDB oracle permits only its exact known AArch64 vDSO warning. |
+| Saved-program path workflow | `run.kpaqvews`: eight fresh exports, four byte-identical pairs, three fatal rejection controls, exact paths/hashes, source/value/step behavior and original preservation pass. Four inherited frame diagnostics per positive case; zero unexplained. All eleven database inventories plus final state preserve everything except the two documented backup files. |
+| Installed digest oracle | Fresh-pair runs `x86_64.jyoltydc`, `aarch64._hxp695z`, `mips32be.bppyhu2q` pass independent Python/GNU comparisons, repeated reads and input bytes/mtimes. |
+| Large digest case | x86 repeats the 2,147,614,787-byte input under actual Java 21 and `-Xmx64m`. Full Python/GNU SHA agrees with `48da45d2cb6bfe6de79a3a91613cddfe7b892c019514168c7a89fb5c251723ed`; CRC32 `f00f4493`. Marker layout and removal of the temporary input are independently checked. |
+| Installed build-ID oracle | Fresh-pair runs `x86_64.f9navmv_`, `aarch64.ebsya__2`, `mips32be.loeg8vpp` pass GNU ID comparisons, all five relationship outcomes, typed/nameless/sectionless/duplicate controls, exact negative diagnostics and protected bytes/mtimes. |
+| Existing association harness | `run.rhUIWr0G` passes all three roles on all three targets. Runtime checks here are x86 executable build-ID/debuglink and no-ID explicit loading; other association cases prove strict symbol/type/source/address lookup. The nine semantic tests separately cover target runtime. |
+
+Headless Ghidra uses the complete local JDK 25. Actual Java 21/64 MiB evidence
+is attributed to the standalone helper and focused checks, not to that headless
+process. Commands/transcripts are the `combined-export-*`, `combined-gdb-*`,
+`combined-path-runtime.log` and `combined-association.log` records under
+`build/build-id-review/`, with the corresponding oracle result directories.
+The final independent audit `combined-runtime-audit.json` accounts for all
+seventeen fresh exports and three rejections, checks exact package/origins,
+manifests, diagnostics, database snapshots and both independent oracles, and is
+clear. Earlier component results remain tied to their original packages.
+
+Normal merge `409c029` then incorporates accepted PR #31. Relative to `40aa249`,
+production Java, Ghidra scripts, build and workflow files are unchanged; only
+the corrected Windows parent oracle and additive incident records arrive.
+That oracle passes actual Java 21 against the combined JAR in
+`combined-parent-java21/`. Final documentation/package matching and the full
+hosted matrix remain required: fourteen Windows focused checks, both installed
+helper oracles in all five target lanes, and both GUI hosts. This is a read-only
+foundation; attachment, receipt parsing, stable file identity and readiness
+remain unimplemented. Published alpha.2 remains unchanged.

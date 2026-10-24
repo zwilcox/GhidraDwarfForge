@@ -54,6 +54,9 @@ Java 21, including packaged-native checksum rejection and report/path/publisher
 regressions. Installed-JAR oracle runs pass on x86-64, AArch64 and MIPS32
 big-endian, including the x86 large input. Nine fresh real exports pass GNU,
 LLVM, strict libdwarf and GDB behavior; packaged export/path preservation and
-deterministic reruns also pass. See `docs/VALIDATION.md` for exact evidence and
+deterministic reruns also pass. A fresh combined digest/build-ID package repeats
+the nine semantic exports, eight saved-program path exports and three rejection
+cases, and reruns both installed helper oracles including the large-file case.
+See `VALIDATION.md` for exact component/combined evidence and
 inherited diagnostics. The five-profile hosted matrix and native Windows are
 still required. P2.8 remains incomplete and published releases are unchanged.

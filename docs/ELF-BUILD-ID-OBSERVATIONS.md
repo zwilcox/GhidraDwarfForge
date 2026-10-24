@@ -78,11 +78,15 @@ malformed records, conflicting IDs, cancellation, source changes and channel
 closure are exercised. The specific VMS false-absence reproduction is now
 rejected, with paired-discriminator controls.
 
-The independent installed-JAR oracle uses existing validated x86-64, AArch64
-and MIPS32 big-endian export pairs. It compares IDs and relationships with GNU
+The independent installed-JAR oracle uses x86-64, AArch64 and MIPS32 big-endian
+export pairs. It compares IDs and relationships with GNU
 readelf, and checks nameless matched sidecars, sectionless originals, renamed
 notes, vendor decoys, repeated identical IDs, conflicts and malformed lengths.
 It checks class origins, fixture identities and input bytes/mtimes. GNU tools
-write only owned variant outputs. This consumes previously validated artifacts;
-it does not claim new ordinary-export behavior. Native Windows and the complete
-five-target hosted gate remain required. P2.8 remains incomplete.
+write only owned variant outputs. The initial component check consumed earlier
+validated artifacts; the final combined local check uses nine freshly exported
+pairs from the exact combined JAR. Eight additional saved-program path exports,
+three rejection cases and both helper oracles pass on that package. This is
+ordinary-export regression evidence, not new exporter integration of the
+observer. Native Windows and the complete five-target hosted gate remain
+required. P2.8 remains incomplete. See `VALIDATION.md` for exact evidence.
