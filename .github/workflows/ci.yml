@@ -473,7 +473,7 @@ jobs:
             src/test/integration/architecture-neutrality.sh
             ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke \
               ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke \
-              exportReportSmoke fileDigestsSmoke elfBuildIdSmoke \
+              exportReportSmoke exportReportClaimsSmoke fileDigestsSmoke elfBuildIdSmoke \
               syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
               variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke \
               stackFirstUseSmoke \
@@ -886,6 +886,13 @@ jobs:
           python3 src/test/integration/elf-build-id.py \
             "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" "$TARGET"
 
+      - name: Read-only export report claims and independent JSON oracle
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/export-report-claims.py \
+            "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" "$TARGET"
+
       - name: QEMU private socket startup and failure cleanup
         if: matrix.target == 'x86_64'
         run: src/test/integration/qemu-socket-startup.sh
@@ -1227,7 +1234,7 @@ jobs:
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke qualifiedFunctionNameSmoke dwarfAddressRangesSmoke `
             registerCopySmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
-            elfBuildIdSmoke 2>&1 |
+            elfBuildIdSmoke exportReportClaimsSmoke 2>&1 |
             Tee-Object -FilePath "$resultDirectory\native-independent.log"
           if ($LASTEXITCODE -ne 0) {
             throw "native-independent Windows checks failed with exit code $LASTEXITCODE"

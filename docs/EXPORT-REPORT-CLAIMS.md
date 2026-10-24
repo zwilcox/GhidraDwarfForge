@@ -1,0 +1,91 @@
+# Read-only export report claims
+
+**CONFIRMED locally; hosted gate pending:** `ExportReportClaims` is a bounded
+reader for the current export report shape. Focused Java 21 checks and the
+installed-JAR oracle pass; native Windows and the complete hosted matrix remain
+required. See the exact evidence in `VALIDATION.md`.
+
+The result contains reported schema/status, target text, artifact path/hash
+strings, counts, native version and validation status. It is an immutable set
+of claims from the supplied report. It does not open the named executable,
+sidecar or source, recompute their hashes, validate ELF/DWARF, establish identity,
+or authorize debuglink attachment. `NOT_RUN` remains a reported validation
+status; successful parsing is not an independent validator result. Ordinary
+export and its report writer remain unchanged.
+
+Artifact paths are opaque strings from the exporting host. Preserve their
+spelling, Unicode, relative components and uppercase/lowercase hash text. A
+Windows path read on Linux does not become a Linux `Path`. The reader opens
+only the supplied report path using actual filesystem semantics, without
+lexically normalizing it first. Reading the report is not a stable snapshot.
+
+## Supported shape
+
+Accept the current schema version 1 with exact known fields and types, in any
+object-field order. Reject duplicate decoded keys, unknown/missing fields,
+numeric coercions, invalid nullability, trailing input and unsupported versions.
+Completed `SUCCESS`/`PARTIAL` reports require target, artifact and count objects,
+a nonblank reported native version, and no failure. Each of the five diagnostic
+inventory counts must match its array; `SUCCESS` requires all five inventories
+empty, while `PARTIAL` requires at least one entry. Inventories are validated
+incrementally and discarded rather than retained in the returned claims.
+
+Validate `CANCELLED`/`FATAL` report shape before rejecting it explicitly as having
+no completed artifact claims. An arbitrary parser error must not be converted
+to a successful empty report. There is no inference that exported functions,
+signatures, decompilations or variable locations form stronger count equalities
+than the current writer actually establishes.
+
+Historical version-1 reports lack `functionStaticVariables`; that field was
+added without a schema increment. This reader deliberately accepts only the
+documented current shape and rejects that historical shape explicitly. It does
+not supply a guessed zero. Even field presence does not establish which exporter
+revision produced the report or which historical static-count semantics were
+used. The returned number is only the reported count. A future schema-evolution
+policy is separate work.
+
+## Strict JSON and resource limits
+
+Use Ghidra 12.0.3's provided Gson 2.9.0, without bundling another copy. Its
+`JsonReader.setLenient(false)` alone accepts several nonstandard string/literal
+forms and does not bound token allocation. A small schema-specific lexical
+reader checks UTF-8, strings/escapes/surrogates and this schema's integer/null
+alphabet before Gson handles object/array grammar and string decoding. The
+schema visitor checks exact token types and key sets instead of coercing values
+or skipping unknown objects.
+
+Supported-reader bounds are 64 MiB of report bytes, 65,536 UTF-16 units per
+decoded string, nesting depth eight, 1,000,000 visited values and 250,000 entries
+per array. These are explicit reader limits, not limits already imposed by the
+writer. Bound strings before Gson can grow an unbounded token. Reject malformed
+UTF-8, a leading BOM, raw string controls, invalid escapes and unpaired
+surrogates. Legal escaped controls and supplementary characters remain valid.
+
+Cancellation is checked before opening, around bounded I/O, during traversal
+and after EOF. The reader owns and closes its stream on success, failure and
+cancellation, preserving primary/suppressed failures. Cancellation cannot
+interrupt a filesystem operation already blocked in the operating system.
+
+## Validation
+
+Focused tests use real writer-generated examples for all four statuses and
+exercise each field's type/nullability, all object key sets, five cardinalities,
+historical shape, bounds, Unicode and stream/cancellation behavior. All 429
+malformed controls pass locally, including exact/over default resource bounds
+under a 64 MiB heap. Four focused checks pass on actual Java 21. Both supported
+hosts must also pass the hosted checks before integration.
+
+The installed-JAR oracle compares returned claims with independently parsed
+real exporter reports. It checks both dependency origins, actual Java 21, a
+64 MiB heap, exact
+path/hash/count text, repeated reads and unchanged report/artifact bytes/mtimes.
+Opaque foreign/missing/FIFO paths must parse without any access to the named
+artifacts. Malformed and terminal controls must return no completed claims.
+Run this oracle beside the other read-only checks directly after primary
+exports. Retain its consumed transcripts, extracted JSON and fixture byte
+copies in its own result directory. Before/after preservation assertions apply
+to this invocation; later regression steps may deliberately reuse the original
+fixture or log paths. Their reuse must not replace the earlier evidence.
+Explicit use of retained reports is recorded separately from fresh exporter
+execution. The full exporter regression pipeline remains required for merge;
+this parser does not introduce new GDB behavior or an attachment command.

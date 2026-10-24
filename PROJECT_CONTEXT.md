@@ -3184,3 +3184,59 @@ three-profile replays pass; an owned derived stale-report control is rejected,
 and retained evidence remains intact after its source-log copy is overwritten.
 No original fixture/evidence bytes change. The complete new exact-head matrix,
 including Windows and x86's previously unreached checks, remains required.
+
+### Current-shape report claims, local acceptance (2026-10-24)
+
+**CONFIRMED locally; hosted gate pending:** production `3d1c62c` adds a bounded
+read-only `ExportReportClaims` reader. It opens only its supplied JSON report,
+preserves exporting-host path/hash spelling and returns immutable reported
+values. Inventories are validated and discarded. Successful parsing retains
+`NOT_RUN`; it does not attest artifact identity, ELF compatibility, validation
+or eligibility for attachment. The ordinary report writer/exporter is unchanged.
+
+The current schema-one shape requires `functionStaticVariables`. Historical
+reports omitted that field without a schema increment; they receive an explicit
+unsupported-shape rejection, not a guessed default. Field presence cannot prove
+which historical count semantics or exporter revision produced the report.
+Valid cancelled/fatal shapes receive a distinct no-completed-claims exception.
+
+Ghidra's provided Gson 2.9 remains the grammar/decoding dependency. A bounded
+schema-specific lexical guard handles the strictness and allocation gaps found
+in the earlier source/research audit; no private Gson or generic replacement
+parser is added. Four focused checks pass on actual Java 21 with a 64 MiB heap,
+including 429 malformed controls and the default resource boundaries. Independent
+source/test review is clear. The installed reader oracle passes on nine retained
+reports from the previously audited combined exporter; this is not fresh
+ordinary-export execution. The first adapter attempt lost Unicode on ASCII
+stdout; explicit UTF-8/Base64 transport fixes the oracle without a reader change.
+Final package matching and native Windows/full hosted acceptance remain required.
+
+Separately, PR #31's main-push `40089265777` now passes all twelve jobs and both
+independent GUI artifact reviews, superseding its earlier pending-main record.
+The digest/build-ID PR #32 gate remains pending at this checkpoint. Published
+alpha.2 and P2.8's attachment transaction remain unchanged.
+
+### Read-only foundations hosted acceptance (2026-10-24)
+
+**CONFIRMED:** corrected PR #32 head
+`c94158b34bfd8e848b89eecae553fe9255198e48` passes exactly all twelve jobs in
+run `40091937766`, attempt 1, with no skips. Independent source/package,
+all-five-target helper artifact and both-host GUI reviews are clear. Each
+target's digest oracle retains three exact consumed transcripts, so later
+default-output tests cannot replace its report evidence. The x86 large-file
+digest and all fourteen native Windows focused checks pass. The old `65f5bb8`
+report-selection failure remains historical; its skipped/unreached checks are
+not counted toward this acceptance.
+
+Normal merge `7f9c0d2606a8f7db0007b256d256e6edb49dd473` at
+`2026-10-24T12:27:43Z` preserves the tested tree. Separate main-push
+`40094022212` remains pending at this checkpoint. Artifact-review limits remain
+explicit: eight of nine raw digest inputs per target were separately retained
+and rehashed; the no-build-ID original is corroborated by its report, Python
+and two Java digest records. Independent libdwarf is unavailable on Windows;
+Linux-ELF runtime GDB is not run there. Native GNU/LLVM and GUI/focused checks pass.
+
+The report-claims branch incorporates accepted main normally as `bcd60ee`,
+with the same tree as its locally reviewed `ccb21a9` before this documentation
+update. Its own hosted gate remains required. No native ABI, attachment
+operation or release change is introduced by these acceptance records.
