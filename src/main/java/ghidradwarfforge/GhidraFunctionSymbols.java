@@ -64,12 +64,6 @@ public final class GhidraFunctionSymbols {
         while (functions.hasNext()) {
             monitor.checkCancelled();
             Function function = functions.next();
-            if (function.isExternal()) {
-                skipped.add(new SkippedFunction(function.getName(), SkipReason.EXTERNAL_IMPORT));
-                diagnostic.accept("Skipped external/import function " + function.getName() +
-                    "; declaration/linkage policy is not implemented yet");
-                continue;
-            }
             if (function.isThunk()) {
                 skipped.add(new SkippedFunction(function.getName(), SkipReason.THUNK));
                 diagnostic.accept("Skipped thunk function " + function.getName() +
@@ -137,6 +131,22 @@ public final class GhidraFunctionSymbols {
             }
             result.add(new FunctionSymbol(function.getName(), entry, translated,
                 plainNamespacePath(function, diagnostic)));
+        }
+        // The ordinary iterator excludes external functions. Inventory them separately;
+        // their qualified names are diagnostic identities, not emitted namespace DIEs.
+        // Never interpret an external-space placeholder as an address in this image.
+        List<String> externalNames = new ArrayList<>();
+        FunctionIterator externals = program.getFunctionManager().getExternalFunctions();
+        while (externals.hasNext()) {
+            monitor.checkCancelled();
+            externalNames.add(externals.next().getName(true));
+        }
+        externalNames.sort(String::compareTo);
+        for (String name : externalNames) {
+            monitor.checkCancelled();
+            skipped.add(new SkippedFunction(name, SkipReason.EXTERNAL_IMPORT));
+            diagnostic.accept("Skipped external/import function " + name +
+                "; declaration/linkage policy is not implemented yet");
         }
         FunctionSymbol.validateDisplayNames(result);
         return new ExtractionResult(result, skipped);

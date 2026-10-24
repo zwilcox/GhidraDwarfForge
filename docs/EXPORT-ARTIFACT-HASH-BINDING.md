@@ -183,5 +183,6 @@ the combined 16,384-entry/1,048,576-UTF-16 boundary are actually observed on
 Windows. Merge `25845418` preserves that tree. The earlier local replays remain
 separate evidence; the distinct main push is tracked in `VALIDATION.md`.
 
-The next captured-validator handoff is test-only and not yet accepted; see
-`VALIDATION-EVIDENCE-HANDOFF.md`. It preserves this API and PARTIAL/NOT_RUN.
+The test-only captured-validator handoff is accepted in PR #41 run `40123518106`,
+merged as `fdebe181`; see `VALIDATION-EVIDENCE-HANDOFF.md`. It preserves this API
+and PARTIAL/NOT_RUN.

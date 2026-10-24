@@ -128,3 +128,19 @@ paths retain SHA/size/mtime. Three later private no-ID CRC tests restore bytes
 after changing mtime; those private final mtimes are not claimed unchanged.
 Full evidence, commands and remaining hosted/package requirements are in
 `VALIDATION.md`.
+
+## Hosted acceptance
+
+**CONFIRMED:** PR #41 head `f52361a` passes all twelve jobs in exact run
+`40123518106`, attempt 1. The hosted focused suite records 97 checks, with exact
+source/test and six retained compiler inputs independently rebound. All five
+fresh exec/PIE/no-ID target sets pass: fifteen captured pairs, thirty actual
+entry rejections, unchanged raw130 controls and full independent artifact chains.
+Exact package, both GUI hosts and 22 native Windows checks pass. Complete
+validator output has zero unexplained diagnostics; the named strict24 subset
+remains separate from the primary captures. No report status is upgraded.
+
+Normal merge `fdebe181` preserves the tested tree. Separate main push
+`40126173922` is pending; see `VALIDATION.md` for package, review and scope records.
+This acceptance does not complete the optional attachment transaction or change
+published releases.

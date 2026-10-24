@@ -149,6 +149,8 @@ ADR-0005's separate native-free owned writer is accepted in PR #39 at corrected
 head `a190026` / run `40116314882`, merged as `4e050609`. Exact package, all five
 target artifacts, 21 native Windows checks and both GUI hosts pass. Its distinct
 main push `40118899783` also passes all twelve jobs and both GUI/native Windows
-reviews. Detailed selected-report preparation is
-the next locally validated component. GNU candidates remain independent
-references; neither component exposes the optional attachment transaction.
+reviews. Detailed selected-report preparation is accepted in PR #40 run
+`40119714272`, merged as `25845418`; its distinct main push also passes.
+Test-only captured-validator continuity is accepted in PR #41 run `40123518106`,
+merged as `fdebe181`. GNU candidates remain independent references; these
+components do not expose the optional attachment transaction.
