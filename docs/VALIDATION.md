@@ -4334,3 +4334,67 @@ five target lanes, the large case on x86, and eighteen focused native Windows
 checks. Existing validators/GDB/GUI gates remain intact. These local replays
 introduce no new exporter/validator/GDB execution claim; exact package and
 hosted acceptance are still required.
+
+
+## Indexed allocation hosted acceptance (2026-10-24)
+
+**CONFIRMED:** PR #35 exact head
+`d5bd9fe8181605a703d601b1ae07faf4b4435b8f` passes pull-request run
+`40099934709`, attempt 1: exactly twelve expected jobs succeed, none skipped,
+with no unresolved review threads. Normal merge
+`0f05ec88704bd2681e7451efdd94d0992cb88af2` at `2026-10-24T14:24:51Z`
+preserves the tested tree. Separate main-push run `40102383229` is pending.
+
+Package artifact `12562268847` has download SHA-256
+`af19b29573f4dfb455044b67db2350edc3a148eccee1ff6b74c7432b3ebde7b2`;
+release ZIP SHA-256 is
+`819592da98a6d92c90bba4eb7a87dff749d1804f3227981999ad92c58495712c`.
+The hosted JAR is
+`3ddcc04bf380ff458558a2c6f182fe75cbde4a33f4e45163a5c423235937bdb5`,
+with 41 production sources and 177 major-65 classes. Exact docs/scripts/support,
+five manifests and both native provenance records pass independent review.
+Actual Java 21 runs allocation's 532 focused assertions with `-Xmx64m`, prior
+smokes, twenty producer lifetimes and 126 production-class origin checks.
+
+All five downloaded target artifacts independently pass thirty real pairs and
+repeats, ninety retained byte copies, thirty complete producer logs, 63 indexed
+metadata mutations, complementary code changes and malformed operands. Parent
+prefix receipts remain bound to the exact producer/helper snapshots. The x86
+sparse metadata recipe is independently reconstructed; no whole-file digest
+or large-prefix proof is inferred. Linux actual GUI `run.ciQxjRTc` and 24
+strict reports pass with zero unexplained errors. Native Windows artifact
+`12562873317`, SHA-256
+`10157695c940ed086242f2877004ea68ba924b22758f8d769f1b81eb356b7a2b`,
+passes seventeen focused checks (allocation 532, reader 429), path protections
+and GUI `run.342627fb99a147d39a325049301c369d GUI paths`. Independent dwarfdump
+is unavailable on Windows; Linux-ELF runtime GDB was not run on that host.
+
+Evidence: allocation worktree `build/allocation-package-audit/final-gate.json`,
+its bound artifact records, `merge-result.json` and `run-40099934709.p3B9UZdp`;
+GUI worktree `build/hosted-gui-review/run-40099934709/acceptance-scope.json`.
+Unchanged older runtime checks have exact CI acceptance, without a claim that
+every historical transcript was manually re-audited.
+
+Separately, PR #34 main push `40099669427` at `837cec8` now passes all twelve
+jobs and independent Linux/Windows GUI reviews. Linux artifact `12563171687`,
+SHA-256 `a761c7e94b04aeadf025abbeecdb64f8895a1e9650afbd814c0138b2d18c1f94`,
+contains GUI `run.g9LiEFcv`; Windows artifact `12562922011`, SHA-256
+`b0dd5cbc83b0c3e4d343bc91bb1cc753013fe99c5593a5c70cbab898f51c9319`,
+passes sixteen focused checks and GUI
+`run.bbf95b8d87644a83bc3b44c9fd479dab GUI paths`. The cross-target results on
+this distinct push are CI evidence; this supersedes its earlier pending status.
+
+### Selected-file binder package before hosted acceptance
+
+**CONFIRMED locally:** package at reviewed integration `e974524` has SHA-256
+`8e2602254940b97cf2a335ae41df85020800b131dd2739a9da05cd9943e96f1e`.
+Independent audit verifies 42 production sources, two scripts, 183 major-65
+classes, current docs/support, five manifests and both native provenance records.
+All 28 runtime/native/provenance files match the earlier installed package;
+JAR `fc8a1c5f0cdb017962ad23b1619e1663a1dc13f9834980b003007f7cece5f3f1`
+is unchanged. This is a packaging review, not another runtime execution. Evidence:
+`build/hash-binding-package-audit/local-e974524.aud02m7f/result.json` and
+`build/hash-binding-review/release-review-runtime.json`. Accepted allocation main
+is incorporated normally as `480b6e2`; following acceptance docs are rebuilt
+and audited against their exact commit before the next PR. Full hosted
+acceptance remains pending.
