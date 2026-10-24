@@ -1603,6 +1603,14 @@ eighteen native/QEMU process executions. Original fixtures remain unchanged.
 The exact package and full hosted/native Windows gates remain required. Private
 candidate creation does not complete attachment or its transaction.
 
+The first hosted head `6f1a220` / run `40114403014` is **not accepted**: ARM32's
+extended-section PIE compiler oracle could not bind TCP port 33168 and never
+reached writer checks. The shared oracle now uses the existing private-socket
+helper with readiness/cleanup. Existing startup controls and ten real compiler
+exec/PIE checks across all five targets pass with unchanged input hashes/mtimes;
+the exact-head full pipeline remains required. The failed artifact is retained,
+and its port owner remains **UNCERTAIN**.
+
 **CONFIRMED locally; full hosted gate pending:** the existing private candidate workflow
 now connects explicitly selected report/producer evidence and all three selected artifacts.
 Opt-in same-parse detailed reader/binder methods preserve all five diagnostic

@@ -3639,6 +3639,26 @@ claim runtime. Earlier GNU references retain their own evidence and GDB checks.
 This replay adds no Ghidra export or repeated strict sidecar-DWARF validation.
 Final exact package and hosted/native Windows acceptance remain required.
 
+### Layout compiler-oracle transport correction (2026-10-24)
+
+**CONFIRMED:** PR #39's first head `6f1a220`, run `40114403014`, failed the
+ARM32 extended-section PIE compiler oracle before candidate-writer tests ran.
+QEMU reported TCP port 33168 already in use; GDB then timed out. The port's
+owner is **UNCERTAIN**. The exact package precheck passed, but this run is not
+full acceptance. Artifact `12567689679` and its complete failure evidence remain
+retained; the unreached writer checks are not called passed.
+
+The shared layout compiler oracle now reuses the existing private UNIX-socket
+helper inside its subshell, including startup readiness, bounded wait and cleanup.
+The native x86 path, compiler assertions and diagnostic policy remain unchanged.
+The established ARM sysroot override permits the same helper to run locally.
+Existing socket startup/failure/cleanup tests and ten fresh compiler-reference
+exec/PIE checks across all five targets pass; all input bytes/mtimes remain
+unchanged and eight emulator children/socket directories are gone. These checks
+do not rerun Ghidra or sidecar validators. An earlier archived-reference source
+mtime warning remains retained; the policy was not relaxed. A new exact-head full
+pipeline is required after this correction.
+
 ### Detailed report binding for private preparation (2026-10-24)
 
 **CONFIRMED decision; acceptance PLANNED:** the next bounded continuation connects
