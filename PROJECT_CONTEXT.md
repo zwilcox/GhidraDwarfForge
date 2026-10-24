@@ -3274,3 +3274,31 @@ the isolated installed-helper probes use actual Java 21. Independent artifact
 review is clear; final package review and the exact hosted gate remain required.
 See `docs/MATCHED-ELF-PREFIX.md` and `docs/VALIDATION.md`. The report-reader PR
 must integrate first; this work does not publish a release or expose attachment.
+
+
+### Report-claims reader hosted acceptance (2026-10-24)
+
+**CONFIRMED:** PR #33 head `67785a482c561cce5763248440e26f206df8e09c`
+passes exactly all twelve jobs in pull-request run `40094712284`, attempt 1,
+with no skips. Independent source/package, all-five-target reader artifact and
+both-host GUI reviews are clear. The target audits rehash all 45 retained
+fixture byte copies and fifteen complete consumed transcripts, compare every
+returned claim with the actual report, and verify all 115 targeted rejections.
+Native Windows passes fifteen focused checks including the 429 malformed-report
+controls and real Script Manager selection/cancellation/export paths.
+
+Normal merge `464caf7e8b71555e3a87f6d8d601a3db57215679` at
+`2026-10-24T13:08:47Z` preserves the tested tree. Its distinct main push
+`40096877943` remains pending at this checkpoint. Separately, PR #32 main push
+`40094022212` now passes all twelve jobs and both independent GUI artifact
+reviews, superseding its earlier pending status. Published releases remain
+unchanged; parsing a report still yields claims, not artifact attestation.
+
+The retained-prefix branch incorporates accepted main normally as `7513236`,
+with the same tree as reviewed `6b5e4c1` before these acceptance docs. The local
+prefix source/runtime/package reviews are clear, including an independent
+second corroboration of all eighteen strict/GDB cases. Its hosted gate remains
+required. Conservative indexed allocated-metadata comparison is a separate
+bounded continuation: names, relocation placeholders, sectionless loads and
+note views need explicit correspondence or unsupported outcomes. Ordinary export
+and P2.8's unimplemented attachment transaction remain unchanged.

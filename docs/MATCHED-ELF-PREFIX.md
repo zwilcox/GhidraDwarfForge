@@ -4,8 +4,8 @@
 Java 21, including an input above 2 GiB under a 64 MiB heap. Independent source
 review is clear. Installed-package comparisons pass for eighteen fresh
 x86-64/AArch64/MIPS32 big-endian export pairs, with structural validators and
-GDB. Independent source and artifact reviews are clear. The final package
-review and full hosted gate remain required.
+GDB. Independent source, artifact and final local package reviews are clear.
+The full hosted gate remains required.
 
 The current matched writer first copies every original byte, appends debug data
 and a new section table, then changes specific fields in the fixed ELF header.
