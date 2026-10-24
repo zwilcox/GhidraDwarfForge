@@ -216,11 +216,8 @@ for target in "${targets[@]}"; do
     fi
     grep -q '[.]debug_str' \
         "$result_dir/$target.$fixture_role.readelf-sections.txt"
-    if grep -Eq '[[:space:]][.]debug_aranges[[:space:]]' \
-            "$result_dir/$target.$fixture_role.readelf-sections.txt"; then
-        echo "sidecar unexpectedly contains .debug_aranges; CU ranges are authoritative" >&2
-        exit 1
-    fi
+    python3 "$repository_dir/src/test/integration/check-code-address-index.py" \
+        "$output" --negative-controls > "$result_dir/$target.$fixture_role.address-index.json"
     grep -q 'DW_FORM_strp' \
         "$result_dir/$target.$fixture_role.readelf-abbrev.txt"
     grep -q 'GhidraDwarfForge' \

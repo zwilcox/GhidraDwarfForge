@@ -478,6 +478,7 @@ jobs:
               variableStorageSmoke registerPrefixSmoke registerAliasSmoke \
               opaqueRegisterEffectsSmoke qualifiedFunctionNameSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
+              dwarfAddressRangesSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
               packagedNativeLibrariesSmoke existingDebugSidecarSmoke \
               extendedSectionNumberingSmoke elfImageReaderSmoke \
@@ -1186,7 +1187,7 @@ jobs:
             -DestinationPath (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions') -Force
           & .\gradlew.bat addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
-            opaqueRegisterEffectsSmoke qualifiedFunctionNameSmoke 2>&1 |
+            opaqueRegisterEffectsSmoke qualifiedFunctionNameSmoke dwarfAddressRangesSmoke 2>&1 |
             Tee-Object -FilePath "$resultDirectory\native-independent.log"
           if ($LASTEXITCODE -ne 0) {
             throw "native-independent Windows checks failed with exit code $LASTEXITCODE"

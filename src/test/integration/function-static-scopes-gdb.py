@@ -32,6 +32,11 @@ require(value("scoped_value") == 61, "namespace global lookup regressed")
 initial_bias = value("&" + first_expression) - expected[0]
 require(value("&" + second_expression) == expected[1] + initial_bias,
         "second initial function address is wrong")
+for expression in ("private_count", first_expression + "::private_count",
+        second_expression + "::private_count", "scoped_value"):
+    # Formatting invokes GDB's address-to-CU lookup, unlike integer-only reads.
+    gdb.execute("print/a &" + expression)
+    gdb.execute("print &" + expression)
 if qualified_fixture:
     require(value("&curated_same") == expected[6] + initial_bias,
             "bare global function identity was lost")
@@ -66,6 +71,9 @@ global_symbol = gdb.lookup_global_symbol("private_count") or gdb.lookup_static_s
 require(global_symbol is not None and int(global_symbol.value().address) == expected[4] + bias,
         "global identity or address was lost")
 require(int(global_symbol.value()) == 19, "global value changed")
+gdb.execute("print/a " + hex(int(global_symbol.value().address)))
+gdb.execute("print " + first_expression + "::private_count")
+print("global-address-formatting=PASS")
 print("SCOPE_RETURN_BEGIN")
 for attempt in range(8):
     if gdb.newest_frame().name() != first_name:

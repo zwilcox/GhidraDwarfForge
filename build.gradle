@@ -246,6 +246,14 @@ tasks.register("dwarfRangeListsSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.dwarf.Dwarf5RangeListsSmoke"
 }
 
+tasks.register("dwarfAddressRangesSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks exact code address indexes for both ELF widths and byte orders"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.dwarf.DwarfAddressRangesSmoke"
+}
+
 tasks.register("dwarfLineTableSmoke", JavaExec) {
     group = "verification"
     description = "Checks deterministic overlap and discontiguous line-table planning"

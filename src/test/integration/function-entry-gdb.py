@@ -45,6 +45,9 @@ for address in range(labels["below_end"], labels["below_entry"]):
     assert function_at(address) is None, hex(address)
     assert gdb.find_pc_line(address).symtab is None, hex(address)
 print("static-entry-ranges-and-gap=PASS")
+for expression in ("below_sink", "middle_sink"):
+    gdb.execute("print/a &" + expression)
+    gdb.execute("print &" + expression)
 
 for name in ["recovered_below", "recovered_middle"]:
     text = gdb.execute("ptype " + name, to_string=True)
@@ -83,6 +86,8 @@ assert value("left") == 17 and value("right") == 25
 source_at(value("$pc"))
 gdb.execute("next")
 assert value("below_sink") == 42 and value("middle_sink") == 42
+gdb.execute("print/a &below_sink")
+gdb.execute("print &middle_sink")
 gdb.execute("step")
 gdb.execute("continue")
 assert exits == [0], exits

@@ -1689,10 +1689,12 @@ The x86-64 fixture's recovered `FUN_00401090` has real intervals
 `DW_RLE_start_end` entries under one subprogram `DW_AT_ranges`; GDB resolves
 both addresses to `FUN_00401090` and reports no line information at the gap
 address `0x4010ae`. The CU has its own merged, non-gap-covering `DW_AT_ranges`.
-`.debug_aranges` is intentionally absent because it is an optional accelerator,
-not required for the validated GDB lookup path. Every real-export role now
-asserts that it remains absent; the x86-64 discontiguous-range oracle verifies
-the authoritative CU/subprogram `DW_AT_ranges` intervals and gap behavior.
+**HISTORICAL:** `.debug_aranges` was absent and every real-export role required
+that absence for the lookup path tested at this checkpoint. A later direct
+global-address formatting regression exposed another GDB path; the exact code
+index described in `ADDRESS-INDEX.md` replaces the absence assertion. The
+x86-64 discontiguous-range oracle continues to verify authoritative
+CU/subprogram `DW_AT_ranges` intervals and gap behavior.
 
 Global extraction is deliberately narrower than “every address with a name”:
 the symbol must be a primary, non-default, non-external Ghidra label with
@@ -2896,3 +2898,99 @@ its own standards-backed coverage change and direct GDB regression before a
 future release. No warning allowance was added. A private Java-home setup
 failure (`run.XAmnFSC7`) is also retained; both successful negative probes used
 JDK 25 despite an attempted Java 21 selection, as explained above.
+
+### Exact code-address index and pointer formatting (2026-10-24)
+
+**CONFIRMED locally; hosted gate pending:** production commits `5342d53` and
+`540a2ec` emit the exact exported function union as `.debug_aranges`. The
+authoritative DIEs, line rows and variable locations are unchanged. The table
+uses the single CU's header offset zero, version 2, DWARF32 offsets, target
+width/order, aligned tuples and a zero terminator. A full ELF32 address-space
+union is split into two length words without overflow or loss of coverage.
+`docs/ADDRESS-INDEX.md` records the decision and bounded support contract.
+
+The motivating GDB 15.1 warnings are independently reproduced with both old
+and opaque-guard sidecars. Official GDB source archive SHA-256 is
+`38254eacd4572134bca9c5a5aa4d4ca564cbbd30c369d881f733fb6b903354f2`.
+The investigation, unmodified-artifact hashes and code-only copied-artifact
+controls remain in the opaque-register-effects worktree at
+`build/opaque-pointer-review/HANDOFF.txt`. The production fix adds no warning
+exception or data/gap coverage. It supersedes the historical aranges-absence
+policy, not the established function/CU-range authority.
+
+The following evidence is retained in the cu-address-index worktree:
+
+| Suite | Evidence | Result |
+|---|---|---|
+| Five profiles, exec/PIE/rebased PIE | `build/test-results/qualified-function-names/run.y31bjNGv` | All 15 cases pass compiler/Forge GDB address formatting, scoped/global values, stepping, validators, hashes and byte-identical repeats |
+| AArch64 supervisor call | `build/test-results/opaque-register-effects/run.dI8HAKKH` | All three roles pass direct `p/a` before exec CU expansion and after runtime bias resolution, typed-pointer formatting and existing four-stop unavailability checks |
+| x86 advanced function entries | `build/test-results/function-entry-export/run.k5q9t0qb` | All six exports retain true entries, backwards execution, split bodies, source/gap checks, pointer formatting and deterministic repeats |
+| Generic x86 and MIPS32-BE sectionless | `build/address-index-review/{core-x86,sectionless-mips}*.log` | Real headless export, structural checks and native/QEMU GDB pass; original targets unchanged |
+| Existing compiler debug data | `build/test-results/existing-debug-export/run.uwM33Zpy` | Plain, zlib, GNU-zlib and indexed inputs pass; exactly one fresh aranges table, old compressed/index data retired, actual GDB and input hashes preserved |
+
+These are 30 runtime cases, not 30 distinct architecture profiles. The independent
+checker decodes raw aranges headers/tuples and compares them to LLVM-expanded
+subprogram intervals; it also rejects ten malformed variants per artifact.
+The final anchored parser was replayed against the 24 qualified/SVC/advanced-entry
+artifacts with 240 rejecting controls. It accepts the necessary adjacent
+full-ELF32 partition and rejects overlapping or descending tuples. No checker
+error is unexplained: the SVC roles each retain six exactly corroborated frame
+diagnostics; advanced-entry exec roles each retain two and PIE roles have zero.
+The remaining suites retain their individual strict reports.
+
+The final installed private package SHA-256 is
+`2ce372b5589402d4a993838ab7e9b4cca06e9bae7d762f02e8507f035bfe7542`; its JAR is
+`57bd25a7ffbac4dc28940c42c7923d07a6e634f9cb3ca61c2b4ba0d729f62dc7`.
+All five manifests pass. Private platform directories and replaced launch
+files isolate settings/cache/home; original installation hashes are unchanged.
+Local headless runtime is JDK 25.0.4.1. The format smoke also passes on actual
+Java 21.0.12.1 after separate `javac --release 21` test compilation, with all
+four relevant production classes loaded from that exact final JAR. Four
+adjacent format smokes, existing-debug/info-repair smokes, build, workflow lint
+and architecture isolation pass. Detailed summaries are in
+`build/address-index-review/{qualified-acceptance,root-runtime-acceptance,final-oracle-replay}.json`.
+
+Representative commands:
+
+```bash
+GHIDRA_INSTALL_DIR=/path/to/ghidra_12.0.3_PUBLIC ./gradlew dwarfAddressRangesSmoke \
+    dwarfRangeListsSmoke dwarfLineTableSmoke dwarfLocationListsSmoke \
+    existingDebugSidecarSmoke dwarfInfoRepairSmoke buildExtension
+FORGE_SCOPE_QUALIFIED=1 DWARFDUMP=/path/to/verified/bin/dwarfdump \
+    src/test/integration/function-static-scopes-export.sh /private/ghidra \
+    x86_64 aarch64 arm32 mips32be mips32le
+DWARFDUMP=/path/to/verified/bin/dwarfdump \
+    src/test/integration/opaque-register-effects-export.sh /private/ghidra
+src/test/integration/function-entry-export.sh /private/ghidra /path/to/libdwarf /path/to/libdwarfp
+src/test/integration/existing-debug-export.sh /private/ghidra /path/to/libdwarf /path/to/libdwarfp
+python3 src/test/integration/check-code-address-index.py artifact.dbg --negative-controls
+```
+
+**Retained failures/setup limits:** qualified attempt `run.Use09Xbe` stopped on
+a harness variable-name typo before GDB; the corrected fresh run supplies
+acceptance. Existing-debug attempt `run.djZBJGkH` exposed its historical active
+section whitelist, now explicitly extended with one exact-coverage aranges
+table. `run.2bjtLdFN` passed plain input but correctly rejected compressed-original
+corroboration because the local checker lacked zlib/zstd. Its sidecar had only
+the expected frame diagnostics; no warning was suppressed or original input
+decompressed to bypass that failure.
+
+The final replacement suite instead uses the digest-verified standalone checker
+from exact PR #27 run `40073884397`: artifact `12552870316`, archive SHA-256
+`977737f22ec4e18471dbdef211445a44b05454c3f4d6836fb5ec0783076c9683`.
+All 19 manifest entries and exact source/helper/three-patch/config pins pass;
+its actual zlib/zstd dependencies and relocated configuration are checked.
+The retained failed zlib pair independently passes with this tool, then all
+four fresh variants pass. Evidence is under
+`build/address-index-review/hosted-validator`. This is a local validator setup
+correction, not a product fix or a reason to invalidate the earlier uncompressed
+checks. An initial manual Java 21 attempt used JDK-25 test classfiles and was
+rejected before execution; its log remains alongside the correctly compiled
+passing smoke. An earlier pre-partition package was never installed or tested.
+
+CI adds the format smoke to Linux and native Windows and replaces absence
+checks with exact decoded coverage throughout the existing real-export lanes.
+The new pointer commands retain strict diagnostics, all five target gates and
+the original architecture scopes. Independent code, harness and evidence
+reviews are clear. Exact hosted acceptance and normal main integration remain
+pending; no version, tag or published alpha assets change.
