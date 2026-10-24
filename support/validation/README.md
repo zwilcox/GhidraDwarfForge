@@ -36,6 +36,12 @@ and end flag but no `op_index` accessor, so this patch checks the address
 component only; it does not claim complete VLIW operation-pointer validation.
 No shared-library source, public API, JNA declaration or Forge artifact changes.
 
+Other upstream checker limits remain: its allocated-section envelope is coarse
+and scans at most the first 50 sections. The sectionless fixture oracle compares
+generated extents directly to every original nonempty `PT_LOAD` and checks all
+emitted location intervals against executable segments independently. GNU,
+LLVM and GDB tests remain complementary checks.
+
 ## Focused regression
 
 `src/test/integration/dwarfdump-line-sequences.py <patched-dwarfdump>` builds a
@@ -56,6 +62,14 @@ range relationship: current libdwarf alone misses these corruptions, just as
 LLVM alone misses the out-of-image line-address control. Both validators are
 therefore required; neither is a substitute for the other or for GDB behavior.
 
+For a real fixture with inherited frame diagnostics, additionally pass
+`--forge-original <original-elf>`. The positive check then delegates to
+`check-dwarfdump.py --tool <patched-tool> --original <original-elf>`, which must
+corroborate exact frame bytes, target identity and same-version diagnostics.
+The sequence regression adds no diagnostic allowance of its own. It verifies
+the original hash and still requires both malformed range copies to fail LLVM.
+Without this option, the original zero-diagnostic positive check is unchanged.
+
 For example, after extracting the verified archive into a private directory:
 
 ```bash
@@ -72,6 +86,15 @@ src/test/integration/dwarfdump-line-sequences.py \
     /private/libdwarf-2.3.2/src/bin/dwarfdump/dwarfdump \
     --unpatched /private/unpatched/dwarfdump \
     --forge-fixture /private/arm32/scopes.dbg
+```
+
+The main x86 integration fixture can exercise the same complementary range
+controls after its real export:
+
+```bash
+src/test/integration/dwarfdump-line-sequences.py /private/patched/dwarfdump \
+    --forge-fixture build/fixtures/x86_64/semantic.exec.ghidra-forge.dbg \
+    --forge-original build/fixtures/x86_64/semantic.exec.stripped
 ```
 
 ## Local evidence, 2026-10-23

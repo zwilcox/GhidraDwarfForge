@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 import struct
 import subprocess
+import sys
 import tempfile
 
 
@@ -134,7 +135,11 @@ def main():
     parser.add_argument("patched", type=Path)
     parser.add_argument("--unpatched", type=Path)
     parser.add_argument("--forge-fixture", type=Path)
+    parser.add_argument("--forge-original", type=Path,
+        help="corroborate inherited frame diagnostics through the strict helper")
     arguments = parser.parse_args()
+    if arguments.forge_original and not arguments.forge_fixture:
+        parser.error("--forge-original requires --forge-fixture")
     tool = arguments.patched.resolve(strict=True)
     repository = Path(__file__).resolve().parents[3]
     root = repository / "build/test-results/dwarfdump-line-sequences"
@@ -207,7 +212,21 @@ def main():
     if arguments.forge_fixture:
         fixture = arguments.forge_fixture.resolve(strict=True)
         before = hashlib.sha256(fixture.read_bytes()).hexdigest()
-        summary["real-forge"] = checker(tool, fixture, work / "real-forge.check.txt")
+        if arguments.forge_original:
+            forge_original = arguments.forge_original.resolve(strict=True)
+            original_before = hashlib.sha256(forge_original.read_bytes()).hexdigest()
+            log = work / "real-forge.check.txt"
+            result = run([sys.executable, repository / "src/test/integration/check-dwarfdump.py",
+                fixture, log, "--tool", tool, "--original", forge_original],
+                work / "real-forge.runner.txt")
+            require(result.returncode == 0, "strict Forge validation failed: " + str(log))
+            summary["real-forge"] = json.loads(log.with_name(log.name + ".check.json").read_text())
+            require(summary["real-forge"]["status"] == "PASS", "missing strict validation success")
+            require(hashlib.sha256(forge_original.read_bytes()).hexdigest() == original_before,
+                "Forge original changed")
+            (work / "forge-original.sha256").write_text(original_before + "  " + str(forge_original) + "\n")
+        else:
+            summary["real-forge"] = checker(tool, fixture, work / "real-forge.check.txt")
         summary.update(check_range_corruptions(tool, fixture, work))
         require(hashlib.sha256(fixture.read_bytes()).hexdigest() == before, "Forge fixture changed")
     require(hashlib.sha256(original.read_bytes()).hexdigest() == original_hash,
