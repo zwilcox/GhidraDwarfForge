@@ -2,7 +2,7 @@ P3.4 inline evidence: Ghidra 12.0.3 / Linux x86-64 / 2026-10-23
 Command: src/test/research/inline/run.sh /path/to/ghidra_12.0.3_PUBLIC
 Recorded run: run.tB61GBSm
 This is a compiler/Ghidra research probe, not a Forge inline export.
-Normalization: result directory -> ${RESULT}; process ID -> <PID>; tabs -> four spaces.
+Normalization: result directory -> ${RESULT}; process ID -> <PID>; tabs -> four spaces; trailing whitespace removed.
 Complete local compiler dumps and Ghidra logs are retained in the recorded run.
 fixture-source-sha256=06683cc704c204f911d4539b04d4ca001536c91c09bf4efed6862e3f6b657a44
 
@@ -103,7 +103,7 @@ int ordinary_caller(int value)
 
 {
   int iVar1;
-  
+
   iVar1 = ordinary_callee(value);
   return iVar1 + 1;
 }
@@ -138,6 +138,6 @@ ${RESULT}/inline.debug: OK
 ${RESULT}/inline.no-debug: OK
 
 --- Retained Ghidra DWARF import diagnostic ---
-ERROR DWARF un-recoverable expressions: (DWARFImportSummary)  
-ERROR   DW_OP_reg5 -> 3 (DWARFImportSummary)  
+ERROR DWARF un-recoverable expressions: (DWARFImportSummary)
+ERROR   DW_OP_reg5 -> 3 (DWARFImportSummary)
 Both Ghidra JVM launches also report the existing Felix/sun.misc.Unsafe deprecation warning.
