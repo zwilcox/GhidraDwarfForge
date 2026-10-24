@@ -5464,3 +5464,17 @@ an inclusive GDB disassembly endpoint, and a tracing file descriptor inherited
 by a child shell. Their corrected runs are separate. This is not broad Thumb,
 PIE/rebase/shared-object, sectionless-mode, or native breakpoint-encoding
 acceptance; the current supported ARM-state profile remains unchanged.
+
+The first hosted attempt at head `02a4bfa` (`40135704323`) is not accepted.
+Its package precheck passes exact source/docs/manifests and downloaded-JAR-first
+Java 21 planner132/extraction38 checks. The x86-64 and ARM target jobs then fail
+the existing exact fixture-source inventory: the three new `arm-thumb-*.c`
+files were not registered. Both stop before exporter/GDB/GUI work. Their logs
+and digest-verified artifacts are retained in
+`gui-script-manager/build/hosted-gui-review/run-40135704323/`; first-failure review
+SHA-256 is `8c6ddb95fad75451976f93fdba74a1c2e700751cec0bc6c7262cc1b13d5519de`.
+The correction adds only those three reviewed names to the inventory, preserving
+the exact guard and existing Makefile behavior. Local x86-64 fixture inventory
+and all thirteen byte-identical rebuild checks pass. A fresh complete hosted
+gate remains required; the successful component package checks do not substitute
+for it.

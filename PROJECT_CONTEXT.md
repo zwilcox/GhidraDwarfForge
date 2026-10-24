@@ -3904,3 +3904,9 @@ or broad Thumb support claim follows. The current ARM-state profile remains
 the accepted scope. See
 [`docs/research/ARM-THUMB-MODE.md`](docs/research/ARM-THUMB-MODE.md) for exact
 versions, retained failures and evidence.
+
+The first hosted run `40135704323` at `02a4bfa` stops in the fixture inventory
+before target export: the three new C sources were missing from its explicit
+reviewed list. The bounded correction registers those names and retains the
+strict guard. Local x86-64 reproducibility passes; a fresh full gate is required.
+The failed logs/artifacts and successful component package checks remain distinct.
