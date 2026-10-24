@@ -3658,3 +3658,82 @@ unchanged and eight emulator children/socket directories are gone. These checks
 do not rerun Ghidra or sidecar validators. An earlier archived-reference source
 mtime warning remains retained; the policy was not relaxed. A new exact-head full
 pipeline is required after this correction.
+
+### Corrected owned-candidate hosted acceptance (2026-10-24)
+
+**CONFIRMED:** PR #39 corrected head `a190026534c70f89d09ac807f6e755fcbcd81473`
+passes all twelve jobs in exact run `40116314882` and merged normally as
+`4e05060939ebcfdd0bf762ed6782780b7389f226`, preserving the tested tree. Exact
+package/source and all-five-target program/content/owned artifact reviews are
+clear. Independent review reconstructs thirty ordinary deterministic candidates
+and five plaintext controls, and verifies 75 copies, 330 parent records, fifteen
+mutations, forty typed failures, 25 writer GDB checks and fifteen plain original/
+candidate execution pairs. Native Windows passes 21 focused checks with 1,140
+owned assertions actually observed; Linux has 1,142. Both GUI hosts pass and
+x86's 24 strict reports have zero unexplained errors. The failed first head/run
+and all its unreached checks remain separate historical evidence.
+
+Hosted package SHA-256 is
+`ceb8a57601bbbe22c5bc43bab922bb5e6067eeb4883b2d8916b1e5db0235ac0e`;
+JAR `7bf8d7e470d2b9419a3061182fb808e059721d24e98d092bfc70439b5ba6678f`
+matches 45 production sources plus two scripts and 207 Java 21 classes. Native
+ABI and VERSION remain unchanged. Final exact-head/base/protection/thread and
+artifact checks are retained in the owned worktree's
+`build/owned-candidate-package-audit/final-gate-40116314882.json` and peer review.
+The separate main push `40118899783` remains pending; it is not inferred from
+the PR gate. PR #38's separate main push `40113254401` lost its Windows runner
+in attempt 1, without surviving Windows logs. Failed jobs/dependents were retried
+as attempt 2; three earlier successful jobs are recorded as reused. That main
+gate also remains pending. Neither event changes published releases.
+
+### Detailed report binding for private preparation (2026-10-24)
+
+**CONFIRMED decision; acceptance PLANNED:** the next bounded continuation connects
+private candidate preparation to one explicitly captured report/producer transcript
+and three selected artifacts. Add opt-in detailed reader/binder methods sharing the
+existing strict parser, preserving five immutable inventories and the old lightweight
+APIs. Retention is limited to 16,384 combined entries and 1,048,576 UTF-16 units
+across retained string fields; overflow rejects rather than truncates. Full parse
+and successful closure precede artifact access and any returned detailed result.
+
+The retained-report survey found ordinary `PARTIAL`/`NOT_RUN` reports with skipped
+functions, omitted locations and opaque effects. Status/counts alone do not classify
+these diagnostics. Preserve their complete text/order without a severity policy.
+The connected fixture consumer will require separate selected-hash, copied-prefix,
+active-allocation, build-ID and reported-target evidence before creating scratch.
+Use the existing isolated `DwarfTarget` descriptions for producer labels; the test
+lane's spelling is not a report architecture. Explicit captured-evidence handoff
+must survive later tests reusing the exporter log filename.
+
+Reports remain unauthenticated claims. Even matching all byte/ELF observations does
+not establish valid appended DWARF or that GDB can resolve the source path recorded
+inside it. Product validator execution/receipts, generic source correlation,
+immutable file identity, host metadata, independent backups and atomic replacement
+remain separate work. The first connected tests will demonstrate those limits as
+well as the required rejection paths; they do not expose an attachment command.
+
+**CONFIRMED locally:** core commit `1d80348` passes 432 detailed checks on actual
+Java 21/64 MiB, including both default retention caps together; existing reader
+429 and binder 574 checks pass unchanged. The private installed JAR
+`42a4631744597a7ae160de0a39f65597716ddfd34734d855e2801b9ed5fa0408`
+passes nine connected exec/PIE/no-ID cases across x86-64, AArch64 and MIPS32
+big-endian. The explicit retained-export flag distinguishes the older producer
+from this reader/writer installation. The baseline GNU and owned-writer oracles
+also remain in the workflow and pass.
+
+Independent review reconstructs all 18 ordinary repeated candidates and twelve
+positive-control candidates, verifies all 78 controls, complete inventories and
+27 full report/log sets, and checks 81 historical artifact copies plus 45 current
+input copies. Nine ordinary GDB checks, eighteen native/QEMU processes, three
+static GDB missing-source controls and three expected LLVM invalid-DWARF failures
+pass. All 44 globally protected files remain unchanged. Later GNU CRC tests
+deliberately change/restore three private no-ID sidecar mtimes; final bytes and
+per-component preservation records are checked without claiming those final
+mtimes unchanged. No fresh export or repeated strict sidecar validation is
+attributed to this replay. Local package `de4f68f`, SHA-256
+`7db090e00a3eb7908f0cccb8c22b5c4b44a4f48d139b1f435634e3f575a038d7`,
+passes independent exact-source/docs/manifests review with all 28 runtime/native/
+script payloads identical to the tested private installation. Normal merge
+`c76d851` incorporates accepted PR #39, preserving both documentation histories
+and importing only its compiler-oracle helper correction. A refreshed exact
+package and complete hosted/native Windows gate remain required.
