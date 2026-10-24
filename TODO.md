@@ -123,7 +123,7 @@ items are these bounded workstreams:
 | Remaining GUI journeys (P2.7) | **PRESENT, UNVERIFIED:** manual Script Manager launch and Windows chooser/cancellation. Linux GUI fallback already has a passing automated test. |
 | Optional debuglink (P2.8) | **PLANNED, optional:** explicit opt-in attachment and backup/rollback. Sidecar lookup/CRC compatibility is tested on private fixture copies; default export leaves the original unchanged. |
 | Inline reconstruction (P3.4) | **CONFIRMED investigation complete:** ADR 0003 and a reproducible compiler/Ghidra probe distinguish real inline instances from Ghidra's decompiler flag and record surviving locals/source information. Inline emission remains deferred until explicit instance/origin/range evidence and GDB acceptance exist. |
-| Performance (P3.5) | **CONFIRMED locally:** synthetic 100/1,000/10,000-function measurements pass validators, full DWARF symbol checks and deterministic reruns. Representative complex-binary and phase-level profiling remain **PLANNED** before selecting an optimization. See `docs/PERFORMANCE.md`. |
+| Performance (P3.5) | **CONFIRMED locally:** synthetic scaling and a JFR-selected line-table index are measured. Five paired 10,000-function exports reduce median process time by 15.5% with byte-identical artifacts and independent validation. Representative complex-binary and further phase-level profiling remain **PLANNED**; no blanket speed or memory claim. See `docs/PERFORMANCE.md`. |
 
 The optional/research items need an explicit recorded outcome; they are not
 silently complete merely because they are outside the current alpha scope.
@@ -1473,9 +1473,12 @@ surviving knowledge, or describe inline export as complete.
 
 ## P3.5 Add optional size/performance features
 
-**Status:** `[~]` — initial synthetic scaling measurements are complete;
-representative complex application/firmware and per-phase profiling remain
-**PLANNED**. No production optimization has been selected or claimed.
+**Status:** `[~]` — synthetic scaling measurements and one measured line-table
+index are complete locally; representative complex application/firmware and
+further per-phase profiling remain **PLANNED**. The bounded 10,000-function
+comparison improves median whole-process time from 10.86 to 9.18 seconds over
+five alternating pairs, with every output pair byte-identical. It does not
+establish speed or memory effects for other workloads/hosts.
 
 `src/test/performance/export-benchmark.py` separates one saved-project import
 from repeated fresh-JVM exports. The 100/1,000/10,000-function cases pass
@@ -1497,9 +1500,9 @@ Potential features only after correctness:
 
 ### Completion criteria
 
-- [ ] No optimization changes semantic output.
-- [ ] Determinism and validators remain passing.
-- [ ] Benchmark demonstrates a measured benefit.
+- [x] The implemented line-table index preserves byte-identical semantic output.
+- [x] Determinism and validators remain passing for that index.
+- [x] A paired benchmark demonstrates its measured benefit on the documented workload.
 
 ---
 

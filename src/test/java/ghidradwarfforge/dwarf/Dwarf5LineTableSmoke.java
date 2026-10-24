@@ -36,6 +36,21 @@ public final class Dwarf5LineTableSmoke {
             throw new AssertionError("unexpected line sequences: " + planned);
         }
 
+        // Shared addresses remain in each overlapping body, starts are included,
+        // and end-exclusive/gap addresses must never acquire executable rows.
+        List<LineSequence> boundaries = Dwarf5LineTable.plan(List.of(
+            new FunctionSymbol("second", 0x1004, 4),
+            new FunctionSymbol("first", 0x1000, 8),
+            new FunctionSymbol("empty", 0x2000, 4)), List.of(
+                new SourceLine(12, List.of(0x1004L, 0x1008L, 0x1fffL, 0x2004L)),
+                new SourceLine(11, List.of(0x1000L, 0x1004L)),
+                new SourceLine(13, List.of(0x1007L))));
+        require(boundaries.equals(List.of(
+            new LineSequence(0x1000, 0x1008, List.of(new LineRow(0x1000, 11),
+                new LineRow(0x1004, 11), new LineRow(0x1007, 13))),
+            new LineSequence(0x1004, 0x1008, List.of(new LineRow(0x1004, 11),
+                new LineRow(0x1007, 13))))), "overlapping bodies and range boundaries");
+
         byte[] first = Dwarf5LineTable.build("fixture.dbg.c", 8,
             ByteOrder.LITTLE_ENDIAN, List.of(later, split), mappings);
         byte[] reordered = Dwarf5LineTable.build("fixture.dbg.c", 8,

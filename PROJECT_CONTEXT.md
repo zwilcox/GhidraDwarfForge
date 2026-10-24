@@ -2082,3 +2082,28 @@ real source/type/location export and a passing Linux/Windows integration matrix.
 The bounded backlog and next-session sequence are in `TODO.md` Sections 1.1
 and 4. Historical prototype observations elsewhere in this file remain useful
 history, not instructions to redo completed implementation.
+
+### P3.5 measured line-table address index (2026-10-23)
+
+**CONFIRMED locally:** an actual 10,000-function saved-project export profile
+identified repeated source-address scans in `Dwarf5LineTable.plan` (131/516 Java
+execution samples). The resulting bounded change builds a sorted global
+address-to-earliest-line map once and takes half-open submaps for each original
+body range. Range/sequence order, overlapping bodies and earliest-row policy
+are unchanged; focused boundary assertions and the existing width/endian tests
+pass. No native signature or decompilation behavior changes.
+
+Five alternating baseline/indexed pairs reduce median whole-process export
+time from 10.86 to 9.18 seconds on this local workload, with every sidecar/source
+pair byte-identical. Validators, all 10,000 full DWARF symbols, runtime GDB,
+input/historical-artifact hashes and the saved-project file manifest pass.
+The optimized build also passes nineteen smoke tasks and the four-profile
+ET_EXEC/PIE/shared semantic matrix. `docs/PERFORMANCE.md` records the complete
+samples, hashes, methodology and limits. This does not establish a speed or
+memory bound for arbitrary firmware or another host.
+
+The benchmark/inline/target-profile research branch was normally merged into
+`work/line-table-index` at `5bc72f1`, retaining its history and additive evidence.
+The only runtime change remains the small line-table index. Larger application/
+firmware profiling and hosted validation remain **PLANNED**; timing thresholds,
+caching, parallel decompilation and compression are not introduced.

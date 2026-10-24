@@ -11,6 +11,37 @@ export. Export remains explicit: installed wrappers request checksum-verified
 packaged natives by default, while source-tree audit runs may supply explicit
 library paths.
 
+## Measured line-table address index (2026-10-23)
+
+**CONFIRMED locally:** a sampled hot path in `Dwarf5LineTable.plan` now builds
+one earliest-line address index and queries each half-open function range.
+The focused smoke preserves starts, excludes ends/gaps, keeps overlapping
+bodies independent and retains the earliest line for repeated addresses.
+The existing width/byte-order and deterministic-order checks continue to pass.
+
+Five alternating baseline/indexed exports of the same saved 10,000-function
+project produce byte-identical `.dbg` and `.dbg.c` files in all ten runs.
+Whole-process median time changes from 10.86 to 9.18 seconds on the recorded
+Linux host. The full 10,000-symbol source/type/address oracle, GDB runtime and
+GNU/LLVM/libdwarf validators pass. Input, historical artifacts and the complete
+saved-project file manifest remain unchanged. Exact timings, hashes, commands,
+memory interpretation and workload limits are in `docs/PERFORMANCE.md`;
+evidence is under `build/line-profile/paired.8k_6dt_w/` in `line-table-index`.
+
+All nineteen native-independent smoke tasks and `buildExtension` pass. The
+installed indexed JAR matches the rebuilt JAR exactly. Real export and GDB
+checks pass x86-64, AArch64, MIPS32 BE and LE across ET_EXEC, PIE and shared
+objects (twelve cases), including source listing/stepping, exact addresses,
+integer/stack/composite values, validators and unchanged input hashes. Logs
+are `build/line-profile/verification/{exec,pie,shared}-{headless,gdb}.txt`.
+Architecture isolation, `actionlint` and whitespace checks pass.
+
+The benchmark/research checkpoint branch was merged normally at `5bc72f1`;
+it adds no production changes. The sole runtime optimization remains the
+line-table index, with no new native interface or timing threshold in CI.
+Broader workloads and hosted validation remain **PLANNED**. No universal speed
+or memory reduction is inferred from this synthetic experiment.
+
 ## ELF robustness development (2026-10-23)
 
 The following evidence applies to implementation `3e47589` in
