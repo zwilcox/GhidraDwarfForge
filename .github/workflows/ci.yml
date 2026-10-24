@@ -475,7 +475,8 @@ jobs:
               ghidraTargetAgreementSmoke outputPathPolicySmoke \
               exportReportSmoke \
               syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
-              variableStorageSmoke registerPrefixSmoke registerAliasSmoke opaqueRegisterEffectsSmoke \
+              variableStorageSmoke registerPrefixSmoke registerAliasSmoke \
+              opaqueRegisterEffectsSmoke qualifiedFunctionNameSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
               packagedNativeLibrariesSmoke existingDebugSidecarSmoke \
@@ -887,6 +888,12 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: src/test/integration/function-static-scopes-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
 
+      - name: Qualified analyst function names and owned statics
+        env:
+          TARGET: ${{ matrix.target }}
+          FORGE_SCOPE_QUALIFIED: '1'
+        run: src/test/integration/function-static-scopes-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
+
       - name: Incoming register lifetime before overwrite
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
         env:
@@ -1179,7 +1186,7 @@ jobs:
             -DestinationPath (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions') -Force
           & .\gradlew.bat addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
-            opaqueRegisterEffectsSmoke 2>&1 |
+            opaqueRegisterEffectsSmoke qualifiedFunctionNameSmoke 2>&1 |
             Tee-Object -FilePath "$resultDirectory\native-independent.log"
           if ($LASTEXITCODE -ne 0) {
             throw "native-independent Windows checks failed with exit code $LASTEXITCODE"

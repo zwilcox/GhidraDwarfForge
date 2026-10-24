@@ -204,3 +204,22 @@ breakpoint and arguments, performs source stepping, prints a local, and waits
 for normal process exit. It is an oracle/infrastructure test, not a Forge
 sidecar test; the future exporter acceptance harness will load `.dbg` instead
 of the reference binary's compiler DWARF.
+
+The qualified-function regression reuses `function-static-scopes.c` with a
+conditional real global `curated_same` definition. Preparation places two
+other functions under `analysis_left::nested` and `analysis_right::nested`,
+renames both `curated_same`, and retains their separate owned static objects.
+Run it through the actual installed exporter with:
+
+```bash
+FORGE_SCOPE_QUALIFIED=1 src/test/integration/function-static-scopes-export.sh \
+    "$GHIDRA_INSTALL_DIR" x86_64 aarch64 arm32 mips32be mips32le
+```
+
+The ordinary static-scope mode is unchanged when the variable is unset. Each
+mode checks non-PIE, PIE and rebased PIE against compiler addresses, GDB values,
+source and stepping; qualified mode additionally checks distinct full display
+names and a global function with the same short name. Every case repeats export
+and compares both output files, preserves input hashes and runs GNU/LLVM/strict
+validators. `FORGE_ARM32_SYSROOT` optionally selects an existing private ARM32
+runtime sysroot; CI retains the installed `/usr/arm-linux-gnueabihf` default.

@@ -6,6 +6,12 @@ if [[ $# -lt 1 ]]; then
     exit 64
 fi
 export LC_ALL=C
+qualified=${FORGE_SCOPE_QUALIFIED:-0}
+if [[ "$qualified" != 0 && "$qualified" != 1 ]]; then
+    echo 'FORGE_SCOPE_QUALIFIED must be 0 or 1' >&2
+    exit 64
+fi
+export FORGE_SCOPE_QUALIFIED="$qualified"
 repository_dir=$(realpath "$(dirname "$0")/../../..")
 ghidra_dir=$(realpath "$1")
 shift
@@ -15,6 +21,9 @@ if [[ ${#targets[@]} -eq 0 ]]; then
 fi
 source "$repository_dir/src/test/integration/elf-layout-gdb-oracle.sh"
 result_root="$repository_dir/build/test-results/function-static-scopes"
+if [[ "$qualified" == 1 ]]; then
+    result_root="$repository_dir/build/test-results/qualified-function-names"
+fi
 mkdir -p "$result_root"
 result_dir=$(mktemp -d "$result_root/run.XXXXXXXX")
 emulator_pid=
@@ -132,11 +141,33 @@ validate_sidecar() {
             exit bad || private != 2 || global != 1 || declarations != 1 || namespaces != 1
         }
     ' "$case_dir/info.txt"
+    if [[ "$qualified" == 1 ]]; then
+        python3 - "$case_dir/info.txt" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+text = Path(sys.argv[1]).read_text()
+assert re.search(r'DW_AT_language\s*:\s*29\b', text), 'synthetic CU language changed'
+for name in ('analysis_left::nested::curated_same',
+             'analysis_right::nested::curated_same'):
+    # These are qualified display strings at CU scope, not C++ namespace DIEs.
+    dies = re.split(r'(?m)^\s*<(?=\d+><[0-9a-fA-F]+>:\s+Abbrev Number:)', text)
+    matching = [die for die in dies if 'DW_TAG_subprogram' in die and
+                re.search(r'DW_AT_name\s*:.*\b' + re.escape(name) + r'\s*$', die, re.M)]
+    assert len(matching) == 1 and matching[0].startswith('1>'), name
+    assert 'DW_AT_decl_line' in matching[0], 'source declaration lost: ' + name
+    assert 'DW_AT_linkage_name' not in matching[0], 'fabricated linkage identity'
+PY
+    fi
 }
 
 for target in "${targets[@]}"; do
     compiler= strip_tool= emulator= sysroot=
     compile_flags=()
+    if [[ "$qualified" == 1 ]]; then
+        compile_flags+=(-DFORGE_QUALIFIED_NAMES)
+    fi
     case "$target" in
         x86_64) compiler=gcc; strip_tool=strip ;;
         aarch64)
@@ -144,8 +175,8 @@ for target in "${targets[@]}"; do
             emulator=qemu-aarch64-static; sysroot=/usr/aarch64-linux-gnu ;;
         arm32)
             compiler=arm-linux-gnueabihf-gcc; strip_tool=arm-linux-gnueabihf-strip
-            emulator=qemu-arm-static; sysroot=/usr/arm-linux-gnueabihf
-            compile_flags=(-march=armv7-a -marm -mfpu=vfpv3-d16) ;;
+            emulator=qemu-arm-static; sysroot=${FORGE_ARM32_SYSROOT:-/usr/arm-linux-gnueabihf}
+            compile_flags+=(-march=armv7-a -marm -mfpu=vfpv3-d16) ;;
         mips32be)
             compiler=mips-linux-gnu-gcc; strip_tool=mips-linux-gnu-strip
             emulator=qemu-mips-static; sysroot=/usr/mips-linux-gnu ;;
@@ -196,6 +227,17 @@ for target in "${targets[@]}"; do
         addresses=$(sed -n 's/^SCOPE_ADDRESSES //p' "$case_dir/compiler-addresses.txt")
         read -r -a address_arguments <<< "$addresses"
         test "${#address_arguments[@]}" -eq 6
+        preparation_arguments=("${address_arguments[@]}")
+        if [[ "$qualified" == 1 ]]; then
+            gdb-multiarch -q -nx -batch -ex 'set debuginfod enabled off' \
+                -ex "file \"$reference\"" \
+                -ex 'python print("GLOBAL_ADDRESS " + hex(int(gdb.parse_and_eval("&curated_same"))))' \
+                > "$case_dir/compiler-global-address.txt" 2>&1
+            global_address=$(sed -n 's/^GLOBAL_ADDRESS //p' "$case_dir/compiler-global-address.txt")
+            [[ "$global_address" =~ ^0x[[:xdigit:]]+$ ]]
+            preparation_arguments+=(qualified "$global_address")
+            addresses+=" $global_address"
+        fi
         run_gdb "$reference" "" compiler-reference "$case_dir/compiler-reference-gdb.txt"
         run_gdb "$input" "$reference" compiler "$case_dir/compiler-gdb.txt"
         for iteration in first repeat; do
@@ -204,7 +246,7 @@ for target in "${targets[@]}"; do
                 -scriptPath "$repository_dir/src/test/integration/ghidra_scripts" \
                 "${rebase[@]}" \
                 -postScript PrepareFunctionStaticScopes.java "$target" \
-                "${address_arguments[@]}" \
+                "${preparation_arguments[@]}" \
                 -postScript GhidraDwarfForge.java --packaged-natives "--output=$output" \
                 > "$case_dir/export-$iteration.log" 2>&1
             grep -Fq 'GhidraDwarfForge symbol export PASS' "$case_dir/export-$iteration.log"

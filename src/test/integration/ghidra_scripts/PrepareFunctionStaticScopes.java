@@ -27,16 +27,22 @@ public class PrepareFunctionStaticScopes extends GhidraScript {
     @Override
     protected void run() throws Exception {
         String[] arguments = getScriptArgs();
-        if (arguments.length != 7) {
+        if (arguments.length != 7 && (arguments.length != 9 ||
+                !arguments[7].equals("qualified"))) {
             throw new IllegalArgumentException("usage: PrepareFunctionStaticScopes <target> " +
                 "<first-function> <second-function> <first-static> <second-static> " +
-                "<global> <namespace-global>");
+                "<global> <namespace-global> [qualified <global-function>]");
         }
         delta = AddressNormalizer.rebaseDelta(currentProgram.getImageBase().getOffset(),
             GhidraImageBase.originalImageBase(currentProgram));
         integer = new IntegerDataType(currentProgram.getDataTypeManager());
         Function first = function(arguments[1], "first_scope");
         Function second = function(arguments[2], "second_scope");
+        if (arguments.length == 9) {
+            qualify(first, "analysis_left");
+            qualify(second, "analysis_right");
+            function(arguments[8], "curated_same");
+        }
         data(arguments[3], "private_count", first);
         data(arguments[4], "private_count", second);
         data(arguments[5], "private_count", currentProgram.getGlobalNamespace());
@@ -62,12 +68,23 @@ public class PrepareFunctionStaticScopes extends GhidraScript {
         if (model.functionStatics().stream().anyMatch(variable ->
                 variable.ownerAddress() == omittedOwner) ||
                 diagnostics.stream().noneMatch(message -> message.equals(
-                    "Skipped function-owned static variable second_scope::private_count; " +
+                    "Skipped function-owned static variable " + second.getName(true) +
+                        "::private_count; " +
                         "owning function was not exported"))) {
             throw new AssertionError("missing function owner was not isolated and diagnosed");
         }
         println("function-static-scopes preparation PASS; missing owner diagnosed");
         println("fixture profile=" + arguments[0] + "; ELF target=" + target);
+    }
+
+    private void qualify(Function function, String parentName) throws Exception {
+        var symbols = currentProgram.getSymbolTable();
+        Namespace parent = symbols.getOrCreateNameSpace(currentProgram.getGlobalNamespace(),
+            parentName, SourceType.USER_DEFINED);
+        Namespace nested = symbols.getOrCreateNameSpace(parent, "nested",
+            SourceType.USER_DEFINED);
+        function.setParentNamespace(nested);
+        function.setName("curated_same", SourceType.USER_DEFINED);
     }
 
     private Address address(String value) {
