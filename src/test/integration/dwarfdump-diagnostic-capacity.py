@@ -18,6 +18,7 @@ import tempfile
 
 CAPACITY = 65536
 CALLOC_MARKER = "FORGE_TEST_CALLOC_FAILURE"
+CONFIG_SHA256 = "842bba9230de82059dfcef1485114cf3c33eae8be2973c649d176f4ad18972ef"
 
 
 def require(condition, message):
@@ -27,6 +28,24 @@ def require(condition, message):
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def allocation_tool(tool):
+    if tool.read_bytes()[:4] == b"\x7fELF":
+        return [tool], {"kind": "standalone-ELF", "binary": str(tool),
+            "binary_sha256": digest(tool)}
+    root = tool.parent.parent
+    binary = (root / "libexec/dwarfdump").resolve(strict=True)
+    config = (root / "share/dwarfdump/dwarfdump.conf").resolve(strict=True)
+    require(binary.read_bytes()[:4] == b"\x7fELF",
+        "packaged allocation controls require the actual ELF checker")
+    require(digest(config) == CONFIG_SHA256, "packaged checker configuration is not pinned")
+    # Inject only into the checker, never the launcher's shell/hash utilities.
+    # Explicit configuration retains the same checks without a host fallback.
+    return [binary, "--file-name=" + str(config)], {"kind": "packaged-launcher",
+        "launcher": str(tool), "launcher_sha256": digest(tool),
+        "binary": str(binary), "binary_sha256": digest(binary),
+        "config": str(config), "config_sha256": digest(config)}
 
 
 def run(command, log, environment=None):
@@ -155,8 +174,10 @@ def main():
     spec = importlib.util.spec_from_file_location("strict_dwarfdump", helper)
     checker = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(checker)
+    allocation_command, tool_identity = allocation_tool(tool)
     clean_run([tool, "--version"], work / "version.txt")
     summary = {"tool_sha256": digest(tool), "capacity": CAPACITY,
+        "tool_identity": tool_identity,
         "positive_counts": [], "negative_controls": [], "hashes": {}}
     pairs = {}
     for count in (50, CAPACITY, CAPACITY + 1):
@@ -218,7 +239,8 @@ def main():
             ("output-array", "array", 2, "ERROR: cannot allocate harmless diagnostic pointer buffer")):
         environment = dict(os.environ, LD_PRELOAD=str(shim),
             FORGE_FAIL_CALLOC_KIND=kind, FORGE_FAIL_CALLOC_AT=str(at))
-        result = run([tool, "--no-follow-debuglink", "-ka", "-ki", "-kd", pairs[50][1]],
+        result = run([*allocation_command, "--no-follow-debuglink", "-ka", "-ki", "-kd",
+            pairs[50][1]],
             work / (label + ".txt"), environment)
         require(result.returncode == 1 and result.stderr.splitlines() == [CALLOC_MARKER, diagnostic],
             "allocation failure was not a controlled normal exit: " + label)
@@ -260,6 +282,10 @@ def main():
 
     for name, before in summary["hashes"].items():
         require(digest(Path(name)) == before, "input changed: " + name)
+    for role in ("launcher", "binary", "config"):
+        if role in tool_identity:
+            require(digest(Path(tool_identity[role])) == tool_identity[role + "_sha256"],
+                "checker input changed: " + role)
     (work / "summary.json").write_text(json.dumps(summary, indent=4) + "\n")
     (work / "result.txt").write_text("dwarfdump-diagnostic-capacity=PASS\n")
     print("dwarfdump-diagnostic-capacity=PASS")

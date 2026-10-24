@@ -163,6 +163,9 @@ jobs:
           support/build-validation-dwarfdump.sh "$LIBDWARF_ARCHIVE" \
             "$PWD/validation-tool" "$PWD/build/test-results/validation-tool-build"
 
+      - name: Validate relocated standalone checker configuration
+        run: python3 src/test/integration/dwarfdump-configuration.py "$PWD/validation-tool"
+
       - name: Validate complete bounded diagnostics and allocation rollback
         run: |
           sources=(build/test-results/validation-tool-build/build.*/libdwarf-2.3.2)
@@ -190,6 +193,7 @@ jobs:
             build/test-results/validation-tool-build/**/dependencies.txt
             build/test-results/validation-tool-build/**/version.txt
             build/test-results/dwarfdump-diagnostic-capacity/
+            build/test-results/dwarfdump-configuration/
           if-no-files-found: warn
           retention-days: 14
 
@@ -640,7 +644,7 @@ jobs:
         run: |
           set -euo pipefail
           (cd validation-tool && sha256sum -c SHA256SUMS)
-          chmod 755 validation-tool/bin/dwarfdump
+          chmod 755 validation-tool/bin/dwarfdump validation-tool/libexec/dwarfdump
           validation-tool/bin/dwarfdump --version
           echo "$PWD/validation-tool/bin" >> "$GITHUB_PATH"
           echo "DWARFDUMP=$PWD/validation-tool/bin/dwarfdump" >> "$GITHUB_ENV"

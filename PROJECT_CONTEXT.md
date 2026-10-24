@@ -2225,3 +2225,26 @@ rerun, and historical timing remains baseline evidence rather than a new
 merged measurement. `docs/PERFORMANCE.md` and `support/validation/README.md`
 record limits, failure controls and retained paths. The complete combined
 hosted matrix and representative complex workloads remain **PLANNED**.
+
+### Standalone checker configuration packaging (2026-10-24)
+
+PR #24 run `40064815083` exposed a hidden host dependency in the validation
+bundle: native Linux had no `dwarfdump.conf`, so the consumer suppressed frame
+checks after printing an error and exiting zero. Strict validation correctly
+failed the first capacity positive. Local distro config had masked this.
+The digest-verified failure remains in `build/hosted-capacity-review/`.
+
+The bounded correction includes the unchanged pinned upstream configuration,
+a relocatable explicit-path launcher and hashes for both launcher and real
+ELF. Configuration absence/corruption or override fails closed; no ABI policy,
+shipped native patch, validator exception or test threshold changes. Relocation
+and negative controls join the full capacity/allocation regression. This is a
+performance-branch validation-packaging follow-up; corrected hosted CI remains
+required and the separate corrective release is unchanged.
+
+The configured bundle passes local relocation/configuration controls, the
+full 50/65,536/65,537 diagnostic boundary and allocation/resize-failure suite,
+strict parser/line/range/extended-program rejection tests, and exact 10,002-message
+retained-benchmark corroboration. Source/manifest checks and independent review
+pass. `docs/VALIDATION.md` records exact bundle hashes and result directories;
+no Ghidra/benchmark export was repeated for this validation-only packaging fix.

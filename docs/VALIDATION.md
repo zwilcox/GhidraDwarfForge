@@ -1315,3 +1315,39 @@ wrapper permissions and two byte-identical assemblies. Logs are in
 `native-patch-provenance/build/provenance-review/`. Native Windows and the full
 exact-candidate matrix remain pending; this audit does not authorize publishing
 the earlier mismatched package.
+
+## Performance-branch validator configuration incident (2026-10-24)
+
+**CONFIRMED:** [run 40064815083](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40064815083)
+at `d12be10bc93d9096042ca620f712fc0baf8063db` failed native Linux job
+`120785718398` in the first diagnostic-capacity positive. The actual checker
+returned zero but emitted `ERROR: dwarfdump found no dwarfdump.conf` and
+suppressed frame access; strict validation rejected the result. Artifact
+`12548957019` matches GitHub digest
+`7ea4ad1d70bc7a1a512977a73293708e6c28b3f27ba5e0918fb8f284e1944ba7`.
+
+The standalone bundle now includes its unchanged pinned upstream config and a
+relocatable launcher selecting it explicitly. It has no dependency on an
+installed distro, CWD or HOME configuration. Missing/altered config and option
+aliases fail closed, and raw allocation-injection controls keep the same
+explicit config. See `support/validation/README.md` for source hashes and
+reproducible controls. The failure does not change historical timing results
+or the indexed planner; no performance export was rerun. Corrected hosted
+acceptance remains pending, and this feature branch stays outside alpha.2.
+
+**PASS locally:** the final configured bundle is
+`line-table-index/build/line-profile/validation-tool-config-final/`.
+Its complete manifest and bundled-source comparisons pass. Launcher SHA-256:
+`cb6c594b13fa18d0e30339390d3985ba594eb0fafa597ec1845c14dde940aaaa`;
+ELF executable SHA-256:
+`94435663cf53fafea90c40db053b90bd5bff77d3974de4471548df0cd88b37fd`.
+Configuration controls pass in `build/test-results/dwarfdump-configuration/run.1n891ve7`;
+full capacity/allocation/static-rollback controls pass in
+`build/test-results/dwarfdump-diagnostic-capacity/run.yfxuwuz0`.
+Strict parser, line/range and extended-program negatives also pass, and the
+retained 10,000-function sidecar again matches all 10,002 original frame
+messages with zero uncorroborated errors. Commands/results are retained under
+`build/hosted-capacity-review/run-40064815083/`. The developer build's initial
+override control caught the older grouped-option filter before correction;
+that failing evidence is preserved. A reviewer independently verified source,
+manifest and controls. Corrected hosted acceptance remains pending.

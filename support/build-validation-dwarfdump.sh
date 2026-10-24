@@ -13,6 +13,8 @@ support_dir=$(realpath "$(dirname "$0")")
 checker_patch="$support_dir/validation/0001-check-line-sequences.patch"
 reader_patch="$support_dir/validation/0002-accept-bounded-extended-program-count.patch"
 diagnostic_patch="$support_dir/validation/0003-preserve-bounded-harmless-diagnostics.patch"
+launcher="$support_dir/validation/run-dwarfdump.sh"
+configuration_hash=842bba9230de82059dfcef1485114cf3c33eae8be2973c649d176f4ad18972ef
 source_hash=7992e7b9019ebfabdda5773e86243517c48cf89fafed3209e853692bc9573efd
 patch_hash=69340f63ee78c06309731a40bb1e0e9e193b5d2f659e5f050ef413138649f696
 reader_patch_hash=8468426396e6a28f755077681eec78d326744a535c7aade9d17d9a1acef73b46
@@ -40,14 +42,19 @@ source="$work/libdwarf-2.3.2"
     make -j"${FORGE_BUILD_JOBS:-$(nproc)}" > "$work/make.log" 2>&1
 )
 stage="$work/output"
-mkdir -p "$stage/bin" "$stage/source/support/validation" "$stage/licenses"
-cp "$source/src/bin/dwarfdump/dwarfdump" "$stage/bin/"
-chmod 755 "$stage/bin/dwarfdump"
+mkdir -p "$stage/bin" "$stage/libexec" "$stage/share/dwarfdump" \
+    "$stage/source/support/validation" "$stage/licenses"
+printf '%s  %s\n' "$configuration_hash" "$source/src/bin/dwarfdump/dwarfdump.conf" | sha256sum -c -
+cp "$source/src/bin/dwarfdump/dwarfdump" "$stage/libexec/"
+cp "$source/src/bin/dwarfdump/dwarfdump.conf" "$stage/share/dwarfdump/"
+cp "$launcher" "$stage/bin/dwarfdump"
+chmod 755 "$stage/bin/dwarfdump" "$stage/libexec/dwarfdump"
 cp "$archive" "$stage/source/libdwarf-2.3.2.tar.xz"
 cp "$0" "$stage/source/support/build-validation-dwarfdump.sh"
 cp "$checker_patch" "$stage/source/support/validation/"
 cp "$reader_patch" "$stage/source/support/validation/"
 cp "$diagnostic_patch" "$stage/source/support/validation/"
+cp "$launcher" "$stage/source/support/validation/"
 cp "$support_dir/validation/README.md" "$stage/source/support/validation/"
 cp "$support_dir/../LICENSE" "$stage/source/LICENSE"
 cp "$source/COPYING" "$stage/licenses/UPSTREAM-COPYING"
@@ -56,7 +63,7 @@ cp "$source/src/lib/libdwarf/LIBDWARFCOPYRIGHT" "$stage/licenses/"
 cp "$source/src/bin/dwarfdump/COPYING" "$stage/licenses/DWARFDUMP-COPYING"
 cp "$source/src/bin/dwarfdump/GPL.txt" "$stage/licenses/DWARFDUMP-GPL.txt"
 cp "$source/src/bin/dwarfdump/DWARFDUMPCOPYRIGHT" "$stage/licenses/"
-readelf -d "$stage/bin/dwarfdump" > "$work/dependencies.txt"
+readelf -d "$stage/libexec/dwarfdump" > "$work/dependencies.txt"
 if grep -Eq 'NEEDED.*libdwarf' "$work/dependencies.txt"; then
     echo 'validation executable unexpectedly requires a shared libdwarf' >&2
     exit 1
@@ -71,6 +78,8 @@ grep -Fq '2.3.2' "$work/version.txt"
         "validation-checker-patch-sha256=$patch_hash" \
         "validation-reader-patch-sha256=$reader_patch_hash" \
         "validation-diagnostic-patch-sha256=$diagnostic_patch_hash" \
+        "validation-configuration-sha256=$configuration_hash" \
+        'entry-point=bin/dwarfdump; executable=libexec/dwarfdump' \
         'configure=--enable-static --disable-shared --disable-dwarfgen' \
         'producer-patch=not-applied'
     cat "$work/version.txt"
@@ -85,6 +94,10 @@ consumer, plus complete harmless-diagnostic evidence up to 65536 messages with
 checked allocation and explicit rejection above that bound. This executable
 and all three patches are excluded from GhidraDwarfForge release-native inputs;
 shipped consumer/producer library sources are unchanged.
+The relocatable bin/dwarfdump launcher checks the pinned upstream configuration
+and selects it explicitly with --file-name, without consulting host defaults.
+The ELF executable is libexec/dwarfdump; configuration is under share/dwarfdump.
+Both executable and launcher/configuration are covered by SHA256SUMS.
 Licenses are in licenses/ and the complete upstream source archive; the
 repository build helper is MIT licensed.
 

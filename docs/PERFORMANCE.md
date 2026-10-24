@@ -231,3 +231,21 @@ lint and architecture-isolation checks also pass locally.
 The complete merged hosted matrix, including Windows, remains **PLANNED**.
 Representative complex application/firmware workloads and finer phase
 profiling remain **PLANNED**; the index has no general speed or memory guarantee.
+
+## Hosted validator configuration correction (2026-10-24)
+
+PR #24 head `d12be10` failed the native Linux job in run `40064815083` before
+the first 50-frame capacity check completed: the standalone consumer lacked
+`dwarfdump.conf`, printed an error, suppressed frame access and exited zero.
+The strict helper rejected that result. Local distro configuration had hidden
+the bundle dependency; this is not a changed planner or benchmark result.
+The original log and digest-verified artifact are retained under
+`build/hosted-capacity-review/run-40064815083/`.
+
+The follow-up packages the pinned upstream config and an explicit-path launcher,
+with separate real-executable and launcher/config provenance. Its relocation,
+hostile-CWD, missing/altered config and option-alias controls are described in
+`support/validation/README.md`. Full capacity/allocation tests remain mandatory;
+no thresholds, frame assertions or diagnostic rules are weakened. A corrected
+hosted run is required before this feature branch can be integrated. The
+corrective alpha.2 branch and shipped native libraries are unaffected.

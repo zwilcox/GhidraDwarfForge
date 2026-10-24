@@ -1554,6 +1554,12 @@ corroborated using the separately bounded validation-only capacity patch.
 No timed 10,000-function export was rerun. Combined hosted/Windows validation
 and representative complex-binary profiling remain **PLANNED**.
 
+**CONFIRMED:** performance PR #24 run `40064815083` failed its validator
+capacity gate because the standalone bundle omitted `dwarfdump.conf`. The
+follow-up packages the pinned config with an explicit-path launcher and
+rejecting relocation/configuration controls. Strict error checks remain intact;
+a corrected full hosted run is required. See `support/validation/README.md`.
+
 Potential features only after correctness:
 
 - `.debug_names` or GDB index generation.

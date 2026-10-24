@@ -21,6 +21,42 @@ or release-native provenance manifests.
   static consumer's `src/lib/libdwarf/dwarf_harmless.c`; public APIs and shipped
   producer/consumer sources remain unchanged.
 
+## Self-contained configuration
+
+The standalone consumer also requires upstream `dwarfdump.conf`, even without
+an explicit ABI selection. Missing configuration makes libdwarf 2.3.2 print
+an error and suppress frame access while returning zero. PR #24 run
+`40064815083`, native Linux job `120785718398`, exposed this before the first
+50-frame capacity positive. Its verified diagnostic artifact is `12548957019`
+(SHA-256 `7ea4ad1d70bc7a1a512977a73293708e6c28b3f27ba5e0918fb8f284e1944ba7`).
+The strict helper correctly rejected it; local distro configuration had masked
+the incomplete packaging. The earlier standalone bundle was not self-contained.
+
+The builder now retains the ELF executable at `libexec/dwarfdump` and places
+the unchanged pinned source configuration at `share/dwarfdump/dwarfdump.conf`,
+SHA-256 `842bba9230de82059dfcef1485114cf3c33eae8be2973c649d176f4ad18972ef`.
+The relocatable `bin/dwarfdump` Bash launcher verifies that hash and passes the
+absolute path through upstream `--file-name`. It preserves the existing ABI
+selection behavior; no target ABI is guessed. Missing/altered bundled config
+and file-selection overrides fail before the checker runs. CWD, HOME and
+system config files cannot replace this explicit selection. Coreutils and Bash
+are Linux validation dependencies, not additions to the shipped extension.
+
+`SHA256SUMS` covers launcher, real executable and configuration; metadata
+identifies the configuration hash and both entry-point paths. The corresponding
+source includes the launcher, builder, source archive and all patches. After
+artifact download, CI restores executable permission on both executable files.
+The existing GNU/LLVM/libdwarf diagnostic policy is unchanged.
+
+`dwarfdump-configuration.py` exercises a relocated bundle in a path containing
+spaces from a directory with an invalid host configuration. It reproduces the
+old missing-config/frame-suppression error, proves complete strict frame checks
+through the launcher, and rejects missing/altered bundled configuration and
+upstream option aliases, including grouped short options. Capacity positives
+use the launcher; allocation-failure tests invoke the real ELF with the same
+explicit config so `LD_PRELOAD` does not instrument the shell/hash utilities.
+Both test suites retain executable/config hashes and original fixture hashes.
+
 ## Complete bounded diagnostic evidence
 
 The retained 10,000-function benchmark and its original each report 10,002
