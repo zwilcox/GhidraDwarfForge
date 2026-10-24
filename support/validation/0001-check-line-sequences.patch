@@ -1,0 +1,128 @@
+--- a/src/bin/dwarfdump/print_lines.c
++++ b/src/bin/dwarfdump/print_lines.c
+@@ -106,47 +106,45 @@
+     }
+ }
+ 
++/*  DWARF5 sections 6.2.2 and 6.2.5.3 describe instruction
++    sequences, not subprogram DIE boundaries.  A compiler may use
++    one sequence for several functions, or several for one function.
++    Public libdwarf exposes row addresses but not VLIW op_index;
++    check the address component without rejecting equal-address rows. */
+ static void
+-check_last_line_of_table(Dwarf_Addr   pc,
+-    Dwarf_Addr   elf_max_address,
+-    const char * sec_name)
++check_line_sequence(Dwarf_Debug dbg,
++    Dwarf_Line line,
++    Dwarf_Addr pc,
++    Dwarf_Bool final_row,
++    Dwarf_Addr *previous_pc,
++    Dwarf_Bool *in_sequence)
+ {
+-    /*  Ignore those PU that have been stripped
+-        by the linker; their low_pc values are
+-        set to -1 (snc linker only) */
+-    /*  It is perfectly sensible for a compiler
+-        to leave a few bytes of NOP or other stuff
+-        after the last instruction in a subprogram,
+-        for cache-alignment or other purposes, so
+-        a mismatch here is not necessarily
+-        an error.  */
+-
+-    if (glflags.gf_check_lines &&
+-        checking_this_compiler()) {
+-        DWARF_CHECK_COUNT(lines_result,1);
+-        if ((pc != glflags.PU_high_address) &&
+-            (glflags.PU_base_address !=
+-            elf_max_address)) {
+-            char addr_tmp[140];
+-            struct esb_s cm;
+-
+-            esb_constructor_fixed(&cm,addr_tmp,
+-                sizeof(addr_tmp));
+-            esb_append_printf_s(&cm,
+-                "%s: Address",sanitized(sec_name));
+-            esb_append_printf_u(&cm,
+-                " 0x%" DW_PR_XZEROS DW_PR_DUx
+-                " DW_LNE_end_sequence address"
+-                " does not exactly match",pc);
+-            esb_append_printf_u(&cm,
+-                " high function addr: "
+-                " 0x%" DW_PR_XZEROS DW_PR_DUx,
+-                glflags.PU_high_address);
++    Dwarf_Bool end_sequence = FALSE;
++    Dwarf_Error error = 0;
++    int res = 0;
++
++    DWARF_CHECK_COUNT(lines_result,1);
++    res = dwarf_lineendsequence(line,&end_sequence,&error);
++    if (res != DW_DLV_OK) {
++        if (res == DW_DLV_ERROR) {
++            print_common_line_error("dwarf_lineendsequence()",error);
++            DROP_ERROR_INSTANCE(dbg,res,error);
++        } else {
+             DWARF_CHECK_ERROR(lines_result,
+-                esb_get_string(&cm));
+-            esb_destructor(&cm);
+-        }
+-    }
++                ".debug_line: missing end_sequence flag");
++        }
++        return;
++    }
++    if (*in_sequence && pc < *previous_pc) {
++        DWARF_CHECK_ERROR(lines_result,
++            ".debug_line: address decreases within a sequence");
++    }
++    if (final_row && !end_sequence) {
++        DWARF_CHECK_ERROR(lines_result,
++            ".debug_line: final row is missing DW_LNE_end_sequence");
++    }
++    *previous_pc = pc;
++    *in_sequence = !end_sequence;
+ }
+ 
+ static int
+@@ -178,13 +176,13 @@
+     int cores = 0;
+     char lastsrc_tmp[ESB_FIXED_ALLOC_SIZE];
+     struct esb_s lastsrc;
+-    Dwarf_Addr elf_max_address = 0;
++    Dwarf_Addr previous_pc = 0;
++    Dwarf_Bool in_sequence = FALSE;
+     Dwarf_Bool SkipRecord = FALSE;
+ 
+     esb_constructor_fixed(&lastsrc,lastsrc_tmp,sizeof(lastsrc_tmp));
+     glflags.current_section_id = DEBUG_LINE;
+     /* line_flag is TRUE */
+-    get_address_size_and_max(dbg,0,&elf_max_address,lt_err);
+     /* Padding for a nice layout */
+     padding = glflags.gf_line_print_pc ? "            " : "";
+     if (glflags.gf_do_print_dwarf) {
+@@ -401,18 +399,13 @@
+                         }
+                     }
+                 } /* end not in bucket group */
+-                /*  Check the last record for the .debug_line,
+-                    the one created by DW_LNE_end_sequence,
+-                    is the same as the high_pc
+-                    address for the last known user program
+-                    unit (PU).
+-                    There is no real reason */
+-                if ((i + 1 == linecount) &&
+-                    glflags.seen_PU_high_address &&
+-                    !is_logicals_table) {
+-                    check_last_line_of_table(pc,
+-                        elf_max_address,sec_name);
+-                }/* end seen_PU_high_address */
++                if (SkipRecord) {
++                    /* Preserve the existing stripped/linkonce row policy. */
++                    in_sequence = FALSE;
++                } else if (glflags.gf_check_lines && !is_logicals_table) {
++                    check_line_sequence(dbg,line,pc,
++                        i + 1 == linecount,&previous_pc,&in_sequence);
++                }
+             }
+         }
+ 
