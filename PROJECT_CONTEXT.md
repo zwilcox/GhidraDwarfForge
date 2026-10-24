@@ -3401,3 +3401,31 @@ reconstructs the x86 sparse 2,147,614,795-byte file's full SHA/CRC/count from it
 retained recipe. The helper installation differs from the earlier exporter and
 reader installations; these are explicit replays, not fresh export acceptance.
 Final package and exact hosted checks remain pending.
+
+
+### Indexed allocation observer hosted acceptance (2026-10-24)
+
+**CONFIRMED:** PR #35 head `d5bd9fe8181605a703d601b1ae07faf4b4435b8f`
+passes all twelve jobs in exact pull-request run `40099934709`, attempt 1,
+with none skipped and no unresolved review threads. Independent source/package,
+all-five-target allocation/prefix artifacts and both GUI host reviews are clear.
+Thirty real pairs/repeats, ninety byte copies, thirty full producer logs and 63
+indexed metadata mutations were independently checked. The x86 large test
+compares selected metadata, not a whole-file hash. Native Windows passes
+seventeen focused checks including 532 allocation assertions and actual GUI
+selection/export/cancellation. Normal merge
+`0f05ec88704bd2681e7451efdd94d0992cb88af2` at `2026-10-24T14:24:51Z`
+preserves the tested tree. Distinct main-push run `40102383229` remains pending.
+
+PR #34's distinct main push `40099669427` now also passes all twelve jobs and
+independent Linux/Windows GUI reviews, superseding its earlier pending status.
+The separate push's cross-target jobs have CI evidence; detailed prefix artifact
+audits belong to the exact PR run. Published releases remain unchanged.
+
+The selected-file claim binder incorporates accepted allocation main normally
+as `480b6e2`, preserving reviewed `e974524`'s tree before documentation updates.
+Its independent source/runtime/package reviews are clear; exact hosted acceptance
+remains required. The next bounded program-byte observer addresses preservation
+of full headers, raw program tables and non-LOAD payloads in private backend
+candidates. It does not expose attachment or certify active section metadata,
+association CRC, file identity or a snapshot.

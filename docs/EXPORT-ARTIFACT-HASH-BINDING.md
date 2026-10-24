@@ -109,5 +109,6 @@ large input has been removed.
 These are explicit retained-export replays through the installed helper, not
 new Ghidra, validator or debugger executions. CI schedules the same oracle in
 all five target lanes, its large case on x86 and the focused suite on native
-Windows. Final package and the complete hosted gate remain required. See
+Windows. Independent local package review is clear; the complete hosted gate
+remains required. See
 `VALIDATION.md` for commands, evidence and limitations.
