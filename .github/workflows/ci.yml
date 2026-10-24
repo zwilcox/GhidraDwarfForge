@@ -476,6 +476,7 @@ jobs:
               exportReportSmoke \
               syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
               variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke \
+              stackFirstUseSmoke \
               opaqueRegisterEffectsSmoke qualifiedFunctionNameSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfAddressRangesSmoke \
@@ -915,6 +916,12 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: src/test/integration/register-copy-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
 
+      - name: Unsupported stack first-use and retained zero-offset locals
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: src/test/integration/stack-first-use-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
+
       - name: Nonzero load-segment file offset and explicit rebase
         if: matrix.target == 'x86_64'
         run: |
@@ -1194,7 +1201,7 @@ jobs:
           & .\gradlew.bat addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke qualifiedFunctionNameSmoke dwarfAddressRangesSmoke `
-            registerCopySmoke 2>&1 |
+            registerCopySmoke stackFirstUseSmoke 2>&1 |
             Tee-Object -FilePath "$resultDirectory\native-independent.log"
           if ($LASTEXITCODE -ne 0) {
             throw "native-independent Windows checks failed with exit code $LASTEXITCODE"

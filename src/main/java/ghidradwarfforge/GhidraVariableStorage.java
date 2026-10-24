@@ -259,6 +259,13 @@ public final class GhidraVariableStorage {
                 registers, monitor, "local");
         }
         if (storage.isStackStorage()) {
+            if (variable.getFirstUseOffset() != 0) {
+                // Pinned Ghidra stack symbols do not model first-use ranges.
+                // Keep the declaration, without inventing a start or an end.
+                return unavailable(OmissionReason.UNKNOWN_LIFETIME,
+                    "stack local has unsupported nonzero first-use offset " +
+                        variable.getFirstUseOffset() + "; its lifetime is not established");
+            }
             return stackStorage(storage, variable.getLength(), "local");
         }
         if (!storage.isRegisterStorage()) {

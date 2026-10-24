@@ -1057,9 +1057,19 @@ or uncertain storage remains locationless with a diagnostic.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
 
-**CONFIRMED locally; hosted gate pending:** the bounded register-copy
-implementation and independent 32/64-bit x86-64/AArch64 fixture pass final
-packaged exec/PIE/rebase exports, validators and 72 calls per debugger mode.
+**CONFIRMED locally; hosted gate pending:** a nonzero first-use field on an
+already stored stack local is diagnosed and its location omitted, retaining
+name/type/offset. Five-profile extraction and actual Java 21 tests pass.
+Packaged x86-64/AArch64 exec/PIE/rebase compiler/GDB cases pass all twelve
+exports, while the prior exporter reproduces the wrong earlier value in all
+six roles. Zero-offset locals remain correct. Exact hosted acceptance remains
+pending; see `docs/STACK-FIRST-USE.md`. No general slot-reuse boundary is inferred.
+
+**CONFIRMED in hosted run `40079317009`:** exact PR #29 head `698e939` passes
+all twelve jobs. The bounded register-copy fixture passes x86-64/AArch64
+exec/PIE/rebase exports, validators and 72 calls per debugger mode, with
+independent package and targeted runtime/host-artifact reviews. Normal merge
+`25f9830` preserves the tested tree.
 It tracks one direct saved
 register through the original overwrite, then stops at an unproved backup
 write. The whole-function flow/opaque guards remain mandatory. No call,
@@ -1091,8 +1101,10 @@ changing-stack test proves SP-relative adjustment, not value migration.
   control-flow shapes remain planned.
 - [ ] Track supported register-to-register and register-to-stack moves across
   calls using the selected ABI and recovered instruction evidence.
-- [ ] Test stack-local first-use and slot-reuse boundaries; record unavailable
-  intervals where identity or lifetime cannot be established.
+- [~] Test stack-local first-use and slot-reuse boundaries; record unavailable
+  intervals where identity or lifetime cannot be established. The bounded
+  nonzero-stack-first-use omission passes local compiler/GDB tests; exact
+  hosted acceptance and general identity/lifetime recovery remain pending.
 - [ ] Support mixed register/memory composite pieces when every piece has
   defensible size, order and lifetime information.
 - [~] Compare GDB values with compiler-oracle fixtures at multiple PCs on each

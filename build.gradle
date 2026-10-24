@@ -310,6 +310,18 @@ tasks.register("registerCopySmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/register-copy/cache").absolutePath
 }
 
+tasks.register("stackFirstUseSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks omission of unsupported nonzero stack-local first-use storage"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.StackFirstUseSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/stack-first-use/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/stack-first-use/cache").absolutePath
+}
+
 tasks.register("opaqueRegisterEffectsSmoke", JavaExec) {
     group = "verification"
     description = "Checks conservative register locations around unmodeled instruction effects"

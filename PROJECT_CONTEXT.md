@@ -2940,3 +2940,50 @@ byte-identical pairs. Independent review also closes physical alias, offcut
 entry, fallthrough provenance and unknown-store proof gaps. The complete
 hosted gate remains required. The policy and evidence boundaries are in
 `docs/REGISTER-COPY-LIFETIMES.md`.
+
+### Unsupported stack-local starts (2026-10-24)
+
+**CONFIRMED:** Ghidra 12.0.3 rejects nonzero stack first-use during ordinary
+construction/insertion, but its public stored-variable setter persists it.
+Its decompiler stack-symbol mapping ignores that field and supplies no
+complete lifetime end. The old Forge output nevertheless located such a
+local throughout the body; in a real shared-slot fixture, the later variable
+showed the earlier object's `11` before becoming `22` in its own scope.
+Uninitialized compiler variables are a separate case and are not treated as
+proof of incorrect locations.
+
+**CONFIRMED locally; hosted gate pending:** the bounded fix preserves the
+curated name/type/offset but omits any nonzero stack-local first-use location
+with `UNKNOWN_LIFETIME` and an explicit diagnostic. It does not clip a guessed
+interval, change zero-offset/parameter behavior or claim general slot-reuse
+support. Actual Ghidra five-profile extraction and Java 21 tests pass,
+including saved/reopened metadata and guard-absent negative controls.
+Final packaged run `run.zHNit33c` passes twelve exports across x86-64/AArch64
+exec/PIE/rebase roles; old-exporter run `run.R6pJS512` reproduces the wrong
+value in all six roles. The fixed variable is typed but unavailable at all
+four observations, while the zero-offset local stays correct. Structural
+checks, exact reports, input hashes and byte-identical repeats pass. Hosted
+acceptance is still required. Policy and pinned API evidence are in
+`docs/STACK-FIRST-USE.md`; detailed commands are in `docs/VALIDATION.md`.
+
+**CONFIRMED prior acceptance:** PR #28's exact-main run `40077843290` passed
+all twelve jobs; independent Linux and native Windows GUI artifact reviews
+also pass. This supersedes its earlier pending-main checkpoint. Neither
+published alpha nor its tag/assets changed.
+
+### Register-copy hosted acceptance (2026-10-24)
+
+**CONFIRMED:** exact PR #29 head `698e9398c382923b50274516f26e928c1d4fc738`
+passed all twelve jobs in `40079317009`, attempt 1, with none skipped. The
+independent source/gate/package audit and targeted x86-64/AArch64 runtime,
+ARM32 floating and both-host GUI artifact reviews are clear. All five target
+lanes pass; MIPS evidence for this PR is its CI conclusions, not an additional
+manual artifact review. Native Windows also passes all ten focused smokes.
+The exact package SHA-256 is
+`e147f60544a0a16cd801444000ff94109e916066e4c7a9bdd9fde37bc4a9f46e`.
+Actual Java 21 smokes, production origins and 20 native producer lifetimes pass.
+
+Normal merge `25f9830f64899a1b3ed9f45e60c3b7404f0fc67c` at
+`2026-10-24T09:16:38Z` preserves the tested tree. Its separate main-push gate
+is still pending. This supersedes earlier pending-hosted register-copy notes;
+it does not attribute acceptance to the later stack guard. No release changed.

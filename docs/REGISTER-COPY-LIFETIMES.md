@@ -1,10 +1,12 @@
 # Bounded register-copy lifetimes
 
-**CONFIRMED locally; hosted gate pending:** the implementation extends a simple
-incoming parameter's location when an earlier instruction demonstrably saved
+**CONFIRMED in exact hosted run `40079317009`:** the implementation extends a
+simple incoming parameter's location when an earlier instruction demonstrably saved
 its bits in another register. The final reviewed package passes real exporter,
 validator and GDB acceptance on x86-64/AArch64 non-PIE, PIE and rebased PIE.
-The complete hosted gate remains required; this is a bounded profile claim.
+All twelve jobs and independent package/targeted runtime/host-artifact reviews
+pass for PR #29 head `698e939`; normal merge `25f9830` preserves the tested tree.
+This remains a bounded profile claim.
 
 The existing whole-function register proof and its opaque-effect guard remain
 in force. Only a rejected, single direct-register parameter can enter the
