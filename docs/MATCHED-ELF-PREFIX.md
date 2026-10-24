@@ -8,7 +8,8 @@ Java 21, including an input above 2 GiB under a 64 MiB heap. Independent source
 review is clear. Installed-package comparisons pass for eighteen fresh
 x86-64/AArch64/MIPS32 big-endian export pairs, with structural validators and
 GDB. Independent source, artifact and final local package reviews are clear.
-The separate main push remains pending; published releases are unchanged.
+The separate main push `40099669427` now also passes all twelve jobs and both
+independent GUI artifact reviews; published releases are unchanged.
 
 The current matched writer first copies every original byte, appends debug data
 and a new section table, then changes specific fields in the fixed ELF header.
