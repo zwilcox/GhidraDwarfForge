@@ -3067,3 +3067,18 @@ inherited frame diagnostics and zero unexplained errors, and GDB freshness,
 typed-value/stepping and later-edit controls. Original bytes and timestamps
 remain unchanged. Candidate `ffe6c81` has the same omission and is also
 intermediate only; a new exact-head full gate and package review are required.
+
+### Windows short-parent test oracle correction (2026-10-24)
+
+**CONFIRMED:** candidate `e465e07`, run `40085186824`, passes all five target
+lanes, including the corrected timestamp check and eight real path exports with
+three rejection cases. Exact package and Linux GUI/runtime reviews pass. Its
+Windows focused job fails before the new alias probe: `OutputPathPolicySmoke`
+expects the raw `RUNNER~1` temporary-parent spelling, while the intended policy
+returns the actual `runneradmin` parent. This is a stale test expectation.
+
+The test now retains the raw request, independently resolves its existing
+directory, and requires exact expected filenames below that directory plus
+input file identity. Actual Java 21 and configured Linux checks pass. Production
+bytes are unchanged; native Windows acceptance and the full updated-head gate
+remain pending. No skipped Windows alias/GUI test is counted as passed.

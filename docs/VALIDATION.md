@@ -3488,3 +3488,30 @@ warns, typed values/stepping work, and original bytes/mtime remain unchanged.
 Exact updated-head package, native Windows alias and complete CI evidence are
 still required; the implementation and packaged production bytes are unchanged
 by this harness-only correction.
+
+### Windows short-parent oracle follow-up
+
+**CONFIRMED:** `e465e07` / run `40085186824` passes all five target lanes and
+the exact package audit. The corrected timestamp check, new path fixture and
+Linux Script Manager journey pass. Independent x86 artifact `12557765728`,
+SHA-256 `bc2a4193fb6e8e1594bc1da805211b543eb252cbdd79c046e4ac0e7639e50329`,
+proves path `run.iepckxq7` (eight exports, three rejection cases), timestamp
+`run.23cF4CZi` and GUI `run.dBhFyP46`; 24 relevant strict reports have zero
+unexplained errors. JAR/script hashes match the exact audited package.
+
+The complete run nevertheless fails native Windows before `PathTraversalSmoke`.
+Failure artifact `12556703937`, SHA-256
+`a15aac78efa714cec8ea55cfe99bab4f1c97158f99596296414bbe53ca7b8b01`,
+records `OutputPathPolicySmoke` expecting a short `RUNNER~1` temporary parent
+while production correctly returns its canonical `runneradmin` spelling.
+Only the preceding address-normalizer smoke passed; the new alias controls and
+Windows GUI did not run. This candidate is intermediate evidence, not acceptance.
+
+The correction keeps the raw temporary/input paths as production arguments,
+derives the real directory independently, and checks all five exact literal
+filenames plus `Files.isSameFile` for the input. It records both parent spellings
+and an `output-policy-existing-parent=PASS` marker. Production and published
+artifacts are unchanged. Configured Linux and actual Java 21 checks pass in
+`build/path-traversal-review/windows-parent-configured.log` and
+`windows-parent-java21/`; independent source review is clear. The updated exact
+package, native Windows alias/GUI evidence and full twelve-job gate remain required.

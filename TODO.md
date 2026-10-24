@@ -1386,6 +1386,11 @@ The initial hosted timestamp harness omitted the new helper from its explicit
 `javac` source list. That dependency is corrected and the full local timestamp
 regression passes; both earlier heads remain intermediate, pending the new
 exact-head gate.
+The next candidate passed all five target lanes, then Windows exposed a stale
+short-parent spelling expectation before the new alias test. The corrected
+oracle retains the raw request and checks the canonical directory with literal
+filenames and file identity. Local Java 21 passes; the full updated native gate
+is still required.
 
 **Status:** `[x]` for the validated paths — deterministic default and explicit paths, stale-path input
 override with imported-file hash verification, preflight collision/write
