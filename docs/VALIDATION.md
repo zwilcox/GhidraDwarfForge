@@ -1015,3 +1015,49 @@ reproduction establish the cause without claiming those lost timestamps.
 The x86 CI lane now runs the deterministic GDB regression; the existing
 publisher smoke also runs on native Windows. Local build and focused checks
 pass. The next exact versioned candidate still requires full hosted validation.
+
+## Native patch checkout and provenance consistency (2026-10-23)
+
+Prepublication audit of candidate `ddad598` in run `40055176326` verified the
+GitHub artifact digest, all release/native/source/runtime manifests, embedded
+source and Java 21 bytecode, and twenty packaged Linux producer lifetimes using
+the downloaded production JAR. It also found a provenance mismatch: Windows
+build metadata recorded `733405d03e2fd34f7bba971e6bbfe534d72ee9b3c1856879a7652f4eff17bc2a`,
+while the bundled patch and release pin were
+`b98561b3e63b76546bd2f18d81d53e188b56deb637b5e145205b3b6eedadf696`.
+
+The former is exactly the latter patch converted from LF to CRLF. Applying
+each with GNU patch to independently extracted copies of the pinned libdwarf
+archive produced byte-identical source trees; the CRLF application explicitly
+reported stripping trailing CRs. This establishes equivalent patched content
+locally, not that the previous raw provenance records agreed. Evidence is under
+`corrective-alpha2/build/exact-release-verification/patch-equivalence/` in the
+isolated worktree collection. No patch content, native API or version changed.
+
+The correction forces LF patch checkouts and checks the pin before all four
+Linux/Windows primary/comparison applications. Release assembly requires both
+platform metadata records to match the canonical bundled patch. It rejects
+missing, malformed, duplicate or mismatched records and a nonpinned bundled
+patch before replacing any previous output ZIP. GNU checksum escaping in
+Windows paths and CRLF metadata lines remain supported.
+
+The assembler requires an unbundled Gradle base ZIP and native inputs with
+their own nonempty regular metadata files. Native-inclusive or already-bundled
+compliance bases are rejected before copying; base contents cannot supply a
+missing native file or cause new compliance files to nest below stale ones.
+
+```bash
+git check-attr text eol -- native/libdwarf/patches/*.patch
+src/test/integration/release-package.sh
+```
+
+**PASS locally:** a temporary Git checkout with `core.autocrlf=true` reproduces
+the CRLF hash without attributes and the pinned LF hash with them. The exact
+pre-application checksum check rejects the former and accepts the latter.
+The updated package regression fails against the previous assembler, which
+accepted the inconsistent Windows hash; the fixed suite passes all rejection
+cases, previous-output preservation, escaped Windows metadata, every manifest,
+wrapper permissions and two byte-identical assemblies. Logs are in
+`native-patch-provenance/build/provenance-review/`. Native Windows and the full
+exact-candidate matrix remain pending; this audit does not authorize publishing
+the earlier mismatched package.

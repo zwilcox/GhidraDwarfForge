@@ -79,6 +79,12 @@ are merged into `main`; the published alpha.1 remains affected.
   paired source; original ELF metadata and later source-edit warnings remain
   intact. Deterministic publisher/cancellation and GDB regressions pass;
   exact candidate CI remains required before release.
+- [x] **CONFIRMED locally:** force canonical LF native patch checkouts, verify
+  their pinned hash before all host/comparison builds, and reject inconsistent
+  patch metadata during release assembly. Candidate audit exposed Windows CRLF
+  metadata; equivalent patched source does not excuse mismatched provenance.
+  Checkout-conversion and malformed-metadata regressions pass; fresh complete
+  candidate CI, including native Windows, remains required before publication.
 
 ## 1. Milestone ordering
 
