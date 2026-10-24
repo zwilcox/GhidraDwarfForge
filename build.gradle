@@ -386,6 +386,14 @@ tasks.register("artifactPairPublisherSmoke", JavaExec) {
     }
 }
 
+tasks.register("pathTraversalSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks filesystem traversal and artifact-pair path identity"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.PathTraversalSmoke"
+}
+
 tasks.register("outputPathPolicySmoke", JavaExec) {
     group = "verification"
     description = "Checks default, explicit, colliding, and unwritable output paths"

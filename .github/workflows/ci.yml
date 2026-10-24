@@ -472,7 +472,7 @@ jobs:
             src/test/integration/headless-wrapper.sh
             src/test/integration/architecture-neutrality.sh
             ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke \
-              ghidraTargetAgreementSmoke outputPathPolicySmoke \
+              ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke \
               exportReportSmoke \
               syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
               variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke \
@@ -1069,6 +1069,10 @@ jobs:
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2"
 
+      - name: Actual filesystem traversal through saved-program export and source lookup
+        if: matrix.target == 'x86_64'
+        run: python3 src/test/integration/path-traversal-export.py "$GHIDRA_INSTALL_DIR"
+
       - name: Automatic build-ID and debuglink sidecar association
         env:
           TARGET: ${{ matrix.target }}
@@ -1201,7 +1205,7 @@ jobs:
           & .\gradlew.bat addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke qualifiedFunctionNameSmoke dwarfAddressRangesSmoke `
-            registerCopySmoke stackFirstUseSmoke 2>&1 |
+            registerCopySmoke stackFirstUseSmoke pathTraversalSmoke 2>&1 |
             Tee-Object -FilePath "$resultDirectory\native-independent.log"
           if ($LASTEXITCODE -ne 0) {
             throw "native-independent Windows checks failed with exit code $LASTEXITCODE"

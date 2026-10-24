@@ -2987,3 +2987,34 @@ Normal merge `25f9830f64899a1b3ed9f45e60c3b7404f0fc67c` at
 `2026-10-24T09:16:38Z` preserves the tested tree. Its separate main-push gate
 is still pending. This supersedes earlier pending-hosted register-copy notes;
 it does not attribute acceptance to the later stack guard. No release changed.
+
+### Actual filesystem paths and publication preflight (2026-10-24)
+
+**CONFIRMED:** the old output policy lexically reduced `symlink/..` before
+opening a file. A Linux compiler fixture reproduces both a wrong-input hash
+rejection and an independently misdirected output. Separate public-publisher
+controls reproduce cross-stage cleanup deleting a newly published source and
+a directory destination being moved before a cleanup failure. The script's
+ordinary path policy already rejected directory destinations; that finding
+is specific to the public API, not a new default-export regression.
+
+**CONFIRMED locally; hosted gate pending:** production commits `a0b75fb` and
+`821808a` resolve existing parents with host filesystem semantics while keeping
+literal file leaves, check all stage/final aliases before mutation, reject
+stage symlinks and unsupported final objects, and preserve dangling-leaf
+rollback. Input-link default naming and unrelated output-link referents remain
+intact. Standalone exporter/source/native paths share the policy; report
+formatting does not introduce filesystem I/O. Missing-input-parent guidance
+keeps `--input` and avoids unrelated `--output` advice.
+
+Final package run `run.ua6ucr7i` passes eight real saved-program exports and
+three rejection cases, with exact paths/reports, source lookup from another
+working directory, typed values/stepping, validators, immutable inputs and
+identical repeats. Every program database/live index/property is unchanged;
+only two explicitly recorded Ghidra index backup paths may rotate. Actual
+Java 21 focused checks and an isolated direct-native raw-path probe pass.
+The final JAR is `14c6fb2e4a89a98888570873e27790761ea3785c543dc1fc6fa4f43dd19f47f3`.
+Independent code and runtime review is clear. Full hosted/native Windows gates
+remain pending. `docs/FILESYSTEM-PATHS.md` defines the scope; this is not an
+attachment transaction or a new crash/concurrency guarantee. Releases stay
+unchanged.

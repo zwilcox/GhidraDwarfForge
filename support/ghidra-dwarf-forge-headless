@@ -44,8 +44,8 @@ reject_log_alias() {
     [[ -n "$protected" ]] || return 0
     lexical=$(realpath -m -s -- "$protected") ||
         die_usage "cannot resolve protected path: $protected"
-    # Ghidra's Java policy normalizes '..' lexically before opening files;
-    # shell/native consumers may instead traverse a symlink before '..'.
+    # Protect actual traversal and its lexical lookalike. Legacy clients can
+    # interpret '..' differently; neither spelling may become a log target.
     for candidate in "$protected" "$lexical"; do
         canonical=$(realpath -m -- "$candidate") ||
             die_usage "cannot resolve protected path: $protected"

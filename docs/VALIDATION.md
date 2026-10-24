@@ -3293,3 +3293,105 @@ Normal merge `25f9830f64899a1b3ed9f45e60c3b7404f0fc67c` retains the exact
 reviewed tree. Its distinct main-push gate remains pending. This accepted
 change is not in either immutable published alpha and does not validate the
 subsequent stack-first-use guard's hosted pipeline.
+
+## Filesystem traversal and public pair identity (2026-10-24)
+
+**CONFIRMED locally; hosted acceptance pending.** Production `a0b75fb` corrects
+actual parent traversal and public publication preflight; `821808a` restores
+stale-input guidance and avoids unrelated output advice. The final JAR is
+`14c6fb2e4a89a98888570873e27790761ea3785c543dc1fc6fa4f43dd19f47f3`;
+the production script SHA-256 is
+`73c11b45f6f87cd93df7e011964699cf2172638bafc5bc2a2f0333433c51a1c2`.
+Private package `df4c89e2261187a7176932ea777274714998df578a1dc97c444c4fa6ea6654b1`
+passes all five manifests and is installed in an owned Ghidra clone. The base
+installation's launch-properties hash remains unchanged. No native mapping,
+producer-source patch, release version, tag or published asset changes.
+
+The six focused traversal/output/publisher/source/report/native-resolver checks,
+architecture guard and extension build pass. Focused checks also pass on actual Java 21.0.12.1 using test classes compiled
+with `--release 21`. Publication/report checks passed before the diagnostic-only
+follow-up; the changed policy/traversal checks were rerun against the exact
+final JAR. All 139 production classfiles match that JAR and are Java 21-compatible. Local
+headless uses the complete JDK 25.0.4.1. A reviewer's initial attempt to run
+Gradle's Java 25 test classes on Java 21 failed correctly and is retained;
+the explicit release-21 recompilation then passed. Do not conflate those runs.
+
+Meaningful baseline controls reproduce wrong traversal, cross-stage publication
+cleanup deleting the new source, and a directory final target being moved before
+cleanup throws. Fixed controls reject before mutation, preserving all sentinels,
+stages and the directory child. Real links/hard links, all six path-pair aliases,
+NOFOLLOW stage checks, dangling output links/rollback, missing/invalid parents,
+nonregular targets and cancellation/failure regressions pass. Windows tests use
+host lookup as their oracle and do not silently skip missing link capability.
+Native Windows acceptance remains pending.
+
+Final real fixture `build/test-results/path-traversal/run.ua6ucr7i` uses the
+installed wrapper and saved curated Program. All four cases pass two exports:
+traversed input, traversed output, input-leaf default names and output-leaf
+replacement. The artifact-bound reports select exact intended paths and hashes;
+input/reference/lookalikes and link referents remain unchanged. Both `.dbg` and
+`.dbg.c` repeat byte-for-byte. GDB from an unrelated directory resolves the exact
+source fullname and analyst signature, prints `19`/`23`, observes return `42`,
+executes next/step and exits normally. Installed production-script origin is
+verified in all eleven export/rejection transcripts. Two alias negatives and a
+missing-input-parent negative pass with no published artifact or sentinel
+changes; the latter has `--input` and no misleading `--output` hint.
+
+GNU/LLVM pass with empty stderr; GDB stderr is empty. Exact code-index and its
+negative controls pass. Strict libdwarf retains four exactly corroborated
+inherited frame diagnostics per case, with zero unexplained errors. The same
+verified pinned checker used for the preceding stack regression is required
+through `DWARFDUMP`, not a system-tool fallback.
+
+The saved-program oracle inventories every file and requires a real `.gbf`.
+Only `PathTraversal.rep/idata/~index.bak` and `~journal.bak` may differ; every
+other addition/removal/change fails. Final `.gbf`, live indexes and properties
+remain byte-identical through all eight exports and three negatives. Initial
+`run.9timcjtk`/`run.7myq952c` failed an overbroad whole-project assertion. The
+latter records only replacement of the index backup and removal of the journal
+backup; pinned `IndexedLocalFileSystem` explicitly rotates those files. Its
+source digest/excerpt is retained in
+`build/path-traversal-review/project-housekeeping-source.txt`. This is precise
+program-database preservation, not unchanged project-directory bytes.
+
+Baseline `run.hiu23mk3` uses unchanged stack-guard JAR `0bffbe24632d077f9c25a8e6f2f17e8cae9b84ac0c7884d3e93a01ea264ef181` and requires
+two wrong-input FATAL results plus two wrong-directory exports. Its exported
+artifact still validates and works in GDB, demonstrating why artifact validity
+alone does not prove correct destination selection. It is explicitly a
+`BASELINE-REPRODUCED` outcome, not a successful fix. Intermediate fixed JAR
+`bd090c67e803c38f7ea2545ad54a6549416c10a9cfd8d1add370f5b1f9ac7b49` run `run.r1m2kptu` passed before the diagnostic follow-up; final
+acceptance above is tied to JAR `14c6fb2e4a89a98888570873e27790761ea3785c543dc1fc6fa4f43dd19f47f3` and the final installed script.
+
+The isolated direct-native probe
+`build/path-traversal-review/direct-native-yd0wje9q` independently supplies raw
+traversed input, library and output paths to the public exporter/source APIs.
+Final-JAR native runs preserve original bytes and repeat validator-inspected
+outputs exactly. GNU/LLVM/strict checks and GDB exact source fullname/list,
+entry breakpoint and normal exit pass. The directory lives in the DWARF 5
+line table, not a CU `DW_AT_comp_dir`; an initial info-only assertion was wrong,
+was retained, and was corrected to check the actual line table. Full signature
+and value acceptance belongs to the separate headless fixture above. Exact final provenance is in
+`build/path-traversal-review/final-hint-java21-result.json` and the probe's
+`final-hint-{first,repeat,llvm,gdb}` logs. The probe's older `result.json`
+intentionally names intermediate JAR `bd090c67...`; it is retained historical
+evidence, not the final-JAR record.
+
+Representative commands:
+
+```bash
+GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC \
+    ./gradlew pathTraversalSmoke outputPathPolicySmoke artifactPairPublisherSmoke \
+    syntheticSourceSmoke exportReportSmoke packagedNativeLibrariesSmoke buildExtension
+src/test/integration/headless-wrapper.sh
+src/test/integration/architecture-neutrality.sh
+DWARFDUMP=/path/to/verified-pinned-dwarfdump \
+    python3 src/test/integration/path-traversal-export.py /path/to/private-fixed-ghidra
+```
+
+Independent source/fixture reviews and final runtime audit are clear. Evidence:
+`build/path-traversal-review/independent-closure-audit.json`, the standalone
+results, final Java 21 results and `build/path-independent-review/` controls.
+Workflow lint, wrapper log-collision regressions, Python syntax and whitespace
+checks pass. The pipeline adds one Linux x86 runtime fixture and a focused smoke
+on Linux/native Windows while retaining all existing architecture and host
+lanes. Its exact-head full gate and candidate-package audit are still required.
