@@ -13,7 +13,13 @@ The installable archive is named:
 GhidraDwarfForge-<version>-ghidra-12.0.3.zip
 ```
 
-Ghidra compatibility remains recorded separately in `extension.properties`.
+Ghidra compatibility remains recorded separately in `extension.properties`:
+its generated `version=12.0.3` identifies the required Ghidra version, not the
+project version. The packaged `VERSION` and `RELEASE-MANIFEST.txt` identify the
+GhidraDwarfForge release. The corrective alpha is described in
+[`releases/0.1.0-alpha.2.md`](releases/0.1.0-alpha.2.md); the published alpha.1
+tag and assets remain unchanged.
+
 The initial host packages are Linux x86-64 and Windows x86-64. The required
 target release lanes are x86-64 and AArch64 ELF; ARM32 and MIPS32 big/little
 endian have additional hosted validation but remain narrower, explicitly

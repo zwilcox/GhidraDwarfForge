@@ -5,6 +5,7 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.FileTime;
 
 /** Publishes an already-staged sidecar/source pair with rollback on failure. */
 public final class ArtifactPairPublisher {
@@ -89,6 +90,14 @@ public final class ArtifactPairPublisher {
         boolean sourceInstalled = false;
         boolean success = false;
         try {
+            // GDB compares source freshness with the separate debug objfile.
+            // Both callbacks are complete now: make the staged sidecar at least
+            // as recent as its source, without lowering either timestamp or
+            // touching the original executable. Later source edits still warn.
+            FileTime sourceTime = Files.getLastModifiedTime(sourceStage);
+            if (Files.getLastModifiedTime(artifactStage).compareTo(sourceTime) < 0) {
+                Files.setLastModifiedTime(artifactStage, sourceTime);
+            }
             if (Files.exists(artifactTarget)) {
                 artifactBackup = backupPath(artifactTarget);
                 moveAtomically(artifactTarget, artifactBackup);

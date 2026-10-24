@@ -627,6 +627,23 @@ also pass real export and explicit GDB/QEMU loading for `--build-id=none`
 fixtures whose sidecars correctly make no build-ID claim. Automatic
 installation into a global debug directory remains outside this slice.
 
+**CONFIRMED locally (2026-10-23):** the original x86-64 build-ID test checked
+successful lookup but did not reject GDB warnings. Automatic separate-file
+association warned about allocated relocation sections because the writer
+renamed and zeroed them. Allocated REL/RELA headers now become inert
+`SHT_NOBITS` entries retaining their original names/addresses/sizes/offsets/
+alignment and only `SHF_ALLOC`; link/info/entry-size fields are cleared.
+Nonallocated relocation retirement is unchanged.
+
+The stricter association harness checks ET_EXEC and PIE on every target lane,
+including full DWARF symbol identity, the exact debug artifact/source file,
+function address, type/source lookup, and build-ID mismatch rejection.
+Debuglink tests modify only private fixture copies with target `objcopy`;
+CRC rejection uses inputs and sidecars with no build ID so another discovery
+method cannot mask failure. All four locally available targets pass, alongside
+the existing six-role native/QEMU matrix. The optional product attachment mode
+remains unimplemented, and hosted verification of this expansion is pending.
+
 **CONFIRMED (2026-09-02):** the installed extension's opt-in headless path now
 extracts Ghidra functions into immutable name/address/size records and emits a
 DWARF 5 CU with one subprogram DIE per contiguous function. Discontiguous
@@ -1848,7 +1865,73 @@ and validated against the updated `main` in order. Use GitHub for live merge
 and CI state. No protection rule was weakened, no admin bypass was used, and
 this integration does not replace the published alpha artifact.
 
-### 16.29 Installed Script Manager export journey
+### 16.29 Corrective alpha.2 preparation
+
+**CONFIRMED integration:** PRs #16/#17/#18 are merged through their enforced,
+up-to-date checks; `main` is `1f2a46b`. The final ELF robustness PR head passed
+all twelve jobs in run `40051501201`. The versioned candidate includes the
+separately reviewed `32d2303` automatic-association correction and strengthened
+build-ID/debuglink tests. Its combined tree passes nineteen native-independent
+smokes, `buildExtension` and `release-package.sh`; exact versioned hosted
+validation and publication remain **PLANNED**.
+
+**CONFIRMED (2026-10-23):** `VERSION` is now `0.1.0-alpha.2` in the isolated
+corrective-release branch based on `b089802`. The release notes at
+`docs/releases/0.1.0-alpha.2.md` describe all six alpha.1 correctness fixes,
+P0.9 ELF layout/resource/cancellation changes, and the tested host/target
+profiles. They explicitly retain the direct-`PN_XNUM` runtime restriction,
+metadata limits, conservative location policy and remaining feature work.
+Later feature branches are excluded from this candidate.
+
+Source inspection of the pinned Script Manager confirms that its ordinary Run
+action supplies no script arguments. The existing no-argument production
+script performs preflight only. Release notes therefore direct alpha.2 users
+to the tested headless wrappers and distinguish the programmatically invoked
+GUI fallback test from a full Script Manager export journey; later launcher
+work remains outside this corrective candidate.
+
+The Ghidra-generated `extension.properties` still uses `version=12.0.3` for
+host compatibility. The packaged `VERSION` and assembly-derived
+`RELEASE-MANIFEST.txt` identify alpha.2. No native library was rebuilt for the
+local preparation check: existing hosted native files and corresponding-source
+materials were verified against their recorded manifests before reuse.
+
+**CONFIRMED locally:** clean `buildExtension`, `release-package.sh`, two
+byte-identical native-inclusive assemblies, all release/platform/source/runtime
+manifests, version metadata, ZIP integrity/timestamps and executable wrapper
+permissions pass. The assembled Linux native pair passes
+`packagedNativeProducerSmoke` for 20 producer lifetimes with deterministic
+output. Logs and the local rehearsal ZIP are under
+`/home/ziggy/GhidraDwarfForge-worktrees/corrective-alpha2/build/release-preparation/`.
+The shared Ghidra installation was not changed.
+
+**PLANNED:** integrate the versioned candidate after the reviewed correction
+stack and run the full required matrix on the exact release commit. Publish
+only that validated CI package with its commit, run and checksum recorded.
+Local assembly is a packaging rehearsal, not final hosted release validation.
+No alpha.2 tag or release was created during preparation; alpha.1 and its
+assets remain unchanged.
+
+### 16.30 Source/sidecar publication timestamps
+
+**CONFIRMED:** main run `40053041949` failed the AArch64 rebased extended-program
+layout's static GDB check with a source-freshness warning. GDB 15.1 compares the
+source mtime with its compilation unit's loaded debug objfile, which is the
+Forge `.dbg`, rather than necessarily the original executable. Pair publication
+previously wrote the artifact first and source second, exposing a seconds-boundary
+race even for an unchanged program. The retained failed Forge pair reproduces
+that comparison independently of the original ELF's timestamp.
+
+Publication now raises the staged sidecar mtime to the staged source mtime only
+when needed, before any final target backup/replacement. It compares full
+`FileTime` values, never lowers an existing newer sidecar timestamp, and keeps
+callback/cancellation order unchanged. Original executable bytes and timestamps
+are untouched. Rollback restores the previous pair and its timestamps. A later
+source edit still warns in GDB; no warning filter was added. Deterministic unit,
+source-built GDB/runtime, and retained AArch64 Forge-artifact checks pass locally.
+See `docs/VALIDATION.md`; the next exact versioned CI remains required.
+
+### 16.31 Installed Script Manager export journey
 
 **CONFIRMED locally:** Ghidra 12.0.3's Script Manager Run action creates and
 executes a script without supplying arguments. Running the existing
