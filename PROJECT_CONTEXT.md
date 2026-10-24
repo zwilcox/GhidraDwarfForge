@@ -1974,7 +1974,7 @@ source edit still warns in GDB; no warning filter was added. Deterministic unit,
 source-built GDB/runtime, and retained AArch64 Forge-artifact checks pass locally.
 See `docs/VALIDATION.md`; the next exact versioned CI remains required.
 
-### 16.31 Native patch checkout and provenance consistency
+### 16.32 Native patch checkout and provenance consistency
 
 **CONFIRMED:** prepublication audit of candidate run `40055176326` found that
 Windows `BUILD-METADATA.txt` recorded patch hash `733405d03e2fd34f7bba971e6bbfe534d72ee9b3c1856879a7652f4eff17bc2a`,
