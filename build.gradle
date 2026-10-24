@@ -378,6 +378,18 @@ tasks.register("ghidraArm32FunctionModesSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/function-modes/cache").absolutePath
 }
 
+tasks.register("dynamicParameterStorageSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks computed parameter storage in saved Ghidra programs across five targets"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.DynamicParameterStorageSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/dynamic-parameters/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/dynamic-parameters/cache").absolutePath
+}
+
 tasks.register("floatingRegisterSliceSmoke", JavaExec) {
     group = "verification"
     description = "Emits a scalar upper-register bit piece through the isolated native producer"

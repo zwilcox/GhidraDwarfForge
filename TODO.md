@@ -1054,6 +1054,15 @@ Map Ghidra registers to target DWARF register numbers using isolated architectur
 
 ## P1.11 Emit parameters/locals with accurate locations
 
+**CONFIRMED locally; full hosted acceptance pending:** computed dynamic
+parameter storage now survives a false persisted `hasAssignedStorage()` flag.
+Actual Java 21 five-language saved/reopened checks and a real ARM base/VFP
+float oracle pass, with existing lifetime/omission rules unchanged. The new
+generic integer fixture passes locally on all five targets and is wired to
+their pipeline lanes. This does not
+complete general lifetimes or ABI classification; see
+`docs/DYNAMIC-PARAMETER-STORAGE.md`.
+
 **CONFIRMED locally (2026-10-23):** mapped logical FP aliases preserve scalar
 float/double arguments on x86-64/AArch64 and scalar floats on both MIPS O32
 byte orders through stores, PIE and explicit rebases. First-overwrite prefix

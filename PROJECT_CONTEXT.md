@@ -3929,3 +3929,20 @@ actual Java 21 planner231/extraction38, the 2 GiB/64 MiB large-file oracle,
 the original Thumb harness, an owned export-dynamic variant and the unchanged
 shared-library GDB script using a clone of the saved program. Original selected
 inputs/evidence remain unchanged. Fresh full hosted acceptance is required.
+
+### Effective dynamic parameter storage (2026-10-24)
+
+**CONFIRMED locally; full hosted acceptance pending:** Ghidra 12.0.3 can retain
+an unassigned parameter symbol row while computing valid parameter storage from
+the curated function signature. Forge previously rejected that effective
+storage through `hasAssignedStorage()`. A parameter-only correction removes
+that redundant persisted-row guard while preserving every effective-storage,
+lifetime, cancellation and local-variable rule. Actual Java 21 checks cover
+five languages and saved/reopened programs; the old JAR fails the same control.
+The generic integer fixture passes real exporter/validator/GDB checks on all
+five existing target profiles, with actual unavailable intervals and preserved
+inputs. An installed ARM fixture proves four exact typed base/VFP float parameters,
+two honest modified-register omissions and deterministic validator-clean
+exports. Whole-file ELF attributes do not determine per-function conventions;
+this is not a broad ABI classifier. See
+[`docs/DYNAMIC-PARAMETER-STORAGE.md`](docs/DYNAMIC-PARAMETER-STORAGE.md).

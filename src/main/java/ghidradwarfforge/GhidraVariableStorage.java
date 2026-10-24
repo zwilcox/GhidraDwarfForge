@@ -66,8 +66,8 @@ public final class GhidraVariableStorage {
             Parameter parameter, TargetRegisterMap registers, TaskMonitor monitor)
             throws CancelledException {
         VariableStorage storage = parameter.getVariableStorage();
-        if (!parameter.hasAssignedStorage() || storage == null ||
-                storage.isUnassignedStorage()) {
+        // Dynamic parameters can have effective storage while their symbol row is unassigned.
+        if (storage == null || storage.isUnassignedStorage()) {
             return unavailable(OmissionReason.UNASSIGNED,
                 "Ghidra parameter has no assigned storage");
         }

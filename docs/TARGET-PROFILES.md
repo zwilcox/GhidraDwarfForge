@@ -60,6 +60,15 @@ their storage survives. Overwritten registers are deliberately unavailable.
 ARM32's current composite/register-local cases prove omission after overwrite;
 they are not positive proofs of those values.
 
+**CONFIRMED locally; full hosted acceptance pending:** an additional computed
+parameter-storage control covers real saved/reopened programs in all five
+languages. A hard-float ARM executable with analyst-selected base/VFP dynamic
+conventions proves four exact float entry values and two honest modified-register
+omissions. It demonstrates that a file's VFP argument attribute does not select
+every function's parameter convention. The correction preserves existing
+lifetime checks and does not establish debugger-injected-call or return-value
+ABI behavior. See [computed parameter storage](DYNAMIC-PARAMETER-STORAGE.md).
+
 The composite fixture uses analyst-curated pieces in two integer registers.
 It does not establish compiler aggregate-passing rules, mixed GPR/FP storage,
 homogeneous floating-point aggregates, or hidden return-value pointers. A
@@ -86,7 +95,8 @@ same target map as O32. Preserving its `e_flags` does not prove its locations.
 Ghidra's loader uses additional processor opinions and ABI properties. Forge's
 preflight compares width and byte order, but does not yet prove agreement of
 every ELF ABI with the selected Ghidra language/compiler specification.
-Nondefault calling-convention strings also lack independent behavior coverage.
+The bounded local ARM base/VFP parameter control does not establish behavior
+for arbitrary nondefault calling-convention strings.
 These are **PLANNED** classification and diagnostic checks, not claims that all
 accepted files are correctly modeled or that every such file is broken.
 

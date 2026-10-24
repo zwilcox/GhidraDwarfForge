@@ -5544,3 +5544,108 @@ their observed bytes/size/mtime. Headless execution uses Java 25; actual Java 21
 focused checks are separate. Initial package-auditor layout assumptions stopped
 before runtime and remain retained. Final exact-document packaging and a fresh
 full hosted gate are still required.
+
+### Effective dynamic parameter storage: local controls (2026-10-24)
+
+**CONFIRMED locally; hosted acceptance pending:** the correction changes only
+the `stableParameter` unassigned-storage guard. It uses effective Ghidra storage
+instead of the persisted symbol's assignment flag and preserves all remaining
+validity, lifetime, prefix, local-variable and cancellation policies. The pinned
+API investigation and initial saved/reopened old-exporter omission evidence
+are retained in `thumb-mode-cues/build/next-abi-profile-review/`.
+
+Interim runtime ZIP SHA-256
+`c2e70b3a2c7f487405280de5caf7aa8b91fa37c545fa3819968b430eb8cd9b5d`
+contains JAR `2fb0d5e41ca6507e4f65e2f1b5dfde5ce61d8d00f541d1355519c43f8c691600`
+and unchanged production scripts. Private installation verifies all 49 embedded
+production sources, two scripts, 220 major-65 classes and five manifests.
+This package predates the dynamic-storage documentation; final exact-source
+packaging remains required.
+
+Focused actual Java 21 run `build/dynamic-parameter-review/java21.x0e43r3e`
+passes 154 assertions across five language profiles, including saved/reopened
+programs and public type/location extraction. Tests are compiled with JDK 25
+`--release 21` and run with a 256 MiB heap, packaged JAR first; class-load logs
+bind the actual storage/type extractor. The same compiled test against the
+earlier `5faafc73...` JAR fails on its first x86-64 computed parameter with the
+expected `UNASSIGNED` reason (`old-jar-negative.5v5kspsd`). It does not reach
+later targets or reopening. The Gradle focused and existing variable-storage,
+prefix, alias, register-copy, stack-first-use and opaque-effect suites also
+pass, as does the extension build.
+
+Installed ARM run `build/test-results/arm-dynamic-pcs/run.pWyLkH3o` uses
+ordinary compiler-produced code with explicit per-function base/VFP conventions
+and dynamically computed Ghidra parameter storage. GDB verifies four correctly
+typed float entry values, distinct incoming register bits, two honest modified
+parameter omissions and natural program exit. The compiler checks named values
+after its prologue; its raw argument carriers are checked at entry. Both modes
+retain the real `bx lr` and `setISAMode` behavior. The test does not inject calls
+or claim nonvoid return-value ABI support. GNU and LLVM checks are quiet; strict
+libdwarf reports zero errors. Saved/reopened output/source/report bytes repeat
+identically and all ten protected inputs/module/harness files remain unchanged.
+The report is correctly `PARTIAL`/`NOT_RUN` with two `REGISTER_MODIFIED` entries.
+Headless Ghidra uses Java 25, separately from the actual Java 21 focused process.
+Independent retained-evidence review SHA-256 is
+`35c830564af0424f929adcecdf59a2833b771528195ce5efe4ce558a3263dc0d`.
+
+Initial failed ARM harness runs remain separate: `run.5S6U4JHq` used an
+unsupported GDB Python property before export; `run.StDEybjl` used global-only
+lookup for curated static Forge definitions; `run.x1TRuEE2` passed real GDB but
+its checker assumed two hex digits for every GNU readelf byte token. Only
+harness assumptions changed between those runs and the passing case. The
+fresh full hosted gate remains separate work.
+
+**CONFIRMED local five-target integer control:** the same interim packaged
+runtime passes ten real exports and ten compiler/Forge GDB sessions with the
+unchanged generic fixture/harness sources. Its author receipt
+`build/dynamic-parameter-review/generic/acceptance.json` has SHA-256
+`2257ac4bf25fc84f244dba36b2f872139be115afc1d652f6499b82fc35c8f40d`.
+
+| Target | Retained run | Strict inherited frame errors | Unexplained errors |
+|---|---|---|---|
+| x86-64 | `x86_64.fO8iPZNl` | 2 | 0 |
+| AArch64 | `aarch64.bDI7auHO` | 4 | 0 |
+| ARM32 | `arm32.tOErmevw` | 0 | 0 |
+| MIPS32 BE | `mips32be.msCw0QDS` | 0 | 0 |
+| MIPS32 LE | `mips32le.N5zfjRR7` | 0 | 0 |
+
+Runs reside under `build/test-results/dynamic-parameter-storage/`. All show
+effective dynamic storage before/after saved-project reopen and deterministic
+sidecar/source/report output. GNU and LLVM are quiet; inherited strict
+diagnostics are corroborated against each original. Eleven preservation records
+per case cover 19 unique paths across the suite. At 167 actually observed Forge
+PCs, 268 typed parameter observations have correct values and 66 are unavailable
+with matching report intervals. All ten mandatory store-function entry values
+are positive. The ARM integer-return function's first parameter remains wholly
+unavailable under the existing modified-register/prefix policy. These counts
+do not claim unexecuted paths or individual delay-slot stops.
+
+An isolated earlier-JAR x86-64 run fails the same real harness with `UNASSIGNED`.
+A separate GDB probe confirms correct raw incoming bits but both named integer
+parameters optimized out at entry, then normal exit. The negative receipt
+`generic-old.vfara7c8/result.json` has SHA-256
+`58aea92d143b709382eee8fc039454b600ce31d6e23d3de1632832433fd5b0d4`.
+Its initial audit-side traceback-format assumption failed separately and is
+retained. No fixed generic runtime or setup run failed. Root rehashed all 355
+files bound by the author receipt. Independent full source/runtime review is
+clear, recorded in `independent-source-package-review/result.json`, SHA-256
+`90c8cfae3036eba3a8068f339df930b5e27cf4c764ceab40a0c85d19c1848147`.
+Final committed package equality remains required before hosted integration.
+
+The inherited Thumb oracle exposed one stale expectation after this fix:
+`run.7UrqpknP` passes validators and all four GDB sessions, but its final checker
+still expects `UNASSIGNED`. The recovered right parameter now has a defensible
+R1 location and reads 7/3 on the two calls; left remains unavailable because R0
+is modified. The revised oracle requires exactly that availability, no right
+omission, and a full-body `REGISTER_MODIFIED` left omission. It does not accept
+either outcome permissively or alter production lifetime rules.
+
+Fresh final runs `arm-thumb-mode/run.KBDtCyM1` and
+`arm-dynamic-pcs/run.kRKyZbBc` pass four/two compiler/Forge GDB sessions, all
+validators with strict zero errors, deterministic repeats and 11/10 protected
+paths. The four shared helper definitions are unchanged; the second run binds
+the latest helper-file bytes explicitly. Thumb retains its exact synthetic
+LOCAL mode symbols and static adjacent ARM boundary; mixed PCS retains four
+float values and two honest omissions. Independent final-pair review SHA-256 is
+`abcc7cccf93757761b9473186ae018400d817f80c13e79f7a6d73689c4596a64`.
+The initial passing/failed receipts remain historical exact-source evidence.

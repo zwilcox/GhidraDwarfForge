@@ -164,13 +164,17 @@ def main():
             assert not prefix.with_suffix(".qemu.stderr").read_bytes()
             if variant == "forge" and phase == "calls":
                 for values in result["values"]:
+                    assert values["right"]["available"] and not values["left"]["available"], values
                     for parameter in ("left", "right"):
-                        if not values[parameter]["available"]:
-                            omitted = [item for item in reports[0]["omittedLocations"] if
-                                       item["function"] == "recovered_thumb_add" and item["variable"] == parameter]
-                            assert len(omitted) == 1 and omitted[0]["reason"] == "UNASSIGNED"
+                        omitted = [item for item in reports[0]["omittedLocations"] if
+                                   item["function"] == "recovered_thumb_add" and item["variable"] == parameter]
+                        if parameter == "left":
+                            assert len(omitted) == 1 and omitted[0]["reason"] == "REGISTER_MODIFIED"
+                            assert omitted[0]["kind"] == "PARAMETER"
                             assert int(omitted[0]["startAddress"], 16) == labels["thumb_add"]["code"]
                             assert int(omitted[0]["endAddress"], 16) == labels["thumb_add"]["code"] + labels["thumb_add"]["size"]
+                        else:
+                            assert not omitted, omitted
             records.append(result)
         assert warnings[0] == warnings[1]
     protected = json.loads((directory / "protected-before.json").read_text())
