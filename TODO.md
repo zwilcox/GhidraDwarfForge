@@ -44,7 +44,7 @@ gates to each implementation change and the exact versioned release commit.
 ## 0.1 Published-alpha correctness review (2026-10-23)
 
 **CONFIRMED:** the six findings against `f4a0199` are reproducible. Fixes
-are on the development branch; the published alpha remains affected.
+are merged into `main`; the published alpha.1 remains affected.
 
 - [x] Reject explicit log aliases before launch/truncation, including direct,
   normalized, symlink and hardlink input/output paths; preserve hashes and
@@ -61,13 +61,18 @@ are on the development branch; the published alpha remains affected.
 - [x] Pass the strengthened complete hosted matrix, including ARM32 bit-field
   values and native Windows log identity checks. **CONFIRMED:** all twelve
   jobs passed in run `40041110549` for implementation commit `cd906de`.
-- [ ] Complete reviewed-PR integration under the standing authorization and
-  required checks, then publish a separately validated replacement release
-  after exact-commit CI and package checks; do not replace the existing artifact.
+- [x] Integrate reviewed PRs #16/#17/#18 under the standing authorization and
+  enforced checks. `main` is `1f2a46b`; PR #18's final head passed all twelve
+  jobs in run `40051501201`.
+- [ ] Publish a separately validated corrective release after exact-commit CI
+  and package checks; do not replace the existing alpha.1 artifact.
   **CONFIRMED locally:** the isolated corrective branch prepares
   `0.1.0-alpha.2`, release notes, verified version metadata and reproducible
   assembly using existing verified native artifacts. Its Linux packaged
-  producer passes 20 lifetimes. Final integration, full hosted release
+  producer passes 20 lifetimes. The candidate also includes the independently
+  reviewed automatic-association fix and strict cross-target tests. Nineteen
+  native-independent checks, extension build and packaging regression pass on
+  the combined versioned tree. Candidate integration, full hosted release
   validation and publication remain incomplete.
 
 ## 1. Milestone ordering
@@ -105,7 +110,7 @@ items are these bounded workstreams:
 
 | Workstream | Status and acceptance needed |
 |---|---|
-| Corrective release (§0.1) | **PLANNED:** integrate reviewed PRs under the standing authorization and required checks, then validate and publish the exact versioned candidate. `0.1.0-alpha.2` version/notes and local packaging checks are prepared; final hosted release validation is pending. Preserve the existing alpha.1 artifact. |
+| Corrective release (§0.1) | **CONFIRMED:** PRs #16/#17/#18 are merged. `0.1.0-alpha.2` version/notes, local packaging checks and the automatic-association correction are prepared. **PLANNED:** integrate and validate the exact versioned candidate, then publish it without changing alpha.1. |
 | ELF robustness (P0.9) | **CONFIRMED complete within the documented bounds:** PR #18 implements extended counts, unnamed tables, bounded file-backed I/O, correct recorded-load-base translation and cancellation. Local checks and all twelve hosted jobs pass; direct PN_XNUM execution limits are documented. |
 | Function identity and scopes (P1.7, P3.3) | **PLANNED:** distinct linkage names without losing analyst-name lookup; external-function declarations, thunks/aliases, function/class/lexical scopes, static locals, and same-named type/variable disambiguation. Existing namespace globals and external-data declarations must remain working. |
 | Additional range/location cases (P1.8, P1.11a) | **PLANNED:** entry points that are not the lowest body address; proven register/memory migration, call-crossing and non-entry lifetimes, stack-slot reuse, and mixed composite storage. Require GDB value checks at multiple instruction addresses and honest unavailable gaps. |

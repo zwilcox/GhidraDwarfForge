@@ -1867,6 +1867,14 @@ this integration does not replace the published alpha artifact.
 
 ### 16.29 Corrective alpha.2 preparation
 
+**CONFIRMED integration:** PRs #16/#17/#18 are merged through their enforced,
+up-to-date checks; `main` is `1f2a46b`. The final ELF robustness PR head passed
+all twelve jobs in run `40051501201`. The versioned candidate includes the
+separately reviewed `32d2303` automatic-association correction and strengthened
+build-ID/debuglink tests. Its combined tree passes nineteen native-independent
+smokes, `buildExtension` and `release-package.sh`; exact versioned hosted
+validation and publication remain **PLANNED**.
+
 **CONFIRMED (2026-10-23):** `VERSION` is now `0.1.0-alpha.2` in the isolated
 corrective-release branch based on `b089802`. The release notes at
 `docs/releases/0.1.0-alpha.2.md` describe all six alpha.1 correctness fixes,
