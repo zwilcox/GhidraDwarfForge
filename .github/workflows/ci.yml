@@ -473,7 +473,8 @@ jobs:
             src/test/integration/architecture-neutrality.sh
             ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke \
               ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke \
-              exportReportSmoke exportReportClaimsSmoke fileDigestsSmoke elfBuildIdSmoke \
+              exportReportSmoke exportReportClaimsSmoke exportArtifactHashBindingSmoke \
+              fileDigestsSmoke elfBuildIdSmoke \
               matchedElfPrefixSmoke matchedElfAllocationsSmoke \
               syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
               variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke \
@@ -920,6 +921,19 @@ jobs:
             "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
             "$TARGET" "${extra[@]}"
 
+      - name: Selected artifact SHA claims and independent streamed hash oracle
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          extra=()
+          if [[ "$TARGET" == x86_64 ]]; then
+            extra+=(--large)
+          fi
+          python3 src/test/integration/export-artifact-hash-binding.py \
+            "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
+            "$TARGET" "${extra[@]}"
+
       - name: QEMU private socket startup and failure cleanup
         if: matrix.target == 'x86_64'
         run: src/test/integration/qemu-socket-startup.sh
@@ -1262,7 +1276,7 @@ jobs:
             opaqueRegisterEffectsSmoke qualifiedFunctionNameSmoke dwarfAddressRangesSmoke `
             registerCopySmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
             elfBuildIdSmoke exportReportClaimsSmoke matchedElfPrefixSmoke `
-            matchedElfAllocationsSmoke 2>&1 |
+            matchedElfAllocationsSmoke exportArtifactHashBindingSmoke 2>&1 |
             Tee-Object -FilePath "$resultDirectory\native-independent.log"
           if ($LASTEXITCODE -ne 0) {
             throw "native-independent Windows checks failed with exit code $LASTEXITCODE"

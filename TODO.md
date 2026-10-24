@@ -1537,6 +1537,16 @@ readiness. Local package review is clear; the exact host/target pipeline remains
 accepted prefix main is incorporated through normal merge `bb02f85`. See
 `docs/MATCHED-ELF-ALLOCATIONS.md`.
 
+**CONFIRMED locally; hosted gate pending:** the separate
+`ExportArtifactHashBinding` composes strict report-first parsing with observed
+digests of three explicitly selected regular files. Actual Java 21/64 MiB
+focused checks and independent source/runtime reviews pass, including files
+above 2 GiB. Installed oracles pass nine retained real reports across three
+targets. Opaque reported paths remain inert; per-role SHA agreement is not provenance,
+ELF/DWARF validation, a snapshot or attachment readiness. Final package and
+exact full CI remain required after allocation acceptance.
+See `docs/EXPORT-ARTIFACT-HASH-BINDING.md`.
+
 **Status:** `[ ]` — optional product operation **PLANNED**. The bounded backend
 and backup-based re-export investigation is complete; the explicit transaction
 design and remaining acceptance tests are in

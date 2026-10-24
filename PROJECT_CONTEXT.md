@@ -3365,3 +3365,39 @@ remains required. A separate bounded
 continuation will compare the three reported SHA-256 claims with explicitly
 selected files. That does not authenticate a report, establish an immutable
 snapshot, combine ELF observations into a readiness flag, or expose attachment.
+
+
+### Selected artifact SHA claims local checkpoint (2026-10-24)
+
+**CONFIRMED locally; installed and hosted gates pending:** source `5a2f8d7`
+adds `ExportArtifactHashBinding` and its focused fixtures. It completely parses
+one explicit current report before inspecting three explicit selected regular
+files, then compares original/sidecar/source SHA claims in fixed order.
+Reported paths remain opaque; selected path spelling and actual host traversal
+are preserved. Each role has a definite agreement, with no overall identity or
+attachment-readiness flag. Errors and cancellation return no result, with exact
+stream closure and original/suppressed exceptions. Ordinary export is unchanged.
+
+A rewritten report can agree with changed or plain-data files. Matching SHA
+claims do not prove ELF/DWARF validity, source correlation, provenance or a
+snapshot. PARTIAL/NOT_RUN remain claims, and discarded diagnostic inventories
+cannot support a future per-diagnostic attachment policy. Known special files
+are rejected before reads; path replacement races remain outside this check.
+
+Actual Java 21/64 MiB passes 574 default and 577 large checks, including a
+2,147,549,185-byte file with independent SHA/CRC/count expectations. Four focused
+suites, build and architecture guard pass, with independent source review.
+Installed retained-export comparisons and the complete hosted gate remain
+required; the allocation parent must integrate before the next PR. See
+`docs/EXPORT-ARTIFACT-HASH-BINDING.md`. No attachment operation or release changes.
+
+
+The frozen binder source now also passes installed actual-Java-21/64-MiB
+oracles for nine retained reports (exec/PIE/no-build-ID) across x86-64, AArch64
+and MIPS32 big-endian. All 27 artifact copies, nine exact reports/full producer
+logs, 21 mismatch subsets and 24 typed failure controls pass. Each invocation
+preserves nineteen selected parent/tool paths. Independent root runtime review
+reconstructs the x86 sparse 2,147,614,795-byte file's full SHA/CRC/count from its
+retained recipe. The helper installation differs from the earlier exporter and
+reader installations; these are explicit replays, not fresh export acceptance.
+Final package and exact hosted checks remain pending.

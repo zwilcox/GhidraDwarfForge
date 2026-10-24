@@ -4253,3 +4253,84 @@ so this is a packaging review, not another runtime execution. Evidence:
 Accepted prefix main is incorporated through normal merge `bb02f85`. Following
 acceptance documentation updates are packaged and checked against their exact
 commit before the new PR; the complete hosted gate remains pending.
+
+
+## Selected artifact hash binding focused checkpoint (2026-10-24)
+
+**CONFIRMED locally; installed/hosted acceptance pending:** source commit
+`5a2f8d749c0b99e39c945086d9dcb6eba0c9b080` adds only the helper and two focused
+test files. Existing report/digest/exporter/native code is unchanged.
+
+`GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC ./gradlew --no-daemon
+exportArtifactHashBindingSmoke fileDigestsSmoke exportReportClaimsSmoke
+pathTraversalSmoke buildExtension` passes. Java 25's compiler separately builds
+test classes with `--release 21`; actual Java 21.0.12.1 executes default 574 and
+optional `--large` 577 checks with `-Xmx64m`. Existing digest and reader suites
+(429 malformed controls) also pass on that runtime. The extension has six new
+major-65 classes. The architecture guard and whitespace checks pass. An initial
+guard command used a nonexistent filename; its failed setup log is retained,
+and the corrected command passed without a source change.
+
+The sparse original is 2,147,549,185 bytes, zeros followed by `0x57`, with SHA
+`90fe8779c170ec19522008da8aab882ee4570236a47438342b13034bec75902f`.
+The bounded-memory recipe independently supplies SHA/CRC/count expectations;
+the observation preserves size, mtime and sentinel. Focused checks cover every
+role mismatch subset, report-first typed errors, special-file preconditions,
+actual host traversal/aliases, injected attribute/open/read/close failures,
+cancellation at each stream's read/EOF/close boundary, exact stream closure and
+primary/suppressed exception preservation.
+
+Evidence in the hash-binding worktree: `build/hash-binding-review/initial-build.log`,
+`java21/`, `source-acceptance.json` and `release-review-source.json`. Independent
+root and peer source/fixture reviews are clear. The preliminary private package
+SHA is `a2e7782e4924b5c84c29701a022659116badf610fd09323c389e3a7dbcd6ea91`,
+with JAR `fc8a1c5f0cdb017962ad23b1619e1663a1dc13f9834980b003007f7cece5f3f1`.
+Its five manifests pass, and the base Ghidra launch file is unchanged. This
+preliminary package predates final acceptance documentation. Installed-JAR
+comparisons and full native Windows/five-target hosted acceptance remain pending.
+
+
+### Installed selected-file hash observations
+
+**CONFIRMED locally:** final installed-oracle runs are `x86_64.7pt1hw75`
+(with `--large`), `aarch64.vfw09p2b` and `mips32be.6yfjh3b1` under
+`build/test-results/export-artifact-hash-binding/`. The commands use actual
+Java 21.0.12.1, `-Xmx64m`, Java 25's `javac --release 21`, the private installed
+module above and explicit `--claims-result` paths to the earlier reader results.
+They record different reader/export installations rather than infer new exports.
+All command stderr is empty.
+
+The nine report groups and repeats agree with independent Python SHA/CRC/count
+observations. Evidence retains 27 complete artifact copies, nine exact JSON
+reports, nine full producer logs and each parent reader receipt. Each target
+preserves nineteen selected parent/module paths. All seven nonempty mismatch
+subsets run per target, so one mismatch cannot hide later role observations.
+Twelve report-first rejections preserve historical/terminal/malformed outcomes
+before missing selections; twelve missing/directory/FIFO selections reject.
+Uppercase hashes with foreign/NUL/FIFO reported paths, false target claims,
+rewritten source hashes, selected symlinks and aliased plain data demonstrate
+the observation's explicit limitations. FIFOs are removed in `finally`.
+
+Peer review identified a harness-only cleanup edge: the FIFO was created before
+symlink setup entered the cleanup block. Setup now falls inside `try`; a
+controlled symlink collision proves FIFO removal and existing-sentinel retention.
+Initial passed runs/logs remain separate from the three final runs above.
+No production code or assertions changed for that fix.
+
+The installed x86 case independently creates a sparse 2,147,614,795-byte file,
+with recipe writes around the 2-GiB boundary and final byte. SHA-256 is
+`85f08b2604c993ee278b2546339222fea6307c0b67a1ba99039d8e7101976216`,
+CRC32 is `1053664050`, and the reported long count is exact. The file is removed
+after checks; its retained recipe reconstructs the whole-file digest. This
+plain-data control makes no ELF or native-Windows-large claim.
+
+Independent root review rehashes every retained artifact/log/report and protected
+path, compares every returned claim/digest/path with the selected bytes, checks
+all installed class origins and typed failures, and independently reconstructs
+the complete large recipe. Evidence: `build/hash-binding-oracle-review/acceptance.json`,
+`setup-cleanup.txt`, and `build/hash-binding-review/root-runtime-audit.{py,json}`.
+CI now schedules the oracle after the preceding report/ELF observations in all
+five target lanes, the large case on x86, and eighteen focused native Windows
+checks. Existing validators/GDB/GUI gates remain intact. These local replays
+introduce no new exporter/validator/GDB execution claim; exact package and
+hosted acceptance are still required.
