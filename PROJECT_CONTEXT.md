@@ -2080,6 +2080,22 @@ Java 21 bytecode; the installed Java 21 directory contains a JRE without
 including main run `40058691020`.
 See TODO Section 0.2 and `docs/VALIDATION.md`.
 
+PR #22's first hosted run `40061424810` passed the native builds, extension,
+release package and ARM32/MIPS32 target lanes, but failed x86-64 and AArch64
+at original-file frame corroboration for `PN_XNUM` fixtures. The standalone
+consumer rejects section zero's nonzero `sh_info` even when it encodes the
+valid extended program-header count. The sidecars themselves pass LLVM and
+have only their exactly inherited frame messages. A separate validation-only
+reader correction passes 16 local positives, 60 malformed-header controls,
+exact retained-original corroboration and fresh x86-64/AArch64 ELF-layout
+export/validator/GDB suites. No additional diagnostic exception or shipped
+native-library change is selected. Windows-hosted checks were skipped
+and the aggregate gate failed. The exact `bf7f2b1` package precheck passed
+source/manifests/native provenance and 20 isolated Java 21 producer lifetimes,
+but this is not a release approval. The checker completion gate additionally
+rejects missing zero-count categories, demonstrated by fifteen new controls
+and 52 unchanged retained real reports.
+
 ## 17. Open questions
 
 Codex should not silently answer these through implementation choices. Investigate, document, and obtain user direction when the answer materially changes compatibility or scope.

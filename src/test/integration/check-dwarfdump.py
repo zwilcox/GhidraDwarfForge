@@ -29,6 +29,13 @@ FRAME_DIAGNOSTIC = re.compile(
     r"totl length=0x[0-9a-f]+, addr size=0x[0-9a-f]+, mod=0x[0-9a-f]+ "
     r"must be zero in (?:fde|cie), offset 0x[0-9a-f]+\. \*\*\*")
 
+COMMON_CHECK_CATEGORIES = frozenset({
+    "pubname_attr", "attr_tag", "attr_formclass", "tag_tree", "type_offset",
+    "decl_file", "ranges", "line_table", "fde_table", "aranges", "names",
+    "frames", "locations", "harmless_errors", "abbreviations", "dwarf_constants",
+    "debug_info_gaps", "forward_declarations", "self_references", "attr_encoding",
+    "duplicated_attributes"})
+
 
 def frame_diagnostics(text):
     return [line.strip() for line in text.splitlines()
@@ -67,8 +74,8 @@ def validate_output(text, inherited=(), original=False):
         if line.strip() == "*** TOTAL ERRORS FOR ALL COMPILERS ***")
     require((not compilers or starts[-2] < total_position) and total_position < starts[-1],
         "misplaced total summary")
-    required_rows = {"attr_tag", "attr_formclass", "tag_tree", "decl_file", "ranges",
-        "line_table", "harmless_errors", "abbreviations", "duplicated_attributes"}
+    modern_format = "Number of TAG records" in text
+    required_rows = COMMON_CHECK_CATEGORIES | ({"function_coverage"} if modern_format else set())
     for start, expected_errors in zip(starts, [*map(int, errors), inherited_count]):
         require(start + 1 < len(lines) and
             lines[start + 1].split() == ["<item>", "<checks>", "<errors>"],
@@ -78,7 +85,10 @@ def validate_output(text, inherited=(), original=False):
         for line in lines[start + 2:]:
             summary = re.fullmatch(r"\s*\*\* Summarize \*\*\s+(\d+)\s+(\d+)\s*", line)
             if summary:
-                require(required_rows <= rows.keys(), "check table omits required categories")
+                require(required_rows == rows.keys(),
+                    "check table categories differ: missing=" +
+                    ",".join(sorted(required_rows - rows.keys())) + "; unexpected=" +
+                    ",".join(sorted(rows.keys() - required_rows)))
                 require(sum(count for count, _ in rows.values()) == int(summary[1]) > 0,
                     "inconsistent or empty check totals")
                 require(int(summary[2]) == expected_errors and
@@ -93,7 +103,7 @@ def validate_output(text, inherited=(), original=False):
         require(completed, "check table has no completed summary")
     # Both supported output formats finish the -ka usage report after checking.
     # Require its last complete record as well, not just an early zero table.
-    if "Number of TAG records" in text:
+    if modern_format:
         tail = text.rsplit("Number of TAG records", 1)[1]
         count = re.match(r"\s*(\d+)", tail)
         instances = re.search(r"Number of distinct TAGs in object\s+(\d+)", tail)

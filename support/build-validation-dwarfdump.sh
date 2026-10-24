@@ -11,14 +11,17 @@ output=$(realpath -m "$2")
 results=$(realpath -m "$3")
 support_dir=$(realpath "$(dirname "$0")")
 checker_patch="$support_dir/validation/0001-check-line-sequences.patch"
+reader_patch="$support_dir/validation/0002-accept-bounded-extended-program-count.patch"
 source_hash=7992e7b9019ebfabdda5773e86243517c48cf89fafed3209e853692bc9573efd
 patch_hash=69340f63ee78c06309731a40bb1e0e9e193b5d2f659e5f050ef413138649f696
+reader_patch_hash=8468426396e6a28f755077681eec78d326744a535c7aade9d17d9a1acef73b46
 if [[ -e "$output" || -L "$output" ]]; then
     echo "validation-tool output already exists: $output" >&2
     exit 1
 fi
 printf '%s  %s\n' "$source_hash" "$archive" | sha256sum -c -
 printf '%s  %s\n' "$patch_hash" "$checker_patch" | sha256sum -c -
+printf '%s  %s\n' "$reader_patch_hash" "$reader_patch" | sha256sum -c -
 mkdir -p "$results" "$(dirname "$output")"
 work=$(mktemp -d "$results/build.XXXXXXXX")
 printf 'validation-tool-build=%s\n' "$work"
@@ -27,6 +30,7 @@ source="$work/libdwarf-2.3.2"
 (
     cd "$source"
     patch -p1 < "$checker_patch" > "$work/patch.log" 2>&1
+    patch -p1 < "$reader_patch" > "$work/reader-patch.log" 2>&1
     ./configure --enable-static --disable-shared --disable-dwarfgen \
         > "$work/configure.log" 2>&1
     make -j"${FORGE_BUILD_JOBS:-$(nproc)}" > "$work/make.log" 2>&1
@@ -38,6 +42,8 @@ chmod 755 "$stage/bin/dwarfdump"
 cp "$archive" "$stage/source/libdwarf-2.3.2.tar.xz"
 cp "$0" "$stage/source/support/build-validation-dwarfdump.sh"
 cp "$checker_patch" "$stage/source/support/validation/"
+cp "$reader_patch" "$stage/source/support/validation/"
+cp "$support_dir/validation/README.md" "$stage/source/support/validation/"
 cp "$support_dir/../LICENSE" "$stage/source/LICENSE"
 cp "$source/COPYING" "$stage/licenses/UPSTREAM-COPYING"
 cp "$source/src/lib/libdwarf/LGPL.txt" "$stage/licenses/LGPL-2.1.txt"
@@ -58,6 +64,7 @@ grep -Fq '2.3.2' "$work/version.txt"
         'source-commit=af7b278c6aa2ae9daad94fb7f8bffdc0e9980993' \
         "source-archive-sha256=$source_hash" \
         "validation-checker-patch-sha256=$patch_hash" \
+        "validation-reader-patch-sha256=$reader_patch_hash" \
         'configure=--enable-static --disable-shared --disable-dwarfgen' \
         'producer-patch=not-applied'
     cat "$work/version.txt"
@@ -66,10 +73,12 @@ grep -Fq '2.3.2' "$work/version.txt"
 } > "$stage/BUILD-METADATA.txt"
 cat > "$stage/CORRESPONDING_SOURCE.md" <<'EOF'
 This validation-only executable is built from the included libdwarf 2.3.2
-archive and the explicitly identified dwarfdump line-sequence patch. It is
-excluded from GhidraDwarfForge release-native inputs. The library and producer
-sources are unchanged by this checker patch. Licenses are in licenses/ and the
-complete upstream source archive; the repository build helper is MIT licensed.
+archive and two explicitly identified validation-only patches: the dwarfdump
+line-sequence correction and bounded PN_XNUM recognition in its static ELF
+consumer. This executable and both patches are excluded from GhidraDwarfForge
+release-native inputs; shipped consumer/producer library sources are unchanged.
+Licenses are in licenses/ and the complete upstream source archive; the
+repository build helper is MIT licensed.
 
 On Ubuntu 24.04, install build-essential, zlib1g-dev, libzstd-dev, binutils,
 patch and xz-utils. From source/, reproduce with:

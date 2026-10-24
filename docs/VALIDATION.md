@@ -77,6 +77,9 @@ the strict helper and native or QEMU/GDB behavior checks. Independent review
 verified all input/output/source hashes, the private script origin, complete
 checker metadata and exact frame corroboration. Logs are in the strict
 worktree's `build/strict-matrix/` and `build/test-results/headless-symbol-export/`.
+The core artifacts and logs were copied to
+`build/strict-matrix-core-before-layout/` before the later ELF-layout harness
+reused its ordinary exec/PIE output paths.
 The local launcher used Java 25.0.4.1. The installed Java 21.0.12.1 directory
 contains a JRE without `javac`; its launcher override and subsequent Gradle
 compiler selection were rejected. The successful build uses JDK 25 and emits
@@ -139,6 +142,66 @@ Exact corrected hosted CI/package validation is required before publication.
 
 For the local extracted ARM toolchain, the runtime harnesses accept
 `FORGE_ARM32_SYSROOT`; the default remains `/usr/arm-linux-gnueabihf` in CI.
+
+### First corrected hosted run and extended program-header reader
+
+Run `40061424810` for PR #22 head `bf7f2b1` passed workflow lint, both native
+builds, extension compilation, release assembly and the full ARM32/MIPS32 BE/LE
+lanes. x86-64 and AArch64 failed during the extended-program-table fixture;
+Windows-hosted validation was skipped and the aggregate gate failed.
+The target artifacts were checked against their GitHub digests before analysis.
+
+The original x86 ELF has `e_phnum=0xffff` and section-zero `sh_info=65549`;
+AArch64 uses 65545. Both complete program tables end exactly at EOF. Standalone
+libdwarf 2.3.2 rejects these with `DW_DLE_IMPROPER_SECTION_ZERO(497)` before it
+can examine the original frame bytes. Its ELF32 and ELF64 reader paths reject
+nonzero `sh_info` unconditionally. The [Linux ELF definition](https://man7.org/linux/man-pages/man5/elf.5.html)
+assigns that field the actual program-header count when `e_phnum=PN_XNUM`.
+The sidecar LLVM checks pass and libdwarf reports only the three/five expected
+inherited frame messages; the strict runner correctly refuses to corroborate
+them from an original that the tool did not read successfully.
+
+Evidence is retained under `build/hosted-pr22-investigation/` in the strict
+worktree. The separate validation-only static-consumer patch now passes 16
+positives and 60 malformed-header controls across ELF32/64 and both byte orders,
+including genuine 65535/65536-entry tables, a compiler-built fixture and exact
+corroboration of both hosted original/sidecar pairs. Negative controls require
+normal checker termination with the expected diagnostic and empty stderr;
+crashing is not an accepted rejection. The final source-consistent tool bundle
+is `build/validation-tool-pn-xnum-reviewed/`, with binary SHA-256
+`cb552b4aba27c1ec88268da9fdee1eb240293d127b04df22a88cd79ee187e284`.
+All bundled source, patch, helper, README and license manifests verify. The
+production native pair and frame diagnostic policy remain unchanged.
+
+The final tool's complete reader regression passes in
+`build/test-results/dwarfdump-extended-programs/run.zz6h3yib/`; its existing
+line-sequence/malformed-range regression passes in `run.jf01eivu/` under the
+corresponding `dwarfdump-line-sequences` results directory. Five sectionless
+location corruption controls also require normal checker termination and pass.
+Fresh full x86-64 and AArch64 ELF-layout export suites pass in
+`build/test-results/elf-layout-export/run.B3PvreYC/` and `run.L6iuQTIY/`,
+covering unnamed sections, extended program tables, repeats, explicit rebase,
+PIE, strict validators, GDB and original preservation. Extended-input runtime
+checks retain the documented equivalent ordinary-load-image rule; actual
+native/QEMU execution of `PN_XNUM` inputs is not newly claimed. Independent
+review found no remaining issue. The previously failed hosted run stays failed;
+the complete corrected hosted matrix is still required.
+
+An independent exact-package precheck passed for this candidate, with release
+ZIP SHA-256 `9b52381bc6dd3795bb69d09293d08bcc473e305d3b4603cff52132cf4a3b3589`.
+It checked five manifests, 29 exact source files, 131 Java 21 classes, both
+platform native provenance records, class origins and 20 deterministic
+producer lifetimes under a Java 21 runtime. Logs are in the corrective-alpha2
+worktree at `build/exact-release-verification/run-40061424810.LWVjQSe7/`.
+This precheck does not override the failed hosted gate.
+
+The subsequent report-parser regression removes zero-count category rows:
+the old parser accepted a missing `locations` row because arithmetic still
+matched. Every table now requires all 22 pinned categories (21 for the legacy
+format). Fifteen missing/unknown-category controls and 52 retained artifact
+and original reports pass; evidence is in
+`build/validator-probes/missing-zero-category.77mdlsjb/` and
+`build/strict-matrix/checker-complete-categories*.log`.
 
 
 Local validation date: 2026-09-03
