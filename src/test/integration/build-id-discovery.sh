@@ -36,10 +36,12 @@ validate_diagnostics() {
 
 prepare_debuglink() {
     local original=$1 candidate=$2 debug_file=$3 case_dir=$4 role=$5
-    local controls=()
+    local source_file=$6 reference=$7
+    local controls=() writer_controls=()
     cp "$original" "$case_dir/before-objcopy"
     if [[ "$role" == exec ]]; then
         controls+=(--controls)
+        writer_controls+=(--controls)
         if [[ "$target" == x86_64 ]]; then
             controls+=(--large)
         fi
@@ -50,6 +52,9 @@ prepare_debuglink() {
     python3 "$repository_dir/src/test/integration/debuglink-candidate-content.py" \
         "$FORGE_MODULE" "$target" "$case_dir/before-objcopy" "$candidate" \
         "$debug_file" "$case_dir/candidate-content" "${controls[@]}"
+    python3 "$repository_dir/src/test/integration/owned-debuglink-candidate.py" \
+        "$FORGE_MODULE" "$target" "$case_dir/before-objcopy" "$candidate" \
+        "$debug_file" "$source_file" "$reference" "$case_dir/owned-candidate" "${writer_controls[@]}"
 }
 
 lookup() {
@@ -136,7 +141,8 @@ for target in "${targets[@]}"; do
         linked_input="$case_dir/debuglink/original"
         linked_debug="$case_dir/debuglink/forge.debug"
         cp "$sidecar" "$linked_debug"
-        prepare_debuglink "$original" "$linked_input" "$linked_debug" "$case_dir" "$role"
+        prepare_debuglink "$original" "$linked_input" "$linked_debug" "$case_dir" "$role" \
+            "$source" "$fixture_dir/semantic.$role.reference"
         lookup "$linked_input" "$case_dir/empty-debug-root" "$linked_debug" \
             "$source" "$address" "$case_dir/matched-debuglink.txt" present "$runtime"
         sha256sum -c "$manifest" > "$case_dir/original-preservation.txt"
@@ -157,7 +163,8 @@ for target in "${targets[@]}"; do
     linked_input="$case_dir/debuglink/original"
     linked_debug="$case_dir/debuglink/forge.debug"
     cp "$sidecar" "$linked_debug"
-    prepare_debuglink "$original" "$linked_input" "$linked_debug" "$case_dir" no-build-id
+    prepare_debuglink "$original" "$linked_input" "$linked_debug" "$case_dir" no-build-id \
+        "$source" "$fixture_dir/semantic.exec.no-build-id.reference"
     printf '\0' >> "$linked_debug"
     lookup "$linked_input" "$case_dir/empty-debug-root" "$linked_debug" \
         "$source" "$address" "$case_dir/crc-mismatch.txt" absent 0 0 \

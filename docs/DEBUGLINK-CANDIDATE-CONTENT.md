@@ -1,6 +1,6 @@
 # Content observations for a new debuglink candidate
 
-**CONFIRMED locally; full hosted gate pending:** `DebuglinkCandidateContent` is the
+**CONFIRMED:** `DebuglinkCandidateContent` is the
 packaged consumer of three separate content predicates. It compares explicitly
 selected original/candidate ELF files and one selected sidecar. Ordinary export
 is unchanged. This component launches no backend, writes no selected file and
@@ -133,9 +133,16 @@ it is not a DWARF sidecar or a debugger-discovery claim for the large file.
 No new Ghidra export, structural-validator or cross-target execution is attributed
 to this retained-fixture replay. Independent exact local package review is
 clear. The accepted program-byte main is incorporated normally as `d2eadf2`;
-the candidate-content full hosted gate remains required.
+PR #38 head `b269ec5` passes exact run `40110565271`, all twelve jobs, all five
+target artifact audits and both GUI reviews, and merged normally as `2bd6739`.
+Windows passes twenty focused checks with 965 content assertions; Linux has 970.
+Its distinct main push `40113254401` remains pending.
 
 Attachment still needs receipt/diagnostic policy, selected export relationships,
-external validation, backend process control, host identity/metadata handling,
+external validation, owned candidate preparation, host identity/metadata handling,
 exclusive backups, durable receipts, atomic replacement and tested recovery.
 See `ADR-0004-DEBUGLINK-ATTACHMENT.md` for that separate contract.
+
+ADR-0005 selects a separate native-free owned writer; its local installed
+acceptance is recorded in `VALIDATION.md`. GNU candidates remain independent
+references. Neither component exposes the optional attachment transaction.

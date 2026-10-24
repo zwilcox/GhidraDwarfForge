@@ -466,6 +466,15 @@ tasks.register("debuglinkCandidateContentSmoke", JavaExec) {
     maxHeapSize = "64m"
 }
 
+tasks.register("ownedDebuglinkCandidateSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks owned append-only executable candidate creation and cleanup"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.OwnedDebuglinkCandidateSmoke"
+    maxHeapSize = "64m"
+}
+
 tasks.register("outputPathPolicySmoke", JavaExec) {
     group = "verification"
     description = "Checks default, explicit, colliding, and unwritable output paths"

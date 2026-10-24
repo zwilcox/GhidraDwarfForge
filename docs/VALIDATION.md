@@ -4767,3 +4767,169 @@ package; this docs/package check adds no runtime claim. Evidence:
 `build/candidate-content-package-audit/local-5ee38af.05ymbvo5/result.json`.
 Normal parent incorporation `d2eadf2` changes no tree bytes. Candidate-content's
 own full hosted gate remains required.
+
+
+## Candidate content: exact hosted acceptance (2026-10-24)
+
+**CONFIRMED:** PR #38 head `b269ec56e03598f5a132caecb9ec0bb344cb841f`,
+pull-request run `40110565271`, attempt 1, passes all twelve expected jobs,
+no skips, with independent final head/base/clean-tree/review-thread checks.
+Package artifact `12566721084`, outer SHA-256
+`04c8fda19fc9badf6914b38e77abb3575535a3d2dddbcb33f6b3a640e9bbc6e8`,
+contains ZIP `dbbe3973a553cb4b05ea6bbaf7b0922fb79cfe1587d60ba6c85b0d5c75f35be5`
+and JAR `2f35b5476aedb5fe7af29ab778da16f934c57ef889b6dc657c04e8a5aaa013a9`.
+All 44 production sources/two scripts, 201 Java21 classes, five manifests and
+native provenance match the exact head. Actual Java21/64MiB content970, prior
+smokes, twenty native producer lifetimes and 150 class-origin checks pass.
+
+Independent audits verify all five targets: fifteen cases/repeats, 120 exact
+content mutations, 45 input copies, 225 parent records and the full x86 sparse
+sidecar recipe. Linux artifact `12567017967`, SHA-256
+`535b0417dd9e370272b6b3f54e36703c3316bc7b41841b2ac11ea381d797b6fb`,
+contains association `run.Ja1f9Z5r`, GUI `run.ssCof786` and 24 strict reports with
+zero unexplained errors. Windows artifact `12567705118`, SHA-256
+`41aed9818bbc1f526a95dc12eec2c8d62339c56b0a3a34d3d59d6efb3ffed78a`,
+contains GUI `run.9488c3f91d1b49f8af19aa8fc9d0e611 GUI paths`, twenty native
+focused checks, observed content965/program431/binder551 and the alias/link/
+rollback protection markers. Linux's content970 is not attributed to Windows.
+Hosted hidden `.build-id` payloads, original invocation mtimes and Windows
+independent dwarfdump/Linux ELF runtime remain outside artifact verification.
+
+Evidence in the candidate-content worktree:
+`build/candidate-content-package-audit/run-40110565271.Pd3Ig7Sj` and
+`build/candidate-content-package-audit/final-gate-40110565271.json`; GUI-worktree
+`build/hosted-gui-review/run-40110565271/acceptance-scope.json` binds the target,
+large, native-host and actual GUI records. Normal merge
+`2bd673900198c00de90f6adfa5079dd21e2f3d2d` at `2026-10-24T16:48:24Z`
+is tree-identical to tested `b269ec5`. Separate main push `40113254401` remains
+pending; no result is transferred between events or heads.
+
+### Distinct PR #37 main-push acceptance
+
+Exact `29055f6`, push `40110261306`, attempt 1, passes all twelve jobs and
+independent Linux/Windows GUI reviews. Linux artifact `12566694247`, SHA-256
+`43b6f32b310b7aefd489d671a26ddc8784639d46f1c6bfbd3630225262760b09`,
+contains GUI `run.h0peIJig` and 24 strict records with zero unexplained errors.
+Windows artifact `12567297640`, SHA-256
+`834f7133ded6c9c7daf11390f30ca116a0cad04419ef88a8311b7a274b6805f3`,
+contains GUI `run.c96313b6d7a9427c9e1b6c4de452501c GUI paths`, nineteen focused
+checks with program431/binder551 observed, and alias/link/rollback protections.
+Other target results on this separate push are CI evidence; detailed all-target
+program-byte audits belong to the accepted PR. Evidence: GUI-worktree
+`build/hosted-gui-review/run-40110261306/acceptance-scope.json`.
+
+## Owned append-only candidates: local acceptance (2026-10-24)
+
+**CONFIRMED locally; exact package/full hosted gate pending:** source
+`1763ebd0268ab9283915a543243b5bdaf1acb9a6` adds only the owned writer and its
+fixture/smoke files. ADR-0005 records the explicit backend decision. The connected
+consumer preserves GNU reference provenance separately and invokes the installed
+writer through `OwnedDebuglinkCandidateProbe`; it verifies actual Java21 and all
+five class origins with a 64MiB heap before checking complete output bytes.
+
+Commands in the owned-candidate worktree:
+
+```bash
+GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC ./gradlew --no-daemon \
+    ownedDebuglinkCandidateSmoke debuglinkCandidateContentSmoke \
+    executableProgramBytesSmoke matchedElfAllocationsSmoke fileDigestsSmoke buildExtension
+/usr/lib/jvm/java-21-openjdk-amd64/bin/java -Xmx64m \
+    -cp build/libs/GhidraDwarfForge.jar:build/owned-candidate-review/classes \
+    ghidradwarfforge.elf.OwnedDebuglinkCandidateSmoke --large
+JAVA=/usr/lib/jvm/java-21-openjdk-amd64/bin/java \
+JAVAC=/usr/lib/jvm/java-25-openjdk-amd64/bin/javac \
+FORGE_MODULE="$PWD/build/owned-candidate-review/ghidra/Ghidra/Extensions/GhidraDwarfForge" \
+    bash src/test/integration/build-id-discovery.sh x86_64 aarch64 mips32be
+bash build/owned-candidate-review/run-shared.sh
+python3 build/owned-candidate-review/root-runtime-audit.py
+```
+
+Focused test classes were compiled separately with `javac --release 21` before
+the actual Java21 commands; Gradle's local test runtime is not the Java21 proof.
+Default/large counts are 1,142/1,148. Both widths/orders, raw duplicate/suffix/
+nonUTF8 names, allocated old name tables, two independent extended-section
+transitions, PN_XNUM, malformed/unsupported inputs, resource limits, aliases,
+determinism, callback identity, exact cleanup and injected I/O failures pass.
+The large artifact is one ELF32 big-endian case: original 2,147,549,185 bytes,
+sidecar 2,147,483,665 bytes, output 2,147,549,672 bytes. Full masked-prefix
+comparison, complete input/digest preservation and a precise mutation at
+2,147,549,184 pass under 64MiB. Files are cleaned afterward; exact end 2^32
+is arithmetic-only. No four-layout large, Windows-large or sparse-allocation
+claim is made. Maximum metadata combinations are not guaranteed at 64MiB.
+
+The initial independent oracle used a wrong new-name offset (+14 instead of +15)
+and a later aggregate fixture inherited stale bytes in newly designated NULL
+records. These setup failures and corrections remain in the source acceptance
+logs. Peer review required explicit zero-filled alignment and rejection of
+nonzero unused section-zero extension bookkeeping. An isolated copy removing
+only the two pad writes fails at `link alignment pad`; the positive test checks
+both pads, without claiming a separate second-pad negative. Evidence:
+`build/owned-candidate-review/source-acceptance.json`,
+`independent-source-evidence-review.json` and `padding-negative/`.
+
+Private ZIP SHA-256
+`6360fb3ca12b97bde1c1bd657cb2090529b7dfca25e0b6e98fab027245941353`
+contains JAR `780909c106fd72a5c5b055a5c8af0c416b849518c3088f5a27c1fdfc2ce3d9e9`
+and 207 Java21 classes. Installation verifies five manifests and preserves the
+base Ghidra launch file. The installed Python oracle is SHA-256
+`8c24db64839484518cca9e7e85993a5d4969226cbc32bde34375609598d97121`.
+Nine exec/PIE/no-ID cases pass in `build/test-results/build-id-discovery/run.j35EcKvB`;
+three separate shared cases pass in `build/test-results/owned-candidate-shared/run.xbmyRUDS`.
+These use retained exporter fixtures, not a new Ghidra export.
+
+Independent root and peer audits reconstruct 24 deterministic main candidates
+plus three plaintext counterexamples, verify sixty retained input copies and
+264 separate GNU/program/content parent records, and confirm all 48 selected
+original fixture SHA/size/mtime snapshots unchanged. Nine precise mutations and
+24 typed failures pass. Each real candidate passes GNU header/program/section/
+note checks and LLVM's explicit completion marker with recorded tool identity.
+Eighteen writer GDB transcripts cover automatic association, source/type/address
+lookup, three native x86 argument19/23 runs and no-ID CRC rejection/restoration.
+Nine original/candidate execution pairs (eighteen processes) pass with zero exit,
+identical output and empty stderr, natively on x86 and under QEMU for AArch64/MIPS.
+Shared cases prove lookup only. The original 27 GNU association checks also pass.
+
+Only owned test copies receive execution permission or colocated debug bytes.
+The later no-ID GNU CRC test changes/restores a private debug copy's mtime;
+final bytes, not its pre-test mtime, are checked. Writer-colocated no-ID debug
+bytes are likewise deliberately corrupted/restored; successful candidate bytes
+remain unchanged. Tool/argv results cover known fixture paths, not generic host
+encoding. Unchanged Forge sidecars are not rerun through strict DWARF validation
+in this replay. The full pipeline's fresh export/validator gates remain required.
+
+Runtime evidence: `build/owned-candidate-review/root-runtime-audit.{py,json}` and
+`build/owned-oracle-review/{source-review,runtime-review}.json`. No additional
+runtime is attributed to those independent audits. The current integration adds
+one focused Linux/native Windows check and installed writer execution in each
+existing target association lane. Final exact package, native Windows and all-five
+hosted acceptance remain pending. No target replacement, original permission
+change, report attestation, snapshot or attachment transaction is exposed.
+
+## Layout compiler-oracle transport correction, 2026-10-24
+
+**CONFIRMED failure:** PR #39 head `6f1a220`, run `40114403014`, is not full
+acceptance. ARM32 extended-section PIE failed before Forge export or writer
+checks: QEMU could not bind TCP33168, then GDB timed out. The listener's owner is
+**UNCERTAIN**. Artifact `12567689679`, SHA-256
+`15f453f29e93dacd8c3fad1a9450d11c6337a46a0592308ec5162a337dad67d1`,
+is retained under the owned-candidate worktree's
+`build/owned-candidate-package-audit/watch-40114403014/arm32-failure`.
+Successful intermediate package/other-lane checks do not fill unreached steps.
+
+The one-file `elf-layout-gdb-oracle.sh` correction uses the existing private
+UNIX-socket helper within the compiler oracle's subshell, including startup
+readiness and cleanup. It preserves native execution, the 30-second GDB timeout,
+compiler assertions and diagnostic policy; ARM uses the existing optional
+`FORGE_ARM32_SYSROOT` override. No production exporter/native source changed.
+
+`src/test/integration/qemu-socket-startup.sh` passes real QEMU/GDB startup,
+missing-input rejection, bounded startup timeout and ready-child cleanup in
+`run.nLECFaEu`. Ten fresh compiler-reference exec/PIE checks pass across x86-64,
+AArch64, ARM32 and both MIPS32 byte orders in `compiler-oracles.jqmyt7ll` under
+the retained failure directory. All ten input SHA/size/mtime snapshots remain
+unchanged; all eight emulator children and private socket directories are gone.
+The fixture Makefile built only these private references. This does not rerun
+Ghidra exports or sidecar validators. Earlier local setup failures, including an
+archived-reference source-mtime warning, are retained without relaxing policy.
+Commands, source hashes and tool versions are in `fix-acceptance.json`. A new
+exact-head package and complete hosted gate remain required.
