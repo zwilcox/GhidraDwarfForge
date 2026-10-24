@@ -3233,8 +3233,8 @@ Normal merge `7f9c0d2606a8f7db0007b256d256e6edb49dd473` at
 `40094022212` remains pending at this checkpoint. Artifact-review limits remain
 explicit: eight of nine raw digest inputs per target were separately retained
 and rehashed; the no-build-ID original is corroborated by its report, Python
-and two Java digest records. Windows independent libdwarf and Linux-ELF GDB
-runtime remain unavailable; native GNU/LLVM and GUI/focused checks pass.
+and two Java digest records. Independent libdwarf is unavailable on Windows;
+Linux-ELF runtime GDB is not run there. Native GNU/LLVM and GUI/focused checks pass.
 
 The report-claims branch incorporates accepted main normally as `bcd60ee`,
 with the same tree as its locally reviewed `ccb21a9` before this documentation
