@@ -65,9 +65,9 @@ for section in info abbrev aranges decodedline Ranges loc; do
 done
 llvm-dwarfdump --verify "$work/large.dbg" \
     >"$work/llvm-verify.txt" 2>"$work/llvm.stderr"
-dwarfdump -ka -ks "$work/large.dbg" \
-    >"$work/dwarfdump.txt" 2>"$work/dwarfdump.stderr"
-for diagnostic in "$work/readelf.stderr" "$work/llvm.stderr" "$work/dwarfdump.stderr"; do
+python3 "$repository_dir/src/test/integration/check-dwarfdump.py" \
+    "$work/large.dbg" "$work/dwarfdump.txt" --original "$work/large.elf"
+for diagnostic in "$work/readelf.stderr" "$work/llvm.stderr"; do
     if [[ -s "$diagnostic" ]]; then
         cat "$diagnostic" >&2
         exit 1

@@ -306,7 +306,7 @@ for target in "${targets[@]}"; do
         aarch64) run_emulated "$target" /usr/bin/qemu-aarch64-static \
             /usr/aarch64-linux-gnu "$base_port" ;;
         arm32) run_emulated "$target" /usr/bin/qemu-arm-static \
-            /usr/arm-linux-gnueabihf "$((base_port + 3))" ;;
+            "${FORGE_ARM32_SYSROOT:-/usr/arm-linux-gnueabihf}" "$((base_port + 3))" ;;
         mips32be) run_emulated "$target" /usr/bin/qemu-mips-static \
             /usr/mips-linux-gnu "$((base_port + 1))" ;;
         mips32le) run_emulated "$target" /usr/bin/qemu-mipsel-static \

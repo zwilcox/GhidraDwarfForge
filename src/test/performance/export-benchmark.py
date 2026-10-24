@@ -12,6 +12,7 @@ import shutil
 import signal
 import statistics
 import subprocess
+import sys
 import tempfile
 import time
 
@@ -93,12 +94,14 @@ def make_fixture(directory, count):
 
 def validate(binary, sidecar, directory, count):
     directory.mkdir()
+    strict_helper = Path(__file__).resolve().parents[1] / "integration/check-dwarfdump.py"
     for name, command in [
             ("elf-header", ["readelf", "-h", sidecar]),
             ("elf-sections", ["readelf", "-SW", sidecar]),
             ("elf-notes", ["readelf", "-n", sidecar]),
             ("llvm", ["llvm-dwarfdump", "--verify", sidecar]),
-            ("libdwarf", ["dwarfdump", "-ka", "-ks", sidecar]),
+            ("libdwarf", [sys.executable, strict_helper, sidecar,
+                          directory / "libdwarf-checks.log", "--original", binary]),
             *[(f"dwarf-{kind}", ["readelf", f"--debug-dump={kind}", sidecar])
               for kind in ("info", "abbrev", "aranges", "decodedline", "Ranges", "loc")]]:
         output = directory / f"{name}.log"
@@ -153,7 +156,8 @@ def main():
     if args.repeats < 2 or any(count < 1 or count > 10000 for count in args.counts):
         parser.error("use at least two repeats and counts between 1 and 10000")
     for tool in ("gcc", "nm", "readelf", "llvm-dwarfdump", "dwarfdump", "gdb-multiarch"):
-        if not shutil.which(tool):
+        executable = os.environ.get("DWARFDUMP", tool) if tool == "dwarfdump" else tool
+        if not shutil.which(executable):
             parser.error(f"required tool unavailable: {tool}")
     if not Path("/usr/bin/time").is_file():
         parser.error("GNU /usr/bin/time is required")
@@ -181,7 +185,8 @@ def main():
     }
     (results / "environment.json").write_text(json.dumps(metadata, indent=4) + "\n")
     for tool in ("gcc", "readelf", "llvm-dwarfdump", "dwarfdump", "gdb-multiarch", "java"):
-        run([tool, "--version"], results / f"version-{tool}.log")
+        executable = os.environ.get("DWARFDUMP", tool) if tool == "dwarfdump" else tool
+        run([executable, "--version"], results / f"version-{tool}.log")
     summaries = []
     for case, count in enumerate(args.counts):
         directory = results / f"case-{case}-{count}-functions"

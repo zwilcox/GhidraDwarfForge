@@ -98,7 +98,8 @@ run_case() {
         exit 1
     fi
     llvm-dwarfdump --verify "$output" >"$case_dir/llvm.txt" 2>&1
-    dwarfdump -ka -ks "$output" >"$case_dir/dwarfdump.txt" 2>&1
+    python3 "$repository_dir/src/test/integration/check-dwarfdump.py" \
+        "$output" "$case_dir/dwarfdump.txt" --original "$input"
     grep -Eq "DW_AT_low_pc[[:space:]]*:[[:space:]]*$function_address$" \
         "$case_dir/info.txt"
     grep -Fq 'GhidraDwarfForge' "$case_dir/info.txt"

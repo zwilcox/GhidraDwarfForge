@@ -77,6 +77,8 @@ jobs:
           echo "$LIBDWARF_ARCHIVE_SHA256  $LIBDWARF_ARCHIVE" | sha256sum -c -
           tar -xf "$LIBDWARF_ARCHIVE"
           cd libdwarf-2.3.2
+          printf '%s\n' "$LIBDWARF_PATCH_SHA256  $GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch" |
+            sha256sum -c -
           patch -p1 < "$GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch"
           ./configure --enable-shared --enable-dwarfgen --disable-static \
             --prefix="$PWD/install" 2>&1 | tee "$result_directory/configure.log"
@@ -139,6 +141,8 @@ jobs:
           mkdir native-linux-rebuild-source native-linux-rebuild
           tar -xf "$LIBDWARF_ARCHIVE" -C native-linux-rebuild-source
           cd native-linux-rebuild-source/libdwarf-2.3.2
+          printf '%s\n' "$LIBDWARF_PATCH_SHA256  $GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch" |
+            sha256sum -c -
           patch -p1 < "$GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch"
           ./configure --enable-shared --enable-dwarfgen --disable-static \
             --prefix="$PWD/install" > "$result_directory/rebuild-configure.log" 2>&1
@@ -153,6 +157,41 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           support/compare-native-builds.sh linux native-out native-linux-rebuild \
             "$result_directory/reproducibility.log"
+
+      - name: Build pinned standalone DWARF validator
+        run: |
+          support/build-validation-dwarfdump.sh "$LIBDWARF_ARCHIVE" \
+            "$PWD/validation-tool" "$PWD/build/test-results/validation-tool-build"
+
+      - name: Validate complete bounded diagnostics and allocation rollback
+        run: |
+          sources=(build/test-results/validation-tool-build/build.*/libdwarf-2.3.2)
+          test "${#sources[@]}" -eq 1
+          python3 src/test/integration/dwarfdump-diagnostic-capacity.py \
+            "$PWD/validation-tool/bin/dwarfdump" --libdwarf-source "${sources[0]}"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dwarfdump-linux-validation
+          path: validation-tool/
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: validation-tool-build-diagnostics
+          path: |
+            build/test-results/validation-tool-build/**/configure.log
+            build/test-results/validation-tool-build/**/patch.log
+            build/test-results/validation-tool-build/**/reader-patch.log
+            build/test-results/validation-tool-build/**/diagnostic-patch.log
+            build/test-results/validation-tool-build/**/config.log
+            build/test-results/validation-tool-build/**/make.log
+            build/test-results/validation-tool-build/**/dependencies.txt
+            build/test-results/validation-tool-build/**/version.txt
+            build/test-results/dwarfdump-diagnostic-capacity/
+          if-no-files-found: warn
+          retention-days: 14
 
       - uses: actions/upload-artifact@v7
         with:
@@ -215,6 +254,8 @@ jobs:
           echo "$LIBDWARF_ARCHIVE_SHA256  $LIBDWARF_ARCHIVE" | sha256sum -c -
           tar -xf "$LIBDWARF_ARCHIVE"
           cd libdwarf-2.3.2
+          printf '%s\n' "$LIBDWARF_PATCH_SHA256  $GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch" |
+            sha256sum -c -
           patch -p1 < "$GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch"
           ./configure --enable-shared --enable-dwarfgen --disable-static \
             --prefix="$PWD/install" 2>&1 | tee "$result_directory/configure.log"
@@ -347,6 +388,8 @@ jobs:
           mkdir native-windows-rebuild-source native-windows-rebuild
           tar -xf "$LIBDWARF_ARCHIVE" -C native-windows-rebuild-source
           cd native-windows-rebuild-source/libdwarf-2.3.2
+          printf '%s\n' "$LIBDWARF_PATCH_SHA256  $GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch" |
+            sha256sum -c -
           patch -p1 < "$GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch"
           ./configure --enable-shared --enable-dwarfgen --disable-static \
             --prefix="$PWD/install" > "$result_directory/rebuild-configure.log" 2>&1
@@ -588,6 +631,28 @@ jobs:
           name: libdwarf-linux-integration
           path: native-integration
 
+      - uses: actions/download-artifact@v8
+        with:
+          name: dwarfdump-linux-validation
+          path: validation-tool
+
+      - name: Verify pinned standalone DWARF validator
+        run: |
+          set -euo pipefail
+          (cd validation-tool && sha256sum -c SHA256SUMS)
+          chmod 755 validation-tool/bin/dwarfdump
+          validation-tool/bin/dwarfdump --version
+          echo "$PWD/validation-tool/bin" >> "$GITHUB_PATH"
+          echo "DWARFDUMP=$PWD/validation-tool/bin/dwarfdump" >> "$GITHUB_ENV"
+
+      - name: Reject incomplete and exit-zero failing validator reports
+        if: matrix.target == 'x86_64'
+        run: python3 src/test/integration/check-dwarfdump-test.py
+
+      - name: Validate extended program counts and reject malformed ELF tables
+        if: matrix.target == 'x86_64'
+        run: python3 src/test/integration/dwarfdump-extended-programs.py "$DWARFDUMP"
+
       - name: Record exact toolchain versions
         env:
           TARGET: ${{ matrix.target }}
@@ -752,6 +817,12 @@ jobs:
           for role in exec partial exec.no-build-id exec.no-sections pie shared; do
             FIXTURE_ROLE="$role" src/test/integration/headless-symbol-export.sh \
               "$GHIDRA_INSTALL_DIR" "$consumer" "$producer" "$TARGET"
+            if [[ "$role" == "exec.no-sections" ]]; then
+              python3 src/test/integration/sectionless-load-ranges.py \
+                "$PWD/build/fixtures/$TARGET/semantic.exec.no-sections.stripped" \
+                "$PWD/build/fixtures/$TARGET/semantic.exec.no-sections.ghidra-forge.dbg" \
+                --tool "$DWARFDUMP"
+            fi
             if [[ "$role" == "shared" ]]; then
               src/test/integration/shared-object-gdb.sh "$TARGET"
             else
@@ -772,6 +843,13 @@ jobs:
                 "$GHIDRA_INSTALL_DIR" "$consumer" "$producer"
             fi
           done
+
+      - name: Validate line sequences and reject malformed range artifacts
+        if: matrix.target == 'x86_64'
+        run: |
+          python3 src/test/integration/dwarfdump-line-sequences.py "$DWARFDUMP" \
+            --forge-fixture "$PWD/build/fixtures/x86_64/semantic.exec.ghidra-forge.dbg" \
+            --forge-original "$PWD/build/fixtures/x86_64/semantic.exec.stripped"
 
       - name: Bit-field values through the real exporter and GDB
         env:
@@ -836,7 +914,8 @@ jobs:
           readelf --string-dump=.debug_str "$output" | grep -q GhidraDwarfForge
           readelf --debug-dump=decodedline "$output"
           llvm-dwarfdump --verify "$output"
-          dwarfdump -ka "$output"
+          python3 src/test/integration/check-dwarfdump.py "$output" \
+            "$PWD/build/test-results/clean-install/dwarfdump.txt" --original "$fixture"
           gdb-multiarch -q -nx -batch \
             -ex 'set debuginfod enabled off' \
             -ex "file $fixture" -ex "symbol-file $output" -ex 'info functions'

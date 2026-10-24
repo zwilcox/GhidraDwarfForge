@@ -1,5 +1,209 @@
 # Validation record
 
+> **Release validation reopened (2026-10-23):** historical green jobs did not
+> enforce libdwarf's nonzero check summaries when its process returned zero.
+> The affected libdwarf results below are not clean-validation evidence. GNU,
+> LLVM, native-safety and GDB outcomes remain separately recorded. Alpha.2 is
+> unpublished while the diagnostic causes and strict checks are resolved.
+
+## Exit-zero libdwarf check summaries
+
+The corrective candidate `bfc2712` passed all twelve jobs in run
+`40057428382` and was merged as `680ecd6`. An independent audit subsequently
+verified the downloaded GitHub artifact digest for each target and inspected
+201 retained dwarfdump/LLVM result files:
+
+| Target | Nonzero libdwarf summary logs |
+|---|---:|
+| x86-64 | 25 |
+| AArch64 | 14 |
+| ARM32 | 4 |
+| MIPS32 little endian | 4 |
+| MIPS32 big endian | 4 |
+
+These include repeated exports and are not a count of unique defects. Raw
+artifact ZIPs, API digest metadata and per-file findings are retained under
+`build/corrective-validator-audit/` in the main checkout. The local ARM
+static-scope case that exposed the gap is retained under
+`arm-unwind-fixture/build/test-results/function-static-scopes/run.mAHnsuSk/`
+in the worktree collection. Its GDB scope/value/runtime checks pass, but its
+old libdwarf log reports four line-table errors despite exit zero.
+
+The older Ubuntu checker misinterprets DWARF 5 function ranges and relies on
+section names for image bounds. Pinned libdwarf 2.3.2 handles those cases, but
+its last-line check incorrectly equates an instruction-sequence boundary to a
+remembered function's `high_pc`. A valid GCC sequence covering several
+functions reproduces that false error without any Forge-generated DWARF.
+The isolated checker patch checks sequence termination and nondecreasing
+addresses within a sequence instead. It does not change the shipped producer
+or consumer library. See `support/validation/README.md` for the exact source,
+patch checksums, DWARF specification references and limitations.
+
+The validation-only executable is built by
+`support/build-validation-dwarfdump.sh`, with source, patch, reconstruction
+instructions, manifests and GPL/LGPL notices in its separate CI artifact.
+Every Linux target lane verifies its manifest and selects it explicitly.
+Windows continues to record standalone dwarfdump as unavailable.
+
+`check-dwarfdump.py` runs `--no-follow-debuglink -ka -ki -kd`, requires complete
+compiler/category/total counts and the completed usage footer, and rejects
+nonzero process status, stderr and every unexplained diagnostic. Input/log
+alias checks include symbolic and hard links before opening any output. The
+only corroborated diagnostic family is
+`DW_DLE_DEBUG_FRAME_LENGTH_NOT_MULTIPLE`: the original must produce exactly
+the same diagnostic multiset using the same tool, and its ELF identity and
+`.eh_frame` address, size and bytes must match the sidecar. These messages are
+retained in raw reports and counted as reported errors, not called absent.
+
+**CONFIRMED locally:** helper regression runs reject exit-zero errors, missing
+or inconsistent summaries, truncation, stderr, incorrect frame corroboration
+and log aliases. The line-sequence tests accept GCC sequences spanning functions,
+equal-address rows and independently ordered sequences; they reject decreasing
+addresses within a sequence, missing final termination and out-of-image PCs.
+Mutated CU/function-range containment fails LLVM. The latter controls are
+missed by libdwarf alone, and LLVM alone misses the out-of-image line control;
+both validators and GDB remain required.
+
+Independent rechecking of 71 retained artifact instances found 43 with zero
+errors and 28 with only frame-length diagnostics (99 messages). Those results
+are not themselves strict passes: frame evidence must be corroborated against
+each original. The retained set includes unnamed-section outputs but contains
+no section-header-free outputs; that absence limits the historical recheck.
+
+Fresh exports through a private copy of the exact `680ecd6` installed extension
+passed 25 cases: exec, partially stripped, no build ID, PIE and shared objects
+on x86-64, AArch64, ARM32 and both MIPS32 byte orders. Each passed GNU/LLVM,
+the strict helper and native or QEMU/GDB behavior checks. Independent review
+verified all input/output/source hashes, the private script origin, complete
+checker metadata and exact frame corroboration. Logs are in the strict
+worktree's `build/strict-matrix/` and `build/test-results/headless-symbol-export/`.
+The core artifacts and logs were copied to
+`build/strict-matrix-core-before-layout/` before the later ELF-layout harness
+reused its ordinary exec/PIE output paths.
+The local launcher used Java 25.0.4.1. The installed Java 21.0.12.1 directory
+contains a JRE without `javac`; its launcher override and subsequent Gradle
+compiler selection were rejected. The successful build uses JDK 25 and emits
+Java 21 bytecode (class major version 65), so these are not Java 21 runtime
+results. Hosted Java 21 checks remain required. A prior attempt loaded an older user-installed module and is
+retained under `*-wrong-install/`; it is excluded from all pass counts.
+
+The five section-header-free cases failed with location-list bound diagnostics.
+Their sidecars had only allocated identity-note metadata, causing even 2.3.2
+to treat note addresses as the image bounds. Independent ARM32 and MIPS32BE
+inspection found all 170 and 202 location intervals, respectively, inside both
+their owning functions and original executable `PT_LOAD` segments. The
+selected correction preserves original load extents as inert section metadata
+for sectionless inputs, with no guessed source section names or output program
+headers.
+
+**CONFIRMED locally:** all five corrected sectionless exports pass strict
+libdwarf checking with zero diagnostics, LLVM verification, GDB runtime
+behavior and byte-identical source/sidecar repeats. The independent metadata
+oracle compares each generated load section to the corresponding original
+program header and checks all location intervals against executable loads:
+
+| Target | Location lists | Intervals |
+|---|---:|---:|
+| x86-64 | 44 | 171 |
+| AArch64 | 45 | 143 |
+| ARM32 | 35 | 170 |
+| MIPS32 BE | 51 | 202 |
+| MIPS32 LE | 51 | 202 |
+
+Each copied out-of-image location mutation produces exactly one matching
+diagnostic and strict rejection. A separately inflated load-section mutation
+fails the original-header metadata comparison. Inputs stay byte-identical.
+Evidence is in `build/strict-matrix/*no-sections.{export,metadata,gdb,repeat}.log`
+and `build/test-results/sectionless-load-ranges/` in the strict worktree. The
+pre-fix failures remain in `build/strict-matrix-sectionless-before-fix/`.
+The new installed JAR SHA-256 is
+`4f1fede9f6a9b298902a289c81ee27d8be750930aef70d3955c635dd3e77c20a`;
+these five cases exercise the corrected writer, while the preceding 25
+non-sectionless cases exercised its unchanged path from `680ecd6`.
+
+The current CI set of 19 Java smoke tasks, `buildExtension`, wrapper,
+architecture-neutrality and release-package regressions pass. A focused
+sectionless-writer regression fails against the old writer and passes the new
+one across ELF32/64 and both byte orders, including memory-only/empty segments,
+unaligned segment starts, address overflow, original preservation and output
+rollback. Compiler-DWARF containers pass GNU/LLVM/strict-libdwarf checks for
+all five sectionless targets. The timestamp and greater-than-2-GiB integrations
+also pass with precisely corroborated inherited frame diagnostics; the latter
+uses a 64 MiB heap. Logs are retained under `build/strict-matrix/` and
+`build/test-results/sectionless-load-review/`.
+Two fresh imports each of `/usr/bin/true` and `/usr/bin/basename` also pass
+determinism, GNU/LLVM, strict checking and GDB source/breakpoint/type/stepping
+checks from an unrelated working directory. Each of the four reports retains
+seven frame diagnostics precisely corroborated against its unchanged original;
+there are no uncorroborated errors or stderr. Evidence is
+`build/test-results/real-world-export/run.KZOwoLaM/` and
+`build/strict-matrix/real-world-export.log`.
+Exact corrected hosted CI/package validation is required before publication.
+
+For the local extracted ARM toolchain, the runtime harnesses accept
+`FORGE_ARM32_SYSROOT`; the default remains `/usr/arm-linux-gnueabihf` in CI.
+
+### First corrected hosted run and extended program-header reader
+
+Run `40061424810` for PR #22 head `bf7f2b1` passed workflow lint, both native
+builds, extension compilation, release assembly and the full ARM32/MIPS32 BE/LE
+lanes. x86-64 and AArch64 failed during the extended-program-table fixture;
+Windows-hosted validation was skipped and the aggregate gate failed.
+The target artifacts were checked against their GitHub digests before analysis.
+
+The original x86 ELF has `e_phnum=0xffff` and section-zero `sh_info=65549`;
+AArch64 uses 65545. Both complete program tables end exactly at EOF. Standalone
+libdwarf 2.3.2 rejects these with `DW_DLE_IMPROPER_SECTION_ZERO(497)` before it
+can examine the original frame bytes. Its ELF32 and ELF64 reader paths reject
+nonzero `sh_info` unconditionally. The [Linux ELF definition](https://man7.org/linux/man-pages/man5/elf.5.html)
+assigns that field the actual program-header count when `e_phnum=PN_XNUM`.
+The sidecar LLVM checks pass and libdwarf reports only the three/five expected
+inherited frame messages; the strict runner correctly refuses to corroborate
+them from an original that the tool did not read successfully.
+
+Evidence is retained under `build/hosted-pr22-investigation/` in the strict
+worktree. The separate validation-only static-consumer patch now passes 16
+positives and 60 malformed-header controls across ELF32/64 and both byte orders,
+including genuine 65535/65536-entry tables, a compiler-built fixture and exact
+corroboration of both hosted original/sidecar pairs. Negative controls require
+normal checker termination with the expected diagnostic and empty stderr;
+crashing is not an accepted rejection. The final source-consistent tool bundle
+is `build/validation-tool-pn-xnum-reviewed/`, with binary SHA-256
+`cb552b4aba27c1ec88268da9fdee1eb240293d127b04df22a88cd79ee187e284`.
+All bundled source, patch, helper, README and license manifests verify. The
+production native pair and frame diagnostic policy remain unchanged.
+
+The final tool's complete reader regression passes in
+`build/test-results/dwarfdump-extended-programs/run.zz6h3yib/`; its existing
+line-sequence/malformed-range regression passes in `run.jf01eivu/` under the
+corresponding `dwarfdump-line-sequences` results directory. Five sectionless
+location corruption controls also require normal checker termination and pass.
+Fresh full x86-64 and AArch64 ELF-layout export suites pass in
+`build/test-results/elf-layout-export/run.B3PvreYC/` and `run.L6iuQTIY/`,
+covering unnamed sections, extended program tables, repeats, explicit rebase,
+PIE, strict validators, GDB and original preservation. Extended-input runtime
+checks retain the documented equivalent ordinary-load-image rule; actual
+native/QEMU execution of `PN_XNUM` inputs is not newly claimed. Independent
+review found no remaining issue. The previously failed hosted run stays failed;
+the complete corrected hosted matrix is still required.
+
+An independent exact-package precheck passed for this candidate, with release
+ZIP SHA-256 `9b52381bc6dd3795bb69d09293d08bcc473e305d3b4603cff52132cf4a3b3589`.
+It checked five manifests, 29 exact source files, 131 Java 21 classes, both
+platform native provenance records, class origins and 20 deterministic
+producer lifetimes under a Java 21 runtime. Logs are in the corrective-alpha2
+worktree at `build/exact-release-verification/run-40061424810.LWVjQSe7/`.
+This precheck does not override the failed hosted gate.
+
+The subsequent report-parser regression removes zero-count category rows:
+the old parser accepted a missing `locations` row because arithmetic still
+matched. Every table now requires all 22 pinned categories (21 for the legacy
+format). Fifteen missing/unknown-category controls and 52 retained artifact
+and original reports pass; evidence is in
+`build/validator-probes/missing-zero-category.77mdlsjb/` and
+`build/strict-matrix/checker-complete-categories*.log`.
+
+
 Local validation date: 2026-09-03
 Ghidra: 12.0.3
 Host: Linux x86-64
@@ -13,34 +217,50 @@ library paths.
 
 ## Measured line-table address index (2026-10-23)
 
-**CONFIRMED locally:** a sampled hot path in `Dwarf5LineTable.plan` now builds
-one earliest-line address index and queries each half-open function range.
-The focused smoke preserves starts, excludes ends/gaps, keeps overlapping
-bodies independent and retains the earliest line for repeated addresses.
-The existing width/byte-order and deterministic-order checks continue to pass.
+**CONFIRMED locally:** `Dwarf5LineTable.plan` builds one earliest-line address
+index and queries each half-open function range. The focused smoke preserves
+starts, excludes ends/gaps, keeps overlapping bodies independent and retains
+the earliest line for repeated addresses. Width/byte-order and deterministic
+ordering checks continue to pass.
 
-Five alternating baseline/indexed exports of the same saved 10,000-function
-project produce byte-identical `.dbg` and `.dbg.c` files in all ten runs.
-Whole-process median time changes from 10.86 to 9.18 seconds on the recorded
-Linux host. The full 10,000-symbol source/type/address oracle, GDB runtime and
-GNU/LLVM/libdwarf validators pass. Input, historical artifacts and the complete
-saved-project file manifest remain unchanged. Exact timings, hashes, commands,
-memory interpretation and workload limits are in `docs/PERFORMANCE.md`;
-evidence is under `build/line-profile/paired.8k_6dt_w/` in `line-table-index`.
+**HISTORICAL:** five alternating `ddad598` baseline/indexed exports of the same
+saved 10,000-function project produced byte-identical `.dbg` and `.dbg.c` files
+in all ten runs, with whole-process medians of 10.86 and 9.18 seconds. GNU,
+LLVM and full GDB symbol/source/type/address/runtime checks passed. The old
+libdwarf log reports 11,833 errors despite exit zero; its clean-validator claim
+is withdrawn. Exact timings, hashes and workload limits remain in
+`docs/PERFORMANCE.md` and `build/line-profile/paired.8k_6dt_w/`.
 
-All nineteen native-independent smoke tasks and `buildExtension` pass. The
-installed indexed JAR matches the rebuilt JAR exactly. Real export and GDB
-checks pass x86-64, AArch64, MIPS32 BE and LE across ET_EXEC, PIE and shared
-objects (twelve cases), including source listing/stepping, exact addresses,
-integer/stack/composite values, validators and unchanged input hashes. Logs
-are `build/line-profile/verification/{exec,pie,shared}-{headless,gdb}.txt`.
-Architecture isolation, `actionlint` and whitespace checks pass.
+The historical indexed build passed nineteen native-independent smokes and
+x86-64, AArch64, MIPS32 BE/LE ET_EXEC/PIE/shared-object GDB cases. Those runs
+predate strict summary enforcement; their old libdwarf pass labels are not
+current validation evidence. Logs remain under `build/line-profile/verification/`.
+The prior benchmark/research branch was merged normally at `5bc72f1`.
 
-The benchmark/research checkpoint branch was merged normally at `5bc72f1`;
-it adds no production changes. The sole runtime optimization remains the
-line-table index, with no new native interface or timing threshold in CI.
-Broader workloads and hosted validation remain **PLANNED**. No universal speed
-or memory reduction is inferred from this synthetic experiment.
+**CONFIRMED locally after merging strict `99845c7`:** the planner source is
+unchanged, and the line-table/source/range smokes and extension build pass.
+Fresh ARM32 ARMv7 hard-float ET_EXEC, PIE and shared-object exports pass GNU,
+LLVM, strict libdwarf (zero errors) and QEMU/GDB runtime assertions. A repeated
+fresh ET_EXEC import/export is byte-identical; originals remain unchanged.
+A fresh ten-function, two-export benchmark rehearsal also passes strict
+validation, byte equality and GDB. These are functional checks, not new timing
+comparisons. Evidence: `build/line-profile/merged-verification/` and
+`build/test-results/export-benchmark/run.3h1im338`.
+
+A retained 10,000-function artifact initially failed strict validation because
+the standalone consumer printed only 49 of 10,002 reported inherited frame
+messages. A separately pinned validation-only capacity patch now retains up to
+65,536 messages with checked allocation and explicit overflow/failure exits.
+The full GNU/LLVM/strict/GDB replay passes: all 10,002 errors are exactly
+corroborated against the unchanged original's identity/frame bytes and
+same-version diagnostics; every other category is zero. Recorded artifact
+hashes and the complete saved-project manifest remain unchanged. No timed
+10,000-function export was rerun. Boundary, missing/duplicated diagnostic and
+allocation-failure controls are documented in `support/validation/README.md`.
+
+The only exporter runtime optimization is the line-table index. There is no
+new native interface or timing threshold. Broader workloads and the combined
+hosted matrix, including Windows, remain **PLANNED**.
 
 ## ELF robustness development (2026-10-23)
 
@@ -978,8 +1198,10 @@ harness runs both validators for every artifact.
 `dwarfdump -ka` reports two harmless `.eh_frame` length-alignment diagnostics
 for the x86-64 fixture. The matched sidecar retains those original target
 sections byte-for-byte, and the same diagnostics occur on the original input;
-they are not emitted from Forge DWARF sections. There are zero line-table,
-abbreviation, DIE, range, or declaration-file errors.
+they are not emitted from Forge DWARF sections. **HISTORICAL CLAIM WITHDRAWN:**
+the previous statement that line-table, range and other error counts were zero
+was based on an insufficient harness. The retained-log audit above finds
+nonzero summaries and requires explicit explanation and enforcement.
 
 ## Generated source freshness at pair publication (2026-10-23)
 
@@ -1047,3 +1269,49 @@ reproduction establish the cause without claiming those lost timestamps.
 The x86 CI lane now runs the deterministic GDB regression; the existing
 publisher smoke also runs on native Windows. Local build and focused checks
 pass. The next exact versioned candidate still requires full hosted validation.
+
+## Native patch checkout and provenance consistency (2026-10-23)
+
+Prepublication audit of candidate `ddad598` in run `40055176326` verified the
+GitHub artifact digest, all release/native/source/runtime manifests, embedded
+source and Java 21 bytecode, and twenty packaged Linux producer lifetimes using
+the downloaded production JAR. It also found a provenance mismatch: Windows
+build metadata recorded `733405d03e2fd34f7bba971e6bbfe534d72ee9b3c1856879a7652f4eff17bc2a`,
+while the bundled patch and release pin were
+`b98561b3e63b76546bd2f18d81d53e188b56deb637b5e145205b3b6eedadf696`.
+
+The former is exactly the latter patch converted from LF to CRLF. Applying
+each with GNU patch to independently extracted copies of the pinned libdwarf
+archive produced byte-identical source trees; the CRLF application explicitly
+reported stripping trailing CRs. This establishes equivalent patched content
+locally, not that the previous raw provenance records agreed. Evidence is under
+`corrective-alpha2/build/exact-release-verification/patch-equivalence/` in the
+isolated worktree collection. No patch content, native API or version changed.
+
+The correction forces LF patch checkouts and checks the pin before all four
+Linux/Windows primary/comparison applications. Release assembly requires both
+platform metadata records to match the canonical bundled patch. It rejects
+missing, malformed, duplicate or mismatched records and a nonpinned bundled
+patch before replacing any previous output ZIP. GNU checksum escaping in
+Windows paths and CRLF metadata lines remain supported.
+
+The assembler requires an unbundled Gradle base ZIP and native inputs with
+their own nonempty regular metadata files. Native-inclusive or already-bundled
+compliance bases are rejected before copying; base contents cannot supply a
+missing native file or cause new compliance files to nest below stale ones.
+
+```bash
+git check-attr text eol -- native/libdwarf/patches/*.patch
+src/test/integration/release-package.sh
+```
+
+**PASS locally:** a temporary Git checkout with `core.autocrlf=true` reproduces
+the CRLF hash without attributes and the pinned LF hash with them. The exact
+pre-application checksum check rejects the former and accepts the latter.
+The updated package regression fails against the previous assembler, which
+accepted the inconsistent Windows hash; the fixed suite passes all rejection
+cases, previous-output preservation, escaped Windows metadata, every manifest,
+wrapper permissions and two byte-identical assemblies. Logs are in
+`native-patch-provenance/build/provenance-review/`. Native Windows and the full
+exact-candidate matrix remain pending; this audit does not authorize publishing
+the earlier mismatched package.

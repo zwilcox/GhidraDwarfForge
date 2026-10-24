@@ -64,8 +64,8 @@ readelf -h -S -n --debug-dump=info --debug-dump=abbrev --debug-dump=aranges \
     "$artifact" > "$work/readelf.txt" 2> "$work/readelf.stderr"
 test ! -s "$work/readelf.stderr"
 llvm-dwarfdump --verify "$artifact" > "$work/llvm.txt" 2>&1
-dwarfdump "$artifact" > "$work/dwarfdump.txt" 2> "$work/dwarfdump.stderr"
-test ! -s "$work/dwarfdump.stderr"
+python3 "$repository/src/test/integration/check-dwarfdump.py" \
+    "$artifact" "$work/dwarfdump.txt" --original "$original"
 gdb_source -ex 'ptype timestamp_function' -ex 'break timestamp_function' \
     -ex 'python exits=[]; gdb.events.exited.connect(lambda event: exits.append(event.exit_code))' \
     -ex run -ex 'python assert gdb.selected_frame().name() == "timestamp_function"' \

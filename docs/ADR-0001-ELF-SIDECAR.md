@@ -35,6 +35,7 @@ Create `<original>.dbg` as a matched, non-loadable ELF sidecar:
 5. Append Forge-generated debug sections and a correctly typed `SHT_STRTAB`
    `.shstrtab`, then write a new section-header table.
 6. When the input has no section headers, begin the new table with `SHT_NULL`,
+   preserve nonempty `PT_LOAD` allocation extents as inert generated sections,
    reconstruct identity note sections from `PT_NOTE`, and add debug sections
    and `.shstrtab` from scratch.
 7. Resolve producer relocation records before publication. Do not copy or emit
@@ -79,6 +80,39 @@ bytes remain in the copied sidecar, but are no longer active debug metadata.
 The input itself, build identity, and unrelated sections such as `.eh_frame`
 remain unchanged. This does not add optional debuglink attachment to the
 original executable.
+
+### Allocation metadata for inputs without section headers (2026-10-23)
+
+An input without a section table still describes its memory image through
+`PT_LOAD`. Retaining only reconstructed allocated notes in the sidecar loses
+the code/data allocation extents: consumers cannot recover those extents from
+the sidecar after its program headers are removed. In particular, independent
+DWARF location checks incorrectly bound the entire image by the note ranges.
+
+For each nonempty original `PT_LOAD`, add a section named
+`.forge.load.<program-header-index>`. This explicitly generated name identifies
+the original physical program-header index; it does not claim to recover an
+original section name or code/data subdivision. The section is `SHT_NOBITS`
+with `sh_addr = p_vaddr`, `sh_size = p_memsz`, and `sh_offset = p_offset`.
+It has `SHF_ALLOC`, plus `SHF_WRITE` for `PF_W` and `SHF_EXECINSTR` for `PF_X`.
+Its link, info and entry-size fields are zero. Alignment is conservatively one:
+segment alignment constrains virtual-address/file-offset congruence, so
+`p_align` need not divide `p_vaddr` and cannot simply become `sh_addralign`.
+
+These sections describe known allocation extents and have no logical file
+payload, including when a segment's memory size exceeds its file size or the
+whole segment is memory-only. Original copied bytes and reconstructed notes
+remain intact. Zero-memory-size loads and non-load program headers do not
+produce allocation sections. Reject a load whose exclusive virtual end exceeds
+the supported signed-64-bit address model, or exceeds `2^32` for ELF32, before
+creating a staging file. An ELF32 load may end exactly at `2^32`.
+
+This rule applies only when the input section table is absent. Present section
+tables, including unnamed sections, retain their existing index/name policy.
+The sidecar still has no program headers and remains non-loadable; the original
+executable remains the authority for runtime mappings and PIE bias. Generated
+allocation metadata does not establish automatic association support for a new
+layout or recover source-level facts.
 
 ### Extended section numbering (2026-10-23)
 

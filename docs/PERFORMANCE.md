@@ -10,7 +10,8 @@ python3 src/test/performance/export-benchmark.py /path/to/ghidra \
 ```
 
 The harness requires GCC, GNU `time`, `nm`, `readelf`, LLVM `llvm-dwarfdump`,
-libdwarf `dwarfdump`, and Python-enabled `gdb-multiarch`. It retains generated
+the repository-built validation `dwarfdump`, and Python-enabled `gdb-multiarch`.
+Set `DWARFDUMP` to that executable when it is not first on `PATH`. It retains generated
 C, binaries, saved projects, commands, transcripts, tool versions, installed
 module hashes, JSON metrics and validation evidence under
 `build/test-results/export-benchmark/run.*`, including after failure. All
@@ -34,7 +35,8 @@ JIT behavior and other host work can affect these small sample sets; the
 harness does not claim cold-cache or isolated-machine measurements.
 
 Validation requires unchanged original hashes, byte-identical repeated
-sidecar/source files, GNU/LLVM/libdwarf checks, and a full GDB DWARF function
+sidecar/source files, GNU/LLVM checks and strict libdwarf summaries with exact
+original-frame corroboration through `check-dwarfdump.py`, and a full GDB DWARF function
 symbol with synthetic-source association and the original address for every
 generated function. An inherited minimal ELF symbol alone cannot satisfy that
 check. GDB also lists source, stops at the first function, checks the initial
@@ -59,7 +61,11 @@ The 100/1,000-function measurements are retained in `run.9aufhyv_`; the
 10,000-function measurements are in `run.3ufsbv4n` in the isolated
 `export-benchmarks` worktree. A 10-function harness rehearsal is in
 `run.p9fpg5et`. All four workloads pass the strengthened full-symbol oracle in
-their `validation-full-symbols` directories. Export status is `PARTIAL` for
+their `validation-full-symbols` directories. Their original exit-zero libdwarf
+checks did not enforce numeric error summaries, so those historical runs do
+not establish clean libdwarf validation. The retained paired 10,000-function
+result is independently revalidated below; the earlier scaling timings are
+not new measurements of the merged branch. Export status is `PARTIAL` for
 the retained startup thunks/opaque recovered types; no function decompilation
 failed. These diagnostics remain visible in the JSON reports.
 
@@ -98,8 +104,8 @@ planning replaces the repeated `R * A` scan with roughly
 `A log U + R log U + E` work. This does not change decompilation, native calls,
 or the line-program encoding.
 
-Five baseline/indexed pairs alternated on the same saved 10,000-function
-project and unchanged input. The baseline was `ddad598`; the indexed build
+**HISTORICAL timing evidence:** five baseline/indexed pairs alternated on the
+same saved 10,000-function project and unchanged input. The baseline was `ddad598`; the indexed build
 changed only this production method, plus its smoke assertions. Both packages
 used the same verified native files. Before every timed sample the package
 was freshly extracted into the same private Ghidra copy and its manifest
@@ -131,10 +137,13 @@ time threshold is added to CI.
 All ten `.dbg`/`.dbg.c` pairs are byte-identical (2,021,584/995,744 bytes).
 Each export decompiled 10,008 functions without failure, including startup
 functions. The original, historical source/artifacts and complete saved-project
-file manifest are unchanged. GNU/LLVM/libdwarf checks and full DWARF
-symbol/type/source/address checks for all 10,000 named functions pass, together
-with the native GDB source/stepping/runtime oracle. This preserves the existing
-`PARTIAL` startup/opaque-type diagnostics rather than suppressing them.
+file manifest are unchanged. GNU/LLVM checks and full DWARF
+symbol/type/source/address checks for all 10,000 named functions passed, together
+with the native GDB source/stepping/runtime oracle. The old libdwarf log exited
+zero but reports 11,833 errors, including 13 line-table errors; the earlier
+claim of clean libdwarf validation is withdrawn. The timed measurements and
+byte-equality evidence remain valid. The fresh validation below preserves the
+existing `PARTIAL` startup/opaque-type diagnostics rather than suppressing them.
 
 Retained evidence is `line-table-index/build/line-profile/paired.8k_6dt_w/`:
 `environment.json`, all command/metric/transcript files, per-install manifests,
@@ -169,3 +178,56 @@ check the input and saved project before/after. Run the existing harness's
 `validate` helper against the final byte-identical result. Broader line/source
 and target behavior remains covered by the semantic matrix documented in
 `VALIDATION.md`, not inferred from this synthetic timing fixture.
+
+## Validation after the strict-checker merge
+
+**CONFIRMED locally:** normal integration of strict-checker commit `99845c7`
+leaves the indexed planner unchanged from `48bb8f2`; no 10,000-function timed
+export was repeated. The line-table, synthetic-source and range-list smokes
+and `buildExtension` pass on the merged tree. A fresh ten-function, two-export
+harness rehearsal passes byte equality, strict validation and GDB in
+`build/test-results/export-benchmark/run.3h1im338`. That concurrent rehearsal
+is functional evidence, not a speed comparison.
+
+The two-patch standalone checker correctly refused the retained paired
+10,000-function artifact: its unchanged original and sidecar each report
+10,002 inherited frame-length diagnostics, but upstream retained/printed only
+49 messages. Equal counts are insufficient corroboration. A third,
+checksum-pinned validation-only patch raises the bounded capacity to 65,536,
+uses checked heap storage and fails explicitly on overflow or allocation
+failure. The shipped producer/consumer libraries are unchanged; see
+`support/validation/README.md` for the limit and failure controls.
+
+With complete diagnostics, the retained sidecar passes GNU, LLVM, the strict
+checker and the full 10,000-function GDB oracle. All **10,002** reported errors
+are matched by exact same-version original diagnostics and unchanged frame
+bytes/ELF identity; every other category and uncorroborated count is zero.
+This is explained inherited input evidence, not an error-free original claim.
+All ten recorded artifact hashes still match, and the original, historical
+artifacts and saved-project manifest remain unchanged. The earlier strict
+failure is retained alongside the successful replay at
+`build/line-profile/merged-verification/retained-10k-complete/` and
+`retained-10k-result.json`.
+
+The merged installed exporter also passes ARM32 ARMv7 hard-float ET_EXEC, PIE
+and shared-object export, GNU/LLVM/strict checks, and QEMU/GDB value, source,
+stepping and normal-exit checks. All three strict reports have zero errors.
+A fresh ET_EXEC import/export produces byte-identical sidecar/source files;
+input hashes remain unchanged. The isolated GCC 13.3 toolchain/sysroot is
+recorded in `build/line-profile/merged-verification/arm32-*.log`; no system or
+user Ghidra installation was modified. Historical four-profile results are
+recorded separately in `docs/VALIDATION.md`.
+
+Final standalone-validator bundle `build/line-profile/validation-tool-final`
+passes its manifest and exact bundled-source comparisons. Its executable
+SHA-256 is `c6e46836af587bc34e214dd04036a3c796b87ae4afe8a0d0ec006b427b376767`.
+The full capacity/allocation/static-rollback regression passes in
+`build/test-results/dwarfdump-diagnostic-capacity/run.kwbald9k`; a final strict
+replay retains all 10,002 messages in
+`build/line-profile/merged-verification/retained-10k-final.txt`. Parser controls,
+line/extended-program negative controls, release-package regression, workflow
+lint and architecture-isolation checks also pass locally.
+
+The complete merged hosted matrix, including Windows, remains **PLANNED**.
+Representative complex application/firmware workloads and finer phase
+profiling remain **PLANNED**; the index has no general speed or memory guarantee.

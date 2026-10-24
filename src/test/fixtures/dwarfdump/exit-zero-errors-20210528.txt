@@ -1,0 +1,258 @@
+
+*** HARMLESS ERROR COUNT: 3 ***
+
+1 Compilers detected:
+01: GhidraDwarfForge range/global milestone
+
+1 Compilers verified:
+01: errors =    16, GhidraDwarfForge range/global milestone
+
+*** TOTAL ERRORS FOR ALL COMPILERS ***
+
+DWARF CHECK RESULT
+<item>                    <checks>    <errors>
+pubname_attr                     0           0
+attr_tag                       662           0
+attr_formclass                 662           0
+tag_tree                       234           0
+type_offset                      0           0
+decl_file                      114           0
+ranges                          13           0
+line_table                     114          13
+fde_table                        0           0
+aranges                          0           0
+names                          216           0
+frames                           0           0
+locations                      171           0
+harmless_errors                  3           3
+abbreviations                  535           0
+dwarf_constants               1887           0
+debug_info_gaps                206           0
+forward_declarations             0           0
+self_references                143           0
+attr_encoding                   65           0
+duplicated_attributes          662           0
+** Summarize **               5687          16
+
+*** TAGS AND ATTRIBUTES USAGE ***
+     7 DW_TAG_array_type
+            7 DW_TAG_subrange_type
+            7 DW_AT_byte_size
+            7 DW_AT_sibling
+            7 DW_AT_type
+     2 DW_TAG_enumeration_type
+           79 DW_TAG_enumerator
+            2 DW_AT_byte_size
+            2 DW_AT_name
+            2 DW_AT_sibling
+     6 DW_TAG_formal_parameter
+            2 DW_AT_location
+            6 DW_AT_name
+            6 DW_AT_type
+    21 DW_TAG_member
+            2 DW_AT_bit_size
+            2 DW_AT_data_bit_offset
+           19 DW_AT_data_member_location
+           21 DW_AT_name
+           21 DW_AT_type
+     3 DW_TAG_pointer_type
+            3 DW_AT_byte_size
+            2 DW_AT_type
+     1 DW_TAG_compile_unit
+            7 DW_TAG_array_type
+            2 DW_TAG_enumeration_type
+            3 DW_TAG_pointer_type
+            6 DW_TAG_structure_type
+            1 DW_TAG_subroutine_type
+            1 DW_TAG_typedef
+            1 DW_TAG_union_type
+            7 DW_TAG_base_type
+            1 DW_TAG_namespace
+           15 DW_TAG_subprogram
+           23 DW_TAG_variable
+            4 DW_TAG_unspecified_type
+            1 DW_AT_language
+            1 DW_AT_name
+            1 DW_AT_producer
+            1 DW_AT_ranges
+            1 DW_AT_stmt_list
+     6 DW_TAG_structure_type
+           19 DW_TAG_member
+            6 DW_AT_byte_size
+            6 DW_AT_name
+            6 DW_AT_sibling
+     1 DW_TAG_subroutine_type
+            2 DW_TAG_formal_parameter
+            1 DW_AT_name
+            1 DW_AT_prototyped
+            1 DW_AT_sibling
+            1 DW_AT_type
+     1 DW_TAG_typedef
+            1 DW_AT_name
+            1 DW_AT_type
+     1 DW_TAG_union_type
+            2 DW_TAG_member
+            1 DW_AT_byte_size
+            1 DW_AT_name
+            1 DW_AT_sibling
+     1 DW_TAG_unspecified_parameters
+     7 DW_TAG_subrange_type
+            7 DW_AT_count
+     7 DW_TAG_base_type
+            7 DW_AT_byte_size
+            7 DW_AT_encoding
+            7 DW_AT_name
+    79 DW_TAG_enumerator
+           79 DW_AT_const_value
+           79 DW_AT_name
+    15 DW_TAG_subprogram
+            4 DW_TAG_formal_parameter
+            1 DW_TAG_unspecified_parameters
+           47 DW_TAG_variable
+           15 DW_AT_decl_file
+           15 DW_AT_decl_line
+            2 DW_AT_calling_convention
+           13 DW_AT_high_pc
+           13 DW_AT_low_pc
+           15 DW_AT_name
+            1 DW_AT_noreturn
+           15 DW_AT_prototyped
+            2 DW_AT_ranges
+            8 DW_AT_sibling
+           13 DW_AT_type
+    71 DW_TAG_variable
+            1 DW_AT_declaration
+            1 DW_AT_external
+           69 DW_AT_location
+           71 DW_AT_name
+           71 DW_AT_type
+     1 DW_TAG_namespace
+            1 DW_TAG_variable
+            1 DW_AT_name
+            1 DW_AT_sibling
+     4 DW_TAG_unspecified_type
+            4 DW_AT_name
+** Summary **
+Number of standard tags      :        467
+Number of standard attributes:        660
+
+*** STANDARD TAGS AND ATTRIBUTES USAGE RATE ***
+                                 Tags             Attributes
+TAG name                         legal found rate legal found rate
+DW_TAG_array_type                    4     1  25%    22     3  13%
+DW_TAG_enumeration_type              1     1 100%    24     3  12%
+DW_TAG_formal_parameter              0     0   0%    16     3  18%
+DW_TAG_member                        0     0   0%    21     5  23%
+DW_TAG_pointer_type                  8     0   0%    11     2  18%
+DW_TAG_compile_unit                 37    12  32%    22     5  22%
+DW_TAG_structure_type               22     1   4%    22     3  13%
+DW_TAG_subroutine_type               3     1  33%    20     4  20%
+DW_TAG_typedef                       0     0   0%    16     2  12%
+DW_TAG_union_type                   10     1  10%    22     3  13%
+DW_TAG_subrange_type                 0     0   0%    22     1   4%
+DW_TAG_base_type                     0     0   0%    23     3  13%
+DW_TAG_enumerator                    0     0   0%     7     2  28%
+DW_TAG_subprogram                   38     3   7%    47    11  23%
+DW_TAG_variable                      0     0   0%    24     5  20%
+DW_TAG_namespace                    31     1   3%    11     2  18%
+DW_TAG_unspecified_type              0     0   0%     5     1  20%
+** Summary **                      154    21  13%   335    58  17%
+
+*** ATTRIBUTES AND FORMS USAGE ***
+Full record count                    :      228
+Total number of objectfile attributes:      662
+[]                                                        found rate
+[  0] DW_AT_name                     DW_FORM_strp             215 32%
+[  1] DW_AT_type                     DW_FORM_ref4             122 18%
+[  2] DW_AT_location                 DW_FORM_sec_offset        44 7%
+[  3] DW_AT_const_value              DW_FORM_data4             40 6%
+[  4] DW_AT_const_value              DW_FORM_data1             36 5%
+[  5] DW_AT_location                 DW_FORM_exprloc           27 4%
+[  6] DW_AT_sibling                  DW_FORM_ref4              26 4%
+[  7] DW_AT_byte_size                DW_FORM_data1             25 4%
+[  8] DW_AT_data_member_location     DW_FORM_data1             19 3%
+[  9] DW_AT_prototyped               DW_FORM_flag              16 2%
+[ 10] DW_AT_decl_file                DW_FORM_data1             15 2%
+[ 11] DW_AT_decl_line                DW_FORM_data1             15 2%
+[ 12] DW_AT_low_pc                   DW_FORM_addr              13 2%
+[ 13] DW_AT_high_pc                  DW_FORM_data1             12 2%
+[ 14] DW_AT_encoding                 DW_FORM_data1              9 1%
+[ 15] DW_AT_count                    DW_FORM_data1              7 1%
+[ 16] DW_AT_const_value              DW_FORM_sdata              3 0%
+[ 17] DW_AT_ranges                   DW_FORM_sec_offset         3 0%
+[ 18] DW_AT_bit_size                 DW_FORM_data1              2 0%
+[ 19] DW_AT_calling_convention       DW_FORM_data1              2 0%
+[ 20] DW_AT_data_bit_offset          DW_FORM_udata              2 0%
+[ 21] DW_AT_name                     DW_FORM_string             1 0%
+[ 22] DW_AT_byte_size                DW_FORM_data2              1 0%
+[ 23] DW_AT_stmt_list                DW_FORM_sec_offset         1 0%
+[ 24] DW_AT_high_pc                  DW_FORM_data2              1 0%
+[ 25] DW_AT_language                 DW_FORM_data1              1 0%
+[ 26] DW_AT_producer                 DW_FORM_strp               1 0%
+[ 27] DW_AT_declaration              DW_FORM_flag               1 0%
+[ 28] DW_AT_external                 DW_FORM_flag               1 0%
+[ 29] DW_AT_noreturn                 DW_FORM_flag               1 0%
+[228] Sum found:                                              662 100%
+
+*** COUNT BY FORMCLASS ***
+[]                                 found rate
+[ 0] DW_FORM_CLASS_ADDRESS            13 2%
+[ 1] DW_FORM_CLASS_CONSTANT          190 29%
+[ 2] DW_FORM_CLASS_EXPRLOC            27 4%
+[ 3] DW_FORM_CLASS_FLAG               19 3%
+[ 4] DW_FORM_CLASS_LINEPTR             1 0%
+[ 5] DW_FORM_CLASS_LOCLISTPTR         44 7%
+[ 6] DW_FORM_CLASS_REFERENCE         148 22%
+[ 7] DW_FORM_CLASS_STRING            217 33%
+[ 8] DW_FORM_CLASS_RNGLIST             3 0%
+[ 9] Sum found:                      662 100%
+
+*** COUNT BY FORM ***
+[]                         found rate
+[ 0] DW_FORM_addr             13 2%
+[ 1] DW_FORM_data2             2 0%
+[ 2] DW_FORM_data4            40 6%
+[ 3] DW_FORM_string            1 0%
+[ 4] DW_FORM_data1           143 22%
+[ 5] DW_FORM_flag             19 3%
+[ 6] DW_FORM_sdata             3 0%
+[ 7] DW_FORM_strp            216 33%
+[ 8] DW_FORM_udata             2 0%
+[ 9] DW_FORM_ref4            148 22%
+[10] DW_FORM_sec_offset       48 7%
+[11] DW_FORM_exprloc          27 4%
+[12] Sum found:              662 100%
+
+*** COUNT BY ATTRIBUTE ***
+[]                                   found rate
+[ 0] DW_AT_low_pc                       13 2%
+[ 1] DW_AT_byte_size                     1 0%
+[ 2] DW_AT_high_pc                       1 0%
+[ 3] DW_AT_const_value                  40 6%
+[ 4] DW_AT_name                          1 0%
+[ 5] DW_AT_const_value                  36 5%
+[ 6] DW_AT_byte_size                    25 4%
+[ 7] DW_AT_data_member_location         19 3%
+[ 8] DW_AT_decl_file                    15 2%
+[ 9] DW_AT_decl_line                    15 2%
+[10] DW_AT_high_pc                      12 2%
+[11] DW_AT_encoding                      9 1%
+[12] DW_AT_count                         7 1%
+[13] DW_AT_bit_size                      2 0%
+[14] DW_AT_calling_convention            2 0%
+[15] DW_AT_language                      1 0%
+[16] DW_AT_prototyped                   16 2%
+[17] DW_AT_declaration                   1 0%
+[18] DW_AT_external                      1 0%
+[19] DW_AT_noreturn                      1 0%
+[20] DW_AT_const_value                   3 0%
+[21] DW_AT_name                        215 32%
+[22] DW_AT_producer                      1 0%
+[23] DW_AT_data_bit_offset               2 0%
+[24] DW_AT_type                        122 18%
+[25] DW_AT_sibling                      26 4%
+[26] DW_AT_stmt_list                     1 0%
+[27] DW_AT_location                     44 7%
+[28] DW_AT_ranges                        3 0%
+[29] DW_AT_location                     27 4%
+[30] Sum found:                        662 100%

@@ -1,0 +1,127 @@
+--- a/src/bin/dwarfdump/dwarfdump.c
++++ b/src/bin/dwarfdump/dwarfdump.c
+@@ -123,7 +123,8 @@
+ 
+ #define BYTES_PER_INSTRUCTION 4
+ 
+-#define LOCAL_PTR_ARY_COUNT 50
++#define MAX_HARMLESS_ERRORS 65536U
++#define LOCAL_PTR_ARY_COUNT (MAX_HARMLESS_ERRORS + 1U)
+ 
+ /* Build section information */
+ void build_linkonce_info(Dwarf_Debug dbg);
+@@ -665,31 +666,47 @@
+ void
+ print_any_harmless_errors(Dwarf_Debug dbg)
+ {
+-    /*  We do not need to initialize the local array,
+-        libdwarf does it. */
+-    const char *buf[LOCAL_PTR_ARY_COUNT];
++    /*  Bounded heap storage includes the getter's terminating NULL slot.
++        Keep complete diagnostic evidence or fail closed. */
++    const char **buf = 0;
+     unsigned totalcount = 0;
+     unsigned i = 0;
+     unsigned printcount = 0;
+-    int res = dwarf_get_harmless_error_list(dbg,
+-        LOCAL_PTR_ARY_COUNT,buf,
+-        &totalcount);
++    int res = 0;
++
++    buf = calloc(LOCAL_PTR_ARY_COUNT,sizeof(*buf));
++    if (!buf) {
++        fprintf(stderr,
++            "ERROR: cannot allocate harmless diagnostic pointer buffer\n");
++        exit(EXIT_FAILURE);
++    }
++    res = dwarf_get_harmless_error_list(dbg,
++        LOCAL_PTR_ARY_COUNT,buf,&totalcount);
+     if (res == DW_DLV_NO_ENTRY) {
++        free(buf);
+         return;
++    }
++    if (res != DW_DLV_OK || totalcount > MAX_HARMLESS_ERRORS) {
++        fprintf(stderr,
++            "ERROR: harmless diagnostic count %u exceeds limit %u "
++            "or retrieval failed\n",totalcount,MAX_HARMLESS_ERRORS);
++        free(buf);
++        exit(EXIT_FAILURE);
+     }
+     if (totalcount > 0) {
+         printf("\n*** HARMLESS ERROR COUNT: %u ***\n",totalcount);
+     }
+-    for (i = 0 ; buf[i]; ++i) {
++    for (i = 0 ; i < MAX_HARMLESS_ERRORS && buf[i]; ++i) {
+         ++printcount;
+         DWARF_CHECK_COUNT(harmless_result,1);
+         DWARF_CHECK_ERROR(harmless_result,buf[i]);
+     }
+-    if (totalcount > printcount) {
+-        /*harmless_result.checks += (totalcount - printcount); */
+-        DWARF_CHECK_COUNT(harmless_result,(totalcount - printcount));
+-        /*harmless_result.errors += (totalcount - printcount); */
+-        DWARF_ERROR_COUNT(harmless_result,(totalcount - printcount));
++    free(buf);
++    if (totalcount != printcount) {
++        fprintf(stderr,
++            "ERROR: incomplete harmless diagnostics: reported %u, "
++            "retained %u\n",totalcount,printcount);
++        exit(EXIT_FAILURE);
+     }
+ }
+ 
+@@ -773,7 +790,13 @@
+         dwarf_set_default_address_size(dbg,
+             (Dwarf_Small)setup_config_file_data->cf_address_size);
+     }
+-    dwarf_set_harmless_error_list_size(dbg,50);
++    dwarf_set_harmless_error_list_size(dbg,MAX_HARMLESS_ERRORS);
++    if (dwarf_set_harmless_error_list_size(dbg,0) != MAX_HARMLESS_ERRORS) {
++        fprintf(stderr,
++            "ERROR: cannot allocate harmless diagnostic capacity %u\n",
++            MAX_HARMLESS_ERRORS);
++        exit(EXIT_FAILURE);
++    }
+ }
+ 
+ /*  Callable at any time, Sets section sizes with the sizes
+--- a/src/lib/libdwarf/dwarf_harmless.c
++++ b/src/lib/libdwarf/dwarf_harmless.c
+@@ -201,6 +201,11 @@
+             /*  Do not double increment the max, the init() func
+                 increments it too. */
+             _dwarf_harmless_init(dhp,maxcount-1);
++            if (!dhp->dh_errors) {
++                /* Failed resizing must retain the old messages and counts. */
++                *dhp = oldarray;
++                return prevcount-1;
++            }
+             if (oldarray.dh_next_to_use != oldarray.dh_first) {
+                 unsigned i = 0;
+                 for (i = oldarray.dh_first;
+@@ -236,19 +241,16 @@
+     for (i = 0; i < dhp->dh_maxcount; ++i) {
+         char *newstr =
+             (char *)calloc(1, DW_HARMLESS_ERROR_MSG_STRING_SIZE);
+-        dhp->dh_errors[i] = newstr;
+-#if 0 /* Commentary about avoiding leak */
+-        /*  BAD IDEA. just use the NULL pointer,
+-            so we avoid problems later with
+-            freeing.  */
+         if (!newstr) {
+-            dhp->dh_maxcount = 0;
+-            /* Let it leak, the leak is a constrained amount. */
++            /* The list is usable only if every bounded string slot exists. */
++            unsigned j = 0;
++            for (j = 0; j < i; ++j) {
++                free(dhp->dh_errors[j]);
++            }
+             free(dhp->dh_errors);
+-            dhp->dh_errors = 0;
++            memset(dhp,0,sizeof(*dhp));
+             return;
+         }
+-#endif /* 0 */
+         dhp->dh_errors[i] = newstr;
+     }
+ }

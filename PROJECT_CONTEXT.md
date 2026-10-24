@@ -1939,6 +1939,92 @@ source edit still warns in GDB; no warning filter was added. Deterministic unit,
 source-built GDB/runtime, and retained AArch64 Forge-artifact checks pass locally.
 See `docs/VALIDATION.md`; the next exact versioned CI remains required.
 
+### 16.31 Native patch checkout and provenance consistency
+
+**CONFIRMED:** prepublication audit of candidate run `40055176326` found that
+Windows `BUILD-METADATA.txt` recorded patch hash `733405d03e2fd34f7bba971e6bbfe534d72ee9b3c1856879a7652f4eff17bc2a`,
+while the release manifest and bundled patch used the pinned
+`b98561b3e63b76546bd2f18d81d53e188b56deb637b5e145205b3b6eedadf696`.
+The former is exactly the CRLF checkout of the latter. Applying each with GNU
+patch to independent copies of the pinned source produced identical source
+trees; the CRLF application explicitly stripped trailing CRs. This explains the
+metadata discrepancy, without asserting that the original records matched.
+
+Git attributes now force LF for native patches. CI checks the pinned hash before
+all four primary/comparison patch applications. Assembly rejects a noncanonical
+bundled patch and missing, malformed, duplicate or inconsistent platform patch
+hash records before replacing the release output. Canonical hashes in escaped
+Windows/CRLF metadata remain accepted. The native version, patch contents and
+Java/native API are unchanged. Assembly explicitly accepts the unbundled Gradle
+base and rejects native/compliance directories already in that base, preventing
+stale base metadata or binaries from filling gaps in new native inputs.
+Checkout-conversion and package regressions pass
+locally; exact native Windows and complete candidate CI remain required before
+publication. See `docs/VALIDATION.md` for retained evidence.
+
+### 16.32 Independent-validator reporting gap
+
+**CONFIRMED:** PR #19 merged as `680ecd6` after candidate run `40057428382`
+passed all twelve jobs and its native-inclusive package passed independent
+provenance/source/producer checks. Alpha.2 remains unpublished. A subsequent
+review of a new ARM static-scope test exposed a broader existing harness gap:
+libdwarf `dwarfdump -ka -ks` exits zero while printing nonzero check summaries.
+The shell tests did not enforce those summary counts.
+
+The five corrective-run target artifacts were downloaded and checked against
+GitHub's artifact digests. The audit inspected 201 dwarfdump/LLVM result logs
+and found nonzero libdwarf summaries in 25 x86-64, 14 AArch64, and four logs
+in each ARM32/MIPS32 lane. These are log counts, including repeated cases, not
+counts of distinct defects. The older checker mishandles DWARF 5 ranges and
+unnamed sections. The validation executable is now built separately from the
+pinned libdwarf 2.3.2 source, with a checksum-pinned correction to its line
+sequence check: sequence boundaries are not function boundaries. The shipped
+native libraries and their patch/provenance contract are unchanged.
+
+**CONFIRMED locally:** the strict runner enforces full numeric summaries and
+completion, exit status and empty stderr. It accepts an inherited frame-length
+diagnostic only when the original ELF produces the exact same diagnostic and
+has identical target metadata and `.eh_frame` address, size and bytes. Raw
+diagnostics remain visible. Malformed reports, input/log aliases, corrupted
+line programs and corrupted range relationships have rejecting controls.
+The checker artifact includes its source, patch, build instructions, manifests
+and GPL/LGPL notices; it is excluded from release-native inputs.
+
+A fresh five-target matrix passed 25 non-sectionless export/validator/GDB
+cases. The five sectionless cases exposed missing image-bound evidence:
+their sidecars contain allocated identity notes but no load extents, causing
+the checker to mistake note addresses for the image limits. Independent ARM32
+and MIPS32 inspection found all emitted location intervals inside the original
+executable segments and their owning functions. The selected correction adds
+inert sectionless-only load extent metadata derived from original `PT_LOAD`
+headers; see ADR 0001. **CONFIRMED locally:** the corrected writer passes
+ELF32/64 in both byte orders, five real sectionless exports with zero checker
+errors, exact load/interval metadata checks, rejecting corruption controls,
+GDB runtime checks and byte-identical repeats. All 19 current CI Java smoke
+tasks, the extension build, packaging/wrapper checks and the greater-than-2-GiB
+and source-timestamp integrations also pass. The local build uses JDK 25 with
+Java 21 bytecode; the installed Java 21 directory contains a JRE without
+`javac`. Hosted Java 21 and the complete corrected matrix remain
+**PRESENT, UNVERIFIED**. Do not publish based only on the earlier green gates,
+including main run `40058691020`.
+See TODO Section 0.2 and `docs/VALIDATION.md`.
+
+PR #22's first hosted run `40061424810` passed the native builds, extension,
+release package and ARM32/MIPS32 target lanes, but failed x86-64 and AArch64
+at original-file frame corroboration for `PN_XNUM` fixtures. The standalone
+consumer rejects section zero's nonzero `sh_info` even when it encodes the
+valid extended program-header count. The sidecars themselves pass LLVM and
+have only their exactly inherited frame messages. A separate validation-only
+reader correction passes 16 local positives, 60 malformed-header controls,
+exact retained-original corroboration and fresh x86-64/AArch64 ELF-layout
+export/validator/GDB suites. No additional diagnostic exception or shipped
+native-library change is selected. Windows-hosted checks were skipped
+and the aggregate gate failed. The exact `bf7f2b1` package precheck passed
+source/manifests/native provenance and 20 isolated Java 21 producer lifetimes,
+but this is not a release approval. The checker completion gate additionally
+rejects missing zero-count categories, demonstrated by fifteen new controls
+and 52 unchanged retained real reports.
+
 ### P3.4 bounded inline-evidence investigation (2026-10-23)
 
 **CONFIRMED:** ADR 0003 records the completed investigation and the conditions
@@ -1973,8 +2059,10 @@ synthetic named-function ELF workloads, measures import separately from saved
 project export, and retains commands/tool versions/module hashes/metrics.
 Three repeated fresh-JVM exports of 100, 1,000 and 10,000 generated functions
 have medians of 2.52, 3.27 and 10.62 seconds on the recorded host. All artifacts
-pass structural validators, full GDB DWARF symbol/address/source checks,
-runtime entry/stepping/exit, original hashes and byte-identical reruns.
+pass GNU/LLVM, full GDB DWARF symbol/address/source checks, runtime
+entry/stepping/exit, original hashes and byte-identical reruns. Their historical
+exit-zero libdwarf checks did not enforce numeric summaries; those pass labels
+are withdrawn pending the strict evidence recorded below.
 Independent review strengthened the oracle so inherited minimal ELF symbols
 cannot mask missing function DIEs, and timeout cleanup kills descendants even
 when the wrapper exits first. The adversarial cleanup probe passes.
@@ -2095,10 +2183,12 @@ pass. No native signature or decompilation behavior changes.
 
 Five alternating baseline/indexed pairs reduce median whole-process export
 time from 10.86 to 9.18 seconds on this local workload, with every sidecar/source
-pair byte-identical. Validators, all 10,000 full DWARF symbols, runtime GDB,
+pair byte-identical. GNU/LLVM, all 10,000 full DWARF symbols, runtime GDB,
 input/historical-artifact hashes and the saved-project file manifest pass.
-The optimized build also passes nineteen smoke tasks and the four-profile
-ET_EXEC/PIE/shared semantic matrix. `docs/PERFORMANCE.md` records the complete
+The old libdwarf report contains 11,833 errors despite exit zero, so its clean
+validation claim is withdrawn. The earlier indexed build passed nineteen
+smoke tasks and the four-profile ET_EXEC/PIE/shared GDB matrix; those historical
+runs predate strict libdwarf summary enforcement. `docs/PERFORMANCE.md` records the complete
 samples, hashes, methodology and limits. This does not establish a speed or
 memory bound for arbitrary firmware or another host.
 
@@ -2107,3 +2197,31 @@ The benchmark/inline/target-profile research branch was normally merged into
 The only runtime change remains the small line-table index. Larger application/
 firmware profiling and hosted validation remain **PLANNED**; timing thresholds,
 caching, parallel decompilation and compression are not introduced.
+
+### Line-index integration and complete diagnostic evidence (2026-10-23)
+
+**CONFIRMED locally:** normal integration of strict `99845c7` into the isolated
+line-index branch preserves the measured planner without changes. The merged
+line/source/range smokes and extension build pass. New ARM32 ARMv7 hard-float
+exec/PIE/shared exports pass GNU/LLVM/strict checks and QEMU/GDB runtime oracles;
+all three strict summaries are zero, and a fresh exec repeat is byte-identical.
+A ten-function/two-export rehearsal proves the migrated benchmark harness.
+
+Strict replay correctly rejected the retained 10,000-function artifact when
+the original and sidecar each reported 10,002 inherited frame errors but the
+consumer printed only 49 messages. The performance branch adds a third pinned
+validation-only patch with capacity 65,536, checked heap retrieval and
+all-or-nothing buffer allocation. Allocation failure, over-capacity and
+incomplete evidence fail explicitly; prior buffers/messages/counters survive
+failed resizing. Shipped producer/consumer libraries and public APIs are
+unchanged. Exact Counter equality still precedes the helper's set-membership
+optimization; missing or duplicated messages cannot pass on counts alone.
+
+The retained result now passes full GNU/LLVM/strict/GDB replay with all 10,002
+messages matched to unchanged original frame bytes, identity and same-version
+diagnostics; no other errors remain. All ten recorded output hashes and the
+saved-project manifest are unchanged. No timed 10,000-function export was
+rerun, and historical timing remains baseline evidence rather than a new
+merged measurement. `docs/PERFORMANCE.md` and `support/validation/README.md`
+record limits, failure controls and retained paths. The complete combined
+hosted matrix and representative complex workloads remain **PLANNED**.
