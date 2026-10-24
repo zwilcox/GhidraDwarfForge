@@ -3339,3 +3339,29 @@ execution is attributed to this helper. Final docs/package review and the full
 hosted gate remain required after the prefix PR integrates. See
 `docs/MATCHED-ELF-ALLOCATIONS.md` and `docs/VALIDATION.md`. P2.8's mutating
 attachment transaction and published releases remain unchanged.
+
+
+### Retained-prefix hosted acceptance and next allocation gate (2026-10-24)
+
+**CONFIRMED:** PR #34 head `888406e244c0265422a2b07ed3f66b11b97be130`
+passes exactly twelve jobs in pull-request run `40097366322`, attempt 1, with
+no skipped jobs. Independent package/source, all-five-target prefix artifacts
+and both GUI host reviews are clear. The thirty pairs and repeated comparisons,
+ninety retained byte copies, thirty complete producer logs and x86 sparse-file
+recipe were independently checked. Native Windows passes sixteen focused checks
+and actual Script Manager export/selection/cancellation. Normal merge
+`837cec8110490635783e037faf48a95c2a2bd86f` at `2026-10-24T13:47:37Z`
+preserves the tested tree. Its distinct main push remains pending.
+
+PR #33's distinct main push `40096877943` now passes all twelve jobs and both
+independent GUI artifact reviews, superseding the earlier pending checkpoint.
+The main target jobs are CI evidence; the detailed reader artifact audits belong
+to its exact PR run. Published alpha.1 and alpha.2 remain unchanged.
+
+The allocation observer's source/runtime reviews and integration commit
+`00e2216` are clear. Accepted prefix main is incorporated normally as `bb02f85`;
+the independent local package review is also clear. Exact hosted acceptance
+remains required. A separate bounded
+continuation will compare the three reported SHA-256 claims with explicitly
+selected files. That does not authenticate a report, establish an immutable
+snapshot, combine ELF observations into a readiness flag, or expose attachment.

@@ -4185,3 +4185,71 @@ review and the exact hosted gate remain pending. CI schedules all five six-role
 oracles after the prefix step, the sparse case on x86 and seventeen default
 focused Windows checks. No new native Windows/ARM32/MIPS32LE runtime result is
 inferred from this local subset, and no attachment operation is introduced.
+
+
+## Retained-prefix hosted acceptance (2026-10-24)
+
+**CONFIRMED:** PR #34 exact head
+`888406e244c0265422a2b07ed3f66b11b97be130` passes pull-request run
+`40097366322`, attempt 1: exactly twelve expected jobs succeed, none skipped,
+with no unresolved review threads. Normal merge
+`837cec8110490635783e037faf48a95c2a2bd86f` at `2026-10-24T13:47:37Z`
+preserves the tested tree. The separate main push is still pending.
+
+Package artifact `12561239257` has download SHA-256
+`49c84ad5dd929df46eeb582e113fa2897d6a5cff3703f1136982a9a263b5bfb5`;
+release ZIP SHA-256 is
+`294181f9592c83a1baf48d62cfb443814c9575b7bcb94a7d0f120bc7fcc17f29`.
+The hosted JAR is
+`ed4f1be4fcdd9946aec673c4c88829541f125df0e7192edd90597b25b7a8907c`,
+with forty production sources and 169 Java-21 classes, exact installed scripts,
+five manifests and pinned native provenance. The independent package audit
+runs actual Java 21 focused checks, twenty producer lifetimes and 118 production
+class-origin checks. Native declarations and version remain unchanged.
+
+All five downloaded target artifacts independently pass the new prefix oracle:
+thirty real pairs/repeats, ninety byte copies and thirty full producer logs,
+plus changed-code, changed-active-address, layout and malformed-input controls.
+The x86 2,147,549,185-byte sparse recipe hashes are independently reconstructed.
+Linux actual GUI `run.9sXkD5mJ` and all 24 strict reports pass with zero
+unexplained errors. Native Windows artifact `12562012029`, SHA-256
+`121519292fe10a0fbee35f63fced1968a28c58e2aa806d52c10e4e7d12cff0a7`,
+passes sixteen focused checks, reader's 429 controls, path protections and actual
+GUI `run.90ee363453964ad19bd94a0acaf5c7cd GUI paths`. Independent dwarfdump
+is unavailable on Windows; Linux-ELF GDB runtime was not run on that host.
+
+Evidence: prefix worktree `build/prefix-package-audit/` final gate, merge result
+and `run-40097366322.FgTVof1A`; GUI worktree
+`build/hosted-gui-review/run-40097366322/acceptance-scope.json`. The full existing
+runtime matrix is accepted through CI; no claim is made that each old runtime
+transcript was manually re-audited. A matching prefix still does not prove active
+metadata, valid DWARF, identity or attachment eligibility.
+
+Separately, PR #33 main-push run `40096877943` at `464caf7` now passes all twelve
+jobs and independently reviewed Linux/Windows GUI artifacts. Linux artifact
+`12562052005` (SHA-256
+`bc927d13391623939e048ecd5c0065a5e2210dac36c5b1a8728f97dadd54b959`)
+contains GUI `run.4vXL606F` and 24 strict reports with zero unexplained errors.
+Windows artifact `12561833590` (SHA-256
+`842ca15e84ab1cbadeec4d2c9649a3e42b4432318397d662c90ab194cb507008`)
+passes fifteen focused checks and GUI
+`run.9c6fc5ed8df24d5888b708d680b3b473 GUI paths`. This supersedes its earlier
+pending checkpoint; target jobs on this separate push have CI-only acceptance.
+
+
+### Allocation package review before hosted gate
+
+**CONFIRMED locally:** integration `00e2216` builds successfully. Package
+`build/allocation-review/reviewed-00e2216.zip`, SHA-256
+`a548be4d9f7d9afd0a88c6a4edcd59719c43f3ce48ed44d49e034295a8ee5746`,
+passes independent source/docs/support, all five manifest and pinned native
+provenance checks. It contains 41 production sources, two scripts and 177
+Java-21 classes; there is no private Gson or JNA. Its JAR remains the tested
+`136407474e48c6f6251a8d0c7a9f39a4843f33558ef278ecf32ae7ff5ac32e58`.
+All 28 runtime/native/provenance files match the earlier installed package,
+so this is a packaging review, not another runtime execution. Evidence:
+`build/allocation-package-audit/local-00e2216.5gewdk36/result.json`.
+
+Accepted prefix main is incorporated through normal merge `bb02f85`. Following
+acceptance documentation updates are packaged and checked against their exact
+commit before the new PR; the complete hosted gate remains pending.

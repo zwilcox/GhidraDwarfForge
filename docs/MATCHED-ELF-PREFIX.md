@@ -1,11 +1,14 @@
 # Retained original bytes in a Forge sidecar
 
-**CONFIRMED locally:** the focused `MatchedElfPrefix` checks pass on actual
+**CONFIRMED:** PR #34 head `888406e` passes all twelve jobs in exact hosted
+run `40097366322` and merged as `837cec8`. Independent package, all five target
+artifacts and both GUI reviews are clear. Thirty pairs and repeated comparisons,
+the x86 large-file case and sixteen native Windows focused checks pass. The focused `MatchedElfPrefix` checks pass on actual
 Java 21, including an input above 2 GiB under a 64 MiB heap. Independent source
 review is clear. Installed-package comparisons pass for eighteen fresh
 x86-64/AArch64/MIPS32 big-endian export pairs, with structural validators and
 GDB. Independent source, artifact and final local package reviews are clear.
-The full hosted gate remains required.
+The separate main push remains pending; published releases are unchanged.
 
 The current matched writer first copies every original byte, appends debug data
 and a new section table, then changes specific fields in the fixed ELF header.
