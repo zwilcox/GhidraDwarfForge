@@ -3569,3 +3569,22 @@ no source-tree change from that merge. Its own full hosted acceptance remains
 required. Candidate preparation is under investigation; no new backend or
 append-only writer has been selected. Optional attachment and published releases
 remain unchanged.
+
+
+### Owned candidate backend direction (2026-10-24)
+
+**CONFIRMED decision; implementation PLANNED:** ADR-0005 explicitly replaces
+the prior GNU candidate backend direction with a separate native-free append-only
+writer. Reviewed supervisor experiments show timeout/descendant snapshots do not
+contain child lifetimes. The alternative layout passes twelve real pairs and
+twenty metadata cases; independent reconstruction matches all 32 candidate files.
+Fourteen rejection controls and all 51 protected input snapshots pass. Real GDB
+lookup and three native x86 runs support feasibility, not production acceptance.
+The evidence and validator/runtime limits are recorded in ADR-0005.
+
+The next component creates a private owned candidate, retains raw indexed sections
+and program bytes, and returns separate content observations. It introduces no
+attachment CLI, target replacement, snapshot, metadata or recovery claim. The
+existing GNU path remains an independent test oracle. Receipt/validator/host/
+backup/transaction prerequisites remain open. PR #38's exact candidate-content
+hosted gate is still running; the new writer is isolated from that reviewed head.

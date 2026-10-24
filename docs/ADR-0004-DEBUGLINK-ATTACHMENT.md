@@ -2,7 +2,7 @@
 
 - Status: Accepted design; product attachment remains **PLANNED**
 - Date: 2026-10-23
-- Refined: 2026-10-24 (output ownership, refresh recovery and program-byte scope)
+- Refined: 2026-10-24 (owned append-only candidate direction in ADR-0005)
 - Scope: P2.8, separate from default export and the corrective alpha.2 release
 
 ## Decision
@@ -13,20 +13,19 @@ backup, independently verified target/sidecar identity, and atomic replacement
 of the target. This investigation does not add an attachment command or close
 P2.8. The research harness modifies only its own disposable fixture copies.
 
-Use a configured GNU `objcopy` as the first candidate backend, operating on a
-staged copy with an explicit output filename. Restrict each supported host,
-tool and target profile to layouts that pass the checks below. Reject a layout
-before mutation when the backend cannot preserve it. Ordinary Forge export
-continues supporting its wider ELF input contract. Do not silently fall back
-to another backend.
+Use the separate native-free append-only candidate direction selected in
+[ADR-0005](ADR-0005-OWNED-DEBUGLINK-CANDIDATE.md). This explicitly supersedes
+the initial GNU backend selection below. GNU-created private candidates remain
+independent test references, with no silent fallback. The writer is planned;
+its own acceptance gates precede any transaction. Ordinary export continues
+supporting its wider ELF input contract.
 
 Do not reuse `MatchedElfSidecarWriter`: its deliberate removal of program
 headers and retirement of relocation metadata produce a non-loadable sidecar,
-not a replacement executable. A native-free append backend would need its own
-audited executable-preserving implementation and the same transaction tests.
-That is a larger change than introducing a section name and CRC.
+not a replacement executable. The separate candidate implementation must preserve
+executable semantics and still satisfy every transaction requirement below.
 
-## Evidence and backend choice
+## Historical GNU evidence and subsequent backend choice
 
 [GNU objcopy's documentation](https://sourceware.org/binutils/docs/binutils/objcopy.html)
 provides separate input/output operation and `--add-gnu-debuglink`. Its accepted
@@ -95,15 +94,15 @@ backend support or a transaction; see `EXECUTABLE-PROGRAM-BYTES.md`.
    outputs must be exclusively created in an owned directory. Fail closed if
    the host cannot establish identity/link count. Path normalization alone is
    insufficient; compare canonical traversal and existing file identity.
-5. Create the candidate in the target directory and run the configured backend
-   against a verified private snapshot. Preserve the complete declared ELF
+5. Invoke the selected candidate writer in a fresh owned subdirectory under
+   the target directory, against a verified private snapshot. Preserve the complete declared ELF
    header, raw program table and every non-NULL program header's file-backed
    payload, except the ELF header's section-table fields. Resolve and preserve
    extended program counts; require positive file-backed LOAD evidence for
    this initial operation. Validate every
    deliberate header change, retained build identity and section relationships;
-   reject tool diagnostics and unexplained changes. Never invoke `objcopy`
-   with omitted output against the live target.
+   reject unexplained changes. Any external reference-tool diagnostics are
+   explicit test failures. No candidate path may alias the live target.
 6. Preserve the supported permission/ownership/ACL metadata, or reject an
    unsupported case before replacing anything. An ordinary byte copy plus
    `COPY_ATTRIBUTES` is not proof of preserving capabilities, extended
@@ -118,7 +117,7 @@ backend support or a transaction; see `EXECUTABLE-PROGRAM-BYTES.md`.
    is a failure, not permission to copy over the live executable.
 8. Retain a versioned transaction receipt recording the operation ID and phase,
    previous receipt hash when applicable, all canonical artifact/backup paths,
-   original/prior-target/candidate/backup/sidecar/source hashes, CRC and tool
+   original/prior-target/candidate/backup/sidecar/source hashes, CRC and backend
    identity. Persist a prepared record and verified recovery material before
    target replacement, then record its committed or recovery outcome. Existing
    committed receipts are immutable. Only this operation's own new record may
@@ -204,9 +203,9 @@ claims still require the host-specific tests above and below.
 
 ## Host feasibility and acceptance before implementation is complete
 
-Linux can use a configured target `objcopy` and Unix file identities/link
-counts. Windows can use an appropriate GNU tool and handle-based file
-identities; the current wrapper's native file-information structure includes
+Candidate bytes use the native-free direction in ADR-0005. Linux transaction
+identity/link counts and Windows handle-based file identities remain separate
+requirements; the current wrapper's native file-information structure includes
 a link count, but there is no attachment transaction using it. Portable Java
 alone does not establish all required Windows metadata/sharing behavior. No
 native Windows attachment support is claimed by this design or the existing
@@ -231,10 +230,10 @@ The first implementation is complete only after all of the following pass:
   without mutation. Test identity and bytes, not only return status.
 - Direct, relative, symlink/`..` and hard-link aliases from transaction
   receipts, staged receipts and logs to any protected input, pair or backup
-  fail before writes/backend launch. Preserve sentinel contents and metadata;
+  fail before writes/candidate preparation. Preserve sentinel contents and metadata;
   rejection diagnostics must not corrupt a protected file. Existing previous
   receipts stay immutable, and interrupted owned receipt updates are tested.
-- Fault injection before/after backup, backend failure/diagnostics, failed
+- Fault injection before/after backup, candidate failure/diagnostics, failed
   metadata application, failed atomic replacement, cancellation and rollback
   proves preservation/recovery. The previous target and backup are never
   silently overwritten by a partial or unrelated image.
@@ -247,10 +246,11 @@ The first implementation is complete only after all of the following pass:
 - All accepted target layouts pass GNU/LLVM and applicable independent DWARF
   checks plus GDB behavior. Unsupported attachment layouts still export normally.
 - Native Linux and Windows jobs exercise their actual filesystem contracts;
-  target tool/profile claims are restricted to observed results. Document tool
+  target/profile claims are restricted to observed results. Document backend
   dependencies, receipts, recovery and backup-based re-export in both wrappers
   and GUI/help before exposing the option.
 
 These are implementation acceptance criteria, not completed work. A product
 transaction with the above guarantees is not a small append-only prototype,
-so this branch stops at tested backend/identity research and a precise design.
+and remains planned. ADR-0005 begins the separate private candidate component;
+that component does not complete the transaction guarantees.

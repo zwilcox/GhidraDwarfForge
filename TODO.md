@@ -1586,6 +1586,11 @@ parent evidence files and a full sparse sidecar digest above 2 GiB. Independent
 exact local package review is clear; the full hosted gate remains required. See
 `docs/DEBUGLINK-CANDIDATE-CONTENT.md`.
 
+**PLANNED candidate preparation:** ADR-0005 explicitly selects a separate
+native-free append-only writer after a reviewed layout experiment. The owned
+writer, connected installed consumer and full hosted acceptance remain to be
+implemented. This does not complete attachment or its transaction.
+
 **Status:** `[ ]` — optional product operation **PLANNED**. The bounded backend
 and backup-based re-export investigation is complete; the explicit transaction
 design and remaining acceptance tests are in
@@ -2134,8 +2139,8 @@ Unless the user changes priorities:
    pass, and accepted program-byte main is incorporated normally as `d2eadf2`.
    Preserve intermediate PR #37 head `e25c148` / run `40105620219`: its callback
    classification defect was corrected before the accepted `89fa8b7` gate.
-   Candidate preparation remains under investigation; no new backend or writer
-   is selected. Optional attachment remains a separate transaction, with no
+   ADR-0005 selects an owned append-only candidate writer after the reviewed
+   feasibility experiment; implementation and its acceptance gates remain planned. Optional attachment remains a separate transaction, with no
    identity/readiness claim from these helpers.
 7. For each coherent change, run appropriate validators and debugger behavior
    tests, preserve original hashes and deterministic output, and record evidence
