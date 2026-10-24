@@ -1875,6 +1875,25 @@ a new architecture support claim. No production exporter code changes.
 Inline DIE emission remains deferred pending an explicit provenance-bearing
 instance model and the compiler/analyst-evidence GDB checks in ADR 0003.
 
+### Performance scaling baseline (P3.5)
+
+**CONFIRMED locally (2026-10-23):** a standalone benchmark harness now builds
+synthetic named-function ELF workloads, measures import separately from saved
+project export, and retains commands/tool versions/module hashes/metrics.
+Three repeated fresh-JVM exports of 100, 1,000 and 10,000 generated functions
+have medians of 2.52, 3.27 and 10.62 seconds on the recorded host. All artifacts
+pass structural validators, full GDB DWARF symbol/address/source checks,
+runtime entry/stepping/exit, original hashes and byte-identical reruns.
+Independent review strengthened the oracle so inherited minimal ELF symbols
+cannot mask missing function DIEs, and timeout cleanup kills descendants even
+when the wrapper exits first. The adversarial cleanup probe passes.
+
+The harness changes no production code and excludes validators from timing.
+Its whole-process measurements include JVM startup and do not identify which
+export phase dominates. **PLANNED:** representative complex-binary and phase
+profiling before choosing an optimization; P3.5 remains partially complete.
+See `docs/PERFORMANCE.md` for commands, retained evidence and limits.
+
 ## 17. Open questions
 
 Codex should not silently answer these through implementation choices. Investigate, document, and obtain user direction when the answer materially changes compatibility or scope.
