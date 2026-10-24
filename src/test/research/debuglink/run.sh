@@ -20,6 +20,7 @@ mkdir -p "$work/classes"
 echo "debuglink-research-results=$work"
 javac --release 21 -d "$work/classes" \
     "$repository/src/main/java/ghidradwarfforge/elf/ElfImage.java" \
+    "$repository/src/main/java/ghidradwarfforge/elf/ExecutableProgramBytes.java" \
     "$repository/src/test/research/debuglink/DebuglinkToolProbe.java"
 printf 'target\trole\ttool_exit\tload_crc_probe\n' > "$work/summary.tsv"
 for target in "${targets[@]}"; do

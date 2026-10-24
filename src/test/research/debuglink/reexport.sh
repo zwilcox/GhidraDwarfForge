@@ -42,6 +42,7 @@ cp --preserve=all "$input" "$backup"
 objcopy "--add-gnu-debuglink=$output" "$input" "$work/attached.stage"
 javac --release 21 -d "$work/classes" \
     "$repository/src/main/java/ghidradwarfforge/elf/ElfImage.java" \
+    "$repository/src/main/java/ghidradwarfforge/elf/ExecutableProgramBytes.java" \
     "$repository/src/test/research/debuglink/DebuglinkToolProbe.java"
 java -cp "$work/classes" ghidradwarfforge.elf.DebuglinkToolProbe \
     "$input" "$work/attached.stage" "$output" > "$work/attachment-probe.txt"

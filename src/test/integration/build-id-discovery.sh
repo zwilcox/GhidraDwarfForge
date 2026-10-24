@@ -5,6 +5,8 @@ set -euo pipefail
 # copies only; the product does not offer an attachment operation in this slice.
 export LC_ALL=C
 repository_dir=$(realpath "$(dirname "$0")/../../..")
+: "${FORGE_MODULE:?set FORGE_MODULE to the installed extension under test}"
+test -s "$FORGE_MODULE/lib/GhidraDwarfForge.jar"
 fixture_root="$repository_dir/build/fixtures"
 result_root="$repository_dir/build/test-results/build-id-discovery"
 targets=("$@")
@@ -30,6 +32,21 @@ validate_diagnostics() {
         tolower($0) ~ /warning:|error:|malformed|corrupt|could not find/ { print; bad = 1 }
         END { exit bad || (expected != "" && matched < 1) }
     ' "$log"
+}
+
+prepare_debuglink() {
+    local original=$1 candidate=$2 debug_file=$3 case_dir=$4 role=$5
+    local controls=()
+    cp "$original" "$case_dir/before-objcopy"
+    if [[ "$role" == exec ]]; then
+        controls+=(--controls)
+        if [[ "$target" == x86_64 ]]; then
+            controls+=(--large)
+        fi
+    fi
+    python3 "$repository_dir/src/test/integration/executable-program-bytes.py" \
+        "$FORGE_MODULE" "$target" "$case_dir/before-objcopy" "$candidate" \
+        "$debug_file" "$case_dir/program-bytes" --objcopy "$objcopy_tool" "${controls[@]}"
 }
 
 lookup() {
@@ -115,9 +132,8 @@ for target in "${targets[@]}"; do
         # lookup from masking a broken debuglink association.
         linked_input="$case_dir/debuglink/original"
         linked_debug="$case_dir/debuglink/forge.debug"
-        cp "$original" "$linked_input"
         cp "$sidecar" "$linked_debug"
-        "$objcopy_tool" "--add-gnu-debuglink=$linked_debug" "$linked_input"
+        prepare_debuglink "$original" "$linked_input" "$linked_debug" "$case_dir" "$role"
         lookup "$linked_input" "$case_dir/empty-debug-root" "$linked_debug" \
             "$source" "$address" "$case_dir/matched-debuglink.txt" present "$runtime"
         sha256sum -c "$manifest" > "$case_dir/original-preservation.txt"
@@ -137,9 +153,8 @@ for target in "${targets[@]}"; do
     test -z "$(build_id "$sidecar")"
     linked_input="$case_dir/debuglink/original"
     linked_debug="$case_dir/debuglink/forge.debug"
-    cp "$original" "$linked_input"
     cp "$sidecar" "$linked_debug"
-    "$objcopy_tool" "--add-gnu-debuglink=$linked_debug" "$linked_input"
+    prepare_debuglink "$original" "$linked_input" "$linked_debug" "$case_dir" no-build-id
     printf '\0' >> "$linked_debug"
     lookup "$linked_input" "$case_dir/empty-debug-root" "$linked_debug" \
         "$source" "$address" "$case_dir/crc-mismatch.txt" absent 0 0 \

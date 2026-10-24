@@ -5,7 +5,8 @@
 allocation/prefix artifacts and both GUI reviews are clear: thirty pairs and
 repeats, 63 metadata mutations, the x86 large-metadata case and seventeen native
 Windows focused checks pass. Local actual-Java-21 and installed evidence is
-retained below. The separate main push remains pending.
+retained below. Separate main push `40102383229` also passes all twelve jobs
+and independent Linux/Windows GUI reviews.
 Ordinary export does not call this helper and gains no additional restrictions.
 
 A copied original prefix cannot establish the addresses in an appended section
