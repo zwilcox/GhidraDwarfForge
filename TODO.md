@@ -63,7 +63,12 @@ are on the development branch; the published alpha remains affected.
   jobs passed in run `40041110549` for implementation commit `cd906de`.
 - [ ] Complete reviewed-PR integration under the standing authorization and
   required checks, then publish a separately validated replacement release
-  when release work is requested; do not replace the existing artifact.
+  after exact-commit CI and package checks; do not replace the existing artifact.
+  **CONFIRMED locally:** the isolated corrective branch prepares
+  `0.1.0-alpha.2`, release notes, verified version metadata and reproducible
+  assembly using existing verified native artifacts. Its Linux packaged
+  producer passes 20 lifetimes. Final integration, full hosted release
+  validation and publication remain incomplete.
 
 ## 1. Milestone ordering
 
@@ -100,7 +105,7 @@ items are these bounded workstreams:
 
 | Workstream | Status and acceptance needed |
 |---|---|
-| Corrective release (§0.1) | **PLANNED:** integrate reviewed PRs under the standing authorization and required checks. For the separate release task, bump `VERSION`, validate the exact release commit/package, and publish a corrective alpha without replacing the existing artifact. |
+| Corrective release (§0.1) | **PLANNED:** integrate reviewed PRs under the standing authorization and required checks, then validate and publish the exact versioned candidate. `0.1.0-alpha.2` version/notes and local packaging checks are prepared; final hosted release validation is pending. Preserve the existing alpha.1 artifact. |
 | ELF robustness (P0.9) | **CONFIRMED complete within the documented bounds:** PR #18 implements extended counts, unnamed tables, bounded file-backed I/O, correct recorded-load-base translation and cancellation. Local checks and all twelve hosted jobs pass; direct PN_XNUM execution limits are documented. |
 | Function identity and scopes (P1.7, P3.3) | **PLANNED:** distinct linkage names without losing analyst-name lookup; external-function declarations, thunks/aliases, function/class/lexical scopes, static locals, and same-named type/variable disambiguation. Existing namespace globals and external-data declarations must remain working. |
 | Additional range/location cases (P1.8, P1.11a) | **PLANNED:** entry points that are not the lowest body address; proven register/memory migration, call-crossing and non-entry lifetimes, stack-slot reuse, and mixed composite storage. Require GDB value checks at multiple instruction addresses and honest unavailable gaps. |

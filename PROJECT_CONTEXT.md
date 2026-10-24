@@ -1848,6 +1848,38 @@ and validated against the updated `main` in order. Use GitHub for live merge
 and CI state. No protection rule was weakened, no admin bypass was used, and
 this integration does not replace the published alpha artifact.
 
+### 16.29 Corrective alpha.2 preparation
+
+**CONFIRMED (2026-10-23):** `VERSION` is now `0.1.0-alpha.2` in the isolated
+corrective-release branch based on `b089802`. The release notes at
+`docs/releases/0.1.0-alpha.2.md` describe all six alpha.1 correctness fixes,
+P0.9 ELF layout/resource/cancellation changes, and the tested host/target
+profiles. They explicitly retain the direct-`PN_XNUM` runtime restriction,
+metadata limits, conservative location policy and remaining feature work.
+Later feature branches are excluded from this candidate.
+
+The Ghidra-generated `extension.properties` still uses `version=12.0.3` for
+host compatibility. The packaged `VERSION` and assembly-derived
+`RELEASE-MANIFEST.txt` identify alpha.2. No native library was rebuilt for the
+local preparation check: existing hosted native files and corresponding-source
+materials were verified against their recorded manifests before reuse.
+
+**CONFIRMED locally:** clean `buildExtension`, `release-package.sh`, two
+byte-identical native-inclusive assemblies, all release/platform/source/runtime
+manifests, version metadata, ZIP integrity/timestamps and executable wrapper
+permissions pass. The assembled Linux native pair passes
+`packagedNativeProducerSmoke` for 20 producer lifetimes with deterministic
+output. Logs and the local rehearsal ZIP are under
+`/home/ziggy/GhidraDwarfForge-worktrees/corrective-alpha2/build/release-preparation/`.
+The shared Ghidra installation was not changed.
+
+**PLANNED:** integrate the versioned candidate after the reviewed correction
+stack and run the full required matrix on the exact release commit. Publish
+only that validated CI package with its commit, run and checksum recorded.
+Local assembly is a packaging rehearsal, not final hosted release validation.
+No alpha.2 tag or release was created during preparation; alpha.1 and its
+assets remain unchanged.
+
 ## 17. Open questions
 
 Codex should not silently answer these through implementation choices. Investigate, document, and obtain user direction when the answer materially changes compatibility or scope.
