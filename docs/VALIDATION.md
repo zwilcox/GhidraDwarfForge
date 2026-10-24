@@ -4904,3 +4904,32 @@ one focused Linux/native Windows check and installed writer execution in each
 existing target association lane. Final exact package, native Windows and all-five
 hosted acceptance remain pending. No target replacement, original permission
 change, report attestation, snapshot or attachment transaction is exposed.
+
+## Layout compiler-oracle transport correction, 2026-10-24
+
+**CONFIRMED failure:** PR #39 head `6f1a220`, run `40114403014`, is not full
+acceptance. ARM32 extended-section PIE failed before Forge export or writer
+checks: QEMU could not bind TCP33168, then GDB timed out. The listener's owner is
+**UNCERTAIN**. Artifact `12567689679`, SHA-256
+`15f453f29e93dacd8c3fad1a9450d11c6337a46a0592308ec5162a337dad67d1`,
+is retained under the owned-candidate worktree's
+`build/owned-candidate-package-audit/watch-40114403014/arm32-failure`.
+Successful intermediate package/other-lane checks do not fill unreached steps.
+
+The one-file `elf-layout-gdb-oracle.sh` correction uses the existing private
+UNIX-socket helper within the compiler oracle's subshell, including startup
+readiness and cleanup. It preserves native execution, the 30-second GDB timeout,
+compiler assertions and diagnostic policy; ARM uses the existing optional
+`FORGE_ARM32_SYSROOT` override. No production exporter/native source changed.
+
+`src/test/integration/qemu-socket-startup.sh` passes real QEMU/GDB startup,
+missing-input rejection, bounded startup timeout and ready-child cleanup in
+`run.nLECFaEu`. Ten fresh compiler-reference exec/PIE checks pass across x86-64,
+AArch64, ARM32 and both MIPS32 byte orders in `compiler-oracles.jqmyt7ll` under
+the retained failure directory. All ten input SHA/size/mtime snapshots remain
+unchanged; all eight emulator children and private socket directories are gone.
+The fixture Makefile built only these private references. This does not rerun
+Ghidra exports or sidecar validators. Earlier local setup failures, including an
+archived-reference source-mtime warning, are retained without relaxing policy.
+Commands, source hashes and tool versions are in `fix-acceptance.json`. A new
+exact-head package and complete hosted gate remain required.
