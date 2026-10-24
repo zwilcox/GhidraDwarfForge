@@ -110,7 +110,10 @@ existing native/QEMU GDB checks. The common fixture creates two unreferenced
 USER_DEFINED functions with the same leaf name in different libraries, then
 compares the complete API inventory to exact production report rows. Nine
 malformed-log/inventory controls reject. See the detailed local record in
-`docs/VALIDATION.md`; PIE/no-ID and both-host hosted acceptance remain required.
+`docs/VALIDATION.md`. Final head `296395e` passes all twelve jobs in
+`40126794530`, including fifteen primary inventories across five targets and
+exec/PIE/no-ID roles, both GUI hosts and 23 native Windows suites. PR #42 merged
+as `0d2cbc5`; separate main push `40129499500` remains pending.
 
 ## Research basis and evidence
 

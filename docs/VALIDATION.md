@@ -5235,7 +5235,9 @@ validator supervisor, attachment, source-authenticity or release claim follows.
 **CONFIRMED:** PR #41 exact head `f52361a374fbf62fd7168eb8e8a8c4e8be0d7b4c`
 passes all twelve jobs in pull-request run `40123518106`, attempt 1. Normal merge
 `fdebe181185ffe7fa5a454252261f070a3099a3c` at `2026-10-24T19:37:50Z`
-preserves the tested tree. The separate exact-main push `40126173922` is pending.
+preserves the tested tree. The separate exact-main push `40126173922` passes
+all twelve jobs and independent both-GUI/native Windows 22 review. This main
+review is distinct from the detailed PR artifact audits below.
 
 Hosted package artifact `12572202938` has outer SHA-256
 `de909dbfd111ae3fb105af6f2c85f01b177579b4dd3f3660a78e03acac050d9a`,
@@ -5286,7 +5288,7 @@ The attachment transaction and published releases remain unchanged.
 
 ### External-function inventory local acceptance (2026-10-24)
 
-**CONFIRMED locally; full hosted gate pending:** the ordinary Ghidra iterator
+**CONFIRMED locally, subsequently accepted in the hosted record below:** the ordinary Ghidra iterator
 excludes genuine external functions. The production correction enumerates them
 separately, retains qualified diagnostic names and one skipped row per function,
 and leaves memory-thunk multiplicity distinct. The former external-or-thunk log
@@ -5347,7 +5349,7 @@ are not counted as passing invocations. Independent source and retained-runtime
 reviews pass, including all artifact hashes, original frame bytes, complete
 checker output and the exact four project-mtime exceptions. This read-only
 review does not rerun any exporter, validator or inferior. The exact final
-package, all hosted roles including PIE/no-ID, and native Windows remain pending. No Ghidra,
+package and all hosted roles subsequently pass the separate record below. No Ghidra,
 Java, GDB baseline, release or optional attachment operation changes.
 
 **CONFIRMED exact local inventory package:** source `0804b46`, ZIP SHA-256
@@ -5360,5 +5362,41 @@ and 163 production origins pass. A copied hosted-only audit footer subsequently
 failed on an unset mode; the failed wrapper/stderr are retained. Independent
 post-run output/hash review closes that audit without repeating JVM/native tests.
 Normal merge `e3d0709` incorporates accepted PR #41; only two appended document
-histories conflicted, and both were retained. Refreshed combined package review
-and full hosted acceptance remain required.
+histories conflicted, and both were retained. The refreshed combined package
+and full hosted acceptance subsequently pass the separate record below.
+
+
+### External-function inventory hosted acceptance and merge (2026-10-24)
+
+**CONFIRMED:** exact PR #42 head `296395e9496042bd34f0a383fce334c6a8019f5a`
+passes all twelve jobs in `40126794530`, attempt 1. Independent source, package,
+all-five-target artifact and both-GUI reviews pass. Native Windows observes 23
+focused suites, including all five external-inventory language models. Fifteen
+unique primary inventories match the exact Ghidra API observations; 45 repeated
+child bindings remain separately counted. Existing fifteen captured validator
+pairs, thirty entry-point rejection controls and 130 raw controls remain intact.
+The named 24 strict reports have zero unexplained errors and are separate from
+captured primary pairs. External declarations remain deferred.
+
+Hosted package artifact `12572623938` has SHA-256
+`5dea29bd1cbec048c0ecced842b5dce33491dbe8183d6058312b60d5b7e4b61d`.
+The enclosed ZIP is
+`c7399871093ab5a50fc3bdb4b573f03485865daf5e357202243d8e59e9db7808`,
+with JAR `d0bedb4db10e102b598d4cd015d6a43f5eb970e6e0b3bba9bd907391975e38da`.
+Its exact source/docs/manifests and native provenance pass; actual Java 21
+focused checks and twenty native producer lifetimes pass. This hosted JAR is
+separately identified from the earlier local package.
+
+Final independent gate evidence is retained under the external-function worktree:
+`build/external-inventory-package-audit/independent-final-gate-40126794530.json`,
+SHA-256 `6b9bda98a927409353b12691d132d8209b383aa089804c44e6afa65f214b4fa2`.
+It binds the package receipt and eight peer receipts, including final GUI/artifact
+acceptance `f676bc744172d4a7aadde5c95067ccfc4b7156ad3d1c77900006ec60db990344`.
+Archive omissions, recorded runtime provenance and Windows validator/runtime
+limits remain explicit; artifact inspection is not fresh execution.
+
+Root independently rehashed the reviewed sources and receipts and checked live
+head/base, strict required-validation protection and unresolved reviews. Normal
+merge `0d2cbc5ad1ca10eb98077f67675bfc8a1927c11d` at `2026-10-24T20:22:37Z`
+has the tested tree. Separate main push `40129499500` remains pending.
+Published releases and optional attachment remain unchanged.

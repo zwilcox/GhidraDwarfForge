@@ -1,0 +1,41 @@
+{
+    "repository": "microsoft/win32metadata",
+    "commit": "2f767671802301cf043c717d66bf004ed7863487",
+    "files": {
+        "fileapi.h": {
+            "url": "https://raw.githubusercontent.com/microsoft/win32metadata/2f767671802301cf043c717d66bf004ed7863487/generation/WinSDK/RecompiledIdlHeaders/um/fileapi.h",
+            "sha256": "db5daf52bf5517858d6f68165b2a9ab86e84b4675aac38d6b09a334c88bf56d0",
+            "bytes": 38835
+        },
+        "WinBase.h": {
+            "url": "https://raw.githubusercontent.com/microsoft/win32metadata/2f767671802301cf043c717d66bf004ed7863487/generation/WinSDK/RecompiledIdlHeaders/um/WinBase.h",
+            "sha256": "c0ac06ea6b2335bd085af0e3071f9dd099bf9bd4c2f79ba2034b4813636cd7c1",
+            "bytes": 262806
+        },
+        "winnt.h": {
+            "url": "https://raw.githubusercontent.com/microsoft/win32metadata/2f767671802301cf043c717d66bf004ed7863487/generation/WinSDK/RecompiledIdlHeaders/um/winnt.h",
+            "sha256": "d66df443218279ed2ffe7718b5347e64bf712dbfa5d25a3b0692787169405c69",
+            "bytes": 876163
+        },
+        "minwinbase.h": {
+            "url": "https://raw.githubusercontent.com/microsoft/win32metadata/2f767671802301cf043c717d66bf004ed7863487/generation/WinSDK/RecompiledIdlHeaders/um/minwinbase.h",
+            "sha256": "22126bf6a3de1023936c5e17098aad374e8f49d7c88c2907e800dd0b28c5e637",
+            "bytes": 13500
+        }
+    },
+    "initial_fetch": "Lowercase winbase.h returned404; corrected to actual WinBase.h before any binding written.",
+    "scope": "Test-only mapping inspection; no Windows execution yet. DWORD32/ULONGLONG64/BOOL32/HANDLE pointer, UTF16W names. Layout assertions require x64; no production ABI change.",
+    "mapping": {
+        "fileapi.h": "CreateFileW93; FindClose194; BY_HANDLE_FILE_INFORMATION641; GetFileInformationByHandle657; WIN32_FIND_STREAM_DATA1324; FindFirstStreamW1334; FindNextStreamW1344",
+        "WinBase.h": "BACKUP_SEMANTICS145; OPEN_REPARSE_POINT148; FILE_ATTRIBUTE_TAG_INFO9188; FILE_ID_INFO9296; GetFileInformationByHandleEx9423",
+        "minwinbase.h": "FILE_INFO_BY_HANDLE_CLASS178: FileAttributeTagInfo9/FileIdInfo18",
+        "winnt.h": "GENERIC_READ0x80000000; FILE_ATTRIBUTE_REPARSE_POINT0x400; FILE_ID_12816opaque bytes"
+    },
+    "documentation": [
+        "https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilew",
+        "https://learn.microsoft.com/en-us/windows/win32/api/fileapi/ns-fileapi-by_handle_file_information",
+        "https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getfileinformationbyhandleex",
+        "https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-findfirststreamw",
+        "https://learn.microsoft.com/en-us/windows/win32/fileio/file-security-and-access-rights"
+    ]
+}
