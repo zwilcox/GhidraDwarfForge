@@ -1,10 +1,11 @@
 # Active allocated metadata in a Forge sidecar
 
-**CONFIRMED locally; hosted gate pending:** `MatchedElfAllocations` implements
-a conservative, read-only comparison of active allocated metadata. Actual Java
-21 focused checks and installed comparisons against eighteen retained exporter
-pairs pass. Independent source/runtime and local package reviews are clear;
-the complete hosted gate remains required.
+**CONFIRMED:** PR #35 head `d5bd9fe` passes all twelve jobs in exact hosted run
+`40099934709` and merged normally as `0f05ec8`. Independent package, all five
+allocation/prefix artifacts and both GUI reviews are clear: thirty pairs and
+repeats, 63 metadata mutations, the x86 large-metadata case and seventeen native
+Windows focused checks pass. Local actual-Java-21 and installed evidence is
+retained below. The separate main push remains pending.
 Ordinary export does not call this helper and gains no additional restrictions.
 
 A copied original prefix cannot establish the addresses in an appended section
@@ -163,4 +164,4 @@ selected metadata ranges. It does not claim a whole-file hash or a large-prefix
 comparison for that test. Both local source and runtime artifact reviews are
 clear. CI schedules the same ordinary six-role oracle in all five target lanes,
 the sparse case on x86, and the default focused suite on native Windows; these
-hosted results remain pending. See `VALIDATION.md` for commands and evidence.
+hosted results pass in the exact PR gate above. See `VALIDATION.md` for commands and evidence.

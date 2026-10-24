@@ -412,6 +412,15 @@ tasks.register("exportReportClaimsSmoke", JavaExec) {
     maxHeapSize = "64m"
 }
 
+tasks.register("exportArtifactHashBindingSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks report-first selected-file SHA observations, failures and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.ExportArtifactHashBindingSmoke"
+    maxHeapSize = "64m"
+}
+
 tasks.register("elfBuildIdSmoke", JavaExec) {
     group = "verification"
     description = "Checks typed ELF build-ID notes, relationships, bounds and cancellation"
