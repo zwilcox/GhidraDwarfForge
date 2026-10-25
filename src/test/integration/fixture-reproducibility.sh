@@ -46,6 +46,7 @@ expected_sources=(
     dynamic-composite-caller.c
     dynamic-composite-scalar.c
     dynamic-parameter-storage.c
+    formal-function-return.c
     fp_register_aliases.c
     function-static-scopes.c
     function_entry_ranges.S

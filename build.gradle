@@ -609,3 +609,15 @@ buildExtension {
     exclude "jna-wrapper/**"
     exclude "settings.gradle"
 }
+
+tasks.register("formalFunctionReturnSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks formal function returns and hidden ABI parameters in five saved Ghidra models"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.FormalFunctionReturnSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/formal-returns/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/formal-returns/cache").absolutePath
+}
