@@ -284,7 +284,7 @@ combined run `40068401197`; its conditional-step scope is recorded in
 | GUI and output paths (P2.7) | **CONFIRMED:** both hosts' real Script Manager/chooser journeys pass. PR #31 adds actual parent traversal, complete publisher alias preflight and native Windows short-parent/trailing-dot controls; its exact PR/main gates and artifact reviews pass. Geometry/GDB run on Linux; Windows uses native GNU/LLVM, with independent libdwarf unavailable and Linux-ELF runtime GDB not run. |
 | Optional debuglink (P2.8) | **PLANNED transaction:** opt-in attachment, identity/receipt chain and backup/rollback remain unimplemented. PRs #32/#33's digests, typed build-ID observations and report reader pass the full matrix. PRs #34/#35's prefix and indexed allocation observers also pass the full matrix. PR #36 selected-file SHA binding also passes the full matrix. PR #37 program-byte preservation passes the full matrix. PR #38 candidate-content checks also pass the full matrix. PR #39 owned append-only preparation also passes the full matrix. PR #40 detailed report binding/private preparation also passes the full matrix. PR #41 captured validator evidence passes its exact PR and main gates. Default export leaves the original unchanged. |
 | Inline reconstruction (P3.4) | **CONFIRMED investigation complete:** ADR 0003 and a reproducible compiler/Ghidra probe distinguish real inline instances from Ghidra's decompiler flag and record surviving locals/source information. Inline emission remains deferred until explicit instance/origin/range evidence and GDB acceptance exist. |
-| Performance (P3.5) | **CONFIRMED:** the indexed planner and configured-checker gates pass component run `40065823442` and combined run `40068401197`. Historical local paired 10,000-function exports reduce median process time by 15.5% with byte-identical artifacts; a fresh strict/GDB replay validates the retained result without rerunning timing. Hosted CI is not a new timing measurement. Representative complex-binary and further phase-level profiling remain **PLANNED**; no blanket speed or memory claim. See `docs/PERFORMANCE.md`. |
+| Performance (P3.5) | **CONFIRMED:** the indexed planner and configured-checker gates pass component run `40065823442` and combined run `40068401197`. Historical local paired 10,000-function exports reduce median process time by 15.5% with byte-identical artifacts; a fresh strict/GDB replay validates the retained result without rerunning timing. Hosted CI is not a new timing measurement. The pinned SQLite complex-application harness and a bounded JFR profile pass locally; broader workloads and further profiling remain **PLANNED**. No blanket speed or memory claim. See `docs/PERFORMANCE.md`. |
 
 The optional/research items need an explicit recorded outcome; they are not
 silently complete merely because they are outside the current alpha scope.
@@ -2172,10 +2172,21 @@ surviving knowledge, or describe inline export as complete.
 
 ## P3.5 Add optional size/performance features
 
+**CONFIRMED locally (2026-10-25):** the pinned SQLite workload decompiles 1,539
+functions without failures; three exports have median 33.93 seconds, with
+identical artifacts and clean strict/LLVM checks. A separate JFR export
+identifies stack-depth analysis as a candidate hot path. The retained run
+failed only its whole-project backup-file assertion; a precise evidence replay
+proves unchanged program data and reports the two rotated backup files. The
+revised full harness subsequently passes `run.zf2690wu` with two timed exports
+and a separate JFR export of the locally corrected return-recovery candidate. GDB basic behavior passes, but
+a DEFAULT return-type discrepancy remains a separate confirmed correctness
+gap. See `docs/PERFORMANCE.md` for measured scope and retained failures.
+
 **Status:** `[~]` — synthetic scaling measurements are complete locally, and
 the indexed line planner passes component run `40065823442` and combined run
-`40068401197`; representative complex application/firmware and
-further per-phase profiling remain **PLANNED**. The bounded 10,000-function
+`40068401197`; the first complex-application observation is recorded above.
+Broader firmware/host workloads and further profiling remain **PLANNED**. The bounded 10,000-function
 comparison improves median whole-process time from 10.86 to 9.18 seconds over
 five alternating pairs, with every output pair byte-identical. It does not
 establish speed or memory effects for other workloads/hosts.

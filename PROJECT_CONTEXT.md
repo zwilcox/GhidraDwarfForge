@@ -4115,6 +4115,33 @@ bytes changed. Final committed packaging and the prefix branch's separate full
 hosted gate remain required. See `docs/TRUNCATED-MEMORY-STORES.md` and
 `docs/COMPOSITE-REGISTER-PREFIX.md` for the separate acceptance scopes.
 
+### Representative application measurement (2026-10-25)
+
+**CONFIRMED locally:** the pinned SQLite 3.46.1 in-memory workload exports
+1,539 decompiled functions without failures. Three fresh-process exports
+have median 33.93 seconds; a separate JFR run is excluded from that median.
+Artifacts are byte-identical, strict validation has zero unexplained errors,
+and basic GDB source/runtime checks pass. A retained postcondition replay
+distinguishes unchanged program data from two Ghidra project backup rotations;
+the original failed whole-project assertion is not erased or reported as a
+passing full harness run. This is one Linux x86-64 non-PIE application, not a
+firmware or speedup claim. See `docs/PERFORMANCE.md`.
+
+The workload confirms an independent signature gap: DEFAULT listing returns
+remain unspecified even where the decompiler recovers a concrete integer.
+GDB therefore displays `void(void)` for the checkpoint. A read-only probe
+confirms the discrepancy; a conservative recovery policy preserving analyst
+types remains **PLANNED**. Profiled stack-depth analysis is a performance
+candidate, not an implemented optimization.
+
+The revised full SQLite harness subsequently passes `run.zf2690wu`: two
+exports plus a separate profiled export of the locally validated scalar-return
+candidate, strict/GDB checks, deterministic artifacts, unchanged executable/
+program data and explicitly reported backup rotations. This fresh validation
+observation does not replace the first three timing samples or establish a
+speedup. The return correction awaits its own hosted gate; benchmark GDB
+coverage remains explicitly narrower than complete recovered semantics.
+
 ### Declaration integration oracle correction (2026-10-25)
 
 **CONFIRMED:** first declaration run `40208416888` failed all target lanes at
@@ -4180,3 +4207,12 @@ new native API is introduced. Five-language model checks and a real installed
 x86-64 compiler/GDB regression pass, including unavailable inferred values,
 ordinary returns, deterministic bytes, preservation and failure/cancellation.
 See `docs/RECOVERED-PARAMETER-TYPES.md` for the bounded policy and evidence.
+
+### Declaration integration accepted (2026-10-25)
+
+**CONFIRMED:** corrected PR49 head `e643d9772ab08c72ac83aa0c084040c3aad0659d`
+passes all twelve jobs in run `40210826397`. Exact package, actual Java 21
+focused checks, raw declaration/GDB artifacts and native Windows checks were
+reviewed. Normal merge `45326971268c156ac1e6d71b3cb6a6d0867c1b78` retains
+the accepted tree; its distinct main run `40214033937` remains pending.
+The two earlier failed runs above are historical, superseded evidence.
