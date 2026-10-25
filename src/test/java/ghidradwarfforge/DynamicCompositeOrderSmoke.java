@@ -402,8 +402,13 @@ public final class DynamicCompositeOrderSmoke {
         var detached = new ParameterImpl("detached", pair, parameter.getVariableStorage(), program);
         require(rejected.equals(GhidraVariableStorage.stableParameter(program, modified, detached, map, TaskMonitor.DUMMY)),
             "detached storage changed known register-write omission");
-        require(GhidraVariableStorage.parameterPrefix(program, modified, parameter, map, rejected, TaskMonitor.DUMMY).isEmpty(),
-            "composite change fabricated a partial register-copy prefix");
+        var prefix = GhidraVariableStorage.parameterPrefix(program, modified, parameter, map,
+            rejected, TaskMonitor.DUMMY);
+        require(prefix.size() == 2 && prefix.get(0).start() == 0x3000 && prefix.get(0).end() == 0x3004 &&
+            prefix.get(1).start() == 0x3004 && prefix.get(1).end() == 0x300c &&
+            !prefix.get(1).storage().available(), "incorrect complete incoming ARM prefix: " + prefix);
+        checkPieces(prefix.get(0).storage(), List.of(0, 1), List.of(32, 32),
+            "terminal boundary changed complete incoming object order");
         for (var item : List.of(
                 new Object[] { "000000eb1eff2fe1", 0x3100L, "compound_call", OmissionReason.CALL_CLOBBERED },
                 new Object[] { "000000ef1eff2fe1", 0x3200L, "compound_opaque", OmissionReason.UNKNOWN_LIFETIME })) {

@@ -54,7 +54,9 @@ Development scalar floating locations now use audited logical register aliases.
 Hosted GDB tests cover float/double arguments on x86-64, AArch64 and ARM32,
 including ARM32 upper register slices, and float arguments on MIPS32 in both
 byte orders, before and after memory stores. Unproven MIPS double-register
-pairs and ARM32 opaque-return prefix locations remain unavailable. See
+pairs remain unavailable. Bounded ARM32 terminal-return prefixes pass local
+model and runtime validation, with hosted acceptance pending; see
+[terminal-return lifetimes](docs/TERMINAL-RETURN-PREFIX.md). See also
 [the bounded FP validation record](docs/VALIDATION.md#scalar-floating-register-aliases-2026-10-23).
 
 The exporter replaces existing compiler DWARF rather than merging

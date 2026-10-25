@@ -297,7 +297,7 @@ combined run `40068401197`; its conditional-step scope is recorded in
 | ELF robustness (P0.9) | **CONFIRMED complete within the documented bounds:** PR #18 implements extended counts, unnamed tables, bounded file-backed I/O, correct recorded-load-base translation and cancellation. Local checks and all twelve hosted jobs pass; direct PN_XNUM execution limits are documented. |
 | Function identity and scopes (P1.7, P3.3) | **CONFIRMED in hosted run `40063017269`:** explicit function-owned statics preserve duplicate-name lookup across all five targets, and the controlled failure check omits failed owners under the symbol-only contract. These workstreams remain partial. Curated addressless external declarations and recovered signature metadata are accepted through PR #53. Class-owned display paths pass local model/runtime tests; their combined hosted gate is pending. **PLANNED:** distinct linkage names, thunks/aliases, full class/lexical semantics, inferred static locals and remaining same-named type/variable cases. Existing namespace globals and external-data declarations must remain working. |
 | Additional range/location cases (P1.8, P1.11a) | **CONFIRMED:** bounded entry/ranges, code-only address indexing and incoming-register prefixes pass. PR #29 adds one proven direct-register backup; PR #30 omits unsupported nonzero stack-local starts. Their exact hosted gates pass. A bounded direct-leaf-call backup now passes local compiler/GDB checks with the class-display correction; its combined hosted gate is pending. A separate test-only follow-up adds locally passing x86-64/AArch64 exec/PIE/rebased-PIE cases; its own hosted gate remains pending. P1.11a remains partial: general register/memory migration, broader call-crossing and non-entry lifetimes, stack-slot reuse and mixed composite storage still require instruction-specific GDB values and honest unavailable gaps. |
-| Target-profile coverage (P2.3/3a/3b) | **CONFIRMED in hosted runs `40063017269` and `40068401197`:** five baseline profiles and scalar FP aliases pass, with exact float/double values on x86-64/AArch64/ARM32 and scalar floats on both MIPS orders. The combined run also proves rejection of definite ELF/Ghidra processor, width or byte-order contradictions; nondefault variants/compiler specifications alone are not rejected. Unproven MIPS double pairs and ARM32's mode-switching-return prefix case remain unavailable. Target expansion and ABI classification remain partial; this is not blanket CPU/ABI support. |
+| Target-profile coverage (P2.3/3a/3b) | **CONFIRMED in hosted runs `40063017269` and `40068401197`:** five baseline profiles and scalar FP aliases pass, with exact float/double values on x86-64/AArch64/ARM32 and scalar floats on both MIPS orders. The combined run also proves rejection of definite ELF/Ghidra processor, width or byte-order contradictions; nondefault variants/compiler specifications alone are not rejected. Unproven MIPS double pairs remain unavailable; the ARM32 terminal-return prefix follow-up passes locally with hosted acceptance pending (see `docs/TERMINAL-RETURN-PREFIX.md`). Target expansion and ABI classification remain partial; this is not blanket CPU/ABI support. |
 | GUI and output paths (P2.7) | **CONFIRMED:** both hosts' real Script Manager/chooser journeys pass. PR #31 adds actual parent traversal, complete publisher alias preflight and native Windows short-parent/trailing-dot controls; its exact PR/main gates and artifact reviews pass. Geometry/GDB run on Linux; Windows uses native GNU/LLVM, with independent libdwarf unavailable and Linux-ELF runtime GDB not run. |
 | Optional debuglink (P2.8) | **PLANNED transaction:** opt-in attachment, identity/receipt chain and backup/rollback remain unimplemented. PRs #32/#33's digests, typed build-ID observations and report reader pass the full matrix. PRs #34/#35's prefix and indexed allocation observers also pass the full matrix. PR #36 selected-file SHA binding also passes the full matrix. PR #37 program-byte preservation passes the full matrix. PR #38 candidate-content checks also pass the full matrix. PR #39 owned append-only preparation also passes the full matrix. PR #40 detailed report binding/private preparation also passes the full matrix. PR #41 captured validator evidence passes its exact PR and main gates. Default export leaves the original unchanged. |
 | Inline reconstruction (P3.4) | **CONFIRMED investigation complete:** ADR 0003 and a reproducible compiler/Ghidra probe distinguish real inline instances from Ghidra's decompiler flag and record surviving locals/source information. Inline emission remains deferred until explicit instance/origin/range evidence and GDB acceptance exist. |
@@ -1140,7 +1140,8 @@ byte orders through stores, PIE and explicit rebases. First-overwrite prefix
 checks still make later values unavailable. ARM32 uses canonical D-register
 numbering and upper/lower scalar slices; the subsequent hosted semantic run
 `40063017269` passes its scalar float/double and upper-slice runtime oracles.
-Its opaque-return prefix case remains explicitly unavailable.
+Its opaque-return prefix case was explicitly unavailable in that gate; the
+bounded local follow-up is recorded in `docs/TERMINAL-RETURN-PREFIX.md`.
 MIPS paired doubles remain explicitly unavailable; compiler-GDB pair values
 are also unverified on the tested emulator/debugger. These cases do not prove
 vector, aggregate-passing, call-crossing or new ABI support. See
@@ -1195,6 +1196,13 @@ or uncertain storage remains locationless with a diagnostic.
 - [x] x86-64 register-number mapping has explicit tests.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
+
+**CONFIRMED locally; hosted acceptance pending (2026-10-25):** ordinary terminal
+return handling now preserves proven ARM incoming scalar/composite prefixes.
+The complete value becomes unavailable after its first piece overwrite.
+Models, actual Java 21 packaged suites and QEMU compiler/GDB regressions pass;
+see `docs/TERMINAL-RETURN-PREFIX.md`. This does not complete mixed pieces,
+register/memory migration, later-starting locals or broader call/flow support.
 
 **CONFIRMED locally; hosted acceptance pending (2026-10-25):** one already
 proven scalar register backup now survives a direct, fully decoded leaf call
@@ -1492,8 +1500,9 @@ This does not complete Thumb profile support; see
 exec/PIE/rebase/repeat cases pass stable float/double and upper-`s1` value
 checks with strict validation. Function-owned static scopes also pass with
 the native EHABI fixture precondition. The clobbered mode-switching-return
-case requires explicit unavailability; general ARM prefix lifetimes are not
-completed. See `docs/VALIDATION.md`.
+case required explicit unavailability in that gate. The bounded terminal-return
+follow-up passes locally; general ARM prefix lifetimes remain incomplete.
+See `docs/TERMINAL-RETURN-PREFIX.md` and `docs/VALIDATION.md`.
 
 ### Work
 

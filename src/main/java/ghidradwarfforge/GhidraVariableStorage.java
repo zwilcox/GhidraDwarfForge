@@ -320,14 +320,29 @@ public final class GhidraVariableStorage {
                 return -1;
             }
             boolean returns = false;
-            for (PcodeOp operation : instruction.getPcode()) {
+            PcodeOp[] operations = instruction.getPcode();
+            for (PcodeOp operation : operations) {
                 if (exactDecodedLength) {
                     monitor.checkCancelled();
                 }
                 switch (operation.getOpcode()) {
                     case PcodeOp.BRANCH, PcodeOp.CBRANCH, PcodeOp.BRANCHIND,
-                        PcodeOp.CALLIND, PcodeOp.CALLOTHER,
+                        PcodeOp.CALLIND,
                         PcodeOp.UNIMPLEMENTED -> { return -1; }
+                    case PcodeOp.CALLOTHER -> {
+                        // Only the state before this final machine return is
+                        // observable in the invocation. Reuse the stable-register
+                        // boundary proof without treating any userop as pure.
+                        if (next != end || !ordinaryTerminalReturn(instruction, operations) ||
+                                operation.getNumInputs() == 0 || operation.getInput(0) == null ||
+                                !operation.getInput(0).isConstant() ||
+                                instruction.isLengthOverridden() || instruction.isFallThroughOverridden() ||
+                                instruction.getLength() <= 0 ||
+                                instruction.getParsedLength() != instruction.getLength() ||
+                                next != Math.addExact(expected, instruction.getLength())) {
+                            return -1;
+                        }
+                    }
                     case PcodeOp.CALL -> {
                         // Only a backup established before the original's
                         // overwrite can cross a call; never infer a new prefix

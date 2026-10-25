@@ -60,6 +60,9 @@ public final class OpaqueRegisterEffectsSmoke {
         try (var arm = fixture("ARM:LE:32:v8", "1eff2fe1")) {
             checkTerminal(arm);
         }
+        try (var arm = fixture("ARM:LE:32:v8", "0000a0e300f020e31eff2fe1")) {
+            checkTerminalPrefix(arm);
+        }
         System.out.println("opaque-register-effects-smoke=PASS");
     }
 
@@ -202,6 +205,83 @@ public final class OpaqueRegisterEffectsSmoke {
             fixture.program().getRegister(name), fixture.program());
         return GhidraVariableStorage.stableParameter(program, fixture.function(), parameter,
             TargetRegisterMap.forTarget(target), TaskMonitor.DUMMY);
+    }
+
+    private static void checkTerminalPrefix(Fixture fixture) throws Exception {
+        var real = fixture.program();
+        var terminal = fixture.instructions().getLast();
+        require(fixture.instructions().size() == 3 &&
+            fixture.instructions().getFirst().toString().startsWith("mov r0,"),
+            "expected decoded ARM incoming register overwrite");
+        prefix(fixture, real, true);
+        var userop = Arrays.stream(terminal.getPcode())
+            .filter(op -> op.getOpcode() == PcodeOp.CALLOTHER).findFirst().orElseThrow();
+        var returns = terminal.getPcode()[terminal.getPcode().length - 1];
+        var register = new Varnode(real.getRegister("r1").getAddress(), 4);
+        var invalid = new ArrayList<Instruction>(List.of(
+            decorate(terminal, "getFlowOverride", FlowOverride.RETURN),
+            decorate(terminal, "isInDelaySlot", true),
+            decorate(terminal, "getDelaySlotDepth", 1),
+            decorate(terminal, "getFlowType", RefType.CONDITIONAL_TERMINATOR),
+            decorate(terminal, "getFlowType", RefType.JUMP_TERMINATOR),
+            decorate(terminal, "getFallThrough", terminal.getMaxAddress().next()),
+            decorate(terminal, "isLengthOverridden", true),
+            decorate(terminal, "isFallThroughOverridden", true),
+            decorate(terminal, "getLength", 0),
+            decorate(terminal, "getParsedLength", 2),
+            decorate(terminal, "getMaxAddress", terminal.getMaxAddress().previous())));
+        for (PcodeOp[] operations : List.of(
+                new PcodeOp[] { userop },
+                new PcodeOp[] { returns, userop },
+                new PcodeOp[] { userop, operation(terminal, PcodeOp.RETURN, new Varnode[0], null) },
+                new PcodeOp[] { operation(terminal, PcodeOp.CALLOTHER, new Varnode[0], null), returns },
+                new PcodeOp[] { operation(terminal, PcodeOp.CALLOTHER,
+                    new Varnode[] { register }, null), returns },
+                new PcodeOp[] { userop, operation(terminal, PcodeOp.UNIMPLEMENTED,
+                    new Varnode[0], null), returns })) {
+            invalid.add(decorate(terminal, "getPcode", operations));
+        }
+        for (int control : new int[] { PcodeOp.BRANCH, PcodeOp.CBRANCH, PcodeOp.BRANCHIND,
+                PcodeOp.CALL, PcodeOp.CALLIND, PcodeOp.RETURN }) {
+            invalid.add(decorate(terminal, "getPcode", new PcodeOp[] {
+                userop, operation(terminal, control, returns.getInputs(), null), returns }));
+        }
+        for (Instruction replacement : invalid) {
+            var instructions = new ArrayList<>(fixture.instructions());
+            instructions.set(2, replacement);
+            prefix(fixture, withInstructions(real, instructions), false);
+        }
+        // A valid userop on an ordinary earlier instruction remains opaque,
+        // even after the first overwrite and before an otherwise valid return.
+        var middle = fixture.instructions().get(1);
+        prefix(fixture, withInstructions(real, List.of(fixture.instructions().getFirst(),
+            decorate(middle, "getPcode", new PcodeOp[] { userop }), terminal)), false);
+        System.out.println("terminal-return-prefix-model=PASS scalar-and-composite negatives=" +
+            (invalid.size() + 1));
+    }
+
+    private static void prefix(Fixture fixture, Program program, boolean available) throws Exception {
+        var real = fixture.program();
+        var map = TargetRegisterMap.forTarget("arm");
+        for (Parameter parameter : List.of(
+                new ParameterImpl("scalar", IntegerDataType.dataType, real.getRegister("r0"), real),
+                new ParameterImpl("pair", LongLongDataType.dataType,
+                    new VariableStorage(real, real.getRegister("r0"), real.getRegister("r1")), real))) {
+            var rejected = GhidraVariableStorage.stableParameter(program, fixture.function(),
+                parameter, map, TaskMonitor.DUMMY);
+            reason(rejected, OmissionReason.REGISTER_MODIFIED);
+            var intervals = GhidraVariableStorage.parameterPrefix(program, fixture.function(),
+                parameter, map, rejected, TaskMonitor.DUMMY);
+            if (available) {
+                require(intervals.size() == 2 && intervals.get(0).start() == 0x1000 &&
+                    intervals.get(0).end() == 0x1004 && intervals.get(0).storage().available() &&
+                    intervals.get(1).start() == 0x1004 && intervals.get(1).end() == 0x100c &&
+                    !intervals.get(1).storage().available(), "invalid terminal prefix: " + intervals);
+            }
+            else {
+                require(intervals.isEmpty(), "unsafe terminal prefix: " + intervals);
+            }
+        }
     }
 
     private static List<Instruction> replaceFirst(Fixture fixture, Instruction first) {

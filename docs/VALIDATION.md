@@ -6547,3 +6547,23 @@ fifteen class cases, six direct-call roles and 33 native Windows tasks pass.
 Main receipt: `488c4288d6a1b343e645ea6026f3d6ca9fb50adc1515fa9865ca945710a7f6f9`. Earlier pending-main54
 notes are historical. The combined coverage/FP32 head retains its own pending
 current-base gate; this main pass does not substitute for that acceptance.
+
+
+### Ordinary terminal-return incoming prefixes (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** the register-prefix proof
+shares the existing ordinary-terminal-return boundary instead of treating
+ARM's final mode-change user operation as an earlier lifetime hazard.
+Scalar/composite model negatives, ten actual Java 21 packaged suites, eighteen
+ARM/x86/AArch64 floating exports, four ARM computed/custom aggregate exports
+and six dedicated ARM register-pair exec/PIE/rebase/repeat exports pass.
+
+Local receipt SHA-256:
+`454a3d4bccdc5779f17fca7faf16c3fc9e3665b029fa9d560855d0e18892da4b`.
+The six dedicated pair artifacts are strict-zero; AArch64 floating artifacts
+retain only independently corroborated inherited frame diagnostics. Local
+headless Ghidra uses Java 25.0.4.1. The final committed package and hosted gate
+remain separate acceptance steps. `docs/TERMINAL-RETURN-PREFIX.md` records
+exact scopes, unvalidated compiler aggregate locations at raw entry, retained
+failed assertions and the protected-input/rebase checks. Mixed register/stack
+locations remain unsupported; no release is published.

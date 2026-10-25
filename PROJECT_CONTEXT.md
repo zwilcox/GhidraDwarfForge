@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally; hosted acceptance pending (2026-10-25):** the incoming
+register-prefix proof now recognizes the same ordinary terminal-return
+boundary used by stable registers. ARM floating and computed register-pair
+values survive until their first overwrite, followed by an unavailable tail.
+Actual Java 21 models and QEMU/GDB/validator regressions pass locally; see
+`docs/TERMINAL-RETURN-PREFIX.md` for scoped evidence and retained failures.
+Mixed register/stack joins remain unsupported. A private ARM compiler/sysroot
+now supports local research without changing the system installation.
+
 This document is the durable project handoff for GhidraDwarfForge. It captures the intended product, the verified repository state, the prototype architecture, known hazards, and unresolved decisions.
 
 - Repository: `zwilcox/GhidraDwarfForge`

@@ -102,7 +102,7 @@ public class PrepareFloatingRegisters extends GhidraScript {
             returns |= operation.getOpcode() == PcodeOp.RETURN;
         }
         if (!opaque || !returns) {
-            throw new IllegalStateException("ARM omission oracle requires setISAMode and RETURN");
+            throw new IllegalStateException("ARM terminal-boundary oracle requires setISAMode and RETURN");
         }
         println("floating-register-arm-opaque-return=PASS");
     }
