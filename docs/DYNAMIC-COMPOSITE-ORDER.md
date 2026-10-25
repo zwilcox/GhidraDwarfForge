@@ -1,6 +1,6 @@
 # Ghidra register joins and object order
 
-**CONFIRMED defect; correction and full acceptance in progress:** admitting Ghidra's valid
+**CONFIRMED correction accepted in PR #45; main-push gate pending:** admitting Ghidra's valid
 computed parameter storage exposes an ordering error for parameters split across
 registers. An ordinary two-int structure passed as `{-19, 37}` appears in GDB
 as `{37, -19}` on ARM32 and MIPS32 little endian. The compiler reference, raw
@@ -215,3 +215,20 @@ Independent computed/custom runtime review SHA-256 is
 `4939adbb7367d73ab6777698a00745d9c503995faf5b538320f947a486bec14d`;
 independent five-primary review is
 `4a803df13f60a9418ca10732f8731112ec579af2eab895bdd824dcd039667229`.
+
+## Exact hosted acceptance and integration
+
+**CONFIRMED:** head `5e2ea7dfc4911c89e42c7b486d08c10a445e8fe7` passes all twelve
+jobs in run `40145554731`, attempt 1. Independent reviews cover the exact package,
+all five computed/custom and generic parameter artifacts, both GUI hosts and
+native Windows 27 suites. Every selected workflow step succeeds; platform
+conditions not selected for a lane remain explicit skips. Fresh downloaded-JAR
+Java 21 checks 231/38/154/1480 pass. Acceptance receipt SHA-256 is
+`ace468102fcd6f929d3e0b2347b5853a89c4aacccb3b88207a6809b2285dfdfe`;
+final artifact bindings are
+`05867502822bbf51fc3e3a16de40cf232d4372c46f4a14b988da26163939bc94`.
+
+Normal merge `96fa0a826429e0b9dbfacd028e6caa02bcf2934e` retains the tested tree.
+Distinct main-push run `40147478153` is pending and will be reviewed separately.
+This integration does not publish a new release or accept the rejected earlier
+candidates. Existing scalar, lifetime and architecture limits remain explicit.

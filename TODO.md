@@ -1056,17 +1056,15 @@ Map Ghidra registers to target DWARF register numbers using isolated architectur
 
 ## P1.11 Emit parameters/locals with accurate locations
 
-**CONFIRMED PR #45 blocker:** its scalar/control gate `40141054093` passes all
-twelve jobs, but real aggregate tests reproduce swapped ARM32 and MIPS32
-little-endian fields. A computed-only fix passes its new local tests but fails
-a real computed-to-custom conversion with unchanged decompiled semantics.
-**CONFIRMED locally:** shared extraction normalization now passes 1,480 actual
-Java21 checks and all five computed/custom/reopened runtime cases. Corrected
-injected-local fixtures preserve the executable and expected values on all
-five primary controls. Independent raw reviews pass; committed packaging and
-fresh full hosted acceptance are required. See `docs/DYNAMIC-COMPOSITE-ORDER.md`.
+**CONFIRMED resolved in PR #45:** corrected head `5e2ea7d` passes all twelve
+jobs in run `40145554731`, independent exact-package/all-five-target/both-GUI
+reviews and native Windows 27 suites. Normal merge `96fa0a8` retains the tested
+tree. The distinct main-push run `40147478153` remains pending. Earlier scalar-
+only and computed-only candidates remain historical, unaccepted evidence.
+Shared register join normalization preserves computed/custom/reopened values;
+see `docs/DYNAMIC-COMPOSITE-ORDER.md`.
 
-**CONFIRMED locally; full hosted acceptance pending:** computed dynamic
+**CONFIRMED in PR #45 run `40145554731`:** computed dynamic
 parameter storage now survives a false persisted `hasAssignedStorage()` flag.
 Actual Java 21 five-language saved/reopened checks and a real ARM base/VFP
 float oracle pass, with existing lifetime/omission rules unchanged. The new
@@ -1087,8 +1085,8 @@ are also unverified on the tested emulator/debugger. These cases do not prove
 vector, aggregate-passing, call-crossing or new ABI support. See
 `docs/VALIDATION.md` for exact evidence and the independent compiler limitation.
 
-**Status:** `[~]` — the baseline cases below are accepted, but joined-storage
-ordering remains blocked on the correction's fresh validation. Parameters and
+**Status:** `[x]` within the documented baseline locations, including PR #45
+register join ordering; broader lifetimes remain in P1.11a. Parameters and
 recovered locals have canonical name/type DIEs. A curated locationless local is
 proven in all ET_EXEC/PIE lanes and GDB
 reports it optimized out. A native-independent planner and audited libdwarf
@@ -1106,7 +1104,8 @@ GDB reads the curated register local as 31 on x86-64, AArch64, and both MIPS
 profiles for ET_EXEC and PIE; ARM32's `r3` is overwritten and omitted.
 **HISTORICAL:** explicit register composite tests supplied memory-order pieces
 and emitted `DW_OP_bit_piece` sequences. Those injected, unused locals did not
-prove Ghidra join semantics and require corrected significance-order storage.
+prove Ghidra join semantics. PR #45 corrects their significance-order storage
+and verifies the unchanged expected values.
 GDB reconstructs the curated 64-bit value
 on the same four profiles, while ARM32's overwritten piece remains
 locationless. A controlled stack-depth change proves the stack local resolves
@@ -1135,6 +1134,14 @@ or uncertain storage remains locationless with a diagnostic.
 - [x] x86-64 register-number mapping has explicit tests.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
+
+**CONFIRMED combined local validation (2026-10-25):** the truncated-RAM STORE
+proof composes with the shared register join correction. Actual Java 21 source
+and packaged checks pass 182/1480/154, and unchanged O32/N32 fixtures in both
+byte orders pass fresh compiler/GDB and strict-zero validation. Independent
+focused/raw reviews pass; final packaging and the full hosted gate remain pending. This does not prove
+call-crossing lifetimes or general ABI support; see
+`docs/TRUNCATED-MEMORY-STORES.md`.
 
 **CONFIRMED in hosted run `40081385807`:** a nonzero first-use field on an
 already stored stack local is diagnosed and its location omitted, retaining
@@ -1311,6 +1318,20 @@ MIPS lanes. Hosted run `40063017269` also proves function-owned statics and
 scalar float locations in both byte orders. Paired doubles remain unavailable;
 the independent compiler-pair observation is explicitly unverified under the
 tested QEMU/GDB transport. Additional storage and ABI cases remain.
+
+**CONFIRMED locally; hosted acceptance pending:** four owned O32/N32
+freestanding cases in both byte orders identify an honest N32 omission caused
+by eight-byte STORE address operands targeting an explicitly truncated
+four-byte RAM space. O32 dynamic stack arguments have correct observed values;
+its wide pair remains modified. The selected follow-up proves only that a
+well-framed STORE into matching declared RAM cannot redirect its wider offset
+to a different space; the separate tracked-register clobber check also protects
+memory-mapped registers. No ABI classifier, register map or broad N32 support change
+is selected. Actual Java 21 decoded/malformed-space controls and four packaged compiler/
+Forge runtime comparisons pass locally, including N32 entry values, O32 stack
+arguments and the retained wide-pair omission. Validators, repeats and independent
+raw review pass; the complete hosted pipeline remains required before integration.
+See [the bounded contract](docs/TRUNCATED-MEMORY-STORES.md).
 
 ### Work
 

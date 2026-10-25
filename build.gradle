@@ -402,6 +402,18 @@ tasks.register("dynamicCompositeOrderSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/dynamic-composites/cache").absolutePath
 }
 
+tasks.register("truncatedSpaceStoreSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks register preservation by stores into explicitly truncated memory spaces"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.TruncatedSpaceStoreSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/truncated-stores/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/truncated-stores/cache").absolutePath
+}
+
 tasks.register("floatingRegisterSliceSmoke", JavaExec) {
     group = "verification"
     description = "Emits a scalar upper-register bit piece through the isolated native producer"

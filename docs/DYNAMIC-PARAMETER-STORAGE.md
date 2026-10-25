@@ -23,17 +23,16 @@ writes, calls, opaque instruction effects, prefix eligibility and cancellation
 also retain their existing policies. Local-variable assignment checks are
 unchanged. A computed location is not automatically a proven lifetime.
 
-**CONFIRMED follow-up blocker:** the scalar-only head passes its full hosted
-matrix but exposes a previously untested computed-composite ordering error.
-ARM32 and MIPS32 little-endian structure fields appear reversed. A computed-only
-fix also fails when the same storage is converted to custom. The shared join
-normalization and semantic regression contract are described in
-[DYNAMIC-COMPOSITE-ORDER.md](DYNAMIC-COMPOSITE-ORDER.md). This head is not accepted
-until that correction passes fresh end-to-end and hosted validation.
+**CONFIRMED accepted in PR #45:** corrected head `5e2ea7d` passes all twelve
+jobs in `40145554731`, including the separate register join correction for
+computed/custom/local storage. Normal merge `96fa0a8` has the tested tree;
+distinct main-push acceptance remains pending. The earlier scalar-only and
+computed-only candidates are historical and unaccepted. See
+[DYNAMIC-COMPOSITE-ORDER.md](DYNAMIC-COMPOSITE-ORDER.md).
 
 ## Focused and cross-target controls
 
-**CONFIRMED locally; hosted acceptance pending:** `dynamicParameterStorageSmoke`
+**CONFIRMED in PR #45 run `40145554731`:** `dynamicParameterStorageSmoke`
 creates actual programs for x86-64, AArch64, ARM32 and both MIPS32 byte orders.
 It observes the persisted/effective storage disagreement before and after
 immutable database reopening, checks the public type/location extractor, and
@@ -55,8 +54,8 @@ and each observed debugger stop: an omitted interval must be unavailable, and
 a reported location must produce the expected entry value. The store function
 must have positive parameter values at entry. Full target execution, structural
 validation and unchanged inputs are required, not just cross compilation.
-All five local target runs pass. Integration is wired; exact evidence and
-pending hosted acceptance are tracked in `docs/VALIDATION.md`.
+All five local and exact-head hosted target runs pass. Evidence and separate
+main-push acceptance are tracked in `docs/VALIDATION.md`.
 
 ## ARM per-function convention control
 

@@ -5,7 +5,10 @@ import java.util.HashMap;
 import java.util.List;
 
 import ghidra.app.cmd.function.CallDepthChangeInfo;
+import ghidra.app.plugin.processors.sleigh.SleighLanguage;
+import ghidra.program.model.address.AddressSpace;
 import ghidra.program.model.lang.Register;
+import ghidra.program.model.lang.SleighLanguageDescription;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FlowOverride;
 import ghidra.program.model.listing.Instruction;
@@ -358,8 +361,47 @@ public final class GhidraVariableStorage {
         // STORE's destination selector is an address-space ID, not an address.
         // Only a well-formed store into known memory can leave register facts
         // intact. It never establishes a memory location for the parameter.
-        return space == null || !space.isMemorySpace() ||
-            operation.getInput(1).getSize() != space.getPointerSize();
+        if (space == null || !space.isMemorySpace()) {
+            return true;
+        }
+        int offsetBytes = operation.getInput(1).getSize();
+        if (offsetBytes == space.getPointerSize()) {
+            return false;
+        }
+        return !declaredTruncatedMemory(program, space, offsetBytes);
+    }
+
+    private static boolean declaredTruncatedMemory(Program program, AddressSpace space,
+            int offsetBytes) {
+        // A loaded Sleigh language can retain wider STORE operands while its
+        // declared RAM space is truncated. Input 0 still selects RAM; input 1
+        // is read as an offset, never written as a register. Bound this extra
+        // case to the concrete long-offset domain, without guessing SLA width.
+        // This only removes the width-based opaque-effect rejection. The
+        // separate writesRegister check still rejects stores into the tracked
+        // register's space, including memory-mapped registers. It proves no
+        // offset validity or successful access (range checks can still fail).
+        if (offsetBytes <= space.getPointerSize() || offsetBytes > Long.BYTES ||
+                space.getType() != AddressSpace.TYPE_RAM || space.isOverlaySpace() ||
+                space.getPhysicalSpace() != space || space.getAddressableUnitSize() <= 0 ||
+                !(program.getLanguage() instanceof SleighLanguage language) ||
+                !(language.getLanguageDescription() instanceof SleighLanguageDescription description)) {
+            return false;
+        }
+        // ProgramAddressFactory retains the language's physical space objects.
+        // Require identity through both IDs and names, not a matching RAM name
+        // supplied by a program overlay or a different address factory.
+        var languageFactory = language.getAddressFactory();
+        if (languageFactory.getAddressSpace(space.getSpaceID()) != space ||
+                languageFactory.getAddressSpace(space.getName()) != space ||
+                program.getAddressFactory().getAddressSpace(space.getName()) != space ||
+                !description.getTruncatedSpaceNames().contains(space.getName())) {
+            return false;
+        }
+        int truncatedBytes = description.getTruncatedSpaceSize(space.getName());
+        return truncatedBytes > 0 && truncatedBytes < offsetBytes &&
+            truncatedBytes == space.getPointerSize() &&
+            space.getSize() == truncatedBytes * Byte.SIZE;
     }
 
 

@@ -74,10 +74,10 @@ fixtures reveal reversed fields for ARM32 and MIPS32 little endian despite the
 scalar-only gate passing. Computed Ghidra joins use significance order, which
 must be translated separately from each register's bit offset. A real conversion
 to custom storage also requires the same normalization. The original injected
-custom/local controls did not establish Ghidra join semantics. PR #45 remains
-blocked until the shared correction passes its fresh full gate. The corrected
-computed/custom/reopened cases and primary regressions pass locally on all five
-targets. See
+custom/local controls did not establish Ghidra join semantics. PR #45
+corrects the shared extraction boundary: computed/custom/reopened cases and
+primary regressions pass on all five targets in exact run `40145554731`, with
+independent reviews and normal merge `96fa0a8`. Main-push acceptance is separate. See
 [the correction](DYNAMIC-COMPOSITE-ORDER.md).
 
 The composite fixture uses analyst-curated pieces in two integer registers.
@@ -140,6 +140,19 @@ permanent prerequisites for every developer.
 EABI/MIPS16/microMIPS/R6, x86 x32/wide vectors, SVE/SME, and non-Linux ABIs.
 Their absence does not invalidate the bounded five-profile milestone. No new
 profile is claimed by this documentation change.
+
+## Truncated-space investigation
+
+**CONFIRMED locally; hosted acceptance pending:** an owned
+freestanding O32/N32 comparison in both byte orders observes four-byte pointers
+with eight-byte N32 argument registers and STORE address operands. The preceding
+exporter omits the N32 locations conservatively because RAM is explicitly
+truncated. The selected fix addresses that memory-space proof. All four local packaged
+compiler/Forge controls now pass exact values, honest omissions, validators and
+repeatability; the full hosted gate remains pending. It does not
+change ABI selection or the five supported profile definitions above. Its scope
+excludes libc startup, N32 floating/aggregate rules, PIE/shared objects and N64.
+See [the contract and evidence](TRUNCATED-MEMORY-STORES.md).
 
 ## Evidence locations
 

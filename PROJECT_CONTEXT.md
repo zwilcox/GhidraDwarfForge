@@ -3987,3 +3987,55 @@ changing its executable or expected value; all five revised primary controls
 pass, with independent raw reviews. Final packaging and fresh full hosted
 validation remain required. See
 `docs/DYNAMIC-COMPOSITE-ORDER.md`.
+
+### Explicitly truncated memory-space stores (2026-10-24)
+
+**CONFIRMED locally; hosted acceptance pending:** same-source
+freestanding O32/N32 comparisons in both byte orders pass plain QEMU, compiler
+GDB, real export, deterministic repeat and independent validators. With the
+preceding exporter, all seven N32 parameter locations are honestly omitted:
+Ghidra's full-width SLEIGH model produces eight-byte STORE address operands,
+while its explicit RAM truncation reports four-byte pointers. The lifetime
+proof rejects that width mismatch. No incorrect register mapping is observed.
+
+A bounded generic correction recognizes the loaded SLEIGH language's explicit
+RAM truncation and exact physical-space identity. It preserves existing framing,
+nontruncated mismatch rejection, call/write/opaque checks and cancellation.
+Widened offsets are bounded by Java's long-offset domain; this is not a guess
+about the original SLEIGH space width or a claim that every address executes.
+Compiler-relative N32 values and O32 controls now pass locally: eight exports,
+eight GDB sessions, four plain QEMU exits, deterministic repeats, preserved
+inputs and four strict-zero sidecars. Independent raw review confirms 194 visited
+PCs, 864 correct available values and 30 honest omissions. The old/current stripped
+inputs are byte-identical. Packaged actual Java 21 passes 182 focused checks;
+the complete hosted gate remains pending before integration. See `docs/TRUNCATED-MEMORY-STORES.md`.
+
+### Combined STORE and register join validation (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** normal local merge `70ba319`
+retains the reviewed `5e2ea7d` join correction and the separate truncated-STORE
+proof without changing either method's semantics. Nine Gradle storage/lifetime
+tasks and the extension build pass. Actual Java 21 source and packaged checks
+pass 182/1480/154; the unchanged four O32/N32 fixtures pass eight exports, eight
+compiler/Forge debugger sessions and strict-zero validation, with 194 visited
+PCs, 864 correct available observations and 30 honest omissions. Protected inputs
+remain unchanged, with independent focused and raw runtime reviews. This
+refreshes the old component evidence against the combined
+package, without broadening N32 or lifetime claims. Exact hosted acceptance and
+final package review remain pending; see `docs/TRUNCATED-MEMORY-STORES.md`.
+
+### PR #45 register join integration (2026-10-25)
+
+**CONFIRMED:** corrected head `5e2ea7d` passes all twelve jobs in run
+`40145554731`, with independent exact-package, all-five computed/custom/generic
+parameter, both-GUI and native Windows 27 reviews. Fresh downloaded-package
+actual Java 21 checks 231/38/154/1480 pass. Normal merge
+`96fa0a826429e0b9dbfacd028e6caa02bcf2934e` preserves that tested tree.
+Distinct main-push run `40147478153` remains pending; earlier rejected candidates
+remain historical. No new release is published.
+
+The truncated-STORE follow-up now includes this main parent through normal
+merge `732356f`. Its tree equals the already validated `0b5d216` tree; no
+production, fixture or oracle bytes changed during that parent update. Fresh
+combined local evidence remains valid. Final committed packaging and the
+follow-up's own full hosted gate remain required.
