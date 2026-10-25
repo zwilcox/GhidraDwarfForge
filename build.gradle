@@ -310,6 +310,18 @@ tasks.register("registerCopySmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/register-copy/cache").absolutePath
 }
 
+tasks.register("compositeRegisterPrefixSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks complete incoming register composites before their first clobber"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.CompositeRegisterPrefixSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/composite-register-prefix/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/composite-register-prefix/cache").absolutePath
+}
+
 tasks.register("stackFirstUseSmoke", JavaExec) {
     group = "verification"
     description = "Checks omission of unsupported nonzero stack-local first-use storage"

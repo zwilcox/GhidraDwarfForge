@@ -4039,3 +4039,26 @@ merge `732356f`. Its tree equals the already validated `0b5d216` tree; no
 production, fixture or oracle bytes changed during that parent update. Fresh
 combined local evidence remains valid. Final committed packaging and the
 follow-up's own full hosted gate remain required.
+
+### Selected composite incoming-register lifetime work (2026-10-25)
+
+**CONFIRMED investigation; correction present, unverified end to end:** the preceding combined
+`2d787e33...` package omits an entire two-register parameter when one incoming
+register is overwritten. Source-built x86-64/AArch64 ET_EXEC probes show correct
+incoming fields and exact DI/W0 clobber boundaries, with compiler DWARF as a
+typed-value oracle. Initial analyst signature/type curation requests computed
+storage; subsequent ordinary custom conversion and reopen preserve it. The
+probe passes export/validator/debugger checks with zero unexplained errors,
+while the preceding Forge location remains honestly unavailable throughout.
+
+The selected P1.11a change revalidates every register piece and the complete
+ordinary leaf body before retaining a complete composite prefix. The whole
+value becomes unavailable after the first physical-register write. Failed
+refinement preserves the preceding diagnostic. Single-register backup/local
+rules and register ordering remain unchanged. No surviving pieces, composite
+backup, calls, delay slots or memory migration are inferred. Actual Java 21
+passes 469 focused checks, including real decoded x86-64/AArch64 cases and a
+controlled big-endian storage case. Ten relevant Gradle regressions and the
+extension build pass under Java 25; independent source/evidence review passes.
+Packaged focused tests, real runtime and full hosted acceptance remain pending; see
+`docs/COMPOSITE-REGISTER-PREFIX.md`.

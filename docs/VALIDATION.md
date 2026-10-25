@@ -6086,3 +6086,35 @@ The truncated-STORE branch's subsequent normal parent merge `732356f` preserves
 its exact prior `0b5d216` tree, including all locally tested combined runtime
 bytes. Only acceptance documentation changes afterwards; final exact-head
 packaging and a separate hosted follow-up gate remain required.
+
+### Composite incoming-register source checkpoint (2026-10-25)
+
+**CONFIRMED source/focused; packaged runtime and hosted acceptance pending.**
+The bounded composite prefix uses the existing interval and location-list path.
+Actual Java 21 at `-Xmx256m` passes 469 checks, including decoded x86-64/AArch64
+computed/custom/reopened storage, whole-body rejection controls, exact raw
+location-list bytes and cancellation. A real big-endian language supplies the
+storage for a controlled p-code test; this does not prove a MIPS runtime prefix.
+The old `2d787e33...` package fails the intended existing-public-API positive
+assertion. Source-focused receipt SHA-256 is
+`12c327069437ea65e220acc4aa3a1fab28e75c86d3c22711f9eaba91d4120194`;
+independent source/focused review is
+`482e90ef75397406fec5a89bca0f0422afca83794051bfb93a8510d20fca2ace`.
+
+The following command passes under Java 25, producing Java 21 bytecode:
+
+```bash
+GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC \
+JAVA_HOME=/usr/lib/jvm/java-25-openjdk-amd64 \
+./gradlew --no-daemon compositeRegisterPrefixSmoke dynamicCompositeOrderSmoke \
+    dynamicParameterStorageSmoke truncatedSpaceStoreSmoke variableStorageSmoke \
+    registerPrefixSmoke registerAliasSmoke registerCopySmoke stackFirstUseSmoke \
+    opaqueRegisterEffectsSmoke buildExtension
+```
+
+All ten requested smoke tasks execute and pass; the build reports 15 executed
+tasks. Workflow lint, architecture neutrality, whitespace checks and the exact
+29-file fixture-source inventory pass. Source-only reviews of the durable
+ET_EXEC harness and private driver pass. The fixture C and compiler flags equal
+the independently reviewed baseline probe. No fresh packaged-exporter/GDB or
+hosted acceptance is claimed at this checkpoint.

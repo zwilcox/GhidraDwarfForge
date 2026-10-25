@@ -94,29 +94,107 @@ public final class GhidraVariableStorage {
     }
 
     /**
-     * Refines only an otherwise rejected simple register parameter. The value
+     * Refines an otherwise rejected register-only parameter. The value
      * exists at the first writing instruction (before it executes), and becomes
      * unavailable at its fall-through address unless a separate ordered p-code
      * proof establishes one completed register backup before that instruction.
+     * A composite has only a complete incoming prefix and a whole-value tail;
+     * no surviving piece or compound backup is inferred.
      * An empty result leaves the original conservative rejection unchanged.
      */
     public static List<StorageInterval> parameterPrefix(Program program, Function function,
             Parameter parameter, TargetRegisterMap registers, Storage rejected,
             TaskMonitor monitor) throws CancelledException {
         if (!(rejected instanceof UnavailableStorage unavailable) ||
-                unavailable.reason() != OmissionReason.REGISTER_MODIFIED ||
-                parameter.getVariableStorage().getVarnodeCount() != 1 ||
-                !parameter.getVariableStorage().isRegisterStorage()) {
+                unavailable.reason() != OmissionReason.REGISTER_MODIFIED) {
             return List.of();
         }
-        Register register = parameter.getRegister();
-        if (register == null || function.getBody().getNumAddressRanges() != 1 ||
+        VariableStorage storage = parameter.getVariableStorage();
+        if (storage == null) {
+            return List.of();
+        }
+        boolean composite = storage.getVarnodeCount() > 1;
+        if (!composite && (storage.getVarnodeCount() != 1 || !storage.isRegisterStorage())) {
+            return List.of();
+        }
+        Register register = composite ? null : parameter.getRegister();
+        if ((!composite && register == null) ||
+                function.getBody().getNumAddressRanges() != 1 ||
                 !function.getEntryPoint().equals(function.getBody().getMinAddress())) {
             return List.of();
         }
-        Storage mapped = mappedRegister(register, parameter.getLength(), registers, "parameter");
-        if (!mapped.available()) {
-            return List.of();
+        Storage mapped;
+        List<Register> bases = new ArrayList<>();
+        if (composite) {
+            // The first REGISTER_MODIFIED result may have hidden invalid later
+            // pieces. Revalidate the entire value before constructing intervals.
+            var formal = parameter.getFormalDataType();
+            int bytes = parameter.getLength();
+            if (bytes <= 0 || formal == null || formal.getLength() != bytes ||
+                    storage.size() != bytes || !storage.isValid() || storage.isBadStorage() ||
+                    storage.isUnassignedStorage() || storage.isForcedIndirect()) {
+                return List.of();
+            }
+            Varnode[] nodes = storage.getVarnodes();
+            if (nodes == null || nodes.length != storage.getVarnodeCount()) {
+                return List.of();
+            }
+            List<Piece> pieces = new ArrayList<>();
+            var pieceEnds = new ArrayList<ghidra.program.model.address.Address>();
+            long total = 0;
+            for (int index = 0; index < nodes.length; index++) {
+                monitor.checkCancelled();
+                Varnode node = nodes[index];
+                if (node == null || !node.isRegister() || node.getSize() <= 0) {
+                    return List.of();
+                }
+                Register pieceRegister = program.getRegister(node);
+                // Big-endian low slices need not start at the full register's
+                // address. Require the language's exact address/size lookup;
+                // mappedRegister preserves its LSB-relative slice semantics.
+                if (pieceRegister == null || pieceRegister != program.getLanguage()
+                        .getRegister(node.getAddress(), node.getSize())) {
+                    return List.of();
+                }
+                Storage piece = mappedRegister(pieceRegister, node.getSize(), registers,
+                    "parameter piece");
+                if (!(piece instanceof RegisterStorage mappedPiece)) {
+                    return List.of();
+                }
+                ghidra.program.model.address.Address nodeEnd;
+                try {
+                    nodeEnd = node.getAddress().addNoWrap(node.getSize() - 1L);
+                }
+                catch (ghidra.program.model.address.AddressOverflowException invalidRange) {
+                    return List.of();
+                }
+                for (int previous = 0; previous < index; previous++) {
+                    monitor.checkCancelled();
+                    Varnode other = nodes[previous];
+                    if (node.getAddress().getAddressSpace().equals(other.getAddress().getAddressSpace()) &&
+                            node.getAddress().compareTo(pieceEnds.get(previous)) <= 0 &&
+                            other.getAddress().compareTo(nodeEnd) <= 0) {
+                        return List.of();
+                    }
+                }
+                total += node.getSize();
+                if (total > bytes) {
+                    return List.of();
+                }
+                pieces.add(new Piece(mappedPiece, mappedPiece.bitSize()));
+                pieceEnds.add(nodeEnd);
+                bases.add(pieceRegister.getBaseRegister());
+            }
+            if (total != bytes) {
+                return List.of();
+            }
+            mapped = new CompositeStorage(program.getLanguage().isBigEndian() ? pieces : pieces.reversed());
+        }
+        else {
+            mapped = mappedRegister(register, parameter.getLength(), registers, "parameter");
+            if (!mapped.available()) {
+                return List.of();
+            }
         }
         List<Instruction> instructions = new ArrayList<>();
         var instructionsByAddress = new HashMap<ghidra.program.model.address.Address, Instruction>();
@@ -162,18 +240,18 @@ public final class GhidraVariableStorage {
         }
         long start = function.getEntryPoint().getOffset();
         long end = Math.addExact(function.getBody().getMaxAddress().getOffset(), 1);
-        long boundary = registerPrefixEnd(start, end, instructions, register.getBaseRegister(),
-            monitor);
+        long boundary = composite
+            ? registerPrefixEnd(start, end, instructions, bases, true, monitor)
+            : registerPrefixEnd(start, end, instructions, register.getBaseRegister(), monitor);
         if (boundary <= start) {
             return List.of();
         }
         List<StorageInterval> result = new ArrayList<>();
         result.add(new StorageInterval(start, boundary, mapped));
         var formalType = parameter.getFormalDataType();
-        var storage = parameter.getVariableStorage();
         // A storage-width copy is not evidence for a differently sized formal
         // value. Keep the established prefix when this narrower proof fails.
-        RegisterCopyLifetime.Backup backup = formalType != null &&
+        RegisterCopyLifetime.Backup backup = !composite && formalType != null &&
                 formalType.getLength() == parameter.getLength() &&
                 storage.size() == parameter.getLength()
             ? RegisterCopyLifetime.prove(program, start, end, instructions,
@@ -195,6 +273,12 @@ public final class GhidraVariableStorage {
     /** Exact fully decoded, ordinary straight-line leaf proof; -1 rejects it. */
     static long registerPrefixEnd(long start, long end, List<Instruction> instructions,
             Register register, TaskMonitor monitor) throws CancelledException {
+        return registerPrefixEnd(start, end, instructions, List.of(register), false, monitor);
+    }
+
+    private static long registerPrefixEnd(long start, long end, List<Instruction> instructions,
+            List<Register> registers, boolean exactDecodedLength, TaskMonitor monitor)
+            throws CancelledException {
         long expected = start;
         long firstWriteEnd = -1;
         boolean returned = false;
@@ -202,15 +286,22 @@ public final class GhidraVariableStorage {
             monitor.checkCancelled();
             if (returned || instruction.getAddress().getOffset() != expected ||
                     instruction.isInDelaySlot() || instruction.getDelaySlotDepth() != 0 ||
-                    instruction.getFlowOverride() != FlowOverride.NONE) {
+                    instruction.getFlowOverride() != FlowOverride.NONE ||
+                    (exactDecodedLength && (instruction.isLengthOverridden() ||
+                        instruction.isFallThroughOverridden() || instruction.getLength() <= 0 ||
+                        instruction.getParsedLength() != instruction.getLength()))) {
                 return -1;
             }
             long next = Math.addExact(instruction.getMaxAddress().getOffset(), 1);
-            if (next <= expected || next > end) {
+            if (next <= expected || next > end ||
+                    (exactDecodedLength && next != Math.addExact(expected, instruction.getLength()))) {
                 return -1;
             }
             boolean returns = false;
             for (PcodeOp operation : instruction.getPcode()) {
+                if (exactDecodedLength) {
+                    monitor.checkCancelled();
+                }
                 switch (operation.getOpcode()) {
                     case PcodeOp.BRANCH, PcodeOp.CBRANCH, PcodeOp.BRANCHIND,
                         PcodeOp.CALL, PcodeOp.CALLIND, PcodeOp.CALLOTHER,
@@ -231,8 +322,16 @@ public final class GhidraVariableStorage {
                     instruction.getFallThrough().getOffset() != next) {
                 return -1;
             }
-            if (firstWriteEnd == -1 && writesRegister(instruction, register)) {
-                firstWriteEnd = next;
+            if (firstWriteEnd == -1) {
+                for (Register register : registers) {
+                    if (exactDecodedLength) {
+                        monitor.checkCancelled();
+                    }
+                    if (writesRegister(instruction, register)) {
+                        firstWriteEnd = next;
+                        break;
+                    }
+                }
             }
             expected = next;
         }

@@ -1135,6 +1135,16 @@ or uncertain storage remains locationless with a diagnostic.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
 
+**PRESENT, UNVERIFIED end to end:** retain a complete incoming register composite
+before its earliest physical-register overwrite, then make the whole value
+unavailable. An independently reviewed x86-64/AArch64 ET_EXEC probe establishes
+the omitted incoming values and exact partial-register clobber boundaries.
+Actual Java 21 passes 469 focused checks; ten relevant Gradle regressions and
+the extension build pass, with independent source review. Fresh package/runtime
+and hosted acceptance remain pending; see
+`docs/COMPOSITE-REGISTER-PREFIX.md`. This adds no call-crossing, surviving-piece,
+backup, mixed-memory or later-local inference.
+
 **CONFIRMED combined local validation (2026-10-25):** the truncated-RAM STORE
 proof composes with the shared register join correction. Actual Java 21 source
 and packaged checks pass 182/1480/154, and unchanged O32/N32 fixtures in both

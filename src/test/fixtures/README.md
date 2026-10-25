@@ -37,12 +37,22 @@ historical harness to replay the old wrong-value case. The direct
 global-address formatting regression is now checked without warning suppression.
 
 `recovered_composite` receives a known 64-bit value split across the third and
-fourth ABI input registers. The preparation script models those ordered
-varnodes as `analyst_composite`; little-endian fixtures put the low word first
-and the big-endian MIPS fixture puts the high word first, matching Ghidra's
-`VariableStorage` contract and DWARF's memory-address piece order. GDB
+fourth ABI input registers. The preparation script models those varnodes as
+`analyst_composite` in Ghidra's most-significant-piece-first join order. The
+exporter reverses the completed list on little-endian targets to produce
+DWARF's object-memory order and retains it on big-endian targets. GDB
 reconstructs `0x1122334455667788` on x86-64, AArch64, and both MIPS profiles.
 ARM32 overwrites an input piece, so its composite is deliberately locationless.
+
+`composite-register-prefix.c` exercises an incoming sixteen-byte aggregate
+whose first physical register is partially overwritten on x86-64 or overwritten
+through W0 on AArch64. Its dedicated ET_EXEC harness requires both typed fields
+through the writing instruction and a whole-value unavailable tail beginning
+at the next instruction. It compares compiler DWARF with computed and custom
+Ghidra storage, repeats saved/reopened exports, and checks original instruction
+bytes and complete location-list pieces. It does not infer composite backups
+or surviving pieces; see `docs/COMPOSITE-REGISTER-PREFIX.md` for the acceptance
+status and proof boundary.
 
 The preparation script also applies a user-defined `analyst_stack` name to the
 compiler fixture's `sum` stack slot. Its Ghidra incoming-stack-pointer offset is
