@@ -1,11 +1,19 @@
 # TODO.md — GhidraDwarfForge
 
+**Current integration:** PR54 is merged as `c0148c7` after all twelve PR
+checks and independent artifact review passed. Its separate main run
+`40228194534` also passes all twelve jobs and independent artifact review.
+PR56 combines the coverage correction and PR55's
+FP32 tests through normal history; 24 combined FP32 exports pass locally and
+the final combined hosted gate is pending. Remaining broad TODOs stay open.
+
 **CONFIRMED (2026-10-25):** combined PR #53 head `47970c8` passes all twelve
 jobs in `40218743315`, exact package/source/native-provenance review, actual
 Java 21 focused checks and fresh raw return/parameter/declaration/stack GDB
 review. Normal merge `5eeefb76cfcefa2ed501bdd59676048081b5e9bc` integrates
 PR50/51/52 and deferred stack analysis without rewriting their history. Its
-distinct main run `40221601223` is pending. Earlier pending-component notes
+distinct main run `40221601223` passes all twelve jobs and separate exact
+package/raw signature, stack and GUI/native Windows artifact review. Earlier pending-component notes
 are historical; no release is published. The direct-leaf call follow-up below
 has local evidence and requires its own full hosted acceptance.
 
@@ -1416,6 +1424,19 @@ all-five-target/both-GUI reviews and exact package audit pass; normal merge
 passes all twelve jobs and independent fresh artifact review.
 See [the bounded contract](docs/TRUNCATED-MEMORY-STORES.md).
 
+**CONFIRMED locally; hosted acceptance pending:** an explicit FP32 profile now
+provides a strict positive compiler double-argument reference in both byte
+orders. Twelve Forge exports across exec/PIE and baseline/rebase/repeat retain
+correct scalar floats and honest paired-double omissions. FPXX still fails the
+strict compiler control with zero. This establishes a testing prerequisite;
+paired-location emission and broader ABI classification remain incomplete.
+A second form now proves positive Forge doubles for explicitly curated FPR
+pieces through the existing generic composite path, with exact raw order and
+runtime values on both byte orders and exec/PIE/rebase. The whole-alias negative
+control remains unavailable. Automatic alias expansion and broader ABI
+classification remain incomplete. Both forms await their hosted gate.
+See `docs/MIPS-FP32-ORACLE.md`.
+
 ### Work
 
 - Add source-built MIPS ELF32 big-endian fixtures from the shared semantic
@@ -2457,3 +2478,16 @@ Unless the user changes priorities:
 7. For each coherent change, run appropriate validators and debugger behavior
    tests, preserve original hashes and deterministic output, and record evidence
    in the handoff documents. Keep the complete supported-profile CI matrix green.
+
+### Incomplete register-body coverage correction (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** a missing instruction in an
+otherwise retained function body bypassed whole-function register safety. In
+real AArch64 exec/PIE/rebased-PIE exports, an undecoded syscall made the previous
+exporter display a process ID for the actual parameter `-19`. The coverage
+guard now retains its name/type without a location, preserves discontiguous
+bodies and checks decoded lengths. Five language models pass 421 checks;
+nine actual Java 21 packaged suites and eighteen baseline/fixed/control exports
+pass their scoped checks. See `docs/REGISTER-BODY-COVERAGE.md` for raw evidence,
+validator details and retained model-proxy failure. General lifetime/migration
+work remains partial.

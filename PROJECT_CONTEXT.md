@@ -4311,3 +4311,75 @@ compiler symbol entries, nonzero runtime load biases and unchanged link-time
 location intervals for byte-identical rebased inputs pass all six cases. No
 production behavior changes. CI requires each role in both lanes; see
 `docs/DIRECT-LEAF-CALL-BACKUPS.md` for the exact local receipt and remaining scope.
+
+### MIPS FP32 compiler reference (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** explicit FP32 enables correct
+compiler-side double arguments under the current QEMU/GDB pair in both byte
+orders, while FPXX retains its zero-value failure. The new opt-in fixture
+profile adds strict compiler values and real exporter/GDB exec/PIE/rebase
+regressions. Forge's paired doubles remain honestly unavailable; this evidence
+does not justify a global register-map change. `docs/MIPS-FP32-ORACLE.md`
+records the twelve final exports, protected-file checks and retained failures.
+
+Separate main run `40221601223` now passes all twelve jobs with exact package,
+Java 21 equality, raw signature/stack and both GUI/native Windows review.
+Acceptance receipt: `40363e983bfc11de5dd93cb50d29fcadd7a886ee499a2ee63efb87a5319cf597`.
+This supersedes earlier pending-main notes for merge `5eeefb76`; subsequent
+class/call and FP32 follow-ups retain their own pending hosted gates.
+
+The FP32 follow-up additionally proves that existing generic composite storage
+exports explicitly curated FPR pairs correctly, with exact compiler/Forge
+double values and raw piece order on both byte orders and exec/PIE/rebase.
+Whole-register aliases remain unavailable and no production mapping changes.
+Both storage forms now have twelve passing local exports and separate receipts
+in `docs/MIPS-FP32-ORACLE.md`; the complete hosted gate remains pending.
+
+### Class display and direct-call integration accepted (2026-10-25)
+
+**CONFIRMED:** PR54 head `0c52f5b08075931ccd35b26e65f84ede33c782ff` passes
+all twelve jobs in `40224888001` and independent exact-package, raw runtime,
+both-GUI and native Windows review. Normal merge `c0148c7451d5701e6ed7b95ba5c3a4be7261c05c`
+preserves its tested tree. Fifteen class cases (30 exports), six direct-call
+exec/PIE/rebase cases, eight actual Java 21 suites and 33 native Windows tasks
+pass within their documented scopes. Acceptance receipt SHA-256:
+`f752c46b1686d7c4e5a5071b01dd078937140e866e6a32a67c3ced18291ebe85`. Earlier pending PR54 notes are historical.
+Its distinct main-push run `40228194534` remains pending; the MIPS FP32
+follow-up requires its own current-base hosted gate. This does not complete
+full class semantics, general call-crossing locations or broader ABI support.
+
+### Incomplete register-body coverage correction (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** a missing instruction in an
+otherwise retained function body bypassed whole-function register safety. In
+real AArch64 exec/PIE/rebased-PIE exports, an undecoded syscall made the previous
+exporter display a process ID for the actual parameter `-19`. The coverage
+guard now retains its name/type without a location, preserves discontiguous
+bodies and checks decoded lengths. Five language models pass 421 checks;
+nine actual Java 21 packaged suites and eighteen baseline/fixed/control exports
+pass their scoped checks. See `docs/REGISTER-BODY-COVERAGE.md` for raw evidence,
+validator details and retained model-proxy failure. General lifetime/migration
+work remains partial.
+
+### Combined coverage and FP32 integration checkpoint (2026-10-25)
+
+**CONFIRMED locally; combined hosted gate pending:** normal merges preserve
+PR55's test-only FP32 work and PR56's instruction-coverage correction. Their
+combined production/harness bytes pass 24 additional FP32 exports; the new
+guard retains valid explicit FPR pieces and honest whole-alias omissions.
+Receipt: `5187f942d15815eb8755e579baa162613b0b6af98e6a685cffbde9fa3ade2478`.
+The final integration is through PR56, with its own enforced current-base gate
+and exact artifact review. Earlier component results retain their separate
+scopes. Additional FP64A investigation finds a failing untouched compiler
+reference under the current debugger transport; it remains unvalidated. See
+`docs/MIPS-FP32-ORACLE.md`. No release is published.
+
+### Separate main54 gate accepted (2026-10-25)
+
+**CONFIRMED:** main push `40228194534` at `c0148c7451d5701e6ed7b95ba5c3a4be7261c05c`
+passes all twelve jobs and fresh exact-package/raw-runtime/both-GUI review.
+The exact JAR and eight test sources match the passing Java 21 receipt; all
+fifteen class cases, six direct-call roles and 33 native Windows tasks pass.
+Main receipt: `488c4288d6a1b343e645ea6026f3d6ca9fb50adc1515fa9865ca945710a7f6f9`. Earlier pending-main54
+notes are historical. The combined coverage/FP32 head retains its own pending
+current-base gate; this main pass does not substitute for that acceptance.

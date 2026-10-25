@@ -170,3 +170,20 @@ The executable regression contracts are under `src/test/fixtures/` and
 `src/test/integration/`, including `RenameFixtureFunction.java`,
 `qemu-gdb-symbols.sh` and `shared-object-gdb.sh`. Architecture-boundary guards
 keep mappings isolated; they do not prove every register in each map.
+
+## Explicit FP32 compiler reference follow-up
+
+**CONFIRMED locally; hosted gate pending:** `-mfp32` fixtures in both MIPS byte
+orders now establish a strict positive compiler double-argument reference at
+three instruction boundaries. FPXX still fails the strict control with zero.
+Twelve real Forge exports across exec/PIE and baseline/rebase/repeat retain
+correct scalar floats and honest paired-double omissions. This is a distinct
+ABI test profile, not an expansion of Forge's paired-register mapping. See
+[MIPS-FP32-ORACLE.md](MIPS-FP32-ORACLE.md) for exact receipts and remaining scope.
+
+The explicit FP32 follow-up also validates current generic composite storage:
+analyst-described pairs `f13`/`f12` and `f15`/`f14` yield exact Forge doubles
+through all tested PCs in both byte orders and exec/PIE/rebase cases. The
+whole-register alias controls remain unavailable. This is locally confirmed
+coverage of explicit pieces, with hosted acceptance pending, rather than an
+automatic mapping or a blanket change to the baseline FPXX profile.

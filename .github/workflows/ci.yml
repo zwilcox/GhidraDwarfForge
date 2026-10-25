@@ -480,7 +480,7 @@ jobs:
               syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
               variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke directLeafCallSmoke compositeRegisterPrefixSmoke \
               stackFirstUseSmoke \
-              opaqueRegisterEffectsSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
+              opaqueRegisterEffectsSmoke registerBodyCoverageSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
               arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfAddressRangesSmoke \
@@ -1017,6 +1017,12 @@ jobs:
         if: matrix.target == 'aarch64'
         run: src/test/integration/opaque-register-effects-export.sh "$GHIDRA_INSTALL_DIR"
 
+      - name: Undecoded listing gaps cannot claim stable register values
+        if: matrix.target == 'aarch64'
+        env:
+          FORGE_OPAQUE_LISTING: gap
+        run: src/test/integration/opaque-register-effects-export.sh "$GHIDRA_INSTALL_DIR"
+
       - name: Proven parameter register copies and unavailable tails
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
         env:
@@ -1120,6 +1126,19 @@ jobs:
             "$GHIDRA_INSTALL_DIR" \
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
+
+      - name: Explicit MIPS FP32 reference, register pieces, and alias omissions
+        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        env:
+          TARGET: ${{ matrix.target }}
+          FORGE_FP_ABI_PROFILE: mips-fp32
+        run: |
+          for storage in register-alias explicit-pieces; do
+              FORGE_FP_STORAGE_FORM="$storage" src/test/integration/floating-registers-export.sh \
+                  "$GHIDRA_INSTALL_DIR" \
+                  "$PWD/native-integration/libdwarf.so.2.3.2" \
+                  "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
+          done
 
       - name: Function entry producer and validators
         env:
@@ -1375,7 +1394,7 @@ jobs:
             -DestinationPath (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions') -Force
           & .\gradlew.bat addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
-            opaqueRegisterEffectsSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
+            opaqueRegisterEffectsSmoke registerBodyCoverageSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
             arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
             registerCopySmoke directLeafCallSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
             elfBuildIdSmoke exportReportClaimsSmoke matchedElfPrefixSmoke `
