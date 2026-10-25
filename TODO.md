@@ -1059,7 +1059,8 @@ Map Ghidra registers to target DWARF register numbers using isolated architectur
 **CONFIRMED resolved in PR #45:** corrected head `5e2ea7d` passes all twelve
 jobs in run `40145554731`, independent exact-package/all-five-target/both-GUI
 reviews and native Windows 27 suites. Normal merge `96fa0a8` retains the tested
-tree. The distinct main-push run `40147478153` remains pending. Earlier scalar-
+tree. Distinct main-push run `40147478153` also passes all twelve jobs and
+independent fresh target/native Windows/both-GUI artifact review. Earlier scalar-
 only and computed-only candidates remain historical, unaccepted evidence.
 Shared register join normalization preserves computed/custom/reopened values;
 see `docs/DYNAMIC-COMPOSITE-ORDER.md`.
@@ -1135,13 +1136,15 @@ or uncertain storage remains locationless with a diagnostic.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
 
-**PRESENT, UNVERIFIED end to end:** retain a complete incoming register composite
+**CONFIRMED locally; hosted acceptance pending:** retain a complete incoming register composite
 before its earliest physical-register overwrite, then make the whole value
 unavailable. An independently reviewed x86-64/AArch64 ET_EXEC probe establishes
 the omitted incoming values and exact partial-register clobber boundaries.
-Actual Java 21 passes 469 focused checks; ten relevant Gradle regressions and
-the extension build pass, with independent source review. Fresh package/runtime
-and hosted acceptance remain pending; see
+Actual Java 21 source checks 469 and packaged checks 469/1480/154/182 pass; ten
+relevant Gradle regressions and the extension build pass. Fresh x86-64/AArch64
+computed/custom/reopened exports pass validators and GDB with unchanged inputs
+and deterministic output. Independent source/package/raw reviews pass. Final
+committed packaging and full hosted acceptance remain pending; see
 `docs/COMPOSITE-REGISTER-PREFIX.md`. This adds no call-crossing, surviving-piece,
 backup, mixed-memory or later-local inference.
 

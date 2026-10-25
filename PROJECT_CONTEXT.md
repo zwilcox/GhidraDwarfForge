@@ -4031,8 +4031,11 @@ final package review remain pending; see `docs/TRUNCATED-MEMORY-STORES.md`.
 parameter, both-GUI and native Windows 27 reviews. Fresh downloaded-package
 actual Java 21 checks 231/38/154/1480 pass. Normal merge
 `96fa0a826429e0b9dbfacd028e6caa02bcf2934e` preserves that tested tree.
-Distinct main-push run `40147478153` remains pending; earlier rejected candidates
-remain historical. No new release is published.
+Distinct main-push run `40147478153` also passes all twelve jobs and independent
+fresh target/native Windows/both-GUI artifact review. Only its package-focused
+Java 21 results are inherited after exact runtime/test-source equality; all
+main runtime artifacts are fresh. Earlier rejected candidates remain historical.
+No new release is published.
 
 The truncated-STORE follow-up now includes this main parent through normal
 merge `732356f`. Its tree equals the already validated `0b5d216` tree; no
@@ -4042,7 +4045,7 @@ follow-up's own full hosted gate remain required.
 
 ### Selected composite incoming-register lifetime work (2026-10-25)
 
-**CONFIRMED investigation; correction present, unverified end to end:** the preceding combined
+**CONFIRMED locally; hosted acceptance pending:** the preceding combined
 `2d787e33...` package omits an entire two-register parameter when one incoming
 register is overwritten. Source-built x86-64/AArch64 ET_EXEC probes show correct
 incoming fields and exact DI/W0 clobber boundaries, with compiler DWARF as a
@@ -4060,5 +4063,11 @@ backup, calls, delay slots or memory migration are inferred. Actual Java 21
 passes 469 focused checks, including real decoded x86-64/AArch64 cases and a
 controlled big-endian storage case. Ten relevant Gradle regressions and the
 extension build pass under Java 25; independent source/evidence review passes.
-Packaged focused tests, real runtime and full hosted acceptance remain pending; see
+The installed `3f9e46b5...` package passes actual Java 21 checks 469/1480/154/182.
+Fresh x86-64/AArch64 tests pass eight deterministic exports, six compiler/Forge
+GDB sessions and two plain exits. Computed and custom variants each have six
+complete positive observations and ten unavailable tails at sixteen PCs across
+the two targets. Both stripped inputs equal the preceding investigation;
+strict validators have zero unexplained errors. Independent raw review passes.
+Final committed packaging and full hosted acceptance remain pending; see
 `docs/COMPOSITE-REGISTER-PREFIX.md`.

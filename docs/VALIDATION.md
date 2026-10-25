@@ -6078,7 +6078,14 @@ run/head/event/attempt and twelve successful job records before merge.
 
 Normal merge `96fa0a826429e0b9dbfacd028e6caa02bcf2934e` occurred at
 `2026-10-25T00:38:23Z`; its tree equals the tested head. Distinct main-push
-run `40147478153` is pending and is not inferred from the PR gate. The rejected
+run `40147478153` independently passes all twelve jobs. Fresh main target,
+all 27 native Windows suites and both-GUI artifacts are reviewed; only package-focused
+actual Java 21 results are inherited after exact 28 runtime/four test-source
+equality. Acceptance receipt SHA-256 is
+`fb2731ee04644ae947b5e2225ba419e879e054055a3984fb57643f6b84b643e5`;
+final bindings are
+`f43ff1e6155abe827a27faee46e878bf31cf3dfea96e33ce158cafb03511c9f8`.
+Root rehashed all 27 final witnesses and confirmed fresh API success. The rejected
 `f46712f` scalar-only run and computed-only `97018b02...` package remain
 historical component evidence. Published releases are unchanged.
 
@@ -6118,3 +6125,60 @@ tasks. Workflow lint, architecture neutrality, whitespace checks and the exact
 ET_EXEC harness and private driver pass. The fixture C and compiler flags equal
 the independently reviewed baseline probe. No fresh packaged-exporter/GDB or
 hosted acceptance is claimed at this checkpoint.
+
+### Composite prefix installed-runtime checkpoint (2026-10-25)
+
+**CONFIRMED locally; full hosted acceptance pending:** initial committed head
+`6397e06` builds ZIP `6d281838...`, containing production JAR `3f9e46b5...`.
+Exact committed sources, scripts, documentation, native provenance, five
+manifests and 220 Java 21 classes pass the strict package audit. All 27 other
+runtime payloads match the preceding combined package. Independent package
+review passes. The private Python installer initially omitted archived modes;
+the owned module's 108 entries were corrected to their archived modes with
+unchanged file bytes/mtimes. The initial mode-check failure and a partial
+correction attempt remain recorded. Independent mode closure is
+`01d836dc1f8dd94d20bb582ef0453a0e0d34d29f4cca01c6ac60cf1405092659`.
+This correction changed no production or fixture bytes and required no JVM
+rerun.
+
+Actual Java 21 at 256 MiB passes the installed-JAR checks 469/1480/154/182,
+with JAR-first classpaths and every loaded production class bound to that JAR.
+Receipt SHA-256 is
+`c9ae84ab6c8d1f169af6dded8a6aeecf70839af154fc8dc582a4f67675e613e3`;
+independent packaged-focused review is
+`d600d8257fc288e5d47282018494f72581666c1f278ca351cadfa35fcc6ef9c8`.
+
+The exact installed package then passes the two durable harness commands:
+
+```bash
+src/test/integration/composite-register-prefix-export.sh "$GHIDRA_INSTALL_DIR" x86_64
+src/test/integration/composite-register-prefix-export.sh "$GHIDRA_INSTALL_DIR" aarch64
+```
+
+Here `GHIDRA_INSTALL_DIR` selects the private `runtime.ua_d0osz/ghidra`
+installation, not the source checkout's base platform. Actual headless Java
+is 25.0.4.1. Eight exports, six compiler/computed/custom GDB sessions and two
+plain executions pass on the first runtime attempt. Computed and custom
+variants each visit sixteen PCs across the targets, with six complete correct
+values and ten explicitly unavailable tail values. The raw DIEs and location
+lists have the correct member offsets, object-order register pieces and exact
+first-write boundary. Compiler DWARF retains correct values at all sixteen PCs.
+Both stripped inputs equal the prior omitted-location baseline byte-for-byte.
+
+Strict output reports four inherited original-frame findings on x86-64 and six
+on AArch64, all corroborated with zero unexplained errors. Each AArch64 GDB
+session has the same one known vDSO warning as its compiler oracle. Repeated
+and reopened outputs are deterministic; 267 global protected records and
+thirteen per-case paths remain unchanged, and all owned sessions/endpoints
+are released. The final author receipt binds 244 witnesses; independent raw
+review also checks all 229 retained case files without rerunning the exporter
+or debugger.
+
+Runtime receipt SHA-256 is
+`703fc5ba467cb9a61fdd3bfaf089a54ef8d107ebc54dd7f77e9b266f76c8b77c`;
+independent raw review is
+`1bebf993bc534ad0af0113d1e920ee9b93eddfa5219476c2b0cee348aae46a12`.
+Final committed packaging and the full five-target/two-host gate remain
+required before integration. Composite PIE/rebase, additional targets,
+surviving pieces, backup migration, calls and delay slots remain outside this
+new bounded runtime claim.

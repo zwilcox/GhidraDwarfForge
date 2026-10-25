@@ -229,6 +229,8 @@ final artifact bindings are
 `05867502822bbf51fc3e3a16de40cf232d4372c46f4a14b988da26163939bc94`.
 
 Normal merge `96fa0a826429e0b9dbfacd028e6caa02bcf2934e` retains the tested tree.
-Distinct main-push run `40147478153` is pending and will be reviewed separately.
+Distinct main-push run `40147478153` also passes all twelve jobs and independent
+fresh target, 27 native Windows suites and both-GUI artifact review. Only package-focused
+Java 21 results are inherited after exact runtime/test-source equality.
 This integration does not publish a new release or accept the rejected earlier
 candidates. Existing scalar, lifetime and architecture limits remain explicit.
