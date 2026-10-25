@@ -908,13 +908,15 @@ Define precedence among analyst-applied listing/signature types and decompiler g
 
 ## P1.7 Emit complete function signatures
 
-**CONFIRMED local correction; hosted validation pending:** the earlier prototype acceptance did not
+**CONFIRMED in PR #48 run `40205151874` (all twelve jobs):** the earlier prototype acceptance did not
 cover forced-indirect aggregate returns. A real x86-64 probe emitted an 8-byte
 pointer for a curated 24-byte structure. Extraction now selects the formal
 return type; 312 Java 21 ProgramDB checks cover five languages, immutable reopen,
 custom conversion and hidden parameters. The x86-64 installed exporter/GDB regression passes: correct structure return,
 hidden pointer, actual returned bytes, deterministic exports and unchanged inputs.
-Hosted acceptance is tracked in `docs/VALIDATION.md`. This bounded fix does
+The downloaded hosted package and native Windows pass the same 312 model checks;
+the hosted x86 runtime agrees. Separate main push `40208082901` is pending.
+This bounded fix does
 not complete external declarations, linkage names, aliases or class scopes.
 
 **Status:** `[~]` — return/parameter DIEs, names,
@@ -928,8 +930,10 @@ accepted a thunk diagnostic alone. **CONFIRMED:** the dedicated external
 inventory passes five real Ghidra language models, five fresh primary exports
 with native/QEMU GDB checks, and identical old/fixed/repeat saved-program sidecar
 and source bytes. PR #42's exact run `40126794530` and distinct main push
-`40129499500` both pass all twelve jobs and independent reviews. External
-declaration/signature emission remains unimplemented. Distinct
+`40129499500` both pass all twelve jobs and independent reviews. Curated addressless declaration emission now passes local five-language model
+checks and a compiler/export/GDB regression; its hosted gate is pending.
+Default signatures stay omitted. GDB ignores unlocated prototypes even in
+compiler DWARF, so this adds metadata without claiming external-code lookup. Distinct
 linkage-name emission remains because GDB must retain the analyst-facing
 breakpoint name.
 
@@ -956,8 +960,9 @@ breakpoint name.
   a documented initial policy: only real definitions emit. Memory thunks are
   diagnosed; separate external-function inventory passes PR #42
   (`296395e` / `40126794530`) across all five targets and both hosts.
-  Declaration/linkage and alias modeling remain
-  separate work.
+  Non-default declarations have a locally validated addressless model and
+  producer path; hosted acceptance is pending. Linkage and alias modeling
+  remain separate work.
 
 ### Completion criteria
 
@@ -2084,7 +2089,7 @@ This supersedes run `40057031192`'s pre-export failure without weakening its
 oracle; broader scopes and declarations remain partial.
 Artificial auto-parameter emission now has a local x86-64 hidden return-storage
 pointer behavior test, including canonical aggregate identity and actual values.
-Its hosted gate is pending; C++ `this` and broader artificial-variable semantics
+Its PR #48 hosted gate passes; C++ `this` and broader artificial-variable semantics
 remain unimplemented. The other scope/declaration work below is
 **PLANNED**.
 
@@ -2100,7 +2105,9 @@ Potential features:
   diagnostic and an accurate exported-static count. Lexical-block
   ownership and inferred/decompiler-only static locals remain unimplemented.
 - Artificial variables.
-- Declaration-only DIEs.
+- [~] External declaration-only function DIEs: local model, producer, validator
+  and GDB non-interference tests pass. Unknown prototypes stay omitted; GDB
+  does not resolve unlocated external prototypes. Hosted validation pending.
 - Disambiguation of same-named types from different Ghidra categories: the
   existing-DWARF regression retains both imported and analyst-defined
   `operation` enums, and uses the unique `OP_INVALID` enumerator to query the

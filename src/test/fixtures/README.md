@@ -289,3 +289,13 @@ harness preserves its original `-O1` probe flags, compares compiler and exported
 return types, checks the hidden destination parameter, and verifies actual
 returned memory and caller observations in GDB. The original input remains
 unchanged. This is not a general aggregate-ABI claim.
+
+### External function declarations
+
+`external-function-declarations.c` builds a normal executable and a separate
+library (`FORGE_DECL_LIBRARY`). The dedicated exporter harness compares curated
+addressless function declarations with the compiler's DWARF, tests a default
+prototype negative and an unreferenced variadic/no-return declaration, and
+requires real definition/source navigation and normal library execution in GDB.
+It explicitly tests that unlocated declarations do not invent debugger code
+symbols. The caller and library inputs remain unchanged.

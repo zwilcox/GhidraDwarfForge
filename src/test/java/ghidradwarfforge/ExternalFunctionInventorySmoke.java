@@ -105,6 +105,11 @@ public final class ExternalFunctionInventorySmoke {
                 new ParameterImpl("external_parameter", integer, program, SourceType.USER_DEFINED));
             unreferenced.setVarArgs(true);
             manager.addExtFunction("lib_a", "unknown_prototype", null, SourceType.IMPORTED);
+            // Name provenance alone does not establish a prototype. These three
+            // declarations have independently curated signature provenance.
+            first.setReturnType(integer, SourceType.USER_DEFINED);
+            duplicate.setReturnType(integer, SourceType.USER_DEFINED);
+            otherLibrary.setReturnType(integer, SourceType.IMPORTED);
             var expected = List.of(
                 new SkippedFunction("lib_a::nested::unreferenced", SkipReason.EXTERNAL_IMPORT),
                 new SkippedFunction("lib_a::same", SkipReason.EXTERNAL_IMPORT),
@@ -115,8 +120,26 @@ public final class ExternalFunctionInventorySmoke {
             var after = extract(program, diagnostics);
             require(after.functions().equals(before.functions()) &&
                 after.skippedFunctions().equals(expected), "external inventory differs: " + after);
-            require(types(program, after, target).equals(beforeTypes),
-                "external signature entered the selected definition/type model");
+            var afterTypes = types(program, after, target);
+            require(afterTypes.functions().equals(beforeTypes.functions()) &&
+                afterTypes.globals().equals(beforeTypes.globals()) &&
+                afterTypes.variableStorage().equals(beforeTypes.variableStorage()) &&
+                afterTypes.functionStatics().equals(beforeTypes.functionStatics()),
+                "external declarations changed definition or memory-location selection");
+            var declarations = afterTypes.functionDeclarations();
+            require(declarations.size() == 4 && declarations.stream()
+                .noneMatch(row -> row.name().contains("unknown_prototype")) &&
+                declarations.stream().map(row -> row.key()).distinct().count() == 4,
+                "curated declarations lost identity or invented an unknown prototype");
+            require(declarations.stream().filter(row -> row.name().equals("lib_z::same")).count() == 2,
+                "same-display-name declarations were conflated");
+            var declaration = declarations.get(0);
+            require(declaration.name().equals("lib_a::nested::unreferenced") && declaration.variadic() &&
+                declaration.signatureSource().equals("USER_DEFINED") &&
+                afterTypes.types().byKey().get(declaration.returnType().key()).name().equals("external_signature_only") &&
+                declaration.parameters().stream().anyMatch(parameter -> parameter.name().equals("external_parameter")),
+                "unreferenced curated declaration lost its formal signature");
+            require(types(program, after, target).equals(afterTypes), "declaration order is unstable");
             var report = report(program, target, after, beforeTypes, diagnostics);
             var json = JsonParser.parseString(report.toJson()).getAsJsonObject();
             require(report.status() == ExportReport.Status.PARTIAL &&
@@ -142,8 +165,8 @@ public final class ExternalFunctionInventorySmoke {
                     SkipReason.EXTERNAL_IMPORT).toList().equals(expected) &&
                 withThunks.skippedFunctions().stream().filter(row -> row.reason() ==
                     SkipReason.THUNK).count() == 2, "thunks and targets were merged");
-            require(types(program, withThunks, target).equals(beforeTypes),
-                "thunk/external signatures changed selected types");
+            require(types(program, withThunks, target).equals(afterTypes),
+                "memory thunks introduced additional declarations or changed types");
             AtomicInteger attempts = new AtomicInteger();
             var source = GhidraSyntheticSource.decompile(program, withThunks.functions(), 0,
                 TaskMonitor.DUMMY, (decompiler, function, timeout, monitor) -> {

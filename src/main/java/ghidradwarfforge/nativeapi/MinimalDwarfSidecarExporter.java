@@ -519,6 +519,37 @@ public final class MinimalDwarfSidecarExporter {
                 }
             }
             if (typeModel != null) {
+                for (ProgramTypeModel.FunctionDeclaration declaration : typeModel.functionDeclarations()) {
+                    Die die = newDie(producer, consumer, debug, DW_TAG_SUBPROGRAM, unit, errorOut);
+                    addName(producer, consumer, die, declaration.name(), errorOut);
+                    addFlag(producer, consumer, debug, die, DW_AT_DECLARATION, true, errorOut);
+                    addFlag(producer, consumer, debug, die, DW_AT_EXTERNAL, true, errorOut);
+                    addFlag(producer, consumer, debug, die, DW_AT_PROTOTYPED, true, errorOut);
+                    addTypeReference(producer, consumer, debug, die,
+                        declaration.returnType(), typeModel.types(), allocatedTypes, errorOut);
+                    if (knownCallingConvention(declaration.callingConvention())) {
+                        addUnsigned(producer, consumer, debug, die,
+                            DW_AT_CALLING_CONVENTION, DW_CC_NORMAL, errorOut);
+                    }
+                    if (declaration.noReturn()) {
+                        addFlag(producer, consumer, debug, die, DW_AT_NORETURN, true, errorOut);
+                    }
+                    for (TypeGraph.Parameter parameter : declaration.parameters()) {
+                        Die parameterDie = newDie(producer, consumer, debug,
+                            DW_TAG_FORMAL_PARAMETER, die, errorOut);
+                        if (!parameter.name().isBlank()) {
+                            addName(producer, consumer, parameterDie, parameter.name(), errorOut);
+                        }
+                        addTypeReference(producer, consumer, debug, parameterDie,
+                            parameter.type(), typeModel.types(), allocatedTypes, errorOut);
+                        if (parameter.artificial()) {
+                            addFlag(producer, consumer, debug, parameterDie, DW_AT_ARTIFICIAL, true, errorOut);
+                        }
+                    }
+                    if (declaration.variadic()) {
+                        newDie(producer, consumer, debug, DW_TAG_UNSPECIFIED_PARAMETERS, die, errorOut);
+                    }
+                }
                 for (ProgramTypeModel.FunctionStaticVariable variable :
                         functionStatics) {
                     Die owner = functionDies.get(variable.ownerAddress());

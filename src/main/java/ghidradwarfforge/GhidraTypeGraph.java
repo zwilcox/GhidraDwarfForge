@@ -105,6 +105,7 @@ public final class GhidraTypeGraph {
             selected.put(symbol.address(), symbol);
         }
         List<ProgramTypeModel.FunctionSignature> signatures = new ArrayList<>();
+        List<ProgramTypeModel.FunctionDeclaration> declarations = new ArrayList<>();
         List<VariableLocation> variableLocations = new ArrayList<>();
         FunctionIterator functions = program.getFunctionManager().getFunctions(true);
         while (functions.hasNext()) {
@@ -267,9 +268,31 @@ public final class GhidraTypeGraph {
                     extractor.reserve(type), true, location.getSource().name()));
             }
         }
+        FunctionIterator externals = program.getFunctionManager().getExternalFunctions();
+        while (externals.hasNext()) {
+            monitor.checkCancelled();
+            Function external = externals.next();
+            if (external.getSignatureSource() == SourceType.DEFAULT) {
+                continue;
+            }
+            List<TypeGraph.Parameter> parameters = new ArrayList<>();
+            for (Parameter parameter : external.getParameters()) {
+                monitor.checkCancelled();
+                parameters.add(new TypeGraph.Parameter(safeParameterName(parameter),
+                    extractor.reserve(parameter.getFormalDataType()), parameter.isAutoParameter()));
+            }
+            // An external-space placeholder is not an address in this image.
+            // Preserve its persistent identity and full Ghidra display name only.
+            declarations.add(new ProgramTypeModel.FunctionDeclaration(
+                "external:" + Long.toUnsignedString(external.getID()), external.getName(true),
+                extractor.reserve(external.getReturn().getFormalDataType()), parameters,
+                external.hasVarArgs(), external.hasNoReturn(),
+                external.getCallingConventionName(), external.getSignatureSource().name()));
+        }
         extractor.drain(monitor);
         return new ProgramTypeModel(new TypeGraph(new ArrayList<>(extractor.nodes.values())),
-            signatures, globals, new VariableStorageModel(variableLocations), functionStatics);
+            signatures, globals, new VariableStorageModel(variableLocations), functionStatics,
+            declarations);
     }
 
     private static List<String> namespacePath(Namespace namespace) {
