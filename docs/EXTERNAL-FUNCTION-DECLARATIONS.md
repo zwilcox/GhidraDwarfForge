@@ -56,3 +56,35 @@ distinct library/nested identities, default-prototype omission, thunk separation
 unchanged definition/location selection and cancellation. Native-free graph
 controls reject duplicate keys and dangling return types. These model tests do
 not imply five-architecture runtime acceptance for this new declaration path.
+
+### Initial hosted inventory-oracle failure
+
+**CONFIRMED:** run `40208416888` at `ff9776a` is not accepted. All five
+lanes stopped after their first extended-section export because the older
+external-inventory checker still required the superseded diagnostic
+`declaration/linkage policy is not implemented yet`. The captured x86-64
+transcript shows successful production export followed by this exact checker
+assertion. The updated assertion requires the new exact diagnostic; external
+names, multiplicities, reasons, counts and PARTIAL status checks are unchanged.
+Replaying that retained transcript passes; missing and stale diagnostic negative
+controls still fail. The exact hosted package/source/manifests and fresh
+packaged Java 21 inventory/type-graph/formal-return checks passed independently.
+They do not substitute for the corrected full workflow, which remains pending.
+
+**CONFIRMED:** corrected inventory head `434f0d5` / run `40209662801` then
+exposed a second stale oracle: the code-address-index checker required ranges
+on every subprogram, including valid addressless declarations. That run is
+also not accepted. The checker now excludes only explicitly true declarations
+and rejects any declaration carrying low/high PC, ranges, entry PC, frame base
+or location. Eight new controls reject such attributes and missing definition
+bounds; all ten prior malformed-index controls remain intact.
+
+The captured hosted x86-64 artifact passes the corrected independent coverage
+check. Fresh installed x86-64 and big-endian MIPS32 extended-section ET_EXEC/PIE
+regressions pass in `run.dWOa1bqk`: five exports, deterministic x86 rerun,
+compiler/Forge GDB behavior, strict validators and original-input preservation.
+The initial local attempt `run.ztbFng1z` used nonexistent unversioned native
+paths and failed before export; the corrected run uses the actual audited
+versioned packaged libraries. No production, fixture or emitted-artifact code
+changed for either oracle correction. The next complete hosted gate remains
+required before merge.
