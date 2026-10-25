@@ -6562,8 +6562,25 @@ Local receipt SHA-256:
 `454a3d4bccdc5779f17fca7faf16c3fc9e3665b029fa9d560855d0e18892da4b`.
 The six dedicated pair artifacts are strict-zero; AArch64 floating artifacts
 retain only independently corroborated inherited frame diagnostics. Local
-headless Ghidra uses Java 25.0.4.1. The final committed package and hosted gate
-remain separate acceptance steps. `docs/TERMINAL-RETURN-PREFIX.md` records
+headless Ghidra uses Java 25.0.4.1. The exact committed `b17517a` package passes source/native/manifest review
+and equals the tested JAR and all ten Java 21 test sources. Its ZIP SHA-256 is
+`b2ecf71bd18809411cb01c16c3c6b6b4ee37b6fec683d69618fcf5a4c3e244e4`.
+The hosted gate remains a separate acceptance step. `docs/TERMINAL-RETURN-PREFIX.md` records
 exact scopes, unvalidated compiler aggregate locations at raw entry, retained
 failed assertions and the protected-input/rebase checks. Mixed register/stack
 locations remain unsupported; no release is published.
+
+### Combined coverage and FP32 integration (2026-10-25)
+
+**CONFIRMED (2026-10-25):** PR56 head `2944b0f` passes all twelve jobs in
+`40231232266` and exact package/Java 21/raw target/GUI/native Windows review.
+Normal merge `fa68fb11c6e0967341fa13ca628a263138953ec9` preserves the tested
+tree and includes the accepted PR55 FP32 component through normal ancestry.
+Combined receipt SHA-256:
+`4c96466a2812c5e10f1b75eb7b6ad6b9d041afcc4c2ff854d69ffd20f0bb057b`.
+The separate main run `40234477662` is pending. Earlier pending-component
+notes are historical. Register coverage now rejects missing listing bytes;
+MIPS FP32 explicit pieces validate in both byte orders. Whole FP aliases,
+FP64A transport and general variable migration remain incomplete. No release
+is published by this integration.
+

@@ -1,5 +1,17 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED (2026-10-25):** PR56 head `2944b0f` passes all twelve jobs in
+`40231232266` and exact package/Java 21/raw target/GUI/native Windows review.
+Normal merge `fa68fb11c6e0967341fa13ca628a263138953ec9` preserves the tested
+tree and includes the accepted PR55 FP32 component through normal ancestry.
+Combined receipt SHA-256:
+`4c96466a2812c5e10f1b75eb7b6ad6b9d041afcc4c2ff854d69ffd20f0bb057b`.
+The separate main run `40234477662` is pending. Earlier pending-component
+notes are historical. Register coverage now rejects missing listing bytes;
+MIPS FP32 explicit pieces validate in both byte orders. Whole FP aliases,
+FP64A transport and general variable migration remain incomplete. No release
+is published by this integration.
+
 **Current integration:** PR54 is merged as `c0148c7` after all twelve PR
 checks and independent artifact review passed. Its separate main run
 `40228194534` also passes all twelve jobs and independent artifact review.

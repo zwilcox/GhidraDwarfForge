@@ -357,3 +357,10 @@ listing profile (`FORGE_OPAQUE_LISTING=gap`). Only the syscall listing entry is
 cleared; input bytes and the function body remain intact. Before/after GDB
 checks require honest unavailable parameters, and post-export inspection proves
 that the listing gap was retained. See `docs/REGISTER-BODY-COVERAGE.md`.
+
+The `terminal-composite.c` fixture uses an ordinary ARMv7 eight-byte parameter
+and a compiler-declared register overwrite. Its dedicated harness checks the
+complete register pair before the write and whole-value unavailability after
+it across exec/PIE/rebase/repeat. Compiler aggregate locations at raw entry are
+recorded as unvalidated; strict field comparisons begin after the prologue.
+See `docs/TERMINAL-RETURN-PREFIX.md`.
