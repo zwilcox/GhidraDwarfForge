@@ -233,10 +233,26 @@ public final class GhidraVariableStorage {
             result.add(new StorageInterval(boundary, backup.end(), backup.storage()));
             boundary = backup.end();
         }
+        boolean spilled = false;
+        if (backup == null && !composite && formalType != null &&
+                formalType.getLength() == parameter.getLength() && storage.size() == parameter.getLength() &&
+                function.getProgram() == program && storage.getProgramArchitecture() == program &&
+                parameter.getFunction() == function && parameter.getOrdinal() >= 0 &&
+                function.getParameter(parameter.getOrdinal()) == parameter && parameter.getFirstUseOffset() == 0 &&
+                storage.isValid() && !storage.isBadStorage() && !storage.isForcedIndirect()) {
+            var spill = StackSpillLifetime.prove(program, start, end, instructions,
+                storage.getFirstVarnode(), parameter.getLength(), registers, monitor);
+            if (spill != null) {
+                result.add(new StorageInterval(boundary, spill.end(), spill.storage()));
+                boundary = spill.end();
+                spilled = true;
+            }
+        }
         if (boundary < end) {
             result.add(new StorageInterval(boundary, end, unavailable(
-                OmissionReason.REGISTER_MODIFIED,
-                "proven parameter register storage was overwritten before address 0x" +
+                spilled ? OmissionReason.UNKNOWN_LIFETIME : OmissionReason.REGISTER_MODIFIED,
+                (spilled ? "proven parameter stack spill may have changed before address 0x" :
+                    "proven parameter register storage was overwritten before address 0x") +
                     Long.toHexString(boundary) + "; later storage is not established")));
         }
         return List.copyOf(result);

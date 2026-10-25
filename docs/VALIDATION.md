@@ -6658,3 +6658,14 @@ The exact initial PR59 package additionally passes sixteen freshly compiled
 actual Java 21 suites; receipt SHA-256:
 `9011e4163947115f05f7887b7fe06bde3817e2f02a5d68890bff452e84a121fc`.
 Neither package acceptance substitutes for the corrected full hosted gate.
+
+## Bounded stack-save lifetimes (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** twelve final exports plus
+six previous-package comparisons pass across x86-64/AArch64 exec/PIE/rebase,
+including 1,350 GDB stops, exact raw location lists and deterministic pairs.
+Seventeen suites run on actual Java 21, with 106 stack-spill controls. GNU and
+LLVM checks pass; strict frame-length messages match original diagnostic
+multisets and .eh_frame bytes, with no uncorroborated errors. Evidence, commands,
+limits and retained failed attempts are in `STACK-SPILL-LIFETIMES.md`.
+Receipt SHA-256: `34cf4303fabcc9bc771cc84b5349e4eb2c49a86a9d040613ff9fb95c5b86d486`.

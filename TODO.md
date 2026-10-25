@@ -1229,6 +1229,13 @@ or uncertain storage remains locationless with a diagnostic.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
 
+**CONFIRMED locally; hosted acceptance pending (2026-10-25):** one complete
+incoming scalar stack save now preserves the value after register loss, ending
+at any later memory or stack-pointer write. Six x86-64/AArch64 exec/PIE/rebase
+roles pass twelve exports, six previous-package comparisons and 1,350 GDB
+observations; 106 model controls and seventeen actual Java 21 suites pass.
+See `docs/STACK-SPILL-LIFETIMES.md`. Broader migration remains incomplete.
+
 **CONFIRMED locally; hosted acceptance pending (2026-10-25):** ordinary terminal
 return handling now preserves proven ARM incoming scalar/composite prefixes.
 The complete value becomes unavailable after its first piece overwrite.

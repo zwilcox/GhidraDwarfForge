@@ -4433,3 +4433,15 @@ fifteen class cases, six direct-call roles and 33 native Windows tasks pass.
 Main receipt: `488c4288d6a1b343e645ea6026f3d6ca9fb50adc1515fa9865ca945710a7f6f9`. Earlier pending-main54
 notes are historical. The combined coverage/FP32 head retains its own pending
 current-base gate; this main pass does not substitute for that acceptance.
+
+### Bounded scalar stack-save lifetimes (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** retain a complete incoming
+scalar after register loss only when decoded p-code proves an earlier completed
+SP-relative save. Any later memory or SP write ends the proof; no alias
+exemptions, calls, slot reuse or later locals are inferred. Six x86-64/AArch64
+exec/PIE/rebase roles pass exact compiler/previous-exporter comparisons,
+validators, deterministic repeats and preserved originals. The 106 model
+controls and seventeen actual Java 21 packaged suites pass. See
+`docs/STACK-SPILL-LIFETIMES.md` for acceptance, limits and retained failures.
+P1.11a remains partial, and no release publication is authorized by this work.

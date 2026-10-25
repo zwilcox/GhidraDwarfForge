@@ -67,6 +67,9 @@ Bounded incoming register/stack pieces pass local ARM computed/custom
 exec/PIE/rebase tests, with hosted acceptance pending. Their complete value
 becomes unavailable after the first possible memory or register write; general
 storage migration remains incomplete. See [mixed incoming storage](docs/MIXED-INCOMING-PREFIX.md).
+A single proven scalar stack save also passes local x86-64/AArch64
+exec/PIE/rebase tests; later memory or stack-pointer writes end its location.
+Hosted acceptance remains pending. See [stack-save lifetimes](docs/STACK-SPILL-LIFETIMES.md).
 
 The exporter replaces existing compiler DWARF rather than merging
 it with the recovered view. Old compressed debug sections, indexes, and debug
