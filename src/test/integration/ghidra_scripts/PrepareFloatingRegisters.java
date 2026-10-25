@@ -27,6 +27,14 @@ public class PrepareFloatingRegisters extends GhidraScript {
         if ("mips-fp32".equals(System.getenv("FORGE_FP_ABI_PROFILE"))) {
             println("floating-storage-origin=" + ghidradwarfforge.GhidraVariableStorage.class
                 .getProtectionDomain().getCodeSource().getLocation().toExternalForm());
+            var image = ghidradwarfforge.elf.ElfImage.read(Path.of(currentProgram.getExecutablePath()));
+            var observed = ghidradwarfforge.elf.MipsAbiFlags.observe(image, monitor::isCancelled);
+            var target = image.byteOrder() == java.nio.ByteOrder.BIG_ENDIAN ? "mips" : "mipsel";
+            var map = ghidradwarfforge.locations.TargetRegisterMap.forElf(target, image, monitor::isCancelled);
+            if (!observed.fp32PairContract() || map.registerPairs().size() != 16) {
+                throw new AssertionError("FP32 fixture lacks explicit ABI evidence: " + observed);
+            }
+            println("floating-fp32-abi=PASS pairs=16 " + observed);
         }
         String[] args = getScriptArgs();
         if (args.length != 2) {

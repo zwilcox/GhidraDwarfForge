@@ -1,5 +1,18 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**Current follow-up (2026-10-25):** combined PR58 head `d478908` is awaiting
+run `40237292953`; its exact hosted package and thirteen actual Java 21 suites
+pass, while the full gate/raw runtime review is pending. PR57's failed fixture
+inventory and obsolete ARM scalar-omission assertions are retained and corrected
+in PR58 ancestry. No component failure is treated as a passing gate.
+
+**CONFIRMED locally; hosted acceptance pending:** explicit MIPS FP32 whole
+aliases now pass 66 exports, including sectionless inputs and five-target
+floating regressions. Sixteen actual Java 21 suites pass. The ABI reader and
+loaded-register checks restrict the new expansion to the recorded FP32 profile;
+FPXX/FP64A do not acquire it. See `docs/MIPS-FP32-PAIR-PROFILE.md`. General ABI,
+location migration, scope and optional attachment requirements remain open.
+
 **CONFIRMED locally; hosted acceptance pending (2026-10-25):** bounded incoming
 register/stack pieces now pass thirteen actual Java 21 suites and twelve ARM
 computed/custom exec/PIE/rebase/repeat exports. The complete value becomes
@@ -14,10 +27,13 @@ Normal merge `fa68fb11c6e0967341fa13ca628a263138953ec9` preserves the tested
 tree and includes the accepted PR55 FP32 component through normal ancestry.
 Combined receipt SHA-256:
 `4c96466a2812c5e10f1b75eb7b6ad6b9d041afcc4c2ff854d69ffd20f0bb057b`.
-The separate main run `40234477662` is pending. Earlier pending-component
-notes are historical. Register coverage now rejects missing listing bytes;
-MIPS FP32 explicit pieces validate in both byte orders. Whole FP aliases,
-FP64A transport and general variable migration remain incomplete. No release
+The separate main run `40234477662` passes all twelve jobs and independent
+package/Java 21/raw five-target/Windows/GUI review; receipt SHA-256 is
+`766063585ec2764edc21f63f2063bb4637f2207bcc66884b9b816a19598805d4`.
+Earlier pending-component notes are historical. Register coverage now rejects missing listing bytes;
+MIPS FP32 explicit pieces validate in both byte orders. Whole FP aliases
+were incomplete at that checkpoint; the local follow-up above remains pending
+hosted acceptance. FP64A transport and general variable migration remain incomplete. No release
 is published by this integration.
 
 **CONFIRMED locally; hosted acceptance pending (2026-10-25):** the incoming

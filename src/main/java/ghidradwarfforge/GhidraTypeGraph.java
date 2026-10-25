@@ -111,8 +111,17 @@ public final class GhidraTypeGraph {
             Map<Long, DataType> recoveredReturns,
             Map<Long, GhidraSyntheticSource.ParameterRecovery> recoveredParameters)
             throws CancelledException {
+        return extract(program, exportedFunctions, TargetRegisterMap.forTarget(targetName),
+            rebaseDelta, monitor, diagnostic, recoveredReturns, recoveredParameters);
+    }
+
+    public static ProgramTypeModel extract(Program program,
+            List<FunctionSymbol> exportedFunctions, TargetRegisterMap registerMap, long rebaseDelta,
+            TaskMonitor monitor, Consumer<String> diagnostic,
+            Map<Long, DataType> recoveredReturns,
+            Map<Long, GhidraSyntheticSource.ParameterRecovery> recoveredParameters)
+            throws CancelledException {
         Extractor extractor = new Extractor(diagnostic);
-        TargetRegisterMap registerMap = TargetRegisterMap.forTarget(targetName);
         List<DataType> favoriteTypes = new ArrayList<>(
             program.getDataTypeManager().getFavorites());
         favoriteTypes.sort(Comparator.comparing(DataType::getPathName)

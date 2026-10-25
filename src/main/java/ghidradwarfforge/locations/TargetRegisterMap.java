@@ -1,9 +1,16 @@
 package ghidradwarfforge.locations;
 
+import java.io.IOException;
+import java.nio.ByteOrder;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.BooleanSupplier;
+
+import ghidradwarfforge.elf.ElfImage;
+import ghidradwarfforge.elf.MipsAbiFlags;
 
 import ghidradwarfforge.locations.VariableStorageModel.DwarfRegister;
 import ghidradwarfforge.locations.VariableStorageModel.OmissionReason;
@@ -19,13 +26,27 @@ import ghidradwarfforge.locations.VariableStorageModel.UnavailableStorage;
  * infers a DWARF number from a register name or ordinal.
  */
 public record TargetRegisterMap(String target, String provenance,
-        Map<String, Integer> dwarfNumbers) {
+        Map<String, Integer> dwarfNumbers, Map<String, List<PairPiece>> registerPairs) {
     private static final String GHIDRA_MAPPING_ROOT =
         "Ghidra 12.0.3 processor DWARF register mapping: ";
 
+    /** Expected physical child position; list order describes object memory. */
+    public record PairPiece(String registerName, int baseBitOffset, int bitSize) {
+        public PairPiece {
+            if (registerName == null || registerName.isBlank() ||
+                    baseBitOffset < 0 || bitSize <= 0) {
+                throw new IllegalArgumentException("invalid paired-register piece");
+            }
+        }
+    }
+
+    public TargetRegisterMap(String target, String provenance, Map<String, Integer> dwarfNumbers) {
+        this(target, provenance, dwarfNumbers, Map.of());
+    }
+
     public TargetRegisterMap {
         if (target == null || target.isBlank() || provenance == null ||
-                provenance.isBlank() || dwarfNumbers == null || dwarfNumbers.isEmpty()) {
+                provenance.isBlank() || dwarfNumbers == null || dwarfNumbers.isEmpty() || registerPairs == null) {
             throw new IllegalArgumentException("invalid target register map");
         }
         Map<String, Integer> sorted = new TreeMap<>();
@@ -37,6 +58,49 @@ public record TargetRegisterMap(String target, String provenance,
             }
         }
         dwarfNumbers = Collections.unmodifiableMap(new LinkedHashMap<>(sorted));
+        Map<String, List<PairPiece>> pairs = new TreeMap<>();
+        for (var entry : registerPairs.entrySet()) {
+            if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null ||
+                    entry.getValue().size() != 2) {
+                throw new IllegalArgumentException("invalid paired-register description");
+            }
+            var pieces = List.copyOf(entry.getValue());
+            if (pieces.get(0).registerName().equals(pieces.get(1).registerName()) ||
+                    pieces.stream().anyMatch(piece -> !sorted.containsKey(piece.registerName()))) {
+                throw new IllegalArgumentException("unmapped or duplicate paired-register child");
+            }
+            PairPiece low = pieces.get(0).baseBitOffset() < pieces.get(1).baseBitOffset()
+                ? pieces.get(0) : pieces.get(1);
+            PairPiece high = low == pieces.get(0) ? pieces.get(1) : pieces.get(0);
+            if (low.baseBitOffset() != 0 || high.baseBitOffset() != low.bitSize()) {
+                throw new IllegalArgumentException("paired-register pieces overlap or have a gap");
+            }
+            pairs.put(entry.getKey(), pieces);
+        }
+        registerPairs = Collections.unmodifiableMap(pairs);
+    }
+
+    /** Additional pair semantics require explicit original-ELF ABI evidence. */
+    public static TargetRegisterMap forElf(String target, ElfImage elf, BooleanSupplier cancelled)
+            throws IOException {
+        TargetRegisterMap ordinary = forTarget(target);
+        if (!target.equals("mips") && !target.equals("mipsel")) {
+            return ordinary;
+        }
+        boolean bigEndian = elf.byteOrder() == ByteOrder.BIG_ENDIAN;
+        if (!target.equals(bigEndian ? "mips" : "mipsel") ||
+                !MipsAbiFlags.observe(elf, cancelled).fp32PairContract()) {
+            return ordinary;
+        }
+        Map<String, List<PairPiece>> pairs = new LinkedHashMap<>();
+        for (int first = 0; first < 32; first += 2) {
+            PairPiece low = new PairPiece("f" + first, 0, 32);
+            PairPiece high = new PairPiece("f" + (first + 1), 32, 32);
+            pairs.put("f" + first + "_" + (first + 1),
+                bigEndian ? List.of(high, low) : List.of(low, high));
+        }
+        return new TargetRegisterMap(target, ordinary.provenance() +
+            "; explicit ELF32 O32 MIPS32r2 FP32 ABI record; paired FPR children", ordinary.dwarfNumbers(), pairs);
     }
 
     public static TargetRegisterMap forTarget(String target) {

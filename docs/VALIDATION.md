@@ -6604,3 +6604,33 @@ ARM semantic/extended-section/shared-object oracles. Their previous hosted
 omission assertions are preserved as a failed run; no green gate is inferred.
 A fresh full combined gate is required. General register/memory migration,
 later locals and broader ABI coverage remain partial.
+
+
+### Explicit MIPS FP32 whole-alias profile (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** the original ELF's typed ABI
+record now gates whole FPR-pair expansion. Metadata tests cover both classes
+and byte orders, section/program carriers, conflicts/absence/unknown profiles,
+cancellation and source changes. Real Ghidra aliases and writes to either half
+are checked in both orders. Sixteen freshly compiled suites pass on actual
+Java 21; local headless uses Java 25.0.4.1.
+
+The same production JAR passes twelve whole-alias exports, twelve sectionless
+whole-alias exports, twelve explicit-piece regressions and thirty default
+five-target floating regressions. Independent review rechecks exact original
+and source/package hashes, raw DIE expressions, compiler and Forge values,
+unavailable FPXX pairs, rebases, deterministic output and validator diagnostics.
+The initial corrected local receipt SHA-256 is
+`638500e3adade683cbf8e32b354dd596d9ca67918cd723fb8e7ceeb4ef618889`.
+Final review added a compressed-ABI-section rejection guard. All 66 exports
+and sixteen actual Java 21 suites were rerun with the final package; metadata
+checks increased to 594. Final independent raw-review receipt SHA-256 is
+`f628126341a174ead95efc74948a90f442bc393f410669195c24a3dad605c4eb`.
+The first audit wrongly assumed no inherited x86 frame messages; its failed
+assertion is retained. Raw diagnostic multisets and `.eh_frame` bytes match the
+originals exactly: six x86 exec, four x86 PIE and seven AArch64 messages, with
+zero unexplained errors. MIPS/ARM artifacts report zero errors.
+
+`docs/MIPS-FP32-PAIR-PROFILE.md` records exact constraints and evidence. FPXX,
+FP64A, N32/N64 and further ISA/ASE profiles gain no new pair interpretation.
+Full hosted/native Windows/GUI review is required before integration.

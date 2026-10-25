@@ -66,7 +66,7 @@ for function in functions:
         assert gdb.selected_frame().find_sal().symtab.filename.endswith("floating.dbg.c")
     bias = entry - labels[function]
     omitted = not compiler and (baseline or
-        (target.startswith("mips") and function == "fp_double" and storage_form == "register-alias"))
+        (target.startswith("mips") and function == "fp_double" and abi_profile == "default"))
     compiler_pair = compiler and target.startswith("mips") and function == "fp_double" and abi_profile == "default"
     if compiler and target.startswith("mips") and function == "fp_double":
         gdb.execute("show mipsfpu")

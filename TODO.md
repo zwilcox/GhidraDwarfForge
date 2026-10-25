@@ -1,18 +1,34 @@
 # TODO.md — GhidraDwarfForge
 
+**Current follow-up (2026-10-25):** combined PR58 head `d478908` is awaiting
+run `40237292953`; its exact hosted package and thirteen actual Java 21 suites
+pass, while the full gate/raw runtime review is pending. PR57's failed fixture
+inventory and obsolete ARM scalar-omission assertions are retained and corrected
+in PR58 ancestry. No component failure is treated as a passing gate.
+
+**CONFIRMED locally; hosted acceptance pending:** explicit MIPS FP32 whole
+aliases now pass 66 exports, including sectionless inputs and five-target
+floating regressions. Sixteen actual Java 21 suites pass. The ABI reader and
+loaded-register checks restrict the new expansion to the recorded FP32 profile;
+FPXX/FP64A do not acquire it. See `docs/MIPS-FP32-PAIR-PROFILE.md`. General ABI,
+location migration, scope and optional attachment requirements remain open.
+
 **CONFIRMED (2026-10-25):** PR56 head `2944b0f` passes all twelve jobs in
 `40231232266` and exact package/Java 21/raw target/GUI/native Windows review.
 Normal merge `fa68fb11c6e0967341fa13ca628a263138953ec9` preserves the tested
 tree and includes the accepted PR55 FP32 component through normal ancestry.
 Combined receipt SHA-256:
 `4c96466a2812c5e10f1b75eb7b6ad6b9d041afcc4c2ff854d69ffd20f0bb057b`.
-The separate main run `40234477662` is pending. Earlier pending-component
-notes are historical. Register coverage now rejects missing listing bytes;
-MIPS FP32 explicit pieces validate in both byte orders. Whole FP aliases,
-FP64A transport and general variable migration remain incomplete. No release
+The separate main run `40234477662` passes all twelve jobs and independent
+package/Java 21/raw five-target/Windows/GUI review; receipt SHA-256 is
+`766063585ec2764edc21f63f2063bb4637f2207bcc66884b9b816a19598805d4`.
+Earlier pending-component notes are historical. Register coverage now rejects missing listing bytes;
+MIPS FP32 explicit pieces validate in both byte orders. Whole FP aliases
+were incomplete at that checkpoint; the local follow-up above remains pending
+hosted acceptance. FP64A transport and general variable migration remain incomplete. No release
 is published by this integration.
 
-**Current integration:** PR54 is merged as `c0148c7` after all twelve PR
+**HISTORICAL checkpoint:** PR54 is merged as `c0148c7` after all twelve PR
 checks and independent artifact review passed. Its separate main run
 `40228194534` also passes all twelve jobs and independent artifact review.
 PR56 combines the coverage correction and PR55's
@@ -307,8 +323,8 @@ combined run `40068401197`; its conditional-step scope is recorded in
 |---|---|
 | Corrective release (§0.1/0.2) | **CONFIRMED complete within the documented profiles:** alpha.2 is published from `2f88c4a` after exact-main CI `40064204515`, the final package audit and public-asset verification. Alpha.1 remains unchanged and affected; subsequent semantic/GUI/target/performance work is excluded. |
 | ELF robustness (P0.9) | **CONFIRMED complete within the documented bounds:** PR #18 implements extended counts, unnamed tables, bounded file-backed I/O, correct recorded-load-base translation and cancellation. Local checks and all twelve hosted jobs pass; direct PN_XNUM execution limits are documented. |
-| Function identity and scopes (P1.7, P3.3) | **CONFIRMED in hosted run `40063017269`:** explicit function-owned statics preserve duplicate-name lookup across all five targets, and the controlled failure check omits failed owners under the symbol-only contract. These workstreams remain partial. Curated addressless external declarations and recovered signature metadata are accepted through PR #53. Class-owned display paths pass local model/runtime tests; their combined hosted gate is pending. **PLANNED:** distinct linkage names, thunks/aliases, full class/lexical semantics, inferred static locals and remaining same-named type/variable cases. Existing namespace globals and external-data declarations must remain working. |
-| Additional range/location cases (P1.8, P1.11a) | **CONFIRMED:** bounded entry/ranges, code-only address indexing and incoming-register prefixes pass. PR #29 adds one proven direct-register backup; PR #30 omits unsupported nonzero stack-local starts. Their exact hosted gates pass. A bounded direct-leaf-call backup now passes local compiler/GDB checks with the class-display correction; its combined hosted gate is pending. A separate test-only follow-up adds locally passing x86-64/AArch64 exec/PIE/rebased-PIE cases; its own hosted gate remains pending. P1.11a remains partial: general register/memory migration, broader call-crossing and non-entry lifetimes, stack-slot reuse and mixed composite storage still require instruction-specific GDB values and honest unavailable gaps. |
+| Function identity and scopes (P1.7, P3.3) | **CONFIRMED in hosted run `40063017269`:** explicit function-owned statics preserve duplicate-name lookup across all five targets, and the controlled failure check omits failed owners under the symbol-only contract. These workstreams remain partial. Curated addressless external declarations and recovered signature metadata are accepted through PR #53. Class-owned display paths and bounded direct-leaf-call backups are accepted through PR54 and its separate main gate. **PLANNED:** distinct linkage names, thunks/aliases, full class/lexical semantics, inferred static locals and remaining same-named type/variable cases. Existing namespace globals and external-data declarations must remain working. |
+| Additional range/location cases (P1.8, P1.11a) | **CONFIRMED:** bounded entry/ranges, code-only address indexing and incoming-register prefixes pass. PR #29 adds one proven direct-register backup; PR #30 omits unsupported nonzero stack-local starts. Their exact hosted gates pass. The bounded direct-leaf-call backup and additional x86-64/AArch64 exec/PIE/rebased-PIE cases are accepted through PR54. PR58 adds locally validated terminal-return and mixed incoming prefixes, pending its full hosted gate. P1.11a remains partial: general register/memory migration, broader call-crossing and non-entry lifetimes, stack-slot reuse and mixed composite storage still require instruction-specific GDB values and honest unavailable gaps. |
 | Target-profile coverage (P2.3/3a/3b) | **CONFIRMED in hosted runs `40063017269` and `40068401197`:** five baseline profiles and scalar FP aliases pass, with exact float/double values on x86-64/AArch64/ARM32 and scalar floats on both MIPS orders. The combined run also proves rejection of definite ELF/Ghidra processor, width or byte-order contradictions; nondefault variants/compiler specifications alone are not rejected. Unproven MIPS double pairs remain unavailable; the ARM32 terminal-return prefix follow-up passes locally with hosted acceptance pending (see `docs/TERMINAL-RETURN-PREFIX.md`). Target expansion and ABI classification remain partial; this is not blanket CPU/ABI support. |
 | GUI and output paths (P2.7) | **CONFIRMED:** both hosts' real Script Manager/chooser journeys pass. PR #31 adds actual parent traversal, complete publisher alias preflight and native Windows short-parent/trailing-dot controls; its exact PR/main gates and artifact reviews pass. Geometry/GDB run on Linux; Windows uses native GNU/LLVM, with independent libdwarf unavailable and Linux-ELF runtime GDB not run. |
 | Optional debuglink (P2.8) | **PLANNED transaction:** opt-in attachment, identity/receipt chain and backup/rollback remain unimplemented. PRs #32/#33's digests, typed build-ID observations and report reader pass the full matrix. PRs #34/#35's prefix and indexed allocation observers also pass the full matrix. PR #36 selected-file SHA binding also passes the full matrix. PR #37 program-byte preservation passes the full matrix. PR #38 candidate-content checks also pass the full matrix. PR #39 owned append-only preparation also passes the full matrix. PR #40 detailed report binding/private preparation also passes the full matrix. PR #41 captured validator evidence passes its exact PR and main gates. Default export leaves the original unchanged. |

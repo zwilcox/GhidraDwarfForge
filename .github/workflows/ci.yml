@@ -480,7 +480,7 @@ jobs:
               syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
               variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke directLeafCallSmoke compositeRegisterPrefixSmoke \
               stackFirstUseSmoke \
-              opaqueRegisterEffectsSmoke registerBodyCoverageSmoke mixedParameterPrefixSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
+              opaqueRegisterEffectsSmoke registerBodyCoverageSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
               arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfAddressRangesSmoke \
@@ -1135,7 +1135,7 @@ jobs:
         if: matrix.target == 'arm32'
         run: src/test/integration/mixed-incoming-prefix-export.sh "$GHIDRA_INSTALL_DIR"
 
-      - name: Explicit MIPS FP32 reference, register pieces, and alias omissions
+      - name: Explicit MIPS FP32 reference, register pieces, and whole aliases
         if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
         env:
           TARGET: ${{ matrix.target }}
@@ -1147,6 +1147,10 @@ jobs:
                   "$PWD/native-integration/libdwarf.so.2.3.2" \
                   "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
           done
+          FORGE_FP_ELF_LAYOUT=sectionless src/test/integration/floating-registers-export.sh \
+              "$GHIDRA_INSTALL_DIR" \
+              "$PWD/native-integration/libdwarf.so.2.3.2" \
+              "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
 
       - name: Function entry producer and validators
         env:
@@ -1402,7 +1406,7 @@ jobs:
             -DestinationPath (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions') -Force
           & .\gradlew.bat addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
-            opaqueRegisterEffectsSmoke registerBodyCoverageSmoke mixedParameterPrefixSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
+            opaqueRegisterEffectsSmoke registerBodyCoverageSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
             arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
             registerCopySmoke directLeafCallSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
             elfBuildIdSmoke exportReportClaimsSmoke matchedElfPrefixSmoke `

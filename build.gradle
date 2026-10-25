@@ -546,6 +546,26 @@ tasks.register("exportReportDetailsSmoke", JavaExec) {
     maxHeapSize = "64m"
 }
 
+tasks.register("mipsAbiFlagsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit MIPS ABI records and conservative FP32 profile selection"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.MipsAbiFlagsSmoke"
+}
+
+tasks.register("mipsFp32PairSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit FP32 alias decomposition against real MIPS registers and instructions"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.MipsFp32PairSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/mips-fp32/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/mips-fp32/cache").absolutePath
+}
+
 tasks.register("elfBuildIdSmoke", JavaExec) {
     group = "verification"
     description = "Checks typed ELF build-ID notes, relationships, bounds and cancellation"

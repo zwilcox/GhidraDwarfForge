@@ -53,8 +53,12 @@ This behavior is not in published alpha.2.
 Development scalar floating locations now use audited logical register aliases.
 Hosted GDB tests cover float/double arguments on x86-64, AArch64 and ARM32,
 including ARM32 upper register slices, and float arguments on MIPS32 in both
-byte orders, before and after memory stores. Unproven MIPS double-register
-pairs remain unavailable. Bounded ARM32 terminal-return prefixes pass local
+byte orders, before and after memory stores. Whole MIPS double-register aliases
+now pass bounded local tests when explicit FP32 ABI metadata and the loaded
+register hierarchy agree, including sectionless inputs; hosted acceptance is
+pending. Other pair profiles remain unproven. See
+[the FP32 pair profile](docs/MIPS-FP32-PAIR-PROFILE.md).
+Bounded ARM32 terminal-return prefixes pass local
 model and runtime validation, with hosted acceptance pending; see
 [terminal-return lifetimes](docs/TERMINAL-RETURN-PREFIX.md). See also
 [the bounded FP validation record](docs/VALIDATION.md#scalar-floating-register-aliases-2026-10-23).

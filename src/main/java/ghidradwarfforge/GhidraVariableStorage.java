@@ -807,6 +807,40 @@ public final class GhidraVariableStorage {
             return unavailable(OmissionReason.UNSUPPORTED_STORAGE,
                 description + " size does not fit its Ghidra register");
         }
+        var pair = registers.registerPairs().get(register.getName());
+        if (pair != null) {
+            // The isolated target description supplies the ABI meaning. The
+            // loaded language must independently agree on both physical slices.
+            if (register != base || requiredBits != register.getBitLength()) {
+                return unavailable(OmissionReason.UNSUPPORTED_STORAGE,
+                    description + " is not the complete paired register");
+            }
+            List<Piece> pieces = new ArrayList<>();
+            long bits = 0;
+            for (var expected : pair) {
+                Register child = null;
+                for (Register candidate : register.getChildRegisters()) {
+                    if (candidate.getName().equals(expected.registerName())) {
+                        child = candidate;
+                        break;
+                    }
+                }
+                if (child == null || child.getBaseRegister() != base ||
+                        child.getLeastSignificantBitInBaseRegister() != expected.baseBitOffset() ||
+                        child.getBitLength() != expected.bitSize()) {
+                    return unavailable(OmissionReason.UNSUPPORTED_STORAGE,
+                        description + " paired register disagrees with the loaded language");
+                }
+                pieces.add(new Piece(registers.register(child.getName(), 0, expected.bitSize()),
+                    expected.bitSize()));
+                bits += expected.bitSize();
+            }
+            if (bits != requiredBits) {
+                return unavailable(OmissionReason.UNSUPPORTED_STORAGE,
+                    description + " paired pieces do not cover its size");
+            }
+            return new CompositeStorage(pieces);
+        }
         // The physical base may be a wider, unmapped vector or paired register.
         // Describe the value through a mapped logical register that contains it;
         // write detection still checks the entire base alias in the caller.
