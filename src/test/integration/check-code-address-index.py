@@ -23,6 +23,10 @@ def command(*arguments):
 
 def coverage(path):
     text = command("llvm-dwarfdump", "--debug-info", str(path))
+    return coverage_text(text)
+
+
+def coverage_text(text):
     units = re.findall(r"^0x([0-9a-f]+): Compile Unit:.*addr_size = 0x([0-9a-f]+)",
         text, re.M)
     require(len(units) == 1 and int(units[0][0], 16) == 0, "expected one CU at header offset zero")
@@ -33,6 +37,15 @@ def coverage(path):
     for block in blocks:
         if not re.match(r"^0x[0-9a-f]+:\s+DW_TAG_subprogram\b", block):
             continue
+        declarations = re.findall(r"^\s+DW_AT_declaration\s+\(([^)]+)\)", block, re.M)
+        require(len(declarations) <= 1, "duplicate declaration flag")
+        if declarations:
+            flag = declarations[0]
+            require(flag in ("0x00", "0x01", "false", "true"), "invalid declaration flag")
+            if flag in ("0x01", "true"):
+                require(not re.search(r"^\s+DW_AT_(?:low_pc|high_pc|ranges|entry_pc|frame_base|location)\b",
+                    block, re.M), "function declaration carries executable address/location")
+                continue
         functions += 1
         low = re.findall(r"^\s+DW_AT_low_pc\s+\((0x[0-9a-f]+)\)", block, re.M)
         high = re.findall(r"^\s+DW_AT_high_pc\s+\((0x[0-9a-f]+)\)", block, re.M)
@@ -53,6 +66,25 @@ def coverage(path):
         else:
             merged.append((start, end))
     return width, functions, merged
+
+
+def declaration_controls():
+    definition = ("0x00000000: Compile Unit: addr_size = 0x08\n"
+        "0x00000020: DW_TAG_subprogram\n"
+        "  DW_AT_low_pc (0x1000)\n  DW_AT_high_pc (0x1010)\n")
+    declaration = "0x00000040: DW_TAG_subprogram\n  DW_AT_declaration (0x01)\n"
+    expected = (8, 1, [(0x1000, 0x1010)])
+    require(coverage_text(definition + declaration) == expected, "addressless declaration changes coverage")
+    invalid = [declaration + "  DW_AT_" + name + " (0x1000)\n"
+        for name in ("low_pc", "high_pc", "ranges", "entry_pc", "frame_base", "location")]
+    invalid += [declaration.replace("0x01", "0x00"), declaration.replace("  DW_AT_declaration (0x01)\n", "")]
+    for candidate in invalid:
+        try:
+            coverage_text(definition + candidate)
+        except ValueError:
+            continue
+        raise ValueError("invalid function declaration/definition was accepted")
+    return len(invalid)
 
 
 def payload(path):
@@ -136,9 +168,11 @@ def main():
     require(width == elf_width, "CU and ELF disagree on target width")
     verify(data, width, order, expected)
     rejected = negative_controls(data, width, order, expected) if arguments.negative_controls else 0
+    declaration_rejected = declaration_controls() if arguments.negative_controls else 0
     print(json.dumps({"code_address_index": "PASS", "functions": functions,
         "ranges": expected, "address_bytes": width, "byte_order": order,
-        "negative_controls_rejected": rejected}, indent=4))
+        "negative_controls_rejected": rejected,
+        "declaration_controls_rejected": declaration_rejected}, indent=4))
 
 
 if __name__ == "__main__":

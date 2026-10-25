@@ -4123,3 +4123,11 @@ after successful export. The checker now requires the current exact diagnostic
 without weakening name/reason/count checks. A retained transcript replay and
 two rejecting diagnostic controls pass. The original failed run is retained;
 full corrected hosted acceptance remains pending.
+
+The corrected declaration run `40209662801` exposed a second stale oracle:
+address-index validation assumed every subprogram was a definition. The checker
+now accepts only addressless true declarations and rejects fabricated address
+attributes, while preserving exact definition-union/index matching. Eighteen
+negative controls and fresh x86-64/MIPS32BE extended-section exec/PIE
+export/validator/GDB checks pass locally. Both failed hosted runs remain
+historical; full corrected acceptance is still pending.

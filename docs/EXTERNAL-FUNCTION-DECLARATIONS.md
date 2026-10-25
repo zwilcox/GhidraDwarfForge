@@ -70,3 +70,21 @@ Replaying that retained transcript passes; missing and stale diagnostic negative
 controls still fail. The exact hosted package/source/manifests and fresh
 packaged Java 21 inventory/type-graph/formal-return checks passed independently.
 They do not substitute for the corrected full workflow, which remains pending.
+
+**CONFIRMED:** corrected inventory head `434f0d5` / run `40209662801` then
+exposed a second stale oracle: the code-address-index checker required ranges
+on every subprogram, including valid addressless declarations. That run is
+also not accepted. The checker now excludes only explicitly true declarations
+and rejects any declaration carrying low/high PC, ranges, entry PC, frame base
+or location. Eight new controls reject such attributes and missing definition
+bounds; all ten prior malformed-index controls remain intact.
+
+The captured hosted x86-64 artifact passes the corrected independent coverage
+check. Fresh installed x86-64 and big-endian MIPS32 extended-section ET_EXEC/PIE
+regressions pass in `run.dWOa1bqk`: five exports, deterministic x86 rerun,
+compiler/Forge GDB behavior, strict validators and original-input preservation.
+The initial local attempt `run.ztbFng1z` used nonexistent unversioned native
+paths and failed before export; the corrected run uses the actual audited
+versioned packaged libraries. No production, fixture or emitted-artifact code
+changed for either oracle correction. The next complete hosted gate remains
+required before merge.
