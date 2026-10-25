@@ -925,7 +925,7 @@ return type; 312 Java 21 ProgramDB checks cover five languages, immutable reopen
 custom conversion and hidden parameters. The x86-64 installed exporter/GDB regression passes: correct structure return,
 hidden pointer, actual returned bytes, deterministic exports and unchanged inputs.
 The downloaded hosted package and native Windows pass the same 312 model checks;
-the hosted x86 runtime agrees. Separate main push `40208082901` is pending.
+the hosted x86 runtime agrees. Separate main push `40208082901` also passes all twelve jobs and root package/runtime review.
 This bounded fix does
 not complete external declarations, linkage names, aliases or class scopes.
 

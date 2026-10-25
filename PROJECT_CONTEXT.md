@@ -4151,3 +4151,18 @@ the distinction; the final installed regression proves raw flag policy, GDB
 unknown/curated argument display and ordinary return values. No parameter or
 variadic behavior is inferred. The earlier candidate's hosted run does not
 establish acceptance of this follow-up; its new full gate remains required.
+
+### Accepted formal-return and declaration parents (2026-10-25)
+
+**CONFIRMED:** formal-return main `a162b0c` passes all twelve jobs in
+`40208082901`, with exact package and fresh raw x86/Windows review.
+Declaration head `e643d97` passes all twelve jobs in `40210826397`, exact
+package/source/manifests, focused Java21 equality, raw declaration and GDB
+review, and 30 native Windows suites. It merges normally as
+`45326971268c156ac1e6d71b3cb6a6d0867c1b78`; its distinct main gate is pending.
+The two rejected declaration-oracle runs remain historical.
+
+The recovered-return branch includes that main parent through a normal merge
+with identical tree to its preceding `9dbb6fd` candidate. No production,
+fixture, workflow or oracle bytes change in this parent update. Its own full
+new-head hosted gate remains required, and no new release is published.
