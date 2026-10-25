@@ -105,3 +105,21 @@ Failures are retained under `build/terminal-review`:
 
 No new native binding, ABI, mixed register/memory support, automatic backup,
 later-local inference, Thumb claim or release publication is part of this work.
+
+## Hosted regression correction
+
+Run `40235383982` at `8527d28` failed the ARM extended-section step: its old
+scalar oracle still required complete omission of `recovered_add::left`.
+The emitted register prefix was correct. The shared-object oracle also retained
+that obsolete expectation for both parameters. These checks now require the
+bounded-lifetime diagnostic and GDB values `left=19, right=23` at the initial
+breakpoint. Later whole-value unavailability remains covered by the dedicated
+scalar floating and register-pair fixtures.
+
+The unchanged tested production JAR passes the corrected extended-section
+exec/PIE/repeat suite (`run.i8pTH80U`) and a shared-library export plus runtime
+GDB. Pinned strict libdwarf reports zero errors for all four artifacts; GNU,
+LLVM, GDB and input preservation checks pass. An earlier local attempt
+(`run.Q9lvCuAC`) used the system dwarfdump instead of the pinned validator and
+failed its completion check; it is retained and is not acceptance. The hosted
+failure remains recorded, and a fresh combined gate is required before merging.
