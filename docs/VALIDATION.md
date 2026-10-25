@@ -6524,3 +6524,16 @@ nine actual Java 21 packaged suites and eighteen baseline/fixed/control exports
 pass their scoped checks. See [REGISTER-BODY-COVERAGE.md](REGISTER-BODY-COVERAGE.md) for raw evidence,
 validator details and retained model-proxy failure. General lifetime/migration
 work remains partial.
+
+### Combined coverage and FP32 integration checkpoint (2026-10-25)
+
+**CONFIRMED locally; combined hosted gate pending:** normal merges preserve
+PR55's test-only FP32 work and PR56's instruction-coverage correction. Their
+combined production/harness bytes pass 24 additional FP32 exports; the new
+guard retains valid explicit FPR pieces and honest whole-alias omissions.
+Receipt: `5187f942d15815eb8755e579baa162613b0b6af98e6a685cffbde9fa3ade2478`.
+The final integration is through PR56, with its own enforced current-base gate
+and exact artifact review. Earlier component results retain their separate
+scopes. Additional FP64A investigation finds a failing untouched compiler
+reference under the current debugger transport; it remains unvalidated. See
+`docs/MIPS-FP32-ORACLE.md`. No release is published.

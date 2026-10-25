@@ -124,3 +124,37 @@ Final receipt SHA-256: `013d09a28cdaa94fa98f0d40fc81730a9fa069191c4c8b6b706da9bf
 Full hosted acceptance remains pending. Automatic whole-alias expansion
 still needs a separate, defensible ABI/storage policy and negative controls. FP64A, arbitrary FPXX execution modes, N32/N64 floating
 arguments and broader MIPS ABI classification remain outside this checkpoint.
+
+## FP64A remains outside the validated profile
+
+**CONFIRMED negative local evidence:** explicit `-mfp64 -mno-odd-spreg`
+fixtures identify a 64-bit FPU and the FP64A ABI. Strict untouched compiler-DWARF
+checks fail in both byte orders: the first double reads zero instead of 21.5.
+A separate observation completes with six explicitly UNVERIFIED parameter
+values per case, while strict stored-global checks and normal execution pass.
+GDB exposes the relevant floating registers as four-byte carriers. These are
+compiler-reference failures before any exporter invocation.
+
+The inspected [QEMU 8.2.2 MIPS stub](https://raw.githubusercontent.com/qemu/qemu/v8.2.2/target/mips/gdbstub.c)
+passes FR=1 values through the target-word-width
+[register helper](https://raw.githubusercontent.com/qemu/qemu/v8.2.2/include/gdbstub/helpers.h).
+**Inference:** truncation in that transport is consistent with the observations;
+the Ubuntu-patched executable is not claimed byte-equivalent to upstream source.
+A verified full-width transport is needed before promoting this profile.
+
+Evidence remains under `build/mips-fp-mode-review/`: strict failure
+`run-fp64a.L8Obhyk4` and corrected observation `observe-fp64a.6DSo22Fc`.
+The observation receipt is
+`6eb529e68763c7154c60ebc23c41bb9bd61c5c4892440c5200b12a58f2e4e1fc`.
+An earlier all-register-value query failed on an unsupported unnamed register;
+its source and `observe-fp64a.muJlW0Ea` logs remain separate. The correction
+queries register configuration only and does not turn wrong values into passes.
+
+A separate six-ELF metadata probe proves that these FP32, FPXX and FP64A inputs
+all have identical `e_flags=0x70001007`. Their ABI records distinguish them and
+remain accessible through `PT_MIPS_ABIFLAGS` in owned sectionless copies.
+Receipt `b7892819c8c122d1dd55cd2010b184bfb539e79fa34c1404241bf064fd0af453`
+is at `build/mips-abi-metadata-review/run.1q0pn2qx/observations.json`.
+This is metadata evidence, not sectionless FP64A runtime validation or a
+production ABI classifier. No exporter mapping compensates for the failed
+compiler reference.

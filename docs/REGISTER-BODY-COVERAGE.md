@@ -96,3 +96,13 @@ was unavailable locally and requires its hosted lane. Regression receipt:
 The first ad hoc completion probe used the wrong final marker string; the
 retained runtime log already ended with `floating-registers-export=PASS`.
 The subsequent raw review uses the exact marker and inspects each artifact.
+
+## Combined FP32 regression checkpoint
+
+The unchanged coverage-fix JAR also passes 24 exports using PR55's exact FP32
+harness: twelve whole-alias omissions and twelve explicit-piece positives,
+covering both byte orders, exec/PIE, rebase and unchanged repeats. Receipt:
+`5187f942d15815eb8755e579baa162613b0b6af98e6a685cffbde9fa3ade2478`.
+The normal integration merge retains both component histories. Its own complete
+current-base hosted gate and exact artifact review remain required; component
+checks do not substitute for the combined gate.
