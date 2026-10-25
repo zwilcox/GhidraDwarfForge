@@ -15,6 +15,7 @@ import ghidra.app.decompiler.ClangToken;
 import ghidra.app.decompiler.ClangTokenGroup;
 import ghidra.app.decompiler.component.DecompilerUtils;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.data.DataType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionIterator;
 import ghidra.program.model.listing.Program;
@@ -29,6 +30,15 @@ import ghidradwarfforge.source.SyntheticSourceFile.RelativeLine;
 public final class GhidraSyntheticSource {
     private static final int DECOMPILE_TIMEOUT_SECONDS = 60;
 
+    /** Return evidence belongs to this pass; it never changes the saved program. */
+    public record Decompilation(SyntheticSourceFile source,
+            Map<Long, DataType> recoveredReturns) {
+        public Decompilation {
+            Objects.requireNonNull(source, "synthetic source");
+            recoveredReturns = Map.copyOf(recoveredReturns);
+        }
+    }
+
     @FunctionalInterface
     public interface DecompileOperation {
         DecompileResults decompile(DecompInterface decompiler, Function function,
@@ -41,7 +51,13 @@ public final class GhidraSyntheticSource {
     public static SyntheticSourceFile decompile(Program program,
             List<FunctionSymbol> exportedFunctions, long rebaseDelta, TaskMonitor monitor)
             throws CancelledException {
-        return decompile(program, exportedFunctions, rebaseDelta, monitor,
+        return decompileDetailed(program, exportedFunctions, rebaseDelta, monitor).source();
+    }
+
+    public static Decompilation decompileDetailed(Program program,
+            List<FunctionSymbol> exportedFunctions, long rebaseDelta, TaskMonitor monitor)
+            throws CancelledException {
+        return decompileDetailed(program, exportedFunctions, rebaseDelta, monitor,
             (decompiler, function, timeoutSeconds, taskMonitor) ->
                 decompiler.decompileFunction(function, timeoutSeconds, taskMonitor));
     }
@@ -50,7 +66,15 @@ public final class GhidraSyntheticSource {
     public static SyntheticSourceFile decompile(Program program,
             List<FunctionSymbol> exportedFunctions, long rebaseDelta, TaskMonitor monitor,
             DecompileOperation operation) throws CancelledException {
+        return decompileDetailed(program, exportedFunctions, rebaseDelta, monitor,
+            operation).source();
+    }
+
+    public static Decompilation decompileDetailed(Program program,
+            List<FunctionSymbol> exportedFunctions, long rebaseDelta, TaskMonitor monitor,
+            DecompileOperation operation) throws CancelledException {
         Objects.requireNonNull(operation, "decompile operation");
+        Map<Long, DataType> recoveredReturns = new HashMap<>();
         Map<Long, FunctionSymbol> selected = new HashMap<>();
         for (FunctionSymbol symbol : exportedFunctions) {
             selected.put(symbol.address(), symbol);
@@ -89,9 +113,16 @@ public final class GhidraSyntheticSource {
                     if (result != null && result.decompileCompleted() &&
                             result.getDecompiledFunction() != null) {
                         String c = result.getDecompiledFunction().getC();
+                        DataType recovered = result.getHighFunction() == null ? null :
+                            result.getHighFunction().getFunctionPrototype().getReturnType();
+                        boolean acceptReturn = GhidraTypeGraph.acceptRecoveredReturn(function,
+                            recovered);
                         texts.add(new FunctionText(symbol.name(), symbol.address(),
                             c, null, mapTokens(result.getCCodeMarkup(), c, symbol,
                                 rebaseDelta)));
+                        if (acceptReturn) {
+                            recoveredReturns.put(symbol.address(), recovered);
+                        }
                     }
                     else {
                         String diagnostic = result == null ? "no decompiler result" :
@@ -117,8 +148,8 @@ public final class GhidraSyntheticSource {
             texts.add(new FunctionText(missing.name(), missing.address(), null,
                 "selected function was not found during the decompiler pass"));
         }
-        return SyntheticSourceFile.build(program.getName(), program.getLanguageID().toString(),
-            texts);
+        return new Decompilation(SyntheticSourceFile.build(program.getName(),
+            program.getLanguageID().toString(), texts), recoveredReturns);
     }
 
     private static List<RelativeLine> mapTokens(ClangTokenGroup markup, String c,

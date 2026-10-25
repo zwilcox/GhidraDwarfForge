@@ -59,6 +59,7 @@ expected_sources=(
     nonzero_load_offset.ld
     nonzero_load_offset_start.S
     opaque-register-effects.c
+    recovered-default-returns.c
     register-copy.c
     register_prefix.c
     semantic.c

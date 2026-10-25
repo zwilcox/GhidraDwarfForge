@@ -299,3 +299,16 @@ prototype negative and an unreferenced variadic/no-return declaration, and
 requires real definition/source navigation and normal library execution in GDB.
 It explicitly tests that unlocated declarations do not invent debugger code
 symbols. The caller and library inputs remain unchanged.
+
+### Default return recovery
+
+`recovered-default-returns.c` preserves natural DEFAULT scalar signatures in
+a symbol-bearing executable without compiler DWARF. The dedicated Python
+harness compares Ghidra's observed inferred returns, the preceding exporter,
+and separate compiler DWARF. GDB checks types and values returned by ordinary
+signed, unsigned and floating-point calls, plus curated pointer/void precedence.
+The optimized unsigned division is inferred as 64-bit unsigned long although
+the original C return is 32-bit unsigned int; that difference is retained and
+documented, not hidden by changing the fixture. Saved program data and input
+bytes remain unchanged. Separate pass controls test one decompilation attempt,
+per-function failure, cancellation and immutable evidence.

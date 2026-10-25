@@ -91,6 +91,15 @@ public final class GhidraTypeGraph {
     public static ProgramTypeModel extract(Program program,
             List<FunctionSymbol> exportedFunctions, String targetName, long rebaseDelta,
             TaskMonitor monitor, Consumer<String> diagnostic) throws CancelledException {
+        return extract(program, exportedFunctions, targetName, rebaseDelta, monitor,
+            diagnostic, Map.of());
+    }
+
+    /** Optional scalar return evidence from the same successful decompiler pass. */
+    public static ProgramTypeModel extract(Program program,
+            List<FunctionSymbol> exportedFunctions, String targetName, long rebaseDelta,
+            TaskMonitor monitor, Consumer<String> diagnostic,
+            Map<Long, DataType> recoveredReturns) throws CancelledException {
         Extractor extractor = new Extractor(diagnostic);
         TargetRegisterMap registerMap = TargetRegisterMap.forTarget(targetName);
         List<DataType> favoriteTypes = new ArrayList<>(
@@ -127,7 +136,15 @@ public final class GhidraTypeGraph {
                 GhidraVariableStorage.stackDepthProfile(program, function, monitor);
             // The effective ABI return may be a hidden pointer (or void).
             // Preserve the curated signature independently of that carrier.
-            TypeRef returnType = extractor.reserve(function.getReturn().getFormalDataType());
+            DataType formalReturn = function.getReturn().getFormalDataType();
+            DataType recoveredReturn = recoveredReturns.get(address);
+            if (acceptRecoveredReturn(function, recoveredReturn)) {
+                formalReturn = recoveredReturn;
+                diagnostic.accept("Using decompiler-recovered scalar return for " +
+                    symbol.name() + ": " + recoveredReturn.getName() +
+                    "; saved DEFAULT undefined signature remains unchanged");
+            }
+            TypeRef returnType = extractor.reserve(formalReturn);
             List<TypeGraph.Parameter> parameters = new ArrayList<>();
             for (Parameter parameter : function.getParameters()) {
                 DataType formalType = parameter.getFormalDataType();
@@ -293,6 +310,17 @@ public final class GhidraTypeGraph {
         return new ProgramTypeModel(new TypeGraph(new ArrayList<>(extractor.nodes.values())),
             signatures, globals, new VariableStorageModel(variableLocations), functionStatics,
             declarations);
+    }
+
+    static boolean acceptRecoveredReturn(Function function, DataType recovered) {
+        return function.getSignatureSource() == SourceType.DEFAULT &&
+            function.getReturn().getSource() == SourceType.DEFAULT &&
+            !function.hasCustomVariableStorage() &&
+            Undefined.isUndefined(function.getReturn().getFormalDataType()) &&
+            recovered != null && !Undefined.isUndefined(recovered) &&
+            recovered.getLength() > 0 &&
+            (recovered instanceof AbstractIntegerDataType ||
+                recovered instanceof AbstractFloatDataType || recovered instanceof BooleanDataType);
     }
 
     private static List<String> namespacePath(Namespace namespace) {

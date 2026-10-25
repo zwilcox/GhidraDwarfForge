@@ -4114,3 +4114,15 @@ acceptance documentation at `eb10b6c`; no production, fixture or debugger-oracle
 bytes changed. Final committed packaging and the prefix branch's separate full
 hosted gate remain required. See `docs/TRUNCATED-MEMORY-STORES.md` and
 `docs/COMPOSITE-REGISTER-PREFIX.md` for the separate acceptance scopes.
+
+### Default scalar return recovery (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** the source pass now retains
+concrete scalar HighFunction return evidence for DEFAULT undefined signatures.
+The extractor preserves all stronger provenance and custom storage, and emits
+an explicit inference diagnostic without changing the saved program. 645
+ProgramDB checks and a real x86-64 compiler/preceding-package/export/GDB
+regression pass. Ordinary calls return -41, 41 and 1.75. The unsigned fixture's
+inferred 64-bit type differs from its original 32-bit C type; both observations
+are retained rather than claiming exact original recovery. See
+`docs/RECOVERED-DEFAULT-RETURNS.md` for scope, failures and evidence.

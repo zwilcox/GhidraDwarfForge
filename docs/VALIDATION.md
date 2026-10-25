@@ -6353,3 +6353,15 @@ tree. Its distinct main push `40208082901` is pending separately. PR #47's
 separate main push `40204254359` has now passed all twelve jobs and independent
 fresh target/both-host artifact review. No release was published. This record
 supersedes the pending PR #48 and main #47 labels above.
+
+## Default scalar return recovery — local acceptance (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** 645 five-profile ProgramDB
+checks and the installed `recovered-default-returns-export.py` regression pass.
+The ordinary compiler/Forge GDB calls return -41/41/1.75; the prior package
+displays void returns. Inferred unsigned width is explicitly distinguished
+from compiler provenance. Repeated artifacts, input/module/program bytes,
+LLVM, strict seven-frame corroboration and actual decompiler failure/cancel
+controls pass. Detailed result/JAR hashes and retained development failures are
+in `docs/RECOVERED-DEFAULT-RETURNS.md`. This is not full original signature or
+new architecture/ABI coverage.

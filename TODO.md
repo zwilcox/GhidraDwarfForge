@@ -908,6 +908,14 @@ Define precedence among analyst-applied listing/signature types and decompiler g
 
 ## P1.7 Emit complete function signatures
 
+**CONFIRMED locally; full hosted acceptance pending:** concrete decompiler
+scalar returns now fill only DEFAULT undefined, noncustom listing returns.
+Stronger signature/return provenance remains authoritative. 645 model checks
+cover five profiles and immutable reopen; a real x86-64 installed regression
+proves GDB types and ordinary returned values against the previous package and
+compiler DWARF. The unsigned-width inference discrepancy is explicit, not
+claimed as original type recovery. See `docs/RECOVERED-DEFAULT-RETURNS.md`.
+
 **CONFIRMED in PR #48 run `40205151874` (all twelve jobs):** the earlier prototype acceptance did not
 cover forced-indirect aggregate returns. A real x86-64 probe emitted an 8-byte
 pointer for a curated 24-byte structure. Extraction now selects the formal
