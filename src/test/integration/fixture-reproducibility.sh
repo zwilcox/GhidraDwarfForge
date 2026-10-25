@@ -57,6 +57,7 @@ expected_sources=(
     minimal.c
     mips-truncated-space-start.S
     mips-truncated-space.c
+    mixed-incoming-prefix.c
     nonzero_load_offset.c
     nonzero_load_offset.ld
     nonzero_load_offset_start.S
@@ -69,6 +70,7 @@ expected_sources=(
     shared_driver.c
     shared_semantic.c
     stack-first-use.c
+    terminal-composite.c
 )
 mapfile -t actual_sources < <(
     cd "$fixture_source_dir"

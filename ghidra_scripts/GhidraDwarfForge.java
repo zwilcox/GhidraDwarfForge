@@ -160,7 +160,9 @@ public class GhidraDwarfForge extends GhidraScript {
             rebaseDelta, monitor);
         var source = decompilation.source();
         monitor.checkCancelled();
-        var typeModel = GhidraTypeGraph.extract(currentProgram, functions, target.name(),
+        var registers = ghidradwarfforge.locations.TargetRegisterMap.forElf(
+            target.name(), originalElf, monitor::isCancelled);
+        var typeModel = GhidraTypeGraph.extract(currentProgram, functions, registers,
             rebaseDelta, monitor, diagnostic, decompilation.recoveredReturns(),
             decompilation.recoveredParameters());
         monitor.checkCancelled();

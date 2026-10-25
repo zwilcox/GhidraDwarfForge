@@ -1,5 +1,11 @@
 # Explicit MIPS FP32 validation reference
 
+**Current follow-up:** the test-only component below is accepted through PR56
+and main run `40234477662`. A separate bounded whole-alias implementation now
+passes local FP32 metadata, Ghidra, validator and GDB checks; its hosted gate
+is pending. See [the pair profile](MIPS-FP32-PAIR-PROFILE.md). Earlier pending
+and whole-alias-omission statements below describe the historical component.
+
 **CONFIRMED locally; hosted acceptance pending:** explicit `-mfp32` compiler
 fixtures provide correct double-argument observations through the installed
 QEMU/GDB combination in both byte orders. The existing exporter also handles

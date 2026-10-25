@@ -116,14 +116,22 @@ public final class DwarfLocationExpression {
         if (first instanceof CompositeStorage composite) {
             List<Operation> operations = new ArrayList<>();
             for (var piece : composite.pieces()) {
-                if (!(piece.storage() instanceof RegisterStorage register) ||
-                        register.bitSize() != piece.bitSize()) {
-                    return omitted("composite piece is not one exact register slice");
+                if (piece.storage() instanceof RegisterStorage register &&
+                        register.bitSize() == piece.bitSize()) {
+                    operations.add(new GenericOperation(DW_OP_REGX,
+                        register.register().dwarfNumber(), 0));
+                    operations.add(new GenericOperation(DW_OP_BIT_PIECE,
+                        piece.bitSize(), register.valueBitOffset()));
                 }
-                operations.add(new GenericOperation(DW_OP_REGX,
-                    register.register().dwarfNumber(), 0));
-                operations.add(new GenericOperation(DW_OP_BIT_PIECE,
-                    piece.bitSize(), register.valueBitOffset()));
+                else if (piece.storage() instanceof RegisterRelativeStorage relative &&
+                        piece.bitSize() % Byte.SIZE == 0) {
+                    operations.add(new GenericOperation(DW_OP_BREGX,
+                        relative.register().dwarfNumber(), relative.byteOffset()));
+                    operations.add(new GenericOperation(DW_OP_BIT_PIECE, piece.bitSize(), 0));
+                }
+                else {
+                    return omitted("composite piece lacks an exact register slice or resolved byte-aligned memory location");
+                }
             }
             return new Expression(operations);
         }

@@ -22,6 +22,12 @@ if [[ "$storage_form" != register-alias && "$storage_form" != explicit-pieces ]]
     exit 64
 fi
 export FORGE_FP_STORAGE_FORM="$storage_form"
+elf_layout=${FORGE_FP_ELF_LAYOUT:-sections}
+if [[ "$elf_layout" != sections && "$elf_layout" != sectionless ]] ||
+        [[ "$elf_layout" == sectionless && "$abi_profile" != mips-fp32 ]]; then
+    echo 'FORGE_FP_ELF_LAYOUT must be sections, or sectionless with mips-fp32' >&2
+    exit 64
+fi
 targets=("$@")
 if [[ ${#targets[@]} -eq 0 ]]; then
     if [[ "$abi_profile" == mips-fp32 ]]; then targets=(mips32be mips32le)
@@ -40,6 +46,7 @@ source "$repository/src/test/integration/elf-layout-gdb-oracle.sh"
 root="$repository/build/test-results/floating-registers"
 if [[ "$abi_profile" == mips-fp32 ]]; then root+="-fp32"; fi
 if [[ "$storage_form" == explicit-pieces ]]; then root+="-pieces"; fi
+if [[ "$elf_layout" == sectionless ]]; then root+="-sectionless"; fi
 mkdir -p "$root"
 results=$(mktemp -d "$root/run.XXXXXXXX")
 projects=$(mktemp -d /tmp/forge-floating-registers.XXXXXXXX)
@@ -67,6 +74,7 @@ files = [consumer, producer] + [repository / name for name in (
     'src/test/integration/floating-registers-export.sh',
     'src/test/integration/floating-registers-gdb.py',
     'src/test/integration/check-fp32-register-pieces.py',
+    'src/test/integration/fp32-sectionless-fixture.py',
     'src/test/integration/ghidra_scripts/PrepareFloatingRegisters.java',
     'src/test/integration/ghidra_scripts/RebaseFixtureProgram.java')]
 files += [p for p in (ghidra / 'Ghidra/Extensions/GhidraDwarfForge').rglob('*') if p.is_file()]
@@ -163,6 +171,13 @@ for target in "${targets[@]}"; do
             grep -Fxq 'FP ABI: Hard float (double precision)' "$case_root/input-elf.txt"
         fi
         if grep -Eq '[[:space:]][.](debug_|symtab)' "$case_root/input-elf.txt"; then exit 1; fi
+        if [[ "$elf_layout" == sectionless ]]; then
+            cp "$input" "$case_root/floating.with-sections"
+            cp "$case_root/input-elf.txt" "$case_root/with-sections-elf.txt"
+            python3 "$repository/src/test/integration/fp32-sectionless-fixture.py" "$input" \
+                > "$case_root/sectionless.json"
+            readelf -hSWnA "$input" >"$case_root/input-elf.txt"
+        fi
         sha256sum "$input" >"$case_root/input.sha256"
         run_gdb "$reference" "" compiler "$case_root/compiler-gdb.txt"
         if [[ "$abi_profile" == mips-fp32 ]]; then
@@ -187,6 +202,7 @@ for target in "${targets[@]}"; do
                 "--output=$output" >"$case_dir/headless.txt" 2>&1
             grep -Fq 'floating-register-preparation=PASS' "$case_dir/headless.txt"
             if [[ "$abi_profile" == mips-fp32 ]]; then
+                grep -Fq 'floating-fp32-abi=PASS pairs=16' "$case_dir/headless.txt"
                 python3 - "$case_dir/headless.txt" "$ghidra" <<'PYTHON'
 from pathlib import Path
 import re
@@ -205,6 +221,8 @@ PYTHON
                 if [[ "$storage_form" == explicit-pieces ]]; then
                     grep -Fq 'floating-fp32-pieces=first ' "$case_dir/headless.txt"
                     grep -Fq 'floating-fp32-pieces=second ' "$case_dir/headless.txt"
+                fi
+                if [[ "$abi_profile" == mips-fp32 ]]; then
                     if grep -Fq 'Omitted location for fp_double::' "$case_dir/headless.txt"; then exit 1; fi
                 else
                     grep -Fq 'Omitted location for fp_double::first' "$case_dir/headless.txt"
@@ -213,9 +231,9 @@ PYTHON
             fi
             if [[ "$target" == arm32 ]]; then
                 grep -Fq 'floating-register-arm-opaque-return=PASS' "$case_dir/headless.txt"
-                grep -Fq 'Omitted location for fp_clobbered::value: function writes parameter register q0' \
+                grep -Fq 'Limited location to proven incoming-register lifetime for fp_clobbered::value:' \
                     "$case_dir/headless.txt"
-                python3 - "$case_dir/headless.txt" <<'PY'
+                python3 - "$case_dir/headless.txt" "$case_root/labels.txt" <<'PY'
 import json
 import pathlib
 import sys
@@ -227,6 +245,10 @@ assert len(reports) == 1, 'expected one exporter report'
 entries = [item for item in reports[0]['omittedLocations']
     if item['function'] == 'fp_clobbered' and item['variable'] == 'value']
 assert len(entries) == 1 and entries[0]['reason'] == 'REGISTER_MODIFIED', entries
+labels = {name: int(address, 16) for name, address in
+    (line.split() for line in pathlib.Path(sys.argv[2]).read_text().splitlines())}
+assert int(entries[0]['startAddress'], 16) == labels['fp_clobber_after'], entries
+assert int(entries[0]['endAddress'], 16) > labels['fp_clobber_after'], entries
 PY
             fi
             readelf -hSWn "$output" >"$case_dir/elf.txt" 2>"$case_dir/readelf.stderr"
@@ -234,7 +256,7 @@ PY
                 readelf "--debug-dump=$kind" "$output" >"$case_dir/$kind.txt" 2>>"$case_dir/readelf.stderr"
             done
             test ! -s "$case_dir/readelf.stderr"
-            if [[ "$storage_form" == explicit-pieces ]]; then
+            if [[ "$abi_profile" == mips-fp32 ]]; then
                 python3 "$repository/src/test/integration/check-fp32-register-pieces.py" \
                     "$output" "$target" > "$case_dir/fp32-pieces.json"
             fi

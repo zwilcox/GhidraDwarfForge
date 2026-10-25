@@ -118,8 +118,8 @@ validate_transcript() {
                 grep -Fxq "right = <optimized out>" "$transcript"
                 ;;
             *arm32.*)
-                grep -Fq "recovered_add (left=<optimized out>, right=23)" "$transcript"
-                grep -Fxq "left = <optimized out>" "$transcript"
+                grep -Fq "recovered_add (left=19, right=23)" "$transcript"
+                grep -Fxq "left = 19" "$transcript"
                 grep -Fxq "right = 23" "$transcript"
                 ;;
         esac

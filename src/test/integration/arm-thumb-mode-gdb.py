@@ -2,6 +2,7 @@
 import json
 import os
 from pathlib import Path
+import re
 
 import gdb
 
@@ -82,6 +83,12 @@ try:
         assert cursor == labels[function]["code"] + labels[function]["size"], rows
     assert labels["thumb_add"]["code"] + labels["thumb_add"]["size"] == labels["arm_after"]["code"]
     result["upperBound"] = gdb.execute("x/2i " + hex(labels["arm_after"]["code"]), to_string=True)
+    thumb = labels["thumb_add"]
+    writes = [row for row in gdb.selected_inferior().architecture().disassemble(
+        thumb["code"], thumb["code"] + thumb["size"] - 1)
+        if re.fullmatch(r"mov\s+r0,\s*r3", row["asm"])]
+    assert len(writes) == 1 and writes[0]["length"] == 2, writes
+    write_pc = writes[0]["addr"]
 
     if phase == "calls":
         breakpoint = gdb.Breakpoint(name("thumb_add"))
@@ -103,6 +110,7 @@ try:
                 else:
                     assert actual == expected, (parameter, actual, expected)
                     values[parameter] = {"available": True, "value": actual}
+            boundary = gdb.Breakpoint("*" + hex(write_pc))
             for step in range(12):
                 if integer("thumb_sink") == total:
                     break
@@ -110,6 +118,23 @@ try:
                 thumb_stop("next-" + str(call) + "-" + str(step))
             assert integer("thumb_sink") == total
             values["sink"] = total
+            # The incoming r0 value is valid before the return-value move, then
+            # Forge must stop describing it. Compiler DWARF retains a stack copy.
+            assert integer("$pc") <= write_pc
+            if integer("$pc") != write_pc:
+                gdb.execute("continue")
+            before = thumb_stop("before-register-write-" + str(call))
+            assert before["pc"] == write_pc and integer("left") == left and integer("right") == right
+            gdb.execute("stepi")
+            after = thumb_stop("after-register-write-" + str(call))
+            assert after["pc"] == write_pc + 2 and integer("$r0") == total and integer("right") == right
+            value = gdb.parse_and_eval("left")
+            assert bool(value.is_optimized_out) == (not compiler)
+            if compiler:
+                assert int(value) == left
+            values["lifetime"] = {"write": write_pc, "end": write_pc + 2,
+                                  "afterUnavailable": bool(value.is_optimized_out), "returnRegister": total}
+            boundary.delete()
             result["values"].append(values)
             gdb.execute("finish")
             row = stop("return-" + str(call))

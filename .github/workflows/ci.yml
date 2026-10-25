@@ -471,6 +471,7 @@ jobs:
           {
             src/test/integration/headless-wrapper.sh
             src/test/integration/architecture-neutrality.sh
+            python3 src/test/integration/architecture-neutrality-smoke.py
             ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke \
               ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke \
               exportReportSmoke exportReportClaimsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke \
@@ -480,7 +481,7 @@ jobs:
               syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
               variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke directLeafCallSmoke compositeRegisterPrefixSmoke \
               stackFirstUseSmoke \
-              opaqueRegisterEffectsSmoke registerBodyCoverageSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
+              opaqueRegisterEffectsSmoke registerBodyCoverageSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
               arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfAddressRangesSmoke \
@@ -1127,7 +1128,15 @@ jobs:
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
 
-      - name: Explicit MIPS FP32 reference, register pieces, and alias omissions
+      - name: ARM register pair prefix at an ordinary terminal return
+        if: matrix.target == 'arm32'
+        run: src/test/integration/terminal-composite-export.sh "$GHIDRA_INSTALL_DIR"
+
+      - name: ARM incoming register and stack pieces
+        if: matrix.target == 'arm32'
+        run: src/test/integration/mixed-incoming-prefix-export.sh "$GHIDRA_INSTALL_DIR"
+
+      - name: Explicit MIPS FP32 reference, register pieces, and whole aliases
         if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
         env:
           TARGET: ${{ matrix.target }}
@@ -1139,6 +1148,10 @@ jobs:
                   "$PWD/native-integration/libdwarf.so.2.3.2" \
                   "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
           done
+          FORGE_FP_ELF_LAYOUT=sectionless src/test/integration/floating-registers-export.sh \
+              "$GHIDRA_INSTALL_DIR" \
+              "$PWD/native-integration/libdwarf.so.2.3.2" \
+              "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
 
       - name: Function entry producer and validators
         env:
@@ -1394,7 +1407,7 @@ jobs:
             -DestinationPath (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions') -Force
           & .\gradlew.bat addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
-            opaqueRegisterEffectsSmoke registerBodyCoverageSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
+            opaqueRegisterEffectsSmoke registerBodyCoverageSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
             arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
             registerCopySmoke directLeafCallSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
             elfBuildIdSmoke exportReportClaimsSmoke matchedElfPrefixSmoke `

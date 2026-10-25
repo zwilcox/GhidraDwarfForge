@@ -6547,3 +6547,133 @@ fifteen class cases, six direct-call roles and 33 native Windows tasks pass.
 Main receipt: `488c4288d6a1b343e645ea6026f3d6ca9fb50adc1515fa9865ca945710a7f6f9`. Earlier pending-main54
 notes are historical. The combined coverage/FP32 head retains its own pending
 current-base gate; this main pass does not substitute for that acceptance.
+
+
+### Ordinary terminal-return incoming prefixes (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** the register-prefix proof
+shares the existing ordinary-terminal-return boundary instead of treating
+ARM's final mode-change user operation as an earlier lifetime hazard.
+Scalar/composite model negatives, ten actual Java 21 packaged suites, eighteen
+ARM/x86/AArch64 floating exports, four ARM computed/custom aggregate exports
+and six dedicated ARM register-pair exec/PIE/rebase/repeat exports pass.
+
+Local receipt SHA-256:
+`454a3d4bccdc5779f17fca7faf16c3fc9e3665b029fa9d560855d0e18892da4b`.
+The six dedicated pair artifacts are strict-zero; AArch64 floating artifacts
+retain only independently corroborated inherited frame diagnostics. Local
+headless Ghidra uses Java 25.0.4.1. The exact committed `b17517a` package passes source/native/manifest review
+and equals the tested JAR and all ten Java 21 test sources. Its ZIP SHA-256 is
+`b2ecf71bd18809411cb01c16c3c6b6b4ee37b6fec683d69618fcf5a4c3e244e4`.
+The hosted gate remains a separate acceptance step. `docs/TERMINAL-RETURN-PREFIX.md` records
+exact scopes, unvalidated compiler aggregate locations at raw entry, retained
+failed assertions and the protected-input/rebase checks. Mixed register/stack
+locations remain unsupported; no release is published.
+
+### Combined coverage and FP32 integration (2026-10-25)
+
+**CONFIRMED (2026-10-25):** PR56 head `2944b0f` passes all twelve jobs in
+`40231232266` and exact package/Java 21/raw target/GUI/native Windows review.
+Normal merge `fa68fb11c6e0967341fa13ca628a263138953ec9` preserves the tested
+tree and includes the accepted PR55 FP32 component through normal ancestry.
+Combined receipt SHA-256:
+`4c96466a2812c5e10f1b75eb7b6ad6b9d041afcc4c2ff854d69ffd20f0bb057b`.
+The separate main run `40234477662` is pending. Earlier pending-component
+notes are historical. Register coverage now rejects missing listing bytes;
+MIPS FP32 explicit pieces validate in both byte orders. Whole FP aliases,
+FP64A transport and general variable migration remain incomplete. No release
+is published by this integration.
+
+
+
+### Bounded incoming register/stack pieces (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** attached incoming mixed joins
+now retain their complete value before the first possible memory/register
+write, resolving stack pieces against analyzed SP depth. ARM computed/custom
+exec/PIE/rebase/repeat passes twelve exports, exact normalized DWARF and runtime
+fields, unavailable tails, source lookup, deterministic repeats and protected
+inputs. Thirteen freshly compiled suites run successfully on actual Java 21
+against the same production JAR. Six terminal register-pair and eighteen
+ARM/x86/AArch64 floating exports also pass. The raw mixed review receipt is
+`a8402f723f968d21c97c3f38317e64e3285d01293cf5fd43a5e2bd90cb759e29`.
+See `docs/MIXED-INCOMING-PREFIX.md` for exact evidence and retained failures.
+
+The combined branch includes the terminal-return component and its corrected
+ARM semantic/extended-section/shared-object oracles. Their previous hosted
+omission assertions are preserved as a failed run; no green gate is inferred.
+A fresh full combined gate is required. General register/memory migration,
+later locals and broader ABI coverage remain partial.
+
+
+### Explicit MIPS FP32 whole-alias profile (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** the original ELF's typed ABI
+record now gates whole FPR-pair expansion. Metadata tests cover both classes
+and byte orders, section/program carriers, conflicts/absence/unknown profiles,
+cancellation and source changes. Real Ghidra aliases and writes to either half
+are checked in both orders. Sixteen freshly compiled suites pass on actual
+Java 21; local headless uses Java 25.0.4.1.
+
+The same production JAR passes twelve whole-alias exports, twelve sectionless
+whole-alias exports, twelve explicit-piece regressions and thirty default
+five-target floating regressions. Independent review rechecks exact original
+and source/package hashes, raw DIE expressions, compiler and Forge values,
+unavailable FPXX pairs, rebases, deterministic output and validator diagnostics.
+The initial corrected local receipt SHA-256 is
+`638500e3adade683cbf8e32b354dd596d9ca67918cd723fb8e7ceeb4ef618889`.
+Final review added a compressed-ABI-section rejection guard. All 66 exports
+and sixteen actual Java 21 suites were rerun with the final package; metadata
+checks increased to 594. Final independent raw-review receipt SHA-256 is
+`f628126341a174ead95efc74948a90f442bc393f410669195c24a3dad605c4eb`.
+The first audit wrongly assumed no inherited x86 frame messages; its failed
+assertion is retained. Raw diagnostic multisets and `.eh_frame` bytes match the
+originals exactly: six x86 exec, four x86 PIE and seven AArch64 messages, with
+zero unexplained errors. MIPS/ARM artifacts report zero errors.
+
+`docs/MIPS-FP32-PAIR-PROFILE.md` records exact constraints and evidence. FPXX,
+FP64A, N32/N64 and further ISA/ASE profiles gain no new pair interpretation.
+Full hosted/native Windows/GUI review is required before integration.
+
+
+### ARM prefix oracle and package-review corrections (2026-10-25)
+
+PR58 `40237292953` and initial PR59 `40239553691` fail the obsolete ARM/Thumb
+whole-function omission assertion. A subsequent local mixed-PCS run exposes
+another obsolete VFP omission assertion. Corrected fresh `run.U2mad1LN` and
+`run.AHNtzPIt` retain four deterministic exports with exact before/after-write
+GDB values, raw register/bit-piece interval checks and zero strict errors.
+See `docs/TERMINAL-RETURN-PREFIX.md` for retained failures and scope.
+
+The first MIPS package-review script updated the 51-source and 232-class
+counts but missed the final source-plus-script assertion (53, formerly 52).
+The hosted review caught it; the initial local shell had also failed to
+propagate that assertion before writing its equality receipt. Both failed logs
+and the premature receipt are retained. Corrected independent audits pass all
+manifests, exact source/script/document bytes, class versions and native
+provenance for the local and exact hosted packages. The corrected local
+package/equality receipt SHA-256 is
+`8f0008f90b5b541cae94948f537b49cbf432996459ac9b7ac993eedfcf1edfd4`.
+The exact initial PR59 package additionally passes sixteen freshly compiled
+actual Java 21 suites; receipt SHA-256:
+`9011e4163947115f05f7887b7fe06bde3817e2f02a5d68890bff452e84a121fc`.
+Neither package acceptance substitutes for the corrected full hosted gate.
+
+
+### Architecture-check false pass corrected (2026-10-25)
+
+The extension-build log for PR59 run `40241105965` contains `rg: command not
+found` immediately before `architecture-neutrality=PASS`. The shell check put
+`rg` in an `if` condition, so a missing tool was treated as an empty match.
+A controlled old-script reproduction returns zero even with an explicit `r0`
+reference in generic code. This gate result is invalid; other structural and
+runtime results do not repair that missing check.
+
+The guard now uses required Python, fails on an empty source tree, and scans
+all Java files outside exact audited paths. The typed MIPS ABI reader joins
+that explicit architecture boundary. Five isolated controls cover empty input,
+ordinary generic source, a generic register-name violation, the allowed typed
+reader and a same-named file outside its allowed path. A deliberately failing
+`rg` stub is never called. The workflow requires those controls after the real
+source scan. Local source/control checks pass; a fresh exact-head hosted gate
+is required. This changes verification only, not production output.

@@ -2,24 +2,41 @@
 set -euo pipefail
 
 repository_dir=$(realpath "$(dirname "$0")/../../..")
-cd "$repository_dir"
+python3 - "$repository_dir" <<'PYTHON'
+from pathlib import Path
+import re
+import sys
 
-# Architecture names, register spellings, and ELF machine selection belong in
-# the target-description/register-map boundary, not in generic export code.
-pattern='\b(x86_64|aarch64|arm32|mips32|mipsel|em_x86_64|em_aarch64|'
-pattern+='em_arm|em_mips|thumb|tmode|rax|rbp|rsp|rdi|rsi|sp|lr|pc|'
-pattern+='x([0-9]|[12][0-9]|30)|w([0-9]|[12][0-9]|30)|'
-pattern+='r([0-9]|[12][0-9]|3[01]))\b'
-if violations=$(rg -ni "$pattern" src/main/java \
-        --glob '!**/DwarfTarget.java' \
-        --glob '!**/TargetRegisterMap.java' \
-        --glob '!**/GhidraArm32FunctionModes.java' \
-        --glob '!**/Arm32ModeSymbols.java' \
-        --glob '!**/PackagedNativeLibraries.java'); then
-    echo "architecture-specific target logic escaped its audited boundary:" >&2
-    echo "$violations" >&2
-    exit 1
-fi
-
-echo "architecture-specific-files=ghidradwarfforge/nativeapi/DwarfTarget.java,ghidradwarfforge/locations/TargetRegisterMap.java,ghidradwarfforge/GhidraArm32FunctionModes.java,ghidradwarfforge/elf/Arm32ModeSymbols.java"
-echo "architecture-neutrality=PASS"
+root = Path(sys.argv[1])
+source = root / "src/main/java"
+# Register/target descriptions and typed ELF metadata readers are the audited
+# architecture-specific boundary. Keep exact paths, not basename exceptions.
+audited = {
+    "ghidradwarfforge/nativeapi/DwarfTarget.java",
+    "ghidradwarfforge/locations/TargetRegisterMap.java",
+    "ghidradwarfforge/GhidraArm32FunctionModes.java",
+    "ghidradwarfforge/elf/Arm32ModeSymbols.java",
+    "ghidradwarfforge/elf/MipsAbiFlags.java",
+    "ghidradwarfforge/nativeapi/PackagedNativeLibraries.java",
+}
+pattern = re.compile(r"\b(x86_64|aarch64|arm32|mips32|mipsel|em_x86_64|em_aarch64|"
+    r"em_arm|em_mips|thumb|tmode|rax|rbp|rsp|rdi|rsi|sp|lr|pc|"
+    r"x([0-9]|[12][0-9]|30)|w([0-9]|[12][0-9]|30)|"
+    r"r([0-9]|[12][0-9]|3[01]))\b", re.IGNORECASE)
+files = sorted(source.rglob("*.java"))
+if not files:
+    raise SystemExit("architecture check found no Java sources")
+violations = []
+for path in files:
+    if path.relative_to(source).as_posix() in audited:
+        continue
+    for line, text in enumerate(path.read_text().splitlines(), 1):
+        if pattern.search(text):
+            violations.append(f"{path.relative_to(root)}:{line}:{text}")
+if violations:
+    print("architecture-specific target logic escaped its audited boundary:", file=sys.stderr)
+    print("\n".join(violations), file=sys.stderr)
+    raise SystemExit(1)
+print("architecture-specific-files=" + ",".join(sorted(audited)))
+print("architecture-neutrality=PASS")
+PYTHON

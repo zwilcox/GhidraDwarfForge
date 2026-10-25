@@ -370,6 +370,18 @@ tasks.register("opaqueRegisterEffectsSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/opaque-register/cache").absolutePath
 }
 
+tasks.register("mixedParameterPrefixSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded incoming register/stack pieces and stack-pointer translation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.MixedParameterPrefixSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/mixed-prefix/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/mixed-prefix/cache").absolutePath
+}
+
 tasks.register("qualifiedFunctionNameSmoke", JavaExec) {
     group = "verification"
     description = "Checks qualified analyst display names without changing lexical identity"
@@ -532,6 +544,26 @@ tasks.register("exportReportDetailsSmoke", JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.output.ExportReportDetailsSmoke"
     maxHeapSize = "64m"
+}
+
+tasks.register("mipsAbiFlagsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit MIPS ABI records and conservative FP32 profile selection"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.MipsAbiFlagsSmoke"
+}
+
+tasks.register("mipsFp32PairSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit FP32 alias decomposition against real MIPS registers and instructions"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.MipsFp32PairSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/mips-fp32/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/mips-fp32/cache").absolutePath
 }
 
 tasks.register("elfBuildIdSmoke", JavaExec) {

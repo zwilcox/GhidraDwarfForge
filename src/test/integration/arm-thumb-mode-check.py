@@ -163,18 +163,39 @@ def main():
             assert prefix.with_suffix(".qemu.status").read_text() == "exit=0\n"
             assert not prefix.with_suffix(".qemu.stderr").read_bytes()
             if variant == "forge" and phase == "calls":
+                function, = [item for item in prep["functions"] if item["name"] == "recovered_thumb_add"]
+                write, = [item for item in function["instructions"] if item["text"] == "mov r0,r3"]
+                assert write["length"] == 2
+                boundary = int(write["address"], 16) + write["length"]
                 for values in result["values"]:
-                    assert values["right"]["available"] and not values["left"]["available"], values
+                    assert values["right"]["available"] and values["left"]["available"], values
+                    assert values["lifetime"] == {"write": boundary - 2, "end": boundary,
+                        "afterUnavailable": True, "returnRegister": values["sink"]}
                     for parameter in ("left", "right"):
                         omitted = [item for item in reports[0]["omittedLocations"] if
                                    item["function"] == "recovered_thumb_add" and item["variable"] == parameter]
                         if parameter == "left":
                             assert len(omitted) == 1 and omitted[0]["reason"] == "REGISTER_MODIFIED"
                             assert omitted[0]["kind"] == "PARAMETER"
-                            assert int(omitted[0]["startAddress"], 16) == labels["thumb_add"]["code"]
+                            assert int(omitted[0]["startAddress"], 16) == boundary
                             assert int(omitted[0]["endAddress"], 16) == labels["thumb_add"]["code"] + labels["thumb_add"]["size"]
                         else:
                             assert not omitted, omitted
+                owner, = [index for index, die in enumerate(dies) if "DW_TAG_subprogram" in die and
+                    re.search(r"DW_AT_name\s*:.*\brecovered_thumb_add\s*$", die, re.M)]
+                children = []
+                for die in dies[owner + 1:]:
+                    depth = re.match(r"\s*<(\d+)>", die)
+                    if depth and int(depth[1]) <= 1:
+                        break
+                    children.append(die)
+                left, = [die for die in children if "DW_TAG_formal_parameter" in die and
+                    re.search(r"DW_AT_name\s*:.*\bleft\s*$", die, re.M)]
+                location = re.search(r"DW_AT_location\s*:\s*(0x[0-9a-f]+) \(location list\)", left)
+                assert location
+                offset = int(location[1], 16)
+                expected = b"\x07" + struct.pack("<II", labels["thumb_add"]["code"], boundary) + b"\x02\x90\x00\x00"
+                assert section(output, ".debug_loclists")["data"][offset:offset + len(expected)] == expected
             records.append(result)
         assert warnings[0] == warnings[1]
     protected = json.loads((directory / "protected-before.json").read_text())

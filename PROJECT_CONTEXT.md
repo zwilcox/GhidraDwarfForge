@@ -1,5 +1,61 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**Current gate correction (2026-10-25):** PR59's extension-build log also
+exposed an architecture-check false pass when `rg` was absent. The guard now
+uses Python with exact audited paths, rejects empty inputs and requires five
+negative/positive controls. The old false pass is retained; a new exact-head
+full gate is required. Production ELF/DWARF behavior is unchanged by this fix.
+
+**Current follow-up (2026-10-25):** combined PR59 includes the terminal,
+mixed incoming and explicit FP32 changes. PR58 `40237292953` and initial PR59
+`40239553691` fail an obsolete ARM/Thumb omission assertion; a local later
+mixed-PCS test exposed the same issue for VFP parameters. The corrected
+oracles require exact values before the write and unavailable tails afterward,
+including raw location-list checks. Four fresh exports pass locally; the next
+complete exact-head gate is required. Initial PR59 package and sixteen actual
+Java 21 suites pass after the recorded package-audit count correction. No
+failed component or partial gate is accepted.
+
+**CONFIRMED locally; hosted acceptance pending:** explicit MIPS FP32 whole
+aliases now pass 66 exports, including sectionless inputs and five-target
+floating regressions. Sixteen actual Java 21 suites pass. The ABI reader and
+loaded-register checks restrict the new expansion to the recorded FP32 profile;
+FPXX/FP64A do not acquire it. See `docs/MIPS-FP32-PAIR-PROFILE.md`. General ABI,
+location migration, scope and optional attachment requirements remain open.
+
+**CONFIRMED locally; hosted acceptance pending (2026-10-25):** bounded incoming
+register/stack pieces now pass thirteen actual Java 21 suites and twelve ARM
+computed/custom exec/PIE/rebase/repeat exports. The complete value becomes
+unavailable after the first possible memory/register write; SP adjustments are
+resolved from Ghidra's instruction depths. Six register-pair and eighteen
+floating regressions also pass. `docs/MIXED-INCOMING-PREFIX.md` records scope,
+raw evidence and retained failures. Broader migration remains incomplete.
+
+**CONFIRMED (2026-10-25):** PR56 head `2944b0f` passes all twelve jobs in
+`40231232266` and exact package/Java 21/raw target/GUI/native Windows review.
+Normal merge `fa68fb11c6e0967341fa13ca628a263138953ec9` preserves the tested
+tree and includes the accepted PR55 FP32 component through normal ancestry.
+Combined receipt SHA-256:
+`4c96466a2812c5e10f1b75eb7b6ad6b9d041afcc4c2ff854d69ffd20f0bb057b`.
+The separate main run `40234477662` passes all twelve jobs and independent
+package/Java 21/raw five-target/Windows/GUI review; receipt SHA-256 is
+`766063585ec2764edc21f63f2063bb4637f2207bcc66884b9b816a19598805d4`.
+Earlier pending-component notes are historical. Register coverage now rejects missing listing bytes;
+MIPS FP32 explicit pieces validate in both byte orders. Whole FP aliases
+were incomplete at that checkpoint; the local follow-up above remains pending
+hosted acceptance. FP64A transport and general variable migration remain incomplete. No release
+is published by this integration.
+
+**CONFIRMED locally; hosted acceptance pending (2026-10-25):** the incoming
+register-prefix proof now recognizes the same ordinary terminal-return
+boundary used by stable registers. ARM floating and computed register-pair
+values survive until their first overwrite, followed by an unavailable tail.
+Actual Java 21 models and QEMU/GDB/validator regressions pass locally; see
+`docs/TERMINAL-RETURN-PREFIX.md` for scoped evidence and retained failures.
+At that checkpoint mixed register/stack joins remained unsupported; the newer
+bounded local evidence above supersedes that limitation. A private ARM compiler/sysroot
+now supports local research without changing the system installation.
+
 This document is the durable project handoff for GhidraDwarfForge. It captures the intended product, the verified repository state, the prototype architecture, known hazards, and unresolved decisions.
 
 - Repository: `zwilcox/GhidraDwarfForge`
