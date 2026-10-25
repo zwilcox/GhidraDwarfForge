@@ -6442,3 +6442,23 @@ Correction receipt:
 `1c3ece73339a5134f16598879b64c291ffe18bcdd10af0b055492d246568e450`.
 The failed job and its exact package evidence remain historical; a corrected
 full hosted gate is pending. See `docs/DIRECT-LEAF-CALL-BACKUPS.md`.
+
+### Combined display and location checkpoint (2026-10-25)
+
+**CONFIRMED locally; final hosted gate pending:** the class-display correction
+and portable direct-call driver are combined through normal commits. The exact
+committed package audit passes (50 sources, 226 Java 21-compatible classes,
+five manifests and pinned native provenance). It contains the same JAR as the
+twelve passing class runtime cases. Five additional packaged call/storage
+suites pass on actual Java 21; receipt SHA-256:
+`313f72128a36a153a546e8ff3e651bf42b1975caf8be6cad14fa2b287b9d6c22`.
+
+Fresh x86-64 `x86_64.api47nhs` and AArch64 `aarch64.6uqjpoii` runs use this
+combined JAR with `rg` deliberately unavailable. Compiler, Forge and previous
+package comparisons, exact raw location intervals, three arguments at five PCs,
+honest unavailable tails, source navigation, unchanged inputs/module/project
+and deterministic repeated artifacts all pass. Raw review receipts are
+`599311c16948b1f8dec2f2dc51794c12321f898fa32912919296b0f82aded56f` and
+`34d964598d573b35e59f784df0e03b7e136b97bc93493df8a4e050d0fa96438f`.
+The earlier failed CI run remains retained. These local results do not replace
+the exact combined head's required hosted gate.

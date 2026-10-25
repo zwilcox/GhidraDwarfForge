@@ -4296,3 +4296,9 @@ existing C11 display-name policy; it invents no C++ class, inheritance, object
 pointer or linkage metadata. Five-language ProgramDB and actual Java 21
 packaged tests pass; twelve local target/role GDB cases retain unique method
 and owner-static lookup. `docs/FUNCTION-NAMING.md` records scope and evidence.
+
+The class-display and direct-call corrections now share a combined tested JAR.
+Separate commits retain each change's scope and evidence. The portable driver
+fix is included, and fresh combined x86/AArch64 call regressions pass alongside
+the class matrix. `docs/VALIDATION.md` records the exact local receipts; the
+combined PR still requires its own hosted gate before normal integration.
