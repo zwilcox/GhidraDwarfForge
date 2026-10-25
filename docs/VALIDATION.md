@@ -6078,7 +6078,14 @@ run/head/event/attempt and twelve successful job records before merge.
 
 Normal merge `96fa0a826429e0b9dbfacd028e6caa02bcf2934e` occurred at
 `2026-10-25T00:38:23Z`; its tree equals the tested head. Distinct main-push
-run `40147478153` is pending and is not inferred from the PR gate. The rejected
+run `40147478153` independently passes all twelve jobs. Fresh main target,
+all 27 native Windows suites and both-GUI artifacts are reviewed; only package-focused
+actual Java 21 results are inherited after exact 28 runtime/four test-source
+equality. Acceptance receipt SHA-256 is
+`fb2731ee04644ae947b5e2225ba419e879e054055a3984fb57643f6b84b643e5`;
+final bindings are
+`f43ff1e6155abe827a27faee46e878bf31cf3dfea96e33ce158cafb03511c9f8`.
+Root rehashed all 27 final witnesses and confirmed fresh API success. The rejected
 `f46712f` scalar-only run and computed-only `97018b02...` package remain
 historical component evidence. Published releases are unchanged.
 
@@ -6086,3 +6093,126 @@ The truncated-STORE branch's subsequent normal parent merge `732356f` preserves
 its exact prior `0b5d216` tree, including all locally tested combined runtime
 bytes. Only acceptance documentation changes afterwards; final exact-head
 packaging and a separate hosted follow-up gate remain required.
+
+### Composite incoming-register source checkpoint (2026-10-25)
+
+**CONFIRMED source/focused; packaged runtime and hosted acceptance pending.**
+The bounded composite prefix uses the existing interval and location-list path.
+Actual Java 21 at `-Xmx256m` passes 469 checks, including decoded x86-64/AArch64
+computed/custom/reopened storage, whole-body rejection controls, exact raw
+location-list bytes and cancellation. A real big-endian language supplies the
+storage for a controlled p-code test; this does not prove a MIPS runtime prefix.
+The old `2d787e33...` package fails the intended existing-public-API positive
+assertion. Source-focused receipt SHA-256 is
+`12c327069437ea65e220acc4aa3a1fab28e75c86d3c22711f9eaba91d4120194`;
+independent source/focused review is
+`482e90ef75397406fec5a89bca0f0422afca83794051bfb93a8510d20fca2ace`.
+
+The following command passes under Java 25, producing Java 21 bytecode:
+
+```bash
+GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC \
+JAVA_HOME=/usr/lib/jvm/java-25-openjdk-amd64 \
+./gradlew --no-daemon compositeRegisterPrefixSmoke dynamicCompositeOrderSmoke \
+    dynamicParameterStorageSmoke truncatedSpaceStoreSmoke variableStorageSmoke \
+    registerPrefixSmoke registerAliasSmoke registerCopySmoke stackFirstUseSmoke \
+    opaqueRegisterEffectsSmoke buildExtension
+```
+
+All ten requested smoke tasks execute and pass; the build reports 15 executed
+tasks. Workflow lint, architecture neutrality, whitespace checks and the exact
+29-file fixture-source inventory pass. Source-only reviews of the durable
+ET_EXEC harness and private driver pass. The fixture C and compiler flags equal
+the independently reviewed baseline probe. No fresh packaged-exporter/GDB or
+hosted acceptance is claimed at this checkpoint.
+
+### Composite prefix installed-runtime checkpoint (2026-10-25)
+
+**CONFIRMED locally; full hosted acceptance pending:** initial committed head
+`6397e06` builds ZIP `6d281838...`, containing production JAR `3f9e46b5...`.
+Exact committed sources, scripts, documentation, native provenance, five
+manifests and 220 Java 21 classes pass the strict package audit. All 27 other
+runtime payloads match the preceding combined package. Independent package
+review passes. The private Python installer initially omitted archived modes;
+the owned module's 108 entries were corrected to their archived modes with
+unchanged file bytes/mtimes. The initial mode-check failure and a partial
+correction attempt remain recorded. Independent mode closure is
+`01d836dc1f8dd94d20bb582ef0453a0e0d34d29f4cca01c6ac60cf1405092659`.
+This correction changed no production or fixture bytes and required no JVM
+rerun.
+
+Actual Java 21 at 256 MiB passes the installed-JAR checks 469/1480/154/182,
+with JAR-first classpaths and every loaded production class bound to that JAR.
+Receipt SHA-256 is
+`c9ae84ab6c8d1f169af6dded8a6aeecf70839af154fc8dc582a4f67675e613e3`;
+independent packaged-focused review is
+`d600d8257fc288e5d47282018494f72581666c1f278ca351cadfa35fcc6ef9c8`.
+
+The exact installed package then passes the two durable harness commands:
+
+```bash
+src/test/integration/composite-register-prefix-export.sh "$GHIDRA_INSTALL_DIR" x86_64
+src/test/integration/composite-register-prefix-export.sh "$GHIDRA_INSTALL_DIR" aarch64
+```
+
+Here `GHIDRA_INSTALL_DIR` selects the private `runtime.ua_d0osz/ghidra`
+installation, not the source checkout's base platform. Actual headless Java
+is 25.0.4.1. Eight exports, six compiler/computed/custom GDB sessions and two
+plain executions pass on the first runtime attempt. Computed and custom
+variants each visit sixteen PCs across the targets, with six complete correct
+values and ten explicitly unavailable tail values. The raw DIEs and location
+lists have the correct member offsets, object-order register pieces and exact
+first-write boundary. Compiler DWARF retains correct values at all sixteen PCs.
+Both stripped inputs equal the prior omitted-location baseline byte-for-byte.
+
+Strict output reports four inherited original-frame findings on x86-64 and six
+on AArch64, all corroborated with zero unexplained errors. Each AArch64 GDB
+session has the same one known vDSO warning as its compiler oracle. Repeated
+and reopened outputs are deterministic; 267 global protected records and
+thirteen per-case paths remain unchanged, and all owned sessions/endpoints
+are released. The final author receipt binds 244 witnesses; independent raw
+review also checks all 229 retained case files without rerunning the exporter
+or debugger.
+
+Runtime receipt SHA-256 is
+`703fc5ba467cb9a61fdd3bfaf089a54ef8d107ebc54dd7f77e9b266f76c8b77c`;
+independent raw review is
+`1bebf993bc534ad0af0113d1e920ee9b93eddfa5219476c2b0cee348aae46a12`.
+Final committed packaging and the full five-target/two-host gate remain
+required before integration. Composite PIE/rebase, additional targets,
+surviving pieces, backup migration, calls and delay slots remain outside this
+new bounded runtime claim.
+
+### PR #46 hosted acceptance and normal merge (2026-10-25)
+
+**CONFIRMED:** exact head `ea4f9c0` passes all twelve jobs in run
+`40148228012`, including all 214 selected target steps and 22 Windows steps.
+The 111 excluded platform conditions are explicit skips. Independent downloaded
+package checks run actual Java 21 suites 231/38/154/1480/182. Fresh artifact
+review accepts all five target chains, the four O32/N32 cases, 28 native Windows
+suites and both GUI journeys. The new MIPS cases retain 194 visited PCs,
+864 correct values, 30 unavailable values and 26 positive entries; all four
+strict validators report zero errors. Other reviewed strict reports have zero
+unexplained errors.
+
+Acceptance receipt SHA-256 is
+`948b3d183f174cbb068e3a55bd2488df037059a056ae33d6e0fa85b9f890c8a7`;
+final artifact bindings are
+`d2b6b9d393afc8fd2aac7ecafc7f2453acd591f1dc2d93e89f38ed71e3aba8cb`.
+Root rehashed all 30 binding witnesses and reread exact CI identity, head/base,
+mergeability and enforced `required-validation` protection. Normal merge
+`800081f7d8dd22280e9d360c2c2a0e5e7ffc343c` at `2026-10-25T01:23:22Z`
+preserves the tested tree. Distinct main-push run `40150436365` also passes all
+twelve jobs and independent fresh target, 28-suite native Windows and both-GUI
+artifact review. Only five package-focused Java 21 observations are inherited
+after exact 28-runtime-payload/five-test-source equality; all main runtime
+artifacts are fresh. Acceptance SHA-256 is
+`495edcaf7420c832156bebecbc1fa661a1c8f20a53424925ee3f286ec58572b8`;
+final bindings are
+`be9656b1839133ebbebb5fc574c7a76bca77c746e527ff7409a9e504d39d6c52`.
+Root rehashed all 30 main witnesses and confirmed fresh API success.
+
+The composite-prefix branch's normal parent merge `b9ba06f` has exactly the
+prior `eb10b6c` tree. Its local source/package/runtime evidence therefore retains
+the same runtime bytes. Subsequent changes record parent acceptance only;
+final committed packaging and a separate prefix hosted gate remain required.

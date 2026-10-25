@@ -478,7 +478,7 @@ jobs:
               matchedElfPrefixSmoke matchedElfAllocationsSmoke executableProgramBytesSmoke \
               debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke \
               syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
-              variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke \
+              variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke compositeRegisterPrefixSmoke \
               stackFirstUseSmoke \
               opaqueRegisterEffectsSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
               arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
@@ -1016,6 +1016,12 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: src/test/integration/register-copy-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
 
+      - name: Complete register composites before their first clobber
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: src/test/integration/composite-register-prefix-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
+
       - name: Unsupported stack first-use and retained zero-offset locals
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
         env:
@@ -1339,7 +1345,7 @@ jobs:
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
             arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
-            registerCopySmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
+            registerCopySmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
             elfBuildIdSmoke exportReportClaimsSmoke matchedElfPrefixSmoke `
             matchedElfAllocationsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke executableProgramBytesSmoke `
             debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke 2>&1 |

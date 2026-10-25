@@ -143,13 +143,16 @@ profile is claimed by this documentation change.
 
 ## Truncated-space investigation
 
-**CONFIRMED locally; hosted acceptance pending:** an owned
+**CONFIRMED in PR #46 run `40148228012`:** an owned
 freestanding O32/N32 comparison in both byte orders observes four-byte pointers
 with eight-byte N32 argument registers and STORE address operands. The preceding
 exporter omits the N32 locations conservatively because RAM is explicitly
 truncated. The selected fix addresses that memory-space proof. All four local packaged
 compiler/Forge controls now pass exact values, honest omissions, validators and
-repeatability; the full hosted gate remains pending. It does not
+repeatability. All twelve hosted PR jobs, independent target/host/package
+reviews and 28 native Windows suites pass. Normal merge `800081f` preserves the
+tested tree; distinct main-push run `40150436365` also passes all twelve jobs
+and independent fresh target/host artifact review. It does not
 change ABI selection or the five supported profile definitions above. Its scope
 excludes libc startup, N32 floating/aggregate rules, PIE/shared objects and N64.
 See [the contract and evidence](TRUNCATED-MEMORY-STORES.md).

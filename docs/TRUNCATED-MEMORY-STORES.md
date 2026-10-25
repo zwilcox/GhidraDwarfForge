@@ -1,6 +1,6 @@
 # Register locations across explicitly truncated memory stores
 
-**CONFIRMED locally; hosted acceptance pending:** Ghidra 12.0.3's
+**CONFIRMED in PR #46 run `40148228012`:** Ghidra 12.0.3's
 MIPS64 languages with 32-bit addresses use a full-width SLEIGH instruction
 model and explicitly truncate the RAM address space. Actual decoded STORE
 operations have eight-byte address operands while that RAM space reports a
@@ -94,7 +94,8 @@ Actual Java 21 passes 182 focused checks using the packaged production JAR,
 including actual decoded stores in both truncated languages, malformed-space
 negatives, memory-mapped register clobber rejection and cancellation. Existing
 dynamic-parameter and lifetime regression tasks also pass. Local headless
-execution uses Java 25; hosted two-host/five-target acceptance remains pending.
+execution uses Java 25. The later PR gate below establishes hosted
+two-host/five-target acceptance for the combined correction.
 These small freestanding QEMU cases are not broad N32 support. They do not cover libc startup, floating/aggregate ABIs, PIE/shared
 objects, O64/N64, native MIPS hardware or debugger-injected calls.
 
@@ -119,7 +120,7 @@ No old runtime execution was repeated just to rename its fixture files.
 
 ## Combined with the register join correction
 
-**CONFIRMED locally (2026-10-25); hosted acceptance pending:** normal merge
+**CONFIRMED local checkpoint (2026-10-25):** normal merge
 `70ba319` combines the STORE change with corrected register-join parent
 `5e2ea7d`. The shared join normalization is byte-identical to that parent, and
 the STORE predicate is byte-identical to the earlier `18c0d0f` follow-up. No
@@ -145,10 +146,37 @@ Focused receipt SHA-256 is
 runtime receipt SHA-256 is
 `66b5d82365138116807ff54b2800691c777719b0391b6280557cb12e2438b4c3`.
 Installed headless/GDB execution uses Java 25.0.4.1; the actual Java 21 checks are
-separate. Independent final runtime and focused reviews pass; final packaging
-and the full hosted gate remain required before integration.
+separate. Independent final runtime and focused reviews pass. At this checkpoint
+final packaging and the full hosted gate remained pending; the later gate below
+closes those requirements.
 
 Independent focused review SHA-256 is
 `03aa07a318c2174589ab98453ce238cee43e4643d96bb3be80c08641001b54be`;
 independent raw four-case review is
 `125f134d13a016df39e94c64ca52107b2913fd882ffa2ceef167fb04e3ff7e0f`.
+
+## Hosted acceptance and normal merge
+
+**CONFIRMED:** exact PR #46 head `ea4f9c0` passes all twelve jobs in run
+`40148228012`. The downloaded package passes fresh actual Java 21 checks
+231/38/154/1480/182. Independent review accepts all five target artifact chains,
+both GUI paths and 28 native Windows suites, including the actual decoded
+truncated-space checks. The four new MIPS cases retain 194 visited PCs,
+864 correct typed observations, 30 unavailable observations and 26 positive
+entry values, with strict-zero validation.
+
+All 214 selected target steps and 22 Windows steps succeed. The 111 excluded
+platform conditions remain recorded as skips. Acceptance receipt SHA-256 is
+`948b3d183f174cbb068e3a55bd2488df037059a056ae33d6e0fa85b9f890c8a7`;
+final artifact bindings are
+`d2b6b9d393afc8fd2aac7ecafc7f2453acd591f1dc2d93e89f38ed71e3aba8cb`.
+Root rehashed all 30 final witnesses and rechecked the exact CI identity and
+enforced branch protection before merging.
+
+Normal merge `800081f7d8dd22280e9d360c2c2a0e5e7ffc343c` at
+`2026-10-25T01:23:22Z` preserves the tested tree. Distinct main-push run
+`40150436365` also passes all twelve jobs and independent fresh target,
+28-suite native Windows and both-GUI artifact review. Only the package-focused
+Java 21 observations are inherited after exact runtime/test-source equality.
+No broad N32 or
+additional lifetime/ABI support is inferred from these freestanding cases.

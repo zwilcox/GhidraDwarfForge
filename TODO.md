@@ -1059,7 +1059,8 @@ Map Ghidra registers to target DWARF register numbers using isolated architectur
 **CONFIRMED resolved in PR #45:** corrected head `5e2ea7d` passes all twelve
 jobs in run `40145554731`, independent exact-package/all-five-target/both-GUI
 reviews and native Windows 27 suites. Normal merge `96fa0a8` retains the tested
-tree. The distinct main-push run `40147478153` remains pending. Earlier scalar-
+tree. Distinct main-push run `40147478153` also passes all twelve jobs and
+independent fresh target/native Windows/both-GUI artifact review. Earlier scalar-
 only and computed-only candidates remain historical, unaccepted evidence.
 Shared register join normalization preserves computed/custom/reopened values;
 see `docs/DYNAMIC-COMPOSITE-ORDER.md`.
@@ -1135,11 +1136,26 @@ or uncertain storage remains locationless with a diagnostic.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
 
-**CONFIRMED combined local validation (2026-10-25):** the truncated-RAM STORE
-proof composes with the shared register join correction. Actual Java 21 source
-and packaged checks pass 182/1480/154, and unchanged O32/N32 fixtures in both
-byte orders pass fresh compiler/GDB and strict-zero validation. Independent
-focused/raw reviews pass; final packaging and the full hosted gate remain pending. This does not prove
+**CONFIRMED locally; hosted acceptance pending:** retain a complete incoming register composite
+before its earliest physical-register overwrite, then make the whole value
+unavailable. An independently reviewed x86-64/AArch64 ET_EXEC probe establishes
+the omitted incoming values and exact partial-register clobber boundaries.
+Actual Java 21 source checks 469 and packaged checks 469/1480/154/182 pass; ten
+relevant Gradle regressions and the extension build pass. Fresh x86-64/AArch64
+computed/custom/reopened exports pass validators and GDB with unchanged inputs
+and deterministic output. Independent source/package/raw reviews pass. Final
+committed packaging and full hosted acceptance remain pending; see
+`docs/COMPOSITE-REGISTER-PREFIX.md`. This adds no call-crossing, surviving-piece,
+backup, mixed-memory or later-local inference.
+
+**CONFIRMED in PR #46 run `40148228012`:** the truncated-RAM STORE
+proof composes with the shared register join correction. All twelve jobs,
+independent exact-package/all-target/both-GUI reviews and 28 native Windows
+suites pass. Fresh downloaded-package actual Java 21 checks pass
+231/38/154/1480/182. The four O32/N32 cases pass compiler/GDB and strict-zero
+validation. Normal merge `800081f` preserves the tested `ea4f9c0` tree; distinct
+main-push run `40150436365` also passes all twelve jobs and independent fresh
+target/native Windows/both-GUI review. This does not prove
 call-crossing lifetimes or general ABI support; see
 `docs/TRUNCATED-MEMORY-STORES.md`.
 
@@ -1319,7 +1335,7 @@ scalar float locations in both byte orders. Paired doubles remain unavailable;
 the independent compiler-pair observation is explicitly unverified under the
 tested QEMU/GDB transport. Additional storage and ABI cases remain.
 
-**CONFIRMED locally; hosted acceptance pending:** four owned O32/N32
+**CONFIRMED in PR #46 run `40148228012`:** four owned O32/N32
 freestanding cases in both byte orders identify an honest N32 omission caused
 by eight-byte STORE address operands targeting an explicitly truncated
 four-byte RAM space. O32 dynamic stack arguments have correct observed values;
@@ -1330,7 +1346,10 @@ memory-mapped registers. No ABI classifier, register map or broad N32 support ch
 is selected. Actual Java 21 decoded/malformed-space controls and four packaged compiler/
 Forge runtime comparisons pass locally, including N32 entry values, O32 stack
 arguments and the retained wide-pair omission. Validators, repeats and independent
-raw review pass; the complete hosted pipeline remains required before integration.
+raw review pass. The complete twelve-job PR gate, 28 native Windows suites,
+all-five-target/both-GUI reviews and exact package audit pass; normal merge
+`800081f` preserves the tested tree. Separate main-push run `40150436365` also
+passes all twelve jobs and independent fresh artifact review.
 See [the bounded contract](docs/TRUNCATED-MEMORY-STORES.md).
 
 ### Work
