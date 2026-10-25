@@ -996,6 +996,13 @@ jobs:
           FORGE_SCOPE_QUALIFIED: '1'
         run: src/test/integration/function-static-scopes-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
 
+      - name: Class-owned display names and saved-program identity
+        env:
+          TARGET: ${{ matrix.target }}
+          FORGE_SCOPE_QUALIFIED: '1'
+          FORGE_SCOPE_CLASS_NAMES: '1'
+        run: src/test/integration/function-static-scopes-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
+
       - name: Incoming register lifetime before overwrite
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
         env:

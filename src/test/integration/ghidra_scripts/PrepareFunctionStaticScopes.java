@@ -28,10 +28,10 @@ public class PrepareFunctionStaticScopes extends GhidraScript {
     protected void run() throws Exception {
         String[] arguments = getScriptArgs();
         if (arguments.length != 7 && (arguments.length != 9 ||
-                !arguments[7].equals("qualified"))) {
+                (!arguments[7].equals("qualified") && !arguments[7].equals("class-qualified")))) {
             throw new IllegalArgumentException("usage: PrepareFunctionStaticScopes <target> " +
                 "<first-function> <second-function> <first-static> <second-static> " +
-                "<global> <namespace-global> [qualified <global-function>]");
+                "<global> <namespace-global> [qualified|class-qualified <global-function>]");
         }
         delta = AddressNormalizer.rebaseDelta(currentProgram.getImageBase().getOffset(),
             GhidraImageBase.originalImageBase(currentProgram));
@@ -39,8 +39,13 @@ public class PrepareFunctionStaticScopes extends GhidraScript {
         Function first = function(arguments[1], "first_scope");
         Function second = function(arguments[2], "second_scope");
         if (arguments.length == 9) {
-            qualify(first, "analysis_left");
-            qualify(second, "analysis_right");
+            boolean classOwner = arguments[7].equals("class-qualified");
+            if (classOwner) {
+                println("function-symbol-origin=" + GhidraFunctionSymbols.class
+                    .getProtectionDomain().getCodeSource().getLocation().toExternalForm());
+            }
+            qualify(first, "analysis_left", classOwner);
+            qualify(second, "analysis_right", classOwner);
             function(arguments[8], "curated_same");
         }
         data(arguments[3], "private_count", first);
@@ -77,10 +82,15 @@ public class PrepareFunctionStaticScopes extends GhidraScript {
         println("fixture profile=" + arguments[0] + "; ELF target=" + target);
     }
 
-    private void qualify(Function function, String parentName) throws Exception {
+    private void qualify(Function function, String parentName, boolean classOwner) throws Exception {
         var symbols = currentProgram.getSymbolTable();
-        Namespace parent = symbols.getOrCreateNameSpace(currentProgram.getGlobalNamespace(),
-            parentName, SourceType.USER_DEFINED);
+        Namespace parent = classOwner
+            ? symbols.createClass(currentProgram.getGlobalNamespace(), parentName, SourceType.USER_DEFINED)
+            : symbols.getOrCreateNameSpace(currentProgram.getGlobalNamespace(), parentName, SourceType.USER_DEFINED);
+        if (parent.getType() != (classOwner ? Namespace.Type.CLASS : Namespace.Type.NAMESPACE)) {
+            throw new AssertionError("fixture owner type differs from its requested profile");
+        }
+        println("display-owner=" + parentName + " type=" + parent.getType());
         Namespace nested = symbols.getOrCreateNameSpace(parent, "nested",
             SourceType.USER_DEFINED);
         function.setParentNamespace(nested);

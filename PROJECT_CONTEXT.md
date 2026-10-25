@@ -4284,3 +4284,15 @@ Normal merge `5eeefb76cfcefa2ed501bdd59676048081b5e9bc` preserves the accepted
 tree. Distinct main run `40221601223` is pending. Earlier combined/component
 pending notes are historical. The direct-call branch incorporates this main
 parent through a normal merge with unchanged feature tree before its own gate.
+
+### Class-owned function display identity (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** explicit Ghidra class owners
+were dropped from display paths, making two method names and an unrelated
+global share one bare-name breakpoint while both qualified names failed.
+Independent compiler/GDB baseline evidence reproduces this on x86-64/AArch64.
+The bounded correction preserves recorded class/namespace components in the
+existing C11 display-name policy; it invents no C++ class, inheritance, object
+pointer or linkage metadata. Five-language ProgramDB and actual Java 21
+packaged tests pass; twelve local target/role GDB cases retain unique method
+and owner-static lookup. `docs/FUNCTION-NAMING.md` records scope and evidence.

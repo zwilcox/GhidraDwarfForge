@@ -1,12 +1,16 @@
 # Function naming policy
 
-**CONFIRMED implementation:** Forge preserves a function's recorded plain
-Ghidra `Namespace` path as its analyst-facing display name. For example,
+**CONFIRMED implementation:** Forge preserves a function's recorded
+Ghidra namespace/class path as its analyst-facing display name. For example,
 `analysis_left` → `nested` → `curated_same` becomes
 `analysis_left::nested::curated_same`. The path comes from actual parent
 namespaces, never datatype categories, mangled-name parsing or decompiler text.
 Current target acceptance and pending hosted gates are recorded separately in
 [VALIDATION.md](VALIDATION.md).
+
+**CONFIRMED locally; class follow-up hosted gate pending (2026-10-25):**
+class ancestors now retain the same display treatment as plain namespaces.
+This extends current-name preservation, not C++ class or method semantics.
 
 The function remains a `DW_TAG_subprogram` directly under the compilation unit;
 only its `DW_AT_name` uses the qualified display. The CU remains truthful C11
@@ -67,12 +71,71 @@ rejects before ELF parsing or native loading. The negative smoke uses regular
 invalid ELF/native files and proves an existing destination and all inputs
 remain unchanged with no temporary residue.
 
-Every ancestor must be a plain `Namespace`. A class, library or function scope
-causes the existing lexical display to be retained with an omitted-scope
-diagnostic. Class semantics, external-function declarations, thunks, aliases,
+Every ancestor must have the recorded `NAMESPACE` or `CLASS` kind. Library or
+function scope retains the lexical display with an omitted-scope diagnostic.
+Class display paths do not create class DIEs, inheritance, `this` relationships
+or original linkage names. Class semantics, thunks, aliases,
 distinct linkage names, lexical blocks and qualified namespace-global lookup
 remain outside this change. The existing failed-decompilation policy for
 function-owned statics is unchanged.
+
+## Class-owned display follow-up
+
+An x86-64/AArch64 baseline probe reproduces a lookup defect: two analyst-curated
+class-owned functions and an unrelated global all emit the same lexical
+`curated_same`. The two full class names and their private-static expressions
+cannot resolve; a bare-name breakpoint selects all three definitions. Compiler
+runtime oracles, validators and deterministic repeated exports pass, so a clean
+artifact is insufficient. Baseline raw-review receipt SHA-256:
+`f21253ed05bd4e796b14471c57f765d45a0162c5ef04b4a743a35f134c6d54f7`.
+
+The bounded correction accepts real Ghidra class ancestors in the existing
+immutable display path. Lexical source/signature keys, address normalization,
+collision rejection, C11 CU ownership and the producer API remain unchanged.
+Literal-name/path collisions still fail before native production. Same-named
+overloads within one owner retain the existing duplicate-name behavior.
+
+The real ProgramDB smoke now covers x86-64, AArch64, ARM32 and both MIPS byte
+orders: classes containing namespaces, classes inside namespaces, nested
+classes, duplicate method names, unchanged global names and rejecting class
+display collisions. Three packaged suites pass on actual Java 21 from JAR
+`4087b89299fe3e55692455c3577cd54aec33360725f0fe76b2c774dff3396642`;
+receipt `7c9aff8fcc570a5b8d1f99efd564f0beef71c380a67511b122283f43bb5c9cc0`.
+
+The existing source-built static-scope fixture gains an explicit class-owner
+mode. It creates real class parents, checks the loaded extractor's origin,
+exports a saved curated project again read-only, checks input/program/module
+preservation, and retains exact single-breakpoint/address/source/prototype and
+private-static/global-value assertions. The compiler oracle remains independent;
+the names are analyst choices and are not labeled original C++ facts.
+
+```bash
+GHIDRA_INSTALL_DIR=/path/to/ghidra_12.0.3_PUBLIC ./gradlew qualifiedFunctionNameSmoke
+FORGE_SCOPE_QUALIFIED=1 FORGE_SCOPE_CLASS_NAMES=1 \
+    src/test/integration/function-static-scopes-export.sh "$GHIDRA_INSTALL_DIR" \
+    x86_64 aarch64 mips32be mips32le
+```
+
+Final run `run.fNIwYKQj` passes twelve exec/PIE/rebased cases on these four
+targets (24 exports). Raw DIE review confirms exact compiler function and
+owned-static addresses, separate full names and retained CU ownership.
+Original/module/harness hashes, saved-program preservation and byte-identical
+reruns pass. Ordinary and plain-namespace x86 regressions also pass all three
+roles. Raw-review receipt SHA-256:
+`9758704cc32894d8c311f84689f8ad676521b2075c0eff89bd58b07d8906ddfc`.
+Local headless uses Java 25.0.4.1, separately from actual Java 21 focused tests.
+ARM32 runtime and native Windows remain required hosted checks; the ARM32
+cross-compiler is unavailable locally. Existing compiler frame diagnostics are
+corroborated by the strict checker; no unexplained diagnostics are accepted.
+
+The first baseline GDB probe incorrectly expected a missing Python breakpoint
+to throw; this GDB instead returns an object with no locations. A second probe
+incorrectly equated source breakpoints with function entries despite prologue
+skipping. Final assertions require no full-name locations and compare the three
+selected function blocks with independently observed compiler entries. Both
+unsuccessful transcripts are retained. An initial build command named absent
+task `functionScopeSmoke`; corrected actual tasks pass. No pass is claimed for
+these unsuccessful checks or for the pending hosted gate.
 
 ## External-function omission inventory
 

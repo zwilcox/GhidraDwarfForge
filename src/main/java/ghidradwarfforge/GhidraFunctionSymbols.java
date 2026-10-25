@@ -130,7 +130,7 @@ public final class GhidraFunctionSymbols {
                 continue;
             }
             result.add(new FunctionSymbol(function.getName(), entry, translated,
-                plainNamespacePath(function, diagnostic)));
+                displayNamespacePath(function, diagnostic)));
         }
         // The ordinary iterator excludes external functions. Inventory them separately;
         // their qualified names are diagnostic identities, not emitted namespace DIEs.
@@ -152,12 +152,12 @@ public final class GhidraFunctionSymbols {
         return new ExtractionResult(result, skipped);
     }
 
-    private static List<String> plainNamespacePath(Function function,
+    private static List<String> displayNamespacePath(Function function,
             Consumer<String> diagnostic) {
         List<String> path = new ArrayList<>();
         for (Namespace scope = function.getParentNamespace();
                 scope != null && !scope.isGlobal(); scope = scope.getParentNamespace()) {
-            if (scope.getType() != Namespace.Type.NAMESPACE) {
+            if (scope.getType() != Namespace.Type.NAMESPACE && scope.getType() != Namespace.Type.CLASS) {
                 // Preserve the existing lexical-name behavior for scopes whose
                 // semantics are not covered by this display-only policy.
                 diagnostic.accept("Omitted function display namespace for " +
@@ -165,6 +165,8 @@ public final class GhidraFunctionSymbols {
                     " scope is unsupported; retained lexical name " + function.getName());
                 return List.of();
             }
+            // This is the current analyst-visible path, not a C++ class DIE,
+            // original linkage name, inheritance model or method declaration.
             path.add(0, scope.getName());
         }
         return List.copyOf(path);

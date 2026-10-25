@@ -327,3 +327,13 @@ Forge at exact PCs before/after a call and the saved-register restore, for three
 integer inputs. It also checks raw location lists, source navigation,
 deterministic saved-program exports and original preservation. See
 [`DIRECT-LEAF-CALL-BACKUPS.md`](../../../docs/DIRECT-LEAF-CALL-BACKUPS.md).
+
+## Class-owned function display names
+
+`function-static-scopes.c` also supports analyst-curated class ownership through
+`FORGE_SCOPE_QUALIFIED=1 FORGE_SCOPE_CLASS_NAMES=1` in its integration harness.
+Two same-named functions in different class paths must remain distinct from
+each other and a real global, including private-static lookup and saved-project
+reopening. The original source is C; these are explicitly analyst-defined names,
+not a claim to recover original C++ classes. See
+[`FUNCTION-NAMING.md`](../../../docs/FUNCTION-NAMING.md).

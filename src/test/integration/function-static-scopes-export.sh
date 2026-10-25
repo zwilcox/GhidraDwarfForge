@@ -7,8 +7,14 @@ if [[ $# -lt 1 ]]; then
 fi
 export LC_ALL=C
 qualified=${FORGE_SCOPE_QUALIFIED:-0}
+class_names=${FORGE_SCOPE_CLASS_NAMES:-0}
 if [[ "$qualified" != 0 && "$qualified" != 1 ]]; then
     echo 'FORGE_SCOPE_QUALIFIED must be 0 or 1' >&2
+    exit 64
+fi
+if [[ "$class_names" != 0 && "$class_names" != 1 ]] ||
+        [[ "$class_names" == 1 && "$qualified" != 1 ]]; then
+    echo 'FORGE_SCOPE_CLASS_NAMES must be 0 or 1; class names require qualified mode' >&2
     exit 64
 fi
 export FORGE_SCOPE_QUALIFIED="$qualified"
@@ -24,8 +30,32 @@ result_root="$repository_dir/build/test-results/function-static-scopes"
 if [[ "$qualified" == 1 ]]; then
     result_root="$repository_dir/build/test-results/qualified-function-names"
 fi
+if [[ "$class_names" == 1 ]]; then
+    result_root="$repository_dir/build/test-results/class-function-names"
+fi
 mkdir -p "$result_root"
 result_dir=$(mktemp -d "$result_root/run.XXXXXXXX")
+snapshot_class_inputs() {
+    python3 - "$repository_dir" "$ghidra_dir" "$result_dir" "$1" <<'PY'
+import hashlib
+import json
+from pathlib import Path
+import sys
+repository, ghidra, result = map(Path, sys.argv[1:4])
+phase = sys.argv[4]
+files = [repository / name for name in (
+    'src/test/fixtures/function-static-scopes.c',
+    'src/test/integration/function-static-scopes-export.sh',
+    'src/test/integration/function-static-scopes-gdb.py',
+    'src/test/integration/ghidra_scripts/PrepareFunctionStaticScopes.java')]
+files += [p for p in (ghidra / 'Ghidra/Extensions/GhidraDwarfForge').rglob('*') if p.is_file()]
+snapshot = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
+(result / ('protected-' + phase + '.json')).write_text(json.dumps(snapshot, indent=4) + '\n')
+if phase == 'after':
+    assert snapshot == json.loads((result / 'protected-before.json').read_text())
+PY
+}
+if [[ "$class_names" == 1 ]]; then snapshot_class_inputs before; fi
 emulator_pid=
 port=$((29000 + ($$ % 10000)))
 cleanup() {
@@ -237,23 +267,35 @@ for target in "${targets[@]}"; do
                 > "$case_dir/compiler-global-address.txt" 2>&1
             global_address=$(sed -n 's/^GLOBAL_ADDRESS //p' "$case_dir/compiler-global-address.txt")
             [[ "$global_address" =~ ^0x[[:xdigit:]]+$ ]]
-            preparation_arguments+=(qualified "$global_address")
+            preparation_mode=qualified
+            if [[ "$class_names" == 1 ]]; then preparation_mode=class-qualified; fi
+            preparation_arguments+=("$preparation_mode" "$global_address")
             addresses+=" $global_address"
         fi
         run_gdb "$reference" "" compiler-reference "$case_dir/compiler-reference-gdb.txt"
         run_gdb "$input" "$reference" compiler "$case_dir/compiler-gdb.txt"
         for iteration in first repeat; do
+            project_arguments=(-deleteProject -import "$input" -analysisTimeoutPerFile 120)
+            script_arguments=("${rebase[@]}" -postScript PrepareFunctionStaticScopes.java
+                "$target" "${preparation_arguments[@]}")
+            if [[ "$class_names" == 1 ]]; then
+                project_arguments=(-import "$input" -analysisTimeoutPerFile 120)
+                if [[ "$iteration" == repeat ]]; then
+                    project_arguments=(-process "$(basename "$input")" -readOnly -noanalysis)
+                    script_arguments=()
+                fi
+            fi
             "$ghidra_dir/support/analyzeHeadless" "$case_dir/project" StaticScopes \
-                -deleteProject -import "$input" -analysisTimeoutPerFile 120 \
+                "${project_arguments[@]}" \
                 -scriptPath "$repository_dir/src/test/integration/ghidra_scripts" \
-                "${rebase[@]}" \
-                -postScript PrepareFunctionStaticScopes.java "$target" \
-                "${preparation_arguments[@]}" \
+                "${script_arguments[@]}" \
                 -postScript GhidraDwarfForge.java --packaged-natives "--output=$output" \
                 > "$case_dir/export-$iteration.log" 2>&1
             grep -Fq 'GhidraDwarfForge symbol export PASS' "$case_dir/export-$iteration.log"
-            grep -Fq 'function-static-scopes preparation PASS; missing owner diagnosed' \
-                "$case_dir/export-$iteration.log"
+            if [[ "$class_names" == 0 || "$iteration" == first ]]; then
+                grep -Fq 'function-static-scopes preparation PASS; missing owner diagnosed' \
+                    "$case_dir/export-$iteration.log"
+            fi
             grep -Fq '"functionStaticVariables":2' "$case_dir/export-$iteration.log"
             if [[ "$iteration" == first ]]; then
                 cp "$output" "$case_dir/first.dbg"
@@ -263,11 +305,47 @@ for target in "${targets[@]}"; do
                 cmp "$output.c" "$case_dir/first.dbg.c"
             fi
             sha256sum -c "$case_dir/input.sha256" > "$case_dir/input-preservation.txt"
+            if [[ "$class_names" == 1 ]]; then
+                python3 - "$case_dir" "$iteration" <<'PY'
+import hashlib
+import json
+from pathlib import Path
+import sys
+case, iteration = Path(sys.argv[1]), sys.argv[2]
+project = case / 'project'
+snapshot = {str(p.relative_to(project)): hashlib.sha256(p.read_bytes()).hexdigest()
+    for p in project.rglob('*') if p.is_file()}
+(case / ('project-' + iteration + '.json')).write_text(json.dumps(snapshot, indent=4) + '\n')
+if iteration == 'repeat':
+    before = json.loads((case / 'project-first.json').read_text())
+    changes = sorted(k for k in before.keys() | snapshot.keys() if before.get(k) != snapshot.get(k))
+    assert set(changes) <= {'StaticScopes.rep/idata/~index.bak', 'StaticScopes.rep/idata/~journal.bak'}, changes
+    (case / 'project-preservation.json').write_text(json.dumps({'status': 'PASS', 'backupChanges': changes}, indent=4) + '\n')
+PY
+            fi
         done
+        if [[ "$class_names" == 1 ]]; then
+            grep -Fq 'display-owner=analysis_left type=CLASS' "$case_dir/export-first.log"
+            grep -Fq 'display-owner=analysis_right type=CLASS' "$case_dir/export-first.log"
+            if grep -Fq 'Omitted function display namespace' "$case_dir/export-first.log"; then
+                echo 'class display unexpectedly lost its owner' >&2
+                exit 1
+            fi
+            python3 - "$case_dir/export-first.log" "$ghidra_dir" <<'PY'
+from pathlib import Path
+import re
+import sys
+from urllib.parse import unquote, urlsplit
+log, ghidra = map(Path, sys.argv[1:])
+origin, = re.findall(r'function-symbol-origin=(\S+)', log.read_text())
+assert Path(unquote(urlsplit(origin).path)).resolve() == (ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar').resolve()
+PY
+        fi
         validate_sidecar
         run_gdb "$input" "$output" forge "$case_dir/forge-gdb.txt"
         sha256sum -c "$case_dir/input.sha256" > "$case_dir/input-preservation.txt"
         echo "function-static-scopes-$target-$role=PASS"
     done
 done
+if [[ "$class_names" == 1 ]]; then snapshot_class_inputs after; fi
 echo 'function-static-scopes=PASS'

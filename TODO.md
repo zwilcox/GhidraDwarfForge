@@ -917,6 +917,13 @@ Define precedence among analyst-applied listing/signature types and decompiler g
 
 ## P1.7 Emit complete function signatures
 
+**CONFIRMED locally; hosted acceptance pending (2026-10-25):** recorded class
+ancestors now retain their qualified display path, preventing same-named methods
+from collapsing onto an unrelated global. Five-language model checks, actual
+Java 21 packaged checks and x86-64/AArch64/MIPS BE/LE exec/PIE/rebase GDB tests
+pass. This is display preservation only; class DIEs, method/object relationships,
+linkage, aliases and lexical blocks remain partial. See `docs/FUNCTION-NAMING.md`.
+
 **CONFIRMED in PR #52 run `40215680796` (all twelve jobs, exact package,
 actual Java 21 and raw GDB/Windows review):** ordered decompiler parameter
 names/types now fill DEFAULT noncustom signatures with zero listing parameters.

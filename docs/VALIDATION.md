@@ -6411,3 +6411,21 @@ The enforced strict gate remained enabled; normal merge
 `5eeefb76cfcefa2ed501bdd59676048081b5e9bc` preserves the tested tree. Main run
 `40221601223` is pending. Component commits remain intact, local timing claims
 stay separately scoped, and no release is published.
+
+## Class-owned display identity local checkpoint (2026-10-25)
+
+**CONFIRMED locally; hosted gate pending:** the qualified-name smoke passes
+real ProgramDB models for all five target profiles, with three focused suites
+running from the installed JAR on actual Java 21. Final runtime
+`run.fNIwYKQj` passes twelve cases and 24 exports across x86-64, AArch64 and
+both MIPS byte orders, each exec/PIE/rebased. Raw DIE and compiler/Forge GDB
+review confirms separate full function names, exact entry/static addresses,
+source lookup, private values 37/83 and distinct global behavior. Saved-program
+read-only re-export, input/module/harness preservation, deterministic bytes
+and GNU/LLVM/strict checks pass with no unexplained findings.
+
+Raw-review receipt SHA-256: `9758704cc32894d8c311f84689f8ad676521b2075c0eff89bd58b07d8906ddfc`.
+Ordinary and namespace-qualified x86 regressions pass all three roles. Local
+headless uses Java 25.0.4.1. ARM32 runtime and Windows remain hosted obligations;
+no local pass is claimed for them. See [FUNCTION-NAMING.md](FUNCTION-NAMING.md)
+for the reproduced bug, retained failed probes and display-only boundary.
