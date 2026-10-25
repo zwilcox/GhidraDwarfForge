@@ -71,9 +71,23 @@ ABI pointer being exported as the function's return type. Concrete signatures
 now use `getReturn().getFormalDataType()`. Hidden return-storage parameters keep
 their separate artificial pointer declaration; custom storage preserves the
 current formal signature rather than guessing its former state. The real
-ProgramDB smoke passes 312 Java 21 checks across five language models. Runtime
-and hosted validation are recorded in `docs/VALIDATION.md`; see
+ProgramDB smoke passes 312 Java 21 checks across five language models. PR #48 run `40205151874` passes all twelve jobs, fresh packaged Java 21 checks,
+native Windows and the real x86 return oracle; normal merge is `a162b0c2`.
+The separate main gate is pending. See `docs/VALIDATION.md` and
 `docs/FORMAL-FUNCTION-RETURNS.md` for the bounded contract.
+
+## Curated external declarations (2026-10-25)
+
+**CONFIRMED locally; hosted gate pending:** non-default external signatures
+are retained as addressless declarations with canonical formal types. Persistent
+identity keeps duplicate display names distinct. External placeholders, thunks
+and possible library addresses do not become current-image code or variable
+locations. Ordinary definition counts and the report schema remain unchanged.
+A compiler oracle confirms GDB ignores declaration-only prototypes; the new
+runtime test requires the same honest limitation and intact real-definition
+lookup/source navigation. See `docs/EXTERNAL-FUNCTION-DECLARATIONS.md` and
+`docs/VALIDATION.md`. This is a bounded P1.7/P3.3 improvement, not completion of
+linkage, class or alias semantics.
 
 ## 3. Goals
 
@@ -4100,3 +4114,20 @@ acceptance documentation at `eb10b6c`; no production, fixture or debugger-oracle
 bytes changed. Final committed packaging and the prefix branch's separate full
 hosted gate remain required. See `docs/TRUNCATED-MEMORY-STORES.md` and
 `docs/COMPOSITE-REGISTER-PREFIX.md` for the separate acceptance scopes.
+
+### Declaration integration oracle correction (2026-10-25)
+
+**CONFIRMED:** first declaration run `40208416888` failed all target lanes at
+an unchanged inventory checker expecting the old declaration-policy text,
+after successful export. The checker now requires the current exact diagnostic
+without weakening name/reason/count checks. A retained transcript replay and
+two rejecting diagnostic controls pass. The original failed run is retained;
+full corrected hosted acceptance remains pending.
+
+The corrected declaration run `40209662801` exposed a second stale oracle:
+address-index validation assumed every subprogram was a definition. The checker
+now accepts only addressless true declarations and rejects fabricated address
+attributes, while preserving exact definition-union/index matching. Eighteen
+negative controls and fresh x86-64/MIPS32BE extended-section exec/PIE
+export/validator/GDB checks pass locally. Both failed hosted runs remain
+historical; full corrected acceptance is still pending.

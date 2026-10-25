@@ -12,7 +12,14 @@ import ghidradwarfforge.types.TypeGraph.TypeRef;
 /** Curated function signatures and the canonical types they reference. */
 public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> functions,
         List<GlobalVariable> globals, VariableStorageModel variableStorage,
-        List<FunctionStaticVariable> functionStatics) {
+        List<FunctionStaticVariable> functionStatics,
+        List<FunctionDeclaration> functionDeclarations) {
+    public ProgramTypeModel(TypeGraph types, List<FunctionSignature> functions,
+            List<GlobalVariable> globals, VariableStorageModel variableStorage,
+            List<FunctionStaticVariable> functionStatics) {
+        this(types, functions, globals, variableStorage, functionStatics, List.of());
+    }
+
     public ProgramTypeModel(TypeGraph types, List<FunctionSignature> functions,
             List<GlobalVariable> globals, VariableStorageModel variableStorage) {
         this(types, functions, globals, variableStorage, List.of());
@@ -68,6 +75,20 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
         }
     }
 
+    /** A curated external signature with an identity key, never an image address. */
+    public record FunctionDeclaration(String key, String name, TypeRef returnType,
+            List<Parameter> parameters, boolean variadic, boolean noReturn,
+            String callingConvention, String signatureSource) {
+        public FunctionDeclaration {
+            if (key == null || key.isBlank() || name == null || name.isBlank() ||
+                    returnType == null || parameters == null || callingConvention == null ||
+                    signatureSource == null || signatureSource.isBlank()) {
+                throw new IllegalArgumentException("invalid external function declaration");
+            }
+            parameters = List.copyOf(parameters);
+        }
+    }
+
     /** A recovered local declaration. Location emission is deliberately separate. */
     public record LocalVariable(String name, long byteSize, TypeRef type,
             int firstUseOffset, boolean storageAssigned, String source) {
@@ -81,7 +102,7 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
 
     public ProgramTypeModel {
         if (types == null || functions == null || globals == null || variableStorage == null ||
-                functionStatics == null) {
+                functionStatics == null || functionDeclarations == null) {
             throw new IllegalArgumentException(
                 "types/functions/globals/variable storage/function statics are required");
         }
@@ -99,6 +120,20 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
                 .thenComparing(FunctionStaticVariable::name)
                 .thenComparingLong(FunctionStaticVariable::address))
             .toList();
+        functionDeclarations = functionDeclarations.stream()
+            .sorted(Comparator.comparing(FunctionDeclaration::name)
+                .thenComparing(FunctionDeclaration::key))
+            .toList();
+        var declarationKeys = new java.util.HashSet<String>();
+        for (FunctionDeclaration declaration : functionDeclarations) {
+            if (!declarationKeys.add(declaration.key()) ||
+                    !types.byKey().containsKey(declaration.returnType().key()) ||
+                    declaration.parameters().stream().anyMatch(parameter ->
+                        !types.byKey().containsKey(parameter.type().key()))) {
+                throw new IllegalArgumentException("duplicate identity or missing type for declaration " +
+                    declaration.name());
+            }
+        }
         for (FunctionSignature function : functions) {
             if (!types.byKey().containsKey(function.returnType().key())) {
                 throw new IllegalArgumentException("missing return type for " + function.name());

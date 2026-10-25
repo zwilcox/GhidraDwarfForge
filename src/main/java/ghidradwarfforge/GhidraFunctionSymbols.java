@@ -146,7 +146,7 @@ public final class GhidraFunctionSymbols {
             monitor.checkCancelled();
             skipped.add(new SkippedFunction(name, SkipReason.EXTERNAL_IMPORT));
             diagnostic.accept("Skipped external/import function " + name +
-                "; declaration/linkage policy is not implemented yet");
+                "; no in-image definition; curated declarations are emitted separately");
         }
         FunctionSymbol.validateDisplayNames(result);
         return new ExtractionResult(result, skipped);

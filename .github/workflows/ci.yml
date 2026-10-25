@@ -1022,6 +1022,10 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: src/test/integration/composite-register-prefix-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
 
+      - name: Curated external declarations without invented image addresses
+        if: matrix.target == 'x86_64'
+        run: src/test/integration/external-function-declarations-export.sh "$GHIDRA_INSTALL_DIR"
+
       - name: Formal aggregate return type and hidden ABI parameter
         if: matrix.target == 'x86_64'
         run: src/test/integration/formal-function-return-export.sh "$GHIDRA_INSTALL_DIR"
