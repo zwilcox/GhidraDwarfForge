@@ -4373,3 +4373,13 @@ and exact artifact review. Earlier component results retain their separate
 scopes. Additional FP64A investigation finds a failing untouched compiler
 reference under the current debugger transport; it remains unvalidated. See
 `docs/MIPS-FP32-ORACLE.md`. No release is published.
+
+### Separate main54 gate accepted (2026-10-25)
+
+**CONFIRMED:** main push `40228194534` at `c0148c7451d5701e6ed7b95ba5c3a4be7261c05c`
+passes all twelve jobs and fresh exact-package/raw-runtime/both-GUI review.
+The exact JAR and eight test sources match the passing Java 21 receipt; all
+fifteen class cases, six direct-call roles and 33 native Windows tasks pass.
+Main receipt: `488c4288d6a1b343e645ea6026f3d6ca9fb50adc1515fa9865ca945710a7f6f9`. Earlier pending-main54
+notes are historical. The combined coverage/FP32 head retains its own pending
+current-base gate; this main pass does not substitute for that acceptance.

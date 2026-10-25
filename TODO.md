@@ -2,7 +2,8 @@
 
 **Current integration:** PR54 is merged as `c0148c7` after all twelve PR
 checks and independent artifact review passed. Its separate main run
-`40228194534` is pending. PR56 combines the coverage correction and PR55's
+`40228194534` also passes all twelve jobs and independent artifact review.
+PR56 combines the coverage correction and PR55's
 FP32 tests through normal history; 24 combined FP32 exports pass locally and
 the final combined hosted gate is pending. Remaining broad TODOs stay open.
 
