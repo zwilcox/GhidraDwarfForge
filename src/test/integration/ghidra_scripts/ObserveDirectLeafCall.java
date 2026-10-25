@@ -12,6 +12,7 @@ import ghidra.program.model.listing.ParameterImpl;
 import ghidra.program.model.listing.ReturnParameterImpl;
 import ghidra.program.model.symbol.SourceType;
 import ghidradwarfforge.GhidraTypeGraph;
+import ghidradwarfforge.GhidraImageBase;
 
 public class ObserveDirectLeafCall extends GhidraScript {
     @Override
@@ -57,6 +58,8 @@ public class ObserveDirectLeafCall extends GhidraScript {
         if (rows.size() != 2) { throw new AssertionError("missing fixture functions"); }
         var result = new LinkedHashMap<String, Object>();
         result.put("java", System.getProperty("java.version"));
+        result.put("imageBase", currentProgram.getImageBase().getOffset());
+        result.put("originalImageBase", GhidraImageBase.originalImageBase(currentProgram));
         result.put("origin", GhidraTypeGraph.class.getProtectionDomain().getCodeSource().getLocation().toExternalForm());
         result.put("functions", rows);
         Files.writeString(Path.of(getScriptArgs()[1]), new GsonBuilder().setPrettyPrinting().create().toJson(result) + "\n");

@@ -4302,3 +4302,12 @@ Separate commits retain each change's scope and evidence. The portable driver
 fix is included, and fresh combined x86/AArch64 call regressions pass alongside
 the class matrix. `docs/VALIDATION.md` records the exact local receipts; the
 combined PR still requires its own hosted gate before normal integration.
+
+### Direct-call relocation coverage (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** the direct-leaf-call harness
+now covers exec/PIE/rebased PIE on native x86-64 and QEMU AArch64. Independent
+compiler symbol entries, nonzero runtime load biases and unchanged link-time
+location intervals for byte-identical rebased inputs pass all six cases. No
+production behavior changes. CI requires each role in both lanes; see
+`docs/DIRECT-LEAF-CALL-BACKUPS.md` for the exact local receipt and remaining scope.

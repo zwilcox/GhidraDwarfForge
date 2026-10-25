@@ -337,3 +337,9 @@ each other and a real global, including private-static lookup and saved-project
 reopening. The original source is C; these are explicitly analyst-defined names,
 not a claim to recover original C++ classes. See
 [`FUNCTION-NAMING.md`](../../../docs/FUNCTION-NAMING.md).
+
+The direct-leaf-call fixture also runs as PIE and as the same PIE imported at
+an explicitly rebased Ghidra image base (`--role pie` / `--role pie-rebased`).
+Its GDB oracle measures real runtime bias and compares parameter values at
+instruction boundaries against compiler DWARF, while raw location ranges remain
+link-time addresses. CI requires exec and both PIE roles on x86-64/AArch64.

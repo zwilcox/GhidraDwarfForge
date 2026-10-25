@@ -138,3 +138,30 @@ provenance audit and five fresh actual Java 21 suites. Those checks do not turn
 the failed integration job into a pass. Hosted JAR SHA-256:
 `686708c0b09c5cb6c8e56e219b16b3110ecf050d016cc51a4cac33e905e0a16b`;
 focused receipt `35dd1a17462e9caf29e0570cfbc74a056d08b4ecf458ae38b66c25dce81d1a44`.
+
+## PIE and explicit rebase regression follow-up
+
+**CONFIRMED locally; hosted acceptance pending:** the same production JAR also
+passes x86-64/AArch64 exec, PIE and rebased PIE cases through the expanded
+`direct-leaf-call-export.py --role` harness. The observer retains Ghidra's
+current and recorded original image bases. The harness independently matches
+normalized entries to compiler ELF symbols, checks ELF type, and checks exact
+location intervals at link-time addresses. GDB starts with symbolic instruction
+breakpoints and records the actual runtime load bias before setting later
+instruction breakpoints; every PIE run must observe a nonzero bias. No ASLR
+disabling, fixed runtime addresses or source-command assertion weakening is
+introduced.
+
+Six complete local cases use JAR
+`4087b89299fe3e55692455c3577cd54aec33360725f0fe76b2c774dff3396642`.
+Each compares the compiler, Forge and previous exporter at fifteen instruction
+stops, checks three signed inputs and returns, source navigation, deterministic
+re-export and original/module/project preservation, then GNU/LLVM/strict
+validation. Local headless uses Java 25.0.4.1. The byte-identical PIE inputs yield
+identical link-time location boundaries before and after the explicit Ghidra
+`0x2000000` rebase. Local combined raw-review receipt SHA-256:
+`4d89b9e28a7dd7463a2a3e5c23ed009da9a0891fbce2c50139c91f287f0b59e3`.
+
+CI now requires all three roles in both target lanes. This expands regression
+coverage without changing production code, register contracts or unsupported
+call/storage policies; shared-object call fixtures remain outside this slice.
