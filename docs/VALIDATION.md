@@ -6398,3 +6398,16 @@ Local headless Java is 25.0.4.1; separate packaged tests use actual Java 21.
 See [the bounded contract and retained failures](DIRECT-LEAF-CALL-BACKUPS.md).
 The new workflow requires both runtime lanes and native Windows model checks;
 this local checkpoint does not claim those hosted results or a new release.
+
+## Combined recovered signatures and stack analysis accepted (2026-10-25)
+
+**CONFIRMED:** PR53 head `47970c8558ca9e4ba9933470a5ddd77cb814adef` passes
+all twelve jobs in `40218743315`. Exact package/manifests/native provenance,
+seven actual Java 21 focused tests, raw parameter/return/declaration GDB/DWARF,
+stack exec/PIE/rebase preservation and 32 Windows smoke tasks pass review.
+Combined receipt SHA-256:
+`f43a469f3dd2d381cc8610d3211c9a3eb80b6165135972f27eeb076f8e1ed90c`.
+The enforced strict gate remained enabled; normal merge
+`5eeefb76cfcefa2ed501bdd59676048081b5e9bc` preserves the tested tree. Main run
+`40221601223` is pending. Component commits remain intact, local timing claims
+stay separately scoped, and no release is published.

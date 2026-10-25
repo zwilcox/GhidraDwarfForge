@@ -4271,3 +4271,16 @@ tails remain unavailable. No general ABI, stack-copy or mixed-piece inference is
 added. Real x86-64/AArch64 compiler/GDB fixtures and actual Java 21 packaged
 model checks pass. `docs/DIRECT-LEAF-CALL-BACKUPS.md` records the exact contract,
 retained failed experiments and pending independent hosted gate.
+
+### Combined recovery and performance integration (2026-10-25)
+
+**CONFIRMED:** exact PR53 head `47970c8558ca9e4ba9933470a5ddd77cb814adef`
+passes all twelve jobs in `40218743315`. Exact package/native/source provenance,
+seven actual Java 21 focused suites, raw inferred types/omissions/returns,
+external declarations, stack exec/PIE/rebase behavior and 32 native Windows
+model tasks pass review. Combined receipt SHA-256:
+`f43a469f3dd2d381cc8610d3211c9a3eb80b6165135972f27eeb076f8e1ed90c`.
+Normal merge `5eeefb76cfcefa2ed501bdd59676048081b5e9bc` preserves the accepted
+tree. Distinct main run `40221601223` is pending. Earlier combined/component
+pending notes are historical. The direct-call branch incorporates this main
+parent through a normal merge with unchanged feature tree before its own gate.

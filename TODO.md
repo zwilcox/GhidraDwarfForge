@@ -1,5 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED (2026-10-25):** combined PR #53 head `47970c8` passes all twelve
+jobs in `40218743315`, exact package/source/native-provenance review, actual
+Java 21 focused checks and fresh raw return/parameter/declaration/stack GDB
+review. Normal merge `5eeefb76cfcefa2ed501bdd59676048081b5e9bc` integrates
+PR50/51/52 and deferred stack analysis without rewriting their history. Its
+distinct main run `40221601223` is pending. Earlier pending-component notes
+are historical; no release is published. The direct-leaf call follow-up below
+has local evidence and requires its own full hosted acceptance.
+
 This plan began at prototype commit `7a39a186538c7aec3f7dbdc4a6e396125b5d63ea`.
 Published corrective release
 [v0.1.0-alpha.2](https://github.com/zwilcox/GhidraDwarfForge/releases/tag/v0.1.0-alpha.2)
