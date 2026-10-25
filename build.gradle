@@ -310,6 +310,18 @@ tasks.register("registerCopySmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/register-copy/cache").absolutePath
 }
 
+tasks.register("laterRegisterLocalSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks curated later register starts and conservative unavailable intervals"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.LaterRegisterLocalSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/later-register-local/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/later-register-local/cache").absolutePath
+}
+
 tasks.register("stackSpillSmoke", JavaExec) {
     group = "verification"
     description = "Checks bounded register-to-stack spills and conservative memory-write boundaries"

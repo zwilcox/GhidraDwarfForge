@@ -1235,6 +1235,15 @@ or uncertain storage remains locationless with a diagnostic.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
 
+**CONFIRMED locally; hosted acceptance pending (2026-10-25):** explicit
+function-owned register locals with positive first-use offsets now have a
+bounded proof: one exact read after a completed definition, no overlapping
+variable storage, and a fully decoded straight-line leaf. Six exec/PIE/rebase
+roles pass twelve exports, six preceding-package comparisons, 594 GDB stops
+and eighteen actual Java 21 suites. Earlier/later intervals remain unavailable.
+Original lexical scopes, inferred locals and general migration remain planned;
+see `docs/LATER-REGISTER-LOCALS.md` for exact evidence and retained failures.
+
 **CONFIRMED locally; hosted acceptance pending (2026-10-25):** one complete
 incoming scalar stack save now preserves the value after register loss, ending
 at any later memory or stack-pointer write. Six x86-64/AArch64 exec/PIE/rebase

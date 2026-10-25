@@ -373,6 +373,11 @@ it across exec/PIE/rebase/repeat. Compiler aggregate locations at raw entry are
 recorded as unvalidated; strict field comparisons begin after the prologue.
 See `docs/TERMINAL-RETURN-PREFIX.md`.
 
+- `later-register-local-export.py` uses `later-register-local.c` for curated
+  signed 32/64-bit register locals with positive first-use offsets. It checks
+  exact read/overwrite boundaries, unavailable prefixes/tails, saved-project
+  repeats, PIE/rebases, compiler-local scope differences and raw register values.
+  See `docs/LATER-REGISTER-LOCALS.md`; this is not original lexical-scope recovery.
 - `stack-spill-export.py` uses `stack-spill.c` for signed 32/64-bit parameters
   saved to the stack before incoming-register loss. x86-64/AArch64 exec, PIE
   and rebase roles compare compiler and Forge values, raw stack bytes and

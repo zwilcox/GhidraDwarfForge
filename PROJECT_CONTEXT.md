@@ -1,5 +1,13 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**Current local candidate — hosted acceptance pending (2026-10-25):** bounded
+curated later register locals pass six x86-64/AArch64 exec/PIE/rebase roles,
+twelve exports, six preceding-package comparisons and 594 GDB stops. Eighteen
+actual Java 21 packaged suites pass. The implementation preserves an analyst's
+function-owned binding, explicitly distinguishes it from original lexical
+scope, and rejects ambiguous definitions, starts, ownership and control flow.
+See `docs/LATER-REGISTER-LOCALS.md`. General lifetimes/scopes remain incomplete.
+
 **CONFIRMED integration (2026-10-25):** PR59 head
 `28ae3f0c0b2306490932da8841d161b09bb9490e` passes all twelve jobs in
 `40241665541` and independent exact-package, sixteen actual Java 21 suites,

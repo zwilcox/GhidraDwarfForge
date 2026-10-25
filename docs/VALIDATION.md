@@ -6710,3 +6710,24 @@ run `40244657118` remains pending. Earlier pending and failed component notes
 are historical, and the failed architecture guard is not retroactively
 accepted. This does not complete broader lifetimes, ABI modes, linkage/scopes
 or optional attachment. No release publication.
+
+
+## Curated later register-local lifetimes (2026-10-25)
+
+**CONFIRMED locally; exact hosted gate pending.** The actual Java 21 packaged
+suite includes 108 new real-decoder checks; eighteen suites pass. The production
+exporter passes six x86-64/AArch64 exec/PIE/rebase cases, twelve repeated exports,
+six preceding-package comparisons and 594 GDB observations. GNU/LLVM validation
+passes, strict diagnostics match only inherited frame-length messages, original
+inputs remain unchanged, and paired outputs are byte-identical. The independent
+receipt is `build/later-local-review/acceptance.json`, SHA-256
+`f1d20ebccd6a857f7a4037d40d111724e8dfe98d239b6918a7eff2fc1f634afa`.
+Six stack-first-use and two stack-spill compatibility cases also pass with the
+same package. See `LATER-REGISTER-LOCALS.md` for exact scope, commands, artifacts,
+retained test-setup failures and the initial compiler-DWARF LLVM timeout.
+
+The feature follows an explicitly curated function-owned local from its exact
+recorded read, after a completed definition, until a possible overwrite. It
+requires a fully decoded straight-line leaf and rejects competing storage.
+Compiler lexical scope and curated physical availability are tested separately;
+no original scope, automatic local lifetime, migration or call support is inferred.
