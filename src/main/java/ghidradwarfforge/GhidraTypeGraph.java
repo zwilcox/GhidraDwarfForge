@@ -53,6 +53,7 @@ import ghidra.util.task.TaskMonitor;
 import ghidradwarfforge.locations.TargetRegisterMap;
 import ghidradwarfforge.locations.VariableStorageModel;
 import ghidradwarfforge.locations.VariableStorageModel.Confidence;
+import ghidradwarfforge.locations.VariableStorageModel.CompositeStorage;
 import ghidradwarfforge.locations.VariableStorageModel.RegisterRelativeStorage;
 import ghidradwarfforge.locations.VariableStorageModel.RegisterStorage;
 import ghidradwarfforge.locations.VariableStorageModel.StackStorage;
@@ -180,6 +181,8 @@ public final class GhidraTypeGraph {
                         parameterName, VariableKind.PARAMETER, logicalLength, ranges));
                     if (storage instanceof UnavailableStorage unavailable) {
                         diagnostic.accept((prefix.isEmpty() ? "Omitted location for " :
+                            GhidraVariableStorage.hasStackPiece(parameter.getVariableStorage())
+                                ? "Limited location to proven incoming mixed-storage lifetime for " :
                             prefix.stream().filter(interval -> interval.storage().available())
                                 .count() > 1 ? "Limited location to proven register-copy lifetime for " :
                                 "Limited location to proven incoming-register lifetime for ") +
@@ -450,12 +453,17 @@ public final class GhidraTypeGraph {
     private static List<LocationRange> parameterPrefixRanges(
             List<GhidraVariableStorage.StorageInterval> intervals, long rebaseDelta,
             SourceType source) {
+        boolean mixed = intervals.stream().anyMatch(interval ->
+            interval.storage() instanceof CompositeStorage composite && composite.pieces().stream()
+                .anyMatch(piece -> piece.storage() instanceof RegisterRelativeStorage));
         return intervals.stream().map(interval -> {
             var confidence = evidence(source, interval.storage()).confidence();
             Evidence evidence = new Evidence(confidence,
                 "Ghidra listing parameter storage (" + source + "); fully decoded " +
-                    "straight-line leaf with incoming register and, where proven, one " +
-                    "completed exact-bit register copy; unproven intervals are unavailable");
+                    (mixed ? "straight-line leaf with exact register/stack pieces and analyzed " +
+                        "stack-pointer depth; bounded by the first possible memory or register write" :
+                        "straight-line leaf with incoming register and, where proven, one " +
+                        "completed exact-bit register copy") + "; unproven intervals are unavailable");
             return new LocationRange(AddressNormalizer.toElfAddress(interval.start(), rebaseDelta),
                 AddressNormalizer.toElfAddress(interval.end(), rebaseDelta),
                 interval.storage(), evidence);

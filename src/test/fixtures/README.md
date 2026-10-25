@@ -358,6 +358,14 @@ cleared; input bytes and the function body remain intact. Before/after GDB
 checks require honest unavailable parameters, and post-export inspection proves
 that the listing gap was retained. See `docs/REGISTER-BODY-COVERAGE.md`.
 
+The `mixed-incoming-prefix.c` fixture places an ordinary ARMv7 two-integer
+parameter across `r3` and the incoming stack. Its dedicated harness checks
+computed/custom storage, SP adjustment, exact complete values before the first
+possible store, and whole-value unavailability afterward. Compiler stack-home
+locations before the prologue store remain explicitly unvalidated; machine
+arguments and subsequent compiler fields corroborate the expected values.
+See `docs/MIXED-INCOMING-PREFIX.md` for the twelve-case matrix and limitations.
+
 The `terminal-composite.c` fixture uses an ordinary ARMv7 eight-byte parameter
 and a compiler-declared register overwrite. Its dedicated harness checks the
 complete register pair before the write and whole-value unavailability after

@@ -1,5 +1,13 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally; hosted acceptance pending (2026-10-25):** bounded incoming
+register/stack pieces now pass thirteen actual Java 21 suites and twelve ARM
+computed/custom exec/PIE/rebase/repeat exports. The complete value becomes
+unavailable after the first possible memory/register write; SP adjustments are
+resolved from Ghidra's instruction depths. Six register-pair and eighteen
+floating regressions also pass. `docs/MIXED-INCOMING-PREFIX.md` records scope,
+raw evidence and retained failures. Broader migration remains incomplete.
+
 **CONFIRMED (2026-10-25):** PR56 head `2944b0f` passes all twelve jobs in
 `40231232266` and exact package/Java 21/raw target/GUI/native Windows review.
 Normal merge `fa68fb11c6e0967341fa13ca628a263138953ec9` preserves the tested
@@ -18,7 +26,8 @@ boundary used by stable registers. ARM floating and computed register-pair
 values survive until their first overwrite, followed by an unavailable tail.
 Actual Java 21 models and QEMU/GDB/validator regressions pass locally; see
 `docs/TERMINAL-RETURN-PREFIX.md` for scoped evidence and retained failures.
-Mixed register/stack joins remain unsupported. A private ARM compiler/sysroot
+At that checkpoint mixed register/stack joins remained unsupported; the newer
+bounded local evidence above supersedes that limitation. A private ARM compiler/sysroot
 now supports local research without changing the system installation.
 
 This document is the durable project handoff for GhidraDwarfForge. It captures the intended product, the verified repository state, the prototype architecture, known hazards, and unresolved decisions.

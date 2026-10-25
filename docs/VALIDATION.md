@@ -6584,3 +6584,23 @@ MIPS FP32 explicit pieces validate in both byte orders. Whole FP aliases,
 FP64A transport and general variable migration remain incomplete. No release
 is published by this integration.
 
+
+
+### Bounded incoming register/stack pieces (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** attached incoming mixed joins
+now retain their complete value before the first possible memory/register
+write, resolving stack pieces against analyzed SP depth. ARM computed/custom
+exec/PIE/rebase/repeat passes twelve exports, exact normalized DWARF and runtime
+fields, unavailable tails, source lookup, deterministic repeats and protected
+inputs. Thirteen freshly compiled suites run successfully on actual Java 21
+against the same production JAR. Six terminal register-pair and eighteen
+ARM/x86/AArch64 floating exports also pass. The raw mixed review receipt is
+`a8402f723f968d21c97c3f38317e64e3285d01293cf5fd43a5e2bd90cb759e29`.
+See `docs/MIXED-INCOMING-PREFIX.md` for exact evidence and retained failures.
+
+The combined branch includes the terminal-return component and its corrected
+ARM semantic/extended-section/shared-object oracles. Their previous hosted
+omission assertions are preserved as a failed run; no green gate is inferred.
+A fresh full combined gate is required. General register/memory migration,
+later locals and broader ABI coverage remain partial.

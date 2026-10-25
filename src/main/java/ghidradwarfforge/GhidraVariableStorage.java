@@ -96,7 +96,7 @@ public final class GhidraVariableStorage {
     }
 
     /**
-     * Refines an otherwise rejected register-only parameter. The value
+     * Refines an otherwise rejected incoming register or register/stack parameter. The value
      * exists at the first writing instruction (before it executes), and becomes
      * unavailable at its fall-through address unless a separate ordered p-code
      * proof establishes one completed register backup before that instruction.
@@ -107,6 +107,9 @@ public final class GhidraVariableStorage {
     public static List<StorageInterval> parameterPrefix(Program program, Function function,
             Parameter parameter, TargetRegisterMap registers, Storage rejected,
             TaskMonitor monitor) throws CancelledException {
+        if (rejected instanceof UnavailableStorage && hasStackPiece(parameter.getVariableStorage())) {
+            return mixedParameterPrefix(program, function, parameter, registers, monitor);
+        }
         if (!(rejected instanceof UnavailableStorage unavailable) ||
                 unavailable.reason() != OmissionReason.REGISTER_MODIFIED) {
             return List.of();
@@ -198,47 +201,9 @@ public final class GhidraVariableStorage {
                 return List.of();
             }
         }
-        List<Instruction> instructions = new ArrayList<>();
-        var instructionsByAddress = new HashMap<ghidra.program.model.address.Address, Instruction>();
-        var iterator = program.getListing().getInstructions(function.getBody(), true);
-        while (iterator.hasNext()) {
-            monitor.checkCancelled();
-            Instruction instruction = iterator.next();
-            for (PcodeOp operation : instruction.getPcode()) {
-                monitor.checkCancelled();
-                if (unprovenStore(program, operation)) {
-                    return List.of();
-                }
-            }
-            instructions.add(instruction);
-            instructionsByAddress.put(instruction.getAddress(), instruction);
-        }
-        // A second entry can target an offcut byte inside a listed instruction,
-        // not just an instruction start. Inspect every referenced destination.
-        var destinations = program.getReferenceManager()
-            .getReferenceDestinationIterator(function.getBody(), true);
-        while (destinations.hasNext()) {
-            monitor.checkCancelled();
-            var destination = destinations.next();
-            if (destination.equals(function.getEntryPoint())) {
-                continue;
-            }
-            var references = program.getReferenceManager().getReferencesTo(destination);
-            while (references.hasNext()) {
-                monitor.checkCancelled();
-                var reference = references.next();
-                var type = reference.getReferenceType();
-                if (type.isFlow()) {
-                    Instruction predecessor = instructionsByAddress.get(reference.getFromAddress());
-                    boolean ordinaryFallthrough = type == ghidra.program.model.symbol.RefType.FALL_THROUGH &&
-                        predecessor != null && instructionsByAddress.containsKey(destination) &&
-                        destination.equals(predecessor.getFallThrough()) &&
-                        destination.equals(predecessor.getMaxAddress().next());
-                    if (!ordinaryFallthrough) {
-                        return List.of();
-                    }
-                }
-            }
+        List<Instruction> instructions = prefixInstructions(program, function, monitor);
+        if (instructions == null) {
+            return List.of();
         }
         long start = function.getEntryPoint().getOffset();
         long end = Math.addExact(function.getBody().getMaxAddress().getOffset(), 1);
@@ -277,6 +242,222 @@ public final class GhidraVariableStorage {
         return List.copyOf(result);
     }
 
+    static boolean hasStackPiece(VariableStorage storage) {
+        if (storage == null || storage.getVarnodeCount() < 2 || storage.getVarnodes() == null) {
+            return false;
+        }
+        for (Varnode node : storage.getVarnodes()) {
+            if (node != null && node.getAddress().isStackAddress()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static List<StorageInterval> mixedParameterPrefix(Program program, Function function,
+            Parameter parameter, TargetRegisterMap registers, TaskMonitor monitor)
+            throws CancelledException {
+        monitor.checkCancelled();
+        VariableStorage storage = parameter.getVariableStorage();
+        var formal = parameter.getFormalDataType();
+        int bytes = parameter.getLength();
+        // Stack analysis and listing instructions must describe the same
+        // attached parameter/function/program, not a detached storage sketch.
+        if (function.getProgram() != program || storage.getProgramArchitecture() != program ||
+                parameter.getFunction() != function ||
+                parameter.getOrdinal() < 0 || function.getParameter(parameter.getOrdinal()) != parameter ||
+                parameter.getFirstUseOffset() != 0 ||
+                bytes <= 0 || formal == null || formal.getLength() != bytes ||
+                storage.size() != bytes || !storage.isValid() || storage.isBadStorage() ||
+                storage.isForcedIndirect() || storage.isUnassignedStorage() ||
+                function.getBody().getNumAddressRanges() != 1 ||
+                !function.getEntryPoint().equals(function.getBody().getMinAddress())) {
+            return List.of();
+        }
+        Varnode[] nodes = storage.getVarnodes();
+        if (nodes.length != storage.getVarnodeCount()) {
+            return List.of();
+        }
+        List<Piece> pieces = new ArrayList<>();
+        List<Register> bases = new ArrayList<>();
+        var ends = new ArrayList<ghidra.program.model.address.Address>();
+        long total = 0;
+        for (int index = 0; index < nodes.length; index++) {
+            monitor.checkCancelled();
+            Varnode node = nodes[index];
+            if (node == null || node.getSize() <= 0) {
+                return List.of();
+            }
+            Storage piece;
+            if (node.isRegister()) {
+                Register register = program.getRegister(node);
+                if (register == null || register != program.getLanguage()
+                        .getRegister(node.getAddress(), node.getSize())) {
+                    return List.of();
+                }
+                piece = mappedRegister(register, node.getSize(), registers, "incoming mixed piece");
+                if (!(piece instanceof RegisterStorage)) {
+                    return List.of();
+                }
+                bases.add(register.getBaseRegister());
+            }
+            else if (node.getAddress().isStackAddress()) {
+                // Ghidra permits one non-register carrier at a target-dependent
+                // end of the join. Check the loaded-language convention.
+                int stackIndex = program.getLanguage().isBigEndian() ? nodes.length - 1 : 0;
+                if (index != stackIndex || node.getAddress().getAddressSpace() !=
+                        program.getAddressFactory().getStackSpace() ||
+                        (node.getOffset() < 0 && node.getOffset() > -((long) node.getSize()))) {
+                    return List.of();
+                }
+                piece = new StackStorage(node.getOffset());
+            }
+            else {
+                return List.of();
+            }
+            ghidra.program.model.address.Address end;
+            try {
+                end = node.getAddress().addNoWrap(node.getSize() - 1L);
+            }
+            catch (ghidra.program.model.address.AddressOverflowException invalid) {
+                return List.of();
+            }
+            for (int previous = 0; previous < index; previous++) {
+                monitor.checkCancelled();
+                if (node.getAddress().getAddressSpace().equals(nodes[previous].getAddress().getAddressSpace()) &&
+                        node.getAddress().compareTo(ends.get(previous)) <= 0 &&
+                        nodes[previous].getAddress().compareTo(end) <= 0) {
+                    return List.of();
+                }
+            }
+            total += node.getSize();
+            if (total > bytes) {
+                return List.of();
+            }
+            ends.add(end);
+            pieces.add(new Piece(piece, Math.multiplyExact(node.getSize(), 8)));
+        }
+        if (total != bytes || bases.isEmpty()) {
+            return List.of();
+        }
+        List<Instruction> instructions = prefixInstructions(program, function, monitor);
+        if (instructions == null) {
+            return List.of();
+        }
+        long start = function.getEntryPoint().getOffset();
+        long end = Math.addExact(function.getBody().getMaxAddress().getOffset(), 1);
+        // Any possible memory write ends this first bounded proof, even a
+        // store that might target a disjoint frame slot. No alias inference.
+        long boundary = registerPrefixEnd(start, end, instructions, bases, true,
+            Map.of(), true, monitor);
+        if (boundary <= start) {
+            return List.of();
+        }
+        StackDepthProfile profile = stackDepthProfile(program, function, monitor);
+        if (profile.intervals().isEmpty() || profile.registerName().isBlank() ||
+                !profile.intervals().getFirst().known() || profile.intervals().getFirst().depth() != 0 ||
+                profile.intervals().getFirst().start() != start) {
+            return List.of();
+        }
+        if (!program.getLanguage().isBigEndian()) {
+            pieces = pieces.reversed();
+        }
+        List<StorageInterval> result = new ArrayList<>();
+        for (StackDepthInterval interval : profile.intervals()) {
+            monitor.checkCancelled();
+            long limit = Math.min(boundary, interval.end());
+            if (interval.start() >= limit) {
+                break;
+            }
+            Storage value = unavailable(OmissionReason.UNKNOWN_LIFETIME,
+                "incoming mixed storage has no proven stack-pointer depth");
+            if (interval.known()) {
+                List<Piece> resolved = new ArrayList<>();
+                for (Piece piece : pieces) {
+                    monitor.checkCancelled();
+                    Storage location = piece.storage() instanceof StackStorage stack
+                        ? registers.registerRelative(profile.registerName(),
+                            Math.subtractExact(stack.byteOffset(), (long) interval.depth()))
+                        : piece.storage();
+                    if (!location.available()) {
+                        return List.of();
+                    }
+                    resolved.add(new Piece(location, piece.bitSize()));
+                }
+                value = new CompositeStorage(resolved);
+            }
+            result.add(new StorageInterval(interval.start(), limit, value));
+        }
+        if (boundary < end) {
+            result.add(new StorageInterval(boundary, end, unavailable(OmissionReason.UNKNOWN_LIFETIME,
+                "incoming mixed storage may have been overwritten; later storage is not established")));
+        }
+        return List.copyOf(result);
+    }
+
+    private static boolean writesMemory(Instruction instruction) {
+        for (Object output : instruction.getResultObjects()) {
+            if (output instanceof ghidra.program.model.address.Address address &&
+                    address.getAddressSpace().isMemorySpace()) {
+                return true;
+            }
+        }
+        for (PcodeOp operation : instruction.getPcode()) {
+            if (operation.getOpcode() == PcodeOp.STORE || (operation.getOutput() != null &&
+                    operation.getOutput().getAddress().getAddressSpace().isMemorySpace())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static List<Instruction> prefixInstructions(Program program, Function function,
+            TaskMonitor monitor) throws CancelledException {
+        List<Instruction> instructions = new ArrayList<>();
+        var instructionsByAddress = new HashMap<ghidra.program.model.address.Address, Instruction>();
+        var iterator = program.getListing().getInstructions(function.getBody(), true);
+        while (iterator.hasNext()) {
+            monitor.checkCancelled();
+            Instruction instruction = iterator.next();
+            for (PcodeOp operation : instruction.getPcode()) {
+                monitor.checkCancelled();
+                if (unprovenStore(program, operation)) {
+                    return null;
+                }
+            }
+            instructions.add(instruction);
+            instructionsByAddress.put(instruction.getAddress(), instruction);
+        }
+        // A second entry can target an offcut byte inside a listed instruction,
+        // not just an instruction start. Inspect every referenced destination.
+        var destinations = program.getReferenceManager()
+            .getReferenceDestinationIterator(function.getBody(), true);
+        while (destinations.hasNext()) {
+            monitor.checkCancelled();
+            var destination = destinations.next();
+            if (destination.equals(function.getEntryPoint())) {
+                continue;
+            }
+            var references = program.getReferenceManager().getReferencesTo(destination);
+            while (references.hasNext()) {
+                monitor.checkCancelled();
+                var reference = references.next();
+                var type = reference.getReferenceType();
+                if (type.isFlow()) {
+                    Instruction predecessor = instructionsByAddress.get(reference.getFromAddress());
+                    boolean ordinaryFallthrough = type == ghidra.program.model.symbol.RefType.FALL_THROUGH &&
+                        predecessor != null && instructionsByAddress.containsKey(destination) &&
+                        destination.equals(predecessor.getFallThrough()) &&
+                        destination.equals(predecessor.getMaxAddress().next());
+                    if (!ordinaryFallthrough) {
+                        return null;
+                    }
+                }
+            }
+        }
+        return List.copyOf(instructions);
+    }
+
     /** Exact fully decoded, ordinary straight-line leaf proof; -1 rejects it. */
     static long registerPrefixEnd(long start, long end, List<Instruction> instructions,
             Register register, TaskMonitor monitor) throws CancelledException {
@@ -301,6 +482,14 @@ public final class GhidraVariableStorage {
             List<Register> registers, boolean exactDecodedLength,
             Map<ghidra.program.model.address.Address, DirectLeafCalls.Leaf> calls, TaskMonitor monitor)
             throws CancelledException {
+        return registerPrefixEnd(start, end, instructions, registers, exactDecodedLength,
+            calls, false, monitor);
+    }
+
+    private static long registerPrefixEnd(long start, long end, List<Instruction> instructions,
+            List<Register> registers, boolean exactDecodedLength,
+            Map<ghidra.program.model.address.Address, DirectLeafCalls.Leaf> calls,
+            boolean stopAtMemoryWrite, TaskMonitor monitor) throws CancelledException {
         long expected = start;
         long firstWriteEnd = -1;
         boolean returned = false;
@@ -368,6 +557,9 @@ public final class GhidraVariableStorage {
                     instruction.getFallThrough().getOffset() != next) {
                 return -1;
             }
+            if (firstWriteEnd == -1 && stopAtMemoryWrite && writesMemory(instruction)) {
+                firstWriteEnd = next;
+            }
             if (firstWriteEnd == -1) {
                 for (Register register : registers) {
                     if (exactDecodedLength) {
@@ -381,7 +573,8 @@ public final class GhidraVariableStorage {
             }
             expected = next;
         }
-        return returned && expected == end ? firstWriteEnd : -1;
+        return returned && expected == end
+            ? firstWriteEnd == -1 && stopAtMemoryWrite ? end : firstWriteEnd : -1;
     }
 
     /** Returns one exact stack or provably stable register local. */

@@ -370,6 +370,18 @@ tasks.register("opaqueRegisterEffectsSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/opaque-register/cache").absolutePath
 }
 
+tasks.register("mixedParameterPrefixSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded incoming register/stack pieces and stack-pointer translation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.MixedParameterPrefixSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/mixed-prefix/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/mixed-prefix/cache").absolutePath
+}
+
 tasks.register("qualifiedFunctionNameSmoke", JavaExec) {
     group = "verification"
     description = "Checks qualified analyst display names without changing lexical identity"

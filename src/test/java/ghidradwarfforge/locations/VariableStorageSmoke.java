@@ -141,6 +141,27 @@ public final class VariableStorageSmoke {
             throw new AssertionError("mapped register slice lost its relative bit offset");
         }
 
+        var mixed = new CompositeStorage(List.of(new Piece(arm32.register("r3", 0, 32), 32),
+            new Piece(arm32.registerRelative("sp", 8), 32)));
+        var mixedVariable = new VariableLocation("mixed", 0x1000, "pair", VariableKind.PARAMETER, 8,
+            List.of(new LocationRange(0x1000, 0x1004, mixed, analyst)));
+        if (!(DwarfLocationExpression.planStable(mixedVariable) instanceof Expression mixedExpression) ||
+                !mixedExpression.operations().equals(List.of(
+                    new GenericOperation(DwarfLocationExpression.DW_OP_REGX, 3, 0),
+                    new GenericOperation(DwarfLocationExpression.DW_OP_BIT_PIECE, 32, 0),
+                    new GenericOperation(DwarfLocationExpression.DW_OP_BREGX, 13, 8),
+                    new GenericOperation(DwarfLocationExpression.DW_OP_BIT_PIECE, 32, 0)))) {
+            throw new AssertionError("resolved mixed register/memory expression lost size, order or offset");
+        }
+        assertOmitted(new VariableLocation("mixed", 0x1000, "unresolved", VariableKind.PARAMETER, 8,
+            List.of(new LocationRange(0x1000, 0x1004, new CompositeStorage(List.of(
+                new Piece(arm32.register("r3", 0, 32), 32), new Piece(new StackStorage(0), 32))), analyst))),
+            "resolved byte-aligned");
+        assertOmitted(new VariableLocation("mixed", 0x1000, "partial", VariableKind.PARAMETER, 8,
+            List.of(new LocationRange(0x1000, 0x1004, new CompositeStorage(List.of(
+                new Piece(arm32.register("r3", 0, 31), 31),
+                new Piece(arm32.registerRelative("sp", 8), 33))), analyst))), "resolved byte-aligned");
+
         List<VariableLocation> input = new ArrayList<>(List.of(changing, omitted,
             pieces, relativeVariable, memory));
         VariableStorageModel first = new VariableStorageModel(input);

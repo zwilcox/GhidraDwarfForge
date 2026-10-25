@@ -1300,8 +1300,13 @@ changing-stack test proves SP-relative adjustment, not value migration.
   intervals where identity or lifetime cannot be established. The bounded
   nonzero-stack-first-use omission passes exact hosted compiler/GDB tests in
   `40081385807`; general identity/lifetime recovery remains pending.
-- [ ] Support mixed register/memory composite pieces when every piece has
-  defensible size, order and lifetime information.
+- [~] Support mixed register/memory composite pieces when every piece has
+  defensible size, order and lifetime information. **CONFIRMED locally; hosted
+  acceptance pending:** attached incoming register/stack joins retain a bounded
+  prefix before any possible memory/register write, with analyzed SP adjustment
+  and whole-value unavailable tails. ARM computed/custom exec/PIE/rebase/repeat
+  passes; other memory joins and migration remain planned. See
+  `docs/MIXED-INCOMING-PREFIX.md`.
 - [~] Compare GDB values with compiler-oracle fixtures at multiple PCs on each
   claimed profile, including intentionally unavailable gaps. The bounded
   x86-64/AArch64 prefix cases pass; broader lifetimes/storage remain planned.

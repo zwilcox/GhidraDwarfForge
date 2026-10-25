@@ -59,6 +59,11 @@ model and runtime validation, with hosted acceptance pending; see
 [terminal-return lifetimes](docs/TERMINAL-RETURN-PREFIX.md). See also
 [the bounded FP validation record](docs/VALIDATION.md#scalar-floating-register-aliases-2026-10-23).
 
+Bounded incoming register/stack pieces pass local ARM computed/custom
+exec/PIE/rebase tests, with hosted acceptance pending. Their complete value
+becomes unavailable after the first possible memory or register write; general
+storage migration remains incomplete. See [mixed incoming storage](docs/MIXED-INCOMING-PREFIX.md).
+
 The exporter replaces existing compiler DWARF rather than merging
 it with the recovered view. Old compressed debug sections, indexes, and debug
 file links are retired inside the sidecar; the original ELF stays unchanged.
