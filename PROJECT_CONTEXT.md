@@ -4311,3 +4311,19 @@ compiler symbol entries, nonzero runtime load biases and unchanged link-time
 location intervals for byte-identical rebased inputs pass all six cases. No
 production behavior changes. CI requires each role in both lanes; see
 `docs/DIRECT-LEAF-CALL-BACKUPS.md` for the exact local receipt and remaining scope.
+
+### MIPS FP32 compiler reference (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** explicit FP32 enables correct
+compiler-side double arguments under the current QEMU/GDB pair in both byte
+orders, while FPXX retains its zero-value failure. The new opt-in fixture
+profile adds strict compiler values and real exporter/GDB exec/PIE/rebase
+regressions. Forge's paired doubles remain honestly unavailable; this evidence
+does not justify a global register-map change. `docs/MIPS-FP32-ORACLE.md`
+records the twelve final exports, protected-file checks and retained failures.
+
+Separate main run `40221601223` now passes all twelve jobs with exact package,
+Java 21 equality, raw signature/stack and both GUI/native Windows review.
+Acceptance receipt: `40363e983bfc11de5dd93cb50d29fcadd7a886ee499a2ee63efb87a5319cf597`.
+This supersedes earlier pending-main notes for merge `5eeefb76`; subsequent
+class/call and FP32 follow-ups retain their own pending hosted gates.

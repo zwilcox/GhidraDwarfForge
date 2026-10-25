@@ -343,3 +343,9 @@ an explicitly rebased Ghidra image base (`--role pie` / `--role pie-rebased`).
 Its GDB oracle measures real runtime bias and compares parameter values at
 instruction boundaries against compiler DWARF, while raw location ranges remain
 link-time addresses. CI requires exec and both PIE roles on x86-64/AArch64.
+
+The `mips-fp32` floating-register profile uses the existing ordinary C fixture
+with explicit compiler `-mfp32`. It verifies ELF ABI attributes and requires
+exact compiler double-argument values; the existing FPXX unverified-value
+exception is disabled for this profile. Forge pairs remain unavailable pending
+a separate mapping proof. Both MIPS lanes retain exec/PIE/rebase/repeat coverage.

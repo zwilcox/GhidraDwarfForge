@@ -6462,3 +6462,27 @@ and deterministic repeated artifacts all pass. Raw review receipts are
 `34d964598d573b35e59f784df0e03b7e136b97bc93493df8a4e050d0fa96438f`.
 The earlier failed CI run remains retained. These local results do not replace
 the exact combined head's required hosted gate.
+
+## Main recovery/performance integration confirmed (2026-10-25)
+
+**CONFIRMED:** separate main push `40221601223` at
+`5eeefb76cfcefa2ed501bdd59676048081b5e9bc` passes all twelve jobs. Exact
+package/source/native provenance, Java 21 receipt equality, raw recovered
+return/parameter/declaration and stack exec/PIE/rebase evidence pass review.
+Both GUI hosts and 32 native Windows suites pass within their documented
+validator/runtime scopes. Main acceptance receipt SHA-256:
+`40363e983bfc11de5dd93cb50d29fcadd7a886ee499a2ee63efb87a5319cf597`.
+Earlier pending-main notes are historical. PR52 is closed as integrated through
+PR53's normal history; its exact head is an ancestor of main.
+
+## Explicit MIPS FP32 reference checkpoint (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** twelve FP32 exports across
+both MIPS byte orders, exec/PIE and baseline/rebase/repeat pass alongside twelve
+default FPXX regressions. FP32 requires exact compiler double arguments at
+three PCs; FPXX still records zero as UNVERIFIED. Forge's floats remain correct
+and its paired doubles remain typed but unavailable. GNU/LLVM/pinned strict
+validation, source navigation, actual installed-class binding, unchanged
+original/module/harness hashes and unchanged-program byte equality pass.
+See [MIPS-FP32-ORACLE.md](MIPS-FP32-ORACLE.md) for receipts and retained failures.
+No production mapping change, full MIPS double support or hosted pass is claimed.

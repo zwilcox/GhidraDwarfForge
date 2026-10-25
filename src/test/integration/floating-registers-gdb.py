@@ -11,6 +11,9 @@ with open(os.environ["FORGE_FP_LABELS"], encoding="utf-8") as stream:
 mode = os.environ["FORGE_FP_MODE"]
 compiler = mode.startswith("compiler")
 target = os.environ["FORGE_FP_TARGET"]
+abi_profile = os.environ.get("FORGE_FP_ABI_PROFILE", "default")
+assert abi_profile in ("default", "mips-fp32")
+assert abi_profile == "default" or target.startswith("mips")
 baseline = os.environ.get("FORGE_FP_BASELINE", "0") == "1"
 functions = ["fp_float", "fp_double"]
 if "fp_clobbered" in labels:
@@ -44,6 +47,8 @@ def read_value(name, expected, unavailable=False, compiler_pair=False):
     else:
         assert not value.is_optimized_out, name + " unavailable"
         assert float(value) == expected, name + " wrong value: " + str(value)
+        if compiler and abi_profile == "mips-fp32" and name in ("first", "second") and value.type.sizeof == 8:
+            print("compiler-fp32-double-location=PASS name=" + name + " value=" + str(expected))
 
 
 for function in functions:
@@ -63,10 +68,10 @@ for function in functions:
         # straight-line prefix proof deliberately rejects it; stable scalar
         # locations above still require their exact values at every marker.
         print("floating-register-omission=arm32 opaque-return PASS")
-    compiler_pair = compiler and target.startswith("mips") and function == "fp_double"
-    if compiler_pair:
+    compiler_pair = compiler and target.startswith("mips") and function == "fp_double" and abi_profile == "default"
+    if compiler and target.startswith("mips") and function == "fp_double":
         gdb.execute("show mipsfpu")
-        gdb.execute("info registers f12 f13 f14 f15")
+        gdb.execute("info registers f12 f13 f14 f15 sr")
     expected = [("value", 13.75)] if function == "fp_clobbered" else (
         [("first", 19.25), ("second", -7.5)] if function == "fp_float" else
         [("first", 21.5), ("second", -9.25)])

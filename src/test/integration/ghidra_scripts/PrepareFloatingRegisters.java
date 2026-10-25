@@ -24,6 +24,10 @@ public class PrepareFloatingRegisters extends GhidraScript {
 
     @Override
     protected void run() throws Exception {
+        if ("mips-fp32".equals(System.getenv("FORGE_FP_ABI_PROFILE"))) {
+            println("floating-storage-origin=" + ghidradwarfforge.GhidraVariableStorage.class
+                .getProtectionDomain().getCodeSource().getLocation().toExternalForm());
+        }
         String[] args = getScriptArgs();
         if (args.length != 2) {
             throw new IllegalArgumentException("expected target labels-file");

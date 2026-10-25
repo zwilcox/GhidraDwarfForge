@@ -9,11 +9,29 @@ ghidra=$(realpath "$1")
 consumer=$(realpath "$2")
 producer=$(realpath "$3")
 shift 3
+abi_profile=${FORGE_FP_ABI_PROFILE:-default}
+if [[ "$abi_profile" != default && "$abi_profile" != mips-fp32 ]]; then
+    echo 'FORGE_FP_ABI_PROFILE must be default or mips-fp32' >&2
+    exit 64
+fi
+export FORGE_FP_ABI_PROFILE="$abi_profile"
 targets=("$@")
-if [[ ${#targets[@]} -eq 0 ]]; then targets=(x86_64 aarch64 mips32be mips32le); fi
+if [[ ${#targets[@]} -eq 0 ]]; then
+    if [[ "$abi_profile" == mips-fp32 ]]; then targets=(mips32be mips32le)
+    else targets=(x86_64 aarch64 mips32be mips32le); fi
+fi
+if [[ "$abi_profile" == mips-fp32 ]]; then
+    for target in "${targets[@]}"; do
+        if [[ "$target" != mips32be && "$target" != mips32le ]]; then
+            echo 'mips-fp32 requires MIPS32 target fixtures' >&2
+            exit 64
+        fi
+    done
+fi
 repository=$(realpath "$(dirname "$0")/../../..")
 source "$repository/src/test/integration/elf-layout-gdb-oracle.sh"
 root="$repository/build/test-results/floating-registers"
+if [[ "$abi_profile" == mips-fp32 ]]; then root+="-fp32"; fi
 mkdir -p "$root"
 results=$(mktemp -d "$root/run.XXXXXXXX")
 projects=$(mktemp -d /tmp/forge-floating-registers.XXXXXXXX)
@@ -28,6 +46,28 @@ cleanup() {
 trap cleanup EXIT
 port=$((28000 + $$ % 10000))
 echo "floating-register-results=$results"
+snapshot_fp32_inputs() {
+    python3 - "$repository" "$ghidra" "$consumer" "$producer" "$results" "$1" <<'PYTHON'
+import hashlib
+import json
+from pathlib import Path
+import sys
+repository, ghidra, consumer, producer, results = map(Path, sys.argv[1:6])
+phase = sys.argv[6]
+files = [consumer, producer] + [repository / name for name in (
+    'src/test/fixtures/fp_register_aliases.c',
+    'src/test/integration/floating-registers-export.sh',
+    'src/test/integration/floating-registers-gdb.py',
+    'src/test/integration/ghidra_scripts/PrepareFloatingRegisters.java',
+    'src/test/integration/ghidra_scripts/RebaseFixtureProgram.java')]
+files += [p for p in (ghidra / 'Ghidra/Extensions/GhidraDwarfForge').rglob('*') if p.is_file()]
+snapshot = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
+(results / ('protected-' + phase + '.json')).write_text(json.dumps(snapshot, indent=4) + '\n')
+if phase == 'after':
+    assert snapshot == json.loads((results / 'protected-before.json').read_text())
+PYTHON
+}
+if [[ "$abi_profile" == mips-fp32 ]]; then snapshot_fp32_inputs before; fi
 run_gdb() {
     local executable=$1 sidecar=$2 mode=$3 log=$4
     local options=() remote=
@@ -88,6 +128,7 @@ for target in "${targets[@]}"; do
             emulator=qemu-mipsel-static; sysroot=/usr/mipsel-linux-gnu ;;
         *) echo "unsupported floating fixture target: $target" >&2; exit 64 ;;
     esac
+    if [[ "$abi_profile" == mips-fp32 ]]; then extra+=(-mfp32); fi
     roles=(exec pie)
     samples=(baseline rebased repeat)
     if [[ ${FORGE_FP_BASELINE:-0} == 1 ]]; then roles=(exec); samples=(baseline); fi
@@ -107,9 +148,18 @@ for target in "${targets[@]}"; do
         awk '$8 ~ /^fp_/ { print $8, "0x" $2 }' "$case_root/reference-symbols.txt" \
             | LC_ALL=C sort -u >"$case_root/labels.txt"
         readelf -hSWnA "$input" >"$case_root/input-elf.txt"
+        if [[ "$abi_profile" == mips-fp32 ]]; then
+            grep -Fq 'Tag_GNU_MIPS_ABI_FP: Hard float (double precision)' "$case_root/input-elf.txt"
+            grep -Fxq 'CPR1 size: 32' "$case_root/input-elf.txt"
+            grep -Fxq 'FP ABI: Hard float (double precision)' "$case_root/input-elf.txt"
+        fi
         if grep -Eq '[[:space:]][.](debug_|symtab)' "$case_root/input-elf.txt"; then exit 1; fi
         sha256sum "$input" >"$case_root/input.sha256"
         run_gdb "$reference" "" compiler "$case_root/compiler-gdb.txt"
+        if [[ "$abi_profile" == mips-fp32 ]]; then
+            [[ $(grep -c '^compiler-fp32-double-location=PASS ' "$case_root/compiler-gdb.txt") == 6 ]]
+            if grep -Fq 'UNVERIFIED' "$case_root/compiler-gdb.txt"; then exit 1; fi
+        fi
         if [[ "$target" == mips* && "$role" == pie ]]; then
             run_gdb "$input" "$reference" compiler-separate "$case_root/compiler-separate-gdb.txt"
         fi
@@ -127,6 +177,17 @@ for target in "${targets[@]}"; do
                 -postScript GhidraDwarfForge.java "--libdwarf=$consumer" "--libdwarfp=$producer" \
                 "--output=$output" >"$case_dir/headless.txt" 2>&1
             grep -Fq 'floating-register-preparation=PASS' "$case_dir/headless.txt"
+            if [[ "$abi_profile" == mips-fp32 ]]; then
+                python3 - "$case_dir/headless.txt" "$ghidra" <<'PYTHON'
+from pathlib import Path
+import re
+import sys
+from urllib.parse import unquote, urlsplit
+log, ghidra = map(Path, sys.argv[1:])
+origin, = re.findall(r'floating-storage-origin=(\S+)', log.read_text())
+assert Path(unquote(urlsplit(origin).path)).resolve() == (ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar').resolve()
+PYTHON
+            fi
             grep -Fq 'GhidraDwarfForge symbol export PASS' "$case_dir/headless.txt"
             if [[ "$sample" == rebased ]]; then
                 grep -Eq 'Rebased fixture image from .* by 0x2000000 ' "$case_dir/headless.txt"
@@ -175,4 +236,5 @@ PY
         fi
     done
 done
+if [[ "$abi_profile" == mips-fp32 ]]; then snapshot_fp32_inputs after; fi
 echo 'floating-registers-export=PASS'
