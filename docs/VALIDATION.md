@@ -6658,3 +6658,22 @@ The exact initial PR59 package additionally passes sixteen freshly compiled
 actual Java 21 suites; receipt SHA-256:
 `9011e4163947115f05f7887b7fe06bde3817e2f02a5d68890bff452e84a121fc`.
 Neither package acceptance substitutes for the corrected full hosted gate.
+
+
+### Architecture-check false pass corrected (2026-10-25)
+
+The extension-build log for PR59 run `40241105965` contains `rg: command not
+found` immediately before `architecture-neutrality=PASS`. The shell check put
+`rg` in an `if` condition, so a missing tool was treated as an empty match.
+A controlled old-script reproduction returns zero even with an explicit `r0`
+reference in generic code. This gate result is invalid; other structural and
+runtime results do not repair that missing check.
+
+The guard now uses required Python, fails on an empty source tree, and scans
+all Java files outside exact audited paths. The typed MIPS ABI reader joins
+that explicit architecture boundary. Five isolated controls cover empty input,
+ordinary generic source, a generic register-name violation, the allowed typed
+reader and a same-named file outside its allowed path. A deliberately failing
+`rg` stub is never called. The workflow requires those controls after the real
+source scan. Local source/control checks pass; a fresh exact-head hosted gate
+is required. This changes verification only, not production output.

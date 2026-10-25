@@ -1,5 +1,11 @@
 # TODO.md — GhidraDwarfForge
 
+**Current gate correction (2026-10-25):** PR59's extension-build log also
+exposed an architecture-check false pass when `rg` was absent. The guard now
+uses Python with exact audited paths, rejects empty inputs and requires five
+negative/positive controls. The old false pass is retained; a new exact-head
+full gate is required. Production ELF/DWARF behavior is unchanged by this fix.
+
 **Current follow-up (2026-10-25):** combined PR59 includes the terminal,
 mixed incoming and explicit FP32 changes. PR58 `40237292953` and initial PR59
 `40239553691` fail an obsolete ARM/Thumb omission assertion; a local later
