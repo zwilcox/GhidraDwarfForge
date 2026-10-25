@@ -4100,3 +4100,22 @@ acceptance documentation at `eb10b6c`; no production, fixture or debugger-oracle
 bytes changed. Final committed packaging and the prefix branch's separate full
 hosted gate remain required. See `docs/TRUNCATED-MEMORY-STORES.md` and
 `docs/COMPOSITE-REGISTER-PREFIX.md` for the separate acceptance scopes.
+
+### Representative application measurement (2026-10-25)
+
+**CONFIRMED locally:** the pinned SQLite 3.46.1 in-memory workload exports
+1,539 decompiled functions without failures. Three fresh-process exports
+have median 33.93 seconds; a separate JFR run is excluded from that median.
+Artifacts are byte-identical, strict validation has zero unexplained errors,
+and basic GDB source/runtime checks pass. A retained postcondition replay
+distinguishes unchanged program data from two Ghidra project backup rotations;
+the original failed whole-project assertion is not erased or reported as a
+passing full harness run. This is one Linux x86-64 non-PIE application, not a
+firmware or speedup claim. See `docs/PERFORMANCE.md`.
+
+The workload confirms an independent signature gap: DEFAULT listing returns
+remain unspecified even where the decompiler recovers a concrete integer.
+GDB therefore displays `void(void)` for the checkpoint. A read-only probe
+confirms the discrepancy; a conservative recovery policy preserving analyst
+types remains **PLANNED**. Profiled stack-depth analysis is a performance
+candidate, not an implemented optimization.

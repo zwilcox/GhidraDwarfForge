@@ -2146,10 +2146,20 @@ surviving knowledge, or describe inline export as complete.
 
 ## P3.5 Add optional size/performance features
 
+**CONFIRMED locally (2026-10-25):** the pinned SQLite workload decompiles 1,539
+functions without failures; three exports have median 33.93 seconds, with
+identical artifacts and clean strict/LLVM checks. A separate JFR export
+identifies stack-depth analysis as a candidate hot path. The retained run
+failed only its whole-project backup-file assertion; a precise evidence replay
+proves unchanged program data and reports the two rotated backup files. The
+revised harness has not been rerun end to end. GDB basic behavior passes, but
+a DEFAULT return-type discrepancy remains a separate confirmed correctness
+gap. See `docs/PERFORMANCE.md` for measured scope and retained failures.
+
 **Status:** `[~]` — synthetic scaling measurements are complete locally, and
 the indexed line planner passes component run `40065823442` and combined run
-`40068401197`; representative complex application/firmware and
-further per-phase profiling remain **PLANNED**. The bounded 10,000-function
+`40068401197`; the first complex-application observation is recorded above.
+Broader firmware/host workloads and further profiling remain **PLANNED**. The bounded 10,000-function
 comparison improves median whole-process time from 10.86 to 9.18 seconds over
 five alternating pairs, with every output pair byte-identical. It does not
 establish speed or memory effects for other workloads/hosts.
