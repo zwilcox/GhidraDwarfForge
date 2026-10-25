@@ -38,7 +38,7 @@ def check(path):
     diagnostics = collections.Counter(report["diagnostics"])
     for name in expected:
         message = (f"Skipped external/import function {name}; "
-                   "declaration/linkage policy is not implemented yet")
+                   "no in-image definition; curated declarations are emitted separately")
         assert diagnostics[message] == 1, ("missing report diagnostic", message)
     assert all(row["reason"] != "EXTERNAL_IMPORT" or "::" in row["name"] for row in skipped)
     print(f"external-function-inventory=PASS external={len(expected)} skipped={len(skipped)}")

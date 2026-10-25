@@ -56,3 +56,17 @@ distinct library/nested identities, default-prototype omission, thunk separation
 unchanged definition/location selection and cancellation. Native-free graph
 controls reject duplicate keys and dangling return types. These model tests do
 not imply five-architecture runtime acceptance for this new declaration path.
+
+### Initial hosted inventory-oracle failure
+
+**CONFIRMED:** run `40208416888` at `ff9776a` is not accepted. All five
+lanes stopped after their first extended-section export because the older
+external-inventory checker still required the superseded diagnostic
+`declaration/linkage policy is not implemented yet`. The captured x86-64
+transcript shows successful production export followed by this exact checker
+assertion. The updated assertion requires the new exact diagnostic; external
+names, multiplicities, reasons, counts and PARTIAL status checks are unchanged.
+Replaying that retained transcript passes; missing and stale diagnostic negative
+controls still fail. The exact hosted package/source/manifests and fresh
+packaged Java 21 inventory/type-graph/formal-return checks passed independently.
+They do not substitute for the corrected full workflow, which remains pending.

@@ -4114,3 +4114,12 @@ acceptance documentation at `eb10b6c`; no production, fixture or debugger-oracle
 bytes changed. Final committed packaging and the prefix branch's separate full
 hosted gate remain required. See `docs/TRUNCATED-MEMORY-STORES.md` and
 `docs/COMPOSITE-REGISTER-PREFIX.md` for the separate acceptance scopes.
+
+### Declaration integration oracle correction (2026-10-25)
+
+**CONFIRMED:** first declaration run `40208416888` failed all target lanes at
+an unchanged inventory checker expecting the old declaration-policy text,
+after successful export. The checker now requires the current exact diagnostic
+without weakening name/reason/count checks. A retained transcript replay and
+two rejecting diagnostic controls pass. The original failed run is retained;
+full corrected hosted acceptance remains pending.
