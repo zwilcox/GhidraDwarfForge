@@ -95,6 +95,13 @@ Failures are retained under `build/terminal-review`:
   offset. It failed against otherwise passing runtime artifacts. The final
   script records the actual current and original bases and checks their
   difference, separately from the requested additional rebase.
+- Hosted run `40234561115` rejected the new C file because the shared fixture
+  reproducibility harness's explicit source inventory was not updated. Package
+  and actual Java 21 checks passed, but target build gates stopped before their
+  exporter cases. The inventory now includes `terminal-composite.c`; all five
+  source-built target inventories and deterministic fixture checks are rerun
+  before restarting the complete gate. This is a harness omission, not accepted
+  hosted runtime evidence.
 
 No new native binding, ABI, mixed register/memory support, automatic backup,
 later-local inference, Thumb claim or release publication is part of this work.
