@@ -344,6 +344,14 @@ Its GDB oracle measures real runtime bias and compares parameter values at
 instruction boundaries against compiler DWARF, while raw location ranges remain
 link-time addresses. CI requires exec and both PIE roles on x86-64/AArch64.
 
+The `mips-fp32` floating-register profile uses the existing ordinary C fixture
+with explicit compiler `-mfp32`. It verifies ELF ABI attributes and requires
+exact compiler double-argument values; the existing FPXX unverified-value
+exception is disabled for this profile. Whole-register aliases remain unavailable. The `explicit-pieces` storage
+form requires exact Forge double values and raw DWARF piece order for curated
+high/low FPR joins, using the existing generic composite exporter. Both forms
+retain exec/PIE/rebase/repeat coverage in the MIPS lanes.
+
 The opaque supervisor-call fixture also has an intentionally incomplete Ghidra
 listing profile (`FORGE_OPAQUE_LISTING=gap`). Only the syscall listing entry is
 cleared; input bytes and the function body remain intact. Before/after GDB

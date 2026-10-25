@@ -6463,6 +6463,55 @@ and deterministic repeated artifacts all pass. Raw review receipts are
 The earlier failed CI run remains retained. These local results do not replace
 the exact combined head's required hosted gate.
 
+## Main recovery/performance integration confirmed (2026-10-25)
+
+**CONFIRMED:** separate main push `40221601223` at
+`5eeefb76cfcefa2ed501bdd59676048081b5e9bc` passes all twelve jobs. Exact
+package/source/native provenance, Java 21 receipt equality, raw recovered
+return/parameter/declaration and stack exec/PIE/rebase evidence pass review.
+Both GUI hosts and 32 native Windows suites pass within their documented
+validator/runtime scopes. Main acceptance receipt SHA-256:
+`40363e983bfc11de5dd93cb50d29fcadd7a886ee499a2ee63efb87a5319cf597`.
+Earlier pending-main notes are historical. PR52 is closed as integrated through
+PR53's normal history; its exact head is an ancestor of main.
+
+## Explicit MIPS FP32 reference checkpoint (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** twelve FP32 exports across
+both MIPS byte orders, exec/PIE and baseline/rebase/repeat pass alongside twelve
+default FPXX regressions. FP32 requires exact compiler double arguments at
+three PCs; FPXX still records zero as UNVERIFIED. Forge's floats remain correct
+and its paired doubles remain typed but unavailable. GNU/LLVM/pinned strict
+validation, source navigation, actual installed-class binding, unchanged
+original/module/harness hashes and unchanged-program byte equality pass.
+See [MIPS-FP32-ORACLE.md](MIPS-FP32-ORACLE.md) for receipts and retained failures.
+No production mapping change, full MIPS double support or hosted pass is claimed.
+
+### Explicit FP32 register-piece positive controls
+
+**CONFIRMED locally; hosted acceptance pending:** twelve final whole-alias
+exports retain the required unavailable pairs, while twelve explicit-piece
+exports read both double arguments correctly in Forge and the compiler at three
+PCs. Both byte orders, exec/PIE and baseline/rebase/repeat pass structural
+checks, exact raw piece order, source navigation, original/module/harness hashes
+and unchanged-program byte identity. The exporter itself is unchanged.
+`docs/MIPS-FP32-ORACLE.md` records the exact separate receipts and development
+failures. This is explicit curated composite storage, not automatic whole-alias
+expansion or FPXX double support.
+
+### Class display and direct-call integration accepted (2026-10-25)
+
+**CONFIRMED:** PR54 head `0c52f5b08075931ccd35b26e65f84ede33c782ff` passes
+all twelve jobs in `40224888001` and independent exact-package, raw runtime,
+both-GUI and native Windows review. Normal merge `c0148c7451d5701e6ed7b95ba5c3a4be7261c05c`
+preserves its tested tree. Fifteen class cases (30 exports), six direct-call
+exec/PIE/rebase cases, eight actual Java 21 suites and 33 native Windows tasks
+pass within their documented scopes. Acceptance receipt SHA-256:
+`f752c46b1686d7c4e5a5071b01dd078937140e866e6a32a67c3ced18291ebe85`. Earlier pending PR54 notes are historical.
+Its distinct main-push run `40228194534` remains pending; the MIPS FP32
+follow-up requires its own current-base hosted gate. This does not complete
+full class semantics, general call-crossing locations or broader ABI support.
+
 ### Incomplete register-body coverage correction (2026-10-25)
 
 **CONFIRMED locally; hosted acceptance pending:** a missing instruction in an

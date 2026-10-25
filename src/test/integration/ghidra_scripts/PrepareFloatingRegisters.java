@@ -24,6 +24,10 @@ public class PrepareFloatingRegisters extends GhidraScript {
 
     @Override
     protected void run() throws Exception {
+        if ("mips-fp32".equals(System.getenv("FORGE_FP_ABI_PROFILE"))) {
+            println("floating-storage-origin=" + ghidradwarfforge.GhidraVariableStorage.class
+                .getProtectionDomain().getCodeSource().getLocation().toExternalForm());
+        }
         String[] args = getScriptArgs();
         if (args.length != 2) {
             throw new IllegalArgumentException("expected target labels-file");
@@ -118,11 +122,41 @@ public class PrepareFloatingRegisters extends GhidraScript {
             if (register == null) {
                 throw new IllegalStateException("missing register " + registers[index]);
             }
-            parameters[index] = new ParameterImpl(names[index], type, register, currentProgram,
-                SourceType.USER_DEFINED);
+            if (name.equals("fp_double") &&
+                    "explicit-pieces".equals(System.getenv("FORGE_FP_STORAGE_FORM"))) {
+                if (!"mips-fp32".equals(System.getenv("FORGE_FP_ABI_PROFILE"))) {
+                    throw new IllegalStateException("explicit FPR pairs require the FP32 fixture");
+                }
+                // Ghidra joins are MSB first. The compiler/GDB FP32 oracle
+                // establishes these physical high/low carriers independently.
+                String[] pair = index == 0 ? new String[] { "f13", "f12" }
+                    : new String[] { "f15", "f14" };
+                var high = currentProgram.getRegister(pair[0]);
+                var low = currentProgram.getRegister(pair[1]);
+                var storage = new ghidra.program.model.listing.VariableStorage(currentProgram,
+                    new ghidra.program.model.pcode.Varnode(high.getAddress(), 4),
+                    new ghidra.program.model.pcode.Varnode(low.getAddress(), 4));
+                parameters[index] = new ParameterImpl(names[index], type, storage, currentProgram,
+                    SourceType.USER_DEFINED);
+            }
+            else {
+                parameters[index] = new ParameterImpl(names[index], type, register, currentProgram,
+                    SourceType.USER_DEFINED);
+            }
         }
         function.replaceParameters(Function.FunctionUpdateType.CUSTOM_STORAGE,
             true, SourceType.USER_DEFINED, parameters);
+        if (name.equals("fp_double") &&
+                "explicit-pieces".equals(System.getenv("FORGE_FP_STORAGE_FORM"))) {
+            for (var parameter : function.getParameters()) {
+                if (!function.hasCustomVariableStorage() ||
+                        parameter.getVariableStorage().getVarnodeCount() != 2) {
+                    throw new AssertionError("explicit two-register storage was not retained");
+                }
+                println("floating-fp32-pieces=" + parameter.getName() + " storage=" +
+                    parameter.getVariableStorage());
+            }
+        }
         println("floating-register-function=" + name + " body=" + function.getBody());
     }
 }
