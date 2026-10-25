@@ -4119,3 +4119,11 @@ GDB therefore displays `void(void)` for the checkpoint. A read-only probe
 confirms the discrepancy; a conservative recovery policy preserving analyst
 types remains **PLANNED**. Profiled stack-depth analysis is a performance
 candidate, not an implemented optimization.
+
+The revised full SQLite harness subsequently passes `run.zf2690wu`: two
+exports plus a separate profiled export of the locally validated scalar-return
+candidate, strict/GDB checks, deterministic artifacts, unchanged executable/
+program data and explicitly reported backup rotations. This fresh validation
+observation does not replace the first three timing samples or establish a
+speedup. The return correction awaits its own hosted gate; benchmark GDB
+coverage remains explicitly narrower than complete recovered semantics.

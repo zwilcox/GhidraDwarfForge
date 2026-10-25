@@ -125,6 +125,33 @@ global value, steps and runs to normal exit. Broader signature, variable-value,
 architecture and PIE acceptance remains in the existing semantic integration
 matrix.
 
+## Completed representative harness validation
+
+**CONFIRMED locally (2026-10-25):** after the postcondition correction, the
+complete revised SQLite harness passed fresh import, two timed exports, one
+separate JFR export, validators, GDB, deterministic artifacts and exact input/
+program-data preservation. Case `run.zf2690wu` uses the separately tested
+scalar-return candidate JAR
+`f333584802dd22ec91fcb8607035f7fadaf468077d1b631a3543604c73b26d8a`
+from the `recovered-default-returns` worktree. Its summary SHA-256 is
+`6a3fc5d1f683ca34ad2271d4913f32311f5e15c175a148f0d470edd2d00ec017`.
+The same executable hash is retained; 1,539 functions decompile without
+failures, the synthetic source remains identical to the original measurement,
+and all three exports within this new run match byte for byte. Only the
+reported Ghidra index/journal backups rotate; protected module/harness inputs
+and program data remain unchanged. Strict validation corroborates 828 frame
+findings with zero unexplained errors.
+
+This new two-sample median is 33.965 seconds with maximum observed RSS
+896,096 KiB; import is 24.08 seconds. These are a fresh harness-validation
+observation of a different runtime, not replacements for the original three
+samples or a controlled speed comparison. The first full-run failure remains
+historical and the pure replay receipt keeps its original scope. The dedicated
+return-recovery regression and separate retained-program replay establish
+return-type/value behavior; this benchmark's GDB checks retain their narrower
+explicit scope. The previously observed void-return gap is corrected locally
+in that candidate and awaits its own hosted gate.
+
 ## Initial observations
 
 **CONFIRMED locally (2026-10-23):** Ghidra 12.0.3, the ELF robustness exporter
