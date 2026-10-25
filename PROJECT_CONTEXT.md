@@ -4259,3 +4259,55 @@ PR53 combines these commits through normal history and adds the separately
 validated deferred-stack optimization. Component passes do not replace its
 own enforced up-to-date full gate and exact package/runtime review. Hold the
 component merges for this combined integration; publish no release as part of it.
+
+### Bounded direct leaf call backups (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** an incoming scalar's proven
+register copy can survive a direct, completely decoded leaf call. The selected
+callee convention must declare the complete base register unaffected and actual
+callee plus call-instruction writes must corroborate preservation. Unknown,
+indirect, nonleaf, opaque, overridden or fixup calls remain rejected; restore
+tails remain unavailable. No general ABI, stack-copy or mixed-piece inference is
+added. Real x86-64/AArch64 compiler/GDB fixtures and actual Java 21 packaged
+model checks pass. `docs/DIRECT-LEAF-CALL-BACKUPS.md` records the exact contract,
+retained failed experiments and pending independent hosted gate.
+
+### Combined recovery and performance integration (2026-10-25)
+
+**CONFIRMED:** exact PR53 head `47970c8558ca9e4ba9933470a5ddd77cb814adef`
+passes all twelve jobs in `40218743315`. Exact package/native/source provenance,
+seven actual Java 21 focused suites, raw inferred types/omissions/returns,
+external declarations, stack exec/PIE/rebase behavior and 32 native Windows
+model tasks pass review. Combined receipt SHA-256:
+`f43a469f3dd2d381cc8610d3211c9a3eb80b6165135972f27eeb076f8e1ed90c`.
+Normal merge `5eeefb76cfcefa2ed501bdd59676048081b5e9bc` preserves the accepted
+tree. Distinct main run `40221601223` is pending. Earlier combined/component
+pending notes are historical. The direct-call branch incorporates this main
+parent through a normal merge with unchanged feature tree before its own gate.
+
+### Class-owned function display identity (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** explicit Ghidra class owners
+were dropped from display paths, making two method names and an unrelated
+global share one bare-name breakpoint while both qualified names failed.
+Independent compiler/GDB baseline evidence reproduces this on x86-64/AArch64.
+The bounded correction preserves recorded class/namespace components in the
+existing C11 display-name policy; it invents no C++ class, inheritance, object
+pointer or linkage metadata. Five-language ProgramDB and actual Java 21
+packaged tests pass; twelve local target/role GDB cases retain unique method
+and owner-static lookup. `docs/FUNCTION-NAMING.md` records scope and evidence.
+
+The class-display and direct-call corrections now share a combined tested JAR.
+Separate commits retain each change's scope and evidence. The portable driver
+fix is included, and fresh combined x86/AArch64 call regressions pass alongside
+the class matrix. `docs/VALIDATION.md` records the exact local receipts; the
+combined PR still requires its own hosted gate before normal integration.
+
+### Direct-call relocation coverage (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** the direct-leaf-call harness
+now covers exec/PIE/rebased PIE on native x86-64 and QEMU AArch64. Independent
+compiler symbol entries, nonzero runtime load biases and unchanged link-time
+location intervals for byte-identical rebased inputs pass all six cases. No
+production behavior changes. CI requires each role in both lanes; see
+`docs/DIRECT-LEAF-CALL-BACKUPS.md` for the exact local receipt and remaining scope.

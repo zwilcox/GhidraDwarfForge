@@ -109,3 +109,15 @@ not replacements for the five-pair measurements above:
 
 - `run.ia8tqtro`: `26a79d342c7e69be6714caaac39f69aaa0889b994d33de5168448431793e8de8`.
 - `run.czbjnqa6`: `2df5e624954dd417ceda845508b91d8b90bdbabf877e0d16ef98c5491a174732`.
+
+## Combined hosted acceptance
+
+**CONFIRMED:** head `47970c8558ca9e4ba9933470a5ddd77cb814adef` passes all
+twelve jobs in `40218743315`, including five target lanes, both hosts and the
+enforced `required-validation` gate. Exact package/source/native metadata,
+actual Java 21 focused equality, fresh raw recovered-signature/declaration
+GDB tests and stack exec/PIE/rebase artifacts pass root review. Receipt:
+`f43a469f3dd2d381cc8610d3211c9a3eb80b6165135972f27eeb076f8e1ed90c`.
+Normal PR53 merge `5eeefb76cfcefa2ed501bdd59676048081b5e9bc` preserves that
+tree; the distinct main run `40221601223` is pending. These checks add no new
+timing measurements and publish no release.

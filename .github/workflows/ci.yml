@@ -478,7 +478,7 @@ jobs:
               matchedElfPrefixSmoke matchedElfAllocationsSmoke executableProgramBytesSmoke \
               debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke \
               syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
-              variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke compositeRegisterPrefixSmoke \
+              variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke directLeafCallSmoke compositeRegisterPrefixSmoke \
               stackFirstUseSmoke \
               opaqueRegisterEffectsSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
               arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
@@ -996,6 +996,13 @@ jobs:
           FORGE_SCOPE_QUALIFIED: '1'
         run: src/test/integration/function-static-scopes-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
 
+      - name: Class-owned display names and saved-program identity
+        env:
+          TARGET: ${{ matrix.target }}
+          FORGE_SCOPE_QUALIFIED: '1'
+          FORGE_SCOPE_CLASS_NAMES: '1'
+        run: src/test/integration/function-static-scopes-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
+
       - name: Incoming register lifetime before overwrite
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
         env:
@@ -1021,6 +1028,15 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
         run: src/test/integration/composite-register-prefix-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
+
+      - name: Saved register parameters across decoded direct leaf calls
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for role in exec pie pie-rebased; do
+              python3 src/test/integration/direct-leaf-call-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
+          done
 
       - name: Curated external declarations without invented image addresses
         if: matrix.target == 'x86_64'
@@ -1361,7 +1377,7 @@ jobs:
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
             arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
-            registerCopySmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
+            registerCopySmoke directLeafCallSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
             elfBuildIdSmoke exportReportClaimsSmoke matchedElfPrefixSmoke `
             matchedElfAllocationsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke executableProgramBytesSmoke `
             debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke 2>&1 |

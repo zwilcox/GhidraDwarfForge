@@ -318,3 +318,28 @@ inference, one unresolved mixed list and an analyst-curated signature. The
 runtime harness builds independent compiler DWARF then strips only its copied
 input's debug sections. GDB checks types, unavailable inferred arguments and
 ordinary returned values. No parameter storage is forced for inferred cases.
+
+## Direct leaf call register backups
+
+`direct-leaf-call.c` and `direct-leaf-callee.c` form a two-translation-unit
+x86-64/AArch64 fixture. The integration harness compares compiler DWARF and
+Forge at exact PCs before/after a call and the saved-register restore, for three
+integer inputs. It also checks raw location lists, source navigation,
+deterministic saved-program exports and original preservation. See
+[`DIRECT-LEAF-CALL-BACKUPS.md`](../../../docs/DIRECT-LEAF-CALL-BACKUPS.md).
+
+## Class-owned function display names
+
+`function-static-scopes.c` also supports analyst-curated class ownership through
+`FORGE_SCOPE_QUALIFIED=1 FORGE_SCOPE_CLASS_NAMES=1` in its integration harness.
+Two same-named functions in different class paths must remain distinct from
+each other and a real global, including private-static lookup and saved-project
+reopening. The original source is C; these are explicitly analyst-defined names,
+not a claim to recover original C++ classes. See
+[`FUNCTION-NAMING.md`](../../../docs/FUNCTION-NAMING.md).
+
+The direct-leaf-call fixture also runs as PIE and as the same PIE imported at
+an explicitly rebased Ghidra image base (`--role pie` / `--role pie-rebased`).
+Its GDB oracle measures real runtime bias and compares parameter values at
+instruction boundaries against compiler DWARF, while raw location ranges remain
+link-time addresses. CI requires exec and both PIE roles on x86-64/AArch64.

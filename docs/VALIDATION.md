@@ -6379,3 +6379,86 @@ unexplained findings and repeat artifacts/input-preservation checks pass.
 The pipeline adds the model on both hosts and the runtime test on x86-64.
 See [RECOVERED-PARAMETER-TYPES.md](RECOVERED-PARAMETER-TYPES.md) for exact
 receipts, the retained initial harness failure and remaining scope.
+
+## Direct leaf call backup local checkpoint (2026-10-25)
+
+**CONFIRMED locally; full hosted gate pending:** 140 decoded/ProgramDB call
+controls, the existing register-prefix/copy/composite/opaque/dynamic-storage
+regressions, extension build, architecture-neutrality guard, actionlint and
+x86 fixture inventory/reproducibility pass. Five focused suites execute on
+actual Java 21 from the installed candidate JAR. Native x86-64 and QEMU AArch64
+compiler/current/preceding-exporter runs compare three signed inputs at five
+PCs, retain an honest unavailable restore tail, and pass raw DIE/location-list,
+GNU/LLVM/strict-validator, source-navigation and preservation checks.
+
+Final full runs are `x86_64.xuhk8nrq` and `aarch64.dte1c21b`; root raw-evidence
+receipt SHA-256 is
+`10cdcda14ed175faf6fbe848aa57b20ad0d8c9035090cbb4f52220f8cd7ae1ae`.
+Local headless Java is 25.0.4.1; separate packaged tests use actual Java 21.
+See [the bounded contract and retained failures](DIRECT-LEAF-CALL-BACKUPS.md).
+The new workflow requires both runtime lanes and native Windows model checks;
+this local checkpoint does not claim those hosted results or a new release.
+
+## Combined recovered signatures and stack analysis accepted (2026-10-25)
+
+**CONFIRMED:** PR53 head `47970c8558ca9e4ba9933470a5ddd77cb814adef` passes
+all twelve jobs in `40218743315`. Exact package/manifests/native provenance,
+seven actual Java 21 focused tests, raw parameter/return/declaration GDB/DWARF,
+stack exec/PIE/rebase preservation and 32 Windows smoke tasks pass review.
+Combined receipt SHA-256:
+`f43a469f3dd2d381cc8610d3211c9a3eb80b6165135972f27eeb076f8e1ed90c`.
+The enforced strict gate remained enabled; normal merge
+`5eeefb76cfcefa2ed501bdd59676048081b5e9bc` preserves the tested tree. Main run
+`40221601223` is pending. Component commits remain intact, local timing claims
+stay separately scoped, and no release is published.
+
+## Class-owned display identity local checkpoint (2026-10-25)
+
+**CONFIRMED locally; hosted gate pending:** the qualified-name smoke passes
+real ProgramDB models for all five target profiles, with three focused suites
+running from the installed JAR on actual Java 21. Final runtime
+`run.fNIwYKQj` passes twelve cases and 24 exports across x86-64, AArch64 and
+both MIPS byte orders, each exec/PIE/rebased. Raw DIE and compiler/Forge GDB
+review confirms separate full function names, exact entry/static addresses,
+source lookup, private values 37/83 and distinct global behavior. Saved-program
+read-only re-export, input/module/harness preservation, deterministic bytes
+and GNU/LLVM/strict checks pass with no unexplained findings.
+
+Raw-review receipt SHA-256: `9758704cc32894d8c311f84689f8ad676521b2075c0eff89bd58b07d8906ddfc`.
+Ordinary and namespace-qualified x86 regressions pass all three roles. Local
+headless uses Java 25.0.4.1. ARM32 runtime and Windows remain hosted obligations;
+no local pass is claimed for them. See [FUNCTION-NAMING.md](FUNCTION-NAMING.md)
+for the reproduced bug, retained failed probes and display-only boundary.
+
+## Direct-call CI driver portability correction (2026-10-25)
+
+**CONFIRMED:** PR54 run `40221737406`'s AArch64 job fails after the compiler
+GDB oracle because `rg` is absent. The one-line standard `grep -Fxq` correction
+preserves the exact marker check and changes no exporter code. The retained CI
+artifact passes local QEMU compiler/Forge replay with `rg` disabled; two fresh
+full native/QEMU runs also pass with the preceding-package comparison, protected
+inputs, identical repeat bytes, strict validators and source navigation.
+Correction receipt:
+`1c3ece73339a5134f16598879b64c291ffe18bcdd10af0b055492d246568e450`.
+The failed job and its exact package evidence remain historical; a corrected
+full hosted gate is pending. See `docs/DIRECT-LEAF-CALL-BACKUPS.md`.
+
+### Combined display and location checkpoint (2026-10-25)
+
+**CONFIRMED locally; final hosted gate pending:** the class-display correction
+and portable direct-call driver are combined through normal commits. The exact
+committed package audit passes (50 sources, 226 Java 21-compatible classes,
+five manifests and pinned native provenance). It contains the same JAR as the
+twelve passing class runtime cases. Five additional packaged call/storage
+suites pass on actual Java 21; receipt SHA-256:
+`313f72128a36a153a546e8ff3e651bf42b1975caf8be6cad14fa2b287b9d6c22`.
+
+Fresh x86-64 `x86_64.api47nhs` and AArch64 `aarch64.6uqjpoii` runs use this
+combined JAR with `rg` deliberately unavailable. Compiler, Forge and previous
+package comparisons, exact raw location intervals, three arguments at five PCs,
+honest unavailable tails, source navigation, unchanged inputs/module/project
+and deterministic repeated artifacts all pass. Raw review receipts are
+`599311c16948b1f8dec2f2dc51794c12321f898fa32912919296b0f82aded56f` and
+`34d964598d573b35e59f784df0e03b7e136b97bc93493df8a4e050d0fa96438f`.
+The earlier failed CI run remains retained. These local results do not replace
+the exact combined head's required hosted gate.

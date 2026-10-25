@@ -1,6 +1,7 @@
 package ghidradwarfforge;
 
 import java.util.List;
+import java.util.Map;
 
 import ghidra.program.model.lang.Register;
 import ghidra.program.model.listing.Instruction;
@@ -13,7 +14,8 @@ import ghidradwarfforge.locations.TargetRegisterMap;
 import ghidradwarfforge.locations.VariableStorageModel.RegisterStorage;
 
 /**
- * One exact low-bit register backup in an otherwise proven straight-line leaf.
+ * One exact low-bit register backup in proven straight-line code. A separately
+ * decoded direct leaf call requires both an ABI contract and no register writes.
  * Facts describe the entry value's bits, not a register's whole numeric value.
  * No memory facts, unique temporaries, chains, or lost-fact reacquisition.
  */
@@ -27,13 +29,21 @@ final class RegisterCopyLifetime {
     static Backup prove(Program program, long start, long end,
             List<Instruction> instructions, Varnode incoming, int bytes,
             TargetRegisterMap registers, TaskMonitor monitor) throws CancelledException {
+        return prove(program, start, end, instructions, incoming, bytes, registers, Map.of(), monitor);
+    }
+
+    static Backup prove(Program program, long start, long end,
+            List<Instruction> instructions, Varnode incoming, int bytes,
+            TargetRegisterMap registers,
+            Map<ghidra.program.model.address.Address, DirectLeafCalls.Leaf> calls,
+            TaskMonitor monitor) throws CancelledException {
         Register original = exactLowRegister(program, incoming);
         if (original == null || bytes <= 0 || incoming.getSize() != bytes) {
             return null;
         }
         Register originalBase = original.getBaseRegister();
         long handoff = GhidraVariableStorage.registerPrefixEnd(start, end, instructions,
-            originalBase, monitor);
+            originalBase, calls, monitor);
         if (handoff <= start || handoff >= end) {
             return null;
         }
@@ -65,6 +75,10 @@ final class RegisterCopyLifetime {
             for (int index = 0; index < operations.length; index++) {
                 monitor.checkCancelled();
                 PcodeOp operation = operations[index];
+                if (operation.getOpcode() == PcodeOp.CALL && candidate != null &&
+                        !calls.get(instruction.getAddress()).preserves(candidate, monitor)) {
+                    candidate = null;
+                }
                 if (!validCopyShape(operation)) {
                     return null;
                 }

@@ -310,6 +310,18 @@ tasks.register("registerCopySmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/register-copy/cache").absolutePath
 }
 
+tasks.register("directLeafCallSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded direct leaf call backups and conservative rejection"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.DirectLeafCallSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/direct-leaf-call/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/direct-leaf-call/cache").absolutePath
+}
+
 tasks.register("compositeRegisterPrefixSmoke", JavaExec) {
     group = "verification"
     description = "Checks complete incoming register composites before their first clobber"

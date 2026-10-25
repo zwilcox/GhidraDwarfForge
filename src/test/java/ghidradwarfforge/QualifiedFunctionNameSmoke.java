@@ -34,16 +34,19 @@ public final class QualifiedFunctionNameSmoke {
         modelControls();
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
             new HeadlessGhidraApplicationConfiguration());
-        var language = DefaultLanguageService.getLanguageService().getLanguage(
-            new LanguageID("x86:LE:64:default"));
-        Object consumer = new Object();
-        var program = new ProgramDB("qualified-functions", language,
-            language.getDefaultCompilerSpec(), consumer);
-        try {
-            checkProgram(program);
-        }
-        finally {
-            program.release(consumer);
+        for (String id : List.of("x86:LE:64:default", "AARCH64:LE:64:v8A",
+                "ARM:LE:32:v7", "MIPS:BE:32:default", "MIPS:LE:32:default")) {
+            var language = DefaultLanguageService.getLanguageService().getLanguage(new LanguageID(id));
+            Object consumer = new Object();
+            var program = new ProgramDB("qualified-functions", language,
+                language.getDefaultCompilerSpec(), consumer);
+            try {
+                checkProgram(program);
+            }
+            finally {
+                program.release(consumer);
+            }
+            System.out.println("qualified-function-name-target=PASS " + id);
         }
         System.out.println("qualified-function-name-smoke=PASS");
     }
@@ -142,10 +145,17 @@ public final class QualifiedFunctionNameSmoke {
             Function ordinary = function(program, "ordinary", global, 0x400000);
             function(program, "same_name", leftNested, 0x400100);
             function(program, "same_name", rightNested, 0x400200);
-            // Plain scopes under a class must not be mistaken for an all-plain path.
+            // Mixed class/namespace paths retain current display ownership only.
             Namespace type = symbols.createClass(global, "AnalystClass", SourceType.USER_DEFINED);
             Namespace classNested = symbols.createNameSpace(type, "nested", SourceType.USER_DEFINED);
             function(program, "class_method", classNested, 0x400300);
+            Namespace otherType = symbols.createClass(global, "OtherClass", SourceType.USER_DEFINED);
+            Namespace otherNested = symbols.createNameSpace(otherType, "nested", SourceType.USER_DEFINED);
+            function(program, "class_method", otherNested, 0x400600);
+            Namespace namespaceClass = symbols.createClass(leftNested, "Inner", SourceType.USER_DEFINED);
+            function(program, "class_method", namespaceClass, 0x400700);
+            Namespace classClass = symbols.createClass(type, "Inner", SourceType.USER_DEFINED);
+            function(program, "class_method", classClass, 0x400800);
             Namespace library = symbols.createExternalLibrary("libfixture", SourceType.USER_DEFINED);
             require(!SymbolType.FUNCTION.isValidParent(program, library, start, false) &&
                 !SymbolType.FUNCTION.isValidParent(program, ordinary, start, false),
@@ -154,7 +164,7 @@ public final class QualifiedFunctionNameSmoke {
             var diagnostics = new ArrayList<String>();
             var first = GhidraFunctionSymbols.extractDetailed(program, TaskMonitor.DUMMY,
                 diagnostics::add, 0x1000);
-            require(first.skippedFunctions().isEmpty() && first.functions().size() == 4,
+            require(first.skippedFunctions().isEmpty() && first.functions().size() == 7,
                 "real functions were skipped");
             require(first.functions().equals(GhidraFunctionSymbols.extract(program,
                 TaskMonitor.DUMMY, ignored -> { }, 0x1000)), "extraction is not deterministic");
@@ -168,10 +178,19 @@ public final class QualifiedFunctionNameSmoke {
                 .equals("right::nested::same_name"), "duplicate short names collapsed");
             require(at(first.functions(), 0x3ff000).qualifiedDisplayName().equals("ordinary"),
                 "ordinary function display changed");
-            require(at(first.functions(), 0x3ff300).namespacePath().isEmpty() &&
-                at(first.functions(), 0x3ff300).qualifiedDisplayName().equals("class_method") &&
-                diagnostics.size() == 1 && diagnostics.get(0).contains("Class scope is unsupported"),
-                "unsupported class scope was guessed or silently discarded");
+            require(at(first.functions(), 0x3ff300).namespacePath().equals(List.of("AnalystClass", "nested")) &&
+                at(first.functions(), 0x3ff300).qualifiedDisplayName().equals("AnalystClass::nested::class_method") &&
+                at(first.functions(), 0x3ff300).name().equals("class_method") && diagnostics.isEmpty(),
+                "class display lost recorded ownership or changed lexical identity");
+            require(at(first.functions(), 0x3ff600).qualifiedDisplayName()
+                .equals("OtherClass::nested::class_method"), "same-named class methods collapsed");
+            require(at(first.functions(), 0x3ff700).namespacePath().equals(List.of("left", "nested", "Inner")) &&
+                at(first.functions(), 0x3ff800).namespacePath().equals(List.of("AnalystClass", "Inner")),
+                "nested classes or classes inside namespaces lost their path");
+            function(program, "AnalystClass::nested::class_method", global, 0x400900);
+            reject(() -> GhidraFunctionSymbols.extract(program, TaskMonitor.DUMMY,
+                ignored -> { }, 0), "ambiguous qualified function display name");
+            program.getFunctionManager().removeFunction(start.add(0x900));
 
             // Ghidra accepts both forms as distinct symbols. The flat display is
             // ambiguous, so extraction must reject instead of renaming either.
