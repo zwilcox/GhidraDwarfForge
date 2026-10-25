@@ -124,7 +124,9 @@ public final class GhidraTypeGraph {
             }
             GhidraVariableStorage.StackDepthProfile stackDepths =
                 GhidraVariableStorage.stackDepthProfile(program, function, monitor);
-            TypeRef returnType = extractor.reserve(function.getReturnType());
+            // The effective ABI return may be a hidden pointer (or void).
+            // Preserve the curated signature independently of that carrier.
+            TypeRef returnType = extractor.reserve(function.getReturn().getFormalDataType());
             List<TypeGraph.Parameter> parameters = new ArrayList<>();
             for (Parameter parameter : function.getParameters()) {
                 DataType formalType = parameter.getFormalDataType();

@@ -6216,3 +6216,70 @@ The composite-prefix branch's normal parent merge `b9ba06f` has exactly the
 prior `eb10b6c` tree. Its local source/package/runtime evidence therefore retains
 the same runtime bytes. Subsequent changes record parent acceptance only;
 final committed packaging and a separate prefix hosted gate remain required.
+
+## Formal aggregate function returns — local acceptance (2026-10-25)
+
+**CONFIRMED locally; hosted validation pending.** The concrete signature
+extractor now uses the curated formal return type instead of the effective ABI
+carrier. See `FORMAL-FUNCTION-RETURNS.md`. The old source fails the new real
+ProgramDB aggregate-return assertion; the corrected source passes 312 checks
+across x86-64, AArch64, ARM32 and both MIPS32 byte orders on actual Java 21 with a
+256 MiB heap. Scalar/pointer/void, custom conversion, hidden parameter identity,
+forced-indirect inputs, cancellation and immutable reopen are covered. The
+existing dynamic parameter suite also passes all 154 checks.
+
+The installed production JAR
+`a7bb363ef5eb1944b917f43f4c8e93a960de2144ae77f9e6381a3134183ef180`
+passes `formal-function-return-export.sh` in owned case `x86_64.Io1OFFWL`:
+three headless invocations, two byte-identical exports and two actual GDB
+sessions. The observed headless runtime is Java **25.0.4.1**, despite the caller's
+JAVA_HOME setting; the Java 21 model test is separate. Compiler and Forge both
+report a 24-byte structure with three unsigned 64-bit members at offsets 0/8/16.
+The compiler's two arguments are correct at all ten callee instructions. Forge's
+hidden destination and seed remain correct at all ten; delta is correct at seven
+and unavailable at the final three, matching raw locations and the omission
+report. Both normal calls return the expected bytes and caller globals and exit
+zero. No inferior call was injected.
+
+LLVM reports no errors. Strict validation reports four inherited frame findings,
+all corroborated against the unchanged input, and zero unexplained findings.
+Original ELF and protected source/module bytes and mtimes are unchanged.
+The result SHA-256 is
+`926ab4b8a167334e85e46524c5dd70b15df0494e71f6da60dff650e42a06701f`.
+This is one x86-64 SysV ET_EXEC runtime profile, not broad aggregate ABI support.
+
+Retained development failures are distinct from acceptance: the first harness
+attempt included a DWARF end-of-children marker as a member; the next pure check
+incorrectly expected scalar `DW_OP_bit_piece` instead of `DW_OP_regx`. Both
+checker assumptions were corrected before the fresh accepted run. An initial
+Java 21 launcher rejected test classes compiled at Java 25's default level;
+explicit `--release 21` corrected the test compilation. None of these failures
+required changes to the production fix, the fixture C, or its compiler flags.
+
+Commands: `formalFunctionReturnSmoke`, `dynamicParameterStorageSmoke`,
+`buildExtension`, the installed `formal-function-return-export.sh`, actionlint,
+`architecture-neutrality.sh`, Python/shell syntax checks and `git diff --check`.
+Hosted checks and a separately packaged Java 21 test are recorded independently.
+
+The separately compiled test-only classes also pass against the installed JAR
+on actual Java 21/256 MiB (`packaged.vl7adtvd`, 312 checks), with class-load logs
+binding the production extractor to that JAR. The same compiled test rejects
+the retained old JAR `3f9e46b5...` at the aggregate return assertion. Receipt
+SHA-256: `95697de837b17880d330d33891de8db54579066bb2aad00c7217f33783313a74`.
+A post-run URI spelling check was corrected to compare parsed file URIs;
+the successful fixed JVM was not repeated. The final rebuilt extension's JAR
+is byte-identical to the runtime-tested JAR above. The 30-file fixture inventory
+and 13-artifact x86-64 reproducibility check pass.
+
+## Composite prefix integration (PR #47)
+
+**CONFIRMED:** exact head `2c8d4fa6bb57e64978ceb656c67036e48104a089`
+passes all twelve jobs in run `40200733276`, six fresh packaged Java 21 focused
+suites, native Windows's 29 suites, both GUI hosts and independent target
+artifact checks. The two new prefix cases cover 16 compiler-positive PCs;
+computed and custom variants each expose six correct values and ten unavailable
+tails. Prior five-target chains, all four bounded MIPS store cases and strict
+validation remain clear. The accepted receipt is `a00839e5...`, with final
+bindings `4d4cdb49...` and packaged JAR `c04913f8...`. Normal merge
+`ffc16713cc1be34924519544356b5d6f57e851f1` retains the tested tree. Its distinct
+main push `40204254359` is pending separately; no release was published.

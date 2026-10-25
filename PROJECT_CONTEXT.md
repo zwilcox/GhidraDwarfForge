@@ -64,6 +64,17 @@ A representative target experience is:
 (gdb) ptype recovered_structure
 ```
 
+## Formal return-type correction (2026-10-25)
+
+**CONFIRMED:** a real x86-64 SysV structure-return probe exposed an effective
+ABI pointer being exported as the function's return type. Concrete signatures
+now use `getReturn().getFormalDataType()`. Hidden return-storage parameters keep
+their separate artificial pointer declaration; custom storage preserves the
+current formal signature rather than guessing its former state. The real
+ProgramDB smoke passes 312 Java 21 checks across five language models. Runtime
+and hosted validation are recorded in `docs/VALIDATION.md`; see
+`docs/FORMAL-FUNCTION-RETURNS.md` for the bounded contract.
+
 ## 3. Goals
 
 **HISTORICAL assessment, with bounded follow-ups now accepted:**

@@ -280,3 +280,12 @@ working directory are required. `--expectation baseline-reproducer` requires
 the old wrong-path behavior and never counts as a passing correction. See
 `docs/FILESYSTEM-PATHS.md` for host semantics and the two explicitly recorded
 Ghidra index-backup files.
+
+### Formal structure return
+
+`formal-function-return.c` is an ordinary x86-64 SysV caller/callee fixture
+returning three 64-bit fields. The dedicated `formal-function-return-export.sh`
+harness preserves its original `-O1` probe flags, compares compiler and exported
+return types, checks the hidden destination parameter, and verifies actual
+returned memory and caller observations in GDB. The original input remains
+unchanged. This is not a general aggregate-ABI claim.
