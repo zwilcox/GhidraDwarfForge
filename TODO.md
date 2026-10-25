@@ -949,8 +949,9 @@ accepted a thunk diagnostic alone. **CONFIRMED:** the dedicated external
 inventory passes five real Ghidra language models, five fresh primary exports
 with native/QEMU GDB checks, and identical old/fixed/repeat saved-program sidecar
 and source bytes. PR #42's exact run `40126794530` and distinct main push
-`40129499500` both pass all twelve jobs and independent reviews. Curated addressless declaration emission now passes local five-language model
-checks and a compiler/export/GDB regression; its hosted gate is pending.
+`40129499500` both pass all twelve jobs and independent reviews. Curated addressless declarations pass PR #49 run `40210826397` and distinct
+main run `40214033937`, all twelve jobs with exact package/raw GDB/Windows
+reviews, in addition to the five-language model and compiler regression.
 Default signatures stay omitted. GDB ignores unlocated prototypes even in
 compiler DWARF, so this adds metadata without claiming external-code lookup. Distinct
 linkage-name emission remains because GDB must retain the analyst-facing
@@ -976,11 +977,11 @@ breakpoint name.
   analyst-facing `DW_AT_name` in the honest C11 CU, breaking
   `break recovered_add`.
 - [~] Distinguish definitions, declarations, imports, thunks, and aliases under
-  a documented initial policy: only real definitions emit. Memory thunks are
+  a documented policy: real definitions and curated addressless declarations emit. Memory thunks are
   diagnosed; separate external-function inventory passes PR #42
   (`296395e` / `40126794530`) across all five targets and both hosts.
-  Non-default declarations have a locally validated addressless model and
-  producer path; hosted acceptance is pending. Linkage and alias modeling
+  Non-default declarations have an addressless model and producer path accepted
+  in PR #49 and its separate main gate. Linkage and alias modeling
   remain separate work.
 
 ### Completion criteria
@@ -1169,15 +1170,16 @@ or uncertain storage remains locationless with a diagnostic.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
 
-**CONFIRMED locally; hosted acceptance pending:** retain a complete incoming register composite
+**CONFIRMED in PR #47 run `40200733276` and distinct main run `40204254359`
+(all twelve jobs and reviewed artifacts):** retain a complete incoming register composite
 before its earliest physical-register overwrite, then make the whole value
 unavailable. An independently reviewed x86-64/AArch64 ET_EXEC probe establishes
 the omitted incoming values and exact partial-register clobber boundaries.
 Actual Java 21 source checks 469 and packaged checks 469/1480/154/182 pass; ten
 relevant Gradle regressions and the extension build pass. Fresh x86-64/AArch64
 computed/custom/reopened exports pass validators and GDB with unchanged inputs
-and deterministic output. Independent source/package/raw reviews pass. Final
-committed packaging and full hosted acceptance remain pending; see
+and deterministic output. Independent source/package/raw reviews pass. Final committed packaging and both hosted gates pass; normal merge
+`ffc16713cc1be34924519544356b5d6f57e851f1` preserves the accepted tree. See
 `docs/COMPOSITE-REGISTER-PREFIX.md`. This adds no call-crossing, surviving-piece,
 backup, mixed-memory or later-local inference.
 
@@ -2171,6 +2173,16 @@ are met. Do not infer compiler inlining from the flag or comments, discard
 surviving knowledge, or describe inline export as complete.
 
 ## P3.5 Add optional size/performance features
+
+**CONFIRMED locally:** instruction-level stack profiles are now created only
+when an exported stack location consumes them, then reused within the function.
+Five alternating 10,000-function pairs preserve every artifact byte and reduce
+median export time from 9.99 to 9.37 seconds on this host; SQLite's 34.76 to
+34.10 second difference is small and has overlapping samples. Full corrected
+comparison harnesses, validators/GDB, preservation checks and x86-64/AArch64
+stack-location exec/PIE/rebase regressions pass. The full integration gate is
+required before merging; no broad speed or memory guarantee is claimed.
+See `docs/LAZY-STACK-PROFILES.md` for exact populations, failures and receipts.
 
 **CONFIRMED locally (2026-10-25):** the pinned SQLite workload decompiles 1,539
 functions without failures; three exports have median 33.93 seconds, with

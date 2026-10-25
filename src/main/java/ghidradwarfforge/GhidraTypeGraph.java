@@ -142,8 +142,9 @@ public final class GhidraTypeGraph {
             if (symbol == null) {
                 continue;
             }
-            GhidraVariableStorage.StackDepthProfile stackDepths =
-                GhidraVariableStorage.stackDepthProfile(program, function, monitor);
+            // Resolve instruction-level stack depths only when an exported
+            // location needs them, then share that profile within this function.
+            GhidraVariableStorage.StackDepthProfile stackDepths = null;
             // The effective ABI return may be a hidden pointer (or void).
             // Preserve the curated signature independently of that carrier.
             DataType formalReturn = function.getReturn().getFormalDataType();
@@ -168,6 +169,9 @@ public final class GhidraTypeGraph {
                         parameter, registerMap, monitor);
                     var prefix = GhidraVariableStorage.parameterPrefix(program, function,
                         parameter, registerMap, storage, monitor);
+                    if (prefix.isEmpty() && storage instanceof StackStorage && stackDepths == null) {
+                        stackDepths = GhidraVariableStorage.stackDepthProfile(program, function, monitor);
+                    }
                     List<LocationRange> ranges = prefix.isEmpty()
                         ? locationRanges(symbol, storage, stackDepths, registerMap, rebaseDelta,
                             parameter.getSource())
@@ -232,6 +236,9 @@ public final class GhidraTypeGraph {
                     variable.getSource().name()));
                 Storage storage = GhidraVariableStorage.stableLocal(program, function,
                     variable, registerMap, monitor);
+                if (storage instanceof StackStorage && stackDepths == null) {
+                    stackDepths = GhidraVariableStorage.stackDepthProfile(program, function, monitor);
+                }
                 List<LocationRange> ranges = locationRanges(symbol, storage, stackDepths,
                     registerMap, rebaseDelta, variable.getSource());
                 variableLocations.add(new VariableLocation(symbol.name(), address,

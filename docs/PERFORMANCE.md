@@ -377,3 +377,15 @@ hosted timing or general memory/speed claim follows. The missing-config failure
 and previously incomplete diagnostic evidence remain recorded above.
 Representative complex-binary workloads and further phase profiling remain
 **PLANNED**. This feature is in main but excluded from published alpha.2.
+
+## Deferred stack-profile comparison (2026-10-25)
+
+A subsequent bounded optimization constructs instruction-level stack profiles
+only for accepted exported stack locations. It preserves byte-identical
+SQLite/synthetic artifacts. The five-pair synthetic median is 9.99 versus
+9.37 seconds; SQLite's 34.76 versus 34.10 second difference is much smaller.
+These use the recovered-parameter packages, a different population from the
+representative application measurements above. See
+[LAZY-STACK-PROFILES.md](LAZY-STACK-PROFILES.md) for exact package identities,
+RSS boundaries, failures, final reusable harness validation and GDB/storage
+regressions. No general firmware, Windows or memory guarantee follows.

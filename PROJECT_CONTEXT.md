@@ -4216,3 +4216,30 @@ focused checks, raw declaration/GDB artifacts and native Windows checks were
 reviewed. Normal merge `45326971268c156ac1e6d71b3cb6a6d0867c1b78` retains
 the accepted tree; its distinct main run `40214033937` remains pending.
 The two earlier failed runs above are historical, superseded evidence.
+
+### Deferred stack analysis and integration checkpoint (2026-10-25)
+
+**CONFIRMED locally:** the extractor computes instruction-level stack depth only
+for an accepted stack location and shares that profile for subsequent variables.
+No register/lifetime/ABI proof changes. Paired SQLite and synthetic exports are
+byte-identical across packages; the five-pair synthetic median is 9.99 versus
+9.37 seconds, while SQLite shows a smaller 34.76 versus 34.10 second difference.
+Corrected full comparison harnesses, strict validators, GDB, actual Java 21
+packaged suites and x86-64/AArch64 stack-first-use exec/PIE/rebase tests pass.
+`docs/LAZY-STACK-PROFILES.md` retains the separate populations and first failed
+GDB harness, and limits the performance claims to the measured workloads.
+
+**CONFIRMED:** the external-declaration main run `40214033937` passes all twelve
+jobs, exact-package equality and fresh raw declaration/GDB/native Windows
+review. Main acceptance receipt SHA-256:
+`f81aca0929a2606284bc58b30c98cfb962f6468c139123d6f8893bef235df99e`.
+Earlier pending main notes are historical. Return recovery's semantic head
+`9dbb6fd` passes all twelve jobs in `40212494601` and root review of package,
+actual Java 21 checks, raw return/prototype DIEs and compiler/GDB behavior.
+Its parent-only update has identical executable bytes and its own gate.
+
+The integration branch preserves PR50/51/52 component commits through normal
+merges and adds deferred-stack analysis separately. Every component's evidence
+remains distinct; the complete combined tree must pass the enforced up-to-date
+required-validation gate and exact artifact review before merging. Release
+publication is outside this integration checkpoint.
