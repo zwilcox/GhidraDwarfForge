@@ -4071,3 +4071,21 @@ the two targets. Both stripped inputs equal the preceding investigation;
 strict validators have zero unexplained errors. Independent raw review passes.
 Final committed packaging and full hosted acceptance remain pending; see
 `docs/COMPOSITE-REGISTER-PREFIX.md`.
+
+### PR #46 integration and prefix parent update (2026-10-25)
+
+**CONFIRMED:** exact truncated-STORE head `ea4f9c0` passes all twelve jobs in
+run `40148228012`, with independent package, all-five-target, four new MIPS,
+28 native Windows suites and both-GUI artifact reviews. The downloaded package
+passes fresh actual Java 21 checks 231/38/154/1480/182. Normal merge
+`800081f7d8dd22280e9d360c2c2a0e5e7ffc343c` preserves the tested tree. Its separate
+main-push run `40150436365` also passes all twelve jobs and independent fresh
+target/native Windows/both-GUI artifact review. These freestanding O32/N32 cases
+do not expand the documented ABI/profile claims.
+
+The next composite-prefix branch includes this main parent through normal merge
+`b9ba06f`. Its tree exactly equals the previously tested source plus local
+acceptance documentation at `eb10b6c`; no production, fixture or debugger-oracle
+bytes changed. Final committed packaging and the prefix branch's separate full
+hosted gate remain required. See `docs/TRUNCATED-MEMORY-STORES.md` and
+`docs/COMPOSITE-REGISTER-PREFIX.md` for the separate acceptance scopes.

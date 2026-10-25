@@ -6182,3 +6182,37 @@ Final committed packaging and the full five-target/two-host gate remain
 required before integration. Composite PIE/rebase, additional targets,
 surviving pieces, backup migration, calls and delay slots remain outside this
 new bounded runtime claim.
+
+### PR #46 hosted acceptance and normal merge (2026-10-25)
+
+**CONFIRMED:** exact head `ea4f9c0` passes all twelve jobs in run
+`40148228012`, including all 214 selected target steps and 22 Windows steps.
+The 111 excluded platform conditions are explicit skips. Independent downloaded
+package checks run actual Java 21 suites 231/38/154/1480/182. Fresh artifact
+review accepts all five target chains, the four O32/N32 cases, 28 native Windows
+suites and both GUI journeys. The new MIPS cases retain 194 visited PCs,
+864 correct values, 30 unavailable values and 26 positive entries; all four
+strict validators report zero errors. Other reviewed strict reports have zero
+unexplained errors.
+
+Acceptance receipt SHA-256 is
+`948b3d183f174cbb068e3a55bd2488df037059a056ae33d6e0fa85b9f890c8a7`;
+final artifact bindings are
+`d2b6b9d393afc8fd2aac7ecafc7f2453acd591f1dc2d93e89f38ed71e3aba8cb`.
+Root rehashed all 30 binding witnesses and reread exact CI identity, head/base,
+mergeability and enforced `required-validation` protection. Normal merge
+`800081f7d8dd22280e9d360c2c2a0e5e7ffc343c` at `2026-10-25T01:23:22Z`
+preserves the tested tree. Distinct main-push run `40150436365` also passes all
+twelve jobs and independent fresh target, 28-suite native Windows and both-GUI
+artifact review. Only five package-focused Java 21 observations are inherited
+after exact 28-runtime-payload/five-test-source equality; all main runtime
+artifacts are fresh. Acceptance SHA-256 is
+`495edcaf7420c832156bebecbc1fa661a1c8f20a53424925ee3f286ec58572b8`;
+final bindings are
+`be9656b1839133ebbebb5fc574c7a76bca77c746e527ff7409a9e504d39d6c52`.
+Root rehashed all 30 main witnesses and confirmed fresh API success.
+
+The composite-prefix branch's normal parent merge `b9ba06f` has exactly the
+prior `eb10b6c` tree. Its local source/package/runtime evidence therefore retains
+the same runtime bytes. Subsequent changes record parent acceptance only;
+final committed packaging and a separate prefix hosted gate remain required.
