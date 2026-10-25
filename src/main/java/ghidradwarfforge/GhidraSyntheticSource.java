@@ -16,6 +16,12 @@ import ghidra.app.decompiler.ClangTokenGroup;
 import ghidra.app.decompiler.component.DecompilerUtils;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
+import ghidra.program.model.data.AbstractFloatDataType;
+import ghidra.program.model.data.AbstractIntegerDataType;
+import ghidra.program.model.data.BooleanDataType;
+import ghidra.program.model.data.Pointer;
+import ghidra.program.model.data.Undefined;
+import ghidra.program.model.pcode.FunctionPrototype;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionIterator;
 import ghidra.program.model.listing.Program;
@@ -32,10 +38,34 @@ public final class GhidraSyntheticSource {
 
     /** Return evidence belongs to this pass; it never changes the saved program. */
     public record Decompilation(SyntheticSourceFile source,
-            Map<Long, DataType> recoveredReturns) {
+            Map<Long, DataType> recoveredReturns,
+            Map<Long, ParameterRecovery> recoveredParameters) {
         public Decompilation {
             Objects.requireNonNull(source, "synthetic source");
             recoveredReturns = Map.copyOf(recoveredReturns);
+            recoveredParameters = Map.copyOf(recoveredParameters);
+        }
+
+        public Decompilation(SyntheticSourceFile source, Map<Long, DataType> recoveredReturns) {
+            this(source, recoveredReturns, Map.of());
+        }
+    }
+
+    public record RecoveredParameter(String name, DataType type) {
+        public RecoveredParameter {
+            if (name == null || name.isBlank() || type == null) {
+                throw new IllegalArgumentException("recovered parameter name/type required");
+            }
+        }
+    }
+
+    /** Either an ordered complete recovered list, or a diagnostic without a partial list. */
+    public record ParameterRecovery(List<RecoveredParameter> parameters, String omission) {
+        public ParameterRecovery {
+            parameters = List.copyOf(parameters);
+            if (parameters.isEmpty() ? omission == null || omission.isBlank() : omission != null) {
+                throw new IllegalArgumentException("parameter list or omission required exclusively");
+            }
         }
     }
 
@@ -75,6 +105,7 @@ public final class GhidraSyntheticSource {
             DecompileOperation operation) throws CancelledException {
         Objects.requireNonNull(operation, "decompile operation");
         Map<Long, DataType> recoveredReturns = new HashMap<>();
+        Map<Long, ParameterRecovery> recoveredParameters = new HashMap<>();
         Map<Long, FunctionSymbol> selected = new HashMap<>();
         for (FunctionSymbol symbol : exportedFunctions) {
             selected.put(symbol.address(), symbol);
@@ -117,11 +148,17 @@ public final class GhidraSyntheticSource {
                             result.getHighFunction().getFunctionPrototype().getReturnType();
                         boolean acceptReturn = GhidraTypeGraph.acceptRecoveredReturn(function,
                             recovered);
+                        ParameterRecovery parameters = result.getHighFunction() == null ||
+                                !GhidraTypeGraph.acceptRecoveredParameters(function) ? null :
+                            recoverParameters(result.getHighFunction().getFunctionPrototype());
                         texts.add(new FunctionText(symbol.name(), symbol.address(),
                             c, null, mapTokens(result.getCCodeMarkup(), c, symbol,
                                 rebaseDelta)));
                         if (acceptReturn) {
                             recoveredReturns.put(symbol.address(), recovered);
+                        }
+                        if (parameters != null) {
+                            recoveredParameters.put(symbol.address(), parameters);
                         }
                     }
                     else {
@@ -149,7 +186,37 @@ public final class GhidraSyntheticSource {
                 "selected function was not found during the decompiler pass"));
         }
         return new Decompilation(SyntheticSourceFile.build(program.getName(),
-            program.getLanguageID().toString(), texts), recoveredReturns);
+            program.getLanguageID().toString(), texts), recoveredReturns, recoveredParameters);
+    }
+
+    private static ParameterRecovery recoverParameters(FunctionPrototype prototype) {
+        if (prototype.getNumParams() == 0) {
+            return null;
+        }
+        if (prototype.isVarArg()) {
+            return new ParameterRecovery(List.of(), "inferred variadic signature is outside the supported recovery policy");
+        }
+        List<RecoveredParameter> parameters = new ArrayList<>();
+        java.util.Set<String> names = new java.util.HashSet<>();
+        for (int index = 0; index < prototype.getNumParams(); index++) {
+            var parameter = prototype.getParam(index);
+            if (parameter == null || parameter.isThisPointer() || parameter.isHiddenReturn()) {
+                return new ParameterRecovery(List.of(), "missing or implicit parameter at position " + index);
+            }
+            String name = parameter.getName();
+            if (name == null || name.isBlank() || !names.add(name) ||
+                    !supportedParameterType(parameter.getDataType())) {
+                return new ParameterRecovery(List.of(), "unresolved type or ambiguous name at position " + index);
+            }
+            parameters.add(new RecoveredParameter(name, parameter.getDataType()));
+        }
+        return new ParameterRecovery(parameters, null);
+    }
+
+    static boolean supportedParameterType(DataType type) {
+        return type != null && !Undefined.isUndefined(type) &&
+            (type instanceof AbstractIntegerDataType || type instanceof AbstractFloatDataType ||
+                type instanceof BooleanDataType || type instanceof Pointer) && type.getLength() > 0;
     }
 
     private static List<RelativeLine> mapTokens(ClangTokenGroup markup, String c,

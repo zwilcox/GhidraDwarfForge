@@ -312,3 +312,9 @@ the original C return is 32-bit unsigned int; that difference is retained and
 documented, not hidden by changing the fixture. Saved program data and input
 bytes remain unchanged. Separate pass controls test one decompilation attempt,
 per-function failure, cancellation and immutable evidence.
+
+`recovered-parameter-types.c` exercises natural DEFAULT scalar/pointer parameter
+inference, one unresolved mixed list and an analyst-curated signature. The
+runtime harness builds independent compiler DWARF then strips only its copied
+input's debug sections. GDB checks types, unavailable inferred arguments and
+ordinary returned values. No parameter storage is forced for inferred cases.

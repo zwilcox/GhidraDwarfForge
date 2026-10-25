@@ -100,6 +100,16 @@ public final class GhidraTypeGraph {
             List<FunctionSymbol> exportedFunctions, String targetName, long rebaseDelta,
             TaskMonitor monitor, Consumer<String> diagnostic,
             Map<Long, DataType> recoveredReturns) throws CancelledException {
+        return extract(program, exportedFunctions, targetName, rebaseDelta, monitor,
+            diagnostic, recoveredReturns, Map.of());
+    }
+
+    public static ProgramTypeModel extract(Program program,
+            List<FunctionSymbol> exportedFunctions, String targetName, long rebaseDelta,
+            TaskMonitor monitor, Consumer<String> diagnostic,
+            Map<Long, DataType> recoveredReturns,
+            Map<Long, GhidraSyntheticSource.ParameterRecovery> recoveredParameters)
+            throws CancelledException {
         Extractor extractor = new Extractor(diagnostic);
         TargetRegisterMap registerMap = TargetRegisterMap.forTarget(targetName);
         List<DataType> favoriteTypes = new ArrayList<>(
@@ -175,6 +185,40 @@ public final class GhidraTypeGraph {
                 }
             }
             List<ProgramTypeModel.LocalVariable> locals = new ArrayList<>();
+            var recovery = recoveredParameters.get(address);
+            if (recovery != null && acceptRecoveredParameters(function)) {
+                java.util.Set<String> names = new java.util.HashSet<>();
+                for (Variable local : function.getLocalVariables()) {
+                    names.add(local.getName());
+                }
+                String omission = recovery.omission();
+                for (var parameter : recovery.parameters()) {
+                    if (!names.add(parameter.name()) ||
+                            !GhidraSyntheticSource.supportedParameterType(parameter.type())) {
+                        omission = "unresolved type or conflicting listing-local name";
+                        break;
+                    }
+                }
+                if (omission != null) {
+                    diagnostic.accept("Omitted decompiler parameter recovery for " + symbol.name() + ": " + omission);
+                }
+                else {
+                    for (var parameter : recovery.parameters()) {
+                        parameters.add(new TypeGraph.Parameter(parameter.name(),
+                            extractor.reserve(parameter.type()), false));
+                        var storage = new UnavailableStorage(OmissionReason.UNKNOWN_LIFETIME,
+                            "decompiler name/type evidence has no validated variable lifetime");
+                        var evidence = new Evidence(Confidence.DECOMPILER,
+                            "Ghidra decompiler parameter metadata; no listing storage or inferred location emitted");
+                        variableLocations.add(new VariableLocation(symbol.name(), address,
+                            parameter.name(), VariableKind.PARAMETER, parameter.type().getLength(),
+                            symbol.ranges().stream().map(range -> new LocationRange(
+                                range.address(), range.endExclusive(), storage, evidence)).toList()));
+                    }
+                    diagnostic.accept("Using decompiler-recovered parameter names/types for " +
+                        symbol.name() + "; locations omitted and DEFAULT prototype remains unspecified");
+                }
+            }
             for (Variable variable : function.getLocalVariables()) {
                 monitor.checkCancelled();
                 String localName = variable.getName();
@@ -321,6 +365,12 @@ public final class GhidraTypeGraph {
             recovered.getLength() > 0 &&
             (recovered instanceof AbstractIntegerDataType ||
                 recovered instanceof AbstractFloatDataType || recovered instanceof BooleanDataType);
+    }
+
+    static boolean acceptRecoveredParameters(Function function) {
+        return function.getSignatureSource() == SourceType.DEFAULT &&
+            !function.hasCustomVariableStorage() && function.getParameterCount() == 0 &&
+            !function.hasVarArgs();
     }
 
     private static List<String> namespacePath(Namespace namespace) {

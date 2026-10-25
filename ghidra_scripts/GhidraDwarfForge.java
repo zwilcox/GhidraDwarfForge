@@ -161,7 +161,8 @@ public class GhidraDwarfForge extends GhidraScript {
         var source = decompilation.source();
         monitor.checkCancelled();
         var typeModel = GhidraTypeGraph.extract(currentProgram, functions, target.name(),
-            rebaseDelta, monitor, diagnostic, decompilation.recoveredReturns());
+            rebaseDelta, monitor, diagnostic, decompilation.recoveredReturns(),
+            decompilation.recoveredParameters());
         monitor.checkCancelled();
         var resultHolder = new MinimalDwarfSidecarExporter.ExportResult[1];
         ArtifactPairPublisher.stageAndPublish(output, sourceOutput,

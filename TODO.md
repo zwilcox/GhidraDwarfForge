@@ -908,6 +908,15 @@ Define precedence among analyst-applied listing/signature types and decompiler g
 
 ## P1.7 Emit complete function signatures
 
+**CONFIRMED locally; hosted acceptance pending:** ordered decompiler parameter
+names/types now fill DEFAULT noncustom signatures with zero listing parameters.
+Only complete supported scalar/pointer lists qualify; uncertain lists are
+omitted as a whole. Stronger metadata stays intact and inferred parameters have
+explicit UNKNOWN_LIFETIME omissions, never invented locations. 550 five-profile
+ProgramDB checks and a real x86-64 compiler/previous-package/GDB regression pass.
+GDB displays the inferred types and unavailable arguments. See
+`docs/RECOVERED-PARAMETER-TYPES.md`; broader P1.7/P1.11 scope remains partial.
+
 **CONFIRMED locally; full hosted acceptance pending:** concrete decompiler
 scalar returns now fill only DEFAULT undefined, noncustom listing returns.
 Stronger signature/return provenance remains authoritative. DEFAULT signatures

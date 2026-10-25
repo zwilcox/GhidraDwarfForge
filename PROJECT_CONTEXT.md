@@ -4166,3 +4166,17 @@ The recovered-return branch includes that main parent through a normal merge
 with identical tree to its preceding `9dbb6fd` candidate. No production,
 fixture, workflow or oracle bytes change in this parent update. Its own full
 new-head hosted gate remains required, and no new release is published.
+
+### Inferred parameter metadata without locations (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** the existing successful
+source-generation pass retains complete supported HighFunction parameter lists
+for DEFAULT noncustom signatures with no listing parameters. The extractor
+preserves stronger metadata and rejects incomplete/implicit/variadic or
+conflicting inferred lists as a whole. Scalar/pointer types and inferred names
+are retained with DECOMPILER evidence and UNKNOWN_LIFETIME location omissions.
+No storage or complete-prototype claim is invented and no program mutation or
+new native API is introduced. Five-language model checks and a real installed
+x86-64 compiler/GDB regression pass, including unavailable inferred values,
+ordinary returns, deterministic bytes, preservation and failure/cancellation.
+See `docs/RECOVERED-PARAMETER-TYPES.md` for the bounded policy and evidence.
