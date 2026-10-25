@@ -284,7 +284,7 @@ combined run `40068401197`; its conditional-step scope is recorded in
 | GUI and output paths (P2.7) | **CONFIRMED:** both hosts' real Script Manager/chooser journeys pass. PR #31 adds actual parent traversal, complete publisher alias preflight and native Windows short-parent/trailing-dot controls; its exact PR/main gates and artifact reviews pass. Geometry/GDB run on Linux; Windows uses native GNU/LLVM, with independent libdwarf unavailable and Linux-ELF runtime GDB not run. |
 | Optional debuglink (P2.8) | **PLANNED transaction:** opt-in attachment, identity/receipt chain and backup/rollback remain unimplemented. PRs #32/#33's digests, typed build-ID observations and report reader pass the full matrix. PRs #34/#35's prefix and indexed allocation observers also pass the full matrix. PR #36 selected-file SHA binding also passes the full matrix. PR #37 program-byte preservation passes the full matrix. PR #38 candidate-content checks also pass the full matrix. PR #39 owned append-only preparation also passes the full matrix. PR #40 detailed report binding/private preparation also passes the full matrix. PR #41 captured validator evidence passes its exact PR and main gates. Default export leaves the original unchanged. |
 | Inline reconstruction (P3.4) | **CONFIRMED investigation complete:** ADR 0003 and a reproducible compiler/Ghidra probe distinguish real inline instances from Ghidra's decompiler flag and record surviving locals/source information. Inline emission remains deferred until explicit instance/origin/range evidence and GDB acceptance exist. |
-| Performance (P3.5) | **CONFIRMED:** the indexed planner and configured-checker gates pass component run `40065823442` and combined run `40068401197`. Historical local paired 10,000-function exports reduce median process time by 15.5% with byte-identical artifacts; a fresh strict/GDB replay validates the retained result without rerunning timing. Hosted CI is not a new timing measurement. Representative complex-binary and further phase-level profiling remain **PLANNED**; no blanket speed or memory claim. See `docs/PERFORMANCE.md`. |
+| Performance (P3.5) | **CONFIRMED:** the indexed planner and configured-checker gates pass component run `40065823442` and combined run `40068401197`. Historical local paired 10,000-function exports reduce median process time by 15.5% with byte-identical artifacts; a fresh strict/GDB replay validates the retained result without rerunning timing. Hosted CI is not a new timing measurement. The pinned SQLite complex-application harness and a bounded JFR profile pass locally; broader workloads and further profiling remain **PLANNED**. No blanket speed or memory claim. See `docs/PERFORMANCE.md`. |
 
 The optional/research items need an explicit recorded outcome; they are not
 silently complete merely because they are outside the current alpha scope.
@@ -908,6 +908,27 @@ Define precedence among analyst-applied listing/signature types and decompiler g
 
 ## P1.7 Emit complete function signatures
 
+**CONFIRMED in PR #52 run `40215680796` (all twelve jobs, exact package,
+actual Java 21 and raw GDB/Windows review):** ordered decompiler parameter
+names/types now fill DEFAULT noncustom signatures with zero listing parameters.
+Only complete supported scalar/pointer lists qualify; uncertain lists are
+omitted as a whole. Stronger metadata stays intact and inferred parameters have
+explicit UNKNOWN_LIFETIME omissions, never invented locations. 550 five-profile
+ProgramDB checks and a real x86-64 compiler/previous-package/GDB regression pass.
+GDB displays the inferred types and unavailable arguments. See
+`docs/RECOVERED-PARAMETER-TYPES.md`; broader P1.7/P1.11 scope remains partial.
+
+**CONFIRMED in PR #50 run `40214441924` (all twelve jobs, exact package,
+actual Java 21 and raw GDB/Windows review):** concrete decompiler
+scalar returns now fill only DEFAULT undefined, noncustom listing returns.
+Stronger signature/return provenance remains authoritative. DEFAULT signatures
+also omit the prototype flag so unknown arguments are not asserted as a known
+no-argument list; curated prototype flags remain intact. 645 model checks
+cover five profiles and immutable reopen; a real x86-64 installed regression
+proves GDB types and ordinary returned values against the previous package and
+compiler DWARF. The unsigned-width inference discrepancy is explicit, not
+claimed as original type recovery. See `docs/RECOVERED-DEFAULT-RETURNS.md`.
+
 **CONFIRMED in PR #48 run `40205151874` (all twelve jobs):** the earlier prototype acceptance did not
 cover forced-indirect aggregate returns. A real x86-64 probe emitted an 8-byte
 pointer for a curated 24-byte structure. Extraction now selects the formal
@@ -915,7 +936,7 @@ return type; 312 Java 21 ProgramDB checks cover five languages, immutable reopen
 custom conversion and hidden parameters. The x86-64 installed exporter/GDB regression passes: correct structure return,
 hidden pointer, actual returned bytes, deterministic exports and unchanged inputs.
 The downloaded hosted package and native Windows pass the same 312 model checks;
-the hosted x86 runtime agrees. Separate main push `40208082901` is pending.
+the hosted x86 runtime agrees. Separate main push `40208082901` also passes all twelve jobs and root package/runtime review.
 This bounded fix does
 not complete external declarations, linkage names, aliases or class scopes.
 
@@ -930,8 +951,9 @@ accepted a thunk diagnostic alone. **CONFIRMED:** the dedicated external
 inventory passes five real Ghidra language models, five fresh primary exports
 with native/QEMU GDB checks, and identical old/fixed/repeat saved-program sidecar
 and source bytes. PR #42's exact run `40126794530` and distinct main push
-`40129499500` both pass all twelve jobs and independent reviews. Curated addressless declaration emission now passes local five-language model
-checks and a compiler/export/GDB regression; its hosted gate is pending.
+`40129499500` both pass all twelve jobs and independent reviews. Curated addressless declarations pass PR #49 run `40210826397` and distinct
+main run `40214033937`, all twelve jobs with exact package/raw GDB/Windows
+reviews, in addition to the five-language model and compiler regression.
 Default signatures stay omitted. GDB ignores unlocated prototypes even in
 compiler DWARF, so this adds metadata without claiming external-code lookup. Distinct
 linkage-name emission remains because GDB must retain the analyst-facing
@@ -957,11 +979,11 @@ breakpoint name.
   analyst-facing `DW_AT_name` in the honest C11 CU, breaking
   `break recovered_add`.
 - [~] Distinguish definitions, declarations, imports, thunks, and aliases under
-  a documented initial policy: only real definitions emit. Memory thunks are
+  a documented policy: real definitions and curated addressless declarations emit. Memory thunks are
   diagnosed; separate external-function inventory passes PR #42
   (`296395e` / `40126794530`) across all five targets and both hosts.
-  Non-default declarations have a locally validated addressless model and
-  producer path; hosted acceptance is pending. Linkage and alias modeling
+  Non-default declarations have an addressless model and producer path accepted
+  in PR #49 and its separate main gate. Linkage and alias modeling
   remain separate work.
 
 ### Completion criteria
@@ -1150,15 +1172,16 @@ or uncertain storage remains locationless with a diagnostic.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
 
-**CONFIRMED locally; hosted acceptance pending:** retain a complete incoming register composite
+**CONFIRMED in PR #47 run `40200733276` and distinct main run `40204254359`
+(all twelve jobs and reviewed artifacts):** retain a complete incoming register composite
 before its earliest physical-register overwrite, then make the whole value
 unavailable. An independently reviewed x86-64/AArch64 ET_EXEC probe establishes
 the omitted incoming values and exact partial-register clobber boundaries.
 Actual Java 21 source checks 469 and packaged checks 469/1480/154/182 pass; ten
 relevant Gradle regressions and the extension build pass. Fresh x86-64/AArch64
 computed/custom/reopened exports pass validators and GDB with unchanged inputs
-and deterministic output. Independent source/package/raw reviews pass. Final
-committed packaging and full hosted acceptance remain pending; see
+and deterministic output. Independent source/package/raw reviews pass. Final committed packaging and both hosted gates pass; normal merge
+`ffc16713cc1be34924519544356b5d6f57e851f1` preserves the accepted tree. See
 `docs/COMPOSITE-REGISTER-PREFIX.md`. This adds no call-crossing, surviving-piece,
 backup, mixed-memory or later-local inference.
 
@@ -2153,10 +2176,31 @@ surviving knowledge, or describe inline export as complete.
 
 ## P3.5 Add optional size/performance features
 
+**CONFIRMED locally:** instruction-level stack profiles are now created only
+when an exported stack location consumes them, then reused within the function.
+Five alternating 10,000-function pairs preserve every artifact byte and reduce
+median export time from 9.99 to 9.37 seconds on this host; SQLite's 34.76 to
+34.10 second difference is small and has overlapping samples. Full corrected
+comparison harnesses, validators/GDB, preservation checks and x86-64/AArch64
+stack-location exec/PIE/rebase regressions pass. The full integration gate is
+required before merging; no broad speed or memory guarantee is claimed.
+See `docs/LAZY-STACK-PROFILES.md` for exact populations, failures and receipts.
+
+**CONFIRMED locally (2026-10-25):** the pinned SQLite workload decompiles 1,539
+functions without failures; three exports have median 33.93 seconds, with
+identical artifacts and clean strict/LLVM checks. A separate JFR export
+identifies stack-depth analysis as a candidate hot path. The retained run
+failed only its whole-project backup-file assertion; a precise evidence replay
+proves unchanged program data and reports the two rotated backup files. The
+revised full harness subsequently passes `run.zf2690wu` with two timed exports
+and a separate JFR export of the locally corrected return-recovery candidate. GDB basic behavior passes, but
+a DEFAULT return-type discrepancy remains a separate confirmed correctness
+gap. See `docs/PERFORMANCE.md` for measured scope and retained failures.
+
 **Status:** `[~]` — synthetic scaling measurements are complete locally, and
 the indexed line planner passes component run `40065823442` and combined run
-`40068401197`; representative complex application/firmware and
-further per-phase profiling remain **PLANNED**. The bounded 10,000-function
+`40068401197`; the first complex-application observation is recorded above.
+Broader firmware/host workloads and further profiling remain **PLANNED**. The bounded 10,000-function
 comparison improves median whole-process time from 10.86 to 9.18 seconds over
 five alternating pairs, with every output pair byte-identical. It does not
 establish speed or memory effects for other workloads/hosts.

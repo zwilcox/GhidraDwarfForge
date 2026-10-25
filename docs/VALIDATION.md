@@ -6353,3 +6353,29 @@ tree. Its distinct main push `40208082901` is pending separately. PR #47's
 separate main push `40204254359` has now passed all twelve jobs and independent
 fresh target/both-host artifact review. No release was published. This record
 supersedes the pending PR #48 and main #47 labels above.
+
+## Default scalar return recovery — local acceptance (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** 645 five-profile ProgramDB
+checks and the installed `recovered-default-returns-export.py` regression pass.
+The ordinary compiler/Forge GDB calls return -41/41/1.75; the prior package
+displays void returns. Inferred unsigned width is explicitly distinguished
+from compiler provenance. Repeated artifacts, input/module/program bytes,
+LLVM, strict seven-frame corroboration and actual decompiler failure/cancel
+controls pass. Detailed result/JAR hashes and retained development failures are
+in `docs/RECOVERED-DEFAULT-RETURNS.md`. This is not full original signature or
+new architecture/ABI coverage.
+
+## Recovered parameter metadata (2026-10-25)
+
+**CONFIRMED locally; full hosted acceptance pending:**
+`recoveredParameterSmoke` passes 550 checks on five Ghidra language models,
+including immutable reopen. Actual Java 21 packaged checks and the real
+x86-64 `recovered-parameter-types-export.py` compiler/previous-package/GDB
+regression pass. The three inferred types have no DWARF location; GDB reports
+their arguments as unavailable while ordinary calls return the expected values.
+Incomplete lists are omitted, analyst metadata survives, validators have no
+unexplained findings and repeat artifacts/input-preservation checks pass.
+The pipeline adds the model on both hosts and the runtime test on x86-64.
+See [RECOVERED-PARAMETER-TYPES.md](RECOVERED-PARAMETER-TYPES.md) for exact
+receipts, the retained initial harness failure and remaining scope.

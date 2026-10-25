@@ -621,3 +621,27 @@ tasks.register("formalFunctionReturnSmoke", JavaExec) {
     systemProperty "application.settingsdir", file("build/tmp/formal-returns/settings").absolutePath
     systemProperty "application.cachedir", file("build/tmp/formal-returns/cache").absolutePath
 }
+
+tasks.register("recoveredReturnSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks conservative recovered scalar returns and preserved signature provenance"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.RecoveredReturnSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/recovered-returns/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/recovered-returns/cache").absolutePath
+}
+
+tasks.register("recoveredParameterSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks conservative decompiler parameter metadata without invented locations"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.RecoveredParameterSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/recovered-parameters/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/recovered-parameters/cache").absolutePath
+}

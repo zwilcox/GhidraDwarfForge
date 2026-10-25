@@ -4115,6 +4115,33 @@ bytes changed. Final committed packaging and the prefix branch's separate full
 hosted gate remain required. See `docs/TRUNCATED-MEMORY-STORES.md` and
 `docs/COMPOSITE-REGISTER-PREFIX.md` for the separate acceptance scopes.
 
+### Representative application measurement (2026-10-25)
+
+**CONFIRMED locally:** the pinned SQLite 3.46.1 in-memory workload exports
+1,539 decompiled functions without failures. Three fresh-process exports
+have median 33.93 seconds; a separate JFR run is excluded from that median.
+Artifacts are byte-identical, strict validation has zero unexplained errors,
+and basic GDB source/runtime checks pass. A retained postcondition replay
+distinguishes unchanged program data from two Ghidra project backup rotations;
+the original failed whole-project assertion is not erased or reported as a
+passing full harness run. This is one Linux x86-64 non-PIE application, not a
+firmware or speedup claim. See `docs/PERFORMANCE.md`.
+
+The workload confirms an independent signature gap: DEFAULT listing returns
+remain unspecified even where the decompiler recovers a concrete integer.
+GDB therefore displays `void(void)` for the checkpoint. A read-only probe
+confirms the discrepancy; a conservative recovery policy preserving analyst
+types remains **PLANNED**. Profiled stack-depth analysis is a performance
+candidate, not an implemented optimization.
+
+The revised full SQLite harness subsequently passes `run.zf2690wu`: two
+exports plus a separate profiled export of the locally validated scalar-return
+candidate, strict/GDB checks, deterministic artifacts, unchanged executable/
+program data and explicitly reported backup rotations. This fresh validation
+observation does not replace the first three timing samples or establish a
+speedup. The return correction awaits its own hosted gate; benchmark GDB
+coverage remains explicitly narrower than complete recovered semantics.
+
 ### Declaration integration oracle correction (2026-10-25)
 
 **CONFIRMED:** first declaration run `40208416888` failed all target lanes at
@@ -4131,3 +4158,104 @@ attributes, while preserving exact definition-union/index matching. Eighteen
 negative controls and fresh x86-64/MIPS32BE extended-section exec/PIE
 export/validator/GDB checks pass locally. Both failed hosted runs remain
 historical; full corrected acceptance is still pending.
+
+### Default scalar return recovery (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** the source pass now retains
+concrete scalar HighFunction return evidence for DEFAULT undefined signatures.
+The extractor preserves all stronger provenance and custom storage, and emits
+an explicit inference diagnostic without changing the saved program. 645
+ProgramDB checks and a real x86-64 compiler/preceding-package/export/GDB
+regression pass. Ordinary calls return -41, 41 and 1.75. The unsigned fixture's
+inferred 64-bit type differs from its original 32-bit C type; both observations
+are retained rather than claiming exact original recovery. See
+`docs/RECOVERED-DEFAULT-RETURNS.md` for scope, failures and evidence.
+
+A related prototype assertion is also corrected locally: DEFAULT signatures
+no longer emit `DW_AT_prototyped`, so an unknown argument list is not presented
+as a known no-argument prototype. An owned-copy GDB/LLVM experiment establishes
+the distinction; the final installed regression proves raw flag policy, GDB
+unknown/curated argument display and ordinary return values. No parameter or
+variadic behavior is inferred. The earlier candidate's hosted run does not
+establish acceptance of this follow-up; its new full gate remains required.
+
+### Accepted formal-return and declaration parents (2026-10-25)
+
+**CONFIRMED:** formal-return main `a162b0c` passes all twelve jobs in
+`40208082901`, with exact package and fresh raw x86/Windows review.
+Declaration head `e643d97` passes all twelve jobs in `40210826397`, exact
+package/source/manifests, focused Java21 equality, raw declaration and GDB
+review, and 30 native Windows suites. It merges normally as
+`45326971268c156ac1e6d71b3cb6a6d0867c1b78`; its distinct main gate is pending.
+The two rejected declaration-oracle runs remain historical.
+
+The recovered-return branch includes that main parent through a normal merge
+with identical tree to its preceding `9dbb6fd` candidate. No production,
+fixture, workflow or oracle bytes change in this parent update. Its own full
+new-head hosted gate remains required, and no new release is published.
+
+### Inferred parameter metadata without locations (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** the existing successful
+source-generation pass retains complete supported HighFunction parameter lists
+for DEFAULT noncustom signatures with no listing parameters. The extractor
+preserves stronger metadata and rejects incomplete/implicit/variadic or
+conflicting inferred lists as a whole. Scalar/pointer types and inferred names
+are retained with DECOMPILER evidence and UNKNOWN_LIFETIME location omissions.
+No storage or complete-prototype claim is invented and no program mutation or
+new native API is introduced. Five-language model checks and a real installed
+x86-64 compiler/GDB regression pass, including unavailable inferred values,
+ordinary returns, deterministic bytes, preservation and failure/cancellation.
+See `docs/RECOVERED-PARAMETER-TYPES.md` for the bounded policy and evidence.
+
+### Declaration integration accepted (2026-10-25)
+
+**CONFIRMED:** corrected PR49 head `e643d9772ab08c72ac83aa0c084040c3aad0659d`
+passes all twelve jobs in run `40210826397`. Exact package, actual Java 21
+focused checks, raw declaration/GDB artifacts and native Windows checks were
+reviewed. Normal merge `45326971268c156ac1e6d71b3cb6a6d0867c1b78` retains
+the accepted tree; its distinct main run `40214033937` remains pending.
+The two earlier failed runs above are historical, superseded evidence.
+
+### Deferred stack analysis and integration checkpoint (2026-10-25)
+
+**CONFIRMED locally:** the extractor computes instruction-level stack depth only
+for an accepted stack location and shares that profile for subsequent variables.
+No register/lifetime/ABI proof changes. Paired SQLite and synthetic exports are
+byte-identical across packages; the five-pair synthetic median is 9.99 versus
+9.37 seconds, while SQLite shows a smaller 34.76 versus 34.10 second difference.
+Corrected full comparison harnesses, strict validators, GDB, actual Java 21
+packaged suites and x86-64/AArch64 stack-first-use exec/PIE/rebase tests pass.
+`docs/LAZY-STACK-PROFILES.md` retains the separate populations and first failed
+GDB harness, and limits the performance claims to the measured workloads.
+
+**CONFIRMED:** the external-declaration main run `40214033937` passes all twelve
+jobs, exact-package equality and fresh raw declaration/GDB/native Windows
+review. Main acceptance receipt SHA-256:
+`f81aca0929a2606284bc58b30c98cfb962f6468c139123d6f8893bef235df99e`.
+Earlier pending main notes are historical. Return recovery's semantic head
+`9dbb6fd` passes all twelve jobs in `40212494601` and root review of package,
+actual Java 21 checks, raw return/prototype DIEs and compiler/GDB behavior.
+Its parent-only update has identical executable bytes and its own gate.
+
+The integration branch preserves PR50/51/52 component commits through normal
+merges and adds deferred-stack analysis separately. Every component's evidence
+remains distinct; the complete combined tree must pass the enforced up-to-date
+required-validation gate and exact artifact review before merging. Release
+publication is outside this integration checkpoint.
+
+### Recovered-signature components accepted (2026-10-25)
+
+**CONFIRMED:** PR50 head `4bde759` / run `40214441924`, PR51 head `19eb9c8` /
+run `40215108752`, and PR52 head `e8f0576` / run `40215680796` each pass all
+twelve jobs. Exact packages, focused Java 21 evidence, raw target/GDB and native
+Windows artifacts are reviewed. Parameter recovery's raw actual Java 21
+runtime proves typed but unavailable arguments; the return fix proves ordinary
+values and preserves the explicit inferred-width discrepancy. The benchmark's
+local full-harness source hashes match its accepted component tree; no hosted
+timing claim is made. Earlier pending-component notes are historical.
+
+PR53 combines these commits through normal history and adds the separately
+validated deferred-stack optimization. Component passes do not replace its
+own enforced up-to-date full gate and exact package/runtime review. Hold the
+component merges for this combined integration; publish no release as part of it.

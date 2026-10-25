@@ -1,5 +1,86 @@
 # Export performance measurements
 
+## Representative SQLite workload
+
+**CONFIRMED locally (2026-10-25):** a source-built SQLite 3.46.1 workload
+provides the first complex application measurement, separately from the
+synthetic scaling experiment below. It uses the pinned
+[amalgamation release](https://www.sqlite.org/releaselog/3_46_1.html), checks
+the archive SHA-256, published source SHA3-256 and source ID, and retains
+downloaded sources only in ignored build results. SQLite's deliverable is
+[public domain](https://www.sqlite.org/copyright.html). The small repository
+fixture opens an in-memory database, inserts 100 rows, queries their count
+and sum, and verifies 100/5050 before normal exit.
+
+```bash
+DWARFDUMP=/path/to/validation/dwarfdump \
+    python3 src/test/performance/sqlite-benchmark.py /path/to/ghidra \
+    --repeats 3 --profile
+```
+
+This requires the tools listed below plus `curl` and a JFR-capable JDK.
+The fixture is Linux x86-64 non-PIE, GCC `-O2 -g0`, `SQLITE_THREADSAFE=0`,
+with ELF names retained and no compiler DWARF. No analyst curation is used.
+The runtime was Ghidra 12.0.3 with the formal-return correction from
+`e588d607`, JAR SHA-256
+`a7bb363ef5eb1944b917f43f4c8e93a960de2144ae77f9e6381a3134183ef180`.
+The headless launcher actually used OpenJDK 25.0.4.1; caller `JAVA_HOME`
+does not establish the launched JVM version.
+
+| Measurement | Observation |
+|---|---:|
+| Import/analysis | 23.55 seconds |
+| Three fresh-JVM exports | 33.64 / 33.93 / 34.06 seconds |
+| Median export | 33.93 seconds |
+| Largest export process-family RSS | 900,900 KiB |
+| Decompiled / failed functions | 1,539 / 0 |
+| Original / sidecar / synthetic C bytes | 1,096,304 / 5,610,928 / 4,159,464 |
+
+These are observations of one workload and host, not a speedup comparison.
+All three timed exports and a separate profiled export produced identical
+sidecar/source hashes. The original ELF is unchanged. LLVM reports no errors;
+strict libdwarf validation corroborates all 828 inherited frame findings
+against the original and reports zero unexplained errors. GDB finds full DWARF
+symbols at the independently observed addresses for four selected functions,
+lists synthetic source, checks the raw count/sum globals, executes `next` and
+`step`, and observes normal exit. Export status remains `PARTIAL` with the
+omission diagnostics retained.
+
+**CONFIRMED limitation:** these basic GDB checks do not establish complete
+signature recovery. GDB displays `benchmark_checkpoint` as `void(void)`:
+the listing has a DEFAULT `undefined` return, while a separate read-only
+decompiler probe recovers `int`. The exporter currently uses the listing type.
+Correctly preserving recovered returns without overriding analyst types is
+a separate correctness follow-up; the original unsigned C declaration must
+not be claimed as recovered merely because the result is positive.
+
+Evidence is retained in the `sqlite-performance` worktree under
+`build/test-results/sqlite-benchmark/run.lxrrlupv`. The original harness reached
+all measurements, validators and GDB checks, then failed its overly broad
+whole-project byte assertion: Ghidra rotated only `SQLite.rep/idata/~index.bak`
+and `~journal.bak` even during read-only opens. The updated postcondition
+reports those exact backup paths and rejects every other changed project file.
+A pure replay checks the retained before/after hashes, unchanged executable,
+program data, module, original harness snapshot and fixtures; a changed
+database negative control is rejected. Its `observation-review.json` SHA-256
+is `45e6841da629b59cd659216d4fb6e7f93806d163081faa94ef80a18e3292fc46`.
+This is not a claim that the revised full harness ran again. Original failures
+and snapshots remain available. Earlier `run.q7yrttbc` failed before the JFR
+export because startup logging polluted Ghidra's launcher JDK-path probe;
+`-Xlog:jfr+startup=off` corrects that profiling setup.
+
+The separately profiled export has 1,075 Java execution samples: 633 have
+type/storage extraction on the stack, 265 decompiler-interface work, 64 DWARF
+construction, 16 synthetic-source work and 97 other work. Full-depth stacks
+place the frequent `HashMap.getNode` samples under Ghidra symbolic stack-depth
+analysis. This identifies a candidate for investigation, not a measured
+optimization. Another 1,241 native-method samples largely show process waits
+and pipe reads. Samples are not phase wall times and do not attribute CPU in
+the external C++ decompiler process. The full-depth JFR rendering and bounded
+summary are in `build/sqlite-performance-review`; no export was rerun merely
+to increase the rendering's stack-depth limit. Broader firmware/host workloads
+and further optimization remain **PLANNED**.
+
 **CONFIRMED:** the initial Linux x86-64 scaling harness measures import/analysis
 separately from repeated exports of the same saved Ghidra program. It changes
 no production exporter behavior. Run it with a native-inclusive installation:
@@ -43,6 +124,33 @@ check. GDB also lists source, stops at the first function, checks the initial
 global value, steps and runs to normal exit. Broader signature, variable-value,
 architecture and PIE acceptance remains in the existing semantic integration
 matrix.
+
+## Completed representative harness validation
+
+**CONFIRMED locally (2026-10-25):** after the postcondition correction, the
+complete revised SQLite harness passed fresh import, two timed exports, one
+separate JFR export, validators, GDB, deterministic artifacts and exact input/
+program-data preservation. Case `run.zf2690wu` uses the separately tested
+scalar-return candidate JAR
+`f333584802dd22ec91fcb8607035f7fadaf468077d1b631a3543604c73b26d8a`
+from the `recovered-default-returns` worktree. Its summary SHA-256 is
+`6a3fc5d1f683ca34ad2271d4913f32311f5e15c175a148f0d470edd2d00ec017`.
+The same executable hash is retained; 1,539 functions decompile without
+failures, the synthetic source remains identical to the original measurement,
+and all three exports within this new run match byte for byte. Only the
+reported Ghidra index/journal backups rotate; protected module/harness inputs
+and program data remain unchanged. Strict validation corroborates 828 frame
+findings with zero unexplained errors.
+
+This new two-sample median is 33.965 seconds with maximum observed RSS
+896,096 KiB; import is 24.08 seconds. These are a fresh harness-validation
+observation of a different runtime, not replacements for the original three
+samples or a controlled speed comparison. The first full-run failure remains
+historical and the pure replay receipt keeps its original scope. The dedicated
+return-recovery regression and separate retained-program replay establish
+return-type/value behavior; this benchmark's GDB checks retain their narrower
+explicit scope. The previously observed void-return gap is corrected locally
+in that candidate and awaits its own hosted gate.
 
 ## Initial observations
 
@@ -269,3 +377,23 @@ hosted timing or general memory/speed claim follows. The missing-config failure
 and previously incomplete diagnostic evidence remain recorded above.
 Representative complex-binary workloads and further phase profiling remain
 **PLANNED**. This feature is in main but excluded from published alpha.2.
+
+## Deferred stack-profile comparison (2026-10-25)
+
+A subsequent bounded optimization constructs instruction-level stack profiles
+only for accepted exported stack locations. It preserves byte-identical
+SQLite/synthetic artifacts. The five-pair synthetic median is 9.99 versus
+9.37 seconds; SQLite's 34.76 versus 34.10 second difference is much smaller.
+These use the recovered-parameter packages, a different population from the
+representative application measurements above. See
+[LAZY-STACK-PROFILES.md](LAZY-STACK-PROFILES.md) for exact package identities,
+RSS boundaries, failures, final reusable harness validation and GDB/storage
+regressions. No general firmware, Windows or memory guarantee follows.
+
+The representative SQLite harness component also passes its updated PR #51
+head `19eb9c803eec22918b7d710dbe290b16c4bd8fbb`, all twelve jobs in
+`40215108752`, exact package and raw runtime/Windows review. Current harness,
+support and fixture bytes match the successful local `run.zf2690wu` protected
+source hashes. Hosted jobs validate the integration matrix; they do not claim
+hosted benchmark timings. Component code is retained by the combined integration
+branch, whose distinct full gate remains mandatory before merging.

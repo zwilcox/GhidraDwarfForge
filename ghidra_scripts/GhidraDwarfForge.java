@@ -156,11 +156,13 @@ public class GhidraDwarfForge extends GhidraScript {
         var modeCues = GhidraArm32FunctionModes.extract(currentProgram, functions,
             target, rebaseDelta, monitor, diagnostic);
         monitor.checkCancelled();
-        var source = GhidraSyntheticSource.decompile(currentProgram, functions,
+        var decompilation = GhidraSyntheticSource.decompileDetailed(currentProgram, functions,
             rebaseDelta, monitor);
+        var source = decompilation.source();
         monitor.checkCancelled();
         var typeModel = GhidraTypeGraph.extract(currentProgram, functions, target.name(),
-            rebaseDelta, monitor, diagnostic);
+            rebaseDelta, monitor, diagnostic, decompilation.recoveredReturns(),
+            decompilation.recoveredParameters());
         monitor.checkCancelled();
         var resultHolder = new MinimalDwarfSidecarExporter.ExportResult[1];
         ArtifactPairPublisher.stageAndPublish(output, sourceOutput,
