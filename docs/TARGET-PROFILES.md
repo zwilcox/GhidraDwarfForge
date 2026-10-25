@@ -69,6 +69,17 @@ every function's parameter convention. The correction preserves existing
 lifetime checks and does not establish debugger-injected-call or return-value
 ABI behavior. See [computed parameter storage](DYNAMIC-PARAMETER-STORAGE.md).
 
+**CONFIRMED correctness finding:** later ordinary eight-byte by-value structure
+fixtures reveal reversed fields for ARM32 and MIPS32 little endian despite the
+scalar-only gate passing. Computed Ghidra joins use significance order, which
+must be translated separately from each register's bit offset. A real conversion
+to custom storage also requires the same normalization. The original injected
+custom/local controls did not establish Ghidra join semantics. PR #45 remains
+blocked until the shared correction passes its fresh full gate. The corrected
+computed/custom/reopened cases and primary regressions pass locally on all five
+targets. See
+[the correction](DYNAMIC-COMPOSITE-ORDER.md).
+
 The composite fixture uses analyst-curated pieces in two integer registers.
 It does not establish compiler aggregate-passing rules, mixed GPR/FP storage,
 homogeneous floating-point aggregates, or hidden return-value pointers. A

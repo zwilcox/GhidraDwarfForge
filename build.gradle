@@ -390,6 +390,18 @@ tasks.register("dynamicParameterStorageSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/dynamic-parameters/cache").absolutePath
 }
 
+tasks.register("dynamicCompositeOrderSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks Ghidra register join order across computed, custom and local storage"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.DynamicCompositeOrderSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/dynamic-composites/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/dynamic-composites/cache").absolutePath
+}
+
 tasks.register("truncatedSpaceStoreSmoke", JavaExec) {
     group = "verification"
     description = "Checks register preservation by stores into explicitly truncated memory spaces"

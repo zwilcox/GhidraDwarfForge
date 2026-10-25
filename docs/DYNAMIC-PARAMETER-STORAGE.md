@@ -23,6 +23,14 @@ writes, calls, opaque instruction effects, prefix eligibility and cancellation
 also retain their existing policies. Local-variable assignment checks are
 unchanged. A computed location is not automatically a proven lifetime.
 
+**CONFIRMED follow-up blocker:** the scalar-only head passes its full hosted
+matrix but exposes a previously untested computed-composite ordering error.
+ARM32 and MIPS32 little-endian structure fields appear reversed. A computed-only
+fix also fails when the same storage is converted to custom. The shared join
+normalization and semantic regression contract are described in
+[DYNAMIC-COMPOSITE-ORDER.md](DYNAMIC-COMPOSITE-ORDER.md). This head is not accepted
+until that correction passes fresh end-to-end and hosted validation.
+
 ## Focused and cross-target controls
 
 **CONFIRMED locally; hosted acceptance pending:** `dynamicParameterStorageSmoke`

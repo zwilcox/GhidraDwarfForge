@@ -840,13 +840,16 @@ native/QEMU behavior checks still pass. Non-entry register lifetimes,
 call-crossing registers, composite pieces, and semantic storage changes remain
 **PLANNED**.
 
-**CONFIRMED (2026-09-02):** P1.11 now supports exact register-only composite
-storage. Ghidra 12.0.3's `VariableStorage` contract orders compound varnodes
-least-significant-first on little-endian targets and most-significant-first on
-big-endian targets; these are both the memory-address order required by DWARF
-5 section 2.6.1.2. Each exact register slice emits `DW_OP_regx` followed by
-`DW_OP_bit_piece`, making the bit size and LSB offset explicit instead of
-depending on ABI-specific partial-register `DW_OP_piece` placement. The
+**HISTORICAL (2026-09-02), incomplete ordering assumption:** P1.11's initial
+register-only composite tests supplied explicit varnodes in memory order.
+Ghidra 12.0.3's `VariableStorage` class documentation describes that order,
+but the computed parameter implementation normalizes joins to most-significant
+first independently of endianness. The original tests did not establish that
+computed-parameter behavior. PR #45's follow-up below records the resulting
+little-endian field reversal and a bounded correction. Each exact register
+slice still emits `DW_OP_regx` followed by `DW_OP_bit_piece`; register bit offsets
+remain LSB-relative, separately from object-piece order. DWARF 5 section 2.6.1.2
+requires the pieces to concatenate in object memory-address order. The
 fixture's `analyst_composite` reconstructs `0x1122334455667788` in GDB on
 x86-64, AArch64, MIPS32 BE, and MIPS32 LE for ET_EXEC and PIE. Mixed memory or
 stack pieces, unstable registers, incomplete widths, and uncertain lifetimes
@@ -3932,7 +3935,8 @@ shared-library GDB script using a clone of the saved program. Original selected
 inputs/evidence remain unchanged. PR #44 subsequently passes all twelve jobs in
 `40138005382` and independent package, ARM/shared, both-GUI and native Windows
 25-suite reviews. It merged normally as `f359d1831f9a6923d0a60c07fc4c7bd1fa2a32ba`
-with the tested tree. The distinct main-push gate `40140510117` remains pending;
+with the tested tree. Distinct main-push run `40140510117` now passes all twelve
+jobs and independent fresh both-GUI/native Windows 25/ARM/strict reviews;
 this does not publish a new release. See `docs/VALIDATION.md` for exact evidence.
 
 ### Effective dynamic parameter storage (2026-10-24)
@@ -3951,6 +3955,38 @@ two honest modified-register omissions and deterministic validator-clean
 exports. Whole-file ELF attributes do not determine per-function conventions;
 this is not a broad ABI classifier. See
 [`docs/DYNAMIC-PARAMETER-STORAGE.md`](docs/DYNAMIC-PARAMETER-STORAGE.md).
+
+### Computed composite parameter ordering: PR #45 blocker (2026-10-24)
+
+**CONFIRMED correctness finding:** head `f46712f` passes all twelve jobs in
+`40141054093`, but it is not accepted for integration. Subsequent ordinary
+by-value structure tests show ARM32 and MIPS32 little-endian fields reversed:
+compiler/register values are `{-19, 37}`, while Forge exposes `{37, -19}`.
+MIPS big endian passes; x86-64 and AArch64 single-register cases also behave as
+reported, including AArch64's honest post-overwrite unavailability. The failing
+inputs, reports and GDB transcripts are retained. This defect predates the
+separate truncated-STORE follow-up: the relevant extraction methods are identical,
+and these instructions use the unchanged equal-width STORE path.
+
+Pinned Ghidra source exposes an API-documentation conflict. The actual
+`ParameterPieces` and decompiler join serialization use most-significant-first
+pieces for computed parameters, custom parameters and locals. The general
+`VariableStorage` class comment instead describes memory order. The first
+computed-only correction passed 603 focused checks and all five aggregate/scalar
+runtime cases, but a real ARM conversion to custom storage reproduced swapped
+fields without changing the decompiled semantics. Those passing results remain
+historical component evidence, not acceptance.
+
+**CONFIRMED local correction; full acceptance pending:** fully proven register
+joins are normalized at the shared Ghidra extraction boundary, preserving each
+register's bit slice and all lifetime/omission rules. Actual Java 21 passes
+1,480 focused checks against source and packaged classes. All five real
+computed/custom/reopened cases pass twenty exports and fifteen debugger runs.
+The older injected-local fixture now supplies Ghidra significance order without
+changing its executable or expected value; all five revised primary controls
+pass, with independent raw reviews. Final packaging and fresh full hosted
+validation remain required. See
+`docs/DYNAMIC-COMPOSITE-ORDER.md`.
 
 ### Explicitly truncated memory-space stores (2026-10-24)
 
