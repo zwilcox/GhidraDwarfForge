@@ -15,6 +15,13 @@ if [[ "$abi_profile" != default && "$abi_profile" != mips-fp32 ]]; then
     exit 64
 fi
 export FORGE_FP_ABI_PROFILE="$abi_profile"
+storage_form=${FORGE_FP_STORAGE_FORM:-register-alias}
+if [[ "$storage_form" != register-alias && "$storage_form" != explicit-pieces ]] ||
+        [[ "$storage_form" == explicit-pieces && "$abi_profile" != mips-fp32 ]]; then
+    echo 'FORGE_FP_STORAGE_FORM must be register-alias, or explicit-pieces with mips-fp32' >&2
+    exit 64
+fi
+export FORGE_FP_STORAGE_FORM="$storage_form"
 targets=("$@")
 if [[ ${#targets[@]} -eq 0 ]]; then
     if [[ "$abi_profile" == mips-fp32 ]]; then targets=(mips32be mips32le)
@@ -32,6 +39,7 @@ repository=$(realpath "$(dirname "$0")/../../..")
 source "$repository/src/test/integration/elf-layout-gdb-oracle.sh"
 root="$repository/build/test-results/floating-registers"
 if [[ "$abi_profile" == mips-fp32 ]]; then root+="-fp32"; fi
+if [[ "$storage_form" == explicit-pieces ]]; then root+="-pieces"; fi
 mkdir -p "$root"
 results=$(mktemp -d "$root/run.XXXXXXXX")
 projects=$(mktemp -d /tmp/forge-floating-registers.XXXXXXXX)
@@ -58,6 +66,7 @@ files = [consumer, producer] + [repository / name for name in (
     'src/test/fixtures/fp_register_aliases.c',
     'src/test/integration/floating-registers-export.sh',
     'src/test/integration/floating-registers-gdb.py',
+    'src/test/integration/check-fp32-register-pieces.py',
     'src/test/integration/ghidra_scripts/PrepareFloatingRegisters.java',
     'src/test/integration/ghidra_scripts/RebaseFixtureProgram.java')]
 files += [p for p in (ghidra / 'Ghidra/Extensions/GhidraDwarfForge').rglob('*') if p.is_file()]
@@ -193,8 +202,14 @@ PYTHON
                 grep -Eq 'Rebased fixture image from .* by 0x2000000 ' "$case_dir/headless.txt"
             fi
             if [[ "$target" == mips* ]]; then
-                grep -Fq 'Omitted location for fp_double::first' "$case_dir/headless.txt"
-                grep -Fq 'no audited DWARF mapping for Ghidra register f12_13' "$case_dir/headless.txt"
+                if [[ "$storage_form" == explicit-pieces ]]; then
+                    grep -Fq 'floating-fp32-pieces=first ' "$case_dir/headless.txt"
+                    grep -Fq 'floating-fp32-pieces=second ' "$case_dir/headless.txt"
+                    if grep -Fq 'Omitted location for fp_double::' "$case_dir/headless.txt"; then exit 1; fi
+                else
+                    grep -Fq 'Omitted location for fp_double::first' "$case_dir/headless.txt"
+                    grep -Fq 'no audited DWARF mapping for Ghidra register f12_13' "$case_dir/headless.txt"
+                fi
             fi
             if [[ "$target" == arm32 ]]; then
                 grep -Fq 'floating-register-arm-opaque-return=PASS' "$case_dir/headless.txt"
@@ -219,6 +234,10 @@ PY
                 readelf "--debug-dump=$kind" "$output" >"$case_dir/$kind.txt" 2>>"$case_dir/readelf.stderr"
             done
             test ! -s "$case_dir/readelf.stderr"
+            if [[ "$storage_form" == explicit-pieces ]]; then
+                python3 "$repository/src/test/integration/check-fp32-register-pieces.py" \
+                    "$output" "$target" > "$case_dir/fp32-pieces.json"
+            fi
             llvm-dwarfdump --verify "$output" >"$case_dir/llvm.txt" 2>&1
             python3 "$repository/src/test/integration/check-dwarfdump.py" \
                 "$output" "$case_dir/dwarfdump.txt" --original "$input"

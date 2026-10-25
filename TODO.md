@@ -1423,6 +1423,11 @@ orders. Twelve Forge exports across exec/PIE and baseline/rebase/repeat retain
 correct scalar floats and honest paired-double omissions. FPXX still fails the
 strict compiler control with zero. This establishes a testing prerequisite;
 paired-location emission and broader ABI classification remain incomplete.
+A second form now proves positive Forge doubles for explicitly curated FPR
+pieces through the existing generic composite path, with exact raw order and
+runtime values on both byte orders and exec/PIE/rebase. The whole-alias negative
+control remains unavailable. Automatic alias expansion and broader ABI
+classification remain incomplete. Both forms await their hosted gate.
 See `docs/MIPS-FP32-ORACLE.md`.
 
 ### Work

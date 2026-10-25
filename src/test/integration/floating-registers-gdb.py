@@ -14,6 +14,9 @@ target = os.environ["FORGE_FP_TARGET"]
 abi_profile = os.environ.get("FORGE_FP_ABI_PROFILE", "default")
 assert abi_profile in ("default", "mips-fp32")
 assert abi_profile == "default" or target.startswith("mips")
+storage_form = os.environ.get("FORGE_FP_STORAGE_FORM", "register-alias")
+assert storage_form in ("register-alias", "explicit-pieces")
+assert storage_form == "register-alias" or abi_profile == "mips-fp32"
 baseline = os.environ.get("FORGE_FP_BASELINE", "0") == "1"
 functions = ["fp_float", "fp_double"]
 if "fp_clobbered" in labels:
@@ -49,6 +52,8 @@ def read_value(name, expected, unavailable=False, compiler_pair=False):
         assert float(value) == expected, name + " wrong value: " + str(value)
         if compiler and abi_profile == "mips-fp32" and name in ("first", "second") and value.type.sizeof == 8:
             print("compiler-fp32-double-location=PASS name=" + name + " value=" + str(expected))
+        if not compiler and storage_form == "explicit-pieces" and name in ("first", "second") and value.type.sizeof == 8:
+            print("forge-fp32-double-piece=PASS name=" + name + " value=" + str(expected))
 
 
 for function in functions:
@@ -61,7 +66,7 @@ for function in functions:
         assert gdb.selected_frame().find_sal().symtab.filename.endswith("floating.dbg.c")
     bias = entry - labels[function]
     omitted = not compiler and (baseline or
-        (target.startswith("mips") and function == "fp_double") or
+        (target.startswith("mips") and function == "fp_double" and storage_form == "register-alias") or
         (target == "arm32" and function == "fp_clobbered"))
     if not compiler and target == "arm32" and function == "fp_clobbered":
         # The actual ARM return contains opaque setISAMode p-code. The bounded

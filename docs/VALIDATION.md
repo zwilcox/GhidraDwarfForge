@@ -6486,3 +6486,15 @@ validation, source navigation, actual installed-class binding, unchanged
 original/module/harness hashes and unchanged-program byte equality pass.
 See [MIPS-FP32-ORACLE.md](MIPS-FP32-ORACLE.md) for receipts and retained failures.
 No production mapping change, full MIPS double support or hosted pass is claimed.
+
+### Explicit FP32 register-piece positive controls
+
+**CONFIRMED locally; hosted acceptance pending:** twelve final whole-alias
+exports retain the required unavailable pairs, while twelve explicit-piece
+exports read both double arguments correctly in Forge and the compiler at three
+PCs. Both byte orders, exec/PIE and baseline/rebase/repeat pass structural
+checks, exact raw piece order, source navigation, original/module/harness hashes
+and unchanged-program byte identity. The exporter itself is unchanged.
+`docs/MIPS-FP32-ORACLE.md` records the exact separate receipts and development
+failures. This is explicit curated composite storage, not automatic whole-alias
+expansion or FPXX double support.

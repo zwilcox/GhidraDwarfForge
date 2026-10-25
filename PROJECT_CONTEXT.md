@@ -4327,3 +4327,10 @@ Java 21 equality, raw signature/stack and both GUI/native Windows review.
 Acceptance receipt: `40363e983bfc11de5dd93cb50d29fcadd7a886ee499a2ee63efb87a5319cf597`.
 This supersedes earlier pending-main notes for merge `5eeefb76`; subsequent
 class/call and FP32 follow-ups retain their own pending hosted gates.
+
+The FP32 follow-up additionally proves that existing generic composite storage
+exports explicitly curated FPR pairs correctly, with exact compiler/Forge
+double values and raw piece order on both byte orders and exec/PIE/rebase.
+Whole-register aliases remain unavailable and no production mapping changes.
+Both storage forms now have twelve passing local exports and separate receipts
+in `docs/MIPS-FP32-ORACLE.md`; the complete hosted gate remains pending.

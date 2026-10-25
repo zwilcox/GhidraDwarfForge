@@ -180,3 +180,10 @@ Twelve real Forge exports across exec/PIE and baseline/rebase/repeat retain
 correct scalar floats and honest paired-double omissions. This is a distinct
 ABI test profile, not an expansion of Forge's paired-register mapping. See
 [MIPS-FP32-ORACLE.md](MIPS-FP32-ORACLE.md) for exact receipts and remaining scope.
+
+The explicit FP32 follow-up also validates current generic composite storage:
+analyst-described pairs `f13`/`f12` and `f15`/`f14` yield exact Forge doubles
+through all tested PCs in both byte orders and exec/PIE/rebase cases. The
+whole-register alias controls remain unavailable. This is locally confirmed
+coverage of explicit pieces, with hosted acceptance pending, rather than an
+automatic mapping or a blanket change to the baseline FPXX profile.

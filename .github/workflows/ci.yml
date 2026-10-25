@@ -1121,16 +1121,18 @@ jobs:
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
 
-      - name: Explicit MIPS FP32 compiler oracle and paired-location omissions
+      - name: Explicit MIPS FP32 reference, register pieces, and alias omissions
         if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
         env:
           TARGET: ${{ matrix.target }}
           FORGE_FP_ABI_PROFILE: mips-fp32
         run: |
-          src/test/integration/floating-registers-export.sh \
-            "$GHIDRA_INSTALL_DIR" \
-            "$PWD/native-integration/libdwarf.so.2.3.2" \
-            "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
+          for storage in register-alias explicit-pieces; do
+              FORGE_FP_STORAGE_FORM="$storage" src/test/integration/floating-registers-export.sh \
+                  "$GHIDRA_INSTALL_DIR" \
+                  "$PWD/native-integration/libdwarf.so.2.3.2" \
+                  "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
+          done
 
       - name: Function entry producer and validators
         env:
