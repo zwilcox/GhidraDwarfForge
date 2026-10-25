@@ -1,10 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
-**Current follow-up (2026-10-25):** combined PR58 head `d478908` is awaiting
-run `40237292953`; its exact hosted package and thirteen actual Java 21 suites
-pass, while the full gate/raw runtime review is pending. PR57's failed fixture
-inventory and obsolete ARM scalar-omission assertions are retained and corrected
-in PR58 ancestry. No component failure is treated as a passing gate.
+**Current follow-up (2026-10-25):** combined PR59 includes the terminal,
+mixed incoming and explicit FP32 changes. PR58 `40237292953` and initial PR59
+`40239553691` fail an obsolete ARM/Thumb omission assertion; a local later
+mixed-PCS test exposed the same issue for VFP parameters. The corrected
+oracles require exact values before the write and unavailable tails afterward,
+including raw location-list checks. Four fresh exports pass locally; the next
+complete exact-head gate is required. Initial PR59 package and sixteen actual
+Java 21 suites pass after the recorded package-audit count correction. No
+failed component or partial gate is accepted.
 
 **CONFIRMED locally; hosted acceptance pending:** explicit MIPS FP32 whole
 aliases now pass 66 exports, including sectionless inputs and five-target

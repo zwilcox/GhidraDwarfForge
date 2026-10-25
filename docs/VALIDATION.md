@@ -6634,3 +6634,27 @@ zero unexplained errors. MIPS/ARM artifacts report zero errors.
 `docs/MIPS-FP32-PAIR-PROFILE.md` records exact constraints and evidence. FPXX,
 FP64A, N32/N64 and further ISA/ASE profiles gain no new pair interpretation.
 Full hosted/native Windows/GUI review is required before integration.
+
+
+### ARM prefix oracle and package-review corrections (2026-10-25)
+
+PR58 `40237292953` and initial PR59 `40239553691` fail the obsolete ARM/Thumb
+whole-function omission assertion. A subsequent local mixed-PCS run exposes
+another obsolete VFP omission assertion. Corrected fresh `run.U2mad1LN` and
+`run.AHNtzPIt` retain four deterministic exports with exact before/after-write
+GDB values, raw register/bit-piece interval checks and zero strict errors.
+See `docs/TERMINAL-RETURN-PREFIX.md` for retained failures and scope.
+
+The first MIPS package-review script updated the 51-source and 232-class
+counts but missed the final source-plus-script assertion (53, formerly 52).
+The hosted review caught it; the initial local shell had also failed to
+propagate that assertion before writing its equality receipt. Both failed logs
+and the premature receipt are retained. Corrected independent audits pass all
+manifests, exact source/script/document bytes, class versions and native
+provenance for the local and exact hosted packages. The corrected local
+package/equality receipt SHA-256 is
+`8f0008f90b5b541cae94948f537b49cbf432996459ac9b7ac993eedfcf1edfd4`.
+The exact initial PR59 package additionally passes sixteen freshly compiled
+actual Java 21 suites; receipt SHA-256:
+`9011e4163947115f05f7887b7fe06bde3817e2f02a5d68890bff452e84a121fc`.
+Neither package acceptance substitutes for the corrected full hosted gate.

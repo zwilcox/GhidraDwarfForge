@@ -6,6 +6,7 @@ import importlib.util
 import json
 from pathlib import Path
 import re
+import struct
 from urllib.parse import unquote, urlsplit
 
 # Reuse the existing small ELF32 LE fixture reader and strict transcript decoder.
@@ -119,6 +120,13 @@ def main():
         assert report["artifacts"][role + "Sha256"] == model.snapshot(path)["sha256"]
     dies = records((directory / "forge-info.stdout").read_text())
     by_offset = {row["offset"]: row for row in dies}
+    forge_gdb = json.loads((directory / "forge.json").read_text())
+    sum_result, = [row for row in forge_gdb["functions"] if row["function"] == "vfp_sum"]
+    lifetime = sum_result["lifetime"]
+    assert lifetime["end"] == lifetime["write"] + 4
+    text_section = model.section(original, ".text")
+    write_offset = lifetime["write"] - text_section["row"][3]
+    assert text_section["data"][write_offset:write_offset + 4] == bytes.fromhex("67 0a b0 ee")
     checked = []
     for symbol in FUNCTIONS:
         full_name = "curated_" + symbol
@@ -141,12 +149,17 @@ def main():
             assert "DW_AT_const_value" not in attrs
             omitted = [row for row in report["omittedLocations"] if row["function"] == full_name and row["variable"] == name(parameter)]
             if symbol == "vfp_sum":
-                assert "DW_AT_location" not in attrs and len(omitted) == 1, (attrs, omitted)
+                assert "DW_AT_location" in attrs and len(omitted) == 1, (attrs, omitted)
                 omission = omitted[0]
                 assert omission["reason"] == "REGISTER_MODIFIED" and omission["kind"] == "PARAMETER"
-                assert int(omission["startAddress"], 16) == labels[symbol]["raw"]
+                assert int(omission["startAddress"], 16) == lifetime["end"]
                 assert int(omission["endAddress"], 16) == labels[symbol]["raw"] + labels[symbol]["size"]
-                assert "function writes parameter register" in omission["diagnostic"]
+                location = re.fullmatch(r"(0x[0-9a-f]+) \(location list\)", attrs["DW_AT_location"])
+                assert location
+                offset = int(location[1], 16)
+                expression = bytes.fromhex("90 80 02" + (" 9d 20 20" if ordinal else ""))
+                expected = b"\x07" + struct.pack("<II", labels[symbol]["raw"], lifetime["end"]) + bytes([len(expression)]) + expression + b"\x00"
+                assert model.section(output, ".debug_loclists")["data"][offset:offset + len(expected)] == expected
             else:
                 assert not omitted, omitted
                 block = re.match(r"(\d+) byte block: ((?:[0-9a-f]{1,2}\s+)+)\(",

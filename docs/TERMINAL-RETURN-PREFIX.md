@@ -123,3 +123,34 @@ LLVM, GDB and input preservation checks pass. An earlier local attempt
 (`run.Q9lvCuAC`) used the system dwarfdump instead of the pinned validator and
 failed its completion check; it is retained and is not acceptance. The hosted
 failure remains recorded, and a fresh combined gate is required before merging.
+
+## Remaining ARM oracle corrections
+
+PR58 run `40237292953` and the initial combined PR59 run `40239553691`
+failed the ARM/Thumb finish checker: it still required `left` to be unavailable
+throughout the function. The captured GDB transcript instead reads the correct
+incoming values at the source breakpoint. Its raw location list ends exactly
+at the fallthrough of the Thumb `mov r0,r3` return-value write. These runs are
+not accepted; successful packages and other lanes do not override that failure.
+
+A local audit of the later ARM tests found the same obsolete whole-function
+omission requirement for the `vfp_sum` parameters in the mixed base/VFP-PCS
+fixture. Both parameters now have a bounded prefix; writing `s0` invalidates
+the shared physical `d0` base conservatively, including the `s1` slice. No
+surviving-piece recovery is inferred.
+
+The corrected oracles require exact values before the real write and unavailable
+Forge parameters immediately afterward. Compiler DWARF retains its stack values;
+raw return registers independently hold the computed sum. The finish checkers
+also compare the precise emitted register/bit-piece expressions, exclusive
+prefix end and unavailable report tail against the decoded machine boundary.
+No production or fixture bytes change for these corrections.
+
+Fresh saved-program runs `arm-thumb-mode/run.U2mad1LN` and
+`arm-dynamic-pcs/run.AHNtzPIt` pass four total exports, deterministic repeats,
+GNU/LLVM/strict validation, QEMU/GDB and input/module preservation. All strict
+checks report zero errors. A first local Thumb attempt placed its boundary
+breakpoint after source stepping could already pass the write; the retained
+`run.FeGtGUbQ` failure led to placing that guard before `next`. The original
+mixed-PCS failure is retained as `run.vOLFLVSh`. The corrected complete hosted
+gate remains required before integration.

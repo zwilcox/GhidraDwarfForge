@@ -3,6 +3,7 @@ import gdb
 import json
 import os
 from pathlib import Path
+import re
 import struct
 
 case = Path(os.environ["FORGE_PCS_CASE"])
@@ -64,10 +65,29 @@ try:
         for key, value in zip(("first", "second"), expected):
             observation = row["parameters"][key]
             assert observation["type"] == "float", observation
-            if variant == "forge" and name == "vfp_sum":
-                assert not observation["available"], observation
-            else:
-                assert observation["available"] and observation["value"] == value, observation
+            assert observation["available"] and observation["value"] == value, observation
+        if name == "vfp_sum":
+            code = labels[name]
+            writes = [item for item in gdb.selected_inferior().architecture().disassemble(
+                code["raw"], code["raw"] + code["size"] - 1)
+                if re.fullmatch(r"vmov\.f32\s+s0,\s*s15", item["asm"])]
+            assert len(writes) == 1 and writes[0]["length"] == 4, writes
+            pc = writes[0]["addr"]
+            boundary = gdb.Breakpoint("*" + hex(pc))
+            assert number("$pc") < pc
+            gdb.execute("continue")
+            assert number("$pc") == pc
+            assert all(parameter(key)["available"] and parameter(key)["value"] == value
+                for key, value in zip(("first", "second"), expected))
+            gdb.execute("stepi")
+            assert number("$pc") == pc + 4 and float(gdb.parse_and_eval("$s0")) == sum(expected)
+            tail = {key: parameter(key) for key in ("first", "second")}
+            for key, value in zip(("first", "second"), expected):
+                assert tail[key]["available"] == (variant == "compiler"), tail
+                if variant == "compiler":
+                    assert tail[key]["value"] == value
+            row["lifetime"] = {"write": pc, "end": pc + 4, "tail": tail}
+            boundary.delete()
     gdb.execute("continue")
     result["exitCode"] = number("$_exitcode")
     assert result["exitCode"] == 0
