@@ -71,8 +71,9 @@ ABI pointer being exported as the function's return type. Concrete signatures
 now use `getReturn().getFormalDataType()`. Hidden return-storage parameters keep
 their separate artificial pointer declaration; custom storage preserves the
 current formal signature rather than guessing its former state. The real
-ProgramDB smoke passes 312 Java 21 checks across five language models. Runtime
-and hosted validation are recorded in `docs/VALIDATION.md`; see
+ProgramDB smoke passes 312 Java 21 checks across five language models. PR #48 run `40205151874` passes all twelve jobs, fresh packaged Java 21 checks,
+native Windows and the real x86 return oracle; normal merge is `a162b0c2`.
+The separate main gate is pending. See `docs/VALIDATION.md` and
 `docs/FORMAL-FUNCTION-RETURNS.md` for the bounded contract.
 
 ## Curated external declarations (2026-10-25)

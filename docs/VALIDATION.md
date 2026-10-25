@@ -6327,3 +6327,29 @@ buildExtension`, installed `external-function-declarations-export.sh`, the three
 packaged Java21 suites, actionlint, architecture neutrality, Python/shell syntax
 and whitespace checks. This does not complete P1.7/P3.3's linkage, aliases,
 classes, lexical scopes or external-code debugging.
+
+## Formal return correction — PR #48 hosted acceptance
+
+**CONFIRMED:** head `e588d607dcc8d01a1a045cd41d1fe5641e3b0621` passes
+all twelve jobs in `40205151874`, including all five target lanes and both
+hosts. The downloaded package passes exact source/manifests/native provenance
+and Java 21 bytecode checks. Its JAR
+`a82e898e96b03e6032af51736b5740a246c0f9df76baae0ce3d04f7ff8a76bc9`
+passes fresh actual Java 21/256 MiB inventory, graph and 312 formal-return
+checks. Native Windows passes thirty smoke suites, including the same 312
+checks across all five Ghidra language models.
+
+The hosted x86 case `x86_64.Kih5iWd1` runs on Java21.0.12.1. Downloaded raw
+DIEs, hidden-pointer references, input hashes and GDB records confirm the
+24-byte aggregate/member layout, ten correct compiler argument observations,
+ten correct Forge seed observations and seven correct delta observations with
+three unavailable tail PCs. Original inputs and repeated outputs match. LLVM
+passes; all four strict frame findings are corroborated, with zero unexplained
+errors. Result SHA-256:
+`41910a898fa458ac48d85a384fbb81b72350f0a0a0ba65e76cc25eb4b6f855cb`.
+
+Normal merge `a162b0c2b4b9add6689b05efac63c5e78c32ec4f` retains the tested
+tree. Its distinct main push `40208082901` is pending separately. PR #47's
+separate main push `40204254359` has now passed all twelve jobs and independent
+fresh target/both-host artifact review. No release was published. This record
+supersedes the pending PR #48 and main #47 labels above.
