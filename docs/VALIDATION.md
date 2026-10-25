@@ -5996,3 +5996,58 @@ production/focused review SHA-256 is
 Final committed-document packaging and full hosted acceptance remain required.
 The bounded freestanding tests do not establish libc, floating/aggregate,
 PIE/shared, O64/N64 or broad N32 support.
+
+### Combined truncated STORE follow-up (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** normal merge `70ba319` has
+parents `18c0d0f` and `5e2ea7d`. The source delta from the corrected join parent
+retains exactly the 16-file STORE follow-up. Conflict resolution retains both
+focused tasks, both runtime steps and both evidence histories. The combined
+fixture inventory is 28. The configured native Windows suite list has 28 entries;
+native Windows acceptance remains pending. Shared join
+normalization matches the parent bytes; the STORE predicate matches the earlier
+follow-up bytes. Source SHA-256 is
+`c4c5e8985349e0a917ffa7a3fb5296250874816553ddd729b068d69de14a4968`.
+
+Nine Gradle storage/lifetime suites and the extension build pass, including
+182/1480/154 controls. Workflow/architecture guards and the exact 28-source
+fixture inventory pass. Initial assembled ZIP SHA-256 is
+`cd057db40dd267244903d1eadcaf5005c4c55612d910aa1d8422c9464632ed81`;
+production JAR is
+`2d787e338390810c8452f4a743aba41905f8440d619a99a06358a607fec465f9`.
+Exact-commit packaging verifies 49 source files, two scripts, 220 class-version-65 classes,
+five manifests and pinned native provenance. All 28 runtime payloads match the
+private installation; 27 non-JAR payloads equal both preceding packages. Author
+package receipt is
+`013fd8c7f1e1ef965a6046b9d569f1c18b612bbae0b92847b0be77241aba04d2`;
+independent source/package review is
+`695bd49d6e58eaa9c574967171a5d9960b654fd94abc44ac9eebb97cb87db5f6`.
+
+Actual Java 21 at 256 MiB passes source and packaged runs for 182/1480/154. Each
+packaged run resolves production classes from the selected combined JAR. The
+shared-parent `8303348f...` JAR fails the exact actual-decoded truncated RAM
+STORE assertion. A final audit's literal file-URI spelling comparison failed;
+retained logs and parsed-URI verification close that audit without repeating
+JVM execution. Focused evidence SHA-256 is
+`3c29840980910059724534b3136bf6c60cdd67c1cfb9f1471d6f2e9efdea0d46`.
+
+Fresh four-case O32/N32 runtime validation uses unchanged fixtures and oracles:
+eight deterministic exports, eight compiler/Forge GDB sessions and four plain
+QEMU exits pass. At 194 actual Forge PCs, 864 parameter observations are available
+and correct and 30 are explicitly unavailable. Both N32 cases have seven positive
+entry values; both O32 cases have six integer positives including stack arguments,
+with their modified wide pair honestly unavailable. Four strict validators
+report zero errors. Forty unique per-case protected paths and eleven global
+records retain their bytes/metadata. The runtime receipt SHA-256 is
+`66b5d82365138116807ff54b2800691c777719b0391b6280557cb12e2438b4c3`;
+root independently rehashed all 332 referenced witnesses. Installed headless/GDB
+execution is Java 25.0.4.1, distinct from the actual Java 21 focused checks.
+
+Independent final raw runtime and focused reviews pass. Committed acceptance
+packaging and the full fresh hosted gate remain required. Earlier `325926ee...` component results and the
+shared-join correction's rejected candidates remain separate historical evidence.
+
+Independent focused review SHA-256 is
+`03aa07a318c2174589ab98453ce238cee43e4643d96bb3be80c08641001b54be`;
+independent raw four-case review is
+`125f134d13a016df39e94c64ca52107b2913fd882ffa2ceef167fb04e3ff7e0f`.

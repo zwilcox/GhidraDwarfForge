@@ -116,3 +116,39 @@ All four stripped executables and both fixture sources equal the preceding
 contrast byte-for-byte. The old packaged exporter therefore supplies an exact
 input comparison; it also fails the new actual-decoded focused positive check.
 No old runtime execution was repeated just to rename its fixture files.
+
+## Combined with the register join correction
+
+**CONFIRMED locally (2026-10-25); hosted acceptance pending:** normal merge
+`70ba319` combines the STORE change with corrected register-join parent
+`5e2ea7d`. The shared join normalization is byte-identical to that parent, and
+the STORE predicate is byte-identical to the earlier `18c0d0f` follow-up. No
+fixture source, compiler choice, signature preparation or debugger expectation
+changed. The earlier `325926ee...` evidence remains a separate component result.
+
+The combined source and installed `2d787e33...` JAR each pass actual Java 21
+checks 182/1480/154 at 256 MiB. The shared parent `8303348f...` JAR fails the
+actual truncated-RAM positive control, as expected. An audit footer compared
+`file:/` and `file:///` spellings literally; its failure is retained. A parsed-
+URI evidence check closes the audit without repeating successful JVM runs.
+
+Fresh O32/N32 tests in both byte orders pass eight deterministic exports, eight
+compiler/Forge GDB sessions and four plain QEMU exits. At 194 visited PCs,
+864 values are correct and 30 are honestly unavailable. N32 has 14 positive
+entry values across its two cases; O32 has 12 positive integer entries, including
+stack arguments, while the modified wide pair stays unavailable. All four
+strict validators report zero errors. Forty distinct per-case protected paths
+and eleven global records remain unchanged.
+
+Focused receipt SHA-256 is
+`3c29840980910059724534b3136bf6c60cdd67c1cfb9f1471d6f2e9efdea0d46`;
+runtime receipt SHA-256 is
+`66b5d82365138116807ff54b2800691c777719b0391b6280557cb12e2438b4c3`.
+Installed headless/GDB execution uses Java 25.0.4.1; the actual Java 21 checks are
+separate. Independent final runtime and focused reviews pass; final packaging
+and the full hosted gate remain required before integration.
+
+Independent focused review SHA-256 is
+`03aa07a318c2174589ab98453ce238cee43e4643d96bb3be80c08641001b54be`;
+independent raw four-case review is
+`125f134d13a016df39e94c64ca52107b2913fd882ffa2ceef167fb04e3ff7e0f`.

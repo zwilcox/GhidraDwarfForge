@@ -4009,3 +4009,17 @@ inputs and four strict-zero sidecars. Independent raw review confirms 194 visite
 PCs, 864 correct available values and 30 honest omissions. The old/current stripped
 inputs are byte-identical. Packaged actual Java 21 passes 182 focused checks;
 the complete hosted gate remains pending before integration. See `docs/TRUNCATED-MEMORY-STORES.md`.
+
+### Combined STORE and register join validation (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** normal local merge `70ba319`
+retains the reviewed `5e2ea7d` join correction and the separate truncated-STORE
+proof without changing either method's semantics. Nine Gradle storage/lifetime
+tasks and the extension build pass. Actual Java 21 source and packaged checks
+pass 182/1480/154; the unchanged four O32/N32 fixtures pass eight exports, eight
+compiler/Forge debugger sessions and strict-zero validation, with 194 visited
+PCs, 864 correct available observations and 30 honest omissions. Protected inputs
+remain unchanged, with independent focused and raw runtime reviews. This
+refreshes the old component evidence against the combined
+package, without broadening N32 or lifetime claims. Exact hosted acceptance and
+final package review remain pending; see `docs/TRUNCATED-MEMORY-STORES.md`.

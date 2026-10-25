@@ -1136,6 +1136,14 @@ or uncertain storage remains locationless with a diagnostic.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
 
+**CONFIRMED combined local validation (2026-10-25):** the truncated-RAM STORE
+proof composes with the shared register join correction. Actual Java 21 source
+and packaged checks pass 182/1480/154, and unchanged O32/N32 fixtures in both
+byte orders pass fresh compiler/GDB and strict-zero validation. Independent
+focused/raw reviews pass; final packaging and the full hosted gate remain pending. This does not prove
+call-crossing lifetimes or general ABI support; see
+`docs/TRUNCATED-MEMORY-STORES.md`.
+
 **CONFIRMED in hosted run `40081385807`:** a nonzero first-use field on an
 already stored stack local is diagnosed and its location omitted, retaining
 name/type/offset. Five-profile extraction and actual Java 21 tests pass.
