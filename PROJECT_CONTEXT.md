@@ -4259,3 +4259,15 @@ PR53 combines these commits through normal history and adds the separately
 validated deferred-stack optimization. Component passes do not replace its
 own enforced up-to-date full gate and exact package/runtime review. Hold the
 component merges for this combined integration; publish no release as part of it.
+
+### Bounded direct leaf call backups (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** an incoming scalar's proven
+register copy can survive a direct, completely decoded leaf call. The selected
+callee convention must declare the complete base register unaffected and actual
+callee plus call-instruction writes must corroborate preservation. Unknown,
+indirect, nonleaf, opaque, overridden or fixup calls remain rejected; restore
+tails remain unavailable. No general ABI, stack-copy or mixed-piece inference is
+added. Real x86-64/AArch64 compiler/GDB fixtures and actual Java 21 packaged
+model checks pass. `docs/DIRECT-LEAF-CALL-BACKUPS.md` records the exact contract,
+retained failed experiments and pending independent hosted gate.

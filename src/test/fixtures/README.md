@@ -318,3 +318,12 @@ inference, one unresolved mixed list and an analyst-curated signature. The
 runtime harness builds independent compiler DWARF then strips only its copied
 input's debug sections. GDB checks types, unavailable inferred arguments and
 ordinary returned values. No parameter storage is forced for inferred cases.
+
+## Direct leaf call register backups
+
+`direct-leaf-call.c` and `direct-leaf-callee.c` form a two-translation-unit
+x86-64/AArch64 fixture. The integration harness compares compiler DWARF and
+Forge at exact PCs before/after a call and the saved-register restore, for three
+integer inputs. It also checks raw location lists, source navigation,
+deterministic saved-program exports and original preservation. See
+[`DIRECT-LEAF-CALL-BACKUPS.md`](../../../docs/DIRECT-LEAF-CALL-BACKUPS.md).

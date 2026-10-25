@@ -1172,6 +1172,15 @@ or uncertain storage remains locationless with a diagnostic.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
 
+**CONFIRMED locally; hosted acceptance pending (2026-10-25):** one already
+proven scalar register backup now survives a direct, fully decoded leaf call
+only when the selected callee ABI and all caller/callee writes prove it remains
+intact. x86-64/AArch64 compiler and preceding-package GDB comparisons retain
+values across the call and expose an unavailable restore tail. 140 model checks,
+actual Java 21 packaged suites and structural validators pass. General calls,
+memory migration and mixed pieces remain **PLANNED**. See
+`docs/DIRECT-LEAF-CALL-BACKUPS.md`; the broader checklist remains partial.
+
 **CONFIRMED in PR #47 run `40200733276` and distinct main run `40204254359`
 (all twelve jobs and reviewed artifacts):** retain a complete incoming register composite
 before its earliest physical-register overwrite, then make the whole value
@@ -1239,8 +1248,10 @@ changing-stack test proves SP-relative adjustment, not value migration.
   Incoming single-register parameters before a proven first overwrite pass
   in the hosted x86-64/AArch64 gates; later-starting variables and other
   control-flow shapes remain planned.
-- [ ] Track supported register-to-register and register-to-stack moves across
-  calls using the selected ABI and recovered instruction evidence.
+- [~] Track supported register-to-register and register-to-stack moves across
+  calls using the selected ABI and recovered instruction evidence. The bounded
+  direct-leaf register-backup case passes locally; its hosted gate and broader
+  register/memory cases remain pending.
 - [~] Test stack-local first-use and slot-reuse boundaries; record unavailable
   intervals where identity or lifetime cannot be established. The bounded
   nonzero-stack-first-use omission passes exact hosted compiler/GDB tests in

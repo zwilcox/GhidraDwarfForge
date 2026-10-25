@@ -3,6 +3,7 @@ package ghidradwarfforge;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import ghidra.app.cmd.function.CallDepthChangeInfo;
 import ghidra.app.plugin.processors.sleigh.SleighLanguage;
@@ -240,9 +241,14 @@ public final class GhidraVariableStorage {
         }
         long start = function.getEntryPoint().getOffset();
         long end = Math.addExact(function.getBody().getMaxAddress().getOffset(), 1);
+        var calls = composite ? Map.<ghidra.program.model.address.Address, DirectLeafCalls.Leaf>of()
+            : DirectLeafCalls.inspect(program, instructions, monitor);
+        if (calls == null) {
+            return List.of();
+        }
         long boundary = composite
             ? registerPrefixEnd(start, end, instructions, bases, true, monitor)
-            : registerPrefixEnd(start, end, instructions, register.getBaseRegister(), monitor);
+            : registerPrefixEnd(start, end, instructions, register.getBaseRegister(), calls, monitor);
         if (boundary <= start) {
             return List.of();
         }
@@ -255,7 +261,7 @@ public final class GhidraVariableStorage {
                 formalType.getLength() == parameter.getLength() &&
                 storage.size() == parameter.getLength()
             ? RegisterCopyLifetime.prove(program, start, end, instructions,
-                storage.getFirstVarnode(), parameter.getLength(), registers, monitor)
+                storage.getFirstVarnode(), parameter.getLength(), registers, calls, monitor)
             : null;
         if (backup != null) {
             result.add(new StorageInterval(boundary, backup.end(), backup.storage()));
@@ -278,6 +284,21 @@ public final class GhidraVariableStorage {
 
     private static long registerPrefixEnd(long start, long end, List<Instruction> instructions,
             List<Register> registers, boolean exactDecodedLength, TaskMonitor monitor)
+            throws CancelledException {
+        return registerPrefixEnd(start, end, instructions, registers, exactDecodedLength,
+            Map.of(), monitor);
+    }
+
+    static long registerPrefixEnd(long start, long end, List<Instruction> instructions,
+            Register register, Map<ghidra.program.model.address.Address, DirectLeafCalls.Leaf> calls,
+            TaskMonitor monitor) throws CancelledException {
+        return registerPrefixEnd(start, end, instructions, List.of(register), !calls.isEmpty(),
+            calls, monitor);
+    }
+
+    private static long registerPrefixEnd(long start, long end, List<Instruction> instructions,
+            List<Register> registers, boolean exactDecodedLength,
+            Map<ghidra.program.model.address.Address, DirectLeafCalls.Leaf> calls, TaskMonitor monitor)
             throws CancelledException {
         long expected = start;
         long firstWriteEnd = -1;
@@ -304,8 +325,16 @@ public final class GhidraVariableStorage {
                 }
                 switch (operation.getOpcode()) {
                     case PcodeOp.BRANCH, PcodeOp.CBRANCH, PcodeOp.BRANCHIND,
-                        PcodeOp.CALL, PcodeOp.CALLIND, PcodeOp.CALLOTHER,
+                        PcodeOp.CALLIND, PcodeOp.CALLOTHER,
                         PcodeOp.UNIMPLEMENTED -> { return -1; }
+                    case PcodeOp.CALL -> {
+                        // Only a backup established before the original's
+                        // overwrite can cross a call; never infer a new prefix
+                        // from ABI metadata or a call instruction itself.
+                        if (firstWriteEnd == -1 || !calls.containsKey(instruction.getAddress())) {
+                            return -1;
+                        }
+                    }
                     case PcodeOp.RETURN -> returns = true;
                     default -> { }
                 }
@@ -318,7 +347,8 @@ public final class GhidraVariableStorage {
                 }
                 returned = true;
             }
-            else if (!flow.isFallthrough() || instruction.getFallThrough() == null ||
+            else if (!(flow.isFallthrough() || calls.containsKey(instruction.getAddress())) ||
+                    instruction.getFallThrough() == null ||
                     instruction.getFallThrough().getOffset() != next) {
                 return -1;
             }

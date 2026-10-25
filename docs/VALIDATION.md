@@ -6379,3 +6379,22 @@ unexplained findings and repeat artifacts/input-preservation checks pass.
 The pipeline adds the model on both hosts and the runtime test on x86-64.
 See [RECOVERED-PARAMETER-TYPES.md](RECOVERED-PARAMETER-TYPES.md) for exact
 receipts, the retained initial harness failure and remaining scope.
+
+## Direct leaf call backup local checkpoint (2026-10-25)
+
+**CONFIRMED locally; full hosted gate pending:** 140 decoded/ProgramDB call
+controls, the existing register-prefix/copy/composite/opaque/dynamic-storage
+regressions, extension build, architecture-neutrality guard, actionlint and
+x86 fixture inventory/reproducibility pass. Five focused suites execute on
+actual Java 21 from the installed candidate JAR. Native x86-64 and QEMU AArch64
+compiler/current/preceding-exporter runs compare three signed inputs at five
+PCs, retain an honest unavailable restore tail, and pass raw DIE/location-list,
+GNU/LLVM/strict-validator, source-navigation and preservation checks.
+
+Final full runs are `x86_64.xuhk8nrq` and `aarch64.dte1c21b`; root raw-evidence
+receipt SHA-256 is
+`10cdcda14ed175faf6fbe848aa57b20ad0d8c9035090cbb4f52220f8cd7ae1ae`.
+Local headless Java is 25.0.4.1; separate packaged tests use actual Java 21.
+See [the bounded contract and retained failures](DIRECT-LEAF-CALL-BACKUPS.md).
+The new workflow requires both runtime lanes and native Windows model checks;
+this local checkpoint does not claim those hosted results or a new release.
