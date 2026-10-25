@@ -1,5 +1,10 @@
 # TODO.md — GhidraDwarfForge
 
+**Current integration:** PR54 is merged as `c0148c7` after all twelve PR
+checks and independent artifact review passed. Its separate main run
+`40228194534` is pending. FP32 explicit-piece/alias coverage has 36 passing
+local exports and awaits its own hosted gate; remaining broad TODOs stay open.
+
 **CONFIRMED (2026-10-25):** combined PR #53 head `47970c8` passes all twelve
 jobs in `40218743315`, exact package/source/native-provenance review, actual
 Java 21 focused checks and fresh raw return/parameter/declaration/stack GDB

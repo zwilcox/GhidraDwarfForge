@@ -6498,3 +6498,16 @@ and unchanged-program byte identity. The exporter itself is unchanged.
 `docs/MIPS-FP32-ORACLE.md` records the exact separate receipts and development
 failures. This is explicit curated composite storage, not automatic whole-alias
 expansion or FPXX double support.
+
+### Class display and direct-call integration accepted (2026-10-25)
+
+**CONFIRMED:** PR54 head `0c52f5b08075931ccd35b26e65f84ede33c782ff` passes
+all twelve jobs in `40224888001` and independent exact-package, raw runtime,
+both-GUI and native Windows review. Normal merge `c0148c7451d5701e6ed7b95ba5c3a4be7261c05c`
+preserves its tested tree. Fifteen class cases (30 exports), six direct-call
+exec/PIE/rebase cases, eight actual Java 21 suites and 33 native Windows tasks
+pass within their documented scopes. Acceptance receipt SHA-256:
+`f752c46b1686d7c4e5a5071b01dd078937140e866e6a32a67c3ced18291ebe85`. Earlier pending PR54 notes are historical.
+Its distinct main-push run `40228194534` remains pending; the MIPS FP32
+follow-up requires its own current-base hosted gate. This does not complete
+full class semantics, general call-crossing locations or broader ABI support.
