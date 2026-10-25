@@ -389,3 +389,11 @@ representative application measurements above. See
 [LAZY-STACK-PROFILES.md](LAZY-STACK-PROFILES.md) for exact package identities,
 RSS boundaries, failures, final reusable harness validation and GDB/storage
 regressions. No general firmware, Windows or memory guarantee follows.
+
+The representative SQLite harness component also passes its updated PR #51
+head `19eb9c803eec22918b7d710dbe290b16c4bd8fbb`, all twelve jobs in
+`40215108752`, exact package and raw runtime/Windows review. Current harness,
+support and fixture bytes match the successful local `run.zf2690wu` protected
+source hashes. Hosted jobs validate the integration matrix; they do not claim
+hosted benchmark timings. Component code is retained by the combined integration
+branch, whose distinct full gate remains mandatory before merging.

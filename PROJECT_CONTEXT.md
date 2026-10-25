@@ -4243,3 +4243,19 @@ merges and adds deferred-stack analysis separately. Every component's evidence
 remains distinct; the complete combined tree must pass the enforced up-to-date
 required-validation gate and exact artifact review before merging. Release
 publication is outside this integration checkpoint.
+
+### Recovered-signature components accepted (2026-10-25)
+
+**CONFIRMED:** PR50 head `4bde759` / run `40214441924`, PR51 head `19eb9c8` /
+run `40215108752`, and PR52 head `e8f0576` / run `40215680796` each pass all
+twelve jobs. Exact packages, focused Java 21 evidence, raw target/GDB and native
+Windows artifacts are reviewed. Parameter recovery's raw actual Java 21
+runtime proves typed but unavailable arguments; the return fix proves ordinary
+values and preserves the explicit inferred-width discrepancy. The benchmark's
+local full-harness source hashes match its accepted component tree; no hosted
+timing claim is made. Earlier pending-component notes are historical.
+
+PR53 combines these commits through normal history and adds the separately
+validated deferred-stack optimization. Component passes do not replace its
+own enforced up-to-date full gate and exact package/runtime review. Hold the
+component merges for this combined integration; publish no release as part of it.

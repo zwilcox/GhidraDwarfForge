@@ -1,6 +1,6 @@
 # Recovering default scalar returns
 
-**CONFIRMED locally; full hosted acceptance pending:** when an analyzed
+**CONFIRMED in component CI:** when an analyzed
 function still has a DEFAULT undefined listing return, the preceding exporter
 emits an unspecified type that GDB displays as `void`. SQLite profiling exposed
 this independently of the corrected formal/effective aggregate-return bug.
@@ -157,3 +157,19 @@ returns, seven corroborated frame findings, LLVM, cancellation/failure controls,
 immutable program data, protected inputs and identical repeated artifacts.
 The earlier SQLite replay and broader local matrix retain their own earlier
 package identities. The later full hosted gate must validate this correction.
+
+## Final component hosted acceptance
+
+Semantic head `9dbb6fd` passes all twelve jobs in `40212494601`, with exact
+package, fresh actual Java 21 and raw return/prototype/GDB/Windows review.
+Current PR #50 head `4bde759621de691cdded6f19f59c45aae91ef186` incorporates
+main through normal history with documentation-only differences and passes
+its own twelve-job run `40214441924`. The two hosted JARs and focused test
+sources are byte-identical. Fresh current-head raw artifacts independently
+confirm the same types, prototype policy, returned values and preservation.
+Current runtime receipt SHA-256:
+`4cda491a231ab572ae071d7d7cc99059dbe8099eaed84fec42ca7e944efd5173`.
+Hosted JAR SHA-256:
+`df4ffad7d92b576cb00a44b7b939b3b5006bba419a17beb2895285f795b90c09`.
+Combined integration preserves the component commits and requires its own
+full gate; no release publication follows from this acceptance.

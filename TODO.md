@@ -908,7 +908,8 @@ Define precedence among analyst-applied listing/signature types and decompiler g
 
 ## P1.7 Emit complete function signatures
 
-**CONFIRMED locally; hosted acceptance pending:** ordered decompiler parameter
+**CONFIRMED in PR #52 run `40215680796` (all twelve jobs, exact package,
+actual Java 21 and raw GDB/Windows review):** ordered decompiler parameter
 names/types now fill DEFAULT noncustom signatures with zero listing parameters.
 Only complete supported scalar/pointer lists qualify; uncertain lists are
 omitted as a whole. Stronger metadata stays intact and inferred parameters have
@@ -917,7 +918,8 @@ ProgramDB checks and a real x86-64 compiler/previous-package/GDB regression pass
 GDB displays the inferred types and unavailable arguments. See
 `docs/RECOVERED-PARAMETER-TYPES.md`; broader P1.7/P1.11 scope remains partial.
 
-**CONFIRMED locally; full hosted acceptance pending:** concrete decompiler
+**CONFIRMED in PR #50 run `40214441924` (all twelve jobs, exact package,
+actual Java 21 and raw GDB/Windows review):** concrete decompiler
 scalar returns now fill only DEFAULT undefined, noncustom listing returns.
 Stronger signature/return provenance remains authoritative. DEFAULT signatures
 also omit the prototype flag so unknown arguments are not asserted as a known

@@ -1,6 +1,6 @@
 # Recovered parameter names and types
 
-**CONFIRMED locally; hosted acceptance pending:** a successful decompiler pass
+**CONFIRMED in component CI:** a successful decompiler pass
 can recover parameter names and types even when the saved listing has no
 parameters. The exporter now retains a bounded subset of that information
 without asserting a variable location or changing the saved program.
@@ -104,3 +104,19 @@ This does not complete all function-signature or variable-location work.
 Partial inferred lists, inferred varargs, implicit parameters, aggregates,
 additional type shapes and recovered location/lifetime evidence remain separate
 work. Existing proven listing-storage policies are unchanged.
+
+## Component hosted acceptance
+
+PR #52 head `e8f0576e5cd8074cd432985a0e89646b19a6010f` passes all twelve jobs
+in run `40215680796`. Exact package/source/native-manifest audit, five fresh
+actual Java 21 packaged suites, raw parameter/type/omission/report evidence,
+compiler/Forge GDB arguments and ordinary returns, deterministic artifacts and
+native Windows 32-suite evidence are reviewed. Hosted runtime receipt SHA-256:
+`f2c3b2f23140dffd74944f6fcdf20e43a0357a48d3eefd5a24083b8bc70252b4`.
+The package JAR SHA-256 is
+`94766206e689664bf8b9c92b9c03f9d27b762ba5600475226cc40c91bce5a6c7`;
+fresh focused actual Java 21 receipt is
+`5aec6f62366daa34bc36a0e7a081bfe2af0d5b5197df1445dd3cbf53dbb267bc`.
+Normal combined integration preserves this component commit. The combined tree
+has a separate enforced up-to-date full gate; this record does not substitute
+for that gate or claim a published release.
