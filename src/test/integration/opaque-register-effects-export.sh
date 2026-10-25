@@ -9,6 +9,11 @@ if [[ $# -lt 1 ]]; then
 fi
 export LC_ALL=C
 expectation=${FORGE_OPAQUE_EXPECTATION:-fixed}
+listing=${FORGE_OPAQUE_LISTING:-complete}
+case "$listing" in
+    complete|gap) ;;
+    *) echo 'FORGE_OPAQUE_LISTING must be complete or gap' >&2; exit 64 ;;
+esac
 if [[ "$expectation" != fixed && "$expectation" != baseline-reproducer ]]; then
     echo 'FORGE_OPAQUE_EXPECTATION must be fixed or baseline-reproducer' >&2
     exit 64
@@ -30,6 +35,7 @@ for command in aarch64-linux-gnu-gcc aarch64-linux-gnu-objcopy \
 done
 source "$repository/src/test/integration/qemu-socket.sh"
 root="$repository/build/test-results/opaque-register-effects"
+if [[ "$listing" == gap ]]; then root+="-listing-gap"; fi
 mkdir -p "$root"
 results=$(mktemp -d "$root/run.XXXXXXXX")
 cleanup() {
@@ -49,6 +55,12 @@ echo "opaque-register-results=$results expectation=$expectation"
 printf 'expectation=%s\nghidra=%s\n' "$expectation" "$ghidra" > "$results/inputs.txt"
 sha256sum "$repository/src/test/fixtures/opaque-register-effects.c" \
     "$ghidra/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+    "$ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarf.so.2.3.2" \
+    "$ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarfp.so.2.3.2" \
+    "$repository/src/test/integration/opaque-register-effects-export.sh" \
+    "$repository/src/test/integration/opaque-register-effects-gdb.py" \
+    "$repository/src/test/integration/ghidra_scripts/PrepareOpaqueRegisterEffects.java" \
+    "$repository/src/test/integration/ghidra_scripts/VerifyOpaqueListing.java" \
     > "$results/source-and-exporter.sha256"
 
 run_gdb() {
@@ -131,13 +143,15 @@ PY
         "$ghidra/support/analyzeHeadless" "$case_dir/project" OpaqueRegisters \
             -deleteProject -import "$input" -loader ElfLoader -analysisTimeoutPerFile 120 \
             -scriptPath "$repository/src/test/integration/ghidra_scripts" "${rebase[@]}" \
-            -postScript PrepareOpaqueRegisterEffects.java "$case_dir/labels.txt" \
+            -postScript PrepareOpaqueRegisterEffects.java "$case_dir/labels.txt" "$listing" \
             -postScript GhidraDwarfForge.java --packaged-natives "--output=$output" \
+            -postScript VerifyOpaqueListing.java "$case_dir/labels.txt" "$listing" \
             > "$case_dir/export-$iteration.log" 2>&1
         grep -Fq 'opaque-register-preparation=PASS' "$case_dir/export-$iteration.log"
         grep -Fq 'GhidraDwarfForge symbol export PASS' "$case_dir/export-$iteration.log"
+        grep -Fq "opaque-listing-preservation=PASS profile=$listing" "$case_dir/export-$iteration.log"
         if [[ "$expectation" == fixed ]]; then
-            python3 - "$case_dir/export-$iteration.log" "$case_dir/report-$iteration.json" <<'PY'
+            python3 - "$case_dir/export-$iteration.log" "$case_dir/report-$iteration.json" "$listing" <<'PY'
 from pathlib import Path
 import json
 import sys
@@ -151,7 +165,8 @@ omitted = [entry for entry in report['omittedLocations']
            if entry['function'] == 'opaque_value' and entry['kind'] == 'PARAMETER']
 assert len(omitted) == 2 and {entry['variable'] for entry in omitted} == {'value', 'destination'}
 assert all(entry['reason'] == 'UNKNOWN_LIFETIME' and
-           'opaque instruction effects' in entry['diagnostic'] for entry in omitted), omitted
+           ('incomplete instruction coverage' if sys.argv[3] == 'gap' else
+            'opaque instruction effects') in entry['diagnostic'] for entry in omitted), omitted
 assert not any(entry['name'] == 'opaque_value' for entry in report['failedFunctions'])
 Path(sys.argv[2]).write_text(json.dumps(report, indent=4) + '\n')
 PY

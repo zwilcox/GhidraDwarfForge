@@ -8,6 +8,7 @@ import java.util.Map;
 import ghidra.app.cmd.function.CallDepthChangeInfo;
 import ghidra.app.plugin.processors.sleigh.SleighLanguage;
 import ghidra.program.model.address.AddressSpace;
+import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.lang.Register;
 import ghidra.program.model.lang.SleighLanguageDescription;
 import ghidra.program.model.listing.Function;
@@ -421,6 +422,10 @@ public final class GhidraVariableStorage {
         }
         Register base = register.getBaseRegister();
         Instruction opaqueInstruction = null;
+        monitor.checkCancelled();
+        var body = function.getBody();
+        var uncovered = new AddressSet(body);
+        boolean incomplete = body.isEmpty();
         InstructionIterator instructions = program.getListing()
             .getInstructions(function.getBody(), true);
         while (instructions.hasNext()) {
@@ -436,6 +441,17 @@ public final class GhidraVariableStorage {
                     "function writes " + description + " register " + base.getName() +
                         " at " + instruction.getAddress());
             }
+            // Listing iteration returns existing instructions, not a proof that
+            // all declared body bytes have been decoded. Keep address sets so
+            // discontiguous bodies do not turn their intervening gaps into code.
+            if (instruction.isLengthOverridden() || instruction.getLength() <= 0 ||
+                    instruction.getLength() != instruction.getParsedLength() ||
+                    !body.contains(instruction.getAddress(), instruction.getMaxAddress())) {
+                incomplete = true;
+            }
+            else {
+                uncovered.delete(instruction.getAddress(), instruction.getMaxAddress());
+            }
             if (opaqueInstruction == null && hasOpaqueRegisterEffects(program, instruction)) {
                 opaqueInstruction = instruction;
             }
@@ -447,6 +463,11 @@ public final class GhidraVariableStorage {
                 "opaque instruction effects prevent proving the " + description +
                     " register " + base.getName() + " stable at " +
                     opaqueInstruction.getAddress());
+        }
+        if (incomplete || !uncovered.isEmpty()) {
+            return unavailable(OmissionReason.UNKNOWN_LIFETIME,
+                "incomplete instruction coverage prevents proving the " + description +
+                    " register " + base.getName() + " stable");
         }
         return mapped;
     }

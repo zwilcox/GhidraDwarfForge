@@ -343,3 +343,9 @@ an explicitly rebased Ghidra image base (`--role pie` / `--role pie-rebased`).
 Its GDB oracle measures real runtime bias and compares parameter values at
 instruction boundaries against compiler DWARF, while raw location ranges remain
 link-time addresses. CI requires exec and both PIE roles on x86-64/AArch64.
+
+The opaque supervisor-call fixture also has an intentionally incomplete Ghidra
+listing profile (`FORGE_OPAQUE_LISTING=gap`). Only the syscall listing entry is
+cleared; input bytes and the function body remain intact. Before/after GDB
+checks require honest unavailable parameters, and post-export inspection proves
+that the listing gap was retained. See `docs/REGISTER-BODY-COVERAGE.md`.

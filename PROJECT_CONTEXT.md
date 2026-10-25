@@ -4311,3 +4311,16 @@ compiler symbol entries, nonzero runtime load biases and unchanged link-time
 location intervals for byte-identical rebased inputs pass all six cases. No
 production behavior changes. CI requires each role in both lanes; see
 `docs/DIRECT-LEAF-CALL-BACKUPS.md` for the exact local receipt and remaining scope.
+
+### Incomplete register-body coverage correction (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** a missing instruction in an
+otherwise retained function body bypassed whole-function register safety. In
+real AArch64 exec/PIE/rebased-PIE exports, an undecoded syscall made the previous
+exporter display a process ID for the actual parameter `-19`. The coverage
+guard now retains its name/type without a location, preserves discontiguous
+bodies and checks decoded lengths. Five language models pass 421 checks;
+nine actual Java 21 packaged suites and eighteen baseline/fixed/control exports
+pass their scoped checks. See `docs/REGISTER-BODY-COVERAGE.md` for raw evidence,
+validator details and retained model-proxy failure. General lifetime/migration
+work remains partial.

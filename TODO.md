@@ -2457,3 +2457,16 @@ Unless the user changes priorities:
 7. For each coherent change, run appropriate validators and debugger behavior
    tests, preserve original hashes and deterministic output, and record evidence
    in the handoff documents. Keep the complete supported-profile CI matrix green.
+
+### Incomplete register-body coverage correction (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** a missing instruction in an
+otherwise retained function body bypassed whole-function register safety. In
+real AArch64 exec/PIE/rebased-PIE exports, an undecoded syscall made the previous
+exporter display a process ID for the actual parameter `-19`. The coverage
+guard now retains its name/type without a location, preserves discontiguous
+bodies and checks decoded lengths. Five language models pass 421 checks;
+nine actual Java 21 packaged suites and eighteen baseline/fixed/control exports
+pass their scoped checks. See `docs/REGISTER-BODY-COVERAGE.md` for raw evidence,
+validator details and retained model-proxy failure. General lifetime/migration
+work remains partial.

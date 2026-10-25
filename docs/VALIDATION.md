@@ -6462,3 +6462,16 @@ and deterministic repeated artifacts all pass. Raw review receipts are
 `34d964598d573b35e59f784df0e03b7e136b97bc93493df8a4e050d0fa96438f`.
 The earlier failed CI run remains retained. These local results do not replace
 the exact combined head's required hosted gate.
+
+### Incomplete register-body coverage correction (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** a missing instruction in an
+otherwise retained function body bypassed whole-function register safety. In
+real AArch64 exec/PIE/rebased-PIE exports, an undecoded syscall made the previous
+exporter display a process ID for the actual parameter `-19`. The coverage
+guard now retains its name/type without a location, preserves discontiguous
+bodies and checks decoded lengths. Five language models pass 421 checks;
+nine actual Java 21 packaged suites and eighteen baseline/fixed/control exports
+pass their scoped checks. See [REGISTER-BODY-COVERAGE.md](REGISTER-BODY-COVERAGE.md) for raw evidence,
+validator details and retained model-proxy failure. General lifetime/migration
+work remains partial.

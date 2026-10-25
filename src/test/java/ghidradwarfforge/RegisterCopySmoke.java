@@ -493,6 +493,7 @@ public final class RegisterCopySmoke {
                     switch (method.getName()) {
                         case "getAddress" -> at;
                         case "getMaxAddress" -> at.add(3);
+                        case "getLength", "getParsedLength" -> 4;
                         case "getFallThrough" -> returns ? null : at.add(4);
                         case "isInDelaySlot", "isLengthOverridden", "isFallThroughOverridden" -> false;
                         case "getDelaySlotDepth" -> 0;

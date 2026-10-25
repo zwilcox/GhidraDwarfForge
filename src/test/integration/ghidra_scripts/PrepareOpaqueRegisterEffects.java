@@ -23,8 +23,8 @@ import ghidradwarfforge.GhidraImageBase;
 public class PrepareOpaqueRegisterEffects extends GhidraScript {
     @Override
     protected void run() throws Exception {
-        if (getScriptArgs().length != 1) {
-            throw new IllegalArgumentException("expected compiler labels file");
+        if (getScriptArgs().length != 2) {
+            throw new IllegalArgumentException("expected compiler labels file and listing profile");
         }
         long delta = AddressNormalizer.rebaseDelta(currentProgram.getImageBase().getOffset(),
             GhidraImageBase.originalImageBase(currentProgram));
@@ -121,6 +121,23 @@ public class PrepareOpaqueRegisterEffects extends GhidraScript {
             DataUtilities.ClearDataMode.CLEAR_ALL_CONFLICT_DATA);
         currentProgram.getSymbolTable().createLabel(sink, "opaque_sink",
             SourceType.USER_DEFINED).setPrimary();
+        String profile = getScriptArgs()[1];
+        if (profile.equals("gap")) {
+            var body = new ghidra.program.model.address.AddressSet(function.getBody());
+            var start = toAddr(labels.get("opaque_before"));
+            var end = getInstructionAt(start).getMaxAddress();
+            byte[] bytes = getBytes(start, Math.toIntExact(end.subtract(start) + 1));
+            currentProgram.getListing().clearCodeUnits(start, end, false);
+            function.setBody(body);
+            if (getInstructionAt(start) != null || !function.getBody().equals(body) ||
+                    !java.util.Arrays.equals(bytes, getBytes(start, bytes.length))) {
+                throw new IllegalStateException("failed to preserve bytes/body around listing gap");
+            }
+            println("opaque-listing-gap=" + start + ".." + end);
+        }
+        else if (!profile.equals("complete")) {
+            throw new IllegalArgumentException("unknown listing profile " + profile);
+        }
         println("opaque-register-preparation=PASS body=" + function.getBody());
     }
 }

@@ -346,6 +346,18 @@ tasks.register("stackFirstUseSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/stack-first-use/cache").absolutePath
 }
 
+tasks.register("registerBodyCoverageSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks complete decoded register lifetimes across five language models"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.RegisterBodyCoverageSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/register-body/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/register-body/cache").absolutePath
+}
+
 tasks.register("opaqueRegisterEffectsSmoke", JavaExec) {
     group = "verification"
     description = "Checks conservative register locations around unmodeled instruction effects"
