@@ -21,5 +21,5 @@ for variant in compiler forge ${CALL_PREVIOUS:-}; do
         > "$case_dir/$variant-gdb.log" 2>&1
     if [[ "$target" == aarch64 ]]; then qemu_socket_wait; fi
     layout_validate_gdb_diagnostics "$case_dir/$variant-gdb.log" "$input" "$variant" "$target" "$case_dir/compiler-gdb.log"
-    rg -q "direct-leaf-call-gdb=$variant PASS" "$case_dir/$variant-gdb.log"
+    grep -Fxq "direct-leaf-call-gdb=$variant PASS" "$case_dir/$variant-gdb.log"
 done

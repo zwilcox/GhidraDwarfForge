@@ -6411,3 +6411,16 @@ The enforced strict gate remained enabled; normal merge
 `5eeefb76cfcefa2ed501bdd59676048081b5e9bc` preserves the tested tree. Main run
 `40221601223` is pending. Component commits remain intact, local timing claims
 stay separately scoped, and no release is published.
+
+## Direct-call CI driver portability correction (2026-10-25)
+
+**CONFIRMED:** PR54 run `40221737406`'s AArch64 job fails after the compiler
+GDB oracle because `rg` is absent. The one-line standard `grep -Fxq` correction
+preserves the exact marker check and changes no exporter code. The retained CI
+artifact passes local QEMU compiler/Forge replay with `rg` disabled; two fresh
+full native/QEMU runs also pass with the preceding-package comparison, protected
+inputs, identical repeat bytes, strict validators and source navigation.
+Correction receipt:
+`1c3ece73339a5134f16598879b64c291ffe18bcdd10af0b055492d246568e450`.
+The failed job and its exact package evidence remain historical; a corrected
+full hosted gate is pending. See `docs/DIRECT-LEAF-CALL-BACKUPS.md`.

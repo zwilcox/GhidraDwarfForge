@@ -111,3 +111,30 @@ shared-library or general ABI call-preservation coverage for this new proof.
 
 Full exact-head hosted package/runtime review and subsequent main acceptance
 remain separate from this local evidence. No release is published by this work.
+
+## First hosted driver correction
+
+**CONFIRMED:** AArch64 job `121256326242` in run `40221737406` completed export,
+raw location-list checks, validators and the compiler GDB oracle, then failed
+with exit 127 because the driver used `rg`, which is not installed in the CI
+lane. Forge GDB had not yet run. The driver now uses standard `grep -Fxq` for
+the same exact PASS marker; exporter and native code are unchanged.
+
+The retained CI compiler/input/sidecar artifacts pass a local QEMU replay with
+a deliberately failing `rg` stub and debugger source-prefix substitutions only.
+All 30 compiler/Forge PC observations, unavailable tails, ordinary returns and
+`next`/`step` checks pass; the stub is never called. Replay receipt:
+`7d905c981fc81805e29cf43e87544577baf3790391f72ad1f2f4a4bc65d955c3`.
+Fresh complete x86-64/AArch64 runs with `rg` disabled also pass, including the
+preceding-package reproduction. Their result receipts are
+`d1dd4088ed839b68a95a342b96c889d6513e25a5736827b2d732325e75545fa4`
+and `7acb93ae745433957b69ab8f6ce6259e37b5cce21dd5433441aa1fb032c1dd91`.
+Root correction review receipt:
+`1c3ece73339a5134f16598879b64c291ffe18bcdd10af0b055492d246568e450`.
+The original failed job remains retained; a new full exact-head gate is required.
+
+The first hosted package independently passes its 50-source/226-class/native
+provenance audit and five fresh actual Java 21 suites. Those checks do not turn
+the failed integration job into a pass. Hosted JAR SHA-256:
+`686708c0b09c5cb6c8e56e219b16b3110ecf050d016cc51a4cac33e905e0a16b`;
+focused receipt `35dd1a17462e9caf29e0570cfbc74a056d08b4ecf458ae38b66c25dce81d1a44`.
