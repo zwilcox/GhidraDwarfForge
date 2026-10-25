@@ -58,6 +58,11 @@ The expressions are `&'observed::curated_0'` and
 experiment adds a CU-owned DW_TAG_imported_declaration with the curated name
 and DW_AT_import referring to the linkage-named subprogram. It still fails
 curated lookup; GNU/LLVM accept the representation. It is not a solution.
+A third experiment adds a second ordinary subprogram DIE with the curated
+name at the same range. LLVM rejects the overlapping function ranges on the
+first x86-64 artifact, so the experiment stops before GDB and AArch64. That
+representation is also rejected; the validator is not relaxed to admit it.
+
 These are symbol-lookup experiments, not runtime stepping or complete type/
 variable acceptance, and not a Windows-host claim.
 
@@ -72,6 +77,7 @@ with the generated artifacts:
 - `run.cebhj2op`: both real Ghidra imports and private program edits.
 - `producer.uwlt0vl7`: four strict-checked isolated sidecars and GDB lookups.
 - `import-alias/producer.o0md98_m`: unsuccessful import-alias alternative.
+- `parallel-alias/producer.0v0tv939`: LLVM-rejected duplicate function range.
 
 Independent metadata receipt SHA-256:
 `bfa1dcbe3fa37d719069e4413aed3ac1b2740b543f21663f3a6e9b0b49c2f591`.

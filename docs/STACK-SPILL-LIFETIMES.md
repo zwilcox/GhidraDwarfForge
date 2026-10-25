@@ -95,3 +95,14 @@ installation; the independent audit initially looked for the JVM version in
 stdout instead of stderr. Corrected runs above pass. The previous architecture
 check's false pass is tracked separately and requires the corrected CI gate.
 No release has been published for this change.
+
+
+Additional compatibility regressions pass six dynamic-parameter exports on
+x86-64/AArch64/ARM32 and two primary semantic exports on x86-64/AArch64,
+including the applicable existing GDB checks. Dynamic saved-program repeats
+remain byte-identical. Evidence is retained as `dynamic-regressions.log`,
+`semantic-regressions.log`, `semantic-gdb-regressions.log` and
+`additional-regressions.json` under `build/stack-spill-review`. The initial
+supplemental audit expected `first.dbg`; it was corrected to the actual retained
+`first.dynamic.dbg` before writing any acceptance receipt. No production or
+oracle changes were necessary for these regressions.
