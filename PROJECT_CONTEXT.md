@@ -75,6 +75,19 @@ ProgramDB smoke passes 312 Java 21 checks across five language models. Runtime
 and hosted validation are recorded in `docs/VALIDATION.md`; see
 `docs/FORMAL-FUNCTION-RETURNS.md` for the bounded contract.
 
+## Curated external declarations (2026-10-25)
+
+**CONFIRMED locally; hosted gate pending:** non-default external signatures
+are retained as addressless declarations with canonical formal types. Persistent
+identity keeps duplicate display names distinct. External placeholders, thunks
+and possible library addresses do not become current-image code or variable
+locations. Ordinary definition counts and the report schema remain unchanged.
+A compiler oracle confirms GDB ignores declaration-only prototypes; the new
+runtime test requires the same honest limitation and intact real-definition
+lookup/source navigation. See `docs/EXTERNAL-FUNCTION-DECLARATIONS.md` and
+`docs/VALIDATION.md`. This is a bounded P1.7/P3.3 improvement, not completion of
+linkage, class or alias semantics.
+
 ## 3. Goals
 
 **HISTORICAL assessment, with bounded follow-ups now accepted:**

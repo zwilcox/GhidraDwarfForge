@@ -928,8 +928,10 @@ accepted a thunk diagnostic alone. **CONFIRMED:** the dedicated external
 inventory passes five real Ghidra language models, five fresh primary exports
 with native/QEMU GDB checks, and identical old/fixed/repeat saved-program sidecar
 and source bytes. PR #42's exact run `40126794530` and distinct main push
-`40129499500` both pass all twelve jobs and independent reviews. External
-declaration/signature emission remains unimplemented. Distinct
+`40129499500` both pass all twelve jobs and independent reviews. Curated addressless declaration emission now passes local five-language model
+checks and a compiler/export/GDB regression; its hosted gate is pending.
+Default signatures stay omitted. GDB ignores unlocated prototypes even in
+compiler DWARF, so this adds metadata without claiming external-code lookup. Distinct
 linkage-name emission remains because GDB must retain the analyst-facing
 breakpoint name.
 
@@ -956,8 +958,9 @@ breakpoint name.
   a documented initial policy: only real definitions emit. Memory thunks are
   diagnosed; separate external-function inventory passes PR #42
   (`296395e` / `40126794530`) across all five targets and both hosts.
-  Declaration/linkage and alias modeling remain
-  separate work.
+  Non-default declarations have a locally validated addressless model and
+  producer path; hosted acceptance is pending. Linkage and alias modeling
+  remain separate work.
 
 ### Completion criteria
 
@@ -2100,7 +2103,9 @@ Potential features:
   diagnostic and an accurate exported-static count. Lexical-block
   ownership and inferred/decompiler-only static locals remain unimplemented.
 - Artificial variables.
-- Declaration-only DIEs.
+- [~] External declaration-only function DIEs: local model, producer, validator
+  and GDB non-interference tests pass. Unknown prototypes stay omitted; GDB
+  does not resolve unlocated external prototypes. Hosted validation pending.
 - Disambiguation of same-named types from different Ghidra categories: the
   existing-DWARF regression retains both imported and analyst-defined
   `operation` enums, and uses the unique `OP_INVALID` enumerator to query the

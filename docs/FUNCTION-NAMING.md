@@ -154,3 +154,14 @@ Those records describe their historical research scope. The implemented model,
 extraction and collision controls are covered by `qualifiedFunctionNameSmoke`;
 the production exporter/GDB matrix remains separately attributable to its
 tested commit and artifacts in the validation record.
+
+## Curated external declaration follow-up
+
+**CONFIRMED locally; hosted gate pending:** external functions with non-default
+signatures now have separate addressless declaration DIEs. The library/nested
+Ghidra display name is retained as a flat metadata name, without claiming a
+language namespace or linkage relationship. Definition omission inventory and
+its multiplicity remain intact. See
+[EXTERNAL-FUNCTION-DECLARATIONS.md](EXTERNAL-FUNCTION-DECLARATIONS.md) for the
+current policy and the compiler-confirmed GDB lookup limitation. This
+supersedes the earlier unimplemented-declaration status for this bounded slice.

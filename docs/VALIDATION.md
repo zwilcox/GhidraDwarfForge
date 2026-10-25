@@ -6283,3 +6283,47 @@ validation remain clear. The accepted receipt is `a00839e5...`, with final
 bindings `4d4cdb49...` and packaged JAR `c04913f8...`. Normal merge
 `ffc16713cc1be34924519544356b5d6f57e851f1` retains the tested tree. Its distinct
 main push `40204254359` is pending separately; no release was published.
+
+## Curated external declarations — local acceptance (2026-10-25)
+
+**CONFIRMED locally; hosted gate pending.** Curated external signatures now
+have a separate addressless declaration model and producer path. Default
+prototypes remain omitted even when their names are imported/user-defined.
+The existing five-language inventory suite additionally proves distinct keys for
+same-display-name declarations, library/nested names, unreferenced signatures,
+unknown-prototype omission and separation from memory thunks/definitions.
+Native-free type graph controls validate ordering, duplicate identities and
+missing return types. These suites and the 312 formal-return checks pass
+against the installed JAR on actual Java 21/256 MiB; class-load logs bind the
+model to that JAR. Receipt `271f7c6a838f282d76636abea5fb2f35b005ad5dbbbafcffbf0a2eb4a5944b3a`
+is retained in `packaged.o1n6sfx_`.
+
+Installed JAR `ee02307991bafe40546cd7cc14de5717dcb76e0b49dcbd6809a865957646db8a`
+passes the real x86-64 caller/library regression `x86_64.VWBADEl4`. Two headless
+exports, including read-only saved-program reopen, produce identical source and
+sidecar bytes and identical extraction models. The observed headless runtime is
+Java25.0.4.1. The actual imported signature and an unreferenced variadic/no-return
+signature appear as typed declarations, without any code address, location,
+frame base or fabricated source attribution. The unknown signature remains
+absent. The imported return/parameter sizes and signedness match GCC's DWARF.
+
+Compiler and Forge GDB sessions both retain real definition lookup/prototype,
+source listing, `next`/`step`, the expected normal library result and exit zero.
+Both ignore unlocated declaration symbols, an explicit debugger limitation
+rather than evidence of resolved external prototypes. LLVM passes. Strict
+validation has two corroborated inherited frame findings and zero unexplained
+errors. Caller inputs, library and protected source/module files remain
+unchanged. Result SHA-256:
+`beb24d5b202428fb1de4f972d452e6ecb6120ea40df3fcd0079e16585bda0871`.
+
+The first harness attempt `x86_64.K0GCLJho` installed its return breakpoint after
+source stepping and could pass the caller return before checking it. That GDB
+control failed; its evidence is retained. The corrected harness installs the
+return breakpoint before navigation and conditionally continues only when not
+already stopped there. Production code and fixture C were unchanged.
+
+Commands: `externalFunctionInventorySmoke typeGraphSmoke formalFunctionReturnSmoke
+buildExtension`, installed `external-function-declarations-export.sh`, the three
+packaged Java21 suites, actionlint, architecture neutrality, Python/shell syntax
+and whitespace checks. This does not complete P1.7/P3.3's linkage, aliases,
+classes, lexical scopes or external-code debugging.

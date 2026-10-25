@@ -116,6 +116,34 @@ public final class TypeGraphSmoke {
                 !program.variableStorage().variables().get(0).equals(analystLocation)) {
             throw new AssertionError("global variable model is not deterministic");
         }
+        var declaration = new ProgramTypeModel.FunctionDeclaration("external:1", "library::callee",
+            signedInt, List.of(new Parameter("value", signedInt, false)), true, false,
+            "default", "USER_DEFINED");
+        var secondDeclaration = new ProgramTypeModel.FunctionDeclaration("external:2", "library::callee",
+            signedInt, declaration.parameters(), true, false, "default", "USER_DEFINED");
+        var declared = new ProgramTypeModel(first, List.of(signature), program.globals(),
+            program.variableStorage(), List.of(), List.of(secondDeclaration, declaration));
+        if (!declared.functionDeclarations().equals(List.of(declaration, secondDeclaration))) {
+            throw new AssertionError("declaration identities were conflated or nondeterministic");
+        }
+        try {
+            new ProgramTypeModel(first, List.of(signature), program.globals(),
+                program.variableStorage(), List.of(), List.of(declaration, declaration));
+            throw new AssertionError("duplicate declaration identity accepted");
+        }
+        catch (IllegalArgumentException expected) {
+            // Names may repeat; identity keys must not.
+        }
+        try {
+            var missing = new ProgramTypeModel.FunctionDeclaration("missing", "missing",
+                new TypeRef("missing"), List.of(), false, false, "default", "USER_DEFINED");
+            new ProgramTypeModel(first, List.of(signature), program.globals(),
+                program.variableStorage(), List.of(), List.of(missing));
+            throw new AssertionError("dangling declaration return accepted");
+        }
+        catch (IllegalArgumentException expected) {
+            // External declarations share the same canonical graph validation.
+        }
         FunctionSignature otherOwner = new FunctionSignature("other", 0x900,
             signedInt, List.of(), List.of(), false, false, "default", "USER_DEFINED");
         List<FunctionStaticVariable> privateVariables = List.of(
