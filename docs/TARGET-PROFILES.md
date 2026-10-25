@@ -37,7 +37,7 @@ functions are compiled in ARM state. Ghidra's generic ARM v8 language name does
 not establish ARMv8 instruction coverage. Similarly, readelf's generic MIPS
 machine label does not replace the MIPS32r2 ISA flags/attributes.
 
-**CONFIRMED locally; hosted validation pending:** a separate mixed ARM/Thumb
+**CONFIRMED in hosted run `40138005382`:** a separate mixed ARM/Thumb
 ET_EXEC regression now checks restored static instruction-mode information for
 a fully stripped input. Only contiguous, fully decoded homogeneous functions
 with matching original bytes receive generated local ELF mode symbols. Existing
@@ -59,6 +59,26 @@ parameters and an entry-live register local have positive value checks where
 their storage survives. Overwritten registers are deliberately unavailable.
 ARM32's current composite/register-local cases prove omission after overwrite;
 they are not positive proofs of those values.
+
+**CONFIRMED locally; full hosted acceptance pending:** an additional computed
+parameter-storage control covers real saved/reopened programs in all five
+languages. A hard-float ARM executable with analyst-selected base/VFP dynamic
+conventions proves four exact float entry values and two honest modified-register
+omissions. It demonstrates that a file's VFP argument attribute does not select
+every function's parameter convention. The correction preserves existing
+lifetime checks and does not establish debugger-injected-call or return-value
+ABI behavior. See [computed parameter storage](DYNAMIC-PARAMETER-STORAGE.md).
+
+**CONFIRMED correctness finding:** later ordinary eight-byte by-value structure
+fixtures reveal reversed fields for ARM32 and MIPS32 little endian despite the
+scalar-only gate passing. Computed Ghidra joins use significance order, which
+must be translated separately from each register's bit offset. A real conversion
+to custom storage also requires the same normalization. The original injected
+custom/local controls did not establish Ghidra join semantics. PR #45 remains
+blocked until the shared correction passes its fresh full gate. The corrected
+computed/custom/reopened cases and primary regressions pass locally on all five
+targets. See
+[the correction](DYNAMIC-COMPOSITE-ORDER.md).
 
 The composite fixture uses analyst-curated pieces in two integer registers.
 It does not establish compiler aggregate-passing rules, mixed GPR/FP storage,
@@ -86,7 +106,8 @@ same target map as O32. Preserving its `e_flags` does not prove its locations.
 Ghidra's loader uses additional processor opinions and ABI properties. Forge's
 preflight compares width and byte order, but does not yet prove agreement of
 every ELF ABI with the selected Ghidra language/compiler specification.
-Nondefault calling-convention strings also lack independent behavior coverage.
+The bounded local ARM base/VFP parameter control does not establish behavior
+for arbitrary nondefault calling-convention strings.
 These are **PLANNED** classification and diagnostic checks, not claims that all
 accepted files are correctly modeled or that every such file is broken.
 

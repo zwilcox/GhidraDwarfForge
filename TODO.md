@@ -915,10 +915,11 @@ distinctions retain their model string without invented DWARF codes. Memory
 thunks are diagnosed and omitted. **HISTORICAL correction:** the earlier claim
 that genuine external functions were also inventoried was not established:
 Ghidra's ordinary function iterator excludes them, and the integration assertion
-accepted a thunk diagnostic alone. **CONFIRMED locally:** the dedicated external
-inventory now passes five real Ghidra language models, five fresh primary exports
+accepted a thunk diagnostic alone. **CONFIRMED:** the dedicated external
+inventory passes five real Ghidra language models, five fresh primary exports
 with native/QEMU GDB checks, and identical old/fixed/repeat saved-program sidecar
-and source bytes. Exact hosted acceptance remains required. External
+and source bytes. PR #42's exact run `40126794530` and distinct main push
+`40129499500` both pass all twelve jobs and independent reviews. External
 declaration/signature emission remains unimplemented. Distinct
 linkage-name emission remains because GDB must retain the analyst-facing
 breakpoint name.
@@ -959,8 +960,9 @@ breakpoint name.
   rows/counts, qualified diagnostic names, unreferenced imports, duplicate names,
   separate memory-thunk multiplicity and cancellation pass locally. The former
   external-or-thunk log assertion did not establish external enumeration.
-  The corrected shared fixture and both host smoke lists are wired; full hosted
-  acceptance remains required. See `docs/FUNCTION-NAMING.md`.
+  The corrected shared fixture and both host smoke lists pass PR #42's exact
+  hosted and main-push gates recorded above. Declaration emission remains
+  separate. See `docs/FUNCTION-NAMING.md`.
 
 ## P1.8 Represent discontiguous program/function ranges correctly
 
@@ -1054,6 +1056,25 @@ Map Ghidra registers to target DWARF register numbers using isolated architectur
 
 ## P1.11 Emit parameters/locals with accurate locations
 
+**CONFIRMED PR #45 blocker:** its scalar/control gate `40141054093` passes all
+twelve jobs, but real aggregate tests reproduce swapped ARM32 and MIPS32
+little-endian fields. A computed-only fix passes its new local tests but fails
+a real computed-to-custom conversion with unchanged decompiled semantics.
+**CONFIRMED locally:** shared extraction normalization now passes 1,480 actual
+Java21 checks and all five computed/custom/reopened runtime cases. Corrected
+injected-local fixtures preserve the executable and expected values on all
+five primary controls. Independent raw reviews pass; committed packaging and
+fresh full hosted acceptance are required. See `docs/DYNAMIC-COMPOSITE-ORDER.md`.
+
+**CONFIRMED locally; full hosted acceptance pending:** computed dynamic
+parameter storage now survives a false persisted `hasAssignedStorage()` flag.
+Actual Java 21 five-language saved/reopened checks and a real ARM base/VFP
+float oracle pass, with existing lifetime/omission rules unchanged. The new
+generic integer fixture passes locally on all five targets and is wired to
+their pipeline lanes. This does not
+complete general lifetimes or ABI classification; see
+`docs/DYNAMIC-PARAMETER-STORAGE.md`.
+
 **CONFIRMED locally (2026-10-23):** mapped logical FP aliases preserve scalar
 float/double arguments on x86-64/AArch64 and scalar floats on both MIPS O32
 byte orders through stores, PIE and explicit rebases. First-overwrite prefix
@@ -1066,8 +1087,10 @@ are also unverified on the tested emulator/debugger. These cases do not prove
 vector, aggregate-passing, call-crossing or new ABI support. See
 `docs/VALIDATION.md` for exact evidence and the independent compiler limitation.
 
-**Status:** `[x]` — parameters and recovered locals have canonical name/type
-DIEs. A curated locationless local is proven in all ET_EXEC/PIE lanes and GDB
+**Status:** `[~]` — the baseline cases below are accepted, but joined-storage
+ordering remains blocked on the correction's fresh validation. Parameters and
+recovered locals have canonical name/type DIEs. A curated locationless local is
+proven in all ET_EXEC/PIE lanes and GDB
 reports it optimized out. A native-independent planner and audited libdwarf
 producer path now emit exact-width stable register/register-relative locations.
 Production extraction admits explicit Ghidra register parameters only after an
@@ -1080,9 +1103,11 @@ DWARF 5 `.debug_loclists`; GDB reads the curated local as 42 on x86-64,
 AArch64, ARM32, and both MIPS byte orders for ET_EXEC and PIE. Exact entry-live
 register locals use the same whole-function overwrite/call-clobber proof;
 GDB reads the curated register local as 31 on x86-64, AArch64, and both MIPS
-profiles for ET_EXEC and PIE; ARM32's `r3` is overwritten and omitted. Exact
-register composites preserve Ghidra's endian-aware varnode order and emit
-explicit `DW_OP_bit_piece` sequences; GDB reconstructs the curated 64-bit value
+profiles for ET_EXEC and PIE; ARM32's `r3` is overwritten and omitted.
+**HISTORICAL:** explicit register composite tests supplied memory-order pieces
+and emitted `DW_OP_bit_piece` sequences. Those injected, unused locals did not
+prove Ghidra join semantics and require corrected significance-order storage.
+GDB reconstructs the curated 64-bit value
 on the same four profiles, while ARM32's overwritten piece remains
 locationless. A controlled stack-depth change proves the stack local resolves
 as 42 in two different location-list ranges on all five targets. Unsupported
@@ -1327,12 +1352,14 @@ exports with correct Ghidra instruction context and clean validators, but GDB
 15.1 disassembles the stripped input's recovered Thumb function as ARM before
 execution. Runtime success can depend on the current CPSR and does not establish
 static mode support. A separate saved-project repeat is deterministic.
-**CONFIRMED locally; hosted gate pending:** the bounded correction restores
-defensible ELF mode cues and passes the compiler-relative regression, including
-neighboring ARM code, validators, calls, stepping and repeatability. Synthesis
-is restricted to ET_EXEC without named defined dynamic symbols; the shared-object
-failure found by PR #44's second gate is corrected locally, with fresh full
-hosted acceptance still required.
+**CONFIRMED in hosted run `40138005382`:** PR #44's bounded correction restores
+defensible ELF mode cues and passes all twelve jobs plus independent package,
+ARM/shared and both-GUI/native-Windows reviews. It merged normally as `f359d18`
+with the tested tree. Synthesis is restricted to ET_EXEC without named defined
+dynamic symbols; the shared-object regression found by the second gate is
+corrected without weakening its GDB oracle. Distinct main-push run `40140510117`
+also passes all twelve jobs and independent fresh both-GUI/native Windows 25,
+ARM and strict-validation reviews.
 This does not complete Thumb profile support; see
 [the scope](docs/research/ARM-THUMB-MODE.md).
 
@@ -2267,7 +2294,8 @@ Unless the user changes priorities:
    Distinct main push `40126173922` passes all twelve jobs and separate
    both-GUI/native Windows 22 review. PR #42 head `296395e` passes all twelve
    jobs in `40126794530`, exact package/all-five-target/both-GUI/native Windows
-   23 review, and merged as `0d2cbc5`; main push `40129499500` is pending. Preserve
+   23 review, and merged as `0d2cbc5`; main push `40129499500` also passes all
+   twelve jobs and independent host reviews. Preserve
    the first writer run's compiler-oracle TCP collision and the failed
    original PR #32 report-selection attempt and earlier feature histories.
    Require current-base checks under AGENTS.md Section 6.1; do not restart
