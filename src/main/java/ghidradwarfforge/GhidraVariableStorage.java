@@ -436,8 +436,9 @@ public final class GhidraVariableStorage {
                 description + " composite storage does not exactly match its size");
         }
         List<Piece> pieces = new ArrayList<>();
-        // Ghidra orders these varnodes in memory order: LSB first for LE and MSB
-        // first for BE, exactly the order required by a DWARF composite location.
+        // Ghidra's AddressXML serializes join pieces most-significant first,
+        // for both computed and explicit storage. Preserve that order while
+        // checking each piece so the existing first omission stays unchanged.
         for (Varnode varnode : storage.getVarnodes()) {
             if (!varnode.isRegister()) {
                 return unavailable(OmissionReason.UNSUPPORTED_STORAGE,
@@ -450,7 +451,9 @@ public final class GhidraVariableStorage {
             }
             pieces.add(new Piece(register, Math.multiplyExact(varnode.getSize(), 8)));
         }
-        return new CompositeStorage(pieces);
+        // DWARF concatenates pieces in object memory order. Normalize only
+        // the completed list; each register's LSB-relative slice is unchanged.
+        return new CompositeStorage(program.getLanguage().isBigEndian() ? pieces : pieces.reversed());
     }
 
     private static Storage stackStorage(VariableStorage storage, int expectedSize,

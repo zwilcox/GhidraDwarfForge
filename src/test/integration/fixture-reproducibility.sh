@@ -41,6 +41,9 @@ expected_sources=(
     arm-thumb-caller.c
     arm-thumb-leaf.c
     bitfield-values.c
+    dynamic-composite-aggregate.c
+    dynamic-composite-caller.c
+    dynamic-composite-scalar.c
     dynamic-parameter-storage.c
     fp_register_aliases.c
     function-static-scopes.c

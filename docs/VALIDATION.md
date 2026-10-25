@@ -5551,7 +5551,12 @@ full hosted gate are still required.
 passes all twelve jobs in pull-request run `40138005382`, attempt 1. Normal
 merge `f359d1831f9a6923d0a60c07fc4c7bd1fa2a32ba` preserves tested tree
 `e79d012213dba9c7a5208fab53acd055d33d000c`. Distinct main-push run
-`40140510117` is pending; PR acceptance is not substituted for that run.
+`40140510117` subsequently passes all twelve jobs and separate fresh artifact
+reviews. Its acceptance receipt SHA-256 is
+`e519d1728f3c90746ea76cf29514d975ce96735838e803e0d285be0a987617d6`.
+Both actual GUI hosts, native Windows 25/231/38, ARM Thumb/shared/primary capture
+and the x86 strict24 subset are independently clear; other cross-target suites
+retain CI-execution scope. No PR #45 acceptance is implied.
 
 The fresh downloaded extension ZIP has SHA-256
 `eca4dae30812df5239915d2ba699cc30cbc587f4dd0eeb73249754cc5ae959fa`;
@@ -5698,3 +5703,225 @@ root independently rehashed all 547 bound files. The subsequent normal merge
 of accepted main `f359d18` preserves that source tree. Documentation now records
 PR #44 acceptance; final package rebinding and the dynamic fix's own fresh
 hosted gate remain required before its integration.
+
+### PR #45 scalar gate and newly exposed composite-order defect (2026-10-24)
+
+**CONFIRMED, not accepted for integration:** exact head
+`f46712fd393efcde283528456e8205fddfb34b60` passes all twelve jobs in
+`40141054093`, attempt 1. Its fresh downloaded package passes actual Java 21
+planner231, extraction38 and dynamic154 checks. Independent artifact review
+verifies the five scalar target cases, ARM mixed PCS/Thumb/shared, both GUI
+hosts and native Windows 26 suites. These remain bounded component evidence.
+Receipt `gui-script-manager/build/hosted-gui-review/run-40141054093/component-evidence-only.json`
+has SHA-256 `08816e0d83d3cbaac97a0eae12cef05524489f9fcb7c75e5e18816ec77e705f3`;
+no final acceptance receipt was issued.
+
+Later ordinary by-value `{int first; int second;}` comparisons expose wrong
+values on ARM32 and MIPS32 little endian. The compiler's incoming carriers and
+named fields are `{-19, 37}`; Forge gives `{37, -19}` without an omission.
+Computed Ghidra storage lists the second register first, and the generated
+DW_OP_regx/DW_OP_bit_piece sequence copies that order. MIPS big endian's
+object-order sequence passes all 16 visited PCs. The x86-64 single-register
+case passes all 11 visited PCs; AArch64 has four correct available PCs and
+nine honest unavailable PCs after overwrite. Both compiler and Forge AArch64
+research sessions retain a file-transfer setup warning and a compiler-correlated
+VDSO warning; this is not quiet-GDB evidence.
+
+All ten research exports repeat identically and independently validate. Strict
+libdwarf records two/four corroborated inherited frame errors for x86/AArch64
+and zero for ARM/MIPS, with zero unexplained errors. The ARM and MIPSLE GDB
+failures stop at the first wrong-field assertion and remain failures. Selected
+inputs/module/test files retain their hashes, sizes and recorded modification
+times, including on failure; owned QEMU processes and socket paths are gone.
+The five-case receipt under
+`truncated-space-stores/build/next-aggregate-review/five-contrast-binding.json`
+has SHA-256 `90bf63bf113755d583428c1500dbf939e209efc8f25035a02d7d80dce58b14bd`.
+Independent raw DIE/expression/member-offset/carrier review has SHA-256
+`d9f80cb6f8bdcbd809b62dacb311d68424c1e60195a8dbd2848522498452000d`.
+Method hashes and the exact production diff show the separate truncated-STORE
+change does not cause this equal-width ARM/O32 ordering defect.
+
+**HISTORICAL attempted correction:** normalize only proven attached computed
+joins after the original piece/lifetime proof, leaving custom/local joins
+unchanged. Its component checks below pass, but the subsequent custom-conversion
+probe exposes the remaining wrong value. This candidate is not accepted.
+
+### PR #45 computed-only correction: historical component checks (2026-10-24)
+
+**HISTORICAL, incomplete correction:** the frozen production source
+has SHA-256 `78da242b10100fa5fc56aae71c0016349d53f71aef08379bf4bfd3bd682f5974`.
+Actual Java 21/256 MiB passes 603 focused checks, with exact five language
+markers, real saved/reopened compound parameters, scalar/aggregate and unequal
+piece cases, explicit custom/local/direct-model isolation, origin negatives,
+first-omission precedence and cancellation. The old `2fb0d5e4...` JAR fails the
+intended actual ARM object-order assertion. Initial test-only constructor and
+overlapping-local setup failures are retained separately. Independent final
+source/focused review SHA-256 is
+`5b37406b61959e67a7094958ebfeee47cc07778848429eaaf2f25fd57a7e34e9`;
+a second independent closure is
+`c43a9b3af169864db0fada355ac3364d3f84f2260b7313e69ab134de416cbb87`.
+
+The eight Gradle focused tasks and extension build pass, including the new603,
+existing154 and six storage/lifetime controls. Workflow/architecture guards
+and the exact 26-file fixture inventory pass; all 13 x86-64 Makefile artifacts
+remain reproducible. Initial assembled ZIP SHA-256 is
+`dd7cb3981411afae4926efee85003f4c706ffb2aabaf24168409942648e28837`,
+containing JAR
+`97018b02251b37e1f1f2a414b35456eed30e1c43435767be7caf7e71298573e7`.
+Author package verification binds 49 sources, two scripts, 220 major65 classes,
+five manifests, pinned native provenance and exact initial documents; all 28
+runtime payloads equal the private installation and 27 non-JAR payloads equal
+the earlier dynamic package. The downloaded/assembled JAR itself passes603 on
+actual Java21 with production origins verified. Author receipt SHA-256 is
+`d07cee6132a6a27aa3bbee1f22c06d6e617da734e2680bcdccc7d6263bc89590`;
+independent package peer review is
+`d354798e941228d5d4c044ff6a54d0d5abdb7dbb4d2b36796146d8985b81931e`.
+
+Final driver `build/dynamic-composite-review/installed.pjp4y3ue` runs the exact
+final harness on x86-64, AArch64, ARM32 and both MIPS32 byte orders. All ten
+exports and ten compiler/Forge GDB sessions pass. The five aggregate entries
+and three non-MIPS scalar entries have correct typed values. Across 105
+actually visited Forge PCs, 76 parameter observations are available and correct
+and 29 are explicitly unavailable. Both MIPS scalar functions copy the incoming
+word and then overwrite a0 using LUI: the raw input instruction bytes, report
+full-body `REGISTER_MODIFIED`, absent location and actual unavailability agree.
+The preselected O1 scalar body and the original failing aggregate C are unchanged.
+There is no positive MIPS scalar-runtime claim or new composite-prefix support.
+
+GNU/LLVM and strict validation pass with inherited totals2/4/0/0/0 and zero
+unexplained errors. One VDSO warning in each AArch64/ARM compiler and Forge
+session is retained and matched; current runs do not retain the initial missing-
+sysroot file-transfer notice. Source/sidecar/report pairs repeat identically.
+All85 per-case protected records (37 unique paths) and12 global records retain
+their bytes/metadata, and all eight owned QEMU processes/sockets are cleaned up.
+Independent all-five review SHA-256 is
+`3492a51b42ba6294ab48ff9c0bb1e1ea9dd8ae1c3e2f843d723e8e916cb6e431`.
+
+Targeted driver `primary.hteyr_ee` makes three fresh owned ARM/MIPS imports and
+uses unchanged existing primary export/GDB scripts. All three exports, GDB
+sessions and strict-zero sidecars pass. Stack/shifted-stack values stay42;
+both MIPS explicit custom/local composites retain `0x1122334455667788`.
+Twenty-eight protected source/input/mirror/module paths, including executable
+modes, remain unchanged. Independent primary review SHA-256 is
+`4c2d82e4347b6dab486f64e2731f53068da3128e2d01ddf62f270f9f67afab68`.
+No old accepted projects or artifacts were overwritten.
+
+Initial harness failures remain distinct: Ghidra's unsigned type name is
+`ulonglong`, so an overly literal spelling assertion was replaced by an actual
+unsigned cast/type check; the two MIPS scalar positive assertions were corrected
+to require the observed precise omissions without changing code or optimization.
+The first primary mirror copies lacked execute permission, so QEMU exited before
+GDB connected; new copies preserve the original mode. Final exact-source runs
+above pass. No production or fixture-body workaround conceals these failures.
+
+Final author receipt `final-local-acceptance.json` has SHA-256
+`585cbd82da6318fbb63306e016b0563b3caad85029aeff6a6077782f804b0b7c`.
+Local headless execution is Java25; actual Java21 checks are separate. Final
+committed-document packaging and the corrected head's fresh full hosted gate
+remain required before integration.
+
+### PR #45 computed-to-custom semantic regression (2026-10-24)
+
+**CONFIRMED blocker:** an owned clone of the passing ARM aggregate project is
+exported before conversion, after `setCustomVariableStorage(true)`, and after
+saving/reopening. The two field offsets, r1/r0 storage sequence, signature and
+actual decompiled member uses stay identical. Only the effective storage class
+and persisted-assignment flag change. With the computed-only `97018b02...` JAR,
+GDB changes from correct fields `{-19,37}` to `{37,-19}`. Raw incoming carriers
+and the compiler oracle remain unchanged. GNU/LLVM and strict validators pass;
+structural validity does not establish value correctness.
+
+Pinned `MappedEntry`, `AddressXML`, `JoinSpace` and `JoinRecord` source establishes
+most-significant-first join serialization for custom/local as well as computed
+storage. The old injected-local fixture only tested memory-order byte assembly:
+its unused local had no decompiled semantic use. Correcting that fixture's
+Ghidra register order must preserve its C executable and expected GDB value.
+
+Receipt `custom-history.exrqsykm/observation-result.json` under
+`build/dynamic-composite-review` has SHA-256
+`820442806d7a87cc60b7d3c65104f85200f173ebef845454ca8a5fee8374e269`.
+It binds all three successful headless calls, two actual QEMU/GDB sessions,
+raw DIEs, source traces and preservation of the original project/module/inputs.
+An incorrect footer comparison across differently named sidecars is retained
+as an audit failure; no successful runtime call was repeated to conceal it.
+The shared extraction correction and new acceptance remain in progress.
+
+### PR #45 shared join correction: local validation (2026-10-25)
+
+**CONFIRMED locally; integration pending:** the correction normalizes completed
+Ghidra register joins at the shared extraction boundary. Little-endian pieces
+are reversed into object memory order; big-endian pieces retain their order.
+Every original piece/lifetime proof runs first in its original order, preserving
+first-omission precedence. Per-register LSB slices, single-register/stack paths,
+the neutral model, expression encoder and native producer are unchanged.
+
+Production source SHA-256 is
+`39eb0a1d4d76554187102e78f2c0c7504438d80918e7b602698388c96e01cdcb`;
+focused source SHA-256 is
+`6cf48e24abcbbe5ab7974bc805cab53c0c2fa48ea8c38d276f15c3c67b68e6b2`.
+Actual Java 21 at 256 MiB passes 1,480 checks across all five real language
+models, including computed-to-custom conversion, immutable reopening, explicit
+custom/local joins, unequal widths, actual AddressXML serialization, direct
+neutral-model order and existing malformed/omission/cancellation controls.
+The `97018b02...` computed-only JAR fails the intended converted-custom ARM
+assertion. Focused receipt SHA-256 is
+`dbda0b6242c82ad40623199bf911b5beeef8c840ef6b7cab3a021091804095cd`;
+independent review is
+`073d6a609eab4dfc9255777c91170afddc572e7c49fe54ebba688bbbe55c964c`.
+
+Eight Gradle storage/lifetime tasks and the extension build pass, along with
+workflow and architecture guards. Initial assembled ZIP SHA-256 is
+`f40335382d2603d61f46468c37440480b455d3f3fb117acb7838a473d988f118`;
+its JAR is
+`8303348fe3b78a152bec19480beda458459f117ac316bafaf73f05d450f7d219`.
+The package audit verifies 49 sources, two scripts, 220 Java21-compatible
+classes, five manifests, native provenance, initial documents and all 28
+installed runtime payloads. The 27 non-JAR payloads equal the previous package.
+Fresh actual Java21 runs the packaged JAR first and passes 1,480 checks with
+all production class origins bound. Author/independent receipts are
+`892c63c3ca89b70c28ad4591c9ed3ddfc09e5bf16a780a307976f2781acb36fc` and
+`f2bef3f7f30d2007210893943850e8dcc7aabf1a619724cb52bfa250b0c6b164`.
+
+Driver `build/join-order-review/installed.xo97n145` passes x86-64, AArch64,
+ARM32 and both MIPS byte orders: twenty exports, fifteen compiler/computed/custom
+GDB sessions and five plain executions. Each Forge variant visits 105 PCs,
+with 76 available correct observations and 29 unavailable observations. Each
+has five aggregate and three scalar entry positives; both MIPS scalar cases
+retain exact whole-body REGISTER_MODIFIED omissions from the original LUI.
+The signatures, storage pieces, typed fields, decompiled member uses and
+high-symbol storage survive computed-to-custom conversion and reopening.
+Both sets of source/sidecar/report pairs repeat identically. GNU/LLVM and strict
+validation pass on both outputs with inherited totals2/4/0/0/0 and no unexplained
+errors. Matching AArch64/ARM VDSO warnings remain explicit. Seventeen protected
+files per case and twelve global records remain unchanged.
+
+The first expanded x86 case, `x86_64.aYzXkK7j`, exposed an overly narrow test
+assertion after its four successful exports. Ghidra uses an adjacent temporary
+for each field assignment. The corrected checker accepts only the bounded
+direct or single-temporary dataflow with unique field read/global write and no
+intervening temporary mutation; unchanged full decompiled text is also required
+across conversion/reopen. The failed attempt remains retained. No fixture body,
+compiler flag or production workaround changed the outcome.
+
+Driver `build/join-order-review/primary.yhrwsh1d` passes five fresh primary
+exports and five existing scripted GDB sessions. Stack/shifted-stack values
+remain42 on all targets; x86/AArch64/both MIPS recover the expected
+`0x1122334455667788`, while ARM retains its modified-register omission. The
+Ghidra fixture alone now supplies significance-order registers; C inputs and
+GDB expected values are unchanged. Strict inherited totals3/5/0/0/0 have zero
+unexplained errors. Thirty-six protected source/input/mirror/module records
+preserve bytes, size, modification time and mode. Old projects are untouched.
+This remains an injected-local assembly control, distinct from the real
+computed/custom aggregate semantic test.
+
+Independent final raw runtime and primary-control reviews pass. Committed
+packaging and the fresh full hosted gate remain required before integration.
+
+The shared correction's installed headless/GDB corpus uses Java 25.0.4.1;
+the actual Java21 checks above are separate source/packaged focused tests.
+Final local evidence receipt SHA-256 is
+`07c73b0f85d28ddb830ffab91f364c6de20c814178b5329a879dc5cc3a5cc86d`.
+Independent computed/custom runtime review SHA-256 is
+`4939adbb7367d73ab6777698a00745d9c503995faf5b538320f947a486bec14d`;
+independent five-primary review is
+`4a803df13f60a9418ca10732f8731112ec579af2eab895bdd824dcd039667229`.

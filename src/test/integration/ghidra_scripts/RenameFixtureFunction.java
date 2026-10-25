@@ -248,7 +248,10 @@ public class RenameFixtureFunction extends GhidraScript {
             throw new IllegalStateException("fixture composite registers are unavailable for " +
                 language);
         }
-        return new Register[] { first, second };
+        // Ghidra join records are most-significant-first on both byte orders.
+        // The fixture's incoming registers are already arranged in memory order.
+        return currentProgram.getLanguage().isBigEndian() ?
+            new Register[] { first, second } : new Register[] { second, first };
     }
 
     private DataType buildFixtureTypes(DataTypeManager manager, DataType signedInt)
