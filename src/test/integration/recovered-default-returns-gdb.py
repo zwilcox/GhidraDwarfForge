@@ -2,6 +2,7 @@
 import json
 import os
 from pathlib import Path
+import re
 import gdb
 
 case = Path(os.environ['RETURN_CASE'])
@@ -22,9 +23,13 @@ for name, (code, size, value) in expected.items():
     symbol = function_symbol(name)
     returned = symbol.type.target().strip_typedefs()
     rows[name] = {'returnType': str(returned), 'returnCode': returned.code, 'returnBytes': returned.sizeof}
+    prototype = gdb.execute('ptype ' + name, to_string=True)
+    rows[name]['prototype'] = prototype
     if variant == 'previous':
         assert returned.code == gdb.TYPE_CODE_VOID, (name, str(returned))
+        assert prototype == 'type = void (void)\n'
     else:
+        assert re.fullmatch(r'type = .+ \(\)\n', prototype) if variant == 'forge' else '(void)' in prototype
         # The optimized division is recovered as ulong, while compiler DWARF
         # records uint. Preserve that observed inference, never label it original.
         recovered_size = 8 if variant == 'forge' and name == 'recovered_unsigned' else size
@@ -35,6 +40,8 @@ for name, (code, size, value) in expected.items():
         gdb.execute('list ' + name)
 assert function_symbol('curated_pointer').type.target().strip_typedefs().code == gdb.TYPE_CODE_PTR
 assert function_symbol('curated_void').type.target().strip_typedefs().code == gdb.TYPE_CODE_VOID
+assert '(void)' in gdb.execute('ptype curated_void', to_string=True)
+assert '(void)' in gdb.execute('ptype curated_pointer', to_string=True)
 if variant != 'previous':
     exits = []
     gdb.events.exited.connect(lambda event: exits.append(getattr(event, 'exit_code', None)))

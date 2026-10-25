@@ -95,6 +95,16 @@ def main():
             run(variant + '-' + name, ['readelf', option, artifact])
         run(variant + '-llvm', ['llvm-dwarfdump', '--verify', artifact])
         assert 'No errors.' in (case / (variant + '-llvm.log')).read_text()
+    records_spec = importlib.util.spec_from_file_location('records', source / 'dynamic-composite-storage-check.py')
+    records = importlib.util.module_from_spec(records_spec)
+    records_spec.loader.exec_module(records)
+    dies = records.die_records((case / 'forge-info.log').read_text())
+    for name in by_name:
+        die, = [row for row in dies if row['tag'] == 'DW_TAG_subprogram' and records.facts.die_name(row) == name]
+        if name.startswith('recovered_'):
+            assert 'DW_AT_prototyped' not in die['attrs'], 'unknown argument list asserted as a complete prototype'
+        else:
+            assert die['attrs']['DW_AT_prototyped'] == '1', 'curated prototype was lost'
     run('strict', ['python3', source / 'check-dwarfdump.py', case / 'returns.dbg', case / 'strict-checks.log', '--original', binary])
     for variant in ['compiler', 'forge'] + (['previous'] if args.previous_ghidra else []):
         artifact = reference if variant == 'compiler' else case / ('previous.dbg' if variant == 'previous' else 'returns.dbg')

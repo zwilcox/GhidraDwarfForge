@@ -4143,3 +4143,11 @@ regression pass. Ordinary calls return -41, 41 and 1.75. The unsigned fixture's
 inferred 64-bit type differs from its original 32-bit C type; both observations
 are retained rather than claiming exact original recovery. See
 `docs/RECOVERED-DEFAULT-RETURNS.md` for scope, failures and evidence.
+
+A related prototype assertion is also corrected locally: DEFAULT signatures
+no longer emit `DW_AT_prototyped`, so an unknown argument list is not presented
+as a known no-argument prototype. An owned-copy GDB/LLVM experiment establishes
+the distinction; the final installed regression proves raw flag policy, GDB
+unknown/curated argument display and ordinary return values. No parameter or
+variadic behavior is inferred. The earlier candidate's hosted run does not
+establish acceptance of this follow-up; its new full gate remains required.

@@ -473,8 +473,12 @@ public final class MinimalDwarfSidecarExporter {
                 ProgramTypeModel.FunctionSignature signature = sourceFailed ? null :
                     signatures.get(FunctionKey.of(function));
                 if (signature != null) {
-                    addFlag(producer, consumer, debug, die, DW_AT_PROTOTYPED, true,
-                        errorOut);
+                    // A DEFAULT listing signature does not establish a complete
+                    // argument list, even when its scalar return was recovered.
+                    if (!signature.signatureSource().equals("DEFAULT")) {
+                        addFlag(producer, consumer, debug, die, DW_AT_PROTOTYPED, true,
+                            errorOut);
+                    }
                     if (knownCallingConvention(signature.callingConvention())) {
                         addUnsigned(producer, consumer, debug, die,
                             DW_AT_CALLING_CONVENTION, DW_CC_NORMAL, errorOut);

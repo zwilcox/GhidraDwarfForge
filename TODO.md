@@ -910,7 +910,9 @@ Define precedence among analyst-applied listing/signature types and decompiler g
 
 **CONFIRMED locally; full hosted acceptance pending:** concrete decompiler
 scalar returns now fill only DEFAULT undefined, noncustom listing returns.
-Stronger signature/return provenance remains authoritative. 645 model checks
+Stronger signature/return provenance remains authoritative. DEFAULT signatures
+also omit the prototype flag so unknown arguments are not asserted as a known
+no-argument list; curated prototype flags remain intact. 645 model checks
 cover five profiles and immutable reopen; a real x86-64 installed regression
 proves GDB types and ordinary returned values against the previous package and
 compiler DWARF. The unsigned-width inference discrepancy is explicit, not

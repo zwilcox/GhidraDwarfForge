@@ -125,3 +125,35 @@ The earlier SQLite observation retains its original tested package identity;
 it is not relabeled as a run of this final package. Workflow lint, architecture
 isolation, Python syntax and the 32-source/13-artifact fixture reproducibility
 check pass. Full hosted acceptance remains pending.
+
+### Unknown argument lists remain unknown
+
+**CONFIRMED locally:** a DEFAULT listing signature also incorrectly asserted
+`DW_AT_prototyped`, making GDB display `uint(void)` for `sqlite3_step` even
+though the saved signature has no established arguments. Changing just that
+flag to false in an owned sidecar copy produces `uint()`; LLVM accepts the
+copy and the original artifact remains unchanged. The
+[DWARF 5 specification](https://dwarfstd.org/doc/DWARF5.pdf) uses this flag to
+represent prototype-style declarations. A default listing does not justify
+asserting a complete argument list. This is separate from recovering a scalar
+return and does not infer parameters or variadic behavior.
+
+The exporter now omits `DW_AT_prototyped` on DEFAULT definition signatures,
+including those without a recovered return. Stronger curated signatures and
+curated external declarations keep their existing prototype flag. The
+regression independently checks raw DIE flag absence/presence and GDB's
+unknown-argument/known-void distinction, while retaining the actual returned
+values and curated pointer/void controls.
+
+This supersedes the preceding local candidate: installed JAR
+`1a37dc933604acfbc2180fe677bdfa72bf7ac0172307fa3cc9cef4df15136513`
+passes fresh actual Java 21 inventory/type-graph/formal-return/recovery checks
+in `packaged.tzt3wcbc` (receipt
+`cae81f81886d9a6e32e4c43a35ac096efb48dd4e5140a075be764beb04c946cf`).
+The full installed regression passes in `x86_64.l29_h2uo` (receipt
+`edb8899ed106e994c50c1b3e706c2552a08bd607a0b2893d6dc62af5d5e1d4d8`),
+including raw prototype flags, unknown argument display, ordinary -41/41/1.75
+returns, seven corroborated frame findings, LLVM, cancellation/failure controls,
+immutable program data, protected inputs and identical repeated artifacts.
+The earlier SQLite replay and broader local matrix retain their own earlier
+package identities. The later full hosted gate must validate this correction.
