@@ -1056,17 +1056,15 @@ Map Ghidra registers to target DWARF register numbers using isolated architectur
 
 ## P1.11 Emit parameters/locals with accurate locations
 
-**CONFIRMED PR #45 blocker:** its scalar/control gate `40141054093` passes all
-twelve jobs, but real aggregate tests reproduce swapped ARM32 and MIPS32
-little-endian fields. A computed-only fix passes its new local tests but fails
-a real computed-to-custom conversion with unchanged decompiled semantics.
-**CONFIRMED locally:** shared extraction normalization now passes 1,480 actual
-Java21 checks and all five computed/custom/reopened runtime cases. Corrected
-injected-local fixtures preserve the executable and expected values on all
-five primary controls. Independent raw reviews pass; committed packaging and
-fresh full hosted acceptance are required. See `docs/DYNAMIC-COMPOSITE-ORDER.md`.
+**CONFIRMED resolved in PR #45:** corrected head `5e2ea7d` passes all twelve
+jobs in run `40145554731`, independent exact-package/all-five-target/both-GUI
+reviews and native Windows 27 suites. Normal merge `96fa0a8` retains the tested
+tree. The distinct main-push run `40147478153` remains pending. Earlier scalar-
+only and computed-only candidates remain historical, unaccepted evidence.
+Shared register join normalization preserves computed/custom/reopened values;
+see `docs/DYNAMIC-COMPOSITE-ORDER.md`.
 
-**CONFIRMED locally; full hosted acceptance pending:** computed dynamic
+**CONFIRMED in PR #45 run `40145554731`:** computed dynamic
 parameter storage now survives a false persisted `hasAssignedStorage()` flag.
 Actual Java 21 five-language saved/reopened checks and a real ARM base/VFP
 float oracle pass, with existing lifetime/omission rules unchanged. The new
@@ -1087,8 +1085,8 @@ are also unverified on the tested emulator/debugger. These cases do not prove
 vector, aggregate-passing, call-crossing or new ABI support. See
 `docs/VALIDATION.md` for exact evidence and the independent compiler limitation.
 
-**Status:** `[~]` — the baseline cases below are accepted, but joined-storage
-ordering remains blocked on the correction's fresh validation. Parameters and
+**Status:** `[x]` within the documented baseline locations, including PR #45
+register join ordering; broader lifetimes remain in P1.11a. Parameters and
 recovered locals have canonical name/type DIEs. A curated locationless local is
 proven in all ET_EXEC/PIE lanes and GDB
 reports it optimized out. A native-independent planner and audited libdwarf
@@ -1106,7 +1104,8 @@ GDB reads the curated register local as 31 on x86-64, AArch64, and both MIPS
 profiles for ET_EXEC and PIE; ARM32's `r3` is overwritten and omitted.
 **HISTORICAL:** explicit register composite tests supplied memory-order pieces
 and emitted `DW_OP_bit_piece` sequences. Those injected, unused locals did not
-prove Ghidra join semantics and require corrected significance-order storage.
+prove Ghidra join semantics. PR #45 corrects their significance-order storage
+and verifies the unchanged expected values.
 GDB reconstructs the curated 64-bit value
 on the same four profiles, while ARM32's overwritten piece remains
 locationless. A controlled stack-depth change proves the stack local resolves

@@ -4023,3 +4023,19 @@ remain unchanged, with independent focused and raw runtime reviews. This
 refreshes the old component evidence against the combined
 package, without broadening N32 or lifetime claims. Exact hosted acceptance and
 final package review remain pending; see `docs/TRUNCATED-MEMORY-STORES.md`.
+
+### PR #45 register join integration (2026-10-25)
+
+**CONFIRMED:** corrected head `5e2ea7d` passes all twelve jobs in run
+`40145554731`, with independent exact-package, all-five computed/custom/generic
+parameter, both-GUI and native Windows 27 reviews. Fresh downloaded-package
+actual Java 21 checks 231/38/154/1480 pass. Normal merge
+`96fa0a826429e0b9dbfacd028e6caa02bcf2934e` preserves that tested tree.
+Distinct main-push run `40147478153` remains pending; earlier rejected candidates
+remain historical. No new release is published.
+
+The truncated-STORE follow-up now includes this main parent through normal
+merge `732356f`. Its tree equals the already validated `0b5d216` tree; no
+production, fixture or oracle bytes changed during that parent update. Fresh
+combined local evidence remains valid. Final committed packaging and the
+follow-up's own full hosted gate remain required.

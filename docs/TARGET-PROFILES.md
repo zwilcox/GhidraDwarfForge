@@ -74,10 +74,10 @@ fixtures reveal reversed fields for ARM32 and MIPS32 little endian despite the
 scalar-only gate passing. Computed Ghidra joins use significance order, which
 must be translated separately from each register's bit offset. A real conversion
 to custom storage also requires the same normalization. The original injected
-custom/local controls did not establish Ghidra join semantics. PR #45 remains
-blocked until the shared correction passes its fresh full gate. The corrected
-computed/custom/reopened cases and primary regressions pass locally on all five
-targets. See
+custom/local controls did not establish Ghidra join semantics. PR #45
+corrects the shared extraction boundary: computed/custom/reopened cases and
+primary regressions pass on all five targets in exact run `40145554731`, with
+independent reviews and normal merge `96fa0a8`. Main-push acceptance is separate. See
 [the correction](DYNAMIC-COMPOSITE-ORDER.md).
 
 The composite fixture uses analyst-curated pieces in two integer registers.

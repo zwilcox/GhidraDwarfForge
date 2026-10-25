@@ -6051,3 +6051,38 @@ Independent focused review SHA-256 is
 `03aa07a318c2174589ab98453ce238cee43e4643d96bb3be80c08641001b54be`;
 independent raw four-case review is
 `125f134d13a016df39e94c64ca52107b2913fd882ffa2ceef167fb04e3ff7e0f`.
+
+### PR #45 exact hosted acceptance and normal merge (2026-10-25)
+
+**CONFIRMED:** corrected head `5e2ea7dfc4911c89e42c7b486d08c10a445e8fe7` passes
+all twelve jobs in run `40145554731`, pull_request attempt 1. Fresh package
+precheck receipt SHA-256 is
+`80301b5dc8618953290ab8055da7ce74953ac7a4ed4a8ac53330bc9e2af408c4`.
+Hosted JAR `10e3cd67...` matches the exact committed sources and passes fresh
+actual Java 21 checks 231/38/154/1480 with bound production origins. The four
+focused source snapshots and all 29 relative package-evidence records were
+independently rebound to the tested head.
+
+Independent acceptance receipt SHA-256 is
+`ace468102fcd6f929d3e0b2347b5853a89c4aacccb3b88207a6809b2285dfdfe`;
+final artifact bindings are
+`05867502822bbf51fc3e3a16de40cf232d4372c46f4a14b988da26163939bc94`.
+All five computed/custom and generic parameter artifacts pass raw audits.
+Computed/custom variants each retain 105 visited PCs, 76 available values and 29
+honest omissions, with five aggregate and three scalar entry positives. Both
+GUI hosts and native Windows 27 suites pass. All 212 selected target-workflow
+steps succeed; 108 unselected platform conditions remain explicit skips.
+All 22 Windows steps succeed. There are no unexplained strict errors. Root
+rehashed all 27 final binding witnesses and independently verified the exact
+run/head/event/attempt and twelve successful job records before merge.
+
+Normal merge `96fa0a826429e0b9dbfacd028e6caa02bcf2934e` occurred at
+`2026-10-25T00:38:23Z`; its tree equals the tested head. Distinct main-push
+run `40147478153` is pending and is not inferred from the PR gate. The rejected
+`f46712f` scalar-only run and computed-only `97018b02...` package remain
+historical component evidence. Published releases are unchanged.
+
+The truncated-STORE branch's subsequent normal parent merge `732356f` preserves
+its exact prior `0b5d216` tree, including all locally tested combined runtime
+bytes. Only acceptance documentation changes afterwards; final exact-head
+packaging and a separate hosted follow-up gate remain required.
