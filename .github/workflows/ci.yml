@@ -471,6 +471,7 @@ jobs:
           {
             src/test/integration/headless-wrapper.sh
             src/test/integration/architecture-neutrality.sh
+            python3 src/test/integration/architecture-neutrality-smoke.py
             ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke \
               ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke \
               exportReportSmoke exportReportClaimsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke \
