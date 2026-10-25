@@ -4451,3 +4451,14 @@ validators, deterministic repeats and preserved originals. The 106 model
 controls and seventeen actual Java 21 packaged suites pass. See
 `docs/STACK-SPILL-LIFETIMES.md` for acceptance, limits and retained failures.
 P1.11a remains partial, and no release publication is authorized by this work.
+
+### Linkage lookup requires a consumer policy (2026-10-25)
+
+**CONFIRMED negative local evidence:** imported Ghidra labels alone do not
+identify a unique original ELF linkage name. A real ELF alias creates multiple
+candidates, and an analyst-created label can carry IMPORTED source. Isolated
+Java 21 producer/GDB tests additionally show that naive DW_AT_linkage_name
+emission hides the curated display name on x86-64 and AArch64; an imported
+alias declaration does not repair lookup. Validators accept these artifacts.
+No production changes follow. See `docs/research/LINKAGE-LOOKUP.md`; P1.7/P3.3
+remain incomplete pending a policy that preserves analyst-facing lookup.

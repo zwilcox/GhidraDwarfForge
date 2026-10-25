@@ -2209,6 +2209,13 @@ after merge and post-merge validation.
 
 ## P3.3 Add richer scopes and declarations
 
+**CONFIRMED investigation, not implementation:** isolated x86-64/AArch64
+producer/GDB tests show naive linkage-name emission hides the curated name,
+and an imported-declaration alias does not fix lookup. Imported labels can
+also be ambiguous or analyst-created. Preserve existing display behavior
+until an original-ELF binding and consumer policy pass. See
+`docs/research/LINKAGE-LOOKUP.md`.
+
 **Status:** `[~]` — namespace-parented globals, typed external-data
 declarations, and function-owned static memory labels pass their documented
 checks. Hosted run `40063017269` proves the static-scope slice on all five
