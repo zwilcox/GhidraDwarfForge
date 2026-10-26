@@ -1274,7 +1274,7 @@ Main receipt SHA-256:
 `ec1358c3d2b4a99772b659be447497346aa16fe6046d86d142f7a36560dbe3a7`.
 Earlier pending stack-spill notes are historical; general migration and other unfinished work remain open.
 
-**CONFIRMED locally; hosted acceptance pending (2026-10-25):** explicit
+**HISTORICAL local checkpoint, accepted through PR61 above:** explicit
 function-owned register locals with positive first-use offsets now have a
 bounded proof: one exact read after a completed definition, no overlapping
 variable storage, and a fully decoded straight-line leaf. Six exec/PIE/rebase

@@ -22,11 +22,11 @@ Java 21 suites pass. See `docs/LOCAL-DEFINITION-BOUNDARIES.md` for exact evidenc
 retained failed attempts and limits; general lifetime and lexical-scope recovery
 remain incomplete.
 
-**Current gate correction:** initial PR61 run `40247500844` correctly rejects
+**HISTORICAL fixture-inventory correction:** initial PR61 run `40247500844` correctly rejects
 the unlisted new fixture in all five lanes before exporter tests. The audited
 inventory is now updated, and five fresh local reproducibility checks pass.
-A new full gate is required; the failed run and scoped package evidence remain
-separate. See `docs/LATER-REGISTER-LOCALS.md`.
+The corrected full gate passed as recorded above; the failed run and its scoped
+package evidence remain separate. See `docs/LATER-REGISTER-LOCALS.md`.
 
 **CONFIRMED integration (2026-10-25):** stack-spill PR60 head
 `2b0666ff7cc5b1ff44cd7420522c57737cc72d43` passes all twelve jobs in
@@ -42,7 +42,7 @@ Main receipt SHA-256:
 `ec1358c3d2b4a99772b659be447497346aa16fe6046d86d142f7a36560dbe3a7`.
 Earlier pending stack-spill notes are historical; general migration and other unfinished work remain open.
 
-**Current local candidate — hosted acceptance pending (2026-10-25):** bounded
+**HISTORICAL local checkpoint, accepted through PR61 above:** bounded
 curated later register locals pass six x86-64/AArch64 exec/PIE/rebase roles,
 twelve exports, six preceding-package comparisons and 594 GDB stops. Eighteen
 actual Java 21 packaged suites pass. The implementation preserves an analyst's
