@@ -637,6 +637,135 @@ public final class GhidraVariableStorage {
             variable.getLength(), registers, monitor, "local");
     }
 
+    /**
+     * A curated function-owned register local may start at an exact read-only
+     * instruction after a completed full-width definition. This preserves the
+     * analyst's storage binding, not an inferred original lexical scope.
+     */
+    public static List<StorageInterval> localPrefix(Program program, Function function,
+            Variable variable, TargetRegisterMap registers, Storage rejected,
+            TaskMonitor monitor) throws CancelledException {
+        monitor.checkCancelled();
+        VariableStorage storage = variable.getVariableStorage();
+        Register register = variable.getRegister();
+        if (!(rejected instanceof UnavailableStorage unavailable) ||
+                unavailable.reason() != OmissionReason.UNKNOWN_LIFETIME ||
+                !(variable instanceof ghidra.program.model.listing.LocalVariable) ||
+                variable.getSource() != ghidra.program.model.symbol.SourceType.USER_DEFINED ||
+                variable.getProgram() != program || variable.getFunction() != function ||
+                function.getProgram() != program || variable.getFirstUseOffset() <= 0 ||
+                !variable.isValid() || !variable.hasAssignedStorage() || storage == null ||
+                storage.getProgramArchitecture() != program || !storage.isValid() ||
+                storage.isBadStorage() || storage.isForcedIndirect() || !storage.isRegisterStorage() ||
+                storage.getVarnodeCount() != 1 || register == null || variable.getLength() <= 0 ||
+                variable.getDataType().getLength() != variable.getLength() ||
+                storage.size() != variable.getLength() ||
+                register.getBitLength() != variable.getLength() * 8L ||
+                !storage.getFirstVarnode().getAddress().equals(register.getAddress()) ||
+                function.getBody().getNumAddressRanges() != 1 ||
+                !function.getEntryPoint().equals(function.getBody().getMinAddress())) {
+            return List.of();
+        }
+        Register base = register.getBaseRegister();
+        boolean attached = false;
+        for (Variable other : function.getAllVariables()) {
+            monitor.checkCancelled();
+            if (other == variable) {
+                attached = true;
+                continue;
+            }
+            VariableStorage otherStorage = other.getVariableStorage();
+            if (otherStorage == null || !other.hasAssignedStorage()) {
+                continue;
+            }
+            if (!otherStorage.isValid()) {
+                return List.of();
+            }
+            for (Varnode node : otherStorage.getVarnodes()) {
+                if (node.getAddress().getAddressSpace().equals(base.getAddress().getAddressSpace()) &&
+                        node.getOffset() < Math.addExact(base.getOffset(), base.getMinimumByteSize()) &&
+                        Math.addExact(node.getOffset(), node.getSize()) > base.getOffset()) {
+                    return List.of();
+                }
+            }
+        }
+        Storage mapped = mappedRegister(register, variable.getLength(), registers, "local");
+        if (!attached || !mapped.available()) {
+            return List.of();
+        }
+        var entry = function.getEntryPoint();
+        ghidra.program.model.address.Address firstUse;
+        try {
+            firstUse = entry.addNoWrap(variable.getFirstUseOffset());
+        }
+        catch (ghidra.program.model.address.AddressOverflowException overflow) {
+            return List.of();
+        }
+        if (!function.getBody().contains(firstUse) || entry.getAddressSpace().isOverlaySpace()) {
+            return List.of();
+        }
+        List<Instruction> instructions = prefixInstructions(program, function, monitor);
+        if (instructions == null) {
+            return List.of();
+        }
+        long start = entry.getOffset();
+        long end = Math.addExact(function.getBody().getMaxAddress().getOffset(), 1);
+        // Validate the entire body, including effects after the proposed range.
+        // No call exception is provided. Require an earlier physical definition.
+        long firstWrite = registerPrefixEnd(start, end, instructions, List.of(base), true, monitor);
+        if (firstWrite <= start || firstWrite > firstUse.getOffset()) {
+            return List.of();
+        }
+        boolean lastDefinitionComplete = false;
+        boolean readAtStart = false;
+        long boundary = end;
+        for (Instruction instruction : instructions) {
+            monitor.checkCancelled();
+            if (instruction.getAddress().getAddressSpace() != entry.getAddressSpace() ||
+                    instruction.getMaxAddress().getAddressSpace() != entry.getAddressSpace()) {
+                return List.of();
+            }
+            boolean writes = writesRegister(instruction, base);
+            if (instruction.getAddress().compareTo(firstUse) < 0 && writes) {
+                lastDefinitionComplete = false;
+                for (PcodeOp operation : instruction.getPcode()) {
+                    Varnode output = operation.getOutput();
+                    if (output != null && output.getAddress().getAddressSpace().equals(register.getAddress().getAddressSpace()) &&
+                            output.getOffset() <= register.getOffset() &&
+                            Math.addExact(output.getOffset(), output.getSize()) >=
+                                Math.addExact(register.getOffset(), variable.getLength())) {
+                        lastDefinitionComplete = true;
+                    }
+                }
+            }
+            if (instruction.getAddress().equals(firstUse)) {
+                if (writes || !lastDefinitionComplete) {
+                    return List.of();
+                }
+                for (PcodeOp operation : instruction.getPcode()) {
+                    for (Varnode input : operation.getInputs()) {
+                        readAtStart |= storage.getFirstVarnode().equals(input);
+                    }
+                }
+            }
+            if (instruction.getAddress().compareTo(firstUse) > 0 && writes && boundary == end) {
+                boundary = Math.addExact(instruction.getMaxAddress().getOffset(), 1);
+            }
+        }
+        if (!readAtStart) {
+            return List.of();
+        }
+        List<StorageInterval> result = new ArrayList<>();
+        result.add(new StorageInterval(start, firstUse.getOffset(), unavailable(OmissionReason.UNKNOWN_LIFETIME,
+            "curated register local is not live before its recorded first use")));
+        result.add(new StorageInterval(firstUse.getOffset(), boundary, mapped));
+        if (boundary < end) {
+            result.add(new StorageInterval(boundary, end, unavailable(OmissionReason.UNKNOWN_LIFETIME,
+                "curated register local was overwritten; later storage is not established")));
+        }
+        return List.copyOf(result);
+    }
+
     private static Storage stableRegister(Program program, Function function,
             Register register, int byteSize, TargetRegisterMap registers,
             TaskMonitor monitor, String description) throws CancelledException {

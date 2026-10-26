@@ -479,7 +479,7 @@ jobs:
               matchedElfPrefixSmoke matchedElfAllocationsSmoke executableProgramBytesSmoke \
               debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke \
               syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
-              variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke stackSpillSmoke directLeafCallSmoke compositeRegisterPrefixSmoke \
+              variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke laterRegisterLocalSmoke stackSpillSmoke directLeafCallSmoke compositeRegisterPrefixSmoke \
               stackFirstUseSmoke \
               opaqueRegisterEffectsSmoke registerBodyCoverageSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
               arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
@@ -1036,6 +1036,15 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: src/test/integration/composite-register-prefix-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
 
+      - name: Curated later register locals and exact unavailable boundaries
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for role in exec pie pie-rebased; do
+              python3 src/test/integration/later-register-local-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
+          done
+
       - name: Completed parameter stack spills and unavailable memory-write tails
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
         env:
@@ -1418,7 +1427,7 @@ jobs:
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke registerBodyCoverageSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
             arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
-            registerCopySmoke stackSpillSmoke directLeafCallSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
+            registerCopySmoke laterRegisterLocalSmoke stackSpillSmoke directLeafCallSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
             elfBuildIdSmoke exportReportClaimsSmoke matchedElfPrefixSmoke `
             matchedElfAllocationsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke executableProgramBytesSmoke `
             debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke 2>&1 |

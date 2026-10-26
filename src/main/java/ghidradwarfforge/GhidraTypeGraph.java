@@ -251,15 +251,26 @@ public final class GhidraTypeGraph {
                     variable.getSource().name()));
                 Storage storage = GhidraVariableStorage.stableLocal(program, function,
                     variable, registerMap, monitor);
+                var prefix = GhidraVariableStorage.localPrefix(program, function, variable,
+                    registerMap, storage, monitor);
                 if (storage instanceof StackStorage && stackDepths == null) {
                     stackDepths = GhidraVariableStorage.stackDepthProfile(program, function, monitor);
                 }
-                List<LocationRange> ranges = locationRanges(symbol, storage, stackDepths,
-                    registerMap, rebaseDelta, variable.getSource());
+                List<LocationRange> ranges = prefix.isEmpty()
+                    ? locationRanges(symbol, storage, stackDepths, registerMap, rebaseDelta, variable.getSource())
+                    : prefix.stream().map(interval -> new LocationRange(
+                        AddressNormalizer.toElfAddress(interval.start(), rebaseDelta),
+                        AddressNormalizer.toElfAddress(interval.end(), rebaseDelta), interval.storage(),
+                        new Evidence(evidence(variable.getSource(), interval.storage()).confidence(),
+                            "Curated Ghidra function-owned local; exact recorded register read after a " +
+                                "completed definition in a fully decoded straight-line leaf; unavailable " +
+                                "before first use and after overwrite; no original lexical scope inferred")))
+                        .toList();
                 variableLocations.add(new VariableLocation(symbol.name(), address,
                     localName, VariableKind.LOCAL, variable.getLength(), ranges));
                 if (storage instanceof UnavailableStorage unavailable) {
-                    diagnostic.accept("Omitted location for " + symbol.name() + "::" +
+                    diagnostic.accept((prefix.isEmpty() ? "Omitted location for " :
+                        "Limited location to proven later-register-local lifetime for ") + symbol.name() + "::" +
                         localName + ": " + unavailable.diagnostic());
                 }
             }

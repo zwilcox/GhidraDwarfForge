@@ -6710,3 +6710,60 @@ run `40244657118` remains pending. Earlier pending and failed component notes
 are historical, and the failed architecture guard is not retroactively
 accepted. This does not complete broader lifetimes, ABI modes, linkage/scopes
 or optional attachment. No release publication.
+
+
+## Curated later register-local lifetimes (2026-10-25)
+
+**CONFIRMED locally; exact hosted gate pending.** The actual Java 21 packaged
+suite includes 108 new real-decoder checks; eighteen suites pass. The production
+exporter passes six x86-64/AArch64 exec/PIE/rebase cases, twelve repeated exports,
+six preceding-package comparisons and 594 GDB observations. GNU/LLVM validation
+passes, strict diagnostics match only inherited frame-length messages, original
+inputs remain unchanged, and paired outputs are byte-identical. The independent
+receipt is `build/later-local-review/acceptance.json`, SHA-256
+`f1d20ebccd6a857f7a4037d40d111724e8dfe98d239b6918a7eff2fc1f634afa`.
+Six stack-first-use and two stack-spill compatibility cases also pass with the
+same package. See `LATER-REGISTER-LOCALS.md` for exact scope, commands, artifacts,
+retained test-setup failures and the initial compiler-DWARF LLVM timeout.
+
+The feature follows an explicitly curated function-owned local from its exact
+recorded read, after a completed definition, until a possible overwrite. It
+requires a fully decoded straight-line leaf and rejects competing storage.
+Compiler lexical scope and curated physical availability are tested separately;
+no original scope, automatic local lifetime, migration or call support is inferred.
+
+## Stack-spill protected integration (2026-10-25)
+
+**CONFIRMED integration (2026-10-25):** stack-spill PR60 head
+`2b0666ff7cc5b1ff44cd7420522c57737cc72d43` passes all twelve jobs in
+`40244794589`, exact-package/seventeen actual Java 21 suites, raw five-target
+review, 38 native Windows tasks and both GUI hosts. The new stack cases cover
+six roles, twelve exports and 900 hosted compiler/Forge GDB observations.
+Normal merge `47ff38ebbfe2ac5eb8e7d2f3d0ec445fdb29dc95` preserves the accepted
+tree. Independent receipt SHA-256:
+`a84e37a5ccc878f2fcacae2dbf53726db7326585ca5b7dc838d1bb4f21ecf225`.
+Separate main-push verification is pending. Earlier pending stack-spill notes
+are historical; general migration and other unfinished work remain open.
+
+The exact raw review confirms location boundaries, actual debugger values,
+input/package preservation, deterministic reruns and exact inherited-frame
+corroboration. Linux and native Windows chooser/console screenshots were
+inspected. Windows GUI strict-checker and Linux-ELF runtime limitations remain
+explicit; the Linux GUI checks include strict validation and GDB.
+
+## Later-local fixture inventory correction (2026-10-25)
+
+
+
+Run `40247500844` at PR61 head `6d530f0` failed all five target lanes in
+`Build source fixture`: the new C source was absent from the explicit audited
+fixture inventory. Exporter integration and native Windows did not run.
+The exact package and eighteen actual Java 21 suites passed independently,
+but are not accepted as a full gate. Logs/artifacts remain under the root's
+`build/pr61-hosted/` with `review-stopped.json`.
+
+The inventory now explicitly includes `later-register-local.c`. Its existing
+unreviewed-file rejection remains intact. Fresh local reproducibility checks
+pass x86-64, AArch64, ARM32 and both MIPS byte orders; see
+`build/later-local-review/fixtures-*.log`. A fresh complete exact-head hosted
+gate is required. This correction changes no production ELF/DWARF behavior.

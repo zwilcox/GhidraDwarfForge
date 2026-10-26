@@ -54,6 +54,7 @@ expected_sources=(
     function-static-scopes.c
     function_entry_ranges.S
     function_entry_ranges.c
+    later-register-local.c
     minimal.c
     mips-truncated-space-start.S
     mips-truncated-space.c
