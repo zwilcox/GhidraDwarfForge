@@ -130,7 +130,9 @@ A change that alters emitted ELF, DWARF, source mapping, types, or locations is 
 
 ## 5. Repository orientation at the handoff baseline
 
-The current repository is a prototype, not a complete Ghidra extension.
+**HISTORICAL:** the repository at the handoff baseline was a prototype, not a
+complete Ghidra extension. The inventory below describes that baseline; see
+`PROJECT_CONTEXT.md` and `TODO.md` for current implementation and validation.
 
 - `src/GhidraDwarfForgeFixed.java` — monolithic Ghidra script; exports decompiled C, builds minimal DIEs through libdwarfp, and hand-writes a minimal ELF container.
 - `src/LibDwarfp.java` — partial JNA producer mapping. Treat it as unsafe until every signature is checked against a pinned libdwarf header.
@@ -347,11 +349,13 @@ export GHIDRA_INSTALL_DIR=/path/to/ghidra_12.0.3_PUBLIC
 ./gradlew clean buildExtension
 ```
 
-The ZIP is written to `dist/`. On 2026-09-02 this command built successfully,
+The ZIP is written to `dist/`. **HISTORICAL:** on 2026-09-02 this command built successfully,
 the ZIP was installed into Ghidra 12.0.3, and its native-free preflight script
 ran successfully through `analyzeHeadless` on an x86-64 `ET_EXEC` fixture.
-Native DWARF production remains disabled until the isolated ABI smoke test
-passes.
+Native DWARF production was disabled at that first checkpoint. It was
+subsequently enabled after the isolated ABI smoke test passed; current CI runs
+the real packaged exporter and native producer tests. Historical checkpoint
+text does not substitute for the current exact-head validation gate.
 
 ### 10.4 Required structural validation
 

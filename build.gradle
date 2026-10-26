@@ -310,6 +310,18 @@ tasks.register("registerCopySmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/register-copy/cache").absolutePath
 }
 
+tasks.register("stackSpillSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded register-to-stack spills and conservative memory-write boundaries"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.StackSpillSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/stack-spill/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/stack-spill/cache").absolutePath
+}
+
 tasks.register("directLeafCallSmoke", JavaExec) {
     group = "verification"
     description = "Checks bounded direct leaf call backups and conservative rejection"

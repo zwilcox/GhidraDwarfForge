@@ -192,6 +192,9 @@ public final class GhidraTypeGraph {
                         diagnostic.accept((prefix.isEmpty() ? "Omitted location for " :
                             GhidraVariableStorage.hasStackPiece(parameter.getVariableStorage())
                                 ? "Limited location to proven incoming mixed-storage lifetime for " :
+                            prefix.stream().anyMatch(interval -> interval.storage() instanceof
+                                ghidradwarfforge.locations.VariableStorageModel.RegisterRelativeStorage)
+                                ? "Limited location to proven stack-spill lifetime for " :
                             prefix.stream().filter(interval -> interval.storage().available())
                                 .count() > 1 ? "Limited location to proven register-copy lifetime for " :
                                 "Limited location to proven incoming-register lifetime for ") +

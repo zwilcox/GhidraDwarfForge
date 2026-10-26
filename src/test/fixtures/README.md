@@ -372,3 +372,11 @@ complete register pair before the write and whole-value unavailability after
 it across exec/PIE/rebase/repeat. Compiler aggregate locations at raw entry are
 recorded as unvalidated; strict field comparisons begin after the prologue.
 See `docs/TERMINAL-RETURN-PREFIX.md`.
+
+- `stack-spill-export.py` uses `stack-spill.c` for signed 32/64-bit parameters
+  saved to the stack before incoming-register loss. x86-64/AArch64 exec, PIE
+  and rebase roles compare compiler and Forge values, raw stack bytes and
+  exact register-to-stack location intervals. A later unrelated memory write
+  or stack-pointer restore must make the parameter unavailable. Repeat exports
+  preserve inputs and saved program state; `--previous-ghidra` additionally
+  demonstrates the preceding omission. See `docs/STACK-SPILL-LIFETIMES.md`.

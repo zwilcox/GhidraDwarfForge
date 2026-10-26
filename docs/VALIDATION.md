@@ -6659,6 +6659,16 @@ actual Java 21 suites; receipt SHA-256:
 `9011e4163947115f05f7887b7fe06bde3817e2f02a5d68890bff452e84a121fc`.
 Neither package acceptance substitutes for the corrected full hosted gate.
 
+## Bounded stack-save lifetimes (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** twelve final exports plus
+six previous-package comparisons pass across x86-64/AArch64 exec/PIE/rebase,
+including 1,350 GDB stops, exact raw location lists and deterministic pairs.
+Seventeen suites run on actual Java 21, with 106 stack-spill controls. GNU and
+LLVM checks pass; strict frame-length messages match original diagnostic
+multisets and .eh_frame bytes, with no uncorroborated errors. Evidence, commands,
+limits and retained failed attempts are in `STACK-SPILL-LIFETIMES.md`.
+Receipt SHA-256: `34cf4303fabcc9bc771cc84b5349e4eb2c49a86a9d040613ff9fb95c5b86d486`.
 
 ### Architecture-check false pass corrected (2026-10-25)
 
@@ -6677,3 +6687,26 @@ reader and a same-named file outside its allowed path. A deliberately failing
 `rg` stub is never called. The workflow requires those controls after the real
 source scan. Local source/control checks pass; a fresh exact-head hosted gate
 is required. This changes verification only, not production output.
+
+## PR59 integration accepted (2026-10-25)
+
+**CONFIRMED:** head `28ae3f0c0b2306490932da8841d161b09bb9490e` passes all
+twelve jobs in `40241665541`, exact hosted package/provenance review and
+sixteen actual Java 21 suites. Raw five-target artifacts, 37 native Windows
+tasks and both GUI hosts pass their applicable checks. Independent review
+confirms exact Thumb/VFP clobber boundaries, twelve mixed incoming exports,
+36 explicit MIPS FP32 exports across whole aliases/pieces/sectionless inputs,
+12 default MIPS regressions, and the corrected architecture guard with five
+controls. Native Windows GUI lacks the independent strict checker and Linux
+ELF runtime GDB; those omissions remain explicit. Linux GUI checks include
+strict validation and GDB. Both hosts' chooser/console screenshots were also
+inspected.
+
+Acceptance receipt SHA-256:
+`4b03ddc3aeb697d002b41f8bc6def3c9fdc427e7a63b3d28a932b49f2270bcfd`.
+Normal merge `2fed5c3c6de79b319b3d6aa3d9c82c88e0fc25ea` has the identical
+accepted tree; PR57 and PR58 are integrated through its ancestry. Distinct main
+run `40244657118` remains pending. Earlier pending and failed component notes
+are historical, and the failed architecture guard is not retroactively
+accepted. This does not complete broader lifetimes, ABI modes, linkage/scopes
+or optional attachment. No release publication.

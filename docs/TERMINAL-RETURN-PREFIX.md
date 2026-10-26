@@ -154,3 +154,26 @@ breakpoint after source stepping could already pass the write; the retained
 `run.FeGtGUbQ` failure led to placing that guard before `next`. The original
 mixed-PCS failure is retained as `run.vOLFLVSh`. The corrected complete hosted
 gate remains required before integration.
+
+## PR59 integration accepted (2026-10-25)
+
+**CONFIRMED:** head `28ae3f0c0b2306490932da8841d161b09bb9490e` passes all
+twelve jobs in `40241665541`, exact hosted package/provenance review and
+sixteen actual Java 21 suites. Raw five-target artifacts, 37 native Windows
+tasks and both GUI hosts pass their applicable checks. Independent review
+confirms exact Thumb/VFP clobber boundaries, twelve mixed incoming exports,
+36 explicit MIPS FP32 exports across whole aliases/pieces/sectionless inputs,
+12 default MIPS regressions, and the corrected architecture guard with five
+controls. Native Windows GUI lacks the independent strict checker and Linux
+ELF runtime GDB; those omissions remain explicit. Linux GUI checks include
+strict validation and GDB. Both hosts' chooser/console screenshots were also
+inspected.
+
+Acceptance receipt SHA-256:
+`4b03ddc3aeb697d002b41f8bc6def3c9fdc427e7a63b3d28a932b49f2270bcfd`.
+Normal merge `2fed5c3c6de79b319b3d6aa3d9c82c88e0fc25ea` has the identical
+accepted tree; PR57 and PR58 are integrated through its ancestry. Distinct main
+run `40244657118` remains pending. Earlier pending and failed component notes
+are historical, and the failed architecture guard is not retroactively
+accepted. This does not complete broader lifetimes, ABI modes, linkage/scopes
+or optional attachment. No release publication.

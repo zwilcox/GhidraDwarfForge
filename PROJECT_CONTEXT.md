@@ -1,35 +1,27 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
-**Current gate correction (2026-10-25):** PR59's extension-build log also
-exposed an architecture-check false pass when `rg` was absent. The guard now
-uses Python with exact audited paths, rejects empty inputs and requires five
-negative/positive controls. The old false pass is retained; a new exact-head
-full gate is required. Production ELF/DWARF behavior is unchanged by this fix.
+**CONFIRMED integration (2026-10-25):** PR59 head
+`28ae3f0c0b2306490932da8841d161b09bb9490e` passes all twelve jobs in
+`40241665541` and independent exact-package, sixteen actual Java 21 suites,
+raw five-target, 37 native Windows tasks and both-GUI review. Normal merge
+`2fed5c3c6de79b319b3d6aa3d9c82c88e0fc25ea` preserves that tested tree and
+includes the PR57/PR58 components through normal ancestry. Exact ARM
+Thumb/VFP prefixes, mixed incoming pieces and explicit MIPS FP32 whole pairs
+(including sectionless inputs) pass their documented scopes. The corrected
+architecture guard and five controls also pass. Acceptance receipt SHA-256:
+`4b03ddc3aeb697d002b41f8bc6def3c9fdc427e7a63b3d28a932b49f2270bcfd`.
+Distinct main run `40244657118` is pending. Earlier failed-head evidence remains
+historical; no false architecture-check pass or partial gate is accepted.
 
-**Current follow-up (2026-10-25):** combined PR59 includes the terminal,
-mixed incoming and explicit FP32 changes. PR58 `40237292953` and initial PR59
-`40239553691` fail an obsolete ARM/Thumb omission assertion; a local later
-mixed-PCS test exposed the same issue for VFP parameters. The corrected
-oracles require exact values before the write and unavailable tails afterward,
-including raw location-list checks. Four fresh exports pass locally; the next
-complete exact-head gate is required. Initial PR59 package and sixteen actual
-Java 21 suites pass after the recorded package-audit count correction. No
-failed component or partial gate is accepted.
-
-**CONFIRMED locally; hosted acceptance pending:** explicit MIPS FP32 whole
-aliases now pass 66 exports, including sectionless inputs and five-target
-floating regressions. Sixteen actual Java 21 suites pass. The ABI reader and
-loaded-register checks restrict the new expansion to the recorded FP32 profile;
-FPXX/FP64A do not acquire it. See `docs/MIPS-FP32-PAIR-PROFILE.md`. General ABI,
-location migration, scope and optional attachment requirements remain open.
-
-**CONFIRMED locally; hosted acceptance pending (2026-10-25):** bounded incoming
-register/stack pieces now pass thirteen actual Java 21 suites and twelve ARM
-computed/custom exec/PIE/rebase/repeat exports. The complete value becomes
-unavailable after the first possible memory/register write; SP adjustments are
-resolved from Ghidra's instruction depths. Six register-pair and eighteen
-floating regressions also pass. `docs/MIXED-INCOMING-PREFIX.md` records scope,
-raw evidence and retained failures. Broader migration remains incomplete.
+**Current follow-up — CONFIRMED locally, hosted acceptance pending:** one
+completed scalar stack save passes six x86-64/AArch64 exec/PIE/rebase roles,
+twelve exports, six preceding-package comparisons and 1,350 GDB stops.
+Seventeen actual Java 21 suites and eight additional compatibility exports
+pass. Any later memory or stack-pointer write ends this bounded location.
+See `docs/STACK-SPILL-LIFETIMES.md`. General migration, broader ABI modes,
+linkage/scopes and optional debuglink attachment remain incomplete. Separate
+negative linkage experiments are documented in `docs/research/LINKAGE-LOOKUP.md`.
+No release publication is included.
 
 **CONFIRMED (2026-10-25):** PR56 head `2944b0f` passes all twelve jobs in
 `40231232266` and exact package/Java 21/raw target/GUI/native Windows review.
@@ -4439,3 +4431,26 @@ fifteen class cases, six direct-call roles and 33 native Windows tasks pass.
 Main receipt: `488c4288d6a1b343e645ea6026f3d6ca9fb50adc1515fa9865ca945710a7f6f9`. Earlier pending-main54
 notes are historical. The combined coverage/FP32 head retains its own pending
 current-base gate; this main pass does not substitute for that acceptance.
+
+### Bounded scalar stack-save lifetimes (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending:** retain a complete incoming
+scalar after register loss only when decoded p-code proves an earlier completed
+SP-relative save. Any later memory or SP write ends the proof; no alias
+exemptions, calls, slot reuse or later locals are inferred. Six x86-64/AArch64
+exec/PIE/rebase roles pass exact compiler/previous-exporter comparisons,
+validators, deterministic repeats and preserved originals. The 106 model
+controls and seventeen actual Java 21 packaged suites pass. See
+`docs/STACK-SPILL-LIFETIMES.md` for acceptance, limits and retained failures.
+P1.11a remains partial, and no release publication is authorized by this work.
+
+### Linkage lookup requires a consumer policy (2026-10-25)
+
+**CONFIRMED negative local evidence:** imported Ghidra labels alone do not
+identify a unique original ELF linkage name. A real ELF alias creates multiple
+candidates, and an analyst-created label can carry IMPORTED source. Isolated
+Java 21 producer/GDB tests additionally show that naive DW_AT_linkage_name
+emission hides the curated display name on x86-64 and AArch64; an imported
+alias declaration does not repair lookup. Validators accept these artifacts.
+No production changes follow. See `docs/research/LINKAGE-LOOKUP.md`; P1.7/P3.3
+remain incomplete pending a policy that preserves analyst-facing lookup.
