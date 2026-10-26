@@ -106,3 +106,16 @@ remain byte-identical. Evidence is retained as `dynamic-regressions.log`,
 supplemental audit expected `first.dbg`; it was corrected to the actual retained
 `first.dynamic.dbg` before writing any acceptance receipt. No production or
 oracle changes were necessary for these regressions.
+
+## Protected hosted acceptance
+
+**CONFIRMED integration (2026-10-25):** stack-spill PR60 head
+`2b0666ff7cc5b1ff44cd7420522c57737cc72d43` passes all twelve jobs in
+`40244794589`, exact-package/seventeen actual Java 21 suites, raw five-target
+review, 38 native Windows tasks and both GUI hosts. The new stack cases cover
+six roles, twelve exports and 900 hosted compiler/Forge GDB observations.
+Normal merge `47ff38ebbfe2ac5eb8e7d2f3d0ec445fdb29dc95` preserves the accepted
+tree. Independent receipt SHA-256:
+`a84e37a5ccc878f2fcacae2dbf53726db7326585ca5b7dc838d1bb4f21ecf225`.
+Separate main-push verification is pending. Earlier pending stack-spill notes
+are historical; general migration and other unfinished work remain open.

@@ -66,9 +66,9 @@ Bounded incoming register/stack pieces pass ARM computed/custom
 exec/PIE/rebase tests and the full PR59 hosted gate. Their complete value
 becomes unavailable after the first possible memory or register write; general
 storage migration remains incomplete. See [mixed incoming storage](docs/MIXED-INCOMING-PREFIX.md).
-A single proven scalar stack save also passes local x86-64/AArch64
-exec/PIE/rebase tests; later memory or stack-pointer writes end its location.
-Hosted acceptance remains pending. See [stack-save lifetimes](docs/STACK-SPILL-LIFETIMES.md).
+A single proven scalar stack save passes x86-64/AArch64 exec/PIE/rebase
+tests and the complete PR60 hosted gate; later memory or stack-pointer writes
+end its location. See [stack-save lifetimes](docs/STACK-SPILL-LIFETIMES.md).
 Curated register locals with an exact later first use also pass local
 x86-64/AArch64 exec/PIE/rebase tests, with unavailable prefixes and overwrite
 tails. Their hosted acceptance is pending; original lexical scopes and general
