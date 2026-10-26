@@ -1,5 +1,16 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED integration (2026-10-25):** PR64 head
+`23d9c57d5e8fc339650428d7252d9b5381adb49e` passes all twelve jobs in
+`40263198239`, independent exact-package/twenty-one actual Java 21 suites,
+raw five-target review, 43 native Windows model tasks and both GUI hosts.
+The six hosted control-flow roles pass 24 exports and 72 GDB observations.
+Normal merge `db66cd5f1832238fa32392d568d0369d48efb9a0` preserves the tested
+tree. Hosted receipt SHA-256:
+`4d6ab95d2a4fa6ced53f5bae017ff50343c4beeffdbd0f558efa34b517cd7106`.
+The distinct main-push gate remains pending. Earlier local-only status for
+this correction is historical; broader lifetime recovery remains partial.
+
 **CONFIRMED locally; hosted acceptance pending (2026-10-25):** explicitly
 selected nondefault Ghidra calling conventions now emit `DW_CC_nocall` instead
 of an unjustified normal-call assertion. Three x86-64 exec/PIE/rebase roles
@@ -12,14 +23,14 @@ and twenty-two actual Java 21 suites pass, plus twelve cross-profile regression
 exports. See `docs/CALLING-CONVENTION-POLICY.md`; broader ABI classification
 and default/custom convention callability remain partial.
 
-**CONFIRMED locally; hosted acceptance pending (2026-10-25):** stable register
+**HISTORICAL local checkpoint, accepted through PR64 above:** stable register
 locations now require contained control flow, not only complete body decoding.
 Six x86-64/AArch64 exec/PIE/rebase roles pass 24 corrected exports, six
 preceding-package reproductions and 96 compiler/Forge GDB observations.
 Twenty-one actual Java 21 suites pass. Names/types remain available when an
 excluded block makes the register lifetime unprovable. See
 `docs/REGISTER-BODY-CONTROL-FLOW.md`. Another 66 cross-profile exports pass,
-for 90 corrected exports total. Full hosted acceptance remains pending; broader
+for 90 corrected exports total. Hosted acceptance is recorded above; broader
 lifetimes remain incomplete.
 
 **CONFIRMED integration (2026-10-25):** PR63 head
