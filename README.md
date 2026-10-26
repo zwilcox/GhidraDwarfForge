@@ -237,3 +237,8 @@ host-provided dependencies retain their respective upstream licenses. See
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the dependency inventory
 and [third_party/CORRESPONDING_SOURCE.md](third_party/CORRESPONDING_SOURCE.md)
 for the source supplied with native-inclusive releases.
+
+**CONFIRMED locally; hosted acceptance pending:** the bounded [i386 shared-library
+follow-up](docs/I386-SHARED-PROFILE.md) adds ordinary/rebased library exports from non-PIE and
+PIE drivers, exact typed values and curated/original symbol lookup. It uses the
+unchanged production exporter and does not establish broader libc or ABI support.

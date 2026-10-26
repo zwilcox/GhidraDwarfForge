@@ -151,3 +151,8 @@ assertion correctly rejected that attempt before export. The final probe passes
 the last included byte, preserves complete contiguous coverage assertions, and
 retains the failed oracle source. Earlier three-point and pre-SP-trace matrices
 remain historical; only the frozen final matrix binds the receipt above.
+
+**CONFIRMED locally; hosted acceptance pending:** the bounded [i386 shared-library
+follow-up](I386-SHARED-PROFILE.md) adds ordinary/rebased library exports from non-PIE and
+PIE drivers, exact typed values and curated/original symbol lookup. It uses the
+unchanged production exporter and does not establish broader libc or ABI support.

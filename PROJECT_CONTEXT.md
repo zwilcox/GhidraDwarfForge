@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally; hosted acceptance pending (2026-10-25):** the unchanged
+i386 exporter now has shared-library exec/PIE/rebase evidence. Four shared and
+four original direct roles pass sixteen exports and 3,000 instruction-boundary
+GDB observations, strict-zero checking and independent raw location/type/name
+review. Shared inputs are byte-identical across roles; curated names require
+explicit sidecar loading while original dynamic symbols remain usable. No
+production code changes. See `docs/I386-SHARED-PROFILE.md`; broader libc/ABI,
+linkage and host claims remain incomplete.
+
 **CONFIRMED locally; hosted acceptance pending (2026-10-25):** a bounded Linux
 i386 integer/stack profile now uses isolated ELF and GPR tables. Fully stripped
 exec, sectionless ELF, PIE and rebased PIE pass eight exports, 1,440 debugger

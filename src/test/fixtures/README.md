@@ -392,3 +392,8 @@ See `docs/TERMINAL-RETURN-PREFIX.md`.
   or stack-pointer restore must make the parameter unavailable. Repeat exports
   preserve inputs and saved program state; `--previous-ghidra` additionally
   demonstrates the preceding omission. See `docs/STACK-SPILL-LIFETIMES.md`.
+
+The i386 fixture also supports `FORGE_I386_SHARED_LIBRARY` and
+`FORGE_I386_SHARED_DRIVER` builds. They keep one source path and byte-identical
+library inputs across the shared exec/PIE/rebase cases. The driver uses the
+system 32-bit loader without libc calls or startup objects.
