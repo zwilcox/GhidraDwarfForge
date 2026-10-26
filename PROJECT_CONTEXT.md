@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally; hosted acceptance pending (2026-10-25):** a curated local's
+recorded full-width register definition now starts availability only after that
+instruction completes. A stale-value sentinel proves the earlier interval is
+unavailable. Twelve definition/read regression roles pass 24 candidate exports,
+six preceding-package comparisons and 1,152 GDB observations. Nineteen actual
+Java 21 suites pass. See `docs/LOCAL-DEFINITION-BOUNDARIES.md` for exact evidence,
+retained failed attempts and limits; general lifetime and lexical-scope recovery
+remain incomplete.
+
 **Current gate correction:** initial PR61 run `40247500844` correctly rejects
 the unlisted new fixture in all five lanes before exporter tests. The audited
 inventory is now updated, and five fresh local reproducibility checks pass.
@@ -35,7 +44,10 @@ Thumb/VFP prefixes, mixed incoming pieces and explicit MIPS FP32 whole pairs
 (including sectionless inputs) pass their documented scopes. The corrected
 architecture guard and five controls also pass. Acceptance receipt SHA-256:
 `4b03ddc3aeb697d002b41f8bc6def3c9fdc427e7a63b3d28a932b49f2270bcfd`.
-Distinct main run `40244657118` is pending. Earlier failed-head evidence remains
+Distinct main run `40244657118` passes all twelve jobs and independent exact
+package/raw review; receipt SHA-256:
+`0e97ba1c742b3e7755c9e0c66b2ef667379c3b75a3b837b90dfe98dd1433756f`.
+Earlier failed-head evidence remains
 historical; no false architecture-check pass or partial gate is accepted.
 
 **Current follow-up — CONFIRMED locally, hosted acceptance pending:** one

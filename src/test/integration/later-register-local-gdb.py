@@ -8,6 +8,7 @@ case = Path(os.environ['LOCAL_CASE'])
 target = os.environ['LOCAL_TARGET']
 variant = os.environ['LOCAL_VARIANT']
 model = json.loads((case / 'model.json').read_text())
+defined = model.get('firstUseKind', 'read') == 'definition'
 labels = json.loads((case / 'boundaries.json').read_text())
 binary = case / ('local.reference' if variant == 'compiler' else 'local.input')
 sidecar = case / {'compiler': 'local.reference', 'forge': 'local.dbg', 'previous': 'previous.dbg'}[variant]
@@ -33,7 +34,9 @@ for iteration, (small, large) in enumerate(((19, 19), (-19, -19), (-1985229329, 
         if model['role'] != 'exec':
             assert bias != 0
         stop.delete()
-        keys = ['entry'] + (['definition'] if target == 'x86_64' else []) + ['read', 'kill', 'after', 'return']
+        keys = (['entry', 'before', 'definition'] if defined else
+            ['entry'] + (['definition'] if label['definition'] != label['entry'] else []))
+        keys += ['read', 'kill', 'after', 'return']
         assert len({label[key] for key in keys}) == len(keys)
         for point in keys:
             pc = label[point] + bias
@@ -58,11 +61,13 @@ for iteration, (small, large) in enumerate(((19, 19), (-19, -19), (-1985229329, 
                 assert value.type.sizeof == label['width']
             row = {'function': name, 'point': point, 'input': argument, 'linkPc': label[point],
                 'pc': pc, 'available': available, 'local': None if value is None else str(value)}
-            if point in ('read', 'kill', 'after', 'return'):
+            if point in ('read', 'kill', 'after', 'return') or (defined and point in ('before', 'definition')):
                 register = 'r10' if target == 'x86_64' else 'x9'
                 dtype = 'int' if label['width'] == 4 else 'long long'
                 raw = int(gdb.parse_and_eval('(' + dtype + ')$' + register))
-                assert raw == (argument + 7 if point in ('read', 'kill') else 0)
+                expected = -12345 if point in ('before', 'definition') else (
+                    argument + 7 if point in ('read', 'kill') else 0)
+                assert raw == expected, (name, point, raw, expected)
                 row['rawRegister'] = raw
             if point == 'read':
                 listing = gdb.execute('list ' + name, to_string=True)

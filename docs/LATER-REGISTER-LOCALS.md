@@ -5,6 +5,11 @@ can preserve a bounded location for an explicitly curated function-owned local
 whose single register becomes live after function entry. General non-entry
 lifetimes and original lexical scopes remain **PLANNED**.
 
+The following describes the original read-start checkpoint. The subsequent
+[definition-boundary extension](LOCAL-DEFINITION-BOUNDARIES.md) also accepts a
+full-width writing first-use, with availability delayed until completion. Its
+evidence and pending hosted gate are recorded separately.
+
 ## Acceptance and limits
 
 The local must be attached to the same Ghidra function/program, have
@@ -40,7 +45,7 @@ Only the common read point is used for the named compiler-local comparison.
 
 ## Local evidence
 
-`laterRegisterLocalSmoke` passes **108** checks with real x86-64/AArch64
+At the original read-start checkpoint, `laterRegisterLocalSmoke` passes **108** checks with real x86-64/AArch64
 decoders. Negative controls include partial/no initialization, wrong/offcut
 first-use offsets, a writing first-use instruction, conflicting locals,
 uncurated/detached storage, missing register maps, opaque and call tails,

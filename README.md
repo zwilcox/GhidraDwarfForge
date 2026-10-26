@@ -73,6 +73,9 @@ Curated register locals with an exact later first use also pass local
 x86-64/AArch64 exec/PIE/rebase tests, with unavailable prefixes and overwrite
 tails. Their hosted acceptance is pending; original lexical scopes and general
 lifetimes remain incomplete. See [later register locals](docs/LATER-REGISTER-LOCALS.md).
+A local whose recorded first use initializes its register becomes available
+only after that instruction completes; the [definition-boundary tests](docs/LOCAL-DEFINITION-BOUNDARIES.md)
+pass locally on both targets, with their hosted gate pending.
 
 The exporter replaces existing compiler DWARF rather than merging
 it with the recovered view. Old compressed debug sections, indexes, and debug

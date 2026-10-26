@@ -1235,6 +1235,15 @@ or uncertain storage remains locationless with a diagnostic.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
 
+**CONFIRMED locally; hosted acceptance pending (2026-10-25):** a curated local's
+recorded full-width register definition now starts availability only after that
+instruction completes. A stale-value sentinel proves the earlier interval is
+unavailable. Twelve definition/read regression roles pass 24 candidate exports,
+six preceding-package comparisons and 1,152 GDB observations. Nineteen actual
+Java 21 suites pass. See `docs/LOCAL-DEFINITION-BOUNDARIES.md` for exact evidence,
+retained failed attempts and limits; general lifetime and lexical-scope recovery
+remain incomplete.
+
 **CONFIRMED integration (2026-10-25):** stack-spill PR60 head
 `2b0666ff7cc5b1ff44cd7420522c57737cc72d43` passes all twelve jobs in
 `40244794589`, exact-package/seventeen actual Java 21 suites, raw five-target
@@ -1343,8 +1352,9 @@ changing-stack test proves SP-relative adjustment, not value migration.
 - [~] Establish evidence-backed machine-address live ranges for register
   variables that begin after entry or whose registers are later overwritten.
   Incoming single-register parameters before a proven first overwrite pass
-  in the hosted x86-64/AArch64 gates; later-starting variables and other
-  control-flow shapes remain planned.
+  in the hosted x86-64/AArch64 gates. Bounded curated read/definition starts
+  pass locally with separate hosted gates pending; general later variables
+  and other control-flow shapes remain planned.
 - [~] Track supported register-to-register and register-to-stack moves across
   calls using the selected ABI and recovered instruction evidence. The bounded
   direct-leaf register-backup case passes locally; its hosted gate and broader

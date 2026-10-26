@@ -20,24 +20,27 @@ import ghidradwarfforge.GhidraTypeGraph;
 public class PrepareLaterRegisterLocal extends GhidraScript {
     @Override
     protected void run() throws Exception {
-        if (getScriptArgs().length != 2 || !List.of("curate", "observe").contains(getScriptArgs()[0])) {
-            throw new IllegalArgumentException("expected curate|observe output-json");
+        if ((getScriptArgs().length != 2 && getScriptArgs().length != 3) ||
+                !List.of("curate", "observe").contains(getScriptArgs()[0])) {
+            throw new IllegalArgumentException("expected curate|observe output-json [read|definition]");
         }
+        String firstUseKind = getScriptArgs().length == 3 ? getScriptArgs()[2] : "read";
+        if (!List.of("read", "definition").contains(firstUseKind)) throw new IllegalArgumentException("invalid first use kind");
         var rows = new ArrayList<Object>();
         for (Function function : currentProgram.getFunctionManager().getFunctions(true)) {
             monitor.checkCancelled();
             if (!List.of("local32", "local64").contains(function.getName())) continue;
-            var symbols = currentProgram.getSymbolTable().getGlobalSymbols(function.getName() + "_read");
-            if (symbols.size() != 1) throw new AssertionError("missing read label");
-            var read = symbols.get(0).getAddress();
-            if (getInstructionAt(read) == null || !function.getBody().contains(read)) {
-                throw new AssertionError("read label is not an instruction");
+            var symbols = currentProgram.getSymbolTable().getGlobalSymbols(function.getName() + "_" + firstUseKind);
+            if (symbols.size() != 1) throw new AssertionError("missing first-use label");
+            var firstUseAddress = symbols.get(0).getAddress();
+            if (getInstructionAt(firstUseAddress) == null || !function.getBody().contains(firstUseAddress)) {
+                throw new AssertionError("first-use label is not an instruction");
             }
             boolean small = function.getName().equals("local32");
             boolean x86 = currentProgram.getLanguageID().toString().startsWith("x86:");
             var register = currentProgram.getRegister(x86 ? (small ? "R10D" : "R10") : (small ? "w9" : "x9"));
             var type = small ? IntegerDataType.dataType : LongLongDataType.dataType;
-            int firstUse = Math.toIntExact(read.subtract(function.getEntryPoint()));
+            int firstUse = Math.toIntExact(firstUseAddress.subtract(function.getEntryPoint()));
             if (firstUse <= 0) throw new AssertionError("expected later start");
             if (getScriptArgs()[0].equals("curate")) {
                 function.updateFunction(currentProgram.getCompilerSpec().getDefaultCallingConvention().getName(),
@@ -74,6 +77,7 @@ public class PrepareLaterRegisterLocal extends GhidraScript {
         if (rows.size() != 2) throw new AssertionError("missing fixture functions");
         var result = new LinkedHashMap<String, Object>();
         result.put("java", System.getProperty("java.version"));
+        result.put("firstUseKind", firstUseKind);
         result.put("imageBase", currentProgram.getImageBase().getOffset());
         result.put("originalImageBase", GhidraImageBase.originalImageBase(currentProgram));
         result.put("origin", GhidraTypeGraph.class.getProtectionDomain().getCodeSource().getLocation().toExternalForm());

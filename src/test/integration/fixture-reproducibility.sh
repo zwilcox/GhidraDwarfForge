@@ -42,6 +42,7 @@ expected_sources=(
     arm-thumb-leaf.c
     bitfield-values.c
     composite-register-prefix.c
+    defined-register-local.c
     direct-leaf-call.c
     direct-leaf-callee.c
     dynamic-composite-aggregate.c

@@ -22,10 +22,12 @@ def main():
     parser.add_argument('target', choices=('x86_64', 'aarch64'))
     parser.add_argument('--previous-ghidra', type=Path)
     parser.add_argument('--role', choices=('exec', 'pie', 'pie-rebased'), default='exec')
+    parser.add_argument('--first-use', choices=('read', 'definition'), default='read')
     args = parser.parse_args()
+    defined = args.first_use == 'definition'
     ghidra = args.ghidra.resolve(strict=True)
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
-    root = repository / 'build/test-results/later-register-local'
+    root = repository / 'build/test-results' / ('defined-register-local' if defined else 'later-register-local')
     root.mkdir(parents=True, exist_ok=True)
     case = Path(tempfile.mkdtemp(prefix=args.target + '.' + args.role + '.', dir=root))
     print(case, flush=True)
@@ -39,7 +41,7 @@ def main():
             support.require_clean(case / (name + '.log'))
         return result
 
-    fixture = source.parent / 'fixtures/later-register-local.c'
+    fixture = source.parent / 'fixtures' / ('defined-register-local.c' if defined else 'later-register-local.c')
     protected = [fixture, Path(__file__).resolve(), source / 'later-register-local-gdb.py',
         source / 'later-register-local-gdb.sh', source / 'check-later-register-local-locations.py',
         source / 'ghidra_scripts/PrepareLaterRegisterLocal.java', source / 'ghidra_scripts/RebaseFixtureProgram.java']
@@ -60,7 +62,7 @@ def main():
     rebase = ['-postScript', 'RebaseFixtureProgram.java', '0x2000000'] if args.role == 'pie-rebased' else []
     run('import', [ghidra / 'support/analyzeHeadless', project, 'Local', '-import', binary,
         '-analysisTimeoutPerFile', '120', '-scriptPath', source / 'ghidra_scripts',
-        *rebase, '-postScript', 'PrepareLaterRegisterLocal.java', 'curate', case / 'import.json'], timeout=240)
+        *rebase, '-postScript', 'PrepareLaterRegisterLocal.java', 'curate', case / 'import.json', args.first_use], timeout=240)
     assert 'REPORT: Analysis succeeded' in (case / 'import.log').read_text()
     project_before = {str(p.relative_to(project)): support.digest(p) for p in project.rglob('*') if p.is_file()}
     write('project-before.json', project_before)
@@ -72,7 +74,7 @@ def main():
         output = case / ('previous.dbg' if variant == 'previous' else 'local.dbg')
         run(variant, [installation / 'support/analyzeHeadless', project, 'Local', '-process', binary.name,
             '-readOnly', '-noanalysis', '-scriptPath', source / 'ghidra_scripts',
-            '-postScript', 'PrepareLaterRegisterLocal.java', 'observe', case / (variant + '.json'),
+            '-postScript', 'PrepareLaterRegisterLocal.java', 'observe', case / (variant + '.json'), args.first_use,
             '-postScript', 'GhidraDwarfForge.java', '--packaged-natives', '--output=' + str(output)], timeout=240)
         assert 'GhidraDwarfForge symbol export PASS' in (case / (variant + '.log')).read_text()
         if variant == 'previous':
@@ -85,6 +87,7 @@ def main():
             shutil.copyfile(output, case / 'first.dbg')
             shutil.copyfile(Path(str(output) + '.c'), case / 'first.dbg.c')
     model = json.loads((case / 'fixed.json').read_text())
+    assert model['firstUseKind'] == args.first_use
     assert model == json.loads((case / 'repeat.json').read_text())
     assert model['functions'] == json.loads((case / 'import.json').read_text())['functions']
     assert Path(unquote(urlsplit(model['origin']).path)).resolve() == (module / 'lib/GhidraDwarfForge.jar').resolve()
@@ -104,9 +107,10 @@ def main():
         assert function['source'] == 'USER_DEFINED'
         instructions = function['instructions']
         entry, end = int(function['entry'], 16) - delta, int(function['end'], 16) - delta
-        row = {key: symbols[name + '_' + key] for key in ('read', 'kill', 'after')}
+        points = ('before', 'definition', 'read', 'kill', 'after') if defined else ('read', 'kill', 'after')
+        row = {key: symbols[name + '_' + key] for key in points}
         row.update(entry=entry, end=end, width=function['width'])
-        assert entry + function['firstUse'] == row['read']
+        assert entry + function['firstUse'] == row[args.first_use]
         by_address = {int(i['address'], 16) - delta: i for i in instructions}
         read = by_address[row['read']]
         kill = by_address[row['kill']]
@@ -117,7 +121,11 @@ def main():
         assert read['text'] == expected_read, read
         assert kill['text'] == ('XOR R10D,R10D' if args.target == 'x86_64' else 'mov x9,xzr'), kill
         definition, = [i for i in instructions if int(i['next'], 16) - delta == row['read']]
-        row['definition'] = int(definition['address'], 16) - delta
+        if defined:
+            assert row['definition'] == int(definition['address'], 16) - delta
+            assert int(by_address[row['before']]['next'], 16) - delta == row['definition']
+        else:
+            row['definition'] = int(definition['address'], 16) - delta
         row['return'] = int(instructions[-1]['address'], 16) - delta
         labels[name] = row
     assert len(labels) == 2
@@ -157,6 +165,7 @@ def main():
     changes = [name for name in sorted(project_before.keys() | project_after.keys()) if project_before.get(name) != project_after.get(name)]
     assert set(changes) <= {'Local.rep/idata/~index.bak', 'Local.rep/idata/~journal.bak'}, changes
     write('result.json', {'status': 'PASS', 'target': args.target, 'role': args.role, 'rebaseDelta': delta,
+        'firstUseKind': args.first_use,
         'inputSha256': before[str(binary)], 'artifactSha256': hashes, 'javaVersion': model['java'],
         'projectBackupChanges': changes, 'protectedUnchanged': True, 'previousPackageCompared': bool(args.previous_ghidra)})
     print('later-register-local-export=PASS ' + str(case), flush=True)

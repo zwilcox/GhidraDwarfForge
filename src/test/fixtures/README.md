@@ -373,6 +373,10 @@ it across exec/PIE/rebase/repeat. Compiler aggregate locations at raw entry are
 recorded as unvalidated; strict field comparisons begin after the prologue.
 See `docs/TERMINAL-RETURN-PREFIX.md`.
 
+- `defined-register-local.c` selects the shared later-local harness with
+  `--first-use definition`. A stale register sentinel proves initialization
+  completes before a curated local is available; exec/PIE/rebase checks cover
+  x86-64 and AArch64. See `docs/LOCAL-DEFINITION-BOUNDARIES.md`.
 - `later-register-local-export.py` uses `later-register-local.c` for curated
   signed 32/64-bit register locals with positive first-use offsets. It checks
   exact read/overwrite boundaries, unavailable prefixes/tails, saved-project

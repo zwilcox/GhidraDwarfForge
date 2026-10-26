@@ -6767,3 +6767,19 @@ unreviewed-file rejection remains intact. Fresh local reproducibility checks
 pass x86-64, AArch64, ARM32 and both MIPS byte orders; see
 `build/later-local-review/fixtures-*.log`. A fresh complete exact-head hosted
 gate is required. This correction changes no production ELF/DWARF behavior.
+
+## Completed local initialization boundaries (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending (2026-10-25):** a curated local's
+recorded full-width register definition now starts availability only after that
+instruction completes. A stale-value sentinel proves the earlier interval is
+unavailable. Twelve definition/read regression roles pass 24 candidate exports,
+six preceding-package comparisons and 1,152 GDB observations. Nineteen actual
+Java 21 suites pass. See `docs/LOCAL-DEFINITION-BOUNDARIES.md` for exact evidence,
+retained failed attempts and limits; general lifetime and lexical-scope recovery
+remain incomplete.
+
+Independent raw receipt SHA-256:
+`edd71cd11b7f82f4b528abc793ba61ea022739370a941c7f1a63411c739456d3`.
+The failed mid-run helper edit is rejected; only the subsequent frozen twelve-case
+matrix is accepted. New hosted acceptance remains pending.
