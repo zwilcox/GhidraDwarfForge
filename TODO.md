@@ -1,12 +1,18 @@
 # TODO.md — GhidraDwarfForge
 
-**CONFIRMED locally on the corrected exporter; hosted acceptance pending:**
+**PRESENT, UNVERIFIED on the calling-convention candidate:** the shared-library
+follow-up now includes the bounded calling-convention fix. Earlier shared
+evidence is retained below; fresh eight-role validation is required before
+claiming the new combined package passes.
+
+**HISTORICAL shared checkpoint on the PR64 exporter:**
 the shared-library follow-up now includes PR64's control-flow correction.
 Fresh eight-role validation passes sixteen exports and 3,000 GDB observations,
 with independent raw identity/location/type/name review, twenty-one actual
 Java 21 suites and sixteen fresh packaged i386 producer lifetimes. Receipt
 SHA-256 `b33566ade02c64de6d80034e5bb39c6e6d2c1a82693572ca5fa70fa16ea1822d`.
-Submission remains held until the correctness fix completes its hosted gate.
+The calling-convention fix changes the producer JAR again; shared acceptance
+requires a fresh run on that package before submission.
 
 **HISTORICAL local shared-library checkpoint (2026-10-25):** the preceding
 i386 exporter now has shared-library exec/PIE/rebase evidence. Four shared and
@@ -17,14 +23,37 @@ explicit sidecar loading while original dynamic symbols remain usable. No
 production code changes. See `docs/I386-SHARED-PROFILE.md`; broader libc/ABI,
 linkage and host claims remain incomplete.
 
-**CONFIRMED locally; hosted acceptance pending (2026-10-25):** stable register
+**CONFIRMED integration (2026-10-25):** PR64 head
+`23d9c57d5e8fc339650428d7252d9b5381adb49e` passes all twelve jobs in
+`40263198239`, independent exact-package/twenty-one actual Java 21 suites,
+raw five-target review, 43 native Windows model tasks and both GUI hosts.
+The six hosted control-flow roles pass 24 exports and 72 GDB observations.
+Normal merge `db66cd5f1832238fa32392d568d0369d48efb9a0` preserves the tested
+tree. Hosted receipt SHA-256:
+`4d6ab95d2a4fa6ced53f5bae017ff50343c4beeffdbd0f558efa34b517cd7106`.
+The distinct main-push gate remains pending. Earlier local-only status for
+this correction is historical; broader lifetime recovery remains partial.
+
+**CONFIRMED locally; hosted acceptance pending (2026-10-25):** explicitly
+selected nondefault Ghidra calling conventions now emit `DW_CC_nocall` instead
+of an unjustified normal-call assertion. Three x86-64 exec/PIE/rebase roles
+pass six corrected exports, three preceding-package comparisons and eighteen
+ordinary GDB calls. The previous artifact injects a Microsoft-ABI call with
+wrong arguments; the candidate refuses it before target execution. Entry
+values/types/source remain usable; GDB also honestly declines automatic return
+value presentation for that unclassified convention. Five-language model checks
+and twenty-two actual Java 21 suites pass, plus twelve cross-profile regression
+exports. See `docs/CALLING-CONVENTION-POLICY.md`; broader ABI classification
+and default/custom convention callability remain partial.
+
+**HISTORICAL local checkpoint, accepted through PR64 above:** stable register
 locations now require contained control flow, not only complete body decoding.
 Six x86-64/AArch64 exec/PIE/rebase roles pass 24 corrected exports, six
 preceding-package reproductions and 96 compiler/Forge GDB observations.
 Twenty-one actual Java 21 suites pass. Names/types remain available when an
 excluded block makes the register lifetime unprovable. See
 `docs/REGISTER-BODY-CONTROL-FLOW.md`. Another 66 cross-profile exports pass,
-for 90 corrected exports total. Full hosted acceptance remains pending; broader
+for 90 corrected exports total. Hosted acceptance is recorded above; broader
 lifetimes remain incomplete.
 
 **CONFIRMED integration (2026-10-25):** PR63 head
@@ -36,7 +65,10 @@ observations; packaged i386 production passes sixteen lifetimes on each host.
 Normal merge `6507ffbc6e52156ba2776151dff8711069ef7108` preserves the tested
 tree. Receipt SHA-256:
 `745e68b0a2151b3e834b246d6d800072c6fb21f77e0ceae9c0609a7beaa4794b`.
-The distinct main run `40260399867` remains pending. Libc/shared, floating/vector
+The distinct main run `40260399867` passes all twelve jobs and independent
+package/raw/both-GUI review; receipt SHA-256
+`18dece7092f5d816cd7c36f4f32cf04a9bf2d02e616d468baa76f3218e9caf41`.
+Libc/shared, floating/vector
 and broader ABI/host claims remain outside that checkpoint. No release is
 published by this integration.
 
@@ -1106,9 +1138,13 @@ breakpoint name.
   all five targets, with distinct owned statics and a same-named global.
   This bounded display-name acceptance is not full namespace, class, linkage
   or alias semantics; the broader signature task remains partial.
-- [x] Preserve calling-convention information where DWARF/GDB can use it:
-  recognized conventional subroutines emit `DW_CC_normal`; unknown convention
-  state and unproven vendor codes remain absent.
+- [~] Preserve calling-convention information where DWARF/GDB can use it:
+  defaults retain `DW_CC_normal`; unknown convention state stays absent.
+  **CONFIRMED locally; hosted acceptance pending:** resolved nondefault
+  prototypes emit `DW_CC_nocall` with a diagnostic, preventing unclassified
+  injected calls. Original model strings remain intact; no vendor mapping is
+  invented. See `docs/CALLING-CONVENTION-POLICY.md`. Broader default/custom/
+  return ABI classification remains unproven.
 - [~] Add linkage names where meaningful. A distinct imported-name experiment
   was rejected because GDB 16.3 used `DW_AT_linkage_name` instead of the
   analyst-facing `DW_AT_name` in the honest C11 CU, breaking

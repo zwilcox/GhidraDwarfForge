@@ -274,10 +274,16 @@ public final class GhidraTypeGraph {
                         localName + ": " + unavailable.diagnostic());
                 }
             }
+            boolean nonDefaultConvention = nonDefaultCallingConvention(program, function);
+            if (nonDefaultConvention) {
+                diagnostic.accept("Debugger-injected calls disabled for " + symbol.name() +
+                    ": selected Ghidra calling convention " + function.getCallingConventionName() +
+                    " differs from the program default; no debugger ABI mapping is established");
+            }
             signatures.add(new ProgramTypeModel.FunctionSignature(symbol.name(), address,
                 returnType, parameters, locals, function.hasVarArgs(), function.hasNoReturn(),
                 nonNull(function.getCallingConventionName()),
-                function.getSignatureSource().name()));
+                function.getSignatureSource().name(), nonDefaultConvention));
         }
         for (FunctionSymbol missing : selected.values()) {
             diagnostic.accept("No Ghidra signature found for exported function " +
@@ -377,11 +383,18 @@ public final class GhidraTypeGraph {
             }
             // An external-space placeholder is not an address in this image.
             // Preserve its persistent identity and full Ghidra display name only.
+            boolean nonDefaultConvention = nonDefaultCallingConvention(program, external);
+            if (nonDefaultConvention) {
+                diagnostic.accept("Debugger-injected calls disabled for " + external.getName(true) +
+                    ": selected Ghidra calling convention " + external.getCallingConventionName() +
+                    " differs from the program default; no debugger ABI mapping is established");
+            }
             declarations.add(new ProgramTypeModel.FunctionDeclaration(
                 "external:" + Long.toUnsignedString(external.getID()), external.getName(true),
                 extractor.reserve(external.getReturn().getFormalDataType()), parameters,
                 external.hasVarArgs(), external.hasNoReturn(),
-                external.getCallingConventionName(), external.getSignatureSource().name()));
+                external.getCallingConventionName(), external.getSignatureSource().name(),
+                nonDefaultConvention));
         }
         extractor.drain(monitor);
         return new ProgramTypeModel(new TypeGraph(new ArrayList<>(extractor.nodes.values())),
@@ -404,6 +417,14 @@ public final class GhidraTypeGraph {
         return function.getSignatureSource() == SourceType.DEFAULT &&
             !function.hasCustomVariableStorage() && function.getParameterCount() == 0 &&
             !function.hasVarArgs();
+    }
+
+    /** Compare resolved models, not architecture-specific names or a raw default alias. */
+    static boolean nonDefaultCallingConvention(Program program, Function function) {
+        var selected = function.getCallingConvention();
+        var fallback = program.getCompilerSpec().getDefaultCallingConvention();
+        return selected != null && fallback != null &&
+            !selected.getName().equals(fallback.getName());
     }
 
     private static List<String> namespacePath(Namespace namespace) {

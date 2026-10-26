@@ -1,5 +1,9 @@
 # Bounded i386 shared-library profile
 
+**PRESENT, UNVERIFIED on the calling-convention candidate:** fresh shared/direct
+revalidation is in progress after incorporating the newer producer JAR. The
+preceding control-flow package's acceptance below remains historical evidence.
+
 **CONFIRMED locally; hosted acceptance pending (2026-10-25).** The
 i386 production exporter with PR64's control-flow correction handles a dynamically loaded integer/stack library
 from non-PIE and PIE drivers, with ordinary and explicitly rebased Ghidra
