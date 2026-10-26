@@ -1,8 +1,11 @@
 # TODO.md — GhidraDwarfForge
 
-**PRESENT, UNVERIFIED on the corrected exporter:** the shared-library follow-up
-now includes PR64's control-flow fix. Fresh eight-role validation is pending;
-its previous-package evidence below does not prove the new production JAR.
+**CONFIRMED locally on the corrected exporter; hosted acceptance pending:**
+the shared-library follow-up now includes PR64's control-flow correction.
+Fresh eight-role validation passes sixteen exports and 3,000 GDB observations,
+with independent raw identity/location/type/name review, twenty-one actual
+Java 21 suites and sixteen fresh packaged i386 producer lifetimes. Receipt
+SHA-256 `b33566ade02c64de6d80034e5bb39c6e6d2c1a82693572ca5fa70fa16ea1822d`.
 Submission remains held until the correctness fix completes its hosted gate.
 
 **HISTORICAL local shared-library checkpoint (2026-10-25):** the preceding
@@ -1694,7 +1697,7 @@ floating/vector and broader ABI/host claims remain outside this checkpoint.
 - [x] Local real export/validator/GDB exec, sectionless, PIE and rebase profile.
 - [x] PR63 exact-head full hosted gate and independent package/runtime review.
 - [~] Shared-library exec/PIE drivers with Ghidra rebases: prior local review
-  passes; corrected-exporter rerun and exact-head hosted acceptance are pending.
+  passes; corrected-exporter rerun passes; exact-head hosted acceptance is pending.
 - [ ] Broader libc, floating/vector and host-specific profiles before expanding
   the documented support claim.
 

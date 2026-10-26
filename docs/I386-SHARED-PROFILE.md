@@ -1,11 +1,11 @@
 # Bounded i386 shared-library profile
 
-**CONFIRMED locally; hosted acceptance pending (2026-10-25).** The unchanged
-i386 production exporter handles a dynamically loaded integer/stack library
+**CONFIRMED locally; hosted acceptance pending (2026-10-25).** The
+i386 production exporter with PR64's control-flow correction handles a dynamically loaded integer/stack library
 from non-PIE and PIE drivers, with ordinary and explicitly rebased Ghidra
 programs. The added code is fixture, harness and CI coverage. This extends the
-local evidence in [the initial profile](I386-INTEGER-PROFILE.md); neither local
-checkpoint substitutes for its exact-head hosted acceptance.
+evidence in [the initial profile](I386-INTEGER-PROFILE.md), which was accepted
+through PR63. This shared-library extension requires its own hosted gate.
 
 The fixture uses the system 32-bit Linux loader and no libc functions or startup
 objects. CI explicitly installs `libc6-i386` for that loader. It does not claim
@@ -62,7 +62,8 @@ imported labels, or complete aliases, C++ namespaces or linkage classification.
 Four shared roles pass eight exports and 1,560 compiler/Forge instruction-boundary
 observations. All four original direct roles are rerun because their shared GDB
 and curation helpers changed: eight more exports and 1,440 observations pass.
-Total: **16 exports and 3,000 GDB observations**. The production JAR is unchanged:
+**HISTORICAL preceding-package checkpoint:** 16 exports and 3,000 GDB
+observations used the then-unchanged production JAR:
 `fc5a90f5e4ce609e5534acb8493a56cc4f312a44c1dc2d1710cad8d90872a5ab`.
 Its preceding twenty actual-Java-21 suites and sixteen isolated producer
 lifetimes remain applicable; they were not rerun or counted as new executions.
@@ -108,3 +109,26 @@ Workflow lint, seven architecture controls, all five ordinary fixture
 reproducibility profiles and the extension build also pass locally. An initial
 verification command used a nonexistent `.sh` spelling for the Python architecture
 smoke; the exit-127 log is retained and the corrected `.py` invocation passes.
+
+## Corrected exporter revalidation
+
+PR64's control-flow correction was merged through normal history before the
+shared-library submission. Fresh shared exec/exec-rebased/PIE/PIE-rebased and
+direct exec/sectionless/PIE/PIE-rebased cases pass sixteen exports, 3,000 GDB
+observations and the complete independent raw audit, including byte-identical
+shared inputs, library load biases, exact typed locations, curated/original
+symbol lookup and source ownership at every tested instruction.
+
+Corrected JAR SHA-256:
+`7721cfd99fb86e791aebfd9bbde6f2a11ab19e749af62bdf8447093fe7f8bca7`.
+The exact twenty-one actual Java 21 model-suite runs from the correction are
+bound by that identical JAR; sixteen new isolated packaged i386 producer
+lifetimes pass on actual Java 21. The original twenty-suite/producer receipt
+above is historical and is not used as acceptance of the changed JAR.
+
+Fresh independent receipt:
+`build/i386-shared-review/flow-acceptance.json`
+SHA-256 `b33566ade02c64de6d80034e5bb39c6e6d2c1a82693572ca5fa70fa16ea1822d`.
+Runtime evidence: `flow-corrected-matrix.log`; native evidence:
+`native21.klml1fj_/result.json`. Hosted submission remains held until the
+correctness fix passes its complete gate and independent artifact review.
