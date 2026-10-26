@@ -77,8 +77,13 @@ A local whose recorded first use initializes its register becomes available
 only after that instruction completes; the [definition-boundary tests](docs/LOCAL-DEFINITION-BOUNDARIES.md)
 pass on both targets through PR62's complete hosted gate and artifact review.
 
-A bounded [i386 integer/stack profile](docs/I386-INTEGER-PROFILE.md) passes local
-stripped exec, sectionless, PIE and rebase tests. Its full hosted gate is pending;
+Stable register locations also require [contained control flow](docs/REGISTER-BODY-CONTROL-FLOW.md).
+An excluded branch block cannot silently clobber an allegedly stable register;
+unproven lifetimes retain names and types without locations.
+
+A bounded [i386 integer/stack profile](docs/I386-INTEGER-PROFILE.md) passes
+stripped exec, sectionless, PIE and rebase tests, including PR63's full hosted gate
+and independent package/runtime review;
 this adds no libc/shared or floating/vector support claim.
 
 The exporter replaces existing compiler DWARF rather than merging

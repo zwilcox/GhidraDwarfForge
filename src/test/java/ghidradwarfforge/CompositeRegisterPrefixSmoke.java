@@ -464,6 +464,7 @@ public final class CompositeRegisterPrefixSmoke {
                 case "getDelaySlotDepth" -> 0;
                 case "getFlowOverride" -> FlowOverride.NONE;
                 case "getFallThrough" -> returns ? null : at.add(4);
+                case "getFlows", "getDefaultFlows" -> new ghidra.program.model.address.Address[0];
                 case "getFlowType" -> returns ? RefType.TERMINATOR : RefType.FALL_THROUGH;
                 case "getPcode" -> new PcodeOp[] { op };
                 case "getResultObjects" -> new Object[0];

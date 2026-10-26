@@ -1,6 +1,6 @@
 # Bounded Linux i386 integer and stack profile
 
-**CONFIRMED locally; hosted acceptance pending (2026-10-25).** The isolated
+**CONFIRMED through PR63 full hosted gate and independent review (2026-10-25).** The isolated
 target table now admits little-endian ELF32 `EM_386` as report target `x86`,
 using libdwarf's `x86` producer mode. The initial positive profile is Linux
 freestanding integer code: non-PIE, PIE, rebased PIE and an executable with no
@@ -156,3 +156,14 @@ remain historical; only the frozen final matrix binds the receipt above.
 follow-up](I386-SHARED-PROFILE.md) adds ordinary/rebased library exports from non-PIE and
 PIE drivers, exact typed values and curated/original symbol lookup. It uses the
 unchanged production exporter and does not establish broader libc or ABI support.
+
+PR63 head `f87f15566a0b9bbbc826de0ea0a51dd70f42a472` passed all twelve jobs
+in run `40256429124`. Independent review includes the hosted package, twenty
+actual Java 21 suites, all raw target artifacts, 42 native Windows tasks and
+both GUI hosts. The i386 runtime lane contributes 1,440 instruction observations;
+each native host completes sixteen packaged i386 producer lifetimes. Normal
+merge `6507ffbc6e52156ba2776151dff8711069ef7108` has the same tree.
+Receipt SHA-256:
+`745e68b0a2151b3e834b246d6d800072c6fb21f77e0ceae9c0609a7beaa4794b`.
+Distinct main run `40260399867` remains pending. Earlier pending-head notes
+above are historical. This acceptance does not publish a release.

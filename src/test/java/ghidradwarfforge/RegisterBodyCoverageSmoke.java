@@ -64,15 +64,15 @@ public final class RegisterBodyCoverageSmoke {
                             method.getName().equals(api) ? value : method.invoke(original, arguments)));
                     checkAll(fixture, withInstructions(fixture.program(), changed), false);
                 }
-                // All actual declared ranges are covered; the gap outside the
-                // body must not be mistaken for an undecoded byte in the body.
+                // Body bytes are covered, but fallthrough executes the excluded
+                // gap. This is a flow failure, distinct from missing decoding.
                 var separated = new AddressSet(fixture.function().getBody());
                 var middle = instructions.get(1);
                 separated.delete(middle.getAddress(), middle.getMaxAddress());
                 int transaction = fixture.program().startTransaction("discontiguous body");
                 try { fixture.function().setBody(separated); }
                 finally { fixture.program().endTransaction(transaction, true); }
-                checkAll(fixture, fixture.program(), true);
+                checkAll(fixture, fixture.program(), false, "control flow");
                 if (instructions.get(0).getLength() > 1) {
                     separated.delete(instructions.get(0).getMaxAddress(), instructions.get(0).getMaxAddress());
                     transaction = fixture.program().startTransaction("partial instruction");
@@ -123,6 +123,10 @@ public final class RegisterBodyCoverageSmoke {
     }
 
     private static void checkAll(Fixture fixture, Program program, boolean available) throws Exception {
+        checkAll(fixture, program, available, "incomplete instruction coverage");
+    }
+
+    private static void checkAll(Fixture fixture, Program program, boolean available, String diagnostic) throws Exception {
         var real = fixture.program();
         var map = TargetRegisterMap.forTarget(fixture.profile().target());
         var first = real.getRegister(fixture.profile().first());
@@ -130,25 +134,25 @@ public final class RegisterBodyCoverageSmoke {
         var pair = new VariableStorage(real, first, second);
         var scalar = parameter(fixture);
         var storage = GhidraVariableStorage.stableParameter(program, fixture.function(), scalar, map, TaskMonitor.DUMMY);
-        check(storage, available);
+        check(storage, available, diagnostic);
         if (!available) {
             require(GhidraVariableStorage.parameterPrefix(program, fixture.function(), scalar,
                 map, storage, TaskMonitor.DUMMY).isEmpty(), "incomplete listing invented a prefix");
         }
         check(GhidraVariableStorage.stableLocal(program, fixture.function(),
-            new LocalVariableImpl("local", 0, IntegerDataType.dataType, first, real), map, TaskMonitor.DUMMY), available);
+            new LocalVariableImpl("local", 0, IntegerDataType.dataType, first, real), map, TaskMonitor.DUMMY), available, diagnostic);
         check(GhidraVariableStorage.stableParameter(program, fixture.function(),
-            new ParameterImpl("pair", LongLongDataType.dataType, pair, real), map, TaskMonitor.DUMMY), available);
+            new ParameterImpl("pair", LongLongDataType.dataType, pair, real), map, TaskMonitor.DUMMY), available, diagnostic);
         check(GhidraVariableStorage.stableLocal(program, fixture.function(),
-            new LocalVariableImpl("pair_local", 0, LongLongDataType.dataType, pair, real), map, TaskMonitor.DUMMY), available);
+            new LocalVariableImpl("pair_local", 0, LongLongDataType.dataType, pair, real), map, TaskMonitor.DUMMY), available, diagnostic);
     }
 
-    private static void check(Storage storage, boolean available) {
+    private static void check(Storage storage, boolean available, String diagnostic) {
         require(storage.available() == available, "unexpected storage " + storage);
         if (!available) {
             require(storage instanceof UnavailableStorage unavailable &&
                 unavailable.reason() == OmissionReason.UNKNOWN_LIFETIME &&
-                unavailable.diagnostic().contains("incomplete instruction coverage"),
+                unavailable.diagnostic().contains(diagnostic),
                 "wrong coverage diagnostic " + storage);
         }
     }
