@@ -1,6 +1,19 @@
 # Local register initialization boundaries
 
-**CONFIRMED locally; hosted acceptance pending (2026-10-25).** An analyst's
+**CONFIRMED integration (2026-10-25):** PR62 head
+`b5771e30711ff1825c6416b75f2a19eae778877b` passes all twelve jobs in
+`40252798774`, independent exact-package/nineteen actual Java 21 suites,
+raw five-target review, 40 native Windows tasks and both GUI hosts. Six
+hosted definition-start roles/twelve exports provide 504 compiler/Forge GDB
+observations; read-start (396) and stack-spill (900) regressions also pass.
+Normal merge `fd0a5bac8ad3b97483253f9f6723d229edb777b9` preserves the tested
+tree. Hosted receipt SHA-256:
+`066960b5571e8e10cae4983dd8d97913b80c7c6d49ff9517efc7ab18ce4c8ad9`.
+The separate main-push run `40256250143` remains pending. Earlier pending
+notes for this PR are historical; general lifetimes and lexical scopes remain
+incomplete. No release publication is included.
+
+**CONFIRMED within the accepted profile.** An analyst's
 recorded first-use instruction can initialize a register local. The prior
 read-start proof omitted that case. The extension now begins availability at
 the next instruction boundary, after the entire definition has executed.

@@ -8,6 +8,19 @@ Java 21 suites and sixteen isolated packaged producer lifetimes. Later stack
 locals remain unavailable. See `docs/I386-INTEGER-PROFILE.md`; libc/shared,
 floating/vector and broader ABI/host claims remain outside this checkpoint.
 
+**CONFIRMED integration (2026-10-25):** PR62 head
+`b5771e30711ff1825c6416b75f2a19eae778877b` passes all twelve jobs in
+`40252798774`, independent exact-package/nineteen actual Java 21 suites,
+raw five-target review, 40 native Windows tasks and both GUI hosts. Six
+hosted definition-start roles/twelve exports provide 504 compiler/Forge GDB
+observations; read-start (396) and stack-spill (900) regressions also pass.
+Normal merge `fd0a5bac8ad3b97483253f9f6723d229edb777b9` preserves the tested
+tree. Hosted receipt SHA-256:
+`066960b5571e8e10cae4983dd8d97913b80c7c6d49ff9517efc7ab18ce4c8ad9`.
+The separate main-push run `40256250143` remains pending. Earlier pending
+notes for this PR are historical; general lifetimes and lexical scopes remain
+incomplete. No release publication is included.
+
 **CONFIRMED integration (2026-10-25):** PR61 head
 `56ead2ffc19f0161e79a28683c91e3dac8a2d43f` passes all twelve jobs in
 `40249151143`, independent exact-package/eighteen actual Java 21 suites,
@@ -18,8 +31,10 @@ merge `b58839468db8511c0814e9e50f766b60ef90f65f` preserves the tested tree.
 Receipt SHA-256:
 `04b499dfa37bf32da8916db2b8a41a81cd27642f8d11c7b9ac27a0302aa96f54`.
 The initial fixture-inventory failure remains rejected. Earlier PR61-pending
-notes are historical; its separate main-push gate is pending. The subsequent
-definition-start extension has its own local evidence and pending hosted gate.
+notes are historical. Distinct main run `40252662854` at that merge passes
+all twelve jobs and independent package/raw/GUI/native Windows review; receipt
+SHA-256 `222d313dd226f84572ef03c370059dffc5811920fefad2b79b777b1b99d37e2c`.
+The definition-start extension is accepted separately through PR62 above.
 
 **CONFIRMED integration (2026-10-25):** PR59 head
 `28ae3f0c0b2306490932da8841d161b09bb9490e` passes all twelve jobs in
@@ -358,8 +373,8 @@ combined run `40068401197`; its conditional-step scope is recorded in
 | Corrective release (§0.1/0.2) | **CONFIRMED complete within the documented profiles:** alpha.2 is published from `2f88c4a` after exact-main CI `40064204515`, the final package audit and public-asset verification. Alpha.1 remains unchanged and affected; subsequent semantic/GUI/target/performance work is excluded. |
 | ELF robustness (P0.9) | **CONFIRMED complete within the documented bounds:** PR #18 implements extended counts, unnamed tables, bounded file-backed I/O, correct recorded-load-base translation and cancellation. Local checks and all twelve hosted jobs pass; direct PN_XNUM execution limits are documented. |
 | Function identity and scopes (P1.7, P3.3) | **CONFIRMED in hosted run `40063017269`:** explicit function-owned statics preserve duplicate-name lookup across all five targets, and the controlled failure check omits failed owners under the symbol-only contract. These workstreams remain partial. Curated addressless external declarations and recovered signature metadata are accepted through PR #53. Class-owned display paths and bounded direct-leaf-call backups are accepted through PR54 and its separate main gate. **PLANNED:** distinct linkage names, thunks/aliases, full class/lexical semantics, inferred static locals and remaining same-named type/variable cases. Existing namespace globals and external-data declarations must remain working. |
-| Additional range/location cases (P1.8, P1.11a) | **CONFIRMED:** bounded entry/ranges, code-only address indexing and incoming-register prefixes pass. PR #29 adds one proven direct-register backup; PR #30 omits unsupported nonzero stack-local starts. Their exact hosted gates pass. The bounded direct-leaf-call backup and additional x86-64/AArch64 exec/PIE/rebased-PIE cases are accepted through PR54. PR59 accepts terminal-return and mixed incoming prefixes through its complete hosted gate; its failed component heads remain historical. P1.11a remains partial: general register/memory migration, broader call-crossing and non-entry lifetimes, stack-slot reuse and mixed composite storage still require instruction-specific GDB values and honest unavailable gaps. |
-| Target-profile coverage (P2.3/3a/3b) | **CONFIRMED in hosted runs `40063017269` and `40068401197`:** five baseline profiles and scalar FP aliases pass, with exact float/double values on x86-64/AArch64/ARM32 and scalar floats on both MIPS orders. The combined run also proves rejection of definite ELF/Ghidra processor, width or byte-order contradictions; nondefault variants/compiler specifications alone are not rejected. Unproven MIPS double pairs remain unavailable; the ARM32 terminal-return prefix follow-up passes locally with hosted acceptance pending (see `docs/TERMINAL-RETURN-PREFIX.md`). Target expansion and ABI classification remain partial; this is not blanket CPU/ABI support. |
+| Additional range/location cases (P1.8, P1.11a) | **CONFIRMED:** bounded entry/ranges, code-only address indexing and incoming-register prefixes pass. PR #29 adds one proven direct-register backup; PR #30 omits unsupported nonzero stack-local starts. Their exact hosted gates pass. The bounded direct-leaf-call backup and additional x86-64/AArch64 exec/PIE/rebased-PIE cases are accepted through PR54. PR59 accepts terminal-return and mixed incoming prefixes through its complete hosted gate; its failed component heads remain historical. PR60 accepts one complete incoming scalar stack save; PR61 accepts explicit curated read-start register locals. PR62 accepts explicit curated definition-start locals. P1.11a remains partial: general register/memory migration, broader call/flow shapes, stack-slot reuse and additional composite storage still require instruction-specific GDB values and honest unavailable gaps. |
+| Target-profile coverage (P2.3/3a/3b) | **CONFIRMED in hosted runs `40063017269` and `40068401197`:** five baseline profiles and scalar FP aliases pass, with exact float/double values on x86-64/AArch64/ARM32 and scalar floats on both MIPS orders. The combined run also proves rejection of definite ELF/Ghidra processor, width or byte-order contradictions; nondefault variants/compiler specifications alone are not rejected. PR59 accepts bounded ARM/Thumb terminal prefixes and explicit MIPS FP32 whole pairs in both byte orders; FP64A transport remains unproven. The bounded i386 integer/stack candidate passes locally with hosted acceptance pending. Target expansion and ABI classification remain partial; this is not blanket CPU/ABI support. |
 | GUI and output paths (P2.7) | **CONFIRMED:** both hosts' real Script Manager/chooser journeys pass. PR #31 adds actual parent traversal, complete publisher alias preflight and native Windows short-parent/trailing-dot controls; its exact PR/main gates and artifact reviews pass. Geometry/GDB run on Linux; Windows uses native GNU/LLVM, with independent libdwarf unavailable and Linux-ELF runtime GDB not run. |
 | Optional debuglink (P2.8) | **PLANNED transaction:** opt-in attachment, identity/receipt chain and backup/rollback remain unimplemented. PRs #32/#33's digests, typed build-ID observations and report reader pass the full matrix. PRs #34/#35's prefix and indexed allocation observers also pass the full matrix. PR #36 selected-file SHA binding also passes the full matrix. PR #37 program-byte preservation passes the full matrix. PR #38 candidate-content checks also pass the full matrix. PR #39 owned append-only preparation also passes the full matrix. PR #40 detailed report binding/private preparation also passes the full matrix. PR #41 captured validator evidence passes its exact PR and main gates. Default export leaves the original unchanged. |
 | Inline reconstruction (P3.4) | **CONFIRMED investigation complete:** ADR 0003 and a reproducible compiler/Ghidra probe distinguish real inline instances from Ghidra's decompiler flag and record surviving locals/source information. Inline emission remains deferred until explicit instance/origin/range evidence and GDB acceptance exist. |
@@ -1259,7 +1274,7 @@ or uncertain storage remains locationless with a diagnostic.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
 
-**CONFIRMED locally; hosted acceptance pending (2026-10-25):** a curated local's
+**HISTORICAL local checkpoint, accepted through PR62 above:** a curated local's
 recorded full-width register definition now starts availability only after that
 instruction completes. A stale-value sentinel proves the earlier interval is
 unavailable. Twelve definition/read regression roles pass 24 candidate exports,
@@ -1291,21 +1306,21 @@ and eighteen actual Java 21 suites. Earlier/later intervals remain unavailable.
 Original lexical scopes, inferred locals and general migration remain planned;
 see `docs/LATER-REGISTER-LOCALS.md` for exact evidence and retained failures.
 
-**CONFIRMED locally; hosted acceptance pending (2026-10-25):** one complete
+**HISTORICAL local checkpoint, accepted through PR60 above:** one complete
 incoming scalar stack save now preserves the value after register loss, ending
 at any later memory or stack-pointer write. Six x86-64/AArch64 exec/PIE/rebase
 roles pass twelve exports, six previous-package comparisons and 1,350 GDB
 observations; 106 model controls and seventeen actual Java 21 suites pass.
 See `docs/STACK-SPILL-LIFETIMES.md`. Broader migration remains incomplete.
 
-**CONFIRMED locally; hosted acceptance pending (2026-10-25):** ordinary terminal
+**HISTORICAL local checkpoint, accepted through PR59 above:** ordinary terminal
 return handling now preserves proven ARM incoming scalar/composite prefixes.
 The complete value becomes unavailable after its first piece overwrite.
 Models, actual Java 21 packaged suites and QEMU compiler/GDB regressions pass;
 see `docs/TERMINAL-RETURN-PREFIX.md`. This does not complete mixed pieces,
 register/memory migration, later-starting locals or broader call/flow support.
 
-**CONFIRMED locally; hosted acceptance pending (2026-10-25):** one already
+**HISTORICAL local checkpoint, accepted through PR54:** one already
 proven scalar register backup now survives a direct, fully decoded leaf call
 only when the selected callee ABI and all caller/callee writes prove it remains
 intact. x86-64/AArch64 compiler and preceding-package GDB comparisons retain
@@ -1379,20 +1394,20 @@ changing-stack test proves SP-relative adjustment, not value migration.
 - [~] Establish evidence-backed machine-address live ranges for register
   variables that begin after entry or whose registers are later overwritten.
   Incoming single-register parameters before a proven first overwrite pass
-  in the hosted x86-64/AArch64 gates. Bounded curated read/definition starts
-  pass locally with separate hosted gates pending; general later variables
-  and other control-flow shapes remain planned.
+  in the hosted x86-64/AArch64 gates. Curated read-start locals pass PR61's
+  complete hosted gate; definition-start locals pass PR62's separate gate. General later variables and other control-flow shapes remain planned.
 - [~] Track supported register-to-register and register-to-stack moves across
   calls using the selected ABI and recovered instruction evidence. The bounded
-  direct-leaf register-backup case passes locally; its hosted gate and broader
-  register/memory cases remain pending.
+  direct-leaf register-backup case passes PR54's complete hosted gate. PR60
+  separately accepts one direct scalar stack spill in a straight-line leaf;
+  broader call-crossing and register/memory cases remain pending.
 - [~] Test stack-local first-use and slot-reuse boundaries; record unavailable
   intervals where identity or lifetime cannot be established. The bounded
   nonzero-stack-first-use omission passes exact hosted compiler/GDB tests in
   `40081385807`; general identity/lifetime recovery remains pending.
 - [~] Support mixed register/memory composite pieces when every piece has
-  defensible size, order and lifetime information. **CONFIRMED locally; hosted
-  acceptance pending:** attached incoming register/stack joins retain a bounded
+  defensible size, order and lifetime information. **CONFIRMED through PR59's
+  complete hosted gate:** attached incoming register/stack joins retain a bounded
   prefix before any possible memory/register write, with analyzed SP adjustment
   and whole-value unavailable tails. ARM computed/custom exec/PIE/rebase/repeat
   passes; other memory joins and migration remain planned. See
@@ -2363,14 +2378,14 @@ surviving knowledge, or describe inline export as complete.
 
 ## P3.5 Add optional size/performance features
 
-**CONFIRMED locally:** instruction-level stack profiles are now created only
+**CONFIRMED through PR53's complete hosted gate:** instruction-level stack profiles are created only
 when an exported stack location consumes them, then reused within the function.
 Five alternating 10,000-function pairs preserve every artifact byte and reduce
 median export time from 9.99 to 9.37 seconds on this host; SQLite's 34.76 to
 34.10 second difference is small and has overlapping samples. Full corrected
 comparison harnesses, validators/GDB, preservation checks and x86-64/AArch64
-stack-location exec/PIE/rebase regressions pass. The full integration gate is
-required before merging; no broad speed or memory guarantee is claimed.
+stack-location exec/PIE/rebase regressions pass. PR53 and its separate main gate also pass; hosted CI is not a new
+timing measurement, and no broad speed or memory guarantee is claimed.
 See `docs/LAZY-STACK-PROFILES.md` for exact populations, failures and receipts.
 
 **CONFIRMED locally (2026-10-25):** the pinned SQLite workload decompiles 1,539
