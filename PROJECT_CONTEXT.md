@@ -1,9 +1,13 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
-**PRESENT, UNVERIFIED on the calling-convention candidate:** the shared-library
-follow-up now includes the bounded calling-convention fix. Earlier shared
-evidence is retained below; fresh eight-role validation is required before
-claiming the new combined package passes.
+**CONFIRMED locally on the calling-convention candidate; hosted acceptance pending:**
+fresh shared/direct revalidation passes eight roles, sixteen deterministic
+exports and 3,000 GDB observations with the new producer JAR. Independent raw
+review verifies identity, exact locations/types/names and byte-identical shared
+inputs. Twenty-two actual Java 21 suites apply to the identical production JAR;
+sixteen fresh packaged i386 producer lifetimes also pass. Receipt SHA-256
+`9d5a8efaf99b9aa84176c41e84005a9372686bea62fa686eaa81e1a23794b900`.
+Submission remains held until PR65's correctness fix completes its hosted gate.
 
 **HISTORICAL shared checkpoint on the PR64 exporter:**
 the shared-library follow-up now includes PR64's control-flow correction.
@@ -11,8 +15,8 @@ Fresh eight-role validation passes sixteen exports and 3,000 GDB observations,
 with independent raw identity/location/type/name review, twenty-one actual
 Java 21 suites and sixteen fresh packaged i386 producer lifetimes. Receipt
 SHA-256 `b33566ade02c64de6d80034e5bb39c6e6d2c1a82693572ca5fa70fa16ea1822d`.
-The calling-convention fix changes the producer JAR again; shared acceptance
-requires a fresh run on that package before submission.
+The calling-convention fix changes the producer JAR again; its fresh acceptance
+is recorded above.
 
 **HISTORICAL local shared-library checkpoint (2026-10-25):** the preceding
 i386 exporter now has shared-library exec/PIE/rebase evidence. Four shared and

@@ -1,8 +1,13 @@
 # Bounded i386 shared-library profile
 
-**PRESENT, UNVERIFIED on the calling-convention candidate:** fresh shared/direct
-revalidation is in progress after incorporating the newer producer JAR. The
-preceding control-flow package's acceptance below remains historical evidence.
+**CONFIRMED locally on the calling-convention candidate; hosted acceptance pending:**
+fresh shared/direct revalidation passes eight roles, sixteen deterministic
+exports and 3,000 GDB observations with the new producer JAR. Independent raw
+review verifies identity, exact locations/types/names and byte-identical shared
+inputs. Twenty-two actual Java 21 suites apply to the identical production JAR;
+sixteen fresh packaged i386 producer lifetimes also pass. Receipt SHA-256
+`9d5a8efaf99b9aa84176c41e84005a9372686bea62fa686eaa81e1a23794b900`.
+Submission remains held until PR65's correctness fix completes its hosted gate.
 
 **CONFIRMED locally; hosted acceptance pending (2026-10-25).** The
 i386 production exporter with PR64's control-flow correction handles a dynamically loaded integer/stack library
