@@ -382,6 +382,18 @@ tasks.register("stackFirstUseSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/stack-first-use/cache").absolutePath
 }
 
+tasks.register("outsideBodyFlowSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks register lifetimes across body boundaries and delayed control flow"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.OutsideBodyFlowSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/outside-body-flow/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/outside-body-flow/cache").absolutePath
+}
+
 tasks.register("registerBodyCoverageSmoke", JavaExec) {
     group = "verification"
     description = "Checks complete decoded register lifetimes across five language models"

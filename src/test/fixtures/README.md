@@ -392,3 +392,10 @@ See `docs/TERMINAL-RETURN-PREFIX.md`.
   or stack-pointer restore must make the parameter unavailable. Repeat exports
   preserve inputs and saved program state; `--previous-ghidra` additionally
   demonstrates the preceding omission. See `docs/STACK-SPILL-LIFETIMES.md`.
+
+`outside-body-flow.c` preserves a parameter in a compiler-known backup while
+inline assembly clears its incoming register in a branch-reached block. The
+headless harness excludes that block from the curated function body and proves
+that the exporter retains the parameter name/type without a false location.
+The x86-64/AArch64 GDB oracle checks the value after the entire assembly
+statement, where the compiler reference still describes the original value.

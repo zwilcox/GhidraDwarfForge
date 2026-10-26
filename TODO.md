@@ -1,12 +1,27 @@
 # TODO.md — GhidraDwarfForge
 
-**CONFIRMED locally; hosted acceptance pending (2026-10-25):** a bounded Linux
-i386 integer/stack profile now uses isolated ELF and GPR tables. Fully stripped
-exec, sectionless ELF, PIE and rebased PIE pass eight exports, 1,440 debugger
-observations at every fixture instruction, strict-zero validation, twenty actual
-Java 21 suites and sixteen isolated packaged producer lifetimes. Later stack
-locals remain unavailable. See `docs/I386-INTEGER-PROFILE.md`; libc/shared,
-floating/vector and broader ABI/host claims remain outside this checkpoint.
+**CONFIRMED locally; hosted acceptance pending (2026-10-25):** stable register
+locations now require contained control flow, not only complete body decoding.
+Six x86-64/AArch64 exec/PIE/rebase roles pass 24 corrected exports, six
+preceding-package reproductions and 96 compiler/Forge GDB observations.
+Twenty-one actual Java 21 suites pass. Names/types remain available when an
+excluded block makes the register lifetime unprovable. See
+`docs/REGISTER-BODY-CONTROL-FLOW.md`. Another 66 cross-profile exports pass,
+for 90 corrected exports total. Full hosted acceptance remains pending; broader
+lifetimes remain incomplete.
+
+**CONFIRMED integration (2026-10-25):** PR63 head
+`f87f15566a0b9bbbc826de0ea0a51dd70f42a472` passes all twelve jobs in
+`40256429124`, independent package/twenty actual Java 21 suites, raw target
+review, 42 native Windows tasks and both GUI hosts. The bounded i386
+integer/stack profile passes four roles/eight exports and 1,440 instruction
+observations; packaged i386 production passes sixteen lifetimes on each host.
+Normal merge `6507ffbc6e52156ba2776151dff8711069ef7108` preserves the tested
+tree. Receipt SHA-256:
+`745e68b0a2151b3e834b246d6d800072c6fb21f77e0ceae9c0609a7beaa4794b`.
+The distinct main run `40260399867` remains pending. Libc/shared, floating/vector
+and broader ABI/host claims remain outside that checkpoint. No release is
+published by this integration.
 
 **CONFIRMED integration (2026-10-25):** PR62 head
 `b5771e30711ff1825c6416b75f2a19eae778877b` passes all twelve jobs in
@@ -17,7 +32,9 @@ observations; read-start (396) and stack-spill (900) regressions also pass.
 Normal merge `fd0a5bac8ad3b97483253f9f6723d229edb777b9` preserves the tested
 tree. Hosted receipt SHA-256:
 `066960b5571e8e10cae4983dd8d97913b80c7c6d49ff9517efc7ab18ce4c8ad9`.
-The separate main-push run `40256250143` remains pending. Earlier pending
+The distinct main run `40256250143` passes all twelve jobs and independent
+package/raw/GUI review; receipt SHA-256:
+`54266d3efdd0adea744a3855dc5bd0d9814148acf55d3de0c82c8ae320b84fc4`. Earlier pending
 notes for this PR are historical; general lifetimes and lexical scopes remain
 incomplete. No release publication is included.
 
@@ -374,7 +391,7 @@ combined run `40068401197`; its conditional-step scope is recorded in
 | ELF robustness (P0.9) | **CONFIRMED complete within the documented bounds:** PR #18 implements extended counts, unnamed tables, bounded file-backed I/O, correct recorded-load-base translation and cancellation. Local checks and all twelve hosted jobs pass; direct PN_XNUM execution limits are documented. |
 | Function identity and scopes (P1.7, P3.3) | **CONFIRMED in hosted run `40063017269`:** explicit function-owned statics preserve duplicate-name lookup across all five targets, and the controlled failure check omits failed owners under the symbol-only contract. These workstreams remain partial. Curated addressless external declarations and recovered signature metadata are accepted through PR #53. Class-owned display paths and bounded direct-leaf-call backups are accepted through PR54 and its separate main gate. **PLANNED:** distinct linkage names, thunks/aliases, full class/lexical semantics, inferred static locals and remaining same-named type/variable cases. Existing namespace globals and external-data declarations must remain working. |
 | Additional range/location cases (P1.8, P1.11a) | **CONFIRMED:** bounded entry/ranges, code-only address indexing and incoming-register prefixes pass. PR #29 adds one proven direct-register backup; PR #30 omits unsupported nonzero stack-local starts. Their exact hosted gates pass. The bounded direct-leaf-call backup and additional x86-64/AArch64 exec/PIE/rebased-PIE cases are accepted through PR54. PR59 accepts terminal-return and mixed incoming prefixes through its complete hosted gate; its failed component heads remain historical. PR60 accepts one complete incoming scalar stack save; PR61 accepts explicit curated read-start register locals. PR62 accepts explicit curated definition-start locals. P1.11a remains partial: general register/memory migration, broader call/flow shapes, stack-slot reuse and additional composite storage still require instruction-specific GDB values and honest unavailable gaps. |
-| Target-profile coverage (P2.3/3a/3b) | **CONFIRMED in hosted runs `40063017269` and `40068401197`:** five baseline profiles and scalar FP aliases pass, with exact float/double values on x86-64/AArch64/ARM32 and scalar floats on both MIPS orders. The combined run also proves rejection of definite ELF/Ghidra processor, width or byte-order contradictions; nondefault variants/compiler specifications alone are not rejected. PR59 accepts bounded ARM/Thumb terminal prefixes and explicit MIPS FP32 whole pairs in both byte orders; FP64A transport remains unproven. The bounded i386 integer/stack candidate passes locally with hosted acceptance pending. Target expansion and ABI classification remain partial; this is not blanket CPU/ABI support. |
+| Target-profile coverage (P2.3/3a/3b) | **CONFIRMED in hosted runs `40063017269` and `40068401197`:** five baseline profiles and scalar FP aliases pass, with exact float/double values on x86-64/AArch64/ARM32 and scalar floats on both MIPS orders. The combined run also proves rejection of definite ELF/Ghidra processor, width or byte-order contradictions; nondefault variants/compiler specifications alone are not rejected. PR59 accepts bounded ARM/Thumb terminal prefixes and explicit MIPS FP32 whole pairs in both byte orders; FP64A transport remains unproven. The bounded i386 integer/stack profile is accepted through PR63 above. Target expansion and ABI classification remain partial; this is not blanket CPU/ABI support. |
 | GUI and output paths (P2.7) | **CONFIRMED:** both hosts' real Script Manager/chooser journeys pass. PR #31 adds actual parent traversal, complete publisher alias preflight and native Windows short-parent/trailing-dot controls; its exact PR/main gates and artifact reviews pass. Geometry/GDB run on Linux; Windows uses native GNU/LLVM, with independent libdwarf unavailable and Linux-ELF runtime GDB not run. |
 | Optional debuglink (P2.8) | **PLANNED transaction:** opt-in attachment, identity/receipt chain and backup/rollback remain unimplemented. PRs #32/#33's digests, typed build-ID observations and report reader pass the full matrix. PRs #34/#35's prefix and indexed allocation observers also pass the full matrix. PR #36 selected-file SHA binding also passes the full matrix. PR #37 program-byte preservation passes the full matrix. PR #38 candidate-content checks also pass the full matrix. PR #39 owned append-only preparation also passes the full matrix. PR #40 detailed report binding/private preparation also passes the full matrix. PR #41 captured validator evidence passes its exact PR and main gates. Default export leaves the original unchanged. |
 | Inline reconstruction (P3.4) | **CONFIRMED investigation complete:** ADR 0003 and a reproducible compiler/Ghidra probe distinguish real inline instances from Ghidra's decompiler flag and record surviving locals/source information. Inline emission remains deferred until explicit instance/origin/range evidence and GDB acceptance exist. |
@@ -1661,7 +1678,7 @@ floating/vector and broader ABI/host claims remain outside this checkpoint.
 
 - [x] Local isolated target/GPR model and producer baseline.
 - [x] Local real export/validator/GDB exec, sectionless, PIE and rebase profile.
-- [ ] Exact-head full hosted gate and independent package/runtime review.
+- [x] PR63 exact-head full hosted gate and independent package/runtime review.
 - [ ] Broader libc/shared, floating/vector and host-specific profiles before
   expanding the documented support claim.
 

@@ -1,5 +1,11 @@
 # Register locations require a completely decoded body
 
+The coverage-only checkpoint below is historical. Its later
+[control-flow correction](REGISTER-BODY-CONTROL-FLOW.md) also requires paths to
+remain in decoded body instructions. The current coverage suite has 446
+checks; excluded fallthrough gaps are negative controls, while direct jumps
+over unused gaps remain positive controls in the new flow suite.
+
 **CONFIRMED locally; hosted acceptance pending (2026-10-25):** listing iteration
 alone does not prove that a register remains stable. Ghidra returns the
 instructions that exist in the listing and skips undefined bytes. A function

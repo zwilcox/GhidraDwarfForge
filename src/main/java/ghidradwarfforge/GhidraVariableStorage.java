@@ -7,6 +7,7 @@ import java.util.Map;
 
 import ghidra.app.cmd.function.CallDepthChangeInfo;
 import ghidra.app.plugin.processors.sleigh.SleighLanguage;
+import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSpace;
 import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.lang.Register;
@@ -798,11 +799,13 @@ public final class GhidraVariableStorage {
         var body = function.getBody();
         var uncovered = new AddressSet(body);
         boolean incomplete = body.isEmpty();
+        var decoded = new HashMap<Address, Instruction>();
         InstructionIterator instructions = program.getListing()
             .getInstructions(function.getBody(), true);
         while (instructions.hasNext()) {
             monitor.checkCancelled();
             Instruction instruction = instructions.next();
+            decoded.put(instruction.getAddress(), instruction);
             if (instruction.getFlowType().isCall()) {
                 return unavailable(OmissionReason.CALL_CLOBBERED,
                     "function contains a call that may clobber " + description +
@@ -841,7 +844,129 @@ public final class GhidraVariableStorage {
                 "incomplete instruction coverage prevents proving the " + description +
                     " register " + base.getName() + " stable");
         }
+        if (!closedRegisterFlow(program, function, decoded, monitor)) {
+            return unavailable(OmissionReason.UNKNOWN_LIFETIME,
+                "unproven control flow prevents proving the " + description +
+                    " register " + base.getName() + " stable");
+        }
         return mapped;
+    }
+
+    /**
+     * Listing coverage alone says nothing about executed code outside the body.
+     * Require every modeled successor to remain in decoded body instructions,
+     * except an ordinary return. References may add flows but cannot erase the
+     * instruction prototype's actual targets. Computed jumps remain unproven.
+     */
+    private static boolean closedRegisterFlow(Program program, Function function,
+            Map<Address, Instruction> decoded, TaskMonitor monitor) throws CancelledException {
+        if (!decoded.containsKey(function.getEntryPoint())) {
+            return false;
+        }
+        var delayOwners = new HashMap<Address, Address>();
+        for (Instruction instruction : decoded.values()) {
+            monitor.checkCancelled();
+            if (instruction.getFlowOverride() != FlowOverride.NONE ||
+                    instruction.isFallThroughOverridden() || instruction.getFlowType().isOverride() ||
+                    instruction.getDelaySlotDepth() < 0) {
+                return false;
+            }
+            Address next = instruction.getMaxAddress().next();
+            for (int slot = 0; slot < instruction.getDelaySlotDepth(); slot++) {
+                monitor.checkCancelled();
+                Instruction delayed = decoded.get(next);
+                if (instruction.isInDelaySlot() || delayed == null || !delayed.isInDelaySlot() ||
+                        delayed.getDelaySlotDepth() != 0 ||
+                        delayOwners.put(next, instruction.getAddress()) != null) {
+                    return false;
+                }
+                next = delayed.getMaxAddress().next();
+            }
+        }
+        if (delayOwners.containsKey(function.getEntryPoint())) {
+            return false;
+        }
+        for (Instruction instruction : decoded.values()) {
+            monitor.checkCancelled();
+            var flow = instruction.getFlowType();
+            Address[] defaults = instruction.getDefaultFlows();
+            Address[] references = instruction.getFlows();
+            if (instruction.isInDelaySlot()) {
+                // A slot executes before its owner's transfer. Its lexical
+                // fallthrough is not an independent path after a return/jump.
+                // Branches into slots and orphaned slots are rejected below.
+                if (!delayOwners.containsKey(instruction.getAddress()) ||
+                        !flow.isFallthrough() || !flow.hasFallthrough() ||
+                        (defaults != null && defaults.length != 0) ||
+                        (references != null && references.length != 0)) {
+                    return false;
+                }
+                continue;
+            }
+            if (flow.isCall() || (flow.isComputed() && !flow.isTerminal()) ||
+                    (flow.isJump() && (defaults == null || defaults.length == 0))) {
+                return false;
+            }
+            for (Address[] targets : new Address[][] { defaults, references }) {
+                if (targets == null) {
+                    continue;
+                }
+                for (Address target : targets) {
+                    monitor.checkCancelled();
+                    if (!decoded.containsKey(target) || delayOwners.containsKey(target)) {
+                        return false;
+                    }
+                }
+            }
+            Address fallthrough = instruction.getFallThrough();
+            if (flow.hasFallthrough()) {
+                if (fallthrough == null || !decoded.containsKey(fallthrough) ||
+                        delayOwners.containsKey(fallthrough)) {
+                    return false;
+                }
+            }
+            else if (fallthrough != null) {
+                return false;
+            }
+            if (flow.isTerminal()) {
+                // Unlike the opaque-userop exception, this check also permits
+                // decoded delay slots, whose effects were checked separately.
+                PcodeOp[] operations = instruction.getPcode();
+                if (flow.isConditional() || flow.isJump() || flow.hasFallthrough() ||
+                        operations.length == 0 ||
+                        operations[operations.length - 1].getOpcode() != PcodeOp.RETURN) {
+                    return false;
+                }
+            }
+            else if (!flow.isJump() && !flow.hasFallthrough()) {
+                return false;
+            }
+        }
+        // An alternate entry (including an offcut) can bypass the invocation's
+        // incoming-value contract. References to the ordinary entry (including
+        // pointer-data INDIRECTION references) retain that entry contract.
+        var destinations = program.getReferenceManager()
+            .getReferenceDestinationIterator(function.getBody(), true);
+        while (destinations.hasNext()) {
+            monitor.checkCancelled();
+            Address destination = destinations.next();
+            var incoming = program.getReferenceManager().getReferencesTo(destination);
+            while (incoming.hasNext()) {
+                monitor.checkCancelled();
+                var reference = incoming.next();
+                if (!reference.getReferenceType().isFlow()) {
+                    continue;
+                }
+                if (!decoded.containsKey(destination) || delayOwners.containsKey(destination)) {
+                    return false;
+                }
+                if (!decoded.containsKey(reference.getFromAddress()) &&
+                        !destination.equals(function.getEntryPoint())) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     private static boolean hasOpaqueRegisterEffects(Program program, Instruction instruction) {

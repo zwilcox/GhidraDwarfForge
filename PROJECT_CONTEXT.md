@@ -1,12 +1,27 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
-**CONFIRMED locally; hosted acceptance pending (2026-10-25):** a bounded Linux
-i386 integer/stack profile now uses isolated ELF and GPR tables. Fully stripped
-exec, sectionless ELF, PIE and rebased PIE pass eight exports, 1,440 debugger
-observations at every fixture instruction, strict-zero validation, twenty actual
-Java 21 suites and sixteen isolated packaged producer lifetimes. Later stack
-locals remain unavailable. See `docs/I386-INTEGER-PROFILE.md`; libc/shared,
-floating/vector and broader ABI/host claims remain outside this checkpoint.
+**CONFIRMED locally; hosted acceptance pending (2026-10-25):** stable register
+locations now require contained control flow, not only complete body decoding.
+Six x86-64/AArch64 exec/PIE/rebase roles pass 24 corrected exports, six
+preceding-package reproductions and 96 compiler/Forge GDB observations.
+Twenty-one actual Java 21 suites pass. Names/types remain available when an
+excluded block makes the register lifetime unprovable. See
+`docs/REGISTER-BODY-CONTROL-FLOW.md`. Another 66 cross-profile exports pass,
+for 90 corrected exports total. Full hosted acceptance remains pending; broader
+lifetimes remain incomplete.
+
+**CONFIRMED integration (2026-10-25):** PR63 head
+`f87f15566a0b9bbbc826de0ea0a51dd70f42a472` passes all twelve jobs in
+`40256429124`, independent package/twenty actual Java 21 suites, raw target
+review, 42 native Windows tasks and both GUI hosts. The bounded i386
+integer/stack profile passes four roles/eight exports and 1,440 instruction
+observations; packaged i386 production passes sixteen lifetimes on each host.
+Normal merge `6507ffbc6e52156ba2776151dff8711069ef7108` preserves the tested
+tree. Receipt SHA-256:
+`745e68b0a2151b3e834b246d6d800072c6fb21f77e0ceae9c0609a7beaa4794b`.
+The distinct main run `40260399867` remains pending. Libc/shared, floating/vector
+and broader ABI/host claims remain outside that checkpoint. No release is
+published by this integration.
 
 **CONFIRMED integration (2026-10-25):** PR62 head
 `b5771e30711ff1825c6416b75f2a19eae778877b` passes all twelve jobs in
@@ -17,7 +32,9 @@ observations; read-start (396) and stack-spill (900) regressions also pass.
 Normal merge `fd0a5bac8ad3b97483253f9f6723d229edb777b9` preserves the tested
 tree. Hosted receipt SHA-256:
 `066960b5571e8e10cae4983dd8d97913b80c7c6d49ff9517efc7ab18ce4c8ad9`.
-The separate main-push run `40256250143` remains pending. Earlier pending
+The distinct main run `40256250143` passes all twelve jobs and independent
+package/raw/GUI review; receipt SHA-256:
+`54266d3efdd0adea744a3855dc5bd0d9814148acf55d3de0c82c8ae320b84fc4`. Earlier pending
 notes for this PR are historical; general lifetimes and lexical scopes remain
 incomplete. No release publication is included.
 
