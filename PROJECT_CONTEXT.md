@@ -1,5 +1,12 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED tracking (2026-10-25):** the user requested GitHub issues for the
+remaining TODOs. Issues #66–#74 now track all nine unfinished top-level items,
+with current acceptance status, remaining-work checklists and completion gates.
+`TODO.md` links each section and provides an issue index. Existing completed
+milestones and historical issues remain closed; component PRs must not close
+an umbrella issue until its remaining acceptance criteria are satisfied.
+
 **CONFIRMED integration (2026-10-25):** PR64 head
 `23d9c57d5e8fc339650428d7252d9b5381adb49e` passes all twelve jobs in
 `40263198239`, independent exact-package/twenty-one actual Java 21 suites,
