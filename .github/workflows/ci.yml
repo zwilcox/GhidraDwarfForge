@@ -718,6 +718,12 @@ jobs:
             -PpackagedPlatform=linux_x86_64 \
             -PtargetProfile=x86_64 \
             -PnativeIterations=2
+          mkdir -p build/test-results/native-producer/i386
+          ./gradlew packagedNativeProducerSmoke \
+            -PpackagedModuleRoot="$module" \
+            -PpackagedPlatform=linux_x86_64 \
+            -PtargetProfile=i386 \
+            -PnativeIterations=16 2>&1 | tee build/test-results/native-producer/i386/packaged-native-producer.log
 
       - name: Build source fixture
         env:
@@ -985,6 +991,13 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
         run: src/test/integration/bitfield-values-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
+
+      - name: Freestanding i386 stack values through stripped exec and PIE exports
+        if: matrix.target == 'x86_64'
+        run: |
+          for role in exec sectionless pie pie-rebased; do
+              python3 src/test/integration/i386-profile-export.py "$GHIDRA_INSTALL_DIR" --role "$role"
+          done
 
       - name: Function-owned statics and duplicate-name lookup
         env:
@@ -1432,7 +1445,7 @@ jobs:
           if ($null -eq $extension) { throw 'extension ZIP is missing' }
           Expand-Archive -Path $extension.FullName `
             -DestinationPath (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions') -Force
-          & .\gradlew.bat addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
+          & .\gradlew.bat dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke registerBodyCoverageSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
             arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
@@ -1526,6 +1539,15 @@ jobs:
             Tee-Object -FilePath "$resultDirectory\packaged-native-producer.log"
           if ($LASTEXITCODE -ne 0) {
             throw "packaged native producer smoke failed with exit code $LASTEXITCODE"
+          }
+
+          & .\gradlew.bat packagedNativeProducerSmoke `
+            "-PpackagedModuleRoot=$module" `
+            -PpackagedPlatform=win_x86_64 `
+            -PtargetProfile=i386 -PnativeIterations=16 2>&1 |
+            Tee-Object -FilePath "$resultDirectory\packaged-i386-producer.log"
+          if ($LASTEXITCODE -ne 0) {
+            throw "packaged i386 producer smoke failed with exit code $LASTEXITCODE"
           }
 
       - name: Windows-hosted headless ELF export

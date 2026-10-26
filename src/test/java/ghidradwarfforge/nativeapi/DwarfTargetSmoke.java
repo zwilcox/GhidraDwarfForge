@@ -13,12 +13,17 @@ public final class DwarfTargetSmoke {
     }
 
     public static void main(String[] arguments) {
+        assertTarget(3, 4, ByteOrder.LITTLE_ENDIAN, "x86", "x86", true);
         assertTarget(62, 8, ByteOrder.LITTLE_ENDIAN, "x86_64", "x86_64", true);
         assertTarget(183, 8, ByteOrder.LITTLE_ENDIAN, "aarch64", "arm64", true);
         assertTarget(40, 4, ByteOrder.LITTLE_ENDIAN, "arm", "arm", true);
         assertTarget(8, 4, ByteOrder.LITTLE_ENDIAN, "mipsel", "mips", true);
         assertTarget(8, 4, ByteOrder.BIG_ENDIAN, "mips", "mips", false);
 
+        expectFailure(() -> DwarfTarget.fromMetadata(3, 8,
+            ByteOrder.LITTLE_ENDIAN), "requires ELF32");
+        expectFailure(() -> DwarfTarget.fromMetadata(3, 4,
+            ByteOrder.BIG_ENDIAN), "big-endian producer mode has not been audited");
         expectFailure(() -> DwarfTarget.fromMetadata(0xffff, 8,
             ByteOrder.LITTLE_ENDIAN), "unsupported ELF machine");
         expectFailure(() -> DwarfTarget.fromMetadata(62, 4,

@@ -105,6 +105,7 @@ public record TargetRegisterMap(String target, String provenance,
 
     public static TargetRegisterMap forTarget(String target) {
         return switch (target) {
+            case "x86" -> x86_32();
             case "x86_64" -> x86_64();
             case "aarch64" -> aarch64();
             case "arm", "arm32" -> arm32();
@@ -137,6 +138,16 @@ public record TargetRegisterMap(String target, String provenance,
         return new UnavailableStorage(OmissionReason.UNMAPPED_REGISTER,
             "target " + target + " has no audited DWARF mapping for Ghidra register " +
                 display);
+    }
+
+    private static TargetRegisterMap x86_32() {
+        Map<String, Integer> result = new LinkedHashMap<>();
+        String[] general = { "EAX", "ECX", "EDX", "EBX", "ESP", "EBP", "ESI", "EDI", "EIP", "eflags" };
+        for (int index = 0; index < general.length; index++) {
+            put(result, index, general[index]);
+        }
+        return new TargetRegisterMap("x86",
+            GHIDRA_MAPPING_ROOT + "Processors/x86/data/languages/x86.dwarf; general-register subset", result);
     }
 
     private static TargetRegisterMap x86_64() {

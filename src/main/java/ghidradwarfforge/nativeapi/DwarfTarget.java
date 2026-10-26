@@ -22,6 +22,7 @@ import ghidradwarfforge.elf.ElfLocalFunctionSymbol;
 /** Table-driven libdwarf target description derived from the original ELF. */
 public record DwarfTarget(String name, String producerIsa, int addressBytes,
         boolean littleEndian, String ghidraProcessor) {
+    private static final int EM_386 = 3;
     private static final int EM_MIPS = 8;
     private static final int EM_ARM = 40;
     private static final int EM_X86_64 = 62;
@@ -29,6 +30,7 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
     // Processor identities follow Ghidra 12.0.3's ELF .opinion and .ldefs files.
     // Language variants and compiler-spec IDs are not portable ABI identifiers.
     private static final Map<Integer, TargetDescription> TARGETS = Map.of(
+        EM_386, new TargetDescription("i386", 4, "x86", null, "x86", false, "x86"),
         EM_MIPS, new TargetDescription("MIPS32", 4, "mipsel", "mips", "mips", true, "MIPS"),
         EM_ARM, new TargetDescription("ARM", 4, "arm", null, "arm", false, "ARM"),
         EM_X86_64,

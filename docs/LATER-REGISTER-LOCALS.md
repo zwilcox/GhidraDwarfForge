@@ -8,7 +8,7 @@ lifetimes and original lexical scopes remain **PLANNED**.
 The following describes the original read-start checkpoint. The subsequent
 [definition-boundary extension](LOCAL-DEFINITION-BOUNDARIES.md) also accepts a
 full-width writing first-use, with availability delayed until completion. Its
-evidence and pending hosted gate are recorded separately.
+evidence and accepted PR62 hosted gate are recorded separately.
 
 **CONFIRMED integration (2026-10-25):** PR61 head
 `56ead2ffc19f0161e79a28683c91e3dac8a2d43f` passes all twelve jobs in
@@ -20,8 +20,10 @@ merge `b58839468db8511c0814e9e50f766b60ef90f65f` preserves the tested tree.
 Receipt SHA-256:
 `04b499dfa37bf32da8916db2b8a41a81cd27642f8d11c7b9ac27a0302aa96f54`.
 The initial fixture-inventory failure remains rejected. Earlier PR61-pending
-notes are historical; its separate main-push gate is pending. The subsequent
-definition-start extension has its own local evidence and pending hosted gate.
+notes are historical. Distinct main run `40252662854` at that merge passes
+all twelve jobs and independent package/raw/GUI/native Windows review; receipt
+SHA-256 `222d313dd226f84572ef03c370059dffc5811920fefad2b79b777b1b99d37e2c`.
+The definition-start extension passes its own PR62 hosted gate; see its evidence record.
 
 ## Acceptance and limits
 

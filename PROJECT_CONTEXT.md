@@ -1,5 +1,26 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally; hosted acceptance pending (2026-10-25):** a bounded Linux
+i386 integer/stack profile now uses isolated ELF and GPR tables. Fully stripped
+exec, sectionless ELF, PIE and rebased PIE pass eight exports, 1,440 debugger
+observations at every fixture instruction, strict-zero validation, twenty actual
+Java 21 suites and sixteen isolated packaged producer lifetimes. Later stack
+locals remain unavailable. See `docs/I386-INTEGER-PROFILE.md`; libc/shared,
+floating/vector and broader ABI/host claims remain outside this checkpoint.
+
+**CONFIRMED integration (2026-10-25):** PR62 head
+`b5771e30711ff1825c6416b75f2a19eae778877b` passes all twelve jobs in
+`40252798774`, independent exact-package/nineteen actual Java 21 suites,
+raw five-target review, 40 native Windows tasks and both GUI hosts. Six
+hosted definition-start roles/twelve exports provide 504 compiler/Forge GDB
+observations; read-start (396) and stack-spill (900) regressions also pass.
+Normal merge `fd0a5bac8ad3b97483253f9f6723d229edb777b9` preserves the tested
+tree. Hosted receipt SHA-256:
+`066960b5571e8e10cae4983dd8d97913b80c7c6d49ff9517efc7ab18ce4c8ad9`.
+The separate main-push run `40256250143` remains pending. Earlier pending
+notes for this PR are historical; general lifetimes and lexical scopes remain
+incomplete. No release publication is included.
+
 **CONFIRMED integration (2026-10-25):** PR61 head
 `56ead2ffc19f0161e79a28683c91e3dac8a2d43f` passes all twelve jobs in
 `40249151143`, independent exact-package/eighteen actual Java 21 suites,
@@ -10,10 +31,12 @@ merge `b58839468db8511c0814e9e50f766b60ef90f65f` preserves the tested tree.
 Receipt SHA-256:
 `04b499dfa37bf32da8916db2b8a41a81cd27642f8d11c7b9ac27a0302aa96f54`.
 The initial fixture-inventory failure remains rejected. Earlier PR61-pending
-notes are historical; its separate main-push gate is pending. The subsequent
-definition-start extension has its own local evidence and pending hosted gate.
+notes are historical. Distinct main run `40252662854` at that merge passes
+all twelve jobs and independent package/raw/GUI/native Windows review; receipt
+SHA-256 `222d313dd226f84572ef03c370059dffc5811920fefad2b79b777b1b99d37e2c`.
+The definition-start extension is accepted separately through PR62 above.
 
-**CONFIRMED locally; hosted acceptance pending (2026-10-25):** a curated local's
+**HISTORICAL local checkpoint, accepted through PR62 above:** a curated local's
 recorded full-width register definition now starts availability only after that
 instruction completes. A stale-value sentinel proves the earlier interval is
 unavailable. Twelve definition/read regression roles pass 24 candidate exports,

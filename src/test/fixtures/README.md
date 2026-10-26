@@ -373,6 +373,9 @@ it across exec/PIE/rebase/repeat. Compiler aggregate locations at raw entry are
 recorded as unvalidated; strict field comparisons begin after the prologue.
 See `docs/TERMINAL-RETURN-PREFIX.md`.
 
+- `i386-profile.c` supplies a freestanding Linux ELF32 integer/stack reference
+  without libc startup objects. Its own compiler/GDB harness covers fully stripped
+  exec, sectionless, PIE and rebase at every instruction. See `docs/I386-INTEGER-PROFILE.md`.
 - `defined-register-local.c` selects the shared later-local harness with
   `--first-use definition`. A stale register sentinel proves initialization
   completes before a curated local is available; exec/PIE/rebase checks cover

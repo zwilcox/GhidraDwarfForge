@@ -35,6 +35,9 @@ with tempfile.TemporaryDirectory(prefix='forge-architecture-check-') as temporar
     run(True, 'architecture-neutrality=PASS')
     generic.write_text('class Generic { String value = "R0"; }\n')
     run(False, 'src/main/java/Generic.java:1:')
+    for spelling in ('EM_386', 'ESP'):
+        generic.write_text('class Generic { String value = "' + spelling + '"; }\n')
+        run(False, 'src/main/java/Generic.java:1:')
     generic.write_text('class Generic { String value = "plain"; }\n')
     audited = source / 'ghidradwarfforge/elf/MipsAbiFlags.java'
     audited.parent.mkdir(parents=True)
@@ -44,4 +47,4 @@ with tempfile.TemporaryDirectory(prefix='forge-architecture-check-') as temporar
     outside.parent.mkdir()
     shutil.copyfile(audited, outside)
     run(False, 'src/main/java/other/MipsAbiFlags.java:1:')
-print('architecture-neutrality-smoke=PASS checks=5')
+print('architecture-neutrality-smoke=PASS checks=7')
