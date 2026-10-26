@@ -6801,3 +6801,18 @@ Receipt SHA-256:
 The initial fixture-inventory failure remains rejected. Earlier PR61-pending
 notes are historical; its separate main-push gate is pending. The subsequent
 definition-start extension has its own local evidence and pending hosted gate.
+
+## Bounded i386 local profile (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending (2026-10-25):** a bounded Linux
+i386 integer/stack profile now uses isolated ELF and GPR tables. Fully stripped
+exec, sectionless ELF, PIE and rebased PIE pass eight exports, 1,440 debugger
+observations at every fixture instruction, strict-zero validation, twenty actual
+Java 21 suites and sixteen isolated packaged producer lifetimes. Later stack
+locals remain unavailable. See `docs/I386-INTEGER-PROFILE.md`; libc/shared,
+floating/vector and broader ABI/host claims remain outside this checkpoint.
+
+Independent receipt SHA-256:
+`70e084c2319b8e392ec1247415f060f4337af2136b89b588d1ffff0eb29b086e`.
+The runtime stack pointer and actual instruction bytes independently validate
+every emitted parameter interval. Hosted acceptance remains pending.

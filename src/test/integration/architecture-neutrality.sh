@@ -19,7 +19,7 @@ audited = {
     "ghidradwarfforge/elf/MipsAbiFlags.java",
     "ghidradwarfforge/nativeapi/PackagedNativeLibraries.java",
 }
-pattern = re.compile(r"\b(x86_64|aarch64|arm32|mips32|mipsel|em_x86_64|em_aarch64|"
+pattern = re.compile(r"\b(i386|x86|x86_32|em_386|eax|ecx|edx|ebx|esp|ebp|esi|edi|eip|eflags|x86_64|aarch64|arm32|mips32|mipsel|em_x86_64|em_aarch64|"
     r"em_arm|em_mips|thumb|tmode|rax|rbp|rsp|rdi|rsi|sp|lr|pc|"
     r"x([0-9]|[12][0-9]|30)|w([0-9]|[12][0-9]|30)|"
     r"r([0-9]|[12][0-9]|3[01]))\b", re.IGNORECASE)

@@ -1,5 +1,13 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally; hosted acceptance pending (2026-10-25):** a bounded Linux
+i386 integer/stack profile now uses isolated ELF and GPR tables. Fully stripped
+exec, sectionless ELF, PIE and rebased PIE pass eight exports, 1,440 debugger
+observations at every fixture instruction, strict-zero validation, twenty actual
+Java 21 suites and sixteen isolated packaged producer lifetimes. Later stack
+locals remain unavailable. See `docs/I386-INTEGER-PROFILE.md`; libc/shared,
+floating/vector and broader ABI/host claims remain outside this checkpoint.
+
 **CONFIRMED integration (2026-10-25):** PR61 head
 `56ead2ffc19f0161e79a28683c91e3dac8a2d43f` passes all twelve jobs in
 `40249151143`, independent exact-package/eighteen actual Java 21 suites,

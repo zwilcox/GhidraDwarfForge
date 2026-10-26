@@ -14,6 +14,16 @@ definite ELF/Ghidra processor/width/endian agreement guard pass combined run
 for exact value/omission tests and conditional scope. This does not complete
 ABI classification or expand the five profile definitions below.
 
+## Additional bounded i386 candidate
+
+**CONFIRMED locally; hosted acceptance pending (2026-10-25):** a bounded Linux
+i386 integer/stack profile now uses isolated ELF and GPR tables. Fully stripped
+exec, sectionless ELF, PIE and rebased PIE pass eight exports, 1,440 debugger
+observations at every fixture instruction, strict-zero validation, twenty actual
+Java 21 suites and sixteen isolated packaged producer lifetimes. Later stack
+locals remain unavailable. See `docs/I386-INTEGER-PROFILE.md`; libc/shared,
+floating/vector and broader ABI/host claims remain outside this checkpoint.
+
 ## Current fixture profiles
 
 | Lane | Tested profile | Distinguishing evidence |
@@ -98,7 +108,8 @@ stores; a guessed number for the larger base is not a solution.
 ## Accepted metadata is broader than validated ABI behavior
 
 **CONFIRMED implementation boundary:** `DwarfTarget.fromElf` selects by
-`e_machine`, ELF class, and byte order. It rejects x86-32, x86 x32, AArch64
+`e_machine`, ELF class, and byte order. **HISTORICAL at the baseline:** it rejected x86-32. The bounded candidate above
+adds little-endian EM_386/ELF32 with a GPR-only map. It still rejects x86 x32, AArch64
 ILP32, MIPS64, and big-endian x86-64/AArch64/ARM. It does not classify ARM or
 MIPS ABI attributes. For example, an untested ELF32 MIPS ABI can reach the
 same target map as O32. Preserving its `e_flags` does not prove its locations.
@@ -126,7 +137,7 @@ shared-object case when binding, load bias or data access changes the behavior.
 | 3 | Stack-passed parameters and real aggregates | Exhaust argument registers; include a 64-bit argument on 32-bit targets; then test bounded aggregate classes independently of the artificial composite |
 | 4 | ARMv7 Thumb-2 and one ARM/Thumb call | Named/address breakpoints, function-pointer mode bit, source stepping, values and PIE/rebase on stripped inputs |
 | 5 | MIPS O32 FP32 and FP64A | Explicit compiler options and ABI attributes, compatible runtime FPU, scalar/pair value checks in both byte orders |
-| 6 | x86-32 System V | New audited descriptor/map and real stack arguments, paired values, source stepping, PIE/shared loading |
+| 6 | x86-32 System V | Bounded freestanding integer exec/sectionless/PIE/rebase passes locally; hosted, libc/shared and broader storage remain pending |
 | 7 | MIPS N32, then N64 | Separate pointer/GPR-width models, additional argument registers, matching sysroots and actual runtime values |
 
 The local audit found existing x86-64, AArch64 and MIPS O32 compilers/sysroots.

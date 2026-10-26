@@ -77,6 +77,10 @@ A local whose recorded first use initializes its register becomes available
 only after that instruction completes; the [definition-boundary tests](docs/LOCAL-DEFINITION-BOUNDARIES.md)
 pass locally on both targets, with their hosted gate pending.
 
+A bounded [i386 integer/stack profile](docs/I386-INTEGER-PROFILE.md) passes local
+stripped exec, sectionless, PIE and rebase tests. Its full hosted gate is pending;
+this adds no libc/shared or floating/vector support claim.
+
 The exporter replaces existing compiler DWARF rather than merging
 it with the recovered view. Old compressed debug sections, indexes, and debug
 file links are retired inside the sidecar; the original ELF stays unchanged.

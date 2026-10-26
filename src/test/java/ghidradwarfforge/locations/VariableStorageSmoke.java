@@ -30,6 +30,12 @@ public final class VariableStorageSmoke {
     }
 
     public static void main(String[] args) {
+        TargetRegisterMap i386 = TargetRegisterMap.forTarget("x86");
+        if (!i386.dwarfNumbers().equals(java.util.Map.of("EAX", 0, "ECX", 1, "EDX", 2, "EBX", 3,
+                "ESP", 4, "EBP", 5, "ESI", 6, "EDI", 7, "EIP", 8, "eflags", 9)) ||
+                i386.register("ST0", 0, 80).available() || i386.register("XMM0", 0, 128).available()) {
+            throw new AssertionError("i386 general registers or unsupported FP boundaries changed");
+        }
         TargetRegisterMap x86 = TargetRegisterMap.forTarget("x86_64");
         TargetRegisterMap arm = TargetRegisterMap.forTarget("aarch64");
         TargetRegisterMap arm32 = TargetRegisterMap.forTarget("arm");
