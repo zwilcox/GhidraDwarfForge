@@ -69,10 +69,13 @@ storage migration remains incomplete. See [mixed incoming storage](docs/MIXED-IN
 A single proven scalar stack save passes x86-64/AArch64 exec/PIE/rebase
 tests and the complete PR60 hosted gate; later memory or stack-pointer writes
 end its location. See [stack-save lifetimes](docs/STACK-SPILL-LIFETIMES.md).
-Curated register locals with an exact later first use also pass local
-x86-64/AArch64 exec/PIE/rebase tests, with unavailable prefixes and overwrite
-tails. Their hosted acceptance is pending; original lexical scopes and general
+Curated register locals with an exact later read pass x86-64/AArch64
+exec/PIE/rebase tests and the full PR61 hosted gate, with unavailable prefixes
+and overwrite tails. Original lexical scopes and general
 lifetimes remain incomplete. See [later register locals](docs/LATER-REGISTER-LOCALS.md).
+A local whose recorded first use initializes its register becomes available
+only after that instruction completes; the [definition-boundary tests](docs/LOCAL-DEFINITION-BOUNDARIES.md)
+pass locally on both targets, with their hosted gate pending.
 
 The exporter replaces existing compiler DWARF rather than merging
 it with the recovered view. Old compressed debug sections, indexes, and debug

@@ -262,8 +262,8 @@ public final class GhidraTypeGraph {
                         AddressNormalizer.toElfAddress(interval.start(), rebaseDelta),
                         AddressNormalizer.toElfAddress(interval.end(), rebaseDelta), interval.storage(),
                         new Evidence(evidence(variable.getSource(), interval.storage()).confidence(),
-                            "Curated Ghidra function-owned local; exact recorded register read after a " +
-                                "completed definition in a fully decoded straight-line leaf; unavailable " +
+                            "Curated Ghidra function-owned local; exact recorded register read or completed " +
+                                "definition in a fully decoded straight-line leaf; unavailable " +
                                 "before first use and after overwrite; no original lexical scope inferred")))
                         .toList();
                 variableLocations.add(new VariableLocation(symbol.name(), address,

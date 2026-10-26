@@ -1,10 +1,32 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
-**Current gate correction:** initial PR61 run `40247500844` correctly rejects
+**CONFIRMED integration (2026-10-25):** PR61 head
+`56ead2ffc19f0161e79a28683c91e3dac8a2d43f` passes all twelve jobs in
+`40249151143`, independent exact-package/eighteen actual Java 21 suites,
+raw five-target review, 39 native Windows tasks and both GUI hosts. Six
+hosted read-start roles/twelve exports provide 396 compiler/Forge GDB
+observations with exact locations and honest unavailable intervals. Normal
+merge `b58839468db8511c0814e9e50f766b60ef90f65f` preserves the tested tree.
+Receipt SHA-256:
+`04b499dfa37bf32da8916db2b8a41a81cd27642f8d11c7b9ac27a0302aa96f54`.
+The initial fixture-inventory failure remains rejected. Earlier PR61-pending
+notes are historical; its separate main-push gate is pending. The subsequent
+definition-start extension has its own local evidence and pending hosted gate.
+
+**CONFIRMED locally; hosted acceptance pending (2026-10-25):** a curated local's
+recorded full-width register definition now starts availability only after that
+instruction completes. A stale-value sentinel proves the earlier interval is
+unavailable. Twelve definition/read regression roles pass 24 candidate exports,
+six preceding-package comparisons and 1,152 GDB observations. Nineteen actual
+Java 21 suites pass. See `docs/LOCAL-DEFINITION-BOUNDARIES.md` for exact evidence,
+retained failed attempts and limits; general lifetime and lexical-scope recovery
+remain incomplete.
+
+**HISTORICAL fixture-inventory correction:** initial PR61 run `40247500844` correctly rejects
 the unlisted new fixture in all five lanes before exporter tests. The audited
 inventory is now updated, and five fresh local reproducibility checks pass.
-A new full gate is required; the failed run and scoped package evidence remain
-separate. See `docs/LATER-REGISTER-LOCALS.md`.
+The corrected full gate passed as recorded above; the failed run and its scoped
+package evidence remain separate. See `docs/LATER-REGISTER-LOCALS.md`.
 
 **CONFIRMED integration (2026-10-25):** stack-spill PR60 head
 `2b0666ff7cc5b1ff44cd7420522c57737cc72d43` passes all twelve jobs in
@@ -14,10 +36,13 @@ six roles, twelve exports and 900 hosted compiler/Forge GDB observations.
 Normal merge `47ff38ebbfe2ac5eb8e7d2f3d0ec445fdb29dc95` preserves the accepted
 tree. Independent receipt SHA-256:
 `a84e37a5ccc878f2fcacae2dbf53726db7326585ca5b7dc838d1bb4f21ecf225`.
-Separate main-push verification is pending. Earlier pending stack-spill notes
-are historical; general migration and other unfinished work remain open.
+Separate main-push run `40247374065` at that merge also passes all twelve
+jobs and independent exact-package, raw target, GUI and native Windows review.
+Main receipt SHA-256:
+`ec1358c3d2b4a99772b659be447497346aa16fe6046d86d142f7a36560dbe3a7`.
+Earlier pending stack-spill notes are historical; general migration and other unfinished work remain open.
 
-**Current local candidate — hosted acceptance pending (2026-10-25):** bounded
+**HISTORICAL local checkpoint, accepted through PR61 above:** bounded
 curated later register locals pass six x86-64/AArch64 exec/PIE/rebase roles,
 twelve exports, six preceding-package comparisons and 594 GDB stops. Eighteen
 actual Java 21 packaged suites pass. The implementation preserves an analyst's
@@ -35,7 +60,10 @@ Thumb/VFP prefixes, mixed incoming pieces and explicit MIPS FP32 whole pairs
 (including sectionless inputs) pass their documented scopes. The corrected
 architecture guard and five controls also pass. Acceptance receipt SHA-256:
 `4b03ddc3aeb697d002b41f8bc6def3c9fdc427e7a63b3d28a932b49f2270bcfd`.
-Distinct main run `40244657118` is pending. Earlier failed-head evidence remains
+Distinct main run `40244657118` passes all twelve jobs and independent exact
+package/raw review; receipt SHA-256:
+`0e97ba1c742b3e7755c9e0c66b2ef667379c3b75a3b837b90dfe98dd1433756f`.
+Earlier failed-head evidence remains
 historical; no false architecture-check pass or partial gate is accepted.
 
 **Current follow-up — CONFIRMED locally, hosted acceptance pending:** one

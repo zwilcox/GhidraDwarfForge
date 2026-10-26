@@ -76,11 +76,16 @@ public final class LaterRegisterLocalSmoke {
                     intervals.get(1).storage().available() && intervals.get(2).start() == boundary &&
                     intervals.get(2).end() == 0x1000 + bytes.length && !intervals.get(2).storage().available(),
                     "wrong local interval " + target + "/" + width + ": " + intervals);
-                for (int offset : new int[] { -1, 0, 1, 5, x86 ? 7 : 8, x86 ? 10 : 12, bytes.length }) {
+                for (int offset : new int[] { -1, 0, 1, 5, x86 ? 10 : 12, bytes.length }) {
                     local.setFirstUseOffset(offset);
                     require(GhidraVariableStorage.localPrefix(program, function, local, mapping, rejected,
                         TaskMonitor.DUMMY).isEmpty(), "unproved first-use accepted " + offset);
                 }
+                local.setFirstUseOffset(x86 ? 7 : 8);
+                var defined = GhidraVariableStorage.localPrefix(program, function, local, mapping, rejected, TaskMonitor.DUMMY);
+                require(defined.size() == 2 && !defined.get(0).storage().available() &&
+                    defined.get(0).end() == boundary && defined.get(1).start() == boundary &&
+                    defined.get(1).storage().available(), "recorded zero definition must finish before availability");
                 local.setFirstUseOffset(4);
                 local.setName("imported", SourceType.IMPORTED);
                 require(GhidraVariableStorage.localPrefix(program, function, local, mapping, rejected,

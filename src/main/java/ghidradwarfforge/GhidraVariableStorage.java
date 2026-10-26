@@ -639,8 +639,9 @@ public final class GhidraVariableStorage {
 
     /**
      * A curated function-owned register local may start at an exact read-only
-     * instruction after a completed full-width definition. This preserves the
-     * analyst's storage binding, not an inferred original lexical scope.
+     * instruction after a completed full-width definition, or immediately after
+     * its recorded first-use instruction defines the whole register value.
+     * This preserves the analyst's binding, not an inferred original lexical scope.
      */
     public static List<StorageInterval> localPrefix(Program program, Function function,
             Variable variable, TargetRegisterMap registers, Storage rejected,
@@ -710,14 +711,28 @@ public final class GhidraVariableStorage {
         }
         long start = entry.getOffset();
         long end = Math.addExact(function.getBody().getMaxAddress().getOffset(), 1);
+        Instruction firstInstruction = program.getListing().getInstructionAt(firstUse);
+        if (firstInstruction == null) {
+            return List.of();
+        }
+        boolean definesStart = writesRegister(firstInstruction, base);
+        if (definesStart && !completeRegisterDefinition(firstInstruction, register, variable.getLength())) {
+            return List.of();
+        }
+        long availableStart = definesStart
+            ? Math.addExact(firstInstruction.getMaxAddress().getOffset(), 1) : firstUse.getOffset();
+        if (availableStart >= end) {
+            return List.of();
+        }
         // Validate the entire body, including effects after the proposed range.
-        // No call exception is provided. Require an earlier physical definition.
+        // No call exception is provided. The definition must have completed
+        // before the first state at which the location is offered to GDB.
         long firstWrite = registerPrefixEnd(start, end, instructions, List.of(base), true, monitor);
-        if (firstWrite <= start || firstWrite > firstUse.getOffset()) {
+        if (firstWrite <= start || firstWrite > availableStart) {
             return List.of();
         }
         boolean lastDefinitionComplete = false;
-        boolean readAtStart = false;
+        boolean provenStart = false;
         long boundary = end;
         for (Instruction instruction : instructions) {
             monitor.checkCancelled();
@@ -727,43 +742,47 @@ public final class GhidraVariableStorage {
             }
             boolean writes = writesRegister(instruction, base);
             if (instruction.getAddress().compareTo(firstUse) < 0 && writes) {
-                lastDefinitionComplete = false;
-                for (PcodeOp operation : instruction.getPcode()) {
-                    Varnode output = operation.getOutput();
-                    if (output != null && output.getAddress().getAddressSpace().equals(register.getAddress().getAddressSpace()) &&
-                            output.getOffset() <= register.getOffset() &&
-                            Math.addExact(output.getOffset(), output.getSize()) >=
-                                Math.addExact(register.getOffset(), variable.getLength())) {
-                        lastDefinitionComplete = true;
-                    }
-                }
+                lastDefinitionComplete = completeRegisterDefinition(instruction, register, variable.getLength());
             }
             if (instruction.getAddress().equals(firstUse)) {
-                if (writes || !lastDefinitionComplete) {
+                if (!definesStart && (writes || !lastDefinitionComplete)) {
                     return List.of();
                 }
                 for (PcodeOp operation : instruction.getPcode()) {
                     for (Varnode input : operation.getInputs()) {
-                        readAtStart |= storage.getFirstVarnode().equals(input);
+                        provenStart |= storage.getFirstVarnode().equals(input);
                     }
                 }
+                provenStart |= definesStart;
             }
             if (instruction.getAddress().compareTo(firstUse) > 0 && writes && boundary == end) {
                 boundary = Math.addExact(instruction.getMaxAddress().getOffset(), 1);
             }
         }
-        if (!readAtStart) {
+        if (!provenStart) {
             return List.of();
         }
         List<StorageInterval> result = new ArrayList<>();
-        result.add(new StorageInterval(start, firstUse.getOffset(), unavailable(OmissionReason.UNKNOWN_LIFETIME,
-            "curated register local is not live before its recorded first use")));
-        result.add(new StorageInterval(firstUse.getOffset(), boundary, mapped));
+        result.add(new StorageInterval(start, availableStart, unavailable(OmissionReason.UNKNOWN_LIFETIME,
+            "curated register local value is not established before its proven start")));
+        result.add(new StorageInterval(availableStart, boundary, mapped));
         if (boundary < end) {
             result.add(new StorageInterval(boundary, end, unavailable(OmissionReason.UNKNOWN_LIFETIME,
                 "curated register local was overwritten; later storage is not established")));
         }
         return List.copyOf(result);
+    }
+
+    private static boolean completeRegisterDefinition(Instruction instruction, Register register, int bytes) {
+        for (PcodeOp operation : instruction.getPcode()) {
+            Varnode output = operation.getOutput();
+            if (output != null && output.getAddress().getAddressSpace().equals(register.getAddress().getAddressSpace()) &&
+                    output.getOffset() <= register.getOffset() &&
+                    Math.addExact(output.getOffset(), output.getSize()) >= Math.addExact(register.getOffset(), bytes)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static Storage stableRegister(Program program, Function function,
