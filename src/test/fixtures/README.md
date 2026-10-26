@@ -399,3 +399,11 @@ headless harness excludes that block from the curated function body and proves
 that the exporter retains the parameter name/type without a false location.
 The x86-64/AArch64 GDB oracle checks the value after the entire assembly
 statement, where the compiler reference still describes the original value.
+
+`calling-convention.c` uses explicit x86-64 SysV and Microsoft conventions in
+one executable. Its harness preserves curated computed parameter storage and
+compares compiler, previous and corrected exports. Both ordinary calls must
+return 1234 with correct entry values. An unsupported debugger-injected call
+must be refused before the Microsoft-function counter changes; the default
+SysV call remains usable. Exec, PIE and rebased PIE are separate cases. This
+does not establish support for arbitrary alternate ABIs or custom storage.

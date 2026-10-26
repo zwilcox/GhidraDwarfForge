@@ -77,6 +77,12 @@ A local whose recorded first use initializes its register becomes available
 only after that instruction completes; the [definition-boundary tests](docs/LOCAL-DEFINITION-BOUNDARIES.md)
 pass on both targets through PR62's complete hosted gate and artifact review.
 
+Explicit nondefault calling conventions use a conservative
+[debugger-call policy](docs/CALLING-CONVENTION-POLICY.md): signatures and ordinary
+entry values remain available, while unsupported injected calls and automatic
+return-value presentation are disabled. Local validation passes; hosted
+acceptance remains pending.
+
 Stable register locations also require [contained control flow](docs/REGISTER-BODY-CONTROL-FLOW.md).
 An excluded branch block cannot silently clobber an allegedly stable register;
 unproven lifetimes retain names and types without locations.

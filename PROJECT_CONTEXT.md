@@ -1,5 +1,17 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally; hosted acceptance pending (2026-10-25):** explicitly
+selected nondefault Ghidra calling conventions now emit `DW_CC_nocall` instead
+of an unjustified normal-call assertion. Three x86-64 exec/PIE/rebase roles
+pass six corrected exports, three preceding-package comparisons and eighteen
+ordinary GDB calls. The previous artifact injects a Microsoft-ABI call with
+wrong arguments; the candidate refuses it before target execution. Entry
+values/types/source remain usable; GDB also honestly declines automatic return
+value presentation for that unclassified convention. Five-language model checks
+and twenty-two actual Java 21 suites pass, plus twelve cross-profile regression
+exports. See `docs/CALLING-CONVENTION-POLICY.md`; broader ABI classification
+and default/custom convention callability remain partial.
+
 **CONFIRMED locally; hosted acceptance pending (2026-10-25):** stable register
 locations now require contained control flow, not only complete body decoding.
 Six x86-64/AArch64 exec/PIE/rebase roles pass 24 corrected exports, six
@@ -19,7 +31,10 @@ observations; packaged i386 production passes sixteen lifetimes on each host.
 Normal merge `6507ffbc6e52156ba2776151dff8711069ef7108` preserves the tested
 tree. Receipt SHA-256:
 `745e68b0a2151b3e834b246d6d800072c6fb21f77e0ceae9c0609a7beaa4794b`.
-The distinct main run `40260399867` remains pending. Libc/shared, floating/vector
+The distinct main run `40260399867` passes all twelve jobs and independent
+package/raw/both-GUI review; receipt SHA-256
+`18dece7092f5d816cd7c36f4f32cf04a9bf2d02e616d468baa76f3218e9caf41`.
+Libc/shared, floating/vector
 and broader ABI/host claims remain outside that checkpoint. No release is
 published by this integration.
 

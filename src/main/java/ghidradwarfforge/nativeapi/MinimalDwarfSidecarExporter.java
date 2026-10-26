@@ -59,6 +59,7 @@ import static ghidradwarfforge.nativeapi.DwarfConstants.DW_ATE_UNSIGNED;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_ATE_UNSIGNED_CHAR;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_ATE_UTF;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_CC_NORMAL;
+import static ghidradwarfforge.nativeapi.DwarfConstants.DW_CC_NOCALL;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DWARF_DRD_BUFFER_VERSION;
 
 import java.io.ByteArrayOutputStream;
@@ -481,7 +482,8 @@ public final class MinimalDwarfSidecarExporter {
                     }
                     if (knownCallingConvention(signature.callingConvention())) {
                         addUnsigned(producer, consumer, debug, die,
-                            DW_AT_CALLING_CONVENTION, DW_CC_NORMAL, errorOut);
+                            DW_AT_CALLING_CONVENTION, signature.nonDefaultCallingConvention()
+                                ? DW_CC_NOCALL : DW_CC_NORMAL, errorOut);
                     }
                     addTypeReference(producer, consumer, debug, die,
                         signature.returnType(), typeModel.types(), allocatedTypes, errorOut);
@@ -533,7 +535,8 @@ public final class MinimalDwarfSidecarExporter {
                         declaration.returnType(), typeModel.types(), allocatedTypes, errorOut);
                     if (knownCallingConvention(declaration.callingConvention())) {
                         addUnsigned(producer, consumer, debug, die,
-                            DW_AT_CALLING_CONVENTION, DW_CC_NORMAL, errorOut);
+                            DW_AT_CALLING_CONVENTION, declaration.nonDefaultCallingConvention()
+                                ? DW_CC_NOCALL : DW_CC_NORMAL, errorOut);
                     }
                     if (declaration.noReturn()) {
                         addFlag(producer, consumer, debug, die, DW_AT_NORETURN, true, errorOut);
