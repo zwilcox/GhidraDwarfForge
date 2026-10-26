@@ -126,3 +126,19 @@ scope distinction, Ghidra's retained curated first-use metadata, and the
 preceding exporter's honest omission on both targets. Auto-analysis eliminated
 the temporary from its decompiled expression; it supplied no original lexical
 scope evidence. This feature therefore does not infer that information.
+
+
+### Initial hosted fixture-inventory failure
+
+Run `40247500844` at PR61 head `6d530f0` failed all five target lanes in
+`Build source fixture`: the new C source was absent from the explicit audited
+fixture inventory. Exporter integration and native Windows did not run.
+The exact package and eighteen actual Java 21 suites passed independently,
+but are not accepted as a full gate. Logs/artifacts remain under the root's
+`build/pr61-hosted/` with `review-stopped.json`.
+
+The inventory now explicitly includes `later-register-local.c`. Its existing
+unreviewed-file rejection remains intact. Fresh local reproducibility checks
+pass x86-64, AArch64, ARM32 and both MIPS byte orders; see
+`build/later-local-review/fixtures-*.log`. A fresh complete exact-head hosted
+gate is required. This correction changes no production ELF/DWARF behavior.

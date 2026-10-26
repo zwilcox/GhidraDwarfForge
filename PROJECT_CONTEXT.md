@@ -1,5 +1,11 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**Current gate correction:** initial PR61 run `40247500844` correctly rejects
+the unlisted new fixture in all five lanes before exporter tests. The audited
+inventory is now updated, and five fresh local reproducibility checks pass.
+A new full gate is required; the failed run and scoped package evidence remain
+separate. See `docs/LATER-REGISTER-LOCALS.md`.
+
 **CONFIRMED integration (2026-10-25):** stack-spill PR60 head
 `2b0666ff7cc5b1ff44cd7420522c57737cc72d43` passes all twelve jobs in
 `40244794589`, exact-package/seventeen actual Java 21 suites, raw five-target
