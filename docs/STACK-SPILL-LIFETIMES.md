@@ -1,9 +1,16 @@
 # Bounded parameter stack spills
 
-**CONFIRMED locally; hosted acceptance pending (2026-10-25).** A scalar
+**CONFIRMED in PR60 and its separate main gate (2026-10-25).** A scalar
 parameter can remain visible after its incoming register is overwritten when
 Ghidra's decoded instructions prove that the complete value was saved to one
 stack location. This extends P1.11a without completing general migration.
+
+PR60 head `2b0666f` passes all twelve jobs in `40244794589` and independent
+exact-package, seventeen actual Java 21 suites, raw target, both-GUI and
+38 native Windows task reviews. Merge `47ff38e` preserves the tested tree.
+Its separate main run `40247374065` also passes the complete gate and review;
+receipt SHA-256: `ec1358c3d2b4a99772b659be447497346aa16fe6046d86d142f7a36560dbe3a7`.
+Earlier hosted-pending statements describe historical checkpoints.
 
 ## Proof and limits
 

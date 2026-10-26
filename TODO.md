@@ -1,5 +1,18 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED integration (2026-10-25):** PR61 head
+`56ead2ffc19f0161e79a28683c91e3dac8a2d43f` passes all twelve jobs in
+`40249151143`, independent exact-package/eighteen actual Java 21 suites,
+raw five-target review, 39 native Windows tasks and both GUI hosts. Six
+hosted read-start roles/twelve exports provide 396 compiler/Forge GDB
+observations with exact locations and honest unavailable intervals. Normal
+merge `b58839468db8511c0814e9e50f766b60ef90f65f` preserves the tested tree.
+Receipt SHA-256:
+`04b499dfa37bf32da8916db2b8a41a81cd27642f8d11c7b9ac27a0302aa96f54`.
+The initial fixture-inventory failure remains rejected. Earlier PR61-pending
+notes are historical; its separate main-push gate is pending. The subsequent
+definition-start extension has its own local evidence and pending hosted gate.
+
 **CONFIRMED integration (2026-10-25):** PR59 head
 `28ae3f0c0b2306490932da8841d161b09bb9490e` passes all twelve jobs in
 `40241665541` and independent exact-package, sixteen actual Java 21 suites,
@@ -10,10 +23,13 @@ Thumb/VFP prefixes, mixed incoming pieces and explicit MIPS FP32 whole pairs
 (including sectionless inputs) pass their documented scopes. The corrected
 architecture guard and five controls also pass. Acceptance receipt SHA-256:
 `4b03ddc3aeb697d002b41f8bc6def3c9fdc427e7a63b3d28a932b49f2270bcfd`.
-Distinct main run `40244657118` is pending. Earlier failed-head evidence remains
+Distinct main run `40244657118` passes all twelve jobs and independent exact
+package/raw review; receipt SHA-256:
+`0e97ba1c742b3e7755c9e0c66b2ef667379c3b75a3b837b90dfe98dd1433756f`.
+Earlier failed-head evidence remains
 historical; no false architecture-check pass or partial gate is accepted.
 
-**Current follow-up — CONFIRMED locally, hosted acceptance pending:** one
+**HISTORICAL local checkpoint, accepted through PR60 below:** one
 completed scalar stack save passes six x86-64/AArch64 exec/PIE/rebase roles,
 twelve exports, six preceding-package comparisons and 1,350 GDB stops.
 Seventeen actual Java 21 suites and eight additional compatibility exports
@@ -1252,8 +1268,11 @@ six roles, twelve exports and 900 hosted compiler/Forge GDB observations.
 Normal merge `47ff38ebbfe2ac5eb8e7d2f3d0ec445fdb29dc95` preserves the accepted
 tree. Independent receipt SHA-256:
 `a84e37a5ccc878f2fcacae2dbf53726db7326585ca5b7dc838d1bb4f21ecf225`.
-Separate main-push verification is pending. Earlier pending stack-spill notes
-are historical; general migration and other unfinished work remain open.
+Separate main-push run `40247374065` at that merge also passes all twelve
+jobs and independent exact-package, raw target, GUI and native Windows review.
+Main receipt SHA-256:
+`ec1358c3d2b4a99772b659be447497346aa16fe6046d86d142f7a36560dbe3a7`.
+Earlier pending stack-spill notes are historical; general migration and other unfinished work remain open.
 
 **CONFIRMED locally; hosted acceptance pending (2026-10-25):** explicit
 function-owned register locals with positive first-use offsets now have a
