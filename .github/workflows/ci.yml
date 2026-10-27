@@ -597,7 +597,7 @@ jobs:
           packages=(gdb-multiarch llvm dwarfdump)
           case "$TARGET" in
             x86_64)
-              packages+=(gcc binutils gdb qemu-user-static xvfb openbox x11-utils libxtst6 libxi6 libxrender1)
+              packages+=(gcc binutils gdb libc6-i386 qemu-user-static xvfb openbox x11-utils libxtst6 libxi6 libxrender1)
               ;;
             aarch64)
               packages+=(gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
@@ -997,6 +997,14 @@ jobs:
         run: |
           for role in exec sectionless pie pie-rebased; do
               python3 src/test/integration/i386-profile-export.py "$GHIDRA_INSTALL_DIR" --role "$role"
+          done
+
+      - name: i386 shared-library stack values and curated/original lookup
+        if: matrix.target == 'x86_64'
+        run: |
+          set -euo pipefail
+          for role in exec exec-rebased pie pie-rebased; do
+              python3 src/test/integration/i386-shared-profile-export.py "$GHIDRA_INSTALL_DIR" --role "$role"
           done
 
       - name: Function-owned statics and duplicate-name lookup

@@ -22,6 +22,33 @@ ordinary execution remains tested. This is part of issue #66, not complete
 alternate-ABI support. The distinct main-push run `40445798908` is pending.
 No release publication is included.
 
+**CONFIRMED locally on the calling-convention candidate; hosted acceptance pending:**
+fresh shared/direct revalidation passes eight roles, sixteen deterministic
+exports and 3,000 GDB observations with the new producer JAR. Independent raw
+review verifies identity, exact locations/types/names and byte-identical shared
+inputs. Twenty-two actual Java 21 suites apply to the identical production JAR;
+sixteen fresh packaged i386 producer lifetimes also pass. Receipt SHA-256
+`9d5a8efaf99b9aa84176c41e84005a9372686bea62fa686eaa81e1a23794b900`.
+Submission remains held until PR65's correctness fix completes its hosted gate.
+
+**HISTORICAL shared checkpoint on the PR64 exporter:**
+the shared-library follow-up now includes PR64's control-flow correction.
+Fresh eight-role validation passes sixteen exports and 3,000 GDB observations,
+with independent raw identity/location/type/name review, twenty-one actual
+Java 21 suites and sixteen fresh packaged i386 producer lifetimes. Receipt
+SHA-256 `b33566ade02c64de6d80034e5bb39c6e6d2c1a82693572ca5fa70fa16ea1822d`.
+The calling-convention fix changes the producer JAR again; its fresh acceptance
+is recorded above.
+
+**HISTORICAL local shared-library checkpoint (2026-10-25):** the preceding
+i386 exporter now has shared-library exec/PIE/rebase evidence. Four shared and
+four original direct roles pass sixteen exports and 3,000 instruction-boundary
+GDB observations, strict-zero checking and independent raw location/type/name
+review. Shared inputs are byte-identical across roles; curated names require
+explicit sidecar loading while original dynamic symbols remain usable. No
+production code changes. See `docs/I386-SHARED-PROFILE.md`; broader libc/ABI,
+linkage and host claims remain incomplete.
+
 **CONFIRMED integration (2026-10-25):** PR64 head
 `23d9c57d5e8fc339650428d7252d9b5381adb49e` passes all twelve jobs in
 `40263198239`, independent exact-package/twenty-one actual Java 21 suites,

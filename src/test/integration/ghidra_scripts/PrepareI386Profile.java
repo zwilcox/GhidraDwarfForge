@@ -30,14 +30,16 @@ public class PrepareI386Profile extends GhidraScript {
         pair.add(IntegerDataType.dataType, "first", null);
         pair.add(IntegerDataType.dataType, "second", null);
         for (String name : List.of("scalar", "wide", "aggregate")) {
+            String displayName = symbols.has("curatedNames")
+                ? symbols.getAsJsonObject("curatedNames").get(name).getAsString() : name;
             var addresses = symbols.getAsJsonObject("functions").getAsJsonObject(name);
             var function = currentProgram.getFunctionManager().getFunctionAt(toAddr(addresses.get("entry").getAsLong() + delta));
             if (function == null || function.getBody().getNumAddressRanges() != 1 ||
                     function.getBody().getMaxAddress().getOffset() + 1 != addresses.get("end").getAsLong() + delta) {
                 throw new AssertionError("incomplete fixture function " + name);
             }
-            if (curate) function.setName(name, SourceType.USER_DEFINED);
-            if (!function.getName().equals(name)) throw new AssertionError("curated name lost");
+            if (curate) function.setName(displayName, SourceType.USER_DEFINED);
+            if (!function.getName().equals(displayName)) throw new AssertionError("curated name lost");
             var integer = IntegerDataType.dataType;
             var wide = LongLongDataType.dataType;
             DataType result = name.equals("wide") ? wide : integer;
@@ -77,18 +79,20 @@ public class PrepareI386Profile extends GhidraScript {
                 .filter(variable -> variable.getName().equals("curated_held")).toList();
             if (locals.size() != 1) throw new AssertionError("curated local lost");
             var local = locals.get(0);
-            rows.add(Map.of("name", name, "entry", function.getEntryPoint().toString(), "parameters", params,
+            rows.add(Map.of("name", name, "displayName", displayName, "entry", function.getEntryPoint().toString(), "parameters", params,
                 "returnType", function.getReturnType().getPathName(), "customStorage", function.hasCustomVariableStorage(),
                 "local", Map.of("name", local.getName(), "offset", local.getStackOffset(), "firstUse", local.getFirstUseOffset())));
         }
         if (curate) {
             var sink = toAddr(symbols.get("sink").getAsLong() + delta);
             createLabel(sink, "sink", true, SourceType.USER_DEFINED);
-            var start = currentProgram.getFunctionManager().getFunctionAt(toAddr(symbols.get("start").getAsLong() + delta));
-            if (start == null) throw new AssertionError("missing fixture entry");
-            start.setName("_start", SourceType.USER_DEFINED);
-            start.setReturnType(VoidDataType.dataType, SourceType.USER_DEFINED);
-            start.setNoReturn(true);
+            if (symbols.has("start")) {
+                var start = currentProgram.getFunctionManager().getFunctionAt(toAddr(symbols.get("start").getAsLong() + delta));
+                if (start == null) throw new AssertionError("missing fixture entry");
+                start.setName("_start", SourceType.USER_DEFINED);
+                start.setReturnType(VoidDataType.dataType, SourceType.USER_DEFINED);
+                start.setNoReturn(true);
+            }
             DataUtilities.createData(currentProgram, sink, IntegerDataType.dataType, 4,
                 DataUtilities.ClearDataMode.CLEAR_ALL_CONFLICT_DATA);
         }

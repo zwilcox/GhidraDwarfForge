@@ -6831,3 +6831,19 @@ Independent receipt SHA-256:
 `70e084c2319b8e392ec1247415f060f4337af2136b89b588d1ffff0eb29b086e`.
 The runtime stack pointer and actual instruction bytes independently validate
 every emitted parameter interval. Hosted acceptance remains pending.
+
+## Local i386 shared-library follow-up (2026-10-25)
+
+**CONFIRMED locally; hosted acceptance pending (2026-10-25):** the unchanged
+i386 exporter now has shared-library exec/PIE/rebase evidence. Four shared and
+four original direct roles pass sixteen exports and 3,000 instruction-boundary
+GDB observations, strict-zero checking and independent raw location/type/name
+review. Shared inputs are byte-identical across roles; curated names require
+explicit sidecar loading while original dynamic symbols remain usable. No
+production code changes. See `docs/I386-SHARED-PROFILE.md`; broader libc/ABI,
+linkage and host claims remain incomplete.
+
+Receipt SHA-256: `17770729f345af7ca5213fb06a578fa6dd37caaf1eeddd20e932dce0ced5f34d`.
+The source/layout and audit failures are retained in the linked evidence record;
+they are not passing feature evidence. Prior actual-Java-21 results apply to the
+identical production JAR, not to a new Java-21 execution.
