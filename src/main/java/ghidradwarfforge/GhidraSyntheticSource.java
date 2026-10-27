@@ -136,6 +136,13 @@ public final class GhidraSyntheticSource {
                 if (symbol == null) {
                     continue;
                 }
+                if (function.isThunk()) {
+                    // Ghidra may substitute the destination's body when decompiling
+                    // a thunk. That text is not source evidence for this memory body.
+                    texts.add(FunctionText.omitted(symbol.name(), symbol.address(),
+                        "curated thunk; destination decompilation is not source for this body"));
+                    continue;
+                }
                 monitor.setMessage("Decompiling " + symbol.name());
                 try {
                     DecompileResults result = operation.decompile(decompiler, function,

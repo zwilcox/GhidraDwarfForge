@@ -25,7 +25,7 @@ public final class FunctionStaticPolicy {
             return new Selection(List.of(), List.of());
         }
         Set<Long> failedOwners = source == null ? Set.of() : source.functions().stream()
-            .filter(function -> !function.decompiled())
+            .filter(function -> function.failureDiagnostic() != null)
             .map(SyntheticSourceFile.FunctionLines::address).collect(Collectors.toSet());
         List<FunctionStaticVariable> exported = new ArrayList<>();
         List<String> diagnostics = new ArrayList<>();

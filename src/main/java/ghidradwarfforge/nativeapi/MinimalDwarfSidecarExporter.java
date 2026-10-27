@@ -464,7 +464,7 @@ public final class MinimalDwarfSidecarExporter {
                         function.address(), errorOut);
                 }
                 FunctionLines sourceFunction = sourceFunctions.get(FunctionKey.of(function));
-                boolean sourceFailed = sourceFunction != null && !sourceFunction.decompiled();
+                boolean sourceFailed = sourceFunction != null && sourceFunction.failureDiagnostic() != null;
                 if (sourceFunction != null && sourceFunction.decompiled()) {
                     addUnsigned(producer, consumer, debug, die, DW_AT_DECL_FILE, fileIndex,
                         errorOut);

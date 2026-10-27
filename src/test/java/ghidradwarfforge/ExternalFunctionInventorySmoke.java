@@ -155,9 +155,12 @@ public final class ExternalFunctionInventorySmoke {
                 report(program, target, after, beforeTypes, repeatedDiagnostics).toJson()
                     .equals(report.toJson()), "inventory/report order is unstable");
 
-            // Two memory thunks remain distinct omissions from their one external target.
-            function(program, "stub_one", 0x400020).setThunkedFunction(first);
-            function(program, "stub_two", 0x400040).setThunkedFunction(first);
+            // Two uncurated memory thunks remain distinct omissions from their external target.
+            for (long offset : new long[] {0x400020, 0x400040}) {
+                var stub = function(program, "stub_" + Long.toHexString(offset), offset);
+                stub.getSymbol().setSource(SourceType.ANALYSIS);
+                stub.setThunkedFunction(first);
+            }
             var withThunks = extract(program, new ArrayList<>());
             require(withThunks.functions().equals(before.functions()) &&
                 withThunks.skippedFunctions().size() == 7 &&

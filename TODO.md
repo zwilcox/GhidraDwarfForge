@@ -1,5 +1,27 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally; hosted acceptance pending (2026-10-26):** explicitly
+analyst-named memory thunks preserve their own names/ranges and formal types,
+with deliberate source omission instead of borrowed destination decompilation.
+The six x86-64/AArch64 exec/PIE/rebase roles pass twelve candidate exports,
+six previous-package comparisons and eighteen GDB runs. Five-language models
+pass 165 checks; 23 actual Java 21 packaged suites, ten cross-profile parameter
+exports, genuine decompiler-failure and cancellation regressions pass. See
+`docs/CURATED-THUNKS.md`. This advances issue #66; general thunk/alias and ABI
+semantics remain partial. No hosted or release acceptance is claimed yet.
+
+**CONFIRMED integration (2026-10-26 America/Chicago):** PR65 head
+`fecf6247c8a82f56cb39b71e947775b68ac83775` passes all twelve jobs in
+`40266976465`, independent exact-package/twenty-two actual Java 21 suites,
+raw target/runtime review, 44 native Windows model tasks and both GUI hosts.
+Normal merge `e2320e0b71b3f7258748f3ac6f3c3ca11b866e46` preserves the tested
+tree. Acceptance receipt SHA-256:
+`cbb30f4a6d8bec15b8a79bcabebe42c1848383838da5d5eb162ef574bb81fa58`.
+Nondefault conventions safely reject unsupported debugger-injected calls;
+ordinary execution remains tested. This is part of issue #66, not complete
+alternate-ABI support. The distinct main-push run `40445798908` is pending.
+No release publication is included.
+
 **CONFIRMED integration (2026-10-25):** PR64 head
 `23d9c57d5e8fc339650428d7252d9b5381adb49e` passes all twelve jobs in
 `40263198239`, independent exact-package/twenty-one actual Java 21 suites,
@@ -8,10 +30,12 @@ The six hosted control-flow roles pass 24 exports and 72 GDB observations.
 Normal merge `db66cd5f1832238fa32392d568d0369d48efb9a0` preserves the tested
 tree. Hosted receipt SHA-256:
 `4d6ab95d2a4fa6ced53f5bae017ff50343c4beeffdbd0f558efa34b517cd7106`.
-The distinct main-push gate remains pending. Earlier local-only status for
-this correction is historical; broader lifetime recovery remains partial.
+The distinct main-push run `40266883548` also passes all twelve jobs and
+independent package/raw/both-GUI review; receipt SHA-256:
+`327f0abd832667c1ab971217219f71688455c60f96bedf4a2f5e15b5c08abfed`.
+Earlier pending status is historical; broader lifetime recovery remains partial.
 
-**CONFIRMED locally; hosted acceptance pending (2026-10-25):** explicitly
+**HISTORICAL local checkpoint, accepted through PR65 above:** explicitly
 selected nondefault Ghidra calling conventions now emit `DW_CC_nocall` instead
 of an unjustified normal-call assertion. Three x86-64 exec/PIE/rebase roles
 pass six corrected exports, three preceding-package comparisons and eighteen
@@ -415,7 +439,7 @@ combined run `40068401197`; its conditional-step scope is recorded in
 |---|---|
 | Corrective release (§0.1/0.2) | **CONFIRMED complete within the documented profiles:** alpha.2 is published from `2f88c4a` after exact-main CI `40064204515`, the final package audit and public-asset verification. Alpha.1 remains unchanged and affected; subsequent semantic/GUI/target/performance work is excluded. |
 | ELF robustness (P0.9) | **CONFIRMED complete within the documented bounds:** PR #18 implements extended counts, unnamed tables, bounded file-backed I/O, correct recorded-load-base translation and cancellation. Local checks and all twelve hosted jobs pass; direct PN_XNUM execution limits are documented. |
-| Function identity and scopes (P1.7, P3.3) | **CONFIRMED in hosted run `40063017269`:** explicit function-owned statics preserve duplicate-name lookup across all five targets, and the controlled failure check omits failed owners under the symbol-only contract. These workstreams remain partial. Curated addressless external declarations and recovered signature metadata are accepted through PR #53. Class-owned display paths and bounded direct-leaf-call backups are accepted through PR54 and its separate main gate. **PLANNED:** distinct linkage names, thunks/aliases, full class/lexical semantics, inferred static locals and remaining same-named type/variable cases. Existing namespace globals and external-data declarations must remain working. |
+| Function identity and scopes (P1.7, P3.3) | **CONFIRMED in hosted run `40063017269`:** explicit function-owned statics preserve duplicate-name lookup across all five targets, and the controlled failure check omits failed owners under the symbol-only contract. These workstreams remain partial. Curated addressless external declarations and recovered signature metadata are accepted through PR #53. Class-owned display paths and bounded direct-leaf-call backups are accepted through PR54 and its separate main gate. **PLANNED:** distinct linkage names, broader thunks/aliases, full class/lexical semantics, inferred static locals and remaining same-named type/variable cases. Existing namespace globals and external-data declarations must remain working. |
 | Additional range/location cases (P1.8, P1.11a) | **CONFIRMED:** bounded entry/ranges, code-only address indexing and incoming-register prefixes pass. PR #29 adds one proven direct-register backup; PR #30 omits unsupported nonzero stack-local starts. Their exact hosted gates pass. The bounded direct-leaf-call backup and additional x86-64/AArch64 exec/PIE/rebased-PIE cases are accepted through PR54. PR59 accepts terminal-return and mixed incoming prefixes through its complete hosted gate; its failed component heads remain historical. PR60 accepts one complete incoming scalar stack save; PR61 accepts explicit curated read-start register locals. PR62 accepts explicit curated definition-start locals. P1.11a remains partial: general register/memory migration, broader call/flow shapes, stack-slot reuse and additional composite storage still require instruction-specific GDB values and honest unavailable gaps. |
 | Target-profile coverage (P2.3/3a/3b) | **CONFIRMED in hosted runs `40063017269` and `40068401197`:** five baseline profiles and scalar FP aliases pass, with exact float/double values on x86-64/AArch64/ARM32 and scalar floats on both MIPS orders. The combined run also proves rejection of definite ELF/Ghidra processor, width or byte-order contradictions; nondefault variants/compiler specifications alone are not rejected. PR59 accepts bounded ARM/Thumb terminal prefixes and explicit MIPS FP32 whole pairs in both byte orders; FP64A transport remains unproven. The bounded i386 integer/stack profile is accepted through PR63 above. Target expansion and ABI classification remain partial; this is not blanket CPU/ABI support. |
 | GUI and output paths (P2.7) | **CONFIRMED:** both hosts' real Script Manager/chooser journeys pass. PR #31 adds actual parent traversal, complete publisher alias preflight and native Windows short-parent/trailing-dot controls; its exact PR/main gates and artifact reviews pass. Geometry/GDB run on Linux; Windows uses native GNU/LLVM, with independent libdwarf unavailable and Linux-ELF runtime GDB not run. |
@@ -1087,8 +1111,10 @@ not complete external declarations, linkage names, aliases or class scopes.
 **Status:** `[~]` — return/parameter DIEs, names,
 prototype/no-return/variadic flags, a user-defined signature, and
 standards-backed `DW_CC_normal` pass locally. Unrepresentable vendor ABI
-distinctions retain their model string without invented DWARF codes. Memory
-thunks are diagnosed and omitted. **HISTORICAL correction:** the earlier claim
+distinctions retain their model string without invented DWARF codes.
+**CONFIRMED locally; hosted pending:** explicitly analyst-named memory thunks
+emit typed definitions with deliberate source omission; uncurated thunks remain
+diagnosed and omitted. See `docs/CURATED-THUNKS.md`. **HISTORICAL correction:** the earlier claim
 that genuine external functions were also inventoried was not established:
 Ghidra's ordinary function iterator excludes them, and the integration assertion
 accepted a thunk diagnostic alone. **CONFIRMED:** the dedicated external
@@ -1117,7 +1143,7 @@ breakpoint name.
   or alias semantics; the broader signature task remains partial.
 - [~] Preserve calling-convention information where DWARF/GDB can use it:
   defaults retain `DW_CC_normal`; unknown convention state stays absent.
-  **CONFIRMED locally; hosted acceptance pending:** resolved nondefault
+  **CONFIRMED through accepted PR65:** resolved nondefault
   prototypes emit `DW_CC_nocall` with a diagnostic, preventing unclassified
   injected calls. Original model strings remain intact; no vendor mapping is
   invented. See `docs/CALLING-CONVENTION-POLICY.md`. Broader default/custom/
@@ -1127,8 +1153,11 @@ breakpoint name.
   analyst-facing `DW_AT_name` in the honest C11 CU, breaking
   `break recovered_add`.
 - [~] Distinguish definitions, declarations, imports, thunks, and aliases under
-  a documented policy: real definitions and curated addressless declarations emit. Memory thunks are
-  diagnosed; separate external-function inventory passes PR #42
+  a documented policy: real definitions and curated addressless declarations
+  emit. Locally validated
+  analyst-named memory thunks preserve typed symbols without borrowed source;
+  hosted acceptance is pending and uncurated thunks remain omitted. The
+  separate external-function inventory passes PR #42
   (`296395e` / `40126794530`) across all five targets and both hosts.
   Non-default declarations have an addressless model and producer path accepted
   in PR #49 and its separate main gate. Linkage and alias modeling
