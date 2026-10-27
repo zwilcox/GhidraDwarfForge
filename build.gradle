@@ -474,6 +474,18 @@ tasks.register("ghidraArm32FunctionModesSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/function-modes/cache").absolutePath
 }
 
+tasks.register("callingConventionPolicySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks resolved calling conventions and saved external declarations across five targets"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.CallingConventionPolicySmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/convention-policy/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/convention-policy/cache").absolutePath
+}
+
 tasks.register("dynamicParameterStorageSmoke", JavaExec) {
     group = "verification"
     description = "Checks computed parameter storage in saved Ghidra programs across five targets"

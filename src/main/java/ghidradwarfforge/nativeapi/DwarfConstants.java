@@ -81,6 +81,7 @@ public final class DwarfConstants {
     public static final long DW_ATE_UNSIGNED_CHAR = 0x08L;
     public static final long DW_ATE_UTF = 0x10L;
     public static final long DW_CC_NORMAL = 0x01L;
+    public static final long DW_CC_NOCALL = 0x03L;
 
     public static final long DW_LANG_C11 = 0x001dL;
     public static final int DWARF_DRD_BUFFER_VERSION = 2;

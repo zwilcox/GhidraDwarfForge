@@ -1,6 +1,17 @@
 # Stable register locations require contained control flow
 
-**CONFIRMED locally; hosted acceptance pending (2026-10-25):** a fully decoded
+**CONFIRMED integration (2026-10-25):** PR64 head
+`23d9c57d5e8fc339650428d7252d9b5381adb49e` passes all twelve jobs in
+`40263198239`, independent exact-package/twenty-one actual Java 21 suites,
+raw five-target review, 43 native Windows model tasks and both GUI hosts.
+The six hosted control-flow roles pass 24 exports and 72 GDB observations.
+Normal merge `db66cd5f1832238fa32392d568d0369d48efb9a0` preserves the tested
+tree. Hosted receipt SHA-256:
+`4d6ab95d2a4fa6ced53f5bae017ff50343c4beeffdbd0f558efa34b517cd7106`.
+The distinct main-push gate remains pending. Earlier local-only status for
+this correction is historical; broader lifetime recovery remains partial.
+
+**CONFIRMED defect and correction:** a fully decoded
 curated function body can omit a real branch destination. The excluded block
 can change an incoming register and return to the body. Inspecting only the
 body's instructions then incorrectly declares that register stable.
@@ -78,8 +89,8 @@ Raw six-role acceptance receipt SHA-256:
 Evidence lives in `build/outside-flow-review/` and
 `build/test-results/outside-body-flow/` in the `outside-body-flow` worktree.
 Local headless runs used Java 25 with Java 21-compatible bytecode; actual
-Java 21 model tests are separate evidence, and the hosted runtime remains
-pending. Both Linux and Windows CI invoke the new model smoke test; both
+Java 21 model tests are separate evidence; exact hosted acceptance is recorded
+above. Both Linux and Windows CI invoke the new model smoke test; both
 mandatory runtime target lanes invoke the six-role exporter/GDB harness.
 
 ## Retained failed attempts

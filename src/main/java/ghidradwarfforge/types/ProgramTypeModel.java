@@ -60,7 +60,8 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
 
     public record FunctionSignature(String name, long address, TypeRef returnType,
             List<Parameter> parameters, List<LocalVariable> locals, boolean variadic,
-            boolean noReturn, String callingConvention, String signatureSource) {
+            boolean noReturn, String callingConvention, String signatureSource,
+            boolean nonDefaultCallingConvention) {
         public FunctionSignature {
             if (name == null || name.isBlank() || address < 0 || returnType == null ||
                     parameters == null || locals == null || callingConvention == null ||
@@ -73,12 +74,19 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
                     .thenComparing(LocalVariable::name))
                 .toList();
         }
+
+        public FunctionSignature(String name, long address, TypeRef returnType,
+                List<Parameter> parameters, List<LocalVariable> locals, boolean variadic,
+                boolean noReturn, String callingConvention, String signatureSource) {
+            this(name, address, returnType, parameters, locals, variadic, noReturn,
+                callingConvention, signatureSource, false);
+        }
     }
 
     /** A curated external signature with an identity key, never an image address. */
     public record FunctionDeclaration(String key, String name, TypeRef returnType,
             List<Parameter> parameters, boolean variadic, boolean noReturn,
-            String callingConvention, String signatureSource) {
+            String callingConvention, String signatureSource, boolean nonDefaultCallingConvention) {
         public FunctionDeclaration {
             if (key == null || key.isBlank() || name == null || name.isBlank() ||
                     returnType == null || parameters == null || callingConvention == null ||
@@ -86,6 +94,13 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
                 throw new IllegalArgumentException("invalid external function declaration");
             }
             parameters = List.copyOf(parameters);
+        }
+
+        public FunctionDeclaration(String key, String name, TypeRef returnType,
+                List<Parameter> parameters, boolean variadic, boolean noReturn,
+                String callingConvention, String signatureSource) {
+            this(key, name, returnType, parameters, variadic, noReturn,
+                callingConvention, signatureSource, false);
         }
     }
 
