@@ -112,3 +112,24 @@ exports and 3,000 GDB observations with the thunk JAR above. Its 23 actual Java
 review receipt SHA-256:
 `71d4daece096658e583dc679ead487f5f8fe8491b112f52e2b58033f694db1d6`.
 These are local results; the combined hosted gate remains pending.
+
+## First hosted attempt and transport correction
+
+PR77 run `40448198808` passed four target lanes and the exact packaged 23-suite
+Java 21 check, but the MIPS32LE floating-register compiler-reference test failed
+before invoking the exporter. The retained emulator log reports a TCP bind
+collision on port 35948; GDB then timed out. Windows-host validation was skipped,
+so this combined head is not accepted.
+
+The floating harness now uses the existing private UNIX-socket helper and its
+readiness, child-exit and cleanup checks. The helper joins FP32 protected-input
+snapshots. No production/native/ABI code changes. Fresh default-profile exports
+pass all five targets (30 exports); sectionless explicit FP32 pieces add six
+MIPS32LE exports. Raw review confirms 43 unique sockets, successful emulator
+exits, removed private directories, validators and deterministic outputs.
+Startup, missing-executable, timeout and ready-child cleanup controls pass.
+The first review mistakenly expected 45 sessions; the corrected review asserts
+per-target counts because only MIPS needs a separate-symbol PIE compiler oracle.
+Receipt SHA-256:
+`6d6a1796c953d4fe4249aa1432bc70bc51fe2442564dff9b1758b1c9a90e8ca9`.
+The corrected exact head still requires the full hosted gate.

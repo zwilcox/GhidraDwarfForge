@@ -97,7 +97,9 @@ both GUI console reviews pass. PR65 merged as
 `e2320e0b71b3f7258748f3ac6f3c3ca11b866e46` with the tested tree.
 Receipt SHA-256:
 `cbb30f4a6d8bec15b8a79bcabebe42c1848383838da5d5eb162ef574bb81fa58`.
-The separate main-push run `40445798908` remains pending.
+The separate main-push run `40445798908` passes all twelve jobs and
+independent package/raw/both-GUI review; receipt SHA-256:
+`c45ca5127556fcf9eae19b917ebbbe707ead3504b1dbde2d02e62bf6c12529b9`.
 
 ## Retained research and failed attempts
 

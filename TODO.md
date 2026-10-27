@@ -1,5 +1,19 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED failed combined gate (2026-10-27):** PR77 run `40448198808`
+failed in the MIPS32 little-endian floating-register compiler-reference check.
+QEMU reported `bind: Address already in use` on the legacy TCP port; GDB then
+timed out before the Forge export ran. The other four target lanes and exact
+package/23 actual Java 21 suites passed, but native Windows was skipped and the
+combined head is not accepted. The floating-register harness now uses the
+existing private UNIX-socket readiness/cleanup helper. Local validation passes
+36 exports across all five profiles plus sectionless MIPS32LE FP32 pieces, with
+43 distinct successful/reaped emulator sessions and startup/failure controls.
+Receipt SHA-256:
+`6d6a1796c953d4fe4249aa1432bc70bc51fe2442564dff9b1758b1c9a90e8ca9`.
+Production code is unchanged. A fresh full hosted gate remains required; failed
+artifacts remain retained.
+
 ## GitHub issue tracking
 
 Each unfinished top-level TODO has one open tracking issue. Its remaining
@@ -47,7 +61,9 @@ tree. Acceptance receipt SHA-256:
 `cbb30f4a6d8bec15b8a79bcabebe42c1848383838da5d5eb162ef574bb81fa58`.
 Nondefault conventions safely reject unsupported debugger-injected calls;
 ordinary execution remains tested. This is part of issue #66, not complete
-alternate-ABI support. The distinct main-push run `40445798908` is pending.
+alternate-ABI support. The distinct main-push run `40445798908` passes all twelve jobs and
+independent exact-package/raw/both-GUI review; receipt SHA-256:
+`c45ca5127556fcf9eae19b917ebbbe707ead3504b1dbde2d02e62bf6c12529b9`.
 No release publication is included.
 
 **CONFIRMED locally on the calling-convention candidate; hosted acceptance pending:**
