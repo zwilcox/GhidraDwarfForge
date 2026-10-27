@@ -7,6 +7,18 @@ with current acceptance status, remaining-work checklists and completion gates.
 milestones and historical issues remain closed; component PRs must not close
 an umbrella issue until its remaining acceptance criteria are satisfied.
 
+**CONFIRMED integration (2026-10-26 America/Chicago):** PR65 head
+`fecf6247c8a82f56cb39b71e947775b68ac83775` passes all twelve jobs in
+`40266976465`, independent exact-package/twenty-two actual Java 21 suites,
+raw target/runtime review, 44 native Windows model tasks and both GUI hosts.
+Normal merge `e2320e0b71b3f7258748f3ac6f3c3ca11b866e46` preserves the tested
+tree. Acceptance receipt SHA-256:
+`cbb30f4a6d8bec15b8a79bcabebe42c1848383838da5d5eb162ef574bb81fa58`.
+Nondefault conventions safely reject unsupported debugger-injected calls;
+ordinary execution remains tested. This is part of issue #66, not complete
+alternate-ABI support. The distinct main-push run `40445798908` is pending.
+No release publication is included.
+
 **CONFIRMED integration (2026-10-25):** PR64 head
 `23d9c57d5e8fc339650428d7252d9b5381adb49e` passes all twelve jobs in
 `40263198239`, independent exact-package/twenty-one actual Java 21 suites,
@@ -15,10 +27,12 @@ The six hosted control-flow roles pass 24 exports and 72 GDB observations.
 Normal merge `db66cd5f1832238fa32392d568d0369d48efb9a0` preserves the tested
 tree. Hosted receipt SHA-256:
 `4d6ab95d2a4fa6ced53f5bae017ff50343c4beeffdbd0f558efa34b517cd7106`.
-The distinct main-push gate remains pending. Earlier local-only status for
-this correction is historical; broader lifetime recovery remains partial.
+The distinct main-push run `40266883548` also passes all twelve jobs and
+independent package/raw/both-GUI review; receipt SHA-256:
+`327f0abd832667c1ab971217219f71688455c60f96bedf4a2f5e15b5c08abfed`.
+Earlier pending status is historical; broader lifetime recovery remains partial.
 
-**CONFIRMED locally; hosted acceptance pending (2026-10-25):** explicitly
+**HISTORICAL local checkpoint, accepted through PR65 above:** explicitly
 selected nondefault Ghidra calling conventions now emit `DW_CC_nocall` instead
 of an unjustified normal-call assertion. Three x86-64 exec/PIE/rebase roles
 pass six corrected exports, three preceding-package comparisons and eighteen
