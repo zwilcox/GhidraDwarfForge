@@ -1,6 +1,6 @@
 # Calling conventions and debugger-injected calls
 
-**CONFIRMED locally; hosted acceptance pending (2026-10-25):** the candidate
+**CONFIRMED through accepted PR65:** the exporter
 preserves the selected Ghidra convention and marks a resolved nondefault
 prototype as `DW_CC_nocall`. All three local runtime roles pass.
 This is a conservative correctness policy, not a new alternate-ABI mapping.
@@ -91,7 +91,13 @@ pass. Candidate JAR SHA-256:
 Aggregate local receipt SHA-256:
 `25a5c14de64448ea9ad97e260392176e7f97c14c070ed32479456989726d89ba`.
 Headless local exports used Java 25 with Java 21 bytecode; actual Java 21 model
-runs are separate evidence. Hosted target/Windows acceptance is still pending.
+runs are separate evidence. Hosted target/Windows acceptance passes in exact-head run `40266976465`;
+all twelve jobs, independent package/raw review, 22 actual Java 21 suites and
+both GUI console reviews pass. PR65 merged as
+`e2320e0b71b3f7258748f3ac6f3c3ca11b866e46` with the tested tree.
+Receipt SHA-256:
+`cbb30f4a6d8bec15b8a79bcabebe42c1848383838da5d5eb162ef574bb81fa58`.
+The separate main-push run `40445798908` remains pending.
 
 ## Retained research and failed attempts
 

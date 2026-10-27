@@ -1,5 +1,24 @@
 # TODO.md — GhidraDwarfForge
 
+## GitHub issue tracking
+
+Each unfinished top-level TODO has one open tracking issue. Its remaining
+subtasks and acceptance criteria are checklists in that issue. Completed
+milestones and historical issues #1–#9 stay closed; partial component PRs do
+not close an umbrella issue automatically.
+
+| TODO | Tracking issue |
+|---|---|
+| P1.7 | [#66 — Complete function signatures, calling conventions, thunks and aliases](https://github.com/zwilcox/GhidraDwarfForge/issues/66) |
+| P1.11a | [#67 — Extend proven variable lifetimes and storage migration](https://github.com/zwilcox/GhidraDwarfForge/issues/67) |
+| P2.3 | [#68 — Extend the validated AArch64 ABI and storage profile](https://github.com/zwilcox/GhidraDwarfForge/issues/68) |
+| P2.3a | [#69 — Extend the validated MIPS ABI and floating-point profiles](https://github.com/zwilcox/GhidraDwarfForge/issues/69) |
+| P2.3b | [#70 — Extend ARM32 Thumb, ABI and endian coverage](https://github.com/zwilcox/GhidraDwarfForge/issues/70) |
+| P2.3c | [#71 — Extend i386 shared-library, floating-point and ABI coverage](https://github.com/zwilcox/GhidraDwarfForge/issues/71) |
+| P2.8 | [#72 — Implement opt-in debuglink attachment with backup and recovery](https://github.com/zwilcox/GhidraDwarfForge/issues/72) |
+| P3.3 | [#73 — Add evidence-backed lexical scopes, classes and declaration relationships](https://github.com/zwilcox/GhidraDwarfForge/issues/73) |
+| P3.5 | [#74 — Profile broader workloads and evaluate optional export optimizations](https://github.com/zwilcox/GhidraDwarfForge/issues/74) |
+
 **CONFIRMED locally; hosted acceptance pending (2026-10-26):** explicitly
 analyst-named memory thunks preserve their own names/ranges and formal types,
 with deliberate source omission instead of borrowed destination decompilation.
@@ -1096,6 +1115,8 @@ Define precedence among analyst-applied listing/signature types and decompiler g
 
 ## P1.7 Emit complete function signatures
 
+Tracking: [#66](https://github.com/zwilcox/GhidraDwarfForge/issues/66).
+
 **CONFIRMED locally; hosted acceptance pending (2026-10-25):** recorded class
 ancestors now retain their qualified display path, preventing same-named methods
 from collapsing onto an unrelated global. Five-language model checks, actual
@@ -1377,6 +1398,8 @@ or uncertain storage remains locationless with a diagnostic.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
 
+Tracking: [#67](https://github.com/zwilcox/GhidraDwarfForge/issues/67).
+
 **HISTORICAL local checkpoint, accepted through PR62 above:** a curated local's
 recorded full-width register definition now starts availability only after that
 instruction completes. A stale-value sentinel proves the earlier interval is
@@ -1597,6 +1620,8 @@ AArch64, ARM32, and MIPS32 big/little endian.
 
 ## P2.3 Add AArch64 target support
 
+Tracking: [#68](https://github.com/zwilcox/GhidraDwarfForge/issues/68).
+
 The shared [target-profile contract](docs/TARGET-PROFILES.md) records the
 existing five profiles and a finite follow-up order for P2.3/3a/3b. The
 read-only audit is **CONFIRMED**; ABI classification/diagnostics, scalar FP,
@@ -1630,6 +1655,8 @@ this documented profile.
   to target-description boundaries.
 
 ## P2.3a Add MIPS target support
+
+Tracking: [#69](https://github.com/zwilcox/GhidraDwarfForge/issues/69).
 
 **Status:** `[~]` — hosted real headless symbol export, structural validation,
 and QEMU/GDB runtime breakpoints pass for MIPS32 big/little endian ET_EXEC,
@@ -1699,6 +1726,8 @@ See `docs/MIPS-FP32-ORACLE.md`.
 
 ## P2.3b Add ARM32/AArch32 target support
 
+Tracking: [#70](https://github.com/zwilcox/GhidraDwarfForge/issues/70).
+
 **Status:** `[~]` — the ARMv7 hard-float, little-endian ARM-state profile passes
 the hosted producer, real headless exporter, structural-validator, and
 QEMU/GDB behavior matrix for ET_EXEC, PIE, shared objects, no-build-ID inputs,
@@ -1753,6 +1782,8 @@ See `docs/TERMINAL-RETURN-PREFIX.md` and `docs/VALIDATION.md`.
   separately modeled and validated before any broader support claim.
 
 ## P2.3c Add bounded i386 target coverage
+
+Tracking: [#71](https://github.com/zwilcox/GhidraDwarfForge/issues/71).
 
 **Status:** `[~]` — a bounded Linux
 i386 integer/stack profile now uses isolated ELF and GPR tables. Fully stripped
@@ -1934,6 +1965,8 @@ Additional user-journey coverage:
 - [x] Cancellation/failure leaves no mismatched final pair.
 
 ## P2.8 Add optional `.gnu_debuglink` attachment
+
+Tracking: [#72](https://github.com/zwilcox/GhidraDwarfForge/issues/72).
 
 **CONFIRMED:** PR #32 head `c94158b` passes all twelve jobs in exact hosted run
 `40091937766` and merged normally as `7f9c0d2`. The read-only foundations
@@ -2402,6 +2435,8 @@ after merge and post-merge validation.
 
 ## P3.3 Add richer scopes and declarations
 
+Tracking: [#73](https://github.com/zwilcox/GhidraDwarfForge/issues/73).
+
 **CONFIRMED investigation, not implementation:** isolated x86-64/AArch64
 producer/GDB tests show naive linkage-name emission hides the curated name,
 and an imported-declaration alias does not fix lookup. Imported labels can
@@ -2482,6 +2517,8 @@ are met. Do not infer compiler inlining from the flag or comments, discard
 surviving knowledge, or describe inline export as complete.
 
 ## P3.5 Add optional size/performance features
+
+Tracking: [#74](https://github.com/zwilcox/GhidraDwarfForge/issues/74).
 
 **CONFIRMED through PR53's complete hosted gate:** instruction-level stack profiles are created only
 when an exported stack location consumes them, then reused within the function.

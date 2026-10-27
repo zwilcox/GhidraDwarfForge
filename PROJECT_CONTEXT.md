@@ -1,5 +1,12 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED tracking (2026-10-25):** the user requested GitHub issues for the
+remaining TODOs. Issues #66–#74 now track all nine unfinished top-level items,
+with current acceptance status, remaining-work checklists and completion gates.
+`TODO.md` links each section and provides an issue index. Existing completed
+milestones and historical issues remain closed; component PRs must not close
+an umbrella issue until its remaining acceptance criteria are satisfied.
+
 **CONFIRMED locally; hosted acceptance pending (2026-10-26):** explicitly
 analyst-named memory thunks preserve their own names/ranges and formal types,
 with deliberate source omission instead of borrowed destination decompilation.
