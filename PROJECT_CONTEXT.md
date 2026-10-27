@@ -7,6 +7,15 @@ with current acceptance status, remaining-work checklists and completion gates.
 milestones and historical issues remain closed; component PRs must not close
 an umbrella issue until its remaining acceptance criteria are satisfied.
 
+**CONFIRMED local integration (2026-10-26):** the combined thunk/shared/issue
+tracking branch retains the tested thunk JAR. A fresh i386 shared/direct matrix
+passes eight roles, sixteen exports and 3,000 GDB observations with that JAR;
+23 actual Java 21 model suites and sixteen fresh native producer lifetimes also
+pass. Independent shared review receipt SHA-256:
+`71d4daece096658e583dc679ead487f5f8fe8491b112f52e2b58033f694db1d6`.
+The issue index preserves all nine open umbrella trackers. Full combined hosted
+acceptance remains pending; component PRs #75/#76 remain open until integration.
+
 **CONFIRMED locally; hosted acceptance pending (2026-10-26):** explicitly
 analyst-named memory thunks preserve their own names/ranges and formal types,
 with deliberate source omission instead of borrowed destination decompilation.

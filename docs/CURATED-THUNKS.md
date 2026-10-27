@@ -102,3 +102,13 @@ This does not recover source for tail transfers, distinguish every compiler
 thunk kind, create alias DIE relationships, certify inherited/custom calling
 conventions, infer locations from the destination, or complete class/lexical
 scope modeling. Those requirements remain in the open tracking issues.
+
+## Combined integration checkpoint
+
+The shared-library follow-up and TODO issue index are included through normal
+merge ancestry. A fresh eight-role i386 shared/direct matrix passes sixteen
+exports and 3,000 GDB observations with the thunk JAR above. Its 23 actual Java
+21 suites and sixteen fresh i386 producer lifetimes pass. Independent shared
+review receipt SHA-256:
+`71d4daece096658e583dc679ead487f5f8fe8491b112f52e2b58033f694db1d6`.
+These are local results; the combined hosted gate remains pending.
