@@ -597,10 +597,10 @@ jobs:
           packages=(gdb-multiarch llvm dwarfdump)
           case "$TARGET" in
             x86_64)
-              packages+=(gcc binutils gdb libc6-i386 qemu-user-static xvfb openbox x11-utils libxtst6 libxi6 libxrender1)
+              packages+=(gcc g++ binutils gdb libc6-i386 qemu-user-static xvfb openbox x11-utils libxtst6 libxi6 libxrender1)
               ;;
             aarch64)
-              packages+=(gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+              packages+=(gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
                 libc6-dev-arm64-cross qemu-user-static)
               ;;
             arm32)
@@ -1082,6 +1082,17 @@ jobs:
         run: |
           for role in exec pie pie-rebased; do
               python3 src/test/integration/later-register-local-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --first-use definition
+          done
+
+      - name: Retained ELF aliases and typed curated function identity
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for role in exec pie pie-rebased; do
+              for symbols in retained stripped; do
+                  python3 src/test/integration/retained-function-aliases-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --symbols "$symbols"
+              done
           done
 
       - name: Curated thunk names retain signatures without borrowed destination source
