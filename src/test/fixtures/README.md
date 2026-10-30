@@ -419,3 +419,10 @@ exec/PIE/rebased PIE on x86-64 and AArch64. It verifies a typed symbol at the
 thunk body, deliberate source omission, correct argument/return execution and
 previous-package omission; it does not treat destination decompilation as thunk
 source. See `docs/CURATED-THUNKS.md`.
+
+`second-register-copy.c` provides x86-64/AArch64 integer parameters with two
+completed register transfers followed by explicit backup kills. The real export
+harness tests exec/PIE/rebased-PIE, signed 32/64-bit values, both exact handoffs
+and unavailable tails against compiler DWARF and raw registers. It deliberately
+exercises incoming-value preservation, not mutable-local identity or arbitrary
+copy chains. The fixture is compiled by `second-register-copy-export.py`.

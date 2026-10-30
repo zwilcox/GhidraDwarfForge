@@ -1,5 +1,26 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally; hosted acceptance pending:** one additional proven
+incoming-parameter register backup is implemented under issue #67. Exact
+x86-64/AArch64 exec/PIE/rebased-PIE compiler and prior-package comparisons pass,
+with an explicit unavailable tail after the second backup is destroyed. Calls,
+mutable-local identity and arbitrary chains remain outside the proof. See
+`docs/SECOND-REGISTER-COPY.md` for evidence and retained failures. P1.7 remains
+open for linkage/aliases and broader calling-convention/return-ABI classification.
+
+**CONFIRMED integration (2026-10-29 America/Chicago):** PR77 corrected head
+`cb092feefa5005cd469c0f5fca241001c12a9287` passes all twelve jobs in
+`40505333973`, independent package/raw artifact review, 23 actual Java 21
+suites and both GUI console reviews. Normal merge
+`c779c0b93b3f90c8798f9f287cd72ff70002ec0b` preserves the tested tree and includes
+PR75/PR76 through normal ancestry. Acceptance receipt SHA-256:
+`39b29389e79eea862d9c7ae60fc0c6411a9901e94f2488df1bca522959b6735f`.
+Curated thunk symbols and bounded i386 shared-library debugging are accepted;
+P1.7 and the broader ABI/alias requirements remain partial. Earlier hosted-pending
+notes for these components are historical. The separate main-push run
+`40991540433` is pending; it is not replaced by the PR pass. No release is published.
+
+
 **CONFIRMED failed combined gate (2026-10-27):** PR77 run `40448198808`
 failed in the MIPS32 little-endian floating-register compiler-reference check.
 QEMU reported `bind: Address already in use` on the legacy TCP port; GDB then

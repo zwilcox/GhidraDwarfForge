@@ -17,10 +17,10 @@ import ghidradwarfforge.locations.VariableStorageModel.RegisterStorage;
  * One exact low-bit register backup in proven straight-line code. A separately
  * decoded direct leaf call requires both an ABI contract and no register writes.
  * Facts describe the entry value's bits, not a register's whole numeric value.
- * No memory facts, unique temporaries, chains, or lost-fact reacquisition.
+ * No memory or lost-fact recovery. Callers may prove a second copy separately.
  */
 final class RegisterCopyLifetime {
-    record Backup(long end, RegisterStorage storage) {
+    record Backup(long start, long end, RegisterStorage storage, Varnode bits) {
     }
 
     private RegisterCopyLifetime() {
@@ -50,6 +50,7 @@ final class RegisterCopyLifetime {
         var codeSpace = instructions.get(0).getAddress().getAddressSpace();
         Register candidate = null;
         RegisterStorage mapped = null;
+        Varnode copiedBits = null;
         boolean selected = false;
         boolean originalAlive = true;
         long candidateEnd = end;
@@ -123,6 +124,10 @@ final class RegisterCopyLifetime {
                     if (location instanceof RegisterStorage register) {
                         candidate = destination;
                         mapped = register;
+                        long lowOffset = program.getLanguage().isBigEndian()
+                            ? destination.getMinimumByteSize() - bytes : 0;
+                        Varnode slice = new Varnode(destination.getAddress().add(lowOffset), bytes);
+                        copiedBits = exactLowRegister(program, slice) == null ? null : slice;
                     }
                 }
             }
@@ -146,7 +151,7 @@ final class RegisterCopyLifetime {
             }
         }
         // A backup killed before the handoff gives no additional interval.
-        return selected && candidateEnd > handoff ? new Backup(candidateEnd, mapped) : null;
+        return selected && candidateEnd > handoff ? new Backup(handoff, candidateEnd, mapped, copiedBits) : null;
     }
 
     private static Register copySource(Program program, PcodeOp operation, int bytes) {
