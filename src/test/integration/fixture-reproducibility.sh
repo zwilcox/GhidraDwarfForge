@@ -72,6 +72,7 @@ expected_sources=(
     recovered-parameter-types.c
     register-copy.c
     register_prefix.c
+    retained-function-aliases.cpp
     second-register-copy.c
     semantic.c
     shared_driver.c

@@ -1,6 +1,6 @@
 # A second proven incoming-value register backup
 
-**CONFIRMED locally; hosted acceptance pending:** a single incoming scalar
+**CONFIRMED through accepted PR78:** a single incoming scalar
 parameter can retain its value through two complete register handoffs in a
 fully decoded straight-line leaf. This advances [P1.11a (#67)](https://github.com/zwilcox/GhidraDwarfForge/issues/67),
 which remains incomplete. General local-variable identity, arbitrary copy
@@ -83,8 +83,12 @@ These additional lanes preserve existing behavior; they do not establish
 second-copy runtime support beyond the two tested targets.
 
 CI adds the decoder suite to both host model lists and all three new runtime
-roles to the x86-64/AArch64 lanes. The full exact-head hosted gate and downloaded
-artifact/GUI review remain pending. This work does not publish a release or
+roles to the x86-64/AArch64 lanes. PR78 run `40993878434` passes all twelve jobs and independent downloaded
+artifact/24 actual Java 21 suites/raw target/both-GUI review. Normal merge
+`2c90da03ee4e4b585d15796e237b000d597b1168` preserves its tested tree.
+Receipt SHA-256:
+`8d2f77da6ccbf009daf11e1508493950c477f26873682da8aac8bd6b6520ff95`.
+The distinct main-push gate remains pending. This work does not publish a release or
 close the broader variable-lifetime issue.
 
 ## Retained failed attempts

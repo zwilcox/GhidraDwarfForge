@@ -426,3 +426,11 @@ harness tests exec/PIE/rebased-PIE, signed 32/64-bit values, both exact handoffs
 and unavailable tails against compiler DWARF and raw registers. It deliberately
 exercises incoming-value preservation, not mutable-local identity or arbitrary
 copy chains. The fixture is compiled by `second-register-copy-export.py`.
+
+`retained-function-aliases.cpp` defines mangled C++ functions, a real ELF alias,
+and distinct function-owned static integers. The exporter integration curates
+independent qualified names and signatures, then checks native/QEMU GDB types,
+alias and curated breakpoints, parameters, owned statics and source navigation.
+Retained/fully stripped controls and exec/PIE/rebased PIE distinguish original
+ELF symbol lookup from curated DWARF metadata. Unsupported labels with an
+IMPORTED source flag are deliberately not treated as original ELF aliases.

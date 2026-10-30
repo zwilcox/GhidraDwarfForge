@@ -1,12 +1,24 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
-**CONFIRMED locally; hosted acceptance pending:** one additional proven
-incoming-parameter register backup is implemented under issue #67. Exact
-x86-64/AArch64 exec/PIE/rebased-PIE compiler and prior-package comparisons pass,
-with an explicit unavailable tail after the second backup is destroyed. Calls,
-mutable-local identity and arbitrary chains remain outside the proof. See
-`docs/SECOND-REGISTER-COPY.md` for evidence and retained failures. P1.7 remains
-open for linkage/aliases and broader calling-convention/return-ABI classification.
+**CONFIRMED locally; hosted acceptance pending (2026-10-30):** retained original
+ELF function names and a same-address alias coexist with curated typed DWARF
+names, parameters, function-owned statics and source navigation. Twelve
+x86-64/AArch64 exec/PIE/rebased-PIE retained/fully stripped cases pass 24 exports
+and 96 compiler/Forge runtime calls. The stripped controls do not invent missing
+original aliases. This adds regression coverage and an explicit consumer policy,
+without changing production code or emitting distinct linkage attributes. See
+`docs/RETAINED-FUNCTION-ALIASES.md`. P1.7/#66 remains partial.
+
+**CONFIRMED integration (2026-10-30):** PR78 head
+`0c5dd575676329b9194b747e55251d9d8d8dd35d` passes all twelve jobs in
+`40993878434`, independent package/raw review, 24 actual Java 21 suites and
+both GUI console reviews. Normal merge
+`2c90da03ee4e4b585d15796e237b000d597b1168` preserves the tested tree.
+Acceptance receipt SHA-256:
+`8d2f77da6ccbf009daf11e1508493950c477f26873682da8aac8bd6b6520ff95`.
+The second proven incoming-register backup is accepted; broader lifetime
+recovery remains partial. The distinct main-push run `41071957971` is pending.
+No release publication is included.
 
 **CONFIRMED integration (2026-10-29 America/Chicago):** PR77 corrected head
 `cb092feefa5005cd469c0f5fca241001c12a9287` passes all twelve jobs in
@@ -18,7 +30,10 @@ PR75/PR76 through normal ancestry. Acceptance receipt SHA-256:
 Curated thunk symbols and bounded i386 shared-library debugging are accepted;
 P1.7 and the broader ABI/alias requirements remain partial. Earlier hosted-pending
 notes for these components are historical. The separate main-push run
-`40991540433` is pending; it is not replaced by the PR pass. No release is published.
+`40991540433` also passes all twelve jobs and independent exact-package/raw/
+both-GUI review; receipt SHA-256:
+`fb6bfc87bb47f0acb48d50929d48fcaf4468f99a746b7c8f7530152f21256459`.
+No release is published.
 
 
 **CONFIRMED failed combined gate (2026-10-27):** PR77 run `40448198808`
