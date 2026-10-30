@@ -231,8 +231,35 @@ public final class GhidraVariableStorage {
                 storage.getFirstVarnode(), parameter.getLength(), registers, calls, monitor)
             : null;
         if (backup != null) {
+            long firstHandoff = boundary;
             result.add(new StorageInterval(boundary, backup.end(), backup.storage()));
             boundary = backup.end();
+            // The first backup is independently proven to contain the incoming
+            // bits at firstHandoff. Start a fresh, bounded copy proof there:
+            // copies of stale pre-handoff state cannot establish a second fact.
+            // Only one additional handoff is admitted, with no calls anywhere.
+            if (boundary < end && calls.isEmpty() && backup.bits() != null &&
+                    function.getProgram() == program && storage.getProgramArchitecture() == program &&
+                    parameter.getFunction() == function && parameter.getOrdinal() >= 0 &&
+                    function.getParameter(parameter.getOrdinal()) == parameter && parameter.getFirstUseOffset() == 0 &&
+                    storage.isValid() && !storage.isBadStorage() && !storage.isForcedIndirect()) {
+                List<Instruction> suffix = new ArrayList<>();
+                for (Instruction instruction : instructions) {
+                    monitor.checkCancelled();
+                    if (instruction.getAddress().getOffset() >= firstHandoff) {
+                        suffix.add(instruction);
+                    }
+                }
+                var second = RegisterCopyLifetime.prove(program, firstHandoff, end, suffix,
+                    backup.bits(), parameter.getLength(), registers, monitor);
+                // A self-copy/widening can preserve the first fact while still
+                // being a physical write in the second proof. Require agreement
+                // on the handoff instead of joining two different boundaries.
+                if (second != null && second.start() == boundary) {
+                    result.add(new StorageInterval(boundary, second.end(), second.storage()));
+                    boundary = second.end();
+                }
+            }
         }
         boolean spilled = false;
         if (backup == null && !composite && formalType != null &&

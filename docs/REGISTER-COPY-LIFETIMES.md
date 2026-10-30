@@ -101,3 +101,13 @@ Actual Java 21 smoke and hosted full-JDK tests are recorded separately. An older
 research report's claim that local headless ran on Java 21 is historical and
 incorrect: its retained launch logs show `25.0.4.1`. Neither that correction nor
 this implementation changes the supported Ghidra/Java baseline.
+
+## Bounded second-copy follow-up
+
+**CONFIRMED locally; hosted acceptance pending:** the first proof can now be
+composed with one second exact copy proof for an attached incoming parameter
+in a call-free leaf. The two proofs must agree on the handoff; earlier copies
+and arbitrary chains are still not inferred. See
+[the second-copy contract](SECOND-REGISTER-COPY.md) for scoped evidence and
+remaining limits. Earlier one-copy-only descriptions above remain historical
+for the original accepted checkpoint.

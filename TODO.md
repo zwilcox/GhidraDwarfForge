@@ -1437,6 +1437,15 @@ or uncertain storage remains locationless with a diagnostic.
 
 Tracking: [#67](https://github.com/zwilcox/GhidraDwarfForge/issues/67).
 
+**CONFIRMED locally; hosted acceptance pending:** a second completed incoming
+scalar register backup preserves the value after the first backup is killed.
+Six x86-64/AArch64 exec/PIE/rebase roles pass twelve candidate exports, six
+previous-package comparisons and 1,188 compiler/Forge/previous GDB observations.
+The 186 decoder checks, 24 actual Java 21 packaged suites, twelve existing copy
+regression exports and ten five-profile parameter exports pass. Both proofs
+must agree on the exact handoff; no calls, arbitrary chains or mutable-local
+identity are inferred. See `docs/SECOND-REGISTER-COPY.md`. P1.11a remains partial.
+
 **HISTORICAL local checkpoint, accepted through PR62 above:** a curated local's
 recorded full-width register definition now starts availability only after that
 instruction completes. A stale-value sentinel proves the earlier interval is

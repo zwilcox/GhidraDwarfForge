@@ -1,5 +1,13 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally; hosted acceptance pending:** one additional proven
+incoming-parameter register backup is implemented under issue #67. Exact
+x86-64/AArch64 exec/PIE/rebased-PIE compiler and prior-package comparisons pass,
+with an explicit unavailable tail after the second backup is destroyed. Calls,
+mutable-local identity and arbitrary chains remain outside the proof. See
+`docs/SECOND-REGISTER-COPY.md` for evidence and retained failures. P1.7 remains
+open for linkage/aliases and broader calling-convention/return-ABI classification.
+
 **CONFIRMED integration (2026-10-29 America/Chicago):** PR77 corrected head
 `cb092feefa5005cd469c0f5fca241001c12a9287` passes all twelve jobs in
 `40505333973`, independent package/raw artifact review, 23 actual Java 21

@@ -19,8 +19,8 @@ public class PrepareRegisterCopy extends GhidraScript {
     @Override
     protected void run() throws Exception {
         String[] args = getScriptArgs();
-        if (args.length != 1) {
-            throw new IllegalArgumentException("expected <preparation-labels>");
+        if (args.length != 1 && args.length != 2) {
+            throw new IllegalArgumentException("expected <preparation-labels> [function-count]");
         }
         long delta = AddressNormalizer.rebaseDelta(currentProgram.getImageBase().getOffset(),
             GhidraImageBase.originalImageBase(currentProgram));
@@ -68,8 +68,8 @@ public class PrepareRegisterCopy extends GhidraScript {
             }
             count++;
         }
-        if (count != 4) {
-            throw new IllegalStateException("expected four fixture functions");
+        if (count != (args.length == 2 ? Integer.parseInt(args[1]) : 4)) {
+            throw new IllegalStateException("unexpected fixture function count");
         }
         println("register-copy-preparation=PASS");
     }
