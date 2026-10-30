@@ -1,13 +1,24 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
-**CONFIRMED locally; hosted acceptance pending (2026-10-30):** retained original
-ELF function names and a same-address alias coexist with curated typed DWARF
-names, parameters, function-owned statics and source navigation. Twelve
-x86-64/AArch64 exec/PIE/rebased-PIE retained/fully stripped cases pass 24 exports
-and 96 compiler/Forge runtime calls. The stripped controls do not invent missing
-original aliases. This adds regression coverage and an explicit consumer policy,
-without changing production code or emitting distinct linkage attributes. See
-`docs/RETAINED-FUNCTION-ALIASES.md`. P1.7/#66 remains partial.
+**CONFIRMED locally; hosted acceptance pending (2026-10-30):** the matched
+ELF writer can insert explicit local function symbols into an existing static
+symbol table while preserving all original records and string offsets. Both
+classes/orders pass 1,272 model checks. Twelve real x86-64/AArch64 exec/PIE/rebase
+retained/stripped cases pass 24 backend writes and 48 runtime calls, plus the
+ordinary exporter regression matrix. This is a backend prerequisite for curated
+aliases, not automatic alias extraction. See `docs/LOCAL-SYMBOL-TABLE-MERGE.md`.
+P1.7/#66 remains open.
+
+**CONFIRMED integration (2026-10-30):** PR79 head
+`d4d04a805d5bcd1daf7a6c8efd8c3b6a0b21ad9b` passes all twelve jobs in
+`41075538032`, independent exact-package/raw alias review, 24 actual Java 21
+suites and both GUI console reviews. Normal merge
+`1bda5cf382812251c0d42ba9ad33ff54105e9afd` preserves its tested tree.
+Acceptance receipt SHA-256:
+`a8bfe99353d2d38d6a35d9999fb027eb9e7f45fd5d91193dfa865fc50b229d62`.
+Retained-original ELF alias coverage is accepted; arbitrary curated aliases and
+broader ABI/scope behavior remain incomplete. The separate main-push run
+`41141403157` is pending. No release publication is included.
 
 **CONFIRMED integration (2026-10-30):** PR78 head
 `0c5dd575676329b9194b747e55251d9d8d8dd35d` passes all twelve jobs in
@@ -17,7 +28,9 @@ both GUI console reviews. Normal merge
 Acceptance receipt SHA-256:
 `8d2f77da6ccbf009daf11e1508493950c477f26873682da8aac8bd6b6520ff95`.
 The second proven incoming-register backup is accepted; broader lifetime
-recovery remains partial. The distinct main-push run `41071957971` is pending.
+recovery remains partial. The distinct main-push run `41071957971` also passes
+all twelve jobs and independent package/raw/both-GUI review; receipt SHA-256:
+`24f67e4ffa8287666e0081bba91743c00f6afdab5348114fa875c77f93190536`.
 No release publication is included.
 
 **CONFIRMED integration (2026-10-29 America/Chicago):** PR77 corrected head

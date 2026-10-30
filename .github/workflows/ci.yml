@@ -482,7 +482,7 @@ jobs:
               variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke secondRegisterCopySmoke laterRegisterLocalSmoke definedRegisterLocalSmoke stackSpillSmoke directLeafCallSmoke compositeRegisterPrefixSmoke \
               stackFirstUseSmoke \
               opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
-              arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke curatedThunkSmoke callingConventionPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
+              localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke curatedThunkSmoke callingConventionPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfAddressRangesSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
@@ -1095,6 +1095,13 @@ jobs:
               done
           done
 
+      - name: Lossless local symbol insertion with retained and stripped tables
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/local-symbol-merge-integration.py "$GHIDRA_INSTALL_DIR" "$TARGET"
+
       - name: Curated thunk names retain signatures without borrowed destination source
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
         env:
@@ -1501,7 +1508,7 @@ jobs:
           & .\gradlew.bat dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
-            arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke curatedThunkSmoke callingConventionPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
+            localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke curatedThunkSmoke callingConventionPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
             registerCopySmoke secondRegisterCopySmoke laterRegisterLocalSmoke definedRegisterLocalSmoke stackSpillSmoke directLeafCallSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
             elfBuildIdSmoke exportReportClaimsSmoke matchedElfPrefixSmoke `
             matchedElfAllocationsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke executableProgramBytesSmoke `

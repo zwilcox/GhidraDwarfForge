@@ -6,6 +6,9 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.CharacterCodingException;
+import java.nio.CharBuffer;
+import java.util.HashMap;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -146,7 +149,7 @@ public final class MatchedElfSidecarWriter {
 
     /** Plan and validate the append-only layout before copying any input bytes. */
     private Layout prepare(ElfImage image, Map<String, byte[]> debugSections,
-            List<ElfLocalFunctionSymbol> symbols, BooleanSupplier cancelled) {
+            List<ElfLocalFunctionSymbol> symbols, BooleanSupplier cancelled) throws IOException {
         long offset = image.fileSize();
         List<Section> sections = new ArrayList<>();
         if (image.sections().isEmpty()) {
@@ -283,30 +286,54 @@ public final class MatchedElfSidecarWriter {
             fileSize);
     }
 
+    private static final int MAX_SYMBOLS = 262144;
+
+    private record SymbolTableInput(Section table, Section strings, Section indices,
+            int count, int locals, byte[] records, byte[] names, byte[] extended,
+            Set<ByteBuffer> existingNames) {
+    }
+
     private static long addFunctionSymbols(ElfImage image, List<Section> sections,
             List<ElfLocalFunctionSymbol> symbols, List<byte[]> payloads, long offset,
-            BooleanSupplier cancelled) {
+            BooleanSupplier cancelled) throws IOException {
         if (symbols.isEmpty()) {
             return offset;
         }
         if (symbols.size() > 65536) {
             throw new IllegalArgumentException("local function symbol count exceeds safety limit");
         }
-        for (Section section : sections) {
-            checkCancelled(cancelled);
-            if (section.type == SHT_SYMTAB || section.name.equals(".symtab") ||
-                    section.name.equals(".strtab") || section.name.equals(".symtab_shndx")) {
-                throw new IllegalArgumentException("local function symbols conflict with existing sections");
-            }
-        }
-        int count = symbols.size() + 1;
         int width = image.is64Bit() ? 24 : 16;
+        SymbolTableInput old = readSymbolTable(image, sections, width, cancelled);
+        int oldCount = old == null ? 1 : old.count();
+        int oldLocals = old == null ? 1 : old.locals();
+        int count = Math.addExact(oldCount, symbols.size());
+        if (count > MAX_SYMBOLS) {
+            throw new IllegalArgumentException("merged symbol count exceeds safety limit");
+        }
         ByteBuffer table = ByteBuffer.allocate(Math.multiplyExact(count, width)).order(image.byteOrder());
         ByteBuffer indices = ByteBuffer.allocate(Math.multiplyExact(count, 4)).order(image.byteOrder());
         ByteArrayOutputStream strings = new ByteArrayOutputStream();
-        strings.write(0);
+        if (old == null) {
+            strings.write(0);
+        }
+        else {
+            strings.writeBytes(old.names());
+            // Insert new locals before the first original nonlocal. Every original
+            // record and its string offset stays byte-for-byte intact. Dependent
+            // symbol-index sections must be retired or explicitly handled below.
+            int split = oldLocals * width;
+            table.put(0, old.records(), 0, split);
+            table.put((oldLocals + symbols.size()) * width, old.records(), split,
+                old.records().length - split);
+            if (old.extended() != null) {
+                int indexSplit = oldLocals * 4;
+                indices.put(0, old.extended(), 0, indexSplit);
+                indices.put((oldLocals + symbols.size()) * 4, old.extended(), indexSplit,
+                    old.extended().length - indexSplit);
+            }
+        }
         Set<String> names = new HashSet<>();
-        boolean extended = false;
+        boolean extended = old != null && old.indices() != null;
         for (int index = 0; index < symbols.size(); index++) {
             checkCancelled(cancelled);
             ElfLocalFunctionSymbol symbol = symbols.get(index);
@@ -315,10 +342,21 @@ public final class MatchedElfSidecarWriter {
                         (SHF_ALLOC | SHF_EXECINSTR) || !names.add(symbol.name())) {
                 throw new IllegalArgumentException("invalid or duplicate planned local function symbol");
             }
-            byte[] name = symbol.name().getBytes(StandardCharsets.UTF_8);
+            byte[] name;
+            try {
+                ByteBuffer encoded = StandardCharsets.UTF_8.newEncoder().encode(CharBuffer.wrap(symbol.name()));
+                name = new byte[encoded.remaining()];
+                encoded.get(name);
+            }
+            catch (CharacterCodingException invalid) {
+                throw new IllegalArgumentException("local symbol name is not valid Unicode", invalid);
+            }
             if (name.length > ElfImage.MAX_NAME_BYTES ||
                     (long) strings.size() + name.length + 1 > ElfImage.MAX_NAME_TABLE_BYTES) {
                 throw new IllegalArgumentException("local symbol names exceed safety limit");
+            }
+            if (old != null && old.existingNames().contains(ByteBuffer.wrap(name))) {
+                throw new IllegalArgumentException("local symbol name conflicts with existing symbol: " + symbol.name());
             }
             int nameOffset = strings.size();
             strings.writeBytes(name);
@@ -326,8 +364,8 @@ public final class MatchedElfSidecarWriter {
             boolean escaped = symbol.sectionIndex() >= SHN_LORESERVE;
             int encoded = escaped ? SHN_XINDEX : symbol.sectionIndex();
             extended |= escaped;
-            indices.putInt((index + 1) * 4, escaped ? symbol.sectionIndex() : 0);
-            table.position((index + 1) * width);
+            indices.putInt((oldLocals + index) * 4, escaped ? symbol.sectionIndex() : 0);
+            table.position((oldLocals + index) * width);
             putUnsignedInt(table, nameOffset);
             if (image.is64Bit()) {
                 table.put((byte) 2); // STB_LOCAL | STT_FUNC; no original linkage assertion.
@@ -344,14 +382,18 @@ public final class MatchedElfSidecarWriter {
                 table.putShort((short) encoded);
             }
         }
-        Section namesSection = new Section();
-        namesSection.name = ".strtab";
-        namesSection.type = SHT_STRTAB;
+        Section namesSection = old == null ? new Section() : old.strings();
+        if (old == null) {
+            namesSection.name = ".strtab";
+            namesSection.type = SHT_STRTAB;
+            namesSection.alignment = 1;
+            sections.add(namesSection);
+        }
+        // Nonallocated string data needs only byte alignment in the new layout.
         namesSection.alignment = 1;
         namesSection.offset = offset;
         namesSection.size = strings.size();
-        int namesIndex = sections.size();
-        sections.add(namesSection);
+        int namesIndex = sections.indexOf(namesSection);
         payloads.add(strings.toByteArray());
         offset = addOffset(offset, namesSection.size);
 
@@ -359,33 +401,144 @@ public final class MatchedElfSidecarWriter {
         int padding = (int) ((alignment - offset % alignment) % alignment);
         payloads.add(new byte[padding]);
         offset = addOffset(offset, padding);
-        Section tableSection = new Section();
-        tableSection.name = ".symtab";
-        tableSection.type = SHT_SYMTAB;
+        Section tableSection = old == null ? new Section() : old.table();
+        if (old == null) {
+            tableSection.name = ".symtab";
+            tableSection.type = SHT_SYMTAB;
+            sections.add(tableSection);
+        }
         tableSection.offset = offset;
         tableSection.size = table.capacity();
         tableSection.link = namesIndex;
-        tableSection.info = count;
+        tableSection.info = oldLocals + symbols.size();
         tableSection.alignment = alignment;
         tableSection.entrySize = width;
-        int tableIndex = sections.size();
-        sections.add(tableSection);
+        int tableIndex = sections.indexOf(tableSection);
         payloads.add(table.array());
         offset = addOffset(offset, table.capacity());
         if (extended) {
-            Section extendedSection = new Section();
-            extendedSection.name = ".symtab_shndx";
-            extendedSection.type = SHT_SYMTAB_SHNDX;
+            Section extendedSection = old == null ? null : old.indices();
+            if (extendedSection == null) {
+                if (sections.stream().anyMatch(section -> section.name.equals(".symtab_shndx"))) {
+                    throw new IllegalArgumentException("extended symbol-index section name conflict");
+                }
+                extendedSection = new Section();
+                extendedSection.name = ".symtab_shndx";
+                extendedSection.type = SHT_SYMTAB_SHNDX;
+                sections.add(extendedSection);
+            }
             extendedSection.offset = offset;
             extendedSection.size = indices.capacity();
             extendedSection.link = tableIndex;
             extendedSection.alignment = 4;
             extendedSection.entrySize = 4;
-            sections.add(extendedSection);
             payloads.add(indices.array());
             offset = addOffset(offset, indices.capacity());
         }
         return offset;
+    }
+
+    /** Read only the symbol metadata needed for a lossless local insertion. */
+    private static SymbolTableInput readSymbolTable(ElfImage image, List<Section> sections,
+            int width, BooleanSupplier cancelled) throws IOException {
+        Section table = null;
+        for (Section section : sections) {
+            checkCancelled(cancelled);
+            if (section.type == SHT_SYMTAB) {
+                if (table != null) {
+                    throw new IllegalArgumentException("multiple static symbol tables cannot be merged");
+                }
+                table = section;
+            }
+        }
+        if (table == null) {
+            for (Section section : sections) {
+                if (section.name.equals(".symtab") || section.name.equals(".strtab") ||
+                        section.name.equals(".symtab_shndx")) {
+                    throw new IllegalArgumentException("local function symbols conflict with existing sections");
+                }
+            }
+            return null;
+        }
+        int tableIndex = sections.indexOf(table);
+        if (table.entrySize != width || table.size < width || table.size % width != 0 ||
+                table.size / width > MAX_SYMBOLS || table.info < 1 || table.info > table.size / width ||
+                table.flags != 0 || table.address != 0 || table.link <= 0 || table.link >= image.sections().size()) {
+            throw new IllegalArgumentException("unsupported static symbol table metadata");
+        }
+        Section strings = sections.get((int) table.link);
+        if (strings.type != SHT_STRTAB || strings.flags != 0 || strings.address != 0 ||
+                strings.size < 1 || strings.size > ElfImage.MAX_NAME_TABLE_BYTES ||
+                strings.offset != image.sections().get((int) table.link).offset) {
+            throw new IllegalArgumentException("unsupported static symbol string table");
+        }
+        int count = (int) (table.size / width);
+        Section indices = null;
+        for (Section section : sections) {
+            checkCancelled(cancelled);
+            if (section.link != tableIndex) {
+                continue;
+            }
+            if (section.type != SHT_SYMTAB_SHNDX || indices != null || section.flags != 0 ||
+                    section.address != 0 || section.entrySize != 4 || section.info != 0 || section.size != count * 4L) {
+                throw new IllegalArgumentException("unsupported dependent symbol-index section: " + section.name);
+            }
+            indices = section;
+        }
+        byte[] records = image.sectionData(table);
+        byte[] names = image.sectionData(strings);
+        byte[] extended = indices == null ? null : image.sectionData(indices);
+        ByteBuffer values = ByteBuffer.wrap(records).order(image.byteOrder());
+        ByteBuffer extra = extended == null ? null : ByteBuffer.wrap(extended).order(image.byteOrder());
+        if (names[0] != 0 || names[names.length - 1] != 0) {
+            throw new IllegalArgumentException("static symbol strings lack boundary terminators");
+        }
+        for (int i = 0; i < width; i++) {
+            if (records[i] != 0) {
+                throw new IllegalArgumentException("static null symbol is not zero");
+            }
+        }
+        Map<Integer, ByteBuffer> decoded = new HashMap<>();
+        Set<ByteBuffer> existingNames = new HashSet<>();
+        long nameBytes = 0;
+        for (int index = 0; index < count; index++) {
+            checkCancelled(cancelled);
+            int record = index * width;
+            long name = Integer.toUnsignedLong(values.getInt(record));
+            int info = Byte.toUnsignedInt(records[record + (image.is64Bit() ? 4 : 12)]);
+            int section = Short.toUnsignedInt(values.getShort(record + (image.is64Bit() ? 6 : 14)));
+            if (((info >>> 4) == 0) != (index < table.info) || name >= names.length ||
+                    (section < SHN_LORESERVE && section >= image.sections().size())) {
+                throw new IllegalArgumentException("invalid static symbol name, binding order or section");
+            }
+            long extendedIndex = extra == null ? 0 : Integer.toUnsignedLong(extra.getInt(index * 4));
+            if (section == SHN_XINDEX ? extra == null || extendedIndex == 0 || extendedIndex >= image.sections().size()
+                    : extendedIndex != 0) {
+                throw new IllegalArgumentException("invalid extended static symbol index");
+            }
+            int nameIndex = (int) name;
+            ByteBuffer key = decoded.get(nameIndex);
+            if (key == null) {
+                int end = nameIndex;
+                while (end < names.length && names[end] != 0 && end - nameIndex <= ElfImage.MAX_NAME_BYTES) {
+                    if ((end & 1023) == 0) {
+                        checkCancelled(cancelled);
+                    }
+                    end++;
+                }
+                if (end == names.length || end - nameIndex > ElfImage.MAX_NAME_BYTES ||
+                        (nameBytes += end - nameIndex) > ElfImage.MAX_NAME_TABLE_BYTES) {
+                    throw new IllegalArgumentException("static symbol names exceed supported bounds");
+                }
+                // ELF names are bytes, not necessarily UTF-8. Compare exact bytes
+                // without replacing malformed sequences or claiming a source encoding.
+                key = ByteBuffer.wrap(names, nameIndex, end - nameIndex).asReadOnlyBuffer();
+                decoded.put(nameIndex, key);
+                existingNames.add(key);
+            }
+        }
+        return new SymbolTableInput(table, strings, indices, count, (int) table.info,
+            records, names, extended, existingNames);
     }
 
     private static boolean isInheritedDebugMetadata(String name) {

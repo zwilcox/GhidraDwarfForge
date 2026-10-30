@@ -88,7 +88,9 @@ artifact/24 actual Java 21 suites/raw target/both-GUI review. Normal merge
 `2c90da03ee4e4b585d15796e237b000d597b1168` preserves its tested tree.
 Receipt SHA-256:
 `8d2f77da6ccbf009daf11e1508493950c477f26873682da8aac8bd6b6520ff95`.
-The distinct main-push gate remains pending. This work does not publish a release or
+The distinct main-push run `41071957971` also passes its full gate and
+independent package/raw/both-GUI review; receipt SHA-256:
+`24f67e4ffa8287666e0081bba91743c00f6afdab5348114fa875c77f93190536`. This work does not publish a release or
 close the broader variable-lifetime issue.
 
 ## Retained failed attempts
