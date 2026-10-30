@@ -1,5 +1,18 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED integration (2026-10-29 America/Chicago):** PR77 corrected head
+`cb092feefa5005cd469c0f5fca241001c12a9287` passes all twelve jobs in
+`40505333973`, independent package/raw artifact review, 23 actual Java 21
+suites and both GUI console reviews. Normal merge
+`c779c0b93b3f90c8798f9f287cd72ff70002ec0b` preserves the tested tree and includes
+PR75/PR76 through normal ancestry. Acceptance receipt SHA-256:
+`39b29389e79eea862d9c7ae60fc0c6411a9901e94f2488df1bca522959b6735f`.
+Curated thunk symbols and bounded i386 shared-library debugging are accepted;
+P1.7 and the broader ABI/alias requirements remain partial. Earlier hosted-pending
+notes for these components are historical. The separate main-push run
+`40991540433` is pending; it is not replaced by the PR pass. No release is published.
+
+
 **CONFIRMED failed combined gate (2026-10-27):** PR77 run `40448198808`
 failed in the MIPS32 little-endian floating-register compiler-reference check.
 QEMU reported `bind: Address already in use` on the legacy TCP port; GDB then
@@ -1185,7 +1198,7 @@ not complete external declarations, linkage names, aliases or class scopes.
 prototype/no-return/variadic flags, a user-defined signature, and
 standards-backed `DW_CC_normal` pass locally. Unrepresentable vendor ABI
 distinctions retain their model string without invented DWARF codes.
-**CONFIRMED locally; hosted pending:** explicitly analyst-named memory thunks
+**CONFIRMED through accepted PR77:** explicitly analyst-named memory thunks
 emit typed definitions with deliberate source omission; uncurated thunks remain
 diagnosed and omitted. See `docs/CURATED-THUNKS.md`. **HISTORICAL correction:** the earlier claim
 that genuine external functions were also inventoried was not established:
@@ -1227,9 +1240,8 @@ breakpoint name.
   `break recovered_add`.
 - [~] Distinguish definitions, declarations, imports, thunks, and aliases under
   a documented policy: real definitions and curated addressless declarations
-  emit. Locally validated
-  analyst-named memory thunks preserve typed symbols without borrowed source;
-  hosted acceptance is pending and uncurated thunks remain omitted. The
+  emit. Analyst-named memory thunks preserve typed symbols without borrowed source
+  through accepted PR77; uncurated thunks remain diagnosed and omitted. The
   separate external-function inventory passes PR #42
   (`296395e` / `40126794530`) across all five targets and both hosts.
   Non-default declarations have an addressless model and producer path accepted

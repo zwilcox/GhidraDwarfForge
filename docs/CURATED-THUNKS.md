@@ -1,5 +1,18 @@
 # Curated thunk symbols without borrowed source
 
+**CONFIRMED integration (2026-10-29 America/Chicago):** PR77 corrected head
+`cb092feefa5005cd469c0f5fca241001c12a9287` passes all twelve jobs in
+`40505333973`, independent package/raw artifact review, 23 actual Java 21
+suites and both GUI console reviews. Normal merge
+`c779c0b93b3f90c8798f9f287cd72ff70002ec0b` preserves the tested tree and includes
+PR75/PR76 through normal ancestry. Acceptance receipt SHA-256:
+`39b29389e79eea862d9c7ae60fc0c6411a9901e94f2488df1bca522959b6735f`.
+Curated thunk symbols and bounded i386 shared-library debugging are accepted;
+P1.7 and the broader ABI/alias requirements remain partial. Earlier hosted-pending
+notes for these components are historical. The separate main-push run
+`40991540433` is pending; it is not replaced by the PR pass. No release is published.
+
+
 **CONFIRMED locally; hosted acceptance pending:** explicitly analyst-named
 memory thunks now retain their own names, body ranges and formal signatures.
 This advances [P1.7 (#66)](https://github.com/zwilcox/GhidraDwarfForge/issues/66).
