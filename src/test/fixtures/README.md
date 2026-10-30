@@ -393,6 +393,11 @@ See `docs/TERMINAL-RETURN-PREFIX.md`.
   preserve inputs and saved program state; `--previous-ghidra` additionally
   demonstrates the preceding omission. See `docs/STACK-SPILL-LIFETIMES.md`.
 
+The i386 fixture also supports `FORGE_I386_SHARED_LIBRARY` and
+`FORGE_I386_SHARED_DRIVER` builds. They keep one source path and byte-identical
+library inputs across the shared exec/PIE/rebase cases. The driver uses the
+system 32-bit loader without libc calls or startup objects.
+
 `outside-body-flow.c` preserves a parameter in a compiler-known backup while
 inline assembly clears its incoming register in a branch-reached block. The
 headless harness excludes that block from the curated function body and proves
@@ -407,3 +412,10 @@ return 1234 with correct entry values. An unsupported debugger-injected call
 must be refused before the Microsoft-function counter changes; the default
 SysV call remains usable. Exec, PIE and rebased PIE are separate cases. This
 does not establish support for arbitrary alternate ABIs or custom storage.
+
+`curated-thunk.c` supplies a tiny tail-transfer function and integer destination.
+The real exporter harness curates the thunk name, persists/reopens it and checks
+exec/PIE/rebased PIE on x86-64 and AArch64. It verifies a typed symbol at the
+thunk body, deliberate source omission, correct argument/return execution and
+previous-package omission; it does not treat destination decompilation as thunk
+source. See `docs/CURATED-THUNKS.md`.

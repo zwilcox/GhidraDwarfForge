@@ -1,5 +1,98 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED failed combined gate (2026-10-27):** PR77 run `40448198808`
+failed in the MIPS32 little-endian floating-register compiler-reference check.
+QEMU reported `bind: Address already in use` on the legacy TCP port; GDB then
+timed out before the Forge export ran. The other four target lanes and exact
+package/23 actual Java 21 suites passed, but native Windows was skipped and the
+combined head is not accepted. The floating-register harness now uses the
+existing private UNIX-socket readiness/cleanup helper. Local validation passes
+36 exports across all five profiles plus sectionless MIPS32LE FP32 pieces, with
+43 distinct successful/reaped emulator sessions and startup/failure controls.
+Receipt SHA-256:
+`6d6a1796c953d4fe4249aa1432bc70bc51fe2442564dff9b1758b1c9a90e8ca9`.
+Production code is unchanged. A fresh full hosted gate remains required; failed
+artifacts remain retained.
+
+## GitHub issue tracking
+
+Each unfinished top-level TODO has one open tracking issue. Its remaining
+subtasks and acceptance criteria are checklists in that issue. Completed
+milestones and historical issues #1–#9 stay closed; partial component PRs do
+not close an umbrella issue automatically.
+
+| TODO | Tracking issue |
+|---|---|
+| P1.7 | [#66 — Complete function signatures, calling conventions, thunks and aliases](https://github.com/zwilcox/GhidraDwarfForge/issues/66) |
+| P1.11a | [#67 — Extend proven variable lifetimes and storage migration](https://github.com/zwilcox/GhidraDwarfForge/issues/67) |
+| P2.3 | [#68 — Extend the validated AArch64 ABI and storage profile](https://github.com/zwilcox/GhidraDwarfForge/issues/68) |
+| P2.3a | [#69 — Extend the validated MIPS ABI and floating-point profiles](https://github.com/zwilcox/GhidraDwarfForge/issues/69) |
+| P2.3b | [#70 — Extend ARM32 Thumb, ABI and endian coverage](https://github.com/zwilcox/GhidraDwarfForge/issues/70) |
+| P2.3c | [#71 — Extend i386 shared-library, floating-point and ABI coverage](https://github.com/zwilcox/GhidraDwarfForge/issues/71) |
+| P2.8 | [#72 — Implement opt-in debuglink attachment with backup and recovery](https://github.com/zwilcox/GhidraDwarfForge/issues/72) |
+| P3.3 | [#73 — Add evidence-backed lexical scopes, classes and declaration relationships](https://github.com/zwilcox/GhidraDwarfForge/issues/73) |
+| P3.5 | [#74 — Profile broader workloads and evaluate optional export optimizations](https://github.com/zwilcox/GhidraDwarfForge/issues/74) |
+
+**CONFIRMED local integration (2026-10-26):** the combined thunk/shared/issue
+tracking branch retains the tested thunk JAR. A fresh i386 shared/direct matrix
+passes eight roles, sixteen exports and 3,000 GDB observations with that JAR;
+23 actual Java 21 model suites and sixteen fresh native producer lifetimes also
+pass. Independent shared review receipt SHA-256:
+`71d4daece096658e583dc679ead487f5f8fe8491b112f52e2b58033f694db1d6`.
+The issue index preserves all nine open umbrella trackers. Full combined hosted
+acceptance remains pending; component PRs #75/#76 remain open until integration.
+
+**CONFIRMED locally; hosted acceptance pending (2026-10-26):** explicitly
+analyst-named memory thunks preserve their own names/ranges and formal types,
+with deliberate source omission instead of borrowed destination decompilation.
+The six x86-64/AArch64 exec/PIE/rebase roles pass twelve candidate exports,
+six previous-package comparisons and eighteen GDB runs. Five-language models
+pass 165 checks; 23 actual Java 21 packaged suites, ten cross-profile parameter
+exports, genuine decompiler-failure and cancellation regressions pass. See
+`docs/CURATED-THUNKS.md`. This advances issue #66; general thunk/alias and ABI
+semantics remain partial. No hosted or release acceptance is claimed yet.
+
+**CONFIRMED integration (2026-10-26 America/Chicago):** PR65 head
+`fecf6247c8a82f56cb39b71e947775b68ac83775` passes all twelve jobs in
+`40266976465`, independent exact-package/twenty-two actual Java 21 suites,
+raw target/runtime review, 44 native Windows model tasks and both GUI hosts.
+Normal merge `e2320e0b71b3f7258748f3ac6f3c3ca11b866e46` preserves the tested
+tree. Acceptance receipt SHA-256:
+`cbb30f4a6d8bec15b8a79bcabebe42c1848383838da5d5eb162ef574bb81fa58`.
+Nondefault conventions safely reject unsupported debugger-injected calls;
+ordinary execution remains tested. This is part of issue #66, not complete
+alternate-ABI support. The distinct main-push run `40445798908` passes all twelve jobs and
+independent exact-package/raw/both-GUI review; receipt SHA-256:
+`c45ca5127556fcf9eae19b917ebbbe707ead3504b1dbde2d02e62bf6c12529b9`.
+No release publication is included.
+
+**CONFIRMED locally on the calling-convention candidate; hosted acceptance pending:**
+fresh shared/direct revalidation passes eight roles, sixteen deterministic
+exports and 3,000 GDB observations with the new producer JAR. Independent raw
+review verifies identity, exact locations/types/names and byte-identical shared
+inputs. Twenty-two actual Java 21 suites apply to the identical production JAR;
+sixteen fresh packaged i386 producer lifetimes also pass. Receipt SHA-256
+`9d5a8efaf99b9aa84176c41e84005a9372686bea62fa686eaa81e1a23794b900`.
+Submission remains held until PR65's correctness fix completes its hosted gate.
+
+**HISTORICAL shared checkpoint on the PR64 exporter:**
+the shared-library follow-up now includes PR64's control-flow correction.
+Fresh eight-role validation passes sixteen exports and 3,000 GDB observations,
+with independent raw identity/location/type/name review, twenty-one actual
+Java 21 suites and sixteen fresh packaged i386 producer lifetimes. Receipt
+SHA-256 `b33566ade02c64de6d80034e5bb39c6e6d2c1a82693572ca5fa70fa16ea1822d`.
+The calling-convention fix changes the producer JAR again; its fresh acceptance
+is recorded above.
+
+**HISTORICAL local shared-library checkpoint (2026-10-25):** the preceding
+i386 exporter now has shared-library exec/PIE/rebase evidence. Four shared and
+four original direct roles pass sixteen exports and 3,000 instruction-boundary
+GDB observations, strict-zero checking and independent raw location/type/name
+review. Shared inputs are byte-identical across roles; curated names require
+explicit sidecar loading while original dynamic symbols remain usable. No
+production code changes. See `docs/I386-SHARED-PROFILE.md`; broader libc/ABI,
+linkage and host claims remain incomplete.
+
 **CONFIRMED integration (2026-10-25):** PR64 head
 `23d9c57d5e8fc339650428d7252d9b5381adb49e` passes all twelve jobs in
 `40263198239`, independent exact-package/twenty-one actual Java 21 suites,
@@ -8,10 +101,12 @@ The six hosted control-flow roles pass 24 exports and 72 GDB observations.
 Normal merge `db66cd5f1832238fa32392d568d0369d48efb9a0` preserves the tested
 tree. Hosted receipt SHA-256:
 `4d6ab95d2a4fa6ced53f5bae017ff50343c4beeffdbd0f558efa34b517cd7106`.
-The distinct main-push gate remains pending. Earlier local-only status for
-this correction is historical; broader lifetime recovery remains partial.
+The distinct main-push run `40266883548` also passes all twelve jobs and
+independent package/raw/both-GUI review; receipt SHA-256:
+`327f0abd832667c1ab971217219f71688455c60f96bedf4a2f5e15b5c08abfed`.
+Earlier pending status is historical; broader lifetime recovery remains partial.
 
-**CONFIRMED locally; hosted acceptance pending (2026-10-25):** explicitly
+**HISTORICAL local checkpoint, accepted through PR65 above:** explicitly
 selected nondefault Ghidra calling conventions now emit `DW_CC_nocall` instead
 of an unjustified normal-call assertion. Three x86-64 exec/PIE/rebase roles
 pass six corrected exports, three preceding-package comparisons and eighteen
@@ -415,7 +510,7 @@ combined run `40068401197`; its conditional-step scope is recorded in
 |---|---|
 | Corrective release (§0.1/0.2) | **CONFIRMED complete within the documented profiles:** alpha.2 is published from `2f88c4a` after exact-main CI `40064204515`, the final package audit and public-asset verification. Alpha.1 remains unchanged and affected; subsequent semantic/GUI/target/performance work is excluded. |
 | ELF robustness (P0.9) | **CONFIRMED complete within the documented bounds:** PR #18 implements extended counts, unnamed tables, bounded file-backed I/O, correct recorded-load-base translation and cancellation. Local checks and all twelve hosted jobs pass; direct PN_XNUM execution limits are documented. |
-| Function identity and scopes (P1.7, P3.3) | **CONFIRMED in hosted run `40063017269`:** explicit function-owned statics preserve duplicate-name lookup across all five targets, and the controlled failure check omits failed owners under the symbol-only contract. These workstreams remain partial. Curated addressless external declarations and recovered signature metadata are accepted through PR #53. Class-owned display paths and bounded direct-leaf-call backups are accepted through PR54 and its separate main gate. **PLANNED:** distinct linkage names, thunks/aliases, full class/lexical semantics, inferred static locals and remaining same-named type/variable cases. Existing namespace globals and external-data declarations must remain working. |
+| Function identity and scopes (P1.7, P3.3) | **CONFIRMED in hosted run `40063017269`:** explicit function-owned statics preserve duplicate-name lookup across all five targets, and the controlled failure check omits failed owners under the symbol-only contract. These workstreams remain partial. Curated addressless external declarations and recovered signature metadata are accepted through PR #53. Class-owned display paths and bounded direct-leaf-call backups are accepted through PR54 and its separate main gate. **PLANNED:** distinct linkage names, broader thunks/aliases, full class/lexical semantics, inferred static locals and remaining same-named type/variable cases. Existing namespace globals and external-data declarations must remain working. |
 | Additional range/location cases (P1.8, P1.11a) | **CONFIRMED:** bounded entry/ranges, code-only address indexing and incoming-register prefixes pass. PR #29 adds one proven direct-register backup; PR #30 omits unsupported nonzero stack-local starts. Their exact hosted gates pass. The bounded direct-leaf-call backup and additional x86-64/AArch64 exec/PIE/rebased-PIE cases are accepted through PR54. PR59 accepts terminal-return and mixed incoming prefixes through its complete hosted gate; its failed component heads remain historical. PR60 accepts one complete incoming scalar stack save; PR61 accepts explicit curated read-start register locals. PR62 accepts explicit curated definition-start locals. P1.11a remains partial: general register/memory migration, broader call/flow shapes, stack-slot reuse and additional composite storage still require instruction-specific GDB values and honest unavailable gaps. |
 | Target-profile coverage (P2.3/3a/3b) | **CONFIRMED in hosted runs `40063017269` and `40068401197`:** five baseline profiles and scalar FP aliases pass, with exact float/double values on x86-64/AArch64/ARM32 and scalar floats on both MIPS orders. The combined run also proves rejection of definite ELF/Ghidra processor, width or byte-order contradictions; nondefault variants/compiler specifications alone are not rejected. PR59 accepts bounded ARM/Thumb terminal prefixes and explicit MIPS FP32 whole pairs in both byte orders; FP64A transport remains unproven. The bounded i386 integer/stack profile is accepted through PR63 above. Target expansion and ABI classification remain partial; this is not blanket CPU/ABI support. |
 | GUI and output paths (P2.7) | **CONFIRMED:** both hosts' real Script Manager/chooser journeys pass. PR #31 adds actual parent traversal, complete publisher alias preflight and native Windows short-parent/trailing-dot controls; its exact PR/main gates and artifact reviews pass. Geometry/GDB run on Linux; Windows uses native GNU/LLVM, with independent libdwarf unavailable and Linux-ELF runtime GDB not run. |
@@ -1045,6 +1140,8 @@ Define precedence among analyst-applied listing/signature types and decompiler g
 
 ## P1.7 Emit complete function signatures
 
+Tracking: [#66](https://github.com/zwilcox/GhidraDwarfForge/issues/66).
+
 **CONFIRMED locally; hosted acceptance pending (2026-10-25):** recorded class
 ancestors now retain their qualified display path, preventing same-named methods
 from collapsing onto an unrelated global. Five-language model checks, actual
@@ -1087,8 +1184,10 @@ not complete external declarations, linkage names, aliases or class scopes.
 **Status:** `[~]` — return/parameter DIEs, names,
 prototype/no-return/variadic flags, a user-defined signature, and
 standards-backed `DW_CC_normal` pass locally. Unrepresentable vendor ABI
-distinctions retain their model string without invented DWARF codes. Memory
-thunks are diagnosed and omitted. **HISTORICAL correction:** the earlier claim
+distinctions retain their model string without invented DWARF codes.
+**CONFIRMED locally; hosted pending:** explicitly analyst-named memory thunks
+emit typed definitions with deliberate source omission; uncurated thunks remain
+diagnosed and omitted. See `docs/CURATED-THUNKS.md`. **HISTORICAL correction:** the earlier claim
 that genuine external functions were also inventoried was not established:
 Ghidra's ordinary function iterator excludes them, and the integration assertion
 accepted a thunk diagnostic alone. **CONFIRMED:** the dedicated external
@@ -1117,7 +1216,7 @@ breakpoint name.
   or alias semantics; the broader signature task remains partial.
 - [~] Preserve calling-convention information where DWARF/GDB can use it:
   defaults retain `DW_CC_normal`; unknown convention state stays absent.
-  **CONFIRMED locally; hosted acceptance pending:** resolved nondefault
+  **CONFIRMED through accepted PR65:** resolved nondefault
   prototypes emit `DW_CC_nocall` with a diagnostic, preventing unclassified
   injected calls. Original model strings remain intact; no vendor mapping is
   invented. See `docs/CALLING-CONVENTION-POLICY.md`. Broader default/custom/
@@ -1127,8 +1226,11 @@ breakpoint name.
   analyst-facing `DW_AT_name` in the honest C11 CU, breaking
   `break recovered_add`.
 - [~] Distinguish definitions, declarations, imports, thunks, and aliases under
-  a documented policy: real definitions and curated addressless declarations emit. Memory thunks are
-  diagnosed; separate external-function inventory passes PR #42
+  a documented policy: real definitions and curated addressless declarations
+  emit. Locally validated
+  analyst-named memory thunks preserve typed symbols without borrowed source;
+  hosted acceptance is pending and uncurated thunks remain omitted. The
+  separate external-function inventory passes PR #42
   (`296395e` / `40126794530`) across all five targets and both hosts.
   Non-default declarations have an addressless model and producer path accepted
   in PR #49 and its separate main gate. Linkage and alias modeling
@@ -1320,6 +1422,8 @@ or uncertain storage remains locationless with a diagnostic.
 - [x] x86-64 register-number mapping has explicit tests.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
+
+Tracking: [#67](https://github.com/zwilcox/GhidraDwarfForge/issues/67).
 
 **HISTORICAL local checkpoint, accepted through PR62 above:** a curated local's
 recorded full-width register definition now starts availability only after that
@@ -1541,6 +1645,8 @@ AArch64, ARM32, and MIPS32 big/little endian.
 
 ## P2.3 Add AArch64 target support
 
+Tracking: [#68](https://github.com/zwilcox/GhidraDwarfForge/issues/68).
+
 The shared [target-profile contract](docs/TARGET-PROFILES.md) records the
 existing five profiles and a finite follow-up order for P2.3/3a/3b. The
 read-only audit is **CONFIRMED**; ABI classification/diagnostics, scalar FP,
@@ -1574,6 +1680,8 @@ this documented profile.
   to target-description boundaries.
 
 ## P2.3a Add MIPS target support
+
+Tracking: [#69](https://github.com/zwilcox/GhidraDwarfForge/issues/69).
 
 **Status:** `[~]` — hosted real headless symbol export, structural validation,
 and QEMU/GDB runtime breakpoints pass for MIPS32 big/little endian ET_EXEC,
@@ -1643,6 +1751,8 @@ See `docs/MIPS-FP32-ORACLE.md`.
 
 ## P2.3b Add ARM32/AArch32 target support
 
+Tracking: [#70](https://github.com/zwilcox/GhidraDwarfForge/issues/70).
+
 **Status:** `[~]` — the ARMv7 hard-float, little-endian ARM-state profile passes
 the hosted producer, real headless exporter, structural-validator, and
 QEMU/GDB behavior matrix for ET_EXEC, PIE, shared objects, no-build-ID inputs,
@@ -1698,6 +1808,8 @@ See `docs/TERMINAL-RETURN-PREFIX.md` and `docs/VALIDATION.md`.
 
 ## P2.3c Add bounded i386 target coverage
 
+Tracking: [#71](https://github.com/zwilcox/GhidraDwarfForge/issues/71).
+
 **Status:** `[~]` — a bounded Linux
 i386 integer/stack profile now uses isolated ELF and GPR tables. Fully stripped
 exec, sectionless ELF, PIE and rebased PIE pass eight exports, 1,440 debugger
@@ -1709,8 +1821,10 @@ floating/vector and broader ABI/host claims remain outside this checkpoint.
 - [x] Local isolated target/GPR model and producer baseline.
 - [x] Local real export/validator/GDB exec, sectionless, PIE and rebase profile.
 - [x] PR63 exact-head full hosted gate and independent package/runtime review.
-- [ ] Broader libc/shared, floating/vector and host-specific profiles before
-  expanding the documented support claim.
+- [~] Shared-library exec/PIE drivers with Ghidra rebases: prior local review
+  passes; corrected-exporter rerun passes; exact-head hosted acceptance is pending.
+- [ ] Broader libc, floating/vector and host-specific profiles before expanding
+  the documented support claim.
 
 ## P2.4 Validate Windows-hosted Ghidra
 
@@ -1876,6 +1990,8 @@ Additional user-journey coverage:
 - [x] Cancellation/failure leaves no mismatched final pair.
 
 ## P2.8 Add optional `.gnu_debuglink` attachment
+
+Tracking: [#72](https://github.com/zwilcox/GhidraDwarfForge/issues/72).
 
 **CONFIRMED:** PR #32 head `c94158b` passes all twelve jobs in exact hosted run
 `40091937766` and merged normally as `7f9c0d2`. The read-only foundations
@@ -2344,6 +2460,8 @@ after merge and post-merge validation.
 
 ## P3.3 Add richer scopes and declarations
 
+Tracking: [#73](https://github.com/zwilcox/GhidraDwarfForge/issues/73).
+
 **CONFIRMED investigation, not implementation:** isolated x86-64/AArch64
 producer/GDB tests show naive linkage-name emission hides the curated name,
 and an imported-declaration alias does not fix lookup. Imported labels can
@@ -2424,6 +2542,8 @@ are met. Do not infer compiler inlining from the flag or comments, discard
 surviving knowledge, or describe inline export as complete.
 
 ## P3.5 Add optional size/performance features
+
+Tracking: [#74](https://github.com/zwilcox/GhidraDwarfForge/issues/74).
 
 **CONFIRMED through PR53's complete hosted gate:** instruction-level stack profiles are created only
 when an exported stack location consumes them, then reused within the function.

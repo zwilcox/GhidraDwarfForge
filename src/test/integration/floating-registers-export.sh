@@ -43,6 +43,7 @@ if [[ "$abi_profile" == mips-fp32 ]]; then
 fi
 repository=$(realpath "$(dirname "$0")/../../..")
 source "$repository/src/test/integration/elf-layout-gdb-oracle.sh"
+source "$repository/src/test/integration/qemu-socket.sh"
 root="$repository/build/test-results/floating-registers"
 if [[ "$abi_profile" == mips-fp32 ]]; then root+="-fp32"; fi
 if [[ "$storage_form" == explicit-pieces ]]; then root+="-pieces"; fi
@@ -50,16 +51,11 @@ if [[ "$elf_layout" == sectionless ]]; then root+="-sectionless"; fi
 mkdir -p "$root"
 results=$(mktemp -d "$root/run.XXXXXXXX")
 projects=$(mktemp -d /tmp/forge-floating-registers.XXXXXXXX)
-emulator_pid=
 cleanup() {
-    if [[ -n "$emulator_pid" ]]; then
-        kill "$emulator_pid" 2>/dev/null || true
-        wait "$emulator_pid" 2>/dev/null || true
-    fi
+    qemu_socket_cleanup
     rm -rf -- "$projects"
 }
 trap cleanup EXIT
-port=$((28000 + $$ % 10000))
 echo "floating-register-results=$results"
 snapshot_fp32_inputs() {
     python3 - "$repository" "$ghidra" "$consumer" "$producer" "$results" "$1" <<'PYTHON'
@@ -73,6 +69,7 @@ files = [consumer, producer] + [repository / name for name in (
     'src/test/fixtures/fp_register_aliases.c',
     'src/test/integration/floating-registers-export.sh',
     'src/test/integration/floating-registers-gdb.py',
+    'src/test/integration/qemu-socket.sh',
     'src/test/integration/check-fp32-register-pieces.py',
     'src/test/integration/fp32-sectionless-fixture.py',
     'src/test/integration/ghidra_scripts/PrepareFloatingRegisters.java',
@@ -90,11 +87,9 @@ run_gdb() {
     local options=() remote=
     if [[ -n "$sidecar" ]]; then options=(-ex "symbol-file \"$sidecar\""); fi
     if [[ -n "$emulator" ]]; then
-        "$emulator" -L "$sysroot" -g "$port" "$executable" >"$log.emulator" 2>&1 &
-        emulator_pid=$!
-        remote=$port
+        qemu_socket_start "$log.emulator" "$emulator" "$sysroot" "$executable"
+        remote=$qemu_socket_path
         options+=(-ex "set sysroot $sysroot")
-        sleep 0.2
     fi
     FORGE_FP_LABELS="$case_root/labels.txt" FORGE_FP_MODE="$mode" \
         FORGE_FP_TARGET="$target" FORGE_FP_REMOTE="$remote" \
@@ -103,7 +98,7 @@ run_gdb() {
         -ex 'set debuginfod enabled off' -ex 'set auto-solib-add off' \
         -ex 'set disable-randomization off' -ex "file \"$executable\"" "${options[@]}" \
         -x "$repository/src/test/integration/floating-registers-gdb.py" >"$log" 2>&1
-    if [[ -n "$emulator_pid" ]]; then wait "$emulator_pid"; emulator_pid=; fi
+    if [[ -n "$emulator" ]]; then qemu_socket_wait; fi
     local oracle="$case_root/compiler-gdb.txt" diagnostics="$log.diagnostics"
     if [[ "$mode" == compiler ]]; then oracle=$log; fi
     if [[ "$target" == mips* && "$role" == pie && -n "$sidecar" ]]; then

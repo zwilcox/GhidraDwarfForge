@@ -198,3 +198,8 @@ through all tested PCs in both byte orders and exec/PIE/rebase cases. The
 whole-register alias controls remain unavailable. This is locally confirmed
 coverage of explicit pieces, with hosted acceptance pending, rather than an
 automatic mapping or a blanket change to the baseline FPXX profile.
+
+**CONFIRMED locally; hosted acceptance pending:** the bounded [i386 shared-library
+follow-up](I386-SHARED-PROFILE.md) adds ordinary/rebased library exports from non-PIE and
+PIE drivers, exact typed values and curated/original symbol lookup. It uses the
+unchanged production exporter and does not establish broader libc or ABI support.

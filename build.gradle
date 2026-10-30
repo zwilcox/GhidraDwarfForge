@@ -474,6 +474,18 @@ tasks.register("ghidraArm32FunctionModesSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/function-modes/cache").absolutePath
 }
 
+tasks.register("curatedThunkSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks curated thunk identity and deliberate source omission across five targets"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.CuratedThunkSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/curated-thunk/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/curated-thunk/cache").absolutePath
+}
+
 tasks.register("callingConventionPolicySmoke", JavaExec) {
     group = "verification"
     description = "Checks resolved calling conventions and saved external declarations across five targets"

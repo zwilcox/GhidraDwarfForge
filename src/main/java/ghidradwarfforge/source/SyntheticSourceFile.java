@@ -18,20 +18,36 @@ import ghidradwarfforge.output.FileSystemPaths;
 public record SyntheticSourceFile(byte[] utf8, List<FunctionLines> functions,
         List<SourceLine> mappedLines) {
     public record FunctionText(String name, long address, String c,
-            String failureDiagnostic, List<RelativeLine> mappedLines) {
+            String failureDiagnostic, List<RelativeLine> mappedLines, String omissionDiagnostic) {
         public FunctionText(String name, long address, String c, String failureDiagnostic) {
-            this(name, address, c, failureDiagnostic, List.of());
+            this(name, address, c, failureDiagnostic, List.of(), null);
+        }
+
+        public FunctionText(String name, long address, String c, String failureDiagnostic,
+                List<RelativeLine> mappedLines) {
+            this(name, address, c, failureDiagnostic, mappedLines, null);
+        }
+
+        public static FunctionText omitted(String name, long address, String diagnostic) {
+            return new FunctionText(name, address, null, null, List.of(), diagnostic);
         }
 
         public FunctionText {
             if (name == null || name.isBlank() || address < 0) {
                 throw new IllegalArgumentException("invalid synthetic-source function");
             }
-            if ((c == null) == (failureDiagnostic == null)) {
+            if ((c == null ? 0 : 1) + (failureDiagnostic == null ? 0 : 1) +
+                    (omissionDiagnostic == null ? 0 : 1) != 1) {
                 throw new IllegalArgumentException(
-                    "exactly one of C text or failure diagnostic is required");
+                    "exactly one of C text, failure or intentional omission is required");
+            }
+            if (omissionDiagnostic != null && omissionDiagnostic.isBlank()) {
+                throw new IllegalArgumentException("source omission diagnostic must not be blank");
             }
             mappedLines = List.copyOf(mappedLines);
+            if (c == null && !mappedLines.isEmpty()) {
+                throw new IllegalArgumentException("unavailable source cannot map executable lines");
+            }
         }
     }
 
@@ -48,7 +64,21 @@ public record SyntheticSourceFile(byte[] utf8, List<FunctionLines> functions,
     }
 
     public record FunctionLines(String name, long address, int startLine, int endLine,
-            boolean decompiled, String failureDiagnostic) {
+            boolean decompiled, String failureDiagnostic, String omissionDiagnostic) {
+        public FunctionLines {
+            if (decompiled ? failureDiagnostic != null || omissionDiagnostic != null :
+                    (failureDiagnostic == null) == (omissionDiagnostic == null)) {
+                throw new IllegalArgumentException("inconsistent synthetic-source disposition");
+            }
+            if (omissionDiagnostic != null && omissionDiagnostic.isBlank()) {
+                throw new IllegalArgumentException("source omission diagnostic must not be blank");
+            }
+        }
+
+        public FunctionLines(String name, long address, int startLine, int endLine,
+                boolean decompiled, String failureDiagnostic) {
+            this(name, address, startLine, endLine, decompiled, failureDiagnostic, null);
+        }
     }
 
     public SyntheticSourceFile {
@@ -84,6 +114,11 @@ public record SyntheticSourceFile(byte[] utf8, List<FunctionLines> functions,
             if (decompiled) {
                 text = normalizeC(function.c());
             }
+            else if (function.omissionDiagnostic() != null) {
+                text = "/* Synthetic source intentionally omitted for " + commentText(function.name()) +
+                    " at 0x" + Long.toHexString(function.address()) + ": " +
+                    commentText(function.omissionDiagnostic()) + " */\n";
+            }
             else {
                 text = "/* Decompilation unavailable for " + commentText(function.name()) +
                     " at 0x" + Long.toHexString(function.address()) + ": " +
@@ -93,7 +128,7 @@ public record SyntheticSourceFile(byte[] utf8, List<FunctionLines> functions,
             int textLines = countNewlines(text);
             line += textLines;
             boundaries.add(new FunctionLines(function.name(), function.address(), startLine,
-                line - 1, decompiled, function.failureDiagnostic()));
+                line - 1, decompiled, function.failureDiagnostic(), function.omissionDiagnostic()));
             if (decompiled) {
                 int declarationLine = declarationLine(text, function.name());
                 if (declarationLine != 0) {

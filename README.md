@@ -29,9 +29,15 @@ Export remains an explicit operation. Installable CI bundles include verified
 Linux x86-64 and Windows x86-64 native libraries; the packaged headless
 wrappers select them automatically. The Windows-hosted ELF lane passes native,
 publication/file-lock, real-export, and structural validation tests; ELF/GDB
-execution remains in Linux native/QEMU lanes. PE/PDB is out of scope. Imports
-and thunks are diagnosed and omitted, and distinct linkage-name emission
-remains unresolved.
+execution remains in Linux native/QEMU lanes. PE/PDB is out of scope. Curated
+external prototypes emit as addressless declarations. Uncurated thunks remain
+omitted, and distinct linkage-name emission remains unresolved.
+
+**Locally validated; hosted acceptance pending:** analyst-named memory thunks
+retain their names, ranges and formal types. Their source is deliberately
+omitted because Ghidra can substitute the destination body. GDB can resolve
+the thunk and its signature without invented lines or variable locations. See
+[the thunk policy and validation](docs/CURATED-THUNKS.md).
 
 Development exports also preserve typed memory labels explicitly owned by a
 Ghidra function as function-scoped static variables. GDB can distinguish
@@ -248,3 +254,8 @@ host-provided dependencies retain their respective upstream licenses. See
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the dependency inventory
 and [third_party/CORRESPONDING_SOURCE.md](third_party/CORRESPONDING_SOURCE.md)
 for the source supplied with native-inclusive releases.
+
+**CONFIRMED locally; hosted acceptance pending:** the bounded [i386 shared-library
+follow-up](docs/I386-SHARED-PROFILE.md) adds ordinary/rebased library exports from non-PIE and
+PIE drivers, exact typed values and curated/original symbol lookup. It uses the
+unchanged production exporter and does not establish broader libc or ABI support.

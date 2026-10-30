@@ -96,3 +96,22 @@ original identity, without duplicate/ambiguous breakpoints. Unknown linkage
 stays absent. Do not infer a linkage name from a datatype category, spelling,
 label iteration order or imported-source flag, and do not switch the synthetic
 CU language to C++ merely to influence lookup.
+
+## Preserved ELF symbol lookup direction
+
+**CONFIRMED local research:** retaining the original ELF symbol table lets both
+x86-64 and AArch64 symbol-only probes resolve the curated and original mangled
+expressions to the same entry without `DW_AT_linkage_name`. Fully stripped
+controls lose only original-name lookup. Adding the attribute still hides the
+curated expression. Actual Java 21 and GNU/LLVM/strict checks pass, with exact
+inherited-frame corroboration; receipt SHA-256
+`cd967421f3fa0347ed3bd0f05a24b23bf1180853a276b88ace2357372a214aee`.
+Evidence is in the root's
+`build/linkage-identity-research/retained-symbols/producer.4ehb14p2/`.
+
+The separate [i386 shared profile](../I386-SHARED-PROFILE.md) extends this
+direction to real exports, explicit library load bias, typed variables and
+runtime/source behavior for three curated global C names alongside their
+preserved dynamic symbols. Its local raw review passes; hosted acceptance is
+pending. Neither experiment invents missing ELF symbols or establishes arbitrary
+C++/alias/namespace semantics. Distinct linkage-attribute emission remains planned.

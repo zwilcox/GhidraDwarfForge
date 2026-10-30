@@ -12,6 +12,7 @@ import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionIterator;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.symbol.Namespace;
+import ghidra.program.model.symbol.SourceType;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
@@ -64,10 +65,10 @@ public final class GhidraFunctionSymbols {
         while (functions.hasNext()) {
             monitor.checkCancelled();
             Function function = functions.next();
-            if (function.isThunk()) {
+            if (function.isThunk() && function.getSymbol().getSource() != SourceType.USER_DEFINED) {
                 skipped.add(new SkippedFunction(function.getName(), SkipReason.THUNK));
                 diagnostic.accept("Skipped thunk function " + function.getName() +
-                    "; thunk/alias policy is not implemented yet");
+                    "; only explicitly analyst-named memory thunks are currently exported");
                 continue;
             }
             AddressSetView body = function.getBody();

@@ -153,7 +153,7 @@ public final class ExportReport {
             throw new IllegalArgumentException("completed export report requires its models");
         }
         List<FunctionFailure> failures = source.functions().stream()
-            .filter(function -> !function.decompiled())
+            .filter(function -> function.failureDiagnostic() != null)
             .map(function -> new FunctionFailure(function.name(), function.address(),
                 function.failureDiagnostic()))
             .sorted(Comparator.comparingLong(FunctionFailure::address)
@@ -179,10 +179,13 @@ public final class ExportReport {
             .thenComparingLong(OmittedLocation::startAddress)
             .thenComparingLong(OmittedLocation::endAddress)
             .thenComparing(OmittedLocation::reason));
-        List<UnsupportedConstruct> unsupported = typeModel.types().nodes().stream()
-            .filter(OpaqueType.class::isInstance).map(OpaqueType.class::cast)
-            .map(type -> new UnsupportedConstruct("OPAQUE_TYPE", type.name(),
-                type.diagnostic()))
+        List<UnsupportedConstruct> unsupported = java.util.stream.Stream.concat(
+            typeModel.types().nodes().stream()
+                .filter(OpaqueType.class::isInstance).map(OpaqueType.class::cast)
+                .map(type -> new UnsupportedConstruct("OPAQUE_TYPE", type.name(), type.diagnostic())),
+            source.functions().stream().filter(function -> function.omissionDiagnostic() != null)
+                .map(function -> new UnsupportedConstruct("OMITTED_SOURCE", function.name(),
+                    function.omissionDiagnostic())))
             .sorted(Comparator.comparing(UnsupportedConstruct::kind)
                 .thenComparing(UnsupportedConstruct::name)
                 .thenComparing(UnsupportedConstruct::diagnostic))

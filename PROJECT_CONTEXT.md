@@ -1,5 +1,86 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED failed combined gate (2026-10-27):** PR77 run `40448198808`
+failed in the MIPS32 little-endian floating-register compiler-reference check.
+QEMU reported `bind: Address already in use` on the legacy TCP port; GDB then
+timed out before the Forge export ran. The other four target lanes and exact
+package/23 actual Java 21 suites passed, but native Windows was skipped and the
+combined head is not accepted. The floating-register harness now uses the
+existing private UNIX-socket readiness/cleanup helper. Local validation passes
+36 exports across all five profiles plus sectionless MIPS32LE FP32 pieces, with
+43 distinct successful/reaped emulator sessions and startup/failure controls.
+Receipt SHA-256:
+`6d6a1796c953d4fe4249aa1432bc70bc51fe2442564dff9b1758b1c9a90e8ca9`.
+Production code is unchanged. A fresh full hosted gate remains required; failed
+artifacts remain retained.
+
+**CONFIRMED tracking (2026-10-25):** the user requested GitHub issues for the
+remaining TODOs. Issues #66–#74 now track all nine unfinished top-level items,
+with current acceptance status, remaining-work checklists and completion gates.
+`TODO.md` links each section and provides an issue index. Existing completed
+milestones and historical issues remain closed; component PRs must not close
+an umbrella issue until its remaining acceptance criteria are satisfied.
+
+**CONFIRMED local integration (2026-10-26):** the combined thunk/shared/issue
+tracking branch retains the tested thunk JAR. A fresh i386 shared/direct matrix
+passes eight roles, sixteen exports and 3,000 GDB observations with that JAR;
+23 actual Java 21 model suites and sixteen fresh native producer lifetimes also
+pass. Independent shared review receipt SHA-256:
+`71d4daece096658e583dc679ead487f5f8fe8491b112f52e2b58033f694db1d6`.
+The issue index preserves all nine open umbrella trackers. Full combined hosted
+acceptance remains pending; component PRs #75/#76 remain open until integration.
+
+**CONFIRMED locally; hosted acceptance pending (2026-10-26):** explicitly
+analyst-named memory thunks preserve their own names/ranges and formal types,
+with deliberate source omission instead of borrowed destination decompilation.
+The six x86-64/AArch64 exec/PIE/rebase roles pass twelve candidate exports,
+six previous-package comparisons and eighteen GDB runs. Five-language models
+pass 165 checks; 23 actual Java 21 packaged suites, ten cross-profile parameter
+exports, genuine decompiler-failure and cancellation regressions pass. See
+`docs/CURATED-THUNKS.md`. This advances issue #66; general thunk/alias and ABI
+semantics remain partial. No hosted or release acceptance is claimed yet.
+
+**CONFIRMED integration (2026-10-26 America/Chicago):** PR65 head
+`fecf6247c8a82f56cb39b71e947775b68ac83775` passes all twelve jobs in
+`40266976465`, independent exact-package/twenty-two actual Java 21 suites,
+raw target/runtime review, 44 native Windows model tasks and both GUI hosts.
+Normal merge `e2320e0b71b3f7258748f3ac6f3c3ca11b866e46` preserves the tested
+tree. Acceptance receipt SHA-256:
+`cbb30f4a6d8bec15b8a79bcabebe42c1848383838da5d5eb162ef574bb81fa58`.
+Nondefault conventions safely reject unsupported debugger-injected calls;
+ordinary execution remains tested. This is part of issue #66, not complete
+alternate-ABI support. The distinct main-push run `40445798908` passes all twelve jobs and
+independent exact-package/raw/both-GUI review; receipt SHA-256:
+`c45ca5127556fcf9eae19b917ebbbe707ead3504b1dbde2d02e62bf6c12529b9`.
+No release publication is included.
+
+**CONFIRMED locally on the calling-convention candidate; hosted acceptance pending:**
+fresh shared/direct revalidation passes eight roles, sixteen deterministic
+exports and 3,000 GDB observations with the new producer JAR. Independent raw
+review verifies identity, exact locations/types/names and byte-identical shared
+inputs. Twenty-two actual Java 21 suites apply to the identical production JAR;
+sixteen fresh packaged i386 producer lifetimes also pass. Receipt SHA-256
+`9d5a8efaf99b9aa84176c41e84005a9372686bea62fa686eaa81e1a23794b900`.
+Submission remains held until PR65's correctness fix completes its hosted gate.
+
+**HISTORICAL shared checkpoint on the PR64 exporter:**
+the shared-library follow-up now includes PR64's control-flow correction.
+Fresh eight-role validation passes sixteen exports and 3,000 GDB observations,
+with independent raw identity/location/type/name review, twenty-one actual
+Java 21 suites and sixteen fresh packaged i386 producer lifetimes. Receipt
+SHA-256 `b33566ade02c64de6d80034e5bb39c6e6d2c1a82693572ca5fa70fa16ea1822d`.
+The calling-convention fix changes the producer JAR again; its fresh acceptance
+is recorded above.
+
+**HISTORICAL local shared-library checkpoint (2026-10-25):** the preceding
+i386 exporter now has shared-library exec/PIE/rebase evidence. Four shared and
+four original direct roles pass sixteen exports and 3,000 instruction-boundary
+GDB observations, strict-zero checking and independent raw location/type/name
+review. Shared inputs are byte-identical across roles; curated names require
+explicit sidecar loading while original dynamic symbols remain usable. No
+production code changes. See `docs/I386-SHARED-PROFILE.md`; broader libc/ABI,
+linkage and host claims remain incomplete.
+
 **CONFIRMED integration (2026-10-25):** PR64 head
 `23d9c57d5e8fc339650428d7252d9b5381adb49e` passes all twelve jobs in
 `40263198239`, independent exact-package/twenty-one actual Java 21 suites,
@@ -8,10 +89,12 @@ The six hosted control-flow roles pass 24 exports and 72 GDB observations.
 Normal merge `db66cd5f1832238fa32392d568d0369d48efb9a0` preserves the tested
 tree. Hosted receipt SHA-256:
 `4d6ab95d2a4fa6ced53f5bae017ff50343c4beeffdbd0f558efa34b517cd7106`.
-The distinct main-push gate remains pending. Earlier local-only status for
-this correction is historical; broader lifetime recovery remains partial.
+The distinct main-push run `40266883548` also passes all twelve jobs and
+independent package/raw/both-GUI review; receipt SHA-256:
+`327f0abd832667c1ab971217219f71688455c60f96bedf4a2f5e15b5c08abfed`.
+Earlier pending status is historical; broader lifetime recovery remains partial.
 
-**CONFIRMED locally; hosted acceptance pending (2026-10-25):** explicitly
+**HISTORICAL local checkpoint, accepted through PR65 above:** explicitly
 selected nondefault Ghidra calling conventions now emit `DW_CC_nocall` instead
 of an unjustified normal-call assertion. Three x86-64 exec/PIE/rebase roles
 pass six corrected exports, three preceding-package comparisons and eighteen

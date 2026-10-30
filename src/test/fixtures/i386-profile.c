@@ -1,5 +1,10 @@
 /* Owned freestanding i386 ABI reference; no libc or host startup objects. */
 struct pair { int first; int second; };
+#if defined(FORGE_I386_SHARED_DRIVER)
+extern int scalar(int, int);
+extern long long wide(int, long long, int);
+extern int aggregate(struct pair, int);
+#else
 volatile int sink;
 __attribute__((noinline)) int scalar(int first, int second) {
     int held = first + second;
@@ -18,6 +23,8 @@ __attribute__((noinline)) int aggregate(struct pair value, int tail) {
     sink = held;
     return held;
 }
+#endif
+#if !defined(FORGE_I386_SHARED_LIBRARY)
 __attribute__((noreturn)) void _start(void) {
     int ok = 1;
 #define ROUND(first, second, large, tail) \
@@ -34,3 +41,4 @@ __attribute__((noreturn)) void _start(void) {
     __asm__ volatile("int $0x80" : : "a"(1), "b"(ok ? 0 : 1) : "memory");
     __builtin_unreachable();
 }
+#endif

@@ -28,7 +28,7 @@ for name in functions:
     gdb.Breakpoint("*" + name, temporary=True)
 remote = os.environ.get("FORGE_FP_REMOTE", "")
 if remote:
-    gdb.execute("target remote :" + remote)
+    gdb.execute("target remote " + remote)
 gdb.execute("continue" if remote else "run")
 
 
