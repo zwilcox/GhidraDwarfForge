@@ -1,5 +1,20 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED development acceptance:** P1.7 function signatures,
+calling conventions, declarations, thunks and aliases passed the combined
+[PR95 run](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/41195618723)
+at `cad5e0dd3d5270cd5c83c09ccb2e2d1da29b5ee0` and merged normally as
+`b78faab6263ae89f9b07d316502c5f6bd9afa702`. Final independently reviewed evidence receipt:
+`9f2a1e03b32def2874f71f9a91052dd8e4717876fa4bb05a16ba16ae2febd1cd`.
+See [the complete acceptance record](docs/P17-ACCEPTANCE.md).
+The published alpha.2 release is unchanged. Richer class/lexical relationships
+remain P3.3; broader variable lifetime recovery remains P1.11a.
+
+## Historical checkpoints
+
+The dated checkpoints below record their original state. Their pending P1.7
+statements are superseded by the acceptance record and current task sections.
+
 **CONFIRMED integration plan (2026-10-31); final acceptance pending:** the
 remaining P1.7 commits from PR88 through PR94 are combined on a normal-history
 integration branch based on current main. This preserves every component commit,
@@ -971,7 +986,7 @@ combined run `40068401197`; its conditional-step scope is recorded in
 |---|---|
 | Corrective release (§0.1/0.2) | **CONFIRMED complete within the documented profiles:** alpha.2 is published from `2f88c4a` after exact-main CI `40064204515`, the final package audit and public-asset verification. Alpha.1 remains unchanged and affected; subsequent semantic/GUI/target/performance work is excluded. |
 | ELF robustness (P0.9) | **CONFIRMED complete within the documented bounds:** PR #18 implements extended counts, unnamed tables, bounded file-backed I/O, correct recorded-load-base translation and cancellation. Local checks and all twelve hosted jobs pass; direct PN_XNUM execution limits are documented. |
-| Function identity and scopes (P1.7, P3.3) | **CONFIRMED in hosted run `40063017269`:** explicit function-owned statics preserve duplicate-name lookup across all five targets, and the controlled failure check omits failed owners under the symbol-only contract. These workstreams remain partial. Curated addressless external declarations and recovered signature metadata are accepted through PR #53. Class-owned display paths and bounded direct-leaf-call backups are accepted through PR54 and its separate main gate. **PLANNED:** distinct linkage names, broader thunks/aliases, full class/lexical semantics, inferred static locals and remaining same-named type/variable cases. Existing namespace globals and external-data declarations must remain working. |
+| Function identity and scopes (P1.7, P3.3) | **CONFIRMED:** P1.7 is accepted through PR95; see `docs/P17-ACCEPTANCE.md` for signatures, conventions, declarations, thunks and original/analyst alias coverage. **PLANNED under P3.3:** full class/lexical relationships, inferred static locals and remaining same-named type/variable cases. Existing namespace globals and external-data declarations remain covered. |
 | Additional range/location cases (P1.8, P1.11a) | **CONFIRMED:** bounded entry/ranges, code-only address indexing and incoming-register prefixes pass. PR #29 adds one proven direct-register backup; PR #30 omits unsupported nonzero stack-local starts. Their exact hosted gates pass. The bounded direct-leaf-call backup and additional x86-64/AArch64 exec/PIE/rebased-PIE cases are accepted through PR54. PR59 accepts terminal-return and mixed incoming prefixes through its complete hosted gate; its failed component heads remain historical. PR60 accepts one complete incoming scalar stack save; PR61 accepts explicit curated read-start register locals. PR62 accepts explicit curated definition-start locals. P1.11a remains partial: general register/memory migration, broader call/flow shapes, stack-slot reuse and additional composite storage still require instruction-specific GDB values and honest unavailable gaps. |
 | Target-profile coverage (P2.3/3a/3b) | **CONFIRMED in hosted runs `40063017269` and `40068401197`:** five baseline profiles and scalar FP aliases pass, with exact float/double values on x86-64/AArch64/ARM32 and scalar floats on both MIPS orders. The combined run also proves rejection of definite ELF/Ghidra processor, width or byte-order contradictions; nondefault variants/compiler specifications alone are not rejected. PR59 accepts bounded ARM/Thumb terminal prefixes and explicit MIPS FP32 whole pairs in both byte orders; FP64A transport remains unproven. The bounded i386 integer/stack profile is accepted through PR63 above. Target expansion and ABI classification remain partial; this is not blanket CPU/ABI support. |
 | GUI and output paths (P2.7) | **CONFIRMED:** both hosts' real Script Manager/chooser journeys pass. PR #31 adds actual parent traversal, complete publisher alias preflight and native Windows short-parent/trailing-dot controls; its exact PR/main gates and artifact reviews pass. Geometry/GDB run on Linux; Windows uses native GNU/LLVM, with independent libdwarf unavailable and Linux-ELF runtime GDB not run. |
@@ -1601,192 +1616,64 @@ Define precedence among analyst-applied listing/signature types and decompiler g
 
 ## P1.7 Emit complete function signatures
 
-**CONFIRMED locally; i386 alias/unwind acceptance incomplete (2026-10-31):**
-six retained/stripped base cases, six automatic-alias cases and three sectionless
-roles pass after exposing original table-proven unwind bytes. Cross-target,
-omission, versioned-symbol, failure and cancellation checks pass; 896 new model
-checks and 34 actual Java 21 suites pass. Final strict-reference regressions,
-independent raw review, 44 final-checker replays and 97 captured-evidence controls
-pass. Committed-package review and hosted gates remain pending. See
-`docs/I386-FUNCTION-ALIASES.md` and `docs/SECTIONLESS-UNWIND.md`.
-This does not complete P1.7 or ARM/Thumb aliases, broader ABI/return classification
-and class/linkage scope work.
-
-**CONFIRMED locally; sectionless alias acceptance incomplete (2026-10-31):**
-bounded PT_DYNAMIC inventories now preserve original symbols before analyst
-alias insertion. Twelve four-target exec/PIE/rebase cases, four incomplete-count
-omission controls and two GNU-versioned DSOs pass fresh headless export,
-validators and GDB/native checks. The new suite passes 1,730 checks; 33 actual
-Java 21 suites, independent raw/corruption controls, large-ELF, failure and
-cancellation checks pass. Receipt:
-`c303b520d316b0cf620564684832b1dc5284783ee1c3061375eafa087f17d526`.
-Final committed-package and hosted acceptance remain pending. See
-`docs/SECTIONLESS-FUNCTION-ALIASES.md`. Earlier research-only/sectionless-disabled
-statements are historical. P1.7/#66 remains open, including other target modes
-and broader ABI/scope work; no release publication.
-
-
-**CONFIRMED defect; fix under validation:** MIPS FPXX floating injected calls
-can execute with stale arguments and incorrect returns. Compiler and current
-Forge reproductions are retained; explicit FP32 controls pass. The isolated ABI
-safeguard passes model tests, 32 actual Java 21 suites and sixteen initial
-installed runtime cases. Rebased/integer controls and pipeline acceptance remain
-pending.
-See `docs/MIPS-FLOATING-CALL-ABI.md`.
-
-**CONFIRMED locally; acceptance incomplete:** dynamic-only symbol mirroring
-preserves original lookup while adding analyst aliases. Both GNU qualified
-versions pass headless DSO fixtures; twelve stripped base/alias roles across
-four targets, independent raw review and 31 actual Java 21 suites pass. Final
-package/hosted review is pending.
-See `docs/DYNAMIC-FUNCTION-ALIASES.md`. This supersedes the earlier blanket
-dynamic-symbol omission below; it does not complete P1.7/#66.
-
-**CONFIRMED locally; hosted acceptance pending:** isolated classic O32 MIPS32r2
-alias planning passes FPXX runtime cases in both byte orders across exec/PIE/
-rebase. 492 model checks, 30 actual Java 21 suites and independent four-target
-raw review pass. Six explicit FP32 base/alias roles also pass locally. Defined dynamic
-symbols without a static table still prevent new alias insertion; sectionless,
-discontiguous and other target-mode relationships remain open. See
-`docs/MIPS-FUNCTION-ALIASES.md`.
-
-**CONFIRMED integration:** PR82's corrected custom-storage safeguard passes
-all twelve jobs in `41167035160`, package/raw/Java 21/both-GUI review and merges
-normally as `f87384c9b9437f28f9088add9f1601b5f981a0dd` with identical tree.
-Earlier pending custom-storage notes are historical. Compiler-profile, alias
-and broader ABI work retain their own acceptance gates; P1.7/#66 remains open.
-
-**CONFIRMED local fixture correction; hosted acceptance pending:** PR82's first
-gate (`41165251340`) fails the two-copy fixture's automatic return-value check
-after the custom-storage guard correctly rejects an unresolved convention.
-The source-built fixture now records and verifies its known default ABI.
-All twelve x86-64/AArch64 first/second-copy roles pass locally, and a separate
-unknown-convention control still rejects calls without changing program state.
-See `docs/CUSTOM-CALL-STORAGE.md`. This is not full P1.7 acceptance.
-
 Tracking: [#66](https://github.com/zwilcox/GhidraDwarfForge/issues/66).
 
-**CONFIRMED locally; hosted acceptance pending (2026-10-25):** recorded class
-ancestors now retain their qualified display path, preventing same-named methods
-from collapsing onto an unrelated global. Five-language model checks, actual
-Java 21 packaged checks and x86-64/AArch64/MIPS BE/LE exec/PIE/rebase GDB tests
-pass. This is display preservation only; class DIEs, method/object relationships,
-linkage, aliases and lexical blocks remain partial. See `docs/FUNCTION-NAMING.md`.
+**Status:** `[x]` — complete within the documented profiles.
 
-**CONFIRMED in PR #52 run `40215680796` (all twelve jobs, exact package,
-actual Java 21 and raw GDB/Windows review):** ordered decompiler parameter
-names/types now fill DEFAULT noncustom signatures with zero listing parameters.
-Only complete supported scalar/pointer lists qualify; uncertain lists are
-omitted as a whole. Stronger metadata stays intact and inferred parameters have
-explicit UNKNOWN_LIFETIME omissions, never invented locations. 550 five-profile
-ProgramDB checks and a real x86-64 compiler/previous-package/GDB regression pass.
-GDB displays the inferred types and unavailable arguments. See
-`docs/RECOVERED-PARAMETER-TYPES.md`; broader P1.7/P1.11 scope remains partial.
+**CONFIRMED development acceptance:** P1.7 function signatures,
+calling conventions, declarations, thunks and aliases passed the combined
+[PR95 run](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/41195618723)
+at `cad5e0dd3d5270cd5c83c09ccb2e2d1da29b5ee0` and merged normally as
+`b78faab6263ae89f9b07d316502c5f6bd9afa702`. Final independently reviewed evidence receipt:
+`9f2a1e03b32def2874f71f9a91052dd8e4717876fa4bb05a16ba16ae2febd1cd`.
+See [the complete acceptance record](docs/P17-ACCEPTANCE.md).
+The published alpha.2 release is unchanged. Richer class/lexical relationships
+remain P3.3; broader variable lifetime recovery remains P1.11a.
 
-**CONFIRMED in PR #50 run `40214441924` (all twelve jobs, exact package,
-actual Java 21 and raw GDB/Windows review):** concrete decompiler
-scalar returns now fill only DEFAULT undefined, noncustom listing returns.
-Stronger signature/return provenance remains authoritative. DEFAULT signatures
-also omit the prototype flag so unknown arguments are not asserted as a known
-no-argument list; curated prototype flags remain intact. 645 model checks
-cover five profiles and immutable reopen; a real x86-64 installed regression
-proves GDB types and ordinary returned values against the previous package and
-compiler DWARF. The unsigned-width inference discrepancy is explicit, not
-claimed as original type recovery. See `docs/RECOVERED-DEFAULT-RETURNS.md`.
+The milestone covers current curated function identity, formal signatures,
+calling-convention policy, declarations, memory thunks and original/analyst
+aliases in the documented target profiles. It does not imply arbitrary ABI
+call injection or original C++ scope reconstruction. The complete requirements
+and their evidence are recorded in `docs/P17-ACCEPTANCE.md`.
 
-**CONFIRMED in PR #48 run `40205151874` (all twelve jobs):** the earlier prototype acceptance did not
-cover forced-indirect aggregate returns. A real x86-64 probe emitted an 8-byte
-pointer for a curated 24-byte structure. Extraction now selects the formal
-return type; 312 Java 21 ProgramDB checks cover five languages, immutable reopen,
-custom conversion and hidden parameters. The x86-64 installed exporter/GDB regression passes: correct structure return,
-hidden pointer, actual returned bytes, deterministic exports and unchanged inputs.
-The downloaded hosted package and native Windows pass the same 312 model checks;
-the hosted x86 runtime agrees. Separate main push `40208082901` also passes all twelve jobs and root package/runtime review.
-This bounded fix does
-not complete external declarations, linkage names, aliases or class scopes.
+### Work and completion evidence
 
-**Status:** `[~]` — return/parameter DIEs, names,
-prototype/no-return/variadic flags, a user-defined signature, and
-standards-backed `DW_CC_normal` pass locally. Unrepresentable vendor ABI
-distinctions retain their model string without invented DWARF codes.
-**CONFIRMED through accepted PR77:** explicitly analyst-named memory thunks
-emit typed definitions with deliberate source omission; uncurated thunks remain
-diagnosed and omitted. See `docs/CURATED-THUNKS.md`. **HISTORICAL correction:** the earlier claim
-that genuine external functions were also inventoried was not established:
-Ghidra's ordinary function iterator excludes them, and the integration assertion
-accepted a thunk diagnostic alone. **CONFIRMED:** the dedicated external
-inventory passes five real Ghidra language models, five fresh primary exports
-with native/QEMU GDB checks, and identical old/fixed/repeat saved-program sidecar
-and source bytes. PR #42's exact run `40126794530` and distinct main push
-`40129499500` both pass all twelve jobs and independent reviews. Curated addressless declarations pass PR #49 run `40210826397` and distinct
-main run `40214033937`, all twelve jobs with exact package/raw GDB/Windows
-reviews, in addition to the five-language model and compiler regression.
-Default signatures stay omitted. GDB ignores unlocated prototypes even in
-compiler DWARF, so this adds metadata without claiming external-code lookup. Distinct
-linkage-name emission remains because GDB must retain the analyst-facing
-breakpoint name.
+- Formal return types and parameter names/types survive curation. Hidden return
+  buffers are artificial variables rather than extra callable parameters.
+- GDB prototypes and actual return values agree with the documented type/ABI
+  policy, including indirect aggregate returns and conservative MIPS safeguards.
+- Analyst metadata overrides weaker DEFAULT decompiler recovery. Inferred types
+  are identified as inference, and uncertain locations remain unavailable.
+- Variadic and direct no-return properties are represented. No-return function
+  type flags receive an explicit omission diagnostic when no validated encoding
+  exists. Saved-program flags remain unchanged.
+- Qualified namespace/class display names and same-name overloads retain
+  separate address/type/source ownership and correct owned-static lookup.
+- Direct definitions, declarations and typed pointers apply the selected
+  calling-convention/compiler/custom-storage restrictions. Supported injected
+  calls work; unvalidated calls are refused without changing target state.
+- Original ELF identities remain available alongside curated DWARF names;
+  analyst aliases use supplemental symbols with verified ownership/code binding.
+  Discontiguous, dynamic, sectionless, versioned, i386, ARM/Thumb and MIPS cases
+  preserve the applicable original identity and instruction-mode semantics.
+- External imports have a separate inventory. Curated external prototypes are
+  addressless declarations. Analyst-named memory thunks retain their own body
+  and signature without borrowing destination source. Other cases follow the
+  documented diagnostic policy.
+- Original binaries and saved curated programs remain unchanged. Repeated
+  artifacts are deterministic; failure and cancellation retain prior complete
+  outputs. Structural validators, actual GDB behavior, both hosts and all five
+  required target lanes pass on the accepted combined package.
 
-### Work
+Distinct `DW_AT_linkage_name` emission was deliberately rejected where GDB used
+it instead of the analyst-facing C11 name. Retained original ELF symbols and
+supplemental analyst aliases provide the validated lookup policy. This is a
+resolved consumer decision, not a silently abandoned requirement.
 
-- Add function return-type references.
-- Add `DW_TAG_formal_parameter` DIEs.
-- Preserve parameter names.
-- Preserve variadic signatures when known.
-- [x] Preserve plain/nested analyst function namespace identity as a qualified
-  display name while retaining lexical source/signature keys. PR #26 head
-  `d5f2521` / run `40071594248` passes fifteen exec/PIE/rebased-PIE cases across
-  all five targets, with distinct owned statics and a same-named global.
-  This bounded display-name acceptance is not full namespace, class, linkage
-  or alias semantics; the broader signature task remains partial.
-- [~] Preserve calling-convention information where DWARF/GDB can use it:
-  defaults retain `DW_CC_normal`; unknown convention state stays absent.
-  **CONFIRMED through accepted PR65:** resolved nondefault
-  prototypes emit `DW_CC_nocall` with a diagnostic, preventing unclassified
-  injected calls. Original model strings remain intact; no vendor mapping is
-  invented. See `docs/CALLING-CONVENTION-POLICY.md`. Broader default/custom/
-  return ABI classification remains partial. **CONFIRMED locally; hosted
-  acceptance pending:** custom-storage equivalence and default compiler-profile
-  restrictions reject independently reproduced unsafe calls while preserving
-  formal signatures and ordinary debugging. See `docs/CUSTOM-CALL-STORAGE.md`
-  and `docs/COMPILER-CALL-ABI.md`; this is not arbitrary ABI certification.
-- [~] Add linkage names where meaningful. A distinct imported-name experiment
-  was rejected because GDB 16.3 used `DW_AT_linkage_name` instead of the
-  analyst-facing `DW_AT_name` in the honest C11 CU, breaking
-  `break recovered_add`. **CONFIRMED through accepted PR79:**
-  retained original ELF symbols preserve typed original-name/alias lookup beside
-  curated DWARF identity in twelve x86-64/AArch64 cases, including fully stripped
-  absence controls. No distinct linkage attributes or fabricated aliases are
-  added. See `docs/RETAINED-FUNCTION-ALIASES.md`; general alias modeling remains.
-  **CONFIRMED through accepted PR80:** lossless static-symbol-table insertion
-  passes format, packaged-writer and GDB checks; see
-  `docs/LOCAL-SYMBOL-TABLE-MERGE.md`. **CONFIRMED locally; hosted acceptance
-  pending:** explicit analyst secondary labels now pass automatic ordinary
-  export and runtime checks on x86-64/AArch64. Collision/code/ownership checks
-  and scope limits are documented in `docs/CURATED-FUNCTION-ALIASES.md`. Other
-  target/mode, sectionless and dynamic-table cases remain planned.
-- [~] Distinguish definitions, declarations, imports, thunks, and aliases under
-  a documented policy: real definitions and curated addressless declarations
-  emit. Analyst-named memory thunks preserve typed symbols without borrowed source
-  through accepted PR77; uncurated thunks remain diagnosed and omitted. The
-  separate external-function inventory passes PR #42
-  (`296395e` / `40126794530`) across all five targets and both hosts.
-  Non-default declarations have an addressless model and producer path accepted
-  in PR #49 and its separate main gate. Linkage and alias modeling
-  remain separate work.
-
-### Completion criteria
-
-- [x] GDB displays expected function prototypes.
-- [x] `ptype <function>` or equivalent output reflects return/parameter types.
-- [x] Analyst-applied signature overrides are preserved.
-- [x] Variadic and no-return cases are represented correctly or diagnosed.
-- [~] External/import policy has independent inventory tests. Exact external
-  rows/counts, qualified diagnostic names, unreferenced imports, duplicate names,
-  separate memory-thunk multiplicity and cancellation pass locally. The former
-  external-or-thunk log assertion did not establish external enumeration.
-  The corrected shared fixture and both host smoke lists pass PR #42's exact
-  hosted and main-push gates recorded above. Declaration emission remains
-  separate. See `docs/FUNCTION-NAMING.md`.
+Richer class/method/`this` relationships, inheritance, lexical scopes and
+original-language overload semantics remain P3.3/#73. Unsupported target/ABI
+profiles remain explicitly diagnosed; completion is not an unrestricted support
+claim. The published alpha.2 release is unchanged by this development milestone.
 
 ## P1.8 Represent discontiguous program/function ranges correctly
 
@@ -3009,12 +2896,11 @@ after merge and post-merge validation.
 
 Tracking: [#73](https://github.com/zwilcox/GhidraDwarfForge/issues/73).
 
-**CONFIRMED investigation, not implementation:** isolated x86-64/AArch64
-producer/GDB tests show naive linkage-name emission hides the curated name,
-and an imported-declaration alias does not fix lookup. Imported labels can
-also be ambiguous or analyst-created. Preserve existing display behavior
-until an original-ELF binding and consumer policy pass. See
-`docs/research/LINKAGE-LOOKUP.md`.
+**HISTORICAL investigation:** naive distinct linkage-name emission hid the
+curated name in GDB. P1.7 resolves original/curated function lookup through
+preserved ELF identity and validated supplemental aliases; see
+`docs/P17-ACCEPTANCE.md` and `docs/research/LINKAGE-LOOKUP.md`. Richer
+specification/origin, class and lexical relationships remain this task.
 
 **Status:** `[~]` — namespace-parented globals, typed external-data
 declarations, and function-owned static memory labels pass their documented
@@ -3042,9 +2928,10 @@ Potential features:
   diagnostic and an accurate exported-static count. Lexical-block
   ownership and inferred/decompiler-only static locals remain unimplemented.
 - Artificial variables.
-- [~] External declaration-only function DIEs: local model, producer, validator
-  and GDB non-interference tests pass. Unknown prototypes stay omitted; GDB
-  does not resolve unlocated external prototypes. Hosted validation pending.
+- [x] Curated external declaration-only function DIEs pass model, producer,
+  validator and GDB non-interference checks in the accepted P1.7 gate.
+  Unknown prototypes stay omitted. Addressless declarations do not acquire
+  invented executable locations or declaration/definition relationships.
 - Disambiguation of same-named types from different Ghidra categories: the
   existing-DWARF regression retains both imported and analyst-defined
   `operation` enums, and uses the unique `OP_INVALID` enumerator to query the
@@ -3323,8 +3210,10 @@ Unless the user changes priorities:
 4. Preserve P0.9's documented resource/layout bounds and the resolved strict
    validator gate. Neither direct PN_XNUM execution nor blanket processor/ABI
    coverage follows from the passing import/export tests.
-5. Preserve P1.8's bounded acceptance and address remaining P1.7/P3.3 scope
-   cases and P1.11a lifetime/storage migration with compiler-oracle/GDB fixtures.
+5. Preserve P1.7's accepted signatures, conventions and alias policies in
+   `docs/P17-ACCEPTANCE.md`, and P1.8's bounded range acceptance. Remaining
+   scope relationships belong to P3.3; lifetime/storage migration belongs to
+   P1.11a. Use compiler-oracle/GDB fixtures for further work.
 6. Extend explicitly selected target profiles and GUI journeys. Treat optional
    debuglink, inlining research and performance candidates according to their
    recorded scopes; do not invent recovered information to complete them.
@@ -3333,8 +3222,8 @@ Unless the user changes priorities:
    at PR #40 head `13e706e5`, merged as `25845418`. Captured-validation continuity
    is accepted in PR #41 at `f52361a`, merged as `fdebe181`, as described in
    `docs/VALIDATION-EVIDENCE-HANDOFF.md`. The external-function inventory
-   correction is accepted at PR #42; external declaration emission remains
-   deferred. Continue the inspection-only host research in
+   correction is accepted at PR #42; curated addressless declarations are
+   also accepted in P1.7. Continue the inspection-only host research in
    `docs/research/ATTACHMENT-HOST-OBSERVATIONS.md` before an owned-fixture
    transaction. Preserve the explicit captured-report handoff
    and separate fresh/retained installation scopes. ADR-0005 selects the writer;

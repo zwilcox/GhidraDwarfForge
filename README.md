@@ -31,9 +31,11 @@ wrappers select them automatically. The Windows-hosted ELF lane passes native,
 publication/file-lock, real-export, and structural validation tests; ELF/GDB
 execution remains in Linux native/QEMU lanes. PE/PDB is out of scope. Curated
 external prototypes emit as addressless declarations. Uncurated thunks remain
-omitted, and distinct linkage-name emission remains unresolved.
+omitted. Original ELF spellings and validated supplemental analyst aliases
+preserve lookup beside curated DWARF names. See the development
+[P1.7 acceptance record](docs/P17-ACCEPTANCE.md) for exact evidence and limits.
 
-**Locally validated; hosted acceptance pending:** analyst-named memory thunks
+Analyst-named memory thunks
 retain their names, ranges and formal types. Their source is deliberately
 omitted because Ghidra can substitute the destination body. GDB can resolve
 the thunk and its signature without invented lines or variable locations. See
@@ -47,8 +49,8 @@ infer lexical blocks from datatype categories or decompiler formatting.
 See [the focused validation record](docs/VALIDATION.md#function-owned-static-data-2026-10-23)
 for tested profiles and debugger limitations.
 
-Development builds retain plain analyst function namespaces as qualified display
-names, such as `analysis_left::nested::curated_same`. Use the full name for a
+Development builds retain recorded analyst namespace/class paths as qualified
+display names, such as `analysis_left::nested::curated_same`. Use the full name for a
 breakpoint and quote it in C11 type/value expressions; a static variable uses
 `print 'analysis_left::nested::curated_same'::private_count`. Global short names
 remain unchanged. This is a display policy, not reconstructed C++ scope or
@@ -86,8 +88,10 @@ pass on both targets through PR62's complete hosted gate and artifact review.
 Explicit nondefault calling conventions use a conservative
 [debugger-call policy](docs/CALLING-CONVENTION-POLICY.md): signatures and ordinary
 entry values remain available, while unsupported injected calls and automatic
-return-value presentation are disabled. Local validation passes; hosted
-acceptance remains pending.
+return-value presentation are disabled. Definitions, declarations and typed
+pointers apply the documented convention, compiler, custom-storage and MIPS
+restrictions. The combined P1.7 gate validates supported calls and refusals
+before target state changes; it does not certify arbitrary ABIs.
 
 Stable register locations also require [contained control flow](docs/REGISTER-BODY-CONTROL-FLOW.md).
 An excluded branch block cannot silently clobber an allegedly stable register;
@@ -255,7 +259,7 @@ host-provided dependencies retain their respective upstream licenses. See
 and [third_party/CORRESPONDING_SOURCE.md](third_party/CORRESPONDING_SOURCE.md)
 for the source supplied with native-inclusive releases.
 
-**CONFIRMED locally; hosted acceptance pending:** the bounded [i386 shared-library
+The accepted bounded [i386 shared-library
 follow-up](docs/I386-SHARED-PROFILE.md) adds ordinary/rebased library exports from non-PIE and
 PIE drivers, exact typed values and curated/original symbol lookup. It uses the
 unchanged production exporter and does not establish broader libc or ABI support.

@@ -1,7 +1,24 @@
 # Validation record
 
+**CONFIRMED development acceptance:** P1.7 function signatures,
+calling conventions, declarations, thunks and aliases passed the combined
+[PR95 run](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/41195618723)
+at `cad5e0dd3d5270cd5c83c09ccb2e2d1da29b5ee0` and merged normally as
+`b78faab6263ae89f9b07d316502c5f6bd9afa702`. Final independently reviewed evidence receipt:
+`9f2a1e03b32def2874f71f9a91052dd8e4717876fa4bb05a16ba16ae2febd1cd`.
+See [the complete acceptance record](P17-ACCEPTANCE.md).
+The published alpha.2 release is unchanged. Richer class/lexical relationships
+remain P3.3; broader variable lifetime recovery remains P1.11a.
 
-**CONFIRMED local profile update; hosted acceptance pending:** the function-pointer
+The exact hosted package passed 39 actual Java 21 suites. All twelve CI
+jobs passed, including five native/QEMU target lanes and the Windows host.
+Independent readers inspected the emitted DIE references, raw validator
+results, GDB values/refusals, protected inputs and deterministic outputs.
+Both GUI console screenshots were personally inspected. Windows executes
+native model/export and GNU/LLVM checks; runtime ELF/GDB and the strict
+libdwarf checker remain Linux validations, not Windows execution claims.
+
+**CONFIRMED in the combined P1.7 gate:** the function-pointer
 call safeguard uses a fourth pinned validation-only patch to recognize the
 established LLVM/GDB subroutine calling-convention extension. The strict parser
 is unchanged. New evidence records all four pins explicitly; prior three-patch

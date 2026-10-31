@@ -1,5 +1,21 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED development acceptance:** P1.7 function signatures,
+calling conventions, declarations, thunks and aliases passed the combined
+[PR95 run](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/41195618723)
+at `cad5e0dd3d5270cd5c83c09ccb2e2d1da29b5ee0` and merged normally as
+`b78faab6263ae89f9b07d316502c5f6bd9afa702`. Final independently reviewed evidence receipt:
+`9f2a1e03b32def2874f71f9a91052dd8e4717876fa4bb05a16ba16ae2febd1cd`.
+See [the complete acceptance record](docs/P17-ACCEPTANCE.md).
+The published alpha.2 release is unchanged. Richer class/lexical relationships
+remain P3.3; broader variable lifetime recovery remains P1.11a.
+
+All original PR88–PR94 commits and both harness fixes are preserved. The
+required up-to-date check and normal merge history were retained. Earlier
+component-pending and sequential-integration notes below are historical.
+
+## Historical checkpoints
+
 **CONFIRMED integration plan (2026-10-31); final acceptance pending:** the
 remaining P1.7 commits from PR88 through PR94 are combined on a normal-history
 integration branch based on current main. This preserves every component commit,
