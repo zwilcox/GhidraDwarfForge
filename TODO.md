@@ -1,5 +1,16 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED bounded sectionless ARM/Thumb runtime checkpoint (2026-10-31):**
+Six fresh sectionless exec/PIE/rebased imports and repeated automatic alias exports
+pass raw inventory, structural validation and QEMU/GDB. The debugger explicitly
+selects compiler-backed ARMv7 and decodes stopped remote memory before continuing;
+this does not establish automatic ISA detection without `.ARM.attributes`.
+Six wrong-mode runtime controls and twelve raw inventory corruptions reject;
+fifteen retained non-ARM oracle replays pass. Receipt:
+`3444e8de979b9baf9fba159474cad2df377f608ab9a26cf2f42df5a106c6370b`.
+The initial ARM candidate JAR supplies this checkpoint; final merged package,
+mixed/conflicting mode cases and pipeline expansion remain pending. P1.7 stays open.
+
 **CONFIRMED initial ARM/Thumb alias implementation locally (2026-10-31):**
 separate saved/current instruction-mode evidence now tags only ELF alias values.
 The isolated planner reconciles original mapping/function tags and retains generic

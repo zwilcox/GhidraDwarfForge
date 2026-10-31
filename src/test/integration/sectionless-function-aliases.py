@@ -29,25 +29,36 @@ def digest(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
-    parser.add_argument('target', choices=('x86_64', 'i386', 'aarch64', 'mips32be', 'mips32le'))
+    parser.add_argument('target', choices=('x86_64', 'i386', 'aarch64', 'arm32', 'mips32be', 'mips32le'))
+    parser.add_argument('--arm-mode', choices=('arm', 'thumb'))
     parser.add_argument('--base-root', type=Path, required=True)
     parser.add_argument('--expect-omission', action='store_true', help='Require complete-count diagnostic and intact primary debugging')
     parser.add_argument('--role', choices=('exec', 'pie', 'pie-rebased'))
     parser.add_argument('--output', type=Path, default=repository / 'build/test-results/sectionless-function-aliases')
     args = parser.parse_args()
+    assert (args.target == 'arm32') == (args.arm_mode is not None), 'ARM fixtures require an explicit mode'
     ghidra = args.ghidra.resolve(strict=True)
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
     jar = module / 'lib/GhidraDwarfForge.jar'
     args.output.mkdir(parents=True, exist_ok=True)
     candidates = []
-    for base in sorted(args.base_root.resolve().glob(args.target + '.*/metadata.json')):
+    for base in sorted(args.base_root.resolve().glob('**/' + args.target + '.*/metadata.json')):
         metadata = json.loads(base.read_text())
-        if metadata['symbols'] == 'stripped' and (args.role is None or metadata['role'] == args.role):
+        if (metadata['symbols'] == 'stripped' and (args.role is None or metadata['role'] == args.role) and
+                (args.arm_mode is None or metadata.get('armMode') == args.arm_mode)):
             candidates.append(base.parent)
     assert len(candidates) == (1 if args.role else 3), 'require one passing source fixture per requested role'
     for base in candidates:
         metadata = json.loads((base / 'metadata.json').read_text())
-        assert json.loads((base / 'result.json').read_text())['status'] == 'PASS'
+        if args.target == 'arm32':
+            # A passing compiler oracle supplies fixture facts. The existing
+            # unaliased Thumb PIE export has a separately recorded mode gap.
+            assert json.loads((base / 'compiler-gdb.json').read_text())['status'] == 'PASS'
+            compile_command = json.loads((base / 'compile.command.json').read_text())
+            assert '-march=armv7-a' in compile_command
+            metadata['gdbArchitecture'] = 'armv7'
+        else:
+            assert json.loads((base / 'result.json').read_text())['status'] == 'PASS'
         case = Path(tempfile.mkdtemp(prefix=args.target + '.' + metadata['role'] + '.', dir=args.output.resolve()))
         print(case, flush=True)
         protected = {str(p): digest(p) for p in base.glob('*') if p.is_file()}
@@ -148,11 +159,13 @@ def main():
                 assert result.returncode != 0 and b'No symbol' in result.stdout
         else:
             assert '.symtab' in emitted
+            symbol_values = ({aliases[row['name']]['alias']: row['elfSymbolValue'] for row in metadata['functions']}
+                             if args.target == 'arm32' else None)
             inventory_check.verify(base / 'aliases.input', binary, case / 'aliases.dbg',
-                list(aliases.values()), case / 'raw-inventory.json')
+                list(aliases.values()), case / 'raw-inventory.json', symbol_values)
             if metadata['role'] == 'exec':
                 inventory_check.corruption_controls(base / 'aliases.input', binary, case / 'aliases.dbg',
-                    list(aliases.values()), case / 'corruption-controls')
+                    list(aliases.values()), case / 'corruption-controls', symbol_values)
             run('gdb', ['bash', source / 'local-symbol-merge-gdb.sh', repository, case, args.target, base / 'compiler-gdb.log'])
         after = {p: digest(Path(p)) for p in protected}
         (case / 'protected-after.json').write_text(json.dumps(after, indent=4) + '\n')

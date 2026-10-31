@@ -13,12 +13,16 @@ elf_support = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(elf_support)
 
 
-def verify(original, binary, sidecar, aliases, receipt):
+def verify(original, binary, sidecar, aliases, receipt, symbol_values=None):
     ident, _, old = elf_support.elf(original)
     output_ident, output_header, new = elf_support.elf(sidecar)
     data, emitted = binary.read_bytes(), sidecar.read_bytes()
     wide, order = data[4] == 2, '<' if data[5] == 1 else '>'
     header = struct.unpack_from(order + ('HHIQQQIHHHHHH' if wide else 'HHIIIIIHHHHHH'), data, 16)
+    arm = not wide and order == '<' and header[1] == 40
+    if symbol_values is not None:
+        assert arm and set(symbol_values) == {row['alias'] for row in aliases}
+        assert all(symbol_values[row['alias']] & ~1 == row['entry'] for row in aliases)
     assert ident == output_ident == data[:16]
     assert header[5] == header[11] == header[12] == 0
     assert output_header[:4] == header[:4] and output_header[6:8] == header[6:8]
@@ -101,10 +105,11 @@ def verify(original, binary, sidecar, aliases, receipt):
         if section in (0, 0xfff1, 0xfff2):
             assert actual[3] == section
         else:
+            code_value = value & ~1 if arm and info & 15 == 2 else value
             possible = [ordinal for ordinal, address, memory, _ in loads
-                if address <= value < address + memory and size <= address + memory - value]
+                if address <= code_value < address + memory and size <= address + memory - code_value]
             if not possible and size == 0:
-                possible = [ordinal for ordinal, address, memory, _ in loads if value == address + memory]
+                possible = [ordinal for ordinal, address, memory, _ in loads if code_value == address + memory]
             assert possible == [actual[3]], (name, possible, actual)
         preserved.append({'name': name.decode(), 'value': value, 'size': size, 'section': actual[3]})
     added = {}
@@ -112,9 +117,11 @@ def verify(original, binary, sidecar, aliases, receipt):
         name, info, other, section, value, size = record(new_bytes, index, strings)
         assert info == 2 and other == 0 and name.decode() not in added
         allocation, = [row for row in loads if row[0] == section]
-        assert allocation[1] <= value and value + size <= allocation[1] + allocation[3]
+        code_value = value & ~1 if arm else value
+        assert allocation[1] <= code_value and code_value + size <= allocation[1] + allocation[3]
         added[name.decode()] = (value, size)
-    assert added == {row['alias']: (row['entry'], row['size']) for row in aliases}
+    assert added == {row['alias']: (row['entry'] if symbol_values is None else symbol_values[row['alias']], row['size'])
+                     for row in aliases}
     result = {'status': 'RAW_SECTIONLESS_INVENTORY_PASS', 'originalRecords': len(preserved),
         'preserved': preserved, 'added': added, 'loads': loads, 'unwind': unwind,
         'artifacts': {str(path): hashlib.sha256(path.read_bytes()).hexdigest()
@@ -123,7 +130,7 @@ def verify(original, binary, sidecar, aliases, receipt):
     return result
 
 
-def corruption_controls(original, binary, sidecar, aliases, root):
+def corruption_controls(original, binary, sidecar, aliases, root, symbol_values=None):
     """Prove the oracle rejects lost records, changed semantics and invented aliases."""
     root.mkdir()
     ident, header, sections = elf_support.elf(sidecar)
@@ -142,6 +149,10 @@ def corruption_controls(original, binary, sidecar, aliases, root):
         'undefined-alias': (table[4] + original_locals * width + (6 if wide else 14), 'H', 0),
         'unnamed-alias': (table[4] + original_locals * width, 'I', 0),
     }
+    if symbol_values is not None:
+        value_offset = table[4] + original_locals * width + 4
+        value, = struct.unpack_from(order + 'I', sidecar.read_bytes(), value_offset)
+        modifications['wrong-mode-tag'] = (value_offset, 'I', value ^ 1)
     rejected = []
     for label, (offset, fmt, value) in modifications.items():
         data = bytearray(sidecar.read_bytes())
@@ -149,7 +160,7 @@ def corruption_controls(original, binary, sidecar, aliases, root):
         candidate = root / (label + '.dbg')
         candidate.write_bytes(data)
         try:
-            verify(original, binary, candidate, aliases, root / (label + '.json'))
+            verify(original, binary, candidate, aliases, root / (label + '.json'), symbol_values)
         except (AssertionError, ValueError) as error:
             (root / (label + '.rejection.txt')).write_text(type(error).__name__ + ': ' + str(error) + '\n')
             rejected.append(label)
