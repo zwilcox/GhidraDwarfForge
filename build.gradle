@@ -1097,3 +1097,15 @@ tasks.register("classScopeModelSmoke", JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.types.ClassScopeModelSmoke"
 }
+
+tasks.register("classBindingEvidenceSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit class/type identities, stale records, cancellation and immutable reopen"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.ClassBindingEvidenceSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/class-binding/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/class-binding/cache").absolutePath
+}

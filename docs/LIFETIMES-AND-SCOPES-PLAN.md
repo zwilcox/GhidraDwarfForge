@@ -220,3 +220,13 @@ deterministic reruns and cancellation/failure cleanup. Pass the existing
 up-to-date `required-validation` protection and normally integrate reviewed
 changes. Reconcile TODO/context and the corresponding issue only after all
 requirements for that umbrella are proven. Release publication is separate.
+
+## Explicit saved class-binding checkpoint
+
+**CONFIRMED explicit class-binding provider; extractor/emitter pending:**
+400 real ProgramDB checks across five language profiles pass on actual Java 21,
+including identity collisions, stale records, edits, rebasing, immutable reopen
+and cancellation. Missing and rejected evidence remain distinct; export reads
+do not repair records or infer replacement identity. Eleven Java 21 suites and
+four existing producer regressions pass. See `CLASS-BINDINGS.md`. Actual
+class extraction/emission and all remaining lifetime/scope rows stay required.

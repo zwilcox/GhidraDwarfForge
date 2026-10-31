@@ -32,9 +32,10 @@ references rather than scanning all functions for every method.
 `ProgramTypeModel` now retains this graph. Existing constructors supply an
 empty graph; the Ghidra compiler-default and both MIPS calling-convention
 policies preserve nonempty graphs when they copy signatures. The existing
-extractor currently uses the empty-compatible constructor. Saved evidence,
-stale/conflict diagnostics and native class declaration/specification emission
-still need implementation and real exporter tests.
+extractor currently uses the empty-compatible constructor. The explicit saved binding provider is implemented and tested separately in
+`CLASS-BINDINGS.md`. Collector conflict diagnostics and native class
+declaration/specification emission still need implementation and real exporter
+tests.
 
 ## Validation
 
