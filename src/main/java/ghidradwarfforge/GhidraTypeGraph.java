@@ -123,6 +123,7 @@ public final class GhidraTypeGraph {
             Map<Long, GhidraSyntheticSource.ParameterRecovery> recoveredParameters)
             throws CancelledException {
         Extractor extractor = new Extractor(program, diagnostic);
+        var classScopes = new GhidraClassScopes(program, monitor, diagnostic);
         List<DataType> favoriteTypes = new ArrayList<>(
             program.getDataTypeManager().getFavorites());
         favoriteTypes.sort(Comparator.comparing(DataType::getPathName)
@@ -368,6 +369,8 @@ public final class GhidraTypeGraph {
             else if (!callRestriction.isEmpty()) {
                 diagnostic.accept("Debugger-injected calls disabled for " + symbol.name() + ": " + callRestriction);
             }
+            classScopes.record(function,
+                ghidradwarfforge.types.ClassScopeModel.FunctionReference.definition(symbol.name(), address), parameters);
             signatures.add(new ProgramTypeModel.FunctionSignature(symbol.name(), address,
                 returnType, parameters, locals, function.hasVarArgs(), function.hasNoReturn(),
                 nonNull(function.getCallingConventionName()),
@@ -483,6 +486,9 @@ public final class GhidraTypeGraph {
             else if (!callRestriction.isEmpty()) {
                 diagnostic.accept("Debugger-injected calls disabled for " + external.getName(true) + ": " + callRestriction);
             }
+            classScopes.record(external,
+                ghidradwarfforge.types.ClassScopeModel.FunctionReference.declaration(external.getName(true),
+                    "external:" + Long.toUnsignedString(external.getID())), parameters);
             declarations.add(new ProgramTypeModel.FunctionDeclaration(
                 "external:" + Long.toUnsignedString(external.getID()), external.getName(true),
                 extractor.reserve(external.getReturn().getFormalDataType()), parameters,
@@ -490,10 +496,12 @@ public final class GhidraTypeGraph {
                 external.getCallingConventionName(), external.getSignatureSource().name(),
                 nonDefaultConvention, callRestriction));
         }
+        classScopes.prepare(extractor::reserve);
         extractor.drain(monitor);
-        return new ProgramTypeModel(new TypeGraph(new ArrayList<>(extractor.nodes.values())),
+        var graph = new TypeGraph(new ArrayList<>(extractor.nodes.values()));
+        return new ProgramTypeModel(graph,
             signatures, globals, new VariableStorageModel(variableLocations), functionStatics,
-            declarations, lexicalScopes);
+            declarations, lexicalScopes, classScopes.finish(graph));
     }
 
     static boolean acceptRecoveredReturn(Function function, DataType recovered) {

@@ -1109,3 +1109,15 @@ tasks.register("classBindingEvidenceSmoke", JavaExec) {
     systemProperty "application.settingsdir", file("build/tmp/class-binding/settings").absolutePath
     systemProperty "application.cachedir", file("build/tmp/class-binding/cache").absolutePath
 }
+
+tasks.register("classScopeExtractionSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks real saved class/method ownership, conflicting layouts and immutable extraction"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.ClassScopeExtractionSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/class-extraction/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/class-extraction/cache").absolutePath
+}

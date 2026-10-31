@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED saved class extraction; native class emission pending:** the
+production extractor now retains actual namespace/class/method identities,
+addressless external methods and separately evidenced canonical layouts. All
+290 real ProgramDB checks across five profiles and twelve actual Java 21 suites
+pass, including conflicts, stale records, cancellation, rebasing and immutable
+reopen. Four real exports retain GDB values and validate; two previous-package
+comparisons are byte-identical. See `docs/CLASS-SCOPE-EXTRACTION.md`. The writer
+still needs class declaration/specification emission; no umbrella is complete.
+
+
 **CONFIRMED explicit class-binding provider; extractor/emitter pending:**
 400 real ProgramDB checks across five language profiles pass on actual Java 21,
 including identity collisions, stale records, edits, rebasing, immutable reopen

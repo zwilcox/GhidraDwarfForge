@@ -1,5 +1,10 @@
 # Explicit saved class layouts
 
+**Current extraction checkpoint:** `CLASS-SCOPE-EXTRACTION.md` supersedes the
+extractor-pending notes below. The provider/model evidence here retains its
+original component scope; native class emission and hosted acceptance remain
+pending.
+
 **CONFIRMED provider component; extraction and class emission remain PLANNED.**
 `GhidraClassBindings` saves an analyst's explicit class/layout relationship in
 the Ghidra program. It separates durable identity from Ghidra's category/name

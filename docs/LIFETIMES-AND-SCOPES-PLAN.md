@@ -230,3 +230,14 @@ and cancellation. Missing and rejected evidence remain distinct; export reads
 do not repair records or infer replacement identity. Eleven Java 21 suites and
 four existing producer regressions pass. See `CLASS-BINDINGS.md`. Actual
 class extraction/emission and all remaining lifetime/scope rows stay required.
+
+## Saved class extraction checkpoint
+
+**CONFIRMED saved class extraction; native class emission pending:** the
+production extractor now retains actual namespace/class/method identities,
+addressless external methods and separately evidenced canonical layouts. All
+290 real ProgramDB checks across five profiles and twelve actual Java 21 suites
+pass, including conflicts, stale records, cancellation, rebasing and immutable
+reopen. Four real exports retain GDB values and validate; two previous-package
+comparisons are byte-identical. See `CLASS-SCOPE-EXTRACTION.md`. The writer
+still needs class declaration/specification emission; no umbrella is complete.

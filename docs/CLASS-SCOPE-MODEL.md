@@ -1,5 +1,10 @@
 # Class ownership model
 
+**Current extraction checkpoint:** `CLASS-SCOPE-EXTRACTION.md` supersedes the
+extractor-pending notes below. The provider/model evidence here retains its
+original component scope; native class emission and hosted acceptance remain
+pending.
+
 **CONFIRMED model component; saved-program extraction and class emission remain
 PLANNED.** `ClassScopeModel` separates namespace/class ownership, method
 identity and canonical layout bindings. This implements the model selected
