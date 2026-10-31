@@ -62,9 +62,14 @@ pinned strict checker pass; inherited compiler-frame diagnostics are matched
 to original bytes and diagnostics. Controlled decompiler failure and
 cancellation after 16 MiB preserve the original and previous output pair.
 
-**PRESENT, UNVERIFIED:** both required runtime lanes and Linux/Windows model
-lists now include this component. Hosted acceptance remains pending. P1.11a
-and P3.3 remain incomplete.
+**CONFIRMED integrated:** both required runtime lanes and Linux/Windows model
+lists pass in PR97 run `41209712240`, with all twelve jobs, exact package/raw
+review and both GUI hosts. Normal merge `8d9e980` retains accepted `caa9da00`'s
+tree. Receipt: `430f5aa877f6e0f0b638187ad1ccdff1a92d958f30f9bbfb170efba29a7c3b4e`.
+P1.11a and P3.3 remain incomplete. PR98's closed-control-flow local component is
+in hosted validation. Saved merged-local identity/mutations have local six-role
+acceptance; see `docs/MERGED-LOCAL-MAPPINGS.md`. All other requirements above
+remain in scope.
 
 Reproduction:
 

@@ -1,5 +1,22 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally; hosted acceptance pending:** saved Ghidra merged locals
+now preserve one canonical typed identity through recorded register moves,
+updates and reinitialization. The 64 saved-model checks, 248 raw-instruction
+checks, 16 actual Java 21 suites and six x86-64/AArch64 exec/PIE/rebase roles pass.
+There are 12 candidate/six previous exports and 16,632 GDB observations, with
+396 old or unavailable previous-package values at checked updates. Exact raw
+loclists, GNU/LLVM/pinned strict validators, determinism and protected inputs
+pass. General inferred identity, stack/reload/call/mixed-piece work and P3.3
+remain required. See `docs/MERGED-LOCAL-MAPPINGS.md` for scope and evidence.
+
+**CONFIRMED integration:** repeated incoming handoffs passed all twelve jobs
+in PR97 run `41209712240`, exact package/raw review and both hosts. Normal merge
+`8d9e98078ed098a14cd6cd02af1eca6e16d4c329` retains accepted head `caa9da00`'s tree.
+Review receipt: `430f5aa877f6e0f0b638187ad1ccdff1a92d958f30f9bbfb170efba29a7c3b4e`.
+PR98's control-flow-local component is submitted at `0c5db884` with its own
+hosted gate pending. Neither component completes P1.11a or P3.3.
+
 **CONFIRMED locally; hosted acceptance pending:** curated definition-start
 register locals now have a control-flow proof requiring all-predecessor
 agreement, including loops and discontiguous bodies. The 380 decoder checks,
@@ -7,7 +24,7 @@ agreement, including loops and discontiguous bodies. The 380 decoder checks,
 18 exports/comparisons and 18,576 GDB instruction observations pass. See
 `docs/LOCAL-DEFINITION-CONTROL-FLOW.md` for exact evidence, fixture corrections
 and remaining gates. The preceding repeated-register-copy component is PR #97;
-its required hosted gate is separate. Neither P1.11a nor P3.3 is complete.
+its hosted gate and normal integration are recorded above. Neither P1.11a nor P3.3 is complete.
 
 **CONFIRMED active goal (2026-10-31):** finish P1.11a variable lifetimes and
 storage migration, followed by P3.3 richer class/lexical scopes. The full
@@ -15,7 +32,7 @@ requirements and sequence are tracked in
 `docs/LIFETIMES-AND-SCOPES-PLAN.md`; neither umbrella is complete. The first
 component composes proven incoming register handoffs beyond the previous
 two-backup limit. Local decoder, thirteen actual Java 21 suites and all six
-x86-64/AArch64 packaged runtime cases pass; hosted acceptance is pending. The Ghidra 12.0.3/Java 21 baseline is unchanged.
+x86-64/AArch64 packaged runtime cases pass; PR97 hosted acceptance is recorded above. The Ghidra 12.0.3/Java 21 baseline is unchanged.
 
 **CONFIRMED development acceptance:** P1.7 function signatures,
 calling conventions, declarations, thunks and aliases passed the combined

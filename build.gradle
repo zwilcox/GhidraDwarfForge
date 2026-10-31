@@ -334,6 +334,30 @@ tasks.register("registerCopyChainSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/register-copy-chain/cache").absolutePath
 }
 
+tasks.register("localMappingsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks canonical saved Ghidra local identities and all storage mappings"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.LocalMappingsSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/local-mappings/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/local-mappings/cache").absolutePath
+}
+
+tasks.register("mergedLocalLifetimeSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks saved local register migration, assignments and stale backup rejection"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.MergedLocalLifetimeSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/merged-local-lifetime/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/merged-local-lifetime/cache").absolutePath
+}
+
 tasks.register("localDefinitionFlowSmoke", JavaExec) {
     group = "verification"
     description = "Checks definite local availability through closed branches, loops and split bodies"

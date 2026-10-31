@@ -1848,6 +1848,14 @@ or uncertain storage remains locationless with a diagnostic.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
 
+**CONFIRMED locally; hosted acceptance pending:** explicitly saved merged-local
+identity now follows register moves, updates and reinitializations. Six roles
+pass 12 candidate/six previous exports and 16,632 instruction observations,
+including unavailable joins and stale-backup rejection. The 64 identity checks,
+248 lifetime checks and 16 actual Java 21 suites pass. See
+`docs/MERGED-LOCAL-MAPPINGS.md`. General inferred identities, stack/reload,
+additional calls and mixed pieces remain required.
+
 **CONFIRMED locally; hosted acceptance pending:** curated definition-start
 locals now retain locations through proven branches, loops and discontiguous
 bodies. All-predecessor agreement excludes unknown joins and killing backedges.
@@ -1861,7 +1869,8 @@ Tracking: [#67](https://github.com/zwilcox/GhidraDwarfForge/issues/67).
 **CONFIRMED active work:** the full remaining scope, followed by P3.3, is
 tracked in `docs/LIFETIMES-AND-SCOPES-PLAN.md`. Repeated incoming register
 handoffs pass local decoder, actual Java 21 and six-role packaged runtime
-checks; hosted acceptance remains pending. This is one component and does not complete this checklist.
+checks, all twelve jobs in PR97 run `41209712240`, package/raw/host review,
+and normal merge `8d9e980`. This is one component and does not complete this checklist.
 
 **CONFIRMED through accepted PR78:** a second completed incoming
 scalar register backup preserves the value after the first backup is killed.
