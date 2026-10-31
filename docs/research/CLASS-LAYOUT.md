@@ -1,5 +1,13 @@
 # Class layout and association evidence
 
+**HISTORICAL lookup limitation:** the research queries below ran after broad
+symbol expansion. Production testing subsequently found that this hides a GDB
+C11 first-lookup failure for namespace-nested canonical types. The corrected
+CU-definition/nested-declaration layout and independent fresh-debugger checks
+are documented in `../CLASS-SCOPE-EMISSION.md`. The original research results
+remain evidence only for their recorded query order.
+
+
 **CONFIRMED research; production class ownership is still PLANNED.** This
 checkpoint follows the explicit object-parameter implementation. It selects a
 consumer-compatible declaration layout and investigates class/type association.

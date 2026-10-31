@@ -241,3 +241,15 @@ pass, including conflicts, stale records, cancellation, rebasing and immutable
 reopen. Four real exports retain GDB values and validate; two previous-package
 comparisons are byte-identical. See `CLASS-SCOPE-EXTRACTION.md`. The writer
 still needs class declaration/specification emission; no umbrella is complete.
+
+## Native class emission checkpoint
+
+**CONFIRMED local class emission; hosted/full-scope acceptance pending:**
+actual saved ownership now emits class declarations and canonical definitions,
+with identity-bound method specifications and collision-aware C lookup aliases.
+Twelve x86-64/AArch64 target/address/binding cases pass 24 deterministic real
+exports, strict validators and compiler-correlated GDB values. Fourteen actual
+Java 21 suites and isolated class/failure/collision checks pass. Fresh debugger
+queries catch and verify the correction of a lazy-lookup defect missed by the
+earlier research query order. See `CLASS-SCOPE-EMISSION.md`; remaining
+class controls, lifetime integration and all other scope requirements stay open.

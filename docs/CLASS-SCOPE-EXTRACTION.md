@@ -1,5 +1,12 @@
 # Saved class ownership extraction
 
+**CONFIRMED native emission checkpoint:** the extracted graph now feeds
+class declarations, canonical definitions and identity-bound method
+specifications. See `CLASS-SCOPE-EMISSION.md` for first-lookup corrections,
+local acceptance and remaining scope/hosted requirements. The earlier
+extractor-only statements below describe that historical component.
+
+
 **CONFIRMED extraction component; native class emission remains PLANNED.**
 `GhidraTypeGraph` now supplies `ProgramTypeModel.classScopes` from actual saved
 Ghidra relationships. `GhidraClassScopes` records selected image methods and

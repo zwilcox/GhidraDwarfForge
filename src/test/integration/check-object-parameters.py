@@ -35,6 +35,17 @@ def check(nodes, isolated, failed):
         assert 'DW_AT_declaration' in external['attributes']
         assert 'DW_AT_low_pc' not in external['attributes'] and 'DW_AT_ranges' not in external['attributes']
         expected.append(external)
+    for definition in list(expected):
+        if 'DW_AT_specification' not in definition['attributes']:
+            continue
+        reference, = re.findall(r'<0x([0-9a-f]+)>', definition['attributes']['DW_AT_specification'])
+        declaration = nodes[int(reference, 16)]
+        assert declaration['tag'] == 'DW_TAG_subprogram' and declaration['attributes']['DW_AT_declaration'] == '1'
+        owner = nodes[declaration['parent']]
+        assert owner['tag'] == 'DW_TAG_structure_type'
+        assert 'DW_AT_specification' in owner['attributes']
+        assert declaration['name'] == definition['name'].rsplit('::', 1)[-1]
+        expected.append(declaration)
     owners = [node for node in nodes.values() if 'DW_AT_object_pointer' in node['attributes']]
     assert {node['offset'] for node in owners} == {node['offset'] for node in expected}
     for owner in owners:

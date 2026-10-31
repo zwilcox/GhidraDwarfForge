@@ -25,6 +25,7 @@ import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_EXTERNAL;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_NORETURN;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_PROTOTYPED;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_TYPE;
+import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_SPECIFICATION;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_DLV_OK;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_FORM_STRP;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_LANG_C11;
@@ -114,6 +115,7 @@ import ghidradwarfforge.source.SyntheticSourceFile;
 import ghidradwarfforge.source.FunctionStaticPolicy;
 import ghidradwarfforge.source.SyntheticSourceFile.FunctionLines;
 import ghidradwarfforge.types.ProgramTypeModel;
+import ghidradwarfforge.types.ClassScopeModel;
 import ghidradwarfforge.types.TypeGraph;
 import ghidradwarfforge.types.TypeGraph.AggregateType;
 import ghidradwarfforge.types.TypeGraph.ArrayType;
@@ -449,15 +451,19 @@ public final class MinimalDwarfSidecarExporter {
             addProducer(producer, consumer, unit, errorOut);
             addUnsigned(producer, consumer, debug, unit, DW_AT_LANGUAGE, DW_LANG_C11,
                 errorOut);
-            Map<String, AllocatedType> allocatedTypes = allocateTypes(producer, consumer,
-                debug, unit, typeModel, errorOut);
-            populateTypes(producer, consumer, debug, typeModel, allocatedTypes, byteOrder,
-                errorOut);
             Map<List<String>, Die> namespaceDies = allocateNamespaces(producer, consumer,
                 debug, unit, typeModel, errorOut);
+            ClassAllocation classes = allocateClassScopes(producer, consumer, debug, unit,
+                typeModel, namespaceDies, errorOut);
+            Map<String, AllocatedType> allocatedTypes = allocateTypes(producer, consumer,
+                debug, unit, typeModel, classes.types(), errorOut);
+            populateTypes(producer, consumer, debug, typeModel, allocatedTypes, byteOrder,
+                errorOut);
             Map<FunctionKey, FunctionLines> sourceFunctions = sourceFunctions(syntheticSource);
             Map<FunctionKey, ProgramTypeModel.FunctionSignature> signatures =
                 emittedFunctionSignatures(functions, typeModel, syntheticSource);
+            Map<ClassScopeModel.FunctionReference, Die> methodDeclarations = allocateMethodDeclarations(
+                producer, consumer, debug, typeModel, classes.scopes(), allocatedTypes, signatures, errorOut);
             Map<VariableKey, VariableLocation> variableLocations =
                 variableLocations(typeModel);
             Map<Long, Die> functionDies = new HashMap<>();
@@ -512,6 +518,11 @@ public final class MinimalDwarfSidecarExporter {
                 ProgramTypeModel.FunctionSignature signature = sourceFailed ? null :
                     signatures.get(FunctionKey.of(function));
                 if (signature != null) {
+                    Die declaration = methodDeclarations.get(ClassScopeModel.FunctionReference.definition(
+                        function.name(), function.address()));
+                    if (declaration != null) {
+                        addReference(producer, consumer, debug, die, DW_AT_SPECIFICATION, declaration, errorOut);
+                    }
                     // A DEFAULT listing signature does not establish a complete
                     // argument list, even when its scalar return was recovered.
                     if (!signature.signatureSource().equals("DEFAULT")) {
@@ -598,6 +609,11 @@ public final class MinimalDwarfSidecarExporter {
                 for (ProgramTypeModel.FunctionDeclaration declaration : typeModel.functionDeclarations()) {
                     Die die = newDie(producer, consumer, debug, DW_TAG_SUBPROGRAM, unit, errorOut);
                     addName(producer, consumer, die, declaration.name(), errorOut);
+                    Die methodDeclaration = methodDeclarations.get(ClassScopeModel.FunctionReference.declaration(
+                        declaration.name(), declaration.key()));
+                    if (methodDeclaration != null) {
+                        addReference(producer, consumer, debug, die, DW_AT_SPECIFICATION, methodDeclaration, errorOut);
+                    }
                     addFlag(producer, consumer, debug, die, DW_AT_DECLARATION, true, errorOut);
                     addFlag(producer, consumer, debug, die, DW_AT_EXTERNAL, true, errorOut);
                     addFlag(producer, consumer, debug, die, DW_AT_PROTOTYPED, true, errorOut);
@@ -720,6 +736,119 @@ public final class MinimalDwarfSidecarExporter {
         }
     }
 
+    private record ClassAllocation(Map<Long, Die> scopes, Map<String, Die> types) { }
+
+    private static ClassAllocation allocateClassScopes(LibDwarfProducer producer,
+            LibDwarfConsumer consumer, Debug debug, Die unit, ProgramTypeModel model,
+            Map<List<String>, Die> namespaces, PointerByReference errorOut) {
+        var scopes = new LinkedHashMap<Long, Die>();
+        var declarations = new HashMap<Long, Die>();
+        var types = new LinkedHashMap<String, Die>();
+        if (model == null) return new ClassAllocation(scopes, types);
+        var bindings = new HashMap<Long, ClassScopeModel.Binding>();
+        for (var binding : model.classScopes().bindings()) bindings.put(binding.classId(), binding);
+        var names = ghidradwarfforge.types.ClassScopeNames.build(model.types(), model.classScopes());
+        var paths = new HashMap<Long, List<String>>();
+        paths.put(0L, List.of());
+        for (var scope : model.classScopes().scopes()) {
+            Die parent = scope.parent() == 0 ? unit : Objects.requireNonNull(declarations.get(scope.parent()));
+            var parts = new ArrayList<>(paths.get(scope.parent()));
+            parts.add(scope.name());
+            var path = List.copyOf(parts);
+            paths.put(scope.id(), path);
+            Die die;
+            if (scope.kind() == ClassScopeModel.Kind.NAMESPACE) {
+                die = namespaces.get(path);
+                if (die == null) {
+                    die = newDie(producer, consumer, debug, DW_TAG_NAMESPACE, parent, errorOut);
+                    addName(producer, consumer, die, scope.name(), errorOut);
+                    namespaces.put(path, die);
+                }
+                declarations.put(scope.id(), die);
+            }
+            else {
+                // Preserve real lexical ownership on the declaration. Keep the
+                // canonical definition at CU scope: GDB's C11 cooked index and
+                // full reader disagree on names of namespace-nested types.
+                Die declaration = newDie(producer, consumer, debug, DW_TAG_STRUCTURE_TYPE, parent, errorOut);
+                addName(producer, consumer, declaration, scope.name(), errorOut);
+                addFlag(producer, consumer, debug, declaration, DW_AT_DECLARATION, true, errorOut);
+                declarations.put(scope.id(), declaration);
+                die = newDie(producer, consumer, debug, DW_TAG_STRUCTURE_TYPE, unit, errorOut);
+                addReference(producer, consumer, debug, die, DW_AT_SPECIFICATION, declaration, errorOut);
+                var binding = bindings.get(scope.id());
+                if (binding == null) {
+                    addName(producer, consumer, die, names.names().get(scope.id()), errorOut);
+                    addFlag(producer, consumer, debug, die, DW_AT_DECLARATION, true, errorOut);
+                }
+                else types.put(binding.type().key(), die);
+            }
+            scopes.put(scope.id(), die);
+        }
+        for (var alias : names.aliases()) {
+            typeAlias(producer, consumer, debug, unit, scopes.get(alias.classId()), alias.name(), errorOut);
+        }
+        return new ClassAllocation(scopes, types);
+    }
+
+    private static void typeAlias(LibDwarfProducer producer, LibDwarfConsumer consumer,
+            Debug debug, Die parent, Die target, String name, PointerByReference errorOut) {
+        Die alias = newDie(producer, consumer, debug, DW_TAG_TYPEDEF, parent, errorOut);
+        addName(producer, consumer, alias, name, errorOut);
+        addReference(producer, consumer, debug, alias, DW_AT_TYPE, target, errorOut);
+    }
+
+    private static Map<ClassScopeModel.FunctionReference, Die> allocateMethodDeclarations(
+            LibDwarfProducer producer, LibDwarfConsumer consumer, Debug debug, ProgramTypeModel model,
+            Map<Long, Die> scopes, Map<String, AllocatedType> types,
+            Map<FunctionKey, ProgramTypeModel.FunctionSignature> emitted, PointerByReference errorOut) {
+        var result = new LinkedHashMap<ClassScopeModel.FunctionReference, Die>();
+        if (model == null) return result;
+        var external = new HashMap<ClassScopeModel.FunctionReference, ProgramTypeModel.FunctionDeclaration>();
+        for (var declaration : model.functionDeclarations()) {
+            external.put(ClassScopeModel.FunctionReference.declaration(declaration.name(), declaration.key()), declaration);
+        }
+        for (var method : model.classScopes().methods()) {
+            var target = method.function();
+            var definition = target.declarationKey().isEmpty() ? emitted.get(new FunctionKey(target.name(), target.address())) : null;
+            var declaration = external.get(target);
+            // Genuine source failure remains symbol-only; no specification may
+            // reintroduce a signature indirectly through the class declaration.
+            if (definition == null && declaration == null) continue;
+            var parameters = definition != null ? definition.parameters() : declaration.parameters();
+            TypeRef returnType = definition != null ? definition.returnType() : declaration.returnType();
+            boolean variadic = definition != null ? definition.variadic() : declaration.variadic();
+            boolean noReturn = definition != null ? definition.noReturn() : declaration.noReturn();
+            String convention = definition != null ? definition.callingConvention() : declaration.callingConvention();
+            boolean disabled = definition != null ? definition.debuggerCallsDisabled() : declaration.debuggerCallsDisabled();
+            Die die = newDie(producer, consumer, debug, DW_TAG_SUBPROGRAM,
+                Objects.requireNonNull(scopes.get(method.classId())), errorOut);
+            addName(producer, consumer, die, method.name(), errorOut);
+            addFlag(producer, consumer, debug, die, DW_AT_DECLARATION, true, errorOut);
+            addFlag(producer, consumer, debug, die, DW_AT_EXTERNAL, true, errorOut);
+            if (definition == null || !definition.signatureSource().equals("DEFAULT")) {
+                addFlag(producer, consumer, debug, die, DW_AT_PROTOTYPED, true, errorOut);
+            }
+            addTypeReference(producer, consumer, debug, die, returnType, model.types(), types, errorOut);
+            if (knownCallingConvention(convention) || disabled) {
+                addUnsigned(producer, consumer, debug, die, DW_AT_CALLING_CONVENTION,
+                    disabled ? DW_CC_NOCALL : DW_CC_NORMAL, errorOut);
+            }
+            if (noReturn) addFlag(producer, consumer, debug, die, DW_AT_NORETURN, true, errorOut);
+            for (var parameter : parameters) {
+                Die child = newDie(producer, consumer, debug,
+                    parameter.returnStorage() ? DW_TAG_VARIABLE : DW_TAG_FORMAL_PARAMETER, die, errorOut);
+                if (!parameter.name().isBlank()) addName(producer, consumer, child, parameter.name(), errorOut);
+                addTypeReference(producer, consumer, debug, child, parameter.type(), model.types(), types, errorOut);
+                if (parameter.artificial()) addFlag(producer, consumer, debug, child, DW_AT_ARTIFICIAL, true, errorOut);
+                if (parameter.objectPointer()) addReference(producer, consumer, debug, die, DW_AT_OBJECT_POINTER, child, errorOut);
+            }
+            if (variadic) newDie(producer, consumer, debug, DW_TAG_UNSPECIFIED_PARAMETERS, die, errorOut);
+            result.put(target, die);
+        }
+        return result;
+    }
+
     private static Map<List<String>, Die> allocateNamespaces(LibDwarfProducer producer,
             LibDwarfConsumer consumer, Debug debug, Die unit, ProgramTypeModel typeModel,
             PointerByReference errorOut) {
@@ -804,7 +933,7 @@ public final class MinimalDwarfSidecarExporter {
 
     private static Map<String, AllocatedType> allocateTypes(LibDwarfProducer producer,
             LibDwarfConsumer consumer, Debug debug, Die unit, ProgramTypeModel model,
-            PointerByReference errorOut) {
+            Map<String, Die> classTypes, PointerByReference errorOut) {
         if (model == null) {
             return Map.of();
         }
@@ -823,7 +952,8 @@ public final class MinimalDwarfSidecarExporter {
                 primary = related.get(0);
             }
             else {
-                primary = newDie(producer, consumer, debug, typeTag(node), unit, errorOut);
+                primary = classTypes.get(node.key());
+                if (primary == null) primary = newDie(producer, consumer, debug, typeTag(node), unit, errorOut);
                 if (node instanceof ArrayType) {
                     related.add(newDie(producer, consumer, debug, DW_TAG_SUBRANGE_TYPE,
                         primary, errorOut));

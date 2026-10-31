@@ -131,7 +131,12 @@ final class GhidraClassScopes {
                 else omit(candidate.classId(), "canonical layout is claimed by multiple classes");
             }
         }
-        return new ClassScopeModel(new ArrayList<>(scopes.values()), bindings, methods);
+        var result = new ClassScopeModel(new ArrayList<>(scopes.values()), bindings, methods);
+        for (String message : ghidradwarfforge.types.ClassScopeNames.build(graph, result).diagnostics()) {
+            monitor.checkCancelled();
+            diagnostic.accept(message);
+        }
+        return result;
     }
 
     /** Keep actual namespace ancestry; a library is a linkage container, not a source namespace. */

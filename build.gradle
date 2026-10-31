@@ -1121,3 +1121,27 @@ tasks.register("classScopeExtractionSmoke", JavaExec) {
     systemProperty "application.settingsdir", file("build/tmp/class-extraction/settings").absolutePath
     systemProperty "application.cachedir", file("build/tmp/class-extraction/cache").absolutePath
 }
+
+tasks.register("classScopeSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks class ownership fixture; optionally runs the isolated producer"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.nativeapi.ClassScopeSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+    doFirst {
+        if (project.hasProperty("sidecarInput")) {
+            setArgs(["libdwarfPath", "libdwarfpPath", "sidecarInput", "sidecarOutput", "functionAddress", "functionSize"].collect {
+                project.property(it)
+            })
+        }
+    }
+}
+
+tasks.register("classScopeNamesSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks class aliases against ambiguous and curated type names"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.types.ClassScopeNamesSmoke"
+}

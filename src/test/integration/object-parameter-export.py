@@ -19,6 +19,8 @@ def main():
     parser.add_argument('ghidra', type=Path)
     parser.add_argument('target', choices=['x86_64', 'aarch64'])
     parser.add_argument('--role', choices=['exec', 'pie', 'pie-rebased'], default='exec')
+    parser.add_argument('--explicit-binding', action='store_true')
+    parser.add_argument('--failure-control', action='store_true')
     args = parser.parse_args()
     ghidra = args.ghidra.resolve(strict=True)
     repository = Path(__file__).resolve().parents[3]
@@ -67,9 +69,14 @@ def main():
     rebase = ['-postScript', 'RebaseFixtureProgram.java', '0x2000000'] if args.role == 'pie-rebased' else []
     run('import', [ghidra / 'support/analyzeHeadless', project, 'Object', '-import', reference,
         '-loader', 'ElfLoader', '-analysisTimeoutPerFile', '120', '-scriptPath', harness / 'ghidra_scripts',
-        *rebase, '-postScript', 'PrepareObjectParameter.java', case / 'prepared.json'])
+        *rebase, '-postScript', 'PrepareObjectParameter.java', case / 'prepared.json',
+        'explicit' if args.explicit_binding else 'inferred'])
     assert 'object-parameter-preparation=PASS' in (case / 'import.log').read_text()
     assert json.loads((case / 'prepared.json').read_text())['javaVersion'].startswith('21.')
+    prepared = json.loads((case / 'prepared.json').read_text())
+    assert prepared['explicitBinding'] == args.explicit_binding
+    if args.explicit_binding:
+        assert sum(item.get('binding') == 'VALID' for item in prepared['parameters']) == 1
     before = {str(p): digest(p) for p in project.rglob('*') if p.is_file() and not p.name.endswith('.lock')}
     pair = None
     for iteration in ['first', 'repeat']:
@@ -94,6 +101,8 @@ def main():
         run(view, ['readelf', '--debug-dump=' + view, output])
         assert 'Warning:' not in (case / (view + '.log')).read_text()
     run('references', ['python3', harness / 'check-object-parameters.py', case / 'info.log'])
+    run('classes', ['python3', harness / 'check-class-scopes.py', case / 'info.log'])
+    run('class-lookup', ['python3', harness / 'check-class-first-lookup.py', stripped, output])
     run('llvm', ['llvm-dwarfdump', '--verify', output])
     assert 'No errors.' in (case / 'llvm.log').read_text()
     run('strict', ['python3', harness / 'check-dwarfdump.py', output, case / 'dwarfdump.log', '--original', reference])
@@ -113,9 +122,12 @@ def main():
     assert protected == {p: digest(Path(p)) for p in protected}
     assert not list(case.glob('.*.tmp'))
     (case / 'acceptance.json').write_text(json.dumps({'status': 'OBJECT_PARAMETER_PASS',
-        'target': args.target, 'role': args.role, 'protected': protected, 'outputPair': pair,
+        'target': args.target, 'role': args.role, 'explicitBinding': args.explicit_binding,
+        'protected': protected, 'outputPair': pair,
         'observations': json.loads((case / 'forge-observations.json').read_text())}, indent=4) + '\n')
     print('object-parameter-export=PASS', flush=True)
+    if args.failure_control:
+        run('failure-driver', ['python3', harness / 'class-scope-failure.py', case, ghidra], timeout=900)
 
 
 if __name__ == '__main__':

@@ -70,6 +70,7 @@ public final class DwarfConstants {
     public static final short DW_AT_DECLARATION = 0x3c;
     public static final short DW_AT_ENCODING = 0x3e;
     public static final short DW_AT_EXTERNAL = 0x3f;
+    public static final short DW_AT_SPECIFICATION = 0x47;
     public static final short DW_AT_TYPE = 0x49;
     public static final short DW_AT_DATA_BIT_OFFSET = 0x6b;
     public static final short DW_AT_NORETURN = (short) 0x87;
