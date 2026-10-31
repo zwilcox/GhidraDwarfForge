@@ -184,6 +184,11 @@ public final class GhidraTypeGraph {
                     if (prefix.isEmpty() && storage instanceof UnavailableStorage) {
                         prefix = StackValueFlow.prove(program, function, parameter, registerMap, monitor);
                     }
+                    if (storage instanceof UnavailableStorage && parameter.getVariableStorage() != null &&
+                            parameter.getVariableStorage().getVarnodeCount() > 1) {
+                        var pieces = CompositeValueFlow.prove(program, function, parameter, registerMap, monitor);
+                        prefix = prefix.isEmpty() ? pieces : StackValueFlow.extendUnavailable(prefix, pieces);
+                    }
                     if (prefix.isEmpty() && storage instanceof StackStorage && stackDepths == null) {
                         stackDepths = GhidraVariableStorage.stackDepthProfile(program, function, monitor);
                     }

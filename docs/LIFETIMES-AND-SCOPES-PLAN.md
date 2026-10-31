@@ -136,6 +136,15 @@ All 23 actual Java 21 suites pass. See `MUTABLE-STACK-MAPPINGS.md` for provenanc
 physical proof boundaries, exact validator/GDB evidence and retained failures.
 Mixed-piece migration and every P3.3 requirement remain in scope.
 
+## Current component: independent incoming pieces
+
+Model and narrow compiler-copy runtime acceptance are recorded in
+`COMPOSITE-VALUE-LIFETIMES.md`. The shared proof now handles independent
+register/stack piece states and requires the complete value at each location.
+Broader compiler-oracle spill/reload, address-role, control-flow and negative
+runtime cases remain required, along with final hosted acceptance. Every P3.3
+row remains in scope after the location core.
+
 ## Completion audit
 
 For every row, record implementation/evidence files, exact reviewed source and

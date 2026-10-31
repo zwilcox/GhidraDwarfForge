@@ -18,17 +18,24 @@ def read(name):
     return json.loads((case / name).read_text())
 
 
-def check_location_list(raw, offset, start, boundary, target):
+def check_location_list(raw, offset, start, boundary, end, target):
     assert len(raw) >= 12 and int.from_bytes(raw[:4], 'little') == len(raw) - 4
     assert raw[4:12] == bytes((5, 0, 8, 0, 0, 0, 0, 0))
     assert 12 <= offset and offset + 29 <= len(raw)
     assert raw[offset] == 0x07  # DW_LLE_start_end
     assert int.from_bytes(raw[offset + 1:offset + 9], 'little') == start
     assert int.from_bytes(raw[offset + 9:offset + 17], 'little') == boundary
-    # Complete object-order pieces; immediate end-of-list leaves the tail absent.
+    # Complete object-order pieces, followed by the proved copied-register pair.
     first, second = (5, 4) if target == 'x86_64' else (0, 1)
     expression = bytes((0x90, first, 0x9d, 64, 0, 0x90, second, 0x9d, 64, 0))
-    assert raw[offset + 17:offset + 29] == bytes((len(expression),)) + expression + b'\x00'
+    assert raw[offset + 17:offset + 28] == bytes((len(expression),)) + expression
+    offset += 28
+    assert raw[offset] == 0x07
+    assert int.from_bytes(raw[offset + 1:offset + 9], 'little') == boundary
+    assert int.from_bytes(raw[offset + 9:offset + 17], 'little') == end
+    backup = 0 if target == 'x86_64' else 2
+    migrated = bytes((0x90, backup, 0x9d, 64, 0, 0x90, second, 0x9d, 64, 0))
+    assert raw[offset + 17:offset + 29] == bytes((len(migrated),)) + migrated + b'\x00'
 
 
 reference, original = (facts.facts.elf(case / name) for name in ('prefix.reference', 'prefix.stripped'))
@@ -164,10 +171,18 @@ for phase, observation in zip(('natural', 'curate', 'inspect', 'custom', 'reopen
     versions = re.findall(r'^(?:openjdk|java) version "([0-9]+)[^"]*"[^\n]*$', log, re.MULTILINE)
     assert versions == [observation['javaVersion'].split('.', 1)[0]], versions
 for report in reports:
-    assert report['status'] == 'PARTIAL' and report['validation'] == {'status': 'NOT_RUN'}
-    omission, = [o for o in report['omittedLocations'] if o['function'] == function['name'] and o['variable'] == 'value']
-    assert omission['reason'] == 'REGISTER_MODIFIED' and omission['kind'] == 'PARAMETER'
-    assert [int(omission[k], 16) for k in ('startAddress', 'endAddress')] == [writes[0]['fallthrough'], end]
+    assert report['status'] in ('SUCCESS', 'PARTIAL') and report['validation'] == {'status': 'NOT_RUN'}
+    assert not [o for o in report['omittedLocations'] if o['function'] == function['name'] and o['variable'] == 'value']
+# The retained first instruction copies the incoming first field in full.
+# Its destination is never modified later; actual bytes were checked above.
+copy, = [op for op in instructions[0]['pcode'] if op['opcode'] == 'COPY']
+assert len(copy['inputs']) == 1 and copy['inputs'][0] == {
+    'space': 'register', 'offset': pieces[1][0], 'bytes': 8, 'register': True}
+backup = copy['output']
+assert backup['register'] and backup['bytes'] == 8
+assert all(not (out['space'] == backup['space'] and out['offset'] < backup['offset'] + 8 and
+    backup['offset'] < out['offset'] + out['bytes']) for instruction in instructions[1:]
+    for out in [op['output'] for op in instruction['pcode'] if op['output'] is not None])
 proof = {'function': function, 'writes': writes, 'incomingPrefix': [start, writes[0]['fallthrough']], 'reports': reports, 'observations': observations}
 if stage == 'observations':
     (case / 'proof.json').write_text(json.dumps(proof, indent=4) + '\n')
@@ -188,7 +203,7 @@ for prefix, leaf, report in [('', 'prefix.dbg', reports[0]), ('custom-', 'custom
     location = re.fullmatch(r'0x([0-9a-f]+) \(location list\)', parameter_die['attrs']['DW_AT_location'])
     assert location, parameter_die
     raw = output['sections']['.debug_loclists'][1]
-    check_location_list(raw, int(location[1], 16), start, writes[0]['fallthrough'], target)
+    check_location_list(raw, int(location[1], 16), start, writes[0]['fallthrough'], end, target)
     dtype = {r['offset']: r for r in dies}[int(re.fullmatch(r'<0x([0-9a-f]+)>', parameter_die['attrs']['DW_AT_type'])[1], 16)]
     assert dtype['tag'] == 'DW_TAG_structure_type' and dtype['attrs']['DW_AT_byte_size'] == '16'
     members = [row for row in facts.children(dies, dies.index(dtype)) if row['tag'] == 'DW_TAG_member']
@@ -205,8 +220,8 @@ for run in gdb:
     assert [state['pc'] for state in run['states']] == list(by_address)
     assert run['entry'] == start and run['firstWrite'] == writes[0]['address'] and run['boundary'] == writes[0]['fallthrough']
 for run in gdb[1:]:
-    assert any(state['available'] for state in run['states']) and any(not state['available'] for state in run['states'])
-    assert all(state['available'] == (state['pc'] < writes[0]['fallthrough']) for state in run['states'])
+    assert all(state['available'] for state in run['states'])
+    assert all(list(state['fields'].values()) == [0x1122334455667788, 0x99aabbccddeeff00] for state in run['states'])
 vdso = re.compile(r'warning: BFD: warning: system-supplied DSO at 0x[0-9a-f]+ has a corrupt string table index')
 warnings = []
 for variant in ('compiler', 'forge', 'custom'):

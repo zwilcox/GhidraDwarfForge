@@ -220,6 +220,26 @@ final class StackValueFlow {
         return result;
     }
 
+    /** Caller validates the complete attached parameter before seeding any piece. */
+    static StackValueFlow forIncomingPiece(Program program, Varnode incoming) {
+        var state = forStackLocal(program, incoming.getSize(), 0);
+        if (state == null) return null;
+        state.localOffset = null;
+        if (incoming.isRegister()) {
+            Register register = exactRegister(program, incoming);
+            if (register == null || register.getLeastSignificantBitInBaseRegister() != 0 ||
+                    register.getBaseRegister() == state.pointer) return null;
+            state.facts.put(incoming, VALUE);
+        }
+        else if (incoming.getAddress().isStackAddress()) state.slots.put(incoming.getOffset(), true);
+        else return null;
+        return state;
+    }
+
+    void setInspectedCalls(Map<Address, DirectLeafCalls.Leaf> inspected) {
+        calls = Map.copyOf(inspected);
+    }
+
     boolean advance(Instruction instruction, boolean initialize, TaskMonitor monitor)
             throws CancelledException {
         initializing = initialize;
@@ -235,11 +255,13 @@ final class StackValueFlow {
             // logical local, never a previous iteration's surviving backup.
             retireLocalValue();
         }
-        // Unique temporaries belong to one instruction. A stack-pointer
-        // change conservatively retires every old slot, including released
-        // frame storage. Already loaded register values can still survive.
+        // Unique temporaries belong to one instruction. For incoming values,
+        // ordered affine stack-pointer changes can retain still-allocated memory. Local
+        // identity continues to retire on frame changes; it needs a separate
+        // ownership proof. Unmodelled stack-pointer effects cannot preserve any slot.
         facts.keySet().removeIf(Varnode::isUnique);
-        if (GhidraVariableStorage.writesRegister(instruction, pointer)) invalidateMemory();
+        if (GhidraVariableStorage.writesRegister(instruction, pointer) &&
+                (localOffset != null || !RegisterCopyLifetime.resultsCovered(instruction, pointer, monitor))) invalidateMemory();
         // Listing-only effects have no defensible ordering relative to raw
         // reads. Retire their inputs before interpreting this instruction.
         for (Varnode node : new ArrayList<>(facts.keySet())) {
@@ -272,6 +294,20 @@ final class StackValueFlow {
             Varnode output = operation.getOutput();
             if (output == null) continue;
             Fact derived = derive(operation);
+            Varnode pointerNode = new Varnode(pointer.getAddress(), pointer.getMinimumByteSize());
+            if (overlaps(output, pointerNode)) {
+                Fact previousPointer = read(pointerNode);
+                if (!output.equals(pointerNode) || previousPointer == null || derived == null ||
+                        previousPointer.kind() != Kind.STACK_ADDRESS || derived.kind() != Kind.STACK_ADDRESS) {
+                    invalidateMemory();
+                }
+                else {
+                    long before = previousPointer.offset(), after = derived.offset();
+                    boolean released = program.getCompilerSpec().stackGrowsNegative() ? after > before : after < before;
+                    if (released) slots.keySet().removeIf(slot -> intersects(slot, bytes,
+                        Math.min(before, after), Math.max(before, after)));
+                }
+            }
             facts.keySet().removeIf(node -> overlaps(node, output));
             if (output.getAddress().getAddressSpace().isMemorySpace()) invalidateMemory();
             if (derived != null && (output.isRegister() || output.isUnique())) facts.put(output, derived);

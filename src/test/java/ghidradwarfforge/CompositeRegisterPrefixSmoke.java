@@ -179,7 +179,15 @@ public final class CompositeRegisterPrefixSmoke {
         var modeled = model.variableStorage().variables().stream().filter(v -> v.kind() == VariableKind.PARAMETER).toList();
         require(modeled.size() == 1 && modeled.get(0).locations().size() == 2 &&
             modeled.get(0).locations().get(0).storage().equals(intervals.get(0).storage()) &&
-            modeled.get(0).locations().get(1).storage().equals(intervals.get(1).storage()), "public type extractor lost prefix/tail");
+            modeled.get(0).locations().get(1).start() == 0x1000 + target.boundary() &&
+            modeled.get(0).locations().get(1).end() == function.getBody().getMaxAddress().getOffset() + 1 &&
+            modeled.get(0).locations().get(1).storage() instanceof CompositeStorage migrated &&
+            migrated.pieces().size() == 2 && migrated.totalBitSize() == 128 &&
+            migrated.pieces().get(0).storage() instanceof RegisterStorage backup &&
+            backup.register().dwarfNumber() == (target.map().equals("x86_64") ? 0 : 2) &&
+            migrated.pieces().get(1).storage() instanceof RegisterStorage retained &&
+            retained.register().dwarfNumber() == map.dwarfNumbers().get(target.second()),
+            "public extractor must retain the complete copied piece after the original is overwritten: " + modeled);
         var ranges = intervals.stream().map(i -> new LocationRange(i.start(), i.end(), i.storage(),
             new Evidence(Confidence.USER_DEFINED, "focused actual decoded composite"))).toList();
         var location = new VariableLocation("capture_pair", 0x1000, "value", VariableKind.PARAMETER, 16, ranges);
