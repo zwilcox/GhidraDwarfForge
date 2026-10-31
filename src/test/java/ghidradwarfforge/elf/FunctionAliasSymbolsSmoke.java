@@ -92,7 +92,7 @@ public final class FunctionAliasSymbolsSmoke {
                 else {
                     header.putInt(32, 0).putShort(48, (short) 0).putShort(50, (short) 0);
                 }
-                check(root, sectionless, List.of(ALIAS), List.of(OWNER), "section-backed");
+                check(root, sectionless, List.of(ALIAS), List.of(OWNER), "file-backed executable allocation");
                 Path path = Files.createTempFile(root, "cancel-", ".elf");
                 Files.write(path, bytes);
                 ElfImage image = ElfImage.read(path);

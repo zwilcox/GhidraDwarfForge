@@ -862,3 +862,12 @@ tasks.register("mipsFloatingCallPolicySmoke", JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.elf.MipsFloatingCallPolicySmoke"
 }
+
+
+tasks.register("sectionlessDynamicSymbolsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks PT_DYNAMIC inventories, sectionless aliases and atomic omission/cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.SectionlessDynamicSymbolsSmoke"
+}

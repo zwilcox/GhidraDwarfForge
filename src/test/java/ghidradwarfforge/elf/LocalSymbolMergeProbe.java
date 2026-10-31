@@ -21,9 +21,26 @@ public class LocalSymbolMergeProbe {
             long entry = Long.parseLong(fields[1]);
             long size = Long.parseLong(fields[2]);
             int index = Integer.parseInt(fields[3]);
-            var section = image.sections().get(index);
-            if (entry < section.address || size <= 0 || Math.addExact(entry, size) >
-                    Math.addExact(section.address, section.size)) throw new AssertionError("out of section");
+            if (image.sections().isEmpty()) {
+                // Independent test oracle: derive the writer's load allocation ordinal.
+                index = 0;
+                int ordinal = 0;
+                for (var segment : image.segments()) {
+                    if (segment.type != 1 || segment.memorySize == 0) continue;
+                    ordinal++;
+                    if ((segment.flags & 1) != 0 && entry >= segment.virtualAddress && size > 0 &&
+                            Math.addExact(entry, size) <= Math.addExact(segment.virtualAddress, segment.fileSize)) {
+                        if (index != 0) throw new AssertionError("ambiguous original code");
+                        index = ordinal;
+                    }
+                }
+                if (index == 0) throw new AssertionError("missing original code");
+            }
+            else {
+                var section = image.sections().get(index);
+                if (entry < section.address || size <= 0 || Math.addExact(entry, size) >
+                        Math.addExact(section.address, section.size)) throw new AssertionError("out of section");
+            }
             symbols.add(new ElfLocalFunctionSymbol(fields[0], entry, size, index));
         }
         if (symbols.size() != 2) throw new AssertionError("two observations required");

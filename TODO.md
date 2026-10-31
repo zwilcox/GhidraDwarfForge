@@ -1,5 +1,18 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally; sectionless alias acceptance incomplete (2026-10-31):**
+bounded PT_DYNAMIC inventories now preserve original symbols before analyst
+alias insertion. Twelve four-target exec/PIE/rebase cases, four incomplete-count
+omission controls and two GNU-versioned DSOs pass fresh headless export,
+validators and GDB/native checks. The new suite passes 1,730 checks; 33 actual
+Java 21 suites, independent raw/corruption controls, large-ELF, failure and
+cancellation checks pass. Receipt:
+`c303b520d316b0cf620564684832b1dc5284783ee1c3061375eafa087f17d526`.
+Final committed-package and hosted acceptance remain pending. See
+`docs/SECTIONLESS-FUNCTION-ALIASES.md`. Earlier research-only/sectionless-disabled
+statements are historical. P1.7/#66 remains open, including other target modes
+and broader ABI/scope work; no release publication.
+
 **CONFIRMED research checkpoint; production implementation PLANNED (2026-10-31):**
 sectionless alias insertion without a dynamic mirror loses original names in
 four MIPS PIE/rebase controls. An independent PT_DYNAMIC mirror passes eight
@@ -1291,6 +1304,20 @@ Define precedence among analyst-applied listing/signature types and decompiler g
   imported or subsequently changed programs.
 
 ## P1.7 Emit complete function signatures
+
+**CONFIRMED locally; sectionless alias acceptance incomplete (2026-10-31):**
+bounded PT_DYNAMIC inventories now preserve original symbols before analyst
+alias insertion. Twelve four-target exec/PIE/rebase cases, four incomplete-count
+omission controls and two GNU-versioned DSOs pass fresh headless export,
+validators and GDB/native checks. The new suite passes 1,730 checks; 33 actual
+Java 21 suites, independent raw/corruption controls, large-ELF, failure and
+cancellation checks pass. Receipt:
+`c303b520d316b0cf620564684832b1dc5284783ee1c3061375eafa087f17d526`.
+Final committed-package and hosted acceptance remain pending. See
+`docs/SECTIONLESS-FUNCTION-ALIASES.md`. Earlier research-only/sectionless-disabled
+statements are historical. P1.7/#66 remains open, including other target modes
+and broader ABI/scope work; no release publication.
+
 
 **CONFIRMED defect; fix under validation:** MIPS FPXX floating injected calls
 can execute with stale arguments and incorrect returns. Compiler and current

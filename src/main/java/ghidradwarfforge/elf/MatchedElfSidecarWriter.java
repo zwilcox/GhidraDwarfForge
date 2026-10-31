@@ -43,13 +43,9 @@ public final class MatchedElfSidecarWriter {
     private static final long SHT_NOBITS = 8;
     private static final long SHT_REL = 9;
     private static final long SHT_SYMTAB_SHNDX = 18;
-    private static final long SHF_WRITE = 0x1;
     private static final long SHF_ALLOC = 0x2;
     private static final long SHF_EXECINSTR = 0x4;
-    private static final long PT_LOAD = 1;
     private static final long PT_NOTE = 4;
-    private static final long PF_X = 0x1;
-    private static final long PF_W = 0x2;
     private static final int SHN_LORESERVE = 0xff00;
     private static final int SHN_XINDEX = 0xffff;
 
@@ -156,7 +152,9 @@ public final class MatchedElfSidecarWriter {
             Section nullSection = new Section();
             nullSection.type = SHT_NULL;
             sections.add(nullSection);
-            addLoadRangeSections(image, sections);
+            for (var allocation : ElfLoadAllocations.read(image, cancelled)) {
+                sections.add(allocation.section());
+            }
         }
         else {
             Set<String> replacementNames = new HashSet<>();
@@ -555,48 +553,6 @@ public final class MatchedElfSidecarWriter {
             name.startsWith(".rel.debug_") || name.startsWith(".rela.debug_") ||
             name.equals(".gdb_index") || name.equals(".gnu_debuglink") ||
             name.equals(".gnu_debugaltlink") || name.equals(".gnu_debugdata");
-    }
-
-    /** Preserve known allocation extents when no original section table exists. */
-    private static void addLoadRangeSections(ElfImage image, List<Section> sections) {
-        for (int index = 0; index < image.segments().size(); index++) {
-            Segment segment = image.segments().get(index);
-            if (segment.type != PT_LOAD || segment.memorySize == 0) {
-                continue;
-            }
-            long end;
-            try {
-                end = Math.addExact(segment.virtualAddress, segment.memorySize);
-            }
-            catch (ArithmeticException overflow) {
-                throw new IllegalArgumentException(
-                    "PT_LOAD virtual range exceeds supported signed 64-bit addresses at " + index,
-                    overflow);
-            }
-            if (!image.is64Bit() && end > 0x1_0000_0000L) {
-                throw new IllegalArgumentException(
-                    "PT_LOAD virtual range exceeds ELF32 address space at " + index);
-            }
-            Section section = new Section();
-            // These are segment-derived allocation records, not recovered
-            // original section names or contents. NOBITS keeps them inert.
-            section.name = ".forge.load." + index;
-            section.type = SHT_NOBITS;
-            section.flags = SHF_ALLOC;
-            if ((segment.flags & PF_W) != 0) {
-                section.flags |= SHF_WRITE;
-            }
-            if ((segment.flags & PF_X) != 0) {
-                section.flags |= SHF_EXECINSTR;
-            }
-            section.address = segment.virtualAddress;
-            section.offset = segment.offset;
-            section.size = segment.memorySize;
-            // p_align constrains VA/file-offset congruence, not VA alignment.
-            // For example, VA 0x403df8 may legitimately have p_align 0x1000.
-            section.alignment = 1;
-            sections.add(section);
-        }
     }
 
     private static void omitRelocationSection(Section section) {

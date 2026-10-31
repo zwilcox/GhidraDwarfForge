@@ -41,6 +41,7 @@ def main():
     parser.add_argument('--results-root', type=Path,
         default=repository / 'build/test-results/retained-function-aliases')
     parser.add_argument('--mips-fp32', action='store_true', help='Build the explicit O32 FP32 fixture profile')
+    parser.add_argument('--hash-style', choices=('default', 'both'), default='default')
     args = parser.parse_args()
     if args.mips_fp32 and not args.target.startswith('mips'):
         parser.error('--mips-fp32 requires a MIPS target')
@@ -77,6 +78,8 @@ def main():
     flags = ['-fno-pie', '-no-pie'] if args.role == 'exec' else ['-fPIE', '-pie']
     if args.mips_fp32:
         flags.append('-mfp32')
+    if args.hash_style != 'default':
+        flags.append('-Wl,--hash-style=' + args.hash_style)
     run('compile', [cc, '-O1', '-g3', '-gdwarf-5', '-gno-variable-location-views', *flags,
         '-Wl,--build-id=sha1', fixture, '-o', reference])
     run('strip', [objcopy, '--strip-debug' if args.symbols == 'retained' else '--strip-all', reference, binary])

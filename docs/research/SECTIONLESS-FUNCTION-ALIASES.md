@@ -1,7 +1,8 @@
 # Sectionless function aliases: consumer experiment and implementation decision
 
-**CONFIRMED research checkpoint (2026-10-31); production implementation PLANNED.**
-The production alias planner still rejects inputs without a section-header table.
+**HISTORICAL research checkpoint (2026-10-31); subsequent implementation is
+documented in [the production policy](../SECTIONLESS-FUNCTION-ALIASES.md).**
+At this checkpoint the production alias planner rejected inputs without a section-header table.
 This experiment establishes a packaging prerequisite for P1.7/#66. It does not
 establish headless extraction, production support, hosted acceptance or release
 readiness. Existing sectionless function/DWARF export remains separate from

@@ -63,6 +63,26 @@ public final class MipsFunctionAliasSymbols {
         // Even inconsistent inputs must not lose a symbol's ISA/mode bits.
         // Only ordinary visibility bits are permitted on defined code symbols;
         // no processor-specific st_other value is copied into a new local alias.
+        if (image.sections().isEmpty()) {
+            try {
+                var inventory = DynamicSymbolMirror.read(image, cancelled);
+                if (inventory != null) {
+                    ByteBuffer symbols = ByteBuffer.wrap(inventory.records()).order(image.byteOrder());
+                    for (int offset = 0; offset < symbols.limit(); offset += 16) {
+                        checkCancelled(cancelled);
+                        int type = Byte.toUnsignedInt(symbols.get(offset + 12)) & 15;
+                        if ((type == 2 || type == 10) && symbols.getShort(offset + 14) != 0 &&
+                                ((Byte.toUnsignedInt(symbols.get(offset + 13)) & ~3) != 0 ||
+                                (symbols.getInt(offset + 4) & 3) != 0)) {
+                            return "defined PT_DYNAMIC code symbol has an unverified mode or tagged address";
+                        }
+                    }
+                }
+            }
+            catch (IllegalArgumentException unsupported) {
+                return unsupported.getMessage();
+            }
+        }
         long rows = 0;
         for (var section : image.sections()) {
             checkCancelled(cancelled);
