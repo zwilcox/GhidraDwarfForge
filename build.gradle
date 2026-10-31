@@ -1201,3 +1201,11 @@ tasks.register("functionRelationExtractionSmoke", JavaExec) {
     systemProperty "application.settingsdir", file("build/tmp/function-relations/settings").absolutePath
     systemProperty "application.cachedir", file("build/tmp/function-relations/cache").absolutePath
 }
+
+tasks.register("globalScopeNamesSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks qualified global identity and collision-safe namespace lookup aliases"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.types.GlobalScopeNamesSmoke"
+}

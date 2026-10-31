@@ -119,6 +119,7 @@ import ghidradwarfforge.source.FunctionStaticPolicy;
 import ghidradwarfforge.source.SyntheticSourceFile.FunctionLines;
 import ghidradwarfforge.types.ProgramTypeModel;
 import ghidradwarfforge.types.ClassScopeModel;
+import ghidradwarfforge.types.GlobalScopeNames;
 import ghidradwarfforge.types.TypeGraph;
 import ghidradwarfforge.types.TypeGraph.AggregateType;
 import ghidradwarfforge.types.TypeGraph.ArrayType;
@@ -373,6 +374,18 @@ public final class MinimalDwarfSidecarExporter {
             .collect(java.util.stream.Collectors.toSet());
         var relatedAliases = aliases.stream().filter(alias -> acceptedAliasNames.contains(alias.name()))
             .distinct().sorted(Comparator.comparing(ElfFunctionAlias::name)).toList();
+        var globalReservedNames = new ArrayList<String>();
+        for (var function : ordered) globalReservedNames.add(function.qualifiedDisplayName());
+        for (var alias : plannedAliases) globalReservedNames.add(alias.name());
+        if (typeModel != null) {
+            for (var declaration : typeModel.functionDeclarations()) globalReservedNames.add(declaration.name());
+            for (var alias : ghidradwarfforge.types.ClassScopeNames.build(typeModel.types(), typeModel.classScopes()).aliases()) {
+                globalReservedNames.add(alias.name());
+            }
+        }
+        var globalNames = typeModel == null ? new GlobalScopeNames.Plan(Set.of(), Set.of(), List.of()) :
+            GlobalScopeNames.build(typeModel.globals(), typeModel.types(), globalReservedNames);
+        for (String message : globalNames.diagnostics()) diagnostic.accept(message);
         byte[] addressRanges = DwarfAddressRanges.build(ordered,
             target.addressBytes(), elf.byteOrder());
         LibDwarfConsumer consumer = Native.load(consumerPath.toString(), LibDwarfConsumer.class);
@@ -417,7 +430,7 @@ public final class MinimalDwarfSidecarExporter {
             target.addressBytes(), elf.byteOrder());
         Map<String, byte[]> sections = produce(producer, consumer, target, ordered,
             unitName, syntheticSource, typeModel, lineTable, rangeLists, locationLists,
-            elf.byteOrder(), relatedAliases);
+            elf.byteOrder(), relatedAliases, globalNames);
         if (sections.putIfAbsent(".debug_aranges", addressRanges) != null) {
             throw new IllegalStateException("producer supplied an unexpected address lookup");
         }
@@ -431,7 +444,7 @@ public final class MinimalDwarfSidecarExporter {
             String unitName, SyntheticSourceFile syntheticSource, ProgramTypeModel typeModel,
             byte[] lineTable, Dwarf5RangeLists.Result rangeLists,
             Dwarf5LocationLists.Result locationLists,
-            ByteOrder byteOrder, List<ElfFunctionAlias> aliases) {
+            ByteOrder byteOrder, List<ElfFunctionAlias> aliases, GlobalScopeNames.Plan globalNames) {
         Map<Long, SectionRecord> sections = new LinkedHashMap<>();
         long[] nextSection = { 1 };
         long[] nextSymbol = { 1 };
@@ -687,9 +700,18 @@ public final class MinimalDwarfSidecarExporter {
                     }
                 }
                 for (ProgramTypeModel.GlobalVariable global : typeModel.globals()) {
+                    boolean qualified = globalNames.qualified().contains(global);
                     Die die = newDie(producer, consumer, debug, DW_TAG_VARIABLE,
-                        namespaceParent(global.namespace(), namespaceDies, unit), errorOut);
-                    addName(producer, consumer, die, global.name(), errorOut);
+                        qualified ? unit : namespaceParent(global.namespace(), namespaceDies, unit), errorOut);
+                    addName(producer, consumer, die, qualified ? GlobalScopeNames.qualifiedName(global) : global.name(), errorOut);
+                    if (qualified) {
+                        // A synthetic lookup import records the actual namespace
+                        // association without duplicating the variable's location.
+                        Die association = newDie(producer, consumer, debug, DW_TAG_IMPORTED_DECLARATION,
+                            namespaceParent(global.namespace(), namespaceDies, unit), errorOut);
+                        if (globalNames.shortAliases().contains(global)) addName(producer, consumer, association, global.name(), errorOut);
+                        addReference(producer, consumer, debug, association, DW_AT_IMPORT, die, errorOut);
+                    }
                     addTypeReference(producer, consumer, debug, die, global.type(),
                         typeModel.types(), allocatedTypes, errorOut);
                     if (global.declaration()) {

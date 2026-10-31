@@ -3138,6 +3138,15 @@ after merge and post-merge validation.
 
 ## P3.3 Add richer scopes and declarations
 
+**CONFIRMED local same-name identities; hosted/full-scope acceptance pending:**
+six x86-64/AArch64 exec/PIE/rebase roles preserve recursive classes, enums,
+typedefs and analyst-renamed category types through immutable saved-program
+exports and actual GDB values. Qualified namespace globals now have a canonical
+lookup definition and addressless namespace association; collision controls
+preserve existing global/function/type/enumerator lookup. See
+`docs/SAME-NAME-TYPES.md` for scope, reproduction and remaining gates.
+Neither P1.11a nor P3.3 is complete.
+
 **CONFIRMED local function relationships; hosted/full-scope acceptance pending:**
 saved direct thunk targets now emit exact `DW_AT_trampoline` references; accepted
 analyst aliases add addressless imports of the canonical definition. Twenty-one
