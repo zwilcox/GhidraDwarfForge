@@ -482,3 +482,15 @@ exactly at the end of an executable PT_LOAD. `arm-symbol-boundary.py` builds a
 reference twice, creates a separate sectionless copy, exports the curated alias
 and checks raw symbols, validators, determinism and QEMU/GDB execution. The
 original tagged function value must survive while allocation uses its code address.
+
+`local-definition-flow.c` uses fixed x86-64/AArch64 registers and explicit
+instruction labels to compare curated definition-start locals with compiler
+DWARF and raw register values. Its signed 32/64-bit cases include preserving
+and killing diamonds, invariant and killing loops, skipped initialization and
+a deliberately excluded body hole. Both branch choices and all loop visits are
+executed for three input pairs. The curated local denotes the value established
+by the recorded definition; a later overwrite is not claimed as the same value.
+The compiler's mutable `held` remains a separate reference for actual physical
+contents. The harness records compiler symbol bounds, reconstructs only the
+fixture's proven body, reopens the saved program, verifies exact loclists and
+checks every executed instruction under GDB in exec/PIE/rebased-PIE roles.

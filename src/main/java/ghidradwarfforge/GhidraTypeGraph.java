@@ -253,8 +253,20 @@ public final class GhidraTypeGraph {
                     variable.getSource().name()));
                 Storage storage = GhidraVariableStorage.stableLocal(program, function,
                     variable, registerMap, monitor);
-                var prefix = GhidraVariableStorage.localPrefix(program, function, variable,
+                var linearPrefix = GhidraVariableStorage.localPrefix(program, function, variable,
                     registerMap, storage, monitor);
+                var controlFlow = linearPrefix.isEmpty()
+                    ? RegisterDefinitionFlow.prove(program, function, variable, registerMap, storage, monitor)
+                    : List.<GhidraVariableStorage.StorageInterval>of();
+                var prefix = controlFlow.isEmpty() ? linearPrefix : controlFlow;
+                String lifetimeEvidence = controlFlow.isEmpty()
+                    ? "Curated Ghidra function-owned local; exact recorded register read or completed " +
+                        "definition in a fully decoded straight-line leaf; unavailable " +
+                        "before first use and after overwrite; no original lexical scope inferred"
+                    : "Curated Ghidra function-owned local; recorded complete register definition " +
+                        "and unchanged physical storage proven on every incoming path in a closed " +
+                        "decoded control-flow graph; unproved joins and body holes have no location; " +
+                        "no original lexical scope inferred";
                 if (storage instanceof StackStorage && stackDepths == null) {
                     stackDepths = GhidraVariableStorage.stackDepthProfile(program, function, monitor);
                 }
@@ -264,15 +276,14 @@ public final class GhidraTypeGraph {
                         AddressNormalizer.toElfAddress(interval.start(), rebaseDelta),
                         AddressNormalizer.toElfAddress(interval.end(), rebaseDelta), interval.storage(),
                         new Evidence(evidence(variable.getSource(), interval.storage()).confidence(),
-                            "Curated Ghidra function-owned local; exact recorded register read or completed " +
-                                "definition in a fully decoded straight-line leaf; unavailable " +
-                                "before first use and after overwrite; no original lexical scope inferred")))
+                            lifetimeEvidence)))
                         .toList();
                 variableLocations.add(new VariableLocation(symbol.name(), address,
                     localName, VariableKind.LOCAL, variable.getLength(), ranges));
                 if (storage instanceof UnavailableStorage unavailable) {
                     diagnostic.accept((prefix.isEmpty() ? "Omitted location for " :
-                        "Limited location to proven later-register-local lifetime for ") + symbol.name() + "::" +
+                        controlFlow.isEmpty() ? "Limited location to proven later-register-local lifetime for " :
+                        "Limited location to proven control-flow-local lifetime for ") + symbol.name() + "::" +
                         localName + ": " + unavailable.diagnostic());
                 }
             }

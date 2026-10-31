@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally; hosted acceptance pending:** curated definition-start
+register locals now have a control-flow proof requiring all-predecessor
+agreement, including loops and discontiguous bodies. The 380 decoder checks,
+14 actual Java 21 packaged suites, six x86-64/AArch64 exec/PIE/rebase roles,
+18 exports/comparisons and 18,576 GDB instruction observations pass. See
+`docs/LOCAL-DEFINITION-CONTROL-FLOW.md` for exact evidence, fixture corrections
+and remaining gates. The preceding repeated-register-copy component is PR #97;
+its required hosted gate is separate. Neither P1.11a nor P3.3 is complete.
+
 **CONFIRMED active goal (2026-10-31):** finish P1.11a variable lifetimes and
 storage migration, followed by P3.3 richer class/lexical scopes. The full
 requirements and sequence are tracked in
