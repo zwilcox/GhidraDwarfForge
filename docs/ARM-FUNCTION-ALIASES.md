@@ -191,3 +191,39 @@ validators. Detailed evidence is under `build/arm-alias-review/boundary/`, inclu
 `490f33b5ed076977ce7fa8d5990e5cebd9b34e92af0fa3cf4ea788a75bc8495e`.
 Final combined ARM validation, contradictory-mode evidence and hosted review
 remain pending; P1.7 is not complete.
+
+## Original mode contradictions
+
+**CONFIRMED locally; final combined and hosted acceptance pending:** the boundary
+harness also accepts `--conflict function-tag` and `--conflict mapping`. Each
+keeps an independently compiled reference, changes only specified ELF metadata
+in a separate input, imports it fresh and confirms that Ghidra retains the
+four-byte Thumb function. The function-tag case clears the original symbol bit
+in both `.dynsym` and `.symtab`; the mapping case changes its sole `$t` label to
+`$a`. No executable bytes change, and both inputs still execute normally under
+QEMU. Recorded mutations are checked before export.
+
+Repeated read-only production exports diagnose the precise contradiction and
+omit `alternate_boundary`. Original static/dynamic symbol and string tables are
+byte-for-byte preserved. GNU/LLVM/strict validation and original/module/program
+preservation pass. In the function-tag case, GDB still resolves the curated
+function, lists source, reads 7, steps the Thumb addition and interworking return,
+and observes 12 with exit zero. This does not require overriding ARM/Thumb mode.
+
+The incorrect mapping case demonstrates a consumer limit: GDB decodes the
+preserved original metadata as a four-byte ARM instruction. The test explicitly
+requires that mismatch while still stopped at `_start`, records
+`EXPECTED_MAPPING_DECODE_REJECTION`, and disconnects before any continue. It does
+not count that case as successful Forge execution or rewrite original metadata
+to hide the contradiction. The initial exploratory failed decode is retained.
+Every compiler reference passes its independent runtime first; existing precise
+QEMU vDSO diagnostic checks still apply. Saved/current context mismatches remain
+separately covered by actual `InstructionDB` objects with controlled context
+views in the extractor model suite; no claim of an end-to-end saved-context
+mutation is made.
+
+The three fresh cases (ordinary boundary plus both conflicts) pass at
+`build/arm-alias-review/conflicts/pipeline.nsq0s0gy`. Receipt:
+`d9cefc626cda90996b52554d0cde7ccfbe254524d6828fc465483e2819b27693`.
+CI now runs the same three harness modes. Production classes are unchanged from
+the boundary fix. Final combined package/matrix and hosted review remain pending.

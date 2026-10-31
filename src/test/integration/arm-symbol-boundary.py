@@ -25,6 +25,7 @@ def digest(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
+    parser.add_argument('--conflict', choices=('function-tag', 'mapping'), help='Require omission for contradictory original ELF mode metadata')
     parser.add_argument('--output', type=Path, default=repository / 'build/test-results/arm-symbol-boundary')
     args = parser.parse_args()
     ghidra = args.ghidra.resolve(strict=True)
@@ -73,9 +74,35 @@ def main():
             boundary.append((value, size, info & 15, section))
     assert len(boundary) == 1 and boundary[0][:3] == (0x101d, 4, 2) and boundary[0][3] != 0
     assert (boundary[0][0] & ~1) + boundary[0][1] == executable[2] + executable[5]
-    struct.pack_into('<I', data, 32, 0)
-    struct.pack_into('<HH', data, 48, 0, 0)
-    binary = case / 'sectionless.elf'
+    mutations = []
+    if args.conflict == 'function-tag':
+        for key in ('.dynsym', '.symtab'):
+            table, records = sections[key]
+            strings = list(sections.values())[table[6]][1]
+            for offset in range(0, len(records), 16):
+                name, value, size, info, other, section = struct.unpack_from('<IIIBBH', records, offset)
+                if strings[name:strings.index(0, name)] == b'boundary':
+                    assert value == 0x101d and size == 4
+                    position = table[4] + offset + 4
+                    struct.pack_into('<I', data, position, 0x101c)
+                    mutations.append({'table': key, 'offset': position, 'before': value, 'after': 0x101c})
+        assert len(mutations) == 2
+    elif args.conflict == 'mapping':
+        table, records = sections['.symtab']
+        strings_table, strings = list(sections.values())[table[6]]
+        for offset in range(0, len(records), 16):
+            name, value, size, info, other, section = struct.unpack_from('<IIIBBH', records, offset)
+            if strings[name:strings.index(0, name)] == b'$t':
+                assert value == 0x101c and info == 0
+                position = strings_table[4] + name + 1
+                data[position] = ord('a')
+                mutations.append({'table': '.strtab', 'offset': position, 'before': ord('t'), 'after': ord('a')})
+        assert len(mutations) == 1
+    else:
+        struct.pack_into('<I', data, 32, 0)
+        struct.pack_into('<HH', data, 48, 0, 0)
+    binary = case / ('mode-conflict.elf' if args.conflict else 'sectionless.elf')
+    (case / 'mutations.json').write_text(json.dumps(mutations, indent=4) + '\n')
     binary.write_bytes(data)
     binary.chmod(0o755)
     protected.update({str(p): digest(p) for p in (reference, binary)})
@@ -96,7 +123,13 @@ def main():
             '-noanalysis', '-readOnly', '-scriptPath', source / 'ghidra_scripts',
             '-postScript', 'PrepareArmBoundary.java', 'observe', case / (iteration + '.json'),
             '-postScript', 'GhidraDwarfForge.java', '--packaged-natives', '--output=' + str(case / 'boundary.dbg')])
-        assert 'GhidraDwarfForge symbol export PASS' in text and 'Omitted function alias' not in text
+        assert 'GhidraDwarfForge symbol export PASS' in text
+        if args.conflict:
+            reason = ('original function tag contradicts decoded mode' if args.conflict == 'function-tag'
+                else 'original mapping at entry contradicts decoded mode')
+            assert 'Omitted function alias alternate_boundary: ARM mode policy: ' + reason in text
+        else:
+            assert 'Omitted function alias' not in text
         report, = [json.JSONDecoder().raw_decode(line.split('GhidraDwarfForge report: ', 1)[1])[0]
             for line in text.splitlines() if 'GhidraDwarfForge report: {' in line]
         assert not report['failedFunctions'] and report['failure'] is None
@@ -114,17 +147,25 @@ def main():
     sidecar = case / 'boundary.dbg'
     aliases = [{'alias': 'alternate_boundary', 'entry': 0x101c, 'size': 4}]
     values = {'alternate_boundary': 0x101d}
-    inventory.verify(reference, binary, sidecar, aliases, case / 'raw-inventory.json', values)
-    inventory.corruption_controls(reference, binary, sidecar, aliases, case / 'raw-controls', values)
+    if args.conflict:
+        _, _, old_sections = inventory.elf_support.elf(binary)
+        _, _, emitted = inventory.elf_support.elf(sidecar)
+        for name in ('.symtab', '.strtab', '.dynsym', '.dynstr'):
+            assert old_sections[name][1] == emitted[name][1], 'original mode metadata was rewritten: ' + name
+    else:
+        inventory.verify(reference, binary, sidecar, aliases, case / 'raw-inventory.json', values)
+        inventory.corruption_controls(reference, binary, sidecar, aliases, case / 'raw-controls', values)
     for option in ['-h', '-SW', '-sW', '-n']:
         run('sidecar' + option, ['readelf', option, sidecar])
     for view in ['info', 'abbrev', 'aranges', 'decodedline', 'loc', 'Ranges']:
         run(view, ['readelf', '--debug-dump=' + view, sidecar])
     assert 'No errors.' in run('llvm', ['llvm-dwarfdump', '--verify', sidecar])
     run('strict', ['python3', source / 'check-dwarfdump.py', sidecar, case / 'strict-checks.log', '--original', binary])
-    run('runtime', ['bash', source / 'arm-symbol-boundary-gdb.sh', repository, case])
+    run('runtime', ['bash', source / 'arm-symbol-boundary-gdb.sh', repository, case, args.conflict or 'none'])
     assert all(digest(Path(path)) == value for path, value in protected.items())
-    (case / 'result.json').write_text(json.dumps({'status': 'PASS', 'codeEnd': '0x1020', 'taggedValue': '0x101d',
+    (case / 'result.json').write_text(json.dumps({'status': 'PASS', 'conflict': args.conflict,
+        'runtimeScope': 'compiler pass; conflicting mapping rejects stopped decode' if args.conflict == 'mapping'
+            else 'compiler and curated function pass', 'codeEnd': '0x1020', 'taggedValue': '0x101d',
         'size': 4, 'originalSha256': digest(binary), 'jarSha256': digest(module / 'lib/GhidraDwarfForge.jar'),
         'artifactHashes': hashes, 'projectBackupChanges': sorted(changes)}, indent=4) + '\n')
     print('ARM_SYMBOL_BOUNDARY_PASS', flush=True)

@@ -1158,7 +1158,11 @@ jobs:
 
       - name: Thumb dynamic symbols ending at a load boundary retain aliases
         if: matrix.target == 'arm32'
-        run: python3 src/test/integration/arm-symbol-boundary.py "$GHIDRA_INSTALL_DIR"
+        run: |
+          python3 src/test/integration/arm-symbol-boundary.py "$GHIDRA_INSTALL_DIR"
+          for conflict in function-tag mapping; do
+              python3 src/test/integration/arm-symbol-boundary.py "$GHIDRA_INSTALL_DIR" --conflict "$conflict"
+          done
 
       - name: Sectionless analyst aliases preserve complete dynamic inventories
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64' || matrix.target == 'mips32be' || matrix.target == 'mips32le'

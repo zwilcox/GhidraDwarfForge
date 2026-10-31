@@ -1,5 +1,17 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED original ARM mode conflict controls locally (2026-10-31):**
+source-built ELF mutations now exercise both contradictory function tags and
+mapping symbols through real imports and repeated production exports. Both omit
+the new alias and preserve original symbols. Curated debugging still passes for
+the function-tag conflict. The wrong mapping is preserved and rejects stopped
+GDB decoding before execution; that negative control is not a passing Forge
+runtime case. The unmodified sectionless boundary case also passes again.
+All three references run correctly, all artifacts validate, and inputs/programs
+remain unchanged. Receipt:
+`d9cefc626cda90996b52554d0cde7ccfbe254524d6828fc465483e2819b27693`.
+Final combined ARM package/matrix and hosted review remain pending; P1.7 stays open.
+
 **CONFIRMED Thumb dynamic-symbol boundary fix locally (2026-10-31):** an
 isolated ARM EABI5 policy uses the untagged function address for load containment
 while retaining the original ELF value. The previous build omits a valid alias;
