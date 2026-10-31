@@ -264,3 +264,13 @@ collision case preserves the existing qualified structure and synthetic scope
 separately. GDB's incomplete-size presentation and failed test expectations are
 recorded in `CLASS-SCOPE-EMISSION.md`. Same-name runtime fixtures, static and
 alias/origin relationships and all outstanding integration gates remain open.
+
+## Static-object evidence provider checkpoint
+
+**CONFIRMED provider; extraction/emission and hosted acceptance pending:**
+explicit memory-label/function/lexical-block relationships pass 460 ProgramDB
+checks across five profiles and sixteen actual Java 21 suites. Identity-based
+records survive rebase and reject stale scope, type, symbol and function data.
+All 300 existing exporter classes are byte-identical. See
+`STATIC-SCOPE-EVIDENCE.md` for the next extractor/model/emitter and GDB matrix;
+this provider does not complete inferred statics or any umbrella requirement.

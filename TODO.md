@@ -1,5 +1,13 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED static-scope evidence provider; extraction/emission pending:**
+explicit typed-memory symbol/function/block associations pass 460 real ProgramDB
+checks on five language profiles and sixteen actual Java 21 suites. Records
+survive rebase and immutable reopen, reject stale/conflicting identities, and
+never infer ownership from a namespace spelling. Existing exporter class bytes
+are unchanged. See `docs/STATIC-SCOPE-EVIDENCE.md`; runtime static-scope emission,
+inferred statics and all remaining umbrella requirements are still open.
+
 **CONFIRMED local rejected-binding controls; hosted/full-scope acceptance
 pending:** twelve stale/conflicting saved-class cases pass 24 deterministic
 exports, strict validators, cold GDB lookup and twelve production-copy

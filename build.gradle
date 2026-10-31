@@ -1145,3 +1145,15 @@ tasks.register("classScopeNamesSmoke", JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.types.ClassScopeNamesSmoke"
 }
+
+tasks.register("staticBindingEvidenceSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks saved static object ownership, lexical identity, rebasing and immutable reopen"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.StaticBindingEvidenceSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/static-binding/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/static-binding/cache").absolutePath
+}
