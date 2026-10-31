@@ -165,9 +165,11 @@ public class GhidraDwarfForge extends GhidraScript {
         monitor.checkCancelled();
         var registers = ghidradwarfforge.locations.TargetRegisterMap.forElf(
             target.name(), originalElf, monitor::isCancelled);
-        var typeModel = GhidraTypeGraph.extract(currentProgram, functions, registers,
+        var extractedTypes = GhidraTypeGraph.extract(currentProgram, functions, registers,
             rebaseDelta, monitor, diagnostic, decompilation.recoveredReturns(),
             decompilation.recoveredParameters());
+        var typeModel = ghidradwarfforge.GhidraCompilerCallPolicy.apply(currentProgram,
+            target, extractedTypes, monitor, diagnostic);
         monitor.checkCancelled();
         var resultHolder = new MinimalDwarfSidecarExporter.ExportResult[1];
         ArtifactPairPublisher.stageAndPublish(output, sourceOutput,

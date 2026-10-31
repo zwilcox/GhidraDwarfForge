@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED defect and initial local fix; acceptance incomplete:** selecting a
+Windows compiler specification for an ELF can make custom Microsoft storage
+match the program default while GDB still injects SysV calls incorrectly.
+A new target-specific compiler-profile restriction preserves curated knowledge
+and blocks unverified injected calls. The initial installed reproduction and
+381 model checks across six languages/23 compiler specifications pass. Six
+Windows/GCC roles, 29 actual Java 21 suites, five-target regressions and independent
+raw review pass; committed package and hosted acceptance remain pending. See
+`docs/COMPILER-CALL-ABI.md`. P1.7/#66 remains open.
+
 **CONFIRMED defect and local fix; acceptance incomplete:** a default-named custom
 parameter/return layout could be incorrectly advertised as normally callable.
 GDB injected a Microsoft layout through SysV registers (4389 instead of 1234).

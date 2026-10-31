@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED defect and initial local fix; acceptance incomplete:** selecting a
+Windows compiler specification for an ELF can make custom Microsoft storage
+match the program default while GDB still injects SysV calls incorrectly.
+A new target-specific compiler-profile restriction preserves curated knowledge
+and blocks unverified injected calls. The initial installed reproduction and
+381 model checks across six languages/23 compiler specifications pass. Six
+Windows/GCC roles, 29 actual Java 21 suites, five-target regressions and independent
+raw review pass; committed package and hosted acceptance remain pending. See
+`docs/COMPILER-CALL-ABI.md`. P1.7/#66 remains open.
+
 **CONFIRMED defect and local fix; acceptance incomplete:** a default-named custom
 parameter/return layout could be incorrectly advertised as normally callable.
 GDB injected a Microsoft layout through SysV registers (4389 instead of 1234).
@@ -1300,7 +1310,11 @@ breakpoint name.
   prototypes emit `DW_CC_nocall` with a diagnostic, preventing unclassified
   injected calls. Original model strings remain intact; no vendor mapping is
   invented. See `docs/CALLING-CONVENTION-POLICY.md`. Broader default/custom/
-  return ABI classification remains unproven.
+  return ABI classification remains partial. **CONFIRMED locally; hosted
+  acceptance pending:** custom-storage equivalence and default compiler-profile
+  restrictions reject independently reproduced unsafe calls while preserving
+  formal signatures and ordinary debugging. See `docs/CUSTOM-CALL-STORAGE.md`
+  and `docs/COMPILER-CALL-ABI.md`; this is not arbitrary ABI certification.
 - [~] Add linkage names where meaningful. A distinct imported-name experiment
   was rejected because GDB 16.3 used `DW_AT_linkage_name` instead of the
   analyst-facing `DW_AT_name` in the honest C11 CU, breaking
