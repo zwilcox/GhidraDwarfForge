@@ -130,4 +130,3 @@ Review receipt SHA-256:
 This supersedes earlier pending PR98 notes. The separate main-push gate and
 this saved mutable-local component retain their own validation status;
 P1.11a and P3.3 remain incomplete.
-
