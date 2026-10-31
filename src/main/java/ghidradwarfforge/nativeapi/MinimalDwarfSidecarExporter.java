@@ -467,6 +467,7 @@ public final class MinimalDwarfSidecarExporter {
             Map<VariableKey, VariableLocation> variableLocations =
                 variableLocations(typeModel);
             Map<Long, Die> functionDies = new HashMap<>();
+            Map<ghidradwarfforge.types.LexicalScopeModel.Key, Die> lexicalOwners = new HashMap<>();
             Set<Long> lexicalAddresses = new java.util.HashSet<>();
             var functionStatics = FunctionStaticPolicy.select(typeModel, syntheticSource)
                 .exported();
@@ -578,6 +579,7 @@ public final class MinimalDwarfSidecarExporter {
                             Die parent = Objects.requireNonNull(lexicalDies.get(block.parent()), "lexical parent");
                             Die blockDie = newDie(producer, consumer, debug, DW_TAG_LEXICAL_BLOCK, parent, errorOut);
                             lexicalDies.put(block.id(), blockDie);
+                            lexicalOwners.put(new ghidradwarfforge.types.LexicalScopeModel.Key(function.address(), block.id()), blockDie);
                             if (block.ranges().size() == 1) {
                                 var range = block.ranges().getFirst();
                                 lexicalAddresses.add(range.address());
@@ -653,7 +655,8 @@ public final class MinimalDwarfSidecarExporter {
                 }
                 for (ProgramTypeModel.FunctionStaticVariable variable :
                         functionStatics) {
-                    Die owner = functionDies.get(variable.ownerAddress());
+                    Die owner = variable.block().isEmpty() ? functionDies.get(variable.ownerAddress()) :
+                        lexicalOwners.get(new ghidradwarfforge.types.LexicalScopeModel.Key(variable.ownerAddress(), variable.block()));
                     if (owner == null) {
                         throw new IllegalArgumentException("missing exported owner for static " +
                             variable.name());

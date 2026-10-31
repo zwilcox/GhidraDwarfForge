@@ -274,3 +274,15 @@ records survive rebase and reject stale scope, type, symbol and function data.
 All 300 existing exporter classes are byte-identical. See
 `STATIC-SCOPE-EVIDENCE.md` for the next extractor/model/emitter and GDB matrix;
 this provider does not complete inferred statics or any umbrella requirement.
+
+## Lexical-static emission checkpoint
+
+**CONFIRMED locally; hosted/full-scope acceptance pending:** explicit memory
+objects retain function/lexical ownership through extraction and native emission.
+Six target/address roles pass 66 production exports, six isolated producer
+artifacts, six cancellations and 378 GDB observations. Rejected/conflicting and
+coalesced scope controls plus genuine decompiler failure retain only surviving
+parent/global lookup. Seventeen actual Java 21 suites and existing static,
+class/object and discontiguous-local regressions pass. See
+`STATIC-SCOPE-EVIDENCE.md`. Inferred/decompiler-only statics, alias/origin,
+same-name type/category behavior and outstanding integration/audits remain open.

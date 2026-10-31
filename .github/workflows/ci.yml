@@ -479,7 +479,7 @@ jobs:
               matchedElfPrefixSmoke matchedElfAllocationsSmoke executableProgramBytesSmoke \
               debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke \
               syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
-              variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke \
+              variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke \
               stackFirstUseSmoke \
               opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
               functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke curatedThunkSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
@@ -1220,6 +1220,15 @@ jobs:
               done
           done
 
+      - name: Static objects preserve lexical shadowing and failure isolation
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for role in exec pie pie-rebased; do
+              python3 src/test/integration/lexical-statics-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --controls
+          done
+
       - name: Stack and register lifetimes across closed branches and loops
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
         env:
@@ -1801,7 +1810,7 @@ jobs:
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
             functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke curatedThunkSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
-            registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
+            registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
             elfBuildIdSmoke exportReportClaimsSmoke matchedElfPrefixSmoke `
             matchedElfAllocationsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke executableProgramBytesSmoke `
             debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke 2>&1 |

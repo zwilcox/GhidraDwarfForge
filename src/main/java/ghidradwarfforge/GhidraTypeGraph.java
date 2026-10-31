@@ -389,6 +389,9 @@ public final class GhidraTypeGraph {
         while (symbols.hasNext()) {
             monitor.checkCancelled();
             Symbol symbol = symbols.next();
+            if (symbol.getSymbolType() != SymbolType.LABEL || symbol.getID() <= 0) continue;
+            var staticBinding = GhidraStaticBindings.read(program, symbol.getID(), monitor, diagnostic);
+            if (staticBinding.status() == GhidraStaticBindings.Status.REJECTED) continue;
             MemoryBlock block = program.getMemory().getBlock(symbol.getAddress());
             if (symbol.getSymbolType() != SymbolType.LABEL || !symbol.isPrimary() ||
                     symbol.isExternal() || symbol.getSource() == SourceType.DEFAULT ||
@@ -411,6 +414,30 @@ public final class GhidraTypeGraph {
             }
             if (address < 0) {
                 diagnostic.accept("Skipped unsupported global address " + symbol.getName());
+                continue;
+            }
+            if (staticBinding.status() == GhidraStaticBindings.Status.VALID) {
+                var binding = staticBinding.binding();
+                long ownerAddress;
+                try {
+                    ownerAddress = AddressNormalizer.toElfAddress(binding.owner().getEntryPoint().getOffset(), rebaseDelta);
+                }
+                catch (ArithmeticException overflow) {
+                    diagnostic.accept("Omitted explicitly scoped static " + symbol.getName(true) + ": untranslatable owner");
+                    continue;
+                }
+                if (!functionOwners.contains(ownerAddress) || (!binding.block().isEmpty() && lexicalScopes.stream()
+                        .noneMatch(scope -> scope.functionAddress() == ownerAddress && scope.blocks().stream()
+                            .anyMatch(lexical -> lexical.id().equals(binding.block()))))) {
+                    diagnostic.accept("Omitted explicitly scoped static " + symbol.getName(true) +
+                        ": its function or saved lexical scope was not exported");
+                    continue;
+                }
+                functionStatics.add(new ProgramTypeModel.FunctionStaticVariable(binding.displayName(), address,
+                    data.getLength(), extractor.reserve(data.getDataType()), ownerAddress,
+                    "EXPLICIT_STATIC_BINDING: " + binding.evidence(), binding.block()));
+                diagnostic.accept("Using explicit static ownership for " + symbol.getName(true) +
+                    " in " + binding.owner().getName(true) + "; " + binding.evidence());
                 continue;
             }
             if (symbol.getParentNamespace() instanceof Function owner) {
@@ -440,6 +467,17 @@ public final class GhidraTypeGraph {
                 symbol.getSource().name(),
                 namespacePath(symbol.getParentNamespace())));
         }
+        var conflictingStatics = ProgramTypeModel.conflictingStatics(signatures, lexicalScopes, functionStatics);
+        for (var variable : conflictingStatics.stream().sorted(Comparator
+                .comparingLong(ProgramTypeModel.FunctionStaticVariable::ownerAddress)
+                .thenComparing(ProgramTypeModel.FunctionStaticVariable::block)
+                .thenComparing(ProgramTypeModel.FunctionStaticVariable::name)
+                .thenComparingLong(ProgramTypeModel.FunctionStaticVariable::address)).toList()) {
+            monitor.checkCancelled();
+            diagnostic.accept("Omitted static " + variable.name() + " at 0x" + Long.toHexString(variable.address()) +
+                ": conflicting declaration in the same function/lexical scope");
+        }
+        functionStatics.removeAll(conflictingStatics);
         List<String> externalLibraries = new ArrayList<>(List.of(
             program.getExternalManager().getExternalLibraryNames()));
         externalLibraries.sort(String::compareTo);

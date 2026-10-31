@@ -62,12 +62,17 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
         }
     }
 
-    /** A defined memory object explicitly owned by a Ghidra function namespace. */
+    /** A defined memory object with evidence-backed function and optional lexical ownership. */
     public record FunctionStaticVariable(String name, long address, long size, TypeRef type,
-            long ownerAddress, String source) {
+            long ownerAddress, String source, String block) {
+        public FunctionStaticVariable(String name, long address, long size, TypeRef type,
+                long ownerAddress, String source) {
+            this(name, address, size, type, ownerAddress, source, "");
+        }
+
         public FunctionStaticVariable {
             if (name == null || name.isBlank() || address < 0 || size <= 0 ||
-                    type == null || ownerAddress < 0 || source == null || source.isBlank()) {
+                    type == null || ownerAddress < 0 || source == null || source.isBlank() || block == null) {
                 throw new IllegalArgumentException("invalid function-owned static variable");
             }
         }
@@ -208,6 +213,7 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
             .toList();
         functionStatics = functionStatics.stream()
             .sorted(Comparator.comparingLong(FunctionStaticVariable::ownerAddress)
+                .thenComparing(FunctionStaticVariable::block)
                 .thenComparing(FunctionStaticVariable::name)
                 .thenComparingLong(FunctionStaticVariable::address))
             .toList();
@@ -293,6 +299,16 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
                 variableStorage = new VariableStorageModel(restricted);
             }
         }
+        for (var variable : functionStatics) {
+            var scope = scopedOwners.get(variable.ownerAddress());
+            if (!variable.block().isEmpty() && (scope == null || scope.blocks().stream()
+                    .noneMatch(block -> block.id().equals(variable.block())))) {
+                throw new IllegalArgumentException("missing lexical owner for static " + variable.name());
+            }
+        }
+        if (!conflictingStatics(functions, lexicalScopes, functionStatics).isEmpty()) {
+            throw new IllegalArgumentException("ambiguous static name in its recorded scope");
+        }
         for (VariableLocation location : variableStorage.variables()) {
             FunctionSignature function = functions.stream()
                 .filter(candidate -> candidate.address() == location.functionAddress() &&
@@ -317,5 +333,28 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
                     "declaration " + location.functionName() + "::" + location.name());
             }
         }
+    }
+
+    /** Reject every conflicting static, independently of extraction order. Parent shadowing is valid. */
+    public static java.util.Set<FunctionStaticVariable> conflictingStatics(List<FunctionSignature> functions,
+            List<LexicalScopeModel> scopes, List<FunctionStaticVariable> statics) {
+        record Name(long owner, String block, String spelling) { }
+        var counts = new java.util.HashMap<Name, Integer>();
+        for (var function : functions) {
+            var scope = scopes.stream().filter(s -> s.functionAddress() == function.address()).findFirst().orElse(null);
+            for (var parameter : function.parameters()) {
+                counts.merge(new Name(function.address(), "", parameter.name()), 1, Integer::sum);
+            }
+            for (var local : function.locals()) {
+                var binding = scope == null ? null : scope.local(local.name());
+                counts.merge(new Name(function.address(), binding == null ? "" : binding.block(),
+                    binding == null ? local.name() : binding.displayName()), 1, Integer::sum);
+            }
+        }
+        for (var variable : statics) {
+            counts.merge(new Name(variable.ownerAddress(), variable.block(), variable.name()), 1, Integer::sum);
+        }
+        return statics.stream().filter(variable -> counts.get(new Name(variable.ownerAddress(), variable.block(),
+            variable.name())) > 1).collect(java.util.stream.Collectors.toUnmodifiableSet());
     }
 }

@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local lexical-static emission; hosted/full-scope acceptance
+pending:** valid saved static identities now emit under their recorded function
+or lexical block. Six x86-64/AArch64 exec/PIE/rebase roles pass 66 exports, six
+isolated producer artifacts, six cancellations and 378 compiler/Forge GDB
+observations. Stale/conflicting/coalesced evidence and genuine decompiler failure
+preserve only defensible declarations; seventeen actual Java 21 suites pass.
+See `docs/STATIC-SCOPE-EVIDENCE.md`. Inferred statics, other scope relationships
+and umbrella integration/audits remain open.
+
 **CONFIRMED static-scope evidence provider; extraction/emission pending:**
 explicit typed-memory symbol/function/block associations pass 460 real ProgramDB
 checks on five language profiles and sixteen actual Java 21 suites. Records

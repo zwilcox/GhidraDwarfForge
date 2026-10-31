@@ -1157,3 +1157,15 @@ tasks.register("staticBindingEvidenceSmoke", JavaExec) {
     systemProperty "application.settingsdir", file("build/tmp/static-binding/settings").absolutePath
     systemProperty "application.cachedir", file("build/tmp/static-binding/cache").absolutePath
 }
+
+tasks.register("staticScopeExtractionSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks static lexical extraction, shadowing, conflict isolation and immutable reopen"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.StaticScopeExtractionSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/static-extraction/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/static-extraction/cache").absolutePath
+}
