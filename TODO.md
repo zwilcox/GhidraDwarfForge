@@ -1,12 +1,13 @@
 # TODO.md — GhidraDwarfForge
 
-**CONFIRMED partial mixed-piece evidence; broader runtime/hosted acceptance pending:**
-independent incoming-piece composition passes 1,032 new checks and all 24 actual
-Java 21 suites. The existing compiler-copy fixture now retains both fields after
-the original register is overwritten: eight exports and 48 GDB observations pass
-on x86-64/AArch64, with validators and preservation. Dedicated register/stack
-migration, PIE/control-flow/runtime negative cases remain required. See
-`docs/COMPOSITE-VALUE-LIFETIMES.md`. Neither P1.11a nor P3.3 is complete.
+**CONFIRMED local mixed-piece acceptance; hosted acceptance pending:**
+all six x86-64/AArch64 exec/PIE/rebased-PIE cases pass independent piece spills,
+reloads, loss, branches, loops, body holes and call controls. Twelve candidate
+and six previous exports provide 8,235 caller and 72 callee observations;
+1,689 candidate values extend previous-package availability. All 24 actual
+Java 21 suites, ten runtime regressions, validators, preservation, determinism
+and cleanup checks pass. See `docs/COMPOSITE-VALUE-LIFETIMES.md`. P1.11a and P3.3
+remain open pending their full acceptance and integration requirements.
 
 **CONFIRMED locally; final package/hosted acceptance pending:** saved mutable
 stack identities now survive proven register assignments, saves and reloads,

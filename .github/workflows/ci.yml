@@ -1184,6 +1184,15 @@ jobs:
               done
           done
 
+      - name: Independent aggregate pieces through spills, reloads and control flow
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for role in exec pie pie-rebased; do
+              python3 src/test/integration/composite-value-flow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
+          done
+
       - name: Stack and register lifetimes across closed branches and loops
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
         env:

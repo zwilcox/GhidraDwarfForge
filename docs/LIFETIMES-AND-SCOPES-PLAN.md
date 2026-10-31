@@ -138,12 +138,13 @@ Mixed-piece migration and every P3.3 requirement remain in scope.
 
 ## Current component: independent incoming pieces
 
-Model and narrow compiler-copy runtime acceptance are recorded in
-`COMPOSITE-VALUE-LIFETIMES.md`. The shared proof now handles independent
-register/stack piece states and requires the complete value at each location.
-Broader compiler-oracle spill/reload, address-role, control-flow and negative
-runtime cases remain required, along with final hosted acceptance. Every P3.3
-row remains in scope after the location core.
+**CONFIRMED locally; hosted acceptance pending:** independent pieces pass all
+six x86-64/AArch64 address roles, 12 candidate/six previous exports, 8,235 caller
+and 72 callee instruction observations, 24 actual Java 21 suites and ten runtime
+regressions. Loss, aliases, branches, loops, body holes, call preservation,
+validators, original preservation, determinism and cleanup pass. See
+`COMPOSITE-VALUE-LIFETIMES.md` for exact bounds and evidence. Final package and
+hosted integration gates remain required. Every P3.3 row remains in scope.
 
 ## Completion audit
 

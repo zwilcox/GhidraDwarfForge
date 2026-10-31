@@ -47,6 +47,7 @@ expected_sources=(
     bitfield-values.c
     calling-convention.c
     composite-register-prefix.c
+    composite-value-flow.c
     curated-thunk.c
     custom-call-storage.c
     defined-register-local.c

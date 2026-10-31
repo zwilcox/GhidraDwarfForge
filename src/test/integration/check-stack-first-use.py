@@ -43,7 +43,7 @@ def parse_dies(text):
             records.append({"depth": int(header[1]), "offset": offset,
                 "tag": header[3], "attributes": {}})
         elif records:
-            attribute = re.match(r"^\s*<[0-9a-f]+>\s+(DW_AT_\w+)\s+:\s*(.*)", line)
+            attribute = re.match(r"^\s*<[0-9a-f]+>\s+(DW_AT_\w+)\s*:\s*(.*)", line)
             if attribute:
                 require(attribute[1] not in records[-1]["attributes"], "duplicate DIE attribute")
                 records[-1]["attributes"][attribute[1]] = attribute[2]
