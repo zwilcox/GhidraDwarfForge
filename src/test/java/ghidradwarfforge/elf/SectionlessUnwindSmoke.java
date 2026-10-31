@@ -29,6 +29,7 @@ public final class SectionlessUnwindSmoke {
                     }
                 }
                 byte[] valid = fixture(wide, order, 0x3b);
+                allocationObservation(root, valid, wide, order);
                 for (String mutation : List.of("version", "pointer-form", "table-form", "count-relative",
                         "count-zero", "count-large", "header-short", "header-mapping", "frame-outside",
                         "frame-bss", "length-zero", "length-extended", "length-excessive", "cie-pointer",
@@ -80,6 +81,49 @@ public final class SectionlessUnwindSmoke {
             }
         }
         System.out.println("sectionless-unwind-smoke=PASS checks=" + checks);
+    }
+
+    private static void allocationObservation(Path root, byte[] bytes, boolean wide, ByteOrder order)
+            throws Exception {
+        Path input = root.resolve("allocation-input");
+        Path output = root.resolve("allocation-output");
+        Files.write(input, bytes);
+        new MatchedElfSidecarWriter().write(ElfImage.read(input), output,
+            Map.of(".debug_info", new byte[] {1}), List.of(), () -> false);
+        require(MatchedElfAllocations.compare(input, output).status() ==
+            MatchedElfAllocations.Status.MATCHING_ALLOCATED_METADATA, "new unwind allocation was not recognized");
+        byte[] candidate = Files.readAllBytes(output);
+        var header = ByteBuffer.wrap(candidate).order(order);
+        long sectionOffset = wide ? header.getLong(40) : Integer.toUnsignedLong(header.getInt(32));
+        var section = ElfImage.read(output).sections().stream().filter(s -> s.name.equals(".eh_frame"))
+            .findFirst().orElseThrow();
+        int at = Math.toIntExact(sectionOffset + (wide ? 64 : 40) * section.originalIndex);
+        String[] fields = { "sh_name", "sh_type", "sh_flags", "sh_addr", "sh_offset", "sh_size",
+            "sh_link", "sh_info", "sh_addralign", "sh_entsize" };
+        int[] offsets = wide ? new int[] { 0, 4, 8, 16, 24, 32, 40, 44, 48, 56 } :
+            new int[] { 0, 4, 8, 12, 16, 20, 24, 28, 32, 36 };
+        for (int field = 0; field < fields.length; field++) {
+            byte[] changed = candidate.clone();
+            var data = ByteBuffer.wrap(changed).order(order);
+            boolean full = wide && field != 0 && field != 1 && field != 6 && field != 7;
+            long old = full ? data.getLong(at + offsets[field]) : Integer.toUnsignedLong(data.getInt(at + offsets[field]));
+            long value = field == 0 ? 0 : field == 8 ? 2 : field == 5 ? old - 1 : old + 1;
+            if (full) data.putLong(at + offsets[field], value);
+            else data.putInt(at + offsets[field], (int) value);
+            Files.write(output, changed);
+            var observed = MatchedElfAllocations.compare(input, output);
+            require(observed.status() == MatchedElfAllocations.Status.DIFFERENT_METADATA &&
+                observed.issue().orElseThrow().field().equals(fields[field]) &&
+                observed.issue().orElseThrow().candidateIndex() == section.originalIndex,
+                "unwind allocation mutation escaped: " + fields[field] + ": " + observed);
+        }
+        Files.write(output, candidate);
+        byte[] changed = bytes.clone();
+        changed[0x327] ^= 1;
+        Files.write(input, changed);
+        require(MatchedElfAllocations.compare(input, output).status() ==
+            MatchedElfAllocations.Status.MATCHING_ALLOCATED_METADATA,
+            "allocation observer incorrectly claimed frame-program byte identity");
     }
 
     private static void positive(Path root, byte[] bytes) throws Exception {

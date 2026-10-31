@@ -79,3 +79,30 @@ the inventory check remains strict. All five fixture reproducibility lanes pass
 with byte-identical rebuilds (including a private ARM cross compiler now located
 outside the normal PATH). Production code and the tested JAR are unchanged.
 Receipt: `cebe59b1e8f522ed79023627961e0f04855e6d83c90cc8f25bdf32a7a732f905`. Fresh hosted acceptance remains pending; P1.7 stays open.
+
+## Allocation-observer integration correction
+
+**CONFIRMED third failed gate and local correction (2026-10-31):** run
+`41180225439` fails x86-64 and AArch64 because the metadata observer and independent
+oracle omit the new sectionless `.eh_frame` view, shifting expected note indexes.
+The other three target jobs pass; Windows is skipped after the failed target gate.
+The observer now derives that view from bounded original header/table/record
+framing, retaining the distinction between metadata and code/CFI byte identity.
+The independent small-fixture oracle decodes its supported GNU encoding without
+using the producer or reading expected values from the candidate.
+
+944 unwind model assertions include all ten allocation-field mutations in both
+ELF classes/orders and a changed-CFI-byte metadata-only control. The existing
+532 allocation checks and 34 packaged suites on actual Java 21 pass. Twelve
+retained x86-64/AArch64 fixture pairs, repeated observations, prefix checks and
+twenty unwind-field mutations pass at a 64 MiB heap, as does the sparse >2 GiB
+metadata case. This replay does not claim fresh exports. A separate fresh
+sectionless i386 rebased-PIE export passes validators and runtime GDB.
+Local receipt: `1bfe45faa2985107344d5fd83863b67ed352bc225f14cdb0c950050d501cce67`.
+
+The first new mutation replay exposed an oracle diagnostic-format assumption:
+derived segment names display as text, while original names display raw bytes.
+The correction checks the exact documented form for each origin. That failed
+replay is retained. CI now runs the ten unwind-field mutations whenever the
+sectionless fixture has a supported original unwind view. Fresh full hosted
+acceptance is still required; this does not complete P1.7.
