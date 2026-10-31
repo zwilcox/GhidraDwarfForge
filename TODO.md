@@ -1,5 +1,26 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED integration:** PR81 head
+`f00932e50b4a2901a41e4a51f43d9bb4d77c0a72` passes all twelve jobs in
+`41162050189`, independent exact-package/raw alias review, 27 actual Java 21
+suites, 49 native Windows model tasks and both GUI checks. Normal merge
+`bfec9f008c62076f99c038e8a805349d89896ac1` preserves its tested tree.
+Receipt: `bb5bbe66c5f4564fbfb9cccd1a197ae0db6bef6dd428e7cda8bee13d368daeee`.
+Automatic analyst-created aliases are accepted for the documented
+x86-64/AArch64 profile; broader P1.7 scope remains open. The distinct main81
+run `41165205316` is pending. Main80 run `41160800685` passes its full
+package/raw/both-GUI gate; receipt
+`15d0cb0f35e729f396f1ae9910cacad99b8c8f11436df0cda0a32bf974eaed81`.
+Earlier pending notes for accepted components below are historical.
+
+**CONFIRMED locally; hosted acceptance pending:** the custom-storage fix and
+accepted aliases pass combined package/raw/runtime checks and 28 actual Java 21
+suites. The original and prior output pair survive failure/cancellation tests;
+all five fixture reproducibility lanes pass. Receipt:
+`f1f34cd01e5a8cbf9e61f3ffd2b7b1bc7e192f762c59f5c1dd11241998ada24f`.
+See `docs/CUSTOM-CALL-STORAGE.md`, including the separate reproduced
+compiler-default/ELF ABI gap. No release publication is included.
+
 **CONFIRMED defect and local fix; acceptance incomplete:** a default-named custom
 parameter/return layout could be incorrectly advertised as normally callable.
 GDB injected a Microsoft layout through SysV registers (4389 instead of 1234).
