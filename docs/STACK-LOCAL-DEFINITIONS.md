@@ -21,9 +21,9 @@ A zero-offset stack local with overlapping saved ownership no longer receives a
 whole-function location. Ordinary nonoverlapping zero-offset locals and stack
 parameters retain their existing behavior. Calls, branch-dependent stack
 identity, mixed pieces and inferred lexical lifetimes remain unimplemented by
-this proof. Further runtime widths and mutation/alias cases remain required
-before making broader claims; the new end-to-end local fixture uses signed
-four-byte objects. The 32/64-bit decoder matrix is not 64-bit runtime evidence.
+this proof. Runtime now covers signed four- and eight-byte objects on x86-64
+and AArch64. Mutation/alias runtime cases remain required before broader claims;
+the decoder checks alone do not establish those end-to-end behaviors.
 
 ## Evidence and reproduction
 
@@ -44,13 +44,15 @@ against the packaged production JAR on actual Java 21; the test class origins
 are recorded in `build/stack-local-review/java21`.
 
 `stack-local-definitions.c` has two separate compiler scopes sharing a stack
-slot, with values 11 and 22. Compiler GDB measures the entry-relative coordinate
+slot. It is compiled at 32 and 64 bits with distinct signed values, including
+negative and positive values beyond the 32-bit range. Compiler GDB measures the entry-relative coordinate
 and proves both values and lexical scope boundaries. Fixture preparation binds
 two analyst locals to the immediately preceding initializing stores. Fresh
 processes reopen the saved program without analysis or mutation and compare
 all symbol IDs, offsets, instruction bytes and raw p-code with preparation.
 
-Six actual Java 21 x86-64/AArch64 exec/PIE/rebased-PIE roles pass twelve candidate exports and
+**HISTORICAL four-byte checkpoint:** six actual Java 21 x86-64/AArch64
+exec/PIE/rebased-PIE roles with values 11 and 22 passed twelve candidate exports and
 six preceding-package exports. The candidate and previous-package GDB passes
 provide 174 instruction observations, including 39 newly available local values;
 the previous package omits both nonzero
@@ -79,12 +81,41 @@ src/test/integration/stack-local-definitions-export.sh /path/to/private-packaged
 Set `DWARFDUMP` to the pinned standalone validator. Optional
 `FORGE_STACK_LOCAL_PREVIOUS_GHIDRA` adds the preceding-package comparison.
 `FORGE_STACK_LOCAL_ROLES` selects roles for diagnosis; CI runs all three.
+`FORGE_STACK_LOCAL_WIDTHS` selects 32 and/or 64 bits for diagnosis; the default
+and both required CI lanes run both widths.
 The Linux and native Windows model lists and both required runtime target
 lanes include this component. The exact source-commit package passes all manifests, pinned native provenance,
 72 embedded production sources and 272 Java 21-compatible classes. Its production
 JAR is byte-identical to the runtime and Java 21 suite artifact:
 `929929c7d0328ac93340e8d012d00a604acf8b7f424d110319a768d1679789ec`.
 Hosted execution/review remains pending. P1.11a and all remaining P3.3 requirements stay open.
+
+## Wide-value runtime checkpoint (2026-10-31)
+
+**CONFIRMED locally; hosted acceptance pending:** all twelve target/width/role
+cases pass on actual JDK 21 in `run.TyGDAILE`, with 24 candidate exports and
+12 preceding-package exports. Every instruction is checked against unchanged
+machine bytes. The 408 candidate/previous instruction observations include
+78 newly available values; old locals remain unavailable before definition and
+after retirement. Values are -1985229329/305419896 at 32 bits and
+-81985529216486895/81985529216486895 at 64 bits, so truncation, wrong signedness
+and stale reused bytes cannot pass by coincidental small values. The zero-start
+control still produces 37 at both widths.
+
+Independent raw-loclist review, compiler lexical/value checks, GNU/LLVM/pinned
+strict validation, deterministic outputs, original/build-ID identity, saved
+program and module preservation all pass. PIE/rebased normalized interval
+receipts agree for each target and width. Production Java and the packaged JAR
+are unchanged from the preceding accepted local checkpoint; its twenty actual
+Java 21 model suites remain separate evidence, not freshly rerun tests.
+Runtime receipt SHA-256:
+`7cddb94033aa3cf82776184462a8c0f85a84f8eaa4b568c9bf48a545bcabc7f9`
+in `build/stack-local-review/wide-runtime/runtime-acceptance.json`.
+
+The wider harness is the default in both required runtime lanes. This branch
+still awaits integration of PR99's architecture-field rename and the dependency
+chain's hosted acceptance. Partial writes/unknown aliases, broader control/calls,
+mixed pieces and all remaining P3.3 requirements remain open.
 
 ## Retained failures and narrower evidence
 

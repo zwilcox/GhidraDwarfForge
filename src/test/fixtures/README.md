@@ -522,8 +522,9 @@ repeatability cover x86-64/AArch64 exec/PIE/rebased-PIE roles. No physical copy
 is treated as evidence of an inferred source variable's identity.
 
 `stack-local-definitions.c` supplies two distinct compiler scopes with a reused
-four-byte stack slot. The dedicated harness records exact initializing stores,
+four- or eight-byte stack slot. Both widths use large signed values, including
+negative initial values. The dedicated harness records exact initializing stores,
 reopens saved analyst identities, checks every candidate/previous GDB boundary,
 and validates raw stack-to-register loclists on x86-64/AArch64 exec, PIE and
-rebased PIE. See `docs/STACK-LOCAL-DEFINITIONS.md`; broader widths and lexical
-scope recovery are not implied by this fixture.
+rebased PIE at both widths. See `docs/STACK-LOCAL-DEFINITIONS.md`; alias/mutation
+cases and lexical scope recovery are not implied by this fixture.

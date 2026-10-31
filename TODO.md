@@ -1,5 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally; hosted acceptance pending:** stack-local runtime coverage
+now includes signed 32/64-bit values on x86-64/AArch64 in all three address roles.
+Twelve cases pass 24 candidate/twelve previous exports, 408 GDB instruction
+observations and 78 newly available values on actual JDK 21, with raw loclists,
+validators, preservation and determinism. Production code/JAR are unchanged.
+See `docs/STACK-LOCAL-DEFINITIONS.md`; PR99's guard correction still needs to
+be integrated into this dependent branch. Alias/mutation runtime cases,
+broader calls/flow, mixed pieces and P3.3 remain required.
+
 **CONFIRMED development acceptance:** P1.7 function signatures,
 calling conventions, declarations, thunks and aliases passed the combined
 [PR95 run](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/41195618723)

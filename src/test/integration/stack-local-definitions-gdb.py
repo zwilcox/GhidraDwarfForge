@@ -1,4 +1,4 @@
-"""Check unsupported stack-start omission against real compiler scopes."""
+"""Check initialized stack identities, slot reuse and wide signed values."""
 
 import json
 import os
@@ -10,6 +10,9 @@ import gdb
 labels = json.loads(Path(os.environ["FORGE_STACK_LABELS"]).read_text())
 storage_path = Path(os.environ["FORGE_STACK_STORAGE"])
 mode = os.environ["FORGE_STACK_MODE"]
+width = labels['width']
+first_value, second_value = labels['first_value'], labels['second_value']
+raw_type = 'int' if width == 4 else 'long long'
 compiler = mode == "compiler"
 storage = {} if compiler else json.loads(storage_path.read_text())
 remote = os.environ.get("FORGE_STACK_REMOTE", "")
@@ -45,7 +48,7 @@ def missing(name):
 
 def typed(name, expected=None):
     value = gdb.parse_and_eval(name)
-    assert value.type.strip_typedefs().code == gdb.TYPE_CODE_INT and value.type.sizeof == 4
+    assert value.type.strip_typedefs().code == gdb.TYPE_CODE_INT and value.type.sizeof == width
     if expected is None:
         assert value.is_optimized_out, (name, str(value))
         print(name + "=unavailable")
@@ -65,12 +68,12 @@ if not compiler:
         assert pc == instruction['address'] + bias
         assert bytes(gdb.selected_inferior().read_memory(pc, len(bytes.fromhex(instruction['bytes'])))).hex() == instruction['bytes']
         record = {'pc': pc, 'linkPc': instruction['address'], 'values': {}}
-        for name, live, dead, expected in [('first', 'first_live', 'between_scopes', 11),
-                                          ('second', 'second_live', 'after_scopes', 22)]:
+        for name, live, dead, expected in [('first', 'first_live', 'between_scopes', first_value),
+                                          ('second', 'second_live', 'after_scopes', second_value)]:
             value = gdb.parse_and_eval(name)
             available = mode == 'forge' and labels['stack_scope'][live] <= instruction['address'] < labels['stack_scope'][dead]
             assert not value.is_optimized_out if available else value.is_optimized_out, (name, hex(pc), str(value), available)
-            assert value.type.strip_typedefs().code == gdb.TYPE_CODE_INT and value.type.sizeof == 4
+            assert value.type.strip_typedefs().code == gdb.TYPE_CODE_INT and value.type.sizeof == width
             if available:
                 assert int(value) == expected, (name, hex(pc), str(value), expected)
             record['values'][name] = str(value)
@@ -85,16 +88,16 @@ if not compiler:
     (storage_path.parent / (mode + '-instruction-gdb.json')).write_text(json.dumps(observations, indent=4) + '\n')
     storage_path.write_text(json.dumps(storage, indent=4) + '\n')
 
-for marker, expected in ([("first_live", 11), ("between_scopes", 11),
-                         ("second_live", 22), ("after_scopes", 22)] if compiler else []):
+for marker, expected in ([("first_live", first_value), ("between_scopes", first_value),
+                         ("second_live", second_value), ("after_scopes", second_value)] if compiler else []):
     if int(gdb.parse_and_eval("$pc")) != labels["stack_scope"][marker] + bias:
         stop(labels["stack_scope"][marker] + bias)
     if compiler:
         if marker == "first_live":
-            typed("first", 11)
+            typed("first", first_value)
             storage["scope_offset"] = int(gdb.parse_and_eval("&first")) - entry_stack
         if marker == "second_live":
-            typed("second", 22)
+            typed("second", second_value)
             missing("first")
             assert int(gdb.parse_and_eval("&second")) - entry_stack == storage["scope_offset"]
         else:
@@ -102,13 +105,13 @@ for marker, expected in ([("first_live", 11), ("between_scopes", 11),
             if marker != "first_live":
                 missing("first")
     else:
-        typed("first", 11 if marker == "first_live" else None)
-        typed("second", 22 if marker == "second_live" else None)
+        typed("first", first_value if marker == "first_live" else None)
+        typed("second", second_value if marker == "second_live" else None)
         assert gdb.selected_frame().find_sal().symtab.filename.endswith("stack.dbg.c" if mode == 'forge' else "previous.dbg.c")
     address = entry_stack + storage["scope_offset"]
-    assert int(gdb.parse_and_eval("*(int*)" + hex(address))) == expected
+    assert int(gdb.parse_and_eval("*(" + raw_type + "*)" + hex(address))) == expected
     print("stack-scope-point=" + marker + " PASS raw=" + str(expected))
-assert int(gdb.parse_and_eval("scope_sink")) == 22
+assert int(gdb.parse_and_eval("scope_sink")) == second_value
 gdb.execute("print/a &scope_sink")
 gdb.execute("print &scope_sink")
 
@@ -130,7 +133,7 @@ if compiler:
     storage["zero_offset"] = int(gdb.parse_and_eval("&zero")) - zero_stack
 else:
     assert gdb.selected_frame().find_sal().symtab.filename.endswith("stack.dbg.c" if mode == 'forge' else "previous.dbg.c")
-assert int(gdb.parse_and_eval("*(int*)" + hex(zero_stack + storage["zero_offset"]))) == 37
+assert int(gdb.parse_and_eval("*(" + raw_type + "*)" + hex(zero_stack + storage["zero_offset"]))) == 37
 stop(labels["zero_stack"]["return"] + zero_bias)
 assert int(gdb.parse_and_eval("zero_sink")) == 37
 gdb.execute("print/a &zero_sink")

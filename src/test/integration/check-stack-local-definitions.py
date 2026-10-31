@@ -95,7 +95,7 @@ assert [row['linkPc'] for row in observed] == [row['address'] for row in prepare
 for row in observed:
     for name in ('first', 'second'):
         available = any(low <= row['linkPc'] < high for low, high, kind in actual[name])
-        assert row['values'][name] == (('11' if name == 'first' else '22') if available else '<optimized out>')
+        assert row['values'][name] == (str(labels[name + '_value']) if available else '<optimized out>')
 if (case / 'previous-instruction-gdb.json').is_file():
     previous = json.loads((case / 'previous-instruction-gdb.json').read_text())
     assert [row['linkPc'] for row in previous] == [row['linkPc'] for row in observed]

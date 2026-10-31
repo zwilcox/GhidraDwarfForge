@@ -12,6 +12,8 @@ import com.google.gson.JsonParser;
 import ghidra.app.script.GhidraScript;
 import ghidra.program.model.data.DataUtilities;
 import ghidra.program.model.data.IntegerDataType;
+import ghidra.program.model.data.LongLongDataType;
+import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.VoidDataType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.LocalVariable;
@@ -33,7 +35,10 @@ public class PrepareStackLocalDefinitions extends GhidraScript {
         var storage = JsonParser.parseString(Files.readString(Path.of(getScriptArgs()[1]))).getAsJsonObject();
         long delta = currentProgram.getImageBase().getOffset() - GhidraImageBase.originalImageBase(currentProgram);
         var records = new LinkedHashMap<String, Object>();
-        var type = new IntegerDataType(currentProgram.getDataTypeManager());
+        int width = labels.get("width").getAsInt();
+        if (width != 4 && width != 8) throw new IllegalArgumentException("unsupported local width");
+        DataType type = width == 4 ? new IntegerDataType(currentProgram.getDataTypeManager()) :
+            new LongLongDataType(currentProgram.getDataTypeManager());
         for (String name : new String[] { "stack_scope", "zero_stack" }) {
             var row = labels.getAsJsonObject(name);
             var entry = toAddr(row.get("entry").getAsLong() + delta);
@@ -72,7 +77,7 @@ public class PrepareStackLocalDefinitions extends GhidraScript {
                     local.setFirstUseOffset(firstUse);
                 }
                 if (local.getFirstUseOffset() != firstUse || local.getStackOffset() != offset ||
-                        local.getLength() != 4 || local.getSource() != SourceType.USER_DEFINED ||
+                        local.getLength() != width || local.getSource() != SourceType.USER_DEFINED ||
                         !local.getDataType().isEquivalent(type)) throw new AssertionError("saved local changed");
                 locals.add(Map.of("name", localName, "symbolId", local.getSymbol().getID(), "firstUse", firstUse,
                     "stackOffset", offset, "definition", definition.getAddress().getOffset() - delta,
