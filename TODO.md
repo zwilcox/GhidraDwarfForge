@@ -1,5 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED failed hosted gate; fixture inventory corrected locally:** PR93 run
+`41192386664` stopped all five target lanes during fixture setup because
+`function-pointer-conventions.c` was absent from the approved source inventory.
+The fixture is now explicitly inventoried and documented. All five target
+`fixture-reproducibility.sh` runs pass byte-identical rebuilds, partial-strip
+symbol checks and source-only inventory checks. Production code is unchanged.
+Fresh hosted validation is required; the failed run is not acceptance evidence.
+P1.7/#66 remains open.
+
 
 **CONFIRMED locally; hosted acceptance pending:** function-pointer types now
 retain calling-convention and compiler/MIPS call restrictions, closing a bypass

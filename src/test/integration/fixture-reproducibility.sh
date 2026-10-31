@@ -59,6 +59,7 @@ expected_sources=(
     external-function-declarations.c
     formal-function-return.c
     fp_register_aliases.c
+    function-pointer-conventions.c
     function-static-scopes.c
     function_entry_ranges.S
     function_entry_ranges.c

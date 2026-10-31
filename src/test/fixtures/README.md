@@ -413,6 +413,14 @@ must be refused before the Microsoft-function counter changes; the default
 SysV call remains usable. Exec, PIE and rebased PIE are separate cases. This
 does not establish support for arbitrary alternate ABIs or custom storage.
 
+`function-pointer-conventions.c` adds typed SysV and Microsoft function pointers
+to the same explicit x86-64 ABI comparison. Its saved-program harness tests GCC
+and Windows compiler specifications across exec, PIE and rebased PIE. Correct
+SysV pointer calls return 1234; unsupported Microsoft pointer calls must be
+refused before either target state or the call counter changes. Ordinary calls
+remain valid. See `docs/FUNCTION-POINTER-CALL-ABI.md` for the type-level policy,
+compiler controls and validation limits.
+
 `curated-thunk.c` supplies a tiny tail-transfer function and integer destination.
 The real exporter harness curates the thunk name, persists/reopens it and checks
 exec/PIE/rebased PIE on x86-64 and AArch64. It verifies a typed symbol at the
