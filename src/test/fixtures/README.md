@@ -421,6 +421,14 @@ refused before either target state or the call counter changes. Ordinary calls
 remain valid. See `docs/FUNCTION-POINTER-CALL-ABI.md` for the type-level policy,
 compiler controls and validation limits.
 
+`function-type-flags.c` supplies a variadic function, a non-returning function
+and typed pointers to both. The saved-program x86-64 exec/PIE/rebased-PIE harness
+checks direct no-return metadata, direct and pointer variadic calls, and ordinary
+execution through the no-return pointer. A curated no-return function-type flag
+has no validated DWARF mapping and must produce an explicit omission diagnostic.
+The diagnostic-only change must preserve the previous artifact bytes. See
+`docs/FUNCTION-TYPE-FLAGS.md`.
+
 `curated-thunk.c` supplies a tiny tail-transfer function and integer destination.
 The real exporter harness curates the thunk name, persists/reopens it and checks
 exec/PIE/rebased PIE on x86-64 and AArch64. It verifies a typed symbol at the

@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally; function-type flag acceptance incomplete:** saved
+variadic/no-return function types pass 1,994 extraction checks and 39 actual
+Java 21 suites. The previously silent no-return type omission now produces an
+explicit diagnostic; direct no-return and variadic behavior are preserved.
+Three saved-program exec/PIE/rebase cases pass validators, 24 compiler/Forge
+variadic calls and six ordinary no-return pointer exits. Prior/current/repeat
+artifacts are byte-identical. Seven cross-target ABI regressions also pass.
+See `docs/FUNCTION-TYPE-FLAGS.md`; final package/hosted review and P1.7/#66
+completion remain pending.
+
 **CONFIRMED failed hosted gate; fixture inventory corrected locally:** PR93 run
 `41192386664` stopped all five target lanes during fixture setup because
 `function-pointer-conventions.c` was absent from the approved source inventory.

@@ -1263,6 +1263,13 @@ jobs:
               python3 src/test/integration/calling-convention-export.py "$GHIDRA_INSTALL_DIR" --role "$role"
           done
 
+      - name: Variadic and no-return function-type metadata
+        if: matrix.target == 'x86_64'
+        run: |
+          for role in exec pie pie-rebased; do
+              python3 src/test/integration/function-type-flags-export.py "$GHIDRA_INSTALL_DIR" --role "$role"
+          done
+
       - name: Function-pointer calling conventions through saved programs
         if: matrix.target == 'x86_64'
         run: |

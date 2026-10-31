@@ -13,7 +13,6 @@ import ghidra.framework.Application;
 import ghidra.framework.HeadlessGhidraApplicationConfiguration;
 import ghidra.framework.data.OpenMode;
 import ghidra.program.database.ProgramDB;
-import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.data.IntegerDataType;
 import ghidra.program.model.data.FunctionDefinitionDataType;
 import ghidra.program.model.data.ParameterDefinitionImpl;
@@ -25,12 +24,12 @@ import ghidra.program.model.listing.Function;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.program.util.DefaultLanguageService;
 import ghidra.util.task.TaskMonitor;
-import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
 
 /** Persisted compiler-model identity; no architecture-specific convention whitelist. */
 public final class FunctionPointerCallPolicySmoke {
     private record Target(String language, String map) { }
-    private record Expected(long entry, String name, String convention, boolean blocked) { }
+    private record Expected(long entry, String name, String convention, boolean blocked,
+            boolean noReturn, boolean variadic) { }
     private static int checks;
 
     private FunctionPointerCallPolicySmoke() { }
@@ -75,19 +74,23 @@ public final class FunctionPointerCallPolicySmoke {
                 }
                 require(names.contains(defaultName), "default model is missing");
                 for (String convention : names) {
-                    long entry = 0x1000 + expected.size() * 0x20;
-                    String name = "function_" + expected.size();
-                    boolean blocked = !convention.equals(defaultName) &&
-                        !convention.equals(Function.DEFAULT_CALLING_CONVENTION_STRING);
-                    var address = language.getDefaultSpace().getAddress(entry);
-                    var functionType = new FunctionDefinitionDataType("callback_" + expected.size(),
-                        program.getDataTypeManager());
-                    functionType.setReturnType(IntegerDataType.dataType);
-                    functionType.setArguments(new ParameterDefinitionImpl("value", IntegerDataType.dataType, ""));
-                    functionType.setCallingConvention(convention);
-                    program.getListing().createData(address, new PointerDataType(functionType, program.getDataTypeManager()));
-                    program.getSymbolTable().createLabel(address, name, SourceType.USER_DEFINED);
-                    expected.add(new Expected(entry, name, convention, blocked));
+                    for (int flags = 0; flags < 4; flags++) {
+                        long entry = 0x1000 + expected.size() * 0x20;
+                        String name = "function_" + expected.size();
+                        boolean blocked = !convention.equals(defaultName) &&
+                            !convention.equals(Function.DEFAULT_CALLING_CONVENTION_STRING);
+                        var address = language.getDefaultSpace().getAddress(entry);
+                        var functionType = new FunctionDefinitionDataType("callback_" + expected.size(),
+                            program.getDataTypeManager());
+                        functionType.setReturnType(IntegerDataType.dataType);
+                        functionType.setArguments(new ParameterDefinitionImpl("value", IntegerDataType.dataType, ""));
+                        functionType.setCallingConvention(convention);
+                        functionType.setNoReturn((flags & 1) != 0);
+                        functionType.setVarArgs((flags & 2) != 0);
+                        program.getListing().createData(address, new PointerDataType(functionType, program.getDataTypeManager()));
+                        program.getSymbolTable().createLabel(address, name, SourceType.USER_DEFINED);
+                        expected.add(new Expected(entry, name, convention, blocked, (flags & 1) != 0, (flags & 2) != 0));
+                    }
                 }
                 observe(program, target, expected);
             }
@@ -135,6 +138,16 @@ public final class FunctionPointerCallPolicySmoke {
             var row = expected.get(index);
             String name = "callback_" + index;
             var type = subroutines.stream().filter(n -> n.name().equals(name)).findFirst().orElseThrow();
+            var address = program.getAddressFactory().getDefaultAddressSpace().getAddress(row.entry());
+            var pointer = (ghidra.program.model.data.Pointer) program.getListing().getDataAt(address).getDataType();
+            var definition = (ghidra.program.model.data.FunctionDefinition) pointer.getDataType();
+            require(definition.hasNoReturn() == row.noReturn() && definition.hasVarArgs() == row.variadic(),
+                "saved function-type flags changed");
+            require(type.variadic() == row.variadic(), "variadic prototype lost");
+            String omitted = "Function type " + definition.getPathName() +
+                " no-return property omitted: DW_AT_noreturn describes subprograms; no validated subroutine-type mapping";
+            require(diagnostics.stream().filter(omitted::equals).count() == (row.noReturn() ? 1 : 0),
+                "no-return type omission was not diagnosed exactly once");
             require(type.callingConvention().equals(row.convention()), "recorded convention lost: " + row);
             require(type.debuggerCallsDisabled() == row.blocked(), "function-pointer decision differs: " + row);
             require(type.parameters().size() == 1 && type.parameters().get(0).name().equals("value"),

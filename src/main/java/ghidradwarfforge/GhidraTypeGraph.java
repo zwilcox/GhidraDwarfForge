@@ -644,6 +644,11 @@ public final class GhidraTypeGraph {
                 return aggregate(key, name, union, AggregateKind.UNION);
             }
             if (type instanceof FunctionDefinition function) {
+                if (function.hasNoReturn()) {
+                    diagnostic.accept("Function type " + type.getPathName() +
+                        " no-return property omitted: DW_AT_noreturn describes subprograms; " +
+                        "no validated subroutine-type mapping");
+                }
                 List<TypeGraph.Parameter> parameters = new ArrayList<>();
                 for (ParameterDefinition parameter : function.getArguments()) {
                     String parameterName = parameter.getName();

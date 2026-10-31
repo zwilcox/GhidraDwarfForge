@@ -61,6 +61,7 @@ expected_sources=(
     fp_register_aliases.c
     function-pointer-conventions.c
     function-static-scopes.c
+    function-type-flags.c
     function_entry_ranges.S
     function_entry_ranges.c
     i386-alias-entry.cpp
