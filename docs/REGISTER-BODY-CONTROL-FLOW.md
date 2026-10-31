@@ -1,5 +1,48 @@
 # Stable register locations require contained control flow
 
+## Complete-body control after value-flow composition
+
+**CONFIRMED locally; fresh hosted acceptance pending (PR100):** the old fixture
+expected no location even when every control-flow instruction was present.
+That expectation predates the shared value-flow engine. The complete body now
+proves its incoming register copy and retains the exact parameter until the
+return-value arithmetic overwrites the final carrier. The excluded-clobber body
+still has no parameter location. The stable-register-only API independently
+continues to reject both cases; the production exporter composes the stronger
+proof only for the complete CFG.
+
+Both target jobs in run `41230414679` failed the stale omission-reason assertion,
+before GDB. No production change is required. The fixture now labels its completed
+copy, captures actual instruction bytes and verifies the raw DWARF 5 intervals:
+incoming register to copy completion, backup to arithmetic completion, then
+unavailable. The excluded case retains its name/type with no `DW_AT_location`.
+GDB steps every executed instruction for both signed inputs, checks physical
+carriers and bytes, and rejects scope/location leakage into the excluded block.
+
+Six x86-64/AArch64 exec/PIE/rebased-PIE cases pass 24 real exports and 270 GDB
+instruction observations on actual Java 21. There are 78 available complete-body
+values; the final overwrite tails and every excluded-body value stay unavailable.
+GNU, LLVM and pinned strict checks pass, as do original/module/source preservation,
+read-only saved-program checks and deterministic output pairs. PIE and rebased-PIE
+raw intervals match. Four existing stack-spill/direct-leaf-call exec regressions
+also pass. Tested hosted production JAR SHA-256:
+`444d2479c2792c23e057f19768749dccd35bf022058161e1f9a8094c40dee7e2`.
+Receipt `build/pr100-outside-flow-fix/acceptance.json` SHA-256:
+`2d5981475cbdb6859fab80e754ace616c7a4de3f63b0cca06b276a5fca8e0425`.
+
+The enhanced oracle exposed another test assumption: GCC describes one inline
+assembly statement, not each internal instruction. At 24 interior observations
+its DWARF still displays the clobbered incoming register. Those observations
+are recorded, not treated as correct parameter values. Compiler GDB must agree
+at the entry, completed-copy and completed-statement boundaries; interior
+correctness is independently checked against the known invocation value and
+physical preserved carrier. Forge must display the exact value at every proven
+instruction. The failed initial local attempts remain in the evidence directory.
+
+The older accepted gate and counts below describe the original guard, before
+this additional complete-CFG value proof. They are not acceptance for PR100.
+P1.11a/P3.3 and the exact-head hosted gate remain open.
+
 **CONFIRMED integration (2026-10-25):** PR64 head
 `23d9c57d5e8fc339650428d7252d9b5381adb49e` passes all twelve jobs in
 `40263198239`, independent exact-package/twenty-one actual Java 21 suites,

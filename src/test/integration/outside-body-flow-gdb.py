@@ -31,28 +31,69 @@ for expected in (19, -19):
     assert int(gdb.parse_and_eval('$pc')) == entry
     if model['role'] != 'exec':
         assert bias != 0
-    for point in ('entry', 'after'):
-        if point == 'after':
-            stop = gdb.Breakpoint('*' + hex(labels['probe_after'] + bias), temporary=True, internal=True)
-            gdb.execute('continue')
-        variable = gdb.parse_and_eval('value')
-        assert variable.type.sizeof == 4
-        available = not variable.is_optimized_out
-        value = int(variable) if available else None
-        raw = int(gdb.parse_and_eval('(int)$' + ('esi' if target == 'x86_64' else 'w1')))
-        assert raw == (expected if point == 'entry' else 0)
-        if compiler:
-            assert available and value == expected, (target, point, value, expected)
-        elif variant == 'previous':
-            assert available and value == raw, (target, point, value, raw)
+    instructions = {row['address']: row for row in model['cases']['complete']['model']['instructions']}
+    retained = {row['address'] for row in model['cases']['excluded']['model']['instructions'] if row['inBody']}
+    arithmetic = instructions[labels['probe_after']]
+    lost = arithmetic['next']
+    raw_expected = expected
+    visited = []
+    while True:
+        pc = int(gdb.parse_and_eval('$pc'))
+        link = pc - bias
+        assert link in instructions and len(visited) < 32, (variant, hex(link), visited)
+        instruction = instructions[link]
+        assert bytes(gdb.selected_inferior().read_memory(pc, len(bytes.fromhex(instruction['bytes'])))).hex() == instruction['bytes']
+        visited.append(link)
+        in_scope = compiler or variant == 'complete' or link in retained
+        if in_scope:
+            variable = gdb.parse_and_eval('value')
+            assert variable.type.sizeof == 4
+            available = not variable.is_optimized_out
+            value = int(variable) if available else None
         else:
-            assert not available, (target, point, value)
-        rendered = gdb.execute('ptype value', to_string=True)
-        assert rendered.startswith('type = int')
-        listing = gdb.execute('list boundary', to_string=True)
-        assert 'boundary' in listing and 'No such file' not in listing
-        points.append({'point': point, 'expectedOriginalParameter': expected, 'available': available,
-            'value': value, 'rawRegister': raw, 'pc': int(gdb.parse_and_eval('$pc')), 'runtimeBias': bias})
+            # The excluded machine block still executes, but has no owning DIE.
+            try:
+                gdb.parse_and_eval('value')
+            except gdb.error:
+                pass
+            else:
+                raise AssertionError('excluded instruction acquired a scoped parameter')
+            available = False
+            value = None
+        raw = int(gdb.parse_and_eval('(int)$' + ('esi' if target == 'x86_64' else 'w1')))
+        backup = int(gdb.parse_and_eval('(int)$' + ('eax' if target == 'x86_64' else 'w0')))
+        assert raw == raw_expected
+        if compiler:
+            # GCC does not describe each instruction inside one inline-asm statement.
+            # Check its source boundaries; physical carrier checks below cover the interior.
+            if link in (labels['boundary'], labels['probe_copy_done'], labels['probe_after']):
+                assert available and value == expected, (target, link, value, expected)
+            elif link == lost and available:
+                assert value == expected
+        elif variant == 'previous' and in_scope:
+            assert available and value == raw, (target, link, value, raw)
+        elif variant == 'complete':
+            assert available == (link != lost), (target, link, value)
+            if available:
+                assert value == expected
+        else:
+            assert not available, (target, link, value)
+        if link != labels['boundary'] and link >= labels['probe_copy_done']:
+            assert backup == (expected + 7 if link == lost else expected)
+        if link == labels['boundary']:
+            rendered = gdb.execute('ptype value', to_string=True)
+            assert rendered.startswith('type = int')
+            listing = gdb.execute('list boundary', to_string=True)
+            assert 'boundary' in listing and 'No such file' not in listing
+        points.append({'linkPc': link, 'expectedOriginalParameter': expected, 'available': available,
+            'value': value, 'rawRegister': raw, 'backupRegister': backup,
+            'pc': pc, 'runtimeBias': bias, 'inScope': in_scope})
+        if link == lost:
+            break
+        if link == labels['probe_hidden']:
+            raw_expected = 0
+        gdb.execute('stepi')
+    assert set(visited) == set(instructions) and len(visited) == len(instructions)
     gdb.execute('finish')
     returned = int(gdb.parse_and_eval('(int)$' + ('eax' if target == 'x86_64' else 'w0')))
     assert returned == expected + 7

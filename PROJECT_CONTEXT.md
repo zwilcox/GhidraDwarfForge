@@ -18,6 +18,18 @@ and failure/cancellation checks pass. See `docs/MUTABLE-STACK-MAPPINGS.md`.
 PR100's AArch64 harness correction `e37035a1` is included by normal merge;
 its replacement hosted gate remains pending. Neither P1.11a nor P3.3 is complete.
 
+**CONFIRMED PR100 control-flow oracle correction; fresh hosted gate pending:**
+run `41230414679` failed both x86-64/AArch64 lanes on an older assertion that the
+complete function body could not preserve its copied parameter. The production
+value-flow engine proves that backup; the excluded-block case still omits its
+location. The corrected six-role oracle passes 24 exports and 270 instruction
+observations on actual Java 21, with 78 available complete-body values and exact
+unavailable overwrite/excluded-body boundaries. Production code is unchanged.
+GNU/LLVM/pinned strict checks, original preservation, deterministic repeats and
+four stack-spill/direct-call regressions pass. Receipt:
+`2d5981475cbdb6859fab80e754ace616c7a4de3f63b0cca06b276a5fca8e0425`.
+See `docs/REGISTER-BODY-CONTROL-FLOW.md`. P1.11a and P3.3 remain incomplete.
+
 **CONFIRMED PR100 hosted harness failure and local correction:** AArch64 run
 `41229139226` stopped on an old diagnostic assertion before GDB. The new scalar
 spill proof retains `recovered_add` parameters, while the semantic harness still
