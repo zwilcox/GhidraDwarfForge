@@ -119,6 +119,14 @@ cover branches, loops, nesting, recursion and body holes. The 36 runtime cases,
 facts and physically written registers are retired unless separately proved.
 Mutable stack mapping identity, mixed pieces and every P3.3 row remain required.
 
+## Integration checkpoint
+
+PR99 is accepted at `d69b0747`, normally merged as `0b76f40a`; run
+`41222554336` and exact hosted review pass. The current development branch
+normally includes that main merge and all locally tested stack/control-flow/
+inspected-call commits. The combined head still needs its own required gate.
+No remaining row is removed from either umbrella.
+
 ## Completion audit
 
 For every row, record implementation/evidence files, exact reviewed source and

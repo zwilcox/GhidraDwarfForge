@@ -1,5 +1,17 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED integration:** PR99 head `d69b07471c92aaf447e962b7779756b5f931dce1`
+passes all twelve jobs in run `41222554336` and exact hosted package/raw/host
+review. Six mutable-local address roles pass 12 exports and 11,088 GDB
+observations; sixteen actual Java 21 suites, Windows saved-identity/assignment
+models, the isolated native producer and both GUI host reviews pass within
+their documented scopes. Normal merge `0b76f40a4b3da7167d5948b22f5161bf45446aec`
+retains the accepted tree. Receipt:
+`ce910deda47c5eacf3be46c1edfcf275c7a00c1425b63a755694a80d6c27b67a`.
+This supersedes older pending PR99 statements. The combined stack/register,
+control-flow and inspected-call component now has a current-main base and
+requires its own exact hosted gate. P1.11a and P3.3 remain incomplete.
+
 **CONFIRMED locally; hosted acceptance pending:** inspected direct-call graphs
 now preserve proven incoming register values through branches, loops, nested
 and recursive calls and discontiguous bodies. All 36 x86-64/AArch64 address-role
