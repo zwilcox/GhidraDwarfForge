@@ -270,8 +270,15 @@ public final class GhidraTypeGraph {
                     : linearPrefix.isEmpty()
                         ? RegisterDefinitionFlow.prove(program, function, variable, registerMap, storage, monitor)
                         : List.<GhidraVariableStorage.StorageInterval>of();
-                var prefix = controlFlow.isEmpty() ? linearPrefix : controlFlow;
-                String lifetimeEvidence = merged != null
+                var stackLocal = merged == null && linearPrefix.isEmpty() && controlFlow.isEmpty()
+                    ? StackLocalLifetime.prove(program, function, variable, registerMap, storage, monitor)
+                    : List.<GhidraVariableStorage.StorageInterval>of();
+                var prefix = !stackLocal.isEmpty() ? stackLocal : controlFlow.isEmpty() ? linearPrefix : controlFlow;
+                String lifetimeEvidence = !stackLocal.isEmpty()
+                    ? "Saved function-owned stack local; recorded start matches a completed full-width stack STORE; " +
+                        "subsequent transfers preserve the current value; overlapping assignments, unknown aliases " +
+                        "and later saved slot owners retire all old copies; no original lexical scope inferred"
+                    : merged != null
                     ? "Saved Ghidra canonical merged-local identity; all explicit full-register definitions " +
                         "checked against raw instructions; latest assignment invalidates previous carriers; " +
                         "all incoming paths must agree on physical storage; no original lexical scope inferred"
@@ -298,6 +305,7 @@ public final class GhidraTypeGraph {
                     localName, VariableKind.LOCAL, variable.getLength(), ranges));
                 if (storage instanceof UnavailableStorage unavailable) {
                     diagnostic.accept((prefix.isEmpty() ? "Omitted location for " :
+                        !stackLocal.isEmpty() ? "Limited location to proven stack-local lifetime for " :
                         merged != null ? "Limited location to proven merged-local lifetime for " :
                         controlFlow.isEmpty() ? "Limited location to proven later-register-local lifetime for " :
                         "Limited location to proven control-flow-local lifetime for ") + symbol.name() + "::" +

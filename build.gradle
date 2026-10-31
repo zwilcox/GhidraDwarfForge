@@ -334,6 +334,30 @@ tasks.register("registerCopyChainSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/register-copy-chain/cache").absolutePath
 }
 
+tasks.register("stackLocalIdentitySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks distinct saved stack locals with overlapping storage and first-use offsets"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.StackLocalIdentitySmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/stack-local-identity/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/stack-local-identity/cache").absolutePath
+}
+
+tasks.register("stackLocalLifetimeSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks initialization, reload and reuse boundaries for saved stack locals"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.StackLocalLifetimeSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/stack-local-lifetime/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/stack-local-lifetime/cache").absolutePath
+}
+
 tasks.register("stackValueFlowSmoke", JavaExec) {
     group = "verification"
     description = "Checks exact stack spill/reload transitions and retired memory facts"

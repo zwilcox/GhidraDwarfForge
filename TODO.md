@@ -1848,6 +1848,15 @@ or uncertain storage remains locationless with a diagnostic.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
 
+**CONFIRMED locally; hosted acceptance pending:** explicit saved stack-local
+initializing stores and later slot reuse now have bounded locations. Five-profile
+identity tests pass 175 checks; 32/64-bit x86-64/AArch64 decoder tests pass 376
+checks, and 20 actual Java 21 suites pass. Six signed-four-byte runtime roles
+pass 12 candidate/six previous exports and 174 candidate/previous instruction
+observations, with compiler scope/value checks and exact raw loclists. See
+`docs/STACK-LOCAL-DEFINITIONS.md`. Final package/hosted acceptance, broader
+runtime widths/aliases, calls/flow, mixed pieces and P3.3 remain required.
+
 **CONFIRMED locally; hosted acceptance pending:** stack spill/reload transitions
 pass 320 model checks, 17 actual Java 21 suites and six dedicated compiler/GDB
 roles. Twelve candidate/six previous exports provide 12,528 instruction

@@ -90,6 +90,7 @@ expected_sources=(
     shared_driver.c
     shared_semantic.c
     stack-first-use.c
+    stack-local-definitions.c
     stack-spill.c
     stack-value-transitions.c
     terminal-composite.c

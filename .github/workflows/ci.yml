@@ -479,7 +479,7 @@ jobs:
               matchedElfPrefixSmoke matchedElfAllocationsSmoke executableProgramBytesSmoke \
               debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke \
               syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
-              variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localMappingsSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke stackSpillSmoke directLeafCallSmoke compositeRegisterPrefixSmoke \
+              variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localMappingsSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackSpillSmoke directLeafCallSmoke compositeRegisterPrefixSmoke \
               stackFirstUseSmoke \
               opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
               functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke curatedThunkSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
@@ -1150,6 +1150,12 @@ jobs:
               python3 src/test/integration/stack-value-transitions-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
           done
 
+      - name: Saved stack-local definitions and slot reuse retain distinct values
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: src/test/integration/stack-local-definitions-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
+
       - name: Retained ELF aliases and typed curated function identity
         if: matrix.target != 'arm32'
         env:
@@ -1720,7 +1726,7 @@ jobs:
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
             functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke curatedThunkSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
-            registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localMappingsSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke stackSpillSmoke directLeafCallSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
+            registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localMappingsSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackSpillSmoke directLeafCallSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
             elfBuildIdSmoke exportReportClaimsSmoke matchedElfPrefixSmoke `
             matchedElfAllocationsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke executableProgramBytesSmoke `
             debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke 2>&1 |

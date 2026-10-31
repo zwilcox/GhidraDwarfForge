@@ -32,7 +32,7 @@ final class StackValueFlow {
     }
     private static final Fact VALUE = new Fact(Kind.VALUE, 0);
     private static final Storage UNKNOWN = new UnavailableStorage(OmissionReason.UNKNOWN_LIFETIME,
-        "no surviving register or stack slot is proven to contain the incoming value");
+        "no surviving register or stack slot is proven to contain the tracked value");
 
     private final Program program;
     private final Register pointer;
@@ -41,6 +41,10 @@ final class StackValueFlow {
     private final Map<Varnode, Fact> facts = new LinkedHashMap<>();
     private final Map<Long, Boolean> slots = new LinkedHashMap<>();
     private boolean reloaded;
+    private Long localOffset;
+    private boolean initializing;
+    private boolean initialized;
+
 
     private StackValueFlow(Program program, Register pointer, AddressSpace memory, int bytes) {
         this.program = program;
@@ -88,48 +92,92 @@ final class StackValueFlow {
             long end = Math.addExact(instruction.getMaxAddress().getOffset(), 1);
             Storage location = analysis.location(registers);
             append(result, start, end, location);
-            // Unique temporaries belong to one instruction. A stack-pointer
-            // change conservatively retires every old slot, including released
-            // frame storage. Already loaded register values can still survive.
-            analysis.facts.keySet().removeIf(Varnode::isUnique);
-            if (GhidraVariableStorage.writesRegister(instruction, pointer)) analysis.slots.clear();
-            // Listing-only effects have no defensible ordering relative to raw
-            // reads. Retire their inputs before interpreting this instruction.
-            for (Varnode node : new ArrayList<>(analysis.facts.keySet())) {
-                monitor.checkCancelled();
-                Register register = exactRegister(program, node);
-                if (node.isRegister() && (register == null ||
-                        !RegisterCopyLifetime.resultsCovered(instruction, register.getBaseRegister(), monitor))) {
-                    analysis.facts.remove(node);
-                }
-            }
-            for (Object output : instruction.getResultObjects()) {
-                if (output instanceof Address address && address.getAddressSpace().isMemorySpace()) analysis.slots.clear();
-            }
-            for (PcodeOp operation : instruction.getPcode()) {
-                monitor.checkCancelled();
-                if (GhidraVariableStorage.unprovenStore(program, operation)) return List.of();
-                if (operation.getOpcode() == PcodeOp.STORE) analysis.store(operation);
-                Varnode output = operation.getOutput();
-                if (output == null) continue;
-                Fact derived = analysis.derive(operation);
-                analysis.facts.keySet().removeIf(node -> overlaps(node, output));
-                if (output.getAddress().getAddressSpace().isMemorySpace()) analysis.slots.clear();
-                if (derived != null && (output.isRegister() || output.isUnique())) analysis.facts.put(output, derived);
-            }
-            for (Varnode node : new ArrayList<>(analysis.facts.keySet())) {
-                monitor.checkCancelled();
-                Register register = exactRegister(program, node);
-                if (node.isRegister() && (register == null ||
-                        !RegisterCopyLifetime.resultsCovered(instruction, register.getBaseRegister(), monitor))) {
-                    analysis.facts.remove(node);
-                }
-            }
-            for (Object output : instruction.getResultObjects()) {
-                if (output instanceof Address address && address.getAddressSpace().isMemorySpace()) analysis.slots.clear();
-            }
+            if (!analysis.advance(instruction, false, monitor)) return List.of();
         }
         return analysis.reloaded ? List.copyOf(result) : List.of();
+    }
+
+    /** Same ordered instruction engine, seeded only by a recorded full stack definition. */
+    static StackValueFlow forStackLocal(Program program, int bytes, long offset) {
+        Register pointer = program.getCompilerSpec().getStackPointer();
+        AddressSpace memory = program.getLanguage().getDefaultDataSpace();
+        if (bytes <= 0 || pointer == null || pointer != pointer.getBaseRegister() ||
+                memory == null || memory.isOverlaySpace() || memory.getType() != AddressSpace.TYPE_RAM ||
+                memory.getAddressableUnitSize() != 1 || memory.getPointerSize() <= 0 ||
+                memory.getPointerSize() > Long.BYTES || pointer.getBitLength() != memory.getPointerSize() * 8 ||
+                program.getAddressFactory().getAddressSpace(memory.getSpaceID()) != memory) return null;
+        var result = new StackValueFlow(program, pointer, memory, bytes);
+        result.localOffset = offset;
+        result.facts.put(new Varnode(pointer.getAddress(), pointer.getMinimumByteSize()),
+            new Fact(Kind.STACK_ADDRESS, 0));
+        return result;
+    }
+
+    boolean advance(Instruction instruction, boolean initialize, TaskMonitor monitor)
+            throws CancelledException {
+        initializing = initialize;
+        if (initialize) {
+            int stores = 0;
+            for (PcodeOp operation : instruction.getPcode()) {
+                monitor.checkCancelled();
+                if (operation.getOpcode() == PcodeOp.STORE) stores++;
+            }
+            if (localOffset == null || initialized || stores != 1 ||
+                    GhidraVariableStorage.writesRegister(instruction, pointer)) return false;
+        }
+        // Unique temporaries belong to one instruction. A stack-pointer
+        // change conservatively retires every old slot, including released
+        // frame storage. Already loaded register values can still survive.
+        facts.keySet().removeIf(Varnode::isUnique);
+        if (GhidraVariableStorage.writesRegister(instruction, pointer)) invalidateMemory();
+        // Listing-only effects have no defensible ordering relative to raw
+        // reads. Retire their inputs before interpreting this instruction.
+        for (Varnode node : new ArrayList<>(facts.keySet())) {
+            monitor.checkCancelled();
+            Register register = exactRegister(program, node);
+            if (node.isRegister() && (register == null ||
+                    !RegisterCopyLifetime.resultsCovered(instruction, register.getBaseRegister(), monitor))) {
+                facts.remove(node);
+            }
+        }
+        for (Object output : instruction.getResultObjects()) {
+            if (output instanceof Address address && address.getAddressSpace().isMemorySpace()) invalidateMemory();
+        }
+        for (PcodeOp operation : instruction.getPcode()) {
+            monitor.checkCancelled();
+            if (GhidraVariableStorage.unprovenStore(program, operation)) return false;
+            if (operation.getOpcode() == PcodeOp.STORE) store(operation);
+            Varnode output = operation.getOutput();
+            if (output == null) continue;
+            Fact derived = derive(operation);
+            facts.keySet().removeIf(node -> overlaps(node, output));
+            if (output.getAddress().getAddressSpace().isMemorySpace()) invalidateMemory();
+            if (derived != null && (output.isRegister() || output.isUnique())) facts.put(output, derived);
+        }
+        for (Varnode node : new ArrayList<>(facts.keySet())) {
+            monitor.checkCancelled();
+            Register register = exactRegister(program, node);
+            if (node.isRegister() && (register == null ||
+                    !RegisterCopyLifetime.resultsCovered(instruction, register.getBaseRegister(), monitor))) {
+                facts.remove(node);
+            }
+        }
+        for (Object output : instruction.getResultObjects()) {
+            if (output instanceof Address address && address.getAddressSpace().isMemorySpace()) invalidateMemory();
+        }
+        initializing = false;
+        return !initialize || (initialized && slots.containsKey(localOffset));
+    }
+
+    /** A local assignment or reuse invalidates old copies as well as its slot. */
+    void retireLocalValue() {
+        facts.entrySet().removeIf(entry -> entry.getValue().kind() == Kind.VALUE);
+        slots.clear();
+    }
+
+    private void invalidateMemory() {
+        if (localOffset != null) retireLocalValue();
+        else slots.clear();
     }
 
     /** Keep every established interval; refine only previously unavailable gaps. */
@@ -160,15 +208,20 @@ final class StackValueFlow {
         Fact destination = address(operation);
         Varnode value = operation.getInput(2);
         if (destination == null) {
-            slots.clear();
+            invalidateMemory();
             return;
         }
         long offset = destination.offset();
         long end;
         try { end = Math.addExact(offset, value.getSize()); }
-        catch (ArithmeticException overflow) { slots.clear(); return; }
+        catch (ArithmeticException overflow) { invalidateMemory(); return; }
+        if (localOffset != null && intersects(localOffset, bytes, offset, end)) retireLocalValue();
         slots.keySet().removeIf(start -> intersects(start, bytes, offset, end));
-        if (value.getSize() == bytes && VALUE.equals(read(value))) slots.put(offset, true);
+        if (initializing && localOffset != null && offset == localOffset && value.getSize() == bytes) {
+            slots.put(offset, true);
+            initialized = true;
+        }
+        else if (value.getSize() == bytes && VALUE.equals(read(value))) slots.put(offset, true);
     }
 
     private Fact address(PcodeOp operation) {
@@ -242,14 +295,14 @@ final class StackValueFlow {
         return node.getAddress().add(program.getLanguage().isBigEndian() ? node.getSize() - bytes : 0);
     }
 
-    private Storage location(TargetRegisterMap registers) {
+    Storage location(TargetRegisterMap registers) {
         var ordered = new ArrayList<>(facts.keySet());
         ordered.sort(Comparator.comparing(Varnode::getAddress).thenComparingInt(Varnode::getSize));
         for (Varnode node : ordered) {
             if (!VALUE.equals(facts.get(node))) continue;
             Register register = exactRegister(program, node);
             if (register == null || register.getLeastSignificantBitInBaseRegister() != 0) continue;
-            Storage mapped = GhidraVariableStorage.mappedRegister(register, bytes, registers, "reloaded parameter");
+            Storage mapped = GhidraVariableStorage.mappedRegister(register, bytes, registers, "tracked scalar");
             if (mapped instanceof RegisterStorage) return mapped;
         }
         Fact current = read(new Varnode(pointer.getAddress(), pointer.getMinimumByteSize()));
