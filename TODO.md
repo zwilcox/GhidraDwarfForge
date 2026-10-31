@@ -1,5 +1,19 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED integration (2026-10-31):** PR87 final main-based head
+`4414691b020971e3bd8037fc99563087d09d0ad9` passes all twelve jobs in
+`41185868818`, independent package/raw review and both actual GUI consoles.
+It merged normally as `020bbe46c5517bd99f09af308fec9927f5e1afe8`. Receipt:
+`a757e26c63946418f937fc66c168cf4dad87383c228c772331ef2aa61526c3f0`.
+The separate main86 push also passes its complete gate; receipt:
+`7586804fd005552a17957fadca8e87309ac1dccbca196d1ce2b97b8101db3734`.
+PR88 component `d5bbd89519e9f96b0a175d33119bca72184040b5` is accepted
+through run `41176178715` and receipt
+`2b7bbbec0da6cd726848129b05edce0ce6d280cea8eba753c6ef0fe0fac0fb50`.
+It is now based on main; this normal merge changes handoff notes only. Fresh
+final-head validation remains required. Earlier pending notes are historical;
+P1.7 remains open.
+
 **CONFIRMED locally; sectionless alias acceptance incomplete (2026-10-31):**
 bounded PT_DYNAMIC inventories now preserve original symbols before analyst
 alias insertion. Twelve four-target exec/PIE/rebase cases, four incomplete-count
@@ -22,6 +36,17 @@ empty-GNU-only ambiguities; no count is guessed. Production aliases remain
 disabled for sectionless inputs. See
 `docs/research/SECTIONLESS-FUNCTION-ALIASES.md`; P1.7/#66 remains open.
 
+**CONFIRMED integration (2026-10-31):** PR86 final main-based head
+`284da1c70b7aa936ca11069827fcb3f1e986044e` passes all twelve jobs in
+`41182122046`, exact package/32 actual Java 21 suites, raw target/ABI review and
+both actual GUI console reviews. It merged normally as `ec15669`. Receipt:
+`e8ab4c28b78df565632069e7a032396abe0cf5e2994ae684e2da604f73c7671a`.
+Its separate main push `41185820092` is running. The preceding main85 push
+`41182072765` is independently accepted, including both GUI reviews; receipt
+`c7aa6783390a1888b60d8906cd130772aa079b75fb9612e4ae8cb12262118bf8`.
+PR87 is now based on main; this merge resolves handoff documentation only.
+Fresh final-head validation is required before integration. P1.7 remains open.
+
 **CONFIRMED locally; acceptance incomplete:** range-aware analyst aliases retain
 split/interior-entry primary bodies. Per-range original-code/ownership checks
 pass 373 planner and 228 six-language extraction checks; 32 installed actual Java
@@ -31,6 +56,35 @@ base/twelve alias cases across four targets, and failure/cancellation checks pas
 Local receipt: `61827be29e754148b01698630f7405b1115240e8fcfdfe5abe46b076115c4616`.
 Final package and hosted acceptance remain pending. See `docs/DISCONTIGUOUS-FUNCTION-ALIASES.md`.
 P1.7/#66 remains open.
+
+**CONFIRMED integration (2026-10-31):** PR85 final main-based head
+`bd522b85d5e7d375479c4c4ec54665c22c2406cb` passes all twelve jobs in
+`41178871807`, exact package/raw review and both GUI console reviews, and
+merged normally as `7eeef48`. Receipt:
+`affa498fdccd633b95223d05d1b31e22e3ea2acf5fc19bb972d816e2d8932085`.
+PR86 component head `32c480fedfd35ab59d3b26dc4fbbb3aca0b2ba10` passes its
+complete component gate (`41172382223`, receipt
+`59ee737783ddbc24f4ed902fe8cb36172d274cf8f7e8c5d8f9c80e9002fd7d81`).
+It now has main as its base; production content is unchanged by the normal
+merge. Fresh final-head validation is required before integration. Earlier
+pending component notes are historical. P1.7 remains open.
+
+**CONFIRMED integration (2026-10-31):** PR84 final main-based head
+`5211c59047141162d38d9c33c91c3e4cc3ab7e59` passes all twelve jobs in
+`41174858655`, exact-package/raw runtime review and both GUI console reviews.
+Normal merge `0f305b30bb33604b047d12da7680dbd134c89c0b` preserves its tested tree.
+Final receipt: `ba4927801dda7dbd29cc685f671544b1a52863b2bc0b138f48991b01f4d3358e`.
+The separate main84 push remains pending. Main83's separate push `41174759972`
+passes its full gate and both GUI reviews; receipt
+`2eec10a18b6e814589a96537f2be994630af36d9b9667fcdb0bbf7f9f43e1d42`.
+
+**CONFIRMED component acceptance; final main-based gate pending:** PR85 corrected
+head `24276e62aa01e9a9b0d4e12f70a4df6aa0baa284` passes all twelve jobs in
+`41172356200`, exact package, raw runtime, 31 actual Java 21 suites and both GUI
+reviews. Receipt: `43c6ac2eded66abe6d92645a1fdf0795cb682d56462ffa2c3323fc2f8ae09b66`.
+The normal main merge changes handoff documentation only. Fresh final-head
+validation is required before integration. Earlier pending component/main83/PR84
+wording below is historical; P1.7/#66 remains open.
 
 **CONFIRMED failed hosted gate; corrected locally:** PR85 run `41170001875`
 fails the standalone large-ELF source compile because its dependency list omitted
@@ -53,6 +107,23 @@ failure isolation and copy cancellation pass. Local receipt:
 `43ee06d6b6ac524c815d56e3dca42927c3f282ed4c8727f906f174bca66ccd53`.
 See `docs/MIPS-FLOATING-CALL-ABI.md`. Final package and hosted gates remain
 pending; P1.7/#66 stays open.
+
+**CONFIRMED integration (2026-10-31):** PR83 final head
+`ba4fbd6cf2d7780478220a4fc33c43564bdf6f49` passes all twelve jobs in
+`41171064361`, exact-package/raw review, 29 actual Java 21 suites, 51 native
+Windows model tasks and both GUI console reviews. Normal merge
+`cb60980b5964e591c14ca003f461d377e7b1c471` has the identical tested tree.
+Receipt: `8275983b14fac9e8624fe7e0c19e9683bb45aef71614da113e0ed67fb2d25db4`.
+The compiler-spec safeguard is accepted; broader ABI/P1.7 scope remains open.
+Separate main push `41174759972` remains pending.
+
+**CONFIRMED component acceptance; final main-base gate pending:** PR84 head
+`dd9ed7ba94662728a9117c5e01c061e63a4ae665` passes all twelve jobs in
+`41168155944`, exact package/raw review and both GUI consoles. Its component
+receipt is `b104384650ca1f3541533b92f1ec41cb94e9b96adbbcd7c41e091a3c8f7615eb`.
+The PR is now based on main after a normal merge; production content is unchanged.
+Fresh final-head validation is required before integration. Earlier pending
+component notes below are historical, not final-main acceptance.
 
 **CONFIRMED defect and initial local fix; acceptance incomplete:** selecting a
 Windows compiler specification for an ELF can make custom Microsoft storage
@@ -1342,6 +1413,12 @@ raw review pass. Six explicit FP32 base/alias roles also pass locally. Defined d
 symbols without a static table still prevent new alias insertion; sectionless,
 discontiguous and other target-mode relationships remain open. See
 `docs/MIPS-FUNCTION-ALIASES.md`.
+
+**CONFIRMED integration:** PR82's corrected custom-storage safeguard passes
+all twelve jobs in `41167035160`, package/raw/Java 21/both-GUI review and merges
+normally as `f87384c9b9437f28f9088add9f1601b5f981a0dd` with identical tree.
+Earlier pending custom-storage notes are historical. Compiler-profile, alias
+and broader ABI work retain their own acceptance gates; P1.7/#66 remains open.
 
 **CONFIRMED local fixture correction; hosted acceptance pending:** PR82's first
 gate (`41165251340`) fails the two-copy fixture's automatic return-value check
