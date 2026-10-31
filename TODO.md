@@ -1251,6 +1251,12 @@ Define precedence among analyst-applied listing/signature types and decompiler g
 
 ## P1.7 Emit complete function signatures
 
+**CONFIRMED integration:** PR82's corrected custom-storage safeguard passes
+all twelve jobs in `41167035160`, package/raw/Java 21/both-GUI review and merges
+normally as `f87384c9b9437f28f9088add9f1601b5f981a0dd` with identical tree.
+Earlier pending custom-storage notes are historical. Compiler-profile, alias
+and broader ABI work retain their own acceptance gates; P1.7/#66 remains open.
+
 **CONFIRMED local fixture correction; hosted acceptance pending:** PR82's first
 gate (`41165251340`) fails the two-copy fixture's automatic return-value check
 after the custom-storage guard correctly rejects an unresolved convention.
