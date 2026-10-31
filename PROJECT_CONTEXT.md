@@ -1,5 +1,17 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED failed hosted gate; corrected locally:** PR85 run `41170001875`
+fails the standalone large-ELF source compile because its dependency list omitted
+`DynamicSymbolMirror`, and the ARM/Thumb oracle because it still expected an
+all-local symbol table. The compile list is repaired. The oracle now proves the
+complete original dynamic inventory survives around inserted local mode symbols,
+with exact string offsets, bindings, original dynamic bytes and a correct local/
+global boundary. Five corruption controls reject missing/changed imports and
+incorrect boundaries. Fresh large-ELF and full ARM/Thumb exporter/GDB checks pass;
+production is unchanged. Receipt:
+`c00c0dad986876ef14bbed896e8c53209c26df531e71ffacef6fe367d71bd3bb`.
+Fresh hosted acceptance is pending; P1.7/#66 remains open.
+
 **CONFIRMED locally; acceptance incomplete:** dynamic-only ELF inventories now
 have a separate complete static mirror before analyst alias insertion. Both GNU
 version-qualified definitions and original dynamic bytes are retained. Model

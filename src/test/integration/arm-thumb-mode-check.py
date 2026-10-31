@@ -2,6 +2,7 @@
 """Fixture-specific independent ELF/symbol/report oracle; no target support inference."""
 import argparse
 from collections import Counter
+from copy import deepcopy
 import hashlib
 import json
 from pathlib import Path
@@ -59,6 +60,59 @@ def section(image, name):
     return selected[0]
 
 
+def validate_symbol_inventory(original, output):
+    table = section(output, ".symtab")
+    dynamic = section(original, ".dynsym")
+    original_strings = original["sections"][dynamic["row"][6]]
+    mirror_strings = output["sections"][table["row"][6]]
+    old_locals, new_locals = dynamic["row"][7], table["row"][7]
+    assert table["row"][2:4] == (0, 0)
+    assert dynamic["row"][9] == table["row"][9] == 16
+    assert 0 < old_locals < new_locals <= len(output["symbols"])
+    inserted = output["symbols"][old_locals:new_locals]
+    assert inserted and all(row["name"].startswith("__forge_arm_mode_") and
+        row["info"] == 2 and row["other"] == 0 for row in inserted)
+    assert all(row["info"] >> 4 == 0 for row in output["symbols"][:new_locals])
+    assert all(row["info"] >> 4 != 0 for row in output["symbols"][new_locals:])
+    # Every original row (including null, local and undefined/nonlocal imports)
+    # retains its exact bytes and string offsets around the inserted local block.
+    assert table["data"][:old_locals * 16] + table["data"][new_locals * 16:] == dynamic["data"]
+    assert mirror_strings["data"].startswith(original_strings["data"])
+    for inherited in (dynamic, original_strings):
+        retained = section(output, inherited["name"])
+        assert retained["data"] == inherited["data"]
+        assert retained["row"][1:4] == inherited["row"][1:4]
+        assert retained["row"][5:] == inherited["row"][5:]
+
+
+def inventory_negative_controls(original, output):
+    for kind in ("missing-import", "changed-import", "wrong-local-boundary", "changed-dynamic-table", "false-mode-name"):
+        altered = deepcopy(output)
+        table = section(altered, ".symtab")
+        if kind == "missing-import":
+            table["data"] = table["data"][:-16]
+            altered["symbols"].pop()
+        elif kind == "changed-import":
+            data = bytearray(table["data"])
+            data[-1] ^= 1
+            table["data"] = bytes(data)
+        elif kind == "wrong-local-boundary":
+            row = list(table["row"])
+            row[7] = len(altered["symbols"])
+            table["row"] = tuple(row)
+        elif kind == "changed-dynamic-table":
+            dynamic = section(altered, ".dynsym")
+            dynamic["data"] = dynamic["data"][:-1] + bytes([dynamic["data"][-1] ^ 1])
+        else:
+            altered["symbols"][section(original, ".dynsym")["row"][7]]["name"] = "invented"
+        try:
+            validate_symbol_inventory(original, altered)
+        except AssertionError:
+            continue
+        raise AssertionError("symbol inventory corruption accepted: " + kind)
+    print("arm-thumb-symbol-inventory-negative-controls=PASS cases=5")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("stage", choices=("labels", "finish"))
@@ -107,8 +161,8 @@ def main():
     assert output["header"][:4] == original["header"][:4]
     assert output["header"][6] == original["header"][6]
     assert section(output, ".text")["data"] == section(original, ".text")["data"]
-    table = section(output, ".symtab")
-    assert table["row"][2:4] == (0, 0) and table["row"][7] == len(output["symbols"])
+    validate_symbol_inventory(original, output)
+    inventory_negative_controls(original, output)
     prep = transcript(directory / "export-first.log", "ARM_THUMB_PREP=")
     assert prep["language"] == "ARM:LE:32:v8" and len(prep["functions"]) == 4
     jars = list((args.module / "lib").glob("GhidraDwarfForge.jar"))
