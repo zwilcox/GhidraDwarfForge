@@ -1169,3 +1169,15 @@ tasks.register("staticScopeExtractionSmoke", JavaExec) {
     systemProperty "application.settingsdir", file("build/tmp/static-extraction/settings").absolutePath
     systemProperty "application.cachedir", file("build/tmp/static-extraction/cache").absolutePath
 }
+
+tasks.register("staticRecoverySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks inferred static typing and saved memory-local ownership"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.StaticRecoverySmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/static-recovery/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/static-recovery/cache").absolutePath
+}

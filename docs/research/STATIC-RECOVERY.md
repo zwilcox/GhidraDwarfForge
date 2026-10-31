@@ -1,6 +1,8 @@
 # Recovered static identity and type evidence
 
-**CONFIRMED API research; production recovery remains PLANNED.** Twelve actual
+**CONFIRMED API research.** Production recovery now has local acceptance in
+[`RECOVERED-STATICS.md`](../RECOVERED-STATICS.md); the research checkpoint below
+does not itself prove exporter behavior. Twelve actual
 Ghidra 12.0.3/Java 21 decompilations cover six variants on x86-64 and AArch64.
 This closes an evidence question for P3.3, not exporter acceptance or either
 umbrella issue. Existing explicit lexical-static emission is described in
@@ -54,7 +56,7 @@ storage for arbitrary input.
 
 ## Recovery decision
 
-**PLANNED:** carry recovered memory-object evidence from the same successful
+**CONFIRMED implemented locally:** carry recovered memory-object evidence from the same successful
 decompiler pass that supplies synthetic source. Keep saved symbol/function IDs,
 actual memory addresses, candidate types and inference provenance separate.
 
@@ -76,11 +78,11 @@ actual memory addresses, candidate types and inference provenance separate.
 - Record inference in diagnostics; do not write inferred types back to the
   analyst's saved program or claim original compiler facts.
 
-Production acceptance still requires extraction/model tests and emitted
+The subsequent production acceptance covers extraction/model tests and emitted
 DWARF/GDB checks for inferred Function-owned labels and memory locals, curated
 type precedence, partial/conflicting storage, stale bindings, wrong namespaces,
 duplicate maps, failure/cancellation and deterministic reopen. Use both runtime
-targets and exec/PIE/rebased-PIE roles. These requirements remain part of P3.3.
+targets and exec/PIE/rebased-PIE roles. Hosted acceptance remains part of P3.3.
 
 ## Reproduction and retained evidence
 

@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local recovered statics; hosted/full-scope acceptance pending:**
+same-pass inferred types and saved memory locals now preserve actual function
+and lexical identities without duplicate declarations or stale-binding fallback.
+Seventy new model checks on five profiles and eighteen actual Java 21 suites
+pass. Six x86-64/AArch64 target/address roles pass 96 exports, 432 GDB observations
+and six cancellations, including type precedence, negative ownership, overlap,
+stale scopes and genuine native failure. See `docs/RECOVERED-STATICS.md` for exact
+evidence and limits. Remaining alias/origin, same-name and umbrella integration
+requirements stay open; this supersedes the research-only implementation status.
+
 **CONFIRMED static-recovery API research; implementation pending:** twelve
 read-only x86-64/AArch64 decompilations establish actual Function-owned labels,
 inferred types over undefined listing bytes and saved memory locals. Same-named

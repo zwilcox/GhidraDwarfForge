@@ -39,11 +39,18 @@ public final class GhidraSyntheticSource {
     /** Return evidence belongs to this pass; it never changes the saved program. */
     public record Decompilation(SyntheticSourceFile source,
             Map<Long, DataType> recoveredReturns,
-            Map<Long, ParameterRecovery> recoveredParameters) {
+            Map<Long, ParameterRecovery> recoveredParameters,
+            Map<Long, GhidraStaticRecovery.Result> recoveredStatics) {
         public Decompilation {
             Objects.requireNonNull(source, "synthetic source");
             recoveredReturns = Map.copyOf(recoveredReturns);
             recoveredParameters = Map.copyOf(recoveredParameters);
+            recoveredStatics = Map.copyOf(recoveredStatics);
+        }
+
+        public Decompilation(SyntheticSourceFile source, Map<Long, DataType> recoveredReturns,
+                Map<Long, ParameterRecovery> recoveredParameters) {
+            this(source, recoveredReturns, recoveredParameters, Map.of());
         }
 
         public Decompilation(SyntheticSourceFile source, Map<Long, DataType> recoveredReturns) {
@@ -106,6 +113,7 @@ public final class GhidraSyntheticSource {
         Objects.requireNonNull(operation, "decompile operation");
         Map<Long, DataType> recoveredReturns = new HashMap<>();
         Map<Long, ParameterRecovery> recoveredParameters = new HashMap<>();
+        Map<Long, GhidraStaticRecovery.Result> recoveredStatics = new HashMap<>();
         Map<Long, FunctionSymbol> selected = new HashMap<>();
         for (FunctionSymbol symbol : exportedFunctions) {
             selected.put(symbol.address(), symbol);
@@ -158,6 +166,7 @@ public final class GhidraSyntheticSource {
                         ParameterRecovery parameters = result.getHighFunction() == null ||
                                 !GhidraTypeGraph.acceptRecoveredParameters(function) ? null :
                             recoverParameters(result.getHighFunction().getFunctionPrototype());
+                        var statics = GhidraStaticRecovery.recover(result.getHighFunction(), monitor);
                         texts.add(new FunctionText(symbol.name(), symbol.address(),
                             c, null, mapTokens(result.getCCodeMarkup(), c, symbol,
                                 rebaseDelta)));
@@ -167,6 +176,7 @@ public final class GhidraSyntheticSource {
                         if (parameters != null) {
                             recoveredParameters.put(symbol.address(), parameters);
                         }
+                        recoveredStatics.put(symbol.address(), statics);
                     }
                     else {
                         String diagnostic = result == null ? "no decompiler result" :
@@ -193,7 +203,7 @@ public final class GhidraSyntheticSource {
                 "selected function was not found during the decompiler pass"));
         }
         return new Decompilation(SyntheticSourceFile.build(program.getName(),
-            program.getLanguageID().toString(), texts), recoveredReturns, recoveredParameters);
+            program.getLanguageID().toString(), texts), recoveredReturns, recoveredParameters, recoveredStatics);
     }
 
     private static ParameterRecovery recoverParameters(FunctionPrototype prototype) {

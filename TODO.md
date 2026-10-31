@@ -3140,6 +3140,15 @@ after merge and post-merge validation.
 
 Tracking: [#73](https://github.com/zwilcox/GhidraDwarfForge/issues/73).
 
+**CONFIRMED local static recovery; hosted/full-scope acceptance pending:**
+Function-owned labels with undefined listing types and saved memory locals now
+retain distinct type/ownership provenance. Six target/address roles pass 96
+exports, 432 GDB observations and six cancellations; negative identity, curated
+type, overlap, stale scope and genuine failure controls pass. Seventy new model
+checks and eighteen actual Java 21 suites pass. See `docs/RECOVERED-STATICS.md`.
+This supersedes the research-only status below, not remaining alias/origin,
+same-name/category or umbrella integration requirements.
+
 **CONFIRMED static-recovery research; implementation pending:** twelve actual
 read-only decompilations distinguish inferred memory types from saved ownership,
 including memory locals, wrong namespaces and rejected/absent bindings. See

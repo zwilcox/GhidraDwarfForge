@@ -21,15 +21,17 @@ def check(nodes):
     owners = {'global': unit, 'root': helper.one(nodes, 'DW_TAG_subprogram', 'scoped_statics', unit['offset']),
         'other': helper.one(nodes, 'DW_TAG_subprogram', 'other_statics', unit['offset'])}
     blocks = [n for n in nodes.values() if n['tag'] == 'DW_TAG_lexical_block']
-    assert len(blocks) == (0 if mode in ['coalesced', 'failed'] else 3)
-    for name in ([] if mode in ['coalesced', 'failed'] else ['outer', 'inner', 'sibling']):
+    assert len(blocks) == (0 if mode in ['coalesced', 'failed', 'memory-stale', 'memory-failed'] else 3)
+    for name in ([] if mode in ['coalesced', 'failed', 'memory-stale', 'memory-failed'] else ['outer', 'inner', 'sibling']):
         block, = [n for n in blocks if int(n['attributes']['DW_AT_low_pc'], 0) == labels[name + '_begin']]
         assert int(block['attributes']['DW_AT_high_pc'], 0) + labels[name + '_begin'] == labels[name + '_end']
         assert block['parent'] == owners['outer' if name == 'inner' else 'root']['offset']
         owners[name] = block
     variables = [n for n in nodes.values() if n['tag'] == 'DW_TAG_variable' and n['name'] == 'shadow']
     omitted = {'stale': {'inner'}, 'conflict': {'inner', 'sibling'},
-        'coalesced': {'inner', 'outer', 'sibling'}, 'failed': {'root', 'inner', 'outer', 'sibling'}}.get(mode, set())
+        'coalesced': {'inner', 'outer', 'sibling'}, 'failed': {'root', 'inner', 'outer', 'sibling'},
+        'memory-stale': {'root', 'inner', 'outer', 'sibling'}, 'memory-failed': {'root', 'inner', 'outer', 'sibling'},
+        'inferred-stale': {'other'}, 'inferred-namespace': {'other'}, 'inferred-overlap': {'other'}}.get(mode, set())
     assert len(variables) == 6 - len(omitted)
     for name, owner in owners.items():
         if name in omitted:
@@ -38,10 +40,15 @@ def check(nodes):
         variable = helper.one(nodes, 'DW_TAG_variable', 'shadow', owner['offset'])
         address, = re.findall(r'DW_OP_addr: ([0-9a-f]+)', variable['attributes']['DW_AT_location'])
         assert int(address, 16) == objects[name], (name, address, objects)
+        if mode.startswith('memory') or mode.startswith('inferred'):
+            same_address = [n for n in nodes.values() if n['tag'] == 'DW_TAG_variable' and
+                any(int(value, 16) == objects[name] for value in re.findall(r'DW_OP_addr: ([0-9a-f]+)',
+                    n['attributes'].get('DW_AT_location', '')))]
+            assert len(same_address) == 1, ('duplicate local/global memory declaration', name, same_address)
         assert 'DW_AT_declaration' not in variable['attributes']
         typ = helper.reference(variable, 'DW_AT_type', nodes)
         assert typ['tag'] == 'DW_TAG_base_type' and int(typ['attributes']['DW_AT_byte_size']) == 4
-        assert '(signed)' in typ['attributes']['DW_AT_encoding']
+        assert ('(unsigned)' if mode == 'inferred-curated' and name == 'other' else '(signed)') in typ['attributes']['DW_AT_encoding']
     return owners
 
 

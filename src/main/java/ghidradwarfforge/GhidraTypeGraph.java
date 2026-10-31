@@ -122,6 +122,17 @@ public final class GhidraTypeGraph {
             Map<Long, DataType> recoveredReturns,
             Map<Long, GhidraSyntheticSource.ParameterRecovery> recoveredParameters)
             throws CancelledException {
+        return extract(program, exportedFunctions, registerMap, rebaseDelta, monitor, diagnostic,
+            recoveredReturns, recoveredParameters, Map.of());
+    }
+
+    public static ProgramTypeModel extract(Program program,
+            List<FunctionSymbol> exportedFunctions, TargetRegisterMap registerMap, long rebaseDelta,
+            TaskMonitor monitor, Consumer<String> diagnostic,
+            Map<Long, DataType> recoveredReturns,
+            Map<Long, GhidraSyntheticSource.ParameterRecovery> recoveredParameters,
+            Map<Long, GhidraStaticRecovery.Result> recoveredStatics)
+            throws CancelledException {
         Extractor extractor = new Extractor(program, diagnostic);
         var classScopes = new GhidraClassScopes(program, monitor, diagnostic);
         List<DataType> favoriteTypes = new ArrayList<>(
@@ -136,6 +147,7 @@ public final class GhidraTypeGraph {
             selected.put(symbol.address(), symbol);
         }
         List<ProgramTypeModel.FunctionSignature> signatures = new ArrayList<>();
+        List<ProgramTypeModel.FunctionStaticVariable> functionStatics = new ArrayList<>();
         var lexicalScopes = new ArrayList<ghidradwarfforge.types.LexicalScopeModel>();
         List<ProgramTypeModel.FunctionDeclaration> declarations = new ArrayList<>();
         List<VariableLocation> variableLocations = new ArrayList<>();
@@ -260,6 +272,9 @@ public final class GhidraTypeGraph {
                         (mapping.register() == null ? mapping.variable().getVariableStorage().toString() :
                             mapping.register().getName())).toList() + "; analyst mappings, not original compiler facts");
             }
+            var memoryLocals = new LinkedHashMap<Variable, ProgramTypeModel.LocalVariable>();
+            var staticRecovery = recoveredStatics.get(address);
+            if (staticRecovery != null) staticRecovery.diagnostics().forEach(diagnostic);
             for (Variable variable : function.getLocalVariables()) {
                 monitor.checkCancelled();
                 var merged = mergedOwners.get(variable);
@@ -273,6 +288,10 @@ public final class GhidraTypeGraph {
                     variable.getLength(), extractor.reserve(variable.getDataType()),
                     variable.getFirstUseOffset(), variable.hasAssignedStorage(),
                     variable.getSource().name()));
+                if (variable.getVariableStorage().isMemoryStorage()) {
+                    memoryLocals.put(variable, locals.getLast());
+                    continue;
+                }
                 Storage storage = merged == null ? GhidraVariableStorage.stableLocal(program, function,
                     variable, registerMap, monitor) : new UnavailableStorage(OmissionReason.UNKNOWN_LIFETIME,
                         "saved merged local requires proof of its latest definition and storage");
@@ -324,6 +343,9 @@ public final class GhidraTypeGraph {
                         localName + ": " + unavailable.diagnostic());
                 }
             }
+            boolean scopeAccepted = false;
+            var scopeProperties = program.getUsrPropertyManager().getPropertyMap(GhidraLexicalScopes.PROPERTY_NAME);
+            boolean scopeRecorded = scopeProperties != null && scopeProperties.hasProperty(function.getEntryPoint());
             var savedScopes = GhidraLexicalScopes.read(function, monitor, diagnostic);
             if (savedScopes.isPresent()) {
                 var saved = savedScopes.get();
@@ -349,14 +371,54 @@ public final class GhidraTypeGraph {
                             blocks.add(new ghidradwarfforge.types.LexicalScopeModel.Block(block.id(), block.parent(), ranges));
                         }
                         lexicalScopes.add(new ghidradwarfforge.types.LexicalScopeModel(address, symbol.ranges(), blocks,
-                            saved.locals().stream().map(binding -> new ghidradwarfforge.types.LexicalScopeModel.Local(
+                            saved.locals().stream().filter(binding -> !memoryLocals.containsKey(binding.variable()))
+                                .map(binding -> new ghidradwarfforge.types.LexicalScopeModel.Local(
                                 binding.variable().getName(), binding.block(), binding.displayName())).toList(), saved.evidence()));
+                        scopeAccepted = true;
                         diagnostic.accept("Using explicitly saved lexical ownership for " + symbol.name() +
                             "; visibility does not establish variable storage; " + saved.evidence());
                     }
                     catch (ArithmeticException | IllegalArgumentException invalidScope) {
                         diagnostic.accept("Omitted saved lexical scopes for " + symbol.name() + ": " + invalidScope.getMessage());
                     }
+                }
+            }
+            for (var item : memoryLocals.entrySet()) {
+                monitor.checkCancelled();
+                Variable variable = item.getKey();
+                locals.remove(item.getValue());
+                Symbol savedSymbol = variable.getSymbol();
+                var storage = variable.getVariableStorage();
+                if (savedSymbol == null || savedSymbol.getSource() == SourceType.DEFAULT ||
+                        !(savedSymbol.getParentNamespace() instanceof Function) ||
+                        savedSymbol.getParentNamespace().getID() != function.getID() ||
+                        variable.getFirstUseOffset() != 0 || storage.getVarnodeCount() != 1 ||
+                        (scopeRecorded && !scopeAccepted)) {
+                    diagnostic.accept("Omitted memory local " + variable.getName() + ": unsupported identity, first-use or rejected lexical scope");
+                    continue;
+                }
+                var memoryAddress = storage.getVarnodes()[0].getAddress();
+                var memoryBlock = program.getMemory().getBlock(memoryAddress);
+                if (memoryBlock == null || !memoryBlock.isLoaded() ||
+                        GhidraStaticBindings.read(program, savedSymbol.getID(), monitor, diagnostic).status() != GhidraStaticBindings.Status.ABSENT) continue;
+                DataType type = variable.getDataType();
+                boolean inferred = Undefined.isUndefined(type);
+                if (inferred) type = GhidraStaticRecovery.accept(program, function, savedSymbol, memoryAddress,
+                    variable.getLength(), recoveredStatic(staticRecovery, savedSymbol.getID()), monitor, diagnostic);
+                if (type == null || type.getLength() <= 0 || type.getLength() != variable.getLength()) continue;
+                try {
+                    if (!memoryBlock.contains(memoryAddress.addNoWrap(type.getLength() - 1L))) continue;
+                    long memoryOffset = AddressNormalizer.toElfAddress(memoryAddress.getOffset(), rebaseDelta);
+                    if (memoryOffset < 0) continue;
+                    var binding = savedScopes.isEmpty() ? null : savedScopes.get().locals().stream()
+                        .filter(local -> local.variable().equals(variable)).findFirst().orElse(null);
+                    functionStatics.add(new ProgramTypeModel.FunctionStaticVariable(
+                        binding == null ? variable.getName() : binding.displayName(), memoryOffset, type.getLength(),
+                        extractor.reserve(type), address, (inferred ? "DECOMPILER_INFERRED_TYPE; " : "") +
+                            "SAVED_MEMORY_LOCAL: " + variable.getSource().name(), binding == null ? "" : binding.block()));
+                }
+                catch (ArithmeticException | ghidra.program.model.address.AddressOverflowException invalidAddress) {
+                    diagnostic.accept("Omitted memory local " + variable.getName() + ": untranslatable memory extent");
                 }
             }
             boolean nonDefaultConvention = nonDefaultCallingConvention(program, function);
@@ -381,7 +443,6 @@ public final class GhidraTypeGraph {
                 missing.name());
         }
         List<ProgramTypeModel.GlobalVariable> globals = new ArrayList<>();
-        List<ProgramTypeModel.FunctionStaticVariable> functionStatics = new ArrayList<>();
         java.util.Set<Long> functionOwners = signatures.stream()
             .map(ProgramTypeModel.FunctionSignature::address)
             .collect(java.util.stream.Collectors.toSet());
@@ -400,9 +461,21 @@ public final class GhidraTypeGraph {
                 continue;
             }
             Data data = program.getListing().getDataAt(symbol.getAddress());
-            if (data == null || !data.isDefined() || data.getLength() <= 0) {
-                continue;
+            DataType objectType = data == null ? null : data.getDataType();
+            boolean inferredType = objectType == null || !data.isDefined();
+            if (inferredType) {
+                if (!(symbol.getParentNamespace() instanceof Function owner)) continue;
+                long ownerAddress;
+                try {
+                    ownerAddress = AddressNormalizer.toElfAddress(owner.getEntryPoint().getOffset(), rebaseDelta);
+                }
+                catch (ArithmeticException overflow) { continue; }
+                objectType = GhidraStaticRecovery.accept(program, owner, symbol, symbol.getAddress(), 0,
+                    recoveredStatic(recoveredStatics.get(ownerAddress), symbol.getID()), monitor, diagnostic);
             }
+            if (objectType == null) continue;
+            int objectSize = inferredType ? objectType.getLength() : data.getLength();
+            if (objectSize <= 0) continue;
             long address;
             try {
                 address = AddressNormalizer.toElfAddress(
@@ -434,7 +507,7 @@ public final class GhidraTypeGraph {
                     continue;
                 }
                 functionStatics.add(new ProgramTypeModel.FunctionStaticVariable(binding.displayName(), address,
-                    data.getLength(), extractor.reserve(data.getDataType()), ownerAddress,
+                    objectSize, extractor.reserve(objectType), ownerAddress,
                     "EXPLICIT_STATIC_BINDING: " + binding.evidence(), binding.block()));
                 diagnostic.accept("Using explicit static ownership for " + symbol.getName(true) +
                     " in " + binding.owner().getName(true) + "; " + binding.evidence());
@@ -457,13 +530,13 @@ public final class GhidraTypeGraph {
                     continue;
                 }
                 functionStatics.add(new ProgramTypeModel.FunctionStaticVariable(
-                    symbol.getName(), address, data.getLength(),
-                    extractor.reserve(data.getDataType()), ownerAddress,
-                    symbol.getSource().name()));
+                    symbol.getName(), address, objectSize,
+                    extractor.reserve(objectType), ownerAddress,
+                    (inferredType ? "DECOMPILER_INFERRED_TYPE; " : "") + symbol.getSource().name()));
                 continue;
             }
             globals.add(new ProgramTypeModel.GlobalVariable(symbol.getName(), address,
-                data.getLength(), extractor.reserve(data.getDataType()), false,
+                objectSize, extractor.reserve(objectType), false,
                 symbol.getSource().name(),
                 namespacePath(symbol.getParentNamespace())));
         }
@@ -540,6 +613,12 @@ public final class GhidraTypeGraph {
         return new ProgramTypeModel(graph,
             signatures, globals, new VariableStorageModel(variableLocations), functionStatics,
             declarations, lexicalScopes, classScopes.finish(graph));
+    }
+
+    private static GhidraStaticRecovery.Candidate recoveredStatic(GhidraStaticRecovery.Result result, long id) {
+        if (result == null) return null;
+        var candidates = result.candidates().stream().filter(candidate -> candidate.symbolId() == id).toList();
+        return candidates.size() == 1 ? candidates.getFirst() : null;
     }
 
     static boolean acceptRecoveredReturn(Function function, DataType recovered) {

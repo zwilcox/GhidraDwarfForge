@@ -152,8 +152,8 @@ These results supersede the provider-only JAR above for exporter behavior.
 ## Remaining scope
 
 Hosted exact-package/host gates and normal integration remain required. The
-provider preserves explicit analyst evidence; inferred and decompiler-only
-static ownership still requires defensible evidence from those APIs. Do not
+provider preserves explicit analyst evidence. Subsequent local inferred-type and
+saved-memory-local acceptance is recorded in `RECOVERED-STATICS.md`. Do not
 promote a lone reference or matching namespace name into a recovered owner.
 Additional same-name type/category fixtures, thunk/alias specification/origin
 relationships, remaining class/artificial semantics and the full P1.11a/P3.3

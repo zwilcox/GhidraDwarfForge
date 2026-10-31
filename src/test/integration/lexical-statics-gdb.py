@@ -11,7 +11,7 @@ remote = os.environ.get('FORGE_STATIC_REMOTE', '')
 exits = []
 gdb.events.exited.connect(lambda event: exits.append(event.exit_code))
 gdb.execute('ptype scoped_statics')
-if mode not in ['isolated', 'failed']:
+if mode not in ['isolated', 'failed', 'memory-failed']:
     gdb.execute('list scoped_statics')
 if remote:
     gdb.execute('target remote ' + remote)
@@ -31,7 +31,9 @@ for marker, scope, value in sequence:
         scope, value = ('outer', 21) if scope == 'inner' else ('root', 11)
     if mode == 'coalesced' and scope in ['outer', 'inner', 'sibling']:
         scope, value = 'root', 11
-    if mode == 'failed' and scope in ['root', 'outer', 'inner', 'sibling']:
+    if mode in ['failed', 'memory-stale', 'memory-failed'] and scope in ['root', 'outer', 'inner', 'sibling']:
+        scope, value = 'global', 101
+    if mode in ['inferred-stale', 'inferred-namespace', 'inferred-overlap'] and scope == 'other':
         scope, value = 'global', 101
     pc = labels[marker] + bias
     gdb.Breakpoint('*' + hex(pc), temporary=True)
@@ -49,7 +51,8 @@ for marker, scope, value in sequence:
     observations.append({'marker': marker, 'scope': scope, 'value': int(current), 'address': address, 'runtimePc': pc, 'bias': bias})
     # Execute the actual marker instruction before selecting the next lexical boundary.
     gdb.execute('stepi')
-assert len(set(objects.values())) == {'stale': 5, 'conflict': 4, 'coalesced': 3, 'failed': 2}.get(mode, 6)
+assert len(set(objects.values())) == {'stale': 5, 'conflict': 4, 'coalesced': 3, 'failed': 2,
+    'memory-stale': 2, 'memory-failed': 2, 'inferred-stale': 5, 'inferred-namespace': 5, 'inferred-overlap': 5}.get(mode, 6)
 if mode == 'compiler':
     (case / 'compiler-objects.json').write_text(json.dumps(objects, indent=4) + '\n')
 gdb.execute('continue')

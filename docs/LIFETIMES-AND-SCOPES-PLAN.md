@@ -26,9 +26,10 @@ the mere existence of a Ghidra high variable is not proof of a compiler lifetime
 
 ## P3.3 requirements after the location core
 
-The inferred-static API question now has twelve passing headless observations;
-see `research/STATIC-RECOVERY.md`. This is evidence for implementation, not
-emitted-artifact acceptance. The complete static scope row below remains open.
+The inferred-static API question has twelve passing headless observations;
+see `research/STATIC-RECOVERY.md`. Its production component now has local
+96-export/432-GDB-observation acceptance; see `RECOVERED-STATICS.md`.
+Hosted/full-scope acceptance and every remaining row below stay required.
 
 | Requirement | Remaining acceptance |
 | --- | --- |

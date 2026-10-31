@@ -20,6 +20,7 @@ def main():
     parser.add_argument('target', choices=['x86_64', 'aarch64'])
     parser.add_argument('--role', choices=['exec', 'pie', 'pie-rebased'], default='exec')
     parser.add_argument('--controls', action='store_true')
+    parser.add_argument('--recovered', action='store_true')
     args = parser.parse_args()
     ghidra = args.ghidra.resolve(strict=True)
     repository = Path(__file__).resolve().parents[3]
@@ -144,6 +145,9 @@ def main():
     print('lexical-statics-export=PASS', flush=True)
     if args.controls:
         run('controls-driver', ['python3', harness / 'lexical-statics-controls.py', case, ghidra], timeout=1800)
+    if args.recovered:
+        run('recovered-driver', ['python3', harness / 'recovered-statics-export.py', case, ghidra], timeout=1800)
+        run('recovered-controls-driver', ['python3', harness / 'recovered-statics-export.py', case, ghidra, '--controls-only'], timeout=1800)
 
 if __name__ == '__main__':
     main()
