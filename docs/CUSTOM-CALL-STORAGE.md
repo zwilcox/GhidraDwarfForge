@@ -109,3 +109,36 @@ the proper qemu-gdb-symbols.sh harness subsequently passed all five targets.
 An initial receipt reviewer expected a scalar exitCode where two harnesses
 record exitCodes; inspecting the raw JSON and checking every exit code corrected
 that reviewer. Neither attempt counts as a passing test.
+
+## Combined alias and custom-storage checkpoint
+
+**CONFIRMED locally:** combined commit
+`2bf119d7cd78fc733f4b66be93becc7659ac77cb` passes 28 actual Java 21 suites,
+the three custom-call roles, twelve retained/stripped alias base cases and
+twelve automatic alias cases. Independent raw reviews pass; automatic alias
+artifacts equal the independently invoked writer byte for byte. The package
+contains 56 exact production sources, two scripts and 241 Java 21 classes.
+JAR SHA-256:
+`502cb0bc0b8a6f72d4fc427f838a49cda7f625f79be6b0138c3446078a5e6777`.
+
+Combined receipts: Java 21
+`6fa5922ae304510509a27858763c4562e73d8320b1310ce928f9c1fb725bc2a7`,
+custom calls `27e9937f053cbd07cadb765022069dca9779dd2a59cf5e8a0be093dc6d10204a`,
+base aliases `bf5eb4e9aa2ffc9c8be811367c57af4256caf16575027445160b5b94e9c1b482`,
+automatic aliases `38d46ce1f71f8a00ec13b500b92170f040dd33d906caa72daf008e0ebbb70f46`.
+
+Retained setup failures: the combined package audit initially retained the old
+source-plus-script count (57 instead of 58); exact source bytes already matched.
+The alias harness first required missing base fixtures, then explicitly rejected
+Java 25 for its standalone writer. Fresh base fixtures and FORGE_JAVA21_HOME
+selecting actual Java 21 passed. No production change was needed for these
+failures. The new fixture is included in the reviewed source inventory.
+
+**CONFIRMED remaining ABI gap:** selecting Ghidra's Windows compiler model for
+an ELF makes its default __fastcall agree with Microsoft custom storage while
+GDB still injects a SysV call. An isolated reproduction on this combined JAR
+returns 4389 instead of 1234; receipt
+`f404520f1809b8dafae0dbf6dcca98c8e06588041c0b0ce89824a1f963d9feea`.
+Classifying the selected default model against the original ELF debugger ABI
+remains P1.7 work. This component only proves equivalence to the selected
+program default; it does not certify an arbitrary compiler specification.

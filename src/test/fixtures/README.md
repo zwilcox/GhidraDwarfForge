@@ -434,3 +434,11 @@ alias and curated breakpoints, parameters, owned statics and source navigation.
 Retained/fully stripped controls and exec/PIE/rebased PIE distinguish original
 ELF symbol lookup from curated DWARF metadata. Unsupported labels with an
 IMPORTED source flag are deliberately not treated as original ELF aliases.
+
+`custom-call-storage.c` adds a default-named custom Microsoft parameter layout
+and a naked assembly function returning in EDX to the SysV control. Its assembly
+caller reads EDX; EAX deliberately contains a wrong sentinel. The installed
+exec/PIE/rebase harness must reject unsupported debugger-injected calls before
+any counter changes, while ordinary execution returns 1234. GCC metadata is a
+negative callability control for these custom ABIs. See
+`docs/CUSTOM-CALL-STORAGE.md` for the complete policy and validation limits.
