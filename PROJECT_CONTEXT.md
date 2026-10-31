@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED research checkpoint; production implementation PLANNED (2026-10-31):**
+sectionless alias insertion without a dynamic mirror loses original names in
+four MIPS PIE/rebase controls. An independent PT_DYNAMIC mirror passes eight
+runtime cases (32 calls), two GNU-versioned DSOs and strict validators. A
+32-fixture count matrix matches 29 full inventories and diagnoses three
+empty-GNU-only ambiguities; no count is guessed. Production aliases remain
+disabled for sectionless inputs. See
+`docs/research/SECTIONLESS-FUNCTION-ALIASES.md`; P1.7/#66 remains open.
+
 **CONFIRMED locally; acceptance incomplete:** range-aware analyst aliases retain
 split/interior-entry primary bodies. Per-range original-code/ownership checks
 pass 373 planner and 228 six-language extraction checks; 32 installed actual Java
