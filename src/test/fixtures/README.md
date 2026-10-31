@@ -494,3 +494,15 @@ The compiler's mutable `held` remains a separate reference for actual physical
 contents. The harness records compiler symbol bounds, reconstructs only the
 fixture's proven body, reopens the saved program, verifies exact loclists and
 checks every executed instruction under GDB in exec/PIE/rebased-PIE roles.
+
+`merged-local-mappings.c` separates the compiler's two physical register locals
+from one explicitly saved Ghidra logical local. Three/four full-register
+assignments preserve a named signed 32/64-bit typedef and define copies,
+arithmetic updates and reinitialization. Tests cover an old carrier being
+killed, an old value remaining after a newer value is lost, branch paths with
+different carriers and repeated loop assignments. The saved merge identity is
+curated through Ghidra's own name/type/mapping contract. The oracle checks both
+compiler locals and raw physical registers at every executed instruction; Forge
+must expose only the current logical value where all paths agree, and no
+location before definition, after loss or at an ambiguous join. Both branch
+choices and three signed input pairs run on x86-64/AArch64 exec/PIE/rebase roles.

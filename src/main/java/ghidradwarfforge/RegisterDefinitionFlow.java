@@ -82,27 +82,9 @@ final class RegisterDefinitionFlow {
         catch (ghidra.program.model.address.AddressOverflowException overflow) {
             return List.of();
         }
-        var body = function.getBody();
-        var uncovered = new AddressSet(body);
-        Map<Address, Instruction> decoded = new LinkedHashMap<>();
-        for (Instruction instruction : program.getListing().getInstructions(body, true)) {
-            monitor.checkCancelled();
-            if (instruction.isLengthOverridden() || instruction.getLength() <= 0 ||
-                    instruction.getParsedLength() != instruction.getLength() ||
-                    instruction.isInDelaySlot() || instruction.getDelaySlotDepth() != 0 ||
-                    !instruction.getAddress().getAddressSpace().equals(definition.getAddressSpace()) ||
-                    !body.contains(instruction.getAddress(), instruction.getMaxAddress()) ||
-                    !uncovered.contains(instruction.getAddress(), instruction.getMaxAddress()) ||
-                    GhidraVariableStorage.hasOpaqueRegisterEffects(program, instruction) ||
-                    !orderedControl(instruction)) {
-                return List.of();
-            }
-            uncovered.delete(instruction.getAddress(), instruction.getMaxAddress());
-            decoded.put(instruction.getAddress(), instruction);
-        }
-        if (!uncovered.isEmpty() || !decoded.containsKey(definition) ||
-                !GhidraVariableStorage.completeRegisterDefinition(decoded.get(definition), register, variable.getLength()) ||
-                !GhidraVariableStorage.closedRegisterFlow(program, function, decoded, monitor)) {
+        Map<Address, Instruction> decoded = decodedBody(program, function, monitor);
+        if (!decoded.containsKey(definition) ||
+                !GhidraVariableStorage.completeRegisterDefinition(decoded.get(definition), register, variable.getLength())) {
             return List.of();
         }
         Map<Address, Set<Address>> successors = new LinkedHashMap<>();
@@ -170,6 +152,34 @@ final class RegisterDefinitionFlow {
             else result.add(new StorageInterval(start, end, value));
         }
         return result.stream().anyMatch(interval -> interval.storage().available()) ? List.copyOf(result) : List.of();
+    }
+
+    /** Shared physical control-flow boundary; mappings never weaken these guards. */
+    static Map<Address, Instruction> decodedBody(Program program, Function function, TaskMonitor monitor)
+            throws CancelledException {
+        monitor.checkCancelled();
+        if (function.getProgram() != program || function.getEntryPoint().getAddressSpace().isOverlaySpace()) return Map.of();
+        var body = function.getBody();
+        var uncovered = new AddressSet(body);
+        Map<Address, Instruction> decoded = new LinkedHashMap<>();
+        for (Instruction instruction : program.getListing().getInstructions(body, true)) {
+            monitor.checkCancelled();
+            if (instruction.isLengthOverridden() || instruction.getLength() <= 0 ||
+                    instruction.getParsedLength() != instruction.getLength() ||
+                    instruction.isInDelaySlot() || instruction.getDelaySlotDepth() != 0 ||
+                    !instruction.getAddress().getAddressSpace().equals(function.getEntryPoint().getAddressSpace()) ||
+                    !body.contains(instruction.getAddress(), instruction.getMaxAddress()) ||
+                    !uncovered.contains(instruction.getAddress(), instruction.getMaxAddress()) ||
+                    GhidraVariableStorage.hasOpaqueRegisterEffects(program, instruction) ||
+                    !orderedControl(instruction)) {
+                return Map.of();
+            }
+            uncovered.delete(instruction.getAddress(), instruction.getMaxAddress());
+            decoded.put(instruction.getAddress(), instruction);
+        }
+        if (!uncovered.isEmpty() ||
+                !GhidraVariableStorage.closedRegisterFlow(program, function, decoded, monitor)) return Map.of();
+        return java.util.Collections.unmodifiableMap(decoded);
     }
 
     /** No intra-instruction conditional execution or hidden control effects. */
