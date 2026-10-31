@@ -1,6 +1,6 @@
 # Aggregate return prototypes and debugger calls
 
-**CONFIRMED locally; final package and hosted acceptance pending:** automatic
+**CONFIRMED locally and in committed packaging; hosted acceptance pending:** automatic
 return-buffer storage is preserved separately from the formal argument list.
 A target-specific MIPS policy prevents independently reproduced unsafe injected
 calls while retaining supported integer/pointer argument transfers.
@@ -64,8 +64,11 @@ The new ABI policy passes 5,256 model checks; the formal-return model passes
 aggregate declarations and immutable reopening. The extended native return
 and external-declaration fixtures pass, as do controlled decompiler failure,
 copy cancellation, all five fixture reproducibility inventories and workflow
-lint. Initial packaged testing passes 38 suites on actual Java 21; final source
-binding and committed-package checks remain required.
+lint. Packaged testing passes 38 suites on actual Java 21. The committed-package
+audit verifies all 67 exact source files, 261 Java 21 classes, native provenance
+and manifests; its production JAR matches the tested matrix byte-for-byte.
+Six fresh stripped/rebased overload regressions, including ARM and Thumb, and
+all five merged fixture inventories also pass.
 
 The first new model test compared lexically sorted declaration names against
 numeric indices after adding case 10; zero-padding corrected that harness
@@ -77,6 +80,5 @@ a return buffer. Those assertions now check the exact intended roles and target
 observations. All failed attempts remain recorded. See also
 [the retained reproduction](research/HIDDEN-RETURN-PARAMETER.md).
 
-This component does not complete P1.7 or authorize release publication. Exact
-committed packaging, the full hosted gate and independent artifact/GUI review
-remain pending.
+This component does not complete P1.7 or authorize release publication. The full hosted gate
+and independent hosted artifact/GUI review remain pending.

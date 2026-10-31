@@ -1,5 +1,12 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED committed-package checkpoint (2026-10-31):** the merged overload/
+aggregate-return candidate builds and its package audit verifies 67 exact source
+files, 261 Java 21 classes, native provenance and every release manifest. Its
+production JAR is byte-identical to the 21-case aggregate matrix. Six fresh
+stripped/rebased overload cases, including ARM and Thumb, and all five merged
+fixture inventories pass. Hosted acceptance remains pending; P1.7 stays open.
+
 **CONFIRMED locally; aggregate-return acceptance incomplete (2026-10-31):**
 return carriers now retain their names/types/locations as artificial variables
 without adding formal arguments. A bounded MIPS policy preserves verified word
