@@ -15,7 +15,7 @@ import ghidra.program.model.pcode.Varnode;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 
-/** Bounded call evidence: an ordinary direct call to a decoded straight-line leaf. */
+/** Register preservation through fully decoded direct-call graphs and selected ABI contracts. */
 final class DirectLeafCalls {
     record Leaf(List<Instruction> instructions, List<Varnode> unaffected) {
         Leaf {
@@ -52,97 +52,100 @@ final class DirectLeafCalls {
     /** Null rejects the caller; an empty map means it contains no calls. */
     static Map<Address, Leaf> inspect(Program program, List<Instruction> caller,
             TaskMonitor monitor) throws CancelledException {
-        Map<Address, Leaf> result = new HashMap<>();
+        Map<Address, Address> roots = new java.util.LinkedHashMap<>();
         for (Instruction instruction : caller) {
             monitor.checkCancelled();
-            int calls = 0;
-            PcodeOp direct = null;
+            boolean rawCall = false;
             for (PcodeOp operation : instruction.getPcode()) {
                 monitor.checkCancelled();
-                if (operation.getOpcode() == PcodeOp.CALL) {
-                    calls++;
-                    direct = operation;
-                }
-                if (operation.getOpcode() == PcodeOp.CALLIND) {
-                    return null;
-                }
+                if (GhidraVariableStorage.unprovenStore(program, operation) ||
+                        operation.getOpcode() == PcodeOp.CALLIND) return null;
+                rawCall |= operation.getOpcode() == PcodeOp.CALL;
             }
-            if (calls == 0 && !instruction.getFlowType().isCall()) {
-                continue;
-            }
-            var flows = instruction.getFlows();
-            var flow = instruction.getFlowType();
-            if (calls != 1 || !flow.isCall() || flow.isComputed() || flow.isConditional() ||
-                    flow.isOverride() || !flow.hasFallthrough() || !exact(instruction) ||
-                    flows.length != 1 || direct.getOutput() != null ||
-                    direct.getNumInputs() != 1 || direct.getInput(0) == null ||
-                    !flows[0].equals(direct.getInput(0).getAddress()) ||
-                    !flows[0].getAddressSpace().equals(instruction.getAddress().getAddressSpace())) {
-                return null;
-            }
-            var function = program.getFunctionManager().getFunctionAt(flows[0]);
+            if (!rawCall && !instruction.getFlowType().isCall()) continue;
+            if (!directCall(instruction)) return null;
+            roots.put(instruction.getAddress(), instruction.getFlows()[0]);
+        }
+        // Inspect each saved body once. A worklist also handles recursive call
+        // graphs without recursive Java calls or an arbitrary depth cutoff.
+        record Body(List<Instruction> instructions, List<Varnode> unaffected, List<Address> calls) {}
+        Map<Address, Body> graph = new java.util.LinkedHashMap<>();
+        var work = new java.util.ArrayDeque<Address>(roots.values());
+        while (!work.isEmpty()) {
+            monitor.checkCancelled();
+            Address entry = work.removeFirst();
+            if (graph.containsKey(entry)) continue;
+            var function = program.getFunctionManager().getFunctionAt(entry);
             if (function == null || function.isExternal() || function.isThunk() ||
                     function.hasNoReturn() || function.getCallFixup() != null ||
-                    function.getCallingConvention() == null ||
-                    function.getBody().getNumAddressRanges() != 1 ||
-                    !function.getEntryPoint().equals(function.getBody().getMinAddress())) {
-                return null;
-            }
-            List<Instruction> decoded = new ArrayList<>();
-            Address expected = function.getEntryPoint();
-            Address last = function.getBody().getMaxAddress();
-            if (last.next() == null) {
-                return null;
-            }
+                    function.getCallingConvention() == null) return null;
+            var decoded = RegisterDefinitionFlow.decodedInstructions(program, function, true, monitor);
+            if (decoded.isEmpty()) return null;
+            var targets = new ArrayList<Address>();
             boolean returned = false;
-            for (Instruction body : program.getListing().getInstructions(function.getBody(), true)) {
+            for (Instruction instruction : decoded.values()) {
                 monitor.checkCancelled();
-                if (returned || !body.getAddress().equals(expected) || !exact(body) ||
-                        !body.getMaxAddress().getAddressSpace().equals(last.getAddressSpace()) ||
-                        body.getMaxAddress().compareTo(last) > 0) {
-                    return null;
-                }
-                PcodeOp[] operations = body.getPcode();
-                for (int index = 0; index < operations.length; index++) {
+                returned |= instruction.getFlowType().isTerminal();
+                if (instruction.getFlowType().isCall()) targets.add(instruction.getFlows()[0]);
+            }
+            if (!returned) return null;
+            graph.put(entry, new Body(List.copyOf(decoded.values()),
+                List.of(function.getCallingConvention().getUnaffectedList()), List.copyOf(targets)));
+            work.addAll(targets);
+        }
+        Map<Address, Leaf> summaries = new HashMap<>();
+        Map<Address, Leaf> result = new HashMap<>();
+        for (var root : roots.entrySet()) {
+            monitor.checkCancelled();
+            Leaf summary = summaries.get(root.getValue());
+            if (summary == null) {
+                var visited = new java.util.HashSet<Address>();
+                var instructions = new ArrayList<Instruction>();
+                var unaffected = new ArrayList<Varnode>(graph.get(root.getValue()).unaffected());
+                work.add(root.getValue());
+                while (!work.isEmpty()) {
                     monitor.checkCancelled();
-                    PcodeOp operation = operations[index];
-                    if (GhidraVariableStorage.unprovenStore(program, operation)) {
-                        return null;
-                    }
-                    switch (operation.getOpcode()) {
-                        case PcodeOp.BRANCH, PcodeOp.CBRANCH, PcodeOp.BRANCHIND,
-                            PcodeOp.CALL, PcodeOp.CALLIND, PcodeOp.CALLOTHER,
-                            PcodeOp.UNIMPLEMENTED -> { return null; }
-                        case PcodeOp.RETURN -> {
-                            if (index != operations.length - 1 || operation.getOutput() != null ||
-                                    operation.getNumInputs() != 1 || operation.getInput(0) == null ||
-                                    operation.getInput(0).getSize() != expected.getAddressSpace().getPointerSize()) {
-                                return null;
-                            }
-                            returned = true;
-                        }
-                        default -> { }
-                    }
+                    Address entry = work.removeFirst();
+                    if (!visited.add(entry)) continue;
+                    Body body = graph.get(entry);
+                    instructions.addAll(body.instructions());
+                    unaffected.retainAll(body.unaffected());
+                    work.addAll(body.calls());
                 }
-                var bodyFlow = body.getFlowType();
-                if (bodyFlow.isCall() || bodyFlow.isConditional() || bodyFlow.isJump() ||
-                        bodyFlow.isOverride() || (returned
-                            ? !bodyFlow.isTerminal() || body.getFallThrough() != null ||
-                                !body.getMaxAddress().equals(last)
-                            : !bodyFlow.isFallthrough() ||
-                                !body.getMaxAddress().next().equals(body.getFallThrough()))) {
-                    return null;
-                }
-                decoded.add(body);
-                expected = body.getMaxAddress().next();
+                summary = new Leaf(instructions, unaffected);
+                summaries.put(root.getValue(), summary);
             }
-            if (!returned || !last.next().equals(expected)) {
-                return null;
-            }
-            result.put(instruction.getAddress(), new Leaf(decoded,
-                List.of(function.getCallingConvention().getUnaffectedList())));
+            result.put(root.getKey(), summary);
         }
         return Map.copyOf(result);
+    }
+
+    /** Raw and listing evidence must describe the same ordinary direct call. */
+    static boolean directCall(Instruction instruction) {
+        var flow = instruction.getFlowType();
+        var targets = instruction.getFlows();
+        var defaults = instruction.getDefaultFlows();
+        if (!exact(instruction) || !flow.isCall() || flow.isComputed() || flow.isConditional() ||
+                !flow.hasFallthrough() || instruction.getFallThrough() == null ||
+                !instruction.getMaxAddress().next().equals(instruction.getFallThrough()) ||
+                targets == null || targets.length != 1 || defaults == null || defaults.length != 1 ||
+                !targets[0].equals(defaults[0])) return false;
+        PcodeOp[] operations = instruction.getPcode();
+        int calls = 0;
+        for (int index = 0; index < operations.length; index++) {
+            PcodeOp operation = operations[index];
+            if (operation.getOpcode() == PcodeOp.CALL) {
+                if (++calls != 1 || index != operations.length - 1 || operation.getOutput() != null ||
+                        operation.getNumInputs() != 1 || operation.getInput(0) == null ||
+                        !targets[0].equals(operation.getInput(0).getAddress()) ||
+                        !targets[0].getAddressSpace().equals(instruction.getAddress().getAddressSpace())) return false;
+            }
+            else if (operation.getOpcode() == PcodeOp.CALLIND || operation.getOpcode() == PcodeOp.CALLOTHER ||
+                    operation.getOpcode() == PcodeOp.UNIMPLEMENTED || operation.getOpcode() == PcodeOp.RETURN ||
+                    operation.getOpcode() == PcodeOp.BRANCH || operation.getOpcode() == PcodeOp.CBRANCH ||
+                    operation.getOpcode() == PcodeOp.BRANCHIND) return false;
+        }
+        return calls == 1;
     }
 
     private static boolean exact(Instruction instruction) {

@@ -466,6 +466,18 @@ tasks.register("directLeafCallSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/direct-leaf-call/cache").absolutePath
 }
 
+tasks.register("inspectedCallsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks physical direct-call graphs, preserved handoffs and nested clobbers"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.InspectedCallsSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/inspected-calls/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/inspected-calls/cache").absolutePath
+}
+
 tasks.register("compositeRegisterPrefixSmoke", JavaExec) {
     group = "verification"
     description = "Checks complete incoming register composites before their first clobber"

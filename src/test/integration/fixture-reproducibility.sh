@@ -66,6 +66,7 @@ expected_sources=(
     function_entry_ranges.c
     i386-alias-entry.cpp
     i386-profile.c
+    inspected-call-callees.c
     later-register-local.c
     local-definition-flow.c
     merged-local-mappings.c

@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally; hosted acceptance pending:** inspected direct-call graphs
+now preserve proven incoming register values through branches, loops, nested
+and recursive calls and discontiguous bodies. All 36 x86-64/AArch64 address-role
+cases pass 72 candidate/36 previous exports and 9,774 distinct caller instruction
+observations. Twenty-two actual Java 21 suites, 12 runtime regressions,
+validators, determinism and failure/cancellation checks pass. See
+`docs/INSPECTED-CALL-GRAPHS.md`. Call memory facts are retired; restored-register
+proofs, mutable stack mapping identity, mixed pieces and all P3.3 remain open.
+
 **CONFIRMED locally; hosted acceptance pending:** stack/register value states now
 intersect across closed branches, loops and discontiguous bodies. All twelve
 signed32/64 target/address cases pass 24 candidate/twelve previous exports,

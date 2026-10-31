@@ -159,6 +159,13 @@ final class RegisterDefinitionFlow {
             throws CancelledException {
         monitor.checkCancelled();
         if (function.getProgram() != program || function.getEntryPoint().getAddressSpace().isOverlaySpace()) return Map.of();
+        return decodedInstructions(program, function, false, monitor);
+    }
+
+    /** Physical decoder; the caller separately establishes saved function ownership. */
+    static Map<Address, Instruction> decodedInstructions(Program program, Function function,
+            boolean directCalls, TaskMonitor monitor) throws CancelledException {
+        if (function.getEntryPoint().getAddressSpace().isOverlaySpace()) return Map.of();
         var body = function.getBody();
         var uncovered = new AddressSet(body);
         Map<Address, Instruction> decoded = new LinkedHashMap<>();
@@ -171,26 +178,31 @@ final class RegisterDefinitionFlow {
                     !body.contains(instruction.getAddress(), instruction.getMaxAddress()) ||
                     !uncovered.contains(instruction.getAddress(), instruction.getMaxAddress()) ||
                     GhidraVariableStorage.hasOpaqueRegisterEffects(program, instruction) ||
-                    !orderedControl(instruction)) {
+                    !orderedControl(instruction, directCalls)) {
                 return Map.of();
             }
             uncovered.delete(instruction.getAddress(), instruction.getMaxAddress());
             decoded.put(instruction.getAddress(), instruction);
         }
         if (!uncovered.isEmpty() ||
-                !GhidraVariableStorage.closedRegisterFlow(program, function, decoded, monitor)) return Map.of();
+                !GhidraVariableStorage.closedRegisterFlow(program, function, decoded, directCalls, monitor)) return Map.of();
         return java.util.Collections.unmodifiableMap(decoded);
     }
 
     /** No intra-instruction conditional execution or hidden control effects. */
-    private static boolean orderedControl(Instruction instruction) {
+    private static boolean orderedControl(Instruction instruction, boolean directCalls) {
         PcodeOp[] operations = instruction.getPcode();
         int branches = 0;
         int returns = 0;
+        int calls = 0;
         for (int index = 0; index < operations.length; index++) {
             var operation = operations[index];
             switch (operation.getOpcode()) {
-                case PcodeOp.CALL, PcodeOp.CALLIND, PcodeOp.CALLOTHER,
+                case PcodeOp.CALL -> {
+                    if (!directCalls || ++calls != 1 || index != operations.length - 1 ||
+                            !DirectLeafCalls.directCall(instruction)) return false;
+                }
+                case PcodeOp.CALLIND, PcodeOp.CALLOTHER,
                     PcodeOp.UNIMPLEMENTED, PcodeOp.BRANCHIND -> { return false; }
                 case PcodeOp.BRANCH, PcodeOp.CBRANCH -> {
                     boolean conditional = operation.getOpcode() == PcodeOp.CBRANCH;
@@ -213,7 +225,8 @@ final class RegisterDefinitionFlow {
                 default -> { }
             }
         }
-        return branches == (instruction.getFlowType().isJump() ? 1 : 0) &&
+        return calls == (instruction.getFlowType().isCall() ? 1 : 0) &&
+            branches == (instruction.getFlowType().isJump() ? 1 : 0) &&
             returns == (instruction.getFlowType().isTerminal() ? 1 : 0);
     }
 }

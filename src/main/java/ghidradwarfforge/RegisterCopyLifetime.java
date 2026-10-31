@@ -77,9 +77,11 @@ final class RegisterCopyLifetime {
             for (int index = 0; index < operations.length; index++) {
                 monitor.checkCancelled();
                 PcodeOp operation = operations[index];
-                if (operation.getOpcode() == PcodeOp.CALL && candidate != null &&
-                        !calls.get(instruction.getAddress()).preserves(candidate, monitor)) {
-                    candidate = null;
+                if (operation.getOpcode() == PcodeOp.CALL) {
+                    var effects = calls.get(instruction.getAddress());
+                    if (effects == null) return null;
+                    if (!effects.preserves(originalBase, monitor)) originalAlive = false;
+                    if (candidate != null && !effects.preserves(candidate, monitor)) candidate = null;
                 }
                 if (!validCopyShape(operation)) {
                     return null;

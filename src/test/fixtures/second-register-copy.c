@@ -24,15 +24,47 @@
 #else
 #error Unsupported second-copy fixture target
 #endif
+#ifdef COPY_CALLS
+#undef FIRST
+#undef SECOND
+#undef FIRST_WRITE
+#undef FIRST_CLOBBER
+#undef SECOND_WRITE
+#undef SECOND_CLOBBER
+#if defined(__x86_64__)
+#define FIRST "rbx"
+#define SECOND "r12"
+#define FIRST_WRITE "xorq %%rbx, %%rbx\n"
+#define FIRST_CLOBBER "rbx", "cc"
+#define SECOND_WRITE "xorq %%r12, %%r12\n"
+#define SECOND_CLOBBER "r12", "cc"
+#else
+#define FIRST "x19"
+#define SECOND "x20"
+#define FIRST_WRITE "mov x19, xzr\n"
+#define FIRST_CLOBBER "x19"
+#define SECOND_WRITE "mov x20, xzr\n"
+#define SECOND_CLOBBER "x20"
+#endif
+extern int COPY_CALL_TARGET(int);
+#define CROSS_CALL(name, number, held) \
+    __asm__ volatile(LABEL(name, call##number) "nop\n" : "+r"(held) : : "memory"); \
+    COPY_CALL_TARGET((int)(held) & 3); \
+    __asm__ volatile(LABEL(name, back##number) "nop\n" : "+r"(held) : : "memory");
+#else
+#define CROSS_CALL(name, number, held)
+#endif
 #define LABEL(name, suffix) \
     ".globl " #name "_" #suffix "\n" #name "_" #suffix ":\n"
 #ifdef COPY_CHAIN
 #define EXTRA_COPIES(type, name) \
+        CROSS_CALL(name, 2, second) \
         __asm__ volatile(LABEL(name, copy3) : "+r"(second) : : "memory"); \
         register type third __asm__(FIRST) = second; \
         __asm__ volatile(LABEL(name, third) "nop\n" \
             LABEL(name, kill2) SECOND_WRITE \
             LABEL(name, tail3) "nop\n" : "+r"(third) : : SECOND_CLOBBER, "memory"); \
+        CROSS_CALL(name, 3, third) \
         __asm__ volatile(LABEL(name, copy4) : "+r"(third) : : "memory"); \
         register type fourth __asm__(SECOND) = third; \
         __asm__ volatile(LABEL(name, fourth) "nop\n" \
@@ -64,8 +96,9 @@
         register type first __asm__(FIRST) = value; \
         __asm__ volatile(LABEL(name, saved) "nop\n" \
             LABEL(name, write) ORIGINAL_WRITE : "+r"(first) : : ORIGINAL_CLOBBER, "memory"); \
-        __asm__ volatile(LABEL(name, after) "nop\n" \
-            LABEL(name, copy) : "+r"(first) : : "memory"); \
+        __asm__ volatile(LABEL(name, after) "nop\n" : "+r"(first) : : "memory"); \
+        CROSS_CALL(name, 1, first) \
+        __asm__ volatile(LABEL(name, copy) : "+r"(first) : : "memory"); \
         register type second __asm__(SECOND) = first; \
         __asm__ volatile(LABEL(name, second) "nop\n" : "+r"(second), "+r"(first) : : "memory"); \
         SELF(type, name, instruction) \
@@ -77,6 +110,7 @@
     __attribute__((noinline, noclone)) type name(type value) { \
         FIRST_TWO(type, name, instruction) \
         EXTRA_COPIES(type, name) \
+        CROSS_CALL(name, 4, FINAL_VALUE) \
         name##_sink = FINAL_VALUE; \
         __asm__ volatile(LABEL(name, erase) SECOND_WRITE \
             LABEL(name, unavailable) "nop\n" : : : SECOND_CLOBBER, "memory"); \

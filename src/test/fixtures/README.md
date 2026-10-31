@@ -447,6 +447,14 @@ and the final unavailable tail; mutable-local identity is a separate task.
 adds an exact-width self-copy before handoff. Both retain independent compiler
 and raw-register oracles.
 
+`inspected-call-callees.c` adds optimized branch, loop, nested, recursive,
+discontiguous and writing/restoring callee graphs to the four-handoff driver.
+`--call-graph` selects a graph. Exact saved bodies and calling conventions are
+curated before read-only export; native/QEMU GDB checks every caller instruction
+and call-return boundary. Written/restored carriers intentionally become
+unavailable, and the earlier exporter is an omission control. See
+`docs/INSPECTED-CALL-GRAPHS.md`.
+
 `retained-function-aliases.cpp` defines mangled C++ functions, a real ELF alias,
 and distinct function-owned static integers. The exporter integration curates
 independent qualified names and signatures, then checks native/QEMU GDB types,

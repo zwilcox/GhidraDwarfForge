@@ -85,7 +85,8 @@ for function, start in offsets.items():
         actual.append((low, high, expression[1]))
         cursor += 3
     record = labels[function]
-    stop = record["unavailable"]
+    backup, second = record.get("backupRegisters", [backup, second])
+    stop = record.get("callStop", record["unavailable"])
     expected = [(record["entry"], record["after"], incoming),
                 (record["after"], record["tail"], backup),
                 (record["tail"], stop, second)]
@@ -93,6 +94,13 @@ for function, start in offsets.items():
         expected[-1] = (record["tail"], record["tail3"], second)
         expected += [(record["tail3"], record["tail4"], backup),
                      (record["tail4"], stop, second)]
-    assert actual == expected, (function, actual, expected)
+    if "backupRegisters" in record:
+        assert actual[0][0] == record['entry'] and actual[-1][1] == stop
+        assert all(a[1] == b[0] for a, b in zip(actual, actual[1:])), actual
+        assert all(register in (incoming, backup, second) for low, high, register in actual)
+        for marker, register in [('entry', incoming), ('after', backup), ('tail', second), ('tail3', backup), ('tail4', second)]:
+            assert [r for low, high, r in actual if low <= record[marker] < high] == ([register] if record[marker] < stop else [])
+    else:
+        assert actual == expected, (function, actual, expected)
     checked[function] = actual
 print(json.dumps({"second_register_copy_locations": "PASS", "functions": checked}, indent=4))

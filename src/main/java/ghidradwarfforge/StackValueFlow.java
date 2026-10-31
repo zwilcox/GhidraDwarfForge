@@ -44,6 +44,7 @@ final class StackValueFlow {
     private final int bytes;
     private final Map<Varnode, Fact> facts = new LinkedHashMap<>();
     private final Map<Long, Boolean> slots = new LinkedHashMap<>();
+    private Map<Address, DirectLeafCalls.Leaf> calls = Map.of();
     private Long localOffset;
     private boolean initializing;
 
@@ -77,9 +78,12 @@ final class StackValueFlow {
         Register original = exactRegister(program, incoming);
         if (original == null || original.getLeastSignificantBitInBaseRegister() != 0 ||
                 original.getBaseRegister() == pointer) return List.of();
-        var decoded = RegisterDefinitionFlow.decodedBody(program, function, monitor);
+        var decoded = RegisterDefinitionFlow.decodedInstructions(program, function, true, monitor);
         if (decoded.isEmpty()) return List.of();
+        var calls = DirectLeafCalls.inspect(program, List.copyOf(decoded.values()), monitor);
+        if (calls == null) return List.of();
         var analysis = new StackValueFlow(program, pointer, memory, bytes);
+        analysis.calls = calls;
         analysis.facts.put(incoming, VALUE);
         analysis.facts.put(new Varnode(pointer.getAddress(), pointer.getMinimumByteSize()),
             new Fact(Kind.STACK_ADDRESS, 0));
@@ -102,9 +106,12 @@ final class StackValueFlow {
         for (var row : decoded.entrySet()) {
             monitor.checkCancelled();
             var edges = new LinkedHashSet<Address>();
-            for (Address[] targets : new Address[][] { row.getValue().getDefaultFlows(), row.getValue().getFlows() }) {
-                if (targets != null) edges.addAll(List.of(targets));
+            if (!row.getValue().getFlowType().isCall()) {
+                for (Address[] targets : new Address[][] { row.getValue().getDefaultFlows(), row.getValue().getFlows() }) {
+                    if (targets != null) edges.addAll(List.of(targets));
+                }
             }
+            else if (!calls.containsKey(row.getKey())) return List.of();
             if (row.getValue().getFallThrough() != null) edges.add(row.getValue().getFallThrough());
             if (!decoded.keySet().containsAll(edges)) return List.of();
             successors.put(row.getKey(), edges);
@@ -155,6 +162,7 @@ final class StackValueFlow {
     private StackValueFlow boundaryCopy() {
         var result = new StackValueFlow(program, pointer, memory, bytes);
         result.localOffset = localOffset;
+        result.calls = calls;
         for (var entry : facts.entrySet()) {
             if (!entry.getKey().isUnique()) result.facts.put(entry.getKey(), entry.getValue());
         }
@@ -224,6 +232,18 @@ final class StackValueFlow {
             monitor.checkCancelled();
             if (GhidraVariableStorage.unprovenStore(program, operation)) return false;
             if (operation.getOpcode() == PcodeOp.STORE) store(operation);
+            if (operation.getOpcode() == PcodeOp.CALL) {
+                var effects = calls.get(instruction.getAddress());
+                if (effects == null) return false;
+                // A call summary proves register preservation only. No callee
+                // memory non-aliasing or restored affine stack address is guessed.
+                invalidateMemory();
+                for (Varnode node : new ArrayList<>(facts.keySet())) {
+                    monitor.checkCancelled();
+                    Register register = exactRegister(program, node);
+                    if (register == null || !effects.preserves(register, monitor)) facts.remove(node);
+                }
+            }
             Varnode output = operation.getOutput();
             if (output == null) continue;
             Fact derived = derive(operation);
