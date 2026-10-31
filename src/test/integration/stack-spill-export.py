@@ -115,12 +115,29 @@ def main():
         assert spill['text'] == expected_store, spill
         if name.endswith('kill'):
             row['kill'] = int(writes[1]['address'], 16) - delta
-            row['unavailable'] = symbols[name + '_unavailable']
-            assert int(writes[1]['next'], 16) - delta == row['unavailable']
+            row['stack_end'] = symbols[name + '_unavailable']
+            assert int(writes[1]['next'], 16) - delta == row['stack_end']
         elif args.target == 'aarch64':
             restore, = [i for i in instructions if i['text'] == 'add sp,sp,#0x10']
             row['restore'] = int(restore['address'], 16) - delta
-            row['unavailable'] = int(restore['next'], 16) - delta
+            row['stack_end'] = int(restore['next'], 16) - delta
+        expected_load = ('MOV EAX,dword ptr [RSP + -0x4]' if function['width'] == 4 else
+            'MOV RAX,qword ptr [RSP + -0x8]') if args.target == 'x86_64' else (
+            'ldr w0,[sp, #0xc]' if function['width'] == 4 else 'ldr x0,[sp, #0x8]')
+        reload, = [i for i in instructions if i['text'] == expected_load]
+        row['reload_ready'] = int(reload['next'], 16) - delta
+        # The fixed compiler fixture has exactly one full-width reload into its
+        # ABI return register. The suffix cannot overwrite that register.
+        tail = instructions[instructions.index(reload) + 1:]
+        if args.target == 'x86_64':
+            assert [i['text'] for i in tail][-1:] == ['RET']
+            assert all(i['text'] in ('NOP', 'RET') or
+                (i['text'].startswith('MOV ') and i['text'].endswith(',EAX' if function['width'] == 4 else ',RAX')) for i in tail)
+        else:
+            assert all(i['text'] in ('nop', 'ret', 'add sp,sp,#0x10') or
+                i['text'].startswith('str w0,' if function['width'] == 4 else 'str x0,') for i in tail)
+        if 'stack_end' in row:
+            assert row['reload_ready'] <= row['stack_end']
         row['return'] = int(instructions[-1]['address'], 16) - delta
         labels[name] = row
     assert len(labels) == 4
@@ -135,11 +152,7 @@ def main():
     assert not report['failedFunctions'] and report['failure'] is None
     for name, row in labels.items():
         omitted = [r for r in report['omittedLocations'] if r['function'] == name and r['variable'] == 'value']
-        assert len(omitted) == (1 if 'unavailable' in row else 0)
-        if omitted:
-            assert omitted[0]['reason'] == 'UNKNOWN_LIFETIME'
-            assert int(omitted[0]['startAddress'], 16) == row['unavailable']
-            assert int(omitted[0]['endAddress'], 16) == row['end']
+        assert not omitted, (name, omitted)
         assert any('proven stack-spill lifetime for ' + name + '::value:' in line for line in report['diagnostics'])
     write('report.json', report)
     for variant, artifact in [('compiler', reference), ('forge', case / 'spill.dbg')]:

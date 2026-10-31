@@ -238,8 +238,8 @@ public final class GhidraVariableStorage {
             // handoff. Compose the same proof from that boundary onward. Facts
             // from before the handoff cannot resurrect a killed value. Every
             // iteration must advance, so the decoded body bounds the chain.
-            // Broader call-crossing requires its own proof, not this fallback.
-            while (boundary < end && calls.isEmpty() && backup.bits() != null &&
+            // Every call in a suffix still requires the inspected graph proof.
+            while (boundary < end && backup.bits() != null &&
                     function.getProgram() == program && storage.getProgramArchitecture() == program &&
                     parameter.getFunction() == function && parameter.getOrdinal() >= 0 &&
                     function.getParameter(parameter.getOrdinal()) == parameter && parameter.getFirstUseOffset() == 0 &&
@@ -252,7 +252,7 @@ public final class GhidraVariableStorage {
                     }
                 }
                 var next = RegisterCopyLifetime.prove(program, firstHandoff, end, suffix,
-                    backup.bits(), parameter.getLength(), registers, monitor);
+                    backup.bits(), parameter.getLength(), registers, calls, monitor);
                 // A self-copy/widening can preserve the first fact while still
                 // being a physical write in the second proof. Require agreement
                 // on the handoff instead of joining two different boundaries.
@@ -286,6 +286,10 @@ public final class GhidraVariableStorage {
                 (spilled ? "proven parameter stack spill may have changed before address 0x" :
                     "proven parameter register storage was overwritten before address 0x") +
                     Long.toHexString(boundary) + "; later storage is not established")));
+        }
+        if (!composite && result.stream().anyMatch(interval -> !interval.storage().available())) {
+            return StackValueFlow.extendUnavailable(result,
+                StackValueFlow.prove(program, function, parameter, registers, monitor));
         }
         return List.copyOf(result);
     }
@@ -581,11 +585,16 @@ public final class GhidraVariableStorage {
                         }
                     }
                     case PcodeOp.CALL -> {
-                        // Only a backup established before the original's
-                        // overwrite can cross a call; never infer a new prefix
-                        // from ABI metadata or a call instruction itself.
-                        if (firstWriteEnd == -1 || !calls.containsKey(instruction.getAddress())) {
-                            return -1;
+                        var effects = calls.get(instruction.getAddress());
+                        if (effects == null) return -1;
+                        if (firstWriteEnd == -1) {
+                            for (Register register : registers) {
+                                monitor.checkCancelled();
+                                if (!effects.preserves(register, monitor)) {
+                                    firstWriteEnd = next;
+                                    break;
+                                }
+                            }
                         }
                     }
                     case PcodeOp.RETURN -> returns = true;
@@ -649,11 +658,20 @@ public final class GhidraVariableStorage {
         }
         if (storage.isStackStorage()) {
             if (variable.getFirstUseOffset() != 0) {
-                // Pinned Ghidra stack symbols do not model first-use ranges.
-                // Keep the declaration, without inventing a start or an end.
+                // A stored offset alone proves no lifetime. The separate raw
+                // stack-definition proof may establish bounded intervals.
                 return unavailable(OmissionReason.UNKNOWN_LIFETIME,
                     "stack local has unsupported nonzero first-use offset " +
                         variable.getFirstUseOffset() + "; its lifetime is not established");
+            }
+            for (Variable other : function.getAllVariables()) {
+                monitor.checkCancelled();
+                var otherStorage = other.getVariableStorage();
+                if (other != variable && other.hasAssignedStorage() && otherStorage != null &&
+                        otherStorage.isValid() && storage.intersects(otherStorage)) {
+                    return unavailable(OmissionReason.UNKNOWN_LIFETIME,
+                        "stack local shares storage with another saved variable; its lifetime is not established");
+                }
             }
             return stackStorage(storage, variable.getLength(), "local");
         }
@@ -891,6 +909,12 @@ public final class GhidraVariableStorage {
      */
     static boolean closedRegisterFlow(Program program, Function function,
             Map<Address, Instruction> decoded, TaskMonitor monitor) throws CancelledException {
+        return closedRegisterFlow(program, function, decoded, false, monitor);
+    }
+
+    static boolean closedRegisterFlow(Program program, Function function,
+            Map<Address, Instruction> decoded, boolean directCalls, TaskMonitor monitor)
+            throws CancelledException {
         if (!decoded.containsKey(function.getEntryPoint())) {
             return false;
         }
@@ -934,11 +958,16 @@ public final class GhidraVariableStorage {
                 }
                 continue;
             }
-            if (flow.isCall() || (flow.isComputed() && !flow.isTerminal()) ||
+            if ((flow.isCall() && (!directCalls || flow.isComputed() || flow.isConditional() ||
+                    !flow.hasFallthrough() || instruction.getDelaySlotDepth() != 0)) ||
+                    (flow.isComputed() && !flow.isTerminal()) ||
                     (flow.isJump() && (defaults == null || defaults.length == 0))) {
                 return false;
             }
             for (Address[] targets : new Address[][] { defaults, references }) {
+                // An inspected ordinary call returns at its local fallthrough;
+                // the separate call-graph proof owns its destination body.
+                if (flow.isCall()) continue;
                 if (targets == null) {
                     continue;
                 }

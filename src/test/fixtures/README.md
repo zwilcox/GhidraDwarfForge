@@ -443,6 +443,17 @@ and unavailable tails against compiler DWARF and raw registers. It deliberately
 exercises incoming-value preservation. `second-register-copy-export.py --handoffs 4` compiles the same source with `COPY_CHAIN`, adding two more
 transfers that reuse previously killed registers. GDB observes every handoff
 and the final unavailable tail; mutable-local identity is a separate task.
+`--copy-shape early` copies before the original is killed; `--copy-shape self`
+adds an exact-width self-copy before handoff. Both retain independent compiler
+and raw-register oracles.
+
+`inspected-call-callees.c` adds optimized branch, loop, nested, recursive,
+discontiguous and writing/restoring callee graphs to the four-handoff driver.
+`--call-graph` selects a graph. Exact saved bodies and calling conventions are
+curated before read-only export; native/QEMU GDB checks every caller instruction
+and call-return boundary. Written/restored carriers intentionally become
+unavailable, and the earlier exporter is an omission control. See
+`docs/INSPECTED-CALL-GRAPHS.md`.
 
 `retained-function-aliases.cpp` defines mangled C++ functions, a real ELF alias,
 and distinct function-owned static integers. The exporter integration curates
@@ -506,3 +517,40 @@ compiler locals and raw physical registers at every executed instruction; Forge
 must expose only the current logical value where all paths agree, and no
 location before definition, after loss or at an ambiguous join. Both branch
 choices and three signed input pairs run on x86-64/AArch64 exec/PIE/rebase roles.
+
+`stack-value-transitions.c` retains an immutable incoming argument while compiler
+locals describe two physical stack slots and two fixed register carriers.
+Explicit labels identify first/second loads, slot writes and final register
+kills. Twelve signed 32/64-bit cases cover surviving reloads, repeated spill/load,
+full slot reuse before a load, unknown-address aliasing and final value loss.
+The fixture disables stack-protector instrumentation to isolate the documented
+straight-line proof; broader call handling remains separately required.
+Compiler GDB independently supplies the slots' SP-relative layout. Every
+executed instruction checks compiler locals, raw registers/memory and Forge's
+incoming parameter. GNU/LLVM/pinned strict validation, exact raw loclists,
+previous-package comparison, protected input/program/module hashes and
+repeatability cover x86-64/AArch64 exec/PIE/rebased-PIE roles. No physical copy
+is treated as evidence of an inferred source variable's identity.
+
+`stack-local-definitions.c` supplies two distinct compiler scopes with a reused
+four- or eight-byte stack slot. Both widths use large signed values, including
+negative initial values. The dedicated harness records exact initializing stores,
+reopens saved analyst identities, checks every candidate/previous GDB boundary,
+and validates raw stack-to-register loclists on x86-64/AArch64 exec, PIE and
+rebased PIE at both widths. See `docs/STACK-LOCAL-DEFINITIONS.md`; alias/mutation
+cases and lexical scope recovery are not implied by this fixture.
+
+`stack-local-effects.c` keeps an old R10/X9 copy alive across partial writes,
+full assignments and pointer stores. The dedicated signed32/64 runtime harness
+checks that stale copies cannot resurrect the local, distinguishes known
+non-overlap from unknown pointers that happen not to alias, and checks every
+instruction through x86-64/AArch64 exec/PIE/rebased exports. Compiler locations,
+raw loclists and physical debugger reads provide independent oracles. See
+`docs/STACK-LOCAL-EFFECTS.md` for the precise evidence and remaining scope.
+
+`stack-control-flow.c` exercises diamonds, skipped definitions, stable/killing
+loops, repeated definitions with stale register copies, and split bodies.
+The signed32/64 harness executes both paths and several loop iterations under
+native/QEMU GDB, correlating raw instructions with compiler and saved Ghidra
+identities. Only its driver uses `-O0` to avoid an LLVM 18 call-site verifier
+loop; all functions under test remain `-O2`. See `docs/STACK-CONTROL-FLOW.md`.

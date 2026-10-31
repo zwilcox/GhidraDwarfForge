@@ -99,6 +99,34 @@ after its identity is lost. Calls remain outside the additional-handoff path.
 This component does not establish mutable-local, stack, branch or mixed-piece
 identity; those requirements remain listed above.
 
+## Current component: stack/register control flow
+
+**CONFIRMED locally; hosted acceptance pending:** closed branches, loops and
+body holes now use exact state intersection, repeated-definition retirement
+and executed saved-owner boundaries. Twelve runtime cases and 21 actual Java 21
+suites pass; see `STACK-CONTROL-FLOW.md` for validators, GDB observations,
+negative controls and retained setup failures. Early and self-copies also pass.
+Broader inspected calls, mutable stack mapping identity, mixed pieces and every
+remaining P3.3 row above remain in scope. PR99's correction has been normally
+merged into this development branch; routine hosted integration is still needed.
+
+## Current component: inspected direct-call graphs
+
+**CONFIRMED locally; hosted acceptance pending:** fully decoded call graphs now
+cover branches, loops, nesting, recursion and body holes. The 36 runtime cases,
+512 new decoder checks and 22 actual Java 21 suites pass; see
+`INSPECTED-CALL-GRAPHS.md` for exact evidence and retained failures. Call memory
+facts and physically written registers are retired unless separately proved.
+Mutable stack mapping identity, mixed pieces and every P3.3 row remain required.
+
+## Integration checkpoint
+
+PR99 is accepted at `d69b0747`, normally merged as `0b76f40a`; run
+`41222554336` and exact hosted review pass. The current development branch
+normally includes that main merge and all locally tested stack/control-flow/
+inspected-call commits. The combined head still needs its own required gate.
+No remaining row is removed from either umbrella.
+
 ## Completion audit
 
 For every row, record implementation/evidence files, exact reviewed source and

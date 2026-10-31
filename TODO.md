@@ -1,5 +1,58 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED PR100 control-flow oracle correction; fresh hosted gate pending:**
+run `41230414679` failed both x86-64/AArch64 lanes on an older assertion that the
+complete function body could not preserve its copied parameter. The production
+value-flow engine proves that backup; the excluded-block case still omits its
+location. The corrected six-role oracle passes 24 exports and 270 instruction
+observations on actual Java 21, with 78 available complete-body values and exact
+unavailable overwrite/excluded-body boundaries. Production code is unchanged.
+GNU/LLVM/pinned strict checks, original preservation, deterministic repeats and
+four stack-spill/direct-call regressions pass. Receipt:
+`2d5981475cbdb6859fab80e754ace616c7a4de3f63b0cca06b276a5fca8e0425`.
+See `docs/REGISTER-BODY-CONTROL-FLOW.md`. P1.11a and P3.3 remain incomplete.
+
+**CONFIRMED PR100 hosted harness failure and local correction:** AArch64 run
+`41229139226` stopped on an old diagnostic assertion before GDB. The new scalar
+spill proof retains `recovered_add` parameters, while the semantic harness still
+expected register-only prefixes and unavailable values. Tests now require the
+stack-spill diagnostic and exact `left=19`, `right=23` values. Four exec/repeat,
+PIE and shared-object exports/GDB runs pass against the exact hosted Java 21
+package. Receipt: `a3483015113053cf4390dcd2bb9b5475c638fc109cbcd38c4dda20e8eae75c9f`.
+Production code is unchanged; a fresh exact-head hosted gate remains required.
+P1.11a and P3.3 remain incomplete.
+
+**CONFIRMED integration:** PR99 head `d69b07471c92aaf447e962b7779756b5f931dce1`
+passes all twelve jobs in run `41222554336` and exact hosted package/raw/host
+review. Six mutable-local address roles pass 12 exports and 11,088 GDB
+observations; sixteen actual Java 21 suites, Windows saved-identity/assignment
+models, the isolated native producer and both GUI host reviews pass within
+their documented scopes. Normal merge `0b76f40a4b3da7167d5948b22f5161bf45446aec`
+retains the accepted tree. Receipt:
+`ce910deda47c5eacf3be46c1edfcf275c7a00c1425b63a755694a80d6c27b67a`.
+This supersedes older pending PR99 statements. The combined stack/register,
+control-flow and inspected-call component now has a current-main base and
+requires its own exact hosted gate. P1.11a and P3.3 remain incomplete.
+
+**CONFIRMED locally; hosted acceptance pending:** inspected direct-call graphs
+now preserve proven incoming register values through branches, loops, nested
+and recursive calls and discontiguous bodies. All 36 x86-64/AArch64 address-role
+cases pass 72 candidate/36 previous exports and 9,774 distinct caller instruction
+observations. Twenty-two actual Java 21 suites, 12 runtime regressions,
+validators, determinism and failure/cancellation checks pass. See
+`docs/INSPECTED-CALL-GRAPHS.md`. Call memory facts are retired; restored-register
+proofs, mutable stack mapping identity, mixed pieces and all P3.3 remain open.
+
+**CONFIRMED locally; hosted acceptance pending:** stack/register value states now
+intersect across closed branches, loops and discontiguous bodies. All twelve
+signed32/64 target/address cases pass 24 candidate/twelve previous exports,
+36,828 GDB observations, 180 stale-backup checks and 216 unavailable joins.
+Early/self-copy runtime cases, 21 actual Java 21 suites, validators, preservation,
+determinism and failure/cancellation checks pass. See `docs/STACK-CONTROL-FLOW.md`.
+PR99's guard correction is normally merged into this development branch;
+its hosted acceptance is still pending. Broader calls, mutable stack mapping
+identity, mixed pieces and P3.3 remain required.
+
 **CONFIRMED PR99 hosted guard failure and local correction:** run `41221918712`
 rejected a generic address field named `pc`. The field is now
 `definitionAddress`; the architecture guard is unchanged and its negative
@@ -7,6 +60,25 @@ controls pass. Six fresh Java 21 runtime roles, twelve exports, 11,088 GDB
 observations and sixteen model suites pass. Exact replacement-head hosted
 acceptance remains pending; see `docs/MERGED-LOCAL-MAPPINGS.md`. P1.11a/P3.3
 remain incomplete.
+
+**CONFIRMED locally; hosted acceptance pending:** stack-local partial/full writes
+and known/unknown aliases pass all twelve width/address/target cases on actual
+JDK21, with 24 candidate/twelve previous exports and 3,636 GDB observations.
+The 36 stale-register controls reject, twelve unknown-pointer/non-alias cases
+remain unavailable and twelve known non-alias cases preserve locations.
+Independent raw loclists, validators, identity/build-ID checks, determinism and
+saved-program/module/input preservation pass. Production Java is unchanged;
+see `docs/STACK-LOCAL-EFFECTS.md`. PR99 corrections and hosted dependency
+acceptance remain pending. Broader calls/flow, mixed pieces and P3.3 remain open.
+
+**CONFIRMED locally; hosted acceptance pending:** stack-local runtime coverage
+now includes signed 32/64-bit values on x86-64/AArch64 in all three address roles.
+Twelve cases pass 24 candidate/twelve previous exports, 408 GDB instruction
+observations and 78 newly available values on actual JDK 21, with raw loclists,
+validators, preservation and determinism. Production code/JAR are unchanged.
+See `docs/STACK-LOCAL-DEFINITIONS.md`; PR99's guard correction still needs to
+be integrated into this dependent branch. Alias/mutation runtime cases,
+broader calls/flow, mixed pieces and P3.3 remain required.
 
 **CONFIRMED development acceptance:** P1.7 function signatures,
 calling conventions, declarations, thunks and aliases passed the combined
@@ -1868,6 +1940,23 @@ Review receipt SHA-256:
 This supersedes earlier pending PR98 notes. The separate main-push gate and
 this saved mutable-local component retain their own validation status;
 P1.11a and P3.3 remain incomplete.
+
+**CONFIRMED locally; hosted acceptance pending:** explicit saved stack-local
+initializing stores and later slot reuse now have bounded locations. Five-profile
+identity tests pass 175 checks; 32/64-bit x86-64/AArch64 decoder tests pass 376
+checks, and 20 actual Java 21 suites pass. Six signed-four-byte runtime roles
+pass 12 candidate/six previous exports and 174 candidate/previous instruction
+observations, with compiler scope/value checks and exact raw loclists. See
+`docs/STACK-LOCAL-DEFINITIONS.md`. The final source-commit package matches the tested JAR. Hosted acceptance,
+broader runtime widths/aliases, calls/flow, mixed pieces and P3.3 remain required.
+
+**CONFIRMED locally; hosted acceptance pending:** stack spill/reload transitions
+pass 320 model checks, 17 actual Java 21 suites and six dedicated compiler/GDB
+roles. Twelve candidate/six previous exports provide 12,528 instruction
+observations, with 1,044 additional available values and explicit gaps after
+stale/uncertain reloads or final loss. See `docs/STACK-VALUE-TRANSITIONS.md`.
+Final package/hosted acceptance, stack-local initialization/slot reuse identity,
+general calls/flow, mixed pieces and scopes remain required.
 
 **CONFIRMED locally; hosted acceptance pending:** explicitly saved merged-local
 identity now follows register moves, updates and reinitializations. Six roles

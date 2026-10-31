@@ -66,6 +66,7 @@ expected_sources=(
     function_entry_ranges.c
     i386-alias-entry.cpp
     i386-profile.c
+    inspected-call-callees.c
     later-register-local.c
     local-definition-flow.c
     merged-local-mappings.c
@@ -89,8 +90,12 @@ expected_sources=(
     semantic.c
     shared_driver.c
     shared_semantic.c
+    stack-control-flow.c
     stack-first-use.c
+    stack-local-definitions.c
+    stack-local-effects.c
     stack-spill.c
+    stack-value-transitions.c
     terminal-composite.c
 )
 mapfile -t actual_sources < <(

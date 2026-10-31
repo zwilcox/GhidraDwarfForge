@@ -59,10 +59,12 @@ def main():
     symbols = {}
     for line in (case / 'symbols.log').read_text().splitlines():
         fields = line.split()
-        if len(fields) == 8 and fields[7] in ('boundary', 'probe_hidden', 'probe_resume', 'probe_after'):
+        if len(fields) == 8 and fields[7] in ('boundary', 'probe_copy_done', 'probe_hidden', 'probe_resume', 'probe_after'):
             assert fields[7] not in symbols
             symbols[fields[7]] = int(fields[1], 16)
-    assert len(symbols) == 4
+            if fields[7] == 'boundary':
+                symbols['end'] = int(fields[1], 16) + int(fields[2])
+    assert len(symbols) == 6
     write('symbols.json', symbols)
     assert int.from_bytes(reference.read_bytes()[16:18], 'little') == (2 if args.role == 'exec' else 3)
     rebase = ['-postScript', 'RebaseFixtureProgram.java', '0x2000000'] if args.role == 'pie-rebased' else []
@@ -112,7 +114,15 @@ def main():
                 for line in log.splitlines() if 'GhidraDwarfForge report: {' in line]
             assert not report['failedFunctions'] and report['failure'] is None
             omitted = [r for r in report['omittedLocations'] if r['function'] == 'boundary' and r['variable'] == 'value']
-            assert omitted and all(r['reason'] == ('UNKNOWN_LIFETIME' if mode == 'excluded' else 'REGISTER_MODIFIED') for r in omitted)
+            assert omitted and all(r['reason'] == 'UNKNOWN_LIFETIME' for r in omitted)
+            if mode == 'complete':
+                arithmetic, = [row for row in model['instructions'] if row['address'] == symbols['probe_after']]
+                assert arithmetic['bytes'] == ('83c007' if args.target == 'x86_64' else '001c0011')
+                assert len(omitted) == 1
+                assert (int(omitted[0]['startAddress'], 0), int(omitted[0]['endAddress'], 0)) == (arithmetic['next'], symbols['end'])
+            else:
+                intervals = [(int(r['startAddress'], 0), int(r['endAddress'], 0)) for r in omitted]
+                assert intervals == [(symbols['boundary'], symbols['probe_hidden']), (symbols['probe_after'], symbols['end'])]
             write(name + '-report.json', report)
         project_after = {str(p.relative_to(project)): support.digest(p) for p in project.rglob('*') if p.is_file()}
         write(mode + '-project-after.json', project_after)
@@ -129,7 +139,7 @@ def main():
         run(variant + '-strict', ['python3', source / 'check-dwarfdump.py', artifact,
             case / (variant + '-strict-checks.log'), '--original', binary])
         if variant != 'compiler':
-            # Keep the name and type, with no expression or location-list attribute.
+            # Keep excluded-flow name/type only; the complete CFG now proves a backup.
             records = []
             for line in (case / (variant + '-info.log')).read_text().splitlines():
                 header = re.match(r'^\s*<(\d+)><[0-9a-f]+>: Abbrev Number: \d+(?: \((DW_TAG_\w+)\))?', line)
@@ -149,7 +159,31 @@ def main():
                     children.append(record)
             parameter, = children
             assert parameter['tag'] == 'DW_TAG_formal_parameter'
-            assert 'DW_AT_type' in parameter['attrs'] and 'DW_AT_location' not in parameter['attrs']
+            assert 'DW_AT_type' in parameter['attrs']
+            if variant == 'excluded':
+                assert 'DW_AT_location' not in parameter['attrs']
+            else:
+                location = parameter['attrs']['DW_AT_location']
+                match = re.fullmatch(r'(0x[0-9a-f]+) \(location list\)', location)
+                assert match, location
+                # Independently read the exact fixed-form DWARF 5 loclist bytes.
+                section, = re.findall(r'^\s*\[\s*\d+\]\s+\.debug_loclists\s+PROGBITS\s+[0-9a-f]+\s+([0-9a-f]+)\s+([0-9a-f]+)\b', (case / 'complete-sections.log').read_text(), re.M)
+                offset, size = [int(v, 16) for v in section]
+                import struct
+                data = artifact.read_bytes()[offset:offset + size]
+                assert struct.unpack_from('<IHBBI', data) == (size - 4, 5, 8, 0, 0)
+                cursor = int(match[1], 16)
+                intervals = []
+                while data[cursor] != 0:
+                    assert data[cursor] == 7  # DW_LLE_start_end
+                    start, end = struct.unpack_from('<QQ', data, cursor + 1)
+                    assert data[cursor + 17:cursor + 19] == bytes([2, 0x90])  # DW_OP_regx
+                    intervals.append([start, end, data[cursor + 19]])
+                    cursor += 20
+                arithmetic, = [row for row in evidence['complete']['model']['instructions'] if row['address'] == symbols['probe_after']]
+                assert intervals == [[symbols['boundary'], symbols['probe_copy_done'], 4 if args.target == 'x86_64' else 1],
+                    [symbols['probe_copy_done'], arithmetic['next'], 0]], intervals
+                write('complete-raw-intervals.json', intervals)
             write(variant + '-raw-location.json', parameter)
     os.environ['FLOW_PREVIOUS'] = 'previous' if args.previous_ghidra else ''
     write('model.json', {'role': args.role, 'target': args.target, 'cases': evidence})

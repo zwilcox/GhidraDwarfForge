@@ -48,17 +48,21 @@ public final class SecondRegisterCopySmoke {
                 // A partial clobber ends the whole value at the completed instruction.
                 if (x86) check(target, bytes, prefix + copy + nop + firstKill + nop +
                     "41b301" + nop + ret, 15, 19, true);
-                // No copy, a changed arithmetic value, or a stale pre-handoff copy.
+                // No copy or a changed arithmetic value cannot preserve the input.
                 check(target, bytes, prefix + (x86 ? "909090" : nop) + suffix, 0, 0, false);
                 check(target, bytes, prefix + (x86 ? "4d01d3" : "4a010991") + suffix, 0, 0, false);
-                check(target, bytes, initial + copy + nop + originalKill + nop +
-                    firstKill + nop + secondKill + nop + ret, 0, 0, false);
+                // A copy before the original register is killed still holds the
+                // immutable incoming bits. The shared flow proof retains it.
+                String earlyPrefix = initial + copy + nop + originalKill + nop + firstKill;
+                check(target, bytes, earlyPrefix + nop + secondKill + nop + ret,
+                    earlyPrefix.length() / 2, (earlyPrefix + nop + secondKill).length() / 2, true);
                 // A second copy killed before handoff is not a surviving fact.
                 check(target, bytes, prefix + copy + nop + secondKill + nop + firstKill + nop + ret, 0, 0, false);
-                // A self-copy of the first backup creates different physical and
-                // semantic write boundaries. Do not join mismatched proofs.
-                check(target, bytes, prefix + copy + nop + (x86 ? (bytes == 4 ? "4589d2" : "4d89d2") : (bytes == 4 ? "e903092a" : "e90309aa")) +
-                    nop + firstKill + nop + secondKill + nop + ret, 0, 0, false);
+                // Exact-width self-copies preserve the same incoming bits.
+                String selfPrefix = prefix + copy + nop + (x86 ? (bytes == 4 ? "4589d2" : "4d89d2") :
+                    (bytes == 4 ? "e903092a" : "e90309aa")) + nop + firstKill;
+                check(target, bytes, selfPrefix + nop + secondKill + nop + ret,
+                    selfPrefix.length() / 2, (selfPrefix + nop + secondKill).length() / 2, true);
                 // Copying the first register only after its kill cannot resurrect it.
                 check(target, bytes, prefix + firstKill + nop + copy + nop + secondKill + nop + ret, 0, 0, false);
             }

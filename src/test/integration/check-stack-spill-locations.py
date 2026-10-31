@@ -82,7 +82,7 @@ for function, start in offsets.items():
         actual.append((low, high, expression.hex()))
         cursor += 1 + length
     record = labels[function]
-    stop = record.get("unavailable", record["end"])
+    stop = record.get("stack_end", record["end"])
     # Offsets are independently derived from this source-built fixture's width
     # and checked against the observed machine store, not extracted from DWARF.
     offset = -record['width'] if target == 'x86_64' else 16 - record['width']
@@ -90,6 +90,8 @@ for function, start in offsets.items():
     memory = bytes([0x92, stack_pointer, offset & 0x7f]).hex()
     expected = [(record["entry"], record["after"], bytes([0x90, incoming]).hex()),
                 (record["after"], stop, memory)]
+    if stop < record["end"]:
+        expected.append((stop, record["end"], bytes([0x90, 0]).hex()))
     assert actual == expected, (function, actual, expected)
     checked[function] = actual
 print(json.dumps({"stack_spill_locations": "PASS", "functions": checked}, indent=4))
