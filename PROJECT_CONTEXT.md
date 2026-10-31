@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED new sectionless unwind gap (2026-10-31):** the i386 alias
+candidate passes six base and six automatic-alias exec/PIE/rebase cases, but
+sectionless rebased PIE fails `next` because the original unwind bytes have no
+`.eh_frame` section view. A PT_GNU_EH_FRAME-only discovery experiment matches
+16 header-bearing fixtures across five targets, declines two absent headers,
+and repairs the failing GDB case with unchanged original frame bytes. GNU,
+LLVM and strict libdwarf checks pass. Production bounded/cancellable recovery
+is still PLANNED; i386 alias acceptance is held on that work. See
+`docs/research/SECTIONLESS-UNWIND.md`; P1.7/#66 remains open.
+
 **CONFIRMED locally; sectionless alias acceptance incomplete (2026-10-31):**
 bounded PT_DYNAMIC inventories now preserve original symbols before analyst
 alias insertion. Twelve four-target exec/PIE/rebase cases, four incomplete-count
