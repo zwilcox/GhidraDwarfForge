@@ -604,7 +604,7 @@ jobs:
                 libc6-dev-arm64-cross qemu-user-static)
               ;;
             arm32)
-              packages+=(gcc-arm-linux-gnueabihf binutils-arm-linux-gnueabihf
+              packages+=(gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf binutils-arm-linux-gnueabihf
                 libc6-dev-armhf-cross qemu-user-static)
               ;;
             mips32be)
@@ -1127,6 +1127,33 @@ jobs:
         run: |
           for role in exec pie pie-rebased; do
               python3 src/test/integration/curated-thunk-export.py "$GHIDRA_INSTALL_DIR" --target "$TARGET" --role "$role"
+          done
+
+      - name: ARM and Thumb automatic aliases retain mode and original symbols
+        if: matrix.target == 'arm32'
+        run: |
+          set -euo pipefail
+          for mode in arm thumb mixed; do
+              base="$PWD/build/test-results/arm-alias-bases/$mode"
+              for role in exec pie pie-rebased; do
+                  for symbols in retained stripped; do
+                      python3 src/test/integration/retained-function-aliases-export.py \
+                          "$GHIDRA_INSTALL_DIR" arm32 --arm-mode "$mode" --role "$role" \
+                          --symbols "$symbols" --prepare-for-aliases --hash-style both --results-root "$base"
+                  done
+              done
+              python3 src/test/integration/arm-function-aliases.py "$GHIDRA_INSTALL_DIR" \
+                  --arm-mode "$mode" --base-root "$base" \
+                  --results-root "$PWD/build/test-results/arm-function-aliases/$mode"
+              python3 src/test/integration/sectionless-function-aliases.py "$GHIDRA_INSTALL_DIR" arm32 \
+                  --arm-mode "$mode" --base-root "$base" \
+                  --output "$PWD/build/test-results/arm-sectionless-aliases/$mode"
+              python3 src/test/integration/arm-alias-mode-controls.py \
+                  "$PWD"/build/test-results/arm-sectionless-aliases/"$mode"/arm32.*
+              if [[ "$mode" == mixed ]]; then
+                  python3 src/test/integration/arm-alias-mode-controls.py --function-index 1 \
+                      "$PWD"/build/test-results/arm-sectionless-aliases/"$mode"/arm32.*
+              fi
           done
 
       - name: Sectionless analyst aliases preserve complete dynamic inventories

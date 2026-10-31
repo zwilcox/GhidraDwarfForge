@@ -78,14 +78,18 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
     parser.add_argument('target', choices=('x86_64', 'i386', 'aarch64', 'arm32', 'mips32be', 'mips32le'))
-    parser.add_argument('--arm-mode', choices=('arm', 'thumb'), default='arm')
+    parser.add_argument('--arm-mode', choices=('arm', 'thumb', 'mixed'), default='arm')
     parser.add_argument('--role', choices=('exec', 'pie', 'pie-rebased'), default='exec')
     parser.add_argument('--symbols', choices=('retained', 'stripped'), default='retained')
     parser.add_argument('--results-root', type=Path,
         default=repository / 'build/test-results/retained-function-aliases')
     parser.add_argument('--mips-fp32', action='store_true', help='Build the explicit O32 FP32 fixture profile')
     parser.add_argument('--hash-style', choices=('default', 'both'), default='default')
+    parser.add_argument('--prepare-for-aliases', action='store_true',
+        help='ARM fixture preparation: compiler runtime and Forge structure only; final alias runtime is required')
     args = parser.parse_args()
+    if args.prepare_for_aliases and args.target != 'arm32':
+        parser.error('--prepare-for-aliases requires the ARM alias follow-up')
     if args.mips_fp32 and not args.target.startswith('mips'):
         parser.error('--mips-fp32 requires a MIPS target')
     ghidra = args.ghidra.resolve(strict=True)
@@ -105,6 +109,9 @@ def main():
         return result
 
     fixture = source.parent / 'fixtures/retained-function-aliases.cpp'
+    if args.arm_mode == 'mixed':
+        assert args.target == 'arm32'
+        fixture = source.parent / 'fixtures/arm-mixed-function-aliases.cpp'
     protected = [fixture, Path(__file__).resolve(), source / 'retained-function-aliases-gdb.py',
         source / 'retained-function-aliases-gdb.sh', source / 'qemu-socket.sh',
         source / 'elf-layout-gdb-oracle.sh', source / 'dynamic-composite-storage-check.py',
@@ -130,7 +137,7 @@ def main():
         flags.append('-mfp32')
     if args.target == 'arm32':
         flags += ['-march=armv7-a', '-mfpu=vfpv3-d16', '-mfloat-abi=hard',
-            '-m' + args.arm_mode, '-funwind-tables']
+            '-m' + ('arm' if args.arm_mode == 'mixed' else args.arm_mode), '-funwind-tables']
     if args.hash_style != 'default':
         flags.append('-Wl,--hash-style=' + args.hash_style)
     run('compile', [cc, '-O1', '-g3', '-gdwarf-5', '-gno-variable-location-views', *flags,
@@ -141,6 +148,11 @@ def main():
     run('symbols', ['readelf', '-sW', reference])
     if args.target == 'arm32':
         run('instructions', [prefix + 'objdump', '-drw', reference])
+        if args.arm_mode == 'mixed':
+            main_code = re.search(r'(?ms)^[0-9a-f]+ <main>:\n(.*?)(?=\n\n|\Z)', (case / 'instructions.log').read_text())
+            assert main_code is not None and len(re.findall(r'\bblx\s+r\d+\b', main_code[1])) == 4
+            write('indirect-call-evidence.json', {'status': 'PASS', 'compilerProfile': 'ARMv7-A',
+                'indirectCalls': 4, 'mainDisassembly': main_code[1]})
     symbols = {}
     for line in (case / 'symbols.log').read_text().splitlines():
         f = line.split()
@@ -160,7 +172,7 @@ def main():
             'original': original, 'privateAddress': d['address'], 'privateValue': value}
         if args.target == 'arm32':
             # ELF function values carry Thumb mode; byte/DWARF addresses do not.
-            thumb = args.arm_mode == 'thumb'
+            thumb = args.arm_mode == 'thumb' or (args.arm_mode == 'mixed' and original == aliased)
             assert f['address'] & 1 == int(thumb)
             row['entry'] = f['address'] & ~1
             row['elfSymbolValue'], row['elfSymbolSize'] = f['address'], f['size']
@@ -309,7 +321,8 @@ def main():
             assert dtype['attrs']['DW_AT_encoding'].split()[0] == '5'
         raw.append({'function': function, 'parameter': parameter, 'private': owned})
     write('raw-dies.json', raw)
-    run('gdb-driver', ['bash', source / 'retained-function-aliases-gdb.sh', repository, case, args.target], timeout=240)
+    run('gdb-driver', ['bash', source / 'retained-function-aliases-gdb.sh', repository, case, args.target,
+        *(['compiler-only'] if args.prepare_for_aliases else [])], timeout=240)
     after = {name: support.digest(Path(name)) for name in before}
     write('protected-after.json', after)
     assert before == after
@@ -317,9 +330,11 @@ def main():
     write('project-after.json', project_after)
     changes = [name for name in sorted(project_before.keys() | project_after.keys()) if project_before.get(name) != project_after.get(name)]
     assert set(changes) <= {'Aliases.rep/idata/~index.bak', 'Aliases.rep/idata/~journal.bak'}, changes
-    write('result.json', {'status': 'PASS', 'target': args.target, 'role': args.role, 'symbols': args.symbols,
+    status = 'PREPARED_FOR_ALIAS_RUNTIME' if args.prepare_for_aliases else 'PASS'
+    write('result.json', {'status': status, 'target': args.target, 'role': args.role, 'symbols': args.symbols,
+        'runtime': 'compiler-only' if args.prepare_for_aliases else 'compiler-and-forge',
         'inputSha256': before[str(binary)], 'hashes': hashes, 'protectedUnchanged': True, 'projectBackupChanges': changes})
-    print('retained-function-aliases-export=PASS ' + str(case), flush=True)
+    print('retained-function-aliases-export=' + status + ' ' + str(case), flush=True)
 
 
 if __name__ == '__main__':

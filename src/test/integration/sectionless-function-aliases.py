@@ -30,7 +30,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
     parser.add_argument('target', choices=('x86_64', 'i386', 'aarch64', 'arm32', 'mips32be', 'mips32le'))
-    parser.add_argument('--arm-mode', choices=('arm', 'thumb'))
+    parser.add_argument('--arm-mode', choices=('arm', 'thumb', 'mixed'))
     parser.add_argument('--base-root', type=Path, required=True)
     parser.add_argument('--expect-omission', action='store_true', help='Require complete-count diagnostic and intact primary debugging')
     parser.add_argument('--role', choices=('exec', 'pie', 'pie-rebased'))
@@ -68,7 +68,8 @@ def main():
             source / 'ghidra_scripts/RebaseFixtureProgram.java', source / 'local-symbol-merge-gdb.py',
             source / 'local-symbol-merge-gdb.sh', source / 'retained-function-aliases-gdb.py',
             source / 'retained-function-aliases-gdb.sh', source / 'qemu-socket.sh', source / 'elf-layout-gdb-oracle.sh',
-            source / 'check-dwarfdump.py', source / 'sectionless-alias-check.py')})
+            source / 'check-dwarfdump.py', source / 'sectionless-alias-check.py',
+            source / 'retained-function-aliases-export.py')})
         binary = case / 'aliases.input'
         data = bytearray((base / 'aliases.input').read_bytes())
         wide, order = data[4] == 2, '<' if data[5] == 1 else '>'

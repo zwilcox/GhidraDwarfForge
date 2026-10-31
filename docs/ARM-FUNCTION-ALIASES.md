@@ -90,3 +90,47 @@ mistake and the regression-wrapper directory mistake are retained. The last
 wrapper now selects all fifteen intended cases rather than reducing the count.
 Full pipeline wiring, mixed/indirect and contradictory-mode cases, dynamic
 boundary symbols, the final merged package and hosted acceptance remain pending.
+
+## Reproducible pipeline and mixed-mode checkpoint
+
+**CONFIRMED locally; hosted acceptance pending:** the repository harness now
+prepares compiler-validated fixtures with status `PREPARED_FOR_ALIAS_RUNTIME`.
+That preparation checks Forge structure and determinism but explicitly defers
+Forge runtime to the automatic-alias follow-up; it is never recorded as a full
+passing export test. `arm-function-aliases.py` then proves saved-program alias
+extraction, exact values, original inventory, unchanged DWARF/source and byte
+identity with a separate invocation of the installed writer on actual Java 21.
+Existing primary mode cues are checked against compiler mapping intervals before
+being passed as explicit records to that writer. The normal four-field writer
+probe protocol still requires exactly two records; the ARM experiment explicitly
+supplies tagged values and the expected record count.
+
+The local matrix contains 18 ordinary cases (ARM, Thumb and mixed-mode, each
+retained/stripped exec/PIE/rebase) and nine freshly imported sectionless cases.
+All 27 pass structural validators and four runtime calls each. Twelve sectionless
+wrong-tag controls reject before the first continue. They isolate alias mode
+hints by using fixtures without original mapping symbols. A mixed-mode fixture
+has neighboring ARM/Thumb functions and four compiler-disassembled `blx` register
+calls through volatile function pointers; both function tags are separately
+corrupted. The fixture preserves the compiler's attributed function type using
+[`__typeof__` and `copy`](https://gcc.gnu.org/onlinedocs/gcc/Common-Attributes.html),
+after two retained compile failures exposed incompatible alias declarations.
+No compiler warning filter was relaxed.
+
+The rebuilt package JAR is
+`de5c0e35fa3fb7a9b539a7e056ba55d15ae7f3e22e6314872fc2828ee12217a8`.
+36 packaged suites run on actual Java 21; the five existing fixture
+reproducibility lanes and workflow lint pass. Receipt:
+`2c794c6336ad054184237c56ce40281d207ae2d4afb09606cd83f2ec62bb1588`.
+The ARM target lane now installs its C++ cross compiler and runs the same
+repository preparation/export/writer/sectionless/negative-control scripts.
+Hosted acceptance is still pending.
+
+**CONFIRMED unresolved boundary defect:** the installed sectionless inventory
+rejects a Thumb `STT_FUNC` at tagged value `0x4071`, size 16, inside a load ending
+at `0x4080`, although the code range is `0x4070..0x4080`. Its allocation check uses
+the mode bit as part of the byte address. The isolated actual-Java-21 reproduction
+is retained under `build/arm-alias-review/pipeline/dynamic-boundary/`.
+Do not claim broad sectionless ARM dynamic-symbol support before a targeted fix,
+negative controls and runtime evidence. Contradictory mode/source evidence and
+final package/hosted review also remain outstanding.

@@ -17,8 +17,9 @@ public class LocalSymbolMergeProbe {
         var symbols = new ArrayList<ElfLocalFunctionSymbol>();
         for (String line : Files.readAllLines(Path.of(args[2]))) {
             String[] fields = line.split("\\t");
-            if (fields.length != 4) throw new AssertionError("invalid observation");
+            if (fields.length != 4 && fields.length != 5) throw new AssertionError("invalid observation");
             long entry = Long.parseLong(fields[1]);
+            long symbolValue = fields.length == 5 ? Long.parseLong(fields[4]) : entry;
             long size = Long.parseLong(fields[2]);
             int index = Integer.parseInt(fields[3]);
             if (image.sections().isEmpty()) {
@@ -41,9 +42,12 @@ public class LocalSymbolMergeProbe {
                 if (entry < section.address || size <= 0 || Math.addExact(entry, size) >
                         Math.addExact(section.address, section.size)) throw new AssertionError("out of section");
             }
-            symbols.add(new ElfLocalFunctionSymbol(fields[0], entry, size, index));
+            symbols.add(new ElfLocalFunctionSymbol(fields[0], symbolValue, size, index));
         }
-        if (symbols.size() != 2) throw new AssertionError("two observations required");
+        int expected = args.length == 5 ? Integer.parseInt(args[4]) : 2;
+        if (expected < 2 || expected > 65536 || symbols.size() != expected) {
+            throw new AssertionError("unexpected observation count");
+        }
         new MatchedElfSidecarWriter().write(image, Path.of(args[3]), debug, symbols, () -> false);
         System.out.println("writer=" + MatchedElfSidecarWriter.class.getProtectionDomain().getCodeSource().getLocation());
         System.out.println("java=" + System.getProperty("java.version"));

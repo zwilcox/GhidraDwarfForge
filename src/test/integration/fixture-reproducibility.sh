@@ -37,6 +37,7 @@ expected_sources=(
     Makefile
     README.md
     arm-dynamic-pcs.c
+    arm-mixed-function-aliases.cpp
     arm-thumb-after.c
     arm-thumb-caller.c
     arm-thumb-leaf.c
