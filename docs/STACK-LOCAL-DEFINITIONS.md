@@ -80,8 +80,11 @@ Set `DWARFDUMP` to the pinned standalone validator. Optional
 `FORGE_STACK_LOCAL_PREVIOUS_GHIDRA` adds the preceding-package comparison.
 `FORGE_STACK_LOCAL_ROLES` selects roles for diagnosis; CI runs all three.
 The Linux and native Windows model lists and both required runtime target
-lanes include this component. Hosted execution/review and exact final package
-acceptance remain pending. P1.11a and all remaining P3.3 requirements stay open.
+lanes include this component. The exact source-commit package passes all manifests, pinned native provenance,
+72 embedded production sources and 272 Java 21-compatible classes. Its production
+JAR is byte-identical to the runtime and Java 21 suite artifact:
+`929929c7d0328ac93340e8d012d00a604acf8b7f424d110319a768d1679789ec`.
+Hosted execution/review remains pending. P1.11a and all remaining P3.3 requirements stay open.
 
 ## Retained failures and narrower evidence
 

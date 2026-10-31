@@ -6,8 +6,8 @@ identity tests pass 175 checks; 32/64-bit x86-64/AArch64 decoder tests pass 376
 checks, and 20 actual Java 21 suites pass. Six signed-four-byte runtime roles
 pass 12 candidate/six previous exports and 174 candidate/previous instruction
 observations, with compiler scope/value checks and exact raw loclists. See
-`docs/STACK-LOCAL-DEFINITIONS.md`. Final package/hosted acceptance, broader
-runtime widths/aliases, calls/flow, mixed pieces and P3.3 remain required.
+`docs/STACK-LOCAL-DEFINITIONS.md`. The final source-commit package matches the tested JAR. Hosted acceptance,
+broader runtime widths/aliases, calls/flow, mixed pieces and P3.3 remain required.
 
 **CONFIRMED locally; hosted acceptance pending:** completed stack stores and
 loads now extend incoming scalar locations through proven register/stack
