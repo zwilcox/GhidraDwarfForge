@@ -313,3 +313,30 @@ lookup definition and addressless namespace association; collision controls
 preserve existing global/function/type/enumerator lookup. See
 `docs/SAME-NAME-TYPES.md` for scope, reproduction and remaining gates.
 Neither P1.11a nor P3.3 is complete.
+
+## Integrated stack/control-flow/call core
+
+**CONFIRMED integration:** PR100 head `53e182e31f5abe38327f43647b30d502a5372395`
+passes all twelve jobs in run `41234746854` and independent exact-package,
+raw-runtime and host review. Normal merge `97a50d1a3c826e639e7754cffed9a98c199616a6`
+preserves the tested tree. Stack transfers, explicit definitions/reuse,
+closed control flow and inspected calls are accepted within their documented
+bounds. Receipt: `1c1879493f65c7afe8ffec26cf4ec606a8d4b360033929fb7d634aeb838e6e80`.
+See `LIFETIME-CORE-ACCEPTANCE.md`. Earlier pending PR100 notes are historical.
+The separate main-push run `41245137186`, mutable-stack/mixed-piece hosted gate
+and richer scope work retain their own acceptance requirements. P1.11a and
+P3.3 remain incomplete.
+
+## Integrated mutable-stack and independent-piece lifetimes
+
+**CONFIRMED PR101 integration:** exact head
+`c8e48213e339dd845abeb9afaafd58a043fdcad4` passes all twelve jobs in run
+`41245301749`, independent hosted package/Java 21/raw-runtime/host review,
+and normal merge `dfb5c2e06822fd40e9ae55928318307976a5aded` with the same tree.
+Eighteen aggregate-piece/mutable-stack roles contribute 10,530 compiler/Forge
+instruction observations, with stale-piece/slot, unknown-alias and conflicting
+owner controls. ARM mixed prefixes, stack/call regressions and both hosts also
+pass their documented checks. See `docs/LIFETIME-CORE-ACCEPTANCE.md` for the
+receipt and exact bounds. Earlier pending PR101 component notes are historical;
+the separate main-push gate and combined scope acceptance remain distinct.
+P1.11a/#67 and P3.3/#73 stay open pending the full requirement audit.

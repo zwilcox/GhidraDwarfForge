@@ -1,5 +1,12 @@
 # Saved mutable stack mappings
 
+**CONFIRMED integrated through PR101:** all twelve exact-head CI jobs and
+independent package, raw runtime and host reviews pass. Normal merge
+`dfb5c2e06822fd40e9ae55928318307976a5aded` preserves the tested tree. See
+`LIFETIME-CORE-ACCEPTANCE.md` for the acceptance receipt; earlier pending-hosted
+notes below are historical. The implementation bounds and full-goal audit
+remain unchanged.
+
 **CONFIRMED locally; final package and hosted acceptance pending.** A saved
 stack-backed canonical local can retain its identity through explicitly recorded
 register assignments, saves and reloads. The proof handles closed branches and
