@@ -240,8 +240,18 @@ public final class GhidraTypeGraph {
                         symbol.name() + "; locations omitted and DEFAULT prototype remains unspecified");
                 }
             }
+            Map<Variable, GhidraLocalMappings.Group> mergedOwners = new HashMap<>();
+            for (var group : GhidraLocalMappings.extract(program, function, monitor, diagnostic)) {
+                for (var mapping : group.mappings()) mergedOwners.put(mapping.variable(), group);
+                diagnostic.accept("Saved Ghidra merged-local identity for " + symbol.name() + "::" +
+                    group.canonical().getName() + ": " + group.mappings().stream().map(mapping ->
+                        mapping.variable().getName() + " at " + mapping.definition() + " in " +
+                        mapping.register().getName()).toList() + "; analyst mappings, not original compiler facts");
+            }
             for (Variable variable : function.getLocalVariables()) {
                 monitor.checkCancelled();
+                var merged = mergedOwners.get(variable);
+                if (merged != null && merged.canonical() != variable) continue;
                 String localName = variable.getName();
                 if (localName == null || localName.isBlank() || variable.getLength() <= 0) {
                     diagnostic.accept("Skipped unnamed or zero-size local in " + symbol.name());
@@ -251,15 +261,21 @@ public final class GhidraTypeGraph {
                     variable.getLength(), extractor.reserve(variable.getDataType()),
                     variable.getFirstUseOffset(), variable.hasAssignedStorage(),
                     variable.getSource().name()));
-                Storage storage = GhidraVariableStorage.stableLocal(program, function,
-                    variable, registerMap, monitor);
-                var linearPrefix = GhidraVariableStorage.localPrefix(program, function, variable,
-                    registerMap, storage, monitor);
-                var controlFlow = linearPrefix.isEmpty()
-                    ? RegisterDefinitionFlow.prove(program, function, variable, registerMap, storage, monitor)
-                    : List.<GhidraVariableStorage.StorageInterval>of();
+                Storage storage = merged == null ? GhidraVariableStorage.stableLocal(program, function,
+                    variable, registerMap, monitor) : new UnavailableStorage(OmissionReason.UNKNOWN_LIFETIME,
+                        "saved merged local requires proof of its latest definition and storage");
+                var linearPrefix = merged == null ? GhidraVariableStorage.localPrefix(program, function, variable,
+                    registerMap, storage, monitor) : List.<GhidraVariableStorage.StorageInterval>of();
+                var controlFlow = merged != null ? MergedLocalLifetime.prove(program, function, merged, registerMap, monitor)
+                    : linearPrefix.isEmpty()
+                        ? RegisterDefinitionFlow.prove(program, function, variable, registerMap, storage, monitor)
+                        : List.<GhidraVariableStorage.StorageInterval>of();
                 var prefix = controlFlow.isEmpty() ? linearPrefix : controlFlow;
-                String lifetimeEvidence = controlFlow.isEmpty()
+                String lifetimeEvidence = merged != null
+                    ? "Saved Ghidra canonical merged-local identity; all explicit full-register definitions " +
+                        "checked against raw instructions; latest assignment invalidates previous carriers; " +
+                        "all incoming paths must agree on physical storage; no original lexical scope inferred"
+                    : controlFlow.isEmpty()
                     ? "Curated Ghidra function-owned local; exact recorded register read or completed " +
                         "definition in a fully decoded straight-line leaf; unavailable " +
                         "before first use and after overwrite; no original lexical scope inferred"
@@ -282,6 +298,7 @@ public final class GhidraTypeGraph {
                     localName, VariableKind.LOCAL, variable.getLength(), ranges));
                 if (storage instanceof UnavailableStorage unavailable) {
                     diagnostic.accept((prefix.isEmpty() ? "Omitted location for " :
+                        merged != null ? "Limited location to proven merged-local lifetime for " :
                         controlFlow.isEmpty() ? "Limited location to proven later-register-local lifetime for " :
                         "Limited location to proven control-flow-local lifetime for ") + symbol.name() + "::" +
                         localName + ": " + unavailable.diagnostic());

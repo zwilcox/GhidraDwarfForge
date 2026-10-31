@@ -115,3 +115,18 @@ requires that prefix to be available while the shared loop PC remains
 unavailable. A separate test compilation error was corrected by retaining the
 returned variable's `LocalVariable` interface for the first-use setter. Both
 failed attempts remain in `build/local-definition-flow-review`.
+
+## Hosted integration checkpoint
+
+**CONFIRMED integration:** PR98 head `0c5db884d8c9517693d31c3d62ab783031e0c053`
+passes all twelve jobs in run `41215780110` and exact hosted package/raw/host
+review. Six control-flow-local roles provide 12,384 GDB observations; related
+register/local/stack regressions provide 3,960 more. Fourteen actual Java 21
+suites, 380 native Windows model checks, the isolated Windows producer and
+both GUI host reviews pass within their documented scopes. Normal merge
+`13760a33a90096bb0c351a5a622fb3603ff71341` preserves the accepted tree.
+Review receipt SHA-256:
+`0de1582dd54054242d2fd499211a25d21cf3b35313fb77899dc615cd3cad10a1`.
+This supersedes earlier pending PR98 notes. The separate main-push gate and
+this saved mutable-local component retain their own validation status;
+P1.11a and P3.3 remain incomplete.
