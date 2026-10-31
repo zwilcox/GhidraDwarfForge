@@ -25,7 +25,7 @@ for line in command("readelf", "--debug-dump=info", artifact).splitlines():
     if header:
         records.append({"depth": int(header[1]), "tag": header[2], "attrs": {}})
     elif records:
-        attribute = re.match(r"^\s*<[0-9a-f]+>\s+(DW_AT_\w+)\s+:\s*(.*)", line)
+        attribute = re.match(r"^\s*<[0-9a-f]+>\s+(DW_AT_\w+)\s*:\s*(.*)", line)
         if attribute:
             records[-1]["attrs"][attribute[1]] = attribute[2]
 
@@ -40,6 +40,7 @@ for index, record in enumerate(records):
         continue
     function = name(record)
     assert function not in offsets
+    assert int(record["attrs"].get("DW_AT_calling_convention", "-1").split()[0]) == 1, record
     parameters = []
     for child in records[index + 1:]:
         if child["depth"] <= record["depth"]:

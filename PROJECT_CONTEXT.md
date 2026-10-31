@@ -10,6 +10,15 @@ Windows/GCC roles, 29 actual Java 21 suites, five-target regressions and indepen
 raw review pass; committed package and hosted acceptance remain pending. See
 `docs/COMPILER-CALL-ABI.md`. P1.7/#66 remains open.
 
+**CONFIRMED failed gate; correction locally validated:** PR82 run `41165251340`
+fails the x86-64/AArch64 second-register-copy tests because their custom fixture
+signature left the convention unresolved. The known source-compiler ABI is now
+explicitly curated and its entire storage layout checked. Twelve first/second
+copy roles pass locally; an independent unknown-convention negative control
+still blocks injected calls without state changes. Production policy is
+unchanged. See `docs/CUSTOM-CALL-STORAGE.md` for evidence and retained failures.
+Fresh hosted acceptance remains pending; P1.7/#66 stays open.
+
 **CONFIRMED integration:** PR81 head
 `f00932e50b4a2901a41e4a51f43d9bb4d77c0a72` passes all twelve jobs in
 `41162050189`, independent exact-package/raw alias review, 27 actual Java 21

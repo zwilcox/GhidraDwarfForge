@@ -1251,6 +1251,14 @@ Define precedence among analyst-applied listing/signature types and decompiler g
 
 ## P1.7 Emit complete function signatures
 
+**CONFIRMED local fixture correction; hosted acceptance pending:** PR82's first
+gate (`41165251340`) fails the two-copy fixture's automatic return-value check
+after the custom-storage guard correctly rejects an unresolved convention.
+The source-built fixture now records and verifies its known default ABI.
+All twelve x86-64/AArch64 first/second-copy roles pass locally, and a separate
+unknown-convention control still rejects calls without changing program state.
+See `docs/CUSTOM-CALL-STORAGE.md`. This is not full P1.7 acceptance.
+
 Tracking: [#66](https://github.com/zwilcox/GhidraDwarfForge/issues/66).
 
 **CONFIRMED locally; hosted acceptance pending (2026-10-25):** recorded class
