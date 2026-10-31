@@ -32,6 +32,48 @@ def elf(path):
     return data[:16], header, named
 
 
+def arm_mode_inventory(original, emitted, compiler_symbols, functions):
+    """Independently check primary mode cues, not analyst alias insertion."""
+    table, records = emitted['.symtab']
+    dynamic, old_records = original['.dynsym']
+    names = emitted['.strtab'][1]
+    old_names = original['.dynstr'][1]
+    assert table[9] == dynamic[9] == 16 and names.startswith(old_names)
+    added = table[7] - dynamic[7]
+    split = dynamic[7] * 16
+    assert added > 0 and records[:split] + records[split + added * 16:] == old_records
+    mappings = {}
+    for line in compiler_symbols.splitlines():
+        fields = line.split()
+        if len(fields) == 8 and fields[7].split('.')[0] in ('$a', '$t', '$d'):
+            assert fields[3:5] == ['NOTYPE', 'LOCAL'] and fields[6].isdigit()
+            key = (int(fields[6]), int(fields[1], 16))
+            mode = fields[7].split('.')[0]
+            assert key not in mappings or mappings[key] == mode
+            mappings[key] = mode
+    observed = {}
+    sections = list(original.values())
+    for offset in range(split, split + added * 16, 16):
+        string, value, size, info, other, section_index = struct.unpack_from('<IIIBBH', records, offset)
+        name = names[string:].split(b'\0', 1)[0].decode()
+        entry, mode = value & ~1, '$t' if value & 1 else '$a'
+        assert name == '__forge_arm_mode_%08x' % entry and name not in observed
+        assert info == 2 and other == 0 and 0 < section_index < len(sections)
+        section = sections[section_index][0]
+        assert section[2] & 6 == 6 and section[3] <= entry < entry + size <= section[3] + section[5]
+        intervals = sorted((address, kind) for (index, address), kind in mappings.items() if index == section_index)
+        preceding = [(address, kind) for address, kind in intervals if address <= entry]
+        assert preceding and preceding[-1][1] == mode
+        next_mapping = min([address for address, kind in intervals if address > entry and kind != mode] +
+            [section[3] + section[5]])
+        assert entry + size <= next_mapping
+        assert (entry | size) & (1 if mode == '$t' else 3) == 0
+        observed[name] = (value, size)
+    for row in functions:
+        assert observed['__forge_arm_mode_%08x' % row['entry']] == (
+            row['elfSymbolValue'], row['end'] - row['entry'])
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
@@ -224,9 +266,12 @@ def main():
     assert os['.note.gnu.build-id'][1] == ds['.note.gnu.build-id'][1]
     for name in ('.symtab', '.strtab'):
         assert (name in os) == (args.symbols == 'retained')
-        assert (name in ds) == (args.symbols == 'retained')
+        if not (args.target == 'arm32' and args.symbols == 'stripped' and args.role == 'exec'):
+            assert (name in ds) == (args.symbols == 'retained')
         if name in os:
             assert os[name][1] == ds[name][1]
+    if args.target == 'arm32' and args.symbols == 'stripped' and '.symtab' in ds:
+        arm_mode_inventory(os, ds, (case / 'symbols.log').read_text(), rows)
     for variant, artifact in [('compiler', reference), ('forge', case / 'aliases.dbg')]:
         for view in ('info', 'abbrev', 'aranges', 'decodedline', 'loc', 'Ranges'):
             run(variant + '-' + view, ['readelf', '--debug-dump=' + view, artifact])

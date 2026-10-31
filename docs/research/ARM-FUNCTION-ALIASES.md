@@ -91,3 +91,57 @@ an exporter change. Original inputs, packaged runtime and saved programs remain
 protected. Passing retained-symbol cases does not prove missing-mode recovery:
 existing mapping symbols can still determine decoding. The next experiments
 must remove that protection, test conflicting tags, and cover mixed neighbors.
+
+## Stripped mode proof and negative controls
+
+**CONFIRMED stripped Thumb PIE mode gap and isolated repair (2026-10-31):**
+four ARM/Thumb baseline cases pass, while stripped Thumb PIE and rebased PIE
+fail GDB static disassembly before attach despite valid DWARF. Existing production
+mode cues are restricted to ET_EXEC. An isolated tagged-alias writer experiment
+repairs both cases; all six stripped roles pass validator and runtime checks.
+Six deliberately wrong-tag controls fail static decoding while LLVM still passes;
+twelve mode-inventory corruption controls are rejected. Production extraction
+and planning remain unchanged. Receipt:
+`b79408ac6e9055788d95822a24712bd6307d68eb47a87e89181102261267f6dd`.
+Automatic ARM/Thumb alias support, sectionless/mixed/conflicting evidence and
+broader P1.7 remain open. See `docs/research/ARM-FUNCTION-ALIASES.md`.
+
+The stripped baseline is `build/arm-alias-review/stripped-baseline.milr6fzy`;
+its two Thumb PIE failures are retained, not counted as passes. Both cases
+complete deterministic export and structural checks before GDB decodes Thumb
+bytes as ARM instructions. The compiler comparison succeeds. The other four
+roles pass the complete baseline workflow.
+
+Primary ET_EXEC mode-symbol inventory is checked independently against compiler
+mapping intervals. The checker preserves the original dynamic records and
+string prefix exactly, checks every added local's type, name, tag, section and
+extent, and requires both curated function cues. Repeated mapping markers of
+the same mode do not end a homogeneous interval; the initial checker failure
+at such redundant ARM markers is retained and corrected. Twelve mutations of
+tags, extents, types, bindings, visibility and names are rejected.
+
+The stripped packaging experiment (`stripped-tagged-packaging.fy_34qkv`) adds
+exactly two local aliases to the original dynamic inventory using the unchanged
+packaged writer and unchanged DWARF sections. It does not reuse the baseline's
+primary mode symbols. All six cases pass deterministic writes, validators,
+static disassembly, typed alias lookup and actual QEMU/GDB stepping and returns.
+The wrong-tag controls (`wrong-tag-controls.n_mwljqq`) change only each added
+symbol's mode bit. All twelve function disassemblies across six cases become
+incorrect before attach, while LLVM still reports no errors. This establishes
+why structural validation alone cannot accept the feature.
+
+## Implementation boundary selected by the experiments
+
+New aliases need separate entry-range mode evidence, rather than relying on
+primary mode cues being emitted. Keep byte and DWARF addresses untagged; apply
+the mode bit only to an ELF function symbol after original-code, ownership and
+mode checks. Derive evidence from both saved decode context and fully known
+current TMode, with exact instruction tiling. Preserve generic checks across
+every body range; an entry below a later range or inside an entry-containing
+range must not be silently excluded.
+
+The target planner must reconcile original function tags and mapping intervals,
+reject conflicting/unknown modes with diagnostics, and handle PIE independently
+of the ET_EXEC-only primary-cue policy. Sectionless and mixed-neighbor experiments
+are still required before general production authorization. No claim is made
+for Thumb shared objects, big-endian ARM or an untested calling convention.

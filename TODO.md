@@ -1,5 +1,17 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED stripped Thumb PIE mode gap and isolated repair (2026-10-31):**
+four ARM/Thumb baseline cases pass, while stripped Thumb PIE and rebased PIE
+fail GDB static disassembly before attach despite valid DWARF. Existing production
+mode cues are restricted to ET_EXEC. An isolated tagged-alias writer experiment
+repairs both cases; all six stripped roles pass validator and runtime checks.
+Six deliberately wrong-tag controls fail static decoding while LLVM still passes;
+twelve mode-inventory corruption controls are rejected. Production extraction
+and planning remain unchanged. Receipt:
+`b79408ac6e9055788d95822a24712bd6307d68eb47a87e89181102261267f6dd`.
+Automatic ARM/Thumb alias support, sectionless/mixed/conflicting evidence and
+broader P1.7 remain open. See `docs/research/ARM-FUNCTION-ALIASES.md`.
+
 **CONFIRMED retained ARM/Thumb baseline and packaging experiment (2026-10-31):**
 six ARM/Thumb exec/PIE/rebased cases pass repeated real exports, independent
 compiler/Ghidra code boundaries, GNU/LLVM/strict libdwarf validation and QEMU/GDB
