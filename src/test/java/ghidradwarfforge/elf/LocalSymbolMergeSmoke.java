@@ -230,7 +230,7 @@ public final class LocalSymbolMergeSmoke {
         }
     }
 
-    private static byte[] fixture(boolean wide, ByteOrder order, boolean indices, boolean high) {
+    static byte[] fixture(boolean wide, ByteOrder order, boolean indices, boolean high) {
         int count = high ? 0xff02 : 6;
         int headerWidth = wide ? 64 : 40;
         byte[] data = new byte[0x400 + count * headerWidth];
@@ -285,7 +285,7 @@ public final class LocalSymbolMergeSmoke {
         field(data, index, "entsize", entrySize);
     }
 
-    private static void field(byte[] data, int index, String name, long value) {
+    static void field(byte[] data, int index, String name, long value) {
         boolean wide = data[4] == 2;
         int member = List.of("name", "type", "flags", "address", "offset", "size", "link", "info", "alignment", "entsize").indexOf(name);
         int[] offsets = wide ? new int[] { 0, 4, 8, 16, 24, 32, 40, 44, 48, 56 }

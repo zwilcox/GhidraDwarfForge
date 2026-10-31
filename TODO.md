@@ -1,6 +1,26 @@
 # TODO.md — GhidraDwarfForge
 
-**CONFIRMED locally; hosted acceptance pending (2026-10-30):** the matched
+**CONFIRMED integration:** PR80 head
+`71ddb39840b65b8d5cd9833054bd37552592bd87` passes all twelve jobs in
+`41144394175`, independent exact-package/raw review, 25 actual Java 21 suites,
+47 native Windows tasks and both GUI console reviews. Normal merge
+`8b6471bb8209c3374e13c3c1d81108a53d736fe3` preserves the tested tree.
+Receipt SHA-256:
+`adc82421f9ca89cab128399f9cb2b27da03e184b38c128c2f1e1df43725e1e4e`.
+The backend prerequisite is accepted. Its distinct main-push run `41160800685`
+is pending. Main79 run `41141403157` also passes full package/raw/both-GUI
+review; receipt `2c602112e884dcdc239822a1fa45ca79c1fe3f8370a9bbedddcc9b680ae65621`.
+Earlier pending wording below is historical.
+
+**CONFIRMED locally; hosted acceptance pending:** ordinary export extracts explicit
+analyst function aliases with original-code/ownership/collision checks. Twelve
+x86-64/AArch64 retained/stripped exec/PIE/rebase cases pass 24 automatic exports
+and 48 runtime calls; automatic output equals the independent writer exactly.
+245 ELF and 186 six-language extraction checks, 27 actual Java 21 suites,
+failure/cancellation and live ARM/Thumb regressions pass. See
+`docs/CURATED-FUNCTION-ALIASES.md`. P1.7/#66 remains open; no release publication.
+
+**HISTORICAL local checkpoint (2026-10-30):** the matched
 ELF writer can insert explicit local function symbols into an existing static
 symbol table while preserving all original records and string offsets. Both
 classes/orders pass 1,272 model checks. Twelve real x86-64/AArch64 exec/PIE/rebase
@@ -18,7 +38,8 @@ Acceptance receipt SHA-256:
 `a8bfe99353d2d38d6a35d9999fb027eb9e7f45fd5d91193dfa865fc50b229d62`.
 Retained-original ELF alias coverage is accepted; arbitrary curated aliases and
 broader ABI/scope behavior remain incomplete. The separate main-push run
-`41141403157` is pending. No release publication is included.
+`41141403157` also passes all twelve jobs and independent package/raw/both-GUI
+review, as recorded above. No release publication is included.
 
 **CONFIRMED integration (2026-10-30):** PR78 head
 `0c5dd575676329b9194b747e55251d9d8d8dd35d` passes all twelve jobs in
@@ -1278,10 +1299,13 @@ breakpoint name.
   curated DWARF identity in twelve x86-64/AArch64 cases, including fully stripped
   absence controls. No distinct linkage attributes or fabricated aliases are
   added. See `docs/RETAINED-FUNCTION-ALIASES.md`; general alias modeling remains.
-  **CONFIRMED locally; hosted acceptance pending:** lossless static-symbol-table
-  insertion passes format, packaged-writer and GDB checks. Automatic curated
-  alias extraction, collision planning and target-specific binding remain
-  separate work; see `docs/LOCAL-SYMBOL-TABLE-MERGE.md`.
+  **CONFIRMED through accepted PR80:** lossless static-symbol-table insertion
+  passes format, packaged-writer and GDB checks; see
+  `docs/LOCAL-SYMBOL-TABLE-MERGE.md`. **CONFIRMED locally; hosted acceptance
+  pending:** explicit analyst secondary labels now pass automatic ordinary
+  export and runtime checks on x86-64/AArch64. Collision/code/ownership checks
+  and scope limits are documented in `docs/CURATED-FUNCTION-ALIASES.md`. Other
+  target/mode, sectionless and dynamic-table cases remain planned.
 - [~] Distinguish definitions, declarations, imports, thunks, and aliases under
   a documented policy: real definitions and curated addressless declarations
   emit. Analyst-named memory thunks preserve typed symbols without borrowed source

@@ -18,6 +18,9 @@ import ghidradwarfforge.elf.Arm32ModeSymbols;
 import ghidradwarfforge.elf.ElfFunctionModeCue;
 import ghidradwarfforge.elf.ElfImage;
 import ghidradwarfforge.elf.ElfLocalFunctionSymbol;
+import ghidradwarfforge.elf.ElfFunctionAlias;
+import ghidradwarfforge.elf.FunctionAliasSymbols;
+import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
 
 /** Table-driven libdwarf target description derived from the original ELF. */
 public record DwarfTarget(String name, String producerIsa, int addressBytes,
@@ -93,6 +96,27 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
                 ? DW_DLC_TARGET_LITTLEENDIAN : DW_DLC_TARGET_BIGENDIAN;
         return pointerFlag | DW_DLC_OFFSET32 | DW_DLC_SYMBOLIC_RELOCATIONS |
             byteOrderFlag;
+    }
+
+    /** Direct code-address values only; tagged/descriptor ABIs need their own binding proof. */
+    public List<ElfLocalFunctionSymbol> planFunctionAliases(ElfImage image,
+            List<ElfFunctionAlias> aliases, List<FunctionSymbol> functions,
+            List<ElfLocalFunctionSymbol> reserved, BooleanSupplier cancelled,
+            Consumer<String> diagnostic) throws IOException {
+        if (aliases.isEmpty()) {
+            return List.of();
+        }
+        if (!equals(fromElf(image))) {
+            throw new IllegalArgumentException("function-alias target disagrees with ELF");
+        }
+        // This initial target policy is intentionally isolated from generic ELF planning.
+        // ARM mode tagging and MIPS variant flags are not inferred from pointer width.
+        if (!List.of("x86_64", "aarch64").contains(name)) {
+            diagnostic.accept("Omitted function aliases: target " + name +
+                " has no audited alias symbol-value policy");
+            return List.of();
+        }
+        return FunctionAliasSymbols.plan(image, aliases, functions, reserved, cancelled, diagnostic);
     }
 
     /** Target-specific ELF symbol semantics stay outside generic DWARF/address handling. */
