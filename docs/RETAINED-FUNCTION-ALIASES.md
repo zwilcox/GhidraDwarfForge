@@ -1,6 +1,6 @@
 # Retained ELF aliases and curated function identity
 
-**CONFIRMED locally; hosted acceptance pending:** original ELF function symbols
+**CONFIRMED through accepted PR79:** original ELF function symbols
 can coexist with curated typed DWARF names on the tested x86-64/AArch64 profiles.
 This bounded policy advances [P1.7/#66](https://github.com/zwilcox/GhidraDwarfForge/issues/66),
 which remains open. The implementation already preserves these original symbol
@@ -82,7 +82,11 @@ The matrix uses the accepted PR78 hosted package (production JAR SHA-256
 whose 52 embedded production sources match this branch. Headless runs use
 Java 25 with Java 21 bytecode; PR78's actual Java 21 packaged suites are separate
 runtime evidence. This change adds no production Java/native modifications.
-A fresh hosted gate and artifact review are required for this test/policy commit.
+PR79 run `41075538032` passes all twelve jobs and exact-package/24 actual
+Java 21 suites/raw alias/both-GUI review. Receipt SHA-256:
+`a8bfe99353d2d38d6a35d9999fb027eb9e7f45fd5d91193dfa865fc50b229d62`.
+Normal merge `1bda5cf382812251c0d42ba9ad33ff54105e9afd` preserves the tested
+tree; its distinct main-push gate remains pending.
 
 ## Remaining scope
 
