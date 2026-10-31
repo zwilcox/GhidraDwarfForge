@@ -35,9 +35,9 @@ for iteration, (small, large) in enumerate(((19, 19), (-19, -19), (-1985229329, 
             assert bias != 0, 'PIE must have an observed runtime bias'
         entry_breakpoint.delete()
         keys = ['entry', 'saved', 'write', 'after']
-        keys += ['kill', 'unavailable'] if name.endswith('kill') else (['restore'] if target == 'aarch64' else [])
+        keys += ['kill', 'stack_end'] if name.endswith('kill') else (['restore'] if target == 'aarch64' else [])
         keys += ['return']
-        # A keep case's AArch64 unavailable boundary is its return PC.
+        # A keep case's AArch64 stack end is its return PC, already included below.
         assert len({label[key] for key in keys}) == len(keys)
         for index, point in enumerate(keys):
             pc = label[point] + bias
@@ -49,13 +49,18 @@ for iteration, (small, large) in enumerate(((19, 19), (-19, -19), (-1985229329, 
             assert symbol is not None and symbol.is_argument
             value = symbol.value(gdb.newest_frame())
             assert value.type.sizeof == label['width']
-            unavailable = (variant == 'previous' and label[point] >= label['after']) or (
-                variant == 'forge' and label[point] >= label.get('unavailable', label['end']))
+            unavailable = variant == 'previous' and label[point] >= label['after']
             assert bool(value.is_optimized_out) == unavailable, (name, point, str(value))
             if not unavailable:
                 assert int(value) == argument, (name, point, str(value), argument)
             row = {'function': name, 'point': point, 'input': argument, 'linkPc': label[point],
                 'pc': pc, 'argument': str(value), 'unavailable': bool(value.is_optimized_out)}
+            if variant == 'forge' and label[point] >= label.get('stack_end', label['end']):
+                dtype = 'int' if label['width'] == 4 else 'long long'
+                register = '$rax' if target == 'x86_64' else '$x0'
+                raw_register = int(gdb.parse_and_eval('(' + dtype + ')' + register))
+                assert raw_register == argument and int(value) == raw_register
+                row['reloadedRegister'] = raw_register
             if point != 'entry':
                 # Memory is observed independently even when Forge must stop
                 # claiming it after an unproved aliasing store or SP change.

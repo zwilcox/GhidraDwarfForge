@@ -212,7 +212,7 @@ final class RegisterCopyLifetime {
             Math.addExact(output.getOffset(), (long) output.getSize()) > base.getAddress().getOffset();
     }
 
-    private static boolean resultsCovered(Instruction instruction, Register base,
+    static boolean resultsCovered(Instruction instruction, Register base,
             TaskMonitor monitor) throws CancelledException {
         for (Object result : instruction.getResultObjects()) {
             monitor.checkCancelled();

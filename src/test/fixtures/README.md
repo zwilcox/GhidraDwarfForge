@@ -506,3 +506,17 @@ compiler locals and raw physical registers at every executed instruction; Forge
 must expose only the current logical value where all paths agree, and no
 location before definition, after loss or at an ambiguous join. Both branch
 choices and three signed input pairs run on x86-64/AArch64 exec/PIE/rebase roles.
+
+`stack-value-transitions.c` retains an immutable incoming argument while compiler
+locals describe two physical stack slots and two fixed register carriers.
+Explicit labels identify first/second loads, slot writes and final register
+kills. Twelve signed 32/64-bit cases cover surviving reloads, repeated spill/load,
+full slot reuse before a load, unknown-address aliasing and final value loss.
+The fixture disables stack-protector instrumentation to isolate the documented
+straight-line proof; broader call handling remains separately required.
+Compiler GDB independently supplies the slots' SP-relative layout. Every
+executed instruction checks compiler locals, raw registers/memory and Forge's
+incoming parameter. GNU/LLVM/pinned strict validation, exact raw loclists,
+previous-package comparison, protected input/program/module hashes and
+repeatability cover x86-64/AArch64 exec/PIE/rebased-PIE roles. No physical copy
+is treated as evidence of an inferred source variable's identity.

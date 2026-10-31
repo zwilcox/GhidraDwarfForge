@@ -96,7 +96,9 @@ public final class StackSpillSmoke {
                     intervals.get(1).end() == expectedEnd && intervals.get(1).storage().equals(backup.storage()),
                     "public extraction lacks exact register-to-stack handoff: " + intervals);
                 if (!x86) {
-                    require(!intervals.getLast().storage().available(), "SP change must end spill");
+                    require(intervals.getLast().storage() instanceof ghidradwarfforge.locations.VariableStorageModel.RegisterStorage reloaded &&
+                        reloaded.register().dwarfNumber() == 0,
+                        "SP change retires stack storage but preserves the completed reload: " + intervals);
                 }
                 var noMap = new TargetRegisterMap(target, "negative SP map", java.util.Map.of(incoming.toString(), 0));
                 require(StackSpillLifetime.prove(program, 0x1000, end, instructions, incoming, width,

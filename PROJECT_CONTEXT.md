@@ -1,5 +1,16 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally; hosted acceptance pending:** completed stack stores and
+loads now extend incoming scalar locations through proven register/stack
+transitions, with unknown aliases and final loss left unavailable. The 320
+model checks, 17 actual Java 21 suites and six dedicated exec/PIE/rebase roles
+pass, including 12 candidate/six previous exports and 12,528 GDB observations.
+There are 1,044 newly available observations. Exact loclists, GNU/LLVM/pinned
+strict validation, preservation, determinism, failure isolation and cancellation
+pass. Final package/hosted acceptance and all broader stack-local identity,
+call/flow/mixed-piece and P3.3 work remain required. See
+`docs/STACK-VALUE-TRANSITIONS.md`.
+
 **CONFIRMED locally; hosted acceptance pending:** saved Ghidra merged locals
 now preserve one canonical typed identity through recorded register moves,
 updates and reinitialization. The 64 saved-model checks, 248 raw-instruction

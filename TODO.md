@@ -1848,6 +1848,14 @@ or uncertain storage remains locationless with a diagnostic.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
 
+**CONFIRMED locally; hosted acceptance pending:** stack spill/reload transitions
+pass 320 model checks, 17 actual Java 21 suites and six dedicated compiler/GDB
+roles. Twelve candidate/six previous exports provide 12,528 instruction
+observations, with 1,044 additional available values and explicit gaps after
+stale/uncertain reloads or final loss. See `docs/STACK-VALUE-TRANSITIONS.md`.
+Final package/hosted acceptance, stack-local initialization/slot reuse identity,
+general calls/flow, mixed pieces and scopes remain required.
+
 **CONFIRMED locally; hosted acceptance pending:** explicitly saved merged-local
 identity now follows register moves, updates and reinitializations. Six roles
 pass 12 candidate/six previous exports and 16,632 instruction observations,

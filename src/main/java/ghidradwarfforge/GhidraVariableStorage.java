@@ -287,6 +287,10 @@ public final class GhidraVariableStorage {
                     "proven parameter register storage was overwritten before address 0x") +
                     Long.toHexString(boundary) + "; later storage is not established")));
         }
+        if (!composite && calls.isEmpty() && result.stream().anyMatch(interval -> !interval.storage().available())) {
+            return StackValueFlow.extendUnavailable(result,
+                StackValueFlow.prove(program, function, parameter, registers, monitor));
+        }
         return List.copyOf(result);
     }
 

@@ -545,8 +545,8 @@ public final class GhidraTypeGraph {
                 "Ghidra listing parameter storage (" + source + "); fully decoded " +
                     (mixed ? "straight-line leaf with exact register/stack pieces and analyzed " +
                         "stack-pointer depth; bounded by the first possible memory or register write" :
-                        "straight-line leaf with incoming register and, where proven, one " +
-                        "completed exact-bit register copy") + "; unproven intervals are unavailable");
+                        "instruction path with incoming bits and completed exact-bit register " +
+                        "copies, stack stores/reloads or inspected direct-leaf preservation, as applicable") + "; unproven intervals are unavailable");
             return new LocationRange(AddressNormalizer.toElfAddress(interval.start(), rebaseDelta),
                 AddressNormalizer.toElfAddress(interval.end(), rebaseDelta),
                 interval.storage(), evidence);

@@ -334,6 +334,18 @@ tasks.register("registerCopyChainSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/register-copy-chain/cache").absolutePath
 }
 
+tasks.register("stackValueFlowSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks exact stack spill/reload transitions and retired memory facts"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.StackValueFlowSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/stack-value-flow/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/stack-value-flow/cache").absolutePath
+}
+
 tasks.register("localMappingsSmoke", JavaExec) {
     group = "verification"
     description = "Checks canonical saved Ghidra local identities and all storage mappings"
