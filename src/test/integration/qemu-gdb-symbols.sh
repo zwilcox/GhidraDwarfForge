@@ -106,16 +106,10 @@ validate_transcript() {
             grep -Eq '[$][0-9]+ = 0x1122334455667788' "$transcript"
         fi
         case "$transcript" in
-            *x86_64.*|*mips32be.*|*mips32le.*)
+            *x86_64.*|*aarch64.*|*mips32be.*|*mips32le.*)
                 grep -Fq "recovered_add (left=19, right=23)" "$transcript"
                 grep -Fxq "left = 19" "$transcript"
                 grep -Fxq "right = 23" "$transcript"
-                ;;
-            *aarch64.*)
-                grep -Fq "recovered_add (left=<optimized out>, right=<optimized out>)" \
-                    "$transcript"
-                grep -Fxq "left = <optimized out>" "$transcript"
-                grep -Fxq "right = <optimized out>" "$transcript"
                 ;;
             *arm32.*)
                 grep -Fq "recovered_add (left=19, right=23)" "$transcript"

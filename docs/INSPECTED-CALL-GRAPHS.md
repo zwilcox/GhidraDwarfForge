@@ -112,3 +112,16 @@ references verify within the existing timeout. No validator is bypassed.
 The first independent regression audit expected the wrong validator log name
 for the stack harness; it was corrected to inspect the actual `fixed-llvm.log`
 and its strict-check receipt. Failed logs remain outside passing receipts.
+
+## Hosted semantic-harness correction
+
+PR100 run `41229139226` exposed stale AArch64 semantic-harness assertions. The
+new scalar proof retains `recovered_add`'s original arguments through stack
+spills, but the old checks required a register-only diagnostic and optimized-out
+values. The corrected checks require the stack-spill diagnostic and exact
+`left=19`/`right=23`. Four extended-sections exec/repeat/PIE and shared-object
+exports pass with the exact hosted JAR on actual Java 21, structural validators,
+QEMU GDB, original preservation and deterministic exec repeats. Receipt:
+`a3483015113053cf4390dcd2bb9b5475c638fc109cbcd38c4dda20e8eae75c9f`
+(`build/pr100-harness-fix/acceptance.json`). Production code is unchanged.
+The failed run is retained; a replacement full gate is still required.
