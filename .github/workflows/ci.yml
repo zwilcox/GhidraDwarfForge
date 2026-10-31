@@ -1156,6 +1156,17 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: src/test/integration/stack-local-definitions-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
 
+      - name: Stack-local writes and unknown aliases retire stale register copies
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for width in 32 64; do
+              for role in exec pie pie-rebased; do
+                  python3 src/test/integration/stack-local-effects-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --width "$width" --role "$role"
+              done
+          done
+
       - name: Retained ELF aliases and typed curated function identity
         if: matrix.target != 'arm32'
         env:

@@ -528,3 +528,11 @@ reopens saved analyst identities, checks every candidate/previous GDB boundary,
 and validates raw stack-to-register loclists on x86-64/AArch64 exec, PIE and
 rebased PIE at both widths. See `docs/STACK-LOCAL-DEFINITIONS.md`; alias/mutation
 cases and lexical scope recovery are not implied by this fixture.
+
+`stack-local-effects.c` keeps an old R10/X9 copy alive across partial writes,
+full assignments and pointer stores. The dedicated signed32/64 runtime harness
+checks that stale copies cannot resurrect the local, distinguishes known
+non-overlap from unknown pointers that happen not to alias, and checks every
+instruction through x86-64/AArch64 exec/PIE/rebased exports. Compiler locations,
+raw loclists and physical debugger reads provide independent oracles. See
+`docs/STACK-LOCAL-EFFECTS.md` for the precise evidence and remaining scope.

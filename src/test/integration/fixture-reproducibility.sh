@@ -91,6 +91,7 @@ expected_sources=(
     shared_semantic.c
     stack-first-use.c
     stack-local-definitions.c
+    stack-local-effects.c
     stack-spill.c
     stack-value-transitions.c
     terminal-composite.c

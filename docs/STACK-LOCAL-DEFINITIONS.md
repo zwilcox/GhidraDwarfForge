@@ -22,8 +22,9 @@ whole-function location. Ordinary nonoverlapping zero-offset locals and stack
 parameters retain their existing behavior. Calls, branch-dependent stack
 identity, mixed pieces and inferred lexical lifetimes remain unimplemented by
 this proof. Runtime now covers signed four- and eight-byte objects on x86-64
-and AArch64. Mutation/alias runtime cases remain required before broader claims;
-the decoder checks alone do not establish those end-to-end behaviors.
+and AArch64. Partial/full writes and known/unknown alias effects also have
+separate end-to-end evidence in `STACK-LOCAL-EFFECTS.md`; those runtime results
+supersede the earlier pending mutation/alias notes below.
 
 ## Evidence and reproduction
 

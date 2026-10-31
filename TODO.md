@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally; hosted acceptance pending:** stack-local partial/full writes
+and known/unknown aliases pass all twelve width/address/target cases on actual
+JDK21, with 24 candidate/twelve previous exports and 3,636 GDB observations.
+The 36 stale-register controls reject, twelve unknown-pointer/non-alias cases
+remain unavailable and twelve known non-alias cases preserve locations.
+Independent raw loclists, validators, identity/build-ID checks, determinism and
+saved-program/module/input preservation pass. Production Java is unchanged;
+see `docs/STACK-LOCAL-EFFECTS.md`. PR99 corrections and hosted dependency
+acceptance remain pending. Broader calls/flow, mixed pieces and P3.3 remain open.
+
 **CONFIRMED locally; hosted acceptance pending:** stack-local runtime coverage
 now includes signed 32/64-bit values on x86-64/AArch64 in all three address roles.
 Twelve cases pass 24 candidate/twelve previous exports, 408 GDB instruction
