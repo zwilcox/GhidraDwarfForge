@@ -1,5 +1,12 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED ARM/Thumb compiler-fixture research (2026-10-31):** four fresh
+ARM/Thumb exec/PIE references run under QEMU. The retained isolated toolchain
+supplies fresh compilation despite no ARM compiler on PATH. Thumb ELF values
+are tagged, and PIE symbol extents include literal-pool data; alias mode and
+code-range proof must account for both. Production aliases remain PLANNED;
+see `docs/research/ARM-FUNCTION-ALIASES.md`. P1.7/#66 remains open.
+
 **CONFIRMED failed hosted gate and local correction (2026-10-31):** PR89
 run `41178632812` stops before compilation because the architecture scan matches
 the generic unwind local variable `pc`. Renaming it to `initialLocation` passes
