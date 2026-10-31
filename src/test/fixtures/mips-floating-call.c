@@ -22,6 +22,9 @@ __attribute__((noinline)) int integer_call(int value) {
     return value + 7;
 }
 
+sample_scalar (*fp_pointer)(sample_scalar, sample_scalar) = fp_call;
+int (*integer_pointer)(int) = integer_call;
+
 __attribute__((noinline)) void marker(void) {
     __asm__ volatile("" ::: "memory");
 }

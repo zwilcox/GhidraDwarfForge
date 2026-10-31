@@ -1,5 +1,20 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+
+**CONFIRMED locally; hosted acceptance pending:** function-pointer types now
+retain calling-convention and compiler/MIPS call restrictions, closing a bypass
+that returned 4389 instead of 1234 through a Microsoft-ABI pointer. All 51 local
+saved-program cases pass (six x86 compiler-profile, 24 MIPS floating and 21
+five-target aggregate cases), with 240 correct and 90 refused fixed-package
+calls, deterministic outputs and protected inputs. All 39 actual Java 21 suites,
+five isolated packaged native profiles, 32 validator metadata controls and 97
+evidence controls pass. The separately pinned checker recognizes the established
+LLVM/GDB function-type convention extension; it suppresses no diagnostics and
+changes no shipped native source. Raw receipt:
+`6a441bb81bc6607d36e3d9d6b580d1438867f9ef0709444502750bbee18ca44e`.
+See `docs/FUNCTION-POINTER-CALL-ABI.md`. Final package/hosted acceptance remains
+pending; P1.7/#66 remains open.
+
 **CONFIRMED committed-package checkpoint (2026-10-31):** the merged overload/
 aggregate-return candidate builds and its package audit verifies 67 exact source
 files, 261 Java 21 classes, native provenance and every release manifest. Its

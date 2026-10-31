@@ -75,6 +75,7 @@ def main():
     functions = ['triple64', 'triple32', 'pair64', 'scalar64', 'word_mix', 'marker']
     globals_ = ['sink', 'pointer_data', 'triple64_calls', 'triple32_calls', 'pair64_calls', 'scalar64_calls', 'words_calls']
     symbols = {}
+    globals_ += [name + '_pointer' for name in functions if name != 'marker']
     for line in (case / 'symbols.log').read_text().splitlines():
         fields = line.split()
         if len(fields) == 8 and fields[7] in functions + globals_:
@@ -151,6 +152,15 @@ def main():
         blocked = args.target.startswith('mips') and name in ('triple64', 'pair64')
         assert int(convention) == (3 if blocked else 1), (name, convention)
         raw.append({'function': function, 'parameters': parameters, 'hiddenCount': len(hidden)})
+        if name != 'marker':
+            callback, = [row for row in dies if row['tag'] == 'DW_TAG_subroutine_type' and
+                facts.facts.die_name(row) == name + '_pointer_type']
+            assert int(callback['attrs']['DW_AT_calling_convention'].split()[0]) == (3 if blocked else 1)
+            callback_parameters = [row for row in facts.children(dies, dies.index(callback))
+                if row['tag'] == 'DW_TAG_formal_parameter']
+            assert len(callback_parameters) == len(explicit)
+            raw[-1]['pointerType'] = callback
+            raw[-1]['pointerParameters'] = callback_parameters
     write('raw-dies.json', raw)
     run('gdb-driver', ['bash', source / 'aggregate-return-calls-gdb.sh', repository, case, args.target])
     after = {name: support.digest(Path(name)) for name in before}

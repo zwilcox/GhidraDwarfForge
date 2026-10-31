@@ -63,11 +63,19 @@ public final class MipsFloatingCallPolicySmoke {
                             declaration.returnType(), declaration.parameters(), declaration.variadic(), declaration.noReturn(),
                             declaration.callingConvention(), declaration.signatureSource(), declaration.nonDefaultCallingConvention(),
                             oldDeclaration.debuggerCallRestriction())), "declaration changed");
+                        var oldType = (SubroutineType) model.types().byKey().get("subroutine" + index);
+                        var newType = (SubroutineType) output.types().byKey().get(oldType.key());
+                        require(newType.debuggerCallRestriction().equals(after.debuggerCallRestriction()),
+                            "function-pointer restriction diverged");
+                        require(oldType.equals(new SubroutineType(newType.key(), newType.name(), newType.byteSize(),
+                            newType.returnType(), newType.parameters(), newType.variadic(), newType.callingConvention(),
+                            oldType.debuggerCallRestriction())), "function-pointer signature changed");
                         if (restriction) blocked++;
                     }
-                    require(diagnostics.size() == blocked * 2, "missing restriction diagnostics");
-                    require(output.types() == model.types() && output.variableStorage() == model.variableStorage(),
-                        "types or locations changed");
+                    require(diagnostics.size() == blocked * 3, "missing restriction diagnostics");
+                    require(output.types().nodes().stream().filter(n -> !(n instanceof SubroutineType)).toList().equals(
+                        model.types().nodes().stream().filter(n -> !(n instanceof SubroutineType)).toList()) &&
+                        output.variableStorage() == model.variableStorage(), "non-function types or locations changed");
                     require(output.equals(MipsFloatingCallPolicy.apply(image, output, () -> false, ignored -> { })),
                         "restriction duplicated");
                     require(Arrays.equals(original, Files.readAllBytes(path)), "original changed");
@@ -124,7 +132,14 @@ public final class MipsFloatingCallPolicySmoke {
             declarations.add(new FunctionDeclaration("external:" + index, "external" + index, result, parameters,
                 selected.variadic(), false, "default", "USER_DEFINED", false, selected.existing()));
         }
-        return new ProgramTypeModel(types, functions, List.of(), new VariableStorageModel(List.of()), List.of(), declarations);
+        var nodes = new ArrayList<TypeNode>(types.nodes());
+        for (int index = 0; index < functions.size(); index++) {
+            var function = functions.get(index);
+            nodes.add(new SubroutineType("subroutine" + index, "callback" + index, 0, function.returnType(),
+                function.parameters().stream().filter(p -> !p.returnStorage()).toList(), function.variadic(),
+                function.callingConvention(), function.debuggerCallRestriction()));
+        }
+        return new ProgramTypeModel(new TypeGraph(nodes), functions, List.of(), new VariableStorageModel(List.of()), List.of(), declarations);
     }
 
     private static void require(boolean value, String message) {

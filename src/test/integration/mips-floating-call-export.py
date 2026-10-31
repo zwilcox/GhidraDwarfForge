@@ -153,6 +153,10 @@ def main():
         assert int(row['attrs']['DW_AT_calling_convention'].split()[0]) == expected
         assert int(row['attrs']['DW_AT_low_pc'], 16) == symbols[name]
         assert 'DW_AT_type' in row['attrs'] and 'DW_AT_decl_line' in row['attrs']
+    for name, expected in [('fp_pointer_type', 3 if args.profile == 'fpxx' else 1), ('integer_pointer_type', 1)]:
+        row, = [row for row in records if row['tag'] == 'DW_TAG_subroutine_type' and
+            row['attrs'].get('DW_AT_name', '').rsplit(': ', 1)[-1] == name]
+        assert int(row['attrs']['DW_AT_calling_convention'].split()[0]) == expected
     write('raw-dies.json', records)
     run('gdb-driver', ['env', 'MIPS_CALL_PREVIOUS=' + ('previous' if args.previous_ghidra else ''),
         'bash', source / 'mips-floating-call-gdb.sh', repository, case, args.target], timeout=240)

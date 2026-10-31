@@ -63,8 +63,24 @@ public final class MipsFloatingCallPolicy {
                 combine(declaration.debuggerCallRestriction(), restriction)));
             diagnostic.accept("Debugger-injected calls disabled for " + declaration.name() + ": " + restriction);
         }
+        var nodes = new ArrayList<TypeNode>();
+        for (var node : model.types().nodes()) {
+            checkCancelled(cancelled);
+            if (node instanceof TypeGraph.SubroutineType subroutine) {
+                String restriction = restriction(types, subroutine.returnType(), subroutine.parameters(),
+                    subroutine.variadic(), abi, cancelled);
+                if (!restriction.isEmpty()) {
+                    nodes.add(subroutine.restrictDebuggerCalls(restriction));
+                    changed = true;
+                    diagnostic.accept("Debugger-injected calls disabled for function type " +
+                        subroutine.name() + ": " + restriction);
+                    continue;
+                }
+            }
+            nodes.add(node);
+        }
         checkCancelled(cancelled);
-        return changed ? new ProgramTypeModel(model.types(), functions, model.globals(), model.variableStorage(),
+        return changed ? new ProgramTypeModel(nodes.equals(model.types().nodes()) ? model.types() : new TypeGraph(nodes), functions, model.globals(), model.variableStorage(),
             model.functionStatics(), declarations) : model;
     }
 

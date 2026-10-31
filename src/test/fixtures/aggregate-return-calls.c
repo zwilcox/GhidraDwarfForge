@@ -38,6 +38,12 @@ __attribute__((noinline, noclone)) struct Triple word_mix(signed char first,
     return (struct Triple){first + *pointer, second + choice, tail};
 }
 
+struct Triple (*triple64_pointer)(uint64_t, int) = triple64;
+struct Triple (*triple32_pointer)(uint32_t, int) = triple32;
+struct Pair (*pair64_pointer)(uint64_t, int) = pair64;
+uint64_t (*scalar64_pointer)(uint64_t, int) = scalar64;
+struct Triple (*word_mix_pointer)(signed char, unsigned short, enum Choice, int *, uint32_t) = word_mix;
+
 __attribute__((noinline, noclone)) void marker(void)
 {
     __asm__ volatile ("" ::: "memory");

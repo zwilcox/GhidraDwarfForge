@@ -68,6 +68,26 @@ public class PrepareAggregateCalls extends GhidraScript {
                     new ReturnParameterImpl(result, currentProgram), Function.FunctionUpdateType.DYNAMIC_STORAGE_ALL_PARAMS,
                     true, SourceType.USER_DEFINED, parameters.toArray(Variable[]::new));
             }
+            if (!name.equals("marker")) {
+                String pointerName = name + "_pointer";
+                var definition = new FunctionDefinitionDataType(pointerName + "_type", manager);
+                definition.setReturnType(function.getReturn().getFormalDataType());
+                definition.setArguments(java.util.Arrays.stream(function.getParameters())
+                    .filter(parameter -> !parameter.isAutoParameter())
+                    .map(parameter -> new ParameterDefinitionImpl(parameter.getName(), parameter.getFormalDataType(), ""))
+                    .toArray(ParameterDefinition[]::new));
+                definition.setCallingConvention(function.getCallingConventionName());
+                var pointer = new PointerDataType(definition, manager);
+                var address = toAddr(labels.get(pointerName) + delta);
+                if (curate) {
+                    DataUtilities.createData(currentProgram, address, pointer, pointer.getLength(),
+                        DataUtilities.ClearDataMode.CLEAR_ALL_CONFLICT_DATA);
+                    currentProgram.getSymbolTable().createLabel(address, pointerName, SourceType.USER_DEFINED).setPrimary();
+                }
+                if (!getDataAt(address).getDataType().isEquivalent(pointer)) {
+                    throw new AssertionError("Pointer prototype changed " + pointerName);
+                }
+            }
             var parameters = new ArrayList<Map<String, Object>>();
             for (Parameter parameter : function.getParameters()) {
                 parameters.add(Map.of("name", parameter.getName(), "type", parameter.getFormalDataType().getName(),

@@ -896,6 +896,10 @@ public final class MinimalDwarfSidecarExporter {
             }
             else if (node instanceof SubroutineType subroutine) {
                 addName(producer, consumer, die, subroutine.name(), errorOut);
+                if (knownCallingConvention(subroutine.callingConvention()) || subroutine.debuggerCallsDisabled()) {
+                    addUnsigned(producer, consumer, debug, die, DW_AT_CALLING_CONVENTION,
+                        subroutine.debuggerCallsDisabled() ? DW_CC_NOCALL : DW_CC_NORMAL, errorOut);
+                }
                 addFlag(producer, consumer, debug, die, DW_AT_PROTOTYPED, true,
                     errorOut);
                 addTypeReference(producer, consumer, debug, die, subroutine.returnType(),

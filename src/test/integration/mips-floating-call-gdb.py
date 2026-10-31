@@ -62,6 +62,38 @@ else:
     assert 'error' not in result and result['after']['floatingCalls'] == 2
     result['floatingTransferCorrect'] = result.get('returned') == 16.25 and result['after']['a'] == 19.5 and result['after']['b'] == -3.25
     print('compiler-or-previous-fpxx-transfer=' + str(result['floatingTransferCorrect']))
+# The same ABI policy must apply when the call is made through a typed pointer.
+pointer_before = state()
+assert int(gdb.parse_and_eval('integer_pointer(29)')) == 36
+pointer_integer_after = state()
+assert pointer_integer_after == {**pointer_before, 'integer': 29,
+    'integerCalls': pointer_before['integerCalls'] + 1}
+registers_before = {item.name: str(gdb.selected_frame().read_register(item.name))
+    for item in gdb.selected_frame().architecture().registers()}
+sp = int(gdb.parse_and_eval('$sp'))
+stack_before = bytes(gdb.selected_inferior().read_memory(sp, 256)).hex()
+pointer = {'before': pointer_integer_after, 'registersBefore': registers_before, 'stackBefore': stack_before}
+try:
+    pointer['returned'] = float(gdb.parse_and_eval('fp_pointer(19.5, -3.25)'))
+except gdb.error as error:
+    pointer['error'] = str(error)
+pointer['after'] = state()
+if variant == 'fixed' and profile == 'fpxx':
+    assert 'does not follow the target calling convention' in pointer.get('error', '')
+    assert pointer['after'] == pointer_integer_after and 'returned' not in pointer
+    pointer['registersAfter'] = {item.name: str(gdb.selected_frame().read_register(item.name))
+        for item in gdb.selected_frame().architecture().registers()}
+    pointer['stackAfter'] = bytes(gdb.selected_inferior().read_memory(sp, 256)).hex()
+    assert pointer['registersAfter'] == registers_before and pointer['stackAfter'] == stack_before
+elif profile == 'fp32':
+    assert pointer.get('returned') == 16.25 and pointer['after'] == {
+        **pointer_integer_after, 'a': 19.5, 'b': -3.25,
+        'floatingCalls': pointer_integer_after['floatingCalls'] + 1}
+else:
+    assert 'error' not in pointer and pointer['after']['floatingCalls'] == pointer_integer_after['floatingCalls'] + 1
+    pointer['floatingTransferCorrect'] = pointer.get('returned') == 16.25 and pointer['after']['a'] == 19.5 and pointer['after']['b'] == -3.25
+result['pointerCalls'] = {'integerReturn': 36, 'integerBefore': pointer_before,
+    'integerAfter': pointer_integer_after, 'floating': pointer}
 gdb.execute('continue')
 assert exits == [0], exits
 result['exitCodes'] = exits

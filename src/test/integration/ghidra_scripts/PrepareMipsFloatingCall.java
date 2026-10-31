@@ -57,6 +57,28 @@ public class PrepareMipsFloatingCall extends GhidraScript {
                 "storage", storage, "returnStorage", function.getReturn().getVariableStorage().toString(),
                 "convention", function.getCallingConventionName()));
         }
+        for (String name : new String[] { "fp_pointer", "integer_pointer" }) {
+            var symbol = getSymbols(name, currentProgram.getGlobalNamespace()).get(0);
+            var function = getGlobalFunctions(name.equals("fp_pointer") ? "fp_call" : "integer_call").get(0);
+            var definition = new ghidra.program.model.data.FunctionDefinitionDataType(
+                name + "_type", currentProgram.getDataTypeManager());
+            definition.setReturnType(function.getReturnType());
+            definition.setArguments(java.util.Arrays.stream(function.getParameters())
+                .filter(parameter -> !parameter.isAutoParameter())
+                .map(parameter -> new ghidra.program.model.data.ParameterDefinitionImpl(
+                    parameter.getName(), parameter.getFormalDataType(), ""))
+                .toArray(ghidra.program.model.data.ParameterDefinition[]::new));
+            definition.setCallingConvention(function.getCallingConventionName());
+            var pointer = new ghidra.program.model.data.PointerDataType(definition, currentProgram.getDataTypeManager());
+            if (args[0].equals("curate")) {
+                DataUtilities.createData(currentProgram, symbol.getAddress(), pointer, pointer.getLength(),
+                    DataUtilities.ClearDataMode.CLEAR_ALL_CONFLICT_DATA);
+                createLabel(symbol.getAddress(), name, true, SourceType.USER_DEFINED);
+            }
+            if (!getDataAt(symbol.getAddress()).getDataType().isEquivalent(pointer)) {
+                throw new AssertionError("pointer type changed " + name);
+            }
+        }
         for (String name : new String[] { "seen_a", "seen_b", "floating_calls", "integer_calls", "seen_integer" }) {
             var symbol = getSymbols(name, currentProgram.getGlobalNamespace()).get(0);
             DataType type = name.startsWith("seen_") && !name.equals("seen_integer") ? scalar :

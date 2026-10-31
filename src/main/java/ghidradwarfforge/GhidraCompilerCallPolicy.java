@@ -8,6 +8,7 @@ import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 import ghidradwarfforge.nativeapi.DwarfTarget;
 import ghidradwarfforge.types.ProgramTypeModel;
+import ghidradwarfforge.types.TypeGraph;
 import ghidradwarfforge.types.ProgramTypeModel.FunctionDeclaration;
 import ghidradwarfforge.types.ProgramTypeModel.FunctionSignature;
 
@@ -48,8 +49,20 @@ public final class GhidraCompilerCallPolicy {
             diagnostic.accept("Debugger-injected calls disabled for " + declaration.name() +
                 ": " + restriction);
         }
+        var nodes = new ArrayList<TypeGraph.TypeNode>();
+        for (var node : model.types().nodes()) {
+            monitor.checkCancelled();
+            if (node instanceof TypeGraph.SubroutineType subroutine) {
+                nodes.add(subroutine.restrictDebuggerCalls(restriction));
+                diagnostic.accept("Debugger-injected calls disabled for function type " +
+                    subroutine.name() + ": " + restriction);
+            }
+            else {
+                nodes.add(node);
+            }
+        }
         monitor.checkCancelled();
-        return new ProgramTypeModel(model.types(), functions, model.globals(),
+        return new ProgramTypeModel(nodes.equals(model.types().nodes()) ? model.types() : new TypeGraph(nodes), functions, model.globals(),
             model.variableStorage(), model.functionStatics(), declarations);
     }
 

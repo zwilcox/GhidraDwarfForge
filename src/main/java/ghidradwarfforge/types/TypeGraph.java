@@ -219,13 +219,32 @@ public record TypeGraph(List<TypeNode> nodes) {
 
     public record SubroutineType(String key, String name, long byteSize,
             TypeRef returnType, List<Parameter> parameters,
-            boolean variadic) implements TypeNode {
+            boolean variadic, String callingConvention, String debuggerCallRestriction) implements TypeNode {
+        public SubroutineType(String key, String name, long byteSize,
+                TypeRef returnType, List<Parameter> parameters, boolean variadic) {
+            this(key, name, byteSize, returnType, parameters, variadic, "", "");
+        }
+
         public SubroutineType {
             common(key, name, byteSize, true);
-            if (returnType == null) {
-                throw new IllegalArgumentException("subroutine return type is required");
+            if (returnType == null || callingConvention == null || debuggerCallRestriction == null) {
+                throw new IllegalArgumentException("subroutine return type and call metadata are required");
             }
             parameters = List.copyOf(parameters);
+        }
+
+        public boolean debuggerCallsDisabled() {
+            return !debuggerCallRestriction.isEmpty();
+        }
+
+        public SubroutineType restrictDebuggerCalls(String restriction) {
+            if (restriction.isEmpty() || debuggerCallRestriction.equals(restriction) ||
+                    debuggerCallRestriction.endsWith("; " + restriction)) {
+                return this;
+            }
+            return new SubroutineType(key, name, byteSize, returnType, parameters, variadic,
+                callingConvention, debuggerCallRestriction.isEmpty() ? restriction :
+                    debuggerCallRestriction + "; " + restriction);
         }
 
         @Override

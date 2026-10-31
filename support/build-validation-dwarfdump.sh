@@ -13,7 +13,9 @@ support_dir=$(realpath "$(dirname "$0")")
 checker_patch="$support_dir/validation/0001-check-line-sequences.patch"
 reader_patch="$support_dir/validation/0002-accept-bounded-extended-program-count.patch"
 diagnostic_patch="$support_dir/validation/0003-preserve-bounded-harmless-diagnostics.patch"
+calling_patch="$support_dir/validation/0004-recognize-subroutine-calling-convention.patch"
 launcher="$support_dir/validation/run-dwarfdump.sh"
+calling_patch_hash=a1b5cc6d63795aeda62b5945bf8991360882c7334003e9912e274638ec073581
 configuration_hash=842bba9230de82059dfcef1485114cf3c33eae8be2973c649d176f4ad18972ef
 source_hash=7992e7b9019ebfabdda5773e86243517c48cf89fafed3209e853692bc9573efd
 patch_hash=69340f63ee78c06309731a40bb1e0e9e193b5d2f659e5f050ef413138649f696
@@ -27,6 +29,7 @@ printf '%s  %s\n' "$source_hash" "$archive" | sha256sum -c -
 printf '%s  %s\n' "$patch_hash" "$checker_patch" | sha256sum -c -
 printf '%s  %s\n' "$reader_patch_hash" "$reader_patch" | sha256sum -c -
 printf '%s  %s\n' "$diagnostic_patch_hash" "$diagnostic_patch" | sha256sum -c -
+printf '%s  %s\n' "$calling_patch_hash" "$calling_patch" | sha256sum -c -
 mkdir -p "$results" "$(dirname "$output")"
 work=$(mktemp -d "$results/build.XXXXXXXX")
 printf 'validation-tool-build=%s\n' "$work"
@@ -37,6 +40,7 @@ source="$work/libdwarf-2.3.2"
     patch -p1 < "$checker_patch" > "$work/patch.log" 2>&1
     patch -p1 < "$reader_patch" > "$work/reader-patch.log" 2>&1
     patch -p1 < "$diagnostic_patch" > "$work/diagnostic-patch.log" 2>&1
+    patch -p1 < "$calling_patch" > "$work/calling-patch.log" 2>&1
     ./configure --enable-static --disable-shared --disable-dwarfgen \
         > "$work/configure.log" 2>&1
     make -j"${FORGE_BUILD_JOBS:-$(nproc)}" > "$work/make.log" 2>&1
@@ -54,6 +58,7 @@ cp "$0" "$stage/source/support/build-validation-dwarfdump.sh"
 cp "$checker_patch" "$stage/source/support/validation/"
 cp "$reader_patch" "$stage/source/support/validation/"
 cp "$diagnostic_patch" "$stage/source/support/validation/"
+cp "$calling_patch" "$stage/source/support/validation/"
 cp "$launcher" "$stage/source/support/validation/"
 cp "$support_dir/validation/README.md" "$stage/source/support/validation/"
 cp "$support_dir/../LICENSE" "$stage/source/LICENSE"
@@ -78,6 +83,7 @@ grep -Fq '2.3.2' "$work/version.txt"
         "validation-checker-patch-sha256=$patch_hash" \
         "validation-reader-patch-sha256=$reader_patch_hash" \
         "validation-diagnostic-patch-sha256=$diagnostic_patch_hash" \
+        "validation-calling-convention-patch-sha256=$calling_patch_hash" \
         "validation-configuration-sha256=$configuration_hash" \
         'entry-point=bin/dwarfdump; executable=libexec/dwarfdump' \
         'configure=--enable-static --disable-shared --disable-dwarfgen' \
@@ -88,11 +94,13 @@ grep -Fq '2.3.2' "$work/version.txt"
 } > "$stage/BUILD-METADATA.txt"
 cat > "$stage/CORRESPONDING_SOURCE.md" <<'EOF'
 This validation-only executable is built from the included libdwarf 2.3.2
-archive and three explicitly identified validation-only patches: the dwarfdump
+archive and four explicitly identified validation-only patches: the dwarfdump
 line-sequence correction and bounded PN_XNUM recognition in its static ELF
 consumer, plus complete harmless-diagnostic evidence up to 65536 messages with
-checked allocation and explicit rejection above that bound. This executable
-and all three patches are excluded from GhidraDwarfForge release-native inputs;
+checked allocation and explicit rejection above that bound. The fourth recognizes
+the LLVM/GDB function-pointer calling-convention extension in the existing
+tag/attribute extension table; all other combinations and checks remain active.
+This executable and all four patches are excluded from GhidraDwarfForge release-native inputs;
 shipped consumer/producer library sources are unchanged.
 The relocatable bin/dwarfdump launcher checks the pinned upstream configuration
 and selects it explicitly with --file-name, without consulting host defaults.

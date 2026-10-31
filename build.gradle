@@ -554,6 +554,18 @@ tasks.register("callingConventionPolicySmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/convention-policy/cache").absolutePath
 }
 
+tasks.register("functionPointerCallPolicySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks function-pointer conventions and immutable saved types across five targets"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.FunctionPointerCallPolicySmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/pointer-convention-policy/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/pointer-convention-policy/cache").absolutePath
+}
+
 tasks.register("customCallStorageSmoke", JavaExec) {
     group = "verification"
     description = "Checks custom return/parameter storage before claiming default callability"
