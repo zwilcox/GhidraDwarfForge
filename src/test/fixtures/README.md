@@ -450,3 +450,12 @@ The preceding exporter advertises the default-matching Microsoft layout as
 callable; the compiler-profile restriction must reject injection before the
 counter changes. Ordinary calls, actual arguments and return registers must
 remain correct. The GCC controls continue to allow the equivalent SysV call.
+
+`mips-floating-call.c` exercises ordinary and debugger-injected scalar float/
+double calls, with an integer-call control and observed argument/call counters.
+The real-exporter harness covers both MIPS byte orders, explicit FPXX/FP32 and
+exec/PIE/rebased PIE. FPXX injection must be rejected before any observed state
+changes; explicit FP32 must transfer `19.5, -3.25` and return `16.25`. Integer
+injection remains usable in both profiles. Compiler and optional previous-package
+controls retain the observed transport behavior without changing target registers.
+See `docs/MIPS-FLOATING-CALL-ABI.md` for the bounded ABI policy.

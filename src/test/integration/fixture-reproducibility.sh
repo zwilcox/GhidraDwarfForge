@@ -61,6 +61,7 @@ expected_sources=(
     i386-profile.c
     later-register-local.c
     minimal.c
+    mips-floating-call.c
     mips-truncated-space-start.S
     mips-truncated-space.c
     mixed-incoming-prefix.c

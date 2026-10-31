@@ -1,5 +1,24 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally; hosted acceptance pending (2026-10-31):** the MIPS floating
+call safeguard passes all 24 maintained both-endian FPXX/FP32, float/double,
+exec/PIE/rebased-PIE cases: 72 real exports, 72 GDB processes, 12 unchanged-state
+rejections, 36 positive FP32 floating calls and 72 integer controls. Independent
+raw review, five-target export/GDB regressions, fixture reproducibility,
+failure isolation and copy cancellation pass. Local receipt:
+`43ee06d6b6ac524c815d56e3dca42927c3f282ed4c8727f906f174bca66ccd53`.
+See `docs/MIPS-FLOATING-CALL-ABI.md`. Final package and hosted gates remain
+pending; P1.7/#66 stays open.
+
+**CONFIRMED new call-ABI defect; initial fix under validation:** MIPS FPXX
+floating GDB calls execute with stale arguments and wrong returns in both
+compiler DWARF and current Forge double-call exports. Explicit FP32 controls
+work. An isolated original-ELF policy now preserves formal signatures while
+restricting unverified floating transfers; 3,456 model checks, 32 actual Java 21
+suites and sixteen initial installed runtime cases pass. Rebased/independent
+integer controls, integration promotion and hosted acceptance remain pending. See
+`docs/MIPS-FLOATING-CALL-ABI.md`; P1.7/#66 remains open.
+
 **CONFIRMED locally; acceptance incomplete:** dynamic-only ELF inventories now
 have a separate complete static mirror before analyst alias insertion. Both GNU
 version-qualified definitions and original dynamic bytes are retained. Model

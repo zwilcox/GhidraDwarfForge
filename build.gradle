@@ -854,3 +854,11 @@ tasks.register("dynamicSymbolMirrorSmoke", JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.elf.DynamicSymbolMirrorSmoke"
 }
+
+tasks.register("mipsFloatingCallPolicySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks original MIPS floating ABI profiles and signature-preserving call restrictions"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.MipsFloatingCallPolicySmoke"
+}

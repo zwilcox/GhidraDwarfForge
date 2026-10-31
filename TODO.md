@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally; hosted acceptance pending (2026-10-31):** the MIPS floating
+call safeguard passes all 24 maintained both-endian FPXX/FP32, float/double,
+exec/PIE/rebased-PIE cases: 72 real exports, 72 GDB processes, 12 unchanged-state
+rejections, 36 positive FP32 floating calls and 72 integer controls. Independent
+raw review, five-target export/GDB regressions, fixture reproducibility,
+failure isolation and copy cancellation pass. Local receipt:
+`43ee06d6b6ac524c815d56e3dca42927c3f282ed4c8727f906f174bca66ccd53`.
+See `docs/MIPS-FLOATING-CALL-ABI.md`. Final package and hosted gates remain
+pending; P1.7/#66 stays open.
+
 **CONFIRMED defect and initial local fix; acceptance incomplete:** selecting a
 Windows compiler specification for an ELF can make custom Microsoft storage
 match the program default while GDB still injects SysV calls incorrectly.
@@ -1250,6 +1260,14 @@ Define precedence among analyst-applied listing/signature types and decompiler g
   imported or subsequently changed programs.
 
 ## P1.7 Emit complete function signatures
+
+**CONFIRMED defect; fix under validation:** MIPS FPXX floating injected calls
+can execute with stale arguments and incorrect returns. Compiler and current
+Forge reproductions are retained; explicit FP32 controls pass. The isolated ABI
+safeguard passes model tests, 32 actual Java 21 suites and sixteen initial
+installed runtime cases. Rebased/integer controls and pipeline acceptance remain
+pending.
+See `docs/MIPS-FLOATING-CALL-ABI.md`.
 
 **CONFIRMED locally; acceptance incomplete:** dynamic-only symbol mirroring
 preserves original lookup while adding analyst aliases. Both GNU qualified
