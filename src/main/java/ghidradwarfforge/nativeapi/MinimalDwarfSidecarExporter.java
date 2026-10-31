@@ -493,9 +493,9 @@ public final class MinimalDwarfSidecarExporter {
                         addFlag(producer, consumer, debug, die, DW_AT_PROTOTYPED, true,
                             errorOut);
                     }
-                    if (knownCallingConvention(signature.callingConvention())) {
+                    if (knownCallingConvention(signature.callingConvention()) || signature.debuggerCallsDisabled()) {
                         addUnsigned(producer, consumer, debug, die,
-                            DW_AT_CALLING_CONVENTION, signature.nonDefaultCallingConvention()
+                            DW_AT_CALLING_CONVENTION, signature.debuggerCallsDisabled()
                                 ? DW_CC_NOCALL : DW_CC_NORMAL, errorOut);
                     }
                     addTypeReference(producer, consumer, debug, die,
@@ -546,9 +546,9 @@ public final class MinimalDwarfSidecarExporter {
                     addFlag(producer, consumer, debug, die, DW_AT_PROTOTYPED, true, errorOut);
                     addTypeReference(producer, consumer, debug, die,
                         declaration.returnType(), typeModel.types(), allocatedTypes, errorOut);
-                    if (knownCallingConvention(declaration.callingConvention())) {
+                    if (knownCallingConvention(declaration.callingConvention()) || declaration.debuggerCallsDisabled()) {
                         addUnsigned(producer, consumer, debug, die,
-                            DW_AT_CALLING_CONVENTION, declaration.nonDefaultCallingConvention()
+                            DW_AT_CALLING_CONVENTION, declaration.debuggerCallsDisabled()
                                 ? DW_CC_NOCALL : DW_CC_NORMAL, errorOut);
                     }
                     if (declaration.noReturn()) {

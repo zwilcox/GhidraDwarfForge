@@ -275,15 +275,19 @@ public final class GhidraTypeGraph {
                 }
             }
             boolean nonDefaultConvention = nonDefaultCallingConvention(program, function);
+            String callRestriction = GhidraCustomCallStorage.restriction(program, function, monitor);
             if (nonDefaultConvention) {
                 diagnostic.accept("Debugger-injected calls disabled for " + symbol.name() +
                     ": selected Ghidra calling convention " + function.getCallingConventionName() +
                     " differs from the program default; no debugger ABI mapping is established");
             }
+            else if (!callRestriction.isEmpty()) {
+                diagnostic.accept("Debugger-injected calls disabled for " + symbol.name() + ": " + callRestriction);
+            }
             signatures.add(new ProgramTypeModel.FunctionSignature(symbol.name(), address,
                 returnType, parameters, locals, function.hasVarArgs(), function.hasNoReturn(),
                 nonNull(function.getCallingConventionName()),
-                function.getSignatureSource().name(), nonDefaultConvention));
+                function.getSignatureSource().name(), nonDefaultConvention, callRestriction));
         }
         for (FunctionSymbol missing : selected.values()) {
             diagnostic.accept("No Ghidra signature found for exported function " +
@@ -384,17 +388,21 @@ public final class GhidraTypeGraph {
             // An external-space placeholder is not an address in this image.
             // Preserve its persistent identity and full Ghidra display name only.
             boolean nonDefaultConvention = nonDefaultCallingConvention(program, external);
+            String callRestriction = GhidraCustomCallStorage.restriction(program, external, monitor);
             if (nonDefaultConvention) {
                 diagnostic.accept("Debugger-injected calls disabled for " + external.getName(true) +
                     ": selected Ghidra calling convention " + external.getCallingConventionName() +
                     " differs from the program default; no debugger ABI mapping is established");
+            }
+            else if (!callRestriction.isEmpty()) {
+                diagnostic.accept("Debugger-injected calls disabled for " + external.getName(true) + ": " + callRestriction);
             }
             declarations.add(new ProgramTypeModel.FunctionDeclaration(
                 "external:" + Long.toUnsignedString(external.getID()), external.getName(true),
                 extractor.reserve(external.getReturn().getFormalDataType()), parameters,
                 external.hasVarArgs(), external.hasNoReturn(),
                 external.getCallingConventionName(), external.getSignatureSource().name(),
-                nonDefaultConvention));
+                nonDefaultConvention, callRestriction));
         }
         extractor.drain(monitor);
         return new ProgramTypeModel(new TypeGraph(new ArrayList<>(extractor.nodes.values())),

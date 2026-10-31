@@ -44,6 +44,7 @@ expected_sources=(
     calling-convention.c
     composite-register-prefix.c
     curated-thunk.c
+    custom-call-storage.c
     defined-register-local.c
     direct-leaf-call.c
     direct-leaf-callee.c

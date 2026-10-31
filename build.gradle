@@ -538,6 +538,18 @@ tasks.register("callingConventionPolicySmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/convention-policy/cache").absolutePath
 }
 
+tasks.register("customCallStorageSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks custom return/parameter storage before claiming default callability"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.CustomCallStorageSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/custom-call-storage/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/custom-call-storage/cache").absolutePath
+}
+
 tasks.register("dynamicParameterStorageSmoke", JavaExec) {
     group = "verification"
     description = "Checks computed parameter storage in saved Ghidra programs across five targets"
