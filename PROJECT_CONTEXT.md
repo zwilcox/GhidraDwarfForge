@@ -1,5 +1,22 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED failed hosted gate; scope harness corrected locally:** PR88 run
+`41189899075` failed before export when the big-endian MIPS compiler-reference
+scope test tried to bind occupied TCP port 33410. The scope harness now uses
+its existing private UNIX-socket helper, including readiness and bounded child
+cleanup, and protects that helper in its input snapshot. Fifteen five-target
+local-candidate roles plus three exact failed-hosted-package MIPS roles pass
+with the former TCP port deliberately occupied: 36 exports and 54 GDB runs,
+validators, deterministic artifacts and preserved inputs. Existing real-QEMU
+startup/failure/timeout/cleanup checks pass. Local receipt:
+`ad4c83475641c72e999f2890cfe42af0103b9413dc63e654edefe613fb324242`.
+Production code is unchanged; a fresh hosted gate is required. P1.7 stays open.
+
+**CONFIRMED main87 validation:** the separate main push `41189858903` passes
+all twelve jobs, exact package/raw review and both personally viewed GUI
+consoles. Receipt:
+`a190b2f76e12822a1f3eee78ee1142cccdfde42566349ea2d3c8c50c08f7b5bb`.
+
 **CONFIRMED integration (2026-10-31):** PR87 final main-based head
 `4414691b020971e3bd8037fc99563087d09d0ad9` passes all twelve jobs in
 `41185868818`, independent package/raw review and both actual GUI consoles.
