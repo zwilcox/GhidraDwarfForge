@@ -74,6 +74,7 @@ expected_sources=(
     nonzero_load_offset_start.S
     opaque-register-effects.c
     outside-body-flow.c
+    overloaded-signatures.cpp
     recovered-default-returns.c
     recovered-parameter-types.c
     register-copy.c

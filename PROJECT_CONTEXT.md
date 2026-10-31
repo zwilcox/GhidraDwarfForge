@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally; hosted acceptance pending (2026-10-31):** all 36 overload
+cases pass across x86-64, AArch64, ARM, Thumb and both MIPS32 byte orders,
+including retained/stripped exec/PIE/rebased PIE. The matrix includes 72 exports,
+72 compiler/Forge GDB processes and 288 ordinary runtime calls. Independent raw
+review, all five fixture inventories and workflow lint pass. Receipt:
+`1318930de47d80a26767bfdc67725f09b83046d5ab27abb360bab566714fce26`.
+See `docs/OVERLOADED-SIGNATURES.md`. P1.7 remains open; the separate hidden
+aggregate-return parameter call defect is under investigation.
+
 **CONFIRMED original ARM mode conflict controls locally (2026-10-31):**
 source-built ELF mutations now exercise both contradictory function tags and
 mapping symbols through real imports and repeated production exports. Both omit

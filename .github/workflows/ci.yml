@@ -1036,6 +1036,22 @@ jobs:
           FORGE_SCOPE_QUALIFIED: '1'
         run: src/test/integration/function-static-scopes-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
 
+      - name: Overloaded signatures preserve types, aliases and source identity
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          for role in exec pie pie-rebased; do
+              for symbols in retained stripped; do
+                  python3 src/test/integration/overloaded-signatures-export.py \
+                      "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --symbols "$symbols"
+                  if [[ "$TARGET" == arm32 ]]; then
+                      python3 src/test/integration/overloaded-signatures-export.py \
+                          "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --symbols "$symbols" --arm-mode thumb
+                  fi
+              done
+          done
+
       - name: Class-owned display names and saved-program identity
         env:
           TARGET: ${{ matrix.target }}
