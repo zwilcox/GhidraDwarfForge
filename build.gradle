@@ -474,6 +474,26 @@ tasks.register("localSymbolMergeSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.elf.LocalSymbolMergeSmoke"
 }
 
+tasks.register("functionAliasSymbolsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks original-byte and symbol-collision binding of recovered aliases"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.FunctionAliasSymbolsSmoke"
+}
+
+tasks.register("ghidraFunctionAliasesSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit analyst aliases in six Ghidra language models"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.GhidraFunctionAliasesSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/function-aliases/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/function-aliases/cache").absolutePath
+}
+
 tasks.register("arm32ModeSymbolsSmoke", JavaExec) {
     group = "verification"
     description = "Checks bounded instruction-mode symbols and preserved ELF metadata"

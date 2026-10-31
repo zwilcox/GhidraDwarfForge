@@ -1,9 +1,9 @@
 # Lossless local symbol insertion into matched ELF sidecars
 
-**CONFIRMED locally; hosted acceptance pending:** the matched ELF writer accepts
+**CONFIRMED through accepted PR80:** the matched ELF writer accepts
 explicit local function-symbol additions when the original image already has
 one supported static symbol table. This is a prerequisite for
-[P1.7/#66](https://github.com/zwilcox/GhidraDwarfForge/issues/66). It does not add
+[P1.7/#66](https://github.com/zwilcox/GhidraDwarfForge/issues/66). That backend component did not add
 an alias option or automatic secondary-label extraction to ordinary export.
 The existing ARM instruction-mode planner retains its own conservative policy.
 
@@ -99,8 +99,9 @@ Independent ordinary-export review receipt SHA-256:
 `6bf4a6faac33ac6c389ff0d4bfc1df33ac5db170ea342d7287d820d3245eb543`.
 Evidence is retained in `build/symbol-merge-review/` in the implementation
 worktree. CI adds the model suite on both hosts and the backend harness after
-the retained-alias matrix on both target lanes. Exact-head hosted acceptance
-remains pending.
+the retained-alias matrix on both target lanes. PR80 exact-head hosted acceptance passes all twelve jobs in `41144394175`,
+with independent package/raw and both GUI console review. Receipt:
+`adc82421f9ca89cab128399f9cb2b27da03e184b38c128c2f1e1df43725e1e4e`.
 
 ## Consumer limitation and remaining alias work
 
@@ -124,3 +125,7 @@ normalized text and the actual ELF32 overflow diagnostic. One regression command
 ran before fixture binaries existed in the fresh worktree; after source-built
 fixtures were generated, sectionless/cancellation checks passed. Failed logs
 remain retained. None is counted as passing runtime or format evidence.
+
+The next ordinary-export component is documented in
+[CURATED-FUNCTION-ALIASES.md](CURATED-FUNCTION-ALIASES.md); its pending acceptance
+does not alter the historical backend-only boundary of PR80.

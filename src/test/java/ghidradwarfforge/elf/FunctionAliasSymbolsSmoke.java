@@ -1,0 +1,184 @@
+package ghidradwarfforge.elf;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HexFormat;
+import java.util.List;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import ghidradwarfforge.nativeapi.DwarfTarget;
+import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
+
+/** Original-byte and name-collision proof, independent of Ghidra/native production. */
+public final class FunctionAliasSymbolsSmoke {
+    private static int checks;
+    private static final FunctionSymbol OWNER = new FunctionSymbol("primary", 0x1040, 16);
+    private static final String HASH = hash(new byte[16]);
+    private static final ElfFunctionAlias ALIAS = new ElfFunctionAlias("scope::alternate", "primary", 0x1040, 16, HASH);
+
+    public static void main(String[] args) throws Exception {
+        Path root = Files.createTempDirectory("forge-alias-planner-");
+        for (boolean wide : List.of(false, true)) {
+            for (ByteOrder order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
+                byte[] bytes = LocalSymbolMergeSmoke.fixture(wide, order, false, false);
+                check(root, bytes, List.of(ALIAS), List.of(OWNER), null);
+                check(root, bytes, List.of(ALIAS, ALIAS), List.of(OWNER), "conflicts");
+                check(root, bytes, List.of(alias("old_global", HASH)), List.of(OWNER), "already exists");
+                check(root, bytes, List.of(alias("different", "0".repeat(64))), List.of(OWNER), "code differs");
+                check(root, bytes, List.of(ALIAS), List.of(new FunctionSymbol("wrong", 0x1040, 16)), "primary definition");
+                check(root, bytes, List.of(ALIAS), List.of(OWNER, new FunctionSymbol("overlap", 0x1048, 8)), "overlapping recovered");
+                check(root, bytes, List.of(ALIAS), List.of(OWNER, OWNER), "primary definition");
+                check(root, bytes, List.of(ALIAS), List.of(OWNER,
+                    new FunctionSymbol(ALIAS.name(), 0x1060, 8)), "conflicts");
+                for (String field : List.of("type", "flags", "size", "address")) {
+                    byte[] changed = bytes.clone();
+                    LocalSymbolMergeSmoke.field(changed, 1, field, switch (field) {
+                        case "type" -> 8;
+                        case "flags" -> 2;
+                        case "size" -> 0x48;
+                        default -> 0x1048;
+                    });
+                    check(root, changed, List.of(ALIAS), List.of(OWNER), "file-backed");
+                }
+                byte[] overlap = bytes.clone();
+                LocalSymbolMergeSmoke.field(overlap, 4, "flags", 2);
+                LocalSymbolMergeSmoke.field(overlap, 4, "address", 0x1048);
+                check(root, overlap, List.of(ALIAS), List.of(OWNER), "overlapping original");
+                for (String field : List.of("link", "size", "entsize")) {
+                    byte[] changed = bytes.clone();
+                    LocalSymbolMergeSmoke.field(changed, 3, field, 1);
+                    check(root, changed, List.of(ALIAS), List.of(OWNER), "symbol");
+                }
+                byte[] badName = bytes.clone();
+                ByteBuffer.wrap(badName).order(order).putInt(0x200 + (wide ? 24 : 16), -1);
+                check(root, badName, List.of(ALIAS), List.of(OWNER), "name offset");
+                byte[] badTerminator = bytes.clone();
+                badTerminator[0x180 + 30] = 1;
+                check(root, badTerminator, List.of(ALIAS), List.of(OWNER), "terminators");
+                byte[] dynamic = bytes.clone();
+                LocalSymbolMergeSmoke.field(dynamic, 3, "type", 11);
+                check(root, dynamic, List.of(ALIAS), List.of(OWNER), "hidden");
+                for (int row = 1; row < 4; row++) {
+                    ByteBuffer.wrap(dynamic).order(order).putShort(0x200 + row * (wide ? 24 : 16) +
+                        (wide ? 6 : 14), (short) 0);
+                }
+                check(root, dynamic, List.of(ALIAS), List.of(OWNER), null);
+                check(root, dynamic, List.of(alias("old_weak", HASH)), List.of(OWNER), "already exists");
+                byte[] rawName = bytes.clone();
+                rawName[0x181] = (byte) 0xff;
+                check(root, rawName, List.of(ALIAS), List.of(OWNER), null);
+                byte[] shared = bytes.clone();
+                ByteBuffer.wrap(shared).order(order).putShort(16, (short) 3);
+                check(root, shared, List.of(ALIAS), List.of(OWNER), null);
+                byte[] relocatable = bytes.clone();
+                ByteBuffer.wrap(relocatable).order(order).putShort(16, (short) 1);
+                check(root, relocatable, List.of(ALIAS), List.of(OWNER), "ET_EXEC");
+                byte[] sectionless = bytes.clone();
+                ByteBuffer header = ByteBuffer.wrap(sectionless).order(order);
+                if (wide) {
+                    header.putLong(40, 0).putShort(60, (short) 0).putShort(62, (short) 0);
+                }
+                else {
+                    header.putInt(32, 0).putShort(48, (short) 0).putShort(50, (short) 0);
+                }
+                check(root, sectionless, List.of(ALIAS), List.of(OWNER), "section-backed");
+                Path path = Files.createTempFile(root, "cancel-", ".elf");
+                Files.write(path, bytes);
+                ElfImage image = ElfImage.read(path);
+                var reservedDiagnostic = new ArrayList<String>();
+                require(FunctionAliasSymbols.plan(image, List.of(ALIAS), List.of(OWNER),
+                    List.of(new ElfLocalFunctionSymbol(ALIAS.name(), 0x1040, 16, 1)),
+                    () -> false, reservedDiagnostic::add).isEmpty() &&
+                    reservedDiagnostic.toString().contains("conflicts"), "reserved name collision lost");
+                var budgetDiagnostic = new ArrayList<String>();
+                require(FunctionAliasSymbols.plan(image, java.util.Collections.nCopies(65537, ALIAS),
+                    List.of(OWNER), List.of(), () -> false, budgetDiagnostic::add).isEmpty() &&
+                    budgetDiagnostic.toString().contains("budget"), "candidate budget ignored");
+                for (int after : List.of(1, 12, 22)) {
+                    AtomicInteger counter = new AtomicInteger();
+                    try {
+                        FunctionAliasSymbols.plan(image, List.of(ALIAS), List.of(OWNER), List.of(),
+                            () -> counter.incrementAndGet() >= after, ignored -> { });
+                        throw new AssertionError("cancel ignored at " + after);
+                    }
+                    catch (CancellationException expected) {
+                        checks++;
+                    }
+                }
+                if (!wide) {
+                    var diagnostics = new ArrayList<String>();
+                    require(DwarfTarget.fromElf(image).planFunctionAliases(image, List.of(ALIAS),
+                        List.of(OWNER), List.of(), () -> false, diagnostics::add).isEmpty() &&
+                        diagnostics.toString().contains("symbol-value policy"), "unproved target accepted");
+                }
+                else if (order == ByteOrder.LITTLE_ENDIAN) {
+                    for (int machine : List.of(62, 183)) {
+                        ByteBuffer.wrap(bytes).order(order).putShort(18, (short) machine);
+                        Path target = Files.createTempFile(root, "target-", ".elf");
+                        Files.write(target, bytes);
+                        var elf = ElfImage.read(target);
+                        require(DwarfTarget.fromElf(elf).planFunctionAliases(elf, List.of(ALIAS),
+                            List.of(OWNER), List.of(), () -> false, ignored -> { }).size() == 1,
+                            "direct target policy rejected");
+                    }
+                }
+            }
+        }
+        for (String name : List.of("", "bad\0name", "bad\ud800", "λ".repeat(33000), "primary")) {
+            try {
+                alias(name, HASH);
+                throw new AssertionError("invalid name accepted");
+            }
+            catch (IllegalArgumentException expected) {
+                checks++;
+            }
+        }
+        System.out.println("function-alias-symbols-smoke=PASS checks=" + checks);
+    }
+
+    private static ElfFunctionAlias alias(String name, String hash) {
+        return new ElfFunctionAlias(name, "primary", 0x1040, 16, hash);
+    }
+
+    private static void check(Path root, byte[] bytes, List<ElfFunctionAlias> aliases,
+            List<FunctionSymbol> owners, String omitted) throws Exception {
+        Path input = Files.createTempFile(root, "case-", ".elf");
+        Files.write(input, bytes);
+        var diagnostics = new ArrayList<String>();
+        var image = ElfImage.read(input);
+        var result = FunctionAliasSymbols.plan(image, aliases, owners, List.of(), () -> false, diagnostics::add);
+        if (omitted == null) {
+            require(result.equals(List.of(new ElfLocalFunctionSymbol(ALIAS.name(), 0x1040, 16, 1))) &&
+                diagnostics.isEmpty(), "unexpected plan/diagnostic " + result + diagnostics);
+            require(result.equals(FunctionAliasSymbols.plan(image, aliases, owners, List.of(), () -> false,
+                ignored -> { })), "nondeterministic plan");
+        }
+        else {
+            require(result.isEmpty() && diagnostics.toString().contains(omitted),
+                "missing omission " + omitted + ": " + diagnostics + result);
+        }
+        require(Arrays.equals(bytes, Files.readAllBytes(input)), "input modified");
+    }
+
+    private static String hash(byte[] bytes) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
+        }
+        catch (Exception failure) {
+            throw new AssertionError(failure);
+        }
+    }
+
+    private static void require(boolean condition, String message) {
+        checks++;
+        if (!condition) {
+            throw new AssertionError(message);
+        }
+    }
+}
