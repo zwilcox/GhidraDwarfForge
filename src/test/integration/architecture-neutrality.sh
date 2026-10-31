@@ -17,6 +17,7 @@ audited = {
     "ghidradwarfforge/GhidraArm32FunctionModes.java",
     "ghidradwarfforge/elf/Arm32ModeSymbols.java",
     "ghidradwarfforge/elf/MipsAbiFlags.java",
+    "ghidradwarfforge/elf/MipsFunctionAliasSymbols.java",
     "ghidradwarfforge/nativeapi/PackagedNativeLibraries.java",
 }
 pattern = re.compile(r"\b(i386|x86|x86_32|em_386|eax|ecx|edx|ebx|esp|ebp|esi|edi|eip|eflags|x86_64|aarch64|arm32|mips32|mipsel|em_x86_64|em_aarch64|"

@@ -1251,6 +1251,14 @@ Define precedence among analyst-applied listing/signature types and decompiler g
 
 ## P1.7 Emit complete function signatures
 
+**CONFIRMED locally; hosted acceptance pending:** isolated classic O32 MIPS32r2
+alias planning passes FPXX runtime cases in both byte orders across exec/PIE/
+rebase. 492 model checks, 30 actual Java 21 suites and independent four-target
+raw review pass. Six explicit FP32 base/alias roles also pass locally. Defined dynamic
+symbols without a static table still prevent new alias insertion; sectionless,
+discontiguous and other target-mode relationships remain open. See
+`docs/MIPS-FUNCTION-ALIASES.md`.
+
 **CONFIRMED local fixture correction; hosted acceptance pending:** PR82's first
 gate (`41165251340`) fails the two-copy fixture's automatic return-value check
 after the custom-storage guard correctly rejects an unresolved convention.

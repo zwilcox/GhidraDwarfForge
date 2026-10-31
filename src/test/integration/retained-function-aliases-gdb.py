@@ -33,7 +33,7 @@ lookup = {}
 for row in functions:
     names = [row['original']] + (['second_identity'] if row['name'].endswith('analyst_alias') else [])
     for name in names:
-        present = compiler or metadata['symbols'] == 'retained'
+        present = compiler or name in metadata['originalSymbols']
         if present:
             assert int(gdb.parse_and_eval(expression(name))) == row['entry']
             # Record this consumer observation separately from typed curated lookup.
@@ -57,7 +57,7 @@ for row in functions:
         stop.delete()
         missing('unbacked_' + row['name'].split('::')[-1])
 if remote:
-    gdb.execute('set sysroot /usr/aarch64-linux-gnu')
+    gdb.execute('set sysroot ' + os.environ['ALIAS_SYSROOT'])
     gdb.execute('target remote ' + remote)
 
 rows, exits, navigation = [], [], []
@@ -67,7 +67,7 @@ for iteration, argument in enumerate((19, -19)):
     for row in functions:
         # The second invocation enters through an original alias where available.
         original = row['original'] if row['name'].endswith('analyst_unique') else 'second_identity'
-        name = original if compiler or (iteration == 1 and metadata['symbols'] == 'retained') else row['name']
+        name = original if compiler or (iteration == 1 and original in metadata['originalSymbols']) else row['name']
         stop = gdb.Breakpoint('*' + expression(name)[1:], internal=True)
         gdb.execute('run' if not started and not remote else 'continue')
         started = True
@@ -92,7 +92,7 @@ for iteration, argument in enumerate((19, -19)):
             'argument': int(value), 'privateValue': int(owned), 'frame': current.name()})
         # Exercise both commands with a return guard; synthetic and compiler line
         # grouping need not match, but neither may escape unnoticed.
-        return_pc = row['end'] - (1 if target == 'x86_64' else 4) + bias
+        return_pc = row['returnInstruction'] + bias
         guard = gdb.Breakpoint('*' + hex(return_pc), internal=True)
         command = 'next' if iteration == 0 else 'step'
         gdb.execute(command)

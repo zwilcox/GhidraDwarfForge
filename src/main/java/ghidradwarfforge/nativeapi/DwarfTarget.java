@@ -20,6 +20,7 @@ import ghidradwarfforge.elf.ElfImage;
 import ghidradwarfforge.elf.ElfLocalFunctionSymbol;
 import ghidradwarfforge.elf.ElfFunctionAlias;
 import ghidradwarfforge.elf.FunctionAliasSymbols;
+import ghidradwarfforge.elf.MipsFunctionAliasSymbols;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
 
 /** Table-driven libdwarf target description derived from the original ELF. */
@@ -125,8 +126,10 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
         if (!equals(fromElf(image))) {
             throw new IllegalArgumentException("function-alias target disagrees with ELF");
         }
-        // This initial target policy is intentionally isolated from generic ELF planning.
-        // ARM mode tagging and MIPS variant flags are not inferred from pointer width.
+        if (image.machine() == EM_MIPS) {
+            return MipsFunctionAliasSymbols.plan(image, aliases, functions, reserved, cancelled, diagnostic);
+        }
+        // ARM mode tagging is not inferred from pointer width.
         if (!List.of("x86_64", "aarch64").contains(name)) {
             diagnostic.accept("Omitted function aliases: target " + name +
                 " has no audited alias symbol-value policy");

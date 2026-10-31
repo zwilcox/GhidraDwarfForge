@@ -23,15 +23,21 @@ spec.loader.exec_module(elf_support)
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
-    parser.add_argument('target', choices=('x86_64', 'aarch64'))
+    parser.add_argument('target', choices=('x86_64', 'aarch64', 'mips32be', 'mips32le'))
+    parser.add_argument('--symbols', choices=('both', 'retained', 'stripped'), default='both')
+    parser.add_argument('--base-root', type=Path,
+        default=repository / 'build/test-results/retained-function-aliases')
     parser.add_argument('--previous-jar', type=Path)
     args = parser.parse_args()
     ghidra = args.ghidra.resolve(strict=True)
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
     jar = module / 'lib/GhidraDwarfForge.jar'
-    base_root = repository / 'build/test-results/retained-function-aliases'
+    base_root = args.base_root.resolve()
     bases = sorted(base_root.glob(args.target + '.*'))
-    assert len(bases) == 6, 'run the six fresh retained/stripped alias cases first'
+    if args.symbols != 'both':
+        bases = [base for base in bases if json.loads((base / 'metadata.json').read_text())['symbols'] == args.symbols]
+    expected_cases = 6 if args.symbols == 'both' else 3
+    assert len(bases) == expected_cases, 'run the fresh retained/stripped alias cases first'
     root = repository / 'build/test-results/local-symbol-merge'
     root.mkdir(parents=True, exist_ok=True)
     compilation = Path(tempfile.mkdtemp(prefix=args.target + '.classes.', dir=root))
@@ -110,9 +116,11 @@ def main():
         metadata['input'] = str(case / 'aliases.input')
         metadata['retainedOriginals'] = []
         for row in metadata['functions']:
-            metadata['retainedOriginals'].append({'name': row['original'], 'entry': row['entry'], 'end': row['end']})
+            metadata['retainedOriginals'].append({'name': row['original'], 'entry': row['entry'], 'end': row['end'],
+                'present': row['original'] in metadata['originalSymbols']})
             if row['name'].endswith('analyst_alias'):
-                metadata['retainedOriginals'].append({'name': 'second_identity', 'entry': row['entry'], 'end': row['end']})
+                metadata['retainedOriginals'].append({'name': 'second_identity', 'entry': row['entry'], 'end': row['end'],
+                    'present': 'second_identity' in metadata['originalSymbols']})
             label = labels[row['name']]
             assert label['entry'] == row['entry'] and label['size'] == row['end'] - row['entry']
             assert label['source'] == 'USER_DEFINED' and not label['isPrimary']
@@ -159,7 +167,7 @@ def main():
             case / 'strict-checks.log', '--original', case / 'aliases.input'])
         run('gdb-driver', ['bash', source / 'local-symbol-merge-gdb.sh', repository, case, args.target,
             base / 'compiler-gdb.log'], timeout=180)
-        _, bh, baseline = elf_support.elf(case / 'baseline.dbg')
+        ident, bh, baseline = elf_support.elf(case / 'baseline.dbg')
         _, ch, candidate = elf_support.elf(case / 'aliases.dbg')
         assert bh[:4] == ch[:4] and bh[6] == ch[6] and ch[4] == ch[8] == ch[9] == 0
         for name, (section, payload) in baseline.items():
@@ -168,9 +176,10 @@ def main():
         if symbols == 'retained':
             old, old_bytes = baseline['.symtab']
             new, new_bytes = candidate['.symtab']
-            split = old[7] * 24
+            width = 24 if ident[4] == 2 else 16
+            split = old[7] * width
             assert new[7] == old[7] + 2 and new[6] == old[6]
-            assert old_bytes == new_bytes[:split] + new_bytes[split + 48:]
+            assert old_bytes == new_bytes[:split] + new_bytes[split + 2 * width:]
             old_strings = baseline['.strtab'][1]
             assert candidate['.strtab'][1][:len(old_strings)] == old_strings
         after = {name: support.digest(Path(name)) for name in before}
@@ -188,7 +197,7 @@ def main():
             'automaticExportMatchesIndependentWriter': True})
         completed.append(str(case))
         print('local-symbol-merge-integration=PASS ' + str(case), flush=True)
-    assert len(completed) == 6
+    assert len(completed) == expected_cases
 
 
 if __name__ == '__main__':

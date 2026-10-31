@@ -35,6 +35,10 @@ cannot silently attach the alias to different code.
 
 ## Target and packaging policy
 
+The classic MIPS32r2 O32 follow-up adds an isolated header/ABI/symbol-mode gate
+and big-/little-endian QEMU/GDB coverage. Its current acceptance and remaining
+limitations are recorded in `MIPS-FUNCTION-ALIASES.md`.
+
 The first runtime matrix targets x86-64 and AArch64 direct-address symbols on
 ET_EXEC, PIE and rebased PIE. The target description authorizes symbol-value
 semantics separately from generic ELF planning. Other processors are diagnosed

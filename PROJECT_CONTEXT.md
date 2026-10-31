@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally; acceptance incomplete:** classic O32 MIPS32r2 analyst
+aliases pass FPXX exec/PIE/rebase export and QEMU/GDB on both byte orders.
+An isolated target policy checks typed ABI records and original code-symbol
+mode bits; 492 policy checks and 30 actual Java 21 suites pass. Independent
+review covers 24 base and 18 alias cases, including x86-64/AArch64 regressions.
+Six additional explicit FP32 base/alias roles also pass; full hosted acceptance
+remains pending.
+Dynamic-only insertion, other modes and wider P1.7 scope remain open. See
+`docs/MIPS-FUNCTION-ALIASES.md`.
+
 **CONFIRMED defect and initial local fix; acceptance incomplete:** selecting a
 Windows compiler specification for an ELF can make custom Microsoft storage
 match the program default while GDB still injects SysV calls incorrectly.
