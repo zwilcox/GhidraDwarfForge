@@ -30,6 +30,12 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
     private static final int EM_ARM = 40;
     private static final int EM_X86_64 = 62;
     private static final int EM_AARCH64 = 183;
+    // Ghidra 12.0.3 compiler specifications used by the ELF runtime baselines.
+    // Membership preserves the existing policy; it does not certify every
+    // signature, language variant or ABI flag combination for injected calls.
+    private static final Map<String, String> BASELINE_COMPILER_SPECS = Map.of(
+        "x86", "gcc", "x86_64", "gcc", "aarch64", "default",
+        "arm", "default", "mips", "default", "mipsel", "default");
     // Processor identities follow Ghidra 12.0.3's ELF .opinion and .ldefs files.
     // Language variants and compiler-spec IDs are not portable ABI identifiers.
     private static final Map<Integer, TargetDescription> TARGETS = Map.of(
@@ -96,6 +102,16 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
                 ? DW_DLC_TARGET_LITTLEENDIAN : DW_DLC_TARGET_BIGENDIAN;
         return pointerFlag | DW_DLC_OFFSET32 | DW_DLC_SYMBOLIC_RELOCATIONS |
             byteOrderFlag;
+    }
+
+    /** A program-default name is not proof of the original ELF consumer's ABI. */
+    public String compilerSpecCallRestriction(String compilerSpecId) {
+        String baseline = BASELINE_COMPILER_SPECS.get(name);
+        if (baseline != null && baseline.equals(compilerSpecId)) {
+            return "";
+        }
+        return "selected Ghidra compiler specification " + compilerSpecId +
+            " has no validated default debugger ABI mapping for ELF target " + name;
     }
 
     /** Direct code-address values only; tagged/descriptor ABIs need their own binding proof. */

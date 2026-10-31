@@ -11,15 +11,20 @@ for variant in compiler fixed ${CUSTOM_CALL_PREVIOUS:-}; do
         -x "$repository/src/test/integration/custom-call-storage-gdb.py" \
         > "$case_dir/$variant-gdb.log" 2>&1
     # DW_CC_nocall also honestly prevents GDB's unclassified return-value display.
-    # Retain the original log and permit exactly this one observed warning.
+    # Retain the original log and permit exactly the observed warning for each restricted function.
     python3 - "$case_dir" "$variant" <<'PYTHON'
 from pathlib import Path
 import sys
+import os
 case, variant = Path(sys.argv[1]), sys.argv[2]
 text = (case / (variant + '-gdb.log')).read_text()
-for name in ('microsoft_function', 'custom_return'):
+windows = os.environ.get('CUSTOM_CALL_COMPILER_PROFILE', 'gcc') == 'windows'
+blocked = set() if variant == 'compiler' else ({'sysv_function', 'microsoft_function', 'custom_return'} if windows and variant == 'fixed' else
+    {'sysv_function', 'custom_return'} if windows else
+    {'microsoft_function', 'custom_return'} if variant == 'fixed' else set())
+for name in ('sysv_function', 'microsoft_function', 'custom_return'):
     warning = "warning: Function '" + name + "' does not follow the target calling convention, cannot determine its returned value.\n"
-    assert text.count(warning) == (1 if variant == 'fixed' else 0)
+    assert text.count(warning) == (1 if name in blocked else 0)
     text = text.replace(warning, '')
 (case / (variant + '-gdb-diagnostics.log')).write_text(text)
 PYTHON

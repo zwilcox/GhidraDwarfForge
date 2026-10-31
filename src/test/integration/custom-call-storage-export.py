@@ -21,11 +21,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
     parser.add_argument('--previous-ghidra', type=Path)
+    parser.add_argument('--compiler', choices=('gcc', 'windows'), default='gcc')
     parser.add_argument('--role', choices=('exec', 'pie', 'pie-rebased'), default='exec')
     args = parser.parse_args()
     ghidra = args.ghidra.resolve(strict=True)
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
-    root = repository / 'build/test-results/custom-call-storage'
+    root = repository / 'build/test-results' / ('custom-call-storage' if args.compiler == 'gcc' else 'compiler-call-abi')
     root.mkdir(parents=True, exist_ok=True)
     case = Path(tempfile.mkdtemp(prefix=args.role + '.', dir=root))
     print(case, flush=True)
@@ -67,6 +68,7 @@ def main():
     project = case / 'project'
     project.mkdir()
     run('import', [ghidra / 'support/analyzeHeadless', project, 'Conventions', '-import', binary,
+        '-processor', 'x86:LE:64:default', '-cspec', args.compiler,
         '-analysisTimeoutPerFile', '120', '-scriptPath', source / 'ghidra_scripts', *rebase,
         '-postScript', 'PrepareCustomCallStorage.java', 'curate', case / 'import.json'], timeout=240)
     assert 'REPORT: Analysis succeeded' in (case / 'import.log').read_text()
@@ -87,7 +89,7 @@ def main():
         observed = json.loads((case / (variant + '.json')).read_text())
         for function in observed['functions']:
             assert function['entry'] - observed['rebaseDelta'] == symbols[function['name']]
-            assert function['compilerSpec'] == 'gcc' and function['customStorage'] is True
+            assert function['compilerSpec'] == args.compiler and function['customStorage'] is True
             assert function['convention'] == function['programDefault']
             assert function['returnStorage'] == ('EDX:4' if function['name'] == 'custom_return' else 'EAX:4')
             assert function['storage'] == (['ECX:4', 'EDX:4', 'R8D:4', 'R9D:4'] if
@@ -98,9 +100,13 @@ def main():
         assert observed == json.loads((case / 'import.json').read_text())
         if args.role == 'pie-rebased':
             assert observed['rebaseDelta'] >= 0x2000000
-        assert 'Debugger-injected calls disabled for microsoft_function: custom parameter 0 storage' in log
+        if args.compiler == 'gcc':
+            assert 'Debugger-injected calls disabled for microsoft_function: custom parameter 0 storage' in log
+            assert 'Debugger-injected calls disabled for sysv_function:' not in log
+        else:
+            assert 'Debugger-injected calls disabled for microsoft_function: selected Ghidra compiler specification windows' in log
+            assert 'has no validated default debugger ABI mapping for ELF target x86_64' in log
         assert 'Debugger-injected calls disabled for custom_return: custom return storage' in log
-        assert 'Debugger-injected calls disabled for sysv_function:' not in log
         current = [support.digest(output), support.digest(Path(str(output) + '.c'))]
         if hashes is not None:
             assert hashes == current
@@ -134,7 +140,7 @@ def main():
             attr = re.match(r'^\s*<[0-9a-f]+>\s+(DW_AT_\w+)\s*:\s*(.*)', line)
             if attr:
                 records[-1]['attrs'][attr[1]] = attr[2]
-    for name, expected in [('sysv_function', 1), ('microsoft_function', 3), ('custom_return', 3)]:
+    for name, expected in [('sysv_function', 1 if args.compiler == 'gcc' else 3), ('microsoft_function', 3), ('custom_return', 3)]:
         row, = [r for r in records if r['tag'] == 'DW_TAG_subprogram' and
             r['attrs'].get('DW_AT_name', '').rsplit(': ', 1)[-1] == name]
         assert int(row['attrs']['DW_AT_calling_convention'].split()[0]) == expected
@@ -142,12 +148,13 @@ def main():
     write('raw-dies.json', records)
     write('model.json', {'role': args.role, 'hashes': hashes, 'projectBackupChanges': changes})
     run('gdb-driver', ['env', 'CUSTOM_CALL_CASE=' + str(case),
+        'CUSTOM_CALL_COMPILER_PROFILE=' + args.compiler,
         'CUSTOM_CALL_PREVIOUS=' + ('previous' if args.previous_ghidra else ''),
         'bash', source / 'custom-call-storage-gdb.sh', repository, case], timeout=180)
     after = {name: support.digest(Path(name)) for name in before}
     write('protected-after.json', after)
     assert before == after
-    write('result.json', {'status': 'PASS', 'role': args.role, 'inputSha256': before[str(binary)],
+    write('result.json', {'status': 'PASS', 'role': args.role, 'compilerProfile': args.compiler, 'inputSha256': before[str(binary)],
         'hashes': hashes, 'protectedUnchanged': True, 'previousPackageCompared': bool(args.previous_ghidra)})
     print('custom-call-storage-export=PASS ' + str(case), flush=True)
 

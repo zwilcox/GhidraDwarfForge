@@ -1,5 +1,26 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED integration (2026-10-31):** PR82 corrected head
+`e87c0ad54fddceb03eb27686d9cdbecb81988b42` passes all twelve jobs in
+`41167035160`, exact package/raw runtime review, 28 actual Java 21 suites and
+both GUI console reviews. Normal merge `f87384c9b9437f28f9088add9f1601b5f981a0dd`
+preserves its tested tree. Acceptance receipt:
+`2dad80db92ec96758efda7ebe0e91da63fd3a3e93d4be93ed259edca495a719e`.
+The custom-storage safeguard is accepted; earlier pending PR82 notes are
+historical. Separate main push `41171008812` remains pending. PR83's earlier
+stacked run `41167056431` is green, but its updated main base requires fresh
+validation. P1.7/#66 remains open; no release publication.
+
+**CONFIRMED defect and initial local fix; acceptance incomplete:** selecting a
+Windows compiler specification for an ELF can make custom Microsoft storage
+match the program default while GDB still injects SysV calls incorrectly.
+A new target-specific compiler-profile restriction preserves curated knowledge
+and blocks unverified injected calls. The initial installed reproduction and
+381 model checks across six languages/23 compiler specifications pass. Six
+Windows/GCC roles, 29 actual Java 21 suites, five-target regressions and independent
+raw review pass; committed package and hosted acceptance remain pending. See
+`docs/COMPILER-CALL-ABI.md`. P1.7/#66 remains open.
+
 **CONFIRMED failed gate; correction locally validated:** PR82 run `41165251340`
 fails the x86-64/AArch64 second-register-copy tests because their custom fixture
 signature left the convention unresolved. The known source-compiler ABI is now

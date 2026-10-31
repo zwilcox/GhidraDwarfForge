@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED defect and initial local fix; acceptance incomplete:** selecting a
+Windows compiler specification for an ELF can make custom Microsoft storage
+match the program default while GDB still injects SysV calls incorrectly.
+A new target-specific compiler-profile restriction preserves curated knowledge
+and blocks unverified injected calls. The initial installed reproduction and
+381 model checks across six languages/23 compiler specifications pass. Six
+Windows/GCC roles, 29 actual Java 21 suites, five-target regressions and independent
+raw review pass; committed package and hosted acceptance remain pending. See
+`docs/COMPILER-CALL-ABI.md`. P1.7/#66 remains open.
+
 **CONFIRMED integration:** PR81 head
 `f00932e50b4a2901a41e4a51f43d9bb4d77c0a72` passes all twelve jobs in
 `41162050189`, independent exact-package/raw alias review, 27 actual Java 21
@@ -1241,6 +1251,12 @@ Define precedence among analyst-applied listing/signature types and decompiler g
 
 ## P1.7 Emit complete function signatures
 
+**CONFIRMED integration:** PR82's corrected custom-storage safeguard passes
+all twelve jobs in `41167035160`, package/raw/Java 21/both-GUI review and merges
+normally as `f87384c9b9437f28f9088add9f1601b5f981a0dd` with identical tree.
+Earlier pending custom-storage notes are historical. Compiler-profile, alias
+and broader ABI work retain their own acceptance gates; P1.7/#66 remains open.
+
 **CONFIRMED local fixture correction; hosted acceptance pending:** PR82's first
 gate (`41165251340`) fails the two-copy fixture's automatic return-value check
 after the custom-storage guard correctly rejects an unresolved convention.
@@ -1329,7 +1345,11 @@ breakpoint name.
   prototypes emit `DW_CC_nocall` with a diagnostic, preventing unclassified
   injected calls. Original model strings remain intact; no vendor mapping is
   invented. See `docs/CALLING-CONVENTION-POLICY.md`. Broader default/custom/
-  return ABI classification remains unproven.
+  return ABI classification remains partial. **CONFIRMED locally; hosted
+  acceptance pending:** custom-storage equivalence and default compiler-profile
+  restrictions reject independently reproduced unsafe calls while preserving
+  formal signatures and ordinary debugging. See `docs/CUSTOM-CALL-STORAGE.md`
+  and `docs/COMPILER-CALL-ABI.md`; this is not arbitrary ABI certification.
 - [~] Add linkage names where meaningful. A distinct imported-name experiment
   was rejected because GDB 16.3 used `DW_AT_linkage_name` instead of the
   analyst-facing `DW_AT_name` in the honest C11 CU, breaking

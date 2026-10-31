@@ -442,3 +442,11 @@ exec/PIE/rebase harness must reject unsupported debugger-injected calls before
 any counter changes, while ordinary execution returns 1234. GCC metadata is a
 negative callability control for these custom ABIs. See
 `docs/CUSTOM-CALL-STORAGE.md` for the complete policy and validation limits.
+
+The same custom-call fixture also runs with an explicitly selected Ghidra
+Windows compiler specification (`custom-call-storage-export.py --compiler
+windows`). This is a Linux ELF with curated storage, not a Windows executable.
+The preceding exporter advertises the default-matching Microsoft layout as
+callable; the compiler-profile restriction must reject injection before the
+counter changes. Ordinary calls, actual arguments and return registers must
+remain correct. The GCC controls continue to allow the equivalent SysV call.

@@ -7,6 +7,10 @@ from pathlib import Path
 case = Path(os.environ['CUSTOM_CALL_CASE'])
 variant = os.environ['CUSTOM_CALL_VARIANT']
 compiler = variant == 'compiler'
+windows = os.environ.get('CUSTOM_CALL_COMPILER_PROFILE', 'gcc') == 'windows'
+blocked = set() if compiler else ({'sysv_function', 'microsoft_function', 'custom_return'} if windows and variant == 'fixed' else
+    {'sysv_function', 'custom_return'} if windows else
+    {'microsoft_function', 'custom_return'} if variant == 'fixed' else set())
 gdb.execute('file ' + str(case / ('control.reference' if compiler else 'control.input')))
 if not compiler:
     gdb.execute('symbol-file ' + str(case / (variant + '.dbg')))
@@ -16,8 +20,18 @@ gdb.execute('start')
 # Access counters through their executable symbols; they do not depend on recovered types.
 counter = lambda name: int(gdb.parse_and_eval('*(int *)&' + name))
 assert counter('sysv_calls') == counter('microsoft_calls') == counter('custom_return_calls') == 0
-assert int(gdb.parse_and_eval('sysv_function(1,2,3,4)')) == 1234
-assert counter('sysv_calls') == 1
+sysv_error = None
+sysv_injected = None
+try:
+    sysv_injected = int(gdb.parse_and_eval('sysv_function(1,2,3,4)'))
+except gdb.error as failure:
+    sysv_error = str(failure)
+if 'sysv_function' in blocked:
+    assert sysv_error and 'does not follow the target calling convention' in sysv_error
+    assert counter('sysv_calls') == 0
+else:
+    assert sysv_error is None and sysv_injected == 1234
+    assert counter('sysv_calls') == 1
 # Deterministic unused-register sentinels make the old SysV-injected MS ABI call wrong.
 gdb.execute('set $r8 = 8')
 gdb.execute('set $r9 = 9')
@@ -27,7 +41,7 @@ try:
     injected = int(gdb.parse_and_eval('microsoft_function(1,2,3,4)'))
 except gdb.error as failure:
     error = str(failure)
-if variant == 'fixed':
+if 'microsoft_function' in blocked:
     assert error is not None and "does not follow the target calling convention" in error, error
     assert counter('microsoft_calls') == 0, 'rejected call executed target code'
 else:
@@ -40,7 +54,7 @@ try:
     return_injected = int(gdb.parse_and_eval('custom_return(1227)'))
 except gdb.error as failure:
     return_error = str(failure)
-if variant == 'fixed':
+if 'custom_return' in blocked:
     assert return_error is not None and "does not follow the target calling convention" in return_error, return_error
     assert counter('custom_return_calls') == 0, 'rejected return-ABI call executed code'
 else:
@@ -62,13 +76,14 @@ for name in ('sysv_function', 'microsoft_function', 'custom_return'):
     returned = int(gdb.parse_and_eval('(int)$edx' if name == 'custom_return' else '(int)$eax'))
     assert returned == 1234
     observations.append({'name': name, 'entryValues': values, 'returnedRegisterValue': returned,
-        'gdbReturnUnavailable': variant == 'fixed' and name != 'sysv_function', 'prototype': prototype})
-assert counter('custom_return_calls') == (1 if variant == 'fixed' else 2)
-assert counter('sysv_calls') == 2
-assert counter('microsoft_calls') == (1 if variant == 'fixed' else 2)
+        'gdbReturnUnavailable': name in blocked, 'prototype': prototype})
+assert counter('custom_return_calls') == (1 if 'custom_return' in blocked else 2)
+assert counter('sysv_calls') == (1 if 'sysv_function' in blocked else 2)
+assert counter('microsoft_calls') == (1 if 'microsoft_function' in blocked else 2)
 gdb.execute('continue')
 assert exits == [0], exits
 (case / (variant + '-gdb.json')).write_text(json.dumps({'status': 'PASS', 'variant': variant,
+    'injectedSysvValue': sysv_injected, 'injectedSysvError': sysv_error,
     'injectedReturnValue': return_injected, 'injectedReturnError': return_error,
     'injectedMicrosoftValue': injected, 'injectedMicrosoftError': error,
     'ordinaryCalls': observations, 'exitCodes': exits}, indent=4) + '\n')

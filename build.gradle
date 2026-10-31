@@ -550,6 +550,18 @@ tasks.register("customCallStorageSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/custom-call-storage/cache").absolutePath
 }
 
+tasks.register("compilerCallPolicySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks unverified compiler specifications against the ELF call ABI baseline"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.CompilerCallPolicySmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/compiler-call-policy/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/compiler-call-policy/cache").absolutePath
+}
+
 tasks.register("dynamicParameterStorageSmoke", JavaExec) {
     group = "verification"
     description = "Checks computed parameter storage in saved Ghidra programs across five targets"
