@@ -3083,6 +3083,13 @@ after merge and post-merge validation.
 
 Tracking: [#73](https://github.com/zwilcox/GhidraDwarfForge/issues/73).
 
+**CONFIRMED research:** fourteen strict-validator/GDB layout cases select a
+class-owned declaration plus qualified root definition for C11. Two actual
+headless probes show automatic THIS typing is preference-driven, not a durable
+class/type key. Ownership and type association need separate provenance and
+stale/conflict checks; see `docs/research/CLASS-LAYOUT.md`. This is not class
+exporter acceptance and removes no remaining P3.3 requirement.
+
 **CONFIRMED local object-parameter checkpoint; hosted acceptance pending:**
 explicit `AutoParameterType.THIS` emits `DW_AT_object_pointer`, without inferring
 it from a parameter name or artificial flag. Six target/address roles pass

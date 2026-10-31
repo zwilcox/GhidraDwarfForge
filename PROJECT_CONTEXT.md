@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED class-layout/API research; implementation pending:** fourteen
+x86-64/AArch64 layout cases pass strict validation and actual GDB values. A
+class-owned leaf declaration linked to the qualified root definition preserves
+existing method lookup in C11. A separate headless probe shows unchanged class
+and method IDs acquiring different THIS pointee types solely from preferred
+category changes. Separate saved ownership from inferred typing and explicit
+class/type identity. See `docs/research/CLASS-LAYOUT.md`; full class semantics
+and the other remaining lifetime/scope requirements stay open.
+
 **CONFIRMED locally; class/hosted acceptance pending:** automatic THIS identity
 now emits an object-pointer reference to the exact artificial formal parameter.
 Six x86-64/AArch64 exec/PIE/rebased roles pass twelve real exports, compiler/Forge

@@ -194,6 +194,16 @@ Actual Java 21 isolated producer checks include declaration-only references and
 symbol-only failure; hidden-return behavior passes. See `OBJECT-PARAMETERS.md`.
 Class-owned method declarations and every other remaining row remain required.
 
+## Class layout and association checkpoint
+
+**CONFIRMED research; implementation pending:** fourteen x86-64/AArch64 layout
+cases pass strict validation and actual GDB values. A class-owned declaration
+and qualified root definition preserve C11 lookup. Two headless probes establish
+that automatic THIS pointee selection can change with category preferences
+while class/method identities remain fixed. Separate saved ownership, current
+inferred typing and explicit type binding. See `research/CLASS-LAYOUT.md`.
+All remaining class/exporter/hosted requirements remain in scope.
+
 ## Completion audit
 
 For every row, record implementation/evidence files, exact reviewed source and
