@@ -1848,6 +1848,14 @@ or uncertain storage remains locationless with a diagnostic.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
 
+**CONFIRMED locally; hosted acceptance pending:** curated definition-start
+locals now retain locations through proven branches, loops and discontiguous
+bodies. All-predecessor agreement excludes unknown joins and killing backedges.
+Six x86-64/AArch64 roles, 18,576 compiler/Forge/previous GDB observations,
+380 model checks and 14 actual Java 21 suites pass. See
+`docs/LOCAL-DEFINITION-CONTROL-FLOW.md`; this does not complete general local
+mutation, memory migration, stack reuse, calls, mixed pieces or lexical scopes.
+
 Tracking: [#67](https://github.com/zwilcox/GhidraDwarfForge/issues/67).
 
 **CONFIRMED active work:** the full remaining scope, followed by P3.3, is

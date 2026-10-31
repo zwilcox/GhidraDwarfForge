@@ -334,6 +334,18 @@ tasks.register("registerCopyChainSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/register-copy-chain/cache").absolutePath
 }
 
+tasks.register("localDefinitionFlowSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks definite local availability through closed branches, loops and split bodies"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.LocalDefinitionFlowSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/local-definition-flow/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/local-definition-flow/cache").absolutePath
+}
+
 tasks.register("definedRegisterLocalSmoke", JavaExec) {
     group = "verification"
     description = "Checks that a curated local's recorded register definition completes before availability"

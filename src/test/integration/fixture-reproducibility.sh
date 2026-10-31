@@ -67,6 +67,7 @@ expected_sources=(
     i386-alias-entry.cpp
     i386-profile.c
     later-register-local.c
+    local-definition-flow.c
     minimal.c
     mips-floating-call.c
     mips-truncated-space-start.S

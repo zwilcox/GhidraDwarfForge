@@ -805,7 +805,7 @@ public final class GhidraVariableStorage {
         return List.copyOf(result);
     }
 
-    private static boolean completeRegisterDefinition(Instruction instruction, Register register, int bytes) {
+    static boolean completeRegisterDefinition(Instruction instruction, Register register, int bytes) {
         for (PcodeOp operation : instruction.getPcode()) {
             Varnode output = operation.getOutput();
             if (output != null && output.getAddress().getAddressSpace().equals(register.getAddress().getAddressSpace()) &&
@@ -889,7 +889,7 @@ public final class GhidraVariableStorage {
      * except an ordinary return. References may add flows but cannot erase the
      * instruction prototype's actual targets. Computed jumps remain unproven.
      */
-    private static boolean closedRegisterFlow(Program program, Function function,
+    static boolean closedRegisterFlow(Program program, Function function,
             Map<Address, Instruction> decoded, TaskMonitor monitor) throws CancelledException {
         if (!decoded.containsKey(function.getEntryPoint())) {
             return false;
@@ -1000,7 +1000,7 @@ public final class GhidraVariableStorage {
         return true;
     }
 
-    private static boolean hasOpaqueRegisterEffects(Program program, Instruction instruction) {
+    static boolean hasOpaqueRegisterEffects(Program program, Instruction instruction) {
         PcodeOp[] operations = instruction.getPcode();
         boolean opaque = false;
         for (PcodeOp operation : operations) {
