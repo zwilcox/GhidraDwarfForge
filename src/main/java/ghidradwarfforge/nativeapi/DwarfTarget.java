@@ -15,6 +15,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 import ghidradwarfforge.elf.Arm32ModeSymbols;
+import ghidradwarfforge.elf.Arm32FunctionAliasSymbols;
 import ghidradwarfforge.elf.ElfFunctionModeCue;
 import ghidradwarfforge.elf.ElfImage;
 import ghidradwarfforge.elf.ElfLocalFunctionSymbol;
@@ -131,6 +132,13 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
             List<ElfFunctionAlias> aliases, List<FunctionSymbol> functions,
             List<ElfLocalFunctionSymbol> reserved, BooleanSupplier cancelled,
             Consumer<String> diagnostic) throws IOException {
+        return planFunctionAliases(image, aliases, functions, reserved, List.of(), cancelled, diagnostic);
+    }
+
+    public List<ElfLocalFunctionSymbol> planFunctionAliases(ElfImage image,
+            List<ElfFunctionAlias> aliases, List<FunctionSymbol> functions,
+            List<ElfLocalFunctionSymbol> reserved, List<ElfFunctionModeCue> aliasModeCues,
+            BooleanSupplier cancelled, Consumer<String> diagnostic) throws IOException {
         if (aliases.isEmpty()) {
             return List.of();
         }
@@ -140,7 +148,10 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
         if (image.machine() == EM_MIPS) {
             return MipsFunctionAliasSymbols.plan(image, aliases, functions, reserved, cancelled, diagnostic);
         }
-        // ARM mode tagging is not inferred from pointer width.
+        if (image.machine() == EM_ARM) {
+            return Arm32FunctionAliasSymbols.plan(image, aliases, functions, reserved,
+                aliasModeCues, cancelled, diagnostic);
+        }
         if (!List.of("x86", "x86_64", "aarch64").contains(name)) {
             diagnostic.accept("Omitted function aliases: target " + name +
                 " has no audited alias symbol-value policy");

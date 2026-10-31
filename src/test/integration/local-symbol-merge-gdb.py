@@ -47,7 +47,14 @@ for row in metadata['retainedOriginals']:
         original_lookup[row['name']] = {'absent': True}
 
 lookup = {}
+static_instructions = {}
 for row in functions:
+    if target == 'arm32':
+        decoded = gdb.selected_inferior().architecture().disassemble(row['entry'], row['end'] - 1)
+        assert [(i['addr'], i['length']) for i in decoded] == [
+            (i['address'], i['length']) for i in row['instructions']], decoded
+        assert decoded[-1]['asm'].split() == ['bx', 'lr'], decoded
+        static_instructions[row['name']] = decoded
     names = [row['original']] + (['recovered::alternate_alias'] if row['name'].endswith('analyst_alias') else [])
     for name in names:
         present = compiler or metadata['symbols'] == 'retained'
@@ -147,5 +154,6 @@ for iteration, argument in enumerate((19, -19)):
 gdb.execute('continue')
 assert exits == [0] and navigation == ['next', 'next', 'step', 'step']
 (case / (variant + '-gdb.json')).write_text(json.dumps({'status': 'PASS', 'lookup': lookup,
-    'originalLookup': original_lookup, 'calls': rows, 'aliasScopes': alias_scopes, 'navigation': navigation, 'exitCodes': exits}, indent=4) + '\n')
+    'originalLookup': original_lookup, 'calls': rows, 'aliasScopes': alias_scopes,
+    'navigation': navigation, 'exitCodes': exits, 'staticInstructions': static_instructions}, indent=4) + '\n')
 print('retained-function-aliases-gdb=' + variant + ' PASS')

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HexFormat;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -15,6 +16,8 @@ import ghidra.program.database.code.InstructionDB;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressOutOfBoundsException;
 import ghidra.program.model.address.AddressOverflowException;
+import ghidra.program.model.address.AddressSet;
+import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.lang.Register;
 import ghidra.program.model.lang.RegisterValue;
 import ghidra.program.model.listing.Function;
@@ -23,6 +26,7 @@ import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 import ghidradwarfforge.elf.ElfFunctionModeCue;
+import ghidradwarfforge.elf.ElfFunctionAlias;
 import ghidradwarfforge.nativeapi.DwarfTarget;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
 
@@ -34,6 +38,96 @@ import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
  */
 public final class GhidraArm32FunctionModes {
     private GhidraArm32FunctionModes() {
+    }
+
+    /**
+     * Alias mode evidence is independent of optional primary ELF mode symbols.
+     * Only the entry-containing range supplies a symbol extent; every original
+     * body range remains bound by the generic alias extractor and ELF planner.
+     */
+    public static List<ElfFunctionModeCue> extractAliases(Program program,
+            List<ElfFunctionAlias> aliases, DwarfTarget target, long rebaseDelta,
+            TaskMonitor monitor, Consumer<String> diagnostic) throws CancelledException {
+        Objects.requireNonNull(program, "program");
+        Objects.requireNonNull(aliases, "aliases");
+        Objects.requireNonNull(target, "target");
+        Objects.requireNonNull(monitor, "monitor");
+        Objects.requireNonNull(diagnostic, "diagnostic");
+        monitor.checkCancelled();
+        if (aliases.isEmpty() || !target.name().equals("arm") ||
+                target.addressBytes() != 4 || !target.littleEndian()) {
+            return List.of();
+        }
+        Register modeRegister = program.getRegister("TMode");
+        if (modeRegister == null || !modeRegister.isProcessorContext() ||
+                modeRegister.getBitLength() != 1 || aliases.size() > 65536) {
+            diagnostic.accept("Omitted ARM32 alias mode evidence: missing TMode or excessive alias count");
+            return List.of();
+        }
+        var result = new ArrayList<ElfFunctionModeCue>();
+        var seen = new HashSet<Long>();
+        long comparedRanges = 0;
+        long codeBytes = 0;
+        var ordered = aliases.stream().sorted(Comparator.comparingLong(ElfFunctionAlias::address)
+            .thenComparing(ElfFunctionAlias::name)).toList();
+        for (var alias : ordered) {
+            monitor.checkCancelled();
+            if (!seen.add(alias.address())) {
+                continue;
+            }
+            String omission = null;
+            try {
+                long analysisOffset = Math.addExact(alias.address(), rebaseDelta);
+                require(analysisOffset >= 0 && analysisOffset <= 0xffff_ffffL,
+                    "analysis entry is outside ARM32 addresses");
+                Address entry = program.getAddressFactory().getDefaultAddressSpace().getAddress(analysisOffset);
+                Function function = program.getFunctionManager().getFunctionAt(entry);
+                require(function != null && !function.isExternal() &&
+                    function.getBody().getNumAddressRanges() == alias.ranges().size(),
+                    "alias owner or body changed");
+                var actual = function.getBody().getAddressRanges();
+                ElfFunctionAlias.CodeRange selected = null;
+                for (var range : alias.ranges()) {
+                    monitor.checkCancelled();
+                    require(++comparedRanges <= 16L * 1024 * 1024, "body comparison budget exceeded");
+                    var next = actual.next();
+                    require(next.getMinAddress().getAddressSpace().equals(entry.getAddressSpace()) &&
+                        Math.subtractExact(next.getMinAddress().getOffset(), rebaseDelta) == range.address() &&
+                        next.getLength() == range.size(), "alias body changed");
+                    if (range.contains(alias.address())) {
+                        selected = range;
+                    }
+                }
+                require(selected != null && alias.address() <= 0xffff_ffffL &&
+                    selected.size() <= 0x1_0000_0000L - selected.address(),
+                    "alias entry range is outside ARM32 addresses");
+                require(selected.size() <= 256L * 1024 * 1024 - codeBytes,
+                    "mode evidence byte budget exceeded");
+                codeBytes += selected.size();
+                Address start = entry.addNoWrap(Math.subtractExact(selected.address(), alias.address()));
+                Address end = start.addNoWrap(selected.size() - 1);
+                int entryMode = mode(program.getProgramContext().getRegisterValue(modeRegister, entry));
+                require(entryMode == 0 || entryMode == 1, "entry TMode is not fully known");
+                require(((selected.address() | alias.address()) & (entryMode == 0 ? 3 : 1)) == 0,
+                    "alias entry or range has invalid instruction alignment");
+                require(program.getListing().getInstructionAt(entry) != null,
+                    "alias entry is not a decoded instruction boundary");
+                String hash = proveInstructions(program, new AddressSet(start, end), start,
+                    selected.size(), modeRegister, entryMode, monitor);
+                require(hash.equals(selected.codeSha256()), "alias code changed after extraction");
+                result.add(new ElfFunctionModeCue(alias.owner(), selected.address(), selected.size(),
+                    selected.address() | entryMode, hash));
+            }
+            catch (Omitted | ArithmeticException | AddressOutOfBoundsException |
+                    AddressOverflowException | MemoryAccessException failure) {
+                omission = failure.getMessage();
+            }
+            if (omission != null) {
+                diagnostic.accept("Omitted ARM32 alias mode evidence for " + alias.owner() + ": " + omission);
+            }
+        }
+        monitor.checkCancelled();
+        return List.copyOf(result);
     }
 
     public static List<ElfFunctionModeCue> extract(Program program,
@@ -128,6 +222,14 @@ public final class GhidraArm32FunctionModes {
         require(entryMode == 0 || entryMode == 1, "entry TMode is not fully known");
         require((symbol.address() & (entryMode == 0 ? 3 : 1)) == 0,
             "entry does not have the decoded instruction alignment");
+        String hash = proveInstructions(program, body, entry, size, modeRegister, entryMode, monitor);
+        return new ElfFunctionModeCue(symbol.qualifiedDisplayName(), symbol.address(), size,
+            symbol.address() | entryMode, hash);
+    }
+
+    private static String proveInstructions(Program program, AddressSetView body,
+            Address entry, long size, Register modeRegister, int entryMode, TaskMonitor monitor)
+            throws Omitted, AddressOverflowException, MemoryAccessException, CancelledException {
         Register baseContext = modeRegister.getBaseRegister();
         MessageDigest digest = sha256();
         long remaining = size;
@@ -176,8 +278,7 @@ public final class GhidraArm32FunctionModes {
         }
         require(remaining == 0, "body has bytes without decoded instructions");
         monitor.checkCancelled();
-        return new ElfFunctionModeCue(symbol.qualifiedDisplayName(), symbol.address(), size,
-            symbol.address() | entryMode, HexFormat.of().formatHex(digest.digest()));
+        return HexFormat.of().formatHex(digest.digest());
     }
 
     private static int mode(RegisterValue value) {

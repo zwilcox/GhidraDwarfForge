@@ -502,6 +502,14 @@ tasks.register("mipsFunctionAliasSymbolsSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.elf.MipsFunctionAliasSymbolsSmoke"
 }
 
+tasks.register("arm32FunctionAliasSymbolsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks ARM alias tags against decoded evidence and original mode symbols"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.Arm32FunctionAliasSymbolsSmoke"
+}
+
 tasks.register("arm32ModeSymbolsSmoke", JavaExec) {
     group = "verification"
     description = "Checks bounded instruction-mode symbols and preserved ELF metadata"

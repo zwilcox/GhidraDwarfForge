@@ -1,5 +1,16 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED initial ARM/Thumb alias implementation locally (2026-10-31):**
+separate saved/current instruction-mode evidence now tags only ELF alias values.
+The isolated planner reconciles original mapping/function tags and retains generic
+full-body ownership, collision and byte checks. Twelve retained/stripped ARM/Thumb
+exec/PIE/rebase cases pass repeated automatic export, unchanged DWARF/source,
+GNU/LLVM/strict validation and QEMU/GDB static decode, lookup, stepping and returns.
+304 target-policy checks, 59 extraction checks and seven actual Java 21 suites pass.
+Receipt: `aea3c3e28605ae12cb56c244261341ba5b702ae60208236a2bf9cef027280ad3`.
+Sectionless/mixed/conflicting-mode runtime proof, pipeline expansion and final
+acceptance remain pending. P1.7/#66 stays open; see `docs/ARM-FUNCTION-ALIASES.md`.
+
 **CONFIRMED stripped Thumb PIE mode gap and isolated repair (2026-10-31):**
 four ARM/Thumb baseline cases pass, while stripped Thumb PIE and rebased PIE
 fail GDB static disassembly before attach despite valid DWARF. Existing production
