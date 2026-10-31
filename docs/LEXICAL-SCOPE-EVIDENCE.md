@@ -148,13 +148,75 @@ non-aliasing. A supplementary log auditor initially mistook a displayed
 synthetic-source warning comment for a debugger diagnostic; it now checks
 actual diagnostic lines. Failed attempts are retained, not counted as passes.
 
+## Discontiguous visibility and failure controls
+
+**CONFIRMED locally; final package/hosted acceptance pending:** the discontiguous
+fixture records an explicit analyst visibility gap around one effect-free
+instruction. The original compiler source block stays continuous, and compiler
+GDB sees 23 there. The analyst explicitly narrows that visibility: Forge GDB
+must select the outer 11 in the gap and return to inner 23 afterward. This tests
+preservation of saved analyst knowledge; it does not misrepresent the gap as an
+original compiler fact. All six target/address roles pass with exact range-list
+and location-list bounds, including exclusion of the gap and initialization
+prefixes. Six wrong-bound controls reject altered expectations.
+
+Two exporter controls exercise full records. Renaming the saved inner local
+makes its fingerprint stale: the entire scope record is diagnosed and omitted,
+while current saved names/types/physical locations remain available. A valid
+binding to a local subsequently coalesced by Ghidra is also diagnosed and
+omitted; it never borrows the surviving object's identity. The intentionally
+unproved merged register definitions remain unavailable. Reopening the untouched
+saved program reproduces the baseline output pair byte for byte.
+
+A native decompiler instruction limit of one causes the actual decompiler to
+return `Flow exceeded maximum allowable instructions` for the scoped function.
+Restoring the default options lets later functions decompile successfully. The
+failed function retains its symbol and address but has no lexical/local/type or
+source-line attributes. GDB can break in it, and the synthetic source contains
+the failure diagnostic. Repeated failure exports are deterministic.
+
+This test caught a production bug: although the failed function's DIE children
+were suppressed, its location lists remained serialized. GNU reported 146 unused
+bytes. Range/location planning and DIE emission now share the same selection of
+emitted signatures, suppressing orphan lexical and location lists. Intentional
+source omissions remain distinct from actual failures. The isolated producer
+regression asserts that an otherwise contiguous symbol-only function emits no
+orphan `.debug_loclists` or lexical `.debug_rnglists`. Both isolated outputs pass
+GNU/LLVM/pinned structural checks on actual Java 21.
+
+Cancellation uses a separate, source-built enlarged input imported with its own
+correct SHA-256 and saved scope metadata. The real installed export entry point
+cancels after 16 MiB of copying. It retains the previous artifact pair, leaves
+no temporary files, and preserves both original and enlarged input bytes. An
+initial attempt to use an enlarged copy with the smaller input's saved program
+was correctly rejected by the imported-input hash guard. The test was corrected
+by importing the copy separately; the guard was not weakened.
+
+All six x86-64/AArch64 exec/PIE/rebased roles pass the positive, stale/coalesced,
+actual-failure and cancellation cases. That is 42 candidate exports and six
+cancelled attempts. The previous-package comparison additionally demonstrates
+that the older flat declarations selected outer 11 in the inner block, while
+the candidate selects the explicitly bound inner 23. The tested production JAR
+is `c1452faf3e8a64f6c36320edf509513a5f7e223267d7bd8cee15ceb9b6e4de88`.
+Evidence is retained in `build/lexical-controls-review`, including the isolated
+Java 21 suites, six-role logs and raw validators. Thunk regressions on both
+targets, all three x86-64 static-local address roles and the x86-64 aggregate
+return fixture pass. Existing ABI/source omission behavior is retained.
+
+```bash
+python3 src/test/integration/lexical-shadow-export.py /path/to/private-ghidra x86_64 --role exec --discontiguous --controls
+python3 src/test/integration/lexical-shadow-export.py /path/to/private-ghidra aarch64 --role pie-rebased --discontiguous --controls
+python3 src/test/integration/lexical-shadow-previous.py /path/to/completed-case /path/to/pre-lexical-ghidra
+```
+
+Run all three roles on both targets. The current workflow runs both contiguous
+and discontiguous/control variants. Prior-package comparison is a local review
+step requiring the documented pre-lexical package, not an implicit CI download.
+
 ## Required continuation
 
-**PLANNED:** add real discontiguous lexical runtime coverage, stale/coalesced
-metadata exporter controls, scope-aware genuine decompiler failure and
-cancellation/publication tests, prior-package comparison, broader regressions,
-final package review and the exact hosted integration gate. Native/model
-range-list tests are not a substitute for discontiguous GDB behavior. Complete
-namespace/class/object, inferred statics, alias/origin and same-name type
-relationships, plus all remaining lifetime integration requirements. Neither
-umbrella is complete at this checkpoint.
+**PLANNED:** final package review, any remaining broader regression coverage and
+the exact hosted integration gate. Complete namespace/class/object, inferred
+statics, alias/origin and same-name type relationships, plus all remaining
+lifetime integration requirements. Neither umbrella is complete at this
+checkpoint. The passing local lexical component does not complete P3.3.

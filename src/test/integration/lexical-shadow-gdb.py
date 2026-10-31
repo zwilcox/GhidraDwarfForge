@@ -11,7 +11,8 @@ remote = os.environ.get('FORGE_LEXICAL_REMOTE', '')
 exits = []
 gdb.events.exited.connect(lambda event: exits.append(event.exit_code))
 gdb.execute('ptype scoped')
-gdb.execute('list scoped')
+if mode != 'failed':
+    gdb.execute('list scoped')
 if remote:
     gdb.execute('target remote ' + remote)
 gdb.Breakpoint('*scoped', temporary=True)
@@ -34,10 +35,49 @@ if mode == 'compiler':
         value = gdb.parse_and_eval('shadow')
         assert int(value) == expected
         storage[block] = int(value.address) - entry_stack
+    if 'inner_gap_begin' in labels:
+        stop('inner_gap_begin')
+        assert int(gdb.parse_and_eval('shadow')) == 23
+        stop('inner_gap_end')
+        assert int(gdb.parse_and_eval('shadow')) == 23
     stop('inner_end')
     assert int(gdb.parse_and_eval('shadow')) == 11
     assert storage['outer'] != storage['inner']
     (case / 'compiler-storage.json').write_text(json.dumps(storage, indent=4) + '\n')
+elif mode == 'failed':
+    for marker in ['outer_live', 'inner_live', 'inner_end']:
+        stop(marker)
+        try:
+            gdb.parse_and_eval('shadow')
+        except gdb.error as error:
+            assert 'No symbol "shadow" in current context.' in str(error)
+        else:
+            raise AssertionError('failed function retained a lexical variable')
+    assert 'scoped' in gdb.execute('info functions scoped', to_string=True)
+elif mode in ('stale', 'coalesced', 'previous'):
+    observations = []
+    for marker in ['outer_live', 'inner_begin', 'inner_live', 'inner_end']:
+        stop(marker)
+        if mode in ('stale', 'previous'):
+            outer = gdb.parse_and_eval('shadow')
+            assert int(outer) == 11 and outer.type.sizeof == 4
+            inner = gdb.parse_and_eval('stale_shadow' if mode == 'stale' else 'shadow_1')
+            if marker in ('outer_live', 'inner_begin'):
+                assert inner.is_optimized_out
+            else:
+                assert int(inner) == 23
+            observations.append({'marker': marker, 'outer': str(outer), 'inner': str(inner)})
+        else:
+            value = gdb.parse_and_eval('merged')
+            assert value.is_optimized_out, 'invalid register definition acquired a location'
+            try:
+                gdb.parse_and_eval('shadow')
+            except gdb.error as error:
+                assert 'No symbol "shadow" in current context.' in str(error)
+            else:
+                raise AssertionError('coalesced binding incorrectly emitted a shadowed object')
+            observations.append({'marker': marker, 'merged': str(value), 'shadow': 'absent'})
+    (case / (mode + '-observations.json')).write_text(json.dumps(observations, indent=4) + '\n')
 else:
     prepared = json.loads((case / 'prepared.json').read_text())
     observations = []
@@ -49,6 +89,8 @@ else:
         assert raw.hex() == instruction['bytes']
         visible = labels['outer_begin'] <= address < labels['outer_end']
         inner = labels['inner_begin'] <= address < labels['inner_end']
+        if 'inner_gap_begin' in labels and labels['inner_gap_begin'] <= address < labels['inner_gap_end']:
+            inner = False
         available = visible and address >= labels['inner_live' if inner else 'outer_live']
         try:
             value = gdb.parse_and_eval('shadow')
@@ -73,6 +115,10 @@ else:
     assert any(r['inner'] and r['value'] == '<optimized out>' for r in observations)
     assert any(r['value'] == '11' for r in observations) and any(r['value'] == '23' for r in observations)
     assert any(r['value'] == 'out-of-scope' for r in observations)
+    if 'inner_gap_begin' in labels:
+        gap = next(r for r in observations if r['address'] == labels['inner_gap_begin'])
+        after = next(r for r in observations if r['address'] == labels['inner_gap_end'])
+        assert gap['value'] == '11' and after['value'] == '23', (gap, after)
     (case / (mode + '-observations.json')).write_text(json.dumps(observations, indent=4) + '\n')
 gdb.execute('continue')
 assert gdb.selected_inferior().pid == 0

@@ -1,6 +1,18 @@
 # TODO.md — GhidraDwarfForge
 
 
+**CONFIRMED locally; final package/hosted acceptance pending:** discontiguous
+analyst scope visibility, stale/coalesced records, actual decompiler failure and
+copy cancellation pass all six x86-64/AArch64 address roles. Forty-two candidate
+exports, six previous-package comparisons, 150 instruction observations and
+six cancellations preserve input identity and published pairs. A real failure
+exposed orphan location lists; planning now matches emitted signatures, removing
+the GNU warning while retaining symbol-only functions and intentional omissions.
+Eight actual Java 21 suites and thunk/static/aggregate-return regressions pass.
+See `docs/LEXICAL-SCOPE-EVIDENCE.md`. All remaining class/object/static/alias/type
+relationships and P1.11a integration gates remain open; neither umbrella is complete.
+
+
 **CONFIRMED locally; full scope/hosted acceptance pending:** explicit lexical
 ownership now reaches DWARF and GDB. Six x86-64/AArch64 exec/PIE/rebased roles
 pass twelve exports and 138 instruction observations for nested shadowing and

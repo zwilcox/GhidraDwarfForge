@@ -1200,6 +1200,7 @@ jobs:
         run: |
           for role in exec pie pie-rebased; do
               python3 src/test/integration/lexical-shadow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
+              python3 src/test/integration/lexical-shadow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --discontiguous --controls
           done
 
       - name: Stack and register lifetimes across closed branches and loops

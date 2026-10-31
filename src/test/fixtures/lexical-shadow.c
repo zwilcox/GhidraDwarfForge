@@ -10,6 +10,12 @@ __attribute__((noinline, noclone)) int scoped(void)
         __asm__ volatile(".globl inner_begin\ninner_begin:\nnop" ::: "memory");
         int shadow = 23;
         __asm__ volatile(".globl inner_live\ninner_live:\nnop" : "+m"(shadow));
+#ifdef FORGE_LEXICAL_GAP
+        /* Analyst visibility may exclude this formatting-only marker while
+         * the compiler's source block and the physical value remain intact. */
+        __asm__ volatile(".globl inner_gap_begin\ninner_gap_begin:\nnop\n"
+            ".globl inner_gap_end\ninner_gap_end:\nnop" ::: "memory");
+#endif
         sum += shadow;
     }
     __asm__ volatile(".globl inner_end\ninner_end:\nnop" ::: "memory");

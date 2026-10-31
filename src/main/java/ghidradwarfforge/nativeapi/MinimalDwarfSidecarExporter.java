@@ -390,10 +390,19 @@ public final class MinimalDwarfSidecarExporter {
         byte[] lineTable = syntheticSource == null ? new byte[0] : Dwarf5LineTable.build(
             unitName, directoryName, target.addressBytes(), elf.byteOrder(), ordered,
             syntheticSource.mappedLines());
+        // Failed source functions remain symbol-only. Do not serialize orphan
+        // scope/location lists for declarations that produce() will not emit.
+        var emittedSignatures = emittedFunctionSignatures(ordered, typeModel, syntheticSource);
+        var scopedOwners = emittedSignatures.keySet().stream().map(FunctionKey::address)
+            .collect(java.util.stream.Collectors.toSet());
         Dwarf5RangeLists.Result rangeLists = Dwarf5RangeLists.build(ordered,
-            typeModel == null ? List.of() : typeModel.lexicalScopes(), target.addressBytes(), elf.byteOrder());
+            typeModel == null ? List.of() : typeModel.lexicalScopes().stream()
+                .filter(scope -> scopedOwners.contains(scope.functionAddress())).toList(),
+            target.addressBytes(), elf.byteOrder());
         Dwarf5LocationLists.Result locationLists = Dwarf5LocationLists.build(
-            typeModel == null ? List.of() : typeModel.variableStorage().variables(),
+            typeModel == null ? List.of() : typeModel.variableStorage().variables().stream()
+                .filter(variable -> emittedSignatures.containsKey(new FunctionKey(
+                    variable.functionName(), variable.functionAddress()))).toList(),
             target.addressBytes(), elf.byteOrder());
         Map<String, byte[]> sections = produce(producer, consumer, target, ordered,
             unitName, syntheticSource, typeModel, lineTable, rangeLists, locationLists,
@@ -447,7 +456,7 @@ public final class MinimalDwarfSidecarExporter {
                 debug, unit, typeModel, errorOut);
             Map<FunctionKey, FunctionLines> sourceFunctions = sourceFunctions(syntheticSource);
             Map<FunctionKey, ProgramTypeModel.FunctionSignature> signatures =
-                functionSignatures(typeModel);
+                emittedFunctionSignatures(functions, typeModel, syntheticSource);
             Map<VariableKey, VariableLocation> variableLocations =
                 variableLocations(typeModel);
             Map<Long, Die> functionDies = new HashMap<>();
@@ -750,6 +759,22 @@ public final class MinimalDwarfSidecarExporter {
             }
         }
         return result;
+    }
+
+    private static Map<FunctionKey, ProgramTypeModel.FunctionSignature> emittedFunctionSignatures(
+            List<FunctionSymbol> functions, ProgramTypeModel model, SyntheticSourceFile source) {
+        var signatures = functionSignatures(model);
+        var sources = sourceFunctions(source);
+        var emitted = new HashMap<FunctionKey, ProgramTypeModel.FunctionSignature>();
+        for (var function : functions) {
+            var key = FunctionKey.of(function);
+            var signature = signatures.get(key);
+            var text = sources.get(key);
+            if (signature != null && (text == null || text.failureDiagnostic() == null)) {
+                emitted.put(key, signature);
+            }
+        }
+        return emitted;
     }
 
     private static Map<VariableKey, VariableLocation> variableLocations(

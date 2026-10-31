@@ -19,6 +19,8 @@ def main():
     parser.add_argument('ghidra', type=Path)
     parser.add_argument('target', choices=['x86_64', 'aarch64'])
     parser.add_argument('--role', choices=['exec', 'pie', 'pie-rebased'], default='exec')
+    parser.add_argument('--discontiguous', action='store_true', help='record an explicit analyst visibility gap around an effect-free instruction')
+    parser.add_argument('--controls', action='store_true', help='also test stale/coalesced evidence, actual decompiler failure and cancellation')
     args = parser.parse_args()
     ghidra = args.ghidra.resolve(strict=True)
     repository = Path(__file__).resolve().parents[3]
@@ -39,6 +41,8 @@ def main():
     prefix = '' if target == 'x86_64' else 'aarch64-linux-gnu-'
     reference, stripped, output = case / 'reference', case / 'stripped', case / 'forge.dbg'
     flags = ['-fno-pie', '-no-pie'] if args.role == 'exec' else ['-fPIE', '-pie']
+    if args.discontiguous:
+        flags.append('-DFORGE_LEXICAL_GAP')
     source = repository / 'src/test/fixtures/lexical-shadow.c'
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar'
     protected = {str(p): digest(p) for p in [source, module]}
@@ -49,6 +53,8 @@ def main():
     run('symbols', [prefix + 'nm', '-S', reference])
     run('disassembly', [prefix + 'objdump', '-d', reference])
     wanted = {'scoped', 'outer_begin', 'outer_live', 'inner_begin', 'inner_live', 'inner_end', 'outer_end'}
+    if args.discontiguous:
+        wanted.update(['inner_gap_begin', 'inner_gap_end'])
     labels = {}
     for line in (case / 'symbols.log').read_text().splitlines():
         fields = line.split()
@@ -58,6 +64,8 @@ def main():
     assert labels.keys() == wanted
     order = ['scoped', 'outer_begin', 'outer_live', 'inner_begin', 'inner_live', 'inner_end', 'outer_end']
     assert all(labels[a] < labels[b] for a, b in zip(order, order[1:]))
+    if args.discontiguous:
+        assert labels['inner_live'] < labels['inner_gap_begin'] < labels['inner_gap_end'] < labels['inner_end']
     (case / 'labels.json').write_text(json.dumps(labels, indent=4) + '\n')
     harness = repository / 'src/test/integration'
     run('compiler-llvm', ['llvm-dwarfdump', '--verify', reference])
@@ -118,10 +126,16 @@ def main():
     assert diagnostics[0] == diagnostics[1], diagnostics
     assert protected == {p: digest(Path(p)) for p in protected}
     receipt = {'status': 'LEXICAL_SHADOW_PASS', 'target': target, 'role': args.role,
+        'discontiguous': args.discontiguous,
         'javaRuntime': 21, 'protected': protected, 'outputPair': pair,
         'observations': len(json.loads((case / 'forge-observations.json').read_text())),
-        'scope': 'nested contiguous explicit blocks, shadow lookup, initialization gaps; full goal remains open'}
+        'scope': 'explicit analyst block visibility, shadow lookup, initialization gaps; full goal remains open'}
     (case / 'acceptance.json').write_text(json.dumps(receipt, indent=4) + '\n')
+    if args.controls:
+        run('negative-driver', ['python3', harness / 'lexical-shadow-controls.py', case, ghidra], timeout=900)
+        run('failure-driver', ['python3', harness / 'lexical-shadow-failure.py', case, ghidra], timeout=900)
+        receipt['controls'] = ['stale', 'coalesced', 'native-decompiler-failure', 'copy-cancellation']
+        (case / 'acceptance.json').write_text(json.dumps(receipt, indent=4) + '\n')
     print(json.dumps(receipt, indent=4))
 
 

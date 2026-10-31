@@ -60,6 +60,13 @@ public final class LexicalScopeSmoke {
         byte[] original = Files.readAllBytes(input);
         var exporter = new MinimalDwarfSidecarExporter();
         exporter.export(input, Path.of(args[3]), Path.of(args[0]), Path.of(args[1]), List.of(function), null, model);
+        var failedSource = ghidradwarfforge.source.SyntheticSourceFile.build("fixture", "fixture",
+            List.of(new ghidradwarfforge.source.SyntheticSourceFile.FunctionText("scoped", entry, null, "controlled failure")));
+        var failed = exporter.export(input, Path.of(args[3] + ".failed"), Path.of(args[0]), Path.of(args[1]),
+            List.of(function), failedSource, model);
+        if (failed.sectionNames().contains(".debug_loclists") || failed.sectionNames().contains(".debug_rnglists")) {
+            throw new AssertionError("symbol-only function retained orphan scope/location lists");
+        }
         if (!java.util.Arrays.equals(original, Files.readAllBytes(input))) throw new AssertionError("input changed");
         System.out.println("lexical-scope-native=PASS");
     }

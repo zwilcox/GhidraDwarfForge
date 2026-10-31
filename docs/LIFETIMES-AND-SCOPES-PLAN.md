@@ -174,6 +174,16 @@ suites and structural validators pass. See `LEXICAL-SCOPE-EVIDENCE.md` for the
 precise coverage and remaining discontiguous, negative, failure, package and
 hosted gates. Every other P3.3 row and lifetime integration gate remains open.
 
+## Discontiguous lexical and failure checkpoint
+
+**CONFIRMED locally; final package/hosted acceptance pending:** six address roles
+pass explicit discontiguous visibility, stale/coalesced records, genuine native
+decompiler failure and production copy cancellation. There are 42 candidate
+exports, six previous-package comparisons and six cancelled attempts. The native
+failure exposed orphan location lists, now removed by sharing emitted-signature
+selection. See `LEXICAL-SCOPE-EVIDENCE.md` for exact boundaries and regressions.
+This does not complete the pending lifetime integrations or other P3.3 rows.
+
 ## Completion audit
 
 For every row, record implementation/evidence files, exact reviewed source and

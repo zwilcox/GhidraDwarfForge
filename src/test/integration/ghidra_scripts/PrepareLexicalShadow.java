@@ -57,9 +57,17 @@ public class PrepareLexicalShadow extends GhidraScript {
         }
         var blocks = new ArrayList<GhidraLexicalScopes.Block>();
         for (String block : List.of("outer", "inner")) {
-            blocks.add(new GhidraLexicalScopes.Block(block, block.equals("outer") ? "" : "outer",
-                new AddressSet(toAddr(labels.get(block + "_begin").getAsLong() + delta),
-                    toAddr(labels.get(block + "_end").getAsLong() + delta - 1))));
+            var body = new AddressSet(toAddr(labels.get(block + "_begin").getAsLong() + delta),
+                toAddr(labels.get(block + "_end").getAsLong() + delta - 1));
+            if (block.equals("inner") && labels.has("inner_gap_begin")) {
+                var gap = toAddr(labels.get("inner_gap_begin").getAsLong() + delta);
+                var afterGap = toAddr(labels.get("inner_gap_end").getAsLong() + delta);
+                var instruction = getInstructionAt(gap);
+                if (instruction == null || !instruction.getMaxAddress().next().equals(afterGap) ||
+                        instruction.getPcode().length != 0) throw new AssertionError("gap must be one effect-free instruction");
+                body.deleteRange(gap, afterGap.previous());
+            }
+            blocks.add(new GhidraLexicalScopes.Block(block, block.equals("outer") ? "" : "outer", body));
         }
         GhidraLexicalScopes.save(function, "Analyst assertion correlated to source-built lexical fixture markers",
             blocks, bindings, monitor);
