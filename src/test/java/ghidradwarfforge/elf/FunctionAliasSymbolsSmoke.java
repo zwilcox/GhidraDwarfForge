@@ -61,9 +61,12 @@ public final class FunctionAliasSymbolsSmoke {
                 byte[] badTerminator = bytes.clone();
                 badTerminator[0x180 + 30] = 1;
                 check(root, badTerminator, List.of(ALIAS), List.of(OWNER), "terminators");
-                byte[] dynamic = bytes.clone();
-                LocalSymbolMergeSmoke.field(dynamic, 3, "type", 11);
-                check(root, dynamic, List.of(ALIAS), List.of(OWNER), "hidden");
+                byte[] dynamic = DynamicSymbolMirrorSmoke.fixture(wide, order, false, false);
+                check(root, dynamic, List.of(ALIAS), List.of(OWNER), null);
+                check(root, dynamic, List.of(alias("old_global", HASH)), List.of(OWNER), "already exists");
+                byte[] malformedDynamic = dynamic.clone();
+                LocalSymbolMergeSmoke.field(malformedDynamic, 3, "info", 0);
+                check(root, malformedDynamic, List.of(ALIAS), List.of(OWNER), "dynamic symbol framing");
                 for (int row = 1; row < 4; row++) {
                     ByteBuffer.wrap(dynamic).order(order).putShort(0x200 + row * (wide ? 24 : 16) +
                         (wide ? 6 : 14), (short) 0);
@@ -158,6 +161,20 @@ public final class FunctionAliasSymbolsSmoke {
                 diagnostics.isEmpty(), "unexpected plan/diagnostic " + result + diagnostics);
             require(result.equals(FunctionAliasSymbols.plan(image, aliases, owners, List.of(), () -> false,
                 ignored -> { })), "nondeterministic plan");
+            if (image.sections().stream().anyMatch(section -> section.type == 11)) {
+                Path output = Files.createTempFile(root, "dynamic-alias-", ".dbg");
+                new MatchedElfSidecarWriter().write(image, output,
+                    java.util.Map.of(".debug_info", new byte[] { 1 }), result, () -> false);
+                var written = ElfImage.read(output);
+                var dynamic = image.sections().stream().filter(section -> section.type == 11)
+                    .findFirst().orElseThrow();
+                require(Arrays.equals(image.sectionData(dynamic),
+                    written.sectionData(written.sections().get(dynamic.originalIndex))),
+                    "planned alias damaged dynamic inventory");
+                require(written.sections().stream().anyMatch(section -> section.type == 2 &&
+                    section.size == dynamic.size + (image.is64Bit() ? 24 : 16)),
+                    "planned alias did not retain complete inventory");
+            }
         }
         else {
             require(result.isEmpty() && diagnostics.toString().contains(omitted),
@@ -165,6 +182,7 @@ public final class FunctionAliasSymbolsSmoke {
         }
         require(Arrays.equals(bytes, Files.readAllBytes(input)), "input modified");
     }
+
 
     private static String hash(byte[] bytes) {
         try {

@@ -1251,6 +1251,14 @@ Define precedence among analyst-applied listing/signature types and decompiler g
 
 ## P1.7 Emit complete function signatures
 
+**CONFIRMED locally; acceptance incomplete:** dynamic-only symbol mirroring
+preserves original lookup while adding analyst aliases. Both GNU qualified
+versions pass headless DSO fixtures; twelve stripped base/alias roles across
+four targets, independent raw review and 31 actual Java 21 suites pass. Final
+package/hosted review is pending.
+See `docs/DYNAMIC-FUNCTION-ALIASES.md`. This supersedes the earlier blanket
+dynamic-symbol omission below; it does not complete P1.7/#66.
+
 **CONFIRMED locally; hosted acceptance pending:** isolated classic O32 MIPS32r2
 alias planning passes FPXX runtime cases in both byte orders across exec/PIE/
 rebase. 492 model checks, 30 actual Java 21 suites and independent four-target

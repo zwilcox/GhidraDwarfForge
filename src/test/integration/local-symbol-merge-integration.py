@@ -182,6 +182,20 @@ def main():
             assert old_bytes == new_bytes[:split] + new_bytes[split + 2 * width:]
             old_strings = baseline['.strtab'][1]
             assert candidate['.strtab'][1][:len(old_strings)] == old_strings
+        elif '.dynsym' in baseline:
+            old, old_bytes = baseline['.dynsym']
+            new, new_bytes = candidate['.symtab']
+            width = 24 if ident[4] == 2 else 16
+            split = old[7] * width
+            assert new[7] == old[7] + 2 and new[2] == new[3] == 0
+            assert old_bytes == new_bytes[:split] + new_bytes[split + 2 * width:]
+            old_strings = baseline['.dynstr'][1]
+            assert candidate['.strtab'][1][:len(old_strings)] == old_strings
+            for name, (section, payload) in baseline.items():
+                if name in ('.dynsym', '.dynstr', '.hash', '.gnu.hash', '.dynamic') or name.startswith('.gnu.version'):
+                    assert candidate[name][1] == payload, name
+                    # Offsets may move, but target addresses, links, flags and counts must not.
+                    assert candidate[name][0][:4] == section[:4] and candidate[name][0][5:] == section[5:], name
         after = {name: support.digest(Path(name)) for name in before}
         write('protected-after.json', after)
         assert before == after

@@ -1,5 +1,19 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally; acceptance incomplete:** dynamic-only ELF inventories now
+have a separate complete static mirror before analyst alias insertion. Both GNU
+version-qualified definitions and original dynamic bytes are retained. Model
+checks, twelve stripped base/alias roles across four targets and two full
+headless versioned DSO fixtures pass. Independent raw review and 31 actual
+Java 21 suites pass; final package/hosted review remains pending. See
+`docs/DYNAMIC-FUNCTION-ALIASES.md`; P1.7/#66 remains open. Earlier dynamic-only
+omission statements describe the preceding implementation.
+
+**CONFIRMED:** main81 run `41165205316` passes all twelve jobs and exact-package,
+raw artifact and both-GUI review. All 23 receipt parts were rehashed.
+Receipt: `6cc4b1065923c09d48ca886f1c4bbf9f9a063c86fa39a8a6b1a9a055fc0c7de8`.
+Earlier pending-main81 wording is historical.
+
 **CONFIRMED locally; acceptance incomplete:** classic O32 MIPS32r2 analyst
 aliases pass FPXX exec/PIE/rebase export and QEMU/GDB on both byte orders.
 An isolated target policy checks typed ABI records and original code-symbol

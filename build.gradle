@@ -845,3 +845,12 @@ tasks.register("recoveredParameterSmoke", JavaExec) {
     systemProperty "application.settingsdir", file("build/tmp/recovered-parameters/settings").absolutePath
     systemProperty "application.cachedir", file("build/tmp/recovered-parameters/cache").absolutePath
 }
+
+
+tasks.register("dynamicSymbolMirrorSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks complete dynamic inventories, GNU versions and atomic mirror failures"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.DynamicSymbolMirrorSmoke"
+}

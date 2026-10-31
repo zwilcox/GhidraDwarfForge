@@ -52,7 +52,7 @@ public final class FunctionAliasSymbols {
         }
         Set<ByteBuffer> originalNames;
         try {
-            originalNames = originalNames(image, cancelled);
+            originalNames = originalNames(image, cancelled, diagnostic);
         }
         catch (IllegalArgumentException unsupported) {
             diagnostic.accept("Omitted function aliases: " + unsupported.getMessage());
@@ -151,8 +151,20 @@ public final class FunctionAliasSymbols {
         return a < b ? b - a < sizeA : a - b < sizeB;
     }
 
-    private static Set<ByteBuffer> originalNames(ElfImage image, BooleanSupplier cancelled) throws IOException {
+    private static Set<ByteBuffer> originalNames(ElfImage image, BooleanSupplier cancelled,
+            Consumer<String> diagnostic) throws IOException {
         boolean hasStatic = image.sections().stream().anyMatch(s -> s.type == 2);
+        if (!hasStatic) {
+            DynamicSymbolMirror.Snapshot mirror = DynamicSymbolMirror.read(image, cancelled);
+            if (mirror != null) {
+                if (mirror.versionedDefinitions()) {
+                    diagnostic.accept("Mirrored GNU-versioned definitions retain qualified names; " +
+                        "unqualified GDB lookup can differ from the loader default; " +
+                        "use the version-qualified spelling or curated definition");
+                }
+                return mirror.existingNames();
+            }
+        }
         Set<ByteBuffer> names = new HashSet<>();
         long totalNames = 0;
         long totalRows = 0;
@@ -196,9 +208,6 @@ public final class FunctionAliasSymbols {
                 if (offset != 0) {
                     // No lossy decoding: arbitrary old name bytes cannot alias a new UTF-8 string.
                     names.add(ByteBuffer.wrap(text, (int) offset, end - (int) offset).slice().asReadOnlyBuffer());
-                    int section = Short.toUnsignedInt(rows.getShort(at + (image.is64Bit() ? 6 : 14)));
-                    require(hasStatic || table.type != 11 || section == 0,
-                        "defined dynamic symbols would be hidden by a partial static table");
                 }
             }
         }
