@@ -6,6 +6,17 @@ component does not complete either umbrella. The starting main commit is
 `6c37222304c2abd081b2c800f2354afe3b28c5c0`; Ghidra 12.0.3 and Java 21-compatible
 bytecode remain the supported baseline. No native ABI change is proposed.
 
+**CONFIRMED completion-audit gaps:** saved-local analyses currently reject
+call-containing bodies, and inspected-call summaries preserve registers only,
+retiring all memory facts. Incoming-call and mixed-piece acceptance does not
+prove these missing local/caller-slot cases. See
+`docs/LIFETIME-SCOPE-COMPLETION-AUDIT.md` for the full original requirement map
+and implementation/acceptance sequence. The combined automatic THIS/return
+buffer method now passes six local x86-64/AArch64 roles without a producer
+change (`docs/ARTIFICIAL-OBJECT-ROLES.md`); its hosted gate is pending.
+P1.11a and P3.3 remain open.
+
+
 ## P1.11a requirements
 
 | Requirement | Starting evidence | Remaining acceptance |

@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED completion-audit gaps:** saved-local analyses currently reject
+call-containing bodies, and inspected-call summaries preserve registers only,
+retiring all memory facts. Incoming-call and mixed-piece acceptance does not
+prove these missing local/caller-slot cases. See
+`docs/LIFETIME-SCOPE-COMPLETION-AUDIT.md` for the full original requirement map
+and implementation/acceptance sequence. The combined automatic THIS/return
+buffer method now passes six local x86-64/AArch64 roles without a producer
+change (`docs/ARTIFICIAL-OBJECT-ROLES.md`); its hosted gate is pending.
+P1.11a and P3.3 remain open.
+
 **CONFIRMED PR101 integration:** exact head
 `c8e48213e339dd845abeb9afaafd58a043fdcad4` passes all twelve jobs in run
 `41245301749`, independent hosted package/Java 21/raw-runtime/host review,

@@ -572,3 +572,13 @@ working-register updates, saved and unsaved slots, branch alternatives, repeated
 loop assignments and a conflicting saved owner. Real export, raw DWARF and GDB
 checks pass for signed 32/64-bit x86-64/AArch64 exec/PIE/rebased PIE cases; exact
 hosted acceptance is pending. See `docs/MUTABLE-STACK-MAPPINGS.md`.
+
+## Combined automatic object and return roles
+
+`object-return.cpp` exercises a method with both automatic THIS and a 24-byte
+aggregate return buffer. `object-return-export.py` validates both exact Ghidra
+roles, their class declaration, actual native/QEMU values and ordinary pointer
+parameters renamed to the automatic spellings. The six x86-64/AArch64
+exec/PIE/rebase roles use immutable saved-program exports and retain original,
+deterministic, GNU/LLVM/pinned-strict and source-lookup checks. See
+`docs/ARTIFICIAL-OBJECT-ROLES.md`; this does not broaden injected-call support.
