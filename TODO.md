@@ -1,5 +1,22 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED integration (2026-10-31):** PR83 final head
+`ba4fbd6cf2d7780478220a4fc33c43564bdf6f49` passes all twelve jobs in
+`41171064361`, exact-package/raw review, 29 actual Java 21 suites, 51 native
+Windows model tasks and both GUI console reviews. Normal merge
+`cb60980b5964e591c14ca003f461d377e7b1c471` has the identical tested tree.
+Receipt: `8275983b14fac9e8624fe7e0c19e9683bb45aef71614da113e0ed67fb2d25db4`.
+The compiler-spec safeguard is accepted; broader ABI/P1.7 scope remains open.
+Separate main push `41174759972` remains pending.
+
+**CONFIRMED component acceptance; final main-base gate pending:** PR84 head
+`dd9ed7ba94662728a9117c5e01c061e63a4ae665` passes all twelve jobs in
+`41168155944`, exact package/raw review and both GUI consoles. Its component
+receipt is `b104384650ca1f3541533b92f1ec41cb94e9b96adbbcd7c41e091a3c8f7615eb`.
+The PR is now based on main after a normal merge; production content is unchanged.
+Fresh final-head validation is required before integration. Earlier pending
+component notes below are historical, not final-main acceptance.
+
 **CONFIRMED defect and initial local fix; acceptance incomplete:** selecting a
 Windows compiler specification for an ELF can make custom Microsoft storage
 match the program default while GDB still injects SysV calls incorrectly.
@@ -1250,6 +1267,14 @@ Define precedence among analyst-applied listing/signature types and decompiler g
   imported or subsequently changed programs.
 
 ## P1.7 Emit complete function signatures
+
+**CONFIRMED locally; hosted acceptance pending:** isolated classic O32 MIPS32r2
+alias planning passes FPXX runtime cases in both byte orders across exec/PIE/
+rebase. 492 model checks, 30 actual Java 21 suites and independent four-target
+raw review pass. Six explicit FP32 base/alias roles also pass locally. Defined dynamic
+symbols without a static table still prevent new alias insertion; sectionless,
+discontiguous and other target-mode relationships remain open. See
+`docs/MIPS-FUNCTION-ALIASES.md`.
 
 **CONFIRMED integration:** PR82's corrected custom-storage safeguard passes
 all twelve jobs in `41167035160`, package/raw/Java 21/both-GUI review and merges

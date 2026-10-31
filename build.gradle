@@ -494,6 +494,14 @@ tasks.register("ghidraFunctionAliasesSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/function-aliases/cache").absolutePath
 }
 
+tasks.register("mipsFunctionAliasSymbolsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded MIPS alias profiles and contradictory instruction modes"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.MipsFunctionAliasSymbolsSmoke"
+}
+
 tasks.register("arm32ModeSymbolsSmoke", JavaExec) {
     group = "verification"
     description = "Checks bounded instruction-mode symbols and preserved ELF metadata"

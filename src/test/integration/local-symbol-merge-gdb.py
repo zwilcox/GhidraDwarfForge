@@ -33,7 +33,7 @@ def missing(name):
 # stripped controls must not gain fabricated original compiler names.
 original_lookup = {}
 for row in metadata['retainedOriginals']:
-    present = metadata['inputSymbols'] == 'retained'
+    present = row['present']
     if present:
         assert int(gdb.parse_and_eval(expression(row['name']))) == row['entry']
         prototype = gdb.execute("ptype '" + row['name'] + "'", to_string=True)
@@ -74,7 +74,7 @@ for row in functions:
         stop.delete()
         missing('unbacked_' + row['name'].split('::')[-1])
 if remote:
-    gdb.execute('set sysroot /usr/aarch64-linux-gnu')
+    gdb.execute('set sysroot ' + os.environ['ALIAS_SYSROOT'])
     gdb.execute('target remote ' + remote)
 
 rows, exits, navigation, alias_scopes = [], [], [], []
@@ -114,7 +114,7 @@ for iteration, argument in enumerate((19, -19)):
             'argument': int(value), 'privateValue': int(owned), 'frame': current.name()})
         # Exercise both commands with a return guard; synthetic and compiler line
         # grouping need not match, but neither may escape unnoticed.
-        return_pc = row['end'] - (1 if target == 'x86_64' else 4) + bias
+        return_pc = row['returnInstruction'] + bias
         guard = gdb.Breakpoint('*' + hex(return_pc), internal=True)
         command = 'next' if iteration == 0 else 'step'
         gdb.execute(command)

@@ -19,10 +19,13 @@ spec.loader.exec_module(support)
 
 def elf(path):
     data = path.read_bytes()
-    assert data[:6] == b'\x7fELF\x02\x01'
-    header = struct.unpack_from('<HHIQQQIHHHHHH', data, 16)
-    assert header[10] == 64 and header[11] > 0
-    sections = [struct.unpack_from('<IIQQQQIIQQ', data, header[5] + index * 64) for index in range(header[11])]
+    assert data[:4] == b'\x7fELF' and data[4] in (1, 2) and data[5] in (1, 2)
+    wide, order = data[4] == 2, '<' if data[5] == 1 else '>'
+    header = struct.unpack_from(order + ('HHIQQQIHHHHHH' if wide else 'HHIIIIIHHHHHH'), data, 16)
+    width = 64 if wide else 40
+    assert header[10] == width and header[11] > 0
+    sections = [struct.unpack_from(order + ('IIQQQQIIQQ' if wide else 'IIIIIIIIII'),
+        data, header[5] + index * width) for index in range(header[11])]
     names = sections[header[12]]
     strings = data[names[4]:names[4] + names[5]]
     named = {strings[s[0]:].split(b'\0', 1)[0].decode(): (s, data[s[4]:s[4] + s[5]]) for s in sections}
@@ -32,13 +35,18 @@ def elf(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
-    parser.add_argument('target', choices=('x86_64', 'aarch64'))
+    parser.add_argument('target', choices=('x86_64', 'aarch64', 'mips32be', 'mips32le'))
     parser.add_argument('--role', choices=('exec', 'pie', 'pie-rebased'), default='exec')
     parser.add_argument('--symbols', choices=('retained', 'stripped'), default='retained')
+    parser.add_argument('--results-root', type=Path,
+        default=repository / 'build/test-results/retained-function-aliases')
+    parser.add_argument('--mips-fp32', action='store_true', help='Build the explicit O32 FP32 fixture profile')
     args = parser.parse_args()
+    if args.mips_fp32 and not args.target.startswith('mips'):
+        parser.error('--mips-fp32 requires a MIPS target')
     ghidra = args.ghidra.resolve(strict=True)
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
-    root = repository / 'build/test-results/retained-function-aliases'
+    root = args.results_root.resolve()
     root.mkdir(parents=True, exist_ok=True)
     case = Path(tempfile.mkdtemp(prefix='.'.join((args.target, args.role, args.symbols)) + '.', dir=root))
     print(case, flush=True)
@@ -63,8 +71,12 @@ def main():
     before = {str(p): support.digest(p) for p in protected}
     write('protected-before.json', before)
     reference, binary = case / 'aliases.reference', case / 'aliases.input'
-    cc, objcopy = ('g++', 'objcopy') if args.target == 'x86_64' else ('aarch64-linux-gnu-g++', 'aarch64-linux-gnu-objcopy')
+    prefix = {'x86_64': '', 'aarch64': 'aarch64-linux-gnu-',
+        'mips32be': 'mips-linux-gnu-', 'mips32le': 'mipsel-linux-gnu-'}[args.target]
+    cc, objcopy = prefix + 'g++', prefix + 'objcopy'
     flags = ['-fno-pie', '-no-pie'] if args.role == 'exec' else ['-fPIE', '-pie']
+    if args.mips_fp32:
+        flags.append('-mfp32')
     run('compile', [cc, '-O1', '-g3', '-gdwarf-5', '-gno-variable-location-views', *flags,
         '-Wl,--build-id=sha1', fixture, '-o', reference])
     run('strip', [objcopy, '--strip-debug' if args.symbols == 'retained' else '--strip-all', reference, binary])
@@ -75,8 +87,9 @@ def main():
     for line in (case / 'symbols.log').read_text().splitlines():
         f = line.split()
         if len(f) == 8 and ('observed' in f[7] or f[7] == 'second_identity'):
-            assert f[7] not in symbols
-            symbols[f[7]] = {'address': int(f[1], 16), 'size': int(f[2]), 'type': f[3], 'binding': f[4], 'section': int(f[6])}
+            record = {'address': int(f[1], 16), 'size': int(f[2]), 'type': f[3], 'binding': f[4], 'section': int(f[6])}
+            assert f[7] not in symbols or symbols[f[7]] == record, 'conflicting static/dynamic symbol records'
+            symbols[f[7]] = record
     unique, aliased = '_ZN8observed6uniqueEi', '_ZN8observed7aliasedEi'
     assert symbols[aliased] == symbols['second_identity']
     names = [('analyst_unique', unique, '_ZZN8observed6uniqueEiE13private_count', 7),
@@ -87,10 +100,31 @@ def main():
         assert f['type'] == 'FUNC' and f['binding'] == 'GLOBAL' and d['type'] == 'OBJECT' and d['size'] == 4
         row = {'name': 'recovered::' + name, 'entry': f['address'], 'end': f['address'] + f['size'],
             'original': original, 'privateAddress': d['address'], 'privateValue': value}
+        if args.target.startswith('mips'):
+            # A MIPS return has a delay slot. Guard the actual jr ra, not the
+            # last instruction, and prove the fixture instruction from bytes.
+            ident, _, sections = elf(reference)
+            section, payload = list(sections.values())[f['section']]
+            row['returnInstruction'] = row['end'] - 8
+            offset = row['returnInstruction'] - section[3]
+            assert offset >= 0 and offset + 8 <= len(payload)
+            assert int.from_bytes(payload[offset:offset + 4], 'big' if ident[5] == 2 else 'little') == 0x03e00008
+        else:
+            row['returnInstruction'] = row['end'] - (1 if args.target == 'x86_64' else 4)
         rows.append(row)
         prep.append(' '.join([name, hex(row['entry']), hex(row['end']), hex(row['privateAddress'])]))
     write('symbols.json', symbols)
-    write('metadata.json', {'target': args.target, 'role': args.role, 'symbols': args.symbols, 'functions': rows})
+    run('input-symbols', ['readelf', '-sW', binary])
+    original_symbols = {}
+    for line in (case / 'input-symbols.log').read_text().splitlines():
+        fields = line.split()
+        if len(fields) == 8 and fields[7] in (unique, aliased, 'second_identity'):
+            address = int(fields[1], 16)
+            assert fields[3] == 'FUNC' and fields[6].isdigit()
+            assert fields[7] not in original_symbols or original_symbols[fields[7]] == address
+            original_symbols[fields[7]] = address
+    write('metadata.json', {'target': args.target, 'role': args.role, 'symbols': args.symbols,
+        'originalSymbols': original_symbols, 'mipsFp32': args.mips_fp32, 'functions': rows})
     (case / 'preparation.txt').write_text('\n'.join(prep) + '\n')
     project = case / 'project'
     project.mkdir()

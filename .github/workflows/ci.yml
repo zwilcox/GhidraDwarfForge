@@ -482,7 +482,7 @@ jobs:
               variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke secondRegisterCopySmoke laterRegisterLocalSmoke definedRegisterLocalSmoke stackSpillSmoke directLeafCallSmoke compositeRegisterPrefixSmoke \
               stackFirstUseSmoke \
               opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
-              functionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke curatedThunkSmoke callingConventionPolicySmoke customCallStorageSmoke compilerCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
+              functionAliasSymbolsSmoke mipsFunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke curatedThunkSmoke callingConventionPolicySmoke customCallStorageSmoke compilerCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfAddressRangesSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
@@ -608,11 +608,11 @@ jobs:
                 libc6-dev-armhf-cross qemu-user-static)
               ;;
             mips32be)
-              packages+=(gcc-mips-linux-gnu binutils-mips-linux-gnu
+              packages+=(gcc-mips-linux-gnu g++-mips-linux-gnu binutils-mips-linux-gnu
                 libc6-dev-mips-cross qemu-user-static)
               ;;
             mips32le)
-              packages+=(gcc-mipsel-linux-gnu binutils-mipsel-linux-gnu
+              packages+=(gcc-mipsel-linux-gnu g++-mipsel-linux-gnu binutils-mipsel-linux-gnu
                 libc6-dev-mipsel-cross qemu-user-static)
               ;;
           esac
@@ -1085,7 +1085,7 @@ jobs:
           done
 
       - name: Retained ELF aliases and typed curated function identity
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        if: matrix.target != 'arm32'
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1096,11 +1096,15 @@ jobs:
           done
 
       - name: Lossless local symbol insertion with retained and stripped tables
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        if: matrix.target != 'arm32'
         env:
           TARGET: ${{ matrix.target }}
         run: |
-          python3 src/test/integration/local-symbol-merge-integration.py "$GHIDRA_INSTALL_DIR" "$TARGET"
+          symbols=both
+          case "$TARGET" in
+              mips32be|mips32le) symbols=retained ;;
+          esac
+          python3 src/test/integration/local-symbol-merge-integration.py "$GHIDRA_INSTALL_DIR" "$TARGET" --symbols "$symbols"
 
       - name: Curated thunk names retain signatures without borrowed destination source
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
@@ -1110,6 +1114,17 @@ jobs:
           for role in exec pie pie-rebased; do
               python3 src/test/integration/curated-thunk-export.py "$GHIDRA_INSTALL_DIR" --target "$TARGET" --role "$role"
           done
+
+      - name: MIPS FP32 curated aliases retain original symbols and debugger identity
+        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          base=build/test-results/retained-function-aliases-fp32
+          for role in exec pie pie-rebased; do
+              python3 src/test/integration/retained-function-aliases-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --symbols retained --mips-fp32 --results-root "$base"
+          done
+          python3 src/test/integration/local-symbol-merge-integration.py "$GHIDRA_INSTALL_DIR" "$TARGET" --symbols retained --base-root "$base"
 
       - name: Custom parameter and return storage reject unsupported injected calls
         if: matrix.target == 'x86_64'
@@ -1522,7 +1537,7 @@ jobs:
           & .\gradlew.bat dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
-            functionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke curatedThunkSmoke callingConventionPolicySmoke customCallStorageSmoke compilerCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
+            functionAliasSymbolsSmoke mipsFunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke curatedThunkSmoke callingConventionPolicySmoke customCallStorageSmoke compilerCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
             registerCopySmoke secondRegisterCopySmoke laterRegisterLocalSmoke definedRegisterLocalSmoke stackSpillSmoke directLeafCallSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
             elfBuildIdSmoke exportReportClaimsSmoke matchedElfPrefixSmoke `
             matchedElfAllocationsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke executableProgramBytesSmoke `
