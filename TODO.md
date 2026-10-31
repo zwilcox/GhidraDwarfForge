@@ -1,5 +1,13 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED PR99 hosted guard failure and local correction:** run `41221918712`
+rejected a generic address field named `pc`. The field is now
+`definitionAddress`; the architecture guard is unchanged and its negative
+controls pass. Six fresh Java 21 runtime roles, twelve exports, 11,088 GDB
+observations and sixteen model suites pass. Exact replacement-head hosted
+acceptance remains pending; see `docs/MERGED-LOCAL-MAPPINGS.md`. P1.11a/P3.3
+remain incomplete.
+
 **CONFIRMED development acceptance:** P1.7 function signatures,
 calling conventions, declarations, thunks and aliases passed the combined
 [PR95 run](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/41195618723)

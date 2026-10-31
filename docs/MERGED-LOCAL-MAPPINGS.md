@@ -120,3 +120,23 @@ The corrected package is `candidate-v2.zip`; its diagnostic receipt is
 `build/merged-local-review/probe-v2/acceptance.json`. No failed attempt counts
 as acceptance. Evidence is under `build/merged-local-review`; research probes
 are in the root checkout's `build/lifetime-evidence/merged-locals`.
+
+## Hosted guard correction (2026-10-31)
+
+**CONFIRMED failed hosted gate:** PR99 run `41221918712` stopped at the
+architecture-neutrality check. The generic saved-definition address field
+`Encoded.pc` matched the guard's prohibited register-name pattern. Renaming it
+to `definitionAddress` preserves the model and leaves the guard unchanged.
+The guard and its seven negative controls now pass. The three affected model
+suites pass 64/248/380 checks; sixteen packaged suites pass on actual Java 21.
+
+**CONFIRMED locally:** the renamed production JAR passes six fresh x86-64/
+AArch64 exec/PIE/rebased cases on full JDK 21, with twelve exports and 11,088
+compiler/Forge instruction observations. Raw location review, GNU/LLVM/strict
+validation, output determinism and input/program/module preservation pass.
+This rerun does not repeat the preceding-package comparison; its earlier
+396 old/unavailable updates remain separately recorded above. JAR SHA-256:
+`62e0a3898d98dccbe9f297a7f2cc2583caac09ac24b2da25bcdc7ea9068879f7`.
+Receipt: `1c9b57c9c0fb9843d6f5d121f5ad0ce01ffef613579da4911fcc66ab32dc8c24` in
+`build/merged-local-review/architecture-fix/runtime-acceptance.json`.
+A fresh exact-head hosted gate remains required; the failed run is not acceptance.

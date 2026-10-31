@@ -1,5 +1,13 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED PR99 hosted guard failure and local correction:** run `41221918712`
+rejected a generic address field named `pc`. The field is now
+`definitionAddress`; the architecture guard is unchanged and its negative
+controls pass. Six fresh Java 21 runtime roles, twelve exports, 11,088 GDB
+observations and sixteen model suites pass. Exact replacement-head hosted
+acceptance remains pending; see `docs/MERGED-LOCAL-MAPPINGS.md`. P1.11a/P3.3
+remain incomplete.
+
 **CONFIRMED integration:** PR98 head `0c5db884d8c9517693d31c3d62ab783031e0c053`
 passes all twelve jobs in run `41215780110` and exact hosted package/raw/host
 review. Six control-flow-local roles provide 12,384 GDB observations; related

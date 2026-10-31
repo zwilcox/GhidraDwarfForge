@@ -98,16 +98,16 @@ final class GhidraLocalMappings {
                     catch (ghidra.program.model.address.AddressOverflowException overflow) {
                         continue;
                     }
-                    if (!entry.pc.equals(definition)) continue;
+                    if (!entry.definitionAddress.equals(definition)) continue;
                     if (matched != null) { valid = false; break; }
                     matched = variable;
                 }
                 if (!valid || matched == null || used.contains(matched) ||
-                        mappings.stream().anyMatch(mapping -> mapping.definition().equals(entry.pc))) {
+                        mappings.stream().anyMatch(mapping -> mapping.definition().equals(entry.definitionAddress))) {
                     valid = false;
                     break;
                 }
-                mappings.add(new Mapping(matched, entry.pc, matched.getRegister()));
+                mappings.add(new Mapping(matched, entry.definitionAddress, matched.getRegister()));
             }
             if (valid && mappings.size() == collector.entries.size() &&
                     mappings.getFirst().variable().getSymbol().getID() == symbol.getId()) {
@@ -121,7 +121,7 @@ final class GhidraLocalMappings {
         return List.copyOf(groups);
     }
 
-    private record Encoded(AddressSpace space, long offset, int bytes, Address pc) {
+    private record Encoded(AddressSpace space, long offset, int bytes, Address definitionAddress) {
     }
 
     /** Capture typed direct addr/rangelist pairs through the public encoder API. */
