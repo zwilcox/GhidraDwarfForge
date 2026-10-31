@@ -62,3 +62,15 @@ paths. No claim is made that arbitrary aliases or unanalyzed callees are safe.
 
 PR102's combined scope run can provide useful independent evidence while this
 work proceeds. A green scope run alone cannot complete P1.11a or the active goal.
+
+## First combined-scope CI inventory correction
+
+**CONFIRMED failed gate:** PR102 run `41253600321` stopped all five target lanes
+at the source-fixture inventory check, before any scope export. The new lexical,
+object and same-name fixture files were absent from the explicit reviewed list.
+The list now includes those files and the combined object-return fixture;
+the unknown-file rejection and byte-identical rebuild requirements remain.
+All four locally available target inventories (x86-64, AArch64, MIPS BE/LE)
+pass deterministic rebuild and partially stripped symbol checks. Local ARM32
+remains unavailable; its hosted lane must still pass. The failed run is not
+scope-runtime evidence, and the final corrected head needs a new complete gate.

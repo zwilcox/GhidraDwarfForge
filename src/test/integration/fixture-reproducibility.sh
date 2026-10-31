@@ -69,6 +69,8 @@ expected_sources=(
     i386-profile.c
     inspected-call-callees.c
     later-register-local.c
+    lexical-shadow.c
+    lexical-statics.c
     local-definition-flow.c
     merged-local-mappings.c
     minimal.c
@@ -80,6 +82,8 @@ expected_sources=(
     nonzero_load_offset.c
     nonzero_load_offset.ld
     nonzero_load_offset_start.S
+    object-parameter.cpp
+    object-return.cpp
     opaque-register-effects.c
     outside-body-flow.c
     overloaded-signatures.cpp
@@ -88,6 +92,7 @@ expected_sources=(
     register-copy.c
     register_prefix.c
     retained-function-aliases.cpp
+    same-name-types.cpp
     second-register-copy.c
     semantic.c
     shared_driver.c
