@@ -1,5 +1,11 @@
 # A second proven incoming-value register backup
 
+The source-built fixture explicitly curates its compiler's default calling
+convention and validates the complete return/parameter storage against that
+model. Its raw DWARF oracle requires DW_CC_normal so GDB can report the finish
+return value. This fixture knowledge does not authorize calls through unresolved
+custom signatures; see `CUSTOM-CALL-STORAGE.md` for that negative control.
+
 **CONFIRMED through accepted PR78:** a single incoming scalar
 parameter can retain its value through two complete register handoffs in a
 fully decoded straight-line leaf. This advances [P1.11a (#67)](https://github.com/zwilcox/GhidraDwarfForge/issues/67),

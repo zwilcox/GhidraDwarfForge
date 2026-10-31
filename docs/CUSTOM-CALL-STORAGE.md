@@ -1,5 +1,34 @@
 # Custom parameter and return storage callability
 
+**CONFIRMED failed hosted gate:** PR82 head
+`b074da3434587cbe2f1843896c703bc10c323a54`, run `41165251340`, fails the
+second-register-copy GDB test on x86-64 and AArch64. Its assembly-heavy fixture
+curated types and custom storage but left the selected convention unresolved.
+The new guard correctly emits DW_CC_nocall; GDB consequently cannot supply the
+automatic finish return value expected by that fixture. This head is not accepted.
+
+The fixture now explicitly selects its source compiler's default convention and
+compares the complete return/parameter storage against that model. Both copy
+oracles require DW_CC_normal as well as their existing exact location checks.
+Their readelf parser accepts attributes with no whitespace before the colon;
+the longer DW_AT_calling_convention name exposed that parser assumption.
+No production policy or GDB warning assertion is weakened.
+
+**CONFIRMED locally:** six first-copy and six second-copy exec/PIE/rebase roles
+pass with the same production JAR, deterministic output, protected originals,
+structural checks and compiler/Forge GDB comparisons. Independent raw review
+checks 864 first-copy and 792 second-copy value observations. A separate QEMU
+negative control using the failed hosted AArch64 sidecar still rejects injected
+chain32/chain64 calls without changing PC, argument register or sink; ordinary
+execution exits zero. Receipt SHA-256:
+`79557d33c9a749b7e37b06866bca3e55a612089c0d025d961aec9c7c38bd947e`.
+Commands/logs live in build/custom-call-fixture-review and the main checkout's
+build/pr82-failure. The first corrected run failed the old attribute parser;
+the first downloaded-artifact QEMU attempt lacked executable file permission.
+Both failures remain retained. The negative control uses a byte-identical copy
+with executable permission, preserving the downloaded evidence. A fresh full
+hosted gate is still required.
+
 **CONFIRMED defect:** a default Ghidra convention name does not prove that a
 custom parameter/return layout follows that ABI. The earlier exporter emitted
 DW_CC_normal for an explicitly custom Microsoft parameter layout labeled with

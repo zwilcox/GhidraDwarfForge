@@ -48,10 +48,27 @@ public class PrepareRegisterCopy extends GhidraScript {
                 throw new IllegalStateException("fixture body differs from compiler bounds: " + name);
             }
             function.setName(name, SourceType.USER_DEFINED);
+            // These source-built C fixtures use the compiler's default ABI.
+            // Analysis may leave the convention unknown after the inline
+            // assembly clobbers the incoming registers. Curate the known
+            // convention together with the compiler-oracle types/storage.
+            var convention = currentProgram.getCompilerSpec().getDefaultCallingConvention();
+            if (convention == null || convention.isErrorPlaceholder()) {
+                throw new IllegalStateException("fixture has no resolved default ABI");
+            }
+            function.setCallingConvention(convention.getName());
             function.setReturnType(type, SourceType.USER_DEFINED);
             function.replaceParameters(Function.FunctionUpdateType.CUSTOM_STORAGE, true,
                 SourceType.USER_DEFINED, new ParameterImpl("value", type,
                     currentProgram.getRegister(fields[5]), currentProgram, SourceType.USER_DEFINED));
+            var expected = convention.getStorageLocations(currentProgram, new DataType[] { type, type }, true);
+            if (expected.length != 2 || !expected[0].equals(function.getReturn().getVariableStorage()) ||
+                    !expected[1].equals(function.getParameter(0).getVariableStorage())) {
+                throw new IllegalStateException("fixture storage differs from its compiler ABI: " + name);
+            }
+            println("register-copy-signature=" + name + " convention=" + function.getCallingConventionName() +
+                " return=" + function.getReturn().getVariableStorage() +
+                " parameter=" + function.getParameter(0).getVariableStorage());
             DataUtilities.createData(currentProgram, sink, type, bytes,
                 DataUtilities.ClearDataMode.CLEAR_ALL_CONFLICT_DATA);
             currentProgram.getSymbolTable().createLabel(sink, name + "_sink",
