@@ -17,7 +17,8 @@ import ghidradwarfforge.locations.VariableStorageModel.RegisterStorage;
  * One exact low-bit register backup in proven straight-line code. A separately
  * decoded direct leaf call requires both an ABI contract and no register writes.
  * Facts describe the entry value's bits, not a register's whole numeric value.
- * No memory or lost-fact recovery. Callers may prove a second copy separately.
+ * No memory or lost-fact recovery. Callers may compose successive proofs when
+ * their independently established handoff boundaries agree.
  */
 final class RegisterCopyLifetime {
     record Backup(long start, long end, RegisterStorage storage, Varnode bits) {

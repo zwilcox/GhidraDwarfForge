@@ -21,10 +21,11 @@ def main():
     parser.add_argument('target', choices=('x86_64', 'aarch64'))
     parser.add_argument('--previous-ghidra', type=Path)
     parser.add_argument('--role', choices=('exec', 'pie', 'pie-rebased'), default='exec')
+    parser.add_argument('--handoffs', type=int, choices=(2, 4), default=2)
     args = parser.parse_args()
     ghidra = args.ghidra.resolve(strict=True)
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
-    root = repository / 'build/test-results/second-register-copy'
+    root = repository / 'build/test-results' / ('register-copy-chain' if args.handoffs == 4 else 'second-register-copy')
     root.mkdir(parents=True, exist_ok=True)
     case = Path(tempfile.mkdtemp(prefix=args.target + '.' + args.role + '.', dir=root))
     print(case, flush=True)
@@ -53,7 +54,7 @@ def main():
     reference, binary = case / 'chain.reference', case / 'chain.input'
     flags = ['-fno-pie', '-no-pie'] if args.role == 'exec' else ['-fPIE', '-pie']
     run('compile', [cc, '-O2', '-g3', '-gdwarf-5', '-gno-variable-location-views', '-fno-inline',
-        '-fno-ipa-sra', '-fomit-frame-pointer', *flags, '-Wl,--build-id=sha1', fixture, '-o', reference])
+        '-fno-ipa-sra', '-fomit-frame-pointer', *(['-DCOPY_CHAIN'] if args.handoffs == 4 else []), *flags, '-Wl,--build-id=sha1', fixture, '-o', reference])
     run('strip', [objcopy, '--strip-all', reference, binary])
     before.update({str(binary): support.digest(binary), str(reference): support.digest(reference)})
     write('protected-before.json', before)
@@ -70,15 +71,20 @@ def main():
         width = 4 if name == 'chain32' else 8
         row = {key: symbols[name + '_' + key][0] for key in
             ('saved', 'write', 'after', 'copy', 'second', 'kill', 'tail', 'erase', 'unavailable', 'sink')}
+        if args.handoffs == 4:
+            row.update({key: symbols[name + '_' + key][0] for key in
+                ('copy3', 'third', 'kill2', 'tail3', 'copy4', 'fourth', 'kill3', 'tail4')})
         row.update(entry=entry, end=entry + size, width=width,
             **{'return': entry + size - (1 if args.target == 'x86_64' else 4)})
         points = ['entry', 'saved', 'write', 'after', 'copy', 'second', 'kill', 'tail', 'erase', 'unavailable', 'return', 'end']
+        if args.handoffs == 4:
+            points[8:8] = ['copy3', 'third', 'kill2', 'tail3', 'copy4', 'fourth', 'kill3', 'tail4']
         assert all(row[a] < row[b] for a, b in zip(points, points[1:])), row
         labels[name] = row
         register = ('EDI' if width == 4 else 'RDI') if args.target == 'x86_64' else ('w0' if width == 4 else 'x0')
         preparation.append(' '.join([name, hex(entry), hex(entry + size), hex(row['sink']), str(width), register]))
     write('labels.json', labels)
-    write('metadata.json', {'target': args.target, 'role': args.role})
+    write('metadata.json', {'target': args.target, 'role': args.role, 'handoffs': args.handoffs})
     (case / 'preparation.txt').write_text('\n'.join(preparation) + '\n')
     project = case / 'project'
     project.mkdir()
@@ -138,7 +144,7 @@ def main():
     write('project-after.json', project_after)
     changes = [name for name in sorted(project_before.keys() | project_after.keys()) if project_before.get(name) != project_after.get(name)]
     assert set(changes) <= {'Chain.rep/idata/~index.bak', 'Chain.rep/idata/~journal.bak'}, changes
-    write('result.json', {'status': 'PASS', 'target': args.target, 'role': args.role,
+    write('result.json', {'status': 'PASS', 'target': args.target, 'role': args.role, 'handoffs': args.handoffs,
         'inputSha256': before[str(binary)], 'artifactSha256': hashes, 'projectBackupChanges': changes,
         'protectedUnchanged': True, 'previousPackageCompared': bool(args.previous_ghidra)})
     print('second-register-copy-export=PASS ' + str(case), flush=True)

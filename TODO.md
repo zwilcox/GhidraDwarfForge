@@ -1850,6 +1850,11 @@ or uncertain storage remains locationless with a diagnostic.
 
 Tracking: [#67](https://github.com/zwilcox/GhidraDwarfForge/issues/67).
 
+**CONFIRMED active work:** the full remaining scope, followed by P3.3, is
+tracked in `docs/LIFETIMES-AND-SCOPES-PLAN.md`. Repeated incoming register
+handoffs pass local decoder, actual Java 21 and six-role packaged runtime
+checks; hosted acceptance remains pending. This is one component and does not complete this checklist.
+
 **CONFIRMED through accepted PR78:** a second completed incoming
 scalar register backup preserves the value after the first backup is killed.
 Six x86-64/AArch64 exec/PIE/rebase roles pass twelve candidate exports, six

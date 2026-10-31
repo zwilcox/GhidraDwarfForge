@@ -89,6 +89,10 @@ for function, start in offsets.items():
     expected = [(record["entry"], record["after"], incoming),
                 (record["after"], record["tail"], backup),
                 (record["tail"], stop, second)]
+    if "tail3" in record:
+        expected[-1] = (record["tail"], record["tail3"], second)
+        expected += [(record["tail3"], record["tail4"], backup),
+                     (record["tail4"], stop, second)]
     assert actual == expected, (function, actual, expected)
     checked[function] = actual
 print(json.dumps({"second_register_copy_locations": "PASS", "functions": checked}, indent=4))

@@ -1,0 +1,105 @@
+# Variable lifetime and scope completion plan
+
+The active user goal is to finish P1.11a, then richer class and lexical scopes
+(P3.3). This plan preserves both umbrella issues, #67 and #73. A passing
+component does not complete either umbrella. The starting main commit is
+`6c37222304c2abd081b2c800f2354afe3b28c5c0`; Ghidra 12.0.3 and Java 21-compatible
+bytecode remain the supported baseline. No native ABI change is proposed.
+
+## P1.11a requirements
+
+| Requirement | Starting evidence | Remaining acceptance |
+| --- | --- | --- |
+| Later-start variable identity | Curated read-start and definition-start register locals have tested prefixes. | Extend evidence-backed later lifetimes and overwrite boundaries, including discontiguous bodies and additional control flow. Test before definition, every transition and after loss. |
+| Register migration | Two incoming copies and one inspected direct-leaf call have bounded accepted proofs. | Compose further copies, then support additional proven call/control-flow shapes. Track value identity rather than register spelling. |
+| Register/stack migration | One incoming scalar spill has accepted straight-line evidence. | Extend saves, loads and storage changes only while instruction and selected ABI effects prove the same value. Unknown aliases/calls must terminate the affected fact. |
+| Stack-local identity and reuse | Nonzero first-use is currently diagnosed and omitted. | Establish initialization and slot-reuse boundaries for distinct locals. Stale bytes before initialization and after reuse must not become a location. |
+| Mixed pieces | Attached incoming register/stack joins have bounded prefixes. | Track independently proven pieces and transitions with exact size/order. Do not present a whole value across a missing or stale piece. |
+| Behavioral acceptance | Existing compiler/Forge oracles cover bounded profiles. | Add source-built compiler-oracle fixtures, positive/negative instruction-boundary values, unavailable gaps, real exporter validators, preservation, determinism, cancellation and required target/host CI. |
+
+**PLANNED sequence:** repeated register handoffs; later-local migration;
+stack identity and spill/reload transitions; control-flow joins and
+discontiguous bodies; additional inspected call effects; mixed-piece lifetime
+composition. The sequence may change when evidence exposes a dependency, but
+all rows remain required. Unsupported observations must remain explicit gaps;
+the mere existence of a Ghidra high variable is not proof of a compiler lifetime.
+
+## P3.3 requirements after the location core
+
+| Requirement | Remaining acceptance |
+| --- | --- |
+| Lexical blocks and shadowed locals | Establish scope ownership and defensible address ranges; GDB must select the correct shadowed object without leaking its lifetime. |
+| Namespace/class/method/object relationships | Go beyond qualified display strings using actual recorded relationships, while preserving existing analyst lookup and synthetic C source behavior. |
+| Thunk/alias specification and origin | Relate only identities established by evidence. Preserve the accepted P1.7 naming, body, type and source ownership rules. |
+| Static-local scope and identity | Preserve explicit function-owned statics; extend decompiler/inferred and lexical ownership only with established identity and genuine-failure behavior. |
+| Artificial and object parameters | Preserve tested hidden return-storage behavior; add evidence-backed `this` and other artificial semantics without inventing original source facts. |
+| Same-name disambiguation | Retain distinct types and variables from different recorded categories/scopes; verify GDB lookup without treating category paths as original namespaces. |
+
+**PLANNED:** inspect saved Ghidra and decompiler APIs for the evidence needed by
+each row, implement a scope model with explicit provenance, then validate
+lexical, class/object, static and same-name fixtures. If an API lacks required
+evidence, record that gap and develop an explicit evidence provider rather
+than silently redefining completion as qualified display names alone.
+
+## Current component: repeated incoming register handoffs
+
+**CONFIRMED locally:** the new decoder fixture fails against the previous
+two-backup implementation. Composing the existing exact-copy proof passes
+424 checks across x86-64/AArch64, signed 32/64-bit storage, three/four/twelve
+handoffs, reused physical registers, lost-value tails and cancellation.
+Existing copy, prefix, direct-leaf-call, stack-spill and later-local decoder
+suites also pass. These Gradle runs use Java 25. Thirteen suites also pass against the exact
+packaged production JAR on actual Java 21, with class origins verified.
+
+**CONFIRMED locally:** all six x86-64/AArch64 exec/PIE/rebased-PIE cases pass
+12 candidate exports, six preceding-package comparisons and 2,052 GDB
+instruction observations. Independent review rechecks raw location intervals,
+original/module/source hashes, deterministic output pairs and actual Java 21
+class origins. The old two-copy package becomes unavailable at the third
+handoff; the candidate retains the exact signed value through the fourth.
+Both targets' existing two-copy exec regressions also pass. GNU/LLVM and the
+pinned strict checker pass; inherited compiler-frame diagnostics are matched
+to original bytes and diagnostics. Controlled decompiler failure and
+cancellation after 16 MiB preserve the original and previous output pair.
+
+**PRESENT, UNVERIFIED:** both required runtime lanes and Linux/Windows model
+lists now include this component. Hosted acceptance remains pending. P1.11a
+and P3.3 remain incomplete.
+
+Reproduction:
+
+```bash
+GHIDRA_INSTALL_DIR=/path/to/ghidra_12.0.3_PUBLIC ./gradlew registerCopyChainSmoke secondRegisterCopySmoke
+python3 src/test/integration/second-register-copy-export.py /path/to/private-packaged-ghidra x86_64 --handoffs 4 --role exec
+python3 src/test/integration/second-register-copy-export.py /path/to/private-packaged-ghidra aarch64 --handoffs 4 --role pie-rebased
+```
+
+Run all three roles on both targets with the pinned `DWARFDUMP` described in
+`support/validation/README.md`. Optional `--previous-ghidra` selects the accepted
+two-copy package for the four-handoff comparison. Local evidence is retained
+under `build/register-copy-chain-review`, including `runtime-acceptance.json`
+and the six listed result directories. Tested JAR SHA-256:
+`7e8fbb5535ca5ce38e2e9d400766479ee77c446dcd6c2ec0ef9b5ccb6fb6ac7b`.
+
+The initial failed decoder run proves the preceding limit. Initial runtime
+setup failures are also retained: a symlinked launcher selected the shared
+installation instead of the private package, and the system checker lacked the
+pinned consumer fixes. Neither failed attempt is counted among the six passing
+cases; the corrected private runtimes and pinned checker are used throughout.
+
+Each composed proof starts at the preceding proven handoff and must agree on
+the next physical write boundary. Completed handoffs strictly advance through
+the decoded function. No fixed copy-count limit is used; no fact is recovered
+after its identity is lost. Calls remain outside the additional-handoff path.
+This component does not establish mutable-local, stack, branch or mixed-piece
+identity; those requirements remain listed above.
+
+## Completion audit
+
+For every row, record implementation/evidence files, exact reviewed source and
+package identity, validator results and GDB outcomes, including explicit
+negative controls. Require source-built fixtures, unchanged original targets,
+deterministic reruns and cancellation/failure cleanup. Pass the existing
+up-to-date `required-validation` protection and normally integrate reviewed
+changes. Reconcile TODO/context and the corresponding issue only after all
+requirements for that umbrella are proven. Release publication is separate.

@@ -234,11 +234,12 @@ public final class GhidraVariableStorage {
             long firstHandoff = boundary;
             result.add(new StorageInterval(boundary, backup.end(), backup.storage()));
             boundary = backup.end();
-            // The first backup is independently proven to contain the incoming
-            // bits at firstHandoff. Start a fresh, bounded copy proof there:
-            // copies of stale pre-handoff state cannot establish a second fact.
-            // Only one additional handoff is admitted, with no calls anywhere.
-            if (boundary < end && calls.isEmpty() && backup.bits() != null &&
+            // Each completed backup establishes the incoming bits at its own
+            // handoff. Compose the same proof from that boundary onward. Facts
+            // from before the handoff cannot resurrect a killed value. Every
+            // iteration must advance, so the decoded body bounds the chain.
+            // Broader call-crossing requires its own proof, not this fallback.
+            while (boundary < end && calls.isEmpty() && backup.bits() != null &&
                     function.getProgram() == program && storage.getProgramArchitecture() == program &&
                     parameter.getFunction() == function && parameter.getOrdinal() >= 0 &&
                     function.getParameter(parameter.getOrdinal()) == parameter && parameter.getFirstUseOffset() == 0 &&
@@ -250,15 +251,18 @@ public final class GhidraVariableStorage {
                         suffix.add(instruction);
                     }
                 }
-                var second = RegisterCopyLifetime.prove(program, firstHandoff, end, suffix,
+                var next = RegisterCopyLifetime.prove(program, firstHandoff, end, suffix,
                     backup.bits(), parameter.getLength(), registers, monitor);
                 // A self-copy/widening can preserve the first fact while still
                 // being a physical write in the second proof. Require agreement
                 // on the handoff instead of joining two different boundaries.
-                if (second != null && second.start() == boundary) {
-                    result.add(new StorageInterval(boundary, second.end(), second.storage()));
-                    boundary = second.end();
+                if (next == null || next.start() != boundary || next.end() <= boundary) {
+                    break;
                 }
+                result.add(new StorageInterval(boundary, next.end(), next.storage()));
+                firstHandoff = boundary;
+                boundary = next.end();
+                backup = next;
             }
         }
         boolean spilled = false;
