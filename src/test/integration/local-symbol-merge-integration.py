@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise the installed ELF writer with observed aliases, independently of export extraction."""
+"""Compare automatic analyst-alias export with independently invoked installed ELF packaging."""
 import argparse
 import importlib.util
 import json
@@ -74,6 +74,14 @@ def main():
         write('protected-before.json', before)
         shutil.copytree(base / 'project', case / 'project')
         shutil.copy2(base / 'aliases.input', case / 'aliases.input')
+        # Export the unchanged saved program at the same final source path before
+        # adding labels. This is the independent DWARF/source baseline.
+        run('before-aliases', [ghidra / 'support/analyzeHeadless', case / 'project', 'Aliases',
+            '-process', 'aliases.input', '-noanalysis', '-readOnly', '-postScript',
+            'GhidraDwarfForge.java', '--packaged-natives', '--output=' + str(case / 'aliases.dbg')], timeout=240)
+        assert 'GhidraDwarfForge symbol export PASS' in (case / 'before-aliases.log').read_text()
+        shutil.copyfile(case / 'aliases.dbg', case / 'baseline.dbg')
+        shutil.copyfile(case / 'aliases.dbg.c', case / 'baseline.dbg.c')
         for mode in ('curate', 'observe'):
             run(mode, [ghidra / 'support/analyzeHeadless', case / 'project', 'Aliases',
                 '-process', 'aliases.input', '-noanalysis', *(['-readOnly'] if mode == 'observe' else []),
@@ -86,12 +94,12 @@ def main():
                 for line in log.splitlines() if 'GhidraDwarfForge report: {' in line]
             assert not report['failedFunctions'] and report['failure'] is None
             if mode == 'curate':
-                shutil.copyfile(case / 'aliases.dbg', case / 'baseline.dbg')
-                shutil.copyfile(case / 'aliases.dbg.c', case / 'baseline.dbg.c')
+                shutil.copyfile(case / 'aliases.dbg', case / 'automatic.dbg')
+                shutil.copyfile(case / 'aliases.dbg.c', case / 'automatic.dbg.c')
                 snapshot = {str(p.relative_to(case / 'project')): support.digest(p)
                     for p in (case / 'project').rglob('*') if p.is_file()}
                 write('project-before.json', snapshot)
-        assert (case / 'aliases.dbg').read_bytes() == (case / 'baseline.dbg').read_bytes()
+        assert (case / 'aliases.dbg').read_bytes() == (case / 'automatic.dbg').read_bytes()
         assert (case / 'aliases.dbg.c').read_bytes() == (case / 'baseline.dbg.c').read_bytes()
         labels = json.loads((case / 'curate.json').read_text())
         assert labels == json.loads((case / 'observe.json').read_text())
@@ -119,7 +127,7 @@ def main():
         _, _, sections = elf_support.elf(case / 'aliases.input')
         section_index = list(sections).index('.text')
         records = ['\t'.join([row['original'], str(row['entry']), str(row['end'] - row['entry']), str(section_index)])
-            for row in metadata['functions']]
+            for row in sorted(metadata['functions'], key=lambda row: (row['entry'], row['original']))]
         (case / 'symbols.tsv').write_text('\n'.join(records) + '\n')
         command = [java, '-cp', str(compilation) + os.pathsep + str(jar),
             'ghidradwarfforge.elf.LocalSymbolMergeProbe', case / 'aliases.input', case / 'baseline.dbg', case / 'symbols.tsv']
@@ -129,6 +137,7 @@ def main():
             assert 'java=21.' in text and 'curated-alias-writer=PASS' in text
             assert jar.resolve().as_uri() in text.replace('file:/', 'file:///')
         assert (case / 'aliases.dbg').read_bytes() == (case / 'repeat.dbg').read_bytes()
+        assert (case / 'aliases.dbg').read_bytes() == (case / 'automatic.dbg').read_bytes()
         if args.previous_jar:
             previous = case / 'previous.dbg'
             previous.write_bytes(b'previous output sentinel')
@@ -175,7 +184,8 @@ def main():
         assert changes <= {'Aliases.rep/idata/~index.bak', 'Aliases.rep/idata/~journal.bak'}
         write('result.json', {'status': 'PASS', 'target': args.target, 'role': role, 'symbols': symbols,
             'baseCase': str(base), 'jarSha256': support.digest(jar), 'projectBackupChanges': sorted(changes),
-            'previousComparison': bool(args.previous_jar), 'protectedUnchanged': True})
+            'previousComparison': bool(args.previous_jar), 'protectedUnchanged': True,
+            'automaticExportMatchesIndependentWriter': True})
         completed.append(str(case))
         print('local-symbol-merge-integration=PASS ' + str(case), flush=True)
     assert len(completed) == 6
