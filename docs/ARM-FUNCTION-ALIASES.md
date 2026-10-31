@@ -126,7 +126,7 @@ The ARM target lane now installs its C++ cross compiler and runs the same
 repository preparation/export/writer/sectionless/negative-control scripts.
 Hosted acceptance is still pending.
 
-**CONFIRMED unresolved boundary defect:** the installed sectionless inventory
+**HISTORICAL boundary defect, subsequently fixed locally below:** the installed sectionless inventory
 rejects a Thumb `STT_FUNC` at tagged value `0x4071`, size 16, inside a load ending
 at `0x4080`, although the code range is `0x4070..0x4080`. Its allocation check uses
 the mode bit as part of the byte address. The isolated actual-Java-21 reproduction
@@ -134,3 +134,60 @@ is retained under `build/arm-alias-review/pipeline/dynamic-boundary/`.
 Do not claim broad sectionless ARM dynamic-symbol support before a targeted fix,
 negative controls and runtime evidence. Contradictory mode/source evidence and
 final package/hosted review also remain outstanding.
+
+## Thumb dynamic-symbol load boundary
+
+**CONFIRMED locally; hosted acceptance pending:** `Arm32SymbolValues` isolates
+ARM EABI5 function-value interpretation. Only ELF32 ARM EABI5 `STT_FUNC` values
+lose bit zero for allocation containment; serialized original values retain it.
+This follows the instruction-address distinction in
+[AAELF32 Symbol Values](https://github.com/ARM-software/abi-aa/blob/main/aaelf32/aaelf32.rst#553symbol-values).
+Other machines, ELF classes, ABI versions and symbol types keep their address
+bits. Both byte orders pass model checks; this is not big-endian ARM runtime
+support. No DWARF addresses or native bindings change.
+
+The source-built `arm-symbol-boundary.S`/`.ld` reference places four Thumb bytes
+at `0x101c..0x1020`, exactly at the executable PT_LOAD end, with raw symbol value
+`0x101d`. A separate sectionless copy runs without an interpreter. Repeated
+reference builds are identical after an explicit `.file` directive removes the
+assembler's temporary object basename; the first failed comparison is retained.
+The old and fixed installed packages export the same saved curated program. The
+old package diagnoses an allocation crossing and omits `alternate_boundary`;
+the fixed package preserves both it and original `boundary`, with identical
+synthetic source. Both artifacts validate structurally, illustrating why debugger
+behavior is also required.
+
+The repository harness repeats fresh import and read-only export, checks the
+installed class origin, preserves input/module/program hashes except documented
+Ghidra backup rotation, and independently compares all original dynamic records.
+Six raw corruption controls reject changed bindings, missing records, boundary,
+undefined/unnamed aliases and an incorrect mode tag. GNU, LLVM and strict
+libdwarf checks pass. QEMU/GDB resolves original/curated/alias names, lists the
+synthetic source, reads argument 7, steps both two-byte Thumb instructions,
+observes result 12 and ARM interworking return, then exits zero. The reference
+run independently reproduces QEMU's exact vDSO string-table warning; the existing
+diagnostic checker admits only that corroborated warning. ARMv7 is an explicit
+fixture ISA, not inferred sectionless metadata.
+
+Validation at candidate JAR
+`d8881634f2e0baba581f07aa4f78fffefd14c43714e132cc178856c7c2fae5ff`:
+452 ARM alias policy checks, 1,730 sectionless dynamic checks and all 36 packaged
+suites on actual Java 21 pass. Fresh x86-64, AArch64, MIPS BE and MIPS LE
+sectionless exec imports, repeated exports, raw checks, validators and GDB pass.
+All five fixture reproducibility lanes, architecture guard and workflow lint pass.
+The >2 GiB standalone writer/validator/GDB test passes on Java 25; its first
+launcher attempt mixed Java 25 compilation with a Java 21 runtime and failed.
+That retained setup failure is not a Java 21 large-file pass.
+
+Run the CI regression with:
+
+```bash
+python3 src/test/integration/arm-symbol-boundary.py "$GHIDRA_INSTALL_DIR"
+```
+
+The harness requires the ARM cross compiler, QEMU, GDB and configured structural
+validators. Detailed evidence is under `build/arm-alias-review/boundary/`, including
+`pipeline-reviewed/run.rsk5yokn` and the old/fixed comparison. Acceptance receipt:
+`490f33b5ed076977ce7fa8d5990e5cebd9b34e92af0fa3cf4ea788a75bc8495e`.
+Final combined ARM validation, contradictory-mode evidence and hosted review
+remain pending; P1.7 is not complete.

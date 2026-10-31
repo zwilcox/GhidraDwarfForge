@@ -1,5 +1,18 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED Thumb dynamic-symbol boundary fix locally (2026-10-31):** an
+isolated ARM EABI5 policy uses the untagged function address for load containment
+while retaining the original ELF value. The previous build omits a valid alias;
+the fixed package preserves it and passes source-built sectionless ET_DYN
+GNU/LLVM/strict validation, raw inventory/corruption checks, deterministic exports
+and QEMU/GDB argument, instruction and return checks. 452 ARM alias checks,
+1,730 dynamic-symbol checks, 36 actual Java 21 suites and four fresh non-ARM
+sectionless runtime regressions pass. The standalone >2 GiB writer check and
+all five fixture reproducibility lanes pass. CI regression wiring is present;
+hosted acceptance and contradictory-mode integration remain pending. Receipt:
+`490f33b5ed076977ce7fa8d5990e5cebd9b34e92af0fa3cf4ea788a75bc8495e`.
+See `docs/ARM-FUNCTION-ALIASES.md`. P1.7/#66 remains open.
+
 **CONFIRMED ARM integration checkpoint locally (2026-10-31):** repository
 harnesses now cover 18 ordinary ARM/Thumb/mixed-mode automatic alias cases and
 nine sectionless cases, including indirect interworking calls. Automatic ordinary
@@ -7,10 +20,9 @@ outputs equal an isolated installed writer byte-for-byte. Twelve wrong-tag
 runtime controls reject; 36 actual Java 21 suites and all five fixture
 reproducibility lanes pass. CI wiring is present, not yet hosted-validated.
 Receipt: `2c794c6336ad054184237c56ce40281d207ae2d4afb09606cd83f2ec62bb1588`.
-A separate confirmed defect remains: sectionless Thumb dynamic-symbol allocation
-uses the tagged value and rejects a definition ending exactly at a load boundary.
-Fix that case, complete contradictory-mode evidence and final package/hosted
-validation before accepting the ARM change. P1.7 remains open.
+The boundary defect observed at this checkpoint is fixed locally as recorded
+above. Contradictory-mode evidence and final package/hosted validation remain
+required before accepting the ARM change. P1.7 remains open.
 
 **CONFIRMED bounded sectionless ARM/Thumb runtime checkpoint (2026-10-31):**
 Six fresh sectionless exec/PIE/rebased imports and repeated automatic alias exports

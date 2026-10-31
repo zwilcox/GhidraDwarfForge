@@ -26,6 +26,7 @@ public final class Arm32FunctionAliasSymbolsSmoke {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("forge-arm-alias-");
+        dynamicBoundaries(root);
         for (int mode : new int[] { 0, 1 }) {
             var cue = new ElfFunctionModeCue("primary", ENTRY, 16, ENTRY | mode, HASH);
             for (int type : new int[] { 2, 3 }) {
@@ -158,6 +159,63 @@ public final class Arm32FunctionAliasSymbolsSmoke {
             cues, () -> false, ignored -> { })), "nondeterministic alias mode policy");
         require(Arrays.equals(bytes, Files.readAllBytes(path)) && time.equals(Files.getLastModifiedTime(path)),
             "original ELF changed");
+    }
+
+    private static void dynamicBoundaries(Path root) throws Exception {
+        for (boolean wide : List.of(false, true)) {
+            for (ByteOrder order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
+                for (int machine : new int[] { 3, 40 }) {
+                    for (int abi : new int[] { 4, 5 }) {
+                        for (int kind : new int[] { 1, 2, 10 }) {
+                            byte[] data = SectionlessDynamicSymbolsSmoke.fixture(wide, order, 3, false, false);
+                            var bytes = ByteBuffer.wrap(data).order(order);
+                            bytes.putShort(18, (short) machine).putInt(wide ? 48 : 36, abi << 24);
+                            int at = 0xa00 + 2 * (wide ? 24 : 16);
+                            bytes.put(at + (wide ? 4 : 12), (byte) (0x10 | kind));
+                            if (wide) {
+                                bytes.putLong(at + 8, 0x4071).putLong(at + 16, 16);
+                            }
+                            else {
+                                bytes.putInt(at + 4, 0x4071).putInt(at + 8, 16);
+                            }
+                            Path input = root.resolve("dynamic-boundary");
+                            Files.write(input, data);
+                            var image = ElfImage.read(input);
+                            boolean tagged = !wide && machine == 40 && abi == 5 && kind == 2;
+                            require(Arm32SymbolValues.allocationAddress(image, kind, 0x4071) ==
+                                (tagged ? 0x4070 : 0x4071), "unrelated symbol/profile lost its low bit");
+                            require(Arm32SymbolValues.allocationAddress(image, kind, 0x4070) == 0x4070,
+                                "untagged address changed");
+                            if (!tagged) {
+                                try {
+                                    DynamicSymbolMirror.read(image, () -> false);
+                                    throw new AssertionError("out-of-allocation definition was rounded into its load");
+                                }
+                                catch (IllegalArgumentException expected) {
+                                    require(expected.getMessage().contains("crosses load"), "wrong boundary rejection");
+                                }
+                                continue;
+                            }
+                            var mirror = DynamicSymbolMirror.read(image, () -> false);
+                            var records = ByteBuffer.wrap(mirror.records()).order(order);
+                            require(records.getInt(2 * 16 + 4) == 0x4071 && records.getInt(2 * 16 + 8) == 16 &&
+                                Short.toUnsignedInt(records.getShort(2 * 16 + 14)) == 1,
+                                "tagged boundary definition lost its value, size or section");
+                            Path output = root.resolve("dynamic-boundary.dbg");
+                            new MatchedElfSidecarWriter().write(image, output,
+                                java.util.Map.of(".debug_info", new byte[] {1}),
+                                List.of(new ElfLocalFunctionSymbol("alternate", 0x4041, 16, 1)), () -> false);
+                            var written = ElfImage.read(output);
+                            var table = written.sections().stream().filter(section -> section.type == 2).findFirst().orElseThrow();
+                            var emitted = ByteBuffer.wrap(written.sectionData(table)).order(order);
+                            require(emitted.getInt(3 * 16 + 4) == 0x4071 && emitted.getInt(3 * 16 + 8) == 16,
+                                "writer removed original entry mode");
+                            require(Arrays.equals(Files.readAllBytes(input), data), "boundary export modified original");
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private static List<FunctionSymbol> functions(ElfFunctionAlias alias) {

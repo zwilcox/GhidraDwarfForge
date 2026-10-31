@@ -55,6 +55,7 @@ javac -d "$work/classes" \
     "$repository_dir/src/main/java/ghidradwarfforge/elf/ElfLocalFunctionSymbol.java" \
     "$repository_dir/src/main/java/ghidradwarfforge/elf/DynamicSymbolMirror.java" \
     "$repository_dir/src/main/java/ghidradwarfforge/elf/ElfLoadAllocations.java" \
+    "$repository_dir/src/main/java/ghidradwarfforge/elf/Arm32SymbolValues.java" \
     "$repository_dir/src/main/java/ghidradwarfforge/elf/MipsDynamicSymbols.java" \
     "$repository_dir/src/main/java/ghidradwarfforge/elf/SectionlessDynamicSymbols.java" \
     "$repository_dir/src/main/java/ghidradwarfforge/elf/SectionlessUnwind.java" \

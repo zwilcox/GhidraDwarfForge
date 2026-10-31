@@ -38,6 +38,8 @@ expected_sources=(
     README.md
     arm-dynamic-pcs.c
     arm-mixed-function-aliases.cpp
+    arm-symbol-boundary.S
+    arm-symbol-boundary.ld
     arm-thumb-after.c
     arm-thumb-caller.c
     arm-thumb-leaf.c

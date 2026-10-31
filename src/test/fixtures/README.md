@@ -459,3 +459,9 @@ changes; explicit FP32 must transfer `19.5, -3.25` and return `16.25`. Integer
 injection remains usable in both profiles. Compiler and optional previous-package
 controls retain the observed transport behavior without changing target registers.
 See `docs/MIPS-FLOATING-CALL-ABI.md` for the bounded ABI policy.
+
+The `arm-symbol-boundary.S` and `.ld` fixture places a four-byte Thumb function
+exactly at the end of an executable PT_LOAD. `arm-symbol-boundary.py` builds a
+reference twice, creates a separate sectionless copy, exports the curated alias
+and checks raw symbols, validators, determinism and QEMU/GDB execution. The
+original tagged function value must survive while allocation uses its code address.

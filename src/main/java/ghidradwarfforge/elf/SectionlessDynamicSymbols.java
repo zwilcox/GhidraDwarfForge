@@ -76,7 +76,8 @@ final class SectionlessDynamicSymbols {
                 require(section < 0xff00 || section == 0xffff, "unsupported PT_DYNAMIC reserved section index");
                 long value = image.is64Bit() ? rows.getLong(offset + 8) : Integer.toUnsignedLong(rows.getInt(offset + 4));
                 long size = image.is64Bit() ? rows.getLong(offset + 16) : Integer.toUnsignedLong(rows.getInt(offset + 8));
-                int allocation = reader.definition(value, size);
+                long address = Arm32SymbolValues.allocationAddress(image, info & 15, value);
+                int allocation = reader.definition(address, size);
                 if (allocation >= 0xff00) {
                     rows.putShort(field, (short) 0xffff);
                     indices.putInt(index * 4, allocation);
