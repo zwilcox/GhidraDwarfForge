@@ -16,13 +16,13 @@ public class PrepareFunctionEntryRanges extends GhidraScript {
     @Override
     protected void run() throws Exception {
         String[] arguments = getScriptArgs();
-        if (arguments.length != 9) {
+        if (arguments.length != 9 && !(arguments.length == 10 && arguments[9].equals("--aliases"))) {
             throw new IllegalArgumentException("expected seven body labels and two globals");
         }
         long delta = AddressNormalizer.rebaseDelta(currentProgram.getImageBase().getOffset(),
             GhidraImageBase.originalImageBase(currentProgram));
-        Address[] addresses = new Address[arguments.length];
-        for (int index = 0; index < arguments.length; index++) {
+        Address[] addresses = new Address[9];
+        for (int index = 0; index < addresses.length; index++) {
             addresses[index] = toAddr(Math.addExact(Long.decode(arguments[index]), delta));
         }
         AddressSet below = new AddressSet(addresses[0], addresses[1].subtract(1));
@@ -37,6 +37,19 @@ public class PrepareFunctionEntryRanges extends GhidraScript {
             currentProgram.getSymbolTable().createLabel(addresses[index],
                 index == 7 ? "below_sink" : "middle_sink", SourceType.USER_DEFINED).setPrimary();
         }
+        if (arguments.length == 10) {
+            var symbols = currentProgram.getSymbolTable();
+            for (int index : new int[] { 2, 5 }) {
+                var alias = symbols.createLabel(addresses[index], index == 2 ? "secondary_below" : "secondary_middle",
+                    SourceType.USER_DEFINED);
+                if (alias.isPrimary() || alias.getSource() != SourceType.USER_DEFINED) {
+                    throw new AssertionError("explicit secondary identity was not retained");
+                }
+            }
+            println("function-entry-alias-preparation=PASS");
+        }
+        println("function-entry-exporter-origin=" + ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.class
+            .getProtectionDomain().getCodeSource().getLocation());
         println("function-entry-preparation=PASS delta=0x" + Long.toHexString(delta));
     }
 

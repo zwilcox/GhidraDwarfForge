@@ -10,12 +10,24 @@ consumer=$(realpath "$2")
 producer=$(realpath "$3")
 repository_dir=$(realpath "$(dirname "$0")/../../..")
 sources="$repository_dir/src/test/fixtures"
-result_root="$repository_dir/build/test-results/function-entry-export"
+result_kind=function-entry-export
+alias_args=()
+if [[ "${FORGE_ENTRY_ALIASES:-0}" == 1 ]]; then
+    result_kind=function-entry-alias-export
+    alias_args=(--aliases)
+fi
+result_root="$repository_dir/build/test-results/$result_kind"
 mkdir -p "$result_root"
 result_dir=$(mktemp -d "$result_root/run.XXXXXXXX")
 projects=$(mktemp -d /tmp/forge-function-entry.XXXXXXXX)
 trap 'rm -rf -- "$projects"' EXIT
 echo "function-entry-results=$result_dir"
+module_jar="$ghidra_dir/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar"
+sha256sum "$module_jar" "$sources/function_entry_ranges.c" "$sources/function_entry_ranges.S" \
+    "$repository_dir/src/test/integration/function-entry-export.sh" \
+    "$repository_dir/src/test/integration/function-entry-gdb.py" \
+    "$repository_dir/src/test/integration/ghidra_scripts/PrepareFunctionEntryRanges.java" \
+    "$repository_dir/src/test/integration/function-entry-alias-check.py" > "$result_dir/protected.sha256"
 
 run_case() {
     local role=$1 name=$2 delta=$3
@@ -35,10 +47,19 @@ run_case() {
     "$ghidra_dir/support/analyzeHeadless" "$projects" "Entry_${role}_${name}" \
         -deleteProject -import "$input" -analysisTimeoutPerFile 120 \
         -scriptPath "$repository_dir/src/test/integration/ghidra_scripts" \
-        "${rebase[@]}" -postScript PrepareFunctionEntryRanges.java "${addresses[@]}" \
+        "${rebase[@]}" -postScript PrepareFunctionEntryRanges.java "${addresses[@]}" "${alias_args[@]}" \
         -postScript GhidraDwarfForge.java "--libdwarf=$consumer" \
         "--libdwarfp=$producer" "--output=$output" >"$case_dir/headless.txt" 2>&1
     grep -Fq 'function-entry-preparation=PASS' "$case_dir/headless.txt"
+    python3 - "$case_dir/headless.txt" "$module_jar" <<'PYORIGIN'
+from pathlib import Path
+import sys
+from urllib.parse import unquote, urlsplit
+log, jar = map(Path, sys.argv[1:])
+origin, = [line.split('function-entry-exporter-origin=', 1)[1].split()[0]
+    for line in log.read_text().splitlines() if 'function-entry-exporter-origin=' in line]
+assert Path(unquote(urlsplit(origin).path)).resolve() == jar.resolve()
+PYORIGIN
     grep -Fq 'GhidraDwarfForge symbol export PASS' "$case_dir/headless.txt"
     if ((delta != 0)); then
         grep -E "Rebased fixture image from .* by $delta " "$case_dir/headless.txt"
@@ -67,7 +88,12 @@ run_case() {
     done
     diff <(readelf -n "$input" | awk '/Build ID:/ {print $3}') \
         <(awk '/Build ID:/ {print $3}' "$case_dir/notes.txt")
-    FORGE_ENTRY_LABELS="$labels" timeout 30s gdb-multiarch -q -nx -batch \
+    if [[ "${FORGE_ENTRY_ALIASES:-0}" == 1 ]]; then
+        grep -Fq 'function-entry-alias-preparation=PASS' "$case_dir/headless.txt"
+        python3 "$repository_dir/src/test/integration/function-entry-alias-check.py" \
+            "$input" "$output" "$labels" > "$case_dir/alias-symbols.json"
+    fi
+    FORGE_ENTRY_LABELS="$labels" FORGE_ENTRY_ALIASES="${FORGE_ENTRY_ALIASES:-0}" timeout 30s gdb-multiarch -q -nx -batch \
         -ex 'set debuginfod enabled off' -ex 'set auto-solib-add off' \
         -ex "file \"$input\"" -ex "symbol-file \"$output\"" \
         -x "$repository_dir/src/test/integration/function-entry-gdb.py" \
@@ -120,4 +146,5 @@ for role in exec pie; do
     cmp "$result_dir/$role/baseline/entry.dbg" "$result_dir/$role/repeat/entry.dbg"
     cmp "$result_dir/$role/baseline/entry.dbg.c" "$result_dir/$role/repeat/entry.dbg.c"
 done
-echo 'function-entry-export=PASS'
+sha256sum --check "$result_dir/protected.sha256" > "$result_dir/protected-check.log"
+echo "$result_kind=PASS"

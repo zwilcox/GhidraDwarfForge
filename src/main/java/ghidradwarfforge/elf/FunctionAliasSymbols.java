@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 
 import ghidradwarfforge.elf.ElfImage.Section;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
+import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionRange;
 
 /** Bounds, collisions and original-byte binding for direct-address ELF aliases. */
 public final class FunctionAliasSymbols {
@@ -46,7 +47,13 @@ public final class FunctionAliasSymbols {
             checkCancelled(cancelled);
             ranges += function.ranges().size();
         }
-        if (aliases.size() > 65536 || (long) aliases.size() * (image.sections().size() + ranges) > MAX_NAMES) {
+        long evidenceRanges = 0;
+        for (ElfFunctionAlias alias : aliases) {
+            checkCancelled(cancelled);
+            evidenceRanges += alias.ranges().size();
+        }
+        if (aliases.size() > 65536 || evidenceRanges > MAX_NAMES ||
+                evidenceRanges * (image.sections().size() + ranges) > MAX_NAMES) {
             diagnostic.accept("Omitted function aliases: allocation/ownership comparison budget exceeded");
             return List.of();
         }
@@ -85,7 +92,7 @@ public final class FunctionAliasSymbols {
         List<ElfFunctionAlias> ordered = new ArrayList<>(aliases);
         ordered.sort(Comparator.comparingLong(ElfFunctionAlias::address).thenComparing(ElfFunctionAlias::name));
         List<ElfLocalFunctionSymbol> result = new ArrayList<>();
-        Map<Long, String> hashes = new HashMap<>();
+        Map<FunctionRange, String> hashes = new HashMap<>();
         long codeBytes = 0;
         try (FileChannel input = FileChannel.open(image.sourcePath(), StandardOpenOption.READ)) {
             image.requireUnchanged(input);
@@ -98,44 +105,55 @@ public final class FunctionAliasSymbols {
                         "name already exists in original ELF symbol tables");
                     FunctionSymbol owner = owners.get(alias.address());
                     require(owner != null && !ambiguousEntries.contains(alias.address()) &&
-                        owner.qualifiedDisplayName().equals(alias.owner()) && owner.contiguous() &&
-                        owner.ranges().get(0).address() == alias.address() &&
-                        owner.ranges().get(0).size() == alias.size(), "primary definition disagrees with alias evidence");
-                    for (FunctionSymbol other : functions) {
+                        owner.qualifiedDisplayName().equals(alias.owner()) &&
+                        owner.ranges().size() == alias.ranges().size(), "primary definition disagrees with alias evidence");
+                    Section entrySection = null;
+                    for (int index = 0; index < alias.ranges().size(); index++) {
                         checkCancelled(cancelled);
-                        if (other == owner) {
-                            continue;
-                        }
-                        for (var range : other.ranges()) {
+                        var evidence = alias.ranges().get(index);
+                        var range = owner.ranges().get(index);
+                        require(range.address() == evidence.address() && range.size() == evidence.size(),
+                            "primary definition disagrees with alias evidence");
+                        for (FunctionSymbol other : functions) {
                             checkCancelled(cancelled);
-                            require(!intersects(alias.address(), alias.size(), range.address(), range.size()),
-                                "overlapping recovered definitions");
+                            if (other == owner) {
+                                continue;
+                            }
+                            for (var otherRange : other.ranges()) {
+                                checkCancelled(cancelled);
+                                require(!intersects(range.address(), range.size(), otherRange.address(), otherRange.size()),
+                                    "overlapping recovered definitions");
+                            }
+                        }
+                        Section selected = null;
+                        for (Section section : image.sections()) {
+                            checkCancelled(cancelled);
+                            if ((section.flags & 2) != 0 && section.size > 0 &&
+                                    intersects(range.address(), range.size(), section.address, section.size)) {
+                                require(selected == null, "overlapping original allocations");
+                                selected = section;
+                            }
+                        }
+                        require(selected != null && selected.type == 1 && (selected.flags & 6) == 6 &&
+                            range.address() >= selected.address && range.address() - selected.address <= selected.size &&
+                            range.size() <= selected.size - (range.address() - selected.address),
+                            "body has no unique file-backed executable section");
+                        String hash = hashes.get(range);
+                        if (hash == null) {
+                            require(range.size() <= 256L * 1024 * 1024 - codeBytes,
+                                "original-code comparison budget exceeded");
+                            codeBytes += range.size();
+                            hash = hash(input, Math.addExact(selected.offset, range.address() - selected.address),
+                                range.size(), cancelled);
+                            hashes.put(range, hash);
+                        }
+                        require(hash.equals(evidence.codeSha256()), "program code differs from original ELF");
+                        if (range.contains(alias.address())) {
+                            entrySection = selected;
                         }
                     }
-                    Section selected = null;
-                    for (Section section : image.sections()) {
-                        checkCancelled(cancelled);
-                        if ((section.flags & 2) != 0 && section.size > 0 &&
-                                intersects(alias.address(), alias.size(), section.address, section.size)) {
-                            require(selected == null, "overlapping original allocations");
-                            selected = section;
-                        }
-                    }
-                    require(selected != null && selected.type == 1 && (selected.flags & 6) == 6 &&
-                        alias.address() >= selected.address && alias.address() - selected.address <= selected.size &&
-                        alias.size() <= selected.size - (alias.address() - selected.address),
-                        "body has no unique file-backed executable section");
-                    String hash = hashes.get(alias.address());
-                    if (hash == null) {
-                        require(alias.size() <= 256L * 1024 * 1024 - codeBytes,
-                            "original-code comparison budget exceeded");
-                        codeBytes += alias.size();
-                        hash = hash(input, Math.addExact(selected.offset, alias.address() - selected.address),
-                            alias.size(), cancelled);
-                        hashes.put(alias.address(), hash);
-                    }
-                    require(hash.equals(alias.codeSha256()), "program code differs from original ELF");
-                    result.add(new ElfLocalFunctionSymbol(alias.name(), alias.address(), alias.size(), selected.originalIndex));
+                    require(entrySection != null, "primary definition has no entry range");
+                    result.add(new ElfLocalFunctionSymbol(alias.name(), alias.address(), alias.size(), entrySection.originalIndex));
                 }
                 catch (IllegalArgumentException | ArithmeticException unsupported) {
                     diagnostic.accept("Omitted function alias " + alias.name() + ": " + unsupported.getMessage());

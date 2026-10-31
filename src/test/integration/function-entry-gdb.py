@@ -49,7 +49,14 @@ for expression in ("below_sink", "middle_sink"):
     gdb.execute("print/a &" + expression)
     gdb.execute("print &" + expression)
 
-for name in ["recovered_below", "recovered_middle"]:
+selected_names = ["recovered_below", "recovered_middle"]
+if os.environ.get("FORGE_ENTRY_ALIASES") == "1":
+    for name, label in [("secondary_below", "below_entry"), ("secondary_middle", "middle_entry")]:
+        assert value("&" + name) == labels[label]
+        assert "int (int, int)" in gdb.execute("ptype " + name, to_string=True)
+        assert gdb.decode_line(name)[1][0].symtab.filename.endswith("entry.dbg.c")
+    selected_names = ["secondary_below", "secondary_middle"]
+for name in selected_names:
     text = gdb.execute("ptype " + name, to_string=True)
     assert "int (int, int)" in text, text
     gdb.execute("list " + name)

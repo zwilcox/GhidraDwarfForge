@@ -86,7 +86,8 @@ public final class GhidraFunctionAliases {
         candidates.sort(Comparator.comparing((Symbol s) -> s.getName(true))
             .thenComparing(Symbol::getAddress));
         List<ElfFunctionAlias> result = new ArrayList<>();
-        Map<Long, String> hashes = new HashMap<>();
+        Map<Long, List<ElfFunctionAlias.CodeRange>> bodies = new HashMap<>();
+        long comparedRanges = 0;
         long codeBytes = 0;
         for (Symbol symbol : candidates) {
             monitor.checkCancelled();
@@ -108,18 +109,32 @@ public final class GhidraFunctionAliases {
                 require(function != null && !function.isExternal() && function.getName().equals(owner.name()),
                     "primary definition changed");
                 var body = function.getBody();
-                require(owner.contiguous() && owner.ranges().get(0).address() == address &&
-                    body.getNumAddressRanges() == 1 && body.getMinAddress().equals(entry) &&
-                    body.getNumAddresses() == owner.ranges().get(0).size(), "requires a contiguous entry-first body");
-                long size = owner.ranges().get(0).size();
-                String hash = hashes.get(address);
-                if (hash == null) {
-                    require(size <= MAX_CODE_BYTES - codeBytes, "original-code comparison budget exceeded");
-                    codeBytes += size;
-                    hash = hash(program, entry, size, monitor);
-                    hashes.put(address, hash);
+                require(body.getNumAddressRanges() == owner.ranges().size() && owner.ranges().size() <= 65536,
+                    "primary body disagrees with exported ranges");
+                var actualRanges = body.getAddressRanges();
+                for (var range : owner.ranges()) {
+                    monitor.checkCancelled();
+                    require(++comparedRanges <= MAX_NAME_BYTES, "body comparison budget exceeded");
+                    var actual = actualRanges.next();
+                    require(actual.getMinAddress().getAddressSpace().equals(entry.getAddressSpace()) &&
+                        AddressNormalizer.toElfAddress(actual.getMinAddress().getOffset(), rebaseDelta) == range.address() &&
+                        actual.getLength() == range.size(), "primary body disagrees with exported ranges");
                 }
-                result.add(new ElfFunctionAlias(name, owner.qualifiedDisplayName(), address, size, hash));
+                List<ElfFunctionAlias.CodeRange> evidence = bodies.get(address);
+                if (evidence == null) {
+                    var collected = new ArrayList<ElfFunctionAlias.CodeRange>();
+                    for (var range : owner.ranges()) {
+                        monitor.checkCancelled();
+                        require(range.size() <= MAX_CODE_BYTES - codeBytes, "original-code comparison budget exceeded");
+                        codeBytes += range.size();
+                        Address start = entry.addNoWrap(Math.subtractExact(range.address(), address));
+                        collected.add(new ElfFunctionAlias.CodeRange(range.address(), range.size(),
+                            hash(program, start, range.size(), monitor)));
+                    }
+                    evidence = List.copyOf(collected);
+                    bodies.put(address, evidence);
+                }
+                result.add(new ElfFunctionAlias(name, owner.qualifiedDisplayName(), address, evidence));
             }
             catch (IllegalArgumentException | ArithmeticException | MemoryAccessException |
                     AddressOverflowException failure) {

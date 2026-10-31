@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import ghidradwarfforge.nativeapi.DwarfTarget;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
+import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionRange;
 
 /** Original-byte and name-collision proof, independent of Ghidra/native production. */
 public final class FunctionAliasSymbolsSmoke {
@@ -27,6 +28,7 @@ public final class FunctionAliasSymbolsSmoke {
         for (boolean wide : List.of(false, true)) {
             for (ByteOrder order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
                 byte[] bytes = LocalSymbolMergeSmoke.fixture(wide, order, false, false);
+                rangeCases(root, bytes);
                 check(root, bytes, List.of(ALIAS), List.of(OWNER), null);
                 check(root, bytes, List.of(ALIAS, ALIAS), List.of(OWNER), "conflicts");
                 check(root, bytes, List.of(alias("old_global", HASH)), List.of(OWNER), "already exists");
@@ -143,6 +145,75 @@ public final class FunctionAliasSymbolsSmoke {
             }
         }
         System.out.println("function-alias-symbols-smoke=PASS checks=" + checks);
+    }
+
+    private static void rangeCases(Path root, byte[] bytes) throws Exception {
+        var lower = new ElfFunctionAlias.CodeRange(0x1010, 8, hash(new byte[8]));
+        var upper = new ElfFunctionAlias.CodeRange(0x1060, 16, HASH);
+        var alias = new ElfFunctionAlias("split_alias", "split", 0x1060, List.of(lower, upper));
+        var owner = new FunctionSymbol("split", 0x1060,
+            List.of(new FunctionRange(0x1010, 8), new FunctionRange(0x1060, 16)));
+        rangeCheck(root, bytes, alias, List.of(owner), null);
+        rangeCheck(root, bytes, alias, List.of(owner, new FunctionSymbol("gap_owner", 0x1030, 8)), null);
+        rangeCheck(root, bytes, new ElfFunctionAlias("split_alias", "split", 0x1060,
+            List.of(new ElfFunctionAlias.CodeRange(0x1010, 8, "0".repeat(64)), upper)), List.of(owner), "code differs");
+        rangeCheck(root, bytes, new ElfFunctionAlias("split_alias", "split", 0x1060,
+            List.of(upper)), List.of(owner), "primary definition");
+        rangeCheck(root, bytes, alias, List.of(owner, new FunctionSymbol("overlap", 0x1014, 4)), "overlapping recovered");
+        byte[] changed = bytes.clone();
+        changed[0x110] = 1;
+        rangeCheck(root, changed, alias, List.of(owner), "code differs");
+        byte[] gap = bytes.clone();
+        gap[0x130] = 1;
+        rangeCheck(root, gap, alias, List.of(owner), null);
+        var middle = new ElfFunctionAlias("middle_alias", "middle", 0x1050,
+            List.of(new ElfFunctionAlias.CodeRange(0x1040, 32, hash(new byte[32]))));
+        rangeCheck(root, bytes, middle, List.of(new FunctionSymbol("middle", 0x1050,
+            List.of(new FunctionRange(0x1040, 32)))), null);
+        for (var bad : List.of(List.of(upper, lower), List.of(lower, lower, upper), List.of(lower))) {
+            try {
+                new ElfFunctionAlias("invalid", "split", 0x1060, bad);
+                throw new AssertionError("invalid alias ranges accepted");
+            }
+            catch (IllegalArgumentException expected) {
+                checks++;
+            }
+        }
+    }
+
+    private static void rangeCheck(Path root, byte[] bytes, ElfFunctionAlias alias,
+            List<FunctionSymbol> owners, String omitted) throws Exception {
+        Path input = Files.createTempFile(root, "range-", ".elf");
+        Files.write(input, bytes);
+        var image = ElfImage.read(input);
+        var diagnostics = new ArrayList<String>();
+        var planned = FunctionAliasSymbols.plan(image, List.of(alias), owners, List.of(), () -> false, diagnostics::add);
+        if (omitted == null) {
+            require(planned.equals(List.of(new ElfLocalFunctionSymbol(alias.name(), alias.address(), 16, 1))) &&
+                diagnostics.isEmpty(), "range plan invented coverage: " + planned + diagnostics);
+            Path output = Files.createTempFile(root, "range-sidecar-", ".dbg");
+            new MatchedElfSidecarWriter().write(image, output, java.util.Map.of(".debug_info", new byte[] { 1 }),
+                planned, () -> false);
+            require(Files.size(output) > 0 && Arrays.equals(bytes, Files.readAllBytes(input)), "range write changed input");
+            AtomicInteger total = new AtomicInteger();
+            FunctionAliasSymbols.plan(image, List.of(alias), owners, List.of(),
+                () -> { total.incrementAndGet(); return false; }, ignored -> { });
+            for (int limit : List.of(total.get() / 2, total.get())) {
+                AtomicInteger counter = new AtomicInteger();
+                try {
+                    FunctionAliasSymbols.plan(image, List.of(alias), owners, List.of(),
+                        () -> counter.incrementAndGet() >= limit, ignored -> { });
+                    throw new AssertionError("range cancellation ignored");
+                }
+                catch (CancellationException expected) {
+                    checks++;
+                }
+            }
+        }
+        else {
+            require(planned.isEmpty() && diagnostics.toString().contains(omitted),
+                "range omission lost: " + planned + diagnostics);
+        }
     }
 
     private static ElfFunctionAlias alias(String name, String hash) {

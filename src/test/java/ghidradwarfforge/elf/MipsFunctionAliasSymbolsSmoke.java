@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import ghidradwarfforge.nativeapi.DwarfTarget;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
+import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionRange;
 
 /** Independent ELF32 carriers and contradictory instruction-mode controls. */
 public final class MipsFunctionAliasSymbolsSmoke {
@@ -64,6 +65,16 @@ public final class MipsFunctionAliasSymbolsSmoke {
                 }
                 check(root, bytes, new ElfFunctionAlias("alternate", "primary", 0x1041, 16, hash), "word aligned");
                 check(root, bytes, new ElfFunctionAlias("alternate", "primary", 0x1040, 15, hash), "word aligned");
+                for (long start : new long[] { 0x1010, 0x1011 }) {
+                    for (long size : new long[] { 16, 15 }) {
+                        String lowerHash = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                            .digest(new byte[(int) size]));
+                        var split = new ElfFunctionAlias("alternate", "primary", 0x1040, List.of(
+                            new ElfFunctionAlias.CodeRange(start, size, lowerHash),
+                            new ElfFunctionAlias.CodeRange(0x1040, 16, hash)));
+                        check(root, bytes, split, start == 0x1010 && size == 16 ? null : "word aligned");
+                    }
+                }
                 Path path = root.resolve("cancel.elf");
                 Files.write(path, bytes);
                 var image = ElfImage.read(path);
@@ -105,7 +116,8 @@ public final class MipsFunctionAliasSymbolsSmoke {
         var time = Files.getLastModifiedTime(path);
         var image = ElfImage.read(path);
         var diagnostics = new ArrayList<String>();
-        var functions = List.of(new FunctionSymbol("primary", 0x1040, 16));
+        var functions = List.of(new FunctionSymbol(alias.owner(), alias.address(), alias.ranges().stream()
+            .map(range -> new FunctionRange(range.address(), range.size())).toList()));
         var actual = DwarfTarget.fromElf(image).planFunctionAliases(image, List.of(alias),
             functions, List.of(), () -> false, diagnostics::add);
         if (omission == null) {

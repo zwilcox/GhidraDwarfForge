@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally; acceptance incomplete:** range-aware analyst aliases retain
+split/interior-entry primary bodies. Per-range original-code/ownership checks
+pass 373 planner and 228 six-language extraction checks; 32 installed actual Java
+21 suites and six x86-64 exec/PIE/rebase/repeat runtime cases pass. The prior
+package omits those aliases. Protected reruns, independent raw review, twelve
+base/twelve alias cases across four targets, and failure/cancellation checks pass.
+Local receipt: `61827be29e754148b01698630f7405b1115240e8fcfdfe5abe46b076115c4616`.
+Final package and hosted acceptance remain pending. See `docs/DISCONTIGUOUS-FUNCTION-ALIASES.md`.
+P1.7/#66 remains open.
+
 **CONFIRMED failed hosted gate; corrected locally:** PR85 run `41170001875`
 fails the standalone large-ELF source compile because its dependency list omitted
 `DynamicSymbolMirror`, and the ARM/Thumb oracle because it still expected an
