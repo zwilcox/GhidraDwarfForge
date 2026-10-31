@@ -1,5 +1,13 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED second failed gate and local correction (2026-10-31):** PR89
+run `41179501376` rejects the new `i386-alias-entry.cpp` because it was missing
+from the explicit fixture source inventory. The reviewed entry is now included;
+the inventory check remains strict. All five fixture reproducibility lanes pass
+with byte-identical rebuilds (including a private ARM cross compiler now located
+outside the normal PATH). Production code and the tested JAR are unchanged.
+Receipt: `cebe59b1e8f522ed79023627961e0f04855e6d83c90cc8f25bdf32a7a732f905`. Fresh hosted acceptance remains pending; P1.7 stays open.
+
 **CONFIRMED failed hosted gate and local correction (2026-10-31):** PR89
 run `41178632812` stops before compilation because the architecture scan matches
 the generic unwind local variable `pc`. Renaming it to `initialLocation` passes

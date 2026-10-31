@@ -58,6 +58,7 @@ expected_sources=(
     function-static-scopes.c
     function_entry_ranges.S
     function_entry_ranges.c
+    i386-alias-entry.cpp
     i386-profile.c
     later-register-local.c
     minimal.c

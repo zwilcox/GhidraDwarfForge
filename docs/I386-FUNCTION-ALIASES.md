@@ -69,3 +69,13 @@ runtime-tested candidate; only the local-variable debug name differs. The 896
 unwind checks, 34 actual Java 21 suites and a fresh sectionless i386 rebased-PIE
 export/validator/GDB case pass. Correction receipt: `9b988bde18f43a0162fe45c25b9ae31b430b987a4d6bde09aafc68015337e7ec`.
 The failed run is retained; fresh hosted acceptance remains pending.
+
+## Fixture inventory gate correction
+
+**CONFIRMED second failed gate and local correction (2026-10-31):** PR89
+run `41179501376` rejects the new `i386-alias-entry.cpp` because it was missing
+from the explicit fixture source inventory. The reviewed entry is now included;
+the inventory check remains strict. All five fixture reproducibility lanes pass
+with byte-identical rebuilds (including a private ARM cross compiler now located
+outside the normal PATH). Production code and the tested JAR are unchanged.
+Receipt: `cebe59b1e8f522ed79023627961e0f04855e6d83c90cc8f25bdf32a7a732f905`. Fresh hosted acceptance remains pending; P1.7 stays open.
