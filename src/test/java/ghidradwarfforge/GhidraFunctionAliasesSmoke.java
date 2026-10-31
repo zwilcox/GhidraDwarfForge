@@ -65,6 +65,10 @@ public final class GhidraFunctionAliasesSmoke {
                     body.add(space.getAddress(0x400240), space.getAddress(0x40024f));
                     split.setBody(body);
                     symbols.createLabel(split.getEntryPoint(), "split_alias", namespace, SourceType.USER_DEFINED);
+                    var middleEntry = space.getAddress(0x400310);
+                    Function middle = program.getFunctionManager().createFunction("middle", middleEntry,
+                        new AddressSet(space.getAddress(0x400300), space.getAddress(0x40031f)), SourceType.USER_DEFINED);
+                    symbols.createLabel(middle.getEntryPoint(), "middle_alias", namespace, SourceType.USER_DEFINED);
                 }
                 finally {
                     program.endTransaction(transaction, true);
@@ -108,21 +112,32 @@ public final class GhidraFunctionAliasesSmoke {
         var functions = GhidraFunctionSymbols.extract(program, TaskMonitor.DUMMY, ignored -> { }, delta);
         var diagnostics = new ArrayList<String>();
         var aliases = GhidraFunctionAliases.extract(program, functions, delta, TaskMonitor.DUMMY, diagnostics::add);
-        require(aliases.size() == 2, "expected two aliases: " + aliases + diagnostics);
+        require(aliases.size() == 4, "expected four aliases: " + aliases + diagnostics);
         require(aliases.stream().map(a -> a.name()).toList().equals(
-            List.of("recovered::Class::class_alias", "recovered::alternate")), "qualified stable ordering lost");
+            List.of("recovered::Class::class_alias", "recovered::alternate", "recovered::middle_alias", "recovered::split_alias")), "qualified stable ordering lost");
         byte[] code = new byte[16];
         Arrays.fill(code, (byte) 0x37);
         String hash = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(code));
-        for (var alias : aliases) {
+        for (var alias : aliases.subList(0, 2)) {
             require(alias.owner().equals("recovered::primary") && alias.address() == 0x3f0000 &&
-                alias.size() == 16 && alias.codeSha256().equals(hash), "owner/extent/hash or rebase changed");
+                alias.size() == 16 && alias.ranges().size() == 1 && alias.ranges().getFirst().codeSha256().equals(hash), "owner/extent/hash or rebase changed");
         }
+        var split = aliases.get(3);
+        require(split.address() == 0x3f0200 && split.size() == 16 && split.ranges().size() == 2 &&
+            split.ranges().get(0).address() == 0x3f0200 && split.ranges().get(1).address() == 0x3f0240 &&
+            split.ranges().stream().allMatch(r -> r.size() == 16 && r.codeSha256().equals(hash)),
+            "split body lost normalized evidence or included the gap");
+        var middle = aliases.get(2);
+        byte[] whole = new byte[32];
+        Arrays.fill(whole, (byte) 0x37);
+        require(middle.address() == 0x3f0310 && middle.size() == 16 && middle.ranges().size() == 1 &&
+            middle.ranges().getFirst().address() == 0x3f0300 && middle.ranges().getFirst().size() == 32 &&
+            middle.ranges().getFirst().codeSha256().equals(HexFormat.of().formatHex(
+                MessageDigest.getInstance("SHA-256").digest(whole))), "interior entry lost lower-body evidence");
         require(diagnostics.stream().filter(s -> s.contains("ambiguous current")).count() == 4,
             "duplicate/literal-path collision was not omitted: " + diagnostics);
         require(diagnostics.toString().contains("unsupported namespace ownership") &&
-            diagnostics.toString().contains("not a unique exported function entry") &&
-            diagnostics.toString().contains("contiguous entry-first"), "missing omission: " + diagnostics);
+            diagnostics.toString().contains("not a unique exported function entry"), "missing omission: " + diagnostics);
         require(diagnostics.stream().noneMatch(s -> s.contains("imported") || s.contains("inferred")),
             "non-analyst labels treated as aliases");
         require(aliases.equals(GhidraFunctionAliases.extract(program, functions, delta, TaskMonitor.DUMMY,
@@ -143,6 +158,18 @@ public final class GhidraFunctionAliasesSmoke {
         var diagnostics = new ArrayList<String>();
         require(GhidraFunctionAliases.extract(program, List.of(), 0, TaskMonitor.DUMMY,
             diagnostics::add).isEmpty(), "aliases invented without exported owner");
+        var stale = new ArrayList<>(functions);
+        for (int index = 0; index < stale.size(); index++) {
+            var function = stale.get(index);
+            if (function.name().equals("split")) {
+                stale.set(index, new ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol(
+                    function.name(), function.address(), List.of(function.ranges().getFirst()), function.namespacePath()));
+            }
+        }
+        diagnostics.clear();
+        require(GhidraFunctionAliases.extract(program, stale, 0, TaskMonitor.DUMMY, diagnostics::add).stream()
+            .noneMatch(a -> a.owner().equals("split")) && diagnostics.toString().contains("body disagrees"),
+            "stale partial body was accepted");
         int transaction = program.startTransaction("negative alias controls");
         try {
             program.getMemory().getBlock("code").setExecute(false);
@@ -156,7 +183,8 @@ public final class GhidraFunctionAliasesSmoke {
             primary.setName("renamed", SourceType.USER_DEFINED);
             diagnostics.clear();
             require(GhidraFunctionAliases.extract(program, functions, 0, TaskMonitor.DUMMY,
-                diagnostics::add).isEmpty() && diagnostics.toString().contains("definition changed"),
+                diagnostics::add).stream().noneMatch(a -> a.owner().equals("recovered::primary")) &&
+                diagnostics.toString().contains("definition changed"),
                 "stale owner accepted");
         }
         finally {

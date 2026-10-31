@@ -26,7 +26,12 @@ public final class MipsFunctionAliasSymbols {
         var aligned = new java.util.ArrayList<ElfFunctionAlias>();
         for (ElfFunctionAlias alias : aliases) {
             checkCancelled(cancelled);
-            if ((alias.address() & 3) != 0 || (alias.size() & 3) != 0) {
+            boolean alignedRanges = true;
+            for (var range : alias.ranges()) {
+                checkCancelled(cancelled);
+                alignedRanges &= (range.address() & 3) == 0 && (range.size() & 3) == 0;
+            }
+            if ((alias.address() & 3) != 0 || !alignedRanges) {
                 diagnostic.accept("Omitted function alias " + alias.name() +
                     ": classic MIPS body is not word aligned");
             }

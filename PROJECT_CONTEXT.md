@@ -1,5 +1,26 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED integration (2026-10-31):** PR86 final main-based head
+`284da1c70b7aa936ca11069827fcb3f1e986044e` passes all twelve jobs in
+`41182122046`, exact package/32 actual Java 21 suites, raw target/ABI review and
+both actual GUI console reviews. It merged normally as `ec15669`. Receipt:
+`e8ab4c28b78df565632069e7a032396abe0cf5e2994ae684e2da604f73c7671a`.
+Its separate main push `41185820092` is running. The preceding main85 push
+`41182072765` is independently accepted, including both GUI reviews; receipt
+`c7aa6783390a1888b60d8906cd130772aa079b75fb9612e4ae8cb12262118bf8`.
+PR87 is now based on main; this merge resolves handoff documentation only.
+Fresh final-head validation is required before integration. P1.7 remains open.
+
+**CONFIRMED locally; acceptance incomplete:** range-aware analyst aliases retain
+split/interior-entry primary bodies. Per-range original-code/ownership checks
+pass 373 planner and 228 six-language extraction checks; 32 installed actual Java
+21 suites and six x86-64 exec/PIE/rebase/repeat runtime cases pass. The prior
+package omits those aliases. Protected reruns, independent raw review, twelve
+base/twelve alias cases across four targets, and failure/cancellation checks pass.
+Local receipt: `61827be29e754148b01698630f7405b1115240e8fcfdfe5abe46b076115c4616`.
+Final package and hosted acceptance remain pending. See `docs/DISCONTIGUOUS-FUNCTION-ALIASES.md`.
+P1.7/#66 remains open.
+
 **CONFIRMED integration (2026-10-31):** PR85 final main-based head
 `bd522b85d5e7d375479c4c4ec54665c22c2406cb` passes all twelve jobs in
 `41178871807`, exact package/raw review and both GUI console reviews, and

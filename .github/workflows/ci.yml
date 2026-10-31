@@ -1324,6 +1324,16 @@ jobs:
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2"
 
+      - name: Analyst aliases retain discontiguous and below-entry function bodies
+        if: matrix.target == 'x86_64'
+        env:
+          FORGE_ENTRY_ALIASES: 1
+        run: |
+          src/test/integration/function-entry-export.sh \
+            "$GHIDRA_INSTALL_DIR" \
+            "$PWD/native-integration/libdwarf.so.2.3.2" \
+            "$PWD/native-integration/libdwarfp.so.2.3.2"
+
       - name: Existing compiler DWARF replacement
         if: matrix.target == 'x86_64'
         run: |
