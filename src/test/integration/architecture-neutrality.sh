@@ -16,6 +16,8 @@ audited = {
     "ghidradwarfforge/locations/TargetRegisterMap.java",
     "ghidradwarfforge/GhidraArm32FunctionModes.java",
     "ghidradwarfforge/elf/Arm32ModeSymbols.java",
+    "ghidradwarfforge/elf/Arm32FunctionAliasSymbols.java",
+    "ghidradwarfforge/elf/Arm32SymbolValues.java",
     "ghidradwarfforge/elf/MipsAbiFlags.java",
     "ghidradwarfforge/elf/MipsFunctionAliasSymbols.java",
     "ghidradwarfforge/nativeapi/PackagedNativeLibraries.java",

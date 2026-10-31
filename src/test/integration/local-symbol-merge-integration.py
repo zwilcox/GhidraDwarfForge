@@ -23,7 +23,7 @@ spec.loader.exec_module(elf_support)
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
-    parser.add_argument('target', choices=('x86_64', 'aarch64', 'mips32be', 'mips32le'))
+    parser.add_argument('target', choices=('x86_64', 'i386', 'aarch64', 'mips32be', 'mips32le'))
     parser.add_argument('--symbols', choices=('both', 'retained', 'stripped'), default='both')
     parser.add_argument('--base-root', type=Path,
         default=repository / 'build/test-results/retained-function-aliases')

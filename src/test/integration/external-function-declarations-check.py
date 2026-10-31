@@ -77,7 +77,12 @@ for row in declarations:
         'DW_AT_location', 'DW_AT_frame_base', 'DW_AT_decl_file', 'DW_AT_decl_line', 'DW_AT_linkage_name'})
     for child in facts.children(dies, dies.index(row)):
         if child['tag'] is not None:
-            assert child['tag'] in ('DW_TAG_formal_parameter', 'DW_TAG_unspecified_parameters')
+            if child['tag'] == 'DW_TAG_variable':
+                declaration, = [item for item in model_declarations if item['name'] == facts.facts.die_name(row)]
+                carrier, = [item for item in declaration['parameters'] if item['returnStorage']]
+                assert facts.facts.die_name(child) == carrier['name'] and child['attrs']['DW_AT_artificial'] == '1'
+            else:
+                assert child['tag'] in ('DW_TAG_formal_parameter', 'DW_TAG_unspecified_parameters')
             assert 'DW_AT_location' not in child['attrs'] and 'DW_AT_const_value' not in child['attrs']
 imported, = [row for row in declarations if facts.facts.die_name(row).endswith('::imported_adjust')]
 compiler = facts.die_records((case / 'compiler-info.stdout').read_text())
@@ -93,6 +98,12 @@ for records, function in ((dies, imported), (compiler, compiler_import)):
     assert returned['tag'] == argument['tag'] == 'DW_TAG_base_type'
     assert returned['attrs']['DW_AT_byte_size'] == '8' and argument['attrs']['DW_AT_byte_size'] == '4'
     assert all('signed' in row['attrs']['DW_AT_encoding'] and 'unsigned' not in row['attrs']['DW_AT_encoding'] for row in (returned, argument))
+aggregate, = [row for row in declarations if facts.facts.die_name(row) == 'analyst_library::external_aggregate']
+aggregate_children = facts.children(dies, dies.index(aggregate))
+explicit = [row for row in aggregate_children if row['tag'] == 'DW_TAG_formal_parameter']
+assert [facts.facts.die_name(row) for row in explicit] == ['seed']
+carrier, = [row for row in aggregate_children if row['tag'] == 'DW_TAG_variable']
+assert carrier['attrs']['DW_AT_artificial'] == '1' and 'DW_AT_location' not in carrier['attrs']
 unused, = [row for row in declarations if facts.facts.die_name(row) == 'analyst_library::never_called']
 assert unused['attrs']['DW_AT_noreturn'] == '1'
 assert any(row['tag'] == 'DW_TAG_unspecified_parameters' for row in facts.children(dies, dies.index(unused)))

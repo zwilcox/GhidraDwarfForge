@@ -413,6 +413,22 @@ must be refused before the Microsoft-function counter changes; the default
 SysV call remains usable. Exec, PIE and rebased PIE are separate cases. This
 does not establish support for arbitrary alternate ABIs or custom storage.
 
+`function-pointer-conventions.c` adds typed SysV and Microsoft function pointers
+to the same explicit x86-64 ABI comparison. Its saved-program harness tests GCC
+and Windows compiler specifications across exec, PIE and rebased PIE. Correct
+SysV pointer calls return 1234; unsupported Microsoft pointer calls must be
+refused before either target state or the call counter changes. Ordinary calls
+remain valid. See `docs/FUNCTION-POINTER-CALL-ABI.md` for the type-level policy,
+compiler controls and validation limits.
+
+`function-type-flags.c` supplies a variadic function, a non-returning function
+and typed pointers to both. The saved-program x86-64 exec/PIE/rebased-PIE harness
+checks direct no-return metadata, direct and pointer variadic calls, and ordinary
+execution through the no-return pointer. A curated no-return function-type flag
+has no validated DWARF mapping and must produce an explicit omission diagnostic.
+The diagnostic-only change must preserve the previous artifact bytes. See
+`docs/FUNCTION-TYPE-FLAGS.md`.
+
 `curated-thunk.c` supplies a tiny tail-transfer function and integer destination.
 The real exporter harness curates the thunk name, persists/reopens it and checks
 exec/PIE/rebased PIE on x86-64 and AArch64. It verifies a typed symbol at the
@@ -459,3 +475,9 @@ changes; explicit FP32 must transfer `19.5, -3.25` and return `16.25`. Integer
 injection remains usable in both profiles. Compiler and optional previous-package
 controls retain the observed transport behavior without changing target registers.
 See `docs/MIPS-FLOATING-CALL-ABI.md` for the bounded ABI policy.
+
+The `arm-symbol-boundary.S` and `.ld` fixture places a four-byte Thumb function
+exactly at the end of an executable PT_LOAD. `arm-symbol-boundary.py` builds a
+reference twice, creates a separate sectionless copy, exports the curated alias
+and checks raw symbols, validators, determinism and QEMU/GDB execution. The
+original tagged function value must survive while allocation uses its code address.

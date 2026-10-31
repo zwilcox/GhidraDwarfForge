@@ -482,7 +482,7 @@ jobs:
               variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke secondRegisterCopySmoke laterRegisterLocalSmoke definedRegisterLocalSmoke stackSpillSmoke directLeafCallSmoke compositeRegisterPrefixSmoke \
               stackFirstUseSmoke \
               opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
-              functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke mipsFunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke curatedThunkSmoke callingConventionPolicySmoke customCallStorageSmoke compilerCallPolicySmoke mipsFloatingCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
+              functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke curatedThunkSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfAddressRangesSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
@@ -604,7 +604,7 @@ jobs:
                 libc6-dev-arm64-cross qemu-user-static)
               ;;
             arm32)
-              packages+=(gcc-arm-linux-gnueabihf binutils-arm-linux-gnueabihf
+              packages+=(gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf binutils-arm-linux-gnueabihf
                 libc6-dev-armhf-cross qemu-user-static)
               ;;
             mips32be)
@@ -870,6 +870,7 @@ jobs:
                   python3 src/test/integration/sectionless-load-ranges.py \
                       "$PWD/build/fixtures/$TARGET/semantic.exec.no-sections.stripped" \
                       "$PWD/build/fixtures/$TARGET/semantic.exec.no-sections.ghidra-forge.dbg" \
+                      --frame-reference "$PWD/build/fixtures/$TARGET/semantic.exec.stripped" \
                       --tool "$DWARFDUMP"
               fi
               if [[ "$role" == "shared" ]]; then
@@ -980,6 +981,10 @@ jobs:
         if: matrix.target == 'x86_64'
         run: src/test/integration/saved-program-determinism.sh "$GHIDRA_INSTALL_DIR"
 
+      - name: Validate function-pointer convention extension and malformed metadata
+        if: matrix.target == 'x86_64'
+        run: python3 src/test/integration/dwarfdump-subroutine-conventions.py "$DWARFDUMP"
+
       - name: Validate line sequences and reject malformed range artifacts
         if: matrix.target == 'x86_64'
         run: |
@@ -1007,6 +1012,23 @@ jobs:
               python3 src/test/integration/i386-shared-profile-export.py "$GHIDRA_INSTALL_DIR" --role "$role"
           done
 
+      - name: i386 analyst aliases preserve names across stripped and sectionless ELF
+        if: matrix.target == 'x86_64'
+        run: |
+          set -euo pipefail
+          base="$PWD/build/test-results/i386-alias-bases"
+          for role in exec pie pie-rebased; do
+              for symbols in retained stripped; do
+                  python3 src/test/integration/retained-function-aliases-export.py \
+                      "$GHIDRA_INSTALL_DIR" i386 --role "$role" --symbols "$symbols" \
+                      --hash-style both --results-root "$base"
+              done
+          done
+          python3 src/test/integration/local-symbol-merge-integration.py \
+              "$GHIDRA_INSTALL_DIR" i386 --base-root "$base"
+          python3 src/test/integration/sectionless-function-aliases.py \
+              "$GHIDRA_INSTALL_DIR" i386 --base-root "$base"
+
       - name: Function-owned statics and duplicate-name lookup
         env:
           TARGET: ${{ matrix.target }}
@@ -1017,6 +1039,22 @@ jobs:
           TARGET: ${{ matrix.target }}
           FORGE_SCOPE_QUALIFIED: '1'
         run: src/test/integration/function-static-scopes-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
+
+      - name: Overloaded signatures preserve types, aliases and source identity
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          for role in exec pie pie-rebased; do
+              for symbols in retained stripped; do
+                  python3 src/test/integration/overloaded-signatures-export.py \
+                      "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --symbols "$symbols"
+                  if [[ "$TARGET" == arm32 ]]; then
+                      python3 src/test/integration/overloaded-signatures-export.py \
+                          "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --symbols "$symbols" --arm-mode thumb
+                  fi
+              done
+          done
 
       - name: Class-owned display names and saved-program identity
         env:
@@ -1111,9 +1149,74 @@ jobs:
               python3 src/test/integration/curated-thunk-export.py "$GHIDRA_INSTALL_DIR" --target "$TARGET" --role "$role"
           done
 
+      - name: ARM and Thumb automatic aliases retain mode and original symbols
+        if: matrix.target == 'arm32'
+        run: |
+          set -euo pipefail
+          for mode in arm thumb mixed; do
+              base="$PWD/build/test-results/arm-alias-bases/$mode"
+              for role in exec pie pie-rebased; do
+                  for symbols in retained stripped; do
+                      python3 src/test/integration/retained-function-aliases-export.py \
+                          "$GHIDRA_INSTALL_DIR" arm32 --arm-mode "$mode" --role "$role" \
+                          --symbols "$symbols" --prepare-for-aliases --hash-style both --results-root "$base"
+                  done
+              done
+              python3 src/test/integration/arm-function-aliases.py "$GHIDRA_INSTALL_DIR" \
+                  --arm-mode "$mode" --base-root "$base" \
+                  --results-root "$PWD/build/test-results/arm-function-aliases/$mode"
+              python3 src/test/integration/sectionless-function-aliases.py "$GHIDRA_INSTALL_DIR" arm32 \
+                  --arm-mode "$mode" --base-root "$base" \
+                  --output "$PWD/build/test-results/arm-sectionless-aliases/$mode"
+              python3 src/test/integration/arm-alias-mode-controls.py \
+                  "$PWD"/build/test-results/arm-sectionless-aliases/"$mode"/arm32.*
+              if [[ "$mode" == mixed ]]; then
+                  python3 src/test/integration/arm-alias-mode-controls.py --function-index 1 \
+                      "$PWD"/build/test-results/arm-sectionless-aliases/"$mode"/arm32.*
+              fi
+          done
+
+      - name: Thumb dynamic symbols ending at a load boundary retain aliases
+        if: matrix.target == 'arm32'
+        run: |
+          python3 src/test/integration/arm-symbol-boundary.py "$GHIDRA_INSTALL_DIR"
+          for conflict in function-tag mapping; do
+              python3 src/test/integration/arm-symbol-boundary.py "$GHIDRA_INSTALL_DIR" --conflict "$conflict"
+          done
+
+      - name: Sectionless analyst aliases preserve complete dynamic inventories
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64' || matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          base="$PWD/build/test-results/retained-function-aliases"
+          if [[ "$TARGET" == x86_64 || "$TARGET" == aarch64 ]]; then
+              base="$PWD/build/test-results/sectionless-alias-bases"
+              for role in exec pie pie-rebased; do
+                  python3 src/test/integration/retained-function-aliases-export.py \
+                      "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --symbols stripped \
+                      --hash-style both --results-root "$base"
+              done
+          fi
+          python3 src/test/integration/sectionless-function-aliases.py \
+              "$GHIDRA_INSTALL_DIR" "$TARGET" --base-root "$base"
+          if [[ "$TARGET" == x86_64 ]]; then
+              python3 src/test/integration/sectionless-function-aliases.py \
+                  "$GHIDRA_INSTALL_DIR" "$TARGET" --expect-omission --role exec \
+                  --base-root "$PWD/build/test-results/retained-function-aliases"
+          elif [[ "$TARGET" == aarch64 ]]; then
+              python3 src/test/integration/sectionless-function-aliases.py \
+                  "$GHIDRA_INSTALL_DIR" "$TARGET" --expect-omission \
+                  --base-root "$PWD/build/test-results/retained-function-aliases"
+          fi
+
       - name: Dynamic symbol versions preserve original and curated lookup
         if: matrix.target == 'x86_64'
-        run: python3 src/test/integration/versioned-dynamic-symbols.py "$GHIDRA_INSTALL_DIR"
+        run: |
+          set -euo pipefail
+          python3 src/test/integration/versioned-dynamic-symbols.py "$GHIDRA_INSTALL_DIR"
+          python3 src/test/integration/versioned-dynamic-symbols.py "$GHIDRA_INSTALL_DIR" --sectionless
 
       - name: MIPS FP32 curated aliases retain original symbols and debugger identity
         if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
@@ -1160,6 +1263,22 @@ jobs:
               python3 src/test/integration/calling-convention-export.py "$GHIDRA_INSTALL_DIR" --role "$role"
           done
 
+      - name: Variadic and no-return function-type metadata
+        if: matrix.target == 'x86_64'
+        run: |
+          for role in exec pie pie-rebased; do
+              python3 src/test/integration/function-type-flags-export.py "$GHIDRA_INSTALL_DIR" --role "$role"
+          done
+
+      - name: Function-pointer calling conventions through saved programs
+        if: matrix.target == 'x86_64'
+        run: |
+          for role in exec pie pie-rebased; do
+              for compiler in gcc windows; do
+                  python3 src/test/integration/function-pointer-conventions-export.py "$GHIDRA_INSTALL_DIR" --compiler "$compiler" --role "$role"
+              done
+          done
+
       - name: Excluded control-flow blocks cannot prove stable register locations
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
         env:
@@ -1198,6 +1317,18 @@ jobs:
       - name: Recovered parameter types without invented locations
         if: matrix.target == 'x86_64'
         run: python3 src/test/integration/recovered-parameter-types-export.py "$GHIDRA_INSTALL_DIR"
+
+      - name: Aggregate return prototypes and guarded debugger calls
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          for role in exec pie pie-rebased; do
+              python3 src/test/integration/aggregate-return-calls.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
+              if [[ "$TARGET" == mips32be || "$TARGET" == mips32le ]]; then
+                  python3 src/test/integration/aggregate-return-calls.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --profile fpxx
+              fi
+          done
 
       - name: Formal aggregate return type and hidden ABI parameter
         if: matrix.target == 'x86_64'
@@ -1560,7 +1691,7 @@ jobs:
           & .\gradlew.bat dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
-            functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke mipsFunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke curatedThunkSmoke callingConventionPolicySmoke customCallStorageSmoke compilerCallPolicySmoke mipsFloatingCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
+            functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke curatedThunkSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
             registerCopySmoke secondRegisterCopySmoke laterRegisterLocalSmoke definedRegisterLocalSmoke stackSpillSmoke directLeafCallSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
             elfBuildIdSmoke exportReportClaimsSmoke matchedElfPrefixSmoke `
             matchedElfAllocationsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke executableProgramBytesSmoke `

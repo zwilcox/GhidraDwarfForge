@@ -502,6 +502,14 @@ tasks.register("mipsFunctionAliasSymbolsSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.elf.MipsFunctionAliasSymbolsSmoke"
 }
 
+tasks.register("arm32FunctionAliasSymbolsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks ARM alias tags against decoded evidence and original mode symbols"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.Arm32FunctionAliasSymbolsSmoke"
+}
+
 tasks.register("arm32ModeSymbolsSmoke", JavaExec) {
     group = "verification"
     description = "Checks bounded instruction-mode symbols and preserved ELF metadata"
@@ -544,6 +552,18 @@ tasks.register("callingConventionPolicySmoke", JavaExec) {
     systemProperty "java.awt.headless", "true"
     systemProperty "application.settingsdir", file("build/tmp/convention-policy/settings").absolutePath
     systemProperty "application.cachedir", file("build/tmp/convention-policy/cache").absolutePath
+}
+
+tasks.register("functionPointerCallPolicySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks function-pointer conventions and immutable saved types across five targets"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.FunctionPointerCallPolicySmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/pointer-convention-policy/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/pointer-convention-policy/cache").absolutePath
 }
 
 tasks.register("customCallStorageSmoke", JavaExec) {
@@ -861,4 +881,29 @@ tasks.register("mipsFloatingCallPolicySmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.elf.MipsFloatingCallPolicySmoke"
+}
+
+
+tasks.register("sectionlessDynamicSymbolsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks PT_DYNAMIC inventories, sectionless aliases and atomic omission/cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.SectionlessDynamicSymbolsSmoke"
+}
+
+tasks.register("sectionlessUnwindSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded original unwind discovery without ELF section headers"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.SectionlessUnwindSmoke"
+}
+
+tasks.register("mipsAggregateCallPolicySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded MIPS aggregate-return call profiles and preserved signatures"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.MipsAggregateCallPolicySmoke"
 }

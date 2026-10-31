@@ -33,6 +33,7 @@ import ghidra.program.model.data.VoidDataType;
 import ghidra.program.model.data.WideChar16DataType;
 import ghidra.program.model.data.WideChar32DataType;
 import ghidra.program.model.data.WideCharDataType;
+import ghidra.program.model.listing.AutoParameterType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionIterator;
 import ghidra.program.model.listing.Data;
@@ -121,7 +122,7 @@ public final class GhidraTypeGraph {
             Map<Long, DataType> recoveredReturns,
             Map<Long, GhidraSyntheticSource.ParameterRecovery> recoveredParameters)
             throws CancelledException {
-        Extractor extractor = new Extractor(diagnostic);
+        Extractor extractor = new Extractor(program, diagnostic);
         List<DataType> favoriteTypes = new ArrayList<>(
             program.getDataTypeManager().getFavorites());
         favoriteTypes.sort(Comparator.comparing(DataType::getPathName)
@@ -173,7 +174,8 @@ public final class GhidraTypeGraph {
                     : formalType.getLength();
                 String parameterName = safeParameterName(parameter);
                 parameters.add(new TypeGraph.Parameter(parameterName,
-                    extractor.reserve(formalType), parameter.isAutoParameter()));
+                    extractor.reserve(formalType), parameter.isAutoParameter(),
+                    parameter.getAutoParameterType() == AutoParameterType.RETURN_STORAGE_PTR));
                 if (!parameterName.isBlank() && logicalLength > 0) {
                     Storage storage = GhidraVariableStorage.stableParameter(program, function,
                         parameter, registerMap, monitor);
@@ -383,7 +385,8 @@ public final class GhidraTypeGraph {
             for (Parameter parameter : external.getParameters()) {
                 monitor.checkCancelled();
                 parameters.add(new TypeGraph.Parameter(safeParameterName(parameter),
-                    extractor.reserve(parameter.getFormalDataType()), parameter.isAutoParameter()));
+                    extractor.reserve(parameter.getFormalDataType()), parameter.isAutoParameter(),
+                    parameter.getAutoParameterType() == AutoParameterType.RETURN_STORAGE_PTR));
             }
             // An external-space placeholder is not an address in this image.
             // Preserve its persistent identity and full Ghidra display name only.
@@ -532,13 +535,15 @@ public final class GhidraTypeGraph {
     }
 
     private static final class Extractor {
+        private final Program program;
         private final Consumer<String> diagnostic;
         private final IdentityHashMap<DataType, String> keys = new IdentityHashMap<>();
         private final Map<String, DataType> owners = new LinkedHashMap<>();
         private final Map<String, TypeNode> nodes = new LinkedHashMap<>();
         private final ArrayDeque<DataType> pending = new ArrayDeque<>();
 
-        Extractor(Consumer<String> diagnostic) {
+        Extractor(Program program, Consumer<String> diagnostic) {
+            this.program = program;
             this.diagnostic = diagnostic;
         }
 
@@ -639,6 +644,11 @@ public final class GhidraTypeGraph {
                 return aggregate(key, name, union, AggregateKind.UNION);
             }
             if (type instanceof FunctionDefinition function) {
+                if (function.hasNoReturn()) {
+                    diagnostic.accept("Function type " + type.getPathName() +
+                        " no-return property omitted: DW_AT_noreturn describes subprograms; " +
+                        "no validated subroutine-type mapping");
+                }
                 List<TypeGraph.Parameter> parameters = new ArrayList<>();
                 for (ParameterDefinition parameter : function.getArguments()) {
                     String parameterName = parameter.getName();
@@ -646,8 +656,19 @@ public final class GhidraTypeGraph {
                         parameterName == null ? "" : parameterName,
                         reserve(parameter.getDataType()), false));
                 }
+                String convention = function.getCallingConventionName();
+                var selected = function.getCallingConvention();
+                var fallback = program.getCompilerSpec().getDefaultCallingConvention();
+                String restriction = selected == null || fallback == null ?
+                    "function type has no resolved calling convention" :
+                    selected.getName().equals(fallback.getName()) ? "" :
+                    "function type calling convention " + selected.getName() +
+                        " differs from the program default; no debugger ABI mapping";
+                if (!restriction.isEmpty()) {
+                    diagnostic.accept("Debugger-injected calls disabled for function type " + name + ": " + restriction);
+                }
                 return new SubroutineType(key, name, 0, reserve(function.getReturnType()),
-                    parameters, function.hasVarArgs());
+                    parameters, function.hasVarArgs(), convention == null ? "" : convention, restriction);
             }
             String reason = type instanceof Dynamic ? "dynamic-size Ghidra type" :
                 Undefined.isUndefined(type) ? "undefined Ghidra type" :

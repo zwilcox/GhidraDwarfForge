@@ -1,4 +1,4 @@
-"""Actual normal caller; no injected call or finish-return interpretation."""
+"""Normal aggregate-return execution and independently checked debugger calls."""
 import json
 import os
 from pathlib import Path
@@ -35,6 +35,7 @@ try:
     assert Path(symbol.symtab.fullname()).resolve() == expected_source.resolve()
     function_type = symbol.type.strip_typedefs()
     assert function_type.code == gdb.TYPE_CODE_FUNC
+    assert len(function_type.fields()) == 2, str(function_type)
     result['returnType'] = type_record(function_type.target())
     returned = function_type.target().strip_typedefs()
     assert returned.code == gdb.TYPE_CODE_STRUCT and returned.sizeof == 24, result['returnType']
@@ -101,6 +102,18 @@ try:
     breakpoint.delete()
     result['callerGlobals'] = {name: number(name) for name in ('observed_first', 'observed_second', 'observed_third')}
     assert list(result['callerGlobals'].values()) == wanted
+    # The debugger supplies ABI return storage from the formal structure type.
+    # Its user-visible argument list must contain only seed and delta.
+    result['injectedCalls'] = []
+    for seed, delta in ((0x1122334455667788, -19), (23, 7)):
+        pc = number('$pc')
+        value = gdb.parse_and_eval(name + '(' + hex(seed) + 'ULL, ' + str(delta) + ')')
+        expected = [seed, (seed + delta) & ((1 << 64) - 1), seed ^ (delta & 0xffffffff)]
+        actual = [int(value[field]) for field in ('first', 'second', 'third')]
+        assert actual == expected and value.type.sizeof == 24, (actual, expected)
+        assert number('$pc') == pc
+        assert {key: number(key) for key in result['callerGlobals']} == result['callerGlobals']
+        result['injectedCalls'].append({'seed': seed, 'delta': delta, 'returned': actual})
     gdb.execute('continue')
     assert result['exitCodes'] == [0]
     result['status'] = 'PASS'

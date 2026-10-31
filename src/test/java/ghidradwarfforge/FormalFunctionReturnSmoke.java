@@ -76,6 +76,12 @@ public final class FormalFunctionReturnSmoke {
                 argument.updateFunction(null, argument.getReturn(), Function.FunctionUpdateType.DYNAMIC_STORAGE_ALL_PARAMS,
                     true, SourceType.USER_DEFINED,
                     new ParameterImpl("seed", aggregate, program, SourceType.USER_DEFINED));
+                var external = program.getExternalManager().addExtFunction(
+                    "analyst_library", "external_aggregate", null, SourceType.USER_DEFINED).getFunction();
+                external.updateFunction(compiler.getDefaultCallingConvention().getName(),
+                    new ghidra.program.model.listing.ReturnParameterImpl(aggregate, program),
+                    Function.FunctionUpdateType.DYNAMIC_STORAGE_ALL_PARAMS, true, SourceType.USER_DEFINED,
+                    new ParameterImpl("seed", new IntegerDataType(manager), program, SourceType.USER_DEFINED));
                 observe(program, target);
                 var monitor = new TaskMonitorAdapter(true);
                 monitor.cancel();
@@ -154,6 +160,13 @@ public final class FormalFunctionReturnSmoke {
     private static void observe(ProgramDB program, Target target) throws Exception {
         var model = extract(program, target, TaskMonitor.DUMMY);
         require(model.functions().size() == 6, "lost a concrete function signature");
+        require(model.functionDeclarations().size() == 1, "lost external aggregate declaration");
+        var external = model.functionDeclarations().get(0);
+        require(external.parameters().size() == 2 && external.parameters().get(0).returnStorage() &&
+            external.parameters().get(0).artificial() && !external.parameters().get(1).returnStorage(),
+            "external return carrier became a user argument");
+        require(model.types().byKey().get(external.returnType().key()) instanceof TypeGraph.AggregateType aggregate &&
+            aggregate.byteSize() == 24, "external formal aggregate return changed");
         var types = model.types().byKey();
         for (var signature : model.functions()) {
             var function = program.getFunctionManager().getFunctionAt(
@@ -170,8 +183,8 @@ public final class FormalFunctionReturnSmoke {
                     var aggregate = (TypeGraph.AggregateType) returnType;
                     require(aggregate.members().stream().map(TypeGraph.Member::byteOffset).toList().equals(List.of(0L, 8L, 16L)),
                         "aggregate layout changed");
-                    require(signature.parameters().size() == 2 && signature.parameters().get(0).artificial() &&
-                        !signature.parameters().get(1).artificial(), "hidden/explicit parameter distinction lost");
+                    require(signature.parameters().size() == 2 && signature.parameters().get(0).artificial() && signature.parameters().get(0).returnStorage() &&
+                        !signature.parameters().get(1).artificial() && !signature.parameters().get(1).returnStorage(), "hidden/explicit parameter distinction lost");
                     var hidden = types.get(signature.parameters().get(0).type().key());
                     require(hidden instanceof TypeGraph.IndirectionType pointer &&
                         pointer.target().equals(signature.returnType()), "hidden return pointer lost canonical aggregate");
@@ -200,7 +213,7 @@ public final class FormalFunctionReturnSmoke {
                     require((formal instanceof Pointer && returnType instanceof TypeGraph.IndirectionType) ||
                         (formal instanceof VoidDataType && returnType instanceof TypeGraph.VoidType),
                         "custom conversion must retain the current curated signature");
-                    require(signature.parameters().stream().noneMatch(TypeGraph.Parameter::artificial),
+                    require(signature.parameters().stream().noneMatch(parameter -> parameter.artificial() || parameter.returnStorage()),
                         "materialized custom parameters must not be guessed artificial from their name");
                 }
                 default -> throw new AssertionError(signature.name());

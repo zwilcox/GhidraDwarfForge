@@ -32,6 +32,7 @@ import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 import ghidra.util.task.TaskMonitorAdapter;
 import ghidradwarfforge.elf.ElfFunctionModeCue;
+import ghidradwarfforge.elf.ElfFunctionAlias;
 import ghidradwarfforge.nativeapi.DwarfTarget;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
 
@@ -48,8 +49,108 @@ public final class GhidraArm32FunctionModesSmoke {
             new HeadlessGhidraApplicationConfiguration());
         try (Fixture fixture = fixture()) {
             controls(fixture);
+            aliasControls(fixture);
         }
         System.out.println("ghidra-arm32-function-modes-smoke=PASS checks=" + checks);
+    }
+
+    private static void aliasControls(Fixture f) throws Exception {
+        int transaction = f.program().startTransaction("explicit alias mode controls");
+        try {
+            for (long entry : new long[] { 0x1000, 0x1020, 0x1040 }) {
+                f.program().getSymbolTable().createLabel(f.address(entry), "alternate_" + entry,
+                    SourceType.USER_DEFINED);
+            }
+            var aliases = aliases(f.program());
+            require(aliases.size() == 3, "explicit aliases were not extracted");
+            var messages = new ArrayList<String>();
+            var cues = GhidraArm32FunctionModes.extractAliases(f.program(), aliases, TARGET, 0,
+                TaskMonitor.DUMMY, messages::add);
+            require(cues.size() == 3 && messages.isEmpty(), "alias evidence missing: " + messages);
+            require(cues.equals(extract(f.program(), symbols(f.program()), new ArrayList<>(), TaskMonitor.DUMMY)),
+                "ordinary alias mode evidence differs from primary proof");
+            var armOnly = GhidraArm32FunctionModes.extractAliases(f.program(),
+                aliases.stream().filter(a -> a.address() == 0x1020).toList(), TARGET, 0,
+                TaskMonitor.DUMMY, messages::add);
+            require(armOnly.size() == 1 && armOnly.get(0).symbolValue() == 0x1020,
+                "ARM-only alias incorrectly requires a Thumb neighbor");
+            var duplicate = new ArrayList<>(aliases);
+            duplicate.add(aliases.get(0));
+            java.util.Collections.reverse(duplicate);
+            require(GhidraArm32FunctionModes.extractAliases(f.program(), duplicate, TARGET, 0,
+                TaskMonitor.DUMMY, messages::add).equals(cues), "alias evidence duplicated or reordered");
+            var shifted = aliases.stream().map(a -> new ElfFunctionAlias(a.name(), a.owner(), a.address() - 0x1000,
+                a.ranges().stream().map(r -> new ElfFunctionAlias.CodeRange(r.address() - 0x1000,
+                    r.size(), r.codeSha256())).toList())).toList();
+            var rebased = GhidraArm32FunctionModes.extractAliases(f.program(), shifted, TARGET, 0x1000,
+                TaskMonitor.DUMMY, messages::add);
+            require(rebased.get(0).address() == 0 && rebased.get(0).symbolValue() == 1 &&
+                rebased.get(0).codeSha256().equals(cues.get(0).codeSha256()), "alias rebasing lost evidence");
+            var bad = new ElfFunctionAlias("bad", "thumb", 0x1000, 4, "0".repeat(64));
+            aliasOmitted(f.program(), List.of(bad), "code changed after extraction");
+            var register = f.program().getRegister("TMode");
+            aliasOmitted(context(f.program(), 0x1000, 0x1003, new RegisterValue(register)), aliases,
+                "entry TMode is not fully known");
+            aliasOmitted(context(f.program(), 0x1001, 0x1001, new RegisterValue(register)), aliases,
+                "unknown or mixed");
+            aliasOmitted(context(f.program(), 0x1040, 0x1045, new RegisterValue(register, BigInteger.ZERO)),
+                aliases, "stored instruction decode mode");
+            require(GhidraArm32FunctionModes.extractAliases(program(f.program(), "getRegister",
+                new AssertionError("other target accessed ARM mode")), aliases,
+                new DwarfTarget("aarch64", "arm64", 8, true, "AARCH64"), 0,
+                TaskMonitor.DUMMY, messages::add).isEmpty(), "other target received alias mode evidence");
+            for (int stop : new int[] { 1, 3, 8, 14, 30 }) {
+                var failure = new CancelledException("alias evidence cancelled");
+                var polls = new AtomicInteger();
+                var monitor = new TaskMonitorAdapter(true) {
+                    @Override
+                    public void checkCancelled() throws CancelledException {
+                        if (polls.incrementAndGet() == stop) throw failure;
+                    }
+                };
+                try {
+                    GhidraArm32FunctionModes.extractAliases(f.program(), aliases, TARGET, 0, monitor, messages::add);
+                    throw new AssertionError("alias cancellation ignored at " + stop);
+                }
+                catch (CancelledException actual) {
+                    require(actual == failure, "alias cancellation identity changed");
+                }
+            }
+
+            f.bytes(0x1080, "02207047");
+            f.decode(0x1080, 4, 1);
+            var split = new AddressSet(f.thumb().getBody());
+            split.add(f.address(0x1080), f.address(0x1083));
+            f.thumb().setBody(split);
+            aliasOmitted(f.program(), aliases, "alias owner or body changed");
+            var splitCues = GhidraArm32FunctionModes.extractAliases(f.program(), aliases(f.program()),
+                TARGET, 0, TaskMonitor.DUMMY, messages::add);
+            require(splitCues.get(0).address() == 0x1000 && splitCues.get(0).size() == 4,
+                "discontiguous alias bridged a gap or lost its entry range");
+            require(f.program().getFunctionManager().removeFunction(f.address(0x1000)), "remove original entry");
+            var interior = f.program().getFunctionManager().createFunction("interior", f.address(0x1002),
+                split, SourceType.USER_DEFINED);
+            f.program().getSymbolTable().createLabel(interior.getEntryPoint(), "interior_alias", SourceType.USER_DEFINED);
+            var interiorCues = GhidraArm32FunctionModes.extractAliases(f.program(), aliases(f.program()),
+                TARGET, 0, TaskMonitor.DUMMY, messages::add);
+            var cue = interiorCues.stream().filter(c -> c.displayName().equals("interior")).findFirst().orElseThrow();
+            require(cue.address() == 0x1000 && cue.size() == 4 && cue.symbolValue() == 0x1001,
+                "interior-entry range proof changed its extent or mode");
+        }
+        finally {
+            f.program().endTransaction(transaction, false);
+        }
+    }
+
+    private static List<ElfFunctionAlias> aliases(Program program) throws Exception {
+        return GhidraFunctionAliases.extract(program, symbols(program), 0, TaskMonitor.DUMMY, ignored -> { });
+    }
+
+    private static void aliasOmitted(Program program, List<ElfFunctionAlias> aliases, String reason) throws Exception {
+        var messages = new ArrayList<String>();
+        var cues = GhidraArm32FunctionModes.extractAliases(program, aliases, TARGET, 0, TaskMonitor.DUMMY, messages::add);
+        require(cues.size() < aliases.size() && messages.stream().anyMatch(m -> m.contains(reason)),
+            "missing alias omission: " + reason + ": " + messages);
     }
 
     private static void controls(Fixture f) throws Exception {

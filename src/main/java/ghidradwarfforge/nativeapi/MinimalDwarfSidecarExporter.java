@@ -323,9 +323,20 @@ public final class MinimalDwarfSidecarExporter {
             SyntheticSourceFile syntheticSource, ProgramTypeModel typeModel,
             String sourceFileName, BooleanSupplier cancelled, List<ElfFunctionModeCue> modeCues,
             List<ElfFunctionAlias> aliases, java.util.function.Consumer<String> diagnostic) throws IOException {
+        return export(input, output, consumerLibrary, producerLibrary, functions, syntheticSource,
+            typeModel, sourceFileName, cancelled, modeCues, aliases, List.of(), diagnostic);
+    }
+
+    public ExportResult export(Path input, Path output, Path consumerLibrary,
+            Path producerLibrary, List<FunctionSymbol> functions,
+            SyntheticSourceFile syntheticSource, ProgramTypeModel typeModel,
+            String sourceFileName, BooleanSupplier cancelled, List<ElfFunctionModeCue> modeCues,
+            List<ElfFunctionAlias> aliases, List<ElfFunctionModeCue> aliasModeCues,
+            java.util.function.Consumer<String> diagnostic) throws IOException {
         Objects.requireNonNull(cancelled, "cancelled");
         Objects.requireNonNull(modeCues, "modeCues");
         Objects.requireNonNull(aliases, "aliases");
+        Objects.requireNonNull(aliasModeCues, "aliasModeCues");
         Objects.requireNonNull(diagnostic, "diagnostic");
         if (cancelled.getAsBoolean()) {
             throw new CancellationException("DWARF export cancelled");
@@ -348,7 +359,8 @@ public final class MinimalDwarfSidecarExporter {
         List<ElfLocalFunctionSymbol> modeSymbols = target.planFunctionModeSymbols(
             elf, modeCues, cancelled, diagnostic);
         List<ElfLocalFunctionSymbol> supplemental = new ArrayList<>(modeSymbols);
-        supplemental.addAll(target.planFunctionAliases(elf, aliases, ordered, modeSymbols, cancelled, diagnostic));
+        supplemental.addAll(target.planFunctionAliases(elf, aliases, ordered, modeSymbols,
+            aliasModeCues, cancelled, diagnostic));
         byte[] addressRanges = DwarfAddressRanges.build(ordered,
             target.addressBytes(), elf.byteOrder());
         LibDwarfConsumer consumer = Native.load(consumerPath.toString(), LibDwarfConsumer.class);
@@ -388,7 +400,7 @@ public final class MinimalDwarfSidecarExporter {
         if (sections.putIfAbsent(".debug_aranges", addressRanges) != null) {
             throw new IllegalStateException("producer supplied an unexpected address lookup");
         }
-        new MatchedElfSidecarWriter().write(elf, destination, sections, supplemental, cancelled);
+        new MatchedElfSidecarWriter().write(elf, destination, sections, supplemental, cancelled, diagnostic);
         return new ExportResult(target, ordered.size(), List.copyOf(sections.keySet()),
             version);
     }
@@ -506,8 +518,12 @@ public final class MinimalDwarfSidecarExporter {
                             errorOut);
                     }
                     for (TypeGraph.Parameter parameter : signature.parameters()) {
+                        // GDB derives return-buffer transport from the formal return
+                        // type. Listing it as another argument shifts injected calls.
+                        // Preserve the known carrier as an artificial scoped variable.
                         Die parameterDie = newDie(producer, consumer, debug,
-                            DW_TAG_FORMAL_PARAMETER, die, errorOut);
+                            parameter.returnStorage() ? DW_TAG_VARIABLE : DW_TAG_FORMAL_PARAMETER,
+                            die, errorOut);
                         if (!parameter.name().isBlank()) {
                             addName(producer, consumer, parameterDie, parameter.name(), errorOut);
                         }
@@ -556,8 +572,12 @@ public final class MinimalDwarfSidecarExporter {
                         addFlag(producer, consumer, debug, die, DW_AT_NORETURN, true, errorOut);
                     }
                     for (TypeGraph.Parameter parameter : declaration.parameters()) {
+                        // GDB derives return-buffer transport from the formal return
+                        // type. Listing it as another argument shifts injected calls.
+                        // Preserve the known carrier as an artificial scoped variable.
                         Die parameterDie = newDie(producer, consumer, debug,
-                            DW_TAG_FORMAL_PARAMETER, die, errorOut);
+                            parameter.returnStorage() ? DW_TAG_VARIABLE : DW_TAG_FORMAL_PARAMETER,
+                            die, errorOut);
                         if (!parameter.name().isBlank()) {
                             addName(producer, consumer, parameterDie, parameter.name(), errorOut);
                         }
@@ -876,6 +896,10 @@ public final class MinimalDwarfSidecarExporter {
             }
             else if (node instanceof SubroutineType subroutine) {
                 addName(producer, consumer, die, subroutine.name(), errorOut);
+                if (knownCallingConvention(subroutine.callingConvention()) || subroutine.debuggerCallsDisabled()) {
+                    addUnsigned(producer, consumer, debug, die, DW_AT_CALLING_CONVENTION,
+                        subroutine.debuggerCallsDisabled() ? DW_CC_NOCALL : DW_CC_NORMAL, errorOut);
+                }
                 addFlag(producer, consumer, debug, die, DW_AT_PROTOTYPED, true,
                     errorOut);
                 addTypeReference(producer, consumer, debug, die, subroutine.returnType(),

@@ -1,5 +1,280 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED integration plan (2026-10-31); final acceptance pending:** the
+remaining P1.7 commits from PR88 through PR94 are combined on a normal-history
+integration branch based on current main. This preserves every component commit,
+the private-socket correction and the explicit fixture inventory correction.
+The entire combined head must pass the unchanged, up-to-date
+`required-validation` gate, exact-package/raw review, actual Java 21 suites and
+both GUI reviews before normal integration. No component pass substitutes for
+that combined gate. P1.7/#66 remains open; no release publication.
+See `docs/P17-ACCEPTANCE.md` for the complete closure checklist. Earlier plans
+to integrate each dependent PR separately are superseded by this combined gate;
+the implementation scope and acceptance requirements are unchanged.
+
+**CONFIRMED component evidence:** PR92 head
+`78f13571a0270d42d2f67a7db822d7b4be944335` passes all twelve jobs in
+`41189959971`, package/raw review and both GUI consoles. Receipt:
+`ca433be694deba875bea124539f71a918c37aa0c96a6ec174c17d6a393d1e902`.
+Independent recovered-signature provenance review also passes; receipt:
+`2a830c53f2ee63ef29f962429fff2620a72dcd8b87cdd04e04386980b1899dda`.
+These are component results; combined-head acceptance remains outstanding.
+
+**CONFIRMED locally; function-type flag acceptance incomplete:** saved
+variadic/no-return function types pass 1,994 extraction checks and 39 actual
+Java 21 suites. The previously silent no-return type omission now produces an
+explicit diagnostic; direct no-return and variadic behavior are preserved.
+Three saved-program exec/PIE/rebase cases pass validators, 24 compiler/Forge
+variadic calls and six ordinary no-return pointer exits. Prior/current/repeat
+artifacts are byte-identical. Seven cross-target ABI regressions also pass.
+See `docs/FUNCTION-TYPE-FLAGS.md`; final package/hosted review and P1.7/#66
+completion remain pending.
+
+**CONFIRMED failed hosted gate; fixture inventory corrected locally:** PR93 run
+`41192386664` stopped all five target lanes during fixture setup because
+`function-pointer-conventions.c` was absent from the approved source inventory.
+The fixture is now explicitly inventoried and documented. All five target
+`fixture-reproducibility.sh` runs pass byte-identical rebuilds, partial-strip
+symbol checks and source-only inventory checks. Production code is unchanged.
+Fresh hosted validation is required; the failed run is not acceptance evidence.
+P1.7/#66 remains open.
+
+
+**CONFIRMED locally; hosted acceptance pending:** function-pointer types now
+retain calling-convention and compiler/MIPS call restrictions, closing a bypass
+that returned 4389 instead of 1234 through a Microsoft-ABI pointer. All 51 local
+saved-program cases pass (six x86 compiler-profile, 24 MIPS floating and 21
+five-target aggregate cases), with 240 correct and 90 refused fixed-package
+calls, deterministic outputs and protected inputs. All 39 actual Java 21 suites,
+five isolated packaged native profiles, 32 validator metadata controls and 97
+evidence controls pass. The separately pinned checker recognizes the established
+LLVM/GDB function-type convention extension; it suppresses no diagnostics and
+changes no shipped native source. Raw receipt:
+`6a441bb81bc6607d36e3d9d6b580d1438867f9ef0709444502750bbee18ca44e`.
+See `docs/FUNCTION-POINTER-CALL-ABI.md`. Final package/hosted acceptance remains
+pending; P1.7/#66 remains open.
+
+**CONFIRMED committed-package checkpoint (2026-10-31):** the merged overload/
+aggregate-return candidate builds and its package audit verifies 67 exact source
+files, 261 Java 21 classes, native provenance and every release manifest. Its
+production JAR is byte-identical to the 21-case aggregate matrix. Six fresh
+stripped/rebased overload cases, including ARM and Thumb, and all five merged
+fixture inventories pass. Hosted acceptance remains pending; P1.7 stays open.
+
+**CONFIRMED locally; aggregate-return acceptance incomplete (2026-10-31):**
+return carriers now retain their names/types/locations as artificial variables
+without adding formal arguments. A bounded MIPS policy preserves verified word
+arguments and rejects reproduced unsafe wide aggregate calls. All 21 target/
+profile/role cases pass 42 exports, 162 positive calls and 24 unchanged-state
+rejections, with 24 compiler failures retained as negative controls. Independent
+raw receipt: `335f0050b3d608df4b3e63a62b2bd0dfba2a03b759bb4ab023d5d61e03a4eee2`.
+Model, fixture, declaration, failure/cancellation and initial Java 21 checks pass;
+final committed package/hosted acceptance remains pending. See
+`docs/AGGREGATE-RETURN-CALLS.md`. P1.7 remains open.
+
+**CONFIRMED locally; hosted acceptance pending (2026-10-31):** all 36 overload
+cases pass across x86-64, AArch64, ARM, Thumb and both MIPS32 byte orders,
+including retained/stripped exec/PIE/rebased PIE. The matrix includes 72 exports,
+72 compiler/Forge GDB processes and 288 ordinary runtime calls. Independent raw
+review, all five fixture inventories and workflow lint pass. Receipt:
+`1318930de47d80a26767bfdc67725f09b83046d5ab27abb360bab566714fce26`.
+See `docs/OVERLOADED-SIGNATURES.md`. P1.7 remains open; the separate hidden
+aggregate-return fix has the local evidence recorded above and awaits hosted acceptance.
+
+**CONFIRMED original ARM mode conflict controls locally (2026-10-31):**
+source-built ELF mutations now exercise both contradictory function tags and
+mapping symbols through real imports and repeated production exports. Both omit
+the new alias and preserve original symbols. Curated debugging still passes for
+the function-tag conflict. The wrong mapping is preserved and rejects stopped
+GDB decoding before execution; that negative control is not a passing Forge
+runtime case. The unmodified sectionless boundary case also passes again.
+All three references run correctly, all artifacts validate, and inputs/programs
+remain unchanged. Receipt:
+`d9cefc626cda90996b52554d0cde7ccfbe254524d6828fc465483e2819b27693`.
+Final combined ARM package/matrix and hosted review remain pending; P1.7 stays open.
+
+**CONFIRMED Thumb dynamic-symbol boundary fix locally (2026-10-31):** an
+isolated ARM EABI5 policy uses the untagged function address for load containment
+while retaining the original ELF value. The previous build omits a valid alias;
+the fixed package preserves it and passes source-built sectionless ET_DYN
+GNU/LLVM/strict validation, raw inventory/corruption checks, deterministic exports
+and QEMU/GDB argument, instruction and return checks. 452 ARM alias checks,
+1,730 dynamic-symbol checks, 36 actual Java 21 suites and four fresh non-ARM
+sectionless runtime regressions pass. The standalone >2 GiB writer check and
+all five fixture reproducibility lanes pass. CI regression wiring is present;
+hosted acceptance and contradictory-mode integration remain pending. Receipt:
+`490f33b5ed076977ce7fa8d5990e5cebd9b34e92af0fa3cf4ea788a75bc8495e`.
+See `docs/ARM-FUNCTION-ALIASES.md`. P1.7/#66 remains open.
+
+**CONFIRMED ARM integration checkpoint locally (2026-10-31):** repository
+harnesses now cover 18 ordinary ARM/Thumb/mixed-mode automatic alias cases and
+nine sectionless cases, including indirect interworking calls. Automatic ordinary
+outputs equal an isolated installed writer byte-for-byte. Twelve wrong-tag
+runtime controls reject; 36 actual Java 21 suites and all five fixture
+reproducibility lanes pass. CI wiring is present, not yet hosted-validated.
+Receipt: `2c794c6336ad054184237c56ce40281d207ae2d4afb09606cd83f2ec62bb1588`.
+The boundary defect observed at this checkpoint is fixed locally as recorded
+above. Contradictory-mode evidence and final package/hosted validation remain
+required before accepting the ARM change. P1.7 remains open.
+
+**CONFIRMED bounded sectionless ARM/Thumb runtime checkpoint (2026-10-31):**
+Six fresh sectionless exec/PIE/rebased imports and repeated automatic alias exports
+pass raw inventory, structural validation and QEMU/GDB. The debugger explicitly
+selects compiler-backed ARMv7 and decodes stopped remote memory before continuing;
+this does not establish automatic ISA detection without `.ARM.attributes`.
+Six wrong-mode runtime controls and twelve raw inventory corruptions reject;
+fifteen retained non-ARM oracle replays pass. Receipt:
+`3444e8de979b9baf9fba159474cad2df377f608ab9a26cf2f42df5a106c6370b`.
+The initial ARM candidate JAR supplies this checkpoint; final merged package,
+mixed/conflicting mode cases and pipeline expansion remain pending. P1.7 stays open.
+
+**CONFIRMED initial ARM/Thumb alias implementation locally (2026-10-31):**
+separate saved/current instruction-mode evidence now tags only ELF alias values.
+The isolated planner reconciles original mapping/function tags and retains generic
+full-body ownership, collision and byte checks. Twelve retained/stripped ARM/Thumb
+exec/PIE/rebase cases pass repeated automatic export, unchanged DWARF/source,
+GNU/LLVM/strict validation and QEMU/GDB static decode, lookup, stepping and returns.
+304 target-policy checks, 59 extraction checks and seven actual Java 21 suites pass.
+Receipt: `aea3c3e28605ae12cb56c244261341ba5b702ae60208236a2bf9cef027280ad3`.
+Sectionless/mixed/conflicting-mode runtime proof, pipeline expansion and final
+acceptance remain pending. P1.7/#66 stays open; see `docs/ARM-FUNCTION-ALIASES.md`.
+
+**CONFIRMED stripped Thumb PIE mode gap and isolated repair (2026-10-31):**
+four ARM/Thumb baseline cases pass, while stripped Thumb PIE and rebased PIE
+fail GDB static disassembly before attach despite valid DWARF. Existing production
+mode cues are restricted to ET_EXEC. An isolated tagged-alias writer experiment
+repairs both cases; all six stripped roles pass validator and runtime checks.
+Six deliberately wrong-tag controls fail static decoding while LLVM still passes;
+twelve mode-inventory corruption controls are rejected. Production extraction
+and planning remain unchanged. Receipt:
+`b79408ac6e9055788d95822a24712bd6307d68eb47a87e89181102261267f6dd`.
+Automatic ARM/Thumb alias support, sectionless/mixed/conflicting evidence and
+broader P1.7 remain open. See `docs/research/ARM-FUNCTION-ALIASES.md`.
+
+**CONFIRMED retained ARM/Thumb baseline and packaging experiment (2026-10-31):**
+six ARM/Thumb exec/PIE/rebased cases pass repeated real exports, independent
+compiler/Ghidra code boundaries, GNU/LLVM/strict libdwarf validation and QEMU/GDB
+lookup, prototypes, owned data, stepping and returns. Static disassembly is checked
+before attaching so CPSR cannot hide missing mode information. An isolated writer
+experiment preserves every existing symbol/DWARF byte while adding two correctly
+tagged local aliases; all six cases pass two deterministic writes and runtime
+lookup through the aliases. Automatic ARM alias extraction remains PLANNED;
+stripped, sectionless, mixed-mode and conflicting-evidence cases remain open.
+Receipt: `94f3e5b759834daa9477773fae4b88b8a822ce6b26c32ada6961805f308f886e`.
+See `docs/research/ARM-FUNCTION-ALIASES.md`. P1.7/#66 remains open.
+
+**CONFIRMED ARM/Thumb compiler-fixture research (2026-10-31):** four fresh
+ARM/Thumb exec/PIE references run under QEMU. The retained isolated toolchain
+supplies fresh compilation despite no ARM compiler on PATH. Thumb ELF values
+are tagged, and PIE symbol extents include literal-pool data; alias mode and
+code-range proof must account for both. Production aliases remain PLANNED;
+see `docs/research/ARM-FUNCTION-ALIASES.md`. P1.7/#66 remains open.
+
+**CONFIRMED failed hosted gate; correction locally validated (2026-10-31):**
+PR89 run `41180225439` fails the x86-64/AArch64 allocation-observer checks.
+The writer exposes original sectionless unwind records before reconstructed
+notes, but both metadata observers still expected notes immediately after loads.
+The Java helper now accounts for the bounded original unwind view; the independent
+Python oracle decodes the fixture search table and record framing itself.
+944 unwind checks, 532 allocation checks, 34 actual Java 21 suites, twelve retained
+pairs, twenty unwind-field mutations, the sparse >2 GiB metadata control and a
+fresh sectionless i386 rebased-PIE export/validator/GDB case pass. Full hosted
+acceptance remains pending. See `docs/I386-FUNCTION-ALIASES.md`. P1.7 stays open.
+
+**CONFIRMED second failed gate and local correction (2026-10-31):** PR89
+run `41179501376` rejects the new `i386-alias-entry.cpp` because it was missing
+from the explicit fixture source inventory. The reviewed entry is now included;
+the inventory check remains strict. All five fixture reproducibility lanes pass
+with byte-identical rebuilds (including a private ARM cross compiler now located
+outside the normal PATH). Production code and the tested JAR are unchanged.
+Receipt: `cebe59b1e8f522ed79023627961e0f04855e6d83c90cc8f25bdf32a7a732f905`. Fresh hosted acceptance remains pending; P1.7 stays open.
+
+**CONFIRMED failed hosted gate and local correction (2026-10-31):** PR89
+run `41178632812` stops before compilation because the architecture scan matches
+the generic unwind local variable `pc`. Renaming it to `initialLocation` passes
+the unchanged scan. All executable bytecode and other JAR entries match the
+runtime-tested candidate; only the local-variable debug name differs. The 896
+unwind checks, 34 actual Java 21 suites and a fresh sectionless i386 rebased-PIE
+export/validator/GDB case pass. Correction receipt: `9b988bde18f43a0162fe45c25b9ae31b430b987a4d6bde09aafc68015337e7ec`.
+The failed run is retained; fresh hosted acceptance remains pending.
+
+**CONFIRMED local implementation; acceptance incomplete (2026-10-31):**
+bounded, cancellable PT_GNU_EH_FRAME discovery now exposes unchanged original
+frame bytes and fixes the i386 sectionless rebased-PIE `next` failure. The new
+suite passes 896 checks; 34 actual Java 21 suites pass. Five-target alias cases,
+omission/versioned regressions, failure and cancellation pass locally. Exposing
+frames also required strict, byte-bound fixture corroboration for inherited
+validator messages, including older objcopy inputs. Fresh final regression and
+independent raw review pass, including 44 final-checker artifact replays and
+97 captured-evidence controls. Receipt:
+`7af0ac26e8c977b0a3d7f90e5d8ef6a0c1cbc215a2ff7fd5cc0dd5b8481cc3b4`.
+Committed-package and hosted acceptance remain pending. See
+`docs/SECTIONLESS-UNWIND.md` and `docs/I386-FUNCTION-ALIASES.md`.
+The following research-only production status is historical. P1.7/#66 remains open.
+
+**CONFIRMED new sectionless unwind gap (2026-10-31):** the i386 alias
+candidate passes six base and six automatic-alias exec/PIE/rebase cases, but
+sectionless rebased PIE fails `next` because the original unwind bytes have no
+`.eh_frame` section view. A PT_GNU_EH_FRAME-only discovery experiment matches
+16 header-bearing fixtures across five targets, declines two absent headers,
+and repairs the failing GDB case with unchanged original frame bytes. GNU,
+LLVM and strict libdwarf checks pass. Production bounded/cancellable recovery
+is still PLANNED; i386 alias acceptance is held on that work. See
+`docs/research/SECTIONLESS-UNWIND.md`; P1.7/#66 remains open.
+
+**CONFIRMED failed hosted gate; scope harness corrected locally:** PR88 run
+`41189899075` failed before export when the big-endian MIPS compiler-reference
+scope test tried to bind occupied TCP port 33410. The scope harness now uses
+its existing private UNIX-socket helper, including readiness and bounded child
+cleanup, and protects that helper in its input snapshot. Fifteen five-target
+local-candidate roles plus three exact failed-hosted-package MIPS roles pass
+with the former TCP port deliberately occupied: 36 exports and 54 GDB runs,
+validators, deterministic artifacts and preserved inputs. Existing real-QEMU
+startup/failure/timeout/cleanup checks pass. Local receipt:
+`ad4c83475641c72e999f2890cfe42af0103b9413dc63e654edefe613fb324242`.
+Production code is unchanged; a fresh hosted gate is required. P1.7 stays open.
+
+**CONFIRMED main87 validation:** the separate main push `41189858903` passes
+all twelve jobs, exact package/raw review and both personally viewed GUI
+consoles. Receipt:
+`a190b2f76e12822a1f3eee78ee1142cccdfde42566349ea2d3c8c50c08f7b5bb`.
+
+**CONFIRMED integration (2026-10-31):** PR87 final main-based head
+`4414691b020971e3bd8037fc99563087d09d0ad9` passes all twelve jobs in
+`41185868818`, independent package/raw review and both actual GUI consoles.
+It merged normally as `020bbe46c5517bd99f09af308fec9927f5e1afe8`. Receipt:
+`a757e26c63946418f937fc66c168cf4dad87383c228c772331ef2aa61526c3f0`.
+The separate main86 push also passes its complete gate; receipt:
+`7586804fd005552a17957fadca8e87309ac1dccbca196d1ce2b97b8101db3734`.
+PR88 component `d5bbd89519e9f96b0a175d33119bca72184040b5` is accepted
+through run `41176178715` and receipt
+`2b7bbbec0da6cd726848129b05edce0ce6d280cea8eba753c6ef0fe0fac0fb50`.
+It is now based on main; this normal merge changes handoff notes only. Fresh
+final-head validation remains required. Earlier pending notes are historical;
+P1.7 remains open.
+
+**CONFIRMED locally; sectionless alias acceptance incomplete (2026-10-31):**
+bounded PT_DYNAMIC inventories now preserve original symbols before analyst
+alias insertion. Twelve four-target exec/PIE/rebase cases, four incomplete-count
+omission controls and two GNU-versioned DSOs pass fresh headless export,
+validators and GDB/native checks. The new suite passes 1,730 checks; 33 actual
+Java 21 suites, independent raw/corruption controls, large-ELF, failure and
+cancellation checks pass. Receipt:
+`c303b520d316b0cf620564684832b1dc5284783ee1c3061375eafa087f17d526`.
+Final committed-package and hosted acceptance remain pending. See
+`docs/SECTIONLESS-FUNCTION-ALIASES.md`. Earlier research-only/sectionless-disabled
+statements are historical. P1.7/#66 remains open, including other target modes
+and broader ABI/scope work; no release publication.
+
+**CONFIRMED research checkpoint; production implementation PLANNED (2026-10-31):**
+sectionless alias insertion without a dynamic mirror loses original names in
+four MIPS PIE/rebase controls. An independent PT_DYNAMIC mirror passes eight
+runtime cases (32 calls), two GNU-versioned DSOs and strict validators. A
+32-fixture count matrix matches 29 full inventories and diagnoses three
+empty-GNU-only ambiguities; no count is guessed. Production aliases remain
+disabled for sectionless inputs. See
+`docs/research/SECTIONLESS-FUNCTION-ALIASES.md`; P1.7/#66 remains open.
+
 **CONFIRMED integration (2026-10-31):** PR86 final main-based head
 `284da1c70b7aa936ca11069827fcb3f1e986044e` passes all twelve jobs in
 `41182122046`, exact package/32 actual Java 21 suites, raw target/ABI review and

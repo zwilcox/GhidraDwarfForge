@@ -32,16 +32,64 @@ def elf(path):
     return data[:16], header, named
 
 
+def arm_mode_inventory(original, emitted, compiler_symbols, functions):
+    """Independently check primary mode cues, not analyst alias insertion."""
+    table, records = emitted['.symtab']
+    dynamic, old_records = original['.dynsym']
+    names = emitted['.strtab'][1]
+    old_names = original['.dynstr'][1]
+    assert table[9] == dynamic[9] == 16 and names.startswith(old_names)
+    added = table[7] - dynamic[7]
+    split = dynamic[7] * 16
+    assert added > 0 and records[:split] + records[split + added * 16:] == old_records
+    mappings = {}
+    for line in compiler_symbols.splitlines():
+        fields = line.split()
+        if len(fields) == 8 and fields[7].split('.')[0] in ('$a', '$t', '$d'):
+            assert fields[3:5] == ['NOTYPE', 'LOCAL'] and fields[6].isdigit()
+            key = (int(fields[6]), int(fields[1], 16))
+            mode = fields[7].split('.')[0]
+            assert key not in mappings or mappings[key] == mode
+            mappings[key] = mode
+    observed = {}
+    sections = list(original.values())
+    for offset in range(split, split + added * 16, 16):
+        string, value, size, info, other, section_index = struct.unpack_from('<IIIBBH', records, offset)
+        name = names[string:].split(b'\0', 1)[0].decode()
+        entry, mode = value & ~1, '$t' if value & 1 else '$a'
+        assert name == '__forge_arm_mode_%08x' % entry and name not in observed
+        assert info == 2 and other == 0 and 0 < section_index < len(sections)
+        section = sections[section_index][0]
+        assert section[2] & 6 == 6 and section[3] <= entry < entry + size <= section[3] + section[5]
+        intervals = sorted((address, kind) for (index, address), kind in mappings.items() if index == section_index)
+        preceding = [(address, kind) for address, kind in intervals if address <= entry]
+        assert preceding and preceding[-1][1] == mode
+        next_mapping = min([address for address, kind in intervals if address > entry and kind != mode] +
+            [section[3] + section[5]])
+        assert entry + size <= next_mapping
+        assert (entry | size) & (1 if mode == '$t' else 3) == 0
+        observed[name] = (value, size)
+    for row in functions:
+        assert observed['__forge_arm_mode_%08x' % row['entry']] == (
+            row['elfSymbolValue'], row['end'] - row['entry'])
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
-    parser.add_argument('target', choices=('x86_64', 'aarch64', 'mips32be', 'mips32le'))
+    parser.add_argument('target', choices=('x86_64', 'i386', 'aarch64', 'arm32', 'mips32be', 'mips32le'))
+    parser.add_argument('--arm-mode', choices=('arm', 'thumb', 'mixed'), default='arm')
     parser.add_argument('--role', choices=('exec', 'pie', 'pie-rebased'), default='exec')
     parser.add_argument('--symbols', choices=('retained', 'stripped'), default='retained')
     parser.add_argument('--results-root', type=Path,
         default=repository / 'build/test-results/retained-function-aliases')
     parser.add_argument('--mips-fp32', action='store_true', help='Build the explicit O32 FP32 fixture profile')
+    parser.add_argument('--hash-style', choices=('default', 'both'), default='default')
+    parser.add_argument('--prepare-for-aliases', action='store_true',
+        help='ARM fixture preparation: compiler runtime and Forge structure only; final alias runtime is required')
     args = parser.parse_args()
+    if args.prepare_for_aliases and args.target != 'arm32':
+        parser.error('--prepare-for-aliases requires the ARM alias follow-up')
     if args.mips_fp32 and not args.target.startswith('mips'):
         parser.error('--mips-fp32 requires a MIPS target')
     ghidra = args.ghidra.resolve(strict=True)
@@ -61,6 +109,9 @@ def main():
         return result
 
     fixture = source.parent / 'fixtures/retained-function-aliases.cpp'
+    if args.arm_mode == 'mixed':
+        assert args.target == 'arm32'
+        fixture = source.parent / 'fixtures/arm-mixed-function-aliases.cpp'
     protected = [fixture, Path(__file__).resolve(), source / 'retained-function-aliases-gdb.py',
         source / 'retained-function-aliases-gdb.sh', source / 'qemu-socket.sh',
         source / 'elf-layout-gdb-oracle.sh', source / 'dynamic-composite-storage-check.py',
@@ -68,21 +119,40 @@ def main():
         source.parent / 'performance/export-benchmark.py',
         source / 'ghidra_scripts/PrepareRetainedAliases.java', source / 'ghidra_scripts/RebaseFixtureProgram.java']
     protected += [p for p in module.rglob('*') if p.is_file()]
+    extra_sources = []
+    if args.target == 'i386':
+        extra_sources.append(source.parent / 'fixtures/i386-alias-entry.cpp')
+        protected += extra_sources
     before = {str(p): support.digest(p) for p in protected}
     write('protected-before.json', before)
     reference, binary = case / 'aliases.reference', case / 'aliases.input'
-    prefix = {'x86_64': '', 'aarch64': 'aarch64-linux-gnu-',
-        'mips32be': 'mips-linux-gnu-', 'mips32le': 'mipsel-linux-gnu-'}[args.target]
+    prefix = {'x86_64': '', 'i386': '', 'aarch64': 'aarch64-linux-gnu-',
+        'arm32': 'arm-linux-gnueabihf-', 'mips32be': 'mips-linux-gnu-', 'mips32le': 'mipsel-linux-gnu-'}[args.target]
     cc, objcopy = prefix + 'g++', prefix + 'objcopy'
     flags = ['-fno-pie', '-no-pie'] if args.role == 'exec' else ['-fPIE', '-pie']
+    if args.target == 'i386':
+        flags = ['-m32', '-nostdlib', '-fno-stack-protector', '-Wl,-e,_start',
+            *(['-fno-pie', '-static'] if args.role == 'exec' else ['-fPIE', '-static-pie'])]
     if args.mips_fp32:
         flags.append('-mfp32')
+    if args.target == 'arm32':
+        flags += ['-march=armv7-a', '-mfpu=vfpv3-d16', '-mfloat-abi=hard',
+            '-m' + ('arm' if args.arm_mode == 'mixed' else args.arm_mode), '-funwind-tables']
+    if args.hash_style != 'default':
+        flags.append('-Wl,--hash-style=' + args.hash_style)
     run('compile', [cc, '-O1', '-g3', '-gdwarf-5', '-gno-variable-location-views', *flags,
-        '-Wl,--build-id=sha1', fixture, '-o', reference])
+        '-Wl,--build-id=sha1', fixture, *extra_sources, '-o', reference])
     run('strip', [objcopy, '--strip-debug' if args.symbols == 'retained' else '--strip-all', reference, binary])
     before.update({str(reference): support.digest(reference), str(binary): support.digest(binary)})
     write('protected-before.json', before)
     run('symbols', ['readelf', '-sW', reference])
+    if args.target == 'arm32':
+        run('instructions', [prefix + 'objdump', '-drw', reference])
+        if args.arm_mode == 'mixed':
+            main_code = re.search(r'(?ms)^[0-9a-f]+ <main>:\n(.*?)(?=\n\n|\Z)', (case / 'instructions.log').read_text())
+            assert main_code is not None and len(re.findall(r'\bblx\s+r\d+\b', main_code[1])) == 4
+            write('indirect-call-evidence.json', {'status': 'PASS', 'compilerProfile': 'ARMv7-A',
+                'indirectCalls': 4, 'mainDisassembly': main_code[1]})
     symbols = {}
     for line in (case / 'symbols.log').read_text().splitlines():
         f = line.split()
@@ -100,6 +170,35 @@ def main():
         assert f['type'] == 'FUNC' and f['binding'] == 'GLOBAL' and d['type'] == 'OBJECT' and d['size'] == 4
         row = {'name': 'recovered::' + name, 'entry': f['address'], 'end': f['address'] + f['size'],
             'original': original, 'privateAddress': d['address'], 'privateValue': value}
+        if args.target == 'arm32':
+            # ELF function values carry Thumb mode; byte/DWARF addresses do not.
+            thumb = args.arm_mode == 'thumb' or (args.arm_mode == 'mixed' and original == aliased)
+            assert f['address'] & 1 == int(thumb)
+            row['entry'] = f['address'] & ~1
+            row['elfSymbolValue'], row['elfSymbolSize'] = f['address'], f['size']
+            instructions = []
+            cursor = row['entry']
+            for line in (case / 'instructions.log').read_text().splitlines():
+                match = re.fullmatch(r'\s*([0-9a-f]+):\s+([0-9a-f]{4,8}(?: [0-9a-f]{4})?)\s+(.+)', line)
+                if match is None or int(match[1], 16) != cursor:
+                    continue
+                encoding = match[2].replace(' ', '')
+                length = len(encoding) // 2
+                assert length in ((2, 4) if thumb else (4,))
+                instructions.append({'address': cursor, 'length': length, 'assembly': match[3]})
+                cursor += length
+                if re.fullmatch(r'bx\s+lr', match[3]):
+                    break
+            assert instructions and re.fullmatch(r'bx\s+lr', instructions[-1]['assembly'])
+            assert cursor <= row['entry'] + f['size']
+            row['end'] = cursor
+            row['instructions'] = instructions
+            row['returnInstruction'] = instructions[-1]['address']
+            _, _, sections = elf(reference)
+            section, payload = list(sections.values())[f['section']]
+            offset = row['returnInstruction'] - section[3]
+            expected_return = bytes.fromhex('7047' if thumb else '1eff2fe1')
+            assert payload[offset:offset + len(expected_return)] == expected_return
         if args.target.startswith('mips'):
             # A MIPS return has a delay slot. Guard the actual jr ra, not the
             # last instruction, and prove the fixture instruction from bytes.
@@ -109,8 +208,18 @@ def main():
             offset = row['returnInstruction'] - section[3]
             assert offset >= 0 and offset + 8 <= len(payload)
             assert int.from_bytes(payload[offset:offset + 4], 'big' if ident[5] == 2 else 'little') == 0x03e00008
-        else:
-            row['returnInstruction'] = row['end'] - (1 if args.target == 'x86_64' else 4)
+        elif args.target != 'arm32':
+            row['returnInstruction'] = row['end'] - (1 if args.target in ('x86_64', 'i386') else 4)
+        if args.target == 'i386' and args.role != 'exec':
+            _, _, sections = elf(reference)
+            section, payload = list(sections.values())[f['section']]
+            offset = row['entry'] - section[3]
+            assert payload[offset] == 0xe8  # Independently decode this fixture's PC-thunk call.
+            thunk = row['entry'] + 5 + int.from_bytes(payload[offset + 1:offset + 5], 'little', signed=True)
+            thunk_offset = thunk - section[3]
+            assert 0 <= thunk_offset <= len(payload) - 4
+            assert payload[thunk_offset:thunk_offset + 4] == bytes.fromhex('8b0424c3')
+            row['entryThunk'] = {'entry': thunk, 'bytes': '8b0424c3', 'returnPc': row['entry'] + 5}
         rows.append(row)
         prep.append(' '.join([name, hex(row['entry']), hex(row['end']), hex(row['privateAddress'])]))
     write('symbols.json', symbols)
@@ -124,7 +233,8 @@ def main():
             assert fields[7] not in original_symbols or original_symbols[fields[7]] == address
             original_symbols[fields[7]] = address
     write('metadata.json', {'target': args.target, 'role': args.role, 'symbols': args.symbols,
-        'originalSymbols': original_symbols, 'mipsFp32': args.mips_fp32, 'functions': rows})
+        'originalSymbols': original_symbols, 'mipsFp32': args.mips_fp32,
+        'armMode': args.arm_mode if args.target == 'arm32' else None, 'functions': rows})
     (case / 'preparation.txt').write_text('\n'.join(prep) + '\n')
     project = case / 'project'
     project.mkdir()
@@ -168,9 +278,12 @@ def main():
     assert os['.note.gnu.build-id'][1] == ds['.note.gnu.build-id'][1]
     for name in ('.symtab', '.strtab'):
         assert (name in os) == (args.symbols == 'retained')
-        assert (name in ds) == (args.symbols == 'retained')
+        if not (args.target == 'arm32' and args.symbols == 'stripped' and args.role == 'exec'):
+            assert (name in ds) == (args.symbols == 'retained')
         if name in os:
             assert os[name][1] == ds[name][1]
+    if args.target == 'arm32' and args.symbols == 'stripped' and '.symtab' in ds:
+        arm_mode_inventory(os, ds, (case / 'symbols.log').read_text(), rows)
     for variant, artifact in [('compiler', reference), ('forge', case / 'aliases.dbg')]:
         for view in ('info', 'abbrev', 'aranges', 'decodedline', 'loc', 'Ranges'):
             run(variant + '-' + view, ['readelf', '--debug-dump=' + view, artifact])
@@ -208,7 +321,8 @@ def main():
             assert dtype['attrs']['DW_AT_encoding'].split()[0] == '5'
         raw.append({'function': function, 'parameter': parameter, 'private': owned})
     write('raw-dies.json', raw)
-    run('gdb-driver', ['bash', source / 'retained-function-aliases-gdb.sh', repository, case, args.target], timeout=240)
+    run('gdb-driver', ['bash', source / 'retained-function-aliases-gdb.sh', repository, case, args.target,
+        *(['compiler-only'] if args.prepare_for_aliases else [])], timeout=240)
     after = {name: support.digest(Path(name)) for name in before}
     write('protected-after.json', after)
     assert before == after
@@ -216,9 +330,11 @@ def main():
     write('project-after.json', project_after)
     changes = [name for name in sorted(project_before.keys() | project_after.keys()) if project_before.get(name) != project_after.get(name)]
     assert set(changes) <= {'Aliases.rep/idata/~index.bak', 'Aliases.rep/idata/~journal.bak'}, changes
-    write('result.json', {'status': 'PASS', 'target': args.target, 'role': args.role, 'symbols': args.symbols,
+    status = 'PREPARED_FOR_ALIAS_RUNTIME' if args.prepare_for_aliases else 'PASS'
+    write('result.json', {'status': status, 'target': args.target, 'role': args.role, 'symbols': args.symbols,
+        'runtime': 'compiler-only' if args.prepare_for_aliases else 'compiler-and-forge',
         'inputSha256': before[str(binary)], 'hashes': hashes, 'protectedUnchanged': True, 'projectBackupChanges': changes})
-    print('retained-function-aliases-export=PASS ' + str(case), flush=True)
+    print('retained-function-aliases-export=' + status + ' ' + str(case), flush=True)
 
 
 if __name__ == '__main__':

@@ -21,6 +21,35 @@ or release-native provenance manifests.
   static consumer's `src/lib/libdwarf/dwarf_harmless.c`; public APIs and shipped
   producer/consumer sources remain unchanged.
 
+## Function-pointer calling conventions
+
+The fourth patch recognizes `DW_AT_calling_convention` on
+`DW_TAG_subroutine_type` in the checker's existing **extension** table. It does
+not add the pair to the standard DWARF 5 table. DWARF 5 Appendix A omits this
+pair; LLVM deliberately emits it for explicit function-pointer conventions
+([LLVM 20.1.8 DwarfUnit.cpp](https://github.com/llvm/llvm-project/blob/llvmorg-20.1.8/llvm/lib/CodeGen/AsmPrinter/DwarfUnit.cpp)).
+GDB reads the attribute, including `DW_CC_nocall`, when evaluating calls through
+typed pointers. A local Clang 16 compiler-produced fixture reproduces the old
+checker's rejection independently of Forge. The change recognizes that
+established producer/consumer extension, not a new core-standard guarantee.
+
+`0004-recognize-subroutine-calling-convention.patch` has SHA-256
+`a1b5cc6d63795aeda62b5945bf8991360882c7334003e9912e274638ec073581`.
+It updates `src/bin/tag_attr/tag_attr_ext.list` and its generated
+`src/bin/dwarfdump/dwarfdump-ta-ext-table.h`. Other tag/attribute combinations,
+forms, reference checks and strict diagnostic parsing remain active. The
+validator evidence profile explicitly records the fourth patch. This patch is
+excluded from shipped native libraries, like the other validation patches.
+
+`dwarfdump-subroutine-conventions.py` builds 32 independent metadata cases
+across ELF32/64 and both byte orders. Normal, no-call and LLVM Win64 conventions
+pass. Invalid tag/attribute combinations, a reserved convention value, a string
+form for the convention and a broken type reference fail strict checking.
+LLVM independently rejects the broken reference but misses the invalid
+convention form; its clean result alone is insufficient. The optional previous
+checker reproduces the compatibility rejection for all twelve positives.
+No target instructions execute in these metadata controls.
+
 ## Self-contained configuration
 
 The standalone consumer also requires upstream `dwarfdump.conf`, even without

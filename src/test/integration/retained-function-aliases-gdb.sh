@@ -3,19 +3,27 @@ set -euo pipefail
 repository=$1
 case_dir=$2
 target=$3
+variants=(compiler forge)
+if [[ ${4:-both} == compiler-only && "$target" == arm32 ]]; then
+    variants=(compiler)
+elif [[ ${4:-both} != both ]]; then
+    echo "invalid runtime selection" >&2
+    exit 64
+fi
 source "$repository/src/test/integration/qemu-socket.sh"
 source "$repository/src/test/integration/elf-layout-gdb-oracle.sh"
 trap qemu_socket_cleanup EXIT
 emulator=
 sysroot=
 case "$target" in
-    x86_64) ;;
+    x86_64|i386) ;;
     aarch64) emulator=qemu-aarch64-static; sysroot=/usr/aarch64-linux-gnu ;;
+    arm32) emulator=qemu-arm-static; sysroot=${FORGE_ARM32_SYSROOT:-/usr/arm-linux-gnueabihf} ;;
     mips32be) emulator=qemu-mips-static; sysroot=/usr/mips-linux-gnu ;;
     mips32le) emulator=qemu-mipsel-static; sysroot=/usr/mipsel-linux-gnu ;;
     *) echo "unsupported alias target: $target" >&2; exit 64 ;;
 esac
-for variant in compiler forge; do
+for variant in "${variants[@]}"; do
     if [[ "$variant" == compiler ]]; then input="$case_dir/aliases.reference"; else input="$case_dir/aliases.input"; fi
     remote=
     if [[ -n "$emulator" ]]; then

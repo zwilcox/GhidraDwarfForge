@@ -24,62 +24,31 @@ final class DynamicSymbolMirror {
     private DynamicSymbolMirror() {
     }
 
+    record Input(int locals, byte[] records, byte[] names, byte[] indices, byte[] versions,
+            byte[] definitions, long definitionCount, int sectionCount) {
+    }
+
     static Snapshot read(ElfImage image, BooleanSupplier cancelled) throws IOException {
         checkCancelled(cancelled);
-        ElfImage.Section table = null;
-        for (var section : image.sections()) {
-            checkCancelled(cancelled);
-            if (section.type == 11) {
-                require(table == null, "multiple dynamic symbol tables");
-                table = section;
-            }
-        }
-        if (table == null) {
+        Input input = image.sections().isEmpty() ? SectionlessDynamicSymbols.read(image, cancelled) :
+            sectionInput(image, cancelled);
+        if (input == null) {
             return null;
         }
         int width = image.is64Bit() ? 24 : 16;
-        require(table.entrySize == width && table.size >= width && table.size % width == 0 &&
-            table.size / width <= MAX_SYMBOLS && table.info >= 1 && table.info <= table.size / width &&
-            (table.flags & 0x800) == 0 && table.link > 0 && table.link < image.sections().size(),
-            "unsupported dynamic symbol framing");
-        var strings = image.sections().get((int) table.link);
-        require(strings.type == 3 && (strings.flags & 0x800) == 0 && strings.size > 0 &&
-            strings.size <= ElfImage.MAX_NAME_TABLE_BYTES, "unsupported dynamic string table");
-        int count = (int) (table.size / width);
-        var names = new Names(image.sectionData(strings), cancelled);
-        byte[] records = image.sectionData(table);
+        int count = input.records().length / width;
+        var names = new Names(input.names(), cancelled);
+        byte[] records = input.records();
         ByteBuffer rows = ByteBuffer.wrap(records).order(image.byteOrder());
         for (int index = 0; index < width; index++) {
             require(records[index] == 0, "dynamic null symbol is not zero");
         }
-        ElfImage.Section indexSection = null;
-        ElfImage.Section versionSection = null;
-        ElfImage.Section definitions = null;
-        for (var section : image.sections()) {
-            checkCancelled(cancelled);
-            if (section.type == 18 && section.link == table.originalIndex) {
-                require(indexSection == null && section.size == count * 4L && section.entrySize == 4 &&
-                    section.info == 0 && (section.flags & 0x800) == 0, "unsupported dynamic extended indices");
-                indexSection = section;
-            }
-            if (section.type == VERSYM && section.link == table.originalIndex) {
-                require(versionSection == null && section.size == count * 2L && section.entrySize == 2 &&
-                    (section.flags & 0x800) == 0, "unsupported dynamic symbol versions");
-                versionSection = section;
-            }
-            if (section.type == VERDEF && section.link == table.link) {
-                require(definitions == null && (section.flags & 0x800) == 0,
-                    "ambiguous or compressed version definitions");
-                definitions = section;
-            }
-        }
-        require(definitions == null || versionSection != null, "version definitions lack symbol versions");
-        byte[] extended = indexSection == null ? null : image.sectionData(indexSection);
+        byte[] extended = input.indices();
         ByteBuffer indices = extended == null ? null : ByteBuffer.wrap(extended).order(image.byteOrder());
-        ByteBuffer versions = versionSection == null ? null :
-            ByteBuffer.wrap(image.sectionData(versionSection)).order(image.byteOrder());
-        Map<Integer, byte[]> versionNames = definitions == null ? Map.of() :
-            definitions(image, definitions, names, cancelled);
+        ByteBuffer versions = input.versions() == null ? null :
+            ByteBuffer.wrap(input.versions()).order(image.byteOrder());
+        Map<Integer, byte[]> versionNames = input.definitions() == null ? Map.of() :
+            definitions(image, input.definitions(), input.definitionCount(), names, cancelled);
         ByteArrayOutputStream text = new ByteArrayOutputStream();
         text.writeBytes(names.bytes);
         Set<ByteBuffer> occupied = new HashSet<>();
@@ -90,10 +59,10 @@ final class DynamicSymbolMirror {
             int offset = index * width;
             int info = Byte.toUnsignedInt(records[offset + (image.is64Bit() ? 4 : 12)]);
             int section = Short.toUnsignedInt(rows.getShort(offset + (image.is64Bit() ? 6 : 14)));
-            require(((info >>> 4) == 0) == (index < table.info), "dynamic local/global order disagrees");
-            require(section >= 0xff00 || section < image.sections().size(), "dynamic section index is invalid");
+            require(((info >>> 4) == 0) == (index < input.locals()), "dynamic local/global order disagrees");
+            require(section >= 0xff00 || section < input.sectionCount(), "dynamic section index is invalid");
             long escaped = indices == null ? 0 : Integer.toUnsignedLong(indices.getInt(index * 4));
-            require(section == 0xffff ? escaped > 0 && escaped < image.sections().size() : escaped == 0,
+            require(section == 0xffff ? escaped > 0 && escaped < input.sectionCount() : escaped == 0,
                 "dynamic extended section index is invalid");
             byte[] name = names.get(Integer.toUnsignedLong(rows.getInt(offset)));
             occupied.add(ByteBuffer.wrap(name).asReadOnlyBuffer());
@@ -137,19 +106,72 @@ final class DynamicSymbolMirror {
             versioned = true;
         }
         checkCancelled(cancelled);
-        return new Snapshot((int) table.info, records, text.toByteArray(), extended,
+        return new Snapshot((int) input.locals(), records, text.toByteArray(), extended,
             Set.copyOf(occupied), versioned);
     }
 
-    private static Map<Integer, byte[]> definitions(ElfImage image, ElfImage.Section section,
+    private static Input sectionInput(ElfImage image, BooleanSupplier cancelled) throws IOException {
+        checkCancelled(cancelled);
+        ElfImage.Section table = null;
+        for (var section : image.sections()) {
+            checkCancelled(cancelled);
+            if (section.type == 11) {
+                require(table == null, "multiple dynamic symbol tables");
+                table = section;
+            }
+        }
+        if (table == null) {
+            return null;
+        }
+        int width = image.is64Bit() ? 24 : 16;
+        require(table.entrySize == width && table.size >= width && table.size % width == 0 &&
+            table.size / width <= MAX_SYMBOLS && table.info >= 1 && table.info <= table.size / width &&
+            (table.flags & 0x800) == 0 && table.link > 0 && table.link < image.sections().size(),
+            "unsupported dynamic symbol framing");
+        var strings = image.sections().get((int) table.link);
+        require(strings.type == 3 && (strings.flags & 0x800) == 0 && strings.size > 0 &&
+            strings.size <= ElfImage.MAX_NAME_TABLE_BYTES, "unsupported dynamic string table");
+        int count = (int) (table.size / width);
+        byte[] names = image.sectionData(strings);
+        byte[] records = image.sectionData(table);
+        ElfImage.Section indexSection = null;
+        ElfImage.Section versionSection = null;
+        ElfImage.Section definitions = null;
+        for (var section : image.sections()) {
+            checkCancelled(cancelled);
+            if (section.type == 18 && section.link == table.originalIndex) {
+                require(indexSection == null && section.size == count * 4L && section.entrySize == 4 &&
+                    section.info == 0 && (section.flags & 0x800) == 0, "unsupported dynamic extended indices");
+                indexSection = section;
+            }
+            if (section.type == VERSYM && section.link == table.originalIndex) {
+                require(versionSection == null && section.size == count * 2L && section.entrySize == 2 &&
+                    (section.flags & 0x800) == 0, "unsupported dynamic symbol versions");
+                versionSection = section;
+            }
+            if (section.type == VERDEF && section.link == table.link) {
+                require(definitions == null && (section.flags & 0x800) == 0,
+                    "ambiguous or compressed version definitions");
+                definitions = section;
+            }
+        }
+        require(definitions == null || versionSection != null, "version definitions lack symbol versions");
+        return new Input((int) table.info, records, names,
+            indexSection == null ? null : image.sectionData(indexSection),
+            versionSection == null ? null : image.sectionData(versionSection),
+            definitions == null ? null : image.sectionData(definitions),
+            definitions == null ? 0 : definitions.info, image.sections().size());
+    }
+
+    private static Map<Integer, byte[]> definitions(ElfImage image, byte[] data, long definitionCount,
             Names strings, BooleanSupplier cancelled) throws IOException {
-        require(section.size >= 20 && section.size <= ElfImage.MAX_TABLE_BYTES &&
-            section.info > 0 && section.info <= MAX_SYMBOLS, "unsupported version-definition extent");
-        ByteBuffer bytes = ByteBuffer.wrap(image.sectionData(section)).order(image.byteOrder());
+        require(data.length >= 20 && data.length <= ElfImage.MAX_TABLE_BYTES &&
+            definitionCount > 0 && definitionCount <= MAX_SYMBOLS, "unsupported version-definition extent");
+        ByteBuffer bytes = ByteBuffer.wrap(data).order(image.byteOrder());
         var names = new HashMap<Integer, byte[]>();
         int cursor = 0;
         long totalAux = 0;
-        for (int index = 0; index < section.info; index++) {
+        for (int index = 0; index < definitionCount; index++) {
             checkCancelled(cancelled);
             require(cursor <= bytes.limit() - 20, "truncated version definition");
             int revision = Short.toUnsignedInt(bytes.getShort(cursor));
@@ -163,7 +185,7 @@ final class DynamicSymbolMirror {
                 auxiliary <= bytes.limit() - cursor - 8L, "unsupported version definition");
             long boundary = next == 0 ? bytes.limit() : (long) cursor + next;
             require(boundary <= bytes.limit() && boundary >= cursor + auxiliary + 8 &&
-                (index + 1 == section.info) == (next == 0), "invalid version-definition chain");
+                (index + 1 == definitionCount) == (next == 0), "invalid version-definition chain");
             int aux = (int) (cursor + auxiliary);
             for (int member = 0; member < count; member++) {
                 checkCancelled(cancelled);

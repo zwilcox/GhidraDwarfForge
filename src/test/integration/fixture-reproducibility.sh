@@ -36,7 +36,11 @@ trap cleanup EXIT
 expected_sources=(
     Makefile
     README.md
+    aggregate-return-calls.c
     arm-dynamic-pcs.c
+    arm-mixed-function-aliases.cpp
+    arm-symbol-boundary.S
+    arm-symbol-boundary.ld
     arm-thumb-after.c
     arm-thumb-caller.c
     arm-thumb-leaf.c
@@ -55,9 +59,12 @@ expected_sources=(
     external-function-declarations.c
     formal-function-return.c
     fp_register_aliases.c
+    function-pointer-conventions.c
     function-static-scopes.c
+    function-type-flags.c
     function_entry_ranges.S
     function_entry_ranges.c
+    i386-alias-entry.cpp
     i386-profile.c
     later-register-local.c
     minimal.c
@@ -70,6 +77,7 @@ expected_sources=(
     nonzero_load_offset_start.S
     opaque-register-effects.c
     outside-body-flow.c
+    overloaded-signatures.cpp
     recovered-default-returns.c
     recovered-parameter-types.c
     register-copy.c

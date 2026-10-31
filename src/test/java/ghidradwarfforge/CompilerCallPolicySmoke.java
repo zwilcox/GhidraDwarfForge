@@ -53,8 +53,8 @@ public final class CompilerCallPolicySmoke {
                     var diagnostics = new ArrayList<String>();
                     var output = GhidraCompilerCallPolicy.apply(program, description, input,
                         TaskMonitor.DUMMY, diagnostics::add);
-                    require(output.types() == input.types() && output.variableStorage() == input.variableStorage(),
-                        "type or storage graph replaced");
+                    require(output.types().byKey().get("integer") == input.types().byKey().get("integer") &&
+                        output.variableStorage() == input.variableStorage(), "non-function type or storage replaced");
                     require(output.globals().equals(input.globals()) && output.functionStatics().equals(input.functionStatics()),
                         "data/ownership changed");
                     require(output.functions().size() == 2 && output.functionDeclarations().size() == 2,
@@ -76,7 +76,15 @@ public final class CompilerCallPolicySmoke {
                         require(decl.key().equals(input.functionDeclarations().get(i).key()) &&
                             decl.parameters().equals(input.functionDeclarations().get(i).parameters()), "external identity changed");
                     }
-                    require(diagnostics.size() == (blocked ? 4 : 0), "missing compiler restriction diagnostics");
+                    for (int i = 0; i < 2; i++) {
+                        var before = (TypeGraph.SubroutineType) input.types().byKey().get("callback" + i);
+                        var after = (TypeGraph.SubroutineType) output.types().byKey().get(before.key());
+                        require(after.debuggerCallsDisabled() == (blocked || i == 1), "pointer type bypassed compiler guard");
+                        require(before.equals(new TypeGraph.SubroutineType(after.key(), after.name(), after.byteSize(),
+                            after.returnType(), after.parameters(), after.variadic(), after.callingConvention(),
+                            before.debuggerCallRestriction())), "pointer type knowledge changed");
+                    }
+                    require(diagnostics.size() == (blocked ? 6 : 0), "missing compiler restriction diagnostics");
                     if (!blocked) require(output == input, "baseline policy did not preserve model");
                     require(output.equals(GhidraCompilerCallPolicy.apply(program, description, output,
                         TaskMonitor.DUMMY, ignored -> { })), "repeated policy accumulated restrictions");
@@ -116,7 +124,13 @@ public final class CompilerCallPolicySmoke {
             declarations.add(new FunctionDeclaration("external:" + index, "library::function" + index,
                 integer, parameters, index != 0, index != 0, "default", "USER_DEFINED", index != 0, reason));
         }
-        return new ProgramTypeModel(types, functions,
+        var nodes = new ArrayList<TypeGraph.TypeNode>(types.nodes());
+        for (int i = 0; i < functions.size(); i++) {
+            var function = functions.get(i);
+            nodes.add(new TypeGraph.SubroutineType("callback" + i, "callback" + i, 0, integer,
+                function.parameters(), function.variadic(), function.callingConvention(), function.debuggerCallRestriction()));
+        }
+        return new ProgramTypeModel(new TypeGraph(nodes), functions,
             List.of(new ProgramTypeModel.GlobalVariable("global", 0x2000, 4, integer, false, "USER_DEFINED")),
             new VariableStorageModel(List.of()),
             List.of(new ProgramTypeModel.FunctionStaticVariable("private", 0x2004, 4, integer, 0x1000, "USER_DEFINED")),

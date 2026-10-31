@@ -38,9 +38,19 @@ public final class FunctionAliasSymbols {
         if (aliases.isEmpty()) {
             return List.of();
         }
-        if (image.sections().isEmpty() || (image.type() != 2 && image.type() != 3)) {
-            diagnostic.accept("Omitted function aliases: requires section-backed ET_EXEC or ET_DYN");
+        if (image.type() != 2 && image.type() != 3) {
+            diagnostic.accept("Omitted function aliases: requires ET_EXEC or ET_DYN");
             return List.of();
+        }
+        List<ElfLoadAllocations.Allocation> allocations = new ArrayList<>();
+        if (image.sections().isEmpty()) {
+            allocations.addAll(ElfLoadAllocations.read(image, cancelled));
+        }
+        else {
+            for (Section section : image.sections()) {
+                checkCancelled(cancelled);
+                allocations.add(new ElfLoadAllocations.Allocation(section, section.type == 1 ? section.size : 0));
+            }
         }
         long ranges = 0;
         for (FunctionSymbol function : functions) {
@@ -53,7 +63,7 @@ public final class FunctionAliasSymbols {
             evidenceRanges += alias.ranges().size();
         }
         if (aliases.size() > 65536 || evidenceRanges > MAX_NAMES ||
-                evidenceRanges * (image.sections().size() + ranges) > MAX_NAMES) {
+                evidenceRanges * (allocations.size() + ranges) > MAX_NAMES) {
             diagnostic.accept("Omitted function aliases: allocation/ownership comparison budget exceeded");
             return List.of();
         }
@@ -125,31 +135,33 @@ public final class FunctionAliasSymbols {
                                     "overlapping recovered definitions");
                             }
                         }
-                        Section selected = null;
-                        for (Section section : image.sections()) {
+                        ElfLoadAllocations.Allocation selected = null;
+                        for (var allocation : allocations) {
                             checkCancelled(cancelled);
+                            Section section = allocation.section();
                             if ((section.flags & 2) != 0 && section.size > 0 &&
                                     intersects(range.address(), range.size(), section.address, section.size)) {
                                 require(selected == null, "overlapping original allocations");
-                                selected = section;
+                                selected = allocation;
                             }
                         }
-                        require(selected != null && selected.type == 1 && (selected.flags & 6) == 6 &&
-                            range.address() >= selected.address && range.address() - selected.address <= selected.size &&
-                            range.size() <= selected.size - (range.address() - selected.address),
-                            "body has no unique file-backed executable section");
+                        require(selected != null && (selected.section().flags & 6) == 6 &&
+                            range.address() >= selected.section().address &&
+                            range.address() - selected.section().address <= selected.fileSize() &&
+                            range.size() <= selected.fileSize() - (range.address() - selected.section().address),
+                            "body has no unique file-backed executable allocation");
                         String hash = hashes.get(range);
                         if (hash == null) {
                             require(range.size() <= 256L * 1024 * 1024 - codeBytes,
                                 "original-code comparison budget exceeded");
                             codeBytes += range.size();
-                            hash = hash(input, Math.addExact(selected.offset, range.address() - selected.address),
+                            hash = hash(input, Math.addExact(selected.section().offset, range.address() - selected.section().address),
                                 range.size(), cancelled);
                             hashes.put(range, hash);
                         }
                         require(hash.equals(evidence.codeSha256()), "program code differs from original ELF");
                         if (range.contains(alias.address())) {
-                            entrySection = selected;
+                            entrySection = selected.section();
                         }
                     }
                     require(entrySection != null, "primary definition has no entry range");

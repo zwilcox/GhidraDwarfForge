@@ -30,6 +30,7 @@ PINS = {
     "checkerPatchSha256": "69340f63ee78c06309731a40bb1e0e9e193b5d2f659e5f050ef413138649f696",
     "readerPatchSha256": "8468426396e6a28f755077681eec78d326744a535c7aade9d17d9a1acef73b46",
     "diagnosticPatchSha256": "e9f7eb0e613b4a4e859377ad12563ad514d24f7ee81b04378a30b8e99e403139",
+    "callingConventionPatchSha256": "a1b5cc6d63795aeda62b5945bf8991360882c7334003e9912e274638ec073581",
     "configurationSha256": "842bba9230de82059dfcef1485114cf3c33eae8be2973c649d176f4ad18972ef",
 }
 PIN_FILES = {
@@ -37,9 +38,10 @@ PIN_FILES = {
     "source/support/validation/0001-check-line-sequences.patch": "checkerPatchSha256",
     "source/support/validation/0002-accept-bounded-extended-program-count.patch": "readerPatchSha256",
     "source/support/validation/0003-preserve-bounded-harmless-diagnostics.patch": "diagnosticPatchSha256",
+    "source/support/validation/0004-recognize-subroutine-calling-convention.patch": "callingConventionPatchSha256",
     "share/dwarfdump/dwarfdump.conf": "configurationSha256",
 }
-PROFILE = "libdwarf-2.3.2-three-corrections-and-llvm-verify"
+PROFILE = "libdwarf-2.3.2-four-corrections-and-llvm-verify"
 
 
 class EvidenceError(ValueError):

@@ -92,7 +92,7 @@ public final class FunctionAliasSymbolsSmoke {
                 else {
                     header.putInt(32, 0).putShort(48, (short) 0).putShort(50, (short) 0);
                 }
-                check(root, sectionless, List.of(ALIAS), List.of(OWNER), "section-backed");
+                check(root, sectionless, List.of(ALIAS), List.of(OWNER), "file-backed executable allocation");
                 Path path = Files.createTempFile(root, "cancel-", ".elf");
                 Files.write(path, bytes);
                 ElfImage image = ElfImage.read(path);
@@ -122,8 +122,8 @@ public final class FunctionAliasSymbolsSmoke {
                         List.of(OWNER), List.of(), () -> false, diagnostics::add).isEmpty() &&
                         diagnostics.toString().contains("symbol-value policy"), "unproved target accepted");
                 }
-                else if (order == ByteOrder.LITTLE_ENDIAN) {
-                    for (int machine : List.of(62, 183)) {
+                if (order == ByteOrder.LITTLE_ENDIAN) {
+                    for (int machine : wide ? List.of(62, 183) : List.of(3)) {
                         ByteBuffer.wrap(bytes).order(order).putShort(18, (short) machine);
                         Path target = Files.createTempFile(root, "target-", ".elf");
                         Files.write(target, bytes);

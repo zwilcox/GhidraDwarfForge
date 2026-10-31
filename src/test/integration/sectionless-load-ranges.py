@@ -163,6 +163,7 @@ def main():
     parser.add_argument("original", type=Path)
     parser.add_argument("sidecar", type=Path)
     parser.add_argument("--tool", default=os.environ.get("DWARFDUMP", "dwarfdump"))
+    parser.add_argument("--frame-reference", type=Path)
     args = parser.parse_args()
     original_path = args.original.resolve(strict=True)
     sidecar_path = args.sidecar.resolve(strict=True)
@@ -183,7 +184,9 @@ def main():
     def check(path, label):
         log = work / (label + ".dwarfdump.txt")
         result = run([sys.executable, helper, path, log, "--tool", args.tool,
-            "--original", original_path], work / (label + ".runner.txt"))
+            "--original", original_path,
+            *(["--frame-reference", args.frame_reference] if args.frame_reference else [])],
+            work / (label + ".runner.txt"))
         metadata = json.loads(log.with_name(log.name + ".check.json").read_text())
         return result.returncode, metadata, log.read_text()
 

@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import struct
 import subprocess
 import tempfile
@@ -17,6 +18,9 @@ repository = source.parents[2]
 spec = importlib.util.spec_from_file_location('elf_support', source / 'retained-function-aliases-export.py')
 elf_support = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(elf_support)
+spec = importlib.util.spec_from_file_location('inventory_check', source / 'sectionless-alias-check.py')
+inventory_check = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(inventory_check)
 
 
 def digest(path):
@@ -26,9 +30,10 @@ def digest(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
+    parser.add_argument('--sectionless', action='store_true')
     args = parser.parse_args()
     jar = args.ghidra.resolve(strict=True) / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar'
-    results = repository / 'build/test-results/versioned-dynamic-symbols'
+    results = repository / 'build/test-results' / ('sectionless-versioned-dynamic-symbols' if args.sectionless else 'versioned-dynamic-symbols')
     results.mkdir(parents=True, exist_ok=True)
     root = Path(tempfile.mkdtemp(prefix='run.', dir=results))
     print(root, flush=True)
@@ -36,7 +41,7 @@ def main():
     classes.mkdir()
     probe = repository / 'src/test/java/ghidradwarfforge/elf/LocalSymbolMergeProbe.java'
     preparation = source / 'ghidra_scripts/PrepareVersionedAliases.java'
-    protected = {str(path): digest(path) for path in (jar, probe, preparation, Path(__file__).resolve())}
+    protected = {str(path): digest(path) for path in (jar, probe, preparation, Path(__file__).resolve(), source / 'sectionless-alias-check.py')}
     javac = str(Path(os.environ['JAVA_HOME']) / 'bin/javac')
     java = str(Path(os.environ.get('FORGE_JAVA21_HOME', os.environ['JAVA_HOME'])) / 'bin/java')
 
@@ -65,8 +70,16 @@ def main():
         run(case / 'compile.log', ['gcc', '-O1', '-g3', '-gdwarf-5', '-fPIC', '-shared',
             '-Wl,--build-id=sha1', '-Wl,--version-script=' + str(versions), fixture, '-o', reference])
         run(case / 'strip.log', ['objcopy', '--strip-all', reference, binary])
-        protected.update({str(path): digest(path) for path in (fixture, versions, reference, binary)})
-        ident, header, original = elf_support.elf(binary)
+        oracle = binary
+        if args.sectionless:
+            oracle = case / 'sectioned.so'
+            shutil.copy2(binary, oracle)
+            contents = bytearray(binary.read_bytes())
+            struct.pack_into('<Q', contents, 40, 0)
+            struct.pack_into('<HH', contents, 60, 0, 0)
+            binary.write_bytes(contents)
+        protected.update({str(path): digest(path) for path in (fixture, versions, reference, binary, oracle)})
+        ident, header, original = elf_support.elf(oracle)
         assert ident[4:6] == b'\x02\x01' and header[1] == 62 and '.symtab' not in original
         dynamic, records = original['.dynsym']
         strings = original['.dynstr'][1]
@@ -106,15 +119,26 @@ def main():
         output = case / 'aliases.dbg'
         assert output.read_bytes() == (case / 'repeat.dbg').read_bytes()
         assert output.read_bytes() == automatic.read_bytes()
+        if args.sectionless:
+            inventory_check.verify(oracle, binary, output,
+                [{'alias': 'recovered::alternate_' + name, 'entry': row[4], 'size': row[5]}
+                    for name, row in defined.items()], case / 'raw-inventory.json')
+            inventory_check.corruption_controls(oracle, binary, output,
+                [{'alias': 'recovered::alternate_' + name, 'entry': row[4], 'size': row[5]}
+                    for name, row in defined.items()], case / 'corruption-controls')
         _, emitted_header, emitted = elf_support.elf(output)
         assert emitted_header[4] == emitted_header[8] == emitted_header[9] == 0
         for name in ('.dynsym', '.dynstr', '.gnu.version', '.gnu.version_d', '.gnu.version_r',
                 '.gnu.hash', '.dynamic', '.note.gnu.build-id'):
             if name in original:
-                assert emitted[name][1] == original[name][1], name
-                # The writer rebuilds .shstrtab; names are compared by decoded key.
-                assert emitted[name][0][1:4] == original[name][0][1:4], name
-                assert emitted[name][0][5:] == original[name][0][5:], name
+                if args.sectionless:
+                    section, payload = original[name]
+                    assert output.read_bytes()[section[4]:section[4] + section[5]] == payload, name
+                else:
+                    assert emitted[name][1] == original[name][1], name
+                    # The writer rebuilds .shstrtab; compare decoded names and original semantics.
+                    assert emitted[name][0][1:4] == original[name][0][1:4], name
+                    assert emitted[name][0][5:] == original[name][0][5:], name
         expected = {'old_api': defined['old_api'][4], 'new_api': defined['new_api'][4]}
         expected.update({'api' + ('@@' if default == version else '@') + version:
             defined['old_api' if version == 'V1' else 'new_api'][4] for version in ('V1', 'V2')})
@@ -136,7 +160,7 @@ def main():
                 '-ex', 'list recovered::analyst_' + name])
             assert 'type = int (int)' in text and 'value' in text
         unqualified = {}
-        for name, path in (('compiler', reference), ('original', binary), ('sidecar', output)):
+        for name, path in (('compiler', reference), ('original', oracle), ('sidecar', output)):
             text = run(case / ('unqualified-' + name + '.log'), ['gdb-multiarch', '-q', '-nx', '-batch',
                 '-ex', 'set debuginfod enabled off', '-ex', 'set auto-solib-add off',
                 '-ex', 'file ' + str(binary), '-ex', 'symbol-file ' + str(path), '-ex', "print/x &'api'"])
@@ -163,13 +187,15 @@ def main():
         text = run(case / 'llvm.log', ['llvm-dwarfdump', '--verify', output])
         assert 'No errors.' in text
         run(case / 'strict.log', ['python3', source / 'check-dwarfdump.py', output,
-            case / 'strict-checks.log', '--original', binary])
+            case / 'strict-checks.log', '--original', binary,
+            *(['--frame-reference', case / 'sectioned.so'] if args.sectionless else [])])
         observations.append({'defaultVersion': default, 'qualifiedLookup': lookup, 'unqualifiedLookup': unqualified,
             'nativeLoaderDefault': default_offset, 'nativeVersionedCalls': runtime,
             'gdbDefaultMatchesLoader': unqualified['sidecar'] == default_offset,
             'sidecarSha256': digest(output)})
     assert protected == {path: digest(Path(path)) for path in protected}
     (root / 'result.json').write_text(json.dumps({'status': 'PASS',
+        'sectionless': args.sectionless,
         'scope': 'Headless curated export, independent writer equality, qualified GDB lookup/types/source and native loader calls',
         'cases': observations, 'protected': protected}, indent=4) + '\n')
     print('versioned-dynamic-symbols=PASS ' + str(root), flush=True)

@@ -60,6 +60,16 @@ public class PrepareExternalDeclarations extends GhidraScript {
                     currentProgram, SourceType.USER_DEFINED));
             unused.setVarArgs(true);
             unused.setNoReturn(true);
+            var triple = new ghidra.program.model.data.StructureDataType("ExternalTriple", 0, manager);
+            for (String field : List.of("first", "second", "third")) {
+                triple.add(new ghidra.program.model.data.UnsignedLongLongDataType(manager), field, null);
+            }
+            Function aggregate = currentProgram.getExternalManager().addExtFunction(
+                "analyst_library", "external_aggregate", null, SourceType.USER_DEFINED).getFunction();
+            aggregate.updateFunction(currentProgram.getCompilerSpec().getDefaultCallingConvention().getName(),
+                new ghidra.program.model.listing.ReturnParameterImpl(triple, currentProgram),
+                Function.FunctionUpdateType.DYNAMIC_STORAGE_ALL_PARAMS, true, SourceType.USER_DEFINED,
+                new ParameterImpl("seed", integer, currentProgram, SourceType.USER_DEFINED));
             currentProgram.getExternalManager().addExtFunction(
                 "analyst_library", "unknown_signature", null, SourceType.USER_DEFINED);
             var global = toAddr(Long.decode(args[2]));

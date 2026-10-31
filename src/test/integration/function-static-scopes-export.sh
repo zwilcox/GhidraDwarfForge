@@ -26,6 +26,7 @@ if [[ ${#targets[@]} -eq 0 ]]; then
     targets=(x86_64 mips32be)
 fi
 source "$repository_dir/src/test/integration/elf-layout-gdb-oracle.sh"
+source "$repository_dir/src/test/integration/qemu-socket.sh"
 result_root="$repository_dir/build/test-results/function-static-scopes"
 if [[ "$qualified" == 1 ]]; then
     result_root="$repository_dir/build/test-results/qualified-function-names"
@@ -47,6 +48,7 @@ files = [repository / name for name in (
     'src/test/fixtures/function-static-scopes.c',
     'src/test/integration/function-static-scopes-export.sh',
     'src/test/integration/function-static-scopes-gdb.py',
+    'src/test/integration/qemu-socket.sh',
     'src/test/integration/ghidra_scripts/PrepareFunctionStaticScopes.java')]
 files += [p for p in (ghidra / 'Ghidra/Extensions/GhidraDwarfForge').rglob('*') if p.is_file()]
 snapshot = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
@@ -56,13 +58,8 @@ if phase == 'after':
 PY
 }
 if [[ "$class_names" == 1 ]]; then snapshot_class_inputs before; fi
-emulator_pid=
-port=$((29000 + ($$ % 10000)))
 cleanup() {
-    if [[ -n "$emulator_pid" ]]; then
-        kill "$emulator_pid" 2>/dev/null || true
-        wait "$emulator_pid" 2>/dev/null || true
-    fi
+    qemu_socket_cleanup
     echo "function-static-scopes results: $result_dir"
 }
 trap cleanup EXIT
@@ -74,11 +71,8 @@ run_gdb() {
         load_symbols=(-ex "symbol-file \"$sidecar\"")
     fi
     if [[ -n "$emulator" ]]; then
-        "$emulator" -L "$sysroot" -g "$port" "$executable" \
-            > "$log.emulator" 2>&1 &
-        emulator_pid=$!
-        sleep 0.2
-        connect=(-ex "set sysroot $sysroot" -ex "target remote :$port")
+        qemu_socket_start "$log.emulator" "$emulator" "$sysroot" "$executable"
+        connect=(-ex "set sysroot $sysroot" -ex "target remote $qemu_socket_path")
         run_command=continue
     fi
     FORGE_SCOPE_ADDRESSES="$addresses" FORGE_SCOPE_KIND="$kind" \
@@ -90,9 +84,8 @@ run_gdb() {
         -ex "file \"$executable\"" "${load_symbols[@]}" "${connect[@]}" \
         -x "$repository_dir/src/test/integration/function-static-scopes-gdb.py" \
         > "$log" 2>&1
-    if [[ -n "$emulator_pid" ]]; then
-        wait "$emulator_pid"
-        emulator_pid=
+    if [[ -n "$qemu_socket_pid" ]]; then
+        qemu_socket_wait
     fi
     local oracle="$case_dir/compiler-gdb.txt" diagnostics="$log.diagnostics"
     if [[ "$kind" != forge ]]; then

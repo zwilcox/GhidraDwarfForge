@@ -1,5 +1,14 @@
 # Validation record
 
+
+**CONFIRMED local profile update; hosted acceptance pending:** the function-pointer
+call safeguard uses a fourth pinned validation-only patch to recognize the
+established LLVM/GDB subroutine calling-convention extension. The strict parser
+is unchanged. New evidence records all four pins explicitly; prior three-patch
+receipts below remain historical evidence for their exact tool profile. See
+[FUNCTION-POINTER-CALL-ABI.md](FUNCTION-POINTER-CALL-ABI.md) and
+[the validator patch record](../support/validation/README.md).
+
 > **Corrective release gate closed (2026-10-24):** alpha.2 was published from
 > exact main `2f88c4a` after all twelve push-CI jobs, the final package audit and
 > downloaded-asset verification passed. See [the final publication record](#corrective-alpha2-official-publication-2026-10-24).

@@ -2,6 +2,7 @@
 import json
 import os
 from pathlib import Path
+import struct
 import gdb
 
 case = Path(os.environ['ALIAS_CASE'])
@@ -14,6 +15,16 @@ binary = Path(metadata['input'])
 gdb.execute('file ' + str(binary))
 gdb.execute('symbol-file ' + str(case / ('aliases.reference' if compiler else 'aliases.dbg')))
 remote = os.environ.get('ALIAS_REMOTE', '')
+with binary.open('rb') as stream:
+    header = stream.read(64)
+sectionless_arm = target == 'arm32' and struct.unpack_from('<I', header, 32)[0] == 0
+architecture_before = gdb.execute('show architecture', to_string=True) if sectionless_arm else None
+if sectionless_arm:
+    # The fixture compiler selects ARMv7-A. Without .ARM.attributes, GDB's
+    # automatic armv3m fallback misdecodes modern ARM instructions. This is an
+    # explicit test profile, not inferred original ELF metadata or a mode override.
+    assert metadata['gdbArchitecture'] == 'armv7'
+    gdb.execute('set architecture ' + metadata['gdbArchitecture'])
 
 
 def expression(name):
@@ -47,7 +58,20 @@ for row in metadata['retainedOriginals']:
         original_lookup[row['name']] = {'absent': True}
 
 lookup = {}
+static_instructions = {}
+
+
+def check_instructions(row, bias=0):
+    decoded = gdb.selected_inferior().architecture().disassemble(row['entry'] + bias, row['end'] + bias - 1)
+    assert [(i['addr'], i['length']) for i in decoded] == [
+        (i['address'] + bias, i['length']) for i in row['instructions']], decoded
+    assert decoded[-1]['asm'].split() == ['bx', 'lr'], decoded
+    static_instructions[row['name']] = decoded
+
+
 for row in functions:
+    if target == 'arm32' and not sectionless_arm:
+        check_instructions(row)
     names = [row['original']] + (['recovered::alternate_alias'] if row['name'].endswith('analyst_alias') else [])
     for name in names:
         present = compiler or metadata['symbols'] == 'retained'
@@ -76,6 +100,14 @@ for row in functions:
 if remote:
     gdb.execute('set sysroot ' + os.environ['ALIAS_SYSROOT'])
     gdb.execute('target remote ' + remote)
+if sectionless_arm:
+    # GDB cannot read file memory from this sectionless original/NOBITS sidecar
+    # pair. Inspect remote memory before the first continue instead. Alias tags
+    # still control decoding; wrong-tag runtime controls must reject it.
+    assert remote
+    for row in functions:
+        bias = int(gdb.parse_and_eval(expression(row['name']))) - row['entry']
+        check_instructions(row, bias)
 
 rows, exits, navigation, alias_scopes = [], [], [], []
 gdb.events.exited.connect(lambda event: exits.append(getattr(event, 'exit_code', None)))
@@ -118,6 +150,21 @@ for iteration, argument in enumerate((19, -19)):
         guard = gdb.Breakpoint('*' + hex(return_pc), internal=True)
         command = 'next' if iteration == 0 else 'step'
         gdb.execute(command)
+        if not row['entry'] + bias < int(gdb.parse_and_eval('$pc')) <= return_pc:
+            # A source step may enter the fixture's independently decoded PIC
+            # helper. Prove its exact bytes and stacked return before returning.
+            thunk = row.get('entryThunk')
+            assert target == 'i386' and command == 'step' and thunk is not None
+            thunk_pc = int(gdb.parse_and_eval('$pc'))
+            assert thunk_pc == thunk['entry'] + bias
+            assert bytes(gdb.selected_inferior().read_memory(thunk_pc, 4)).hex() == thunk['bytes']
+            assert int(gdb.parse_and_eval('*(unsigned int *)$esp')) == thunk['returnPc'] + bias
+            back = gdb.Breakpoint('*' + hex(thunk['returnPc'] + bias), internal=True)
+            gdb.execute('continue')
+            assert int(gdb.parse_and_eval('$pc')) == thunk['returnPc'] + bias
+            back.delete()
+            rows[-1]['steppedPicThunk'] = {'linkPc': thunk['entry'], 'bytes': thunk['bytes'],
+                'returnPc': thunk['returnPc']}
         assert row['entry'] + bias < int(gdb.parse_and_eval('$pc')) <= return_pc
         navigation.append(command)
         if int(gdb.parse_and_eval('$pc')) != return_pc:
@@ -132,5 +179,9 @@ for iteration, argument in enumerate((19, -19)):
 gdb.execute('continue')
 assert exits == [0] and navigation == ['next', 'next', 'step', 'step']
 (case / (variant + '-gdb.json')).write_text(json.dumps({'status': 'PASS', 'lookup': lookup,
-    'originalLookup': original_lookup, 'calls': rows, 'aliasScopes': alias_scopes, 'navigation': navigation, 'exitCodes': exits}, indent=4) + '\n')
+    'originalLookup': original_lookup, 'calls': rows, 'aliasScopes': alias_scopes,
+    'navigation': navigation, 'exitCodes': exits, 'staticInstructions': static_instructions,
+    'instructionObservation': 'stopped remote before first continue' if sectionless_arm else 'file before attachment',
+    'architectureBeforeProfile': architecture_before,
+    'explicitArchitecture': metadata['gdbArchitecture'] if sectionless_arm else None}, indent=4) + '\n')
 print('retained-function-aliases-gdb=' + variant + ' PASS')
