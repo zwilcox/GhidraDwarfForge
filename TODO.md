@@ -6,8 +6,18 @@ including branches/loops. Twelve target/width/address cases pass 24 candidate
 and 12 previous exports, 7,560 GDB observations and stale-slot/owner controls.
 All 23 actual Java 21 suites, six runtime regressions, validators, determinism
 and failure/cancellation checks pass. See `docs/MUTABLE-STACK-MAPPINGS.md`.
-PR100's separate AArch64 harness correction is in progress; neither P1.11a nor
-P3.3 is complete.
+PR100's AArch64 harness correction `e37035a1` is included by normal merge;
+its replacement hosted gate remains pending. Neither P1.11a nor P3.3 is complete.
+
+**CONFIRMED PR100 hosted harness failure and local correction:** AArch64 run
+`41229139226` stopped on an old diagnostic assertion before GDB. The new scalar
+spill proof retains `recovered_add` parameters, while the semantic harness still
+expected register-only prefixes and unavailable values. Tests now require the
+stack-spill diagnostic and exact `left=19`, `right=23` values. Four exec/repeat,
+PIE and shared-object exports/GDB runs pass against the exact hosted Java 21
+package. Receipt: `a3483015113053cf4390dcd2bb9b5475c638fc109cbcd38c4dda20e8eae75c9f`.
+Production code is unchanged; a fresh exact-head hosted gate remains required.
+P1.11a and P3.3 remain incomplete.
 
 **CONFIRMED integration:** PR99 head `d69b07471c92aaf447e962b7779756b5f931dce1`
 passes all twelve jobs in run `41222554336` and exact hosted package/raw/host
