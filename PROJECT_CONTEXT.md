@@ -1,5 +1,17 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED integration:** PR100 head `53e182e31f5abe38327f43647b30d502a5372395`
+passes all twelve jobs in run `41234746854` and independent exact-package,
+raw-runtime and host review. Normal merge `97a50d1a3c826e639e7754cffed9a98c199616a6`
+preserves the tested tree. Stack transfers, explicit definitions/reuse,
+closed control flow and inspected calls are accepted within their documented
+bounds. Receipt: `1c1879493f65c7afe8ffec26cf4ec606a8d4b360033929fb7d634aeb838e6e80`.
+See `docs/LIFETIME-CORE-ACCEPTANCE.md`. Earlier pending PR100 notes are historical.
+The separate main-push run `41245137186`, mutable-stack/mixed-piece hosted gate
+and richer scope work retain their own acceptance requirements. P1.11a and
+P3.3 remain incomplete.
+
+
 **CONFIRMED local mixed-piece acceptance; hosted acceptance pending:**
 all six x86-64/AArch64 exec/PIE/rebased-PIE cases pass independent piece spills,
 reloads, loss, branches, loops, body holes and call controls. Twelve candidate
