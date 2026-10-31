@@ -118,6 +118,21 @@ for iteration, argument in enumerate((19, -19)):
         guard = gdb.Breakpoint('*' + hex(return_pc), internal=True)
         command = 'next' if iteration == 0 else 'step'
         gdb.execute(command)
+        if not row['entry'] + bias < int(gdb.parse_and_eval('$pc')) <= return_pc:
+            # A source step may enter the fixture's independently decoded PIC
+            # helper. Prove its exact bytes and stacked return before returning.
+            thunk = row.get('entryThunk')
+            assert target == 'i386' and command == 'step' and thunk is not None
+            thunk_pc = int(gdb.parse_and_eval('$pc'))
+            assert thunk_pc == thunk['entry'] + bias
+            assert bytes(gdb.selected_inferior().read_memory(thunk_pc, 4)).hex() == thunk['bytes']
+            assert int(gdb.parse_and_eval('*(unsigned int *)$esp')) == thunk['returnPc'] + bias
+            back = gdb.Breakpoint('*' + hex(thunk['returnPc'] + bias), internal=True)
+            gdb.execute('continue')
+            assert int(gdb.parse_and_eval('$pc')) == thunk['returnPc'] + bias
+            back.delete()
+            rows[-1]['steppedPicThunk'] = {'linkPc': thunk['entry'], 'bytes': thunk['bytes'],
+                'returnPc': thunk['returnPc']}
         assert row['entry'] + bias < int(gdb.parse_and_eval('$pc')) <= return_pc
         navigation.append(command)
         if int(gdb.parse_and_eval('$pc')) != return_pc:

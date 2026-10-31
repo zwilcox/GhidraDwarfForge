@@ -482,7 +482,7 @@ jobs:
               variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke secondRegisterCopySmoke laterRegisterLocalSmoke definedRegisterLocalSmoke stackSpillSmoke directLeafCallSmoke compositeRegisterPrefixSmoke \
               stackFirstUseSmoke \
               opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
-              functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke mipsFunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke curatedThunkSmoke callingConventionPolicySmoke customCallStorageSmoke compilerCallPolicySmoke mipsFloatingCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
+              functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke curatedThunkSmoke callingConventionPolicySmoke customCallStorageSmoke compilerCallPolicySmoke mipsFloatingCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfAddressRangesSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
@@ -870,6 +870,7 @@ jobs:
                   python3 src/test/integration/sectionless-load-ranges.py \
                       "$PWD/build/fixtures/$TARGET/semantic.exec.no-sections.stripped" \
                       "$PWD/build/fixtures/$TARGET/semantic.exec.no-sections.ghidra-forge.dbg" \
+                      --frame-reference "$PWD/build/fixtures/$TARGET/semantic.exec.stripped" \
                       --tool "$DWARFDUMP"
               fi
               if [[ "$role" == "shared" ]]; then
@@ -1006,6 +1007,23 @@ jobs:
           for role in exec exec-rebased pie pie-rebased; do
               python3 src/test/integration/i386-shared-profile-export.py "$GHIDRA_INSTALL_DIR" --role "$role"
           done
+
+      - name: i386 analyst aliases preserve names across stripped and sectionless ELF
+        if: matrix.target == 'x86_64'
+        run: |
+          set -euo pipefail
+          base="$PWD/build/test-results/i386-alias-bases"
+          for role in exec pie pie-rebased; do
+              for symbols in retained stripped; do
+                  python3 src/test/integration/retained-function-aliases-export.py \
+                      "$GHIDRA_INSTALL_DIR" i386 --role "$role" --symbols "$symbols" \
+                      --hash-style both --results-root "$base"
+              done
+          done
+          python3 src/test/integration/local-symbol-merge-integration.py \
+              "$GHIDRA_INSTALL_DIR" i386 --base-root "$base"
+          python3 src/test/integration/sectionless-function-aliases.py \
+              "$GHIDRA_INSTALL_DIR" i386 --base-root "$base"
 
       - name: Function-owned statics and duplicate-name lookup
         env:
@@ -1590,7 +1608,7 @@ jobs:
           & .\gradlew.bat dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
-            functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke mipsFunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke curatedThunkSmoke callingConventionPolicySmoke customCallStorageSmoke compilerCallPolicySmoke mipsFloatingCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
+            functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke curatedThunkSmoke callingConventionPolicySmoke customCallStorageSmoke compilerCallPolicySmoke mipsFloatingCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
             registerCopySmoke secondRegisterCopySmoke laterRegisterLocalSmoke definedRegisterLocalSmoke stackSpillSmoke directLeafCallSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
             elfBuildIdSmoke exportReportClaimsSmoke matchedElfPrefixSmoke `
             matchedElfAllocationsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke executableProgramBytesSmoke `

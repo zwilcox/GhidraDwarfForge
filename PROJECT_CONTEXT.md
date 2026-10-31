@@ -1,5 +1,19 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local implementation; acceptance incomplete (2026-10-31):**
+bounded, cancellable PT_GNU_EH_FRAME discovery now exposes unchanged original
+frame bytes and fixes the i386 sectionless rebased-PIE `next` failure. The new
+suite passes 896 checks; 34 actual Java 21 suites pass. Five-target alias cases,
+omission/versioned regressions, failure and cancellation pass locally. Exposing
+frames also required strict, byte-bound fixture corroboration for inherited
+validator messages, including older objcopy inputs. Fresh final regression and
+independent raw review pass, including 44 final-checker artifact replays and
+97 captured-evidence controls. Receipt:
+`7af0ac26e8c977b0a3d7f90e5d8ef6a0c1cbc215a2ff7fd5cc0dd5b8481cc3b4`.
+Committed-package and hosted acceptance remain pending. See
+`docs/SECTIONLESS-UNWIND.md` and `docs/I386-FUNCTION-ALIASES.md`.
+The following research-only production status is historical. P1.7/#66 remains open.
+
 **CONFIRMED new sectionless unwind gap (2026-10-31):** the i386 alias
 candidate passes six base and six automatic-alias exec/PIE/rebase cases, but
 sectionless rebased PIE fails `next` because the original unwind bytes have no

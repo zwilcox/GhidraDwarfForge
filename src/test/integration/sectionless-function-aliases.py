@@ -29,7 +29,7 @@ def digest(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
-    parser.add_argument('target', choices=('x86_64', 'aarch64', 'mips32be', 'mips32le'))
+    parser.add_argument('target', choices=('x86_64', 'i386', 'aarch64', 'mips32be', 'mips32le'))
     parser.add_argument('--base-root', type=Path, required=True)
     parser.add_argument('--expect-omission', action='store_true', help='Require complete-count diagnostic and intact primary debugging')
     parser.add_argument('--role', choices=('exec', 'pie', 'pie-rebased'))
@@ -133,7 +133,7 @@ def main():
         run('headers', ['readelf', '-hSWs', case / 'aliases.dbg'])
         assert 'No errors.' in run('llvm', ['llvm-dwarfdump', '--verify', case / 'aliases.dbg'])
         run('strict', ['python3', source / 'check-dwarfdump.py', case / 'aliases.dbg',
-            case / 'strict-checks.log', '--original', binary])
+            case / 'strict-checks.log', '--original', binary, '--frame-reference', base / 'aliases.input'])
         _, _, emitted = elf_support.elf(case / 'aliases.dbg')
         if args.expect_omission:
             assert '.symtab' not in emitted

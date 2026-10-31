@@ -9,7 +9,7 @@ trap qemu_socket_cleanup EXIT
 emulator=
 sysroot=
 case "$target" in
-    x86_64) ;;
+    x86_64|i386) ;;
     aarch64) emulator=qemu-aarch64-static; sysroot=/usr/aarch64-linux-gnu ;;
     mips32be) emulator=qemu-mips-static; sysroot=/usr/mips-linux-gnu ;;
     mips32le) emulator=qemu-mipsel-static; sysroot=/usr/mipsel-linux-gnu ;;

@@ -1315,6 +1315,17 @@ Define precedence among analyst-applied listing/signature types and decompiler g
 
 ## P1.7 Emit complete function signatures
 
+**CONFIRMED locally; i386 alias/unwind acceptance incomplete (2026-10-31):**
+six retained/stripped base cases, six automatic-alias cases and three sectionless
+roles pass after exposing original table-proven unwind bytes. Cross-target,
+omission, versioned-symbol, failure and cancellation checks pass; 896 new model
+checks and 34 actual Java 21 suites pass. Final strict-reference regressions,
+independent raw review, 44 final-checker replays and 97 captured-evidence controls
+pass. Committed-package review and hosted gates remain pending. See
+`docs/I386-FUNCTION-ALIASES.md` and `docs/SECTIONLESS-UNWIND.md`.
+This does not complete P1.7 or ARM/Thumb aliases, broader ABI/return classification
+and class/linkage scope work.
+
 **CONFIRMED locally; sectionless alias acceptance incomplete (2026-10-31):**
 bounded PT_DYNAMIC inventories now preserve original symbols before analyst
 alias insertion. Twelve four-target exec/PIE/rebase cases, four incomplete-count

@@ -388,7 +388,7 @@ public final class MinimalDwarfSidecarExporter {
         if (sections.putIfAbsent(".debug_aranges", addressRanges) != null) {
             throw new IllegalStateException("producer supplied an unexpected address lookup");
         }
-        new MatchedElfSidecarWriter().write(elf, destination, sections, supplemental, cancelled);
+        new MatchedElfSidecarWriter().write(elf, destination, sections, supplemental, cancelled, diagnostic);
         return new ExportResult(target, ordered.size(), List.copyOf(sections.keySet()),
             version);
     }

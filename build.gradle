@@ -871,3 +871,11 @@ tasks.register("sectionlessDynamicSymbolsSmoke", JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.elf.SectionlessDynamicSymbolsSmoke"
 }
+
+tasks.register("sectionlessUnwindSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded original unwind discovery without ELF section headers"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.SectionlessUnwindSmoke"
+}

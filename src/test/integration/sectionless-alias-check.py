@@ -24,7 +24,19 @@ def verify(original, binary, sidecar, aliases, receipt):
     assert output_header[:4] == header[:4] and output_header[6:8] == header[6:8]
     assert output_header[4] == output_header[8] == output_header[9] == 0
     assert emitted[header[7]:len(data)] == data[header[7]:], 'retained source prefix changed'
+    unwind = None
+    if '.eh_frame_hdr' in old:
+        before, original_frames = old['.eh_frame']
+        after, recovered_frames = new['.eh_frame']
+        assert after[1:5] == before[1:5] and after[6:8] == (0, 0) and after[8] == 1
+        assert 0 < after[5] <= before[5] and original_frames.startswith(recovered_frames)
+        assert not any(original_frames[len(recovered_frames):])
+        unwind = {'address': after[3], 'offset': after[4], 'size': after[5],
+            'originalSize': before[5], 'sha256': hashlib.sha256(recovered_frames).hexdigest()}
+    else:
+        assert '.eh_frame' not in new, 'invented an unproved original frame section'
     loads = []
+    has_dynamic = False
     for index in range(header[9]):
         fields = struct.unpack_from(order + ('IIQQQQQQ' if wide else 'IIIIIIII'),
             data, header[4] + index * header[8])
@@ -32,6 +44,7 @@ def verify(original, binary, sidecar, aliases, receipt):
             kind, flags, offset, address, _, size, memory, _ = fields
         else:
             kind, offset, address, _, size, memory, flags, _ = fields
+        has_dynamic |= kind == 2
         if kind != 1 or memory == 0:
             continue
         ordinal = len(loads) + 1
@@ -40,12 +53,18 @@ def verify(original, binary, sidecar, aliases, receipt):
         assert section[1:4] == (8, 2 | (1 if flags & 2 else 0) | (4 if flags & 1 else 0), address)
         assert section[4:10] == (offset, memory, 0, 0, 1, 0)
         loads.append((ordinal, address, memory, size))
-    old_table, old_bytes = old['.dynsym']
+    width = 24 if wide else 16
+    if '.dynsym' in old:
+        old_table, old_bytes = old['.dynsym']
+        old_strings = list(old.values())[old_table[6]][1]
+    else:
+        assert not has_dynamic, 'missing section-backed dynamic inventory oracle'
+        # No dynamic inventory exists: the new table begins with a null record.
+        old_table, old_bytes = (0, 2, 0, 0, 0, width, 0, 1, 1, width), bytes(width)
+        old_strings = b'\0'
     new_table, new_bytes = new['.symtab']
-    old_strings = list(old.values())[old_table[6]][1]
     strings = list(new.values())[new_table[6]][1]
     assert strings.startswith(old_strings)
-    width = 24 if wide else 16
     assert old_table[9] == new_table[9] == width and new_table[2:4] == (0, 0)
     assert new_table[7] == old_table[7] + len(aliases)
     assert len(new_bytes) == len(old_bytes) + width * len(aliases)
@@ -97,7 +116,7 @@ def verify(original, binary, sidecar, aliases, receipt):
         added[name.decode()] = (value, size)
     assert added == {row['alias']: (row['entry'], row['size']) for row in aliases}
     result = {'status': 'RAW_SECTIONLESS_INVENTORY_PASS', 'originalRecords': len(preserved),
-        'preserved': preserved, 'added': added, 'loads': loads,
+        'preserved': preserved, 'added': added, 'loads': loads, 'unwind': unwind,
         'artifacts': {str(path): hashlib.sha256(path.read_bytes()).hexdigest()
             for path in (original, binary, sidecar, Path(__file__).resolve())}}
     receipt.write_text(json.dumps(result, indent=4) + '\n')
@@ -110,15 +129,18 @@ def corruption_controls(original, binary, sidecar, aliases, root):
     ident, header, sections = elf_support.elf(sidecar)
     wide, order = ident[4] == 2, '<' if ident[5] == 1 else '>'
     table = sections['.symtab'][0]
-    old_table = elf_support.elf(original)[2]['.dynsym'][0]
+    original_sections = elf_support.elf(original)[2]
+    original_locals = original_sections['.dynsym'][0][7] if '.dynsym' in original_sections else 1
     width = 24 if wide else 16
+    # A static fixture has no inherited nonlocal row; corrupt its null binding.
+    binding_row = table[7] if table[7] * width < table[5] else 0
     table_header = header[5] + list(sections).index('.symtab') * header[10]
     modifications = {
         'missing-record': (table_header + (32 if wide else 20), 'Q' if wide else 'I', table[5] - width),
         'wrong-boundary': (table_header + (44 if wide else 28), 'I', table[7] - 1),
-        'changed-binding': (table[4] + table[7] * width + (4 if wide else 12), 'B', 0),
-        'undefined-alias': (table[4] + old_table[7] * width + (6 if wide else 14), 'H', 0),
-        'unnamed-alias': (table[4] + old_table[7] * width, 'I', 0),
+        'changed-binding': (table[4] + binding_row * width + (4 if wide else 12), 'B', 0 if binding_row else 16),
+        'undefined-alias': (table[4] + original_locals * width + (6 if wide else 14), 'H', 0),
+        'unnamed-alias': (table[4] + original_locals * width, 'I', 0),
     }
     rejected = []
     for label, (offset, fmt, value) in modifications.items():

@@ -140,6 +140,68 @@ def main():
     strings = baseline[names[4]:names[4] + names[5]]
     frame_index = next(index for index, section in enumerate(sections)
         if strings[section[0]:].split(b"\0", 1)[0] == b".eh_frame")
+    sectionless = work / "sectionless.elf"
+    erased = bytearray(baseline)
+    struct.pack_into("<Q", erased, 40, 0)
+    struct.pack_into("<HH", erased, 60, 0, 0)
+    sectionless.write_bytes(erased)
+    subprocess.run([sys.executable, str(helper), str(artifact), str(work / "bound-frame-reference.txt"),
+        "--original", str(sectionless), "--frame-reference", str(original)], check=True)
+    truncated = work / "sectionless-trailing-table-removed.elf"
+    shortened = erased[:section_offset]
+    struct.pack_into("<H", shortened, 58, 0)
+    truncated.write_bytes(shortened)
+    subprocess.run([sys.executable, str(helper), str(artifact), str(work / "trailing-table-reference.txt"),
+        "--original", str(truncated), "--frame-reference", str(original)], check=True)
+    for label, data in (
+            ("missing-frame-tail", shortened[:sections[frame_index][4] + sections[frame_index][5] - 1]),
+            ("changed-retained-byte", shortened[:])):
+        if label == "changed-retained-byte":
+            data[0x100] ^= 1
+        candidate = work / (label + ".elf")
+        candidate.write_bytes(data)
+        result = subprocess.run([sys.executable, str(helper), str(artifact), str(work / (label + ".txt")),
+            "--original", str(candidate), "--frame-reference", str(original)], text=True, capture_output=True)
+        assert result.returncode != 0 and ("frame reference" in result.stderr or
+            "frame bytes differ" in result.stderr), result.stderr
+    for label, offset in (("body", 0x100), ("header", 18), ("frame", sections[frame_index][4])):
+        candidate = work / ("reference-mismatch-" + label)
+        changed = bytearray(baseline)
+        changed[offset] ^= 1
+        candidate.write_bytes(changed)
+        result = subprocess.run([sys.executable, str(helper), str(artifact),
+            str(work / ("reference-mismatch-" + label + ".txt")), "--original", str(sectionless),
+            "--frame-reference", str(candidate)], text=True, capture_output=True)
+        assert result.returncode != 0 and "frame reference" in result.stderr
+    assert sections[frame_index][5] > 4 and baseline[
+        sections[frame_index][4] + sections[frame_index][5] - 4:
+        sections[frame_index][4] + sections[frame_index][5]] == bytes(4)
+    # A table-proven extent can stop before the original zero terminator.
+    trimmed = work / "trimmed-frame.dbg"
+    data = bytearray(artifact.read_bytes())
+    table = struct.unpack_from("<Q", data, 40)[0]
+    width, count, names_index_ = struct.unpack_from("<HHH", data, 58)
+    headers = [struct.unpack_from("<IIQQQQIIQQ", data, table + i * width) for i in range(count)]
+    strings_ = headers[names_index_]
+    names_ = data[strings_[4]:strings_[4] + strings_[5]]
+    index = next(i for i, h in enumerate(headers) if names_[h[0]:].split(b"\0", 1)[0] == b".eh_frame")
+    struct.pack_into("<Q", data, table + index * width + 32, headers[index][5] - 4)
+    trimmed.write_bytes(data)
+    subprocess.run([sys.executable, str(helper), str(trimmed), str(work / "trimmed-bound-reference.txt"),
+        "--original", str(sectionless), "--frame-reference", str(original)], check=True)
+    for kind in ("direct", "symlink", "hardlink"):
+        collision = work / ("reference-log-alias-" + kind)
+        if kind == "direct":
+            collision = original
+        elif kind == "symlink":
+            collision.symlink_to(original)
+        else:
+            os.link(original, collision)
+        result = subprocess.run([sys.executable, str(helper), str(artifact), str(collision),
+            "--original", str(sectionless), "--frame-reference", str(original)], text=True, capture_output=True)
+        assert result.returncode != 0 and "aliases an ELF input" in result.stderr
+        assert original.read_bytes() == baseline
+    print("sectionless-frame-reference-byte-binding-and-controls=PASS", flush=True)
     for name, offset in (("frame-byte", sections[frame_index][4]), ("machine", 18),
             ("frame-address", section_offset + frame_index * entry_size + 16)):
         changed = bytearray(baseline)

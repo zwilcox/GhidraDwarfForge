@@ -57,6 +57,7 @@ javac -d "$work/classes" \
     "$repository_dir/src/main/java/ghidradwarfforge/elf/ElfLoadAllocations.java" \
     "$repository_dir/src/main/java/ghidradwarfforge/elf/MipsDynamicSymbols.java" \
     "$repository_dir/src/main/java/ghidradwarfforge/elf/SectionlessDynamicSymbols.java" \
+    "$repository_dir/src/main/java/ghidradwarfforge/elf/SectionlessUnwind.java" \
     "$repository_dir/src/main/java/ghidradwarfforge/elf/MatchedElfSidecarWriter.java" \
     "$repository_dir/src/test/java/ghidradwarfforge/elf/LargeElfSidecarSmoke.java"
 java -Xmx64m -cp "$work/classes" ghidradwarfforge.elf.LargeElfSidecarSmoke \

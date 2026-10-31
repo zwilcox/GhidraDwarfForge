@@ -364,8 +364,13 @@ for target in "${targets[@]}"; do
     else
         llvm-dwarfdump --verify "$output" \
             >"$result_dir/$target.$fixture_role.llvm-dwarfdump.txt" 2>&1
+        frame_reference=()
+        if [[ "$fixture_role" == "exec.no-sections" ]]; then
+            frame_reference=(--frame-reference "$fixture_dir/$target/semantic.exec.stripped")
+        fi
         python3 "$repository_dir/src/test/integration/check-dwarfdump.py" \
-            "$output" "$result_dir/$target.$fixture_role.dwarfdump.txt" --original "$input"
+            "$output" "$result_dir/$target.$fixture_role.dwarfdump.txt" --original "$input" \
+            "${frame_reference[@]}"
     fi
 done
 

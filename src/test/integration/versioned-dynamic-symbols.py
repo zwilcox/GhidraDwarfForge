@@ -187,7 +187,8 @@ def main():
         text = run(case / 'llvm.log', ['llvm-dwarfdump', '--verify', output])
         assert 'No errors.' in text
         run(case / 'strict.log', ['python3', source / 'check-dwarfdump.py', output,
-            case / 'strict-checks.log', '--original', binary])
+            case / 'strict-checks.log', '--original', binary,
+            *(['--frame-reference', case / 'sectioned.so'] if args.sectionless else [])])
         observations.append({'defaultVersion': default, 'qualifiedLookup': lookup, 'unqualifiedLookup': unqualified,
             'nativeLoaderDefault': default_offset, 'nativeVersionedCalls': runtime,
             'gdbDefaultMatchesLoader': unqualified['sidecar'] == default_offset,

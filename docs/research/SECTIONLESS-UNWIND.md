@@ -1,7 +1,9 @@
 # Sectionless unwind discovery: i386 alias acceptance blocker
 
-**CONFIRMED defect and research repair (2026-10-31). Production recovery is
-PLANNED.** P1.7/#66 remains open; the i386 alias candidate is not accepted.
+**HISTORICAL research checkpoint (2026-10-31).** The defect and independent
+repair below led to a bounded production implementation. See
+[current implementation and validation](../SECTIONLESS-UNWIND.md).
+P1.7/#66 remains open; full i386 alias acceptance is pending.
 
 Six fresh i386 retained/fully-stripped exec/PIE/rebase base cases and six
 automatic analyst-alias cases pass structural validators and GDB. The same

@@ -122,8 +122,8 @@ public final class FunctionAliasSymbolsSmoke {
                         List.of(OWNER), List.of(), () -> false, diagnostics::add).isEmpty() &&
                         diagnostics.toString().contains("symbol-value policy"), "unproved target accepted");
                 }
-                else if (order == ByteOrder.LITTLE_ENDIAN) {
-                    for (int machine : List.of(62, 183)) {
+                if (order == ByteOrder.LITTLE_ENDIAN) {
+                    for (int machine : wide ? List.of(62, 183) : List.of(3)) {
                         ByteBuffer.wrap(bytes).order(order).putShort(18, (short) machine);
                         Path target = Files.createTempFile(root, "target-", ".elf");
                         Files.write(target, bytes);

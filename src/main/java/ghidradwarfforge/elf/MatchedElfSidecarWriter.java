@@ -69,8 +69,16 @@ public final class MatchedElfSidecarWriter {
     /** Serialize target-planned local symbols against the same image used for planning. */
     public void write(ElfImage image, Path output, Map<String, byte[]> debugSections,
             List<ElfLocalFunctionSymbol> symbols, BooleanSupplier cancelled) throws IOException {
+        write(image, output, debugSections, symbols, cancelled, ignored -> { });
+    }
+
+    /** Production callers retain diagnostics for unsupported original unwind metadata. */
+    public void write(ElfImage image, Path output, Map<String, byte[]> debugSections,
+            List<ElfLocalFunctionSymbol> symbols, BooleanSupplier cancelled,
+            java.util.function.Consumer<String> diagnostic) throws IOException {
         Objects.requireNonNull(image, "image");
         Objects.requireNonNull(cancelled, "cancelled");
+        Objects.requireNonNull(diagnostic, "diagnostic");
         symbols = List.copyOf(symbols);
         checkCancelled(cancelled);
         Path original = image.sourcePath();
@@ -95,7 +103,7 @@ public final class MatchedElfSidecarWriter {
             }
         }
 
-        Layout layout = prepare(image, debugSections, symbols, cancelled);
+        Layout layout = prepare(image, debugSections, symbols, cancelled, diagnostic);
         Path temporary = Files.createTempFile(parent, ".ghidra-dwarf-forge-", ".tmp");
         boolean moved = false;
         try {
@@ -145,7 +153,8 @@ public final class MatchedElfSidecarWriter {
 
     /** Plan and validate the append-only layout before copying any input bytes. */
     private Layout prepare(ElfImage image, Map<String, byte[]> debugSections,
-            List<ElfLocalFunctionSymbol> symbols, BooleanSupplier cancelled) throws IOException {
+            List<ElfLocalFunctionSymbol> symbols, BooleanSupplier cancelled,
+            java.util.function.Consumer<String> diagnostic) throws IOException {
         long offset = image.fileSize();
         List<Section> sections = new ArrayList<>();
         if (image.sections().isEmpty()) {
@@ -154,6 +163,11 @@ public final class MatchedElfSidecarWriter {
             sections.add(nullSection);
             for (var allocation : ElfLoadAllocations.read(image, cancelled)) {
                 sections.add(allocation.section());
+            }
+            // Append after all load identities so symbol indices remain stable.
+            Section unwind = SectionlessUnwind.find(image, cancelled, diagnostic);
+            if (unwind != null) {
+                sections.add(unwind);
             }
         }
         else {

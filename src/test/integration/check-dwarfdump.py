@@ -128,7 +128,7 @@ def validate_output(text, inherited=(), original=False):
         "reported_errors": inherited_count, "uncorroborated_errors": 0}
 
 
-def elf_frame_identity(path):
+def elf_frame_identity(path, include_offset=False):
     """Read bounded ELF metadata and the named frame section without rewriting input."""
     with path.open("rb") as stream:
         length = os.fstat(stream.fileno()).st_size
@@ -176,11 +176,54 @@ def elf_frame_identity(path):
             "frame corroboration requires one nonempty PROGBITS .eh_frame")
         section = frames[0]
         payload = region(section[4], section[5])
-        return {"class": header[4], "byte_order": header[5], "os_abi": header[7],
+        identity = {"class": header[4], "byte_order": header[5], "os_abi": header[7],
             "abi_version": header[8], "machine": struct.unpack_from(endian + "H", header, 18)[0],
             "flags": struct.unpack_from(endian + "I", header, 48 if wide else 36)[0],
             "section_address": section[3], "section_size": section[5],
-            "section_sha256": hashlib.sha256(payload).hexdigest()}, payload
+            "section_sha256": hashlib.sha256(payload).hexdigest()}
+        if include_offset:
+            identity["section_offset"] = section[4]
+        return identity, payload
+
+
+def sectionless_reference(original, reference):
+    """Bind an oracle to every original byte except cleared SHT fields; allow removed trailing tables."""
+    before = [path.stat() for path in (original, reference)]
+    require(before[0].st_size <= before[1].st_size, "frame reference is shorter than original")
+    digests = [hashlib.sha256(), hashlib.sha256()]
+    with original.open("rb") as first, reference.open("rb") as second:
+        actual, expected = first.read(64), bytearray(second.read(64))
+        require(len(actual) >= 52 and actual[:4] == b"\x7fELF" and
+            actual[4] in (1, 2) and actual[5] in (1, 2), "invalid sectionless original")
+        wide, endian = actual[4] == 2, "<" if actual[5] == 1 else ">"
+        require(len(actual) == 64 and actual[:16] == expected[:16], "frame reference identity differs")
+        require(struct.unpack_from(endian + ("Q" if wide else "I"), expected, 40 if wide else 32)[0] > 0 and
+            struct.unpack_from(endian + "H", expected, 62 if wide else 50)[0] > 0,
+            "frame reference has no section-header oracle")
+        digests[0].update(actual)
+        digests[1].update(expected)
+        struct.pack_into(endian + ("Q" if wide else "I"), expected, 40 if wide else 32, 0)
+        struct.pack_into(endian + "HH", expected, 60 if wide else 48, 0, 0)
+        # objcopy also clears e_shentsize and removes trailing section metadata.
+        if struct.unpack_from(endian + "H", actual, 58 if wide else 46)[0] == 0:
+            struct.pack_into(endian + "H", expected, 58 if wide else 46, 0)
+        require(actual == expected, "frame reference differs beyond cleared section-header fields")
+        while True:
+            left = first.read(65536)
+            right = second.read(len(left))
+            require(left == right, "frame reference payload differs from original")
+            if not left:
+                break
+            digests[0].update(left)
+            digests[1].update(right)
+        for remainder in iter(lambda: second.read(65536), b""):
+            digests[1].update(remainder)
+    for path, initial in zip((original, reference), before):
+        after = path.stat()
+        require((initial.st_dev, initial.st_ino, initial.st_size, initial.st_mtime_ns) ==
+            (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns), "frame reference input changed")
+    return {"path": str(reference), "sha256": digests[1].hexdigest(),
+        "sectionless_original_sha256": digests[0].hexdigest()}
 
 
 def main():
@@ -190,11 +233,15 @@ def main():
     parser.add_argument("--tool", default=os.environ.get("DWARFDUMP", "dwarfdump"))
     parser.add_argument("--original", type=Path,
         help="corroborate only byte-identical inherited .eh_frame alignment diagnostics")
+    parser.add_argument("--frame-reference", type=Path,
+        help="section-backed fixture oracle, matching every original byte except cleared section-header fields")
     arguments = parser.parse_args()
     tool = shutil.which(arguments.tool)
     require(tool is not None, "dwarfdump executable was not found: " + arguments.tool)
     artifact = arguments.artifact.resolve(strict=True)
     original = arguments.original.resolve(strict=True) if arguments.original is not None else None
+    reference = arguments.frame_reference.resolve(strict=True) if arguments.frame_reference is not None else None
+    require(reference is None or original is not None, "frame reference requires a sectionless original")
     log = arguments.log.absolute()
     command = [tool, "--no-follow-debuglink", "-ka", "-ki", "-kd", str(artifact)]
     metadata = {"command": command, "cwd": str(Path.cwd()), "status": "FAILED"}
@@ -202,7 +249,7 @@ def main():
     stderr_path = log.with_name(log.name + ".stderr")
     original_log = log.with_name(log.name + ".original.txt")
     original_stderr = original_log.with_name(original_log.name + ".stderr")
-    inputs = [artifact] + ([original] if original is not None else [])
+    inputs = [artifact] + ([original] if original is not None else []) + ([reference] if reference is not None else [])
     destinations = [log, stderr_path, metadata_path] + (
         [original_log, original_stderr] if original is not None else [])
 
@@ -212,6 +259,7 @@ def main():
 
     require(original is None or not aliases(original, artifact),
         "original must be distinct from the artifact being checked")
+    require(reference is None or not aliases(reference, artifact), "frame reference must differ from artifact")
     for index, destination in enumerate(destinations):
         require(not any(aliases(destination, source) for source in inputs),
             "checker log aliases an ELF input: " + str(destination))
@@ -219,6 +267,8 @@ def main():
             "checker log destinations alias each other: " + str(destination))
     log.parent.mkdir(parents=True, exist_ok=True)
     try:
+        if reference is not None:
+            metadata["frame_reference"] = sectionless_reference(original, reference)
         with log.open("wb") as output, stderr_path.open("wb") as errors:
             result = subprocess.run(command, stdout=output, stderr=errors, check=False)
         metadata["exit_status"] = result.returncode
@@ -228,11 +278,21 @@ def main():
         text = log.read_text(encoding="utf-8", errors="strict")
         inherited = frame_diagnostics(text)
         if inherited and original is not None:
-            actual_identity, actual_bytes = elf_frame_identity(artifact)
-            original_identity, original_bytes = elf_frame_identity(original)
-            require(actual_identity == original_identity and actual_bytes == original_bytes,
-                "original and sidecar ELF/frame identities or bytes differ")
-            original_command = [*command[:-1], str(original)]
+            actual_identity, actual_bytes = elf_frame_identity(artifact, include_offset=reference is not None)
+            frame_original = reference if reference is not None else original
+            original_identity, original_bytes = elf_frame_identity(frame_original, include_offset=reference is not None)
+            if reference is None:
+                require(actual_identity == original_identity and actual_bytes == original_bytes,
+                    "original and sidecar ELF/frame identities or bytes differ")
+            else:
+                # Discovery ends at the last table-proven FDE. Only original
+                # zero termination/padding may lie beyond that exact prefix.
+                require({k: v for k, v in actual_identity.items() if k not in ("section_size", "section_sha256")} ==
+                    {k: v for k, v in original_identity.items() if k not in ("section_size", "section_sha256")} and
+                    original_identity["section_offset"] + len(original_bytes) <= original.stat().st_size and
+                    len(actual_bytes) <= len(original_bytes) and original_bytes.startswith(actual_bytes) and
+                    not any(original_bytes[len(actual_bytes):]), "discovered frame bytes differ from bound reference")
+            original_command = [*command[:-1], str(frame_original)]
             with original_log.open("wb") as output, original_stderr.open("wb") as errors:
                 original_result = subprocess.run(original_command, stdout=output,
                     stderr=errors, check=False)

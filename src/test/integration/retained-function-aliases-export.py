@@ -35,7 +35,7 @@ def elf(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
-    parser.add_argument('target', choices=('x86_64', 'aarch64', 'mips32be', 'mips32le'))
+    parser.add_argument('target', choices=('x86_64', 'i386', 'aarch64', 'mips32be', 'mips32le'))
     parser.add_argument('--role', choices=('exec', 'pie', 'pie-rebased'), default='exec')
     parser.add_argument('--symbols', choices=('retained', 'stripped'), default='retained')
     parser.add_argument('--results-root', type=Path,
@@ -69,19 +69,26 @@ def main():
         source.parent / 'performance/export-benchmark.py',
         source / 'ghidra_scripts/PrepareRetainedAliases.java', source / 'ghidra_scripts/RebaseFixtureProgram.java']
     protected += [p for p in module.rglob('*') if p.is_file()]
+    extra_sources = []
+    if args.target == 'i386':
+        extra_sources.append(source.parent / 'fixtures/i386-alias-entry.cpp')
+        protected += extra_sources
     before = {str(p): support.digest(p) for p in protected}
     write('protected-before.json', before)
     reference, binary = case / 'aliases.reference', case / 'aliases.input'
-    prefix = {'x86_64': '', 'aarch64': 'aarch64-linux-gnu-',
+    prefix = {'x86_64': '', 'i386': '', 'aarch64': 'aarch64-linux-gnu-',
         'mips32be': 'mips-linux-gnu-', 'mips32le': 'mipsel-linux-gnu-'}[args.target]
     cc, objcopy = prefix + 'g++', prefix + 'objcopy'
     flags = ['-fno-pie', '-no-pie'] if args.role == 'exec' else ['-fPIE', '-pie']
+    if args.target == 'i386':
+        flags = ['-m32', '-nostdlib', '-fno-stack-protector', '-Wl,-e,_start',
+            *(['-fno-pie', '-static'] if args.role == 'exec' else ['-fPIE', '-static-pie'])]
     if args.mips_fp32:
         flags.append('-mfp32')
     if args.hash_style != 'default':
         flags.append('-Wl,--hash-style=' + args.hash_style)
     run('compile', [cc, '-O1', '-g3', '-gdwarf-5', '-gno-variable-location-views', *flags,
-        '-Wl,--build-id=sha1', fixture, '-o', reference])
+        '-Wl,--build-id=sha1', fixture, *extra_sources, '-o', reference])
     run('strip', [objcopy, '--strip-debug' if args.symbols == 'retained' else '--strip-all', reference, binary])
     before.update({str(reference): support.digest(reference), str(binary): support.digest(binary)})
     write('protected-before.json', before)
@@ -113,7 +120,17 @@ def main():
             assert offset >= 0 and offset + 8 <= len(payload)
             assert int.from_bytes(payload[offset:offset + 4], 'big' if ident[5] == 2 else 'little') == 0x03e00008
         else:
-            row['returnInstruction'] = row['end'] - (1 if args.target == 'x86_64' else 4)
+            row['returnInstruction'] = row['end'] - (1 if args.target in ('x86_64', 'i386') else 4)
+        if args.target == 'i386' and args.role != 'exec':
+            _, _, sections = elf(reference)
+            section, payload = list(sections.values())[f['section']]
+            offset = row['entry'] - section[3]
+            assert payload[offset] == 0xe8  # Independently decode this fixture's PC-thunk call.
+            thunk = row['entry'] + 5 + int.from_bytes(payload[offset + 1:offset + 5], 'little', signed=True)
+            thunk_offset = thunk - section[3]
+            assert 0 <= thunk_offset <= len(payload) - 4
+            assert payload[thunk_offset:thunk_offset + 4] == bytes.fromhex('8b0424c3')
+            row['entryThunk'] = {'entry': thunk, 'bytes': '8b0424c3', 'returnPc': row['entry'] + 5}
         rows.append(row)
         prep.append(' '.join([name, hex(row['entry']), hex(row['end']), hex(row['privateAddress'])]))
     write('symbols.json', symbols)

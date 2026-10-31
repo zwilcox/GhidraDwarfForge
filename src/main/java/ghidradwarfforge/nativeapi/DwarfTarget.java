@@ -141,7 +141,7 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
             return MipsFunctionAliasSymbols.plan(image, aliases, functions, reserved, cancelled, diagnostic);
         }
         // ARM mode tagging is not inferred from pointer width.
-        if (!List.of("x86_64", "aarch64").contains(name)) {
+        if (!List.of("x86", "x86_64", "aarch64").contains(name)) {
             diagnostic.accept("Omitted function aliases: target " + name +
                 " has no audited alias symbol-value policy");
             return List.of();
