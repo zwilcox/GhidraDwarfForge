@@ -68,10 +68,10 @@ final class SectionlessUnwind {
         long end = start;
         for (long index = 0; index < count; index++) {
             checkCancelled(reader.cancelled);
-            long pc = encoded(reader, bytes, header.virtualAddress, tableEncoding);
+            long initialLocation = encoded(reader, bytes, header.virtualAddress, tableEncoding);
             long fde = encoded(reader, bytes, header.virtualAddress, tableEncoding);
-            require(pc > lastPc && referenced.add(fde), "unordered or duplicate unwind search-table entry");
-            lastPc = pc;
+            require(initialLocation > lastPc && referenced.add(fde), "unordered or duplicate unwind search-table entry");
+            lastPc = initialLocation;
             require(fde >= start && fde - start <= ElfImage.MAX_TABLE_BYTES - 8,
                 "unwind FDE outside bounded frame extent");
             long length = length(reader.bytes(fde, 4).getInt());

@@ -1,5 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED failed hosted gate and local correction (2026-10-31):** PR89
+run `41178632812` stops before compilation because the architecture scan matches
+the generic unwind local variable `pc`. Renaming it to `initialLocation` passes
+the unchanged scan. All executable bytecode and other JAR entries match the
+runtime-tested candidate; only the local-variable debug name differs. The 896
+unwind checks, 34 actual Java 21 suites and a fresh sectionless i386 rebased-PIE
+export/validator/GDB case pass. Correction receipt: `9b988bde18f43a0162fe45c25b9ae31b430b987a4d6bde09aafc68015337e7ec`.
+The failed run is retained; fresh hosted acceptance remains pending.
+
 **CONFIRMED new sectionless unwind gap (2026-10-31):** the i386 alias
 candidate passes six base and six automatic-alias exec/PIE/rebase cases, but
 sectionless rebased PIE fails `next` because the original unwind bytes have no

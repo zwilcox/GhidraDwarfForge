@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED failed hosted gate and local correction (2026-10-31):** PR89
+run `41178632812` stops before compilation because the architecture scan matches
+the generic unwind local variable `pc`. Renaming it to `initialLocation` passes
+the unchanged scan. All executable bytecode and other JAR entries match the
+runtime-tested candidate; only the local-variable debug name differs. The 896
+unwind checks, 34 actual Java 21 suites and a fresh sectionless i386 rebased-PIE
+export/validator/GDB case pass. Correction receipt: `9b988bde18f43a0162fe45c25b9ae31b430b987a4d6bde09aafc68015337e7ec`.
+The failed run is retained; fresh hosted acceptance remains pending.
+
 **CONFIRMED local implementation; acceptance incomplete (2026-10-31):**
 bounded, cancellable PT_GNU_EH_FRAME discovery now exposes unchanged original
 frame bytes and fixes the i386 sectionless rebased-PIE `next` failure. The new

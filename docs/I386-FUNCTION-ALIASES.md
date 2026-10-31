@@ -58,3 +58,14 @@ CI runs the i386 cases in the x86-64 host lane. This is bounded native Linux
 i386 runtime evidence, not a new Windows target or a general ABI guarantee.
 ARM/Thumb aliases, broader calling conventions and richer scope relationships
 remain separate P1.7 work. No release is published by this change.
+
+## First hosted gate correction
+
+**CONFIRMED failed hosted gate and local correction (2026-10-31):** PR89
+run `41178632812` stops before compilation because the architecture scan matches
+the generic unwind local variable `pc`. Renaming it to `initialLocation` passes
+the unchanged scan. All executable bytecode and other JAR entries match the
+runtime-tested candidate; only the local-variable debug name differs. The 896
+unwind checks, 34 actual Java 21 suites and a fresh sectionless i386 rebased-PIE
+export/validator/GDB case pass. Correction receipt: `9b988bde18f43a0162fe45c25b9ae31b430b987a4d6bde09aafc68015337e7ec`.
+The failed run is retained; fresh hosted acceptance remains pending.
