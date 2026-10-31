@@ -146,6 +146,16 @@ validators, original preservation, determinism and cleanup pass. See
 `COMPOSITE-VALUE-LIFETIMES.md` for exact bounds and evidence. Final package and
 hosted integration gates remain required. Every P3.3 row remains in scope.
 
+## Scope API evidence checkpoint
+
+**CONFIRMED research; implementation pending:** the checked-in probe passes
+four headless imports and compiler GDB oracles on both runtime targets.
+`research/SCOPE-EVIDENCE.md` records actual class/THIS identities, flattened
+shadow locals, lost lexical boundaries and the imported static namespace trap.
+Use the explicit saved-program evidence-provider direction plus real Ghidra
+relationships; do not infer scopes from first-use, suffixes or qualified names.
+All six P3.3 rows and remaining lifetime integration requirements remain open.
+
 ## Completion audit
 
 For every row, record implementation/evidence files, exact reviewed source and

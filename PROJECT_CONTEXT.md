@@ -1,5 +1,12 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED scope API research; implementation pending:** four real imports
+and both x86-64/AArch64 compiler GDB oracles establish preserved class/THIS/type
+identity, flattened shadowed locals and a same-name static namespace that is
+not the actual function owner. See `docs/research/SCOPE-EVIDENCE.md` for the
+reproducible probe, API audit and explicit evidence-provider direction. This
+does not complete any P3.3 row or replace P1.11a hosted acceptance.
+
 **CONFIRMED local mixed-piece acceptance; hosted acceptance pending:**
 all six x86-64/AArch64 exec/PIE/rebased-PIE cases pass independent piece spills,
 reloads, loss, branches, loops, body holes and call controls. Twelve candidate
