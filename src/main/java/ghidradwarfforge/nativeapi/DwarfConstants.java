@@ -25,6 +25,7 @@ public final class DwarfConstants {
 
     public static final long DW_TAG_COMPILE_UNIT = 0x11L;
     public static final long DW_TAG_SUBPROGRAM = 0x2eL;
+    public static final long DW_TAG_IMPORTED_DECLARATION = 0x08L;
     public static final long DW_TAG_LEXICAL_BLOCK = 0x0bL;
     public static final long DW_TAG_ARRAY_TYPE = 0x01L;
     public static final long DW_TAG_ENUMERATION_TYPE = 0x04L;
@@ -71,6 +72,8 @@ public final class DwarfConstants {
     public static final short DW_AT_ENCODING = 0x3e;
     public static final short DW_AT_EXTERNAL = 0x3f;
     public static final short DW_AT_SPECIFICATION = 0x47;
+    public static final short DW_AT_IMPORT = 0x18;
+    public static final short DW_AT_TRAMPOLINE = 0x56;
     public static final short DW_AT_TYPE = 0x49;
     public static final short DW_AT_DATA_BIT_OFFSET = 0x6b;
     public static final short DW_AT_NORETURN = (short) 0x87;

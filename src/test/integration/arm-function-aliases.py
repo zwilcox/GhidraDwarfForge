@@ -11,6 +11,8 @@ import struct
 import subprocess
 import tempfile
 
+from alias_relationships import check_alias_relationships
+
 source = Path(__file__).resolve().parent
 repository = source.parents[2]
 spec = importlib.util.spec_from_file_location('elf_support', source / 'retained-function-aliases-export.py')
@@ -59,7 +61,7 @@ def main():
         case = Path(tempfile.mkdtemp(prefix='.'.join((args.arm_mode, metadata['role'], metadata['symbols'])) + '.', dir=root))
         print(case, flush=True)
         protected = [p for p in base.rglob('*') if p.is_file()] + [p for p in module.rglob('*') if p.is_file()]
-        protected += [Path(__file__), probe, source / 'retained-function-aliases-export.py',
+        protected += [Path(__file__), probe, source / 'alias_relationships.py', source / 'retained-function-aliases-export.py',
             source / 'local-symbol-merge-gdb.py', source / 'local-symbol-merge-gdb.sh',
             source / 'ghidra_scripts/PrepareLocalSymbolMerge.java', source / 'check-dwarfdump.py']
         protected += list(classes.glob('**/*.class'))
@@ -114,6 +116,7 @@ def main():
             row['original'] = label['alias']
             expected[label['alias']] = (row['elfSymbolValue'], label['size'])
         (case / 'metadata.json').write_text(json.dumps(metadata, indent=4) + '\n')
+        check_alias_relationships(case, {row['original']: row['entry'] for row in metadata['functions']})
         _, _, original = elf_support.elf(case / 'aliases.input')
         _, _, baseline = elf_support.elf(case / 'baseline.dbg')
         _, _, automatic = elf_support.elf(case / 'automatic.dbg')
@@ -132,12 +135,12 @@ def main():
         (case / 'symbols.tsv').write_text(''.join('\t'.join(map(str, row)) + '\n' for row in records))
         for name in ('writer.dbg', 'writer-repeat.dbg'):
             text = run(name, [java, '-cp', os.pathsep.join((str(classes), str(jar))), 'ghidradwarfforge.elf.LocalSymbolMergeProbe',
-                case / 'aliases.input', case / 'baseline.dbg', case / 'symbols.tsv', case / name, len(records)])
+                case / 'aliases.input', case / 'automatic.dbg', case / 'symbols.tsv', case / name, len(records)])
             assert 'java=21.' in text and 'curated-alias-writer=PASS' in text
             assert jar.resolve().as_uri() in text.replace('file:/', 'file:///')
             assert (case / name).read_bytes() == (case / 'automatic.dbg').read_bytes()
         for name, (_, payload) in baseline.items():
-            if name.startswith('.debug_'):
+            if name.startswith('.debug_') and name not in ('.debug_info', '.debug_abbrev', '.debug_str'):
                 assert automatic[name][1] == payload
         table, payload = baseline['.symtab'] if '.symtab' in baseline else baseline['.dynsym']
         names = baseline['.strtab' if '.symtab' in baseline else '.dynstr'][1]

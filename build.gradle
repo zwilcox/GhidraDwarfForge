@@ -1181,3 +1181,23 @@ tasks.register("staticRecoverySmoke", JavaExec) {
     systemProperty "application.settingsdir", file("build/tmp/static-recovery/settings").absolutePath
     systemProperty "application.cachedir", file("build/tmp/static-recovery/cache").absolutePath
 }
+
+tasks.register("functionRelationsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks exact function relationships, cycles and absent targets"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.types.FunctionRelationsSmoke"
+}
+
+tasks.register("functionRelationExtractionSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks saved direct thunk targets, external identities and immutable rebases"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.FunctionRelationExtractionSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/function-relations/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/function-relations/cache").absolutePath
+}

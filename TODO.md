@@ -3138,6 +3138,15 @@ after merge and post-merge validation.
 
 ## P3.3 Add richer scopes and declarations
 
+**CONFIRMED local function relationships; hosted/full-scope acceptance pending:**
+saved direct thunk targets now emit exact `DW_AT_trampoline` references; accepted
+analyst aliases add addressless imports of the canonical definition. Twenty-one
+actual Java 21 suites, 28 isolated artifacts, six thunk roles and 24 alias roles
+on x86-64/AArch64/both MIPS byte orders pass. Existing declarations/source/storage
+remain unchanged; wrong-hash/owner/collision and source-failure controls pass.
+See `docs/FUNCTION-RELATIONSHIPS.md` for exact evidence, the unavailable local
+ARM32 toolchain and remaining host/scope acceptance. The full goal remains open.
+
 Tracking: [#73](https://github.com/zwilcox/GhidraDwarfForge/issues/73).
 
 **CONFIRMED local static recovery; hosted/full-scope acceptance pending:**

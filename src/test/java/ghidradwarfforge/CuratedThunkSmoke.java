@@ -162,6 +162,10 @@ public final class CuratedThunkSmoke {
             signature.parameters().get(0).name().equals("value") &&
             model.types().byKey().get(signature.returnType().key()).name().equals("int"), "formal signature lost");
         require(model.functionStatics().size() == 2, "static controls missing");
+        require(model.functionRelations().thunks().size() == 1 &&
+            model.functionRelations().thunks().getFirst().function().address() == 0x1100 &&
+            model.functionRelations().thunks().getFirst().target().address() == 0x1000,
+            "saved direct thunk relationship lost");
         var statics = FunctionStaticPolicy.select(model, source);
         require(statics.exported().size() == 1 && statics.exported().get(0).ownerAddress() == 0x1100 &&
             statics.diagnostics().size() == 1, "intentional omission suppressed curated static or retained failed owner");

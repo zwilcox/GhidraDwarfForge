@@ -291,3 +291,14 @@ parent/global lookup. Seventeen actual Java 21 suites and existing static,
 class/object and discontiguous-local regressions pass. See
 `STATIC-SCOPE-EVIDENCE.md`. Inferred/decompiler-only statics, alias/origin,
 same-name type/category behavior and outstanding integration/audits remain open.
+
+## Saved function relationship checkpoint
+
+**CONFIRMED locally; hosted/full-scope acceptance pending:** direct saved thunk
+identities and accepted analyst aliases have explicit destination references,
+without duplicate function ranges or inherited source/storage. The 21 Java 21
+suites, 28 isolated artifacts, six thunk roles and 24 alias roles pass; see
+`FUNCTION-RELATIONSHIPS.md`. Local ARM runtime is unverified because the
+cross-toolchain is unavailable; its hosted gate stays required. Same-name
+runtime fixtures, artificial-semantics audit and all pending lifetime/scope
+integration requirements remain open.

@@ -612,7 +612,8 @@ public final class GhidraTypeGraph {
         var graph = new TypeGraph(new ArrayList<>(extractor.nodes.values()));
         return new ProgramTypeModel(graph,
             signatures, globals, new VariableStorageModel(variableLocations), functionStatics,
-            declarations, lexicalScopes, classScopes.finish(graph));
+            declarations, lexicalScopes, classScopes.finish(graph),
+            GhidraFunctionRelations.extract(program, signatures, declarations, rebaseDelta, monitor, diagnostic));
     }
 
     private static GhidraStaticRecovery.Candidate recoveredStatic(GhidraStaticRecovery.Result result, long id) {

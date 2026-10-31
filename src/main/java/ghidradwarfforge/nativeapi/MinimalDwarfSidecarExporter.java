@@ -26,6 +26,9 @@ import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_NORETURN;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_PROTOTYPED;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_TYPE;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_SPECIFICATION;
+import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_IMPORT;
+import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_TRAMPOLINE;
+import static ghidradwarfforge.nativeapi.DwarfConstants.DW_TAG_IMPORTED_DECLARATION;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_DLV_OK;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_FORM_STRP;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_LANG_C11;
@@ -363,8 +366,13 @@ public final class MinimalDwarfSidecarExporter {
         List<ElfLocalFunctionSymbol> modeSymbols = target.planFunctionModeSymbols(
             elf, modeCues, cancelled, diagnostic);
         List<ElfLocalFunctionSymbol> supplemental = new ArrayList<>(modeSymbols);
-        supplemental.addAll(target.planFunctionAliases(elf, aliases, ordered, modeSymbols,
-            aliasModeCues, cancelled, diagnostic));
+        var plannedAliases = target.planFunctionAliases(elf, aliases, ordered, modeSymbols,
+            aliasModeCues, cancelled, diagnostic);
+        supplemental.addAll(plannedAliases);
+        var acceptedAliasNames = plannedAliases.stream().map(ElfLocalFunctionSymbol::name)
+            .collect(java.util.stream.Collectors.toSet());
+        var relatedAliases = aliases.stream().filter(alias -> acceptedAliasNames.contains(alias.name()))
+            .distinct().sorted(Comparator.comparing(ElfFunctionAlias::name)).toList();
         byte[] addressRanges = DwarfAddressRanges.build(ordered,
             target.addressBytes(), elf.byteOrder());
         LibDwarfConsumer consumer = Native.load(consumerPath.toString(), LibDwarfConsumer.class);
@@ -409,7 +417,7 @@ public final class MinimalDwarfSidecarExporter {
             target.addressBytes(), elf.byteOrder());
         Map<String, byte[]> sections = produce(producer, consumer, target, ordered,
             unitName, syntheticSource, typeModel, lineTable, rangeLists, locationLists,
-            elf.byteOrder());
+            elf.byteOrder(), relatedAliases);
         if (sections.putIfAbsent(".debug_aranges", addressRanges) != null) {
             throw new IllegalStateException("producer supplied an unexpected address lookup");
         }
@@ -423,7 +431,7 @@ public final class MinimalDwarfSidecarExporter {
             String unitName, SyntheticSourceFile syntheticSource, ProgramTypeModel typeModel,
             byte[] lineTable, Dwarf5RangeLists.Result rangeLists,
             Dwarf5LocationLists.Result locationLists,
-            ByteOrder byteOrder) {
+            ByteOrder byteOrder, List<ElfFunctionAlias> aliases) {
         Map<Long, SectionRecord> sections = new LinkedHashMap<>();
         long[] nextSection = { 1 };
         long[] nextSymbol = { 1 };
@@ -467,6 +475,7 @@ public final class MinimalDwarfSidecarExporter {
             Map<VariableKey, VariableLocation> variableLocations =
                 variableLocations(typeModel);
             Map<Long, Die> functionDies = new HashMap<>();
+            Map<ClassScopeModel.FunctionReference, Die> relatedFunctions = new HashMap<>();
             Map<ghidradwarfforge.types.LexicalScopeModel.Key, Die> lexicalOwners = new HashMap<>();
             Set<Long> lexicalAddresses = new java.util.HashSet<>();
             var functionStatics = FunctionStaticPolicy.select(typeModel, syntheticSource)
@@ -483,6 +492,7 @@ public final class MinimalDwarfSidecarExporter {
             for (FunctionSymbol function : functions) {
                 Die die = newDie(producer, consumer, debug, DW_TAG_SUBPROGRAM, unit, errorOut);
                 functionDies.put(function.address(), die);
+                relatedFunctions.put(ClassScopeModel.FunctionReference.definition(function.name(), function.address()), die);
                 // C11 stays truthful. Plain analyst scopes are a flat display
                 // name on the CU-owned definition, not guessed language scopes,
                 // linkage names or duplicate alias DIEs.
@@ -610,6 +620,7 @@ public final class MinimalDwarfSidecarExporter {
             if (typeModel != null) {
                 for (ProgramTypeModel.FunctionDeclaration declaration : typeModel.functionDeclarations()) {
                     Die die = newDie(producer, consumer, debug, DW_TAG_SUBPROGRAM, unit, errorOut);
+                    relatedFunctions.put(ClassScopeModel.FunctionReference.declaration(declaration.name(), declaration.key()), die);
                     addName(producer, consumer, die, declaration.name(), errorOut);
                     Die methodDeclaration = methodDeclarations.get(ClassScopeModel.FunctionReference.declaration(
                         declaration.name(), declaration.key()));
@@ -668,6 +679,13 @@ public final class MinimalDwarfSidecarExporter {
                     addAddressLocation(producer, consumer, debug, die, variable.address(),
                         errorOut);
                 }
+                for (var thunk : typeModel.functionRelations().thunks()) {
+                    Die origin = relatedFunctions.get(thunk.function());
+                    Die destination = relatedFunctions.get(thunk.target());
+                    if (origin != null && destination != null) {
+                        addReference(producer, consumer, debug, origin, DW_AT_TRAMPOLINE, destination, errorOut);
+                    }
+                }
                 for (ProgramTypeModel.GlobalVariable global : typeModel.globals()) {
                     Die die = newDie(producer, consumer, debug, DW_TAG_VARIABLE,
                         namespaceParent(global.namespace(), namespaceDies, unit), errorOut);
@@ -685,6 +703,13 @@ public final class MinimalDwarfSidecarExporter {
                             errorOut);
                     }
                 }
+            }
+            for (var alias : aliases) {
+                Die owner = functionDies.get(alias.address());
+                if (owner == null) throw new IllegalStateException("accepted alias has no emitted primary");
+                Die imported = newDie(producer, consumer, debug, DW_TAG_IMPORTED_DECLARATION, unit, errorOut);
+                addName(producer, consumer, imported, alias.name(), errorOut);
+                addReference(producer, consumer, debug, imported, DW_AT_IMPORT, owner, errorOut);
             }
             check(producer.dwarf_add_die_to_debug_a(debug, unit, errorOut),
                 "dwarf_add_die_to_debug_a", errorOut, consumer);

@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local function relationships; hosted/full-scope acceptance pending:**
+saved direct thunk targets now emit exact `DW_AT_trampoline` references; accepted
+analyst aliases add addressless imports of the canonical definition. Twenty-one
+actual Java 21 suites, 28 isolated artifacts, six thunk roles and 24 alias roles
+on x86-64/AArch64/both MIPS byte orders pass. Existing declarations/source/storage
+remain unchanged; wrong-hash/owner/collision and source-failure controls pass.
+See `docs/FUNCTION-RELATIONSHIPS.md` for exact evidence, the unavailable local
+ARM32 toolchain and remaining host/scope acceptance. The full goal remains open.
+
 **CONFIRMED local recovered statics; hosted/full-scope acceptance pending:**
 same-pass inferred types and saved memory locals now preserve actual function
 and lexical identities without duplicate declarations or stale-binding fallback.
