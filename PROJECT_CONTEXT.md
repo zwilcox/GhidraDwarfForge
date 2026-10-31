@@ -1,5 +1,25 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED integration plan (2026-10-31); final acceptance pending:** the
+remaining P1.7 commits from PR88 through PR94 are combined on a normal-history
+integration branch based on current main. This preserves every component commit,
+the private-socket correction and the explicit fixture inventory correction.
+The entire combined head must pass the unchanged, up-to-date
+`required-validation` gate, exact-package/raw review, actual Java 21 suites and
+both GUI reviews before normal integration. No component pass substitutes for
+that combined gate. P1.7/#66 remains open; no release publication.
+See `docs/P17-ACCEPTANCE.md` for the complete closure checklist. Earlier plans
+to integrate each dependent PR separately are superseded by this combined gate;
+the implementation scope and acceptance requirements are unchanged.
+
+**CONFIRMED component evidence:** PR92 head
+`78f13571a0270d42d2f67a7db822d7b4be944335` passes all twelve jobs in
+`41189959971`, package/raw review and both GUI consoles. Receipt:
+`ca433be694deba875bea124539f71a918c37aa0c96a6ec174c17d6a393d1e902`.
+Independent recovered-signature provenance review also passes; receipt:
+`2a830c53f2ee63ef29f962429fff2620a72dcd8b87cdd04e04386980b1899dda`.
+These are component results; combined-head acceptance remains outstanding.
+
 **CONFIRMED locally; function-type flag acceptance incomplete:** saved
 variadic/no-return function types pass 1,994 extraction checks and 39 actual
 Java 21 suites. The previously silent no-return type omission now produces an
@@ -202,6 +222,37 @@ LLVM and strict libdwarf checks pass. Production bounded/cancellable recovery
 is still PLANNED; i386 alias acceptance is held on that work. See
 `docs/research/SECTIONLESS-UNWIND.md`; P1.7/#66 remains open.
 
+**CONFIRMED failed hosted gate; scope harness corrected locally:** PR88 run
+`41189899075` failed before export when the big-endian MIPS compiler-reference
+scope test tried to bind occupied TCP port 33410. The scope harness now uses
+its existing private UNIX-socket helper, including readiness and bounded child
+cleanup, and protects that helper in its input snapshot. Fifteen five-target
+local-candidate roles plus three exact failed-hosted-package MIPS roles pass
+with the former TCP port deliberately occupied: 36 exports and 54 GDB runs,
+validators, deterministic artifacts and preserved inputs. Existing real-QEMU
+startup/failure/timeout/cleanup checks pass. Local receipt:
+`ad4c83475641c72e999f2890cfe42af0103b9413dc63e654edefe613fb324242`.
+Production code is unchanged; a fresh hosted gate is required. P1.7 stays open.
+
+**CONFIRMED main87 validation:** the separate main push `41189858903` passes
+all twelve jobs, exact package/raw review and both personally viewed GUI
+consoles. Receipt:
+`a190b2f76e12822a1f3eee78ee1142cccdfde42566349ea2d3c8c50c08f7b5bb`.
+
+**CONFIRMED integration (2026-10-31):** PR87 final main-based head
+`4414691b020971e3bd8037fc99563087d09d0ad9` passes all twelve jobs in
+`41185868818`, independent package/raw review and both actual GUI consoles.
+It merged normally as `020bbe46c5517bd99f09af308fec9927f5e1afe8`. Receipt:
+`a757e26c63946418f937fc66c168cf4dad87383c228c772331ef2aa61526c3f0`.
+The separate main86 push also passes its complete gate; receipt:
+`7586804fd005552a17957fadca8e87309ac1dccbca196d1ce2b97b8101db3734`.
+PR88 component `d5bbd89519e9f96b0a175d33119bca72184040b5` is accepted
+through run `41176178715` and receipt
+`2b7bbbec0da6cd726848129b05edce0ce6d280cea8eba753c6ef0fe0fac0fb50`.
+It is now based on main; this normal merge changes handoff notes only. Fresh
+final-head validation remains required. Earlier pending notes are historical;
+P1.7 remains open.
+
 **CONFIRMED locally; sectionless alias acceptance incomplete (2026-10-31):**
 bounded PT_DYNAMIC inventories now preserve original symbols before analyst
 alias insertion. Twelve four-target exec/PIE/rebase cases, four incomplete-count
@@ -224,6 +275,17 @@ empty-GNU-only ambiguities; no count is guessed. Production aliases remain
 disabled for sectionless inputs. See
 `docs/research/SECTIONLESS-FUNCTION-ALIASES.md`; P1.7/#66 remains open.
 
+**CONFIRMED integration (2026-10-31):** PR86 final main-based head
+`284da1c70b7aa936ca11069827fcb3f1e986044e` passes all twelve jobs in
+`41182122046`, exact package/32 actual Java 21 suites, raw target/ABI review and
+both actual GUI console reviews. It merged normally as `ec15669`. Receipt:
+`e8ab4c28b78df565632069e7a032396abe0cf5e2994ae684e2da604f73c7671a`.
+Its separate main push `41185820092` is running. The preceding main85 push
+`41182072765` is independently accepted, including both GUI reviews; receipt
+`c7aa6783390a1888b60d8906cd130772aa079b75fb9612e4ae8cb12262118bf8`.
+PR87 is now based on main; this merge resolves handoff documentation only.
+Fresh final-head validation is required before integration. P1.7 remains open.
+
 **CONFIRMED locally; acceptance incomplete:** range-aware analyst aliases retain
 split/interior-entry primary bodies. Per-range original-code/ownership checks
 pass 373 planner and 228 six-language extraction checks; 32 installed actual Java
@@ -233,6 +295,35 @@ base/twelve alias cases across four targets, and failure/cancellation checks pas
 Local receipt: `61827be29e754148b01698630f7405b1115240e8fcfdfe5abe46b076115c4616`.
 Final package and hosted acceptance remain pending. See `docs/DISCONTIGUOUS-FUNCTION-ALIASES.md`.
 P1.7/#66 remains open.
+
+**CONFIRMED integration (2026-10-31):** PR85 final main-based head
+`bd522b85d5e7d375479c4c4ec54665c22c2406cb` passes all twelve jobs in
+`41178871807`, exact package/raw review and both GUI console reviews, and
+merged normally as `7eeef48`. Receipt:
+`affa498fdccd633b95223d05d1b31e22e3ea2acf5fc19bb972d816e2d8932085`.
+PR86 component head `32c480fedfd35ab59d3b26dc4fbbb3aca0b2ba10` passes its
+complete component gate (`41172382223`, receipt
+`59ee737783ddbc24f4ed902fe8cb36172d274cf8f7e8c5d8f9c80e9002fd7d81`).
+It now has main as its base; production content is unchanged by the normal
+merge. Fresh final-head validation is required before integration. Earlier
+pending component notes are historical. P1.7 remains open.
+
+**CONFIRMED integration (2026-10-31):** PR84 final main-based head
+`5211c59047141162d38d9c33c91c3e4cc3ab7e59` passes all twelve jobs in
+`41174858655`, exact-package/raw runtime review and both GUI console reviews.
+Normal merge `0f305b30bb33604b047d12da7680dbd134c89c0b` preserves its tested tree.
+Final receipt: `ba4927801dda7dbd29cc685f671544b1a52863b2bc0b138f48991b01f4d3358e`.
+The separate main84 push remains pending. Main83's separate push `41174759972`
+passes its full gate and both GUI reviews; receipt
+`2eec10a18b6e814589a96537f2be994630af36d9b9667fcdb0bbf7f9f43e1d42`.
+
+**CONFIRMED component acceptance; final main-based gate pending:** PR85 corrected
+head `24276e62aa01e9a9b0d4e12f70a4df6aa0baa284` passes all twelve jobs in
+`41172356200`, exact package, raw runtime, 31 actual Java 21 suites and both GUI
+reviews. Receipt: `43c6ac2eded66abe6d92645a1fdf0795cb682d56462ffa2c3323fc2f8ae09b66`.
+The normal main merge changes handoff documentation only. Fresh final-head
+validation is required before integration. Earlier pending component/main83/PR84
+wording below is historical; P1.7/#66 remains open.
 
 **CONFIRMED failed hosted gate; corrected locally:** PR85 run `41170001875`
 fails the standalone large-ELF source compile because its dependency list omitted
@@ -279,6 +370,23 @@ raw artifact and both-GUI review. All 23 receipt parts were rehashed.
 Receipt: `6cc4b1065923c09d48ca886f1c4bbf9f9a063c86fa39a8a6b1a9a055fc0c7de8`.
 Earlier pending-main81 wording is historical.
 
+**CONFIRMED integration (2026-10-31):** PR83 final head
+`ba4fbd6cf2d7780478220a4fc33c43564bdf6f49` passes all twelve jobs in
+`41171064361`, exact-package/raw review, 29 actual Java 21 suites, 51 native
+Windows model tasks and both GUI console reviews. Normal merge
+`cb60980b5964e591c14ca003f461d377e7b1c471` has the identical tested tree.
+Receipt: `8275983b14fac9e8624fe7e0c19e9683bb45aef71614da113e0ed67fb2d25db4`.
+The compiler-spec safeguard is accepted; broader ABI/P1.7 scope remains open.
+Separate main push `41174759972` remains pending.
+
+**CONFIRMED component acceptance; final main-base gate pending:** PR84 head
+`dd9ed7ba94662728a9117c5e01c061e63a4ae665` passes all twelve jobs in
+`41168155944`, exact package/raw review and both GUI consoles. Its component
+receipt is `b104384650ca1f3541533b92f1ec41cb94e9b96adbbcd7c41e091a3c8f7615eb`.
+The PR is now based on main after a normal merge; production content is unchanged.
+Fresh final-head validation is required before integration. Earlier pending
+component notes below are historical, not final-main acceptance.
+
 **CONFIRMED locally; acceptance incomplete:** classic O32 MIPS32r2 analyst
 aliases pass FPXX exec/PIE/rebase export and QEMU/GDB on both byte orders.
 An isolated target policy checks typed ABI records and original code-symbol
@@ -288,6 +396,17 @@ Six additional explicit FP32 base/alias roles also pass; full hosted acceptance
 remains pending.
 Dynamic-only insertion, other modes and wider P1.7 scope remain open. See
 `docs/MIPS-FUNCTION-ALIASES.md`.
+
+**CONFIRMED integration (2026-10-31):** PR82 corrected head
+`e87c0ad54fddceb03eb27686d9cdbecb81988b42` passes all twelve jobs in
+`41167035160`, exact package/raw runtime review, 28 actual Java 21 suites and
+both GUI console reviews. Normal merge `f87384c9b9437f28f9088add9f1601b5f981a0dd`
+preserves its tested tree. Acceptance receipt:
+`2dad80db92ec96758efda7ebe0e91da63fd3a3e93d4be93ed259edca495a719e`.
+The custom-storage safeguard is accepted; earlier pending PR82 notes are
+historical. Separate main push `41171008812` remains pending. PR83's earlier
+stacked run `41167056431` is green, but its updated main base requires fresh
+validation. P1.7/#66 remains open; no release publication.
 
 **CONFIRMED defect and initial local fix; acceptance incomplete:** selecting a
 Windows compiler specification for an ELF can make custom Microsoft storage
