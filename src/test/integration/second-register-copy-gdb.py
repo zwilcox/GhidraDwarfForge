@@ -34,6 +34,8 @@ for iteration, (small, large) in enumerate(((19, 19), (-19, -19), (-1985229329, 
             assert bias != 0
         stop.delete()
         points = ['entry', 'saved', 'write', 'after', 'copy', 'second', 'kill', 'tail', 'erase', 'unavailable', 'return']
+        if metadata.get('handoffs', 2) == 4:
+            points[8:8] = ['copy3', 'third', 'kill2', 'tail3', 'copy4', 'fourth', 'kill3', 'tail4']
         assert len({label[p] for p in points}) == len(points)
         for point in points:
             pc = label[point] + bias
@@ -43,8 +45,8 @@ for iteration, (small, large) in enumerate(((19, 19), (-19, -19), (-1985229329, 
             assert int(gdb.parse_and_eval('$pc')) == pc and gdb.newest_frame().name() == name
             value = gdb.parse_and_eval('value')
             available = not value.is_optimized_out
-            expected = variant == 'compiler' or point not in (
-                ('tail', 'erase', 'unavailable', 'return') if variant == 'previous' else ('unavailable', 'return'))
+            stop_point = ('tail3' if metadata.get('handoffs', 2) == 4 else 'tail') if variant == 'previous' else 'unavailable'
+            expected = variant == 'compiler' or label[point] < label[stop_point]
             assert available == expected, (variant, name, point, str(value))
             assert value.type.sizeof == label['width']
             if available:
@@ -61,8 +63,18 @@ for iteration, (small, large) in enumerate(((19, 19), (-19, -19), (-1985229329, 
                 raw = int(gdb.parse_and_eval('(' + dtype + ')$' + registers[2]))
                 assert raw == (0 if point == 'unavailable' else argument)
                 row['secondBackup'] = raw
-            if point == 'tail':
+            if point in ('third', 'kill2', 'tail3', 'copy4', 'fourth', 'kill3'):
+                raw = int(gdb.parse_and_eval('(' + dtype + ')$' + registers[1]))
+                assert raw == argument
+                row['thirdBackup'] = raw
+            if point in ('fourth', 'kill3', 'tail4'):
+                raw = int(gdb.parse_and_eval('(' + dtype + ')$' + registers[2]))
+                assert raw == argument
+                row['fourthBackup'] = raw
+            if point in ('tail', 'tail4'):
                 assert int(gdb.parse_and_eval('$' + registers[1])) == 0
+            if point == 'tail3':
+                assert int(gdb.parse_and_eval('$' + registers[2])) == 0
             if point in ('erase', 'unavailable', 'return'):
                 assert int(gdb.parse_and_eval(name + '_sink')) == argument
             if point == 'entry':

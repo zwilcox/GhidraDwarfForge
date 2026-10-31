@@ -1,5 +1,13 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED active goal (2026-10-31):** finish P1.11a variable lifetimes and
+storage migration, followed by P3.3 richer class/lexical scopes. The full
+requirements and sequence are tracked in
+`docs/LIFETIMES-AND-SCOPES-PLAN.md`; neither umbrella is complete. The first
+component composes proven incoming register handoffs beyond the previous
+two-backup limit. Local decoder, thirteen actual Java 21 suites and all six
+x86-64/AArch64 packaged runtime cases pass; hosted acceptance is pending. The Ghidra 12.0.3/Java 21 baseline is unchanged.
+
 **CONFIRMED development acceptance:** P1.7 function signatures,
 calling conventions, declarations, thunks and aliases passed the combined
 [PR95 run](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/41195618723)

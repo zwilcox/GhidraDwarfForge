@@ -322,6 +322,18 @@ tasks.register("secondRegisterCopySmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/second-register-copy/cache").absolutePath
 }
 
+tasks.register("registerCopyChainSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks repeated proven register handoffs, reused registers and unavailable tails"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.RegisterCopyChainSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/register-copy-chain/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/register-copy-chain/cache").absolutePath
+}
+
 tasks.register("definedRegisterLocalSmoke", JavaExec) {
     group = "verification"
     description = "Checks that a curated local's recorded register definition completes before availability"

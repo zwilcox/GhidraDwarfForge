@@ -119,3 +119,12 @@ An initial prior-package model launch used Gradle's Java 25 test classes on
 Java 21 and failed class-version loading. The accepted baseline comparison uses
 the separately compiled `--release 21` classes and reproduces the semantic
 missing-interval assertion. That launch failure is not regression evidence.
+
+## Repeated handoff follow-up
+
+**CONFIRMED locally; hosted acceptance pending:** the exact handoff proof can
+now be composed without a fixed two-backup limit. Three/four/twelve-transfer
+decoder tests and four-transfer x86-64/AArch64 runtime cases cover repeated
+register reuse and lost-value tails. See `LIFETIMES-AND-SCOPES-PLAN.md` for
+commands, acceptance and the complete remaining P1.11a/P3.3 scope. Earlier
+one-additional-handoff wording describes the accepted previous component.

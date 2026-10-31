@@ -440,8 +440,9 @@ source. See `docs/CURATED-THUNKS.md`.
 completed register transfers followed by explicit backup kills. The real export
 harness tests exec/PIE/rebased-PIE, signed 32/64-bit values, both exact handoffs
 and unavailable tails against compiler DWARF and raw registers. It deliberately
-exercises incoming-value preservation, not mutable-local identity or arbitrary
-copy chains. The fixture is compiled by `second-register-copy-export.py`.
+exercises incoming-value preservation. `second-register-copy-export.py --handoffs 4` compiles the same source with `COPY_CHAIN`, adding two more
+transfers that reuse previously killed registers. GDB observes every handoff
+and the final unavailable tail; mutable-local identity is a separate task.
 
 `retained-function-aliases.cpp` defines mangled C++ functions, a real ELF alias,
 and distinct function-owned static integers. The exporter integration curates

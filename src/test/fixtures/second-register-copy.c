@@ -1,4 +1,4 @@
-/* Two complete register copies of the incoming value, followed by two kills. */
+/* Complete register copies of the incoming value; optional repeated reuse. */
 #if defined(__x86_64__)
 #define FIRST "r10"
 #define SECOND "r11"
@@ -22,6 +22,23 @@
 #endif
 #define LABEL(name, suffix) \
     ".globl " #name "_" #suffix "\n" #name "_" #suffix ":\n"
+#ifdef COPY_CHAIN
+#define EXTRA_COPIES(type, name) \
+        __asm__ volatile(LABEL(name, copy3) : "+r"(second) : : "memory"); \
+        register type third __asm__(FIRST) = second; \
+        __asm__ volatile(LABEL(name, third) "nop\n" \
+            LABEL(name, kill2) SECOND_WRITE \
+            LABEL(name, tail3) "nop\n" : "+r"(third) : : SECOND_CLOBBER, "memory"); \
+        __asm__ volatile(LABEL(name, copy4) : "+r"(third) : : "memory"); \
+        register type fourth __asm__(SECOND) = third; \
+        __asm__ volatile(LABEL(name, fourth) "nop\n" \
+            LABEL(name, kill3) FIRST_WRITE \
+            LABEL(name, tail4) "nop\n" : "+r"(fourth) : : FIRST_CLOBBER, "memory");
+#define FINAL_VALUE fourth
+#else
+#define EXTRA_COPIES(type, name)
+#define FINAL_VALUE second
+#endif
 #define BODY(type, name) \
     volatile type name##_sink; \
     __attribute__((noinline, noclone)) type name(type value) { \
@@ -34,7 +51,8 @@
         __asm__ volatile(LABEL(name, second) "nop\n" \
             LABEL(name, kill) FIRST_WRITE \
             LABEL(name, tail) "nop\n" : "+r"(second) : : FIRST_CLOBBER, "memory"); \
-        name##_sink = second; \
+        EXTRA_COPIES(type, name) \
+        name##_sink = FINAL_VALUE; \
         __asm__ volatile(LABEL(name, erase) SECOND_WRITE \
             LABEL(name, unavailable) "nop\n" : : : SECOND_CLOBBER, "memory"); \
         return 0; \
