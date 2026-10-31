@@ -29,10 +29,78 @@ final class MergedLocalLifetime {
     private MergedLocalLifetime() {
     }
 
+    /** Stack-backed saved identity with explicit later register assignments. */
+    private static List<StorageInterval> proveStack(Program program, Function function,
+            GhidraLocalMappings.Group group, TargetRegisterMap registers, TaskMonitor monitor)
+            throws CancelledException {
+        Variable canonical = group.canonical();
+        var storage = canonical.getVariableStorage();
+        if (function.getProgram() != program || canonical.getFirstUseOffset() <= 0 ||
+                !storage.isStackStorage() || storage.getVarnodeCount() != 1 ||
+                storage.getProgramArchitecture() != program || !storage.isValid() ||
+                storage.isForcedIndirect() || canonical.getLength() <= 0 ||
+                storage.size() != canonical.getLength()) return List.of();
+        var decoded = RegisterDefinitionFlow.decodedBody(program, function, monitor);
+        if (decoded.isEmpty()) return List.of();
+        Set<Variable> members = new HashSet<>();
+        Map<Address, Register> definitions = new LinkedHashMap<>();
+        Address stackDefinition = null;
+        for (var mapping : group.mappings()) {
+            monitor.checkCancelled();
+            Variable variable = mapping.variable();
+            var assigned = variable.getVariableStorage();
+            if (variable.getProgram() != program || variable.getFunction() != function ||
+                    variable.getSource() != SourceType.USER_DEFINED || !variable.isValid() ||
+                    !variable.hasAssignedStorage() || assigned == null || !assigned.isValid() ||
+                    assigned.getProgramArchitecture() != program || assigned.isForcedIndirect() ||
+                    assigned.getVarnodeCount() != 1 || assigned.size() != canonical.getLength() ||
+                    !variable.getDataType().equals(canonical.getDataType()) ||
+                    variable.getLength() != canonical.getLength() || !members.add(variable) ||
+                    mapping.definition().subtract(function.getEntryPoint()) != variable.getFirstUseOffset() ||
+                    !decoded.containsKey(mapping.definition())) return List.of();
+            if (variable == canonical) {
+                if (mapping.register() != null || stackDefinition != null) return List.of();
+                stackDefinition = mapping.definition();
+            }
+            else {
+                Register register = mapping.register();
+                if (register == null || !assigned.isRegisterStorage() || variable.getRegister() != register ||
+                        register.getBaseRegister() == program.getCompilerSpec().getStackPointer() ||
+                        !GhidraVariableStorage.completeRegisterDefinition(decoded.get(mapping.definition()),
+                            register, variable.getLength()) ||
+                        !GhidraVariableStorage.mappedRegister(register, variable.getLength(), registers,
+                            "saved stack-local assignment").available() ||
+                        definitions.put(mapping.definition(), register) != null) return List.of();
+            }
+        }
+        if (stackDefinition == null || definitions.containsKey(stackDefinition)) return List.of();
+        int attached = 0;
+        for (Variable other : function.getAllVariables()) {
+            monitor.checkCancelled();
+            if (members.contains(other)) { attached++; continue; }
+            var assigned = other.getVariableStorage();
+            if (!other.hasAssignedStorage() || assigned == null) continue;
+            if (!assigned.isValid()) return List.of();
+            // Conflicting owners need a separate ownership proof; a saved
+            // identity never grants the entire frame to this one variable.
+            for (Variable member : members) {
+                if (member.getVariableStorage().intersects(assigned)) return List.of();
+            }
+        }
+        if (attached != members.size()) return List.of();
+        var analysis = StackValueFlow.forStackLocal(program, canonical.getLength(), canonical.getStackOffset());
+        if (analysis == null) return List.of();
+        return analysis.acrossSavedAssignments(function, decoded, stackDefinition, definitions, registers, monitor);
+    }
+
     static List<StorageInterval> prove(Program program, Function function, GhidraLocalMappings.Group group,
             TargetRegisterMap registers, TaskMonitor monitor) throws CancelledException {
         monitor.checkCancelled();
         if (group.mappings().size() < 2 || group.canonical().getFunction() != function) return List.of();
+        if (group.canonical().getVariableStorage().isStackStorage()) {
+            return proveStack(program, function, group, registers, monitor);
+        }
+        if (group.mappings().stream().anyMatch(mapping -> mapping.register() == null)) return List.of();
         var decoded = RegisterDefinitionFlow.decodedBody(program, function, monitor);
         if (decoded.isEmpty()) return List.of();
         Map<Address, Register> definitions = new LinkedHashMap<>();

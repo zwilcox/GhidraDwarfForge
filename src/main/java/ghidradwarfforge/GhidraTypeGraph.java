@@ -249,7 +249,8 @@ public final class GhidraTypeGraph {
                 diagnostic.accept("Saved Ghidra merged-local identity for " + symbol.name() + "::" +
                     group.canonical().getName() + ": " + group.mappings().stream().map(mapping ->
                         mapping.variable().getName() + " at " + mapping.definition() + " in " +
-                        mapping.register().getName()).toList() + "; analyst mappings, not original compiler facts");
+                        (mapping.register() == null ? mapping.variable().getVariableStorage().toString() :
+                            mapping.register().getName())).toList() + "; analyst mappings, not original compiler facts");
             }
             for (Variable variable : function.getLocalVariables()) {
                 monitor.checkCancelled();
@@ -282,7 +283,7 @@ public final class GhidraTypeGraph {
                         "subsequent transfers preserve the current value; overlapping assignments, unknown aliases " +
                         "and later saved slot owners retire all old copies; no original lexical scope inferred"
                     : merged != null
-                    ? "Saved Ghidra canonical merged-local identity; all explicit full-register definitions " +
+                    ? "Saved Ghidra canonical merged-local identity; all explicit full-width definitions " +
                         "checked against raw instructions; latest assignment invalidates previous carriers; " +
                         "all incoming paths must agree on physical storage; no original lexical scope inferred"
                     : controlFlow.isEmpty()

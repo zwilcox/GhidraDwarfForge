@@ -69,7 +69,7 @@ final class GhidraLocalMappings {
             if (collector.mappingCount < 2) continue;
             if (!collector.valid || collector.entries.size() != collector.mappingCount) {
                 diagnostic.accept("Omitted saved local merge evidence for " + symbol.getName() +
-                    ": unsupported mapping form; no full register definition identity inferred");
+                    ": unsupported mapping form; no definition identity inferred");
                 continue;
             }
             var mappings = new ArrayList<Mapping>();
@@ -81,16 +81,26 @@ final class GhidraLocalMappings {
                     monitor.checkCancelled();
                     var storage = variable.getVariableStorage();
                     var register = variable.getRegister();
+                    boolean stack = storage != null && storage.isStackStorage();
                     if (variable.getProgram() != program || variable.getFunction() != function ||
                             variable.getSource() != SourceType.USER_DEFINED || !variable.isValid() ||
                             !variable.hasAssignedStorage() || storage == null || !storage.isValid() ||
-                            !storage.isRegisterStorage() || storage.getVarnodeCount() != 1 || register == null ||
+                            (!storage.isRegisterStorage() && !stack) || storage.getVarnodeCount() != 1 ||
+                            (!stack && register == null) ||
                             variable.getFirstUseOffset() < 0 || variable.getLength() <= 0 ||
                             !variable.getDataType().equals(symbol.getDataType()) ||
-                            storage.size() != variable.getLength() || register.getBitLength() != variable.getLength() * 8L ||
-                            !storage.getFirstVarnode().getAddress().equals(register.getAddress()) ||
-                            entry.bytes != storage.size() || !entry.space.equals(register.getAddress().getAddressSpace()) ||
-                            entry.offset != register.getOffset()) continue;
+                            storage.size() != variable.getLength() ||
+                            (!stack && (register.getBitLength() != variable.getLength() * 8L ||
+                                !storage.getFirstVarnode().getAddress().equals(register.getAddress()))) ||
+                            entry.bytes != storage.size() ||
+                            !entry.space.equals(storage.getFirstVarnode().getAddress().getAddressSpace()) ||
+                            entry.offset != storage.getFirstVarnode().getAddress().getUnsignedOffset()) continue;
+                    // Ghidra leaves the stack map address-tied. Only its exact
+                    // canonical saved symbol supplies a positive first-use
+                    // definition; a missing map range is not a guessed lifetime.
+                    if (stack && (entry.definitionAddress != null || !mappings.isEmpty() ||
+                            variable.getSymbol().getID() != symbol.getId() || variable.getFirstUseOffset() <= 0)) continue;
+                    if (!stack && entry.definitionAddress == null) continue;
                     Address definition;
                     try {
                         definition = function.getEntryPoint().addNoWrap(variable.getFirstUseOffset());
@@ -98,16 +108,20 @@ final class GhidraLocalMappings {
                     catch (ghidra.program.model.address.AddressOverflowException overflow) {
                         continue;
                     }
-                    if (!entry.definitionAddress.equals(definition)) continue;
+                    if (!stack && !entry.definitionAddress.equals(definition)) continue;
                     if (matched != null) { valid = false; break; }
                     matched = variable;
                 }
-                if (!valid || matched == null || used.contains(matched) ||
-                        mappings.stream().anyMatch(mapping -> mapping.definition().equals(entry.definitionAddress))) {
+                if (!valid || matched == null || used.contains(matched)) {
                     valid = false;
                     break;
                 }
-                mappings.add(new Mapping(matched, entry.definitionAddress, matched.getRegister()));
+                Address savedDefinition = function.getEntryPoint().add(matched.getFirstUseOffset());
+                if (mappings.stream().anyMatch(mapping -> mapping.definition().equals(savedDefinition))) {
+                    valid = false;
+                    break;
+                }
+                mappings.add(new Mapping(matched, savedDefinition, matched.getRegister()));
             }
             if (valid && mappings.size() == collector.entries.size() &&
                     mappings.getFirst().variable().getSymbol().getID() == symbol.getId()) {
@@ -115,7 +129,7 @@ final class GhidraLocalMappings {
                 for (Mapping mapping : mappings) used.add(mapping.variable());
             }
             else diagnostic.accept("Omitted saved local merge evidence for " + symbol.getName() +
-                ": every mapping must match one distinct curated full-width register definition");
+                ": every mapping must match one distinct curated full-width definition");
         }
         groups.sort(java.util.Comparator.comparing(group -> group.canonical().getName()));
         return List.copyOf(groups);
@@ -183,10 +197,12 @@ final class GhidraLocalMappings {
             check();
             if (path.isEmpty() || !path.peek().equals(element)) throw new IOException("unbalanced mapping encoder");
             if (at(ElementId.ELEM_RANGELIST, 2)) {
-                if (!pending || ranges != 1 || space == null || !space.isRegisterSpace() ||
-                        offset == null || bytes == null || bytes <= 0 || bytes > Integer.MAX_VALUE ||
-                        pcSpace == null || first == null || !first.equals(last)) valid = false;
-                else entries.add(new Encoded(space, offset, bytes.intValue(), pcSpace.getAddress(first)));
+                boolean stack = space != null && space.isStackSpace();
+                boolean rangeValid = stack ? ranges == 0 && pcSpace == null && first == null && last == null
+                    : ranges == 1 && pcSpace != null && first != null && first.equals(last);
+                if (!pending || !rangeValid || space == null || (!space.isRegisterSpace() && !stack) ||
+                        offset == null || bytes == null || bytes <= 0 || bytes > Integer.MAX_VALUE) valid = false;
+                else entries.add(new Encoded(space, offset, bytes.intValue(), stack ? null : pcSpace.getAddress(first)));
                 pending = false;
             }
             if (path.size() == 1 && pending) valid = false;

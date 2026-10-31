@@ -114,8 +114,23 @@ public final class LocalMappingsSmoke {
                 diagnostics.clear();
                 require(GhidraLocalMappings.extract(program, function, TaskMonitor.DUMMY, diagnostics::add).isEmpty(),
                     "address-tied stack base has no recorded definition PC");
-                require(diagnostics.size() == 1 && diagnostics.getFirst().contains("unsupported mapping form"),
+                require(diagnostics.size() == 1 && diagnostics.getFirst().contains("distinct curated full-width definition"),
                     "unsupported stack merge diagnosed without fabricated lifetime");
+                var stack = (ghidra.program.model.listing.LocalVariable) function.getLocalVariables()[0];
+                for (var local : function.getLocalVariables()) {
+                    if (local.getName().equals("value")) stack = (ghidra.program.model.listing.LocalVariable) local;
+                }
+                stack.setFirstUseOffset(4);
+                diagnostics.clear();
+                var stackGroups = GhidraLocalMappings.extract(program, function, TaskMonitor.DUMMY, diagnostics::add);
+                require(stackGroups.size() == 1 && diagnostics.isEmpty(),
+                    "saved stack owner plus register updates must retain Ghidra identity " + languageId + diagnostics);
+                require(stackGroups.getFirst().canonical() == stack && stackGroups.getFirst().mappings().size() == 3,
+                    "stack canonical plus both register mappings");
+                require(stackGroups.getFirst().mappings().getFirst().definition().equals(entry.add(4)),
+                    "stack definition comes from the saved listing first use, not an invented decompiler PC");
+                require(stackGroups.getFirst().mappings().getFirst().register() == null,
+                    "stack mapping must not fabricate a register");
             }
             finally { program.endTransaction(tx, true); }
         }

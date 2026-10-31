@@ -1,5 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally; final package/hosted acceptance pending:** saved mutable
+stack identities now survive proven register assignments, saves and reloads,
+including branches/loops. Twelve target/width/address cases pass 24 candidate
+and 12 previous exports, 7,560 GDB observations and stale-slot/owner controls.
+All 23 actual Java 21 suites, six runtime regressions, validators, determinism
+and failure/cancellation checks pass. See `docs/MUTABLE-STACK-MAPPINGS.md`.
+PR100's separate AArch64 harness correction is in progress; neither P1.11a nor
+P3.3 is complete.
+
 **CONFIRMED integration:** PR99 head `d69b07471c92aaf447e962b7779756b5f931dce1`
 passes all twelve jobs in run `41222554336` and exact hosted package/raw/host
 review. Six mutable-local address roles pass 12 exports and 11,088 GDB

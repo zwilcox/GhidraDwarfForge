@@ -127,6 +127,15 @@ normally includes that main merge and all locally tested stack/control-flow/
 inspected-call commits. The combined head still needs its own required gate.
 No remaining row is removed from either umbrella.
 
+## Current component: saved mutable stack mappings
+
+**CONFIRMED locally; final package/hosted acceptance pending:** explicit stack
+identity with later register assignments passes 12 real target/width/address
+cases, including branches/loops, stale unsaved slots and conflicting owners.
+All 23 actual Java 21 suites pass. See `MUTABLE-STACK-MAPPINGS.md` for provenance,
+physical proof boundaries, exact validator/GDB evidence and retained failures.
+Mixed-piece migration and every P3.3 requirement remain in scope.
+
 ## Completion audit
 
 For every row, record implementation/evidence files, exact reviewed source and

@@ -47,6 +47,7 @@ final class StackValueFlow {
     private Map<Address, DirectLeafCalls.Leaf> calls = Map.of();
     private Long localOffset;
     private boolean initializing;
+    private boolean savedAssignments;
 
 
     private StackValueFlow(Program program, Register pointer, AddressSpace memory, int bytes) {
@@ -100,6 +101,19 @@ final class StackValueFlow {
     List<StorageInterval> acrossControlFlow(Function function, Map<Address, Instruction> decoded,
             Address definition, Set<Address> owners, TargetRegisterMap registers, TaskMonitor monitor)
             throws CancelledException {
+        return acrossControlFlow(function, decoded, definition, owners, Map.of(), registers, monitor);
+    }
+
+    List<StorageInterval> acrossSavedAssignments(Function function, Map<Address, Instruction> decoded,
+            Address definition, Map<Address, Register> assignments, TargetRegisterMap registers,
+            TaskMonitor monitor) throws CancelledException {
+        savedAssignments = true;
+        return acrossControlFlow(function, decoded, definition, Set.of(), assignments, registers, monitor);
+    }
+
+    private List<StorageInterval> acrossControlFlow(Function function, Map<Address, Instruction> decoded,
+            Address definition, Set<Address> owners, Map<Address, Register> assignments,
+            TargetRegisterMap registers, TaskMonitor monitor) throws CancelledException {
         if (!decoded.containsKey(function.getEntryPoint())) return List.of();
         Map<Address, Set<Address>> successors = new LinkedHashMap<>();
         Map<Address, Set<Address>> predecessors = new HashMap<>();
@@ -141,6 +155,16 @@ final class StackValueFlow {
             if (owners.contains(address)) state.retireLocalValue();
             input.put(address, state.boundaryCopy());
             if (!state.advance(decoded.get(address), address.equals(definition), monitor)) return List.of();
+            Register assignment = assignments.get(address);
+            if (assignment != null) {
+                // The saved mapping establishes this assignment's logical
+                // identity after its complete raw definition. Old stack and
+                // register copies belong to the previous value and are stale.
+                state.retireLocalValue();
+                Varnode destination = new Varnode(assignment.getAddress(), assignment.getMinimumByteSize());
+                state.facts.keySet().removeIf(node -> overlaps(node, destination));
+                state.facts.put(destination, VALUE);
+            }
             state = state.boundaryCopy();
             StackValueFlow previous = output.put(address, state);
             if (previous == null || !state.sameFacts(previous)) {
@@ -163,6 +187,7 @@ final class StackValueFlow {
         var result = new StackValueFlow(program, pointer, memory, bytes);
         result.localOffset = localOffset;
         result.calls = calls;
+        result.savedAssignments = savedAssignments;
         for (var entry : facts.entrySet()) {
             if (!entry.getKey().isUnique()) result.facts.put(entry.getKey(), entry.getValue());
         }
@@ -315,7 +340,8 @@ final class StackValueFlow {
         long end;
         try { end = Math.addExact(offset, value.getSize()); }
         catch (ArithmeticException overflow) { invalidateMemory(); return; }
-        if (localOffset != null && intersects(localOffset, bytes, offset, end)) retireLocalValue();
+        boolean savedValue = savedAssignments && value.getSize() == bytes && VALUE.equals(read(value));
+        if (localOffset != null && intersects(localOffset, bytes, offset, end) && !savedValue) retireLocalValue();
         slots.keySet().removeIf(start -> intersects(start, bytes, offset, end));
         if (initializing && localOffset != null && offset == localOffset && value.getSize() == bytes) {
             slots.put(offset, true);

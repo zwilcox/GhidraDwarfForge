@@ -75,6 +75,7 @@ expected_sources=(
     mips-truncated-space-start.S
     mips-truncated-space.c
     mixed-incoming-prefix.c
+    mutable-stack-mappings.c
     nonzero_load_offset.c
     nonzero_load_offset.ld
     nonzero_load_offset_start.S

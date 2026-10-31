@@ -554,3 +554,9 @@ The signed32/64 harness executes both paths and several loop iterations under
 native/QEMU GDB, correlating raw instructions with compiler and saved Ghidra
 identities. Only its driver uses `-O0` to avoid an LLVM 18 call-site verifier
 loop; all functions under test remain `-O2`. See `docs/STACK-CONTROL-FLOW.md`.
+
+`mutable-stack-mappings.c` exercises saved stack/register identity with explicit
+working-register updates, saved and unsaved slots, branch alternatives, repeated
+loop assignments and a conflicting saved owner. Real export, raw DWARF and GDB
+checks pass for signed 32/64-bit x86-64/AArch64 exec/PIE/rebased PIE cases; exact
+hosted acceptance is pending. See `docs/MUTABLE-STACK-MAPPINGS.md`.
