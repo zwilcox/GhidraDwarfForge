@@ -290,7 +290,7 @@ public final class MatchedElfSidecarWriter {
 
     private record SymbolTableInput(Section table, Section strings, Section indices,
             int count, int locals, byte[] records, byte[] names, byte[] extended,
-            Set<ByteBuffer> existingNames) {
+            Set<ByteBuffer> existingNames, boolean synthesized) {
     }
 
     private static long addFunctionSymbols(ElfImage image, List<Section> sections,
@@ -333,7 +333,7 @@ public final class MatchedElfSidecarWriter {
             }
         }
         Set<String> names = new HashSet<>();
-        boolean extended = old != null && old.indices() != null;
+        boolean extended = old != null && old.extended() != null;
         for (int index = 0; index < symbols.size(); index++) {
             checkCancelled(cancelled);
             ElfLocalFunctionSymbol symbol = symbols.get(index);
@@ -382,8 +382,8 @@ public final class MatchedElfSidecarWriter {
                 table.putShort((short) encoded);
             }
         }
-        Section namesSection = old == null ? new Section() : old.strings();
-        if (old == null) {
+        Section namesSection = old == null || old.synthesized() ? new Section() : old.strings();
+        if (old == null || old.synthesized()) {
             namesSection.name = ".strtab";
             namesSection.type = SHT_STRTAB;
             namesSection.alignment = 1;
@@ -401,8 +401,8 @@ public final class MatchedElfSidecarWriter {
         int padding = (int) ((alignment - offset % alignment) % alignment);
         payloads.add(new byte[padding]);
         offset = addOffset(offset, padding);
-        Section tableSection = old == null ? new Section() : old.table();
-        if (old == null) {
+        Section tableSection = old == null || old.synthesized() ? new Section() : old.table();
+        if (old == null || old.synthesized()) {
             tableSection.name = ".symtab";
             tableSection.type = SHT_SYMTAB;
             sections.add(tableSection);
@@ -417,7 +417,7 @@ public final class MatchedElfSidecarWriter {
         payloads.add(table.array());
         offset = addOffset(offset, table.capacity());
         if (extended) {
-            Section extendedSection = old == null ? null : old.indices();
+            Section extendedSection = old == null || old.synthesized() ? null : old.indices();
             if (extendedSection == null) {
                 if (sections.stream().anyMatch(section -> section.name.equals(".symtab_shndx"))) {
                     throw new IllegalArgumentException("extended symbol-index section name conflict");
@@ -458,7 +458,13 @@ public final class MatchedElfSidecarWriter {
                     throw new IllegalArgumentException("local function symbols conflict with existing sections");
                 }
             }
-            return null;
+            DynamicSymbolMirror.Snapshot mirror = DynamicSymbolMirror.read(image, cancelled);
+            if (mirror == null) {
+                return null;
+            }
+            return new SymbolTableInput(null, null, null, mirror.records().length / width,
+                mirror.locals(), mirror.records(), mirror.names(), mirror.indices(),
+                mirror.existingNames(), true);
         }
         int tableIndex = sections.indexOf(table);
         if (table.entrySize != width || table.size < width || table.size % width != 0 ||
@@ -538,7 +544,7 @@ public final class MatchedElfSidecarWriter {
             }
         }
         return new SymbolTableInput(table, strings, indices, count, (int) table.info,
-            records, names, extended, existingNames);
+            records, names, extended, existingNames, false);
     }
 
     private static boolean isInheritedDebugMetadata(String name) {

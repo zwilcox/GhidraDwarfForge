@@ -1,5 +1,34 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED integration (2026-10-31):** PR84 final main-based head
+`5211c59047141162d38d9c33c91c3e4cc3ab7e59` passes all twelve jobs in
+`41174858655`, exact-package/raw runtime review and both GUI console reviews.
+Normal merge `0f305b30bb33604b047d12da7680dbd134c89c0b` preserves its tested tree.
+Final receipt: `ba4927801dda7dbd29cc685f671544b1a52863b2bc0b138f48991b01f4d3358e`.
+The separate main84 push remains pending. Main83's separate push `41174759972`
+passes its full gate and both GUI reviews; receipt
+`2eec10a18b6e814589a96537f2be994630af36d9b9667fcdb0bbf7f9f43e1d42`.
+
+**CONFIRMED component acceptance; final main-based gate pending:** PR85 corrected
+head `24276e62aa01e9a9b0d4e12f70a4df6aa0baa284` passes all twelve jobs in
+`41172356200`, exact package, raw runtime, 31 actual Java 21 suites and both GUI
+reviews. Receipt: `43c6ac2eded66abe6d92645a1fdf0795cb682d56462ffa2c3323fc2f8ae09b66`.
+The normal main merge changes handoff documentation only. Fresh final-head
+validation is required before integration. Earlier pending component/main83/PR84
+wording below is historical; P1.7/#66 remains open.
+
+**CONFIRMED failed hosted gate; corrected locally:** PR85 run `41170001875`
+fails the standalone large-ELF source compile because its dependency list omitted
+`DynamicSymbolMirror`, and the ARM/Thumb oracle because it still expected an
+all-local symbol table. The compile list is repaired. The oracle now proves the
+complete original dynamic inventory survives around inserted local mode symbols,
+with exact string offsets, bindings, original dynamic bytes and a correct local/
+global boundary. Five corruption controls reject missing/changed imports and
+incorrect boundaries. Fresh large-ELF and full ARM/Thumb exporter/GDB checks pass;
+production is unchanged. Receipt:
+`c00c0dad986876ef14bbed896e8c53209c26df531e71ffacef6fe367d71bd3bb`.
+Fresh hosted acceptance is pending; P1.7/#66 remains open.
+
 **CONFIRMED integration (2026-10-31):** PR83 final head
 `ba4fbd6cf2d7780478220a4fc33c43564bdf6f49` passes all twelve jobs in
 `41171064361`, exact-package/raw review, 29 actual Java 21 suites, 51 native
@@ -1267,6 +1296,14 @@ Define precedence among analyst-applied listing/signature types and decompiler g
   imported or subsequently changed programs.
 
 ## P1.7 Emit complete function signatures
+
+**CONFIRMED locally; acceptance incomplete:** dynamic-only symbol mirroring
+preserves original lookup while adding analyst aliases. Both GNU qualified
+versions pass headless DSO fixtures; twelve stripped base/alias roles across
+four targets, independent raw review and 31 actual Java 21 suites pass. Final
+package/hosted review is pending.
+See `docs/DYNAMIC-FUNCTION-ALIASES.md`. This supersedes the earlier blanket
+dynamic-symbol omission below; it does not complete P1.7/#66.
 
 **CONFIRMED locally; hosted acceptance pending:** isolated classic O32 MIPS32r2
 alias planning passes FPXX runtime cases in both byte orders across exec/PIE/
