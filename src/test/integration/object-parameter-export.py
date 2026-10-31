@@ -21,7 +21,10 @@ def main():
     parser.add_argument('--role', choices=['exec', 'pie', 'pie-rebased'], default='exec')
     parser.add_argument('--explicit-binding', action='store_true')
     parser.add_argument('--failure-control', action='store_true')
+    parser.add_argument('--binding-control', choices=['stale', 'conflict'])
+    parser.add_argument('--cancellation-control', action='store_true')
     args = parser.parse_args()
+    assert not args.binding_control or not (args.explicit_binding or args.failure_control)
     ghidra = args.ghidra.resolve(strict=True)
     repository = Path(__file__).resolve().parents[3]
     harness = repository / 'src/test/integration'
@@ -70,19 +73,26 @@ def main():
     run('import', [ghidra / 'support/analyzeHeadless', project, 'Object', '-import', reference,
         '-loader', 'ElfLoader', '-analysisTimeoutPerFile', '120', '-scriptPath', harness / 'ghidra_scripts',
         *rebase, '-postScript', 'PrepareObjectParameter.java', case / 'prepared.json',
-        'explicit' if args.explicit_binding else 'inferred'])
+        args.binding_control or ('explicit' if args.explicit_binding else 'inferred')])
     assert 'object-parameter-preparation=PASS' in (case / 'import.log').read_text()
     assert json.loads((case / 'prepared.json').read_text())['javaVersion'].startswith('21.')
     prepared = json.loads((case / 'prepared.json').read_text())
     assert prepared['explicitBinding'] == args.explicit_binding
     if args.explicit_binding:
         assert sum(item.get('binding') == 'VALID' for item in prepared['parameters']) == 1
+    if args.binding_control:
+        expected = 'REJECTED' if args.binding_control == 'stale' else 'VALID'
+        assert sum(item.get('binding') == expected for item in prepared['parameters']) == 1
+        assert prepared['bindingControl'] == args.binding_control
     before = {str(p): digest(p) for p in project.rglob('*') if p.is_file() and not p.name.endswith('.lock')}
     pair = None
     for iteration in ['first', 'repeat']:
         run('export-' + iteration, [ghidra / 'support/analyzeHeadless', project, 'Object', '-process', 'reference',
             '-readOnly', '-noanalysis', '-postScript', 'GhidraDwarfForge.java', '--packaged-natives', '--output=' + str(output)])
         assert 'GhidraDwarfForge symbol export PASS' in (case / ('export-' + iteration + '.log')).read_text()
+        if args.binding_control:
+            expected = 'saved class type identity is stale' if args.binding_control == 'stale' else 'current method object types contradict the class layout'
+            assert expected in (case / ('export-' + iteration + '.log')).read_text()
         current = [digest(output), digest(Path(str(output) + '.c'))]
         assert pair is None or pair == current
         pair = current
@@ -101,13 +111,16 @@ def main():
         run(view, ['readelf', '--debug-dump=' + view, output])
         assert 'Warning:' not in (case / (view + '.log')).read_text()
     run('references', ['python3', harness / 'check-object-parameters.py', case / 'info.log'])
-    run('classes', ['python3', harness / 'check-class-scopes.py', case / 'info.log'])
-    run('class-lookup', ['python3', harness / 'check-class-first-lookup.py', stripped, output])
+    checker = 'check-unbound-class.py' if args.binding_control else 'check-class-scopes.py'
+    run('classes', ['python3', harness / checker, case / 'info.log'])
+    run('class-lookup', ['python3', harness / 'check-class-first-lookup.py', stripped, output,
+        *(['--unbound'] if args.binding_control else [])])
     run('llvm', ['llvm-dwarfdump', '--verify', output])
     assert 'No errors.' in (case / 'llvm.log').read_text()
     run('strict', ['python3', harness / 'check-dwarfdump.py', output, case / 'dwarfdump.log', '--original', reference])
-    run('forge-gdb', ['bash', harness / 'object-parameter-gdb.sh', case, args.target, 'forge', output])
-    assert 'object-parameter-gdb=forge PASS' in (case / 'forge-gdb.log').read_text()
+    mode = 'unbound' if args.binding_control else 'forge'
+    run('forge-gdb', ['bash', harness / 'object-parameter-gdb.sh', case, args.target, mode, output])
+    assert 'object-parameter-gdb=' + mode + ' PASS' in (case / 'forge-gdb.log').read_text()
     diagnostics = []
     for phase in ['compiler', 'forge']:
         warnings = [line for line in (case / (phase + '-gdb.log')).read_text().splitlines()
@@ -123,11 +136,14 @@ def main():
     assert not list(case.glob('.*.tmp'))
     (case / 'acceptance.json').write_text(json.dumps({'status': 'OBJECT_PARAMETER_PASS',
         'target': args.target, 'role': args.role, 'explicitBinding': args.explicit_binding,
+        'bindingControl': args.binding_control,
         'protected': protected, 'outputPair': pair,
-        'observations': json.loads((case / 'forge-observations.json').read_text())}, indent=4) + '\n')
+        'observations': json.loads((case / (mode + '-observations.json')).read_text())}, indent=4) + '\n')
     print('object-parameter-export=PASS', flush=True)
     if args.failure_control:
         run('failure-driver', ['python3', harness / 'class-scope-failure.py', case, ghidra], timeout=900)
+    if args.cancellation_control:
+        run('cancellation-driver', ['python3', harness / 'class-scope-cancellation.py', case, ghidra], timeout=900)
 
 
 if __name__ == '__main__':

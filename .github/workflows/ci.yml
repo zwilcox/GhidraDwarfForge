@@ -1215,6 +1215,9 @@ jobs:
           for role in exec pie pie-rebased; do
               python3 src/test/integration/object-parameter-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
               python3 src/test/integration/object-parameter-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --explicit-binding --failure-control
+              for control in stale conflict; do
+                  python3 src/test/integration/object-parameter-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --binding-control "$control" --cancellation-control
+              done
           done
 
       - name: Stack and register lifetimes across closed branches and loops

@@ -39,9 +39,9 @@ def check(nodes, isolated=False, failed=False, variant='normal'):
     assert int(member['attributes']['DW_AT_data_member_location']) == 0
     alias = one(nodes, 'DW_TAG_typedef', namespace_name + '::Counter', unit['offset'])
     assert reference(alias, 'DW_AT_type', nodes) is definition
-    if isolated and variant == 'normal':
+    if isolated and variant in ['normal', 'unbound-collision']:
         assert reference(one(nodes, 'DW_TAG_typedef', 'Counter', unit['offset']), 'DW_AT_type', nodes) is definition
-    if variant != 'normal':
+    if variant in ['collision', 'ambiguous']:
         assert isolated
         assert not any(n['tag'] == 'DW_TAG_typedef' and n['name'] == 'Counter' for n in nodes.values())
         unrelated = one(nodes, 'DW_TAG_structure_type',
@@ -69,10 +69,17 @@ def check(nodes, isolated=False, failed=False, variant='normal'):
         assert not {'DW_AT_low_pc', 'DW_AT_high_pc', 'DW_AT_ranges'} & external['attributes'].keys()
         pairs.append((external, one(nodes, 'DW_TAG_subprogram', 'external', definition['offset']), True))
         nested_declaration = one(nodes, 'DW_TAG_structure_type', 'Nested', declaration['offset'])
-        nested_definition = one(nodes, 'DW_TAG_structure_type', 'outer::Counter::Nested', unit['offset'])
+        nested_name = '__ghidra_class_scope_3' if variant == 'unbound-collision' else 'outer::Counter::Nested'
+        nested_definition = one(nodes, 'DW_TAG_structure_type', nested_name, unit['offset'])
         assert reference(nested_definition, 'DW_AT_specification', nodes) is nested_declaration
         assert nested_definition['attributes']['DW_AT_declaration'] == '1'
         assert 'DW_AT_byte_size' not in nested_definition['attributes']
+        assert reference(one(nodes, 'DW_TAG_typedef', nested_name, unit['offset']), 'DW_AT_type', nodes) is nested_definition
+        if variant == 'unbound-collision':
+            unrelated = one(nodes, 'DW_TAG_structure_type', 'outer::Counter::Nested', unit['offset'])
+            assert int(unrelated['attributes']['DW_AT_byte_size']) == 8
+            assert 'DW_AT_specification' not in unrelated['attributes']
+            assert not any(n['tag'] == 'DW_TAG_typedef' and n['name'] == 'outer::Counter::Nested' for n in nodes.values())
         pairs.append((one(nodes, 'DW_TAG_subprogram', 'outer::Counter::Nested::static_method', unit['offset']),
             one(nodes, 'DW_TAG_subprogram', 'static_method', nested_definition['offset']), False))
     for root, method, has_object in pairs:
@@ -101,7 +108,7 @@ def main():
     parser.add_argument('info', type=Path)
     parser.add_argument('--isolated', action='store_true')
     parser.add_argument('--failed', action='store_true')
-    parser.add_argument('--variant', choices=['normal', 'collision', 'ambiguous'], default='normal')
+    parser.add_argument('--variant', choices=['normal', 'collision', 'ambiguous', 'unbound-collision'], default='normal')
     args = parser.parse_args()
     nodes = objects.read_dies(args.info.read_text())
     unit, definition, alias, pairs = check(nodes, args.isolated, args.failed, args.variant)

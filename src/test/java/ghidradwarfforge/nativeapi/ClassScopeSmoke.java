@@ -85,6 +85,11 @@ public final class ClassScopeSmoke {
             new VariableStorageModel(List.of()), List.of(), declarations, List.of(),
             new ClassScopeModel(extendedScopes, extendedBindings, classes.methods()));
         exporter.export(input, Path.of(args[3] + ".ambiguous"), Path.of(args[0]), Path.of(args[1]), functions, null, ambiguous);
+        extendedTypes.set(extendedTypes.size() - 1, new AggregateType("unrelated", "outer::Counter::Nested", 8,
+            AggregateKind.STRUCTURE, List.of(new Member("first", integer, 0), new Member("second", integer, 4))));
+        var unboundCollision = new ProgramTypeModel(new TypeGraph(extendedTypes), signatures, List.of(),
+            new VariableStorageModel(List.of()), List.of(), declarations, List.of(), classes);
+        exporter.export(input, Path.of(args[3] + ".unbound-collision"), Path.of(args[0]), Path.of(args[1]), functions, null, unboundCollision);
         if (!Arrays.equals(original, Files.readAllBytes(input))) throw new AssertionError("input modified");
         System.out.println("class-scope-native=PASS");
     }

@@ -780,6 +780,11 @@ public final class MinimalDwarfSidecarExporter {
                 if (binding == null) {
                     addName(producer, consumer, die, names.names().get(scope.id()), errorOut);
                     addFlag(producer, consumer, debug, die, DW_AT_DECLARATION, true, errorOut);
+                    // GDB's C index omits declaration-only structure names.
+                    // A typedef exposes the already collision-checked spelling
+                    // while its target remains incomplete; do not invent a size.
+                    typeAlias(producer, consumer, debug, unit, die,
+                        names.names().get(scope.id()), errorOut);
                 }
                 else types.put(binding.type().key(), die);
             }

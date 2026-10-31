@@ -88,7 +88,7 @@ python3 src/test/integration/object-parameter-export.py /path/to/installed-ghidr
 
 Use the same runtime command for AArch64 and each address role. The isolated
 runner compiles its test with `javac --release 21` and uses the installed
-production JAR and native libraries. CI includes the four native class variants,
+production JAR and native libraries. CI includes the five native class variants,
 fresh-debugger lookup, both binding modes and genuine-failure controls. Local
 commands/results are retained under `build/class-emission-alias-final` and the
 per-case `build/test-results` directories. The first genuine-failure driver
@@ -100,10 +100,64 @@ The reviewed runtime receipt is
 The actual Java 21-tested production JAR is
 `a1d4ddcad5a6426e404c5579c4702b2e0b593b0419de4607fff37f2a07b57b01`.
 
+## Rejected binding and incomplete-class lookup controls
+
+**CONFIRMED locally; hosted acceptance pending:** twelve saved-program cases
+cover stale and contradictory explicit bindings on x86-64/AArch64 non-PIE,
+PIE and rebased PIE. The stale case deletes the saved layout identity while
+retaining a valid current THIS pointee. The conflict case binds a different
+eight-byte structure while THIS still points to the four-byte `Counter`.
+Neither may fall back to inferred binding. Actual class/method ownership and
+the independently known parameter type remain available; the unbound class
+has no invented size or members. Four raw-DIE mutations must be rejected.
+
+These cases exposed another cold GDB lookup defect: declaration-only class
+names were absent from GDB's C index. A synthetic typedef now exposes the
+collision-checked unbound spelling, pointing to the same declaration-only DIE.
+This preserves the existing name/type plan and does not add a layout. A fifth
+isolated producer case collides an incomplete nested class with an unrelated
+qualified structure name. The existing structure remains queryable using
+`ptype struct 'outer::Counter::Nested'`; the incomplete scope uses the
+separate `__ghidra_class_scope_3` lookup name and retains its static method.
+
+GDB 15.1 displays the static method for this incomplete class and reports zero
+for `sizeof`, despite the absence of `DW_AT_byte_size`. The exporter does not
+supply that size. Do not interpret debugger presentation as recovered layout
+evidence. Raw checks enforce declaration status and absence of members/size.
+The initial expectation of `<incomplete type>` and a later typedef-style query
+for the unrelated C structure tag both failed and are retained in the logs.
+The corrected checks require actual method and distinct structure contents.
+
+Twenty-four deterministic exports pass GNU/LLVM/pinned strict validation,
+36 isolated lookup processes and compiler-correlated GDB values (member `7`,
+argument `3`, ordinary parameter named `this` equal to `41`). Twelve additional
+copy-cancellation attempts preserve originals, saved projects and previous
+output pairs after actual class production. Cancellation imports its private
+128 MiB padded ELF before export, preserving target identity checks. An earlier
+attempt to reuse a different imported target correctly failed the SHA-256
+identity check; it is retained and is not counted as cancellation acceptance.
+Both targets' explicit-binding non-PIE regressions and genuine decompiler
+failure controls also pass on the corrected package. Fourteen actual Java 21
+suites pass; the updated five-variant producer is compiled and run on Java 21.
+
+```bash
+python3 src/test/integration/object-parameter-export.py /path/to/installed-ghidra x86_64 --role pie --binding-control stale --cancellation-control
+python3 src/test/integration/object-parameter-export.py /path/to/installed-ghidra aarch64 --role pie-rebased --binding-control conflict --cancellation-control
+```
+
+CI runs both controls with cancellation for each of the six target/address
+roles. Local commands, failed attempts and independent receipt review are
+retained under `build/class-binding-controls`. Acceptance receipt SHA-256:
+`4f6c66f99ca2d2636abbdc1a18875a94cf45e3cba032b62f1bc63b906d7ef225`.
+Tested production JAR:
+`1935a0aaf127318f1e40cbd4af7dc45f240acec28a8aa27d45204a691cd7c255`.
+This supersedes the earlier JAR for the unbound-class correction; the earlier
+positive matrix retains its original package and scope.
+
 ## Remaining work
 
 This component does not complete P1.11a or P3.3. Hosted acceptance and normal
-integration remain required. Real saved-program class conflict/stale-binding,
-additional same-name, cancellation and class/static/alias/origin relationships
+integration remain required. Additional real same-name category/scope fixtures,
+class/static ownership, inferred statics and thunk/alias/origin relationships
 still need their complete behavior matrix. The full requirements remain in
 `LIFETIMES-AND-SCOPES-PLAN.md`; no umbrella issue is closed here.

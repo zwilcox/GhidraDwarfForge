@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local rejected-binding controls; hosted/full-scope acceptance
+pending:** twelve stale/conflicting saved-class cases pass 24 deterministic
+exports, strict validators, cold GDB lookup and twelve production-copy
+cancellations on x86-64/AArch64 exec/PIE/rebased PIE. They exposed and corrected
+unbound-class lookup without fabricating layout. Five isolated producer
+variants preserve distinct collision identities; both targets' explicit-binding
+and genuine-decompiler-failure regressions pass. GDB's zero-size presentation
+of incomplete classes is documented, not claimed as recovered knowledge.
+See `docs/CLASS-SCOPE-EMISSION.md`; broader scope work remains open.
+
 **CONFIRMED local class emission; hosted/full-scope acceptance pending:**
 actual saved ownership now emits class declarations and canonical definitions,
 with identity-bound method specifications and collision-aware C lookup aliases.

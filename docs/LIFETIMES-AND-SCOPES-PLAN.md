@@ -253,3 +253,14 @@ Java 21 suites and isolated class/failure/collision checks pass. Fresh debugger
 queries catch and verify the correction of a lazy-lookup defect missed by the
 earlier research query order. See `CLASS-SCOPE-EMISSION.md`; remaining
 class controls, lifetime integration and all other scope requirements stay open.
+
+## Rejected class-binding and cancellation checkpoint
+
+**CONFIRMED locally; hosted/full-scope acceptance pending:** twelve real
+stale/conflicting binding cases pass 24 deterministic exports and twelve copy
+cancellations across both runtime targets and all three address roles. Unbound
+classes now remain queryable without a fabricated layout; a fifth isolated
+collision case preserves the existing qualified structure and synthetic scope
+separately. GDB's incomplete-size presentation and failed test expectations are
+recorded in `CLASS-SCOPE-EMISSION.md`. Same-name runtime fixtures, static and
+alias/origin relationships and all outstanding integration gates remain open.

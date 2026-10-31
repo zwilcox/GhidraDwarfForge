@@ -55,7 +55,7 @@ def main():
         'ghidradwarfforge.nativeapi.ClassScopeSmoke', native / 'libdwarf.so.2.3.2',
         native / 'libdwarfp.so.2.3.2', original, output, '0x' + address, '0x' + size])
     artifacts = []
-    for variant in ['normal', 'failed', 'collision', 'ambiguous']:
+    for variant in ['normal', 'failed', 'collision', 'ambiguous', 'unbound-collision']:
         artifact = output if variant == 'normal' else Path(str(output) + '.' + variant)
         for view in ['info', 'abbrev', 'aranges', 'decodedline']:
             run(variant + '-' + view, ['readelf', '--debug-dump=' + view, artifact])

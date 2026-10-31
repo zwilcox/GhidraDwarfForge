@@ -14,6 +14,10 @@ if mode == 'forge':
     class_text = gdb.execute("ptype 'recovered::Counter'", to_string=True)
     assert 'int value;' in class_text and 'inspect_object' in class_text
     assert 'int value;' in gdb.execute('ptype struct Counter', to_string=True)
+if mode == 'unbound':
+    class_text = gdb.execute("ptype 'recovered::Counter'", to_string=True)
+    assert 'int value;' not in class_text and 'int first;' not in class_text
+    assert 'int value;' in gdb.execute('ptype struct Counter', to_string=True)
 if mode != 'failed':
     gdb.execute('ptype ' + method)
     gdb.execute('list ' + method)
