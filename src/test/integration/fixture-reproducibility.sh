@@ -47,6 +47,7 @@ expected_sources=(
     bitfield-values.c
     calling-convention.c
     composite-register-prefix.c
+    composite-value-flow.c
     curated-thunk.c
     custom-call-storage.c
     defined-register-local.c
@@ -75,6 +76,7 @@ expected_sources=(
     mips-truncated-space-start.S
     mips-truncated-space.c
     mixed-incoming-prefix.c
+    mutable-stack-mappings.c
     nonzero_load_offset.c
     nonzero_load_offset.ld
     nonzero_load_offset_start.S

@@ -370,6 +370,18 @@ tasks.register("stackLocalLifetimeSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/stack-local-lifetime/cache").absolutePath
 }
 
+tasks.register("compositeValueFlowSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks independently migrating incoming pieces and whole-value loss"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.CompositeValueFlowSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/composite-value-flow/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/composite-value-flow/cache").absolutePath
+}
+
 tasks.register("stackValueFlowSmoke", JavaExec) {
     group = "verification"
     description = "Checks exact stack spill/reload transitions and retired memory facts"
@@ -464,6 +476,18 @@ tasks.register("directLeafCallSmoke", JavaExec) {
     systemProperty "java.awt.headless", "true"
     systemProperty "application.settingsdir", file("build/tmp/direct-leaf-call/settings").absolutePath
     systemProperty "application.cachedir", file("build/tmp/direct-leaf-call/cache").absolutePath
+}
+
+tasks.register("mutableStackMappingsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks saved stack-local identity through register assignments and reloads"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.MutableStackMappingsSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/mutable-stack-mappings/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/mutable-stack-mappings/cache").absolutePath
 }
 
 tasks.register("inspectedCallsSmoke", JavaExec) {

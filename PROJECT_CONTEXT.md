@@ -1,5 +1,35 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED integration:** PR100 head `53e182e31f5abe38327f43647b30d502a5372395`
+passes all twelve jobs in run `41234746854` and independent exact-package,
+raw-runtime and host review. Normal merge `97a50d1a3c826e639e7754cffed9a98c199616a6`
+preserves the tested tree. Stack transfers, explicit definitions/reuse,
+closed control flow and inspected calls are accepted within their documented
+bounds. Receipt: `1c1879493f65c7afe8ffec26cf4ec606a8d4b360033929fb7d634aeb838e6e80`.
+See `docs/LIFETIME-CORE-ACCEPTANCE.md`. Earlier pending PR100 notes are historical.
+The separate main-push run `41245137186`, mutable-stack/mixed-piece hosted gate
+and richer scope work retain their own acceptance requirements. P1.11a and
+P3.3 remain incomplete.
+
+
+**CONFIRMED local mixed-piece acceptance; hosted acceptance pending:**
+all six x86-64/AArch64 exec/PIE/rebased-PIE cases pass independent piece spills,
+reloads, loss, branches, loops, body holes and call controls. Twelve candidate
+and six previous exports provide 8,235 caller and 72 callee observations;
+1,689 candidate values extend previous-package availability. All 24 actual
+Java 21 suites, ten runtime regressions, validators, preservation, determinism
+and cleanup checks pass. See `docs/COMPOSITE-VALUE-LIFETIMES.md`. P1.11a and P3.3
+remain open pending their full acceptance and integration requirements.
+
+**CONFIRMED locally; final package/hosted acceptance pending:** saved mutable
+stack identities now survive proven register assignments, saves and reloads,
+including branches/loops. Twelve target/width/address cases pass 24 candidate
+and 12 previous exports, 7,560 GDB observations and stale-slot/owner controls.
+All 23 actual Java 21 suites, six runtime regressions, validators, determinism
+and failure/cancellation checks pass. See `docs/MUTABLE-STACK-MAPPINGS.md`.
+PR100's AArch64 harness correction `e37035a1` is included by normal merge;
+its replacement hosted gate remains pending. Neither P1.11a nor P3.3 is complete.
+
 **CONFIRMED PR100 control-flow oracle correction; fresh hosted gate pending:**
 run `41230414679` failed both x86-64/AArch64 lanes on an older assertion that the
 complete function body could not preserve its copied parameter. The production

@@ -127,6 +127,25 @@ normally includes that main merge and all locally tested stack/control-flow/
 inspected-call commits. The combined head still needs its own required gate.
 No remaining row is removed from either umbrella.
 
+## Current component: saved mutable stack mappings
+
+**CONFIRMED locally; final package/hosted acceptance pending:** explicit stack
+identity with later register assignments passes 12 real target/width/address
+cases, including branches/loops, stale unsaved slots and conflicting owners.
+All 23 actual Java 21 suites pass. See `MUTABLE-STACK-MAPPINGS.md` for provenance,
+physical proof boundaries, exact validator/GDB evidence and retained failures.
+Mixed-piece migration and every P3.3 requirement remain in scope.
+
+## Current component: independent incoming pieces
+
+**CONFIRMED locally; hosted acceptance pending:** independent pieces pass all
+six x86-64/AArch64 address roles, 12 candidate/six previous exports, 8,235 caller
+and 72 callee instruction observations, 24 actual Java 21 suites and ten runtime
+regressions. Loss, aliases, branches, loops, body holes, call preservation,
+validators, original preservation, determinism and cleanup pass. See
+`COMPOSITE-VALUE-LIFETIMES.md` for exact bounds and evidence. Final package and
+hosted integration gates remain required. Every P3.3 row remains in scope.
+
 ## Completion audit
 
 For every row, record implementation/evidence files, exact reviewed source and
@@ -136,3 +155,16 @@ deterministic reruns and cancellation/failure cleanup. Pass the existing
 up-to-date `required-validation` protection and normally integrate reviewed
 changes. Reconcile TODO/context and the corresponding issue only after all
 requirements for that umbrella are proven. Release publication is separate.
+
+## Integrated stack/control-flow/call core
+
+**CONFIRMED integration:** PR100 head `53e182e31f5abe38327f43647b30d502a5372395`
+passes all twelve jobs in run `41234746854` and independent exact-package,
+raw-runtime and host review. Normal merge `97a50d1a3c826e639e7754cffed9a98c199616a6`
+preserves the tested tree. Stack transfers, explicit definitions/reuse,
+closed control flow and inspected calls are accepted within their documented
+bounds. Receipt: `1c1879493f65c7afe8ffec26cf4ec606a8d4b360033929fb7d634aeb838e6e80`.
+See `LIFETIME-CORE-ACCEPTANCE.md`. Earlier pending PR100 notes are historical.
+The separate main-push run `41245137186`, mutable-stack/mixed-piece hosted gate
+and richer scope work retain their own acceptance requirements. P1.11a and
+P3.3 remain incomplete.

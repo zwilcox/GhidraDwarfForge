@@ -46,19 +46,14 @@ try:
         value = gdb.selected_frame().read_var('value')
         assert value.type.sizeof == 16 and value.type.strip_typedefs().code == gdb.TYPE_CODE_STRUCT
         state = {'pc': pc, 'raw': raw, 'type': str(value.type), 'bytes': value.type.sizeof, 'available': not value.is_optimized_out}
-        if compiler:
-            assert not value.is_optimized_out, state
-        else:
-            assert (not value.is_optimized_out) == (pc < boundary), state
+        assert not value.is_optimized_out, state
+        if not compiler:
             omissions = [o for o in proof['reports'][0 if variant == 'forge' else 2]['omittedLocations']
-                if o['function'] == function['name'] and o['variable'] == 'value'
-                and int(o['startAddress'], 16) <= pc < int(o['endAddress'], 16)]
-            assert bool(omissions) == (pc >= boundary), state
-            if omissions:
-                omission, = omissions
-                assert omission['reason'] == 'REGISTER_MODIFIED' and omission['kind'] == 'PARAMETER'
-                assert [int(omission[k], 16) for k in ('startAddress', 'endAddress')] == [boundary, end]
-                state['omission'] = omission
+                if o['function'] == function['name'] and o['variable'] == 'value']
+            assert not omissions, state
+        backup = 'rax' if target == 'x86_64' else 'x2'
+        if pc >= boundary:
+            assert number('$' + backup) & ((1 << 64) - 1) == expected[0], state
         if not value.is_optimized_out:
             state['fields'] = {}
             for name, wanted in zip(('first', 'second'), expected):

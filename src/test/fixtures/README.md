@@ -47,12 +47,24 @@ ARM32 overwrites an input piece, so its composite is deliberately locationless.
 `composite-register-prefix.c` exercises an incoming sixteen-byte aggregate
 whose first physical register is partially overwritten on x86-64 or overwritten
 through W0 on AArch64. Its dedicated ET_EXEC harness requires both typed fields
-through the writing instruction and a whole-value unavailable tail beginning
-at the next instruction. It compares compiler DWARF with computed and custom
+through the writing instruction and through the compiler's actual backup copy
+after that instruction. It compares compiler DWARF with computed and custom
 Ghidra storage, repeats saved/reopened exports, and checks original instruction
-bytes and complete location-list pieces. It does not infer composite backups
-or surviving pieces; see `docs/COMPOSITE-REGISTER-PREFIX.md` for the acceptance
-status and proof boundary.
+bytes and complete location-list pieces. See `docs/COMPOSITE-VALUE-LIFETIMES.md`
+for the current proof and acceptance; `docs/COMPOSITE-REGISTER-PREFIX.md` records
+the earlier prefix-only boundary.
+
+`composite-value-flow.c` passes two real scalar arguments in registers or in
+register/stack storage. The curator explicitly groups those observed arguments
+into a custom `AnalystPair`; this is analyst knowledge rather than an assertion
+about the original C signature. Each field spills and reloads independently.
+Partial overwrite, stale reload and unknown alias cases require whole-value
+unavailability when either field loses its proof. Branch outcomes, repeated
+loops, a discontiguous body and a separately inspected ordinary C leaf exercise composed control
+flow. Compiler DWARF establishes argument values and local-slot coordinates;
+GDB then checks original instruction bytes, physical pieces and exported field
+values on x86-64 and QEMU AArch64. The runtime harness supports exec, PIE and
+rebased PIE. See `docs/COMPOSITE-VALUE-LIFETIMES.md` for acceptance status.
 
 The preparation script also applies a user-defined `analyst_stack` name to the
 compiler fixture's `sum` stack slot. Its Ghidra incoming-stack-pointer offset is
@@ -554,3 +566,9 @@ The signed32/64 harness executes both paths and several loop iterations under
 native/QEMU GDB, correlating raw instructions with compiler and saved Ghidra
 identities. Only its driver uses `-O0` to avoid an LLVM 18 call-site verifier
 loop; all functions under test remain `-O2`. See `docs/STACK-CONTROL-FLOW.md`.
+
+`mutable-stack-mappings.c` exercises saved stack/register identity with explicit
+working-register updates, saved and unsaved slots, branch alternatives, repeated
+loop assignments and a conflicting saved owner. Real export, raw DWARF and GDB
+checks pass for signed 32/64-bit x86-64/AArch64 exec/PIE/rebased PIE cases; exact
+hosted acceptance is pending. See `docs/MUTABLE-STACK-MAPPINGS.md`.
