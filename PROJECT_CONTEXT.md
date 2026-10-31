@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED defect and local fix; acceptance incomplete:** a default-named custom
+parameter/return layout could be incorrectly advertised as normally callable.
+GDB injected a Microsoft layout through SysV registers (4389 instead of 1234).
+A separate custom-storage restriction now preserves exact default equivalence
+and emits DW_CC_nocall for unproved layouts. Six-language models and three real
+x86-64 exec/PIE/rebase roles pass, including a real custom EDX return and
+previous-package controls. Five-target runtime regressions, controlled failure/
+cancellation, 26 actual Java 21 suites and independent local artifact review
+pass. Final committed package and hosted review remain pending. See `docs/CUSTOM-CALL-STORAGE.md`; P1.7/#66 remains open.
+
 **CONFIRMED locally; hosted acceptance pending (2026-10-30):** the matched
 ELF writer can insert explicit local function symbols into an existing static
 symbol table while preserving all original records and string offsets. Both

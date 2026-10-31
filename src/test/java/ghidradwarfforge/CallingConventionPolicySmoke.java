@@ -85,8 +85,7 @@ public final class CallingConventionPolicySmoke {
                     prepare(external, convention);
                     expected.add(new Expected(entry, name, convention, blocked));
                 }
-                // Custom storage does not itself identify an ABI. This control must
-                // not be mistaken for certification of arbitrary custom callability.
+                // Custom storage with an unknown model is no longer implicitly callable.
                 var first = program.getFunctionManager().getFunctionAt(start);
                 first.setCustomVariableStorage(true);
                 observe(program, target, expected);
@@ -148,7 +147,11 @@ public final class CallingConventionPolicySmoke {
                 declaration.signatureSource().equals("USER_DEFINED"), "signature provenance lost");
         }
         require(diagnostics.stream().filter(s -> s.startsWith("Debugger-injected calls disabled for ")).count() ==
-            2 * expected.stream().filter(Expected::blocked).count(), "omission diagnostic multiplicity differs");
+            2 * expected.stream().filter(Expected::blocked).count() + 1, "omission diagnostic multiplicity differs");
+        var unknownCustom = model.functions().stream().filter(f -> f.address() == expected.get(0).entry())
+            .findFirst().orElseThrow();
+        require(unknownCustom.debuggerCallsDisabled() && !unknownCustom.nonDefaultCallingConvention() &&
+            unknownCustom.debuggerCallRestriction().contains("resolved default"), "unknown custom call remains enabled");
         var repeatedDiagnostics = new ArrayList<String>();
         require(model.equals(GhidraTypeGraph.extract(program, symbols, target.map(), 0, TaskMonitor.DUMMY,
             repeatedDiagnostics::add)) && diagnostics.equals(repeatedDiagnostics), "extraction is not deterministic");

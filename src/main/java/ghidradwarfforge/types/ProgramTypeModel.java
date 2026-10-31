@@ -61,11 +61,11 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
     public record FunctionSignature(String name, long address, TypeRef returnType,
             List<Parameter> parameters, List<LocalVariable> locals, boolean variadic,
             boolean noReturn, String callingConvention, String signatureSource,
-            boolean nonDefaultCallingConvention) {
+            boolean nonDefaultCallingConvention, String debuggerCallRestriction) {
         public FunctionSignature {
             if (name == null || name.isBlank() || address < 0 || returnType == null ||
                     parameters == null || locals == null || callingConvention == null ||
-                    signatureSource == null) {
+                    signatureSource == null || debuggerCallRestriction == null) {
                 throw new IllegalArgumentException("invalid function signature");
             }
             parameters = List.copyOf(parameters);
@@ -73,6 +73,18 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
                 .sorted(Comparator.comparingInt(LocalVariable::firstUseOffset)
                     .thenComparing(LocalVariable::name))
                 .toList();
+        }
+
+        public boolean debuggerCallsDisabled() {
+            return nonDefaultCallingConvention || !debuggerCallRestriction.isEmpty();
+        }
+
+        public FunctionSignature(String name, long address, TypeRef returnType,
+                List<Parameter> parameters, List<LocalVariable> locals, boolean variadic,
+                boolean noReturn, String callingConvention, String signatureSource,
+                boolean nonDefaultCallingConvention) {
+            this(name, address, returnType, parameters, locals, variadic, noReturn,
+                callingConvention, signatureSource, nonDefaultCallingConvention, "");
         }
 
         public FunctionSignature(String name, long address, TypeRef returnType,
@@ -86,14 +98,26 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
     /** A curated external signature with an identity key, never an image address. */
     public record FunctionDeclaration(String key, String name, TypeRef returnType,
             List<Parameter> parameters, boolean variadic, boolean noReturn,
-            String callingConvention, String signatureSource, boolean nonDefaultCallingConvention) {
+            String callingConvention, String signatureSource, boolean nonDefaultCallingConvention,
+            String debuggerCallRestriction) {
         public FunctionDeclaration {
             if (key == null || key.isBlank() || name == null || name.isBlank() ||
                     returnType == null || parameters == null || callingConvention == null ||
-                    signatureSource == null || signatureSource.isBlank()) {
+                    signatureSource == null || signatureSource.isBlank() || debuggerCallRestriction == null) {
                 throw new IllegalArgumentException("invalid external function declaration");
             }
             parameters = List.copyOf(parameters);
+        }
+
+        public boolean debuggerCallsDisabled() {
+            return nonDefaultCallingConvention || !debuggerCallRestriction.isEmpty();
+        }
+
+        public FunctionDeclaration(String key, String name, TypeRef returnType,
+                List<Parameter> parameters, boolean variadic, boolean noReturn,
+                String callingConvention, String signatureSource, boolean nonDefaultCallingConvention) {
+            this(key, name, returnType, parameters, variadic, noReturn, callingConvention,
+                signatureSource, nonDefaultCallingConvention, "");
         }
 
         public FunctionDeclaration(String key, String name, TypeRef returnType,
