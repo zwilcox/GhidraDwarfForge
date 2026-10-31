@@ -21,6 +21,8 @@ import ghidradwarfforge.elf.ElfLocalFunctionSymbol;
 import ghidradwarfforge.elf.ElfFunctionAlias;
 import ghidradwarfforge.elf.FunctionAliasSymbols;
 import ghidradwarfforge.elf.MipsFunctionAliasSymbols;
+import ghidradwarfforge.elf.MipsFloatingCallPolicy;
+import ghidradwarfforge.types.ProgramTypeModel;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
 
 /** Table-driven libdwarf target description derived from the original ELF. */
@@ -113,6 +115,15 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
         }
         return "selected Ghidra compiler specification " + compilerSpecId +
             " has no validated default debugger ABI mapping for ELF target " + name;
+    }
+
+    /** Target ABI guards preserve the signature while preventing unverified debugger calls. */
+    public ProgramTypeModel applyCallRestrictions(ElfImage image, ProgramTypeModel model,
+            BooleanSupplier cancelled, Consumer<String> diagnostic) throws IOException {
+        if (!equals(fromElf(image))) {
+            throw new IllegalArgumentException("call ABI target disagrees with ELF");
+        }
+        return MipsFloatingCallPolicy.apply(image, model, cancelled, diagnostic);
     }
 
     /** Direct code-address values only; tagged/descriptor ABIs need their own binding proof. */

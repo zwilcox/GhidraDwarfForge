@@ -1,5 +1,17 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED integration (2026-10-31):** PR85 final main-based head
+`bd522b85d5e7d375479c4c4ec54665c22c2406cb` passes all twelve jobs in
+`41178871807`, exact package/raw review and both GUI console reviews, and
+merged normally as `7eeef48`. Receipt:
+`affa498fdccd633b95223d05d1b31e22e3ea2acf5fc19bb972d816e2d8932085`.
+PR86 component head `32c480fedfd35ab59d3b26dc4fbbb3aca0b2ba10` passes its
+complete component gate (`41172382223`, receipt
+`59ee737783ddbc24f4ed902fe8cb36172d274cf8f7e8c5d8f9c80e9002fd7d81`).
+It now has main as its base; production content is unchanged by the normal
+merge. Fresh final-head validation is required before integration. Earlier
+pending component notes are historical. P1.7 remains open.
+
 **CONFIRMED integration (2026-10-31):** PR84 final main-based head
 `5211c59047141162d38d9c33c91c3e4cc3ab7e59` passes all twelve jobs in
 `41174858655`, exact-package/raw runtime review and both GUI console reviews.
@@ -28,6 +40,16 @@ incorrect boundaries. Fresh large-ELF and full ARM/Thumb exporter/GDB checks pas
 production is unchanged. Receipt:
 `c00c0dad986876ef14bbed896e8c53209c26df531e71ffacef6fe367d71bd3bb`.
 Fresh hosted acceptance is pending; P1.7/#66 remains open.
+
+**CONFIRMED locally; hosted acceptance pending (2026-10-31):** the MIPS floating
+call safeguard passes all 24 maintained both-endian FPXX/FP32, float/double,
+exec/PIE/rebased-PIE cases: 72 real exports, 72 GDB processes, 12 unchanged-state
+rejections, 36 positive FP32 floating calls and 72 integer controls. Independent
+raw review, five-target export/GDB regressions, fixture reproducibility,
+failure isolation and copy cancellation pass. Local receipt:
+`43ee06d6b6ac524c815d56e3dca42927c3f282ed4c8727f906f174bca66ccd53`.
+See `docs/MIPS-FLOATING-CALL-ABI.md`. Final package and hosted gates remain
+pending; P1.7/#66 stays open.
 
 **CONFIRMED integration (2026-10-31):** PR83 final head
 `ba4fbd6cf2d7780478220a4fc33c43564bdf6f49` passes all twelve jobs in
@@ -1296,6 +1318,14 @@ Define precedence among analyst-applied listing/signature types and decompiler g
   imported or subsequently changed programs.
 
 ## P1.7 Emit complete function signatures
+
+**CONFIRMED defect; fix under validation:** MIPS FPXX floating injected calls
+can execute with stale arguments and incorrect returns. Compiler and current
+Forge reproductions are retained; explicit FP32 controls pass. The isolated ABI
+safeguard passes model tests, 32 actual Java 21 suites and sixteen initial
+installed runtime cases. Rebased/integer controls and pipeline acceptance remain
+pending.
+See `docs/MIPS-FLOATING-CALL-ABI.md`.
 
 **CONFIRMED locally; acceptance incomplete:** dynamic-only symbol mirroring
 preserves original lookup while adding analyst aliases. Both GNU qualified

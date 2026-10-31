@@ -344,6 +344,7 @@ public final class MinimalDwarfSidecarExporter {
 
         ElfImage elf = ElfImage.read(source);
         DwarfTarget target = DwarfTarget.fromElf(elf);
+        typeModel = target.applyCallRestrictions(elf, typeModel, cancelled, diagnostic);
         List<ElfLocalFunctionSymbol> modeSymbols = target.planFunctionModeSymbols(
             elf, modeCues, cancelled, diagnostic);
         List<ElfLocalFunctionSymbol> supplemental = new ArrayList<>(modeSymbols);
