@@ -13,7 +13,16 @@ import ghidradwarfforge.types.TypeGraph.TypeRef;
 public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> functions,
         List<GlobalVariable> globals, VariableStorageModel variableStorage,
         List<FunctionStaticVariable> functionStatics,
-        List<FunctionDeclaration> functionDeclarations, List<LexicalScopeModel> lexicalScopes) {
+        List<FunctionDeclaration> functionDeclarations, List<LexicalScopeModel> lexicalScopes,
+        ClassScopeModel classScopes) {
+    public ProgramTypeModel(TypeGraph types, List<FunctionSignature> functions,
+            List<GlobalVariable> globals, VariableStorageModel variableStorage,
+            List<FunctionStaticVariable> functionStatics, List<FunctionDeclaration> functionDeclarations,
+            List<LexicalScopeModel> lexicalScopes) {
+        this(types, functions, globals, variableStorage, functionStatics, functionDeclarations,
+            lexicalScopes, ClassScopeModel.empty());
+    }
+
     public ProgramTypeModel(TypeGraph types, List<FunctionSignature> functions,
             List<GlobalVariable> globals, VariableStorageModel variableStorage,
             List<FunctionStaticVariable> functionStatics, List<FunctionDeclaration> functionDeclarations) {
@@ -251,6 +260,8 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
                     variable.name());
             }
         }
+        if (classScopes == null) throw new IllegalArgumentException("class scopes are required");
+        classScopes.validate(types, functions, functionDeclarations);
         if (lexicalScopes == null) throw new IllegalArgumentException("lexical scopes are required");
         lexicalScopes = lexicalScopes.stream().sorted(Comparator.comparingLong(LexicalScopeModel::functionAddress)).toList();
         var scopedOwners = new java.util.HashMap<Long, LexicalScopeModel>();

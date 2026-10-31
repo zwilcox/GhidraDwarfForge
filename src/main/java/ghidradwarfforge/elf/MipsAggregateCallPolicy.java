@@ -82,7 +82,7 @@ public final class MipsAggregateCallPolicy {
         }
         checkCancelled(cancelled);
         return changed ? new ProgramTypeModel(nodes.equals(model.types().nodes()) ? model.types() : new TypeGraph(nodes), functions, model.globals(), model.variableStorage(),
-            model.functionStatics(), declarations, model.lexicalScopes()) : model;
+            model.functionStatics(), declarations, model.lexicalScopes(), model.classScopes()) : model;
     }
 
     private static boolean integerProfile(ElfImage image, MipsAbiFlags.Observation observation) {

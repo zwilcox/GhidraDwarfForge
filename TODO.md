@@ -3083,6 +3083,12 @@ after merge and post-merge validation.
 
 Tracking: [#73](https://github.com/zwilcox/GhidraDwarfForge/issues/73).
 
+**CONFIRMED model component:** class/namespace ownership, method identities and
+explicit/inferred layout bindings are represented separately. Fifty-one checks
+and ten actual Java 21 suites pass, including nonempty ownership through all
+three call-policy copies. See `docs/CLASS-SCOPE-MODEL.md`; saved-program evidence
+and class emission remain planned. No P3.3 row is closed by this model alone.
+
 **CONFIRMED research:** fourteen strict-validator/GDB layout cases select a
 class-owned declaration plus qualified root definition for C11. Two actual
 headless probes show automatic THIS typing is preference-driven, not a durable

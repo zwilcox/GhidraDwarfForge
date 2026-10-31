@@ -30,7 +30,7 @@ public final class MipsFloatingCallPolicySmoke {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("forge-mips-call-");
-        var model = model();
+        var model = ghidradwarfforge.types.ClassScopeModelSmoke.withOwnership(model());
         for (ByteOrder order : List.of(ByteOrder.BIG_ENDIAN, ByteOrder.LITTLE_ENDIAN)) {
             for (int abi : List.of(0, 1, 2, 3, 4, 5, 6, 7, 255)) {
                 for (int carrier : List.of(0, 1, 2, 3)) {
@@ -76,6 +76,7 @@ public final class MipsFloatingCallPolicySmoke {
                     require(output.types().nodes().stream().filter(n -> !(n instanceof SubroutineType)).toList().equals(
                         model.types().nodes().stream().filter(n -> !(n instanceof SubroutineType)).toList()) &&
                         output.variableStorage() == model.variableStorage(), "non-function types or locations changed");
+                    require(output.classScopes() == model.classScopes(), "class ownership dropped by call policy");
                     require(output.equals(MipsFloatingCallPolicy.apply(image, output, () -> false, ignored -> { })),
                         "restriction duplicated");
                     require(Arrays.equals(original, Files.readAllBytes(path)), "original changed");

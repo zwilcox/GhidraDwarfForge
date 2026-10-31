@@ -1089,3 +1089,11 @@ tasks.register("objectParameterSmoke", JavaExec) {
         }
     }
 }
+
+tasks.register("classScopeModelSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks saved class ownership, distinct types and explicit/inferred binding conflicts"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.types.ClassScopeModelSmoke"
+}

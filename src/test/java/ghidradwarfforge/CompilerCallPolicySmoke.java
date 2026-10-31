@@ -32,7 +32,7 @@ public final class CompilerCallPolicySmoke {
     public static void main(String[] args) throws Exception {
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
             new HeadlessGhidraApplicationConfiguration());
-        var input = model();
+        var input = ghidradwarfforge.types.ClassScopeModelSmoke.withOwnership(model());
         int specifications = 0;
         for (var target : List.of(new Target("x86:LE:64:default", "x86_64", "gcc"),
                 new Target("x86:LE:32:default", "x86", "gcc"),
@@ -53,6 +53,7 @@ public final class CompilerCallPolicySmoke {
                     var diagnostics = new ArrayList<String>();
                     var output = GhidraCompilerCallPolicy.apply(program, description, input,
                         TaskMonitor.DUMMY, diagnostics::add);
+                    require(output.classScopes() == input.classScopes(), "class ownership dropped by call policy");
                     require(output.types().byKey().get("integer") == input.types().byKey().get("integer") &&
                         output.variableStorage() == input.variableStorage(), "non-function type or storage replaced");
                     require(output.globals().equals(input.globals()) && output.functionStatics().equals(input.functionStatics()),
@@ -106,7 +107,7 @@ public final class CompilerCallPolicySmoke {
             require(!description.compilerSpecCallRestriction("unregistered").isEmpty(), "unknown compiler accepted");
             System.out.println("compiler-call-policy-target=PASS " + target.language());
         }
-        require(input.equals(model()), "input model mutated");
+        require(input.equals(ghidradwarfforge.types.ClassScopeModelSmoke.withOwnership(model())), "input model mutated");
         System.out.println("compiler-call-policy-smoke=PASS checks=" + checks + " specifications=" + specifications);
     }
 

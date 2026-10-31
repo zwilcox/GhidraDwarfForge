@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED class model component; extractor/emitter pending:** saved scope and
+method identities are now separate from explicit or inferred class/layout
+bindings. The model rejects contradictory type/ownership evidence and preserves
+distinct same-name types. Fifty-one model checks and ten actual Java 21 suites
+pass; compiler-default and both MIPS call policies retain nonempty ownership
+graphs. Existing producer regressions pass strict validation. See
+`docs/CLASS-SCOPE-MODEL.md`. This is not class emission acceptance; the full
+lifetime/scope goal remains incomplete.
+
 **CONFIRMED class-layout/API research; implementation pending:** fourteen
 x86-64/AArch64 layout cases pass strict validation and actual GDB values. A
 class-owned leaf declaration linked to the qualified root definition preserves

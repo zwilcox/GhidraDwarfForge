@@ -81,7 +81,7 @@ public final class MipsFloatingCallPolicy {
         }
         checkCancelled(cancelled);
         return changed ? new ProgramTypeModel(nodes.equals(model.types().nodes()) ? model.types() : new TypeGraph(nodes), functions, model.globals(), model.variableStorage(),
-            model.functionStatics(), declarations, model.lexicalScopes()) : model;
+            model.functionStatics(), declarations, model.lexicalScopes(), model.classScopes()) : model;
     }
 
     private static String restriction(Map<String, TypeNode> types, TypeRef result, List<Parameter> parameters,

@@ -206,6 +206,13 @@ All remaining class/exporter/hosted requirements remain in scope.
 
 ## Completion audit
 
+**Current class model checkpoint:** identity-based ownership and separately
+evidenced layout bindings pass 51 model checks and ten actual Java 21 suites.
+Nonempty graphs survive compiler-default and both MIPS policy copies. See
+`CLASS-SCOPE-MODEL.md`. Saved evidence, native class emission and all remaining
+scope/hosted requirements are still required; the model alone completes none
+of the umbrella rows.
+
 For every row, record implementation/evidence files, exact reviewed source and
 package identity, validator results and GDB outcomes, including explicit
 negative controls. Require source-built fixtures, unchanged original targets,
