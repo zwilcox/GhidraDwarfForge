@@ -1,5 +1,16 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally; aggregate-return acceptance incomplete (2026-10-31):**
+return carriers now retain their names/types/locations as artificial variables
+without adding formal arguments. A bounded MIPS policy preserves verified word
+arguments and rejects reproduced unsafe wide aggregate calls. All 21 target/
+profile/role cases pass 42 exports, 162 positive calls and 24 unchanged-state
+rejections, with 24 compiler failures retained as negative controls. Independent
+raw receipt: `335f0050b3d608df4b3e63a62b2bd0dfba2a03b759bb4ab023d5d61e03a4eee2`.
+Model, fixture, declaration, failure/cancellation and initial Java 21 checks pass;
+final committed package/hosted acceptance remains pending. See
+`docs/AGGREGATE-RETURN-CALLS.md`. P1.7 remains open.
+
 **CONFIRMED original ARM mode conflict controls locally (2026-10-31):**
 source-built ELF mutations now exercise both contradictory function tags and
 mapping symbols through real imports and repeated production exports. Both omit

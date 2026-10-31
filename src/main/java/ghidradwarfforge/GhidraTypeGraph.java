@@ -33,6 +33,7 @@ import ghidra.program.model.data.VoidDataType;
 import ghidra.program.model.data.WideChar16DataType;
 import ghidra.program.model.data.WideChar32DataType;
 import ghidra.program.model.data.WideCharDataType;
+import ghidra.program.model.listing.AutoParameterType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionIterator;
 import ghidra.program.model.listing.Data;
@@ -173,7 +174,8 @@ public final class GhidraTypeGraph {
                     : formalType.getLength();
                 String parameterName = safeParameterName(parameter);
                 parameters.add(new TypeGraph.Parameter(parameterName,
-                    extractor.reserve(formalType), parameter.isAutoParameter()));
+                    extractor.reserve(formalType), parameter.isAutoParameter(),
+                    parameter.getAutoParameterType() == AutoParameterType.RETURN_STORAGE_PTR));
                 if (!parameterName.isBlank() && logicalLength > 0) {
                     Storage storage = GhidraVariableStorage.stableParameter(program, function,
                         parameter, registerMap, monitor);
@@ -383,7 +385,8 @@ public final class GhidraTypeGraph {
             for (Parameter parameter : external.getParameters()) {
                 monitor.checkCancelled();
                 parameters.add(new TypeGraph.Parameter(safeParameterName(parameter),
-                    extractor.reserve(parameter.getFormalDataType()), parameter.isAutoParameter()));
+                    extractor.reserve(parameter.getFormalDataType()), parameter.isAutoParameter(),
+                    parameter.getAutoParameterType() == AutoParameterType.RETURN_STORAGE_PTR));
             }
             // An external-space placeholder is not an address in this image.
             // Preserve its persistent identity and full Ghidra display name only.

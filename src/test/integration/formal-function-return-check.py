@@ -105,9 +105,12 @@ assert strict['status'] == 'PASS' and strict['uncorroborated_errors'] == 0
 return_shape((case / 'compiler-info.stdout').read_text(), 'make_result')
 dies, function, returned, referenced = return_shape((case / 'forge-info.stdout').read_text(), 'curated_make_result')
 parameters = [row for row in facts.children(dies, dies.index(function)) if row['tag'] == 'DW_TAG_formal_parameter']
-assert [facts.facts.die_name(row) for row in parameters] == [p['name'] for p in current['parameters']]
-assert [row['attrs'].get('DW_AT_artificial', '0') for row in parameters] == ['1', '0', '0']
-hidden = referenced(parameters[0])
+assert [facts.facts.die_name(row) for row in parameters] == [p['name'] for p in current['parameters'][1:]]
+assert [row['attrs'].get('DW_AT_artificial', '0') for row in parameters] == ['0', '0']
+hidden_variable, = [row for row in facts.children(dies, dies.index(function))
+    if row['tag'] == 'DW_TAG_variable' and facts.facts.die_name(row) == auto['name']]
+assert hidden_variable['attrs']['DW_AT_artificial'] == '1'
+hidden = referenced(hidden_variable)
 assert hidden['tag'] == 'DW_TAG_pointer_type' and hidden['attrs']['DW_AT_byte_size'] == '8' and referenced(hidden) == returned
 output = facts.facts.elf(case / 'return.dbg')
 assert output['header'][:4] == original['header'][:4] and output['header'][6] == original['header'][6]
@@ -115,7 +118,7 @@ assert output['header'][4] == output['header'][9] == 0
 assert output['sections']['.text'][1] == text_bytes
 # Check actual encoded locations, independently of omission reports.
 locations = []
-for parameter, register in zip(parameters, (5, 4, 1), strict=True):
+for parameter, register in zip([hidden_variable, *parameters], (5, 4, 1), strict=True):
     attr = parameter['attrs']['DW_AT_location']
     expected = bytes((0x90, register))
     if 'byte block:' in attr:
@@ -157,6 +160,9 @@ for row in (compiler, forge):
     assert row['status'] == 'PASS' and [state['pc'] for state in row['states']] == pcs and row['exitCodes'] == [0]
     assert row['returnType']['bytes'] == 24 and row['returnType']['code'] == 3
     assert list(row['callerGlobals'].values()) == model['wanted']
+    assert row['injectedCalls'] == [
+        {'seed': 0x1122334455667788, 'delta': -19, 'returned': model['wanted']},
+        {'seed': 23, 'delta': 7, 'returned': [23, 30, 16]}]
 assert all(compiler['explicitPositivePCs'][name] == len(pcs) for name in ('seed', 'delta'))
 assert forge['explicitPositivePCs']['seed'] == len(pcs) and 0 < forge['explicitPositivePCs']['delta'] < len(pcs)
 protected = read('protected-before.json')
@@ -167,5 +173,5 @@ for role, name in [('input', 'return.stripped'), ('output', 'return.dbg'), ('sou
     assert reports[0]['artifacts'][role + 'Sha256'] == facts.facts.snapshot(case / name)['sha256']
 write('result.json', {'status': 'PASS', 'target': 'x86_64', 'javaVersion': current['javaVersion'],
     'protectedUnchanged': True, 'instructionPCs': pcs, 'strict': strict, 'gdb': [compiler, forge],
-    'scope': 'One native SysV ET_EXEC aggregate return; no injected calls or broad ABI claim.'})
+    'scope': 'One native SysV ET_EXEC aggregate return with two injected calls per compiler/Forge run; no broad ABI claim.'})
 print('formal-function-return=PASS ' + str(case))

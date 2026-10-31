@@ -887,3 +887,11 @@ tasks.register("sectionlessUnwindSmoke", JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.elf.SectionlessUnwindSmoke"
 }
+
+tasks.register("mipsAggregateCallPolicySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded MIPS aggregate-return call profiles and preserved signatures"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.MipsAggregateCallPolicySmoke"
+}

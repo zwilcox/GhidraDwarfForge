@@ -518,8 +518,12 @@ public final class MinimalDwarfSidecarExporter {
                             errorOut);
                     }
                     for (TypeGraph.Parameter parameter : signature.parameters()) {
+                        // GDB derives return-buffer transport from the formal return
+                        // type. Listing it as another argument shifts injected calls.
+                        // Preserve the known carrier as an artificial scoped variable.
                         Die parameterDie = newDie(producer, consumer, debug,
-                            DW_TAG_FORMAL_PARAMETER, die, errorOut);
+                            parameter.returnStorage() ? DW_TAG_VARIABLE : DW_TAG_FORMAL_PARAMETER,
+                            die, errorOut);
                         if (!parameter.name().isBlank()) {
                             addName(producer, consumer, parameterDie, parameter.name(), errorOut);
                         }
@@ -568,8 +572,12 @@ public final class MinimalDwarfSidecarExporter {
                         addFlag(producer, consumer, debug, die, DW_AT_NORETURN, true, errorOut);
                     }
                     for (TypeGraph.Parameter parameter : declaration.parameters()) {
+                        // GDB derives return-buffer transport from the formal return
+                        // type. Listing it as another argument shifts injected calls.
+                        // Preserve the known carrier as an artificial scoped variable.
                         Die parameterDie = newDie(producer, consumer, debug,
-                            DW_TAG_FORMAL_PARAMETER, die, errorOut);
+                            parameter.returnStorage() ? DW_TAG_VARIABLE : DW_TAG_FORMAL_PARAMETER,
+                            die, errorOut);
                         if (!parameter.name().isBlank()) {
                             addName(producer, consumer, parameterDie, parameter.name(), errorOut);
                         }

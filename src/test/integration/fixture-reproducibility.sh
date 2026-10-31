@@ -36,6 +36,7 @@ trap cleanup EXIT
 expected_sources=(
     Makefile
     README.md
+    aggregate-return-calls.c
     arm-dynamic-pcs.c
     arm-mixed-function-aliases.cpp
     arm-symbol-boundary.S

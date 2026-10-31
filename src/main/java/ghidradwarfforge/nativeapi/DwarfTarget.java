@@ -23,6 +23,7 @@ import ghidradwarfforge.elf.ElfFunctionAlias;
 import ghidradwarfforge.elf.FunctionAliasSymbols;
 import ghidradwarfforge.elf.MipsFunctionAliasSymbols;
 import ghidradwarfforge.elf.MipsFloatingCallPolicy;
+import ghidradwarfforge.elf.MipsAggregateCallPolicy;
 import ghidradwarfforge.types.ProgramTypeModel;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
 
@@ -124,7 +125,8 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
         if (!equals(fromElf(image))) {
             throw new IllegalArgumentException("call ABI target disagrees with ELF");
         }
-        return MipsFloatingCallPolicy.apply(image, model, cancelled, diagnostic);
+        return MipsAggregateCallPolicy.apply(image,
+            MipsFloatingCallPolicy.apply(image, model, cancelled, diagnostic), cancelled, diagnostic);
     }
 
     /** Direct code-address values only; tagged/descriptor ABIs need their own binding proof. */
