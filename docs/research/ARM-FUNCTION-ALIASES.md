@@ -56,3 +56,38 @@ breakpoints, source stepping, values and returns. Include malformed, changed-cod
 ambiguous-mode and discontiguous/entry-interior controls. Shared-object behavior
 must be proven before claiming that scope. General ARM modes and calling ABIs
 are not established by these four compiler fixtures.
+
+## Retained baseline and tagged-symbol experiment
+
+**CONFIRMED retained ARM/Thumb baseline and packaging experiment (2026-10-31):**
+six ARM/Thumb exec/PIE/rebased cases pass repeated real exports, independent
+compiler/Ghidra code boundaries, GNU/LLVM/strict libdwarf validation and QEMU/GDB
+lookup, prototypes, owned data, stepping and returns. Static disassembly is checked
+before attaching so CPSR cannot hide missing mode information. An isolated writer
+experiment preserves every existing symbol/DWARF byte while adding two correctly
+tagged local aliases; all six cases pass two deterministic writes and runtime
+lookup through the aliases. Automatic ARM alias extraction remains PLANNED;
+stripped, sectionless, mixed-mode and conflicting-evidence cases remain open.
+Receipt: `94f3e5b759834daa9477773fae4b88b8a822ce6b26c32ada6961805f308f886e`.
+See `docs/research/ARM-FUNCTION-ALIASES.md`. P1.7/#66 remains open.
+
+The common integration harness now accepts `arm32 --arm-mode arm|thumb`.
+It separates the tagged ELF value and compiler symbol size from the decoded code
+extent. Independent objdump instruction boundaries and exact `bx lr` bytes define
+the fixture body; Ghidra must agree without expanding it across literals.
+
+The baseline cases are retained under `build/arm-alias-review/baseline.ysz2rova`;
+the writer experiment is `tagged-packaging.vt0n2ar6`. Both use packaged JAR
+`adacaa6dd7f27fd3990ff58b63c0282962d262902af9901c3dcf8d15361ce699`.
+Commands are retained alongside each artifact. The experiment compiles the
+existing `LocalSymbolMergeProbe` with `--release 21`, executes it with Java 21,
+and compares the full original symbol inventory and all DWARF sections. Its
+second invocation of each function uses the newly inserted alternate name.
+
+Two harness failures are retained: GDB Python's inclusive disassembly end
+included the next instruction until the test used `end - 1`; the first experiment
+copy omitted the executable permission until it used `copy2`. Neither required
+an exporter change. Original inputs, packaged runtime and saved programs remain
+protected. Passing retained-symbol cases does not prove missing-mode recovery:
+existing mapping symbols can still determine decoding. The next experiments
+must remove that protection, test conflicting tags, and cover mixed neighbors.

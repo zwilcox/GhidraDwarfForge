@@ -11,6 +11,7 @@ sysroot=
 case "$target" in
     x86_64|i386) ;;
     aarch64) emulator=qemu-aarch64-static; sysroot=/usr/aarch64-linux-gnu ;;
+    arm32) emulator=qemu-arm-static; sysroot=${FORGE_ARM32_SYSROOT:-/usr/arm-linux-gnueabihf} ;;
     mips32be) emulator=qemu-mips-static; sysroot=/usr/mips-linux-gnu ;;
     mips32le) emulator=qemu-mipsel-static; sysroot=/usr/mipsel-linux-gnu ;;
     *) echo "unsupported alias target: $target" >&2; exit 64 ;;

@@ -1,5 +1,17 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED retained ARM/Thumb baseline and packaging experiment (2026-10-31):**
+six ARM/Thumb exec/PIE/rebased cases pass repeated real exports, independent
+compiler/Ghidra code boundaries, GNU/LLVM/strict libdwarf validation and QEMU/GDB
+lookup, prototypes, owned data, stepping and returns. Static disassembly is checked
+before attaching so CPSR cannot hide missing mode information. An isolated writer
+experiment preserves every existing symbol/DWARF byte while adding two correctly
+tagged local aliases; all six cases pass two deterministic writes and runtime
+lookup through the aliases. Automatic ARM alias extraction remains PLANNED;
+stripped, sectionless, mixed-mode and conflicting-evidence cases remain open.
+Receipt: `94f3e5b759834daa9477773fae4b88b8a822ce6b26c32ada6961805f308f886e`.
+See `docs/research/ARM-FUNCTION-ALIASES.md`. P1.7/#66 remains open.
+
 **CONFIRMED ARM/Thumb compiler-fixture research (2026-10-31):** four fresh
 ARM/Thumb exec/PIE references run under QEMU. The retained isolated toolchain
 supplies fresh compilation despite no ARM compiler on PATH. Thumb ELF values

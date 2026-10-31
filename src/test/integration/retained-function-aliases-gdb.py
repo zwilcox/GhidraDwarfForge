@@ -30,7 +30,17 @@ def missing(name):
 
 
 lookup = {}
+static_instructions = {}
 for row in functions:
+    if target == 'arm32':
+        # Check before attaching: live CPSR can conceal missing ELF mode cues.
+        # GDB's Python disassembler includes an instruction starting at end_pc.
+        decoded = gdb.selected_inferior().architecture().disassemble(row['entry'], row['end'] - 1)
+        expected = row['instructions']
+        assert [(i['addr'], i['length']) for i in decoded] == [
+            (i['address'], i['length']) for i in expected], (decoded, expected)
+        assert decoded[-1]['asm'].split() == ['bx', 'lr'], decoded
+        static_instructions[row['name']] = decoded
     names = [row['original']] + (['second_identity'] if row['name'].endswith('analyst_alias') else [])
     for name in names:
         present = compiler or name in metadata['originalSymbols']
@@ -125,5 +135,6 @@ for iteration, argument in enumerate((19, -19)):
 gdb.execute('continue')
 assert exits == [0] and navigation == ['next', 'next', 'step', 'step']
 (case / (variant + '-gdb.json')).write_text(json.dumps({'status': 'PASS', 'lookup': lookup,
-    'calls': rows, 'navigation': navigation, 'exitCodes': exits}, indent=4) + '\n')
+    'calls': rows, 'navigation': navigation, 'exitCodes': exits,
+    'staticInstructions': static_instructions}, indent=4) + '\n')
 print('retained-function-aliases-gdb=' + variant + ' PASS')

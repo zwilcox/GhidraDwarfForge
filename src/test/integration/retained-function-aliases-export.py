@@ -35,7 +35,8 @@ def elf(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
-    parser.add_argument('target', choices=('x86_64', 'i386', 'aarch64', 'mips32be', 'mips32le'))
+    parser.add_argument('target', choices=('x86_64', 'i386', 'aarch64', 'arm32', 'mips32be', 'mips32le'))
+    parser.add_argument('--arm-mode', choices=('arm', 'thumb'), default='arm')
     parser.add_argument('--role', choices=('exec', 'pie', 'pie-rebased'), default='exec')
     parser.add_argument('--symbols', choices=('retained', 'stripped'), default='retained')
     parser.add_argument('--results-root', type=Path,
@@ -77,7 +78,7 @@ def main():
     write('protected-before.json', before)
     reference, binary = case / 'aliases.reference', case / 'aliases.input'
     prefix = {'x86_64': '', 'i386': '', 'aarch64': 'aarch64-linux-gnu-',
-        'mips32be': 'mips-linux-gnu-', 'mips32le': 'mipsel-linux-gnu-'}[args.target]
+        'arm32': 'arm-linux-gnueabihf-', 'mips32be': 'mips-linux-gnu-', 'mips32le': 'mipsel-linux-gnu-'}[args.target]
     cc, objcopy = prefix + 'g++', prefix + 'objcopy'
     flags = ['-fno-pie', '-no-pie'] if args.role == 'exec' else ['-fPIE', '-pie']
     if args.target == 'i386':
@@ -85,6 +86,9 @@ def main():
             *(['-fno-pie', '-static'] if args.role == 'exec' else ['-fPIE', '-static-pie'])]
     if args.mips_fp32:
         flags.append('-mfp32')
+    if args.target == 'arm32':
+        flags += ['-march=armv7-a', '-mfpu=vfpv3-d16', '-mfloat-abi=hard',
+            '-m' + args.arm_mode, '-funwind-tables']
     if args.hash_style != 'default':
         flags.append('-Wl,--hash-style=' + args.hash_style)
     run('compile', [cc, '-O1', '-g3', '-gdwarf-5', '-gno-variable-location-views', *flags,
@@ -93,6 +97,8 @@ def main():
     before.update({str(reference): support.digest(reference), str(binary): support.digest(binary)})
     write('protected-before.json', before)
     run('symbols', ['readelf', '-sW', reference])
+    if args.target == 'arm32':
+        run('instructions', [prefix + 'objdump', '-drw', reference])
     symbols = {}
     for line in (case / 'symbols.log').read_text().splitlines():
         f = line.split()
@@ -110,6 +116,35 @@ def main():
         assert f['type'] == 'FUNC' and f['binding'] == 'GLOBAL' and d['type'] == 'OBJECT' and d['size'] == 4
         row = {'name': 'recovered::' + name, 'entry': f['address'], 'end': f['address'] + f['size'],
             'original': original, 'privateAddress': d['address'], 'privateValue': value}
+        if args.target == 'arm32':
+            # ELF function values carry Thumb mode; byte/DWARF addresses do not.
+            thumb = args.arm_mode == 'thumb'
+            assert f['address'] & 1 == int(thumb)
+            row['entry'] = f['address'] & ~1
+            row['elfSymbolValue'], row['elfSymbolSize'] = f['address'], f['size']
+            instructions = []
+            cursor = row['entry']
+            for line in (case / 'instructions.log').read_text().splitlines():
+                match = re.fullmatch(r'\s*([0-9a-f]+):\s+([0-9a-f]{4,8}(?: [0-9a-f]{4})?)\s+(.+)', line)
+                if match is None or int(match[1], 16) != cursor:
+                    continue
+                encoding = match[2].replace(' ', '')
+                length = len(encoding) // 2
+                assert length in ((2, 4) if thumb else (4,))
+                instructions.append({'address': cursor, 'length': length, 'assembly': match[3]})
+                cursor += length
+                if re.fullmatch(r'bx\s+lr', match[3]):
+                    break
+            assert instructions and re.fullmatch(r'bx\s+lr', instructions[-1]['assembly'])
+            assert cursor <= row['entry'] + f['size']
+            row['end'] = cursor
+            row['instructions'] = instructions
+            row['returnInstruction'] = instructions[-1]['address']
+            _, _, sections = elf(reference)
+            section, payload = list(sections.values())[f['section']]
+            offset = row['returnInstruction'] - section[3]
+            expected_return = bytes.fromhex('7047' if thumb else '1eff2fe1')
+            assert payload[offset:offset + len(expected_return)] == expected_return
         if args.target.startswith('mips'):
             # A MIPS return has a delay slot. Guard the actual jr ra, not the
             # last instruction, and prove the fixture instruction from bytes.
@@ -119,7 +154,7 @@ def main():
             offset = row['returnInstruction'] - section[3]
             assert offset >= 0 and offset + 8 <= len(payload)
             assert int.from_bytes(payload[offset:offset + 4], 'big' if ident[5] == 2 else 'little') == 0x03e00008
-        else:
+        elif args.target != 'arm32':
             row['returnInstruction'] = row['end'] - (1 if args.target in ('x86_64', 'i386') else 4)
         if args.target == 'i386' and args.role != 'exec':
             _, _, sections = elf(reference)
@@ -144,7 +179,8 @@ def main():
             assert fields[7] not in original_symbols or original_symbols[fields[7]] == address
             original_symbols[fields[7]] = address
     write('metadata.json', {'target': args.target, 'role': args.role, 'symbols': args.symbols,
-        'originalSymbols': original_symbols, 'mipsFp32': args.mips_fp32, 'functions': rows})
+        'originalSymbols': original_symbols, 'mipsFp32': args.mips_fp32,
+        'armMode': args.arm_mode if args.target == 'arm32' else None, 'functions': rows})
     (case / 'preparation.txt').write_text('\n'.join(prep) + '\n')
     project = case / 'project'
     project.mkdir()
