@@ -1,12 +1,12 @@
 # Explicit saved lexical evidence
 
-**CONFIRMED provider implementation and local model validation; exporter hookup
-and hosted acceptance pending.** `GhidraLexicalScopes` preserves analyst-recorded
-lexical blocks and local ownership in the Ghidra program. It does not infer a
-lexical tree from first-use offsets, suffixes, datatype categories or decompiler
-formatting. See `research/SCOPE-EVIDENCE.md` for the API evidence behind this
-choice. The provider is not yet consumed by the production exporter, so this
-checkpoint does not emit lexical DIEs or claim GDB shadow lookup support.
+**CONFIRMED locally: provider, extraction and initial lexical DWARF/GDB tests;
+full scope and hosted acceptance pending.** `GhidraLexicalScopes` preserves
+analyst-recorded lexical blocks and local ownership in the Ghidra program.
+It does not infer a lexical tree from first-use offsets, suffixes, datatype
+categories or decompiler formatting. See `research/SCOPE-EVIDENCE.md` for the
+API evidence behind this choice. The production exporter now consumes this
+explicit evidence; the validation bounds below do not complete P3.3.
 
 The public `save(function, evidence, blocks, locals, monitor)` operation runs in
 the caller's program transaction. `read(function, monitor, diagnostic)` only
@@ -72,8 +72,8 @@ production JAR, with their origins and source hashes checked. Receipt:
 Tested JAR SHA-256:
 `fce89e03ab9ae7034e7d2ffc355516658ee993c8d93b4a1213992aae99f7dff2`.
 Architecture neutrality, its seven negative controls and workflow lint pass.
-No ELF/DWARF emission changes occur yet, so the provider tests do not substitute
-for structural validators or GDB behavior tests of the forthcoming hookup.
+That provider-only checkpoint did not emit ELF/DWARF. Its evidence is distinct
+from the subsequent extraction/emission checkpoint below.
 
 Retained setup failures: the first Java 21 launcher selected Gradle's Java 25
 test classfiles and failed before running tests. The corrected launcher compiles
@@ -83,16 +83,78 @@ models passed, but the audit did not. The final auditor validates each lambda's
 owner and the four concrete classes' exact JAR origin. Both failed attempts are
 retained under the evidence directory and excluded from final acceptance.
 
+## Extraction and emission checkpoint
+
+**CONFIRMED locally:** extraction matches each saved binding to exactly one
+canonical exported local by saved name and first-use identity. Missing or
+coalesced bindings omit the entire scope record with a diagnostic. AddressSets
+are normalized to original ELF addresses only when building `LexicalScopeModel`.
+The model keeps physical location identity separate from the explicit display
+name, intersects locations with block visibility, and preserves unavailable
+initialization gaps. Repeated call-policy cloning does not extend a location.
+
+Lexical DIEs use their recorded parent, a low/high pair for one interval, or
+DWARF 5 range lists for multiple intervals. The CU address index still describes
+function coverage. Symbolic relocation validation includes the addresses of
+actually emitted contiguous blocks. Failed source functions take the existing
+symbol-only path; additional genuine-failure scope validation remains required.
+
+The isolated native test emits an outer block beginning after function entry
+and a discontiguous inner block. This distinct start caught a real missing
+relocation-expectation update; a block starting at function entry alone did not
+expose it. `LexicalScopeModelSmoke` passes 105 ownership, clipping, raw range
+encoding and negative checks, including both widths/byte orders and rejection
+of 32-bit truncation. Seven model suites and the isolated producer pass against
+the packaged production JAR on actual Java 21, with class origins checked.
+GNU/LLVM and the pinned strict validator accept the isolated output; two
+inherited frame diagnostics match the original input.
+
+All six x86-64/AArch64 exec/PIE/rebased-PIE runtime roles pass with twelve real
+exports and 138 instruction observations. Compiler GDB establishes distinct
+stack slots and values 11/23/11. Explicit analyst metadata supplies the lexical
+bounds. Forge GDB selects the inner name before initialization but reports it
+unavailable, selects 23 while live, restores outer 11 after the inner block,
+and omits the name outside the outer block. Checks include raw instruction and
+stack bytes, exact emitted DIE parents/bounds, four wrong-bound negative
+controls, function address-index coverage, validators, source lookup, zero exit
+status, unchanged original inputs and byte-identical output pairs. Read-only
+reopen preserves saved program contents; only Ghidra's known index/journal
+backup files may rotate. AArch64's system DSO string-index warning is matched
+to the compiler-reference run; it is not attributed to the sidecar.
+
+Reproduce with a freshly assembled extension installed in a private Ghidra
+12.0.3/Java 21 installation and the pinned `DWARFDUMP`:
+
+```bash
+./gradlew lexicalScopeModelSmoke dwarfRangeListsSmoke dwarfLocationListsSmoke
+python3 src/test/integration/lexical-shadow-export.py /path/to/private-ghidra x86_64 --role exec
+python3 src/test/integration/lexical-shadow-export.py /path/to/private-ghidra aarch64 --role pie-rebased
+```
+
+Run all three roles on both targets. The workflow now includes those six cases
+and the new model suite in both host model lists; hosted results are pending.
+Evidence is in `build/lexical-emission-review/{java21-acceptance,runtime-acceptance}.json`.
+Tested JAR: `0de88a56a47db2fdfb2509419a1fb1299511ca17010e9fcd49e61899d1a858b3`.
+
+Retained failures include native test constructor/Gradle argument setup errors,
+a headless fixture cast error, the missing lexical relocation expectation,
+and an unnecessary storage-model replacement caught by the compiler-call
+regression. The first snapshot check included rotating project backup files;
+the corrected check uses the established narrow backup exception. An initial
+fixture wrote globals, which conservatively retired stack facts under the
+existing memory-alias policy; the lexical fixture now accumulates in a proven
+separate stack slot. This checkpoint does not claim improved global-store
+non-aliasing. A supplementary log auditor initially mistook a displayed
+synthetic-source warning comment for a debugger diagnostic; it now checks
+actual diagnostic lines. Failed attempts are retained, not counted as passes.
+
 ## Required continuation
 
-**PLANNED:** normalize the validated evidence at the ELF serialization boundary,
-associate it with exported canonical locals, restrict locations to lexical
-visibility, and emit lexical-block DIEs with exact contiguous/discontiguous
-ranges. Reject evidence referring to a local omitted or coalesced by extraction;
-do not silently assign another object's location. Preserve symbol-only behavior
-on genuine decompiler failure. Add real exporter/GDB fixtures for shadow lookup,
-unavailable gaps, stale metadata, saved-program reopen and rebasing, then run
-the structural validators, preservation/determinism/cleanup tests and hosted
-matrix. Namespace/class/object, inferred statics, alias/origin and same-name type
-relationships remain the other required P3.3 components. Neither umbrella is
-complete at this checkpoint.
+**PLANNED:** add real discontiguous lexical runtime coverage, stale/coalesced
+metadata exporter controls, scope-aware genuine decompiler failure and
+cancellation/publication tests, prior-package comparison, broader regressions,
+final package review and the exact hosted integration gate. Native/model
+range-list tests are not a substitute for discontiguous GDB behavior. Complete
+namespace/class/object, inferred statics, alias/origin and same-name type
+relationships, plus all remaining lifetime integration requirements. Neither
+umbrella is complete at this checkpoint.

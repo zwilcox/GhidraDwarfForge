@@ -6,6 +6,7 @@ import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_LOW_PC;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_ENTRY_PC;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_STMT_LIST;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_RANGES;
+import static ghidradwarfforge.nativeapi.DwarfConstants.DW_TAG_LEXICAL_BLOCK;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_LOCATION;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_DECL_FILE;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_DECL_LINE;
@@ -390,7 +391,7 @@ public final class MinimalDwarfSidecarExporter {
             unitName, directoryName, target.addressBytes(), elf.byteOrder(), ordered,
             syntheticSource.mappedLines());
         Dwarf5RangeLists.Result rangeLists = Dwarf5RangeLists.build(ordered,
-            target.addressBytes(), elf.byteOrder());
+            typeModel == null ? List.of() : typeModel.lexicalScopes(), target.addressBytes(), elf.byteOrder());
         Dwarf5LocationLists.Result locationLists = Dwarf5LocationLists.build(
             typeModel == null ? List.of() : typeModel.variableStorage().variables(),
             target.addressBytes(), elf.byteOrder());
@@ -450,6 +451,7 @@ public final class MinimalDwarfSidecarExporter {
             Map<VariableKey, VariableLocation> variableLocations =
                 variableLocations(typeModel);
             Map<Long, Die> functionDies = new HashMap<>();
+            Set<Long> lexicalAddresses = new java.util.HashSet<>();
             var functionStatics = FunctionStaticPolicy.select(typeModel, syntheticSource)
                 .exported();
             long fileIndex = 0;
@@ -542,10 +544,34 @@ public final class MinimalDwarfSidecarExporter {
                         newDie(producer, consumer, debug, DW_TAG_UNSPECIFIED_PARAMETERS,
                             die, errorOut);
                     }
+                    var scopes = typeModel.lexicalScopes().stream()
+                        .filter(scope -> scope.functionAddress() == function.address()).findFirst().orElse(null);
+                    Map<String, Die> lexicalDies = new HashMap<>();
+                    lexicalDies.put("", die);
+                    if (scopes != null) {
+                        for (var block : scopes.blocks()) {
+                            Die parent = Objects.requireNonNull(lexicalDies.get(block.parent()), "lexical parent");
+                            Die blockDie = newDie(producer, consumer, debug, DW_TAG_LEXICAL_BLOCK, parent, errorOut);
+                            lexicalDies.put(block.id(), blockDie);
+                            if (block.ranges().size() == 1) {
+                                var range = block.ranges().getFirst();
+                                lexicalAddresses.add(range.address());
+                                addAddress(producer, consumer, debug, blockDie, DW_AT_LOW_PC, range.address(), errorOut);
+                                addUnsigned(producer, consumer, debug, blockDie, DW_AT_HIGH_PC, range.size(), errorOut);
+                            }
+                            else {
+                                Long offset = rangeLists.lexicalOffsets().get(
+                                    new ghidradwarfforge.types.LexicalScopeModel.Key(function.address(), block.id()));
+                                addSectionOffset(producer, consumer, debug, blockDie, DW_AT_RANGES,
+                                    Objects.requireNonNull(offset, "lexical ranges"), errorOut);
+                            }
+                        }
+                    }
                     for (ProgramTypeModel.LocalVariable local : signature.locals()) {
-                        Die localDie = newDie(producer, consumer, debug, DW_TAG_VARIABLE, die,
-                            errorOut);
-                        addName(producer, consumer, localDie, local.name(), errorOut);
+                        var binding = scopes == null ? null : scopes.local(local.name());
+                        Die parent = binding == null ? die : Objects.requireNonNull(lexicalDies.get(binding.block()));
+                        Die localDie = newDie(producer, consumer, debug, DW_TAG_VARIABLE, parent, errorOut);
+                        addName(producer, consumer, localDie, binding == null ? local.name() : binding.displayName(), errorOut);
                         addTypeReference(producer, consumer, debug, localDie, local.type(),
                             typeModel.types(), allocatedTypes, errorOut);
                         addVariableLocation(producer, consumer, debug, localDie,
@@ -632,7 +658,7 @@ public final class MinimalDwarfSidecarExporter {
             Map<Long, byte[]> bytes = collect(producer, consumer, debug, errorOut,
                 bufferCount.getValue(), sections);
             validateRelocations(producer, consumer, debug, errorOut, sections, bytes,
-                functions, typeModel, functionStatics, target.addressBytes(), byteOrder);
+                functions, typeModel, functionStatics, lexicalAddresses, target.addressBytes(), byteOrder);
 
             Map<String, byte[]> result = new LinkedHashMap<>();
             sections.forEach((index, section) -> {
@@ -1050,7 +1076,7 @@ public final class MinimalDwarfSidecarExporter {
             LibDwarfConsumer consumer, Debug debug, PointerByReference errorOut,
             Map<Long, SectionRecord> sections, Map<Long, byte[]> sectionData,
             List<FunctionSymbol> functions, ProgramTypeModel typeModel,
-            List<ProgramTypeModel.FunctionStaticVariable> functionStatics, int addressBytes,
+            List<ProgramTypeModel.FunctionStaticVariable> functionStatics, Set<Long> lexicalAddresses, int addressBytes,
             ByteOrder byteOrder) {
         LongByReference groupCount = new LongByReference();
         IntByReference version = new IntByReference();
@@ -1104,6 +1130,7 @@ public final class MinimalDwarfSidecarExporter {
         functions.stream()
             .filter(function -> function.address() != function.ranges().get(0).address())
             .map(FunctionSymbol::address).forEach(expected::add);
+        expected.addAll(lexicalAddresses);
         if (typeModel != null) {
             typeModel.globals().stream().filter(global -> !global.declaration())
                 .map(ProgramTypeModel.GlobalVariable::address).forEach(expected::add);
@@ -1113,7 +1140,7 @@ public final class MinimalDwarfSidecarExporter {
         if (!expected.containsAll(relocatedAddresses) ||
                 expected.stream().anyMatch(address -> !relocatedAddresses.contains(address))) {
             throw new IllegalStateException(
-                "producer address relocations do not match requested functions");
+                "producer address relocations do not match requested functions, scopes and objects");
         }
     }
 

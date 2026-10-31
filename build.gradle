@@ -1051,3 +1051,25 @@ tasks.register("lexicalScopeEvidenceSmoke", JavaExec) {
     systemProperty "application.settingsdir", file("build/tmp/lexical-evidence/settings").absolutePath
     systemProperty "application.cachedir", file("build/tmp/lexical-evidence/cache").absolutePath
 }
+
+tasks.register("lexicalScopeSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks lexical range serialization in an isolated native producer"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.nativeapi.LexicalScopeSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+    doFirst {
+        setArgs(["libdwarfPath", "libdwarfpPath", "sidecarInput", "sidecarOutput", "functionAddress", "functionSize"].collect {
+            project.property(it)
+        })
+    }
+}
+
+tasks.register("lexicalScopeModelSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks lexical ownership, visibility intersections and independently decoded ranges"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.types.LexicalScopeModelSmoke"
+}

@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import ghidradwarfforge.types.LexicalScopeModel;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionRange;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
 
@@ -17,10 +18,11 @@ public final class Dwarf5RangeLists {
     private static final int DW_RLE_START_END = 0x06;
 
     public record Result(byte[] section, long compilationUnitOffset,
-            Map<FunctionSymbol, Long> functionOffsets) {
+            Map<FunctionSymbol, Long> functionOffsets, Map<LexicalScopeModel.Key, Long> lexicalOffsets) {
         public Result {
             section = section.clone();
             functionOffsets = Map.copyOf(functionOffsets);
+            lexicalOffsets = Map.copyOf(lexicalOffsets);
         }
 
         @Override
@@ -38,11 +40,23 @@ public final class Dwarf5RangeLists {
 
     public static Result build(List<FunctionSymbol> functions, int addressBytes,
             ByteOrder order) {
+        return build(functions, List.of(), addressBytes, order);
+    }
+
+    public static Result build(List<FunctionSymbol> functions, List<LexicalScopeModel> scopes,
+            int addressBytes, ByteOrder order) {
+        for (var scope : scopes) {
+            var owners = functions.stream().filter(function -> function.address() == scope.functionAddress()).toList();
+            if (owners.size() != 1 || !owners.getFirst().ranges().equals(scope.body())) {
+                throw new IllegalArgumentException("lexical ranges refer to a different function body");
+            }
+        }
         if (addressBytes != 4 && addressBytes != 8) {
             throw new IllegalArgumentException("unsupported address size " + addressBytes);
         }
-        if (functions.stream().noneMatch(FunctionSymbol::usesRangeList)) {
-            return new Result(new byte[0], 0, Map.of());
+        if (functions.stream().noneMatch(FunctionSymbol::usesRangeList) &&
+                scopes.stream().flatMap(scope -> scope.blocks().stream()).noneMatch(block -> block.ranges().size() > 1)) {
+            return new Result(new byte[0], 0, Map.of(), Map.of());
         }
 
         ByteArrayOutputStream lists = new ByteArrayOutputStream();
@@ -59,6 +73,18 @@ public final class Dwarf5RangeLists {
             writeList(lists, entryFirstRanges(function), addressBytes, order);
         }
 
+        Map<LexicalScopeModel.Key, Long> lexicalOffsets = new LinkedHashMap<>();
+        for (var scope : scopes.stream().sorted(Comparator.comparingLong(LexicalScopeModel::functionAddress)).toList()) {
+            for (var block : scope.blocks()) {
+                if (block.ranges().size() < 2) continue;
+                var key = new LexicalScopeModel.Key(scope.functionAddress(), block.id());
+                if (lexicalOffsets.put(key, Math.addExact(unitOffset, lists.size())) != null) {
+                    throw new IllegalArgumentException("duplicate lexical range identity");
+                }
+                writeList(lists, block.ranges(), addressBytes, order);
+            }
+        }
+
         ByteArrayOutputStream body = new ByteArrayOutputStream();
         writeUnsigned(body, 5, 2, order);
         body.write(addressBytes);
@@ -69,7 +95,7 @@ public final class Dwarf5RangeLists {
         ByteArrayOutputStream section = new ByteArrayOutputStream();
         writeUnsigned(section, body.size(), 4, order);
         section.writeBytes(body.toByteArray());
-        return new Result(section.toByteArray(), unitOffset, offsets);
+        return new Result(section.toByteArray(), unitOffset, offsets, lexicalOffsets);
     }
 
     /**
@@ -139,6 +165,9 @@ public final class Dwarf5RangeLists {
 
     private static void writeUnsigned(ByteArrayOutputStream output, long value, int width,
             ByteOrder order) {
+        if (width < Long.BYTES && value >>> (width * 8) != 0) {
+            throw new IllegalArgumentException("range value exceeds serialized width");
+        }
         for (int index = 0; index < width; index++) {
             int shift = order == ByteOrder.LITTLE_ENDIAN ? index * 8 :
                 (width - index - 1) * 8;

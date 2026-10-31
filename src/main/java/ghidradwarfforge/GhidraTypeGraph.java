@@ -135,6 +135,7 @@ public final class GhidraTypeGraph {
             selected.put(symbol.address(), symbol);
         }
         List<ProgramTypeModel.FunctionSignature> signatures = new ArrayList<>();
+        var lexicalScopes = new ArrayList<ghidradwarfforge.types.LexicalScopeModel>();
         List<ProgramTypeModel.FunctionDeclaration> declarations = new ArrayList<>();
         List<VariableLocation> variableLocations = new ArrayList<>();
         FunctionIterator functions = program.getFunctionManager().getFunctions(true);
@@ -321,6 +322,41 @@ public final class GhidraTypeGraph {
                         localName + ": " + unavailable.diagnostic());
                 }
             }
+            var savedScopes = GhidraLexicalScopes.read(function, monitor, diagnostic);
+            if (savedScopes.isPresent()) {
+                var saved = savedScopes.get();
+                boolean valid = saved.locals().stream().allMatch(binding ->
+                    locals.stream().filter(local -> local.name().equals(binding.variable().getName()) &&
+                        local.firstUseOffset() == binding.variable().getFirstUseOffset()).count() == 1);
+                if (!valid) {
+                    diagnostic.accept("Omitted saved lexical scopes for " + symbol.name() +
+                        ": a bound local was skipped or coalesced during extraction");
+                }
+                else {
+                    try {
+                        var blocks = new ArrayList<ghidradwarfforge.types.LexicalScopeModel.Block>();
+                        for (var block : saved.blocks()) {
+                            monitor.checkCancelled();
+                            var ranges = new ArrayList<ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionRange>();
+                            for (var range : block.body().getAddressRanges()) {
+                                monitor.checkCancelled();
+                                long start = AddressNormalizer.toElfAddress(range.getMinAddress().getOffset(), rebaseDelta);
+                                long end = Math.addExact(AddressNormalizer.toElfAddress(range.getMaxAddress().getOffset(), rebaseDelta), 1);
+                                ranges.add(new ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionRange(start, Math.subtractExact(end, start)));
+                            }
+                            blocks.add(new ghidradwarfforge.types.LexicalScopeModel.Block(block.id(), block.parent(), ranges));
+                        }
+                        lexicalScopes.add(new ghidradwarfforge.types.LexicalScopeModel(address, symbol.ranges(), blocks,
+                            saved.locals().stream().map(binding -> new ghidradwarfforge.types.LexicalScopeModel.Local(
+                                binding.variable().getName(), binding.block(), binding.displayName())).toList(), saved.evidence()));
+                        diagnostic.accept("Using explicitly saved lexical ownership for " + symbol.name() +
+                            "; visibility does not establish variable storage; " + saved.evidence());
+                    }
+                    catch (ArithmeticException | IllegalArgumentException invalidScope) {
+                        diagnostic.accept("Omitted saved lexical scopes for " + symbol.name() + ": " + invalidScope.getMessage());
+                    }
+                }
+            }
             boolean nonDefaultConvention = nonDefaultCallingConvention(program, function);
             String callRestriction = GhidraCustomCallStorage.restriction(program, function, monitor);
             if (nonDefaultConvention) {
@@ -455,7 +491,7 @@ public final class GhidraTypeGraph {
         extractor.drain(monitor);
         return new ProgramTypeModel(new TypeGraph(new ArrayList<>(extractor.nodes.values())),
             signatures, globals, new VariableStorageModel(variableLocations), functionStatics,
-            declarations);
+            declarations, lexicalScopes);
     }
 
     static boolean acceptRecoveredReturn(Function function, DataType recovered) {

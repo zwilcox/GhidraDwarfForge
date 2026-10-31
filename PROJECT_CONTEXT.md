@@ -1,5 +1,16 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+
+**CONFIRMED locally; full scope/hosted acceptance pending:** explicit lexical
+ownership now reaches DWARF and GDB. Six x86-64/AArch64 exec/PIE/rebased roles
+pass twelve exports and 138 instruction observations for nested shadowing and
+initialization gaps. Raw DIE bounds/parents, GNU/LLVM/pinned validation,
+determinism and preservation pass. Eight actual Java 21 suites include the
+isolated producer; the new model supplies 105 checks. See
+`docs/LEXICAL-SCOPE-EVIDENCE.md` for exact evidence, retained failures and
+remaining discontiguous/negative/failure/hosted coverage. This supersedes the
+older provider-only status below; P1.11a and P3.3 remain incomplete.
+
 **CONFIRMED lexical evidence provider; exporter hookup pending:** explicit
 saved block/local ownership now survives real program rebasing and immutable
 reopen. All 430 checks pass on actual Java 21 across five language models,

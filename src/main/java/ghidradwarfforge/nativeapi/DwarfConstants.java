@@ -25,6 +25,7 @@ public final class DwarfConstants {
 
     public static final long DW_TAG_COMPILE_UNIT = 0x11L;
     public static final long DW_TAG_SUBPROGRAM = 0x2eL;
+    public static final long DW_TAG_LEXICAL_BLOCK = 0x0bL;
     public static final long DW_TAG_ARRAY_TYPE = 0x01L;
     public static final long DW_TAG_ENUMERATION_TYPE = 0x04L;
     public static final long DW_TAG_FORMAL_PARAMETER = 0x05L;

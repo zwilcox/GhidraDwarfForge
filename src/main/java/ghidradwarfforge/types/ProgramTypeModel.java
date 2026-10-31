@@ -13,7 +13,13 @@ import ghidradwarfforge.types.TypeGraph.TypeRef;
 public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> functions,
         List<GlobalVariable> globals, VariableStorageModel variableStorage,
         List<FunctionStaticVariable> functionStatics,
-        List<FunctionDeclaration> functionDeclarations) {
+        List<FunctionDeclaration> functionDeclarations, List<LexicalScopeModel> lexicalScopes) {
+    public ProgramTypeModel(TypeGraph types, List<FunctionSignature> functions,
+            List<GlobalVariable> globals, VariableStorageModel variableStorage,
+            List<FunctionStaticVariable> functionStatics, List<FunctionDeclaration> functionDeclarations) {
+        this(types, functions, globals, variableStorage, functionStatics, functionDeclarations, List.of());
+    }
+
     public ProgramTypeModel(TypeGraph types, List<FunctionSignature> functions,
             List<GlobalVariable> globals, VariableStorageModel variableStorage,
             List<FunctionStaticVariable> functionStatics) {
@@ -204,6 +210,37 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
             if (!types.byKey().containsKey(variable.type().key())) {
                 throw new IllegalArgumentException("missing type for function static " +
                     variable.name());
+            }
+        }
+        if (lexicalScopes == null) throw new IllegalArgumentException("lexical scopes are required");
+        lexicalScopes = lexicalScopes.stream().sorted(Comparator.comparingLong(LexicalScopeModel::functionAddress)).toList();
+        var scopedOwners = new java.util.HashMap<Long, LexicalScopeModel>();
+        for (var scope : lexicalScopes) {
+            if (scopedOwners.put(scope.functionAddress(), scope) != null) throw new IllegalArgumentException("duplicate lexical owner");
+            var function = functions.stream().filter(f -> f.address() == scope.functionAddress()).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("missing lexical owner"));
+            var names = new java.util.HashSet<String>();
+            function.parameters().forEach(parameter -> names.add(parameter.name()));
+            for (var local : function.locals()) {
+                var binding = scope.local(local.name());
+                if ((binding == null || binding.block().isEmpty()) &&
+                        !names.add(binding == null ? local.name() : binding.displayName())) {
+                    throw new IllegalArgumentException("ambiguous function-scope local");
+                }
+            }
+            for (var local : scope.locals()) {
+                if (function.locals().stream().filter(v -> v.name().equals(local.savedName())).count() != 1) {
+                    throw new IllegalArgumentException("scoped local has no unique canonical declaration");
+                }
+            }
+        }
+        if (!scopedOwners.isEmpty()) {
+            var restricted = variableStorage.variables().stream().map(location -> {
+                var scope = scopedOwners.get(location.functionAddress());
+                return scope == null || location.kind() != VariableKind.LOCAL ? location : scope.restrict(location);
+            }).toList();
+            if (!restricted.equals(variableStorage.variables())) {
+                variableStorage = new VariableStorageModel(restricted);
             }
         }
         for (VariableLocation location : variableStorage.variables()) {

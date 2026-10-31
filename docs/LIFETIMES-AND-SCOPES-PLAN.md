@@ -165,6 +165,15 @@ identity, immutable reopen, stale/malformed records and cancellation. See
 `LEXICAL-SCOPE-EVIDENCE.md`. This is the provider component, not emitted lexical
 scopes or GDB acceptance. Every P3.3 row and pending lifetime gates remain open.
 
+## Initial lexical emission checkpoint
+
+**CONFIRMED locally; full scope/hosted acceptance pending:** six runtime roles,
+twelve exports and 138 GDB instruction observations validate explicit nested
+scope lookup, initialization gaps and rebased bounds. Eight actual Java 21
+suites and structural validators pass. See `LEXICAL-SCOPE-EVIDENCE.md` for the
+precise coverage and remaining discontiguous, negative, failure, package and
+hosted gates. Every other P3.3 row and lifetime integration gate remains open.
+
 ## Completion audit
 
 For every row, record implementation/evidence files, exact reviewed source and
