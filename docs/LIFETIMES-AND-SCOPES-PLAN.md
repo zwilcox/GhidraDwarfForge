@@ -26,6 +26,10 @@ the mere existence of a Ghidra high variable is not proof of a compiler lifetime
 
 ## P3.3 requirements after the location core
 
+The inferred-static API question now has twelve passing headless observations;
+see `research/STATIC-RECOVERY.md`. This is evidence for implementation, not
+emitted-artifact acceptance. The complete static scope row below remains open.
+
 | Requirement | Remaining acceptance |
 | --- | --- |
 | Lexical blocks and shadowed locals | Establish scope ownership and defensible address ranges; GDB must select the correct shadowed object without leaking its lifetime. |

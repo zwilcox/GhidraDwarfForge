@@ -3140,6 +3140,13 @@ after merge and post-merge validation.
 
 Tracking: [#73](https://github.com/zwilcox/GhidraDwarfForge/issues/73).
 
+**CONFIRMED static-recovery research; implementation pending:** twelve actual
+read-only decompilations distinguish inferred memory types from saved ownership,
+including memory locals, wrong namespaces and rejected/absent bindings. See
+`docs/research/STATIC-RECOVERY.md`. Wire evidence into extraction and validate the
+full target/address matrix before claiming inferred-static support. All remaining
+scope and lifetime acceptance stays required.
+
 **CONFIRMED model component:** class/namespace ownership, method identities and
 explicit/inferred layout bindings are represented separately. Fifty-one checks
 and ten actual Java 21 suites pass, including nonempty ownership through all

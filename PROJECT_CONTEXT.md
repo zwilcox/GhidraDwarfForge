@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED static-recovery API research; implementation pending:** twelve
+read-only x86-64/AArch64 decompilations establish actual Function-owned labels,
+inferred types over undefined listing bytes and saved memory locals. Same-named
+namespaces and dynamic globals do not supply function ownership; stale explicit
+bindings remain distinct from absent evidence. All original/project/source hashes
+are preserved. See `docs/research/STATIC-RECOVERY.md` for the recovery policy and
+remaining production/GDB acceptance. No additional static-export support is
+claimed by this research checkpoint.
+
 **CONFIRMED local lexical-static emission; hosted/full-scope acceptance
 pending:** valid saved static identities now emit under their recorded function
 or lexical block. Six x86-64/AArch64 exec/PIE/rebase roles pass 66 exports, six
