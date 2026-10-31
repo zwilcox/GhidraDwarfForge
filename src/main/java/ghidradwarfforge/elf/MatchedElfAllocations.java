@@ -35,14 +35,17 @@ import ghidradwarfforge.elf.ElfImage.Segment;
  * Both files are parsed before target/layout outcomes. Unsupported original
  * allocation transformations precede indexed differences. A match permits only
  * retained indexed sections, inert REL/RELA placeholders, and exactly derived
- * LOAD/note records. It does not validate the original's complete runtime map.
+ * LOAD/note records and the bounded original unwind view. It does not validate
+ * the original's complete runtime map.
  *
  * ElfImage's metadata bounds and signed offset/address model apply. Additionally
  * at most 65536 nonempty note views are considered, with at most 262144 merged
  * coverage intervals/expected records. Note processing is indexed, not quadratic.
- * No payload or whole file is read; used name tables remain bounded at 16 MiB
- * each. These limits do not promise that all maximum metadata combinations fit
- * a 64 MiB heap. ElfImage owns/closes its channels, including name reads.
+ * No whole file or code payload is read. Sectionless unwind discovery reads
+ * bounded header/search-table/CIE/FDE framing metadata, not call-frame programs;
+ * used name tables remain bounded at 16 MiB each. These limits do not promise
+ * that all maximum metadata combinations fit a 64 MiB heap. ElfImage owns/closes
+ * its channels, including name reads.
  * Cancellation is checked around parser calls and during every bounded walk;
  * it cannot interrupt a blocked filesystem call or every internal parser read.
  */
@@ -208,6 +211,20 @@ public final class MatchedElfAllocations {
                     expected.size = segment.memorySize;
                     expected.alignment = 1;
                     result = section(Origin.ORIGINAL_SEGMENT, index, appendedIndex++, expected, null);
+                    if (result != null) {
+                        return result;
+                    }
+                }
+                Section unwind = SectionlessUnwind.find(before, cancelled, ignored -> { });
+                if (unwind != null) {
+                    int headerIndex = -1;
+                    for (int index = 0; index < before.segments().size(); index++) {
+                        checkCancelled(cancelled);
+                        if (before.segments().get(index).type == 0x6474e550L) {
+                            headerIndex = index;
+                        }
+                    }
+                    result = section(Origin.ORIGINAL_SEGMENT, headerIndex, appendedIndex++, unwind, null);
                     if (result != null) {
                         return result;
                     }

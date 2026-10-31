@@ -70,6 +70,15 @@ link/info/entry size are zero. Memory-only loads and ELF32 extents ending at
 2^32 are considered under the writer's existing address model. An unnamed or
 NULL-only section table is present and does not select this reconstruction.
 
+After reconstructed loads, a sectionless input may expose one `.eh_frame`
+view derived from its `PT_GNU_EH_FRAME` search table and bounded CIE/FDE
+record framing. Compare its name, PROGBITS type, ALLOC flag, original address,
+offset and proven extent, alignment one and zero link/info/entry size at the
+exact appended index. Unsupported unwind encodings or inconsistent framing
+omit this view, matching the writer's conservative policy. The issue origin
+is the original unwind program header. This does not certify CFI instructions
+or their runtime semantics.
+
 Any other candidate active allocation must be an explicitly reconstructed typed
 note record. Original nonallocated rows cannot acquire ALLOC silently. Missing,
 duplicated, shifted or unaccounted allocations fail the comparison. A global
@@ -118,8 +127,13 @@ table, 16 MiB for names and 65,536 bytes per used name. Each separately read raw
 name table enforces its own per-name and aggregate bounds. At most 65,536
 nonempty note views are processed, with bounded coverage/derived-record counts.
 Interval processing is indexed rather than scanning every note against every
-section. Retain only the first issue. Do not read complete files or load
-payloads; metadata can reside beyond 2 GiB.
+section. Retain only the first issue. Do not read complete files or code
+payloads; metadata can reside beyond 2 GiB. Sectionless unwind discovery reads
+at most a 16 MiB search header, 262,144 table entries/records and 128 MiB of
+framing metadata, with a 64 MiB frame extent and 16,777,216 load comparisons.
+These reads inspect record headers and CIE versions, not call-frame programs.
+Changing CFI program bytes can therefore retain matching allocation metadata;
+the copied-prefix and content checks remain separate requirements.
 
 The 64 MiB tests concern their specified fixtures, not every maximum metadata
 combination. Checked arithmetic and the existing signed file-offset/address

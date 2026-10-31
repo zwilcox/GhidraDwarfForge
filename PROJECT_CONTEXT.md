@@ -1,5 +1,16 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED failed hosted gate; correction locally validated (2026-10-31):**
+PR89 run `41180225439` fails the x86-64/AArch64 allocation-observer checks.
+The writer exposes original sectionless unwind records before reconstructed
+notes, but both metadata observers still expected notes immediately after loads.
+The Java helper now accounts for the bounded original unwind view; the independent
+Python oracle decodes the fixture search table and record framing itself.
+944 unwind checks, 532 allocation checks, 34 actual Java 21 suites, twelve retained
+pairs, twenty unwind-field mutations, the sparse >2 GiB metadata control and a
+fresh sectionless i386 rebased-PIE export/validator/GDB case pass. Full hosted
+acceptance remains pending. See `docs/I386-FUNCTION-ALIASES.md`. P1.7 stays open.
+
 **CONFIRMED second failed gate and local correction (2026-10-31):** PR89
 run `41179501376` rejects the new `i386-alias-entry.cpp` because it was missing
 from the explicit fixture source inventory. The reviewed entry is now included;

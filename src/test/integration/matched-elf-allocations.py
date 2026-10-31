@@ -115,6 +115,82 @@ def merged(intervals):
     return result
 
 
+def original_unwind(path, source):
+    """Independently decode the small fixtures' GNU search-table/frame headers.
+
+    Only the fixtures' version-1 1b/03/3b encoding is accepted here. Unsupported
+    inputs fail the oracle; they are never inferred from the candidate's table.
+    No CFI instruction is interpreted or synthesized.
+    """
+    headers = [segment for segment in source["segments"] if segment["type"] == 0x6474e550]
+    if not headers:
+        return None
+    require(len(headers) == 1, "ambiguous fixture unwind header")
+    header = headers[0]
+    order = source["order"]
+    with path.open("rb") as stream:
+        def locate(address, size):
+            require(0 < size <= 64 * 1024 * 1024, "unbounded fixture unwind extent")
+            overlaps = [segment for segment in source["segments"] if segment["type"] == 1 and
+                        segment["address"] < address + size and address < segment["address"] + segment["memory_size"]]
+            require(len(overlaps) == 1, "ambiguous fixture unwind load mapping")
+            load = overlaps[0]
+            relative = address - load["address"]
+            require(0 <= relative and relative + size <= load["file_size"], "unwind bytes are not file backed")
+            offset = load["offset"] + relative
+            require(0 <= offset and offset + size <= source["bytes"], "unwind bytes outside fixture")
+            return offset
+
+        def read(address, size):
+            stream.seek(locate(address, size))
+            data = stream.read(size)
+            require(len(data) == size, "short fixture unwind read")
+            return data
+
+        require(12 <= header["file_size"] <= 16 * 1024 * 1024 and
+                locate(header["address"], header["file_size"]) == header["offset"], "invalid fixture unwind header view")
+        data = read(header["address"], header["file_size"])
+        require(data[:4] == bytes((1, 0x1b, 3, 0x3b)), "unsupported independent fixture unwind encoding")
+        displacement, count = struct.unpack_from(order + "iI", data, 4)
+        start = header["address"] + 4 + displacement
+        require(0 < count <= 262144 and 12 + count * 8 <= len(data), "invalid fixture unwind table count")
+        entries = [struct.unpack_from(order + "ii", data, 12 + index * 8) for index in range(count)]
+        require(all(entries[index - 1][0] < entries[index][0] for index in range(1, count)),
+                "unordered fixture unwind search table")
+        referenced = {header["address"] + entry[1] for entry in entries}
+        require(len(referenced) == count, "duplicate fixture unwind FDE")
+
+        def length(address):
+            value, = struct.unpack(order + "I", read(address, 4))
+            require(4 <= value <= 64 * 1024 * 1024, "unsupported fixture unwind record length")
+            return value
+
+        require(all(start <= address < start + 64 * 1024 * 1024 - 8 for address in referenced),
+                "fixture unwind FDE outside bounded frame extent")
+        end = max(address + 4 + length(address) for address in referenced)
+        offset = locate(start, end - start)
+        cies, fdes = set(), set()
+        cursor = start
+        while cursor < end:
+            require(len(cies) + len(fdes) < 262144 and end - cursor >= 8, "invalid fixture unwind record boundary")
+            size, identity = struct.unpack(order + "II", read(cursor, 8))
+            require(4 <= size <= end - cursor - 4, "fixture unwind record crosses frame extent")
+            if identity == 0:
+                require(size >= 9, "short fixture CIE")
+                version = read(cursor + 8, 1)[0]
+                require(version in (1, 3, 4) and (version != 4 or size >= 11), "unsupported fixture CIE")
+                cies.add(cursor)
+            else:
+                require(size >= 6 and cursor + 4 - identity in cies, "fixture FDE lacks earlier CIE")
+                fdes.add(cursor)
+            cursor += 4 + size
+        require(cursor == end and fdes == referenced, "fixture frame records disagree with search table")
+    return {"origin": "ORIGINAL_SEGMENT", "original_index": header["index"],
+            "fields": {"name": b".eh_frame".hex(), "type": 1, "flags": 2,
+                       "address": start, "offset": offset, "size": end - start,
+                       "link": 0, "info": 0, "alignment": 1, "entry_size": 0}}
+
+
 def allocation_model(original, candidate):
     """Normal fixture relation: indexed fields plus physical note coverage.
 
@@ -155,6 +231,10 @@ def allocation_model(original, candidate):
             expected[next_index] = {"origin": "ORIGINAL_SEGMENT", "original_index": segment["index"], "fields": fields}
             next_index += 1
             loads += 1
+        unwind = original_unwind(original, left)
+        if unwind is not None:
+            expected[next_index] = unwind
+            next_index += 1
     typed = [section for section in left["sections"] if section["type"] == 7 and section["size"]]
     views = [segment for segment in left["segments"] if segment["type"] == 4 and segment["file_size"]]
     # Only the small six-role fixtures use this quadratic independent check;
@@ -252,7 +332,9 @@ def probe(pairs, jar, classes, destination, reject=False, state=snapshot):
             if first["value_kind"] == "unexpected":
                 wanted, found = first["expected"], display_name(first["observed"])
             elif first["value_kind"] == "name":
-                wanted, found = display_name(first["expected"]), display_name(first["observed"])
+                wanted = (bytes.fromhex(first["expected"]).decode("ascii") if first["origin"] == "ORIGINAL_SEGMENT"
+                          else display_name(first["expected"]))
+                found = display_name(first["observed"])
             else:
                 wanted, found = first["expected"], first["observed"]
                 require((int(issue["expected"], 0), int(issue["observed"], 0)) == (wanted, found),
@@ -402,6 +484,31 @@ def mutations(pair, work):
     return results
 
 
+def unwind_mutations(pair, work):
+    original, sidecar = pair
+    source = metadata(original)
+    require(not source["sections"], "unwind mutation control requires sectionless input")
+    if original_unwind(original, source) is None:
+        return []
+    image = metadata(sidecar)
+    frame, = [section for section in image["sections"] if section["name"] == b".eh_frame".hex()]
+    offsets = (0, 4, 8, 16, 24, 32, 40, 44, 48, 56) if image["wide"] else tuple(range(0, 40, 4))
+    results = []
+    for field, offset in zip(("name_offset", *FIELDS[1:]), offsets):
+        value = 0 if field == "name_offset" else frame[field] - 1 if field == "size" else frame[field] + 1
+        path = work / ("unwind-" + field + ".dbg")
+        shutil.copyfile(sidecar, path)
+        with path.open("r+b") as stream:
+            stream.seek(frame["header"] + offset)
+            wide = image["wide"] and field not in ("name_offset", "type", "link", "info")
+            stream.write(struct.pack(image["order"] + ("Q" if wide else "I"), value))
+        model = allocation_model(original, path)
+        require(model["differences"] and model["differences"][0]["candidate_index"] == frame["index"],
+                "unwind field mutation escaped independent oracle")
+        results.append({"name": "unwind-" + field, "pair": [original, path], "field": field})
+    return results
+
+
 def same_installation(module, receipt, current):
     if str(module) != receipt["producer_module"]:
         return False
@@ -532,6 +639,13 @@ def main():
     differences = probe(changed_pairs, jar, classes, work / "metadata-mutations")
     prefix_changes = PREFIX.probe(changed_pairs, jar, classes, work / "metadata-mutation-prefixes")
     require(all(item["status"] == "MATCHING_COPIED_PREFIX" for item in prefix_changes), "metadata control changed retained prefix")
+    sectionless, = [pair for pair in pairs if not metadata(pair[0])["sections"]]
+    unwind_changed = unwind_mutations(sectionless, work)
+    unwind_pairs = [item["pair"] for item in unwind_changed]
+    unwind_differences = probe(unwind_pairs, jar, classes, work / "unwind-mutations") if unwind_pairs else []
+    unwind_prefixes = PREFIX.probe(unwind_pairs, jar, classes, work / "unwind-prefixes") if unwind_pairs else []
+    require(all(item["status"] == "MATCHING_COPIED_PREFIX" for item in unwind_prefixes),
+            "unwind field mutation changed copied prefix")
     original, sidecar = pairs[0]
     before = metadata(original)
     text = next(section for section in before["sections"] if section["name"] == b".text".hex())
@@ -567,6 +681,8 @@ def main():
               "protected": protected, "retained_artifacts": retained, "reports": reports, "models": models,
               "mutation_snapshots": mutation_snapshots,
               "pairs": positive, "prefix_pairs": prefix_results,
+              "unwind_metadata_mutations": [{**item, "pair": list(map(str, item["pair"])), "allocation": difference, "prefix": prefix}
+                  for item, difference, prefix in zip(unwind_changed, unwind_differences, unwind_prefixes)],
               "metadata_mutations": [{**item, "pair": list(map(str, item["pair"])), "allocation": difference, "prefix": prefix}
                   for item, difference, prefix in zip(changed, differences, prefix_changes)],
               "changed_code": {"allocation": code_result[0], "prefix": code_prefix[0], "same_metadata": True,
