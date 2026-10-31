@@ -1073,3 +1073,19 @@ tasks.register("lexicalScopeModelSmoke", JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.types.LexicalScopeModelSmoke"
 }
+
+tasks.register("objectParameterSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit object parameter identity; optionally runs the isolated producer"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.nativeapi.ObjectParameterSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+    doFirst {
+        if (project.hasProperty("sidecarInput")) {
+            setArgs(["libdwarfPath", "libdwarfpPath", "sidecarInput", "sidecarOutput", "functionAddress", "functionSize"].collect {
+                project.property(it)
+            })
+        }
+    }
+}

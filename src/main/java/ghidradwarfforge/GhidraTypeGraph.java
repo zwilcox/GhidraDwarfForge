@@ -176,7 +176,8 @@ public final class GhidraTypeGraph {
                 String parameterName = safeParameterName(parameter);
                 parameters.add(new TypeGraph.Parameter(parameterName,
                     extractor.reserve(formalType), parameter.isAutoParameter(),
-                    parameter.getAutoParameterType() == AutoParameterType.RETURN_STORAGE_PTR));
+                    parameter.getAutoParameterType() == AutoParameterType.RETURN_STORAGE_PTR,
+                    parameter.getAutoParameterType() == AutoParameterType.THIS));
                 if (!parameterName.isBlank() && logicalLength > 0) {
                     Storage storage = GhidraVariableStorage.stableParameter(program, function,
                         parameter, registerMap, monitor);
@@ -467,7 +468,8 @@ public final class GhidraTypeGraph {
                 monitor.checkCancelled();
                 parameters.add(new TypeGraph.Parameter(safeParameterName(parameter),
                     extractor.reserve(parameter.getFormalDataType()), parameter.isAutoParameter(),
-                    parameter.getAutoParameterType() == AutoParameterType.RETURN_STORAGE_PTR));
+                    parameter.getAutoParameterType() == AutoParameterType.RETURN_STORAGE_PTR,
+                    parameter.getAutoParameterType() == AutoParameterType.THIS));
             }
             // An external-space placeholder is not an address in this image.
             // Preserve its persistent identity and full Ghidra display name only.

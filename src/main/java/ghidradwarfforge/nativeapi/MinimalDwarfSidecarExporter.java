@@ -12,6 +12,7 @@ import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_DECL_FILE;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_DECL_LINE;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_DECLARATION;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_ARTIFICIAL;
+import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_OBJECT_POINTER;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_BIT_SIZE;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_BYTE_SIZE;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_CALLING_CONVENTION;
@@ -548,6 +549,10 @@ public final class MinimalDwarfSidecarExporter {
                             variableLocations.get(new VariableKey(function.address(),
                                 VariableKind.PARAMETER, parameter.name())), locationLists,
                             errorOut);
+                        if (parameter.objectPointer()) {
+                            addReference(producer, consumer, debug, die,
+                                DW_AT_OBJECT_POINTER, parameterDie, errorOut);
+                        }
                     }
                     if (signature.variadic()) {
                         newDie(producer, consumer, debug, DW_TAG_UNSPECIFIED_PARAMETERS,
@@ -620,6 +625,10 @@ public final class MinimalDwarfSidecarExporter {
                             parameter.type(), typeModel.types(), allocatedTypes, errorOut);
                         if (parameter.artificial()) {
                             addFlag(producer, consumer, debug, parameterDie, DW_AT_ARTIFICIAL, true, errorOut);
+                        }
+                        if (parameter.objectPointer()) {
+                            addReference(producer, consumer, debug, die,
+                                DW_AT_OBJECT_POINTER, parameterDie, errorOut);
                         }
                     }
                     if (declaration.variadic()) {

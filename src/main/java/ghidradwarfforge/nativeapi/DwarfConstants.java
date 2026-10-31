@@ -61,6 +61,7 @@ public final class DwarfConstants {
     public static final short DW_AT_CONST_VALUE = 0x1c;
     public static final short DW_AT_PROTOTYPED = 0x27;
     public static final short DW_AT_ARTIFICIAL = 0x34;
+    public static final short DW_AT_OBJECT_POINTER = 0x64;
     public static final short DW_AT_CALLING_CONVENTION = 0x36;
     public static final short DW_AT_COUNT = 0x37;
     public static final short DW_AT_DATA_MEMBER_LOCATION = 0x38;

@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally; class/hosted acceptance pending:** automatic THIS identity
+now emits an object-pointer reference to the exact artificial formal parameter.
+Six x86-64/AArch64 exec/PIE/rebased roles pass twelve real exports, compiler/Forge
+object values, ordinary-name negative controls, deterministic reopen and strict
+validators. Actual Java 21 isolated producer checks include external declarations
+and symbol-only failure; the hidden aggregate-return regression passes. See
+`docs/OBJECT-PARAMETERS.md`. Full class ownership, other P3.3 rows and pending
+P1.11a integration remain required.
+
 
 **CONFIRMED locally; final package/hosted acceptance pending:** discontiguous
 analyst scope visibility, stale/coalesced records, actual decompiler failure and

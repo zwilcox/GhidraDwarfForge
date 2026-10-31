@@ -75,6 +75,7 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
                 throw new IllegalArgumentException("invalid function signature");
             }
             parameters = List.copyOf(parameters);
+            validateObjectParameterCount(parameters);
             locals = locals.stream()
                 .sorted(Comparator.comparingInt(LocalVariable::firstUseOffset)
                     .thenComparing(LocalVariable::name))
@@ -113,6 +114,7 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
                 throw new IllegalArgumentException("invalid external function declaration");
             }
             parameters = List.copyOf(parameters);
+            validateObjectParameterCount(parameters);
         }
 
         public boolean debuggerCallsDisabled() {
@@ -145,6 +147,41 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
         }
     }
 
+    private static void validateObjectParameterCount(List<Parameter> parameters) {
+        if (parameters.stream().filter(Parameter::objectPointer).count() > 1) {
+            throw new IllegalArgumentException("multiple object parameters in one signature");
+        }
+    }
+
+    private static void validateObjectParameterTypes(TypeGraph types, List<Parameter> parameters) {
+        for (Parameter parameter : parameters) {
+            if (!parameter.objectPointer()) {
+                continue;
+            }
+            var byKey = types.byKey();
+            var visited = new java.util.HashSet<String>();
+            TypeRef reference = parameter.type();
+            while (visited.add(reference.key())) {
+                var node = byKey.get(reference.key());
+                if (node instanceof TypeGraph.QualifiedType qualified) {
+                    reference = qualified.target();
+                }
+                else if (node instanceof TypeGraph.TypedefType typedef) {
+                    reference = typedef.target();
+                }
+                else {
+                    if (!(node instanceof TypeGraph.IndirectionType)) {
+                        throw new IllegalArgumentException("object parameter requires a pointer or reference type");
+                    }
+                    break;
+                }
+            }
+            if (!(byKey.get(reference.key()) instanceof TypeGraph.IndirectionType)) {
+                throw new IllegalArgumentException("cyclic object parameter type");
+            }
+        }
+    }
+
     public ProgramTypeModel {
         if (types == null || functions == null || globals == null || variableStorage == null ||
                 functionStatics == null || functionDeclarations == null) {
@@ -171,6 +208,7 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
             .toList();
         var declarationKeys = new java.util.HashSet<String>();
         for (FunctionDeclaration declaration : functionDeclarations) {
+            validateObjectParameterTypes(types, declaration.parameters());
             if (!declarationKeys.add(declaration.key()) ||
                     !types.byKey().containsKey(declaration.returnType().key()) ||
                     declaration.parameters().stream().anyMatch(parameter ->
@@ -180,6 +218,7 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
             }
         }
         for (FunctionSignature function : functions) {
+            validateObjectParameterTypes(types, function.parameters());
             if (!types.byKey().containsKey(function.returnType().key())) {
                 throw new IllegalArgumentException("missing return type for " + function.name());
             }

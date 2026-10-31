@@ -184,6 +184,16 @@ failure exposed orphan location lists, now removed by sharing emitted-signature
 selection. See `LEXICAL-SCOPE-EVIDENCE.md` for exact boundaries and regressions.
 This does not complete the pending lifetime integrations or other P3.3 rows.
 
+## Object parameter checkpoint
+
+**CONFIRMED locally; class and hosted acceptance pending:** explicit automatic
+THIS metadata survives as a reference to its exact artificial formal parameter.
+Six target/address roles pass twelve production exports and compiler/Forge
+values, ordinary-name controls, validators and deterministic immutable reopen.
+Actual Java 21 isolated producer checks include declaration-only references and
+symbol-only failure; hidden-return behavior passes. See `OBJECT-PARAMETERS.md`.
+Class-owned method declarations and every other remaining row remain required.
+
 ## Completion audit
 
 For every row, record implementation/evidence files, exact reviewed source and

@@ -3083,6 +3083,14 @@ after merge and post-merge validation.
 
 Tracking: [#73](https://github.com/zwilcox/GhidraDwarfForge/issues/73).
 
+**CONFIRMED local object-parameter checkpoint; hosted acceptance pending:**
+explicit `AutoParameterType.THIS` emits `DW_AT_object_pointer`, without inferring
+it from a parameter name or artificial flag. Six target/address roles pass
+twelve real exports and exact compiler/Forge values. Isolated Java 21 producer
+references, declaration/failure controls and hidden-return regression pass.
+See `docs/OBJECT-PARAMETERS.md`. This supersedes the older unimplemented-THIS
+note below; class ownership and all other remaining P3.3 requirements stay open.
+
 **HISTORICAL investigation:** naive distinct linkage-name emission hid the
 curated name in GDB. P1.7 resolves original/curated function lookup through
 preserved ELF identity and validated supplemental aliases; see
