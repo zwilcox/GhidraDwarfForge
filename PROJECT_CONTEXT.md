@@ -1,5 +1,22 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED integration (2026-10-31):** PR84 final main-based head
+`5211c59047141162d38d9c33c91c3e4cc3ab7e59` passes all twelve jobs in
+`41174858655`, exact-package/raw runtime review and both GUI console reviews.
+Normal merge `0f305b30bb33604b047d12da7680dbd134c89c0b` preserves its tested tree.
+Final receipt: `ba4927801dda7dbd29cc685f671544b1a52863b2bc0b138f48991b01f4d3358e`.
+The separate main84 push remains pending. Main83's separate push `41174759972`
+passes its full gate and both GUI reviews; receipt
+`2eec10a18b6e814589a96537f2be994630af36d9b9667fcdb0bbf7f9f43e1d42`.
+
+**CONFIRMED component acceptance; final main-based gate pending:** PR85 corrected
+head `24276e62aa01e9a9b0d4e12f70a4df6aa0baa284` passes all twelve jobs in
+`41172356200`, exact package, raw runtime, 31 actual Java 21 suites and both GUI
+reviews. Receipt: `43c6ac2eded66abe6d92645a1fdf0795cb682d56462ffa2c3323fc2f8ae09b66`.
+The normal main merge changes handoff documentation only. Fresh final-head
+validation is required before integration. Earlier pending component/main83/PR84
+wording below is historical; P1.7/#66 remains open.
+
 **CONFIRMED failed hosted gate; corrected locally:** PR85 run `41170001875`
 fails the standalone large-ELF source compile because its dependency list omitted
 `DynamicSymbolMirror`, and the ARM/Thumb oracle because it still expected an
@@ -26,6 +43,23 @@ raw artifact and both-GUI review. All 23 receipt parts were rehashed.
 Receipt: `6cc4b1065923c09d48ca886f1c4bbf9f9a063c86fa39a8a6b1a9a055fc0c7de8`.
 Earlier pending-main81 wording is historical.
 
+**CONFIRMED integration (2026-10-31):** PR83 final head
+`ba4fbd6cf2d7780478220a4fc33c43564bdf6f49` passes all twelve jobs in
+`41171064361`, exact-package/raw review, 29 actual Java 21 suites, 51 native
+Windows model tasks and both GUI console reviews. Normal merge
+`cb60980b5964e591c14ca003f461d377e7b1c471` has the identical tested tree.
+Receipt: `8275983b14fac9e8624fe7e0c19e9683bb45aef71614da113e0ed67fb2d25db4`.
+The compiler-spec safeguard is accepted; broader ABI/P1.7 scope remains open.
+Separate main push `41174759972` remains pending.
+
+**CONFIRMED component acceptance; final main-base gate pending:** PR84 head
+`dd9ed7ba94662728a9117c5e01c061e63a4ae665` passes all twelve jobs in
+`41168155944`, exact package/raw review and both GUI consoles. Its component
+receipt is `b104384650ca1f3541533b92f1ec41cb94e9b96adbbcd7c41e091a3c8f7615eb`.
+The PR is now based on main after a normal merge; production content is unchanged.
+Fresh final-head validation is required before integration. Earlier pending
+component notes below are historical, not final-main acceptance.
+
 **CONFIRMED locally; acceptance incomplete:** classic O32 MIPS32r2 analyst
 aliases pass FPXX exec/PIE/rebase export and QEMU/GDB on both byte orders.
 An isolated target policy checks typed ABI records and original code-symbol
@@ -35,6 +69,17 @@ Six additional explicit FP32 base/alias roles also pass; full hosted acceptance
 remains pending.
 Dynamic-only insertion, other modes and wider P1.7 scope remain open. See
 `docs/MIPS-FUNCTION-ALIASES.md`.
+
+**CONFIRMED integration (2026-10-31):** PR82 corrected head
+`e87c0ad54fddceb03eb27686d9cdbecb81988b42` passes all twelve jobs in
+`41167035160`, exact package/raw runtime review, 28 actual Java 21 suites and
+both GUI console reviews. Normal merge `f87384c9b9437f28f9088add9f1601b5f981a0dd`
+preserves its tested tree. Acceptance receipt:
+`2dad80db92ec96758efda7ebe0e91da63fd3a3e93d4be93ed259edca495a719e`.
+The custom-storage safeguard is accepted; earlier pending PR82 notes are
+historical. Separate main push `41171008812` remains pending. PR83's earlier
+stacked run `41167056431` is green, but its updated main base requires fresh
+validation. P1.7/#66 remains open; no release publication.
 
 **CONFIRMED defect and initial local fix; acceptance incomplete:** selecting a
 Windows compiler specification for an ELF can make custom Microsoft storage
