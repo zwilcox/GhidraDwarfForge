@@ -156,6 +156,15 @@ Use the explicit saved-program evidence-provider direction plus real Ghidra
 relationships; do not infer scopes from first-use, suffixes or qualified names.
 All six P3.3 rows and remaining lifetime integration requirements remain open.
 
+## Saved lexical evidence provider checkpoint
+
+**CONFIRMED locally; exporter hookup pending:** `GhidraLexicalScopes` stores
+explicit lexical ownership separately from physical location proofs. Five real
+language models pass 430 checks, actual Java 21 class origins, persisted/rebased
+identity, immutable reopen, stale/malformed records and cancellation. See
+`LEXICAL-SCOPE-EVIDENCE.md`. This is the provider component, not emitted lexical
+scopes or GDB acceptance. Every P3.3 row and pending lifetime gates remain open.
+
 ## Completion audit
 
 For every row, record implementation/evidence files, exact reviewed source and

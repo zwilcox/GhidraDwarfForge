@@ -1039,3 +1039,15 @@ tasks.register("mipsAggregateCallPolicySmoke", JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.elf.MipsAggregateCallPolicySmoke"
 }
+
+tasks.register("lexicalScopeEvidenceSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks saved lexical ownership, ambiguity, rebasing and immutable reopening"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.LexicalScopeEvidenceSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/lexical-evidence/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/lexical-evidence/cache").absolutePath
+}

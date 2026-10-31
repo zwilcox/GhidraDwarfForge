@@ -1,5 +1,12 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED lexical evidence provider; exporter hookup pending:** explicit
+saved block/local ownership now survives real program rebasing and immutable
+reopen. All 430 checks pass on actual Java 21 across five language models,
+including stale identity/type/storage starts, shadowing, malformed metadata and
+cancellation. See `docs/LEXICAL-SCOPE-EVIDENCE.md`. No lexical DWARF is emitted
+by this checkpoint; scope lookup, full P3.3 and lifetime integration remain open.
+
 **CONFIRMED PR100 control-flow oracle correction; fresh hosted gate pending:**
 run `41230414679` failed both x86-64/AArch64 lanes on an older assertion that the
 complete function body could not preserve its copied parameter. The production
