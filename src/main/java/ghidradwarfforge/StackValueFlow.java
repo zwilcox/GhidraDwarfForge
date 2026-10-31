@@ -1,6 +1,10 @@
 package ghidradwarfforge;
 
 import java.util.ArrayList;
+import java.util.ArrayDeque;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -40,10 +44,8 @@ final class StackValueFlow {
     private final int bytes;
     private final Map<Varnode, Fact> facts = new LinkedHashMap<>();
     private final Map<Long, Boolean> slots = new LinkedHashMap<>();
-    private boolean reloaded;
     private Long localOffset;
     private boolean initializing;
-    private boolean initialized;
 
 
     private StackValueFlow(Program program, Register pointer, AddressSpace memory, int bytes) {
@@ -70,9 +72,7 @@ final class StackValueFlow {
                 memory == null || memory.isOverlaySpace() || memory.getType() != AddressSpace.TYPE_RAM ||
                 memory.getAddressableUnitSize() != 1 || memory.getPointerSize() <= 0 ||
                 memory.getPointerSize() > Long.BYTES || pointer.getBitLength() != memory.getPointerSize() * 8 ||
-                program.getAddressFactory().getAddressSpace(memory.getSpaceID()) != memory ||
-                function.getBody().getNumAddressRanges() != 1 ||
-                !function.getEntryPoint().equals(function.getBody().getMinAddress())) return List.of();
+                program.getAddressFactory().getAddressSpace(memory.getSpaceID()) != memory) return List.of();
         Varnode incoming = storage.getFirstVarnode();
         Register original = exactRegister(program, incoming);
         if (original == null || original.getLeastSignificantBitInBaseRegister() != 0 ||
@@ -83,18 +83,92 @@ final class StackValueFlow {
         analysis.facts.put(incoming, VALUE);
         analysis.facts.put(new Varnode(pointer.getAddress(), pointer.getMinimumByteSize()),
             new Fact(Kind.STACK_ADDRESS, 0));
-        var result = new ArrayList<StorageInterval>();
-        for (Instruction instruction : decoded.values()) {
+        return analysis.acrossControlFlow(function, decoded, null, Set.of(), registers, monitor);
+    }
+
+    /**
+     * Must analysis over the already checked physical CFG. An unvisited edge is
+     * top, not an empty state; once visited it can only remove unsupported facts
+     * at joins. Exact affine addresses form a flat lattice (different offsets
+     * become unknown), so changing stack offsets on a loop cannot grow forever.
+     * Value and address facts are never unioned across alternative executions.
+     */
+    List<StorageInterval> acrossControlFlow(Function function, Map<Address, Instruction> decoded,
+            Address definition, Set<Address> owners, TargetRegisterMap registers, TaskMonitor monitor)
+            throws CancelledException {
+        if (!decoded.containsKey(function.getEntryPoint())) return List.of();
+        Map<Address, Set<Address>> successors = new LinkedHashMap<>();
+        Map<Address, Set<Address>> predecessors = new HashMap<>();
+        for (var row : decoded.entrySet()) {
             monitor.checkCancelled();
-            if (instruction.getFlowType().isJump() || instruction.getFlowType().isConditional() ||
-                    instruction.getFlowType().isCall()) return List.of();
-            long start = instruction.getAddress().getOffset();
-            long end = Math.addExact(instruction.getMaxAddress().getOffset(), 1);
-            Storage location = analysis.location(registers);
-            append(result, start, end, location);
-            if (!analysis.advance(instruction, false, monitor)) return List.of();
+            var edges = new LinkedHashSet<Address>();
+            for (Address[] targets : new Address[][] { row.getValue().getDefaultFlows(), row.getValue().getFlows() }) {
+                if (targets != null) edges.addAll(List.of(targets));
+            }
+            if (row.getValue().getFallThrough() != null) edges.add(row.getValue().getFallThrough());
+            if (!decoded.keySet().containsAll(edges)) return List.of();
+            successors.put(row.getKey(), edges);
+            for (Address target : edges) predecessors.computeIfAbsent(target, unused -> new LinkedHashSet<>()).add(row.getKey());
         }
-        return analysis.reloaded ? List.copyOf(result) : List.of();
+        Map<Address, StackValueFlow> input = new HashMap<>();
+        Map<Address, StackValueFlow> output = new HashMap<>();
+        var work = new ArrayDeque<Address>();
+        var queued = new LinkedHashSet<Address>();
+        work.add(function.getEntryPoint());
+        queued.add(function.getEntryPoint());
+        while (!work.isEmpty()) {
+            monitor.checkCancelled();
+            Address address = work.removeFirst();
+            queued.remove(address);
+            StackValueFlow state = address.equals(function.getEntryPoint()) ? boundaryCopy() : null;
+            for (Address predecessor : predecessors.getOrDefault(address, Set.of())) {
+                monitor.checkCancelled();
+                StackValueFlow incoming = output.get(predecessor);
+                if (incoming == null) continue;
+                if (state == null) state = incoming.boundaryCopy();
+                else state.intersect(incoming);
+            }
+            if (state == null) continue;
+            // A saved overlapping owner takes effect when its instruction is
+            // reached, including a backedge to an earlier numeric address.
+            if (owners.contains(address)) state.retireLocalValue();
+            input.put(address, state.boundaryCopy());
+            if (!state.advance(decoded.get(address), address.equals(definition), monitor)) return List.of();
+            state = state.boundaryCopy();
+            StackValueFlow previous = output.put(address, state);
+            if (previous == null || !state.sameFacts(previous)) {
+                for (Address next : successors.get(address)) {
+                    if (queued.add(next)) work.addLast(next);
+                }
+            }
+        }
+        var result = new ArrayList<StorageInterval>();
+        for (var row : decoded.entrySet()) {
+            monitor.checkCancelled();
+            StackValueFlow state = input.get(row.getKey());
+            append(result, row.getKey().getOffset(), Math.addExact(row.getValue().getMaxAddress().getOffset(), 1),
+                state == null ? UNKNOWN : state.location(registers));
+        }
+        return result.stream().anyMatch(interval -> interval.storage().available()) ? List.copyOf(result) : List.of();
+    }
+
+    private StackValueFlow boundaryCopy() {
+        var result = new StackValueFlow(program, pointer, memory, bytes);
+        result.localOffset = localOffset;
+        for (var entry : facts.entrySet()) {
+            if (!entry.getKey().isUnique()) result.facts.put(entry.getKey(), entry.getValue());
+        }
+        result.slots.putAll(slots);
+        return result;
+    }
+
+    private void intersect(StackValueFlow other) {
+        facts.entrySet().removeIf(entry -> !entry.getValue().equals(other.facts.get(entry.getKey())));
+        slots.keySet().retainAll(other.slots.keySet());
+    }
+
+    private boolean sameFacts(StackValueFlow other) {
+        return facts.equals(other.facts) && slots.equals(other.slots);
     }
 
     /** Same ordered instruction engine, seeded only by a recorded full stack definition. */
@@ -122,8 +196,11 @@ final class StackValueFlow {
                 monitor.checkCancelled();
                 if (operation.getOpcode() == PcodeOp.STORE) stores++;
             }
-            if (localOffset == null || initialized || stores != 1 ||
+            if (localOffset == null || stores != 1 ||
                     GhidraVariableStorage.writesRegister(instruction, pointer)) return false;
+            // Re-executing the recorded definition establishes the current
+            // logical local, never a previous iteration's surviving backup.
+            retireLocalValue();
         }
         // Unique temporaries belong to one instruction. A stack-pointer
         // change conservatively retires every old slot, including released
@@ -166,7 +243,10 @@ final class StackValueFlow {
             if (output instanceof Address address && address.getAddressSpace().isMemorySpace()) invalidateMemory();
         }
         initializing = false;
-        return !initialize || (initialized && slots.containsKey(localOffset));
+        // If the initializing address is unknown at a join, no slot was
+        // generated. Keep that path unavailable rather than manufacturing a
+        // fixed entry-relative address or retaining a previous local value.
+        return true;
     }
 
     /** A local assignment or reuse invalidates old copies as well as its slot. */
@@ -219,7 +299,6 @@ final class StackValueFlow {
         slots.keySet().removeIf(start -> intersects(start, bytes, offset, end));
         if (initializing && localOffset != null && offset == localOffset && value.getSize() == bytes) {
             slots.put(offset, true);
-            initialized = true;
         }
         else if (value.getSize() == bytes && VALUE.equals(read(value))) slots.put(offset, true);
     }
@@ -241,7 +320,6 @@ final class StackValueFlow {
         if (opcode == PcodeOp.LOAD && operation.getNumInputs() == 2 && output.getSize() == bytes) {
             Fact source = address(operation);
             if (source != null && slots.containsKey(source.offset())) {
-                reloaded = true;
                 return VALUE;
             }
             return null;

@@ -443,6 +443,9 @@ and unavailable tails against compiler DWARF and raw registers. It deliberately
 exercises incoming-value preservation. `second-register-copy-export.py --handoffs 4` compiles the same source with `COPY_CHAIN`, adding two more
 transfers that reuse previously killed registers. GDB observes every handoff
 and the final unavailable tail; mutable-local identity is a separate task.
+`--copy-shape early` copies before the original is killed; `--copy-shape self`
+adds an exact-width self-copy before handoff. Both retain independent compiler
+and raw-register oracles.
 
 `retained-function-aliases.cpp` defines mangled C++ functions, a real ELF alias,
 and distinct function-owned static integers. The exporter integration curates
@@ -536,3 +539,10 @@ non-overlap from unknown pointers that happen not to alias, and checks every
 instruction through x86-64/AArch64 exec/PIE/rebased exports. Compiler locations,
 raw loclists and physical debugger reads provide independent oracles. See
 `docs/STACK-LOCAL-EFFECTS.md` for the precise evidence and remaining scope.
+
+`stack-control-flow.c` exercises diamonds, skipped definitions, stable/killing
+loops, repeated definitions with stale register copies, and split bodies.
+The signed32/64 harness executes both paths and several loop iterations under
+native/QEMU GDB, correlating raw instructions with compiler and saved Ghidra
+identities. Only its driver uses `-O0` to avoid an LLVM 18 call-site verifier
+loop; all functions under test remain `-O2`. See `docs/STACK-CONTROL-FLOW.md`.

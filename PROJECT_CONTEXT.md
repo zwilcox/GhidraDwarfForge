@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally; hosted acceptance pending:** stack/register value states now
+intersect across closed branches, loops and discontiguous bodies. All twelve
+signed32/64 target/address cases pass 24 candidate/twelve previous exports,
+36,828 GDB observations, 180 stale-backup checks and 216 unavailable joins.
+Early/self-copy runtime cases, 21 actual Java 21 suites, validators, preservation,
+determinism and failure/cancellation checks pass. See `docs/STACK-CONTROL-FLOW.md`.
+PR99's guard correction is normally merged into this development branch;
+its hosted acceptance is still pending. Broader calls, mutable stack mapping
+identity, mixed pieces and P3.3 remain required.
+
 **CONFIRMED PR99 hosted guard failure and local correction:** run `41221918712`
 rejected a generic address field named `pc`. The field is now
 `definitionAddress`; the architecture guard is unchanged and its negative

@@ -36,6 +36,7 @@ for iteration, (small, large) in enumerate(((19, 19), (-19, -19), (-1985229329, 
         points = ['entry', 'saved', 'write', 'after', 'copy', 'second', 'kill', 'tail', 'erase', 'unavailable', 'return']
         if metadata.get('handoffs', 2) == 4:
             points[8:8] = ['copy3', 'third', 'kill2', 'tail3', 'copy4', 'fourth', 'kill3', 'tail4']
+        points.sort(key=lambda point: label[point])
         assert len({label[p] for p in points}) == len(points)
         for point in points:
             pc = label[point] + bias

@@ -121,7 +121,9 @@ public final class StackValueFlowSmoke {
                 String context = (x86 ? "x86" : "arm") + "/" + bytes + "/" + shape + " " + intervals;
                 boolean lostBeforeReload = shape.equals("clobbered-slot") || shape.equals("partial-slot") || shape.equals("unknown-store");
                 if (lostBeforeReload) {
-                    require(intervals.isEmpty(), "unproven overwritten reload: " + context);
+                    require(at(intervals, 0) instanceof RegisterStorage, "retain valid incoming prefix: " + context);
+                    require(!at(intervals, reload).available() && !at(intervals, ready).available() &&
+                        !at(intervals, returned).available(), "unproven overwritten reload: " + context);
                 }
                 else {
                     require(!intervals.isEmpty(), "no stack transition proof: " + context);

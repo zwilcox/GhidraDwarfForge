@@ -89,6 +89,7 @@ expected_sources=(
     semantic.c
     shared_driver.c
     shared_semantic.c
+    stack-control-flow.c
     stack-first-use.c
     stack-local-definitions.c
     stack-local-effects.c

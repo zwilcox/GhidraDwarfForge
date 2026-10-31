@@ -346,6 +346,18 @@ tasks.register("stackLocalIdentitySmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/stack-local-identity/cache").absolutePath
 }
 
+tasks.register("stackControlFlowSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks stack/register agreement across closed branches, loops and split bodies"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.StackControlFlowSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/stack-control-flow/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/stack-control-flow/cache").absolutePath
+}
+
 tasks.register("stackLocalLifetimeSmoke", JavaExec) {
     group = "verification"
     description = "Checks initialization, reload and reuse boundaries for saved stack locals"

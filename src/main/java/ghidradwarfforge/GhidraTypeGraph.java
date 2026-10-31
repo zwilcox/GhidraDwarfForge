@@ -181,6 +181,9 @@ public final class GhidraTypeGraph {
                         parameter, registerMap, monitor);
                     var prefix = GhidraVariableStorage.parameterPrefix(program, function,
                         parameter, registerMap, storage, monitor);
+                    if (prefix.isEmpty() && storage instanceof UnavailableStorage) {
+                        prefix = StackValueFlow.prove(program, function, parameter, registerMap, monitor);
+                    }
                     if (prefix.isEmpty() && storage instanceof StackStorage && stackDepths == null) {
                         stackDepths = GhidraVariableStorage.stackDepthProfile(program, function, monitor);
                     }
