@@ -65,6 +65,18 @@ flow. Compiler DWARF establishes argument values and local-slot coordinates;
 GDB then checks original instruction bytes, physical pieces and exported field
 values on x86-64 and QEMU AArch64. The runtime harness supports exec, PIE and
 rebased PIE. See `docs/COMPOSITE-VALUE-LIFETIMES.md` for acceptance status.
+The call-memory variants invoke a callee while both pieces reside in memory;
+an unknown-pointer-store control retains one physical half but rejects the
+whole aggregate. Dedicated x86 red-zone and frame-pointer-leaf controls retain
+honest gaps at release/unproven-pointer boundaries. See
+`docs/PIECE-CALL-MEMORY.md` for the exact compiler options and checks.
+
+`lexical-shadow.c` records explicit outer/inner ownership independently of
+initialization and physical storage. Its `--calls` variant reads the caller's
+shadowed variable while GDB is stopped inside an inspected stack-writing leaf.
+The discontiguous visibility, rejected-binding, actual decompiler-failure and
+copy-cancellation controls also run on this variant; see
+`docs/LEXICAL-CALL-LIFETIMES.md`.
 
 The preparation script also applies a user-defined `analyst_stack` name to the
 compiler fixture's `sum` stack slot. Its Ghidra incoming-stack-pointer offset is

@@ -118,9 +118,11 @@ incompatible return-SP paths and immediate caller restoration on both targets.
 `MUTABLE-CALL-MEMORY.md` adds twelve mutable-identity runtime roles with stale-slot
 controls and preceding-package comparisons.
 
-**PLANNED:** independently migrating pieces. The existing regressions do not replace
-those targeted cases. Compose
-the new intervals with lexical ownership and genuine failure/cancellation
-paths, review the exact final target/host package and integrate normally.
-PR102's separate scope gate and the full original requirement audit remain
-required before either umbrella can close.
+**CONFIRMED subsequent composition:** `PIECE-CALL-MEMORY.md` proves two memory
+pieces through safe calls and whole-value gaps when one piece loses its proof.
+`LEXICAL-CALL-LIFETIMES.md` proves scope intersections, unwound caller lookup,
+real source failure and cancellation on call-containing programs.
+
+**PLANNED:** review the exact final combined target/host package, integrate
+normally and reconcile every original requirement. The separate PR102 scope
+run alone cannot complete the later call-memory implementation or either umbrella.

@@ -6,21 +6,15 @@ component does not complete either umbrella. The starting main commit is
 `6c37222304c2abd081b2c800f2354afe3b28c5c0`; Ghidra 12.0.3 and Java 21-compatible
 bytecode remain the supported baseline. No native ABI change is proposed.
 
-**HISTORICAL audit at b71bfd9 (local register component superseded by
-`LOCAL-CALL-LIFETIMES.md`; memory and final acceptance still open):** saved-local analyses currently reject
-call-containing bodies, and inspected-call summaries preserve registers only,
-retiring all memory facts. Incoming-call and mixed-piece acceptance does not
-prove these missing local/caller-slot cases. See
-`docs/LIFETIME-SCOPE-COMPLETION-AUDIT.md` for the full original requirement map
-and implementation/acceptance sequence. The combined automatic THIS/return
-buffer method now passes six local x86-64/AArch64 roles without a producer
-change (`docs/ARTIFICIAL-OBJECT-ROLES.md`); its hosted gate is pending.
-P1.11a and P3.3 remain open.
-
-
-**CONFIRMED local memory extension:** `CALL-MEMORY-EFFECTS.md` records exact
-callee stack/memory effects and their runtime evidence. Keep its remaining
-composition and integration requirements alongside all original rows below.
+**CONFIRMED local composition; final combined acceptance pending:** the original
+call-local and caller-memory gaps now have implementation and runtime evidence.
+Independent aggregate pieces and lexical/failure/cancellation composition also
+pass locally. See `LIFETIME-SCOPE-COMPLETION-AUDIT.md` for the current status of
+every original row, and `PIECE-CALL-MEMORY.md` / `LEXICAL-CALL-LIFETIMES.md` for
+the latest checks. The requirement tables below retain their original scope;
+subsequent checkpoint sections are historical evidence, not current gap lists.
+The full final target/host/package review and protected integration remain
+required. Neither umbrella is complete.
 
 ## P1.11a requirements
 

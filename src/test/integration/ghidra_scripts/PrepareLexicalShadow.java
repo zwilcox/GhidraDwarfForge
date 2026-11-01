@@ -72,12 +72,43 @@ public class PrepareLexicalShadow extends GhidraScript {
         GhidraLexicalScopes.save(function, "Analyst assertion correlated to source-built lexical fixture markers",
             blocks, bindings, monitor);
         if (GhidraLexicalScopes.read(function, monitor, this::println).isEmpty()) throw new AssertionError("missing saved scopes");
+        if (labels.has("lexical_leaf")) {
+            var leafEntry = toAddr(labels.get("lexical_leaf").getAsLong() + delta);
+            var leafEnd = toAddr(labels.get("leaf_end").getAsLong() + delta);
+            var leaf = getFunctionAt(leafEntry);
+            if (leaf == null || !leaf.getBody().hasSameAddresses(new AddressSet(leafEntry, leafEnd.previous()))) {
+                throw new AssertionError("callee body mismatch");
+            }
+            leaf.setName("lexical_leaf", SourceType.USER_DEFINED);
+            leaf.setCallingConvention(currentProgram.getCompilerSpec().getDefaultCallingConvention().getName());
+            leaf.setReturnType(ghidra.program.model.data.VoidDataType.dataType, SourceType.USER_DEFINED);
+            leaf.replaceParameters(Function.FunctionUpdateType.CUSTOM_STORAGE, true, SourceType.USER_DEFINED, new Parameter[0]);
+            for (var variable : leaf.getLocalVariables()) leaf.removeVariable(variable);
+            var leafInstructions = new ArrayList<Object>();
+            for (var instruction : currentProgram.getListing().getInstructions(leaf.getBody(), true)) {
+                leafInstructions.add(Map.of("address", instruction.getAddress().getOffset() - delta,
+                    "next", instruction.getMaxAddress().next().getOffset() - delta,
+                    "bytes", java.util.HexFormat.of().formatHex(instruction.getBytes())));
+            }
+            records.put("calleeInstructions", leafInstructions);
+        }
+        int calls = 0;
         var instructions = new ArrayList<Object>();
         for (var instruction : currentProgram.getListing().getInstructions(function.getBody(), true)) {
+            if (instruction.getFlowType().isCall()) {
+                String block = calls++ == 0 ? "outer" : "inner";
+                if (!labels.has("lexical_leaf") || instruction.getFlows().length != 1 ||
+                        instruction.getFlows()[0].getOffset() - delta != labels.get("lexical_leaf").getAsLong() ||
+                        instruction.getMaxAddress().next().getOffset() - delta != labels.get(block + "_returned").getAsLong()) {
+                    throw new AssertionError("unexpected call contract");
+                }
+            }
             instructions.add(Map.of("address", instruction.getAddress().getOffset() - delta,
                 "next", instruction.getMaxAddress().next().getOffset() - delta,
-                "bytes", java.util.HexFormat.of().formatHex(instruction.getBytes())));
+                "bytes", java.util.HexFormat.of().formatHex(instruction.getBytes()),
+                "call", instruction.getFlowType().isCall()));
         }
+        if (calls != (labels.has("lexical_leaf") ? 2 : 0)) throw new AssertionError("missing lexical calls");
         records.put("instructions", instructions);
         records.put("javaVersion", System.getProperty("java.version"));
         Files.writeString(Path.of(args[2]), new GsonBuilder().setPrettyPrinting().create().toJson(records) + "\n");

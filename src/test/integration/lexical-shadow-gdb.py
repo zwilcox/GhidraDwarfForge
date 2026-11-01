@@ -28,6 +28,32 @@ def stop(name):
     assert int(gdb.parse_and_eval('$pc')) == address
 
 
+call_observations = []
+
+
+def trace_callee(block):
+    expected = 11 if block == 'outer' else 23
+    for step in range(40):
+        pc = int(gdb.parse_and_eval('$pc'))
+        address = pc - bias
+        assert labels['lexical_leaf'] <= address < labels['leaf_end']
+        decoded, = gdb.selected_frame().architecture().disassemble(pc, count=1)
+        raw = bytes(gdb.selected_inferior().read_memory(pc, decoded['length'])).hex()
+        caller = gdb.newest_frame().older()
+        assert caller is not None and caller.name() == 'scoped'
+        value = caller.read_var('shadow')
+        assert not value.is_optimized_out and value.type.sizeof == 4 and int(value) == expected
+        if mode == 'forge':
+            saved, = [i for i in prepared['calleeInstructions'] if i['address'] == address]
+            assert saved['bytes'] == raw and saved['next'] == address + decoded['length']
+        call_observations.append({'block': block, 'address': address, 'bytes': raw, 'callerValue': int(value)})
+        gdb.execute('stepi')
+        if int(gdb.parse_and_eval('$pc')) == labels[block + '_returned'] + bias:
+            break
+    else:
+        raise AssertionError('callee did not return')
+
+
 if mode == 'compiler':
     storage = {}
     for block, expected in [('outer', 11), ('inner', 23)]:
@@ -35,6 +61,15 @@ if mode == 'compiler':
         value = gdb.parse_and_eval('shadow')
         assert int(value) == expected
         storage[block] = int(value.address) - entry_stack
+        if 'lexical_leaf' in labels:
+            stop(block + '_call')
+            for step in range(10):
+                gdb.execute('stepi')
+                if int(gdb.parse_and_eval('$pc')) == labels['lexical_leaf'] + bias:
+                    break
+            else:
+                raise AssertionError('call marker did not reach helper')
+            trace_callee(block)
     if 'inner_gap_begin' in labels:
         stop('inner_gap_begin')
         assert int(gdb.parse_and_eval('shadow')) == 23
@@ -112,6 +147,8 @@ else:
         if instruction == prepared['instructions'][-1]:
             break
         gdb.execute('stepi')
+        if instruction.get('call'):
+            trace_callee('inner' if inner else 'outer')
     assert any(r['inner'] and r['value'] == '<optimized out>' for r in observations)
     assert any(r['value'] == '11' for r in observations) and any(r['value'] == '23' for r in observations)
     assert any(r['value'] == 'out-of-scope' for r in observations)
@@ -120,6 +157,9 @@ else:
         after = next(r for r in observations if r['address'] == labels['inner_gap_end'])
         assert gap['value'] == '11' and after['value'] == '23', (gap, after)
     (case / (mode + '-observations.json')).write_text(json.dumps(observations, indent=4) + '\n')
+if mode in ('compiler', 'forge') and 'lexical_leaf' in labels:
+    assert {row['block'] for row in call_observations} == {'outer', 'inner'}
+    (case / (mode + '-calls.json')).write_text(json.dumps(call_observations, indent=4) + '\n')
 gdb.execute('continue')
 assert gdb.selected_inferior().pid == 0
 assert exits == [0], exits

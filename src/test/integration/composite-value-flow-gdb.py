@@ -78,7 +78,12 @@ for name in labels['order']:
     visited = []
     visits = Counter()
     calls = 0
-    boundary = row['returned'] if name == 'pieces_volatile_call' else row['alias_done'] if alias else row['lost']
+    boundary = row['returned'] if name in ('pieces_volatile_call', 'pieces_memory_unknown') else row['alias_done'] if alias else row['lost']
+    if name in ('pieces_memory_registers', 'pieces_memory_mixed'):
+        if labels['redZone']:
+            boundary = row['restored']
+        elif labels['framePointerLeaf']:
+            boundary = row['slot_changed']
     for step in range(256):
         address = number('$pc') - bias
         assert row['entry'] <= address < row['end'], (name, hex(address))
@@ -137,6 +142,19 @@ for name in labels['order']:
                 assert [int(field) for field in fields] == expected, (name, hex(address), str(value))
                 record['fields'] = [int(field) for field in fields]
             record['value'] = str(value)
+        if name == 'pieces_memory_unknown' and address == row['returned']:
+            retained = number('$r12' if target == 'x86_64' else '$x20') & mask
+            assert retained == expected[1]
+            assert record['slots'] == expected
+            record['survivingSecond'] = retained
+            if variant == 'forge':
+                assert not record['available']
+        if labels['redZone'] and name == 'pieces_memory_mixed' and address == row['restored']:
+            retained = memory(entry_stack + storage[name]['incomingSecond'])
+            assert retained == expected[1]
+            record['survivingSecond'] = retained
+            if variant == 'forge':
+                assert not record['available']
         if address == row['stale']:
             stale = number(('$rbx' if target == 'x86_64' else '$x19') if name == 'pieces_call' else ('$r10' if target == 'x86_64' else '$x9')) & mask
             retained = number(('$r12' if target == 'x86_64' else '$x20') if name == 'pieces_call' else ('$r11' if target == 'x86_64' else '$x10')) & mask
@@ -150,10 +168,12 @@ for name in labels['order']:
             returns.append(name)
             break
         if instruction['asm'].split()[0] in ('call', 'callq', 'bl'):
-            assert name in ('pieces_call', 'pieces_volatile_call')
+            assert name in ('pieces_call', 'pieces_volatile_call', 'pieces_memory_registers', 'pieces_memory_mixed', 'pieces_memory_unknown')
             calls += 1
             trace = []
-            leaf = labels['functions']['pieces_leaf']
+            leaf_name = ('pieces_memory_alias' if name == 'pieces_memory_unknown' else
+                'pieces_memory_leaf' if name in ('pieces_memory_registers', 'pieces_memory_mixed') else 'pieces_leaf')
+            leaf = labels['functions'][leaf_name]
             gdb.execute('stepi')
             for leaf_step in range(16):
                 leaf_address = number('$pc') - bias
@@ -161,7 +181,7 @@ for name in labels['order']:
                 leaf_instruction, = gdb.selected_inferior().architecture().disassemble(number('$pc'), count=1)
                 leaf_bytes = bytes(gdb.selected_inferior().read_memory(number('$pc'), leaf_instruction['length'])).hex()
                 if not compiler:
-                    saved, = [item for item in prepared['pieces_leaf_instructions'] if item['address'] == leaf_address]
+                    saved, = [item for item in prepared[leaf_name + '_instructions'] if item['address'] == leaf_address]
                     assert saved['bytes'] == leaf_bytes and saved['next'] == leaf_address + leaf_instruction['length']
                 trace.append({'address': leaf_address, 'bytes': leaf_bytes})
                 gdb.execute('stepi')
@@ -176,7 +196,7 @@ for name in labels['order']:
     else:
         raise AssertionError('instruction bound exceeded')
     assert {row[key] for key in ('entry', 'before', 'first_memory', 'second_memory', 'first_loaded', 'second_loaded', 'lost', 'stale')} <= set(visited)
-    assert calls == int(name in ('pieces_call', 'pieces_volatile_call'))
+    assert calls == int(name in ('pieces_call', 'pieces_volatile_call', 'pieces_memory_registers', 'pieces_memory_mixed', 'pieces_memory_unknown'))
     if name == 'pieces_branch':
         assert visits[row['left']] == int(invocation == 0) and visits[row['right']] == int(invocation == 1)
     if name == 'pieces_loop':

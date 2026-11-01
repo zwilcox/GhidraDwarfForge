@@ -52,7 +52,9 @@ public class PrepareCompositeValueFlow extends GhidraScript {
                         toAddr(row.get("afterhole").getAsLong() + delta - 1)))) {
                 throw new AssertionError("the compiler body hole was included");
             }
-            boolean navigation = name.equals("navigation_control") || name.equals("pieces_leaf");
+            boolean leaf = List.of("pieces_leaf", "pieces_memory_leaf", "pieces_memory_alias").contains(name);
+            boolean aliasLeaf = name.equals("pieces_memory_alias");
+            boolean navigation = name.equals("navigation_control") || leaf;
             VariableStorage joined = null;
             if (!navigation) {
                 var first = currentProgram.getRegister(x86 ? "RDI" : "x0");
@@ -65,22 +67,28 @@ public class PrepareCompositeValueFlow extends GhidraScript {
             }
             if (!observe) {
                 function.setName(name, SourceType.USER_DEFINED);
-                if (name.equals("pieces_leaf")) {
+                if (leaf) {
                     // The separately compiled no-argument C leaf uses this
                     // compiler ABI; custom analyst aggregates make no such claim.
                     function.setCallingConvention(currentProgram.getCompilerSpec().getDefaultCallingConvention().getName());
                 }
                 function.setReturnType(VoidDataType.dataType, SourceType.USER_DEFINED);
                 function.replaceParameters(Function.FunctionUpdateType.CUSTOM_STORAGE, true, SourceType.USER_DEFINED,
-                    navigation ? new Parameter[0] : new Parameter[] {
+                    aliasLeaf ? new Parameter[] {
+                        new ParameterImpl("first", integer, currentProgram.getRegister(x86 ? "RDI" : "x0"), currentProgram),
+                        new ParameterImpl("second", integer, currentProgram.getRegister(x86 ? "RSI" : "x1"), currentProgram),
+                        new ParameterImpl("pointer", new ghidra.program.model.data.PointerDataType(
+                            ghidra.program.model.data.UnsignedCharDataType.dataType),
+                            currentProgram.getRegister(x86 ? "RDX" : "x2"), currentProgram) }
+                    : navigation ? new Parameter[0] : new Parameter[] {
                         new ParameterImpl("value", pair, joined, currentProgram, SourceType.USER_DEFINED) });
                 for (var local : function.getLocalVariables()) function.removeVariable(local);
             }
-            if (!function.getName().equals(name) || function.getParameterCount() != (navigation ? 0 : 1) ||
+            if (!function.getName().equals(name) || function.getParameterCount() != (aliasLeaf ? 3 : navigation ? 0 : 1) ||
                     function.getSignatureSource() != SourceType.USER_DEFINED || function.getLocalVariables().length != 0) {
                 throw new AssertionError("saved analyst signature changed");
             }
-            if (name.equals("pieces_leaf") && function.getCallingConvention() !=
+            if (leaf && function.getCallingConvention() !=
                     currentProgram.getCompilerSpec().getDefaultCallingConvention()) {
                 throw new AssertionError("the compiler leaf ABI was not retained");
             }

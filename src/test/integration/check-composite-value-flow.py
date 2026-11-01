@@ -105,7 +105,12 @@ for name, cursor in offsets.items():
         if intervals:
             assert intervals[-1]['end'] <= start
         intervals.append({'start': start, 'end': end, 'pieces': pieces})
-    boundary = row['returned'] if name == 'pieces_volatile_call' else row['alias_done'] if 'alias' in name else row['lost']
+    boundary = row['returned'] if name in ('pieces_volatile_call', 'pieces_memory_unknown') else row['alias_done'] if 'alias' in name else row['lost']
+    if name in ('pieces_memory_registers', 'pieces_memory_mixed'):
+        if labels['redZone']:
+            boundary = row['restored']
+        elif labels['framePointerLeaf']:
+            boundary = row['slot_changed']
     assert intervals and intervals[0]['start'] == row['entry'] and intervals[-1]['end'] == boundary, (name, intervals)
     gaps = [(a['end'], b['start']) for a, b in zip(intervals, intervals[1:]) if a['end'] != b['start']]
     assert gaps == ([(row['hole'], row['afterhole'])] if name == 'pieces_split' else []), (name, gaps)
@@ -116,10 +121,16 @@ for name, cursor in offsets.items():
     assert all(any(i['address'] == interval['start'] for i in instructions) and
         any(i['next'] == interval['end'] for i in instructions) for interval in intervals)
     expected = {'second_ready': ['register', 'register'], 'first_memory': ['stack', 'register']}
-    if 'alias' not in name:
+    if 'alias' not in name and name != 'pieces_memory_unknown':
         expected.update(second_memory=['stack', 'stack'], first_loaded=['register', 'stack'],
             slot_changed=['register', 'stack'], second_loaded=['register', 'register'])
+    if name in ('pieces_memory_registers', 'pieces_memory_mixed'):
+        expected['returned'] = ['stack', 'stack']
+    if labels['framePointerLeaf'] and name in ('pieces_memory_registers', 'pieces_memory_mixed'):
+        expected['first_loaded'] = ['stack', 'stack']
     for marker, kinds in expected.items():
+        if row[marker] >= boundary:
+            continue
         interval, = [i for i in intervals if i['start'] <= row[marker] < i['end']]
         assert [p['kind'] for p in interval['pieces']] == kinds, (name, marker, interval)
     locations[name] = intervals

@@ -20,6 +20,7 @@ def main():
     parser.add_argument('target', choices=['x86_64', 'aarch64'])
     parser.add_argument('--role', choices=['exec', 'pie', 'pie-rebased'], default='exec')
     parser.add_argument('--discontiguous', action='store_true', help='record an explicit analyst visibility gap around an effect-free instruction')
+    parser.add_argument('--calls', action='store_true', help='compose both lexical identities with inspected calls')
     parser.add_argument('--controls', action='store_true', help='also test stale/coalesced evidence, actual decompiler failure and cancellation')
     args = parser.parse_args()
     ghidra = args.ghidra.resolve(strict=True)
@@ -41,11 +42,18 @@ def main():
     prefix = '' if target == 'x86_64' else 'aarch64-linux-gnu-'
     reference, stripped, output = case / 'reference', case / 'stripped', case / 'forge.dbg'
     flags = ['-fno-pie', '-no-pie'] if args.role == 'exec' else ['-fPIE', '-pie']
+    if args.calls:
+        flags.append('-DFORGE_LEXICAL_CALLS')
     if args.discontiguous:
         flags.append('-DFORGE_LEXICAL_GAP')
     source = repository / 'src/test/fixtures/lexical-shadow.c'
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar'
-    protected = {str(p): digest(p) for p in [source, module]}
+    harness = repository / 'src/test/integration'
+    files = [source, module, Path(__file__), *harness.glob('lexical-shadow*'),
+        harness / 'check-lexical-shadow.py', harness / 'ghidra_scripts/PrepareLexicalShadow.java',
+        harness / 'ghidra_scripts/LexicalDecompilerFailureExport.java',
+        harness / 'ghidra_scripts/CancelDuringElfCopy.java']
+    protected = {str(p): digest(p) for p in files if p.is_file()}
     run('compile', [prefix + 'gcc', '-O0', '-g', '-gdwarf-5', '-fno-stack-protector',
         '-fno-omit-frame-pointer', *flags, source, '-o', reference])
     run('strip', [prefix + 'objcopy', '--strip-all', reference, stripped])
@@ -53,6 +61,8 @@ def main():
     run('symbols', [prefix + 'nm', '-S', reference])
     run('disassembly', [prefix + 'objdump', '-d', reference])
     wanted = {'scoped', 'outer_begin', 'outer_live', 'inner_begin', 'inner_live', 'inner_end', 'outer_end'}
+    if args.calls:
+        wanted.update(['lexical_leaf', 'outer_call', 'outer_returned', 'inner_call', 'inner_returned'])
     if args.discontiguous:
         wanted.update(['inner_gap_begin', 'inner_gap_end'])
     labels = {}
@@ -61,7 +71,9 @@ def main():
         if fields[-1] in wanted:
             assert fields[-1] not in labels
             labels[fields[-1]] = int(fields[0], 16)
-    assert labels.keys() == wanted
+            if fields[-1] == 'lexical_leaf':
+                labels['leaf_end'] = int(fields[0], 16) + int(fields[1], 16)
+    assert labels.keys() == wanted | ({'leaf_end'} if args.calls else set())
     order = ['scoped', 'outer_begin', 'outer_live', 'inner_begin', 'inner_live', 'inner_end', 'outer_end']
     assert all(labels[a] < labels[b] for a, b in zip(order, order[1:]))
     if args.discontiguous:
@@ -125,8 +137,12 @@ def main():
         diagnostics.append(Counter(re.sub(r'0x[0-9a-f]+', 'ADDRESS', line) for line in warnings))
     assert diagnostics[0] == diagnostics[1], diagnostics
     assert protected == {p: digest(Path(p)) for p in protected}
+    if args.calls:
+        compiler_calls = json.loads((case / 'compiler-calls.json').read_text())
+        forge_calls = json.loads((case / 'forge-calls.json').read_text())
+        assert compiler_calls == forge_calls and {r['block'] for r in forge_calls} == {'outer', 'inner'}
     receipt = {'status': 'LEXICAL_SHADOW_PASS', 'target': target, 'role': args.role,
-        'discontiguous': args.discontiguous,
+        'discontiguous': args.discontiguous, 'calls': args.calls,
         'javaRuntime': 21, 'protected': protected, 'outputPair': pair,
         'observations': len(json.loads((case / 'forge-observations.json').read_text())),
         'scope': 'explicit analyst block visibility, shadow lookup, initialization gaps; full goal remains open'}
@@ -136,6 +152,7 @@ def main():
         run('failure-driver', ['python3', harness / 'lexical-shadow-failure.py', case, ghidra], timeout=900)
         receipt['controls'] = ['stale', 'coalesced', 'native-decompiler-failure', 'copy-cancellation']
         (case / 'acceptance.json').write_text(json.dumps(receipt, indent=4) + '\n')
+    assert protected == {p: digest(Path(p)) for p in protected}
     print(json.dumps(receipt, indent=4))
 
 

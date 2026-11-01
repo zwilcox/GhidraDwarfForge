@@ -72,7 +72,8 @@ python3 src/test/integration/mutable-stack-mappings-export.py /path/to/private-p
 python3 src/test/integration/mutable-stack-mappings-export.py /path/to/private-packaged-ghidra aarch64 --width 64 --role pie-rebased --calls
 ```
 
-**PLANNED:** independent pieces across call effects, lexical intersections,
-genuine decompiler failure/cancellation composition, final target/host/package
-acceptance, normal integration and the full original completion audit.
-P1.11a/#67 and P3.3/#73 remain open.
+**CONFIRMED subsequent composition:** independent pieces and lexical calls now
+have local runtime evidence, including real decompiler failure/cancellation;
+see `PIECE-CALL-MEMORY.md` and `LEXICAL-CALL-LIFETIMES.md`.
+Final target/host/package acceptance, normal integration and the full original
+completion audit remain required. P1.11a/#67 and P3.3/#73 remain open.

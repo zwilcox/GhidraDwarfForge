@@ -1,5 +1,20 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local piece and lexical-call composition; combined acceptance pending:**
+Twelve aggregate configurations prove two memory pieces across safe calls and
+honest whole-value gaps after unknown writes, released slots or unproven frame
+pointers. Six lexical-call configurations prove outer/inner shadow lookup while
+unwound from callees, discontiguous visibility, genuine decompiler failure and
+cancellation; two no-call regressions also pass. Production/native code is
+unchanged. See `docs/PIECE-CALL-MEMORY.md`, `docs/LEXICAL-CALL-LIFETIMES.md` and
+the refreshed `docs/LIFETIME-SCOPE-COMPLETION-AUDIT.md`. Final combined hosted
+package/target/host acceptance, protected integration and full requirement
+reconciliation remain required. P1.11a/#67 and P3.3/#73 remain open.
+
+Earlier checkpoint paragraphs below retain their historical remaining-work
+lists. The completion audit is the current requirement/status map; implemented
+call support must not be described as a current decoder rejection.
+
 **CONFIRMED local return-SP and mutable-call composition:** incompatible return
 paths execute with immediate caller restoration and retain honest location
 gaps. Twelve x86-64/AArch64 signed-width/address roles now prove mutable saved
@@ -39,7 +54,7 @@ See `docs/LOCAL-CALL-LIFETIMES.md`. This supersedes the historical decoder gap
 below; it does not complete P1.11a/#67 or P3.3/#73.
 
 
-**CONFIRMED completion-audit gaps:** saved-local analyses currently reject
+**HISTORICAL audit at b71bfd9 (superseded by the current audit):** saved-local analyses rejected
 call-containing bodies, and inspected-call summaries preserve registers only,
 retiring all memory facts. Incoming-call and mixed-piece acceptance does not
 prove these missing local/caller-slot cases. See
