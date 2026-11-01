@@ -41,12 +41,15 @@ expected_sources=(
     aarch64-vector.c
     aggregate-return-calls.c
     arm-dynamic-pcs.c
+    arm-mixed-body-driver.c
+    arm-mixed-body.S
     arm-mixed-function-aliases.cpp
     arm-symbol-boundary.S
     arm-symbol-boundary.ld
     arm-thumb-after.c
     arm-thumb-caller.c
     arm-thumb-leaf.c
+    arm-thumb-shared-driver.c
     bitfield-values.c
     call-memory-boundaries.c
     calling-convention.c

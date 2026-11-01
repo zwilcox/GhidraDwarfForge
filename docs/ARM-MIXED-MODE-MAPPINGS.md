@@ -135,3 +135,10 @@ generic-source probe containing TMode is still rejected; no broad path or
 pattern exception was introduced. This test-inventory correction does not
 change the validated production package. Exact-head hosted acceptance is still
 required.
+
+Run `41354691661` passed extension/native/release assembly, then the fixture
+inventory rejected the three newly added ARM mixed/shared source files before
+target tests. The exact filenames are now registered; the source-only inventory
+and all 13 x86-64 fixture byte-identical rebuild checks pass locally. The
+inventory remains closed to unreviewed files. This correction changes no
+production code and does not substitute for the pending hosted target gate.
