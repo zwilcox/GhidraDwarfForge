@@ -104,6 +104,19 @@ try:
         row = {"name": name, "entryPc": entry, "incoming": incoming(index == 0)}
         result["functions"].append(row)
         entries[index].delete()
+        scalar_boundary = None
+        if index == 1 and target in ("mips32be", "mips32le"):
+            # Independent machine-code oracle: the first four instructions
+            # leave a0/a1 intact; LUI then overwrites a0. Do not derive the
+            # expected live range from the exporter omission report.
+            byte_order = "big" if target == "mips32be" else "little"
+            raw = bytes(gdb.selected_inferior().read_memory(entry, 20))
+            words = [int.from_bytes(raw[offset:offset + 4], byte_order) for offset in range(0, 20, 4)]
+            assert words[:4] == [0x27bdfff8, 0xafbe0004, 0x03a0f025, 0x00801025], words
+            assert words[4] & 0xffff0000 == 0x3c040000, words
+            scalar_boundary = entry + 20
+            row["scalarCarrierBoundary"] = {"instructionWords": words,
+                "clobberPc": entry + 16, "unavailableFrom": scalar_boundary}
         if compiler:
             source_pc = list(named[index].locations)[0].address
             if source_pc != entry:
@@ -120,16 +133,20 @@ try:
                 state = observe(function, index == 0, True)
                 row["states"].append(state)
                 if step == 0:
-                    expected_available = not (index == 1 and target in ("mips32be", "mips32le"))
-                    assert state["available"] == expected_available, state
-                if index == 1 and target in ("mips32be", "mips32le"):
-                    assert not state["available"] and state["omission"]["reason"] == "REGISTER_MODIFIED", state
-                    assert [int(state["omission"][key], 16) for key in ("startAddress", "endAddress")] == [
-                        int(bound, 16) for bound in function["ranges"][0]], state
+                    assert state["available"], state
+                if scalar_boundary is not None:
+                    assert state["available"] == (state["pc"] < scalar_boundary), state
+                    if not state["available"]:
+                        assert state["omission"]["reason"] == "REGISTER_MODIFIED", state
+                        assert [int(state["omission"][key], 16) for key in ("startAddress", "endAddress")] == [
+                            scalar_boundary, int(function["ranges"][0][1], 16)], state
                 gdb.execute("stepi")
             else:
                 raise AssertionError("bounded ordinary leaf did not return")
             assert row["states"]
+            if scalar_boundary is not None:
+                assert any(state["available"] for state in row["states"])
+                assert any(not state["available"] for state in row["states"])
         row["returnPc"] = number("$pc")
         expected_globals = {"observed_first": -19, "observed_second": 37} if index == 0 else {"observed_scalar": wide}
         row["globalsAfterReturn"] = {key: number(key) for key in expected_globals}
