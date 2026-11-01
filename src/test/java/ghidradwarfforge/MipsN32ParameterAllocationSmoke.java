@@ -180,6 +180,73 @@ public final class MipsN32ParameterAllocationSmoke {
                                 "tail slot after aggregate");
                             require(before.equals(snapshot(function)), "classification mutated original type/storage");
                         }
+                        var aligned = new StructureDataType("AlignedPair", 16, manager);
+                        aligned.replaceAtOffset(0, word, 8, "first", null);
+                        aligned.replaceAtOffset(8, word, 8, "second", null);
+                        aligned.setExplicitMinimumAlignment(16);
+                        var alignedMixed = new StructureDataType("AlignedMixed", 32, manager);
+                        alignedMixed.replaceAtOffset(0, real, 8, "first", null);
+                        alignedMixed.replaceAtOffset(8, word, 8, "second", null);
+                        alignedMixed.setExplicitMinimumAlignment(32);
+                        String[] general = {"a0", "a1", "a2", "a3", "t0", "t1", "t2", "t3"};
+                        for (var type : List.of(aligned, alignedMixed)) {
+                            for (int count : List.of(1, 3, 7, 9)) {
+                                var inputs = new ArrayList<DataType>();
+                                for (int i = 0; i < count; i++) inputs.add(word);
+                                inputs.add(type);
+                                inputs.add(word);
+                                var function = function(program, word, inputs.toArray(DataType[]::new));
+                                String before = snapshot(function);
+                                var changes = policy.corrections(function, TaskMonitor.DUMMY, ignored -> { });
+                                var value = changes.getOrDefault(count, function.getParameter(count).getVariableStorage());
+                                var tail = changes.getOrDefault(count + 1, function.getParameter(count + 1).getVariableStorage());
+                                int slot = count + 1;
+                                int end = slot + type.getLength() / 8;
+                                if (slot < 8) {
+                                    var pieces = new ArrayList<String>();
+                                    for (int index = slot; index < end; index++) {
+                                        pieces.add((type == alignedMixed && index == slot ? "f" + (12 + index) : general[index]) + ":8");
+                                    }
+                                    if (!big) java.util.Collections.reverse(pieces);
+                                    require(value.toString().equals(String.join(",", pieces)), "aligned aggregate register pieces: " + value);
+                                }
+                                else {
+                                    require(value.isStackStorage() && value.getStackOffset() == (slot - 8) * 8,
+                                        "aggregate stack alignment must cap at16: " + value);
+                                }
+                                require(end >= 8 ? tail.isStackStorage() && tail.getStackOffset() == (end - 8) * 8 :
+                                    tail.toString().equals(general[end] + ":8"), "tail after aligned aggregate: " + tail);
+                                require(before.equals(snapshot(function)), "aligned aggregate mutated saved data");
+                                require(changes.equals(policy.corrections(function, TaskMonitor.DUMMY, ignored -> { })), "aligned aggregate nondeterminism");
+                            }
+                        }
+                        var hiddenAligned = function(program, alignedMixed, aligned);
+                        String hiddenBefore = snapshot(hiddenAligned);
+                        var hiddenChanges = policy.corrections(hiddenAligned, TaskMonitor.DUMMY, ignored -> { });
+                        require(hiddenAligned.getParameter(0).isAutoParameter(), "hidden return pointer missing");
+                        require(!hiddenChanges.containsKey(0), "hidden return pointer was moved");
+                        require(hiddenChanges.getOrDefault(1, hiddenAligned.getParameter(1).getVariableStorage()).toString()
+                            .equals(big ? "a2:8,a3:8" : "a3:8,a2:8"), "alignment must account for hidden return slot");
+                        require(hiddenBefore.equals(snapshot(hiddenAligned)), "hidden aligned signature mutated");
+                        // This getter lazily materializes an empty array in the
+                        // pinned Ghidra model, changing XML without changing ABI.
+                        program.getCompilerSpec().getDefaultCallingConvention().getKilledByCallList();
+                        var observedPolicy = MipsWideParameterAllocation.forProgram(program, ElfImage.read(path),
+                            TaskMonitor.DUMMY, ignored -> { });
+                        require(hiddenChanges.equals(observedPolicy.corrections(hiddenAligned, TaskMonitor.DUMMY, ignored -> { })),
+                            "observing killed registers changed allocation policy");
+                        var original = program.getCompilerSpec().getDefaultCallingConvention();
+                        var killedField = ghidra.program.model.lang.PrototypeModel.class.getDeclaredField("killedbycall");
+                        killedField.setAccessible(true);
+                        Object previousKilled = killedField.get(original);
+                        try {
+                            killedField.set(original, new ghidra.program.model.pcode.Varnode[] {
+                                new ghidra.program.model.pcode.Varnode(program.getRegister("a0").getAddress(), 1) });
+                            require(MipsWideParameterAllocation.forProgram(program, ElfImage.read(path),
+                                TaskMonitor.DUMMY, ignored -> { }) == GhidraParameterAllocation.UNCHANGED,
+                                "nonempty changed killed-register list bypassed fingerprint guard");
+                        }
+                        finally { killedField.set(original, previousKilled); }
                         for (int count : List.of(1, 3, 7, 9)) {
                             var inputs = new ArrayList<DataType>();
                             for (int i = 0; i < count; i++) inputs.add(word);

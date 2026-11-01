@@ -14,6 +14,7 @@ import ghidra.program.model.data.AbstractIntegerDataType;
 import ghidra.program.model.data.ArrayDataType;
 import ghidra.program.model.data.Integer16DataType;
 import ghidra.program.model.data.Structure;
+import ghidra.program.model.data.Composite;
 import ghidra.program.model.data.StructureDataType;
 import ghidra.program.model.data.TypeDef;
 import ghidra.program.model.data.UnsignedCharDataType;
@@ -72,8 +73,13 @@ public final class MipsWideParameterAllocation {
         String xml = encoder.toString();
         PrototypeModel corrected = new PrototypeModel();
         try {
+            // PrototypeModel.getKilledByCallList() lazily turns null into an
+            // empty array. Analysis can therefore add this empty XML element
+            // without changing allocation; reopening removes it again. Keep
+            // all nonempty register lists and every other audited byte strict.
+            String fingerprintXml = xml.replace("<killedbycall/>", "");
             String hash = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
-                .digest(xml.getBytes(StandardCharsets.UTF_8)));
+                .digest(fingerprintXml.getBytes(StandardCharsets.UTF_8)));
             if (!baseline.equals(hash)) {
                 diagnostic.accept("Computed " + profile + " allocation correction unavailable: selected prototype differs from the audited baseline");
                 return GhidraParameterAllocation.UNCHANGED;
@@ -106,13 +112,38 @@ public final class MipsWideParameterAllocation {
             }
             var signature = types.toArray(DataType[]::new);
             var expected = original.getStorageLocations(program, signature, true);
-            var allocationTypes = signature.clone();
-            for (int index = 1; index < allocationTypes.length; index++) {
+            // The pinned dual-class aggregate rule aligns stack storage but
+            // does not skip odd register slots. An allocation-only placeholder
+            // consumes that ABI hole; it is never exported as a parameter.
+            var allocationTypes = new ArrayList<DataType>();
+            allocationTypes.add(signature[0]);
+            int[] allocationIndices = new int[parameters.length];
+            long slots = 0;
+            int padding = 0;
+            for (int index = 0; index < parameters.length; index++) {
                 task.checkCancelled();
-                allocationTypes[index] = inputType(allocationTypes[index]);
+                var parameter = parameters[index];
+                if (parameter.isAutoParameter()) {
+                    slots += (parameter.getVariableStorage().size() + 7L) / 8;
+                }
+                else {
+                    DataType input = inputType(parameter.getFormalDataType());
+                    if (input.getLength() <= 0) return Map.of();
+                    boolean aligned = input.getAlignment() >= 16;
+                    if (aligned && (slots & 1) != 0) {
+                        if (input instanceof Composite && slots < 8) {
+                            allocationTypes.add(new UnsignedLongLongDataType(program.getDataTypeManager()));
+                            padding++;
+                        }
+                        slots++;
+                    }
+                    allocationTypes.add(input);
+                    slots += (input.getLength() + 7L) / 8;
+                }
+                allocationIndices[index] = index + 1 + padding;
             }
-            var adjusted = corrected.getStorageLocations(program, allocationTypes, true);
-            if (expected.length != parameters.length + 1 || adjusted.length != expected.length ||
+            var adjusted = corrected.getStorageLocations(program, allocationTypes.toArray(DataType[]::new), true);
+            if (expected.length != parameters.length + 1 || adjusted.length != expected.length + padding ||
                     !adjusted[0].equals(expected[0])) {
                 throw new IllegalStateException("Audited MIPS input allocation changed return or automatic parameter count");
             }
@@ -121,7 +152,7 @@ public final class MipsWideParameterAllocation {
                 task.checkCancelled();
                 var actual = parameters[index].getVariableStorage();
                 var prior = expected[index + 1];
-                var replacement = adjusted[index + 1];
+                var replacement = adjusted[allocationIndices[index]];
                 if (!prior.equals(actual) || prior.isForcedIndirect() != actual.isForcedIndirect() ||
                         prior.isAutoStorage() != actual.isAutoStorage()) {
                     throw new IllegalStateException("Saved MIPS dynamic storage disagrees with its selected prototype");
@@ -165,7 +196,7 @@ public final class MipsWideParameterAllocation {
         if (!(type instanceof Structure structure) || type.getLength() <= 0 || type.getLength() > 4096) {
             return original;
         }
-        int alignment = original.getAlignment();
+        int alignment = Math.min(16, original.getAlignment());
         var shape = new StructureDataType("__forge_allocation_shape", 0, manager) {
             @Override
             public int getAlignment() { return alignment; }

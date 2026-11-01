@@ -20,6 +20,10 @@ expected = {
     'layout_padded': {'value.first': 8.25, 'value.second': -9.5, 'tail': 37},
     'layout_aligned': {'lead': 41, 'value': (43 << 64) | 47, 'tail': 53},
     'layout_aligned_stack': dict(zip('abcdefgh', range(1, 9))) | {'lead': 59, 'value': (61 << 64) | 67, 'tail': 71},
+    'layout_pair16': {'lead': 11, 'value.first': 13, 'value.second': 17, 'tail': 19},
+    'layout_mixed32': {'lead': 23, 'value.first': 29.0, 'value.second': 31, 'tail': 37},
+    'layout_pair16_stack': dict(zip('abcdefgh', range(1, 9))) | {'lead': 41, 'value.first': 43, 'value.second': 47, 'tail': 53},
+    'layout_mixed32_edge': dict(zip('abcdefg', range(1, 8))) | {'value.first': 59.0, 'value.second': 61, 'tail': 67},
 }
 artifact = case / ('reference' if mode == 'compiler' else 'input.dbg')
 shared = meta['role'].startswith('shared')
@@ -107,7 +111,7 @@ for name, values in expected.items():
         print('LAYOUT', mode, name, point, sum((v['correct'] for v in observed.values())), '/', len(observed))
 gdb.execute('continue')
 assert int(gdb.parse_and_eval('$_exitcode')) == 0
-assert len(rows) == 16
+assert len(rows) == 2 * len(expected)
 checks = 0
 for row in rows:
     if mode == 'compiler' and row['point'] == 'entry':

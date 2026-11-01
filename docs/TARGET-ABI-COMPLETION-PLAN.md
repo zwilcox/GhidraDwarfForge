@@ -180,3 +180,14 @@ selection is refreshed onto main and rerunning its exact-head gate. The wider
 MIPS layout matrix now passes 20 local ABI/endian/layout combinations and has
 versioned GDB 17.1 provisioning plus 20 passing failure/cancellation
 compositions; exact-head hosted acceptance remains in progress. All four original requirement rows remain open.
+
+## Aligned aggregate and live-session follow-up
+
+**CONFIRMED aligned-aggregate and live-session MIPS defects; correction under validation:**
+Explicit aggregate alignment now skips the required register slot and caps
+argument alignment at 16 without changing formal types. A separate fresh-import
+failure was traced to Ghidra lazily serializing an empty killed-register list;
+the fingerprint correction preserves strict rejection of nonempty changes.
+434 model checks, all 20 saved-program layout/control cases and all 20 final
+live-session cases pass locally. Exact-head hosted acceptance remains pending. See
+`docs/MIPS-ALIGNED-COMPOSITES.md`. The full #68–#71 goal remains open.
