@@ -14,11 +14,14 @@ public class PrepareArmMixedBody extends GhidraScript {
     @Override
     protected void run() throws Exception {
         var args = getScriptArgs();
-        if (args.length != 1) {
+        if (args.length != 1 && args.length != 2) {
             throw new IllegalArgumentException("mixed function link address required");
         }
         var image = ghidradwarfforge.elf.ElfImage.read(
             java.nio.file.Path.of(currentProgram.getExecutablePath()));
+        if (args.length == 2) {
+            currentProgram.setImageBase(toAddr(Math.addExact(image.preferredImageBase(), Long.decode(args[1]))), true);
+        }
         long delta = currentProgram.getImageBase().getOffset() - image.preferredImageBase();
         var entry = toAddr(Math.addExact(Long.decode(args[0]), delta));
         Function function = getFunctionAt(entry);
@@ -43,6 +46,7 @@ public class PrepareArmMixedBody extends GhidraScript {
         function.setBody(new ghidra.program.model.address.AddressSet(entry, entry.add(39)));
         function.setName("recovered_mixed_body", SourceType.USER_DEFINED);
         var type = new IntegerDataType(currentProgram.getDataTypeManager());
+        function.setCallingConvention(Function.DEFAULT_CALLING_CONVENTION_STRING);
         function.setReturnType(type, SourceType.USER_DEFINED);
         function.replaceParameters(Function.FunctionUpdateType.DYNAMIC_STORAGE_FORMAL_PARAMS,
             true, SourceType.USER_DEFINED,

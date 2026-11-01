@@ -1,5 +1,16 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local production ARM32 mixed-body mapping progress:**
+The real exporter now emits complete evidence-backed ARM/Thumb/data section
+mappings. Non-PIE, PIE and rebased PIE pass raw mapping checks, compiler-relative
+static decoding, twelve actual instruction observations, strict validators,
+determinism and original/program preservation. Six real decompiler-failure
+exports and three cancellations pass; ELF/writer and real-Ghidra models pass
+33/84 checks. The final package also passes the AArch64 vector/control regression.
+See `docs/ARM-MIXED-MODE-MAPPINGS.md`. Shared/sectionless mixed compositions,
+source-step acceptance, broader ABI requirements and exact-head integration
+remain open; the complete #68–#71 scope is unchanged.
+
 **CONFIRMED ARM32 mixed-body defect and consumer reference:**
 A source-built function switches ARM → Thumb → ARM with twelve independently
 checked executed instructions. The current curated production sidecar passes

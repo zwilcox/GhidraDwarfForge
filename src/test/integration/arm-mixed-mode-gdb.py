@@ -27,6 +27,10 @@ try:
             return [(row["addr"], row["length"], re.sub(r"\s*<[^>]*>", "", row["asm"])) for row in rows]
         result["staticMatchesCompiler"] = decoded(result["static"]) == decoded(reference["static"])
     gdb.execute("target remote " + os.environ["FORGE_MIXED_REMOTE"])
+    bias = int(gdb.parse_and_eval("&" + name)) - start
+    assert (bias != 0) == labels.get("role", "exec").startswith("pie"), bias
+    result["loadBias"] = bias
+    start += bias
     stop = gdb.Breakpoint(name)
     gdb.execute("continue")
     assert int(gdb.parse_and_eval("$pc")) == start

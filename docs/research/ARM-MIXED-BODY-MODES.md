@@ -1,6 +1,9 @@
 # ARM mixed-body mapping reference
 
-**CONFIRMED defect and consumer experiment; production correction PLANNED.**
+**HISTORICAL defect and confirmed consumer experiment.** A production correction
+now passes its first three executable layouts; see
+[the current implementation checkpoint](../ARM-MIXED-MODE-MAPPINGS.md). The
+remaining acceptance below is not superseded by the basic runtime pass.
 This is a component of the unchanged #70 requirement, within the complete
 #68–#71 goal. The research harness explicitly requires the current exporter to
 fail its static decoding check. Its passing research status is not an exporter
