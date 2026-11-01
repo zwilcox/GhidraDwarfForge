@@ -14,12 +14,14 @@ public class PrepareArmMixedBody extends GhidraScript {
     @Override
     protected void run() throws Exception {
         var args = getScriptArgs();
-        if (args.length != 1 && args.length != 2) {
-            throw new IllegalArgumentException("mixed function link address required");
+        if (args.length < 1 || args.length > 3 || (args.length == 3 && !args[2].equals("split"))) {
+            throw new IllegalArgumentException("mixed function link-address [rebase [split]] required");
         }
+        boolean split = args.length == 3;
+        int shift = split ? 8 : 0;
         var image = ghidradwarfforge.elf.ElfImage.read(
             java.nio.file.Path.of(currentProgram.getExecutablePath()));
-        if (args.length == 2) {
+        if (args.length >= 2) {
             currentProgram.setImageBase(toAddr(Math.addExact(image.preferredImageBase(), Long.decode(args[1]))), true);
         }
         long delta = currentProgram.getImageBase().getOffset() - image.preferredImageBase();
@@ -31,19 +33,49 @@ public class PrepareArmMixedBody extends GhidraScript {
         var originalBody = function.getBody().toString();
         // Explicit analyst knowledge joins already decoded regions. Do not decode
         // bytes or infer context to make the fixture pass.
-        for (int offset : new int[] {0, 4, 8, 12, 16, 18, 20, 22, 24, 28, 32, 36}) {
+        int[] offsets = split ? new int[] {0, 8, 12, 16, 20, 24, 26, 28, 30, 32, 36, 40, 44} :
+            new int[] {0, 4, 8, 12, 16, 18, 20, 22, 24, 28, 32, 36};
+        for (int offset : offsets) {
             var address = entry.add(offset);
             var instruction = getInstructionAt(address);
-            if (instruction == null || instruction.getLength() != (offset >= 16 && offset < 24 ? 2 : 4)) {
+            if (instruction == null || instruction.getLength() != (offset >= shift + 16 && offset < shift + 24 ? 2 : 4)) {
                 throw new IllegalStateException("missing independently expected instruction at " + address);
             }
             var mode = currentProgram.getProgramContext().getValue(
                 currentProgram.getRegister("TMode"), address, false);
-            if (!java.math.BigInteger.valueOf(offset >= 16 && offset < 24 ? 1 : 0).equals(mode)) {
+            if (!java.math.BigInteger.valueOf(offset >= shift + 16 && offset < shift + 24 ? 1 : 0).equals(mode)) {
                 throw new IllegalStateException("analysis mode differs at " + address);
             }
         }
-        function.setBody(new ghidra.program.model.address.AddressSet(entry, entry.add(39)));
+        var body = new ghidra.program.model.address.AddressSet(entry, entry.add(39));
+        if (split) {
+            body = new ghidra.program.model.address.AddressSet(entry, entry.add(3));
+            body.add(entry.add(8), entry.add(47));
+            if (getInstructionAt(entry.add(4)) != null || getInt(entry.add(4)) != 0xfeedface) {
+                throw new IllegalStateException("unexpected skipped literal bytes or instruction");
+            }
+            var neighbors = currentProgram.getFunctionManager().getFunctions(body, true);
+            var removed = new ArrayList<ghidra.program.model.address.Address>();
+            while (neighbors.hasNext()) {
+                var neighbor = neighbors.next();
+                if (!neighbor.getEntryPoint().equals(entry)) {
+                    if (!neighbor.getEntryPoint().equals(entry.add(8)) ||
+                            neighbor.getSymbol().getSource() == SourceType.USER_DEFINED ||
+                            !body.contains(neighbor.getBody())) {
+                        throw new IllegalStateException("unexpected analyst or external fragment");
+                    }
+                    println("split-analysis-fragment=" + neighbor.getName() + ":" + neighbor.getBody());
+                    removed.add(neighbor.getEntryPoint());
+                }
+            }
+            // Detach before deleting its target: otherwise Ghidra also deletes
+            // the dependent entry thunk. This is explicit analyst body curation.
+            function.setThunkedFunction(null);
+            for (var at : removed) currentProgram.getFunctionManager().removeFunction(at);
+            clearListing(entry.add(4), entry.add(7));
+            createData(entry.add(4), ghidra.program.model.data.UnsignedIntegerDataType.dataType);
+        }
+        function.setBody(body);
         function.setName("recovered_mixed_body", SourceType.USER_DEFINED);
         var type = new IntegerDataType(currentProgram.getDataTypeManager());
         function.setCallingConvention(Function.DEFAULT_CALLING_CONVENTION_STRING);

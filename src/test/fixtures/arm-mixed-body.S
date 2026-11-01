@@ -8,6 +8,11 @@
 .global mixed_body
 .type mixed_body,%function
 mixed_body:
+#ifdef FORGE_MIXED_SPLIT
+    b mixed_code
+    .word 0xfeedface
+mixed_code:
+#endif
     add r0, r0, #3
     adr r3, mixed_thumb
     add r3, r3, #1

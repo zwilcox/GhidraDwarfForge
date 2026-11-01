@@ -34,6 +34,7 @@ def main(ghidra, baseline):
         Path(__file__), source / 'arm-mixed-mode-reference.py', source / 'arm-mixed-mode-gdb.py',
         source / 'arm-mixed-mode-runtime.sh', source / 'qemu-socket.sh', source / 'arm-mixed-inventory.py',
         source / 'arm-thumb-mode-check.py', source / 'sectionless-alias-check.py',
+        source / 'arm-mixed-range-check.py', source / 'dynamic-parameter-storage-check.py',
         source / 'retained-function-aliases-export.py', source / 'ghidra_scripts/PrepareArmMixedBody.java',
         source / 'ghidra_scripts/RepeatLiveAbiExport.java', *module.rglob('*')]
     before = {str(p): reference.digest(p) for p in protected if p.is_file()}
@@ -49,7 +50,7 @@ def main(ghidra, baseline):
 
     project = case / 'project'
     project.mkdir()
-    prepare = [hex(labels['start'])] + (['0x200000'] if labels['role'].endswith('-rebased') else [])
+    prepare = reference.prepare_arguments(labels)
     log = run('live-export', [ghidra / 'support/analyzeHeadless', project, 'Live', '-import',
         case / 'mixed.stripped', '-loader', 'ElfLoader', '-analysisTimeoutPerFile', '120',
         '-scriptPath', source / 'ghidra_scripts', '-postScript', 'PrepareArmMixedBody.java', *prepare,
@@ -66,6 +67,9 @@ def main(ghidra, baseline):
     if labels['sectionless']:
         run('raw-inventory', ['python3', source / 'arm-mixed-inventory.py', case])
         assert not (case / 'raw-inventory.stderr').read_bytes()
+    if labels.get('split', False):
+        run('split-ranges', ['python3', source / 'arm-mixed-range-check.py', case])
+        assert not (case / 'split-ranges.stderr').read_bytes()
     results = {}
     vdso = re.compile(r'^warning: BFD: warning: system-supplied DSO at 0x[0-9a-f]+ has a corrupt string table index\n', re.M)
     for variant in ('compiler', 'curated'):

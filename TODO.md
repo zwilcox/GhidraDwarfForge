@@ -1,12 +1,22 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local discontiguous mixed-body acceptance:** eight additional ARM
+layouts pass two-range bodies with an excluded data word, six exact mapping
+boundaries, raw DWARF range/line checks and compiler/Forge runtime comparisons.
+Saved/live/failure exports total 1,672 debugger observations, 32 injected calls,
+16 native failure exports and eight cancellations. CI covers both contiguous
+and split bodies. See `docs/ARM-MIXED-MODE-MAPPINGS.md` for source-map limits,
+receipts and retained harness failures. Inherited-map runtime acceptance,
+sectionless shared composition, the remaining original ABI requirements and
+exact-head hosted integration remain open; this does not complete #68–#71.
+
 **CONFIRMED local mixed-mode layout/source expansion; full ABI goal remains open:**
 Eight ARM mixed-body layouts pass compiler/Forge source stepping, named/address
 breakpoints, injected function-pointer calls, raw symbol preservation, validators,
 determinism and failure/cancellation. This includes shared/rebased libraries and
 sectionless exec/PIE/rebased executables. See `docs/ARM-MIXED-MODE-MAPPINGS.md`
 for 832 observations, exact package receipts and retained failed experiments.
-The producer is unchanged in this expansion. Discontiguous/inherited
+The producer is unchanged in this expansion. Inherited
 mapping acceptance, remaining ARM/MIPS/i386 requirements, exact-head hosted
 gates and protected integration remain required; #68–#71 are not complete.
 
@@ -14,8 +24,7 @@ gates and protected integration remain required; #68–#71 are not complete.
 before closing fresh analysis, with identical artifacts, matching saved-program
 mode inventories and 736 additional compiler/Forge observations. The full
 sectionless/rebased/control/live command passes and CI includes live checks for
-every layout. Live-session behavior is now confirmed locally; discontiguous/
-inherited mapping and the full original ABI scope remain open. See the same mapping evidence document.
+every layout. Live-session behavior is now confirmed locally; inherited mapping and the full original ABI scope remain open. See the same mapping evidence document.
 
 **CONFIRMED local production ARM32 mixed-body mapping progress:**
 The real exporter now emits complete evidence-backed ARM/Thumb/data section

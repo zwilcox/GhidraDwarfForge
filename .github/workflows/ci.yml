@@ -1528,13 +1528,17 @@ jobs:
       - name: Mixed ARM and Thumb function section mappings
         if: matrix.target == 'arm32'
         run: |
-          for role in exec pie pie-rebased shared shared-rebased; do
-              python3 src/test/integration/arm-mixed-mode-reference.py "$GHIDRA_INSTALL_DIR" \
-                  --production --role "$role" --with-controls --with-live
-          done
-          for role in exec pie pie-rebased; do
-              python3 src/test/integration/arm-mixed-mode-reference.py "$GHIDRA_INSTALL_DIR" \
-                  --production --role "$role" --sectionless --with-controls --with-live
+          for shape in contiguous split; do
+              shape_args=()
+              if [[ "$shape" == split ]]; then shape_args=(--split); fi
+              for role in exec pie pie-rebased shared shared-rebased; do
+                  python3 src/test/integration/arm-mixed-mode-reference.py "$GHIDRA_INSTALL_DIR" \
+                      --production --role "$role" --with-controls --with-live "${shape_args[@]}"
+              done
+              for role in exec pie pie-rebased; do
+                  python3 src/test/integration/arm-mixed-mode-reference.py "$GHIDRA_INSTALL_DIR" \
+                      --production --role "$role" --sectionless --with-controls --with-live "${shape_args[@]}"
+              done
           done
 
       - name: Recovered ARM and Thumb instruction modes

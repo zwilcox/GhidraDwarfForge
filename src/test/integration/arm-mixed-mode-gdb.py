@@ -1,4 +1,5 @@
 """Independent assembly-known ARM/Thumb transitions and instruction values."""
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -10,6 +11,11 @@ variant = os.environ["FORGE_MIXED_VARIANT"]
 phase = os.environ.get("FORGE_MIXED_PHASE", "instructions")
 assert phase in ("instructions", "next", "step", "address", "calls")
 labels = json.loads((case / "labels.json").read_text())
+spec = importlib.util.spec_from_file_location('mixed_source_reference', Path(__file__).with_name('arm-mixed-mode-reference.py'))
+fixture_module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(fixture_module)
+expected = fixture_module.fixture(labels.get('split', False))
+assert labels['hex'] == expected['hex']
 start = labels["start"]
 name = "mixed_body" if variant == "compiler" else "recovered_mixed_body"
 result = {"status": "FAILED", "variant": variant, "phase": phase, "observations": []}
@@ -24,12 +30,12 @@ try:
         gdb.execute("target remote " + os.environ["FORGE_MIXED_REMOTE"])
         inspection_bias = int(gdb.parse_and_eval("&" + name)) - start
     arch = gdb.selected_inferior().architecture()
-    result["static"] = arch.disassemble(start + inspection_bias, start + inspection_bias + 43)
+    result["static"] = arch.disassemble(start + inspection_bias, start + inspection_bias + expected['size'] - 1)
     for row in result["static"]:
         row["addr"] -= inspection_bias
     result["instructionSource"] = "remote-before-continue" if sectionless else "file-before-attach"
-    expected_offsets = [0, 4, 8, 12, 16, 18, 20, 22, 24, 28, 32, 36, 40]
-    expected_lengths = [4, 4, 4, 4, 2, 2, 2, 2, 4, 4, 4, 4, 4]
+    expected_offsets = expected['units']
+    expected_lengths = expected['lengths']
     result["staticWidthsMatch"] = [(r["addr"] - start, r["length"]) for r in result["static"]] == list(
         zip(expected_offsets, expected_lengths))
     if variant != "compiler":
@@ -62,15 +68,26 @@ try:
         assert (bias != 0) == labels.get("role", "exec").startswith("pie"), bias
     result["loadBias"] = bias
     start += bias
-    stop = gdb.Breakpoint("*" + hex(start + 16) if phase == "address" else name)
+    thumb_offset = expected['thumb'][0]
+    stop = gdb.Breakpoint("*" + hex(start + thumb_offset) if phase == "address" else name)
     gdb.execute("continue")
-    assert int(gdb.parse_and_eval("$pc")) == start + (16 if phase == "address" else 0)
+    assert int(gdb.parse_and_eval("$pc")) == start + (thumb_offset if phase == "address" else 0)
     stop.delete()
     # Source-known values before each instruction; mappings cannot supply these.
-    values = [11, 14, 14, 14, 14, 19, 19, 19, 19, 26, 26, 4686]
+    values = dict(zip(expected['offsets'], expected['values']))
+    if labels.get('split', False) and variant != 'compiler':
+        for offset in range(4, 8):
+            block = gdb.block_for_pc(start + offset)
+            while block is not None:
+                assert block.function is None, 'data hole belongs to a function'
+                block = block.superblock
+            sal = gdb.find_pc_line(start + offset)
+            assert sal.line == 0, 'data hole has executable source mapping'
+        result['excludedDataHole'] = [start + 4, start + 8]
     if phase in ("next", "step"):
         result["listing"] = gdb.execute("list " + name, to_string=True)
-        assert ("mixed_body:" if variant == "compiler" else "recovered_mixed_body") in result["listing"]
+        listing_marker = ("mixed_body:" if labels.get('split', False) else "add r0, r0, #3") if variant == "compiler" else "recovered_mixed_body"
+        assert listing_marker in result["listing"]
         assert "No such file" not in result["listing"]
         if variant != "compiler":
             result["type"] = gdb.execute("ptype " + name, to_string=True)
@@ -84,25 +101,31 @@ try:
     visited = []
     for _ in range(16):
         pc = int(gdb.parse_and_eval("$pc"))
-        if not start <= pc < start + 40:
+        if not start <= pc < start + expected['codeEnd']:
             break
         offset = pc - start
-        assert offset in expected_offsets[:-1]
+        assert offset in expected['offsets'], 'execution entered data or unknown bytes'
         position = expected_offsets.index(offset)
-        width, value = expected_lengths[position], values[position]
+        width, value = expected_lengths[position], values[offset]
         r0 = int(gdb.parse_and_eval("$r0"))
         thumb = bool(int(gdb.parse_and_eval("$cpsr")) & 32)
         actual_bytes = bytes(gdb.selected_inferior().read_memory(pc, width)).hex()
         assert r0 == value
-        assert thumb == (16 <= offset < 24)
+        assert thumb == (expected['thumb'][0] <= offset < expected['thumb'][1])
         assert actual_bytes == labels["hex"][offset * 2:(offset + width) * 2]
         row = {"pc": pc, "offset": offset, "r0": r0, "thumb": thumb, "bytes": actual_bytes,
             "instruction": arch.disassemble(pc, count=1)}
         if phase in ("next", "step"):
             sal = gdb.selected_frame().find_sal()
-            assert sal.symtab is not None and sal.line > 0
-            row["source"] = {"path": sal.symtab.fullname(), "line": sal.line}
-            if variant != "compiler":
+            if variant != 'compiler' and labels.get('split', False) and offset == 8:
+                # GDB stops at the second discontiguous range's entry. Ghidra's
+                # first expression token is later; never fabricate a line here.
+                assert sal.line == 0
+                row['source'] = {'line': 0, 'reason': 'unmapped second range entry'}
+            else:
+                assert sal.symtab is not None and sal.line > 0
+                row["source"] = {"path": sal.symtab.fullname(), "line": sal.line}
+            if variant != "compiler" and sal.line > 0:
                 assert Path(sal.symtab.fullname()).resolve() == (case / "curated.dbg.c").resolve()
                 text = Path(sal.symtab.fullname()).read_text().splitlines()[sal.line - 1].strip()
                 assert text == "return value + 0x1243;" or (
@@ -113,11 +136,13 @@ try:
     else:
         raise AssertionError("mixed function failed to make bounded stepping progress")
     if phase not in ("next", "step"):
-        expected_visits = expected_offsets[4:-1] if phase == "address" else expected_offsets[:-1]
+        expected_visits = [offset for offset in expected['offsets'] if phase != 'address' or offset >= thumb_offset]
         assert visited == expected_visits
     result["returnedPc"] = int(gdb.parse_and_eval("$pc"))
     assert int(gdb.parse_and_eval("$r0")) == 4686
-    assert bytes(gdb.selected_inferior().read_memory(start + 40, 4)).hex() == "34120000"
+    assert bytes(gdb.selected_inferior().read_memory(start + expected['codeEnd'], 4)).hex() == "34120000"
+    if labels.get('split', False):
+        assert bytes(gdb.selected_inferior().read_memory(start + 4, 4)).hex() == 'cefaedfe'
     exits = []
     gdb.events.exited.connect(lambda event: exits.append(event.exit_code))
     gdb.execute("continue")

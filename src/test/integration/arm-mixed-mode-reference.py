@@ -28,6 +28,32 @@ def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def fixture(split=False):
+    """Source-known bytes/behavior, independently compared with compiler and Forge."""
+    shift = 8 if split else 0
+    offsets = ([0] if split else []) + [shift + value for value in (0, 4, 8, 12, 16, 18, 20, 22, 24, 28, 32, 36)]
+    values = ([11] if split else []) + [11, 14, 14, 14, 14, 19, 19, 19, 19, 26, 26, 4686]
+    boundaries = ([('a', 0), ('d', 4)] if split else []) + [
+        ('a', shift), ('t', shift + 16), ('a', shift + 24), ('d', shift + 40)]
+    data = ([4] if split else []) + [shift + 40]
+    units = sorted(offsets + data)
+    return {'size': shift + 44, 'codeEnd': shift + 40, 'thumb': [shift + 16, shift + 24],
+        'offsets': offsets, 'values': values, 'boundaries': boundaries, 'data': data, 'units': units,
+        'lengths': [2 if shift + 16 <= at < shift + 24 else 4 for at in units],
+        'ranges': [(0, 4), (8, 48)] if split else [(0, 40)],
+        'hex': ('000000eacefaedfe' if split else '') +
+            '030080e204308fe2013083e213ff2fe1053000bf00a31847070080e204209fe5020080e01eff2fe134120000'}
+
+
+def prepare_arguments(labels):
+    args = [hex(labels['start'])]
+    if labels['role'].endswith('-rebased') or labels.get('split', False):
+        args.append('0x200000' if labels['role'].endswith('-rebased') else '0')
+    if labels.get('split', False):
+        args.append('split')
+    return args
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("ghidra", type=Path)
@@ -36,6 +62,7 @@ def main():
     parser.add_argument("--with-controls", action="store_true")
     parser.add_argument("--with-live", action="store_true")
     parser.add_argument("--sectionless", action="store_true")
+    parser.add_argument("--split", action="store_true")
     args = parser.parse_args()
     if args.sectionless and (not args.production or args.role.startswith("shared")):
         parser.error("sectionless reference currently requires a production executable role")
@@ -43,10 +70,14 @@ def main():
         parser.error("failure/cancellation controls require production acceptance")
     if args.with_live and not args.production:
         parser.error("live-session checks require production acceptance")
+    if args.split and not args.production:
+        parser.error("split-body fixture requires production acceptance")
+    expected = fixture(args.split)
     ghidra = args.ghidra.resolve(strict=True)
     root = repository / "build/test-results/arm-mixed-reference"
     root.mkdir(parents=True, exist_ok=True)
-    case = Path(tempfile.mkdtemp(prefix=args.role + (".sectionless." if args.sectionless else "."), dir=root))
+    case = Path(tempfile.mkdtemp(prefix=args.role + (".split" if args.split else "") +
+        (".sectionless." if args.sectionless else "."), dir=root))
     print(case, flush=True)
 
     def run(label, command, expected=0, env=None):
@@ -62,6 +93,7 @@ def main():
 
     protected = [Path(__file__), source / "arm-mixed-mode-gdb.py", source / "arm-mixed-mapping-experiment.py",
         source / "arm-mixed-inventory.py", source / "sectionless-alias-check.py",
+        source / "arm-mixed-range-check.py", source / "dynamic-parameter-storage-check.py",
         source / "retained-function-aliases-export.py",
         source / "arm-mixed-live-export.py", source / "ghidra_scripts/RepeatLiveAbiExport.java",
         source / "arm-thumb-mode-check.py", source / "arm-mixed-mode-runtime.sh", source / "qemu-socket.sh",
@@ -74,6 +106,8 @@ def main():
     shared = args.role.startswith("shared")
     common = [compiler, "-march=armv7-a", "-marm", "-mfpu=vfpv3-d16", "-mfloat-abi=hard",
         "-O0", "-g3", "-gdwarf-5"]
+    if args.split:
+        common.append('-DFORGE_MIXED_SPLIT=1')
     inputs = [repository / "src/test/fixtures/arm-mixed-body.S"]
     if not shared:
         inputs += [repository / "src/test/fixtures/arm-mixed-body-driver.c"]
@@ -101,7 +135,7 @@ def main():
             if entry[0] == 1 and entry[5]:
                 loads.append(index)
                 if entry[2] == 0x20000:
-                    assert entry[4:7] == (44, 44, 5)
+                    assert entry[4:7] == (expected['size'], expected['size'], 5)
                     candidates.append((index, len(loads)))
         assert len(candidates) == 1
         mapping_allocation = ".forge.load." + str(candidates[0][0])
@@ -120,14 +154,15 @@ def main():
     section = inventory.section(image, ".forge_mixed")
     start = section["row"][3]
     symbols = [s for s in image["symbols"] if s["section"] == section["index"]]
-    assert section["row"][5] == 44
+    assert section["row"][5] == expected['size']
     assert [(s["name"], s["raw"] - start, s["size"], s["info"]) for s in symbols if s["name"].startswith("$")] == [
-        ("$a", 0, 0, 0), ("$t", 16, 0, 0), ("$a", 24, 0, 0), ("$d", 40, 0, 0)]
-    assert section["data"].hex() == "030080e204308fe2013083e213ff2fe1053000bf00a31847070080e204209fe5020080e01eff2fe134120000"
-    (case / "labels.json").write_text(json.dumps({"start": start, "size": 44, "role": args.role, "shared": shared,
+        ('$' + tag, at, 0, 0) for tag, at in expected['boundaries']]
+    assert section["data"].hex() == expected['hex']
+    labels = {"start": start, "size": expected['size'], "role": args.role, "shared": shared, 'split': args.split,
         "textAddress": inventory.section(image, ".text")["row"][3],
         "sectionless": args.sectionless, "mappingAllocation": mapping_allocation,
-        "symbols": symbols, "hex": section["data"].hex()}, indent=4) + "\n")
+        "symbols": symbols, "hex": section["data"].hex()}
+    (case / "labels.json").write_text(json.dumps(labels, indent=4) + "\n")
     before.update({str(case / name): digest(case / name) for name in ("mixed.reference", "mixed.stripped", "labels.json")})
     project = case / "project"
     project.mkdir()
@@ -136,7 +171,7 @@ def main():
     assert "REPORT: Import succeeded" in text
     text = run("prepare", [ghidra / "support/analyzeHeadless", project, "MixedModes", "-process",
         "mixed.stripped", "-noanalysis", "-scriptPath", source / "ghidra_scripts",
-        "-postScript", "PrepareArmMixedBody.java", hex(start), *(["0x200000"] if args.role.endswith("-rebased") else [])])
+        "-postScript", "PrepareArmMixedBody.java", *prepare_arguments(labels)])
     assert "REPORT SCRIPT ERROR" not in text
     program_before = {str(p.relative_to(project)): digest(p) for p in project.rglob("*") if p.is_file()}
     text = run("export", [ghidra / "support/analyzeHeadless", project, "MixedModes", "-process",
@@ -144,10 +179,13 @@ def main():
         "--packaged-natives", "--output=" + str(case / "curated.dbg")])
     assert "GhidraDwarfForge symbol export PASS" in text and "REPORT SCRIPT ERROR" not in text
     model = inventory.transcript(case / "prepare.stdout", "ARM_MIXED_MODEL=")
-    assert len(model["units"]) == 13 and all(row["inBody"] for row in model["units"][:12])
-    assert not model["units"][-1]["inBody"]
-    assert [(int(row["address"], 16) - start - model["imageBaseDelta"], row["mode"]) for row in model["units"][:12]] == [
-        (offset, 1 if 16 <= offset < 24 else 0) for offset in (0, 4, 8, 12, 16, 18, 20, 22, 24, 28, 32, 36)]
+    assert len(model['units']) == len(expected['units'])
+    for row, offset, width in zip(model['units'], expected['units'], expected['lengths']):
+        assert int(row['address'], 16) - start - model['imageBaseDelta'] == offset
+        assert row['size'] == width and row['bytes'] == expected['hex'][offset * 2:(offset + width) * 2]
+        assert row['inBody'] == row['instruction'] == (offset in expected['offsets'])
+        if row['instruction']:
+            assert row['mode'] == int(expected['thumb'][0] <= offset < expected['thumb'][1])
     if args.role.endswith("-rebased"):
         assert model["imageBaseDelta"] == 0x200000
     if args.production:
@@ -155,10 +193,13 @@ def main():
         allocation = inventory.section(emitted, mapping_allocation)
         boundaries = [s for s in emitted["symbols"] if s["section"] == allocation["index"] and s["name"].startswith("$")]
         assert [(s["name"][:2], s["raw"] - start, s["size"], s["info"], s["other"]) for s in boundaries] == [
-            ("$a", 0, 0, 0, 0), ("$t", 16, 0, 0, 0), ("$a", 24, 0, 0, 0), ("$d", 40, 0, 0, 0)]
+            ('$' + tag, at, 0, 0, 0) for tag, at in expected['boundaries']]
         if args.sectionless:
             run("raw-inventory", ["python3", source / "arm-mixed-inventory.py", case])
             clean("raw-inventory")
+        if args.split:
+            run('split-ranges', ['python3', source / 'arm-mixed-range-check.py', case])
+            clean('split-ranges')
     artifact_hashes = [digest(case / name) for name in ("curated.dbg", "curated.dbg.c")]
     run("repeat", [ghidra / "support/analyzeHeadless", project, "MixedModes", "-process", "mixed.stripped",
         "-readOnly", "-noanalysis", "-postScript", "GhidraDwarfForge.java", "--packaged-natives",
@@ -177,7 +218,7 @@ def main():
             expected=1 if expected_failure else 0)
         results[variant] = json.loads((case / (variant + "-gdb.json")).read_text())
         assert results[variant]["status"] == ("FAILED" if expected_failure else "PASS")
-        assert len(results[variant]["observations"]) == 12 and results[variant]["exitCodes"] == [0]
+        assert len(results[variant]["observations"]) == len(expected['offsets']) and results[variant]["exitCodes"] == [0]
         stderr = (case / (variant + "-gdb.stderr")).read_text()
         warnings = re.findall(r"^warning: BFD: warning: system-supplied DSO at 0x[0-9a-f]+ has a corrupt string table index\n", stderr, re.M)
         assert len(warnings) == 1

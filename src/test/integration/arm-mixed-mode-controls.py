@@ -17,6 +17,9 @@ spec.loader.exec_module(reference)
 spec = importlib.util.spec_from_file_location("facts", source / "dynamic-parameter-storage-check.py")
 facts = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(facts)
+spec = importlib.util.spec_from_file_location('split_ranges', source / 'arm-mixed-range-check.py')
+split_ranges = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(split_ranges)
 
 
 def snapshot(directory):
@@ -45,7 +48,8 @@ def main(ghidra, baseline):
     for path, expected in accepted["protectedHashes"].items():
         if module in Path(path).parents:
             assert reference.digest(Path(path)) == expected, path
-    paths = [Path(__file__), source / "arm-mixed-mode-runtime.sh", source / "arm-mixed-mode-gdb.py",
+    paths = [Path(__file__), source / "arm-mixed-mode-reference.py", source / "arm-mixed-range-check.py",
+        source / "arm-mixed-mode-runtime.sh", source / "arm-mixed-mode-gdb.py",
         source / "ghidra_scripts/AbiDecompilerFailureExport.java", source / "ghidra_scripts/CancelDuringElfCopy.java",
         source / "ghidra_scripts/PrepareArmMixedBody.java", *(module.rglob("*")),
         *(baseline / name for name in ("mixed.stripped", "mixed.reference", "curated.dbg", "curated.dbg.c")),
@@ -90,7 +94,13 @@ def main(ghidra, baseline):
     index, failed = next((i, d) for i, d in enumerate(dies) if d["tag"] == "DW_TAG_subprogram" and
         facts.die_name(d) == selected)
     assert "DW_AT_decl_line" not in failed["attrs"] and "DW_AT_type" not in failed["attrs"]
-    assert "DW_AT_low_pc" in failed["attrs"] and dies[index + 1]["depth"] <= failed["depth"]
+    if labels.get('split', False) and selected == 'recovered_mixed_body':
+        assert 'DW_AT_low_pc' not in failed['attrs'] and 'DW_AT_high_pc' not in failed['attrs']
+        raw = reference.inventory.section(reference.inventory.elf(case / 'curated.dbg'), '.debug_rnglists')['data']
+        split_ranges.check_ranges(raw, split_ranges.range_offset(failed['attrs']['DW_AT_ranges']), labels['start'])
+    else:
+        assert 'DW_AT_low_pc' in failed['attrs']
+    assert dies[index + 1]["depth"] <= failed["depth"]
     assert "No errors." in run("llvm", ["llvm-dwarfdump", "--verify", case / "curated.dbg"])
     run("strict", ["python3", source / "check-dwarfdump.py", case / "curated.dbg", case / "strict.log",
         "--original", case / "mixed.stripped"])
@@ -106,7 +116,7 @@ def main(ghidra, baseline):
     assert not (Counter(vdso.sub("<vdso>", line) for line in warnings) -
         Counter(vdso.sub("<vdso>", line) for line in compiler_warnings))
     runtime = json.loads((case / "curated-gdb.json").read_text())
-    assert runtime["status"] == "PASS" and len(runtime["observations"]) == 12
+    assert runtime["status"] == "PASS" and len(runtime["observations"]) == len(reference.fixture(labels.get('split', False))['offsets'])
     program_changes = unchanged(case / "project", program_before)
     padded = case / "padded"
     shutil.copy2(case / "mixed.stripped", padded)
@@ -116,7 +126,7 @@ def main(ghidra, baseline):
     project = case / "cancel-project"
     project.mkdir()
     labels = json.loads((case / "labels.json").read_text())
-    prepare = [hex(labels["start"])] + (["0x200000"] if labels["role"].endswith("-rebased") else [])
+    prepare = reference.prepare_arguments(labels)
     log = run("cancel-import", [ghidra / "support/analyzeHeadless", project, "MixedModes", "-import", padded,
         "-analysisTimeoutPerFile", "120", "-scriptPath", source / "ghidra_scripts",
         "-postScript", "PrepareArmMixedBody.java", *prepare])

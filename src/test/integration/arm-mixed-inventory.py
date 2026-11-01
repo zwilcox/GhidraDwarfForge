@@ -16,6 +16,7 @@ def module(name, filename):
 
 facts = module('mixed_inventory_facts', 'arm-thumb-mode-check.py')
 inventory = module('mixed_sectionless_inventory', 'sectionless-alias-check.py')
+reference_fixture = module('mixed_source_reference', 'arm-mixed-mode-reference.py')
 
 
 def verify(case):
@@ -25,8 +26,9 @@ def verify(case):
     output = facts.elf(case / 'curated.dbg')
     allocation = facts.section(output, labels['mappingAllocation'])
     index, start = allocation['index'], labels['start']
+    expected = reference_fixture.fixture(labels.get('split', False))
     mappings = {f'${mode}.forge_{index:x}_{start + offset:08x}': (start + offset, index)
-                for mode, offset in (('a', 0), ('t', 16), ('a', 24), ('d', 40))}
+                for mode, offset in expected['boundaries']}
     aliases, values, modes_checked = [], {}, []
     # These auxiliary homogeneous hints are not the mixed-body acceptance
     # target. Check every supplied hint against compiler mode intervals, without

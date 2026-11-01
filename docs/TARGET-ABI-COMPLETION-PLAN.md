@@ -254,3 +254,15 @@ exports and three cancellations pass; ELF/writer and real-Ghidra models pass
 See `docs/ARM-MIXED-MODE-MAPPINGS.md`. Shared/sectionless mixed compositions,
 source-step acceptance, broader ABI requirements and exact-head integration
 remain open; the complete #68–#71 scope is unchanged.
+
+## ARM32 discontiguous mixed-body checkpoint
+
+**CONFIRMED local discontiguous mixed-body acceptance:** eight additional ARM
+layouts pass two-range bodies with an excluded data word, six exact mapping
+boundaries, raw DWARF range/line checks and compiler/Forge runtime comparisons.
+Saved/live/failure exports total 1,672 debugger observations, 32 injected calls,
+16 native failure exports and eight cancellations. CI covers both contiguous
+and split bodies. See `ARM-MIXED-MODE-MAPPINGS.md` for source-map limits,
+receipts and retained harness failures. Inherited-map runtime acceptance,
+sectionless shared composition, the remaining original ABI requirements and
+exact-head hosted integration remain open; this does not complete #68–#71.

@@ -202,13 +202,70 @@ harness preservation pass. The eight live cases add 736 debugger observations,
 The full `--production --role pie-rebased --sectionless --with-controls
 --with-live` command additionally passes at `pie-rebased.sectionless.s8bwln49`.
 CI enables `--with-live` for all eight layout commands. This verifies live
-analysis/export composition; inherited mappings and discontiguous bodies still
-need their own acceptance evidence.
+analysis/export composition. The split-body evidence below extends this to
+discontiguous bodies; inherited mappings still need runtime acceptance.
+
+## Discontiguous mixed-body acceptance
+
+The maintained `--split` fixture adds an entry branch over the source-known
+`0xfeedface` word. The 52-byte allocation contains thirteen executed instructions,
+with function ranges `[0,4)` and `[8,48)` and exact mapping boundaries
+`$a:0`, `$d:4`, `$a:8`, `$t:24`, `$a:32`, `$d:48`. The trailing literal and
+skipped word are excluded from executable DWARF ranges and source rows.
+Explicit analyst preparation validates all already-decoded bytes and contexts,
+detaches the automatic entry thunk before removing its verified automatic inner
+fragment, and records the two-range body and data word. It does not repair
+instruction decoding or context to obtain a pass.
+
+The unchanged v2 production package passes the following complete saved/live/
+failure/cancellation commands. The receipt is
+`build/arm-mixed-modes/split-matrix-v2.json`; child names are retained there.
+
+| Layout | Case |
+| --- | --- |
+| Non-PIE | `exec.split.6z8_cjmb` |
+| PIE | `pie.split.s6fqz0nc` |
+| Rebased PIE | `pie-rebased.split.3jt1_4vk` |
+| Shared library | `shared.split.s615bdj8` |
+| Rebased shared library | `shared-rebased.split.qjdxj_2a` |
+| Sectionless non-PIE | `exec.split.sectionless.uab09am5` |
+| Sectionless PIE | `pie.split.sectionless.7q4g53im` |
+| Sectionless rebased PIE | `pie-rebased.split.sectionless.olypa41a` |
+
+Across these cases, 48 completed exports pass deterministic-output and original/
+saved-program/package preservation checks. Saved and live debugger phases each
+provide 784 observations; failure exports add 104, totaling 1,672. All 32 injected
+calls, 16 native failure exports and eight production cancellations pass.
+GNU/LLVM/pinned strict checks pass without reported or unexplained errors.
+The independent raw range/line checker rejects eleven deliberate corruptions
+per normal/live case, including a range covering the skipped word and source
+rows on each excluded data byte. GDB also checks that every skipped byte has
+no function owner or executable source line.
+
+Source stepping deliberately retains a real limitation: GDB stops at the second
+range entry (offset 8) without a line because Ghidra's first mapped expression
+is later. The oracle permits exactly this observed stop and independently
+checks its PC, instruction bytes, mode and value. No source line is fabricated.
+The entry and later expression still have required valid rows. Instruction,
+address-breakpoint and call phases require all applicable executed instructions
+and the source-known result 4686; execution into data is always rejected.
+
+Retained setup failures caught the old blanket source-line expectation, a
+symbol-only control requiring `low_pc` instead of the valid range list, and GNU
+readelf's explicit `(sec_offset)` annotation. Generalizing the fixture also
+moved the assembly label outside the contiguous compiler `list` window; the
+contiguous oracle now requires its actual first instruction. Fresh complete
+contiguous sectionless PIE (`pie.sectionless.d_kgr_dj`) and rebased shared
+(`shared-rebased.dvz83c6r`) regressions pass. The final combined split command
+also passes at `pie-rebased.split.sectionless.s0crx0i3`.
+
+CI runs both contiguous and split shapes over all eight layouts, each with
+`--production --with-controls --with-live`; split adds `--split`. This local
+acceptance requires its own exact-head hosted gate and protected integration.
 
 ## Remaining acceptance
 
-Discontiguous mixed bodies and additional inherited-map cases,
-and runtime omission controls beyond the current model coverage still need
+Additional inherited-map cases and runtime omission controls beyond the current model coverage still need
 evidence. Sectionless shared-library composition is not covered by this matrix.
 
 Unknown gaps intentionally prevent complete section mapping. A successful
