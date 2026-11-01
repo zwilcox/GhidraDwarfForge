@@ -22,7 +22,7 @@ offsets, observations, exits = {}, [], []
 gdb.events.exited.connect(lambda event: exits.append(getattr(event, 'exit_code', None)))
 started = False
 for argument in (19, -19, -81985529216486895):
-    for shape in ('overlap', 'adjacent', 'released', 'unknown'):
+    for shape in ('overlap', 'adjacent', 'released', 'unknown', 'incompatible'):
         name, helper = 'local_call_' + shape, 'inspected_' + shape
         stop = gdb.Breakpoint('*' + name, internal=True)
         gdb.execute('run' if not started and not remote else 'continue')
@@ -81,7 +81,7 @@ for argument in (19, -19, -81985529216486895):
             'address': address, 'adjacentAddress': adjacent, 'offset': offset, 'value': held,
             'store': definition, 'before': before.hex(), 'after': raw.hex()})
 gdb.execute('continue')
-assert exits == [0] and len(observations) == 12
+assert exits == [0] and len(observations) == 15
 (case / 'boundaries.json').write_text(json.dumps(labels, indent=4) + '\n')
 (case / 'stack-offsets.json').write_text(json.dumps({'status': 'PASS', 'functions': offsets,
     'observations': observations, 'exitCodes': exits}, indent=4) + '\n')

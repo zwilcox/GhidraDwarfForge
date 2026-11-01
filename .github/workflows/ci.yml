@@ -1188,6 +1188,7 @@ jobs:
           for width in 32 64; do
               for role in exec pie pie-rebased; do
                   python3 src/test/integration/mutable-stack-mappings-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --width "$width" --role "$role"
+                  python3 src/test/integration/mutable-stack-mappings-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --width "$width" --role "$role" --calls
               done
           done
 

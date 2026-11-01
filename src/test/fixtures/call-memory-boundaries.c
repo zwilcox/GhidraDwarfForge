@@ -8,12 +8,24 @@
 #define RESTORE "subq $40, %%rsp\n"
 #define UNKNOWN_SP "movq %%rsp, %%r10\nxorq $16, %%r10\nxorq $16, %%r10\nmovq %%r10, %%rsp\n"
 #define TEMPORARY "r10"
+#define FRAME_REGISTER "r12"
+#define HELD_REGISTER "r13"
+#define RESULT_REGISTER "rax"
+#define SAVE_SP "movq %%rsp, %0\n"
+#define RESTORE_SP "movq %0, %%rsp\n"
+#define DIFFERENT_RETURN "ret $16\n"
 #elif defined(__aarch64__)
 #define ZERO_BYTE "strb wzr, %0\n"
 #define RELEASE "add sp, sp, #16\n"
 #define RESTORE "sub sp, sp, #16\n"
 #define UNKNOWN_SP "mov x9, sp\neor x9, x9, #16\neor x9, x9, #16\nmov sp, x9\n"
 #define TEMPORARY "x9"
+#define FRAME_REGISTER "x19"
+#define HELD_REGISTER "x20"
+#define RESULT_REGISTER "x0"
+#define SAVE_SP "mov %0, sp\n"
+#define RESTORE_SP "mov sp, %0\n"
+#define DIFFERENT_RETURN ".cfi_remember_state\nsub sp, sp, #16\n.cfi_adjust_cfa_offset 16\nret\n.cfi_restore_state\n"
 #else
 #error Unsupported call-memory boundary runtime target
 #endif
@@ -58,6 +70,21 @@ SIGNATURE(inspected_unknown) {
     return input + 1;
 }
 
+SIGNATURE(inspected_incompatible) {
+    KEEP_ARGUMENTS;
+    __asm__ volatile(LABEL(inspected_incompatible, written) "nop\n" : : : "memory");
+    if (input < 0) {
+        register long long result __asm__(RESULT_REGISTER) = input + 1;
+        /* This intentionally violates ordinary ABI stack cleanup. Its caller
+         * restores SP immediately; the exporter must reject a common memory
+         * contract instead of trusting the selected default convention.
+         */
+        __asm__ volatile(DIFFERENT_RETURN : : "r"(result) : "memory");
+        __builtin_unreachable();
+    }
+    return input + 1;
+}
+
 #define CALLER(name, helper) \
     __attribute__((noinline, noclone)) long long name(long long input) { \
         long long held = input + 7; \
@@ -73,11 +100,25 @@ CALLER(local_call_adjacent, inspected_adjacent)
 CALLER(local_call_released, inspected_released)
 CALLER(local_call_unknown, inspected_unknown)
 
+__attribute__((noinline, noclone)) long long local_call_incompatible(long long input) {
+    register long long held __asm__(HELD_REGISTER) = input + 7;
+    register unsigned long saved_sp __asm__(FRAME_REGISTER);
+    __asm__ volatile("" : "+r"(held));
+    __asm__ volatile(SAVE_SP : "=r"(saved_sp) : : "memory");
+    long long result = inspected_incompatible(input, input + 1, input + 2, input + 3, input + 4,
+        input + 5, input + 6, input + 7, held, 0x11223344U);
+    __asm__ volatile(LABEL(local_call_incompatible, restore) RESTORE_SP
+        LABEL(local_call_incompatible, after) "nop\n" : : "r"(saved_sp) : "memory");
+    __asm__ volatile("" : "+r"(held), "+r"(result));
+    return held + result;
+}
+
 __attribute__((noinline, noclone)) static int round_values(long long input) {
     return local_call_overlap(input) != input * 2 + 8 ||
         local_call_adjacent(input) != input * 2 + 8 ||
         local_call_released(input) != input * 2 + 8 ||
-        local_call_unknown(input) != input * 2 + 8;
+        local_call_unknown(input) != input * 2 + 8 ||
+        local_call_incompatible(input) != input * 2 + 8;
 }
 
 int main(void) {

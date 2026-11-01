@@ -608,3 +608,10 @@ changes no process memory and compares the caller's live compiler value with
 the exported copy or its required gap. Six target/address roles, old-package
 comparisons and retained signed values are documented in
 `docs/CALL-MEMORY-BOUNDARIES.md`.
+
+The outgoing-copy fixture also executes two incompatible return-SP paths and
+immediate caller restoration; neither path receives a post-call location.
+`mutable-stack-mappings.c` accepts `FORGE_MUTABLE_CALLS=1` (the harness's `--calls`
+option) to check updated saved identities through a real register clobber and
+callee-owned stack write. Stale-slot and conflicting-owner controls remain gaps.
+See `docs/MUTABLE-CALL-MEMORY.md` and `docs/CALL-MEMORY-BOUNDARIES.md`.

@@ -25,6 +25,7 @@ def main():
     parser.add_argument('--width', type=int, choices=(32, 64), required=True)
     parser.add_argument('--role', choices=('exec', 'pie', 'pie-rebased'), default='exec')
     parser.add_argument('--previous-ghidra', type=Path)
+    parser.add_argument('--calls', action='store_true')
     args = parser.parse_args()
     ghidra = args.ghidra.resolve(strict=True)
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
@@ -52,6 +53,8 @@ def main():
     cc, objcopy = ('gcc', 'objcopy') if args.target == 'x86_64' else ('aarch64-linux-gnu-gcc', 'aarch64-linux-gnu-objcopy')
     reference, binary = case / 'local.reference', case / 'local.input'
     flags = ['-fno-pie', '-no-pie'] if args.role == 'exec' else ['-fPIE', '-pie']
+    if args.calls:
+        flags += ['-DFORGE_MUTABLE_CALLS=1', '-fno-ipa-cp', '-fno-inline']
     if args.target == 'x86_64':
         flags.append('-fcf-protection=none')
     run('compile', [cc, '-O2', '-g3', '-gdwarf-5', '-gno-variable-location-views', '-fno-stack-protector',
@@ -64,21 +67,27 @@ def main():
     symbols, functions = {}, {}
     for line in (case / 'symbols.log').read_text().splitlines():
         fields = line.split()
-        if len(fields) == 8 and (fields[7].startswith('mutable_') or fields[7] in ('effect_sink', 'backup_sink', 'path_choice', 'navigation_control')):
+        if len(fields) == 8 and (fields[7].startswith('mutable_') or fields[7] in ('effect_sink', 'backup_sink', 'path_choice', 'navigation_control', 'inspected_mutable')):
             assert fields[7] not in symbols
             symbols[fields[7]] = int(fields[1], 16)
             if fields[3] == 'FUNC':
                 functions[fields[7]] = {'entry': int(fields[1], 16), 'end': int(fields[1], 16) + int(fields[2])}
+    helper = functions.pop('inspected_mutable') if args.calls else None
     assert set(functions) == {*names, 'navigation_control'}
     for name in names:
         row = functions[name]
         row.update({marker: symbols[name + '_' + marker] for marker in ('before', 'live', 'load', 'loaded', 'update', 'updated', 'changed', 'save', 'saved', 'kill', 'killed', 'reload', 'reloaded', 'lost')})
         keys = ['entry', 'before', 'live', 'load', 'loaded', 'update', 'updated', 'changed', 'save', 'saved', 'kill', 'killed', 'reload', 'reloaded', 'lost', 'end']
         assert all(row[a] < row[b] for a, b in zip(keys, keys[1:])), row
-        row['availableEnd'] = row['killed'] if name == 'mutable_unsaved' else row['lost']
+        if args.calls:
+            row.update({marker: symbols[name + '_' + marker] for marker in ('call', 'returned')})
+            assert row['saved'] < row['call'] < row['returned'] < row['kill']
+        row['availableEnd'] = (row['returned'] if args.calls else row['killed']) if name == 'mutable_unsaved' else row['lost']
     initial = -1985229329 if args.width == 32 else -81985529216486895
     labels = {'functions': functions, 'order': ['mutable_saved', 'mutable_unsaved', 'mutable_branch', 'mutable_branch', 'mutable_loop', 'mutable_loop', 'mutable_conflict'], 'width': args.width // 8, 'initial': initial,
         'effect_sink': symbols['effect_sink'], 'backup_sink': symbols['backup_sink'], 'path_choice': symbols['path_choice']}
+    if args.calls:
+        labels['helper'] = helper
     write('labels.json', labels)
     os.environ['LOCAL_VARIANTS'] = 'compiler'
     run('compiler-driver', ['bash', source / 'mutable-stack-mappings-gdb.sh', repository, case, args.target], timeout=240)
@@ -150,7 +159,7 @@ def main():
     write('result.json', {'status': 'PASS', 'target': args.target, 'width': args.width, 'role': args.role,
         'jarSha256': support.digest(module / 'lib/GhidraDwarfForge.jar'), 'projectBackupChanges': changes,
         'artifactSha256': [support.digest(case / name) for name in ('local.dbg', 'local.dbg.c')],
-        'previousPackageCompared': bool(args.previous_ghidra)})
+        'previousPackageCompared': bool(args.previous_ghidra), 'calls': args.calls})
     print('mutable-stack-mappings-export=PASS ' + str(case), flush=True)
 
 

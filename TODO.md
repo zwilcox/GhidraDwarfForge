@@ -1,5 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local return-SP and mutable-call composition:** incompatible return
+paths execute with immediate caller restoration and retain honest location
+gaps. Twelve x86-64/AArch64 signed-width/address roles now prove mutable saved
+values through call clobbers, stack retention and reloads, including stale-slot
+and conflicting-owner controls. Four no-call regressions and two predecessor
+comparisons pass. Production code is unchanged. See `docs/MUTABLE-CALL-MEMORY.md`
+and the updated boundary document. Independent-piece, lexical/failure/cancellation
+composition, final hosted acceptance and integration remain open; #67/#73 stay open.
+
 **CONFIRMED local call-memory boundary controls:** six x86-64/AArch64
 exec/PIE/rebased configurations now exercise partial-overlap and adjacent writes,
 released slots and unknown SP using compiler-calibrated outgoing copies.

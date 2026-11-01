@@ -21,11 +21,11 @@ if remote:
     gdb.execute('set sysroot /usr/aarch64-linux-gnu')
     gdb.execute('target remote ' + remote)
 register = 'r12' if target == 'x86_64' else 'x19'
-rows, calls, returns, exits = [], [], [], []
+rows, calls, returns, exits, stack_returns = [], [], [], [], []
 gdb.events.exited.connect(lambda event: exits.append(getattr(event, 'exit_code', None)))
 started = False
 for argument in (19, -19, -81985529216486895):
-    for shape in (('overlap', 'adjacent', 'released', 'unknown') if outgoing else ('once', 'twice', 'alias') if stack else ('once', 'twice', 'branch', 'loop', 'split', 'clobber')):
+    for shape in (('overlap', 'adjacent', 'released', 'unknown', 'incompatible') if outgoing else ('once', 'twice', 'alias') if stack else ('once', 'twice', 'branch', 'loop', 'split', 'clobber')):
         name = 'local_call_' + shape
         count = (2 if shape == 'twice' else 1 if shape == 'branch' and argument > 0 else
             2 if shape == 'branch' else (2 if argument > 0 else 3) if shape == 'loop' else 1)
@@ -44,6 +44,7 @@ for argument in (19, -19, -81985529216486895):
         call_count = 0
         clobbers = 0
         callee_entry_sp = None
+        call_sp = None
         visits = {}
         for step in range(100):
             pc = int(gdb.parse_and_eval('$pc')) - bias
@@ -71,6 +72,14 @@ for argument in (19, -19, -81985529216486895):
                 continue
             assert pc in instructions, (name, hex(pc))
             visits[pc] = visits.get(pc, 0) + 1
+            if instructions[pc]['call']:
+                call_sp = int(gdb.parse_and_eval('$sp'))
+            if shape == 'incompatible' and pc in (label['restore'], label['after']):
+                sp = int(gdb.parse_and_eval('$sp'))
+                adjustment = (16 if target == 'x86_64' else -16) if argument < 0 and pc == label['restore'] else 0
+                assert sp == call_sp + adjustment, (name, argument, pc, sp, call_sp, adjustment)
+                stack_returns.append({'function': name, 'input': argument, 'pc': pc,
+                    'callSp': call_sp, 'observedSp': sp, 'adjustment': adjustment})
             symbol, _ = gdb.lookup_symbol('held' if variant == 'compiler' else 'curated_held')
             assert symbol is not None and not symbol.is_argument
             value = symbol.value(gdb.newest_frame())
@@ -79,7 +88,7 @@ for argument in (19, -19, -81985529216486895):
             proven = any(low <= pc < high for low, high in label['available'])
             expected_value = 909 if shape == 'alias' and pc >= label['after'] else argument + 7
             if variant == 'compiler':
-                if label.get('before', label['ready']) <= pc < label['lost']:
+                if label.get('before', label['ready']) <= pc < label.get('compilerLost', label['lost']):
                     assert available and int(value) == (expected_value if initialized else -12345), (name, pc, str(value))
             else:
                 assert available == (proven and not baseline), (name, pc, available, proven, baseline)
@@ -115,7 +124,8 @@ for argument in (19, -19, -81985529216486895):
         returns.append({'function': name, 'input': argument, 'value': expected, 'calls': count,
             'clobbers': clobbers, 'visits': visits})
 gdb.execute('continue')
-assert exits == [0] and len(returns) == (12 if outgoing else 9 if stack else 18) and len(calls) > 0
+assert exits == [0] and len(returns) == (15 if outgoing else 9 if stack else 18) and len(calls) > 0
+assert len(stack_returns) == (6 if outgoing else 0)
 (case / (variant + '-gdb.json')).write_text(json.dumps({'status': 'PASS', 'points': rows,
-    'calleePoints': calls, 'returned': returns, 'exitCodes': exits}, indent=4) + '\n')
+    'calleePoints': calls, 'returned': returns, 'exitCodes': exits, 'stackReturns': stack_returns}, indent=4) + '\n')
 print('local-call-lifetimes-gdb=' + variant + ' PASS')

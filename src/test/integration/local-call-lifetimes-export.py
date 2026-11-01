@@ -87,7 +87,8 @@ def main():
     if args.storage == 'outgoing':
         assert set(labels) == {'local_call_overlap', 'local_call_adjacent',
             'inspected_overlap', 'inspected_adjacent', 'local_call_released',
-            'local_call_unknown', 'inspected_released', 'inspected_unknown'}
+            'local_call_unknown', 'inspected_released', 'inspected_unknown',
+            'local_call_incompatible', 'inspected_incompatible'}
     elif args.storage == 'stack':
         assert set(labels) == {'local_call_once', 'local_call_twice', 'local_call_alias',
             'inspected_leaf', 'inspected_nested', 'inspected_alias'}
@@ -146,13 +147,25 @@ def main():
         assert row['entry'] + function['firstUse'] == row['definition']
         writes = [i for i in row['instructions'] if i['writesHeld' if args.storage == 'register' else 'writesSp']
             and not i['call'] and i['address'] >= row['ready'] and i != row['instructions'][-1]]
-        assert len(writes) == 1, writes
+        if name == 'local_call_incompatible':
+            restore, = [i for i in writes if i['address'] == row['restore']]
+            assert restore['next'] == row['after']
+            writes = [i for i in writes if i['address'] >= row['after']]
+            assert writes
+            restored_held = [i['next'] for i in row['instructions']
+                if i['writesHeld'] and i['address'] >= row['after']]
+            assert len(restored_held) == 1
+            row['compilerLost'] = min(restored_held[0], writes[0]['next'])
+        else:
+            assert len(writes) == 1, writes
         row['lost'] = writes[0]['next']
         row['return'] = row['instructions'][-1]['address']
         assert row['lost'] <= row['return']
         calls = [i for i in row['instructions'] if i['call']]
         assert len(calls) == (2 if args.storage == 'register' and name.endswith(('twice', 'branch')) else 1)
-        high = calls[0]['next'] if name.endswith(('clobber', 'alias', 'overlap', 'released', 'unknown')) or args.expect_memory_gap else row['lost']
+        if name == 'local_call_incompatible':
+            assert calls[0]['next'] == row['restore'], 'SP must be restored immediately on return'
+        high = calls[0]['next'] if name.endswith(('clobber', 'alias', 'overlap', 'released', 'unknown', 'incompatible')) or args.expect_memory_gap else row['lost']
         row['available'] = [(row['ready'], high)]
         if name.endswith('split'):
             row['available'] = [(row['ready'], row['gap']), (row['resume'], high)]

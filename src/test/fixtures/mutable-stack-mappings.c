@@ -50,6 +50,19 @@ typedef int stack_value;
 volatile int path_choice;
 volatile stack_value effect_sink;
 volatile stack_value backup_sink;
+#if FORGE_MUTABLE_CALLS
+__attribute__((noinline, noclone)) void inspected_mutable(stack_value input) {
+    volatile stack_value scratch = input;
+    register stack_value overwritten __asm__(CARRIER);
+    __asm__ volatile(KILL : [work] "=r"(overwritten) : "m"(scratch) : "memory");
+}
+#define INSPECTED_CALL(name) \
+    __asm__ volatile(MARK(name, call) : : : "memory"); \
+    inspected_mutable(value); \
+    __asm__ volatile(MARK(name, returned) : : : "memory");
+#else
+#define INSPECTED_CALL(name)
+#endif
 #define ONCE(name) LABEL(name, update) UPDATE MARK(name, updated)
 #define BRANCH(name) TEST SKIP(name) ONCE(name)
 #define LOOP(name) COUNT ONCE(name) AGAIN(name)
@@ -65,6 +78,7 @@ __attribute__((noinline, noclone)) void name(void) { \
     __asm__ volatile(changes(name) MARK(name, changed) : [work] "+r"(working) : [choice] "r"(path_choice) : COUNTER, "cc"); \
     __asm__ volatile(LABEL(name, save) saving : [slot] "+m"(value) : [work] "r"(working) : "memory"); \
     __asm__ volatile(MARK(name, saved) : "+r"(working) : "m"(value)); \
+    INSPECTED_CALL(name) \
     __asm__ volatile(LABEL(name, kill) KILL : [work] "=r"(working)); \
     __asm__ volatile(MARK(name, killed) : "+r"(working) : "m"(value)); \
     __asm__ volatile(LABEL(name, reload) LOAD : [work] "=r"(working) : [slot] "m"(value)); \

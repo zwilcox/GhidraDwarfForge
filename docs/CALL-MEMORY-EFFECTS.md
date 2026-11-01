@@ -113,8 +113,12 @@ six executed partial-overlap, adjacent-write, released-slot and unknown-SP
 target/address configurations, four harness regressions and two old-package
 comparisons. These controls use compiler-derived outgoing copy locations.
 
-**PLANNED:** incompatible-return-SP runtime coverage, saved mutable identities
-and independently migrating pieces. The existing regressions do not replace
+**CONFIRMED subsequent composition:** the expanded boundary fixture executes
+incompatible return-SP paths and immediate caller restoration on both targets.
+`MUTABLE-CALL-MEMORY.md` adds twelve mutable-identity runtime roles with stale-slot
+controls and preceding-package comparisons.
+
+**PLANNED:** independently migrating pieces. The existing regressions do not replace
 those targeted cases. Compose
 the new intervals with lexical ownership and genuine failure/cancellation
 paths, review the exact final target/host package and integrate normally.

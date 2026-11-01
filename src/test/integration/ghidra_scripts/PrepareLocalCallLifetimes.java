@@ -35,6 +35,8 @@ public class PrepareLocalCallLifetimes extends GhidraScript {
         for (var item : labels.entrySet()) {
             monitor.checkCancelled();
             String name = item.getKey();
+            var heldRegister = name.equals("local_call_incompatible")
+                ? currentProgram.getRegister(x86 ? "R13" : "x20") : register;
             var label = item.getValue().getAsJsonObject();
             var entry = toAddr(label.get("entry").getAsLong() + delta);
             var end = toAddr(label.get("end").getAsLong() + delta);
@@ -113,7 +115,7 @@ public class PrepareLocalCallLifetimes extends GhidraScript {
                 instructions.add(Map.of("address", instruction.getAddress().getOffset() - delta,
                     "next", instruction.getMaxAddress().next().getOffset() - delta,
                     "text", instruction.toString(), "call", instruction.getFlowType().isCall(),
-                    "writesHeld", java.util.Arrays.asList(instruction.getResultObjects()).contains(register),
+                    "writesHeld", java.util.Arrays.asList(instruction.getResultObjects()).contains(heldRegister),
                     "writesSp", java.util.Arrays.asList(instruction.getResultObjects()).contains(currentProgram.getCompilerSpec().getStackPointer()),
                     "bytes", java.util.HexFormat.of().formatHex(instruction.getBytes()),
                     "pcode", java.util.Arrays.stream(instruction.getPcode()).map(Object::toString).toList()));

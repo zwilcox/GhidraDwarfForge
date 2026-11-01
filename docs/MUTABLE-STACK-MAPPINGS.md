@@ -1,5 +1,10 @@
 # Saved mutable stack mappings
 
+**CONFIRMED subsequent local call composition:** `MUTABLE-CALL-MEMORY.md`
+records twelve executed target/width/address roles, real clobbers, stale-slot
+controls and predecessor comparisons. It supersedes the historical no-call
+limit below. Full piece/scope and hosted acceptance remain open.
+
 **CONFIRMED integrated through PR101:** all twelve exact-head CI jobs and
 independent package, raw runtime and host reviews pass. Normal merge
 `dfb5c2e06822fd40e9ae55928318307976a5aded` preserves the tested tree. See

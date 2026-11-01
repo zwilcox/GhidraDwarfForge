@@ -23,8 +23,10 @@ the original historical table below is not a current failure report.
 **CONFIRMED subsequent boundary checkpoint:** `CALL-MEMORY-BOUNDARIES.md`
 proves partial-overlap, adjacent-write, released-slot and unknown-SP behavior
 with six candidate runtime roles and two preceding-package comparisons. The
-incompatible-return-SP, mutable/piece/scope composition and hosted requirements
-remain open; the requirement table retains its historical gap descriptions.
+subsequent return-SP and `MUTABLE-CALL-MEMORY.md` checkpoints execute incompatible
+returns and saved mutable identities on both primary targets. Independent-piece,
+lexical/failure/cancellation composition and hosted requirements remain open;
+the requirement table retains its historical gap descriptions.
 
 | Requirement | Current evidence | Outstanding proof or work |
 | --- | --- | --- |

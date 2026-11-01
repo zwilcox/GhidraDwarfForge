@@ -1,6 +1,7 @@
 """Check every physical instruction, updated identities and stale slot controls."""
 import json
 import os
+import re
 from pathlib import Path
 
 import gdb
@@ -43,7 +44,7 @@ def register(number):
     return names[number]
 
 
-points, returns = [], []
+points, returns, callee_points = [], [], []
 for index, name in enumerate(labels['order']):
     row = labels['functions'][name]
     gdb.Breakpoint('*' + name, temporary=True)
@@ -64,6 +65,22 @@ for index, name in enumerate(labels['order']):
     while True:
         runtime_address = int(gdb.parse_and_eval('$pc'))
         address = runtime_address - bias
+        if 'helper' in labels and labels['helper']['entry'] <= address < labels['helper']['end']:
+            assert len(callee_points) < 1000
+            current = int.from_bytes(gdb.selected_inferior().read_memory(entry_stack + storage[name]['offset'], width), 'little', signed=True)
+            assert current == stack_expected
+            decoded, = gdb.selected_frame().architecture().disassemble(runtime_address, count=1)
+            raw = bytes(gdb.selected_inferior().read_memory(runtime_address, decoded['length'])).hex()
+            if not compiler:
+                prepared = json.loads((case / 'prepared.json').read_text())
+                matched, = [i for i in prepared['inspected_mutable_instructions'] if i['address'] == address]
+                assert matched['bytes'] == raw and matched['next'] == address + decoded['length']
+            callee_points.append({'function': name, 'invocation': index, 'linkPc': address,
+                'next': address + decoded['length'], 'bytes': raw, 'stackValue': current})
+            gdb.execute('stepi')
+            continue
+        if 'helper' in labels and address == row['returned']:
+            carrier_expected = 909
         assert address in by_address and len(visited) < 1000
         instruction = by_address[address]
         visited.append(address)
@@ -114,7 +131,7 @@ for index, name in enumerate(labels['order']):
                     actual = signed(physical)
                 assert actual == logical
                 record['locationValue'] = actual
-            if not saved and row['killed'] <= address < row['lost']:
+            if not saved and row['availableEnd'] <= address < row['lost']:
                 assert record['rawStack'] == initial != logical
                 record['staleSlotRejected'] = True
             if name == 'mutable_conflict' and row['live'] <= address < row['lost']:
@@ -147,6 +164,22 @@ for index, name in enumerate(labels['order']):
             0 if name == 'mutable_branch' and choice == 0 and row['update'] <= address < row['changed'] else 1)
         assert visited.count(address) == count, (name, choice, hex(address), visited.count(address), count)
     if compiler:
+        if 'helper' in labels:
+            candidates = []
+            for instruction in instructions:
+                if not row['call'] <= instruction['addr'] - bias < row['returned']:
+                    continue
+                pattern = (r'mov\s+((?:0x[0-9a-f]+)?)\(%rsp\),%[er]di' if target == 'x86_64'
+                    else r'ldr\s+[xw]0, \[sp(?:, #(\d+))?\]')
+                match = re.fullmatch(pattern, instruction['asm'])
+                if match:
+                    offset = int(match[1], 0) if match[1] else 0
+                    assert offset == storage[name]['spOffset']
+                    candidates.append({'definition': instruction['addr'] - bias,
+                        'ready': instruction['addr'] - bias + instruction['length'],
+                        'register': 5 if target == 'x86_64' else 0})
+            argument, = candidates
+            storage[name]['callArgument'] = argument
         if 'instructions' in storage[name]:
             assert actual_instructions == storage[name]['instructions']
         storage[name]['instructions'] = actual_instructions
@@ -165,5 +198,5 @@ assert int(gdb.parse_and_eval('$_exitcode')) == 0
 if compiler:
     (case / 'compiler-storage.json').write_text(json.dumps(storage, indent=4) + '\n')
 (case / (variant + '-gdb.json')).write_text(json.dumps({'status': 'PASS', 'points': points,
-    'returns': returns, 'navigation': ['next', 'step'], 'exitCode': 0}, indent=4) + '\n')
+    'calleePoints': callee_points, 'returns': returns, 'navigation': ['next', 'step'], 'exitCode': 0}, indent=4) + '\n')
 print('mutable-stack-mappings-gdb=' + variant + ' PASS')

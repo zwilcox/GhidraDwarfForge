@@ -118,14 +118,20 @@ for name, cursor in offsets.items():
     assert instruction['pcode'] == definition['pcode']
     effect, = [item for item in prepared[name + '_instructions'] if item['next'] == row['lost']]
     assert sum(' STORE ' in op for op in effect['pcode']) == 1
+    call_end = row['returned'] if 'helper' in labels else row['killed']
     expected = [(row['live'], row['loaded'], 'stack'),
-        (row['loaded'], row['killed'], 'register')]
+        (row['loaded'], call_end, 'register')]
     if name != 'mutable_unsaved':
-        expected += [(row['killed'], row['reloaded'], 'stack'), (row['reloaded'], row['lost'], 'register')]
+        expected += [(call_end, row['reloaded'], 'stack'), (row['reloaded'], row['lost'], 'register')]
+    if 'helper' in labels and name != 'mutable_unsaved':
+        argument = storage[name]['callArgument']
+        expected[1:2] = [(row['loaded'], argument['ready'], 'register'),
+            (argument['ready'], row['returned'], 'register')]
     assert [(item['start'], item['end'], item['kind']) for item in intervals] == expected, (name, intervals, expected)
     for item in intervals:
         if item['kind'] == 'register':
-            assert item['register'] == (10 if target == 'x86_64' else 9)
+            argument_copy = 'helper' in labels and name != 'mutable_unsaved' and item['start'] == storage[name]['callArgument']['ready']
+            assert item['register'] == (storage[name]['callArgument']['register'] if argument_copy else 10 if target == 'x86_64' else 9)
     locations[name] = intervals
 (case / 'locations.json').write_text(json.dumps(locations, indent=4) + '\n')
 print('mutable-stack-mappings-locations=PASS functions=' + str(len(locations)))
