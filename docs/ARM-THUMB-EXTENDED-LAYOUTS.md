@@ -89,3 +89,8 @@ sectionless runtime, mixed mode within one body, per-function base/VFP ABI,
 BE8/big-endian runtime, broader storage and failure/cancellation composition
 remain required. Exact-head hosted acceptance and protected integration also
 remain required. This component does not complete #70 or any umbrella issue.
+
+An independent BE8 compiler/QEMU/GDB reference now passes, and Ghidra selects
+the expected mixed-endian instruction language automatically. Production export
+still rejects that target before native calls. See
+[the BE8 reference](research/ARM-BE8-REFERENCE.md); this does not claim BE8 support.
