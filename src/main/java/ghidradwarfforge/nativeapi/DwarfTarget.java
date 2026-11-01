@@ -50,7 +50,7 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
         EM_MIPS, List.of(
             new TargetDescription("MIPS32", 4, "mipsel", "mips", "mips", true, "MIPS"),
             new TargetDescription("MIPS64", 8, "mips64el", "mips64", "mips", true, "MIPS")),
-        EM_ARM, List.of(new TargetDescription("ARM", 4, "arm", null, "arm", false, "ARM")),
+        EM_ARM, List.of(new TargetDescription("ARM", 4, "arm", "arm", "arm", true, "ARM")),
         EM_X86_64, List.of(
             new TargetDescription("x86-64", 8, "x86_64", null, "x86_64", false, "x86")),
         EM_AARCH64, List.of(
@@ -89,8 +89,15 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
     }
 
     public static DwarfTarget fromElf(ElfImage elf) {
+        Arm32EndianProfile.requireSupportedEncoding(elf);
         int addressBytes = elf.is64Bit() ? 8 : 4;
         return fromMetadata(elf.machine(), addressBytes, elf.byteOrder());
+    }
+
+    /** A mixed-endian ELF can constrain instructions independently of data. */
+    public ByteOrder requiredInstructionByteOrder(ElfImage elf) {
+        if (!equals(fromElf(elf))) throw new IllegalArgumentException("instruction target disagrees with ELF");
+        return Arm32EndianProfile.instructionByteOrder(elf);
     }
 
     static DwarfTarget fromMetadata(int machine, int addressBytes, ByteOrder byteOrder) {
@@ -135,6 +142,9 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
     /** Metadata compatibility is not a claim that all instructions or signatures are supported. */
     public String elfAbiCallRestriction(ElfImage image) {
         if (!equals(fromElf(image))) throw new IllegalArgumentException("call ABI target disagrees with ELF");
+        if (Arm32EndianProfile.isBe8(image)) {
+            return "ARM BE8 debugger call ABI has not been validated for recovered signatures";
+        }
         if (!name.equals("aarch64")) return "";
         byte[] header = image.headerBytes();
         int osAbi = Byte.toUnsignedInt(header[7]);

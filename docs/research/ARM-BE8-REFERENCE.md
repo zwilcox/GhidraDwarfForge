@@ -1,5 +1,9 @@
 # ARM BE8 independent reference
 
+**Current candidate:** the historical rejection/PLANNED statements below describe
+the earlier experiments. The subsequent real packaged scalar checkpoint is in
+[`../ARM-BE8-PROFILE.md`](../ARM-BE8-PROFILE.md). Full ABI acceptance remains incomplete.
+
 **CONFIRMED reference; exporter support remains PLANNED.** The private GCC 13
 ARM hard-float toolchain already used for ARM32 fixtures can build a freestanding
 BE8 executable without a big-endian libc. No system packages were installed.

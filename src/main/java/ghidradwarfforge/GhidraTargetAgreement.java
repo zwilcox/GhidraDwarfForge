@@ -1,5 +1,7 @@
 package ghidradwarfforge;
 
+import java.nio.ByteOrder;
+import ghidra.program.model.lang.Endian;
 import ghidra.program.model.lang.Language;
 import ghidra.program.model.listing.Program;
 import ghidradwarfforge.elf.ElfImage;
@@ -35,6 +37,18 @@ public final class GhidraTargetAgreement {
                 ", language=" + language.getLanguageID() +
                 ", compiler=" + program.getCompilerSpec().getCompilerSpecID() +
                 "; export stopped before extraction and native production");
+        }
+        ByteOrder instructionOrder = target.requiredInstructionByteOrder(elf);
+        if (instructionOrder != null) {
+            Endian actual = language.getLanguageDescription().getInstructionEndian();
+            Endian expected = instructionOrder == ByteOrder.LITTLE_ENDIAN ? Endian.LITTLE : Endian.BIG;
+            if (actual != expected) {
+                throw new IllegalStateException("ELF/Ghidra instruction byte-order mismatch: ELF machine=" +
+                    elf.machine() + ", flags=0x" + Long.toHexString(elf.flags()) +
+                    ", expected=" + expected + "; Ghidra instruction-byte-order=" + actual +
+                    ", language=" + language.getLanguageID() +
+                    "; export stopped before extraction and native production");
+            }
         }
         return target;
     }

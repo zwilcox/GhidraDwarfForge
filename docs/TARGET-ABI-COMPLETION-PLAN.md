@@ -1,5 +1,11 @@
 # P2.3 through P2.3c completion plan
 
+**CONFIRMED local BE8 scalar progress:** see `ARM-BE8-PROFILE.md` for the isolated
+encoding policy, real-language/native checks and real packaged scalar export.
+The full requirements below remain active, including saved-parameter migration,
+base/VFP arguments/returns, layouts, controls and protected integration. No issue
+is complete merely because this scalar checkpoint passes.
+
 **CONFIRMED active scope (2026-11-01):** finish P2.3, P2.3a, P2.3b and
 P2.3c together, following the user's expanded goal. Issues #68–#71 remain open.
 The shared baseline is Ghidra 12.0.3, Java 21-compatible bytecode and the pinned

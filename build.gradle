@@ -214,6 +214,17 @@ tasks.register("ghidraTargetAgreementSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.GhidraTargetAgreementSmoke"
 }
 
+tasks.register("ghidraArmBe8ProfileSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks BE8 ELF encoding against real data/instruction endian language descriptions"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.GhidraArmBe8ProfileSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/be8-profile/settings").absolutePath
+}
+
 tasks.register("typeGraphSmoke", JavaExec) {
     group = "verification"
     description = "Checks deterministic canonical and recursive type modeling"
