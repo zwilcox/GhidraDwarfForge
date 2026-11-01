@@ -1,5 +1,13 @@
 # P2.3 through P2.3c completion plan
 
+**CONFIRMED call-reference findings:** independent compiler runs separate GDB's
+global base/VFP selection from QEMU's big-endian floating-register write defect.
+Fourteen reference executions retain correct natural-call values, wrong injected
+calls/typed returns and the raw remote-packet control. See
+`research/ARM-PCS-CALL-REFERENCE.md`. Corrected consumer/reference investigation
+and real per-function exporter classification remain required; these failures
+do not narrow the full ABI objective.
+
 **CONFIRMED local floating follow-up:** ARM base/VFP arguments now also pass in
 BE8, with correct logical register halves and surviving scalar values through
 frame release. The BE8 bit-piece debugger profile explicitly uses unmodified

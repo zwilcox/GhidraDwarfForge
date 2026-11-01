@@ -75,6 +75,9 @@ lifetimes on both native hosts and the scalar harness in the ARM32 target lane.
 - BE8 debugger calls remain guarded by `DW_CC_nocall` pending per-function
   base/VFP argument and return classification. The required compiler-relative
   call/return validation cannot be replaced with a blanket guard.
+  The independent [call reference](research/ARM-PCS-CALL-REFERENCE.md) now
+  reproduces GDB's global PCS choice and a separate QEMU BE8 register-write defect;
+  investigate corrected consumers before claiming injected-call acceptance.
 - Wider/FP/vector transfers, aggregate/piece ordering, additional stack arguments,
   applicable PIE/rebase/shared/sectionless forms and runtime negative/failure/
   cancellation controls remain required before broad acceptance.
