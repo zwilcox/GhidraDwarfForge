@@ -194,8 +194,12 @@ public final class GhidraTypeGraph {
                 if (!parameterName.isBlank() && logicalLength > 0) {
                     Storage storage = GhidraVariableStorage.stableParameter(program, function,
                         parameter, registerMap, monitor);
-                    var prefix = GhidraVariableStorage.parameterPrefix(program, function,
-                        parameter, registerMap, storage, monitor);
+                    boolean indirect = parameter.getVariableStorage() != null &&
+                        parameter.getVariableStorage().isForcedIndirect();
+                    var prefix = indirect
+                        ? StackValueFlow.proveIndirect(program, function, parameter, registerMap, monitor)
+                        : GhidraVariableStorage.parameterPrefix(program, function,
+                            parameter, registerMap, storage, monitor);
                     if (prefix.isEmpty() && storage instanceof UnavailableStorage) {
                         prefix = StackValueFlow.prove(program, function, parameter, registerMap, monitor);
                     }
@@ -215,6 +219,7 @@ public final class GhidraTypeGraph {
                         parameterName, VariableKind.PARAMETER, logicalLength, ranges));
                     if (storage instanceof UnavailableStorage unavailable) {
                         diagnostic.accept((prefix.isEmpty() ? "Omitted location for " :
+                            indirect ? "Limited location to proven indirect-parameter carrier lifetime for " :
                             GhidraVariableStorage.hasStackPiece(parameter.getVariableStorage())
                                 ? "Limited location to proven incoming mixed-storage lifetime for " :
                             prefix.stream().anyMatch(interval -> interval.storage() instanceof
@@ -224,7 +229,9 @@ public final class GhidraTypeGraph {
                                 .count() > 1 ? "Limited location to proven register-copy lifetime for " :
                                 "Limited location to proven incoming-register lifetime for ") +
                             symbol.name() + "::" + parameterName + ": " +
-                            unavailable.diagnostic());
+                            (indirect && !prefix.isEmpty()
+                                ? "the formal object follows the proven ABI pointer; unproven carrier intervals are unavailable"
+                                : unavailable.diagnostic()));
                     }
                 }
             }

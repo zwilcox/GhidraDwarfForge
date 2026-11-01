@@ -2454,6 +2454,13 @@ AArch64, ARM32, and MIPS32 big/little endian.
 
 Tracking: [#68](https://github.com/zwilcox/GhidraDwarfForge/issues/68).
 
+**CONFIRMED active scope:** P2.3–P2.3c are being completed together under
+[the full requirement plan](docs/TARGET-ABI-COMPLETION-PLAN.md). All four
+umbrella issues remain open. The indirect-argument component passes local
+non-PIE/PIE/rebased-PIE value and validator checks, genuine failure/cancellation
+controls, and x86-64/AArch64 shared-flow regressions. Hosted acceptance and
+protected integration remain pending; see [the component evidence](docs/AARCH64-PROFILE-PLAN.md).
+
 The shared [target-profile contract](docs/TARGET-PROFILES.md) records the
 existing five profiles and a finite follow-up order for P2.3/3a/3b. The
 read-only audit is **CONFIRMED**; ABI classification/diagnostics, scalar FP,

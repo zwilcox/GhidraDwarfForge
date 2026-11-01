@@ -36,7 +36,7 @@ public record VariableStorageModel(List<VariableLocation> variables) {
     }
 
     public sealed interface Storage permits StackStorage, RegisterStorage,
-            RegisterRelativeStorage, MemoryStorage, CompositeStorage,
+            RegisterRelativeStorage, MemoryStorage, IndirectMemoryStorage, CompositeStorage,
             UnavailableStorage {
         default boolean available() {
             return !(this instanceof UnavailableStorage);
@@ -72,6 +72,16 @@ public record VariableStorageModel(List<VariableLocation> variables) {
         public MemoryStorage {
             if (address < 0) {
                 throw new IllegalArgumentException("memory address must be nonnegative");
+            }
+        }
+    }
+
+    /** A full target-width pointer held in an already resolved memory location. */
+    public record IndirectMemoryStorage(Storage pointerLocation) implements Storage {
+        public IndirectMemoryStorage {
+            if (!(pointerLocation instanceof RegisterRelativeStorage) &&
+                    !(pointerLocation instanceof MemoryStorage)) {
+                throw new IllegalArgumentException("indirect pointer requires resolved memory storage");
             }
         }
     }
