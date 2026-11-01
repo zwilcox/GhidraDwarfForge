@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Real mixed-mode ET_EXEC, same saved Program twice, default GDB ARM mode.
+# Real mixed-mode executable, same saved Program twice, default GDB ARM mode.
 set -euo pipefail
 if [[ $# != 1 ]]; then
     echo "usage: $0 <ghidra-dir>" >&2
@@ -21,8 +21,17 @@ trap qemu_socket_cleanup EXIT
 compiler=${ARM32_CC:-arm-linux-gnueabihf-gcc}
 objcopy=${ARM32_OBJCOPY:-arm-linux-gnueabihf-objcopy}
 sysroot=${FORGE_ARM32_SYSROOT:-/usr/arm-linux-gnueabihf}
+role=${FORGE_THUMB_ROLE:-exec}
+case "$role" in
+    exec) code_model=-fno-pie; link_model=-no-pie ;;
+    pie|pie-rebased|pie-dynamic) code_model=-fPIE; link_model=-pie ;;
+    *) echo "unsupported Thumb role: $role" >&2; exit 2 ;;
+esac
+printf '%s\n' "$role" > "$case_dir/role.txt"
+extra_link=()
+if [[ "$role" == pie-dynamic ]]; then extra_link=(-Wl,--export-dynamic); fi
 common=(-march=armv7-a -mfpu=vfpv3-d16 -mfloat-abi=hard -O0 -g3 -gdwarf-5
-    -fno-omit-frame-pointer -funwind-tables -fno-pie)
+    -fno-omit-frame-pointer -funwind-tables "$code_model")
 for unit in caller leaf after; do
     mode=-marm
     if [[ "$unit" == leaf ]]; then mode=-mthumb; fi
@@ -31,7 +40,7 @@ for unit in caller leaf after; do
         >"$case_dir/compile-$unit.stdout" 2>"$case_dir/compile-$unit.stderr"
     test ! -s "$case_dir/compile-$unit.stderr"
 done
-"$compiler" "${common[@]}" -marm -no-pie -Wl,--build-id=none \
+"$compiler" "${common[@]}" -marm "$link_model" "${extra_link[@]}" -Wl,--build-id=none \
     "$case_dir/caller.o" "$case_dir/leaf.o" "$case_dir/after.o" -o "$case_dir/thumb.reference" \
     >"$case_dir/link.stdout" 2>"$case_dir/link.stderr"
 test ! -s "$case_dir/link.stderr"
@@ -51,6 +60,7 @@ for view in header sections notes symbols info rawline; do
 done
 python3 "$repository/src/test/integration/arm-thumb-mode-check.py" labels "$case_dir" "$repository" "$module"
 mapfile -t preparation < "$case_dir/prepare.txt"
+if [[ "$role" == pie-rebased ]]; then preparation+=(0x200000); fi
 run_gdb() {
     local variant=$1 phase=$2 input symbols
     if [[ "$variant" == compiler ]]; then
@@ -107,3 +117,7 @@ python3 "$repository/src/test/integration/check-dwarfdump.py" "$case_dir/thumb.d
 run_gdb forge calls
 run_gdb forge from-arm
 python3 "$repository/src/test/integration/arm-thumb-mode-check.py" finish "$case_dir" "$repository" "$module"
+
+if [[ "$role" != pie-dynamic ]]; then
+    python3 "$repository/src/test/integration/arm-thumb-mode-negative.py" "$case_dir"
+fi

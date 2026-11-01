@@ -1527,7 +1527,10 @@ jobs:
 
       - name: Recovered ARM and Thumb instruction modes
         if: matrix.target == 'arm32'
-        run: src/test/integration/arm-thumb-mode-export.sh "$GHIDRA_INSTALL_DIR"
+        run: |
+          for role in exec pie pie-rebased pie-dynamic; do
+              FORGE_THUMB_ROLE="$role" src/test/integration/arm-thumb-mode-export.sh "$GHIDRA_INSTALL_DIR"
+          done
 
       - name: Saved dynamic parameter storage and debugger values
         env:

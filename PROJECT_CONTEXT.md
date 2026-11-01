@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local ARM32 PIE mode progress; full acceptance remains open:**
+The original ET_DYN omission now has a reproduced static-decoding failure and a
+candidate correction using existing byte/owner/mode checks. Four packaged
+exec/PIE/rebased/dynamic-symbol cases pass compiler/Forge runtime, validators,
+determinism and original-preservation checks. See `docs/ARM-THUMB-EXTENDED-LAYOUTS.md`
+for exact evidence and literal-pool oracle boundaries. Sectionless production
+behavior is PRESENT, UNVERIFIED beyond model checks; shared/mixed-body/BE8/ABI
+work, failure/cancellation composition and hosted acceptance remain required.
+All #68–#71 requirements remain active.
+
 **CONFIRMED aligned-aggregate and live-session MIPS defects; correction under validation:**
 Explicit aggregate alignment now skips the required register slot and caps
 argument alignment at 16 without changing formal types. A separate fresh-import

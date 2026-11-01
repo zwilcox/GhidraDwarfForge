@@ -191,3 +191,16 @@ the fingerprint correction preserves strict rejection of nonempty changes.
 434 model checks, all 20 saved-program layout/control cases and all 20 final
 live-session cases pass locally. Exact-head hosted acceptance remains pending. See
 `docs/MIPS-ALIGNED-COMPOSITES.md`. The full #68–#71 goal remains open.
+
+## ARM32 extended-layout checkpoint
+
+**CONFIRMED local ARM32 PIE mode progress; full acceptance remains open:**
+The original ET_DYN omission now has a reproduced static-decoding failure and a
+candidate correction using existing byte/owner/mode checks. Four packaged
+exec/PIE/rebased/dynamic-symbol cases pass compiler/Forge runtime, validators,
+determinism and original-preservation checks. See `ARM-THUMB-EXTENDED-LAYOUTS.md`
+for exact evidence and literal-pool oracle boundaries. Sectionless production
+behavior is PRESENT, UNVERIFIED beyond model checks; shared/mixed-body/BE8/ABI
+work, failure/cancellation composition and hosted acceptance remain required.
+All #68–#71 requirements remain active.
+

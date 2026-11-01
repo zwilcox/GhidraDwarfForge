@@ -27,6 +27,7 @@ public final class Arm32FunctionAliasSymbolsSmoke {
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("forge-arm-alias-");
         dynamicBoundaries(root);
+        recoveredModeLayouts(root);
         for (int mode : new int[] { 0, 1 }) {
             var cue = new ElfFunctionModeCue("primary", ENTRY, 16, ENTRY | mode, HASH);
             for (int type : new int[] { 2, 3 }) {
@@ -118,6 +119,63 @@ public final class Arm32FunctionAliasSymbolsSmoke {
             }
         }
         System.out.println("arm32-function-alias-symbols-smoke=PASS checks=" + checks);
+    }
+
+    private static void recoveredModeLayouts(Path root) throws Exception {
+        var cue = new ElfFunctionModeCue("primary", ENTRY, 16, ENTRY | 1, HASH);
+        var owner = new FunctionSymbol("primary", ENTRY, 16);
+        for (boolean sectionless : List.of(false, true)) {
+            byte[] original = fixture(1, 3);
+            if (sectionless) {
+                var bytes = buffer(original);
+                bytes.putInt(28, 52).putShort(42, (short) 32).putShort(44, (short) 1);
+                bytes.putInt(52, 1).putInt(56, 0x100).putInt(60, 0x1000).putInt(64, 0x1000)
+                    .putInt(68, 0x80).putInt(72, 0x80).putInt(76, 5).putInt(80, 4);
+                bytes.putInt(32, 0).putShort(48, (short) 0).putShort(50, (short) 0);
+            }
+            Path input = root.resolve("recovered-layout.elf");
+            Files.write(input, original);
+            var image = ElfImage.read(input);
+            var target = DwarfTarget.fromElf(image);
+            var messages = new ArrayList<String>();
+            var result = target.planFunctionModeSymbols(image, List.of(cue), List.of(owner),
+                () -> false, messages::add);
+            require(result.equals(List.of(new ElfLocalFunctionSymbol("__forge_arm_mode_00001040",
+                ENTRY | 1, 16, 1))) && messages.isEmpty(), "extended mode binding " + messages);
+            for (var definitions : List.of(List.<FunctionSymbol>of(),
+                    List.of(new FunctionSymbol("other", ENTRY, 16)),
+                    List.of(new FunctionSymbol("primary", ENTRY, 12)),
+                    List.of(owner, new FunctionSymbol("uncued_overlap", ENTRY + 8, 16)))) {
+                require(target.planFunctionModeSymbols(image, List.of(cue), definitions,
+                    () -> false, ignored -> { }).isEmpty(), "unproved recovered ownership admitted");
+            }
+            for (var invalid : List.of(
+                    new ElfFunctionModeCue("primary", ENTRY, 16, ENTRY | 1, "0".repeat(64)),
+                    new ElfFunctionModeCue("primary", ENTRY, 16, ENTRY + 3, HASH))) {
+                require(target.planFunctionModeSymbols(image, List.of(invalid), List.of(owner),
+                    () -> false, ignored -> { }).isEmpty(), "bad original bytes/mode admitted");
+            }
+            require(target.planFunctionModeSymbols(image, List.of(cue, cue), List.of(owner),
+                () -> false, ignored -> { }).isEmpty(), "duplicate mode evidence admitted");
+            var arm = new ElfFunctionModeCue("primary", ENTRY, 16, ENTRY, HASH);
+            require(target.planFunctionModeSymbols(image, List.of(arm), List.of(owner),
+                () -> false, ignored -> { }).isEmpty(), "ARM-only behavior changed");
+            Path output = root.resolve("recovered-layout.dbg");
+            new MatchedElfSidecarWriter().write(image, output,
+                java.util.Map.of(".debug_info", new byte[] {1}), result, () -> false);
+            byte[] first = Files.readAllBytes(output);
+            new MatchedElfSidecarWriter().write(image, output,
+                java.util.Map.of(".debug_info", new byte[] {1}), result, () -> false);
+            require(Arrays.equals(first, Files.readAllBytes(output)), "nondeterministic extended mode export");
+            require(Arrays.equals(original, Files.readAllBytes(input)), "extended mode export changed input");
+            try {
+                target.planFunctionModeSymbols(image, List.of(cue), List.of(owner), () -> true, ignored -> { });
+                throw new AssertionError("recovered mode cancellation ignored");
+            }
+            catch (CancellationException expected) {
+                checks++;
+            }
+        }
     }
 
     private static byte[] fixture(int mode, int type) {

@@ -201,7 +201,7 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
 
     /** Target-specific ELF symbol semantics stay outside generic DWARF/address handling. */
     public List<ElfLocalFunctionSymbol> planFunctionModeSymbols(ElfImage image,
-            List<ElfFunctionModeCue> cues, BooleanSupplier cancelled,
+            List<ElfFunctionModeCue> cues, List<FunctionSymbol> functions, BooleanSupplier cancelled,
             Consumer<String> diagnostic) throws IOException {
         if (cues.isEmpty()) {
             return List.of();
@@ -210,6 +210,9 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
             throw new IllegalArgumentException("function-mode target disagrees with ELF");
         }
         if (image.machine() == EM_ARM) {
+            if (image.type() == 3 || image.sections().isEmpty()) {
+                return Arm32ModeSymbols.planRecovered(image, cues, functions, cancelled, diagnostic);
+            }
             return Arm32ModeSymbols.plan(image, cues, cancelled, diagnostic);
         }
         diagnostic.accept("Omitted function-mode symbols: target " + name +

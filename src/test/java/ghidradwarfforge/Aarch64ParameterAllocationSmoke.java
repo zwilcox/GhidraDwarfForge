@@ -109,6 +109,17 @@ public final class Aarch64ParameterAllocationSmoke {
         require(changes.get(10).getStackOffset() == 48 && changes.get(10).isForcedIndirect(), "indirect pointer shifted incorrectly");
         require(!changes.containsKey(11) && parameters[11].getVariableStorage().isRegisterStorage(), "independent FP allocation changed");
         require(snapshot(function).equals(before), "extended signature changed");
+        var spec = program.getCompilerSpec();
+        var encoderBefore = new ghidra.program.model.pcode.XmlEncode(false);
+        spec.getDefaultCallingConvention().encode(encoderBefore, spec.getPcodeInjectLibrary());
+        require(spec.getDefaultCallingConvention().getKilledByCallList().length > 0,
+            "audited AArch64 killed-register list unexpectedly empty");
+        var encoderAfter = new ghidra.program.model.pcode.XmlEncode(false);
+        spec.getDefaultCallingConvention().encode(encoderAfter, spec.getPcodeInjectLibrary());
+        require(encoderBefore.toString().equals(encoderAfter.toString()), "register observation changed AArch64 model fingerprint");
+        require(changes.equals(Aarch64ParameterAllocation.forProgram(program, ElfImage.read(path),
+            TaskMonitor.DUMMY, ignored -> { }).corrections(function, TaskMonitor.DUMMY, ignored -> { })),
+            "register observation changed AArch64 allocation");
         function.setVarArgs(true);
         before = snapshot(function);
         require(changes.equals(policy.corrections(function, TaskMonitor.DUMMY, ignored -> { })),

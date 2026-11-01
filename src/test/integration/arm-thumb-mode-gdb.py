@@ -1,4 +1,4 @@
-"""Default-mode static and QEMU behavior oracle for the bounded mixed ET_EXEC."""
+"""Default-mode static and QEMU behavior oracle for mixed ARM/Thumb executables."""
 import json
 import os
 from pathlib import Path
@@ -27,7 +27,7 @@ def instructions(original):
     return [{"address": item["addr"], "length": item["length"],
              "mnemonic": item["asm"].split()[0]}
             for item in gdb.selected_inferior().architecture().disassemble(
-                row["code"], row["code"] + row["size"] - 1)]
+                row["code"], row["code"] + row["codeSize"] - 1)]
 
 
 def stop(label):
@@ -43,7 +43,7 @@ def stop(label):
 def thumb_stop(label):
     row = stop(label)
     entry = labels["thumb_add"]["code"]
-    assert entry <= row["pc"] < entry + labels["thumb_add"]["size"], row
+    assert entry <= row["pc"] < entry + labels["thumb_add"]["codeSize"], row
     assert row["cpsr"] & 32 and row["function"] == name("thumb_add"), row
     expected_source = labels["compilerSource"] if compiler else str(directory / "thumb.dbg.c")
     assert row["source"] == expected_source and row["line"] > 0, row
@@ -61,6 +61,13 @@ try:
     assert '"auto"' in result["forceMode"] and '"auto"' in result["fallbackMode"]
     result["static"] = {function: instructions(function)
                         for function in ("arm_call", "main", "thumb_add", "arm_after")}
+    # GCC st_size includes literal pools. Compare actual instructions only,
+    # bounded independently by compiler $d mapping symbols. Data disassembly
+    # is a consumer observation, not evidence of executable instruction mode.
+    result["literalPoolDecoding"] = {function: gdb.selected_inferior().architecture().disassemble(
+        row["code"] + row["codeSize"], row["code"] + row["size"] - 1)
+        for function, row in labels.items() if isinstance(row, dict)
+        and "codeSize" in row and row["codeSize"] < row["size"]}
     result["functionAddress"] = integer("&" + name("thumb_add"))
     result["storedPointer"] = integer("thumb_pointer")
     assert result["storedPointer"] == labels["thumb_add"]["raw"], result
@@ -74,27 +81,39 @@ try:
         assert result["static"] == oracle["static"], "static ARM/Thumb decoding differs from compiler"
         assert result["functionAddress"] == oracle["functionAddress"], "GDB function address differs"
         assert result["storedPointer"] == oracle["storedPointer"]
+    if labels["role"] == "pie-dynamic":
+        result["originalLookup"] = {original: integer("&" + original)
+            for original in ("arm_call", "thumb_add", "arm_after", "thumb_sink", "thumb_pointer")}
+        if not compiler:
+            assert result["originalLookup"] == oracle["originalLookup"], "inherited dynamic lookup changed"
     for function, rows in result["static"].items():
         cursor = labels[function]["code"]
         for row in rows:
             assert row["address"] == cursor, rows
             assert row["length"] in ((2, 4) if function == "thumb_add" else (4,)), row
             cursor += row["length"]
-        assert cursor == labels[function]["code"] + labels[function]["size"], rows
+        assert cursor == labels[function]["code"] + labels[function]["codeSize"], rows
     assert labels["thumb_add"]["code"] + labels["thumb_add"]["size"] == labels["arm_after"]["code"]
     result["upperBound"] = gdb.execute("x/2i " + hex(labels["arm_after"]["code"]), to_string=True)
     thumb = labels["thumb_add"]
     writes = [row for row in gdb.selected_inferior().architecture().disassemble(
-        thumb["code"], thumb["code"] + thumb["size"] - 1)
+        thumb["code"], thumb["code"] + thumb["codeSize"] - 1)
         if re.fullmatch(r"mov\s+r0,\s*r3", row["asm"])]
     assert len(writes) == 1 and writes[0]["length"] == 2, writes
     write_pc = writes[0]["addr"]
 
+    gdb.execute("target remote " + os.environ["FORGE_THUMB_REMOTE"])
+    bias = integer("&main") - labels["main"]["code"]
+    assert (bias != 0) == labels["role"].startswith("pie"), bias
+    result["loadBias"] = bias
+    for function in ("arm_call", "main", "thumb_add", "arm_after"):
+        labels[function]["code"] += bias
+        labels[function]["raw"] += bias
+    write_pc += bias
     if phase == "calls":
         breakpoint = gdb.Breakpoint(name("thumb_add"))
     else:
         breakpoint = gdb.Breakpoint("*" + hex(labels["arm_call"]["code"]))
-    gdb.execute("target remote " + os.environ["FORGE_THUMB_REMOTE"])
     if phase == "calls":
         result["values"] = []
         for call, (left, right, total) in enumerate(((12, 7, 19), (19, 3, 22))):
@@ -146,7 +165,8 @@ try:
         assert row["pc"] == labels["arm_call"]["code"] and not row["cpsr"] & 32, row
         breakpoint.delete()
         result["thumbDecodedFromArm"] = instructions("thumb_add")
-        assert result["thumbDecodedFromArm"] == result["static"]["thumb_add"]
+        assert result["thumbDecodedFromArm"] == [dict(row, address=row["address"] + bias)
+            for row in result["static"]["thumb_add"]]
         breakpoint = gdb.Breakpoint("*" + hex(labels["thumb_add"]["code"]))
         gdb.execute("continue")
         row = thumb_stop("entry-from-arm")

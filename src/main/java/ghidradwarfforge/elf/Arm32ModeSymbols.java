@@ -48,6 +48,43 @@ public final class Arm32ModeSymbols {
     private Arm32ModeSymbols() {
     }
 
+    /**
+     * Extended executable layouts share the audited alias byte/owner binding and
+     * original mode inventory. These synthetic names are ELF mode hints only;
+     * they are never exported as analyst aliases or DWARF declarations.
+     */
+    public static List<ElfLocalFunctionSymbol> planRecovered(ElfImage image,
+            List<ElfFunctionModeCue> cues,
+            List<ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol> functions,
+            BooleanSupplier cancelled, Consumer<String> diagnostic) throws IOException {
+        checkCancelled(cancelled);
+        if (cues.size() > MAX_CUES) {
+            diagnostic.accept("Omitted ARM32 mode symbols: cue count exceeds " + MAX_CUES);
+            return List.of();
+        }
+        if (cues.stream().noneMatch(cue -> (cue.symbolValue() & 1) != 0)) {
+            return List.of();
+        }
+        var bindings = new ArrayList<ElfFunctionAlias>();
+        for (var cue : cues) {
+            checkCancelled(cancelled);
+            String name = "__forge_arm_mode_" + String.format(java.util.Locale.ROOT, "%08x", cue.address());
+            if (name.equals(cue.displayName())) {
+                diagnostic.accept("Omitted ARM32 mode cue " + cue.displayName() + ": synthetic name conflicts with owner");
+                continue;
+            }
+            bindings.add(new ElfFunctionAlias(name, cue.displayName(), cue.address(), cue.size(), cue.codeSha256()));
+        }
+        var planned = Arm32FunctionAliasSymbols.plan(image, bindings, functions, List.of(), cues,
+            cancelled, message -> diagnostic.accept(message.replace("function aliases", "ARM32 mode symbols")
+                .replace("function alias", "ARM32 mode cue")));
+        if (planned.stream().noneMatch(symbol -> (symbol.value() & 1) != 0)) {
+            diagnostic.accept("Omitted ARM32 mode symbols: no eligible Thumb cue remains");
+            return List.of();
+        }
+        return planned;
+    }
+
     public static List<ElfLocalFunctionSymbol> plan(ElfImage image,
             List<ElfFunctionModeCue> cues, BooleanSupplier cancelled,
             Consumer<String> diagnostic) throws IOException {
