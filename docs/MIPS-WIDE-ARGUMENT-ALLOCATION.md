@@ -177,3 +177,36 @@ converted-custom-storage runs pass with GNU/LLVM/strict validation,
 deterministic reruns and protected-input checks. Production code is unchanged.
 Receipts: `build/mips-wide-allocation/dynamic-composite-correction-v2.json`.
 The required hosted gate must pass again on the updated test commit.
+
+## Truncated-store runtime oracle correction
+
+**CONFIRMED:** hosted run `41346595567` next reached the older truncated-store
+fixture and failed both MIPS lanes on its expectation that the O32 wide argument
+was unavailable at entry. The emitted value was the source-known
+`0x1122334455667788`. This is the same newly supported incoming-register prefix,
+not a reason to remove valid locations from the exporter.
+
+The corrected test independently reads the first six original instructions:
+frame adjustment, frame-register save/setup, the two argument stores, then
+`LUI a0`. It requires a positive location through the LUI instruction and an
+unavailable tail starting immediately after it (`0x400148` in this fixture).
+It checks the exact endian-aware raw location-list bytes for the two 32-bit
+register pieces, the end marker, report bounds and typed value/unavailability
+at every visited instruction. It does not infer expected availability from the
+exporter's report alone. N32 retains its independently checked scalar path.
+
+Four fresh exact-production-v5 cases pass all compiler/Forge runtime checks,
+GNU/LLVM/pinned strict validators, deterministic exports and original/package
+preservation. They contribute 194 Forge instruction observations:
+
+- `mips32be.o32.hwXQkRzq`: 49 observations.
+- `mips32be.n32.tiHEOyn9`: 48 observations.
+- `mips32le.o32.0Xyd0pjB`: 49 observations.
+- `mips32le.n32.IqWXjc1a`: 48 observations.
+
+Paths are below `build/test-results/mips-truncated-space`; invocation logs are
+`build/mips-wide-allocation/truncated-prefix-v5-mips32{be,le}.log`. The unchanged
+v5 JAR is `8c3931eed60e9e06d084e5026747d948f011dda278535e3abf9f524a2d93aadb`.
+The later PR129 package also passes the BE O32/N32 pair. This correction changes
+only the regression oracle. A new hosted gate remains required; #69 and the
+full four-issue goal remain open.
