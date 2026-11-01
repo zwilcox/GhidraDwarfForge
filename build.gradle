@@ -746,6 +746,14 @@ tasks.register("customCallStorageSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/custom-call-storage/cache").absolutePath
 }
 
+tasks.register("aarch64AbiSelectionSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks actual ELF metadata against bounded debugger call profiles"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.nativeapi.Aarch64AbiSelectionSmoke"
+}
+
 tasks.register("compilerCallPolicySmoke", JavaExec) {
     group = "verification"
     description = "Checks unverified compiler specifications against the ELF call ABI baseline"

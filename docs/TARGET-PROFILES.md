@@ -1,5 +1,12 @@
 # Tested ELF and ABI profiles
 
+**CONFIRMED local AArch64 selection candidate (2026-11-01), integration pending:**
+`AARCH64-ABI-SELECTION.md` records explicit language/compiler and ELF call-profile
+checks, twelve packaged runtime cases and six x86-64/MIPS regressions. Earlier
+classification gaps below describe their historical checkpoints. The candidate
+does not establish additional operating systems, SVE, ILP32 or big-endian
+AArch64 support; full P2.3–P2.3c acceptance remains open.
+
 **CONFIRMED:** the five Linux target lanes exercise the production exporter,
 independent ELF/DWARF validators, and native or QEMU/GDB behavior. This document
 describes the profiles and storage cases actually tested. An ELF machine number

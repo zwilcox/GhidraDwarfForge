@@ -90,3 +90,15 @@ ARM big-endian/MIPS64/N32 emulators are on PATH. ARM cross compilers, MIPS64
 compilers and an i686 cross compiler are not currently on PATH. This is a
 tool-discovery result, not a blocking conclusion; inspect retained toolchains
 and obtain isolated dependencies where needed before requesting user action.
+
+## AArch64 selection component
+
+**CONFIRMED locally; integration pending:** the next component distinguishes
+actual AArch64 language/compiler pairs and classifies ELF call-profile metadata.
+Twelve packaged cases pass validators, ordinary argument/source observations,
+positive injected calls and unchanged-state rejection through both names and
+callback types. Six existing x86-64/MIPS rebased regressions pass. The contract,
+reference CPU bound, diagnostic accounting and receipts are in
+`AARCH64-ABI-SELECTION.md`. This is progress on the first and final rows of #68;
+it does not close that issue or any related target issue. Required exact-head
+hosted validation, protected integration and the full scope audit remain.
