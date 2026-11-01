@@ -13,7 +13,10 @@ elf_support = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(elf_support)
 
 
-def verify(original, binary, sidecar, aliases, receipt, symbol_values=None):
+def verify(original, binary, sidecar, aliases, receipt, symbol_values=None, mapping_symbols=None):
+    mapping_symbols = {} if mapping_symbols is None else mapping_symbols
+    assert not (set(mapping_symbols) & {row['alias'] for row in aliases})
+    additions = len(aliases) + len(mapping_symbols)
     ident, _, old = elf_support.elf(original)
     output_ident, output_header, new = elf_support.elf(sidecar)
     data, emitted = binary.read_bytes(), sidecar.read_bytes()
@@ -70,8 +73,8 @@ def verify(original, binary, sidecar, aliases, receipt, symbol_values=None):
     strings = list(new.values())[new_table[6]][1]
     assert strings.startswith(old_strings)
     assert old_table[9] == new_table[9] == width and new_table[2:4] == (0, 0)
-    assert new_table[7] == old_table[7] + len(aliases)
-    assert len(new_bytes) == len(old_bytes) + width * len(aliases)
+    assert new_table[7] == old_table[7] + additions
+    assert len(new_bytes) == len(old_bytes) + width * additions
 
     def record(payload, index, names):
         fields = struct.unpack_from(order + ('IBBHQQ' if wide else 'IIIBBH'), payload, index * width)
@@ -94,7 +97,7 @@ def verify(original, binary, sidecar, aliases, receipt, symbol_values=None):
     preserved = []
     for index in range(len(old_bytes) // width):
         expected = record(old_bytes, index, old_strings)
-        destination = index if index < old_table[7] else index + len(aliases)
+        destination = index if index < old_table[7] else index + additions
         actual = record(new_bytes, destination, strings)
         name, info, other, section, value, size = expected
         # readelf synthesizes section names for unnamed STT_SECTION entries;
@@ -115,13 +118,20 @@ def verify(original, binary, sidecar, aliases, receipt, symbol_values=None):
     added = {}
     for index in range(old_table[7], new_table[7]):
         name, info, other, section, value, size = record(new_bytes, index, strings)
-        assert info == 2 and other == 0 and name.decode() not in added
+        mapping = name.decode() in mapping_symbols
+        assert info == (0 if mapping else 2) and other == 0 and name.decode() not in added
+        assert size == 0 if mapping else size > 0
         allocation, = [row for row in loads if row[0] == section]
-        code_value = value & ~1 if arm else value
+        code_value = value & ~1 if arm and not mapping else value
         assert allocation[1] <= code_value and code_value + size <= allocation[1] + allocation[3]
+        if mapping:
+            assert code_value < allocation[1] + allocation[3]
+            assert (value, section) == tuple(mapping_symbols[name.decode()])
         added[name.decode()] = (value, size)
-    assert added == {row['alias']: (row['entry'] if symbol_values is None else symbol_values[row['alias']], row['size'])
-                     for row in aliases}
+    expected_added = {row['alias']: (row['entry'] if symbol_values is None else symbol_values[row['alias']], row['size'])
+                      for row in aliases}
+    expected_added.update({name: (value, 0) for name, (value, section) in mapping_symbols.items()})
+    assert added == expected_added
     result = {'status': 'RAW_SECTIONLESS_INVENTORY_PASS', 'originalRecords': len(preserved),
         'preserved': preserved, 'added': added, 'loads': loads, 'unwind': unwind,
         'artifacts': {str(path): hashlib.sha256(path.read_bytes()).hexdigest()
@@ -130,7 +140,7 @@ def verify(original, binary, sidecar, aliases, receipt, symbol_values=None):
     return result
 
 
-def corruption_controls(original, binary, sidecar, aliases, root, symbol_values=None):
+def corruption_controls(original, binary, sidecar, aliases, root, symbol_values=None, mapping_symbols=None):
     """Prove the oracle rejects lost records, changed semantics and invented aliases."""
     root.mkdir()
     ident, header, sections = elf_support.elf(sidecar)
@@ -153,6 +163,15 @@ def corruption_controls(original, binary, sidecar, aliases, root, symbol_values=
         value_offset = table[4] + original_locals * width + 4
         value, = struct.unpack_from(order + 'I', sidecar.read_bytes(), value_offset)
         modifications['wrong-mode-tag'] = (value_offset, 'I', value ^ 1)
+    if mapping_symbols:
+        assert not wide and order == '<'
+        first_mapping = table[4] + (original_locals + len(aliases)) * width
+        value, = struct.unpack_from('<I', sidecar.read_bytes(), first_mapping + 4)
+        modifications.update({
+            'mapping-is-function': (first_mapping + 12, 'B', 2),
+            'mapping-has-size': (first_mapping + 8, 'I', 4),
+            'mapping-wrong-address': (first_mapping + 4, 'I', value + 2),
+        })
     rejected = []
     for label, (offset, fmt, value) in modifications.items():
         data = bytearray(sidecar.read_bytes())
@@ -160,7 +179,7 @@ def corruption_controls(original, binary, sidecar, aliases, root, symbol_values=
         candidate = root / (label + '.dbg')
         candidate.write_bytes(data)
         try:
-            verify(original, binary, candidate, aliases, root / (label + '.json'), symbol_values)
+            verify(original, binary, candidate, aliases, root / (label + '.json'), symbol_values, mapping_symbols)
         except (AssertionError, ValueError) as error:
             (root / (label + '.rejection.txt')).write_text(type(error).__name__ + ': ' + str(error) + '\n')
             rejected.append(label)

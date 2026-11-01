@@ -90,6 +90,10 @@ including sectionless and failure/cancellation children at `run.9hzKkoYq` and
 to include allocated non-code sections, with its new passing negative control.
 The final v2 package passes the AArch64 vector exec/runtime/native-failure/
 cancellation regression at `build/test-results/aarch64-vector/exec.htj4xv7z`.
+It also passes the final existing ARM PIE command at `run.sfOzuXIe`, with
+`run.6cidmjx5` controls and sectionless `pie.f1vx09dc`. The updated sectionless
+inventory oracle retains the old alias checks and rejects all six old
+corruptions at `build/arm-mixed-modes/inventory-regression.6rsa7jjb`.
 
 The first PIE harness comparison forgot Ghidra's default `0x10000` import bias.
 Its retained failure is a test-coordinate error, not an accepted runtime result.
@@ -109,14 +113,75 @@ freshly at `pie.96bxfy2x`, exercising the same command used in CI.
 Both model tasks and the three production/control roles are wired into CI.
 Hosted exact-head acceptance and protected integration remain pending.
 
+## Expanded layout and source acceptance
+
+The same v2 package now passes eight fresh complete commands, including native
+failure and cancellation children. The machine-readable local receipt is
+`build/arm-mixed-modes/layout-source-matrix-v2.json`.
+
+| Layout | Production case | Control case |
+| --- | --- | --- |
+| Non-PIE | `exec.g58nzakc` | `controls.g8zcu6fh` |
+| PIE | `pie._gmalpk0` | `controls.24i6yg14` |
+| Rebased PIE | `pie-rebased.xcrtar5n` | `controls._lgm884b` |
+| Shared library | `shared.3aiyrd58` | `controls.h6673gc8` |
+| Rebased shared library | `shared-rebased.xc3gzoo1` | `controls.3w4tm30r` |
+| Sectionless non-PIE | `exec.sectionless.33o3o1up` | `controls.kqygfyah` |
+| Sectionless PIE | `pie.sectionless._vwh3a13` | `controls.f0cxvwyv` |
+| Sectionless rebased PIE | `pie-rebased.sectionless.oxz1ert_` | `controls.5zb5orzq` |
+
+Compiler and Forge symbols each undergo five separate runtime phases: all
+twelve instructions, source `next`, source `step`, an address breakpoint at
+the Thumb entry, and an injected function-pointer call. The source checks
+require `list`, the correct synthetic source path and declaration/return lines,
+the curated signature and an honestly unavailable parameter. Compiler assembly
+has twelve executable source rows; the synthetic C has two observed stops,
+at entry and its recovered return expression. This does not promise one source
+line per instruction. Every observed stop checks raw instruction bytes, actual
+CPSR mode and the source-known register value. The complete matrix contains
+832 observations including failure exports, 16 injected calls, 16 native
+failures and eight production cancellations. Every runtime ends with exit zero;
+GNU/LLVM/pinned strict validation, deterministic outputs and input/package/
+saved-program preservation pass in all cases.
+
+Shared cases retain the driver's symbols, stop after its loader has mapped the
+library, measure the `.text` load bias, and explicitly `add-symbol-file` the
+library sidecar at that bias with automatic shared symbols disabled. An earlier
+`symbol-file` attempt discarded the driver's entry point and caused injected
+calls to fail for both compiler and Forge. That retained failed reference is
+not counted as acceptance; preserving the executable's entry makes both pass.
+
+The sectionless linker fixture gives the 44-byte mixed allocation a separate
+exact-sized executable PT_LOAD. Only section-header discovery fields are
+cleared in the copied input. Since synthetic NOBITS sections supply no file
+instruction bytes, both symbol variants inspect actual remote memory before
+continuing, with architecture `armv7` and automatic ARM/Thumb mode selection.
+An independent raw inventory check verifies every inherited dynamic symbol,
+load allocation, string prefix and all four exact new NOTYPE boundaries.
+Each supplied auxiliary function hint is checked against original compiler
+mode intervals; those output-derived sizes are not a completeness claim for
+the auxiliary hint set. Nine deliberate record corruptions are rejected per
+sectionless case, including wrong mapping type, size and address.
+
+The isolated high PT_LOAD places the mixed function last. A first failure
+control correctly rejected the missing later decompiled neighbor. The final
+sectionless control selects the lower-address caller by its independent
+compiler link address, requires its real decompiler failure and the later
+mixed function's successful decompilation, then verifies retained mappings and
+runtime. Ordinary/shared controls still fail the mixed function itself.
+The helper's existing name selection and positive saved-parameter assertions
+remain the defaults for other ABI fixtures.
+
+CI now invokes all five sectioned roles and all three sectionless roles with
+`--production --with-controls`; sectionless commands additionally pass
+`--sectionless`. Actionlint and Python/shell syntax checks pass locally.
+Hosted exact-head acceptance and protected integration remain required.
+
 ## Remaining acceptance
 
-Shared-library and sectionless mixed-body runtime compositions still need
-evidence. The generic synthetic-load allocation route is PRESENT, UNVERIFIED for
-this new mapping feature. Discontiguous mixed bodies, additional inherited-map
-and live-session cases, explicit source `list`/`next`/`step` behavior and broader
-named/address/function-pointer workflows also remain to be tested. Machine
-stepping in this checkpoint does not claim source-stepping completion.
+Discontiguous mixed bodies, additional inherited-map and live-session cases,
+and runtime omission controls beyond the current model coverage still need
+evidence. Sectionless shared-library composition is not covered by this matrix.
 
 Unknown gaps intentionally prevent complete section mapping. A successful
 homogeneous-function mode hint elsewhere does not establish mixed-body coverage.

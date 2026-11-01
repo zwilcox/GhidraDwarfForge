@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local mixed-mode layout/source expansion; full ABI goal remains open:**
+Eight ARM mixed-body layouts pass compiler/Forge source stepping, named/address
+breakpoints, injected function-pointer calls, raw symbol preservation, validators,
+determinism and failure/cancellation. This includes shared/rebased libraries and
+sectionless exec/PIE/rebased executables. See `docs/ARM-MIXED-MODE-MAPPINGS.md`
+for 832 observations, exact package receipts and retained failed experiments.
+The producer is unchanged in this expansion. Discontiguous/inherited/live-session
+mapping acceptance, remaining ARM/MIPS/i386 requirements, exact-head hosted
+gates and protected integration remain required; #68–#71 are not complete.
+
 **CONFIRMED local production ARM32 mixed-body mapping progress:**
 The real exporter now emits complete evidence-backed ARM/Thumb/data section
 mappings. Non-PIE, PIE and rebased PIE pass raw mapping checks, compiler-relative

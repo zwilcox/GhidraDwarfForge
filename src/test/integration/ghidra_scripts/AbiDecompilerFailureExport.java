@@ -24,7 +24,7 @@ public class AbiDecompilerFailureExport extends GhidraScript {
         if (getScriptArgs().length < 2 || getScriptArgs().length > 3) {
             throw new IllegalArgumentException("output failed-function [saved-parameter]");
         }
-        String failedName = getScriptArgs()[1];
+        String failureSelection = getScriptArgs()[1];
         boolean symbolOnlyReference = getScriptArgs().length == 3 && getScriptArgs()[2].equals("--symbol-only");
         String parameterName = getScriptArgs().length == 3 && !symbolOnlyReference ? getScriptArgs()[2] : "value";
         Path input = Path.of(currentProgram.getExecutablePath());
@@ -34,6 +34,17 @@ public class AbiDecompilerFailureExport extends GhidraScript {
         var natives = PackagedNativeLibraries.resolve();
         long delta = AddressNormalizer.rebaseDelta(currentProgram.getImageBase().getOffset(),
             GhidraImageBase.originalImageBase(currentProgram));
+        String failedName;
+        if (failureSelection.startsWith("@")) {
+            var selected = currentProgram.getFunctionManager().getFunctionAt(toAddr(
+                Math.addExact(Long.decode(failureSelection.substring(1)), delta)));
+            if (selected == null) throw new AssertionError("no analyzed failure-reference function at " + failureSelection);
+            failedName = selected.getName();
+        }
+        else {
+            failedName = failureSelection;
+        }
+        println("abi-decompiler-selected-failure=" + failedName);
         var functions = GhidraFunctionSymbols.extractDetailed(currentProgram, monitor, this::println, delta).functions();
         var failures = new ArrayList<String>();
         var decompilation = GhidraSyntheticSource.decompileDetailed(currentProgram, functions, delta, monitor,

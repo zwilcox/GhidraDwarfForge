@@ -38,6 +38,8 @@ def main(ghidra, baseline):
     print(case, flush=True)
     for name in ("mixed.stripped", "mixed.reference", "labels.json", "compiler-gdb.json"):
         shutil.copy2(baseline / name, case / name)
+    if (baseline / "mixed.driver").is_file():
+        shutil.copy2(baseline / "mixed.driver", case / "mixed.driver")
     shutil.copytree(baseline / "project", case / "project")
     module = ghidra / "Ghidra/Extensions/GhidraDwarfForge"
     for path, expected in accepted["protectedHashes"].items():
@@ -48,6 +50,8 @@ def main(ghidra, baseline):
         source / "ghidra_scripts/PrepareArmMixedBody.java", *(module.rglob("*")),
         *(baseline / name for name in ("mixed.stripped", "mixed.reference", "curated.dbg", "curated.dbg.c")),
         *(case / name for name in ("mixed.stripped", "mixed.reference", "labels.json"))]
+    if (case / "mixed.driver").is_file():
+        paths += [case / "mixed.driver", baseline / "mixed.driver"]
     before = {str(p): reference.digest(p) for p in paths if p.is_file()}
 
     def run(label, command):
@@ -60,10 +64,20 @@ def main(ghidra, baseline):
 
     program_before = snapshot(case / "project")
     hashes = None
+    labels = json.loads((case / "labels.json").read_text())
+    failure_selection = "recovered_mixed_body"
+    if labels.get("sectionless", False):
+        # The isolated high load segment makes mixed_body the last function.
+        # Fail the compiler-identified caller, then require the later mixed body
+        # to decompile and retain its full mappings and runtime behavior.
+        image = reference.inventory.elf(case / "mixed.reference")
+        caller, = [s for s in image["symbols"] if s["name"] == "main" and (s["info"] & 15) == 2]
+        failure_selection = "@" + hex(caller["raw"] & ~1)
     for iteration in ("first", "repeat"):
         log = run("failure-" + iteration, [ghidra / "support/analyzeHeadless", case / "project", "MixedModes",
             "-process", "mixed.stripped", "-readOnly", "-noanalysis", "-scriptPath", source / "ghidra_scripts",
-            "-postScript", "AbiDecompilerFailureExport.java", case / "curated.dbg", "recovered_mixed_body", "--symbol-only"])
+            "-postScript", "AbiDecompilerFailureExport.java", case / "curated.dbg", failure_selection, "--symbol-only"])
+        selected, = re.findall(r"abi-decompiler-selected-failure=([^\s]+)", log)
         assert "abi-decompiler-failure=PASS" in log and "REPORT SCRIPT ERROR" not in log
         assert "Flow exceeded maximum allowable instructions" in log
         current = [reference.digest(case / name) for name in ("curated.dbg", "curated.dbg.c")]
@@ -74,7 +88,7 @@ def main(ghidra, baseline):
     info = run("gnu", ["readelf", "-hSWn", "--debug-dump=info,abbrev,aranges,decodedline,loc", case / "curated.dbg"])
     dies = facts.die_records(info)
     index, failed = next((i, d) for i, d in enumerate(dies) if d["tag"] == "DW_TAG_subprogram" and
-        facts.die_name(d) == "recovered_mixed_body")
+        facts.die_name(d) == selected)
     assert "DW_AT_decl_line" not in failed["attrs"] and "DW_AT_type" not in failed["attrs"]
     assert "DW_AT_low_pc" in failed["attrs"] and dies[index + 1]["depth"] <= failed["depth"]
     assert "No errors." in run("llvm", ["llvm-dwarfdump", "--verify", case / "curated.dbg"])
@@ -102,7 +116,7 @@ def main(ghidra, baseline):
     project = case / "cancel-project"
     project.mkdir()
     labels = json.loads((case / "labels.json").read_text())
-    prepare = [hex(labels["start"])] + (["0x200000"] if labels["role"] == "pie-rebased" else [])
+    prepare = [hex(labels["start"])] + (["0x200000"] if labels["role"].endswith("-rebased") else [])
     log = run("cancel-import", [ghidra / "support/analyzeHeadless", project, "MixedModes", "-import", padded,
         "-analysisTimeoutPerFile", "120", "-scriptPath", source / "ghidra_scripts",
         "-postScript", "PrepareArmMixedBody.java", *prepare])
@@ -117,7 +131,7 @@ def main(ghidra, baseline):
     assert before == {p: reference.digest(Path(p)) for p in before}
     assert not any(p.name.startswith(".") for p in case.iterdir())
     (case / "result.json").write_text(json.dumps({"status": "PASS", "role": labels["role"],
-        "failureExports": 2, "cancelledExports": 1, "runtime": runtime, "protectedHashes": before,
+        "failureExports": 2, "cancelledExports": 1, "failedFunction": selected, "runtime": runtime, "protectedHashes": before,
         "programBackupChanges": program_changes, "cancelBackupChanges": cancel_changes}, indent=4) + "\n")
     print("arm-mixed-mode-controls=PASS " + str(case))
 
