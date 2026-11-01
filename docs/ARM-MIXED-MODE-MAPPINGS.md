@@ -123,3 +123,15 @@ homogeneous-function mode hint elsewhere does not establish mixed-body coverage.
 The remaining ARM per-function base/VFP ABI, BE8 and storage requirements, MIPS
 FPXX/FP64A and wider lifetime work, i386 work, and full integration audit all
 remain active in `TARGET-ABI-COMPLETION-PLAN.md`.
+
+## Hosted boundary-audit correction
+
+Run `41354512199` rejected the new isolated ARM extractor/planner because their
+exact paths were absent from the architecture-boundary audit inventory. The
+review confirms that TMode interpretation and ARM ELF mapping semantics remain
+inside those two target modules; the generic writer only serializes explicit
+ELF symbol types. The audit now names those exact paths. A separate temporary
+generic-source probe containing TMode is still rejected; no broad path or
+pattern exception was introduced. This test-inventory correction does not
+change the validated production package. Exact-head hosted acceptance is still
+required.
