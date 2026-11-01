@@ -1,0 +1,17 @@
+--- a/src/bin/dwarfdump/dd_trace_abstract_origin_etc.c
++++ b/src/bin/dwarfdump/dd_trace_abstract_origin_etc.c
+@@ -145,6 +145,14 @@
+     esb_empty_string(valname);
+     esb_append(valname, esb_get_string(&lesb));
+     esb_destructor(&lesb);
++
++    /* GNU location views reference a view list in .debug_loc or
++       .debug_loclists, never a DIE in .debug_info. The attribute value
++       was read above; DIE self-reference/name traversal does not apply. */
++    if (attrnum == DW_AT_GNU_locviews &&
++        theform == DW_FORM_sec_offset) {
++        return DW_DLV_OK;
++    }
+ 
+     if (glflags.gf_check_forward_decl ||
+         glflags.gf_check_self_references ||

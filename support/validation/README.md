@@ -325,3 +325,42 @@ consumer fails; the corrected consumer reports zero errors. N32's identical
 four-byte section already passed. These are compiler-reference observations,
 not claims of complete N32/N64 exporter support. See
 `../../docs/research/MIPS-ABI-COMPLETION.md` for the ongoing ABI investigation.
+
+## GNU location views are section offsets
+
+The sixth patch, `0006-locviews-are-not-die-references.patch`, changes only the
+validation executable's `dd_trace_abstract_origin_etc.c`. SHA-256:
+`54fce0dd7b7f19775cfb2bf95f610a4c3f4b96dd98d28ce99580d30c4e6aa879`.
+For `DW_AT_GNU_locviews` encoded as `DW_FORM_sec_offset`, it retains attribute
+reading/printing but does not traverse the numeric value as a `.debug_info`
+DIE reference. GCC documents this attribute as a location-view list offset in
+`.debug_loc` or `.debug_loclists`, not a DIE reference; see
+[the GCC extension discussion](https://gcc.gnu.org/legacy-ml/gcc-patches/2019-03/msg00542.html).
+Other attributes and forms keep the existing checks. This does not implement a
+new GNU view-pair evaluator; GNU readelf separately inspects the actual lists.
+
+**CONFIRMED locally:** a native debugger trace on the unmodified GCC 12.4 N32
+reference shows the old checker following attribute `0x2137` into
+`dwarf_offdie_b`, then rejecting bytes from the CU as abbreviation code 688.
+GNU and LLVM accept that reference. The corrected checker reports zero errors.
+`dwarfdump-locviews.py` constructs DWARF 4/5 fixtures in both ELF classes and
+byte orders. Eight positive cases pass GNU, LLVM and the complete strict report;
+sixteen malformed actual-type/reference-form cases remain rejected. With the
+previous tool, all 24 cases reject, reproducing its eight false positives.
+The checker is built afresh from the pinned archive and all six hashed patches.
+
+The local 48-case receipt is
+`build/test-results/dwarfdump-locviews/run.9w_ckkwp/result.json` in the active
+MIPS allocation worktree. Eighteen retained N32/N64 compiler/Forge artifacts
+also pass; `build/mips-wide-allocation/locviews-real-artifacts.json` records
+those paths. The existing GNU/IRIX frame regression passes at
+`build/test-results/dwarfdump-eh-terminators/run.xqd4ox09/`.
+Hosted validation remains pending. Shipped Ghidra native libraries are unchanged.
+
+The new bundle also passes the 97 evidence-capture/mutation controls at
+`build/mips-wide-allocation/locviews-evidence-controls/run.kuzv0m3b/` and
+extended-program-header controls at
+`build/test-results/dwarfdump-extended-programs/run.i7hc23r1/`. Evidence records
+now pin the sixth patch and use the explicit six-correction profile. The native
+Linux CI job installs LLVM for the new independent structural controls and
+retains their reports with its existing artifacts.

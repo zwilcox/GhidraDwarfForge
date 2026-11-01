@@ -64,7 +64,7 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install --no-install-recommends -y \
             build-essential zlib1g-dev libzstd-dev curl xz-utils patch \
-            autoconf automake libtool pkg-config patchelf
+            autoconf automake libtool pkg-config patchelf llvm
 
       - name: Build pinned libdwarf producer
         run: |
@@ -168,6 +168,8 @@ jobs:
 
       - name: Validate GNU frame terminators and malformed-prefix rejection
         run: python3 src/test/integration/dwarfdump-eh-terminators.py "$PWD/validation-tool/bin/dwarfdump"
+      - name: Validate GNU location views and actual DIE-reference controls
+        run: python3 src/test/integration/dwarfdump-locviews.py "$PWD/validation-tool/bin/dwarfdump"
 
       - name: Validate complete bounded diagnostics and allocation rollback
         run: |
@@ -199,6 +201,7 @@ jobs:
             build/test-results/dwarfdump-diagnostic-capacity/
             build/test-results/dwarfdump-configuration/
             build/test-results/dwarfdump-eh-terminators/
+            build/test-results/dwarfdump-locviews/
           if-no-files-found: warn
           retention-days: 14
 

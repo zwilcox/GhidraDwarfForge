@@ -32,6 +32,7 @@ PINS = {
     "diagnosticPatchSha256": "e9f7eb0e613b4a4e859377ad12563ad514d24f7ee81b04378a30b8e99e403139",
     "callingConventionPatchSha256": "a1b5cc6d63795aeda62b5945bf8991360882c7334003e9912e274638ec073581",
     "terminatorPatchSha256": "d69033dbf8b67380c06b51932018c2c024e5610f3e5343cd75915e206ac16b08",
+    "locviewsPatchSha256": "54fce0dd7b7f19775cfb2bf95f610a4c3f4b96dd98d28ce99580d30c4e6aa879",
     "configurationSha256": "842bba9230de82059dfcef1485114cf3c33eae8be2973c649d176f4ad18972ef",
 }
 PIN_FILES = {
@@ -41,9 +42,10 @@ PIN_FILES = {
     "source/support/validation/0003-preserve-bounded-harmless-diagnostics.patch": "diagnosticPatchSha256",
     "source/support/validation/0004-recognize-subroutine-calling-convention.patch": "callingConventionPatchSha256",
     "source/support/validation/0005-honor-eh-frame-zero-terminator.patch": "terminatorPatchSha256",
+    "source/support/validation/0006-locviews-are-not-die-references.patch": "locviewsPatchSha256",
     "share/dwarfdump/dwarfdump.conf": "configurationSha256",
 }
-PROFILE = "libdwarf-2.3.2-five-corrections-and-llvm-verify"
+PROFILE = "libdwarf-2.3.2-six-corrections-and-llvm-verify"
 
 
 class EvidenceError(ValueError):
