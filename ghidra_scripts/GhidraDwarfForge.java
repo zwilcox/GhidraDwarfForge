@@ -172,7 +172,7 @@ public class GhidraDwarfForge extends GhidraScript {
             decompilation.recoveredParameters(), decompilation.recoveredStatics(),
             ghidradwarfforge.targets.TargetParameterAllocation.forProgram(currentProgram, originalElf, monitor, diagnostic));
         var typeModel = ghidradwarfforge.GhidraCompilerCallPolicy.apply(currentProgram,
-            target, extractedTypes, monitor, diagnostic);
+            target, originalElf, extractedTypes, monitor, diagnostic);
         monitor.checkCancelled();
         var resultHolder = new MinimalDwarfSidecarExporter.ExportResult[1];
         ArtifactPairPublisher.stageAndPublish(output, sourceOutput,

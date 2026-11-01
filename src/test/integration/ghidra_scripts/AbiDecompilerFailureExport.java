@@ -63,7 +63,7 @@ public class AbiDecompilerFailureExport extends GhidraScript {
         var extracted = GhidraTypeGraph.extract(currentProgram, functions, registers, delta, monitor, this::println,
             decompilation.recoveredReturns(), decompilation.recoveredParameters(), decompilation.recoveredStatics(),
             ghidradwarfforge.targets.TargetParameterAllocation.forProgram(currentProgram, elf, monitor, this::println));
-        var model = GhidraCompilerCallPolicy.apply(currentProgram, target, extracted, monitor, this::println);
+        var model = GhidraCompilerCallPolicy.apply(currentProgram, target, elf, extracted, monitor, this::println);
         if (model.variableStorage().variables().stream().noneMatch(variable ->
                 variable.functionName().equals(failedName) && variable.name().equals(parameterName) &&
                 variable.hasDefensibleLocation())) {

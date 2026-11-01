@@ -12,10 +12,17 @@ __attribute__((noinline)) word wide_words(word a, word b, word c, word d, word e
     return integer_sink;
 }
 __attribute__((noinline)) struct Pair wide_pair(struct Pair value) {
+#ifdef FORGE_MIPS_AGGREGATE_HOME
+    /* A second fixture form gives compiler DWARF real aggregate homes. */
+    __asm__ volatile ("" : : "m" (value));
+#endif
     pair_sink = value;
     return value;
 }
 __attribute__((noinline)) struct Large wide_large(struct Large value) {
+#ifdef FORGE_MIPS_AGGREGATE_HOME
+    __asm__ volatile ("" : : "m" (value));
+#endif
     large_sink = value;
     return value;
 }
@@ -25,6 +32,10 @@ __attribute__((noinline)) word wide_mixed(word a, double b, int c, float d,
     real_sink = b+d+g;
     return integer_sink;
 }
+word (*words_callback)(word, word, word, word, word, word, word, word, word, word) = wide_words;
+struct Pair (*pair_callback)(struct Pair) = wide_pair;
+struct Large (*large_callback)(struct Large) = wide_large;
+word (*mixed_callback)(word, double, int, float, struct Pair, word, double, word, int) = wide_mixed;
 int main(void) {
     word sum=wide_words(11,22,33,44,55,66,77,88,909,-1010);
     struct Pair pair=wide_pair((struct Pair){101,-202});

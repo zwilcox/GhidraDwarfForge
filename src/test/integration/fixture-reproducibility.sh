@@ -82,6 +82,7 @@ expected_sources=(
     mips-floating-call.c
     mips-truncated-space-start.S
     mips-truncated-space.c
+    mips_wide_arguments.c
     mixed-incoming-prefix.c
     mutable-stack-mappings.c
     nonzero_load_offset.c

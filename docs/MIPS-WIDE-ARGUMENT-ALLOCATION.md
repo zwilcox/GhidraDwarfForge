@@ -98,20 +98,58 @@ GUI-only entry script and was rejected before writing output. The retry uses
 the production `GhidraDwarfForge.java --packaged-natives` headless entry. Both
 failed logs remain available. No production exception was suppressed.
 
-## Still required
+## Current follow-up and remaining work
 
-**PRESENT, UNVERIFIED as a complete component:** finish the type/profile audit,
-including unsupported or opaque signatures, larger/aligned/floating aggregates,
-and remaining return/storage cases. Establish a precise multiple-PC compiler
-reference policy: GCC `-Og`/`-O2` and Clang 16 alternatives retain distinct
-aggregate entry defects. Do not treat clean DWARF verification as correct values
-or hide those failures with whole-function exceptions.
+The versioned wider runtime/oracle and non-PIE/PIE/rebased/shared tests now
+pass locally, including failure/cancellation controls and independent compiler
+reference windows. The separate bounded call policy also fixes the suppressed
+N32/N64 typed returns. See `MIPS-WIDE-CALL-PROFILE.md` for exact counts, package
+receipts and limits. The checkpoint investigation below retains the failures
+that led to those fixes; they are no longer the current outcome of the admitted
+four-signature fixture.
 
-The owned wider fixture and label-driven curation script are now versioned and
-pass the fully stripped cases. Move the wider runtime driver and independent
-raw-value oracle into versioned integration tests; complete PIE/rebase/shared forms,
-real failure/cancellation compositions, extended deterministic/state-preservation
-receipts, exact-package regressions and hosted protected integration. General
-N32 spill/reload and delayed control-flow tracking still require work. The
-remaining O32, FPXX/FP64A, ARM32 and i386 requirements in the full plan are
-unchanged.
+**PRESENT, UNVERIFIED as a complete ABI/storage profile:** finish the N32 input
+allocation audit for opaque, wider/aligned/floating/nested aggregate signatures,
+and remaining return/storage cases. General N32 spill/reload and delayed
+control-flow tracking still require work. Hosted acceptance, protected
+integration and the remaining O32, FPXX/FP64A, ARM32 and i386 requirements in
+`TARGET-ABI-COMPLETION-PLAN.md` remain binding. Passing this fixture does not
+complete #69 or the combined goal.
+
+## Wider reference and return follow-up
+
+**HISTORICAL investigation, now covered by the passing follow-up above:** complete
+GCC instruction sampling shows that the original `wide_pair`/`wide_large`
+aggregate homes are never populated. `-fno-tree-sra` does not repair them.
+`-O0` and Clang 16 provide later positive aggregate observations but introduce
+different unavailable ranges. The original source form and its prior passing
+Forge regressions are retained. An additional `FORGE_MIPS_AGGREGATE_HOME`
+fixture form explicitly requests aggregate memory operands and supplies positive
+compiler observations after each corresponding store.
+
+The candidate versioned oracle decodes the independent compiler instructions,
+requires the expected stores at the reported frame offsets, and checks raw ABI
+registers/memory against source-known values at every calibrated pre-store PC.
+It also identifies the single delayed-return PC where GCC switches two stack
+argument locations before the stack adjustment executes. A strict-reference
+mode retains those wrong displays as failures. The first N32 big-endian compiler
+run passes 412 observations under this precise policy. Every parameter has
+positive typed observations outside the calibrated windows. This is not yet a
+passing wider compiler/Forge pipeline: the Forge return checks below fail.
+
+The experiment also exposes `DW_AT_GNU_locviews` being incorrectly followed as
+a DIE reference by the pinned strict checker. The validation-only correction,
+48 positive/negative/previous-tool checks and actual-artifact results are
+recorded in `../support/validation/README.md`. The production native pair and
+JNA bindings remain unchanged.
+
+**CONFIRMED remaining debugger-call/return work:** the current N32 call policy
+marks the functions as non-callable, and GDB's `FinishBreakpoint.return_value`
+is unavailable even for `wide_words`. This is retained as a failing Forge
+acceptance test, not silently converted into a passing return check. The
+compiler's hidden-buffer `wide_large` return also lacks automatic display;
+the harness separately checks the captured caller buffer using its return type,
+matching the existing AArch64 oracle policy. Independently injected compiler
+calls now return exact values for all four signatures on both N32/N64 byte
+orders (16/16). That establishes a prerequisite for a carefully bounded wider
+call policy; it does not itself authorize every MIPS signature or ABI.

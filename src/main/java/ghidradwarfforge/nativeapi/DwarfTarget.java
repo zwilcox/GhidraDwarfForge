@@ -24,6 +24,7 @@ import ghidradwarfforge.elf.FunctionAliasSymbols;
 import ghidradwarfforge.elf.MipsFunctionAliasSymbols;
 import ghidradwarfforge.elf.MipsFloatingCallPolicy;
 import ghidradwarfforge.elf.MipsAggregateCallPolicy;
+import ghidradwarfforge.elf.MipsWideCallPolicy;
 import ghidradwarfforge.types.ProgramTypeModel;
 import ghidradwarfforge.types.DebuggerCallRestrictions;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
@@ -156,6 +157,9 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
             BooleanSupplier cancelled, Consumer<String> diagnostic) throws IOException {
         if (!equals(fromElf(image))) {
             throw new IllegalArgumentException("call ABI target disagrees with ELF");
+        }
+        if (MipsWideCallPolicy.isWideCandidate(image)) {
+            return MipsWideCallPolicy.apply(image, model, cancelled, diagnostic);
         }
         return DebuggerCallRestrictions.applyAll(MipsAggregateCallPolicy.apply(image,
             MipsFloatingCallPolicy.apply(image, model, cancelled, diagnostic), cancelled, diagnostic),

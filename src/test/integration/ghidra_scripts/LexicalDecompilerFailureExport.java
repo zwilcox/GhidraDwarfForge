@@ -58,7 +58,7 @@ public class LexicalDecompilerFailureExport extends GhidraScript {
         var registers = TargetRegisterMap.forElf(target.name(), elf, monitor::isCancelled);
         var extracted = GhidraTypeGraph.extract(currentProgram, functions, registers, delta, monitor, this::println,
             decompilation.recoveredReturns(), decompilation.recoveredParameters(), decompilation.recoveredStatics());
-        var model = GhidraCompilerCallPolicy.apply(currentProgram, target, extracted, monitor, this::println);
+        var model = GhidraCompilerCallPolicy.apply(currentProgram, target, elf, extracted, monitor, this::println);
         if (model.lexicalScopes().size() != 1) throw new AssertionError("scope evidence unexpectedly removed before emission");
         Path sourceOutput = Path.of(output + ".c");
         ArtifactPairPublisher.stageAndPublish(output, sourceOutput,

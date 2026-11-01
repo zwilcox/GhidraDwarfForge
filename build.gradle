@@ -1318,3 +1318,15 @@ tasks.register("truncatedStackDepthSmoke", JavaExec) {
     systemProperty "application.settingsdir", file("build/tmp/truncated-stack-depth/settings").absolutePath
     systemProperty "application.cachedir", file("build/tmp/truncated-stack-depth/cache").absolutePath
 }
+
+tasks.register("mipsWideCallPolicySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks N32/N64 ELF, Ghidra compiler and typed debugger call contracts"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.MipsWideCallPolicySmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/mips-wide-calls/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/mips-wide-calls/cache").absolutePath
+}
