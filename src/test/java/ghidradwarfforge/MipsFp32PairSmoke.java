@@ -19,6 +19,7 @@ import ghidra.program.model.lang.LanguageID;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.ParameterImpl;
 import ghidra.program.model.symbol.SourceType;
+import ghidra.program.model.symbol.RefType;
 import ghidra.program.util.DefaultLanguageService;
 import ghidra.util.task.TaskMonitor;
 import ghidradwarfforge.elf.ElfImage;
@@ -98,8 +99,17 @@ public final class MipsFp32PairSmoke {
                                 stable instanceof UnavailableStorage u && u.reason() == OmissionReason.REGISTER_MODIFIED,
                                 "pair write was missed: " + stable);
                             if (write != 0) {
+                                var prefix = GhidraVariableStorage.parameterPrefix(program, function, parameter,
+                                    mapped, stable, TaskMonitor.DUMMY);
+                                require(prefix.size() == 2 && prefix.getFirst().start() == 0x1000 &&
+                                    prefix.getFirst().end() == 0x1004 && prefix.getFirst().storage() instanceof CompositeStorage,
+                                    "decoded pair prefix must end immediately after either member write: " + prefix);
+                                require(prefix.getLast().start() == 0x1004 && prefix.getLast().end() == 0x100c &&
+                                    !prefix.getLast().storage().available(), "partially clobbered pair remained available");
+                                program.getReferenceManager().addMemoryReference(start.add(0x40), start.add(4),
+                                    RefType.UNCONDITIONAL_JUMP, SourceType.USER_DEFINED, 0);
                                 require(GhidraVariableStorage.parameterPrefix(program, function, parameter,
-                                    mapped, stable, TaskMonitor.DUMMY).isEmpty(), "unproven MIPS pair prefix");
+                                    mapped, stable, TaskMonitor.DUMMY).isEmpty(), "alternate-entry pair prefix accepted");
                             }
                         }
                         finally {

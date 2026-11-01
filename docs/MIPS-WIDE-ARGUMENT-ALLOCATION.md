@@ -100,6 +100,15 @@ failed logs remain available. No production exception was suppressed.
 
 ## Current follow-up and remaining work
 
+**CONFIRMED CI regression correction:** run `41342751358` stopped at the old
+O32 FP32 paired-register smoke expectation, before runtime jobs. The decoded
+delayed-return proof now correctly retains both pieces until the first member
+write. The revised test checks the exact `[0x1000,0x1004)` available prefix,
+unavailable remainder and rejection of an alternate entry, for both member
+writes and byte orders. No production behavior changed. The full workflow
+Gradle model/build command passes locally (114 tasks); hosted acceptance still
+requires a passing run of the corrected head.
+
 The versioned wider runtime/oracle and non-PIE/PIE/rebased/shared tests now
 pass locally, including failure/cancellation controls and independent compiler
 reference windows. The separate bounded call policy also fixes the suppressed
