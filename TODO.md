@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local N32/N64 scalar progress; full profile remains incomplete:**
+Both byte orders pass 20 packaged executable-layout cases, with exact typed
+arguments at entry and visited instructions, globals, separate source stepping,
+validators, deterministic reruns and unchanged inputs/program databases. N64
+retains addresses above 4 GiB. Forty failure exports, twenty cancellations and
+the AArch64 regression pass. Hosted validation and integration remain pending;
+separate wider fixtures now reproduce N32 aggregate/mixed allocation defects.
+See `docs/MIPS-WIDE-SCALAR-PROFILE.md`. This does not
+complete #69 or narrow the P2.3–P2.3c goal.
+
 **CONFIRMED MIPS reference investigation; full profile remains incomplete:**
 Private GCC/glibc N32 and N64 non-PIE compiler references execute and pass typed
 GDB floating-value checks. N64 exposed a validation-consumer bug in four-byte

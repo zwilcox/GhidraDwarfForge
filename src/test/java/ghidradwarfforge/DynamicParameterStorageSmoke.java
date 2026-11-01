@@ -60,7 +60,9 @@ public final class DynamicParameterStorageSmoke {
                 new Target("AARCH64:LE:64:v8A", "aarch64", "1f2003d5c0035fd6", List.of("w0", "w1")),
                 new Target("ARM:LE:32:v8", "arm", "00f020e31eff2fe1", List.of("r0", "r1")),
                 new Target("MIPS:BE:32:default", "mips", "0000000003e0000800000000", List.of("a0", "a1")),
-                new Target("MIPS:LE:32:default", "mipsel", "000000000800e00300000000", List.of("a0", "a1")))) {
+                new Target("MIPS:LE:32:default", "mipsel", "000000000800e00300000000", List.of("a0", "a1")),
+                new Target("MIPS:BE:64:default", "mips64", "0000000003e0000800000000", List.of("a0_lo", "a1_lo")),
+                new Target("MIPS:LE:64:default", "mips64el", "000000000800e00300000000", List.of("a0_lo", "a1_lo")))) {
             check(target);
         }
         System.out.println("dynamic-parameter-storage-smoke=PASS checks=" + checks);

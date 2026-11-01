@@ -61,6 +61,15 @@ public final class VariableStorageSmoke {
         assertRegister(mipsBe.register("a0", 0, 32), 4);
         assertRegister(mipsBe.register("sp", 0, 32), 29);
         assertRegister(mipsLe.register("f31", 0, 32), 63);
+        for (String name : java.util.List.of("mips64", "mips64el")) {
+            var map = TargetRegisterMap.forTarget(name);
+            assertRegister(map.register("a0", 0, 64), 4);
+            assertRegister(map.register("sp", 0, 64), 29);
+            assertRegister(map.register("f31", 0, 64), 63);
+            if (!map.dwarfNumbers().equals(mipsBe.dwarfNumbers()) || !map.registerPairs().isEmpty()) {
+                throw new AssertionError("MIPS64 physical numbering or unexpected FP32 pair policy");
+            }
+        }
 
         Storage unknown = x86.register("NOT_A_GHIDRA_REGISTER", 0, 64);
         if (!(unknown instanceof UnavailableStorage unavailable) ||

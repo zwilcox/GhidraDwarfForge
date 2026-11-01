@@ -1,5 +1,18 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local MIPS N32/N64 scalar candidate; acceptance pending:** both byte
+orders now pass 20 non-PIE/PIE/rebased/shared/rebased-shared packaged cases, with
+348 compiler and 348 Forge instruction observations, separate source stepping,
+typed globals, clean validators and deterministic preserved-input exports.
+ELF64 target selection and physical register mappings remain isolated; no
+native binding or binary changed. MIPS PIE separate symbols use the measured
+loader bias after attachment to avoid a reproduced GDB frame-lookup warning.
+Forty failure exports, twenty cancellations and the AArch64 ABI regression also
+pass. Hosted gates and protected integration remain pending. Separate wider
+fixtures expose N32 aggregate/mixed allocation defects and compiler entry
+limitations for the next correction. See `docs/MIPS-WIDE-SCALAR-PROFILE.md`; all four target issues and
+the broader ABI requirements remain open.
+
 **CONFIRMED MIPS reference investigation; full profile remains incomplete:**
 Private GCC/glibc N32 and N64 non-PIE compiler references execute and pass typed
 GDB floating-value checks. N64 exposed a validation-consumer bug in four-byte
