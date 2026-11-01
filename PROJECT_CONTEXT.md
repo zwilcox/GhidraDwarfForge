@@ -1,5 +1,20 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local wider MIPS runtime and call progress; acceptance pending:**
+The N32 allocation and truncated-stack corrections now have versioned tests
+covering 20 ABI/endian/layout cases, 9,500 Forge instruction observations and
+320 compiler/Forge injected calls through names and callbacks. Twenty matching
+failure/cancellation compositions pass. Separate float/double returns pass 24
+cases, and eight original unhomed regressions retain 3,472 passing observations.
+GNU/LLVM/pinned strict validation, deterministic reruns and preserved inputs/
+program databases pass locally; the packaged AArch64 regression also passes.
+A bounded ELF/language/type policy fixes previously suppressed N32/N64 returns.
+The validation-only GNU location-view checker correction has 48 controls and
+18 original real-artifact checks. See `docs/MIPS-WIDE-CALL-PROFILE.md` and
+`docs/MIPS-WIDE-ARGUMENT-ALLOCATION.md`. Broader allocation/storage auditing,
+hosted acceptance, protected integration and all original #68–#71 rows remain
+required. The full four-issue goal remains open.
+
 **CONFIRMED local MIPS N32/N64 scalar candidate; acceptance pending:** both byte
 orders now pass 20 non-PIE/PIE/rebased/shared/rebased-shared packaged cases, with
 348 compiler and 348 Forge instruction observations, separate source stepping,
