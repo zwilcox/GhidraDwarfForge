@@ -13,7 +13,7 @@ source = root / "src/main/java"
 # architecture-specific boundary. Keep exact paths, not basename exceptions.
 audited = {
     "ghidradwarfforge/targets/Aarch64ParameterAllocation.java",
-    "ghidradwarfforge/targets/MipsN32ParameterAllocation.java",
+    "ghidradwarfforge/targets/MipsWideParameterAllocation.java",
     "ghidradwarfforge/nativeapi/DwarfTarget.java",
     "ghidradwarfforge/locations/TargetRegisterMap.java",
     "ghidradwarfforge/GhidraArm32FunctionModes.java",

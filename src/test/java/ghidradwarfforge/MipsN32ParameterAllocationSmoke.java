@@ -29,7 +29,7 @@ import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 import ghidra.util.task.TaskMonitorAdapter;
 import ghidradwarfforge.elf.ElfImage;
-import ghidradwarfforge.targets.MipsN32ParameterAllocation;
+import ghidradwarfforge.targets.MipsWideParameterAllocation;
 
 /** Real N32 prototype: positional floats, composite splits, hidden pointers and immutable signatures. */
 public final class MipsN32ParameterAllocationSmoke {
@@ -65,7 +65,7 @@ public final class MipsN32ParameterAllocationSmoke {
                                 for (int fpr : List.of(2, 1)) {
                                     Files.write(path, image(matchingEndian ? big : !big, flags, fpr));
                                     var diagnostics = new ArrayList<String>();
-                                    var policy = MipsN32ParameterAllocation.forProgram(program, ElfImage.read(path),
+                                    var policy = MipsWideParameterAllocation.forProgram(program, ElfImage.read(path),
                                         TaskMonitor.DUMMY, diagnostics::add);
                                     var changes = policy.corrections(mixed, TaskMonitor.DUMMY, diagnostics::add);
                                     boolean accepted = compiler.equals("n32") && matchingEndian && flags == 0x80000025 && fpr == 2;
@@ -87,7 +87,7 @@ public final class MipsN32ParameterAllocationSmoke {
                         }
                         if (compiler.equals("n32")) {
                             Files.write(path, image(big, 0x80000025, 2));
-                            var policy = MipsN32ParameterAllocation.forProgram(program, ElfImage.read(path), TaskMonitor.DUMMY, ignored -> { });
+                            var policy = MipsWideParameterAllocation.forProgram(program, ElfImage.read(path), TaskMonitor.DUMMY, ignored -> { });
                             var pairFunction = function(program, pair, pair);
                             var changed = policy.corrections(pairFunction, TaskMonitor.DUMMY, ignored -> { });
                             require(changed.get(0).toString().equals(big ? "a0:8,a1:8" : "a1:8,a0:8"), "pair input");
@@ -135,7 +135,98 @@ public final class MipsN32ParameterAllocationSmoke {
             }
         }
         finally { Files.deleteIfExists(path); }
+        checkLayouts();
         System.out.println("mips-n32-parameter-allocation-smoke=PASS checks=" + checks);
+    }
+
+    private static void checkLayouts() throws Exception {
+        var path = Files.createTempFile("forge-wide-layout-", ".elf");
+        try {
+            for (boolean n64 : List.of(false, true)) {
+                for (boolean big : List.of(false, true)) {
+                    var language = DefaultLanguageService.getLanguageService().getLanguage(new LanguageID(
+                        "MIPS:" + (big ? "BE" : "LE") + (n64 ? ":64:default" : ":64:64-32addr")));
+                    var owner = new Object();
+                    var program = new ProgramDB("wide-layout", language,
+                        language.getCompilerSpecByID(new CompilerSpecID(n64 ? "default" : "n32")), owner);
+                    int transaction = program.startTransaction("owned layouts");
+                    try {
+                        Files.write(path, n64 ? wideImage(big) : image(big, 0x80000025, 2));
+                        var policy = MipsWideParameterAllocation.forProgram(program, ElfImage.read(path),
+                            TaskMonitor.DUMMY, ignored -> { });
+                        var manager = program.getDataTypeManager();
+                        var word = new LongLongDataType(manager);
+                        var real = new DoubleDataType(manager);
+                        var array = new StructureDataType("ArrayDoubles", 0, manager);
+                        array.add(new ghidra.program.model.data.ArrayDataType(real, 2, 8, manager), "elements", null);
+                        var choice = new ghidra.program.model.data.UnionDataType(
+                            ghidra.program.model.data.CategoryPath.ROOT, "DoubleChoice", manager);
+                        choice.add(real, "value", null);
+                        var union = new StructureDataType("UnionDouble", 0, manager);
+                        union.add(choice, "first", null); union.add(real, "second", null);
+                        var box = new StructureDataType("DoubleBox", 0, manager);
+                        box.add(real, "value", null);
+                        var nested = new StructureDataType("NestedDouble", 0, manager);
+                        nested.add(box, "first", null); nested.add(real, "second", null);
+                        for (var type : List.of(array, union, nested)) {
+                            var function = function(program, word, type, word);
+                            String before = snapshot(function);
+                            var changes = policy.corrections(function, TaskMonitor.DUMMY, ignored -> { });
+                            var storage = changes.getOrDefault(0, function.getParameter(0).getVariableStorage());
+                            String first = "a0:8", second = type == array ? "a1:8" : "f13:8";
+                            require(storage.toString().equals(big ? first + "," + second : second + "," + first),
+                                "wrong direct-field classification: " + type.getName() + " " + storage);
+                            require(changes.getOrDefault(1, function.getParameter(1).getVariableStorage()).toString().equals("a2:8"),
+                                "tail slot after aggregate");
+                            require(before.equals(snapshot(function)), "classification mutated original type/storage");
+                        }
+                        for (int count : List.of(1, 3, 7, 9)) {
+                            var inputs = new ArrayList<DataType>();
+                            for (int i = 0; i < count; i++) inputs.add(word);
+                            inputs.add(new ghidra.program.model.data.Integer16DataType(manager));
+                            inputs.add(word);
+                            var function = function(program, word, inputs.toArray(DataType[]::new));
+                            String before = snapshot(function);
+                            var changes = policy.corrections(function, TaskMonitor.DUMMY, ignored -> { });
+                            var value = changes.getOrDefault(count, function.getParameter(count).getVariableStorage());
+                            var tail = changes.getOrDefault(count + 1, function.getParameter(count + 1).getVariableStorage());
+                            if (count == 1 || count == 3) {
+                                String first = count == 1 ? "a2:8" : "t0:8";
+                                String second = count == 1 ? "a3:8" : "t1:8";
+                                require(value.toString().equals(big ? first + "," + second : second + "," + first), "aligned integer register pair: " + value);
+                                require(tail.toString().equals(count == 1 ? "t0:8" : "t2:8"), "tail after aligned integer");
+                            }
+                            else {
+                                require(value.isStackStorage() && value.getStackOffset() == (count == 7 ? 0 : 16),
+                                    "aligned integer stack offset: " + value);
+                                require(tail.isStackStorage() && tail.getStackOffset() == (count == 7 ? 16 : 32),
+                                    "tail after aligned stack integer: " + tail);
+                            }
+                            require(before.equals(snapshot(function)), "alignment mutated saved signature");
+                        }
+                    }
+                    finally {
+                        program.endTransaction(transaction, true);
+                        program.release(owner);
+                    }
+                }
+            }
+        }
+        finally { Files.deleteIfExists(path); }
+    }
+
+    private static byte[] wideImage(boolean big) {
+        var bytes = ByteBuffer.allocate(152).order(big ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN);
+        bytes.put(new byte[] { 0x7f, 'E', 'L', 'F', 2, (byte) (big ? 2 : 1), 1, 0, 1 });
+        bytes.position(16);
+        bytes.putShort((short) 2).putShort((short) 8).putInt(1).putLong(0).putLong(64).putLong(0).putInt(0x80000005);
+        bytes.putShort((short) 64).putShort((short) 56).putShort((short) 1);
+        bytes.position(64);
+        bytes.putInt(0x70000003).putInt(4).putLong(128).putLong(0).putLong(0).putLong(24).putLong(24).putLong(8);
+        bytes.position(128);
+        bytes.putShort((short) 0).put((byte) 64).put((byte) 2).put((byte) 2).put((byte) 2).put((byte) 0).put((byte) 1);
+        bytes.putInt(0).putInt(0).putInt(1).putInt(0);
+        return bytes.array();
     }
 
     private static Function function(ProgramDB program, DataType result, DataType... inputs) throws Exception {
