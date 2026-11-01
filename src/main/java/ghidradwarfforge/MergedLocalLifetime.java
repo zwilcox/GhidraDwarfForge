@@ -40,7 +40,8 @@ final class MergedLocalLifetime {
                 storage.getProgramArchitecture() != program || !storage.isValid() ||
                 storage.isForcedIndirect() || canonical.getLength() <= 0 ||
                 storage.size() != canonical.getLength()) return List.of();
-        var decoded = RegisterDefinitionFlow.decodedBody(program, function, monitor);
+        var inspected = RegisterDefinitionFlow.inspectBody(program, function, monitor);
+        var decoded = inspected.instructions();
         if (decoded.isEmpty()) return List.of();
         Set<Variable> members = new HashSet<>();
         Map<Address, Register> definitions = new LinkedHashMap<>();
@@ -57,7 +58,8 @@ final class MergedLocalLifetime {
                     !variable.getDataType().equals(canonical.getDataType()) ||
                     variable.getLength() != canonical.getLength() || !members.add(variable) ||
                     mapping.definition().subtract(function.getEntryPoint()) != variable.getFirstUseOffset() ||
-                    !decoded.containsKey(mapping.definition())) return List.of();
+                    !decoded.containsKey(mapping.definition()) ||
+                    decoded.get(mapping.definition()).getFlowType().isCall()) return List.of();
             if (variable == canonical) {
                 if (mapping.register() != null || stackDefinition != null) return List.of();
                 stackDefinition = mapping.definition();
@@ -90,6 +92,7 @@ final class MergedLocalLifetime {
         if (attached != members.size()) return List.of();
         var analysis = StackValueFlow.forStackLocal(program, canonical.getLength(), canonical.getStackOffset());
         if (analysis == null) return List.of();
+        analysis.setInspectedCalls(inspected.calls());
         return analysis.acrossSavedAssignments(function, decoded, stackDefinition, definitions, registers, monitor);
     }
 
@@ -101,7 +104,8 @@ final class MergedLocalLifetime {
             return proveStack(program, function, group, registers, monitor);
         }
         if (group.mappings().stream().anyMatch(mapping -> mapping.register() == null)) return List.of();
-        var decoded = RegisterDefinitionFlow.decodedBody(program, function, monitor);
+        var inspected = RegisterDefinitionFlow.inspectBody(program, function, monitor);
+        var decoded = inspected.instructions();
         if (decoded.isEmpty()) return List.of();
         Map<Address, Register> definitions = new LinkedHashMap<>();
         Map<Register, Storage> locations = new LinkedHashMap<>();
@@ -117,7 +121,7 @@ final class MergedLocalLifetime {
                     !variable.getDataType().equals(group.canonical().getDataType()) ||
                     variable.getLength() != group.canonical().getLength() ||
                     mapping.definition().subtract(function.getEntryPoint()) != variable.getFirstUseOffset() ||
-                    instruction == null || !members.add(variable) ||
+                    instruction == null || instruction.getFlowType().isCall() || !members.add(variable) ||
                     !GhidraVariableStorage.completeRegisterDefinition(instruction, register, variable.getLength()) ||
                     definitions.put(mapping.definition(), register.getBaseRegister()) != null) return List.of();
             Storage storage = GhidraVariableStorage.mappedRegister(register, variable.getLength(), registers, "merged local");
@@ -146,11 +150,7 @@ final class MergedLocalLifetime {
         Map<Address, Set<Address>> predecessors = new HashMap<>();
         for (var row : decoded.entrySet()) {
             monitor.checkCancelled();
-            var edges = new LinkedHashSet<Address>();
-            for (Address[] targets : new Address[][] { row.getValue().getDefaultFlows(), row.getValue().getFlows() }) {
-                if (targets != null) edges.addAll(List.of(targets));
-            }
-            if (row.getValue().getFallThrough() != null) edges.add(row.getValue().getFallThrough());
+            var edges = RegisterDefinitionFlow.localSuccessors(row.getValue());
             successors.put(row.getKey(), edges);
             for (Address target : edges) predecessors.computeIfAbsent(target, unused -> new LinkedHashSet<>()).add(row.getKey());
         }
@@ -188,7 +188,13 @@ final class MergedLocalLifetime {
                 known.clear();
                 known.add(definition);
             }
-            else known.removeIf(register -> GhidraVariableStorage.writesRegister(decoded.get(address), register));
+            else {
+                for (Register register : Set.copyOf(known)) {
+                    if (!RegisterDefinitionFlow.preserves(decoded.get(address), register, inspected.calls(), monitor)) {
+                        known.remove(register);
+                    }
+                }
+            }
             if (!known.equals(output.get(address))) {
                 output.put(address, Set.copyOf(known));
                 work.addAll(successors.get(address));

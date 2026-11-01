@@ -6,7 +6,8 @@ component does not complete either umbrella. The starting main commit is
 `6c37222304c2abd081b2c800f2354afe3b28c5c0`; Ghidra 12.0.3 and Java 21-compatible
 bytecode remain the supported baseline. No native ABI change is proposed.
 
-**CONFIRMED completion-audit gaps:** saved-local analyses currently reject
+**HISTORICAL audit at b71bfd9 (local register component superseded by
+`LOCAL-CALL-LIFETIMES.md`; memory and final acceptance still open):** saved-local analyses currently reject
 call-containing bodies, and inspected-call summaries preserve registers only,
 retiring all memory facts. Incoming-call and mixed-piece acceptance does not
 prove these missing local/caller-slot cases. See

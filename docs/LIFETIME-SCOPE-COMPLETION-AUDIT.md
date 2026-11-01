@@ -6,6 +6,12 @@ does not replace or narrow `LIFETIMES-AND-SCOPES-PLAN.md`. It separates accepted
 components from missing composition and validation. Issues #67 and #73 stay
 open; PR102 remains a draft pending its combined review.
 
+**CONFIRMED local update:** `LOCAL-CALL-LIFETIMES.md` records saved register-call
+composition and its six passing runtime roles. The original audit table below
+is historical at b71bfd9 where it says the local decoder rejects calls.
+Remaining call-memory, broader local-call controls and combined acceptance are
+still required; this checkpoint does not close either umbrella.
+
 ## Requirement evidence
 
 | Requirement | Current evidence | Outstanding proof or work |

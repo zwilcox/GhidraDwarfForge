@@ -71,6 +71,7 @@ expected_sources=(
     later-register-local.c
     lexical-shadow.c
     lexical-statics.c
+    local-call-lifetimes.c
     local-definition-flow.c
     merged-local-mappings.c
     minimal.c

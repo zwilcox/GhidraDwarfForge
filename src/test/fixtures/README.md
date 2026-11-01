@@ -582,3 +582,12 @@ parameters renamed to the automatic spellings. The six x86-64/AArch64
 exec/PIE/rebase roles use immutable saved-program exports and retain original,
 deterministic, GNU/LLVM/pinned-strict and source-lookup checks. See
 `docs/ARTIFICIAL-OBJECT-ROLES.md`; this does not broaden injected-call support.
+
+`local-call-lifetimes.c` retains a compiler-tracked later local in R12/x19
+through one and two ordinary calls. Its headless curation records the exact
+saved definition; compiler/Forge GDB checks every caller/callee instruction,
+initialization and restored-register gaps, signed values and returned results.
+The export harness covers exec, PIE and rebased PIE, immutable deterministic
+exports, raw location lists, validators and preservation. The old-package
+`--expect-baseline-gap` option is a reproduction only. Call-memory and broader
+control-flow acceptance remain separate; see `docs/LOCAL-CALL-LIFETIMES.md`.

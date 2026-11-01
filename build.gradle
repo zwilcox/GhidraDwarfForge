@@ -430,6 +430,18 @@ tasks.register("localDefinitionFlowSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/local-definition-flow/cache").absolutePath
 }
 
+tasks.register("localCallLifetimeSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks saved later locals across inspected calls and clobber boundaries"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.LocalCallLifetimeSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/local-call-lifetime/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/local-call-lifetime/cache").absolutePath
+}
+
 tasks.register("definedRegisterLocalSmoke", JavaExec) {
     group = "verification"
     description = "Checks that a curated local's recorded register definition completes before availability"

@@ -1,5 +1,16 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local call-register checkpoint; full lifetime/scope work incomplete:**
+saved later locals now use inspected call graphs and caller return successors.
+Six x86-64/AArch64 exec/PIE/rebased roles, raw locations, compiler/Forge GDB,
+validators, eight runtime regressions and eight actual Java 21 suites pass.
+Stack-owned logical identities still require a callee memory proof; preserved
+register bits alone are insufficient. Call-specific branch/loop/split, merged,
+native-clobber, scope, failure/cancellation and hosted acceptance remain open.
+See `docs/LOCAL-CALL-LIFETIMES.md`. This supersedes the historical decoder gap
+below; it does not complete P1.11a/#67 or P3.3/#73.
+
+
 **CONFIRMED completion-audit gaps:** saved-local analyses currently reject
 call-containing bodies, and inspected-call summaries preserve registers only,
 retiring all memory facts. Incoming-call and mixed-piece acceptance does not
