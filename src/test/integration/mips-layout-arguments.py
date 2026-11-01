@@ -61,6 +61,7 @@ def main():
     fixture = source.parent / 'fixtures/mips_layout_arguments.c'
     protected = [fixture, Path(__file__), source / 'mips-layout-arguments-gdb.py',
         source / 'mips-layout-arguments-gdb.sh', source / 'mips-layout-arguments-controls.py',
+        source / 'mips-live-import-export.py', source / 'ghidra_scripts/RepeatLiveAbiExport.java',
         source / 'ghidra_scripts/AbiDecompilerFailureExport.java', source / 'ghidra_scripts/CancelDuringElfCopy.java',
         source / 'ghidra_scripts/ProbeMipsLayoutArguments.java',
         source / 'ghidra_scripts/RebaseFixtureProgram.java']
@@ -90,7 +91,8 @@ def main():
     run('symbols', ['readelf', '-sW', reference])
     labels = {}
     functions = {'layout_array', 'layout_union', 'layout_nested', 'layout_float_box',
-        'layout_small', 'layout_padded', 'layout_aligned', 'layout_aligned_stack'}
+        'layout_small', 'layout_padded', 'layout_aligned', 'layout_aligned_stack',
+        'layout_pair16', 'layout_mixed32', 'layout_pair16_stack', 'layout_mixed32_edge'}
     wanted = functions | {name + '_body' for name in functions}
     for line in (case / 'symbols.log').read_text().splitlines():
         fields = line.split()
@@ -160,6 +162,12 @@ def main():
     run('controls', ['python3', source / 'mips-layout-arguments-controls.py', case, ghidra,
         debugger, args.gdb_data_directory], clean=False)
     assert 'mips-layout-arguments-controls=PASS' in (case / 'controls.log').read_text()
+    assert before == {path: support.digest(Path(path)) for path in before}
+    result['status'] = 'LIVE_PENDING'
+    write('result.json', result)
+    run('live-import', ['python3', source / 'mips-live-import-export.py', case, ghidra,
+        debugger, args.gdb_data_directory], clean=False)
+    assert 'mips-live-import-export=PASS' in (case / 'live-import.log').read_text()
     assert before == {path: support.digest(Path(path)) for path in before}
     result['status'] = 'PASS'
     write('result.json', result)

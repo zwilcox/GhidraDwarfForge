@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED aligned-aggregate and live-session MIPS defects; correction under validation:**
+Explicit aggregate alignment now skips the required register slot and caps
+argument alignment at 16 without changing formal types. A separate fresh-import
+failure was traced to Ghidra lazily serializing an empty killed-register list;
+the fingerprint correction preserves strict rejection of nonempty changes.
+434 model checks, all 20 saved-program layout/control cases and all 20 final
+live-session cases pass locally. Exact-head hosted acceptance remains pending. See
+`docs/MIPS-ALIGNED-COMPOSITES.md`. The full #68–#71 goal remains open.
+
 **CONFIRMED expanded MIPS layout validation:** the v3 production package now
 passes all 20 ABI/endian/exec/PIE/rebase/shared cases, with 1,280 exact Forge
 values and 640 compiler-body values plus GNU/LLVM/strict validation. A versioned,
