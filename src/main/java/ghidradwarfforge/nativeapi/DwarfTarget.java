@@ -44,14 +44,16 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
         "arm", "default", "mips", "default", "mipsel", "default");
     // Processor identities follow Ghidra 12.0.3's ELF .opinion and .ldefs files.
     // Language variants and compiler-spec IDs are not portable ABI identifiers.
-    private static final Map<Integer, TargetDescription> TARGETS = Map.of(
-        EM_386, new TargetDescription("i386", 4, "x86", null, "x86", false, "x86"),
-        EM_MIPS, new TargetDescription("MIPS32", 4, "mipsel", "mips", "mips", true, "MIPS"),
-        EM_ARM, new TargetDescription("ARM", 4, "arm", null, "arm", false, "ARM"),
-        EM_X86_64,
-            new TargetDescription("x86-64", 8, "x86_64", null, "x86_64", false, "x86"),
-        EM_AARCH64,
-            new TargetDescription("AArch64", 8, "aarch64", null, "arm64", false, "AARCH64"));
+    private static final Map<Integer, List<TargetDescription>> TARGETS = Map.of(
+        EM_386, List.of(new TargetDescription("i386", 4, "x86", null, "x86", false, "x86")),
+        EM_MIPS, List.of(
+            new TargetDescription("MIPS32", 4, "mipsel", "mips", "mips", true, "MIPS"),
+            new TargetDescription("MIPS64", 8, "mips64el", "mips64", "mips", true, "MIPS")),
+        EM_ARM, List.of(new TargetDescription("ARM", 4, "arm", null, "arm", false, "ARM")),
+        EM_X86_64, List.of(
+            new TargetDescription("x86-64", 8, "x86_64", null, "x86_64", false, "x86")),
+        EM_AARCH64, List.of(
+            new TargetDescription("AArch64", 8, "aarch64", null, "arm64", false, "AARCH64")));
 
     private record TargetDescription(String displayName, int addressBytes,
             String littleEndianName, String bigEndianName, String producerIsa,
@@ -94,11 +96,14 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
         if (byteOrder == null) {
             throw new IllegalArgumentException("ELF byte order is required");
         }
-        TargetDescription description = TARGETS.get(machine);
-        if (description == null) {
+        List<TargetDescription> descriptions = TARGETS.get(machine);
+        if (descriptions == null) {
             throw new IllegalArgumentException("unsupported ELF machine " + machine +
                 "; add an audited libdwarf target description before exporting");
         }
+        TargetDescription description = descriptions.stream()
+            .filter(candidate -> candidate.addressBytes() == addressBytes)
+            .findFirst().orElse(descriptions.getFirst());
         return description.create(addressBytes, byteOrder);
     }
 

@@ -1,4 +1,4 @@
-// Exercise a real native failure after saving a dynamically indirect ABI parameter.
+// Exercise a real native failure after saving a defensible ABI parameter.
 // @category DWARF.Tests
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -21,8 +21,11 @@ import ghidradwarfforge.output.ArtifactPairPublisher;
 public class AbiDecompilerFailureExport extends GhidraScript {
     @Override
     protected void run() throws Exception {
-        if (getScriptArgs().length != 2) throw new IllegalArgumentException("output failed-function");
+        if (getScriptArgs().length < 2 || getScriptArgs().length > 3) {
+            throw new IllegalArgumentException("output failed-function [saved-parameter]");
+        }
         String failedName = getScriptArgs()[1];
+        String parameterName = getScriptArgs().length == 3 ? getScriptArgs()[2] : "value";
         Path input = Path.of(currentProgram.getExecutablePath());
         Path output = Path.of(getScriptArgs()[0]);
         var elf = ElfImage.read(input);
@@ -62,9 +65,9 @@ public class AbiDecompilerFailureExport extends GhidraScript {
             ghidradwarfforge.targets.Aarch64ParameterAllocation.forProgram(currentProgram, elf, monitor, this::println));
         var model = GhidraCompilerCallPolicy.apply(currentProgram, target, extracted, monitor, this::println);
         if (model.variableStorage().variables().stream().noneMatch(variable ->
-                variable.functionName().equals(failedName) && variable.name().equals("value") &&
+                variable.functionName().equals(failedName) && variable.name().equals(parameterName) &&
                 variable.hasDefensibleLocation())) {
-            throw new AssertionError("saved indirect carrier disappeared before failure filtering");
+            throw new AssertionError("saved parameter disappeared before failure filtering");
         }
         Path sourceOutput = Path.of(output + ".c");
         ArtifactPairPublisher.stageAndPublish(output, sourceOutput,

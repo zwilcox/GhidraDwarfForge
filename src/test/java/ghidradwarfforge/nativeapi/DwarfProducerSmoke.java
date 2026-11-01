@@ -68,7 +68,9 @@ public final class DwarfProducerSmoke {
         ARM64("arm64", 8, true, 0x1_0000_1234L),
         ARM32("arm", 4, true, 0x0010_1234L),
         MIPS32BE("mips", 4, false, 0x0040_1234L),
-        MIPS32LE("mips", 4, true, 0x0040_1234L);
+        MIPS32LE("mips", 4, true, 0x0040_1234L),
+        MIPS64BE("mips", 8, false, 0x1_2000_1234L),
+        MIPS64LE("mips", 8, true, 0x1_2000_1234L);
 
         private final String isaName;
         private final int addressBytes;
@@ -91,9 +93,11 @@ public final class DwarfProducerSmoke {
                 case "arm", "arm32" -> ARM32;
                 case "mips", "mips32be" -> MIPS32BE;
                 case "mipsel", "mips32le" -> MIPS32LE;
+                case "mips64", "mips64be" -> MIPS64BE;
+                case "mips64el", "mips64le" -> MIPS64LE;
                 default -> throw new IllegalArgumentException(
                     "unknown target profile " + value +
-                        " (expected i386, x86_64, arm64, arm32, mips32be, or mips32le)");
+                        " (expected i386, x86_64, arm64, arm32, mips32be, mips32le, mips64be, or mips64le)");
             };
         }
 
@@ -135,7 +139,7 @@ public final class DwarfProducerSmoke {
         if (args.length != 3 && args.length != 6) {
             throw new IllegalArgumentException(
                 "usage: DwarfProducerSmoke <absolute-libdwarf> <absolute-libdwarfp> " +
-                    "<i386|x86_64|arm64|arm32|mips32be|mips32le> [<input-elf> <output-dbg> " +
+                    "<i386|x86_64|arm64|arm32|mips32be|mips32le|mips64be|mips64le> [<input-elf> <output-dbg> " +
                     "<function-address>]");
         }
 

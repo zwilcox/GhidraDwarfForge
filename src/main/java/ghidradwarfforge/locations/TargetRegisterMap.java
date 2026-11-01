@@ -109,7 +109,7 @@ public record TargetRegisterMap(String target, String provenance,
             case "x86_64" -> x86_64();
             case "aarch64" -> aarch64();
             case "arm", "arm32" -> arm32();
-            case "mips", "mipsel" -> mips(target);
+            case "mips", "mipsel", "mips64", "mips64el" -> mips(target);
             default -> throw new IllegalArgumentException(
                 "no audited DWARF register map for target " + target);
         };

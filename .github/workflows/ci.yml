@@ -614,11 +614,13 @@ jobs:
               ;;
             mips32be)
               packages+=(gcc-mips-linux-gnu g++-mips-linux-gnu binutils-mips-linux-gnu
-                libc6-dev-mips-cross qemu-user-static)
+                libc6-dev-mips-cross qemu-user-static gcc-multilib-mips64-linux-gnuabi64
+                libc6-dev-mips64-cross libc6-dev-mipsn32-mips64-cross)
               ;;
             mips32le)
               packages+=(gcc-mipsel-linux-gnu g++-mipsel-linux-gnu binutils-mipsel-linux-gnu
-                libc6-dev-mipsel-cross qemu-user-static)
+                libc6-dev-mipsel-cross qemu-user-static gcc-multilib-mips64el-linux-gnuabi64
+                libc6-dev-mips64el-cross libc6-dev-mipsn32-mips64el-cross)
               ;;
           esac
           sudo apt-get update -y
@@ -709,6 +711,15 @@ jobs:
               -PlibdwarfpPath="$PWD/native-integration/libdwarfp.so.2.3.2" \
               -PtargetProfile="$profile" \
               -PnativeIterations="$iterations"
+          if [[ "$TARGET" == mips32be || "$TARGET" == mips32le ]]; then
+              wide_profile=${TARGET/mips32/mips64}
+              src/test/integration/run-isolated-native-smoke.sh \
+                  "build/test-results/native-producer/$wide_profile" \
+                  ./gradlew nativeProducerSmoke \
+                    -PlibdwarfPath="$PWD/native-integration/libdwarf.so.2.3.2" \
+                    -PlibdwarfpPath="$PWD/native-integration/libdwarfp.so.2.3.2" \
+                    -PtargetProfile="$wide_profile" -PnativeIterations=16
+          fi
 
       - name: Install extension
         run: unzip -q dist/*.zip -d "$GHIDRA_INSTALL_DIR/Ghidra/Extensions"
@@ -1574,6 +1585,20 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: src/test/integration/mips-truncated-space-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
 
+      - name: MIPS N32 and N64 scalar ABI runtime and loader profiles
+        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          endian=${TARGET#mips32}
+          for abi in n32 n64; do
+              for role in exec pie pie-rebased shared shared-rebased; do
+                  python3 src/test/integration/mips-wide-abi.py "$GHIDRA_INSTALL_DIR" \
+                      --abi "$abi" --endian "$endian" --role "$role" --with-controls
+              done
+          done
+
       - name: ARM per-function dynamic base and VFP parameters
         if: matrix.target == 'arm32'
         run: src/test/integration/arm-dynamic-pcs-export.sh "$GHIDRA_INSTALL_DIR"
@@ -1978,6 +2003,20 @@ jobs:
           }
           'isolated-native-producer=PASS' |
             Add-Content -Path "$resultDirectory\native-producer-status.txt" -Encoding utf8
+
+          foreach ($wideProfile in @('mips64be', 'mips64le')) {
+              & .\gradlew.bat nativeProducerSmoke `
+                "-PlibdwarfPath=$($consumer.FullName)" `
+                "-PlibdwarfpPath=$($producer.FullName)" `
+                "-PtargetProfile=$wideProfile" -PnativeIterations=16 2>&1 |
+                Tee-Object -FilePath "$resultDirectory\$wideProfile.log"
+              $wideStatus = $LASTEXITCODE
+              "exit_status=$wideStatus" |
+                Set-Content -Path "$resultDirectory\$wideProfile-status.txt" -Encoding utf8
+              if ($wideStatus -ne 0) {
+                  throw "isolated $wideProfile producer failed or crashed with exit code $wideStatus"
+              }
+          }
 
           $module = Join-Path $env:GHIDRA_INSTALL_DIR `
             'Ghidra\Extensions\GhidraDwarfForge'

@@ -134,3 +134,11 @@ observations. A strict-reader GNU frame-termination defect blocks the original
 N64 validator and has a separate validation-only correction. FPXX FR-mode
 experiments expose different unresolved consumer failures by byte order. See
 `research/MIPS-ABI-COMPLETION.md`; the full #69 row above remains binding.
+
+**CONFIRMED local N32/N64 scalar acceptance; integration pending:** the new
+ELF64 target descriptions and shared physical register mapping pass all 20
+ABI/endian/layout cases, including real failure/cancellation compositions.
+See `MIPS-WIDE-SCALAR-PROFILE.md` for exact package receipts, the explicit PIE
+load-bias workflow, and separate N32 aggregate/mixed failures uncovered by the
+next research fixture. Those failures and all remaining original issue rows
+still require correction and acceptance; this component does not close #69.
