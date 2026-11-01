@@ -1,12 +1,19 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local sectionless shared composition:** contiguous/split shared and
+rebased shared mixed-body cases pass 810 saved/live/failure debugger observations,
+sixteen calls, eight native failure exports and four cancellations. The oracle
+measures the loader's live link_map because sectionless objects have no GDB From
+address, and verifies original header/code bytes before using the bias. See
+`docs/ARM-MIXED-MODE-MAPPINGS.md`. Runtime context/conflict controls, broader ABI
+profiles and exact-head hosted integration remain open; #68–#71 are not complete.
+
 **CONFIRMED local inherited/omitted ARM mapping acceptance:** five retained-symbol
 split layouts preserve every original symbol and mapping, with 1,045 saved/live/
 failure debugger observations and twenty injected calls. Eight stripped layouts
 pass explicit unknown-data omission controls with 208 instruction observations,
 exact diagnostics and no invented mapping. See `docs/ARM-MIXED-MODE-MAPPINGS.md`.
-Sectionless shared composition, broader ABI profiles and exact-head integration
-remain required; #68–#71 remain open.
+Broader ABI profiles and exact-head integration remain required; #68–#71 remain open.
 
 **CONFIRMED local discontiguous mixed-body acceptance:** eight additional ARM
 layouts pass two-range bodies with an excluded data word, six exact mapping
@@ -14,8 +21,8 @@ boundaries, raw DWARF range/line checks and compiler/Forge runtime comparisons.
 Saved/live/failure exports total 1,672 debugger observations, 32 injected calls,
 16 native failure exports and eight cancellations. CI covers both contiguous
 and split bodies. See `docs/ARM-MIXED-MODE-MAPPINGS.md` for source-map limits,
-receipts and retained harness failures. Inherited-map runtime acceptance,
-sectionless shared composition, the remaining original ABI requirements and
+receipts and retained harness failures. Runtime context/conflict controls,
+the remaining original ABI requirements and
 exact-head hosted integration remain open; this does not complete #68–#71.
 
 **CONFIRMED local mixed-mode layout/source expansion; full ABI goal remains open:**
@@ -24,8 +31,8 @@ breakpoints, injected function-pointer calls, raw symbol preservation, validator
 determinism and failure/cancellation. This includes shared/rebased libraries and
 sectionless exec/PIE/rebased executables. See `docs/ARM-MIXED-MODE-MAPPINGS.md`
 for 832 observations, exact package receipts and retained failed experiments.
-The producer is unchanged in this expansion. Inherited
-mapping acceptance, remaining ARM/MIPS/i386 requirements, exact-head hosted
+The producer is unchanged in this expansion. Remaining ARM/MIPS/i386
+requirements, exact-head hosted
 gates and protected integration remain required; #68–#71 are not complete.
 
 **CONFIRMED live-program follow-up:** all eight layouts also pass two exports

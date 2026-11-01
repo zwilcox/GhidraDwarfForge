@@ -70,3 +70,31 @@ are retained in the `arm-mixed-modes` worktree under
 an accepted BE8 sidecar or prove variable/return ABI correctness. The next step
 remains matched-ELF validation and exact Ghidra data/instruction-endian agreement,
 followed by source-known storage/return/call behavior and the required layouts.
+
+## Symbol-only packaging and debugger experiment
+
+**CONFIRMED isolated experiment; production support remains PLANNED:** a
+standalone producer copy emits a symbol-only DIE for the actual compiler-known
+`be8_probe` at `0x100b8`, with its exact 52-byte extent. The smoke fixture's
+synthetic formal parameter is removed; no unproven variable lifetime, type,
+source line or return ABI is emitted. The matched writer preserves ELF32
+big-endian identity and `e_flags=0x05800400`, with no program-header table.
+GNU, LLVM and strict libdwarf accept the artifact with zero reported errors.
+
+Compiler and experimental symbols resolve the same function entry and decode
+all thirteen instructions identically. Two independent QEMU/GDB executions
+check each instruction PC, raw instruction bytes, ARM state and source-known
+register values, the big-endian global bytes `11 22 33 44`, expected return
+`0x1122334b` and normal process exit. All 26 observations agree; original bytes
+are unchanged. Only the exact compiler-corroborated QEMU vDSO warning remains.
+The initial disassembly endpoint included the first inaccessible byte past the
+function; both failing transcripts are retained, and the corrected exclusive
+extent checks all thirteen instructions without extending the function.
+
+The complete experiment sources, binaries, native/validator/debugger transcripts
+and hashes are in the `arm-mixed-modes` worktree's
+`build/arm-mixed-modes/be8-symbol-experiment/result.json`. This is an isolated
+native/packaging experiment, not the production Ghidra exporter. Production BE8
+remains explicitly rejected. Next work is an isolated target/ELF/language
+agreement model and real curated types/storage/runtime, including return/call
+classification, before advertising any supported BE8 profile.

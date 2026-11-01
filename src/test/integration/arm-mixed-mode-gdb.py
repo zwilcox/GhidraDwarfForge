@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import re
+import struct
 import gdb
 
 case = Path(os.environ["FORGE_MIXED_CASE"])
@@ -19,6 +20,77 @@ assert labels['hex'] == expected['hex']
 start = labels["start"]
 name = "mixed_body" if variant == "compiler" else "recovered_mixed_body"
 result = {"status": "FAILED", "variant": variant, "phase": phase, "observations": []}
+
+
+
+def shared_link_map():
+    """Read the Linux ARM32 loader rendezvous, independent of exported symbols."""
+    driver = fixture_module.inventory.elf(case / 'mixed.driver')
+    dynamic = fixture_module.inventory.section(driver, '.dynamic')
+    slots = [dynamic['row'][3] + offset + 4 for offset in range(0, len(dynamic['data']), 8)
+        if struct.unpack_from('<II', dynamic['data'], offset)[0] == 21]  # DT_DEBUG
+    assert len(slots) == 1 and driver['header'][0] == 2  # fixed-address driver
+    memory = gdb.selected_inferior()
+    def word(at):
+        return int.from_bytes(memory.read_memory(at, 4), 'little')
+    debug = word(slots[0])
+    assert debug and word(debug) == 1  # r_debug.r_version
+    node = word(debug + 4)  # r_debug.r_map
+    seen, entries = set(), []
+    selected = []
+    while node:
+        assert node not in seen and len(seen) < 64
+        seen.add(node)
+        bias, path, dynamic_address, following, previous = struct.unpack('<5I', memory.read_memory(node, 20))
+        name_bytes = bytearray()
+        for offset in range(4096):
+            value = bytes(memory.read_memory(path + offset, 1))
+            if value == b'\0':
+                break
+            name_bytes += value
+        else:
+            raise AssertionError('unterminated link_map name')
+        loaded = name_bytes.decode()
+        row = {'node': node, 'bias': bias, 'path': loaded, 'dynamic': dynamic_address}
+        entries.append(row)
+        if loaded == str(case / 'mixed.stripped'):
+            selected.append(row)
+        node = following
+    row, = selected
+    original = fixture_module.inventory.elf(case / 'mixed.reference')
+    assert row['dynamic'] == row['bias'] + fixture_module.inventory.section(original, '.dynamic')['row'][3]
+    assert bytes(memory.read_memory(row['bias'], 16)) == original['data'][:16]
+    assert bytes(memory.read_memory(row['bias'] + labels['start'], expected['size'])).hex() == expected['hex']
+    return row['bias'], {'debugSlot': slots[0], 'rDebug': debug, 'entries': entries,
+        'matchingHeaderAndCodeBytes': True}
+
+
+def load_shared():
+    gdb.execute("file " + str(case / "mixed.driver"))
+    gdb.execute("set solib-search-path " + str(case))
+    gdb.execute("target remote " + os.environ["FORGE_MIXED_REMOTE"])
+    driver_entry = gdb.Breakpoint("*main", internal=True)
+    gdb.execute("continue")
+    driver_entry.delete()
+    libraries = gdb.execute("info sharedlibrary", to_string=True)
+    line, = [row for row in libraries.splitlines() if row.split()[-1:] == [str(case / "mixed.stripped")]]
+    if labels.get('sectionless', False):
+        bias, rendezvous = shared_link_map()
+        runtime_text = None  # GDB has no section-derived From address.
+    else:
+        runtime_text = int(line.split()[0], 16)
+        bias = runtime_text - labels["textAddress"]
+        rendezvous = None
+    assert bias > 0
+    artifact = case / ("mixed.reference" if variant == "compiler" else variant + ".dbg")
+    gdb.execute("add-symbol-file " + str(artifact) + " -o " + hex(bias))
+    assert int(gdb.parse_and_eval("&" + name)) == start + bias
+    result["sharedLoading"] = {"bias": bias, "runtimeText": runtime_text,
+        "linkText": labels["textAddress"], "autoSolibAdd": False, "libraries": libraries,
+        "loadCommand": "add-symbol-file", "retainsDriverEntry": True,
+        "loaderRendezvous": rendezvous}
+    return bias
+
 try:
     assert str(gdb.parameter("arm force-mode")) == "auto"
     assert str(gdb.parameter("arm fallback-mode")) == "auto"
@@ -27,13 +99,16 @@ try:
     inspection_bias = 0
     if sectionless:
         gdb.execute("set architecture armv7")
-        gdb.execute("target remote " + os.environ["FORGE_MIXED_REMOTE"])
-        inspection_bias = int(gdb.parse_and_eval("&" + name)) - start
+        if labels.get('shared', False):
+            inspection_bias = load_shared()
+        else:
+            gdb.execute("target remote " + os.environ["FORGE_MIXED_REMOTE"])
+            inspection_bias = int(gdb.parse_and_eval("&" + name)) - start
     arch = gdb.selected_inferior().architecture()
     result["static"] = arch.disassemble(start + inspection_bias, start + inspection_bias + expected['size'] - 1)
     for row in result["static"]:
         row["addr"] -= inspection_bias
-    result["instructionSource"] = "remote-before-continue" if sectionless else "file-before-attach"
+    result["instructionSource"] = ("remote-before-mixed-call" if labels.get("shared", False) else "remote-before-continue") if sectionless else "file-before-attach"
     expected_offsets = expected['units']
     expected_lengths = expected['lengths']
     result["staticWidthsMatch"] = [(r["addr"] - start, r["length"]) for r in result["static"]] == list(
@@ -44,23 +119,7 @@ try:
             return [(row["addr"], row["length"], re.sub(r"\s*<[^>]*>", "", row["asm"])) for row in rows]
         result["staticMatchesCompiler"] = decoded(result["static"]) == decoded(reference["static"])
     if labels.get("shared", False):
-        gdb.execute("file " + str(case / "mixed.driver"))
-        gdb.execute("set solib-search-path " + str(case))
-        gdb.execute("target remote " + os.environ["FORGE_MIXED_REMOTE"])
-        driver_entry = gdb.Breakpoint("*main", internal=True)
-        gdb.execute("continue")
-        driver_entry.delete()
-        libraries = gdb.execute("info sharedlibrary", to_string=True)
-        line, = [row for row in libraries.splitlines() if row.split()[-1:] == [str(case / "mixed.stripped")]]
-        runtime_text = int(line.split()[0], 16)
-        bias = runtime_text - labels["textAddress"]
-        assert bias > 0
-        artifact = case / ("mixed.reference" if variant == "compiler" else variant + ".dbg")
-        gdb.execute("add-symbol-file " + str(artifact) + " -o " + hex(bias))
-        assert int(gdb.parse_and_eval("&" + name)) == start + bias
-        result["sharedLoading"] = {"bias": bias, "runtimeText": runtime_text,
-            "linkText": labels["textAddress"], "autoSolibAdd": False, "libraries": libraries,
-            "loadCommand": "add-symbol-file", "retainsDriverEntry": True}
+        bias = inspection_bias if sectionless else load_shared()
     else:
         if not sectionless:
             gdb.execute("target remote " + os.environ["FORGE_MIXED_REMOTE"])

@@ -302,11 +302,55 @@ layout. The final combined sectionless rebased command with controls, live
 exports and omissions passes at `pie-rebased.split.sectionless.1v67x5a6`.
 Exact-head hosted acceptance remains pending.
 
+## Sectionless shared-library composition
+
+**CONFIRMED locally:** shared and explicitly rebased shared objects now pass
+with no section-header table, for both contiguous and split mixed bodies. The
+loader retains the original program headers and dynamic metadata; only the
+section-header discovery fields are cleared in the copied fixture input.
+
+GDB's `info sharedlibrary` cannot provide a section-derived From address for
+these inputs. The first retained run (`shared.split.sectionless.849qwvj7`)
+failed when the previous oracle tried to interpret `No` as that address. The
+corrected Linux ARM32 fixture oracle reads the fixed-address driver's `DT_DEBUG`
+slot and the loader's public `r_debug`/`link_map` protocol. It bounds traversal,
+rejects cycles, requires exactly one matching library path, verifies the live
+dynamic-section address against the original ELF, and compares its ELF identity
+and complete mixed instruction/data allocation bytes in remote memory. The
+sidecar is then added at this independently measured bias. The driver entry
+remains available for injected calls.
+
+Because the sidecar's synthetic section has no file-backed instructions,
+decoding is checked after the loader runs and before the mixed function executes.
+This is recorded as `remote-before-mixed-call`, not a claim of pre-attachment
+file disassembly. Both compiler and Forge symbols follow the same measured
+loader workflow, with automatic shared symbol loading disabled.
+
+| Shape / layout | Case |
+| --- | --- |
+| Split shared | `shared.split.sectionless.skdfmw_6` |
+| Contiguous shared | `shared.sectionless.43ajrstm` |
+| Contiguous rebased shared | `shared-rebased.sectionless.65po9vwb` |
+| Split rebased shared | `shared-rebased.split.sectionless.w63yw61y` |
+
+Saved/live/failure runs total 810 debugger observations, sixteen injected calls,
+eight native failure exports and four cancellations. Each shared failure control
+selects the compiler-identified lower-address `_init` and requires the later
+mixed function to decompile successfully. Raw original dynamic-symbol/load/mode
+inventories, structural validators, repeated output and original/program/package
+preservation pass. The split cases also pass both unknown-data controls, adding
+52 instruction observations and exact omission diagnostics. The receipt is
+`build/arm-mixed-modes/sectionless-shared-matrix-v2.json`. CI now covers all five
+sectionless roles for each shape. A fresh sectioned/rebased split regression
+with control/live/omission composition also passes at
+`shared-rebased.split.y89lz7hd`. Exact-head hosted acceptance remains required.
+
 ## Remaining acceptance
 
 Inherited mapping preservation and unknown-data omission now have runtime
 evidence. Additional conflict/context-change controls remain model-only.
-Sectionless shared-library composition is not covered by this matrix.
+Sectionless shared-library composition is covered by the additional matrix
+above; its exact-head hosted acceptance remains required.
 
 Unknown gaps intentionally prevent complete section mapping. A successful
 homogeneous-function mode hint elsewhere does not establish mixed-body coverage.

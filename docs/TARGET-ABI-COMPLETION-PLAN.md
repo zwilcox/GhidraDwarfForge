@@ -276,3 +276,13 @@ pass explicit unknown-data omission controls with 208 instruction observations,
 exact diagnostics and no invented mapping. See `ARM-MIXED-MODE-MAPPINGS.md`.
 Sectionless shared composition, broader ABI profiles and exact-head integration
 remain required; #68–#71 remain open.
+
+## ARM32 sectionless shared checkpoint
+
+**CONFIRMED local sectionless shared composition:** contiguous/split shared and
+rebased shared mixed-body cases pass 810 saved/live/failure debugger observations,
+sixteen calls, eight native failure exports and four cancellations. The oracle
+measures the loader's live link_map because sectionless objects have no GDB From
+address, and verifies original header/code bytes before using the bias. See
+`ARM-MIXED-MODE-MAPPINGS.md`. Runtime context/conflict controls, broader ABI
+profiles and exact-head hosted integration remain open; #68–#71 are not complete.

@@ -72,10 +72,12 @@ def main(ghidra, baseline):
     failure_selection = "recovered_mixed_body"
     if labels.get("sectionless", False):
         # The isolated high load segment makes mixed_body the last function.
-        # Fail the compiler-identified caller, then require the later mixed body
-        # to decompile and retain its full mappings and runtime behavior.
+        # Fail the compiler-identified caller (or the shared object's _init),
+        # then require the later mixed body to decompile and retain its full
+        # mappings and runtime behavior.
         image = reference.inventory.elf(case / "mixed.reference")
-        caller, = [s for s in image["symbols"] if s["name"] == "main" and (s["info"] & 15) == 2]
+        caller_name = "_init" if labels.get("shared", False) else "main"
+        caller, = [s for s in image["symbols"] if s["name"] == caller_name and (s["info"] & 15) == 2]
         failure_selection = "@" + hex(caller["raw"] & ~1)
     for iteration in ("first", "repeat"):
         log = run("failure-" + iteration, [ghidra / "support/analyzeHeadless", case / "project", "MixedModes",

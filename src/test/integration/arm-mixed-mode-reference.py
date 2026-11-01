@@ -108,8 +108,8 @@ def main():
     parser.add_argument("--split", action="store_true")
     parser.add_argument("--retain-symbols", action="store_true")
     args = parser.parse_args()
-    if args.sectionless and (not args.production or args.role.startswith("shared")):
-        parser.error("sectionless reference currently requires a production executable role")
+    if args.sectionless and not args.production:
+        parser.error("sectionless reference requires production acceptance")
     if args.with_controls and not args.production:
         parser.error("failure/cancellation controls require production acceptance")
     if args.with_live and not args.production:
