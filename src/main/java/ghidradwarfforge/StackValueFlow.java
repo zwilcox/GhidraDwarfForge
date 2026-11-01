@@ -328,8 +328,8 @@ final class StackValueFlow {
 
     /** Translate callee-entry-relative effects only after CALL's own raw effects. */
     private void applyCall(DirectLeafCalls.Leaf effects, TaskMonitor monitor) throws CancelledException {
-        Varnode sp = new Varnode(pointer.getAddress(), pointer.getMinimumByteSize());
-        Fact calledSp = read(sp);
+        Varnode pointerNode = new Varnode(pointer.getAddress(), pointer.getMinimumByteSize());
+        Fact calledSp = read(pointerNode);
         Long returnedSp = null;
         var writes = new ArrayList<CallMemoryEffects.Range>();
         if (effects.memory() != null && calledSp != null && calledSp.kind() == Kind.STACK_ADDRESS) {
@@ -359,7 +359,7 @@ final class StackValueFlow {
             Register register = exactRegister(program, node);
             if (register == null || !effects.preserves(register, monitor)) facts.remove(node);
         }
-        if (returnedSp != null) facts.put(sp, new Fact(Kind.STACK_ADDRESS, returnedSp));
+        if (returnedSp != null) facts.put(pointerNode, new Fact(Kind.STACK_ADDRESS, returnedSp));
     }
 
     /** A local assignment or reuse invalidates old copies as well as its slot. */

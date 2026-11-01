@@ -1,5 +1,12 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED combined-gate correction:** PR103's first run stopped before
+compilation because the architecture-neutrality scanner rejects the token `sp`.
+Two generic locals derived from Ghidra are renamed `pointerNode`; comments use
+“stack pointer”. The scanner is unchanged, executable disassembly is identical
+and the corrected package/model checks pass. The new complete hosted gate and
+final combined acceptance remain required; see the completion audit.
+
 **CONFIRMED local piece and lexical-call composition; combined acceptance pending:**
 Twelve aggregate configurations prove two memory pieces across safe calls and
 honest whole-value gaps after unknown writes, released slots or unproven frame

@@ -45,9 +45,9 @@ CALL's own raw effects, rather than retaining arbitrary caller memory.
 The historical b71bfd9 findings about blanket call rejection and absent memory
 summaries are resolved in source and tested; they are not current failures.
 
-The local production package remains JAR SHA-256
+The pre-neutrality-correction local production package has JAR SHA-256
 `5eb68820f15051378ca9d3b57af48eeb08eb09ba1a318e66bca6213647295826`.
-Its archive sources match all 85 current production Java files; 318 classfiles
+At that checkpoint its archive sources matched all 85 production Java files; 318 classfiles
 target Java 21 and the prior nine-suite actual-Java-21 receipt matches the JAR.
 The latest tests add no production/native changes.
 
@@ -96,3 +96,25 @@ before scope export. Commit b71bfd9 corrected the explicit list; unknown-file
 rejection and deterministic rebuild checks remain. The replacement scope run
 `41254453232` is independent of the final combined gate. Neither the failed run
 nor unobserved completion of the replacement can count as final acceptance.
+
+## Combined-gate terminology correction
+
+**CONFIRMED failed precompilation gate:** PR103 run `41260845931` rejected the
+standalone token `sp` in two generic classes under the architecture-neutrality
+scanner. Both variables already came from Ghidra's compiler-spec stack pointer;
+there was no named-register lookup or target-specific register number. Rename
+those locals to `pointerNode` and expand the comment to “stack pointer”. The
+scanner and its audited boundaries remain unchanged; all seven scanner controls
+and the real source check pass.
+
+The rebuilt JAR is
+`1a0a8471a87407a3cc5b56c7eccbbe441c752168056cca0081174114b645760d`.
+Exactly two classfiles differ (`CallMemoryEffects`, `StackValueFlow`); their
+`javap -c -p -s` executable disassembly/signatures are byte-identical, and all
+other 316 classfiles are byte-identical. The source diff is restricted to local
+identifiers and comments. Nine relevant model suites and the extension build
+pass, followed by the same nine suites against the rebuilt JAR on actual Java
+21 with production class origins checked. Evidence is retained in
+`build/combined-acceptance/neutrality/`. Earlier runtime receipts retain their
+original package identity; they are not relabeled as tests of the rebuilt JAR.
+The corrected commit requires a new complete combined hosted gate.

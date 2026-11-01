@@ -19,7 +19,7 @@ import ghidra.program.model.pcode.Varnode;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 
-/** Possible writes/releases and definite return SP, relative to callee entry SP. */
+/** Possible writes/releases and definite return stack pointer, relative to its callee entry value. */
 final class CallMemoryEffects {
     record Range(long start, long end) {
         Range {
@@ -41,7 +41,7 @@ final class CallMemoryEffects {
 
     /**
      * The caller supplies fully decoded, closed bodies and inspected ABI effects.
-     * Unknown stores, missing nested summaries and unequal return SPs fail only
+     * Unknown stores, missing nested summaries and unequal return stack pointers fail only
      * this memory proof; they never manufacture an unaffected-memory contract.
      */
     static Summary summarize(Program program, Address entry, List<Instruction> instructions,
@@ -53,7 +53,7 @@ final class CallMemoryEffects {
                 memory.isOverlaySpace() || memory.getType() != AddressSpace.TYPE_RAM ||
                 memory.getAddressableUnitSize() != 1 || memory.getPointerSize() <= 0 ||
                 memory.getPointerSize() > Long.BYTES || pointer.getBitLength() != memory.getPointerSize() * 8) return null;
-        Varnode sp = new Varnode(pointer.getAddress(), pointer.getMinimumByteSize());
+        Varnode pointerNode = new Varnode(pointer.getAddress(), pointer.getMinimumByteSize());
         Map<Address, Instruction> decoded = new LinkedHashMap<>();
         Map<Address, Set<Address>> predecessors = new HashMap<>();
         for (Instruction instruction : instructions) {
@@ -76,7 +76,7 @@ final class CallMemoryEffects {
                 monitor.checkCancelled();
                 Address address = work.removeFirst();
                 queued.remove(address);
-                Map<Varnode, Term> state = address.equals(entry) ? new LinkedHashMap<>(Map.of(sp, new Term(true, 0))) : null;
+                Map<Varnode, Term> state = address.equals(entry) ? new LinkedHashMap<>(Map.of(pointerNode, new Term(true, 0))) : null;
                 for (Address predecessor : predecessors.getOrDefault(address, Set.of())) {
                     var incoming = output.get(predecessor);
                     if (incoming == null) continue;
@@ -98,7 +98,7 @@ final class CallMemoryEffects {
                         Address target = operation.getInput(0).getAddress();
                         Summary effects = nested.get(target);
                         DirectLeafCalls.Leaf registerEffects = registers.get(target);
-                        Term calledSp = state.get(sp);
+                        Term calledSp = state.get(pointerNode);
                         if (effects == null || registerEffects == null || calledSp == null || !calledSp.stack()) return null;
                         for (Range range : effects.writes()) {
                             writes.add(new Range(Math.addExact(calledSp.offset(), range.start()), Math.addExact(calledSp.offset(), range.end())));
@@ -109,15 +109,15 @@ final class CallMemoryEffects {
                         }
                         long restored = Math.addExact(calledSp.offset(), effects.stackDelta());
                         if (!fits(restored, memory.getPointerSize())) return null;
-                        state.put(sp, new Term(true, restored));
+                        state.put(pointerNode, new Term(true, restored));
                     }
                     Varnode destination = operation.getOutput();
                     if (destination == null) continue;
                     if (destination.getAddress().getAddressSpace().isMemorySpace()) return null;
                     Term derived = derive(operation, state, memory.getPointerSize());
-                    if (overlaps(destination, sp)) {
-                        Term before = state.get(sp);
-                        if (!destination.equals(sp) || before == null || derived == null || !before.stack() || !derived.stack()) return null;
+                    if (overlaps(destination, pointerNode)) {
+                        Term before = state.get(pointerNode);
+                        if (!destination.equals(pointerNode) || before == null || derived == null || !before.stack() || !derived.stack()) return null;
                         boolean released = program.getCompilerSpec().stackGrowsNegative() ? derived.offset() > before.offset() : derived.offset() < before.offset();
                         if (released) writes.add(new Range(Math.min(before.offset(), derived.offset()), Math.max(before.offset(), derived.offset())));
                     }
@@ -127,7 +127,7 @@ final class CallMemoryEffects {
                 if (!covered(program, instruction, state, monitor)) return null;
                 state.keySet().removeIf(Varnode::isUnique);
                 if (instruction.getFlowType().isTerminal()) {
-                    Term returnedSp = state.get(sp);
+                    Term returnedSp = state.get(pointerNode);
                     if (returnedSp == null || !returnedSp.stack()) return null;
                     returns.put(address, returnedSp.offset());
                 }
