@@ -17,6 +17,6 @@ public final class TargetParameterAllocation {
             TaskMonitor monitor, Consumer<String> diagnostic) throws CancelledException, IOException {
         var policy = Aarch64ParameterAllocation.forProgram(program, image, monitor, diagnostic);
         return policy != GhidraParameterAllocation.UNCHANGED ? policy :
-            MipsN32ParameterAllocation.forProgram(program, image, monitor, diagnostic);
+            MipsWideParameterAllocation.forProgram(program, image, monitor, diagnostic);
     }
 }

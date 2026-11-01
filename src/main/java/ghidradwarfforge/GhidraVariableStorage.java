@@ -94,6 +94,36 @@ public final class GhidraVariableStorage {
             return stackStorage(storage, parameter.getLength(), "parameter");
         }
         if (!storage.isRegisterStorage()) {
+            // A byte-exact varnode can be a valid register slice even when the
+            // language has no named alias of that width (for example, three
+            // bytes of an aggregate). Resolve only through mapped registers
+            // whose actual physical extent contains the complete slice.
+            var node = storage.getFirstVarnode();
+            if (node != null && node.isRegister() && node.getSize() == parameter.getLength() &&
+                    storage.size() == parameter.getLength()) {
+                Register enclosing = null;
+                RegisterStorage mapped = null;
+                for (String name : registers.dwarfNumbers().keySet()) {
+                    monitor.checkCancelled();
+                    Register candidate = program.getLanguage().getRegister(name);
+                    if (candidate == null || candidate.getBitLength() % Byte.SIZE != 0 ||
+                            !candidate.getAddress().getAddressSpace().equals(node.getAddress().getAddressSpace())) continue;
+                    long delta = node.getAddress().subtract(candidate.getAddress());
+                    int bytes = candidate.getMinimumByteSize();
+                    if (delta < 0 || delta > bytes - node.getSize() ||
+                            (enclosing != null && enclosing.getBitLength() <= candidate.getBitLength())) continue;
+                    Storage whole = mappedRegister(candidate, bytes, registers, "enclosing parameter register");
+                    if (!(whole instanceof RegisterStorage register)) continue;
+                    int offset = Math.toIntExact(candidate.isBigEndian() ? bytes - delta - node.getSize() : delta);
+                    mapped = new RegisterStorage(register.register(),
+                        Math.addExact(register.valueBitOffset(), Math.multiplyExact(offset, Byte.SIZE)),
+                        Math.multiplyExact(node.getSize(), Byte.SIZE));
+                    enclosing = candidate;
+                }
+                if (mapped != null) {
+                    return stableRegister(program, function, enclosing, mapped, monitor, "parameter slice");
+                }
+            }
             return unavailable(OmissionReason.UNSUPPORTED_STORAGE,
                 "parameter is neither one direct register nor one stack slot");
         }
@@ -893,6 +923,12 @@ public final class GhidraVariableStorage {
             Register register, int byteSize, TargetRegisterMap registers,
             TaskMonitor monitor, String description) throws CancelledException {
         Storage mapped = mappedRegister(register, byteSize, registers, description);
+        return stableRegister(program, function, register, mapped, monitor, description);
+    }
+
+    private static Storage stableRegister(Program program, Function function,
+            Register register, Storage mapped, TaskMonitor monitor, String description)
+            throws CancelledException {
         if (!mapped.available()) {
             return mapped;
         }

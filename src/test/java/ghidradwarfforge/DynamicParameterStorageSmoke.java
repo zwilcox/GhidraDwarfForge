@@ -83,6 +83,7 @@ public final class DynamicParameterStorageSmoke {
                 Function function = create(program, target, 0x1000, "integer_arguments", false, null);
                 observe(program, function, target, target.incoming());
                 rejectionControls(program, function, target);
+                unnamedSlices(program, function, target);
                 if (target.map().equals("arm")) {
                     observe(program, create(program, target, 0x1100, "base_float_arguments", true,
                         "__stdcall_softfp"), target, List.of("r0", "r1"));
@@ -187,6 +188,24 @@ public final class DynamicParameterStorageSmoke {
             model.variableStorage().variables().size() == 2 &&
             model.variableStorage().variables().stream().allMatch(variable -> variable.hasDefensibleLocation()),
             "computed parameter declaration/location was lost in the public type extractor");
+    }
+
+    private static void unnamedSlices(ProgramDB program, Function function, Target target) throws Exception {
+        var register = program.getRegister(target.incoming().getFirst()).getBaseRegister();
+        var type = new ghidra.program.model.data.ArrayDataType(
+            new ghidra.program.model.data.UnsignedCharDataType(program.getDataTypeManager()),
+            3, 1, program.getDataTypeManager());
+        for (int offset = 0; offset <= register.getMinimumByteSize() - 3; offset++) {
+            var node = new ghidra.program.model.pcode.Varnode(register.getAddress().add(offset), 3);
+            var storage = new VariableStorage(program, node);
+            var parameter = new ParameterImpl("slice", type, storage, program, SourceType.USER_DEFINED);
+            var mapped = GhidraVariableStorage.stableParameter(program, function, parameter,
+                TargetRegisterMap.forTarget(target.map()), TaskMonitor.DUMMY);
+            int expectedOffset = (register.isBigEndian() ? register.getMinimumByteSize() - offset - 3 : offset) * 8;
+            require(mapped instanceof RegisterStorage result && result.bitSize() == 24 &&
+                result.valueBitOffset() == expectedOffset,
+                "unnamed register slice mismatch: " + target.language() + " offset=" + offset + " " + mapped);
+        }
     }
 
     private static void rejectionControls(ProgramDB program, Function function, Target target) throws Exception {

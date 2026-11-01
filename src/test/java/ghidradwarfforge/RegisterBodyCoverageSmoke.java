@@ -135,6 +135,11 @@ public final class RegisterBodyCoverageSmoke {
         var scalar = parameter(fixture);
         var storage = GhidraVariableStorage.stableParameter(program, fixture.function(), scalar, map, TaskMonitor.DUMMY);
         check(storage, available, diagnostic);
+        var sliceType = new ghidra.program.model.data.ArrayDataType(
+            ghidra.program.model.data.UnsignedCharDataType.dataType, 3, 1);
+        var slice = new VariableStorage(real, new ghidra.program.model.pcode.Varnode(first.getAddress(), 3));
+        check(GhidraVariableStorage.stableParameter(program, fixture.function(),
+            new ParameterImpl("slice", sliceType, slice, real), map, TaskMonitor.DUMMY), available, diagnostic);
         if (!available) {
             require(GhidraVariableStorage.parameterPrefix(program, fixture.function(), scalar,
                 map, storage, TaskMonitor.DUMMY).isEmpty(), "incomplete listing invented a prefix");

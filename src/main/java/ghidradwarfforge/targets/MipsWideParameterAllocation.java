@@ -9,6 +9,15 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import ghidra.program.model.data.DataType;
+import ghidra.program.model.data.AbstractFloatDataType;
+import ghidra.program.model.data.AbstractIntegerDataType;
+import ghidra.program.model.data.ArrayDataType;
+import ghidra.program.model.data.Integer16DataType;
+import ghidra.program.model.data.Structure;
+import ghidra.program.model.data.StructureDataType;
+import ghidra.program.model.data.TypeDef;
+import ghidra.program.model.data.UnsignedCharDataType;
+import ghidra.program.model.data.UnsignedLongLongDataType;
 import ghidra.program.model.lang.PrototypeModel;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.listing.VariableStorage;
@@ -21,26 +30,31 @@ import ghidradwarfforge.elf.ElfImage;
 import ghidradwarfforge.elf.MipsAbiFlags;
 import org.xml.sax.helpers.DefaultHandler;
 
-/** N32 positional argument slots and by-value aggregate allocation, without program mutation. */
-public final class MipsN32ParameterAllocation {
-    private static final String BASELINE =
+/** Audited N32/N64 positional argument slots, without program mutation. */
+public final class MipsWideParameterAllocation {
+    private static final String N32_BASELINE =
         "7779b39a220a4ef8fc5da8c838311138a0cec39e6724ed3afeb076b0652bd9a2";
 
-    private MipsN32ParameterAllocation() {
+    private MipsWideParameterAllocation() {
     }
 
     public static GhidraParameterAllocation forProgram(Program program, ElfImage image,
             TaskMonitor monitor, Consumer<String> diagnostic) throws CancelledException, IOException {
         monitor.checkCancelled();
         boolean big = image.byteOrder() == java.nio.ByteOrder.BIG_ENDIAN;
+        boolean n64 = image.is64Bit();
+        String profile = n64 ? "N64" : "N32";
+        String baseline = n64 ? (big
+            ? "b8f0d07f076f2c193e61b0ff69312bdea213f144d22a9f3acf0ed5c617f2f713"
+            : "d210c0b368233a5370593154af3abec36c52ff3cb2a399e1afca2ba7542620a5") : N32_BASELINE;
         var spec = program.getCompilerSpec();
         byte[] header = image.headerBytes();
         int osAbi = Byte.toUnsignedInt(header[7]);
-        if (image.machine() != 8 || image.is64Bit() || (image.type() != 2 && image.type() != 3) ||
-                (image.flags() & ~7L) != 0x80000020L || (osAbi != 0 && osAbi != 3) ||
-                Byte.toUnsignedInt(header[8]) > 1 || program.getDefaultPointerSize() != 4 ||
-                !program.getLanguageID().toString().equals("MIPS:" + (big ? "BE" : "LE") + ":64:64-32addr") ||
-                !spec.getCompilerSpecID().toString().equals("n32")) {
+        if (image.machine() != 8 || (image.type() != 2 && image.type() != 3) ||
+                (image.flags() & ~7L) != (n64 ? 0x80000000L : 0x80000020L) || (osAbi != 0 && osAbi != 3) ||
+                Byte.toUnsignedInt(header[8]) > 1 || program.getDefaultPointerSize() != (n64 ? 8 : 4) ||
+                !program.getLanguageID().toString().equals("MIPS:" + (big ? "BE" : "LE") + (n64 ? ":64:default" : ":64:64-32addr")) ||
+                !spec.getCompilerSpecID().toString().equals(n64 ? "default" : "n32")) {
             return GhidraParameterAllocation.UNCHANGED;
         }
         var observation = MipsAbiFlags.observe(image, monitor::isCancelled);
@@ -60,8 +74,8 @@ public final class MipsN32ParameterAllocation {
         try {
             String hash = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
                 .digest(xml.getBytes(StandardCharsets.UTF_8)));
-            if (!BASELINE.equals(hash)) {
-                diagnostic.accept("Computed N32 allocation correction unavailable: selected prototype differs from the audited baseline");
+            if (!baseline.equals(hash)) {
+                diagnostic.accept("Computed " + profile + " allocation correction unavailable: selected prototype differs from the audited baseline");
                 return GhidraParameterAllocation.UNCHANGED;
             }
             String revised = xml.substring(0, xml.indexOf("<input")) + input(big) +
@@ -92,10 +106,15 @@ public final class MipsN32ParameterAllocation {
             }
             var signature = types.toArray(DataType[]::new);
             var expected = original.getStorageLocations(program, signature, true);
-            var adjusted = corrected.getStorageLocations(program, signature, true);
+            var allocationTypes = signature.clone();
+            for (int index = 1; index < allocationTypes.length; index++) {
+                task.checkCancelled();
+                allocationTypes[index] = inputType(allocationTypes[index]);
+            }
+            var adjusted = corrected.getStorageLocations(program, allocationTypes, true);
             if (expected.length != parameters.length + 1 || adjusted.length != expected.length ||
                     !adjusted[0].equals(expected[0])) {
-                throw new IllegalStateException("Audited N32 input allocation changed return or automatic parameter count");
+                throw new IllegalStateException("Audited MIPS input allocation changed return or automatic parameter count");
             }
             var changes = new LinkedHashMap<Integer, VariableStorage>();
             for (int index = 0; index < parameters.length; index++) {
@@ -105,24 +124,73 @@ public final class MipsN32ParameterAllocation {
                 var replacement = adjusted[index + 1];
                 if (!prior.equals(actual) || prior.isForcedIndirect() != actual.isForcedIndirect() ||
                         prior.isAutoStorage() != actual.isAutoStorage()) {
-                    throw new IllegalStateException("Saved N32 dynamic storage disagrees with its selected prototype");
+                    throw new IllegalStateException("Saved MIPS dynamic storage disagrees with its selected prototype");
                 }
                 if (prior.equals(replacement)) continue;
                 if (!replacement.isValid() || replacement.size() != actual.size() ||
                         replacement.isForcedIndirect() != actual.isForcedIndirect() ||
                         replacement.isAutoStorage() != actual.isAutoStorage()) {
-                    throw new IllegalStateException("N32 allocation correction changed parameter representation");
+                    throw new IllegalStateException("MIPS allocation correction changed parameter representation");
                 }
                 changes.put(parameters[index].getOrdinal(), replacement);
                 report.accept("Corrected computed parameter storage for " + function.getName() + "::" +
                     parameters[index].getName() + " from " + actual + " to " + replacement +
-                    " using audited N32 allocation; saved program and decompiler output remain unchanged");
+                    " using audited " + profile + " allocation; saved program and decompiler output remain unchanged");
             }
             return Map.copyOf(changes);
         };
     }
 
-    /** Ghidra 12.0.3 N64 input rules also describe N32 slots; pointer types remain four bytes. */
+    /**
+     * Allocation-only shape: GCC's N32/N64 classifier considers direct, aligned
+     * double fields, not floating primitives nested in an array, union or struct.
+     * The original types are retained for DWARF and in the saved program.
+     */
+    private static DataType inputType(DataType original) {
+        DataType type = original;
+        var seen = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<DataType, Boolean>());
+        while (type instanceof TypeDef alias && seen.add(type) && seen.size() <= 64) {
+            type = alias.getBaseDataType();
+        }
+        if (type.getLength() != original.getLength()) return original;
+        var manager = type.getDataTypeManager();
+        if (type instanceof AbstractIntegerDataType && type.getLength() == 16) {
+            // The pinned Ghidra data organization reports eight-byte alignment;
+            // the selected GCC ABI aligns its native 128-bit integer to 16.
+            return new Integer16DataType(manager) {
+                @Override
+                public int getAlignment() { return 16; }
+            };
+        }
+        if (!(type instanceof Structure structure) || type.getLength() <= 0 || type.getLength() > 4096) {
+            return original;
+        }
+        int alignment = original.getAlignment();
+        var shape = new StructureDataType("__forge_allocation_shape", 0, manager) {
+            @Override
+            public int getAlignment() { return alignment; }
+        };
+        for (int offset = 0; offset < type.getLength();) {
+            int size = Math.min(8, type.getLength() - offset);
+            DataType slot = size == 8 ? new UnsignedLongLongDataType(manager)
+                : new ArrayDataType(new UnsignedCharDataType(manager), size, 1, manager);
+            var component = structure.getComponentAt(offset);
+            if (size == 8 && component != null && component.getOffset() == offset &&
+                    component.getLength() == 8 && !component.isBitFieldComponent()) {
+                DataType field = component.getDataType();
+                var aliases = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<DataType, Boolean>());
+                while (field instanceof TypeDef alias && aliases.add(field) && aliases.size() <= 64) {
+                    field = alias.getBaseDataType();
+                }
+                if (field instanceof AbstractFloatDataType && field.getLength() == 8) slot = field;
+            }
+            shape.add(slot, size, "slot_" + offset, null);
+            offset += size;
+        }
+        return shape;
+    }
+
+    /** Eight positional slots, with the original return model and pointer width retained. */
     private static String input(boolean big) {
         var xml = new StringBuilder("<input killedbycall=\"true\">");
         String[] general = { "a0", "a1", "a2", "a3", "t0", "t1", "t2", "t3" };
@@ -141,6 +209,6 @@ public final class MipsN32ParameterAllocation {
         xml.append("<rule><datatype name=\"struct\"/><join_dual_class stackspill=\"true\" fillalternate=\"true\"")
             .append(justify).append("/></rule>");
         if (big) xml.append("<rule><datatype name=\"union\"/><join reversejustify=\"true\"/></rule>");
-        return xml.append("<rule><datatype name=\"any\"/><join/></rule></input>").toString();
+        return xml.append("<rule><datatype name=\"any\"/><join align=\"true\"/></rule></input>").toString();
     }
 }

@@ -161,3 +161,13 @@ compiler defects, consumer limits and retained natural-source regressions.
 This resolves the earlier blanket-call-guard failure, but does not establish
 completion of the broader allocation/storage audit or any original issue row.
 Hosted gates and protected integration remain pending.
+
+## Wider MIPS layout audit
+
+**CONFIRMED additional defects; candidate acceptance in progress:** nested
+aggregate classification and 128-bit alignment produced wrong values in both
+ABIs and byte orders. Shared unnamed register-slice handling also needs an
+exporter correction; a separate GDB 15 big-endian piece defect has a positive
+unmodified GDB 17.1 reference. See `MIPS-LAYOUT-ALLOCATION.md` for exact evidence
+and remaining acceptance. This adds evidence to the original #69 row without
+closing it or narrowing any of the four issues.

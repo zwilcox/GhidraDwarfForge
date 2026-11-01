@@ -1,5 +1,13 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED further MIPS layout defects; candidate acceptance in progress:**
+N32/N64 now have an owned nested-aggregate/128-bit alignment audit. Candidate
+allocation and unnamed-register-slice corrections pass 256 exact entry/body
+values across both ABIs and byte orders with unmodified GDB 17.1. GDB 15.1 has
+a separately reproduced high-register-piece consumer defect. Structural
+validators and local models pass; exact-head broader runtime/hosted acceptance
+and all original issue rows remain required. See `docs/MIPS-LAYOUT-ALLOCATION.md`.
+
 **CONFIRMED local wider MIPS runtime and call progress; acceptance pending:**
 The N32 allocation and truncated-stack corrections now have versioned tests
 covering 20 ABI/endian/layout cases, 9,500 Forge instruction observations and
