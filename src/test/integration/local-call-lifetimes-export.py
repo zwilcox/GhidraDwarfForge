@@ -21,11 +21,11 @@ def main():
     parser.add_argument('target', choices=('x86_64', 'aarch64'))
     parser.add_argument('--role', choices=('exec', 'pie', 'pie-rebased'), default='exec')
     parser.add_argument('--expect-baseline-gap', action='store_true')
-    parser.add_argument('--storage', choices=('register', 'stack'), default='register')
+    parser.add_argument('--storage', choices=('register', 'stack', 'outgoing'), default='register')
     parser.add_argument('--expect-memory-gap', action='store_true')
     args = parser.parse_args()
-    if args.expect_memory_gap and (args.storage != 'stack' or args.expect_baseline_gap):
-        parser.error('--expect-memory-gap requires stack storage and excludes --expect-baseline-gap')
+    if args.expect_memory_gap and (args.storage == 'register' or args.expect_baseline_gap):
+        parser.error('--expect-memory-gap requires stack or outgoing storage and excludes --expect-baseline-gap')
     ghidra = args.ghidra.resolve(strict=True)
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
     root = repository / 'build/test-results/local-call-lifetimes'
@@ -42,22 +42,27 @@ def main():
             support.require_clean(case / (name + '.log'))
         return result
 
-    fixture = source.parent / 'fixtures' / ('stack-call-lifetimes.c' if args.storage == 'stack' else 'local-call-lifetimes.c')
+    fixture = source.parent / 'fixtures' / {'stack': 'stack-call-lifetimes.c',
+        'register': 'local-call-lifetimes.c', 'outgoing': 'call-memory-boundaries.c'}[args.storage]
     protected = [fixture, Path(__file__).resolve(), source / 'local-call-lifetimes-gdb.py',
         source / 'local-call-lifetimes-gdb.sh', source / 'ghidra_scripts/PrepareLocalCallLifetimes.java',
         source / 'ghidra_scripts/RebaseFixtureProgram.java', source / 'check-local-definition-flow-locations.py']
-    if args.storage == 'stack':
-        protected += [source / 'stack-call-offsets.py', source / 'stack-call-offsets.sh']
+    if args.storage != 'register':
+        protected += [source / 'stack-call-offsets.py', source / 'stack-call-offsets.sh', source / 'call-memory-offsets.py']
     protected += [p for p in module.rglob('*') if p.is_file()]
     before = {str(p): support.digest(p) for p in protected}
     cc, objcopy = ('gcc', 'objcopy') if args.target == 'x86_64' else (
         'aarch64-linux-gnu-gcc', 'aarch64-linux-gnu-objcopy')
     reference, binary = case / 'local.reference', case / 'local.input'
     flags = ['-fno-pie', '-no-pie'] if args.role == 'exec' else ['-fPIE', '-pie']
-    if args.storage == 'stack':
+    if args.storage != 'register':
         # Isolate the inspected call effects from an unrelated external canary
         # failure path, which deliberately has no inspected return contract.
         flags += ['-fno-stack-protector']
+    if args.storage == 'outgoing':
+        flags += ['-fno-ipa-cp']
+        if args.target == 'x86_64':
+            flags += ['-maccumulate-outgoing-args']
     run('compile', [cc, '-O2', '-g3', '-gdwarf-5', '-gno-variable-location-views', '-fno-inline',
         '-fno-ipa-sra', '-fno-ipa-icf', '-fomit-frame-pointer', '-fno-reorder-blocks',
         '-fno-reorder-blocks-and-partition', '-fno-align-jumps', '-fno-align-labels', '-fno-align-loops', *flags,
@@ -79,7 +84,11 @@ def main():
         row = {key[len(name) + 1:]: value for key, value in symbols.items() if key.startswith(name + '_')}
         row.update(entry=symbols[name], end=symbols[name] + size)
         labels[name] = row
-    if args.storage == 'stack':
+    if args.storage == 'outgoing':
+        assert set(labels) == {'local_call_overlap', 'local_call_adjacent',
+            'inspected_overlap', 'inspected_adjacent', 'local_call_released',
+            'local_call_unknown', 'inspected_released', 'inspected_unknown'}
+    elif args.storage == 'stack':
         assert set(labels) == {'local_call_once', 'local_call_twice', 'local_call_alias',
             'inspected_leaf', 'inspected_nested', 'inspected_alias'}
     else:
@@ -87,9 +96,11 @@ def main():
             'inspected_leaf', 'inspected_clobber'}
     write('boundaries.json', labels)
     offset_args = []
-    if args.storage == 'stack':
+    if args.storage != 'register':
+        os.environ['LOCAL_STORAGE'] = args.storage
         run('offsets-driver', ['bash', source / 'stack-call-offsets.sh', repository, case, args.target], timeout=180)
         offset_args = [case / 'stack-offsets.json']
+        labels = json.loads((case / 'boundaries.json').read_text())
     project = case / 'project'
     project.mkdir()
     rebase = ['-postScript', 'RebaseFixtureProgram.java', '0x2000000'] if args.role == 'pie-rebased' else []
@@ -141,14 +152,14 @@ def main():
         assert row['lost'] <= row['return']
         calls = [i for i in row['instructions'] if i['call']]
         assert len(calls) == (2 if args.storage == 'register' and name.endswith(('twice', 'branch')) else 1)
-        high = calls[0]['next'] if name.endswith(('clobber', 'alias')) or args.expect_memory_gap else row['lost']
+        high = calls[0]['next'] if name.endswith(('clobber', 'alias', 'overlap', 'released', 'unknown')) or args.expect_memory_gap else row['lost']
         row['available'] = [(row['ready'], high)]
         if name.endswith('split'):
             row['available'] = [(row['ready'], row['gap']), (row['resume'], high)]
     write('model.json', model)
     write('boundaries.json', labels)
     write('locations.json', {name: {'available': [] if args.expect_baseline_gap else row['available'],
-        'dwarfRegister': 12 if args.target == 'x86_64' else 19, 'allowStorageMigration': args.storage == 'stack'}
+        'dwarfRegister': 12 if args.target == 'x86_64' else 19, 'allowStorageMigration': args.storage != 'register'}
         for name, row in labels.items() if name.startswith('local_call_')})
     report, = [json.JSONDecoder().raw_decode(line.split('GhidraDwarfForge report: ', 1)[1])[0]
         for line in (case / 'fixed.log').read_text().splitlines() if 'GhidraDwarfForge report: {' in line]

@@ -1142,6 +1142,7 @@ jobs:
               python3 src/test/integration/local-definition-flow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
               python3 src/test/integration/local-call-lifetimes-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
               python3 src/test/integration/local-call-lifetimes-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --storage stack
+              python3 src/test/integration/local-call-lifetimes-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --storage outgoing
           done
 
       - name: Saved local identities retain current values through register moves and updates

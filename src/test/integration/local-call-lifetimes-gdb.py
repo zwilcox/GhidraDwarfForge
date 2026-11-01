@@ -10,7 +10,8 @@ variant = os.environ['LOCAL_VARIANT']
 baseline = os.environ.get('LOCAL_BASELINE') == '1'
 labels = json.loads((case / 'boundaries.json').read_text())
 model = json.loads((case / 'model.json').read_text())
-stack = model['storage'] == 'stack'
+outgoing = model['storage'] == 'outgoing'
+stack = model['storage'] != 'register'
 offsets = json.loads((case / 'stack-offsets.json').read_text())['functions'] if stack else {}
 binary = case / ('local.reference' if variant == 'compiler' else 'local.input')
 gdb.execute('file ' + str(binary))
@@ -24,7 +25,7 @@ rows, calls, returns, exits = [], [], [], []
 gdb.events.exited.connect(lambda event: exits.append(getattr(event, 'exit_code', None)))
 started = False
 for argument in (19, -19, -81985529216486895):
-    for shape in (('once', 'twice', 'alias') if stack else ('once', 'twice', 'branch', 'loop', 'split', 'clobber')):
+    for shape in (('overlap', 'adjacent', 'released', 'unknown') if outgoing else ('once', 'twice', 'alias') if stack else ('once', 'twice', 'branch', 'loop', 'split', 'clobber')):
         name = 'local_call_' + shape
         count = (2 if shape == 'twice' else 1 if shape == 'branch' and argument > 0 else
             2 if shape == 'branch' else (2 if argument > 0 else 3) if shape == 'loop' else 1)
@@ -42,14 +43,29 @@ for argument in (19, -19, -81985529216486895):
         callee = {i['address']: i for leaf in labels if leaf.startswith('inspected_') for i in labels[leaf]['instructions']}
         call_count = 0
         clobbers = 0
+        callee_entry_sp = None
         visits = {}
         for step in range(100):
             pc = int(gdb.parse_and_eval('$pc')) - bias
             if pc in callee:
                 raw = int(gdb.parse_and_eval(value_expression))
                 changed = 909 if shape == 'alias' else 0
-                assert raw in ({argument + 7, changed} if shape in ('clobber', 'alias') else {argument + 7})
-                clobbers += int(raw == changed)
+                if shape == 'overlap':
+                    data = bytearray((argument + 7).to_bytes(8, 'little', signed=True))
+                    data[2] = 0
+                    changed = int.from_bytes(data, 'little', signed=True)
+                if outgoing:
+                    helper = labels['inspected_' + shape]
+                    if pc == helper['entry']:
+                        callee_entry_sp = int(gdb.parse_and_eval('$sp'))
+                    if shape == 'released' and pc == helper['released']:
+                        slot = int(gdb.parse_and_eval('&' + value_expression))
+                        assert callee_entry_sp <= slot and int(gdb.parse_and_eval('$sp')) >= slot + 8
+                    if pc == helper['written']:
+                        assert int(gdb.parse_and_eval('$sp')) == callee_entry_sp
+                    assert raw == (changed if shape == 'overlap' and pc >= helper['written'] else argument + 7)
+                assert raw in ({argument + 7, changed} if shape in ('clobber', 'alias', 'overlap') else {argument + 7})
+                clobbers += int(raw == changed and raw != argument + 7)
                 calls.append({'function': name, 'input': argument, 'pc': pc, 'held': raw})
                 gdb.execute('stepi')
                 continue
@@ -70,7 +86,12 @@ for argument in (19, -19, -81985529216486895):
                 if available:
                     assert value.type.sizeof == 8 and int(value) == expected_value
             if initialized:
-                assert int(gdb.parse_and_eval(value_expression)) == expected_value
+                memory_value = expected_value
+                if shape == 'overlap' and pc >= label['after']:
+                    data = bytearray((argument + 7).to_bytes(8, 'little', signed=True))
+                    data[2] = 0
+                    memory_value = int.from_bytes(data, 'little', signed=True)
+                assert int(gdb.parse_and_eval(value_expression)) == memory_value
             if pc == label['after']:
                 listing = gdb.execute('list ' + name, to_string=True)
                 assert name in listing and 'No such file' not in listing
@@ -84,7 +105,7 @@ for argument in (19, -19, -81985529216486895):
         else:
             raise AssertionError('fixture did not return')
         assert call_count == (1 if stack else count)
-        assert (clobbers > 0) == (shape in ('clobber', 'alias'))
+        assert (clobbers > 0) == (shape in ('clobber', 'alias') or shape == 'overlap' and argument < 0)
         if shape == 'loop':
             assert max(visits.values()) == count
         finish = gdb.FinishBreakpoint(gdb.newest_frame(), internal=True)
@@ -94,7 +115,7 @@ for argument in (19, -19, -81985529216486895):
         returns.append({'function': name, 'input': argument, 'value': expected, 'calls': count,
             'clobbers': clobbers, 'visits': visits})
 gdb.execute('continue')
-assert exits == [0] and len(returns) == (9 if stack else 18) and len(calls) > 0
+assert exits == [0] and len(returns) == (12 if outgoing else 9 if stack else 18) and len(calls) > 0
 (case / (variant + '-gdb.json')).write_text(json.dumps({'status': 'PASS', 'points': rows,
     'calleePoints': calls, 'returned': returns, 'exitCodes': exits}, indent=4) + '\n')
 print('local-call-lifetimes-gdb=' + variant + ' PASS')

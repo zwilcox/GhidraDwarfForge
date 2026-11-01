@@ -71,6 +71,14 @@ public class PrepareLocalCallLifetimes extends GhidraScript {
                 if (name.equals("inspected_alias")) parameters.add(new ParameterImpl("destination",
                     new ghidra.program.model.data.PointerDataType(LongLongDataType.dataType), currentProgram));
                 parameters.add(new ParameterImpl("input", LongLongDataType.dataType, currentProgram));
+                if (!caller && labels.has("inspected_overlap")) {
+                    for (int index = 1; index <= 7; index++) {
+                        parameters.add(new ParameterImpl("p" + index, LongLongDataType.dataType, currentProgram));
+                    }
+                    parameters.add(new ParameterImpl("held", LongLongDataType.dataType, currentProgram));
+                    parameters.add(new ParameterImpl("adjacent",
+                        ghidra.program.model.data.UnsignedIntegerDataType.dataType, currentProgram));
+                }
                 function.updateFunction(currentProgram.getCompilerSpec().getDefaultCallingConvention().getName(),
                     new ReturnParameterImpl(LongLongDataType.dataType, currentProgram),
                     Function.FunctionUpdateType.DYNAMIC_STORAGE_ALL_PARAMS, true, SourceType.USER_DEFINED,
@@ -111,6 +119,18 @@ public class PrepareLocalCallLifetimes extends GhidraScript {
                     "pcode", java.util.Arrays.stream(instruction.getPcode()).map(Object::toString).toList()));
             }
             if (!uncovered.isEmpty()) throw new AssertionError("incomplete body");
+            if (caller && labels.has("inspected_overlap")) {
+                var definition = getInstructionAt(entry.add(firstUse));
+                var stores = java.util.Arrays.stream(definition.getPcode())
+                    .filter(op -> op.getOpcode() == ghidra.program.model.pcode.PcodeOp.STORE).toList();
+                if (stores.size() != 1 || stores.get(0).getInput(2).getSize() != 8 ||
+                        definition.getFlowType().isCall() ||
+                        java.util.Arrays.asList(definition.getResultObjects()).contains(
+                            currentProgram.getCompilerSpec().getStackPointer()) ||
+                        definition.getMaxAddress().next().getOffset() - delta != label.get("ready").getAsLong()) {
+                    throw new AssertionError("compiler-calibrated copy must be one full non-SP-changing store");
+                }
+            }
             rows.add(Map.of("name", name, "firstUse", firstUse, "instructions", instructions,
                 "convention", function.getCallingConventionName()));
         }

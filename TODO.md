@@ -1,5 +1,13 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local call-memory boundary controls:** six x86-64/AArch64
+exec/PIE/rebased configurations now exercise partial-overlap and adjacent writes,
+released slots and unknown SP using compiler-calibrated outgoing copies.
+Four existing harness regressions and two preceding-package comparisons pass;
+production code is unchanged. See `docs/CALL-MEMORY-BOUNDARIES.md` for exact
+runtime evidence. Incompatible-return-SP, mutable/piece/scope composition,
+failure/cancellation and hosted acceptance remain open; #67/#73 are incomplete.
+
 **CONFIRMED local call-memory checkpoint; full goal remains open:**
 callee-entry-relative writes, released frames and exact return SP now preserve
 proven nonoverlapping caller slots. Twelve x86-64/AArch64 register/stack address

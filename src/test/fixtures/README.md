@@ -599,3 +599,12 @@ process memory before Ghidra curation. Canary insertion is explicitly disabled
 to isolate the tested calls from an unsupported external failure path. Register
 mode now also covers conditional calls, loops, body holes and temporary callee
 clobbers. See `docs/CALL-MEMORY-EFFECTS.md` for evidence and remaining controls.
+
+`call-memory-boundaries.c` uses compiler-described stack arguments to distinguish
+partial-overlap and adjacent writes, released slots and unproven SP effects.
+The `--storage outgoing` local-call mode derives the saved copy's location and
+completed definition from actual GDB observations before Ghidra curation. It
+changes no process memory and compares the caller's live compiler value with
+the exported copy or its required gap. Six target/address roles, old-package
+comparisons and retained signed values are documented in
+`docs/CALL-MEMORY-BOUNDARIES.md`.

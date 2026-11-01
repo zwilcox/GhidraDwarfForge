@@ -45,6 +45,7 @@ expected_sources=(
     arm-thumb-caller.c
     arm-thumb-leaf.c
     bitfield-values.c
+    call-memory-boundaries.c
     calling-convention.c
     composite-register-prefix.c
     composite-value-flow.c

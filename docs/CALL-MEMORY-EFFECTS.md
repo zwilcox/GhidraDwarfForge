@@ -108,9 +108,14 @@ failure call. The AArch64 oracle also initially assumed restoration directly
 preceded `ret`; it now checks the actual earlier release boundary. Logs and
 failed artifacts remain alongside the passing reruns.
 
-**PLANNED:** add call-memory runtime cases for partial overlaps, released slots,
-unknown/incompatible SP, saved mutable identities and independently migrating
-pieces. The existing regressions do not replace those targeted cases. Compose
+**CONFIRMED subsequent boundary coverage:** `CALL-MEMORY-BOUNDARIES.md` records
+six executed partial-overlap, adjacent-write, released-slot and unknown-SP
+target/address configurations, four harness regressions and two old-package
+comparisons. These controls use compiler-derived outgoing copy locations.
+
+**PLANNED:** incompatible-return-SP runtime coverage, saved mutable identities
+and independently migrating pieces. The existing regressions do not replace
+those targeted cases. Compose
 the new intervals with lexical ownership and genuine failure/cancellation
 paths, review the exact final target/host package and integrate normally.
 PR102's separate scope gate and the full original requirement audit remain

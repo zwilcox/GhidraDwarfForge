@@ -20,6 +20,12 @@ the original historical table below is not a current failure report.
 
 ## Requirement evidence
 
+**CONFIRMED subsequent boundary checkpoint:** `CALL-MEMORY-BOUNDARIES.md`
+proves partial-overlap, adjacent-write, released-slot and unknown-SP behavior
+with six candidate runtime roles and two preceding-package comparisons. The
+incompatible-return-SP, mutable/piece/scope composition and hosted requirements
+remain open; the requirement table retains its historical gap descriptions.
+
 | Requirement | Current evidence | Outstanding proof or work |
 | --- | --- | --- |
 | Later-start register identities and overwrite boundaries | Saved read/definition starts, branch/loop agreement and discontiguous ranges have compiler/Forge evidence in `LOCAL-DEFINITION-CONTROL-FLOW.md` and `MERGED-LOCAL-MAPPINGS.md`. | Compose saved-local identities with supported call effects; current local decoders reject calls. |
