@@ -1,5 +1,12 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED AArch64 profile-selection integration:** PR #122 passes all twelve
+jobs at `086eaee9` in run `41346340841`, independent package/five-target/both-host
+review, and normal protected merge `a848391`. See
+`docs/AARCH64-ABI-SELECTION.md` for 96 injected-call checks, artifact binding,
+validator diagnostics and host limits. This accepts the selected call-profile
+component; the remaining #68–#71 requirements stay open.
+
 **CONFIRMED local AArch64 SIMD storage candidate; hosted acceptance pending:**
 Separate integer/float lane fixtures now prove 128-bit register copies,
 spill/reload, ninth-vector stack arguments and conservative alias/clobber gaps
