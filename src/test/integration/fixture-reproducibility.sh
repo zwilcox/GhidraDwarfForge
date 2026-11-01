@@ -45,6 +45,7 @@ expected_sources=(
     arm-thumb-caller.c
     arm-thumb-leaf.c
     bitfield-values.c
+    call-memory-boundaries.c
     calling-convention.c
     composite-register-prefix.c
     composite-value-flow.c
@@ -69,6 +70,9 @@ expected_sources=(
     i386-profile.c
     inspected-call-callees.c
     later-register-local.c
+    lexical-shadow.c
+    lexical-statics.c
+    local-call-lifetimes.c
     local-definition-flow.c
     merged-local-mappings.c
     minimal.c
@@ -80,6 +84,8 @@ expected_sources=(
     nonzero_load_offset.c
     nonzero_load_offset.ld
     nonzero_load_offset_start.S
+    object-parameter.cpp
+    object-return.cpp
     opaque-register-effects.c
     outside-body-flow.c
     overloaded-signatures.cpp
@@ -88,10 +94,12 @@ expected_sources=(
     register-copy.c
     register_prefix.c
     retained-function-aliases.cpp
+    same-name-types.cpp
     second-register-copy.c
     semantic.c
     shared_driver.c
     shared_semantic.c
+    stack-call-lifetimes.c
     stack-control-flow.c
     stack-first-use.c
     stack-local-definitions.c

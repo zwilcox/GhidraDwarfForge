@@ -17,7 +17,11 @@ import ghidra.util.task.TaskMonitor;
 
 /** Register preservation through fully decoded direct-call graphs and selected ABI contracts. */
 final class DirectLeafCalls {
-    record Leaf(List<Instruction> instructions, List<Varnode> unaffected) {
+    record Leaf(List<Instruction> instructions, List<Varnode> unaffected, CallMemoryEffects.Summary memory) {
+        Leaf(List<Instruction> instructions, List<Varnode> unaffected) {
+            this(instructions, unaffected, null);
+        }
+
         Leaf {
             instructions = List.copyOf(instructions);
             unaffected = List.copyOf(unaffected);
@@ -94,15 +98,14 @@ final class DirectLeafCalls {
             work.addAll(targets);
         }
         Map<Address, Leaf> summaries = new HashMap<>();
-        Map<Address, Leaf> result = new HashMap<>();
-        for (var root : roots.entrySet()) {
+        for (Address root : graph.keySet()) {
             monitor.checkCancelled();
-            Leaf summary = summaries.get(root.getValue());
+            Leaf summary = summaries.get(root);
             if (summary == null) {
                 var visited = new java.util.HashSet<Address>();
                 var instructions = new ArrayList<Instruction>();
-                var unaffected = new ArrayList<Varnode>(graph.get(root.getValue()).unaffected());
-                work.add(root.getValue());
+                var unaffected = new ArrayList<Varnode>(graph.get(root).unaffected());
+                work.add(root);
                 while (!work.isEmpty()) {
                     monitor.checkCancelled();
                     Address entry = work.removeFirst();
@@ -113,9 +116,31 @@ final class DirectLeafCalls {
                     work.addAll(body.calls());
                 }
                 summary = new Leaf(instructions, unaffected);
-                summaries.put(root.getValue(), summary);
+                summaries.put(root, summary);
             }
-            result.put(root.getKey(), summary);
+        }
+        // Resolve memory summaries from leaves upward. Cycles and unresolved
+        // effects retain their register proof but no memory contract; never
+        // assume a recursive fixed point or a stack adjustment from the ABI.
+        Map<Address, CallMemoryEffects.Summary> memory = new HashMap<>();
+        var resolved = new java.util.HashSet<Address>();
+        boolean progress;
+        do {
+            progress = false;
+            for (var row : graph.entrySet()) {
+                monitor.checkCancelled();
+                if (resolved.contains(row.getKey()) || !resolved.containsAll(row.getValue().calls())) continue;
+                var effects = CallMemoryEffects.summarize(program, row.getKey(), row.getValue().instructions(),
+                    memory, summaries, monitor);
+                if (effects != null) memory.put(row.getKey(), effects);
+                resolved.add(row.getKey());
+                progress = true;
+            }
+        } while (progress);
+        Map<Address, Leaf> result = new HashMap<>();
+        for (var root : roots.entrySet()) {
+            Leaf summary = summaries.get(root.getValue());
+            result.put(root.getKey(), new Leaf(summary.instructions(), summary.unaffected(), memory.get(root.getValue())));
         }
         return Map.copyOf(result);
     }

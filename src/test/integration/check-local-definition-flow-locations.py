@@ -50,10 +50,17 @@ for index, record in enumerate(records):
     assert len(parameters) == 1 and name(parameters[0]) == "curated_held", parameters
     attrs = parameters[0]["attrs"]
     assert "DW_AT_type" in attrs
+    if not labels[function]["available"]:
+        assert "DW_AT_location" not in attrs, attrs
+        offsets[function] = None
+        continue
     location = re.fullmatch(r"(0x[0-9a-f]+) \(location list\)", attrs.get("DW_AT_location", ""))
     assert location, attrs
     offsets[function] = int(location[1], 16)
 assert set(offsets) == set(labels), offsets
+if all(offset is None for offset in offsets.values()):
+    print(json.dumps({"local_definition_flow_locations": "PASS", "unavailable": sorted(offsets)}))
+    sys.exit(0)
 sections = command("readelf", "-SW", artifact)
 section = re.findall(r"^\s*\[\s*\d+\]\s+\.debug_loclists\s+PROGBITS\s+"
     r"[0-9a-f]+\s+([0-9a-f]+)\s+([0-9a-f]+)\b", sections, re.M)
@@ -70,6 +77,8 @@ assert (length, version, width, segment, table) == (size - 4, 5, 8, 0, 0)
 register = {"x86_64": 10, "aarch64": 9}[target]
 checked = {}
 for function, start in offsets.items():
+    if start is None:
+        continue
     actual = []
     cursor = start
     while data[cursor] != 0:
@@ -82,7 +91,24 @@ for function, start in offsets.items():
         actual.append((low, high, expression.hex()))
         cursor += 1 + length
     record = labels[function]
-    expected = [(low, high, bytes([0x90, register]).hex()) for low, high in record["available"]]
+    if record.get("allowStorageMigration"):
+        coverage = []
+        for low, high, encoded in actual:
+            expression = bytes.fromhex(encoded)
+            if expression[0] == 0x90:
+                assert len(expression) == 2 and expression[1] <= (16 if target == "x86_64" else 31)
+            else:
+                assert expression[0] == 0x92 and expression[1] == (7 if target == "x86_64" else 31)
+                assert len(expression) == 3 and expression[2] < 0x80
+            if coverage and coverage[-1][1] == low:
+                coverage[-1][1] = high
+            else:
+                coverage.append([low, high])
+        assert coverage == record["available"], (function, coverage, record["available"])
+        checked[function] = actual
+        continue
+    expected = [(low, high, bytes([0x90, record.get("dwarfRegister", register)]).hex())
+        for low, high in record["available"]]
     assert actual == expected, (function, actual, expected)
     checked[function] = actual
 print(json.dumps({"local_definition_flow_locations": "PASS", "functions": checked}, indent=4))

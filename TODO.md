@@ -1,5 +1,194 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED combined-gate correction:** PR103's first run stopped before
+compilation because the architecture-neutrality scanner rejects the token `sp`.
+Two generic locals derived from Ghidra are renamed `pointerNode`; comments use
+“stack pointer”. The scanner is unchanged, executable disassembly is identical
+and the corrected package/model checks pass. The new complete hosted gate and
+final combined acceptance remain required; see the completion audit.
+
+**CONFIRMED local piece and lexical-call composition; combined acceptance pending:**
+Twelve aggregate configurations prove two memory pieces across safe calls and
+honest whole-value gaps after unknown writes, released slots or unproven frame
+pointers. Six lexical-call configurations prove outer/inner shadow lookup while
+unwound from callees, discontiguous visibility, genuine decompiler failure and
+cancellation; two no-call regressions also pass. Production/native code is
+unchanged. See `docs/PIECE-CALL-MEMORY.md`, `docs/LEXICAL-CALL-LIFETIMES.md` and
+the refreshed `docs/LIFETIME-SCOPE-COMPLETION-AUDIT.md`. Final combined hosted
+package/target/host acceptance, protected integration and full requirement
+reconciliation remain required. P1.11a/#67 and P3.3/#73 remain open.
+
+Earlier checkpoint paragraphs below retain their historical remaining-work
+lists. The completion audit is the current requirement/status map; implemented
+call support must not be described as a current decoder rejection.
+
+**CONFIRMED local return-SP and mutable-call composition:** incompatible return
+paths execute with immediate caller restoration and retain honest location
+gaps. Twelve x86-64/AArch64 signed-width/address roles now prove mutable saved
+values through call clobbers, stack retention and reloads, including stale-slot
+and conflicting-owner controls. Four no-call regressions and two predecessor
+comparisons pass. Production code is unchanged. See `docs/MUTABLE-CALL-MEMORY.md`
+and the updated boundary document. Independent-piece, lexical/failure/cancellation
+composition, final hosted acceptance and integration remain open; #67/#73 stay open.
+
+**CONFIRMED local call-memory boundary controls:** six x86-64/AArch64
+exec/PIE/rebased configurations now exercise partial-overlap and adjacent writes,
+released slots and unknown SP using compiler-calibrated outgoing copies.
+Four existing harness regressions and two preceding-package comparisons pass;
+production code is unchanged. See `docs/CALL-MEMORY-BOUNDARIES.md` for exact
+runtime evidence. Incompatible-return-SP, mutable/piece/scope composition,
+failure/cancellation and hosted acceptance remain open; #67/#73 are incomplete.
+
+**CONFIRMED local call-memory checkpoint; full goal remains open:**
+callee-entry-relative writes, released frames and exact return SP now preserve
+proven nonoverlapping caller slots. Twelve x86-64/AArch64 register/stack address
+configurations, twelve runtime regressions and nine actual Java 21 suites pass.
+Conditional/loop/split calls, temporary register clobbers, nested stack effects
+and a real aliasing write are checked against compiler DWARF and GDB. Broader
+call-memory controls, mutable/piece/scope composition, failure/cancellation and
+hosted integration remain required. See `docs/CALL-MEMORY-EFFECTS.md`.
+P1.11a/#67 and P3.3/#73 remain open.
+
+
+**CONFIRMED local call-register checkpoint; full lifetime/scope work incomplete:**
+saved later locals now use inspected call graphs and caller return successors.
+Six x86-64/AArch64 exec/PIE/rebased roles, raw locations, compiler/Forge GDB,
+validators, eight runtime regressions and eight actual Java 21 suites pass.
+Stack-owned logical identities still require a callee memory proof; preserved
+register bits alone are insufficient. Call-specific branch/loop/split, merged,
+native-clobber, scope, failure/cancellation and hosted acceptance remain open.
+See `docs/LOCAL-CALL-LIFETIMES.md`. This supersedes the historical decoder gap
+below; it does not complete P1.11a/#67 or P3.3/#73.
+
+
+**HISTORICAL audit at b71bfd9 (superseded by the current audit):** saved-local analyses rejected
+call-containing bodies, and inspected-call summaries preserve registers only,
+retiring all memory facts. Incoming-call and mixed-piece acceptance does not
+prove these missing local/caller-slot cases. See
+`docs/LIFETIME-SCOPE-COMPLETION-AUDIT.md` for the full original requirement map
+and implementation/acceptance sequence. The combined automatic THIS/return
+buffer method now passes six local x86-64/AArch64 roles without a producer
+change (`docs/ARTIFICIAL-OBJECT-ROLES.md`); its hosted gate is pending.
+P1.11a and P3.3 remain open.
+
+**CONFIRMED PR101 integration:** exact head
+`c8e48213e339dd845abeb9afaafd58a043fdcad4` passes all twelve jobs in run
+`41245301749`, independent hosted package/Java 21/raw-runtime/host review,
+and normal merge `dfb5c2e06822fd40e9ae55928318307976a5aded` with the same tree.
+Eighteen aggregate-piece/mutable-stack roles contribute 10,530 compiler/Forge
+instruction observations, with stale-piece/slot, unknown-alias and conflicting
+owner controls. ARM mixed prefixes, stack/call regressions and both hosts also
+pass their documented checks. See `docs/LIFETIME-CORE-ACCEPTANCE.md` for the
+receipt and exact bounds. Earlier pending PR101 component notes are historical;
+the separate main-push gate and combined scope acceptance remain distinct.
+P1.11a/#67 and P3.3/#73 stay open pending the full requirement audit.
+
+**CONFIRMED local lexical-static emission; hosted/full-scope acceptance
+pending:** valid saved static identities now emit under their recorded function
+or lexical block. Six x86-64/AArch64 exec/PIE/rebase roles pass 66 exports, six
+isolated producer artifacts, six cancellations and 378 compiler/Forge GDB
+observations. Stale/conflicting/coalesced evidence and genuine decompiler failure
+preserve only defensible declarations; seventeen actual Java 21 suites pass.
+See `docs/STATIC-SCOPE-EVIDENCE.md`. Inferred statics, other scope relationships
+and umbrella integration/audits remain open.
+
+**CONFIRMED static-scope evidence provider; extraction/emission pending:**
+explicit typed-memory symbol/function/block associations pass 460 real ProgramDB
+checks on five language profiles and sixteen actual Java 21 suites. Records
+survive rebase and immutable reopen, reject stale/conflicting identities, and
+never infer ownership from a namespace spelling. Existing exporter class bytes
+are unchanged. See `docs/STATIC-SCOPE-EVIDENCE.md`; runtime static-scope emission,
+inferred statics and all remaining umbrella requirements are still open.
+
+**CONFIRMED local rejected-binding controls; hosted/full-scope acceptance
+pending:** twelve stale/conflicting saved-class cases pass 24 deterministic
+exports, strict validators, cold GDB lookup and twelve production-copy
+cancellations on x86-64/AArch64 exec/PIE/rebased PIE. They exposed and corrected
+unbound-class lookup without fabricating layout. Five isolated producer
+variants preserve distinct collision identities; both targets' explicit-binding
+and genuine-decompiler-failure regressions pass. GDB's zero-size presentation
+of incomplete classes is documented, not claimed as recovered knowledge.
+See `docs/CLASS-SCOPE-EMISSION.md`; broader scope work remains open.
+
+**CONFIRMED local class emission; hosted/full-scope acceptance pending:**
+actual saved ownership now emits class declarations and canonical definitions,
+with identity-bound method specifications and collision-aware C lookup aliases.
+Twelve x86-64/AArch64 target/address/binding cases pass 24 deterministic real
+exports, strict validators and compiler-correlated GDB values. Fourteen actual
+Java 21 suites and isolated class/failure/collision checks pass. Fresh debugger
+queries catch and verify the correction of a lazy-lookup defect missed by the
+earlier research query order. See `docs/CLASS-SCOPE-EMISSION.md`; remaining
+class controls, lifetime integration and all other scope requirements stay open.
+
+
+**CONFIRMED saved class extraction; native class emission pending:** the
+production extractor now retains actual namespace/class/method identities,
+addressless external methods and separately evidenced canonical layouts. All
+290 real ProgramDB checks across five profiles and twelve actual Java 21 suites
+pass, including conflicts, stale records, cancellation, rebasing and immutable
+reopen. Four real exports retain GDB values and validate; two previous-package
+comparisons are byte-identical. See `docs/CLASS-SCOPE-EXTRACTION.md`. The writer
+still needs class declaration/specification emission; no umbrella is complete.
+
+
+**CONFIRMED explicit class-binding provider; extractor/emitter pending:**
+400 real ProgramDB checks across five language profiles pass on actual Java 21,
+including identity collisions, stale records, edits, rebasing, immutable reopen
+and cancellation. Missing and rejected evidence remain distinct; export reads
+do not repair records or infer replacement identity. Eleven Java 21 suites and
+four existing producer regressions pass. See `docs/CLASS-BINDINGS.md`. Actual
+class extraction/emission and all remaining lifetime/scope rows stay required.
+
+
+
+**CONFIRMED locally; final package/hosted acceptance pending:** discontiguous
+analyst scope visibility, stale/coalesced records, actual decompiler failure and
+copy cancellation pass all six x86-64/AArch64 address roles. Forty-two candidate
+exports, six previous-package comparisons, 150 instruction observations and
+six cancellations preserve input identity and published pairs. A real failure
+exposed orphan location lists; planning now matches emitted signatures, removing
+the GNU warning while retaining symbol-only functions and intentional omissions.
+Eight actual Java 21 suites and thunk/static/aggregate-return regressions pass.
+See `docs/LEXICAL-SCOPE-EVIDENCE.md`. All remaining class/object/static/alias/type
+relationships and P1.11a integration gates remain open; neither umbrella is complete.
+
+
+**CONFIRMED locally; full scope/hosted acceptance pending:** explicit lexical
+ownership now reaches DWARF and GDB. Six x86-64/AArch64 exec/PIE/rebased roles
+pass twelve exports and 138 instruction observations for nested shadowing and
+initialization gaps. Raw DIE bounds/parents, GNU/LLVM/pinned validation,
+determinism and preservation pass. Eight actual Java 21 suites include the
+isolated producer; the new model supplies 105 checks. See
+`docs/LEXICAL-SCOPE-EVIDENCE.md` for exact evidence, retained failures and
+remaining discontiguous/negative/failure/hosted coverage. This supersedes the
+older provider-only status below; P1.11a and P3.3 remain incomplete.
+
+**CONFIRMED lexical evidence provider; exporter hookup pending:** explicit
+saved block/local ownership now survives real program rebasing and immutable
+reopen. All 430 checks pass on actual Java 21 across five language models,
+including stale identity/type/storage starts, shadowing, malformed metadata and
+cancellation. See `docs/LEXICAL-SCOPE-EVIDENCE.md`. No lexical DWARF is emitted
+by this checkpoint; scope lookup, full P3.3 and lifetime integration remain open.
+
+**CONFIRMED PR100 control-flow oracle correction; fresh hosted gate pending:**
+run `41230414679` failed both x86-64/AArch64 lanes on an older assertion that the
+complete function body could not preserve its copied parameter. The production
+value-flow engine proves that backup; the excluded-block case still omits its
+location. The corrected six-role oracle passes 24 exports and 270 instruction
+observations on actual Java 21, with 78 available complete-body values and exact
+unavailable overwrite/excluded-body boundaries. Production code is unchanged.
+GNU/LLVM/pinned strict checks, original preservation, deterministic repeats and
+four stack-spill/direct-call regressions pass. Receipt:
+`2d5981475cbdb6859fab80e754ace616c7a4de3f63b0cca06b276a5fca8e0425`.
+See `docs/REGISTER-BODY-CONTROL-FLOW.md`. P1.11a and P3.3 remain incomplete.
+
+**CONFIRMED scope API research; implementation pending:** four real imports
+and both x86-64/AArch64 compiler GDB oracles establish preserved class/THIS/type
+identity, flattened shadowed locals and a same-name static namespace that is
+not the actual function owner. See `docs/research/SCOPE-EVIDENCE.md` for the
+reproducible probe, API audit and explicit evidence-provider direction. This
+does not complete any P3.3 row or replace P1.11a hosted acceptance.
+
 **CONFIRMED integration:** PR100 head `53e182e31f5abe38327f43647b30d502a5372395`
 passes all twelve jobs in run `41234746854` and independent exact-package,
 raw-runtime and host review. Normal merge `97a50d1a3c826e639e7754cffed9a98c199616a6`
@@ -29,6 +218,7 @@ All 23 actual Java 21 suites, six runtime regressions, validators, determinism
 and failure/cancellation checks pass. See `docs/MUTABLE-STACK-MAPPINGS.md`.
 PR100's AArch64 harness correction `e37035a1` is included by normal merge;
 its replacement hosted gate remains pending. Neither P1.11a nor P3.3 is complete.
+
 
 **CONFIRMED PR100 control-flow oracle correction; fresh hosted gate pending:**
 run `41230414679` failed both x86-64/AArch64 lanes on an older assertion that the
@@ -1958,6 +2148,11 @@ or uncertain storage remains locationless with a diagnostic.
 
 ## P1.11a Extend proven variable lifetimes and storage migration
 
+**Current status: PRESENT, UNVERIFIED for final combined hosted acceptance.**
+Local implementation/composition evidence and every original requirement are
+mapped in `docs/LIFETIME-SCOPE-COMPLETION-AUDIT.md`. Earlier component notes
+below are historical checkpoints, not the current remaining-work list.
+
 **CONFIRMED integration:** PR98 head `0c5db884d8c9517693d31c3d62ab783031e0c053`
 passes all twelve jobs in run `41215780110` and exact hosted package/raw/host
 review. Six control-flow-local roles provide 12,384 GDB observations; related
@@ -3056,7 +3251,67 @@ after merge and post-merge validation.
 
 ## P3.3 Add richer scopes and declarations
 
+**Current status: PRESENT, UNVERIFIED for final combined hosted acceptance.**
+Local implementation/composition evidence and every original requirement are
+mapped in `docs/LIFETIME-SCOPE-COMPLETION-AUDIT.md`. Earlier component notes
+below are historical checkpoints, not the current remaining-work list.
+
+**CONFIRMED local same-name identities; hosted/full-scope acceptance pending:**
+six x86-64/AArch64 exec/PIE/rebase roles preserve recursive classes, enums,
+typedefs and analyst-renamed category types through immutable saved-program
+exports and actual GDB values. Qualified namespace globals now have a canonical
+lookup definition and addressless namespace association; collision controls
+preserve existing global/function/type/enumerator lookup. See
+`docs/SAME-NAME-TYPES.md` for scope, reproduction and remaining gates.
+Neither P1.11a nor P3.3 is complete.
+
+**CONFIRMED local function relationships; hosted/full-scope acceptance pending:**
+saved direct thunk targets now emit exact `DW_AT_trampoline` references; accepted
+analyst aliases add addressless imports of the canonical definition. Twenty-one
+actual Java 21 suites, 28 isolated artifacts, six thunk roles and 24 alias roles
+on x86-64/AArch64/both MIPS byte orders pass. Existing declarations/source/storage
+remain unchanged; wrong-hash/owner/collision and source-failure controls pass.
+See `docs/FUNCTION-RELATIONSHIPS.md` for exact evidence, the unavailable local
+ARM32 toolchain and remaining host/scope acceptance. The full goal remains open.
+
 Tracking: [#73](https://github.com/zwilcox/GhidraDwarfForge/issues/73).
+
+**CONFIRMED local static recovery; hosted/full-scope acceptance pending:**
+Function-owned labels with undefined listing types and saved memory locals now
+retain distinct type/ownership provenance. Six target/address roles pass 96
+exports, 432 GDB observations and six cancellations; negative identity, curated
+type, overlap, stale scope and genuine failure controls pass. Seventy new model
+checks and eighteen actual Java 21 suites pass. See `docs/RECOVERED-STATICS.md`.
+This supersedes the research-only status below, not remaining alias/origin,
+same-name/category or umbrella integration requirements.
+
+**CONFIRMED static-recovery research; implementation pending:** twelve actual
+read-only decompilations distinguish inferred memory types from saved ownership,
+including memory locals, wrong namespaces and rejected/absent bindings. See
+`docs/research/STATIC-RECOVERY.md`. Wire evidence into extraction and validate the
+full target/address matrix before claiming inferred-static support. All remaining
+scope and lifetime acceptance stays required.
+
+**CONFIRMED model component:** class/namespace ownership, method identities and
+explicit/inferred layout bindings are represented separately. Fifty-one checks
+and ten actual Java 21 suites pass, including nonempty ownership through all
+three call-policy copies. See `docs/CLASS-SCOPE-MODEL.md`; saved-program evidence
+and class emission remain planned. No P3.3 row is closed by this model alone.
+
+**CONFIRMED research:** fourteen strict-validator/GDB layout cases select a
+class-owned declaration plus qualified root definition for C11. Two actual
+headless probes show automatic THIS typing is preference-driven, not a durable
+class/type key. Ownership and type association need separate provenance and
+stale/conflict checks; see `docs/research/CLASS-LAYOUT.md`. This is not class
+exporter acceptance and removes no remaining P3.3 requirement.
+
+**CONFIRMED local object-parameter checkpoint; hosted acceptance pending:**
+explicit `AutoParameterType.THIS` emits `DW_AT_object_pointer`, without inferring
+it from a parameter name or artificial flag. Six target/address roles pass
+twelve real exports and exact compiler/Forge values. Isolated Java 21 producer
+references, declaration/failure controls and hidden-return regression pass.
+See `docs/OBJECT-PARAMETERS.md`. This supersedes the older unimplemented-THIS
+note below; class ownership and all other remaining P3.3 requirements stay open.
 
 **HISTORICAL investigation:** naive distinct linkage-name emission hid the
 curated name in GDB. P1.7 resolves original/curated function lookup through

@@ -169,7 +169,7 @@ public class GhidraDwarfForge extends GhidraScript {
             target.name(), originalElf, monitor::isCancelled);
         var extractedTypes = GhidraTypeGraph.extract(currentProgram, functions, registers,
             rebaseDelta, monitor, diagnostic, decompilation.recoveredReturns(),
-            decompilation.recoveredParameters());
+            decompilation.recoveredParameters(), decompilation.recoveredStatics());
         var typeModel = ghidradwarfforge.GhidraCompilerCallPolicy.apply(currentProgram,
             target, extractedTypes, monitor, diagnostic);
         monitor.checkCancelled();

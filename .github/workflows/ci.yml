@@ -479,10 +479,10 @@ jobs:
               matchedElfPrefixSmoke matchedElfAllocationsSmoke executableProgramBytesSmoke \
               debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke \
               syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
-              variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke \
+              variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke \
               stackFirstUseSmoke \
               opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
-              functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke curatedThunkSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
+              functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfAddressRangesSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
@@ -707,6 +707,10 @@ jobs:
 
       - name: Install extension
         run: unzip -q dist/*.zip -d "$GHIDRA_INSTALL_DIR/Ghidra/Extensions"
+
+      - name: Isolated class producer specifications and conflicting lookup aliases
+        if: matrix.target == 'x86_64'
+        run: python3 src/test/integration/class-scope-native.py "$GHIDRA_INSTALL_DIR"
 
       - name: Isolated packaged-native producer smoke test
         if: matrix.target == 'x86_64'
@@ -1136,6 +1140,9 @@ jobs:
         run: |
           for role in exec pie pie-rebased; do
               python3 src/test/integration/local-definition-flow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
+              python3 src/test/integration/local-call-lifetimes-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
+              python3 src/test/integration/local-call-lifetimes-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --storage stack
+              python3 src/test/integration/local-call-lifetimes-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --storage outgoing
           done
 
       - name: Saved local identities retain current values through register moves and updates
@@ -1181,6 +1188,7 @@ jobs:
           for width in 32 64; do
               for role in exec pie pie-rebased; do
                   python3 src/test/integration/mutable-stack-mappings-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --width "$width" --role "$role"
+                  python3 src/test/integration/mutable-stack-mappings-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --width "$width" --role "$role" --calls
               done
           done
 
@@ -1191,6 +1199,54 @@ jobs:
         run: |
           for role in exec pie pie-rebased; do
               python3 src/test/integration/composite-value-flow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
+              if [[ "$TARGET" == x86_64 ]]; then
+                  python3 src/test/integration/composite-value-flow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --red-zone
+                  python3 src/test/integration/composite-value-flow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --frame-pointer-leaf
+              fi
+          done
+
+      - name: Explicit lexical blocks and shadowed initialized locals
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for role in exec pie pie-rebased; do
+              python3 src/test/integration/lexical-shadow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
+              python3 src/test/integration/lexical-shadow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --discontiguous --controls
+              python3 src/test/integration/lexical-shadow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --discontiguous --controls --calls
+          done
+
+      - name: Class ownership and object parameters preserve saved identities and lookup
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for role in exec pie pie-rebased; do
+              python3 src/test/integration/object-parameter-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
+              python3 src/test/integration/object-return-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
+              python3 src/test/integration/object-parameter-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --explicit-binding --failure-control
+              for control in stale conflict; do
+                  python3 src/test/integration/object-parameter-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --binding-control "$control" --cancellation-control
+              done
+          done
+
+      - name: Same-name types and namespace globals preserve distinct identities
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/namespace-globals-native.py "$GHIDRA_INSTALL_DIR" "$TARGET"
+          for role in exec pie pie-rebased; do
+              python3 src/test/integration/same-name-types-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
+          done
+
+      - name: Static objects preserve lexical shadowing and failure isolation
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for role in exec pie pie-rebased; do
+              python3 src/test/integration/lexical-statics-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --controls --recovered
           done
 
       - name: Stack and register lifetimes across closed branches and loops
@@ -1221,6 +1277,17 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: |
           python3 src/test/integration/local-symbol-merge-integration.py "$GHIDRA_INSTALL_DIR" "$TARGET" --symbols both
+
+      - name: Isolated function relationships preserve lookup and reject false aliases
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          module="$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge"
+          python3 src/test/research/function-relationships/probe.py \
+              "$GHIDRA_INSTALL_DIR" "$JAVA_HOME" "$module/os/linux_x86_64" \
+              "build/test-results/function-relationships/$TARGET" \
+              --target "$TARGET" --jar "$module/lib/GhidraDwarfForge.jar"
 
       - name: Curated thunk names retain signatures without borrowed destination source
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
@@ -1773,8 +1840,8 @@ jobs:
           & .\gradlew.bat dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
-            functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke curatedThunkSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
-            registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
+            functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
+            registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
             elfBuildIdSmoke exportReportClaimsSmoke matchedElfPrefixSmoke `
             matchedElfAllocationsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke executableProgramBytesSmoke `
             debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke 2>&1 |

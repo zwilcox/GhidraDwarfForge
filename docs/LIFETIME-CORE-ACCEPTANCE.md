@@ -63,3 +63,48 @@ stack assignments and independently migrating pieces retain their own package,
 required CI and integration gates. Richer class/lexical/static/alias/origin and
 same-name relationships remain under P3.3. The full requirement audit remains
 `LIFETIMES-AND-SCOPES-PLAN.md`; neither #67 nor #73 is closed by this component.
+
+## Independent pieces and mutable saved-stack integration (PR101)
+
+**CONFIRMED:** head `c8e48213e339dd845abeb9afaafd58a043fdcad4` passes all twelve
+jobs in run `41245301749`. Normal protected merge
+`dfb5c2e06822fd40e9ae55928318307976a5aded` has the same tree. This supersedes
+pending integration of the mutable-stack and piece components above. It does
+not substitute for the separate main-push gate or pending scope integration.
+
+The exact hosted JAR is
+`0787a3852a86910f8d87579264853d506ab502f66bfc9b95173528417eac07c4`.
+Package review covers 73 production sources, 274 Java 21 classfiles, manifests
+and provenance. Twenty-four suites pass on actual Java 21 with 632 checked
+class origins. The locally built and hosted JARs differ in 23 classfiles;
+normalized instruction text agrees, and acceptance uses the independently
+executed hosted JAR rather than assuming those bytes are identical.
+
+Fresh review of uploaded artifacts verifies eighteen x86-64/AArch64 address/
+width roles: six independent-piece roles and twelve mutable-stack roles.
+There are 10,530 compiler/Forge caller-instruction observations, 3,180 available
+candidate values, 66 stale-first-piece controls, twelve unknown-alias gaps,
+57 stale-slot controls and 189 conflicting-owner controls. Twenty-four
+compiler/Forge callee visits cover 48 callee instructions. Raw location lists
+are decoded again from the actual ELF and compared against instruction bytes,
+physical carriers, expected mutation/initialization/loss boundaries and GDB
+values. PIE and rebased-PIE locations agree after normalization.
+
+The exact head additionally passes reviewed 42 stack roles (18,072 observations),
+36 inspected-call roles (15,318 instruction observations), six complete/excluded
+body roles (270 observations), register-composite cases and twelve ARM mixed
+incoming-piece artifacts. The latter preserve exact piece ordering and stack
+adjustments, and keep unavailable gaps after the proven prefix. Original,
+project, source and module preservation and deterministic pairs are checked.
+Fresh LLVM/pinned strict validation passes. Linux/Windows GUI, Windows native
+models/producer/headless export and all five baseline target profiles retain
+their documented behavior. The Windows standalone checker remains unavailable;
+its emitted artifacts are independently validated on Linux.
+
+Exact-head review receipt: `build/pr101-composite-hosted/acceptance.json`, SHA-256
+`26c8a9b2db02402e7e09c19e46facb212d124ec3a79cc80c09f52a122ab3e8bf`.
+It binds six review receipts (migration, prefixes, stack, inspected calls,
+outside-body flow and hosts) and the hosted package receipt. Review evidence is
+recorded on PR101; self-approval is unavailable to the author account. Strict
+`required-validation` was preserved, with no admin bypass or history rewrite.
+The full P1.11a/P3.3 audit and remaining scope work stay open.

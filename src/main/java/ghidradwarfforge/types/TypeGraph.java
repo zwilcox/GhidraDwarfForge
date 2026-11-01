@@ -205,13 +205,19 @@ public record TypeGraph(List<TypeNode> nodes) {
     }
 
     public record Parameter(String name, TypeRef type, boolean artificial,
-            boolean returnStorage) {
+            boolean returnStorage, boolean objectPointer) {
+        public Parameter(String name, TypeRef type, boolean artificial,
+                boolean returnStorage) {
+            this(name, type, artificial, returnStorage, false);
+        }
+
         public Parameter(String name, TypeRef type, boolean artificial) {
             this(name, type, artificial, false);
         }
 
         public Parameter {
-            if (name == null || type == null || (returnStorage && !artificial)) {
+            if (name == null || type == null || (returnStorage && !artificial) ||
+                    (objectPointer && (!artificial || returnStorage))) {
                 throw new IllegalArgumentException("invalid subroutine parameter");
             }
         }

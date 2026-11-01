@@ -1,5 +1,12 @@
 # Independently migrating incoming pieces
 
+**CONFIRMED integrated through PR101:** all twelve exact-head CI jobs and
+independent package, raw runtime and host reviews pass. Normal merge
+`dfb5c2e06822fd40e9ae55928318307976a5aded` preserves the tested tree. See
+`LIFETIME-CORE-ACCEPTANCE.md` for the acceptance receipt; earlier pending-hosted
+notes below are historical. The implementation bounds and full-goal audit
+remain unchanged.
+
 **CONFIRMED locally; hosted acceptance pending.** Every piece of an incoming
 register/register or register/stack value is tracked independently through the
 ordered value-flow engine. The complete attached Ghidra parameter, formal and

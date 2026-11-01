@@ -260,8 +260,11 @@ final class StackValueFlow {
         // identity continues to retire on frame changes; it needs a separate
         // ownership proof. Unmodelled stack-pointer effects cannot preserve any slot.
         facts.keySet().removeIf(Varnode::isUnique);
+        var inspectedCall = calls.get(instruction.getAddress());
+        boolean memoryCall = instruction.getFlowType().isCall() && inspectedCall != null && inspectedCall.memory() != null;
         if (GhidraVariableStorage.writesRegister(instruction, pointer) &&
-                (localOffset != null || !RegisterCopyLifetime.resultsCovered(instruction, pointer, monitor))) invalidateMemory();
+                ((localOffset != null && !memoryCall) ||
+                !RegisterCopyLifetime.resultsCovered(instruction, pointer, monitor))) invalidateMemory();
         // Listing-only effects have no defensible ordering relative to raw
         // reads. Retire their inputs before interpreting this instruction.
         for (Varnode node : new ArrayList<>(facts.keySet())) {
@@ -282,14 +285,7 @@ final class StackValueFlow {
             if (operation.getOpcode() == PcodeOp.CALL) {
                 var effects = calls.get(instruction.getAddress());
                 if (effects == null) return false;
-                // A call summary proves register preservation only. No callee
-                // memory non-aliasing or restored affine stack address is guessed.
-                invalidateMemory();
-                for (Varnode node : new ArrayList<>(facts.keySet())) {
-                    monitor.checkCancelled();
-                    Register register = exactRegister(program, node);
-                    if (register == null || !effects.preserves(register, monitor)) facts.remove(node);
-                }
+                applyCall(effects, monitor);
             }
             Varnode output = operation.getOutput();
             if (output == null) continue;
@@ -328,6 +324,42 @@ final class StackValueFlow {
         // generated. Keep that path unavailable rather than manufacturing a
         // fixed entry-relative address or retaining a previous local value.
         return true;
+    }
+
+    /** Translate callee-entry-relative effects only after CALL's own raw effects. */
+    private void applyCall(DirectLeafCalls.Leaf effects, TaskMonitor monitor) throws CancelledException {
+        Varnode pointerNode = new Varnode(pointer.getAddress(), pointer.getMinimumByteSize());
+        Fact calledSp = read(pointerNode);
+        Long returnedSp = null;
+        var writes = new ArrayList<CallMemoryEffects.Range>();
+        if (effects.memory() != null && calledSp != null && calledSp.kind() == Kind.STACK_ADDRESS) {
+            try {
+                long restored = Math.addExact(calledSp.offset(), effects.memory().stackDelta());
+                int shift = (Long.BYTES - memory.getPointerSize()) * 8;
+                if (((restored << shift) >> shift) == restored) {
+                    for (var range : effects.memory().writes()) {
+                        writes.add(new CallMemoryEffects.Range(Math.addExact(calledSp.offset(), range.start()),
+                            Math.addExact(calledSp.offset(), range.end())));
+                    }
+                    returnedSp = restored;
+                }
+            }
+            catch (ArithmeticException overflow) { /* An unrepresentable effect cannot preserve memory. */ }
+        }
+        if (returnedSp == null) invalidateMemory();
+        else {
+            for (var range : writes) {
+                monitor.checkCancelled();
+                if (localOffset != null && intersects(localOffset, bytes, range.start(), range.end())) retireLocalValue();
+                slots.keySet().removeIf(slot -> intersects(slot, bytes, range.start(), range.end()));
+            }
+        }
+        for (Varnode node : new ArrayList<>(facts.keySet())) {
+            monitor.checkCancelled();
+            Register register = exactRegister(program, node);
+            if (register == null || !effects.preserves(register, monitor)) facts.remove(node);
+        }
+        if (returnedSp != null) facts.put(pointerNode, new Fact(Kind.STACK_ADDRESS, returnedSp));
     }
 
     /** A local assignment or reuse invalidates old copies as well as its slot. */

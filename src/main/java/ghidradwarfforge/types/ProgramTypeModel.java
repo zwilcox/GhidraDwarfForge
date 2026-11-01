@@ -13,7 +13,29 @@ import ghidradwarfforge.types.TypeGraph.TypeRef;
 public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> functions,
         List<GlobalVariable> globals, VariableStorageModel variableStorage,
         List<FunctionStaticVariable> functionStatics,
-        List<FunctionDeclaration> functionDeclarations) {
+        List<FunctionDeclaration> functionDeclarations, List<LexicalScopeModel> lexicalScopes,
+        ClassScopeModel classScopes, FunctionRelations functionRelations) {
+    public ProgramTypeModel(TypeGraph types, List<FunctionSignature> functions,
+            List<GlobalVariable> globals, VariableStorageModel variableStorage,
+            List<FunctionStaticVariable> functionStatics, List<FunctionDeclaration> functionDeclarations,
+            List<LexicalScopeModel> lexicalScopes, ClassScopeModel classScopes) {
+        this(types, functions, globals, variableStorage, functionStatics, functionDeclarations,
+            lexicalScopes, classScopes, FunctionRelations.empty());
+    }
+    public ProgramTypeModel(TypeGraph types, List<FunctionSignature> functions,
+            List<GlobalVariable> globals, VariableStorageModel variableStorage,
+            List<FunctionStaticVariable> functionStatics, List<FunctionDeclaration> functionDeclarations,
+            List<LexicalScopeModel> lexicalScopes) {
+        this(types, functions, globals, variableStorage, functionStatics, functionDeclarations,
+            lexicalScopes, ClassScopeModel.empty());
+    }
+
+    public ProgramTypeModel(TypeGraph types, List<FunctionSignature> functions,
+            List<GlobalVariable> globals, VariableStorageModel variableStorage,
+            List<FunctionStaticVariable> functionStatics, List<FunctionDeclaration> functionDeclarations) {
+        this(types, functions, globals, variableStorage, functionStatics, functionDeclarations, List.of());
+    }
+
     public ProgramTypeModel(TypeGraph types, List<FunctionSignature> functions,
             List<GlobalVariable> globals, VariableStorageModel variableStorage,
             List<FunctionStaticVariable> functionStatics) {
@@ -47,12 +69,17 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
         }
     }
 
-    /** A defined memory object explicitly owned by a Ghidra function namespace. */
+    /** A defined memory object with evidence-backed function and optional lexical ownership. */
     public record FunctionStaticVariable(String name, long address, long size, TypeRef type,
-            long ownerAddress, String source) {
+            long ownerAddress, String source, String block) {
+        public FunctionStaticVariable(String name, long address, long size, TypeRef type,
+                long ownerAddress, String source) {
+            this(name, address, size, type, ownerAddress, source, "");
+        }
+
         public FunctionStaticVariable {
             if (name == null || name.isBlank() || address < 0 || size <= 0 ||
-                    type == null || ownerAddress < 0 || source == null || source.isBlank()) {
+                    type == null || ownerAddress < 0 || source == null || source.isBlank() || block == null) {
                 throw new IllegalArgumentException("invalid function-owned static variable");
             }
         }
@@ -69,6 +96,7 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
                 throw new IllegalArgumentException("invalid function signature");
             }
             parameters = List.copyOf(parameters);
+            validateObjectParameterCount(parameters);
             locals = locals.stream()
                 .sorted(Comparator.comparingInt(LocalVariable::firstUseOffset)
                     .thenComparing(LocalVariable::name))
@@ -107,6 +135,7 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
                 throw new IllegalArgumentException("invalid external function declaration");
             }
             parameters = List.copyOf(parameters);
+            validateObjectParameterCount(parameters);
         }
 
         public boolean debuggerCallsDisabled() {
@@ -139,6 +168,41 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
         }
     }
 
+    private static void validateObjectParameterCount(List<Parameter> parameters) {
+        if (parameters.stream().filter(Parameter::objectPointer).count() > 1) {
+            throw new IllegalArgumentException("multiple object parameters in one signature");
+        }
+    }
+
+    private static void validateObjectParameterTypes(TypeGraph types, List<Parameter> parameters) {
+        for (Parameter parameter : parameters) {
+            if (!parameter.objectPointer()) {
+                continue;
+            }
+            var byKey = types.byKey();
+            var visited = new java.util.HashSet<String>();
+            TypeRef reference = parameter.type();
+            while (visited.add(reference.key())) {
+                var node = byKey.get(reference.key());
+                if (node instanceof TypeGraph.QualifiedType qualified) {
+                    reference = qualified.target();
+                }
+                else if (node instanceof TypeGraph.TypedefType typedef) {
+                    reference = typedef.target();
+                }
+                else {
+                    if (!(node instanceof TypeGraph.IndirectionType)) {
+                        throw new IllegalArgumentException("object parameter requires a pointer or reference type");
+                    }
+                    break;
+                }
+            }
+            if (!(byKey.get(reference.key()) instanceof TypeGraph.IndirectionType)) {
+                throw new IllegalArgumentException("cyclic object parameter type");
+            }
+        }
+    }
+
     public ProgramTypeModel {
         if (types == null || functions == null || globals == null || variableStorage == null ||
                 functionStatics == null || functionDeclarations == null) {
@@ -156,6 +220,7 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
             .toList();
         functionStatics = functionStatics.stream()
             .sorted(Comparator.comparingLong(FunctionStaticVariable::ownerAddress)
+                .thenComparing(FunctionStaticVariable::block)
                 .thenComparing(FunctionStaticVariable::name)
                 .thenComparingLong(FunctionStaticVariable::address))
             .toList();
@@ -165,6 +230,7 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
             .toList();
         var declarationKeys = new java.util.HashSet<String>();
         for (FunctionDeclaration declaration : functionDeclarations) {
+            validateObjectParameterTypes(types, declaration.parameters());
             if (!declarationKeys.add(declaration.key()) ||
                     !types.byKey().containsKey(declaration.returnType().key()) ||
                     declaration.parameters().stream().anyMatch(parameter ->
@@ -174,6 +240,7 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
             }
         }
         for (FunctionSignature function : functions) {
+            validateObjectParameterTypes(types, function.parameters());
             if (!types.byKey().containsKey(function.returnType().key())) {
                 throw new IllegalArgumentException("missing return type for " + function.name());
             }
@@ -206,6 +273,51 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
                     variable.name());
             }
         }
+        if (classScopes == null) throw new IllegalArgumentException("class scopes are required");
+        classScopes.validate(types, functions, functionDeclarations);
+        if (functionRelations == null) throw new IllegalArgumentException("function relationships are required");
+        functionRelations.validate(functions, functionDeclarations);
+        if (lexicalScopes == null) throw new IllegalArgumentException("lexical scopes are required");
+        lexicalScopes = lexicalScopes.stream().sorted(Comparator.comparingLong(LexicalScopeModel::functionAddress)).toList();
+        var scopedOwners = new java.util.HashMap<Long, LexicalScopeModel>();
+        for (var scope : lexicalScopes) {
+            if (scopedOwners.put(scope.functionAddress(), scope) != null) throw new IllegalArgumentException("duplicate lexical owner");
+            var function = functions.stream().filter(f -> f.address() == scope.functionAddress()).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("missing lexical owner"));
+            var names = new java.util.HashSet<String>();
+            function.parameters().forEach(parameter -> names.add(parameter.name()));
+            for (var local : function.locals()) {
+                var binding = scope.local(local.name());
+                if ((binding == null || binding.block().isEmpty()) &&
+                        !names.add(binding == null ? local.name() : binding.displayName())) {
+                    throw new IllegalArgumentException("ambiguous function-scope local");
+                }
+            }
+            for (var local : scope.locals()) {
+                if (function.locals().stream().filter(v -> v.name().equals(local.savedName())).count() != 1) {
+                    throw new IllegalArgumentException("scoped local has no unique canonical declaration");
+                }
+            }
+        }
+        if (!scopedOwners.isEmpty()) {
+            var restricted = variableStorage.variables().stream().map(location -> {
+                var scope = scopedOwners.get(location.functionAddress());
+                return scope == null || location.kind() != VariableKind.LOCAL ? location : scope.restrict(location);
+            }).toList();
+            if (!restricted.equals(variableStorage.variables())) {
+                variableStorage = new VariableStorageModel(restricted);
+            }
+        }
+        for (var variable : functionStatics) {
+            var scope = scopedOwners.get(variable.ownerAddress());
+            if (!variable.block().isEmpty() && (scope == null || scope.blocks().stream()
+                    .noneMatch(block -> block.id().equals(variable.block())))) {
+                throw new IllegalArgumentException("missing lexical owner for static " + variable.name());
+            }
+        }
+        if (!conflictingStatics(functions, lexicalScopes, functionStatics).isEmpty()) {
+            throw new IllegalArgumentException("ambiguous static name in its recorded scope");
+        }
         for (VariableLocation location : variableStorage.variables()) {
             FunctionSignature function = functions.stream()
                 .filter(candidate -> candidate.address() == location.functionAddress() &&
@@ -230,5 +342,28 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
                     "declaration " + location.functionName() + "::" + location.name());
             }
         }
+    }
+
+    /** Reject every conflicting static, independently of extraction order. Parent shadowing is valid. */
+    public static java.util.Set<FunctionStaticVariable> conflictingStatics(List<FunctionSignature> functions,
+            List<LexicalScopeModel> scopes, List<FunctionStaticVariable> statics) {
+        record Name(long owner, String block, String spelling) { }
+        var counts = new java.util.HashMap<Name, Integer>();
+        for (var function : functions) {
+            var scope = scopes.stream().filter(s -> s.functionAddress() == function.address()).findFirst().orElse(null);
+            for (var parameter : function.parameters()) {
+                counts.merge(new Name(function.address(), "", parameter.name()), 1, Integer::sum);
+            }
+            for (var local : function.locals()) {
+                var binding = scope == null ? null : scope.local(local.name());
+                counts.merge(new Name(function.address(), binding == null ? "" : binding.block(),
+                    binding == null ? local.name() : binding.displayName()), 1, Integer::sum);
+            }
+        }
+        for (var variable : statics) {
+            counts.merge(new Name(variable.ownerAddress(), variable.block(), variable.name()), 1, Integer::sum);
+        }
+        return statics.stream().filter(variable -> counts.get(new Name(variable.ownerAddress(), variable.block(),
+            variable.name())) > 1).collect(java.util.stream.Collectors.toUnmodifiableSet());
     }
 }

@@ -82,8 +82,9 @@ final class RegisterDefinitionFlow {
         catch (ghidra.program.model.address.AddressOverflowException overflow) {
             return List.of();
         }
-        Map<Address, Instruction> decoded = decodedBody(program, function, monitor);
-        if (!decoded.containsKey(definition) ||
+        LocalBody inspected = inspectBody(program, function, monitor);
+        Map<Address, Instruction> decoded = inspected.instructions();
+        if (!decoded.containsKey(definition) || decoded.get(definition).getFlowType().isCall() ||
                 !GhidraVariableStorage.completeRegisterDefinition(decoded.get(definition), register, variable.getLength())) {
             return List.of();
         }
@@ -91,11 +92,7 @@ final class RegisterDefinitionFlow {
         Map<Address, Set<Address>> predecessors = new HashMap<>();
         for (var entry : decoded.entrySet()) {
             monitor.checkCancelled();
-            var edges = new LinkedHashSet<Address>();
-            for (Address[] targets : new Address[][] { entry.getValue().getDefaultFlows(), entry.getValue().getFlows() }) {
-                if (targets != null) edges.addAll(List.of(targets));
-            }
-            if (entry.getValue().getFallThrough() != null) edges.add(entry.getValue().getFallThrough());
+            var edges = localSuccessors(entry.getValue());
             successors.put(entry.getKey(), edges);
             for (Address target : edges) predecessors.computeIfAbsent(target, unused -> new LinkedHashSet<>()).add(entry.getKey());
         }
@@ -113,6 +110,8 @@ final class RegisterDefinitionFlow {
         // Must analysis: initialize reachable facts to top and only remove
         // them. Entry has no initialized local. The recorded complete
         // definition generates a fact; every other physical write kills it.
+        // The definition cannot itself be a call: its raw p-code outputs
+        // precede callee execution and do not establish return-time values.
         // A join needs agreement from all executable predecessors, including
         // loop backedges. The finite lattice guarantees termination.
         Map<Address, Boolean> input = new HashMap<>();
@@ -131,7 +130,7 @@ final class RegisterDefinitionFlow {
             }
             input.put(address, available);
             boolean after = address.equals(definition) ||
-                (available && !GhidraVariableStorage.writesRegister(decoded.get(address), base));
+                (available && preserves(decoded.get(address), base, inspected.calls(), monitor));
             if (after != output.get(address)) {
                 output.put(address, after);
                 work.addAll(successors.get(address));
@@ -154,12 +153,40 @@ final class RegisterDefinitionFlow {
         return result.stream().anyMatch(interval -> interval.storage().available()) ? List.copyOf(result) : List.of();
     }
 
-    /** Shared physical control-flow boundary; mappings never weaken these guards. */
-    static Map<Address, Instruction> decodedBody(Program program, Function function, TaskMonitor monitor)
+    record LocalBody(Map<Address, Instruction> instructions, Map<Address, DirectLeafCalls.Leaf> calls) {
+    }
+
+    /** Saved caller ownership and complete inspected call graphs are both required. */
+    static LocalBody inspectBody(Program program, Function function, TaskMonitor monitor)
             throws CancelledException {
         monitor.checkCancelled();
-        if (function.getProgram() != program || function.getEntryPoint().getAddressSpace().isOverlaySpace()) return Map.of();
-        return decodedInstructions(program, function, false, monitor);
+        var rejected = new LocalBody(Map.of(), Map.of());
+        if (function.getProgram() != program || function.getEntryPoint().getAddressSpace().isOverlaySpace()) return rejected;
+        var decoded = decodedInstructions(program, function, true, monitor);
+        if (decoded.isEmpty()) return rejected;
+        var calls = DirectLeafCalls.inspect(program, List.copyOf(decoded.values()), monitor);
+        return calls == null ? rejected : new LocalBody(decoded, calls);
+    }
+
+    /** Calls return to the caller successor; callee entries are not local CFG edges. */
+    static Set<Address> localSuccessors(Instruction instruction) {
+        var edges = new LinkedHashSet<Address>();
+        if (!instruction.getFlowType().isCall()) {
+            for (Address[] targets : new Address[][] {instruction.getDefaultFlows(), instruction.getFlows()}) {
+                if (targets != null) edges.addAll(List.of(targets));
+            }
+        }
+        if (instruction.getFallThrough() != null) edges.add(instruction.getFallThrough());
+        return edges;
+    }
+
+    /** A physical write or a callee lacking either ABI or instruction proof retires the carrier. */
+    static boolean preserves(Instruction instruction, Register register,
+            Map<Address, DirectLeafCalls.Leaf> calls, TaskMonitor monitor) throws CancelledException {
+        if (GhidraVariableStorage.writesRegister(instruction, register)) return false;
+        if (!instruction.getFlowType().isCall()) return true;
+        var callee = calls.get(instruction.getAddress());
+        return callee != null && callee.preserves(register, monitor);
     }
 
     /** Physical decoder; the caller separately establishes saved function ownership. */

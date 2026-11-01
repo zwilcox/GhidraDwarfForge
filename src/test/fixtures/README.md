@@ -65,6 +65,18 @@ flow. Compiler DWARF establishes argument values and local-slot coordinates;
 GDB then checks original instruction bytes, physical pieces and exported field
 values on x86-64 and QEMU AArch64. The runtime harness supports exec, PIE and
 rebased PIE. See `docs/COMPOSITE-VALUE-LIFETIMES.md` for acceptance status.
+The call-memory variants invoke a callee while both pieces reside in memory;
+an unknown-pointer-store control retains one physical half but rejects the
+whole aggregate. Dedicated x86 red-zone and frame-pointer-leaf controls retain
+honest gaps at release/unproven-pointer boundaries. See
+`docs/PIECE-CALL-MEMORY.md` for the exact compiler options and checks.
+
+`lexical-shadow.c` records explicit outer/inner ownership independently of
+initialization and physical storage. Its `--calls` variant reads the caller's
+shadowed variable while GDB is stopped inside an inspected stack-writing leaf.
+The discontiguous visibility, rejected-binding, actual decompiler-failure and
+copy-cancellation controls also run on this variant; see
+`docs/LEXICAL-CALL-LIFETIMES.md`.
 
 The preparation script also applies a user-defined `analyst_stack` name to the
 compiler fixture's `sum` stack slot. Its Ghidra incoming-stack-pointer offset is
@@ -572,3 +584,46 @@ working-register updates, saved and unsaved slots, branch alternatives, repeated
 loop assignments and a conflicting saved owner. Real export, raw DWARF and GDB
 checks pass for signed 32/64-bit x86-64/AArch64 exec/PIE/rebased PIE cases; exact
 hosted acceptance is pending. See `docs/MUTABLE-STACK-MAPPINGS.md`.
+
+## Combined automatic object and return roles
+
+`object-return.cpp` exercises a method with both automatic THIS and a 24-byte
+aggregate return buffer. `object-return-export.py` validates both exact Ghidra
+roles, their class declaration, actual native/QEMU values and ordinary pointer
+parameters renamed to the automatic spellings. The six x86-64/AArch64
+exec/PIE/rebase roles use immutable saved-program exports and retain original,
+deterministic, GNU/LLVM/pinned-strict and source-lookup checks. See
+`docs/ARTIFICIAL-OBJECT-ROLES.md`; this does not broaden injected-call support.
+
+`local-call-lifetimes.c` retains a compiler-tracked later local in R12/x19
+through one and two ordinary calls. Its headless curation records the exact
+saved definition; compiler/Forge GDB checks every caller/callee instruction,
+initialization and restored-register gaps, signed values and returned results.
+The export harness covers exec, PIE and rebased PIE, immutable deterministic
+exports, raw location lists, validators and preservation. The old-package
+`--expect-baseline-gap` option is a reproduction only. Call-memory and broader
+control-flow acceptance remain separate; see `docs/LOCAL-CALL-LIFETIMES.md`.
+
+`stack-call-lifetimes.c` adds compiler-owned stack locals across callee-owned
+stack writes, nested calls and an aliasing write. The shared local-call harness
+uses `--storage stack`; its offset bootstrap reads actual compiler DWARF and
+process memory before Ghidra curation. Canary insertion is explicitly disabled
+to isolate the tested calls from an unsupported external failure path. Register
+mode now also covers conditional calls, loops, body holes and temporary callee
+clobbers. See `docs/CALL-MEMORY-EFFECTS.md` for evidence and remaining controls.
+
+`call-memory-boundaries.c` uses compiler-described stack arguments to distinguish
+partial-overlap and adjacent writes, released slots and unproven SP effects.
+The `--storage outgoing` local-call mode derives the saved copy's location and
+completed definition from actual GDB observations before Ghidra curation. It
+changes no process memory and compares the caller's live compiler value with
+the exported copy or its required gap. Six target/address roles, old-package
+comparisons and retained signed values are documented in
+`docs/CALL-MEMORY-BOUNDARIES.md`.
+
+The outgoing-copy fixture also executes two incompatible return-SP paths and
+immediate caller restoration; neither path receives a post-call location.
+`mutable-stack-mappings.c` accepts `FORGE_MUTABLE_CALLS=1` (the harness's `--calls`
+option) to check updated saved identities through a real register clobber and
+callee-owned stack write. Stale-slot and conflicting-owner controls remain gaps.
+See `docs/MUTABLE-CALL-MEMORY.md` and `docs/CALL-MEMORY-BOUNDARIES.md`.

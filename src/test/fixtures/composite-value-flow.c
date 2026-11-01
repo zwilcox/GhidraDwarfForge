@@ -30,6 +30,8 @@ volatile uint8_t alias_sink;
     MARK(name, loop) "movq %[slot_b], %%r11\n\txorq %%r11, %%r11\n\tdecl %%ecx\n\tjne 1b\n\t"
 #define SPLIT_FLOW(name) "jmp 1f\n\t" MARK(name, hole) ".byte 0xcc,0xcc,0xcc\n1:\n\t" MARK(name, afterhole) "nop\n\t"
 #define CALL_FLOW(name) "subq $32, %%rsp\n\tcall pieces_leaf\n\t" MARK(name, returned) "addq $32, %%rsp\n\t"
+#define MEMORY_CALL(name) "subq $32, %%rsp\n\tcall pieces_memory_leaf\n\t" MARK(name, returned) "addq $32, %%rsp\n\t" MARK(name, restored) "nop\n\t"
+#define UNKNOWN_CALL(name) "subq $32, %%rsp\n\tcall pieces_memory_alias\n\t" MARK(name, returned) "addq $32, %%rsp\n\t"
 #define LOAD_A_SAVED "movq %[slot_a], %%rbx\n\t"
 #define LOAD_B_SAVED "movq %[slot_b], %%r12\n\t"
 #define KILL_SAVED "xorq %%rbx, %%rbx\n\t"
@@ -58,6 +60,8 @@ volatile uint8_t alias_sink;
     MARK(name, loop) "ldr x10, %[slot_b]\n\tmov x10, xzr\n\tsubs w3, w3, #1\n\tb.ne 1b\n\t"
 #define SPLIT_FLOW(name) "b 1f\n\t" MARK(name, hole) ".inst 0xd4200000\n1:\n\t" MARK(name, afterhole) "nop\n\t"
 #define CALL_FLOW(name) "bl pieces_leaf\n\t" MARK(name, returned) "nop\n\t"
+#define MEMORY_CALL(name) "bl pieces_memory_leaf\n\t" MARK(name, returned) "nop\n\t" MARK(name, restored) "nop\n\t"
+#define UNKNOWN_CALL(name) "bl pieces_memory_alias\n\t" MARK(name, returned) "nop\n\t"
 #define LOAD_A_SAVED "ldr x19, %[slot_a]\n\t"
 #define LOAD_B_SAVED "ldr x20, %[slot_b]\n\t"
 #define KILL_SAVED "mov x19, xzr\n\t"
@@ -130,6 +134,38 @@ __attribute__((noinline, noclone)) void pieces_leaf(void)
     __asm__ volatile("nop");
 }
 
+/* The positive fixture isolates SP-relative callee writes. A separate x86
+ * control retains a frame-pointer save/restore that the current physical
+ * nonwrite proof deliberately does not treat as register preservation. */
+#if !FORGE_FRAME_LEAF
+__attribute__((optimize("omit-frame-pointer")))
+#endif
+__attribute__((noinline, noclone)) void pieces_memory_leaf(void)
+{
+    volatile uint64_t scratch = UINT64_C(0x8877665544332211);
+    __asm__ volatile("" : "+m"(scratch));
+}
+
+__attribute__((noinline, noclone)) void pieces_memory_alias(uint64_t first, uint64_t second, volatile uint8_t *pointer)
+{
+    *pointer = 127;
+}
+
+__attribute__((noinline, noclone)) void pieces_memory_registers(uint64_t first, uint64_t second, volatile uint8_t *unknown)
+{
+    BODY(pieces_memory_registers, second, "", "", , MEMORY_CALL(pieces_memory_registers), "", LOAD_A, LOAD_B, KILL_LOADED);
+}
+
+__attribute__((noinline, noclone)) void pieces_memory_mixed(MIXED_ARGS)
+{
+    BODY(pieces_memory_mixed, 0, INPUT_SECOND, "", INCOMING_OPERAND, MEMORY_CALL(pieces_memory_mixed), "", LOAD_A, LOAD_B, KILL_LOADED);
+}
+
+__attribute__((noinline, noclone)) void pieces_memory_unknown(uint64_t first, uint64_t second, volatile uint8_t *unknown)
+{
+    BODY(pieces_memory_unknown, second, "", "", , LOAD_B_SAVED UNKNOWN_CALL(pieces_memory_unknown), "", LOAD_A, LOAD_B, KILL_LOADED);
+}
+
 __attribute__((noinline, noclone)) void pieces_call(uint64_t first, uint64_t second, volatile uint8_t *unknown)
 {
     BODY(pieces_call, second, "", "", , "", CALL_FLOW(pieces_call), LOAD_A_SAVED, LOAD_B_SAVED, KILL_SAVED);
@@ -178,6 +214,13 @@ int main(void)
     if (effect_sink != (changed ^ second)) return 8;
     pieces_split(first, second, &alias_sink);
     if (effect_sink != (changed ^ second)) return 11;
+    pieces_memory_registers(first, second, &alias_sink);
+    if (effect_sink != (changed ^ second)) return 12;
+    MIXED_CALL(pieces_memory_mixed, first, second);
+    if (effect_sink != (changed ^ second)) return 13;
+    alias_sink = 0;
+    pieces_memory_unknown(first, second, &alias_sink);
+    if (effect_sink != (changed ^ second) || alias_sink != 127) return 14;
     pieces_call(first, second, &alias_sink);
     if (effect_sink != (changed ^ second)) return 9;
     pieces_volatile_call(first, second, &alias_sink);

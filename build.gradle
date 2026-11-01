@@ -430,6 +430,30 @@ tasks.register("localDefinitionFlowSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/local-definition-flow/cache").absolutePath
 }
 
+tasks.register("localCallLifetimeSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks saved later locals across inspected calls and clobber boundaries"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.LocalCallLifetimeSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/local-call-lifetime/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/local-call-lifetime/cache").absolutePath
+}
+
+tasks.register("callMemoryEffectsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks exact callee stack and memory effects through raw instruction control flow"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.CallMemoryEffectsSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/call-memory-effects/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/call-memory-effects/cache").absolutePath
+}
+
 tasks.register("definedRegisterLocalSmoke", JavaExec) {
     group = "verification"
     description = "Checks that a curated local's recorded register definition completes before availability"
@@ -1038,4 +1062,174 @@ tasks.register("mipsAggregateCallPolicySmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.elf.MipsAggregateCallPolicySmoke"
+}
+
+tasks.register("lexicalScopeEvidenceSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks saved lexical ownership, ambiguity, rebasing and immutable reopening"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.LexicalScopeEvidenceSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/lexical-evidence/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/lexical-evidence/cache").absolutePath
+}
+
+tasks.register("lexicalScopeSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks lexical range serialization in an isolated native producer"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.nativeapi.LexicalScopeSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+    doFirst {
+        setArgs(["libdwarfPath", "libdwarfpPath", "sidecarInput", "sidecarOutput", "functionAddress", "functionSize"].collect {
+            project.property(it)
+        })
+    }
+}
+
+tasks.register("lexicalScopeModelSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks lexical ownership, visibility intersections and independently decoded ranges"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.types.LexicalScopeModelSmoke"
+}
+
+tasks.register("objectParameterSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit object parameter identity; optionally runs the isolated producer"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.nativeapi.ObjectParameterSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+    doFirst {
+        if (project.hasProperty("sidecarInput")) {
+            setArgs(["libdwarfPath", "libdwarfpPath", "sidecarInput", "sidecarOutput", "functionAddress", "functionSize"].collect {
+                project.property(it)
+            })
+        }
+    }
+}
+
+tasks.register("classScopeModelSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks saved class ownership, distinct types and explicit/inferred binding conflicts"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.types.ClassScopeModelSmoke"
+}
+
+tasks.register("classBindingEvidenceSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit class/type identities, stale records, cancellation and immutable reopen"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.ClassBindingEvidenceSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/class-binding/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/class-binding/cache").absolutePath
+}
+
+tasks.register("classScopeExtractionSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks real saved class/method ownership, conflicting layouts and immutable extraction"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.ClassScopeExtractionSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/class-extraction/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/class-extraction/cache").absolutePath
+}
+
+tasks.register("classScopeSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks class ownership fixture; optionally runs the isolated producer"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.nativeapi.ClassScopeSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+    doFirst {
+        if (project.hasProperty("sidecarInput")) {
+            setArgs(["libdwarfPath", "libdwarfpPath", "sidecarInput", "sidecarOutput", "functionAddress", "functionSize"].collect {
+                project.property(it)
+            })
+        }
+    }
+}
+
+tasks.register("classScopeNamesSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks class aliases against ambiguous and curated type names"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.types.ClassScopeNamesSmoke"
+}
+
+tasks.register("staticBindingEvidenceSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks saved static object ownership, lexical identity, rebasing and immutable reopen"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.StaticBindingEvidenceSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/static-binding/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/static-binding/cache").absolutePath
+}
+
+tasks.register("staticScopeExtractionSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks static lexical extraction, shadowing, conflict isolation and immutable reopen"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.StaticScopeExtractionSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/static-extraction/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/static-extraction/cache").absolutePath
+}
+
+tasks.register("staticRecoverySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks inferred static typing and saved memory-local ownership"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.StaticRecoverySmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/static-recovery/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/static-recovery/cache").absolutePath
+}
+
+tasks.register("functionRelationsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks exact function relationships, cycles and absent targets"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.types.FunctionRelationsSmoke"
+}
+
+tasks.register("functionRelationExtractionSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks saved direct thunk targets, external identities and immutable rebases"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.FunctionRelationExtractionSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/function-relations/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/function-relations/cache").absolutePath
+}
+
+tasks.register("globalScopeNamesSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks qualified global identity and collision-safe namespace lookup aliases"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.types.GlobalScopeNamesSmoke"
 }

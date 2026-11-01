@@ -63,7 +63,7 @@ public final class GhidraCompilerCallPolicy {
         }
         monitor.checkCancelled();
         return new ProgramTypeModel(nodes.equals(model.types().nodes()) ? model.types() : new TypeGraph(nodes), functions, model.globals(),
-            model.variableStorage(), model.functionStatics(), declarations);
+            model.variableStorage(), model.functionStatics(), declarations, model.lexicalScopes(), model.classScopes(), model.functionRelations());
     }
 
     private static String combine(String existing, String restriction) {

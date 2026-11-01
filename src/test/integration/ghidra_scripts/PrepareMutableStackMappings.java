@@ -39,6 +39,34 @@ public class PrepareMutableStackMappings extends GhidraScript {
         if (width != 4 && width != 8) throw new IllegalArgumentException("unsupported local width");
         DataType type = width == 4 ? new IntegerDataType(currentProgram.getDataTypeManager()) :
             new LongLongDataType(currentProgram.getDataTypeManager());
+        if (labels.has("helper")) {
+            var helper = labels.getAsJsonObject("helper");
+            var entry = toAddr(helper.get("entry").getAsLong() + delta);
+            var end = toAddr(helper.get("end").getAsLong() + delta);
+            var function = getFunctionAt(entry);
+            if (function == null || !function.getBody().hasSameAddresses(
+                    new ghidra.program.model.address.AddressSet(entry, end.previous()))) {
+                throw new AssertionError("inspected helper body mismatch");
+            }
+            if (!observe) {
+                function.setName("inspected_mutable", SourceType.USER_DEFINED);
+                function.updateFunction(currentProgram.getCompilerSpec().getDefaultCallingConvention().getName(),
+                    new ghidra.program.model.listing.ReturnParameterImpl(VoidDataType.dataType, currentProgram),
+                    Function.FunctionUpdateType.DYNAMIC_STORAGE_ALL_PARAMS, true, SourceType.USER_DEFINED,
+                    new ghidra.program.model.listing.ParameterImpl("input", type, currentProgram));
+            }
+            if (!function.getName().equals("inspected_mutable") || function.getParameterCount() != 1 ||
+                    function.getCallingConvention() == null) throw new AssertionError("helper contract changed");
+            var helperInstructions = new ArrayList<Object>();
+            for (var instruction : currentProgram.getListing().getInstructions(function.getBody(), true)) {
+                helperInstructions.add(Map.of("address", instruction.getAddress().getOffset() - delta,
+                    "next", instruction.getMaxAddress().next().getOffset() - delta,
+                    "bytes", java.util.HexFormat.of().formatHex(instruction.getBytes()),
+                    "text", instruction.toString(),
+                    "pcode", java.util.Arrays.stream(instruction.getPcode()).map(Object::toString).toList()));
+            }
+            records.put("inspected_mutable_instructions", helperInstructions);
+        }
         for (String name : labels.getAsJsonObject("functions").keySet()) {
             var row = labels.getAsJsonObject("functions").getAsJsonObject(name);
             var entry = toAddr(row.get("entry").getAsLong() + delta);
@@ -132,14 +160,27 @@ public class PrepareMutableStackMappings extends GhidraScript {
             if (function.getLocalVariables().length != locals.size()) throw new AssertionError("local identity replaced");
             records.put(name, locals);
             var instructions = new ArrayList<Object>();
+            int callCount = 0;
             for (var instruction : currentProgram.getListing().getInstructions(function.getBody(), true)) {
                 monitor.checkCancelled();
+                if (labels.has("helper") && instruction.getFlowType().isCall()) {
+                    callCount++;
+                    var helper = labels.getAsJsonObject("helper");
+                    if (name.equals("navigation_control") || instruction.getFlows().length != 1 ||
+                            instruction.getFlows()[0].getOffset() - delta != helper.get("entry").getAsLong() ||
+                            instruction.getMaxAddress().next().getOffset() - delta != row.get("returned").getAsLong()) {
+                        throw new AssertionError("unexpected call or return boundary");
+                    }
+                }
                 instructions.add(Map.of("address", instruction.getAddress().getOffset() - delta,
                     "next", instruction.getMaxAddress().next().getOffset() - delta,
                     "bytes", java.util.HexFormat.of().formatHex(instruction.getBytes()),
                     "text", instruction.toString(), "pcode", java.util.Arrays.stream(instruction.getPcode()).map(Object::toString).toList()));
             }
             records.put(name + "_instructions", instructions);
+            if (labels.has("helper") && callCount != (name.equals("navigation_control") ? 0 : 1)) {
+                throw new AssertionError("missing fixture call");
+            }
         }
         for (String name : new String[] { "effect_sink", "backup_sink", "path_choice" }) {
             DataType globalType = name.equals("path_choice") ? new IntegerDataType(currentProgram.getDataTypeManager()) : type;

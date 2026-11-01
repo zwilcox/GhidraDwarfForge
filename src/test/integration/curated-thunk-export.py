@@ -143,6 +143,11 @@ def main():
     assert int(row['attrs']['DW_AT_high_pc'], 0) == observed['ranges'][0][1] - observed['ranges'][0][0]
     assert observed['ranges'] == [[symbols['gateway'], symbols['gateway'] + int(row['attrs']['DW_AT_high_pc'], 0)]]
     assert 'DW_AT_type' in row['attrs']
+    target_row, = [item for item in records if item['tag'] == 'DW_TAG_subprogram' and
+        item['attrs'].get('DW_AT_name', '').rsplit(': ', 1)[-1] == 'implementation']
+    relation = re.match(r'<0x([0-9a-f]+)>', row['attrs'].get('DW_AT_trampoline', ''))
+    assert relation and int(relation[1], 16) == target_row['offset'], 'direct saved target reference missing'
+    assert 'DW_AT_abstract_origin' not in row['attrs'] and 'DW_AT_specification' not in row['attrs']
     assert not any(key in row['attrs'] for key in ('DW_AT_decl_file', 'DW_AT_decl_line'))
     parameters = []
     for child in records[index + 1:]:

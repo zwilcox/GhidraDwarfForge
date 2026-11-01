@@ -41,8 +41,9 @@ final class StackLocalLifetime {
         Address definition;
         try { definition = function.getEntryPoint().addNoWrap(variable.getFirstUseOffset()); }
         catch (ghidra.program.model.address.AddressOverflowException overflow) { return List.of(); }
-        var decoded = RegisterDefinitionFlow.decodedBody(program, function, monitor);
-        if (!decoded.containsKey(definition)) return List.of();
+        var inspected = RegisterDefinitionFlow.inspectBody(program, function, monitor);
+        var decoded = inspected.instructions();
+        if (!decoded.containsKey(definition) || decoded.get(definition).getFlowType().isCall()) return List.of();
         boolean attached = false;
         var owners = new LinkedHashSet<Address>();
         for (var other : function.getAllVariables()) {
@@ -62,6 +63,7 @@ final class StackLocalLifetime {
         }
         var analysis = StackValueFlow.forStackLocal(program, variable.getLength(), variable.getStackOffset());
         if (!attached || analysis == null) return List.of();
+        analysis.setInspectedCalls(inspected.calls());
         return analysis.acrossControlFlow(function, decoded, definition, owners, registers, monitor);
     }
 }

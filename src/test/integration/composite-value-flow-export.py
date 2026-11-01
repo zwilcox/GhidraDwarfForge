@@ -24,7 +24,15 @@ def main():
     parser.add_argument('target', choices=('x86_64', 'aarch64'))
     parser.add_argument('--role', choices=('exec', 'pie', 'pie-rebased'), default='exec')
     parser.add_argument('--previous-ghidra', type=Path)
+    parser.add_argument('--red-zone', action='store_true')
+    parser.add_argument('--frame-pointer-leaf', action='store_true')
     args = parser.parse_args()
+    if args.red_zone and args.frame_pointer_leaf:
+        parser.error('select one boundary control at a time')
+    if args.frame_pointer_leaf and args.target != 'x86_64':
+        parser.error('--frame-pointer-leaf is an x86-64 fixture control')
+    if args.red_zone and args.target != 'x86_64':
+        parser.error('--red-zone is an x86-64 fixture control')
     ghidra = args.ghidra.resolve(strict=True)
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
     root = repository / 'build/test-results/composite-value-flow'
@@ -52,8 +60,12 @@ def main():
     cc, objcopy = ('gcc', 'objcopy') if args.target == 'x86_64' else ('aarch64-linux-gnu-gcc', 'aarch64-linux-gnu-objcopy')
     reference, binary = case / 'local.reference', case / 'local.input'
     flags = ['-fno-pie', '-no-pie'] if args.role == 'exec' else ['-fPIE', '-pie']
+    if args.frame_pointer_leaf:
+        flags.append('-DFORGE_FRAME_LEAF=1')
     if args.target == 'x86_64':
         flags.append('-fcf-protection=none')
+        if not args.red_zone:
+            flags.append('-mno-red-zone')
     run('compile', [cc, '-O1', '-g3', '-gdwarf-5', '-gno-variable-location-views', '-fno-stack-protector',
         '-fno-ipa-icf', '-fno-ipa-sra', '-fno-omit-frame-pointer', *flags, '-Wl,--build-id=sha1', fixture, '-o', reference])
     run('strip', [objcopy, '--strip-all', reference, binary])
@@ -61,7 +73,8 @@ def main():
     write('protected-before.json', protected)
     run('symbols', ['readelf', '-sW', reference])
     names = ['pieces_registers', 'pieces_mixed', 'pieces_alias_registers', 'pieces_alias_mixed',
-        'pieces_branch', 'pieces_branch', 'pieces_loop', 'pieces_loop', 'pieces_split', 'pieces_call', 'pieces_volatile_call']
+        'pieces_branch', 'pieces_branch', 'pieces_loop', 'pieces_loop', 'pieces_split', 'pieces_memory_registers', 'pieces_memory_mixed', 'pieces_memory_unknown',
+        'pieces_call', 'pieces_volatile_call']
     symbols, functions = {}, {}
     for line in (case / 'symbols.log').read_text().splitlines():
         fields = line.split()
@@ -70,7 +83,7 @@ def main():
             symbols[fields[7]] = int(fields[1], 16)
             if fields[3] == 'FUNC':
                 functions[fields[7]] = {'entry': int(fields[1], 16), 'end': int(fields[1], 16) + int(fields[2])}
-    assert set(functions) == {*names, 'navigation_control', 'pieces_leaf'}
+    assert set(functions) == {*names, 'navigation_control', 'pieces_leaf', 'pieces_memory_leaf', 'pieces_memory_alias'}
     markers = ['before', 'second_ready', 'first_saved', 'first_memory', 'alias_done', 'second_saved',
         'second_memory', 'first_loaded', 'slot_changed', 'second_loaded', 'lost', 'stale']
     for name in names:
@@ -80,7 +93,7 @@ def main():
         assert all(row[a] < row[b] for a, b in zip(keys, keys[1:])), row
     labels = {'functions': functions, 'order': names, 'first': 0x1122334455667788,
         'second': 0x99aabbccddeeff00, 'changedMask': 90 if args.target == 'x86_64' else 2,
-        'effect_sink': symbols['effect_sink'], 'target': args.target}
+        'effect_sink': symbols['effect_sink'], 'target': args.target, 'redZone': args.red_zone, 'framePointerLeaf': args.frame_pointer_leaf}
     write('labels.json', labels)
     os.environ['LOCAL_VARIANTS'] = 'compiler'
     run('compiler-driver', ['bash', source / 'composite-value-flow-gdb.sh', repository, case, args.target], timeout=240)
@@ -161,7 +174,7 @@ def main():
     write('result.json', {'status': 'PASS', 'target': args.target, 'role': args.role,
         'jarSha256': support.digest(module / 'lib/GhidraDwarfForge.jar'), 'projectBackupChanges': changes,
         'artifactSha256': [support.digest(case / name) for name in ('local.dbg', 'local.dbg.c')],
-        'previousPackageCompared': bool(args.previous_ghidra)})
+        'previousPackageCompared': bool(args.previous_ghidra), 'redZone': args.red_zone, 'framePointerLeaf': args.frame_pointer_leaf})
     print('composite-value-flow-export=PASS ' + str(case), flush=True)
 
 

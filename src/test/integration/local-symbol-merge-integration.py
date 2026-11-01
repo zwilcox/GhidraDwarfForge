@@ -10,6 +10,8 @@ import shutil
 import subprocess
 import tempfile
 
+from alias_relationships import check_alias_relationships
+
 source = Path(__file__).resolve().parent
 repository = source.parents[2]
 spec = importlib.util.spec_from_file_location('support', source.parent / 'performance/export-benchmark.py')
@@ -68,7 +70,7 @@ def main():
 
         protected = [p for p in base.rglob('*') if p.is_file()]
         protected += [p for p in module.rglob('*') if p.is_file()]
-        protected += [probe, Path(__file__).resolve(), source / 'local-symbol-merge-gdb.py',
+        protected += [probe, Path(__file__).resolve(), source / 'alias_relationships.py', source / 'local-symbol-merge-gdb.py',
             source / 'local-symbol-merge-gdb.sh', source / 'ghidra_scripts/PrepareLocalSymbolMerge.java',
             source / 'retained-function-aliases-export.py', source / 'qemu-socket.sh',
             source / 'elf-layout-gdb-oracle.sh', source / 'check-dwarfdump.py',
@@ -132,13 +134,14 @@ def main():
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=60)
         (case / 'baseline-lookup.log').write_bytes(negative.stdout)
         assert negative.returncode != 0 and b'No symbol' in negative.stdout
+        check_alias_relationships(case, {row['original']: row['entry'] for row in metadata['functions']})
         _, _, sections = elf_support.elf(case / 'aliases.input')
         section_index = list(sections).index('.text')
         records = ['\t'.join([row['original'], str(row['entry']), str(row['end'] - row['entry']), str(section_index)])
             for row in sorted(metadata['functions'], key=lambda row: (row['entry'], row['original']))]
         (case / 'symbols.tsv').write_text('\n'.join(records) + '\n')
         command = [java, '-cp', str(compilation) + os.pathsep + str(jar),
-            'ghidradwarfforge.elf.LocalSymbolMergeProbe', case / 'aliases.input', case / 'baseline.dbg', case / 'symbols.tsv']
+            'ghidradwarfforge.elf.LocalSymbolMergeProbe', case / 'aliases.input', case / 'automatic.dbg', case / 'symbols.tsv']
         for suffix in ('aliases.dbg', 'repeat.dbg'):
             run('writer-' + suffix, [*command, case / suffix])
             text = (case / ('writer-' + suffix + '.log')).read_text()
@@ -171,7 +174,8 @@ def main():
         _, ch, candidate = elf_support.elf(case / 'aliases.dbg')
         assert bh[:4] == ch[:4] and bh[6] == ch[6] and ch[4] == ch[8] == ch[9] == 0
         for name, (section, payload) in baseline.items():
-            if name.startswith('.debug_') or name in ('.text', '.eh_frame', '.note.gnu.build-id'):
+            if ((name.startswith('.debug_') and name not in ('.debug_info', '.debug_abbrev', '.debug_str')) or
+                    name in ('.text', '.eh_frame', '.note.gnu.build-id')):
                 assert candidate[name][1] == payload
         if symbols == 'retained':
             old, old_bytes = baseline['.symtab']
