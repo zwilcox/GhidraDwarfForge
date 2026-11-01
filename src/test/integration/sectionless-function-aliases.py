@@ -26,6 +26,40 @@ def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def arm_mode_aliases(base):
+    """Carry independently validated primary mode cues into the sectionless oracle."""
+    original = elf_support.elf(base / 'aliases.input')[2]
+    baseline = elf_support.elf(base / 'aliases.dbg')[2]
+    if '.symtab' not in baseline:
+        return [], {}
+    metadata = json.loads((base / 'metadata.json').read_text())
+    compiler_symbols = (base / 'symbols.log').read_text()
+    elf_support.arm_mode_inventory(original, baseline, compiler_symbols, metadata['functions'])
+    table, records = baseline['.symtab']
+    names = baseline['.strtab'][1]
+    expected = {}
+    for offset in range(original['.dynsym'][0][7] * 16, table[7] * 16, 16):
+        name, value, size, info, other, section = struct.unpack_from('<IIIBBH', records, offset)
+        name = names[name:].split(b'\0', 1)[0].decode()
+        expected[name] = (value, size)
+    # Without section roles Ghidra also recovers the PLT resolver prefix as a
+    # function. Prove its exact four instructions and compiler mapping limits;
+    # do not derive an expected cue from the sectionless output being tested.
+    plt, code = original['.plt']
+    assert struct.unpack_from('<4I', code) == (0xe52de004, 0xe59fe004, 0xe08fe00e, 0xe5bef008)
+    plt_index = list(original).index('.plt')
+    mappings = {(int(fields[1], 16), fields[7].split('.')[0])
+        for line in compiler_symbols.splitlines() if len(fields := line.split()) == 8
+        and fields[6] == str(plt_index) and fields[7].split('.')[0] in ('$a', '$t', '$d')}
+    assert (plt[3], '$a') in mappings and (plt[3] + 16, '$d') in mappings
+    name = '__forge_arm_mode_%08x' % plt[3]
+    assert name not in expected or expected[name] == (plt[3], 16)
+    expected[name] = (plt[3], 16)
+    return ([{'alias': name, 'entry': value & ~1, 'size': size}
+        for name, (value, size) in sorted(expected.items())],
+        {name: value for name, (value, size) in expected.items()})
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
@@ -162,11 +196,17 @@ def main():
             assert '.symtab' in emitted
             symbol_values = ({aliases[row['name']]['alias']: row['elfSymbolValue'] for row in metadata['functions']}
                              if args.target == 'arm32' else None)
+            expected_aliases = list(aliases.values())
+            if args.target == 'arm32':
+                cues, cue_values = arm_mode_aliases(base)
+                expected_aliases += cues
+                assert not (symbol_values.keys() & cue_values.keys())
+                symbol_values.update(cue_values)
             inventory_check.verify(base / 'aliases.input', binary, case / 'aliases.dbg',
-                list(aliases.values()), case / 'raw-inventory.json', symbol_values)
+                expected_aliases, case / 'raw-inventory.json', symbol_values)
             if metadata['role'] == 'exec':
                 inventory_check.corruption_controls(base / 'aliases.input', binary, case / 'aliases.dbg',
-                    list(aliases.values()), case / 'corruption-controls', symbol_values)
+                    expected_aliases, case / 'corruption-controls', symbol_values)
             run('gdb', ['bash', source / 'local-symbol-merge-gdb.sh', repository, case, args.target, base / 'compiler-gdb.log'])
         after = {p: digest(Path(p)) for p in protected}
         (case / 'protected-after.json').write_text(json.dumps(after, indent=4) + '\n')
