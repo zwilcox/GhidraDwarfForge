@@ -105,8 +105,11 @@ the differing states.
 1. Extract section-bound mode/data evidence from the actual saved listing,
    retaining complete coverage, original decode context, unambiguous ownership,
    normalized addresses and original-byte binding. Never extend a mapping over
-   a hole, uninitialized data, or unknown padding. Investigate the actual Data
-   API distinction between explicit data and undefined bytes before using it.
+   a hole, uninitialized data, or unknown padding. In the pinned Ghidra source,
+   `DataDB.isDefined()` excludes `DefaultDataType`; explicitly placed `undefined4`
+   remains a defined data unit. `Undefined.isUndefined()` has broader semantics
+   and must not substitute for that listing distinction. Test both cases and
+   verify initialized memory/complete unit extents before accepting data evidence.
 2. Plan standard mapping symbols in an isolated ARM policy. Reconcile inherited
    mapping symbols and function hints, reject conflicts, bound resource usage,
    and preserve existing symbol/index dependencies. Retain honest diagnostics
