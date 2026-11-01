@@ -47,6 +47,7 @@ expected_sources=(
     arm-thumb-after.c
     arm-thumb-caller.c
     arm-thumb-leaf.c
+    arm-thumb-shared-driver.c
     bitfield-values.c
     call-memory-boundaries.c
     calling-convention.c
