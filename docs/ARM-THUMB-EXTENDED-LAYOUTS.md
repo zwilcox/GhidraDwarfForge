@@ -5,6 +5,13 @@ addresses the stripped PIE/rebased PIE and dynamic-symbol portion of #70.
 The complete #68–#71 requirement table remains in `TARGET-ABI-COMPLETION-PLAN.md`.
 Ghidra 12.0.3, Java 21 and libdwarf 2.3.2 are unchanged.
 
+**CONFIRMED hosted inventory correction:** run `41352322191` built the extension,
+natives and package, but all five target lanes stopped before export because
+the new `arm-thumb-shared-driver.c` was missing from the reviewed fixture list.
+The exact filename is now registered. The source-only inventory and all 13
+x86-64 fixture byte-identical rebuild checks pass locally; no production code
+changes. A fresh exact-head hosted gate remains required.
+
 The previous planner rejected every ET_DYN input. The ordinary PIE reproduction
 in `build/test-results/arm-thumb-mode/run.aHT0H57Y` passed compiler/QEMU execution
 and GNU/LLVM/strict DWARF validation, but the exported Thumb function was decoded
