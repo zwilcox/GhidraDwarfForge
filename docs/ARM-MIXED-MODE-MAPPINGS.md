@@ -332,3 +332,32 @@ target tests. The exact filenames are now registered; the source-only inventory
 and all 13 x86-64 fixture byte-identical rebuild checks pass locally. The
 inventory remains closed to unreviewed files. This correction changes no
 production code and does not substitute for the pending hosted target gate.
+
+## Hosted auxiliary-harness regressions
+
+Run `41356347084` exposed two auxiliary test failures before the mixed-mode
+step. The large-file standalone javac command omitted the newly required
+`ElfLocalSymbol` and `ElfLocalMappingSymbol` sources. Adding those exact inputs
+restores the complete over-2-GiB container/64-MiB-heap/GDB test at
+`build/test-results/large-elf-sidecar/run.IahgwkHt`. The real headless repeated
+large-file export also passes at `large-headless-export/run.7cO6eGu0`, preserving
+the original and producing deterministic artifacts. The standalone strict
+check reports two corroborated inherited frame diagnostics, not zero reports.
+
+The ARM alias preparation oracle assumed retained symbol tables could not gain
+mode hints for PIE. Inspection of the failed hosted artifact proves all 105
+original records survive, with nine independently valid local mode hints
+inserted. The revised oracle checks every original byte and string prefix,
+then checks every new hint against compiler mapping intervals and source-known
+function bounds. The independent writer probe also includes those additions
+for retained inputs. Its earlier missing-hint comparison failure is retained
+at `arm.pie-rebased.retained.7g_t80im`.
+
+All eighteen ARM/Thumb/mixed-state, exec/PIE/rebased and retained/stripped cases
+pass fresh preparation and final alias runtime with the unchanged v2 package:
+72 injected calls, 36 static function checks, exact independent-writer agreement,
+validators, repeat determinism and original/saved-program preservation. Receipts
+are under `build/test-results/arm-alias-regression-runtime-v2` and
+`build/arm-mixed-modes/alias-regression-matrix-v2.json`. The same preparation
+assumption also failed PR130's run `41355781605`; its harness correction is
+applied there as well. These local fixes still require fresh hosted gates.

@@ -43,3 +43,30 @@ BE32, PIE/shared loading, or any broad ARM big-endian support. Those required
 cases must use source-known runtime values and independent validators, with
 versioned fixtures and harnesses before acceptance. The existing reference
 scripts, source files, logs and hashes are recorded in `reference-receipt.json`.
+
+## Isolated producer endian audit
+
+**CONFIRMED native-only experiment; production support remains PLANNED:** the
+pinned producer's `arm` ISA accepts four-byte target addresses and big-endian
+DWARF data. The header declares `DW_DLC_TARGET_BIGENDIAN = 0x08000000`;
+`dwarf_pro_init.c` selects byte-swapping independently of the ISA relocation
+name. The existing audited JNA declarations were reused without new calls or
+signature changes. An ignored copy of `DwarfProducerSmoke` changes only the
+ARM32 test profile's little-endian boolean to false, leaving production target
+selection and its explicit rejection unchanged.
+
+Using the actual v2 package's Linux native pair and Java 21, all 32 producer
+lifetimes pass initialization, DIE creation, transformation, section collection,
+relocation-record checks, intentional error callbacks and finish. Section
+fingerprints are deterministic; stderr is empty and resident growth is
+8,060,928 bytes against the existing 33,554,432-byte bound. The consumer and
+producer SHA-256 values are respectively
+`613d86accc88ea0fe369b7d6ade0d4fe605a451a7675b0c2453f21b328de81b7` and
+`fa82f4524de69634c7301fa5bdd53327aa89040da92c1d086271df51119531ad`.
+
+The source delta, original source hash, compiled class hashes and raw transcripts
+are retained in the `arm-mixed-modes` worktree under
+`build/arm-mixed-modes/be8-producer-reference/result.json`. This does not emit
+an accepted BE8 sidecar or prove variable/return ABI correctness. The next step
+remains matched-ELF validation and exact Ghidra data/instruction-endian agreement,
+followed by source-known storage/return/call behavior and the required layouts.
