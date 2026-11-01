@@ -214,6 +214,17 @@ tasks.register("ghidraTargetAgreementSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.GhidraTargetAgreementSmoke"
 }
 
+tasks.register("upperAliasValueFlowSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks full logical values in upper register aliases"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.UpperAliasValueFlowSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/upper-alias-value/settings").absolutePath
+}
+
 tasks.register("terminalStackValueSmoke", JavaExec) {
     group = "verification"
     description = "Checks stack value states before opaque terminal effects"

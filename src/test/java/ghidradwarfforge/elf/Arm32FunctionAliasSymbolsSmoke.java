@@ -76,7 +76,7 @@ public final class Arm32FunctionAliasSymbolsSmoke {
                 check(root, changed, ALIAS, List.of(cue), List.of(), "EABI5", 0);
                 changed = original.clone();
                 buffer(changed).putInt(36, 0x05800400);
-                check(root, changed, ALIAS, List.of(cue), List.of(), "EABI5", 0);
+                rejectContradictoryEncoding(root, changed, cue);
                 changed = original.clone();
                 changed[0x140] ^= 1;
                 check(root, changed, ALIAS, List.of(cue), List.of(), "code differs", 0);
@@ -192,6 +192,26 @@ public final class Arm32FunctionAliasSymbolsSmoke {
         bytes.putInt(0x220, mode == 0 ? 10 : 13).putInt(0x224, 0x1000).putShort(0x22e, (short) 1);
         bytes.putInt(0x230, 16).putInt(0x234, 0x1060).putShort(0x23e, (short) 1);
         return data;
+    }
+
+    private static void rejectContradictoryEncoding(Path root, byte[] bytes, ElfFunctionModeCue cue) throws Exception {
+        Path path = root.resolve("contradictory-encoding.elf");
+        Files.write(path, bytes);
+        var time = Files.getLastModifiedTime(path);
+        var image = ElfImage.read(path);
+        try {
+            DwarfTarget.fromElf(image);
+            throw new AssertionError("BE8 flag on little-endian input accepted");
+        }
+        catch (IllegalArgumentException expected) {
+            require(expected.getMessage().contains("contradicts little-endian ELF data"), "wrong preflight rejection");
+        }
+        var diagnostics = new ArrayList<String>();
+        require(Arm32FunctionAliasSymbols.plan(image, List.of(ALIAS), functions(ALIAS), List.of(),
+            List.of(cue), () -> false, diagnostics::add).isEmpty() && diagnostics.toString().contains("EABI5"),
+            "direct alias policy admitted contradictory encoding");
+        require(Arrays.equals(bytes, Files.readAllBytes(path)) && time.equals(Files.getLastModifiedTime(path)),
+            "negative control changed original ELF");
     }
 
     private static void check(Path root, byte[] bytes, ElfFunctionAlias alias,

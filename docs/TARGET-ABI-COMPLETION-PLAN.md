@@ -1,5 +1,12 @@
 # P2.3 through P2.3c completion plan
 
+**CONFIRMED local floating follow-up:** ARM base/VFP arguments now also pass in
+BE8, with correct logical register halves and surviving scalar values through
+frame release. The BE8 bit-piece debugger profile explicitly uses unmodified
+GDB 17.1; the old debugger's wrong display is retained as a causal control.
+This does not complete per-function injected-call or automatic typed-return
+acceptance. See `ARM-BE8-PROFILE.md`; all original rows below remain binding.
+
 **CONFIRMED local BE8 scalar progress:** see `ARM-BE8-PROFILE.md` for the isolated
 encoding policy, real-language/native checks and real packaged scalar export.
 The scalar saved-parameter case now passes through frame release in both ARM

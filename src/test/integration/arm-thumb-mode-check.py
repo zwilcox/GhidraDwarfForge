@@ -17,14 +17,16 @@ def snapshot(path):
             "bytes": stat.st_size, "mtimeNs": stat.st_mtime_ns}
 
 
-def elf(path):
+def elf(path, allow_big_endian=False):
     data = path.read_bytes()
-    assert data[:7] == b"\x7fELF\x01\x01\x01", path
-    header = struct.unpack_from("<HHIIIIIHHHHHH", data, 16)
+    assert data[:5] == b"\x7fELF\x01" and data[6] == 1, path
+    assert data[5] == 1 or allow_big_endian and data[5] == 2, path
+    endian = "<" if data[5] == 1 else ">"
+    header = struct.unpack_from(endian + "HHIIIIIHHHHHH", data, 16)
     assert header[0] in (2, 3) and header[1] == 40, header
     offset, width, count, names_index = header[5], header[10], header[11], header[12]
     assert width == 40 and 0 < count < 0xff00 and 0 < names_index < count
-    sections = [struct.unpack_from("<10I", data, offset + index * width) for index in range(count)]
+    sections = [struct.unpack_from(endian + "10I", data, offset + index * width) for index in range(count)]
     names_row = sections[names_index]
     names = data[names_row[4]:names_row[4] + names_row[5]]
     def string(table, at):
@@ -40,7 +42,7 @@ def elf(path):
         assert row[9] == 16 and row[5] % 16 == 0
         strings = result[row[6]]["data"]
         for at in range(0, row[5], 16):
-            name, value, size, info, other, shndx = struct.unpack_from("<IIIBBH", section["data"], at)
+            name, value, size, info, other, shndx = struct.unpack_from(endian + "IIIBBH", section["data"], at)
             symbols.append({"name": string(strings, name), "raw": value, "size": size,
                             "info": info, "other": other, "section": shndx})
     return {"data": data, "header": header, "sections": result, "symbols": symbols}

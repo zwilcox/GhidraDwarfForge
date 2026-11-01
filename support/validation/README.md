@@ -1,5 +1,18 @@
 # Standalone DWARF validation corrections
 
+## Pinned target debugger profiles
+
+`build-mips-gdb.py` also builds an isolated, unmodified GDB 17.1 executable from
+a checksum-pinned GNU archive. Its default MIPS profile remains unchanged.
+`--target-profile arm32` selects `arm-linux-gnueabihf` for the BE8 floating
+register-piece tests; ordinary ARM tests continue using the system debugger.
+Each build records source/executable hashes, command logs, a Python smoke check
+and its private data-directory path. It never installs over the system debugger.
+See `../../docs/ARM-BE8-PROFILE.md` for the GDB 15.1 failure and the paired 17.1
+reference. These debugger builds are validation tools, not shipped libraries.
+
+## Standalone libdwarf patches
+
 These patches apply only to the independently built **validation executable**
 from libdwarf 2.3.2, including its statically linked ELF consumer. None may
 enter the shipped producer/consumer library builds, their source patch set,

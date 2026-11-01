@@ -120,3 +120,83 @@ production JAR SHA-256:
 `db5da9cda3c31f7fed4ee338ef1df8b8d8924fefe67b352c7ff8a198dd9d6722`.
 The earlier checkpoint/failed experiments remain retained; the original full
 ABI, storage, layout and control requirements remain open.
+
+## Logical floating registers and surviving scalar values
+
+**CONFIRMED locally:** the existing mixed base/VFP dynamic-parameter fixture now
+runs in both data orders. Two independent defects were reproduced and corrected.
+First, shared scalar flow rejected complete upper logical registers, losing `s1`
+after a disjoint write to `s0`. Exact varnode facts now preserve disjoint values
+and retire overlapping writes. Second, Ghidra 12.0.3's LEBE descriptions reuse
+`ARM*_le.sla`, whose physical register layout is little endian despite the
+language's big-endian data override. The old inferred bit positions swapped
+`s0` and `s1` in their `d0` parent.
+
+`TargetRegisterMap` now supplies independently checked logical register slices
+and physical register byte order for this ELF profile. Extraction checks the
+loaded child, parent, widths, address space and byte displacement before using
+the ABI bit offset. Scalar flow uses that physical order only for registers;
+memory retains the language data order. Generic code has no ARM register names.
+The selected ABI keeps even S registers in the low 32 bits and odd S registers
+in the high 32 bits of D registers. A register `DW_OP_bit_piece` offset is relative
+to its least significant end; see the [DWARF clarification](https://dwarfstd.org/issues/161206.2.html).
+
+The real `vfp_sum(6.25f, 7.5f)` now keeps the first argument in surviving `s14`
+and the second in unchanged `s1`, including three PCs through frame release and
+the terminal return. Independently decoded raw location bytes require these
+exact register pieces and intervals. Other functions prove base arguments in
+core registers and VFP arguments in their logical halves. Both compiler and
+Forge artifacts pass GNU, LLVM and strict libdwarf validation. Repeated exports
+are byte-identical, all 191 protected files are unchanged, and saved program
+hashes are unchanged. Current-harness receipts are:
+
+- `build/test-results/arm-dynamic-pcs/run.smxJyJUP/result.json` (LE, GDB 15.1).
+- `build/test-results/arm-dynamic-pcs/run.k12AynQK/result.json` (BE8, GDB 17.1).
+
+`upperAliasValueFlowSmoke` passes 139 checks in the actual LE/LEBE languages:
+neighbor writes, upper/full-parent overlap, stale stack-slot reuse, released
+frames and contradictory child width/parent/displacement. The complete current
+Linux extension model command passes in `full-extension-model-v3.log`, with
+119 Gradle tasks (115 executed). The three final alias mismatch controls pass
+separately in `upper-alias-negatives-v3.log`. No shipped native ABI changed.
+
+### Explicit debugger compatibility
+
+GDB 15.1 misreads the valid big-endian upper `DW_OP_bit_piece 32,32`: its register
+piece offset calculation selects the low half when offset plus size equals the
+register size. The private unmodified GDB 17.1 build handles that boundary
+correctly. This is an additional BE8 floating validation profile, not a silent
+replacement of the system debugger or the previously validated scalar baseline.
+The source archive, SHA-256, exact configure/build commands and executable hash
+are retained in `build/arm-be8-profile/gdb17-arm/`; CI reproduces it with
+`support/validation/build-mips-gdb.py --target-profile arm32`. The first local
+build used a private copy of the same recipe with the two ARM target options;
+the maintained optional profile preserves those exact build arguments.
+
+Causal controls remain retained:
+
+- `pcs-be8-reference`: old Forge mapping fails while compiler DWARF passes.
+- `pcs-gdb17-v2-control`: GDB 17.1 reads the old sidecar's first/second values
+  as 4.5/3.25 instead of 3.25/4.5, proving the exporter defect independently.
+- `pcs-gdb15-control`: GDB 15.1 reads the corrected sidecar's second value as
+  3.25 instead of 4.5, proving the independent consumer defect.
+- `run.OHRjGxOl`: the prior regression oracle incorrectly expected the retained
+  first argument to be unavailable. It now requires the source-known values.
+
+All paths above are under `build/arm-be8-profile` except the last, which is under
+`build/test-results/arm-dynamic-pcs`. The v3 package SHA-256 is
+`e9edfaf4055cff30b58c165d10344b6b7f4e0e50ac9a750dd686cd55b4fd2a8d`, and its
+production JAR is `575f550f32b22f494c3283946221b7132feac6fb705da004030878fcb184c6d2`.
+
+Hosted run `41361515592` failed an older alias negative test: contradictory
+little-endian ELF plus BE8 flags now correctly fail preflight before alias
+extraction. The corrected test requires that exact rejection, separately checks
+the direct alias-plan guard and verifies original bytes/mtime. All focused
+preflight/alias regressions pass; that failed hosted run remains failed. Current
+hosted acceptance, per-function calls/returns, broader storage/layouts and
+failure/cancellation composition are still required before #70 can close.
+
+The v3 scalar regression also passes in both data orders at
+`build/test-results/arm-be8-reference/scalar.big.kb4ffzso/result.json` and
+`scalar.little.m9jjxyqb/result.json`. The complete four-command scalar/floating
+receipt is `build/arm-be8-profile/v3-current-regressions.json`.

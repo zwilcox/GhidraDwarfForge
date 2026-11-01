@@ -26,7 +26,8 @@ import ghidradwarfforge.locations.VariableStorageModel.UnavailableStorage;
  * infers a DWARF number from a register name or ordinal.
  */
 public record TargetRegisterMap(String target, String provenance,
-        Map<String, Integer> dwarfNumbers, Map<String, List<PairPiece>> registerPairs) {
+        Map<String, Integer> dwarfNumbers, Map<String, List<PairPiece>> registerPairs,
+        Map<String, RegisterSlice> registerSlices, ByteOrder registerStorageByteOrder) {
     private static final String GHIDRA_MAPPING_ROOT =
         "Ghidra 12.0.3 processor DWARF register mapping: ";
 
@@ -40,13 +41,30 @@ public record TargetRegisterMap(String target, String provenance,
         }
     }
 
+    /** Logical ABI bits and their independently checked physical language placement. */
+    public record RegisterSlice(String parent, int parentBits, int byteOffset, int bitSize, int valueBitOffset) {
+        public RegisterSlice {
+            if (parent == null || parent.isBlank() || parentBits <= 0 || byteOffset < 0 ||
+                    bitSize <= 0 || valueBitOffset < 0 || (long) byteOffset * 8 + bitSize > parentBits ||
+                    (long) valueBitOffset + bitSize > parentBits) {
+                throw new IllegalArgumentException("invalid logical register slice");
+            }
+        }
+    }
+
     public TargetRegisterMap(String target, String provenance, Map<String, Integer> dwarfNumbers) {
         this(target, provenance, dwarfNumbers, Map.of());
     }
 
+    public TargetRegisterMap(String target, String provenance, Map<String, Integer> dwarfNumbers,
+            Map<String, List<PairPiece>> registerPairs) {
+        this(target, provenance, dwarfNumbers, registerPairs, Map.of(), null);
+    }
+
     public TargetRegisterMap {
         if (target == null || target.isBlank() || provenance == null ||
-                provenance.isBlank() || dwarfNumbers == null || dwarfNumbers.isEmpty() || registerPairs == null) {
+                provenance.isBlank() || dwarfNumbers == null || dwarfNumbers.isEmpty() || registerPairs == null ||
+                registerSlices == null) {
             throw new IllegalArgumentException("invalid target register map");
         }
         Map<String, Integer> sorted = new TreeMap<>();
@@ -78,12 +96,34 @@ public record TargetRegisterMap(String target, String provenance,
             pairs.put(entry.getKey(), pieces);
         }
         registerPairs = Collections.unmodifiableMap(pairs);
+        var slices = new TreeMap<String, RegisterSlice>();
+        for (var entry : registerSlices.entrySet()) {
+            if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null ||
+                    !dwarfNumbers.containsKey(entry.getValue().parent())) {
+                throw new IllegalArgumentException("unmapped logical register slice");
+            }
+            slices.put(entry.getKey(), entry.getValue());
+        }
+        registerSlices = Collections.unmodifiableMap(slices);
     }
 
     /** Additional pair semantics require explicit original-ELF ABI evidence. */
     public static TargetRegisterMap forElf(String target, ElfImage elf, BooleanSupplier cancelled)
             throws IOException {
         TargetRegisterMap ordinary = forTarget(target);
+        if ((target.equals("arm") || target.equals("arm32")) && elf.machine() == 40 && !elf.is64Bit() &&
+                elf.byteOrder() == ByteOrder.BIG_ENDIAN && (elf.flags() & 0xffc00000L) == 0x05800000L) {
+            // Pinned LEBE languages reuse ARM*_le.sla physical register layout,
+            // despite their big-endian data override. Numeric S-register halves
+            // still have the AADWARF32 meaning: even low, odd high in Dn.
+            var slices = new LinkedHashMap<String, RegisterSlice>();
+            for (int index = 0; index < 32; index++) {
+                slices.put("s" + index, new RegisterSlice("d" + index / 2, 64, (index % 2) * 4,
+                    32, (index % 2) * 32));
+            }
+            return new TargetRegisterMap(target, ordinary.provenance() + "; EABI5 BE8 LEBE physical slices",
+                ordinary.dwarfNumbers(), ordinary.registerPairs(), slices, ByteOrder.LITTLE_ENDIAN);
+        }
         if (!target.equals("mips") && !target.equals("mipsel")) {
             return ordinary;
         }

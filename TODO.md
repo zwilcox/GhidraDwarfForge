@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local BE8 floating and upper-register correction:** the shared scalar
+flow preserves logical upper registers across disjoint writes and rejects
+overlap, reused slots and contradictory physical aliases. The BE8 target map
+separates Ghidra's little-endian physical register layout from big-endian data.
+Both base/VFP argument fixtures pass validators and debugger observations through
+frame release. BE8 register bit pieces require the separately pinned, unmodified
+GDB 17.1 validation profile: GDB 15.1 demonstrably displays a wrong upper value.
+The full local model suite passes. Hosted acceptance, injected calls/typed returns
+and the broader ABI requirements remain open; see `docs/ARM-BE8-PROFILE.md`.
+
 **CONFIRMED local BE8 scalar checkpoint; full ABI work remains open:** matching
 EABI5 BE8 ELF/Ghidra instruction/data encoding passes 61 model checks, 32 native
 lifetimes, strict validators and six compiler/Forge debugger runs. Repeated
