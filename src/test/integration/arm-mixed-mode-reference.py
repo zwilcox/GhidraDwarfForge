@@ -34,12 +34,15 @@ def main():
     parser.add_argument("--production", action="store_true", help="require unmodified production sidecar to pass")
     parser.add_argument("--role", choices=("exec", "pie", "pie-rebased", "shared", "shared-rebased"), default="exec")
     parser.add_argument("--with-controls", action="store_true")
+    parser.add_argument("--with-live", action="store_true")
     parser.add_argument("--sectionless", action="store_true")
     args = parser.parse_args()
     if args.sectionless and (not args.production or args.role.startswith("shared")):
         parser.error("sectionless reference currently requires a production executable role")
     if args.with_controls and not args.production:
         parser.error("failure/cancellation controls require production acceptance")
+    if args.with_live and not args.production:
+        parser.error("live-session checks require production acceptance")
     ghidra = args.ghidra.resolve(strict=True)
     root = repository / "build/test-results/arm-mixed-reference"
     root.mkdir(parents=True, exist_ok=True)
@@ -60,6 +63,7 @@ def main():
     protected = [Path(__file__), source / "arm-mixed-mode-gdb.py", source / "arm-mixed-mapping-experiment.py",
         source / "arm-mixed-inventory.py", source / "sectionless-alias-check.py",
         source / "retained-function-aliases-export.py",
+        source / "arm-mixed-live-export.py", source / "ghidra_scripts/RepeatLiveAbiExport.java",
         source / "arm-thumb-mode-check.py", source / "arm-mixed-mode-runtime.sh", source / "qemu-socket.sh",
         source / "ghidra_scripts/PrepareArmMixedBody.java",
         repository / "src/test/fixtures/arm-mixed-body.S", repository / "src/test/fixtures/arm-mixed-body-driver.c"]
@@ -206,6 +210,10 @@ def main():
         run("controls", ["python3", source / "arm-mixed-mode-controls.py", ghidra, case])
         control, = case.glob("controls.*/result.json")
         assert json.loads(control.read_text())["status"] == "PASS"
+    if args.with_live:
+        run("live", ["python3", source / "arm-mixed-live-export.py", ghidra, case])
+        live, = case.glob("live.*/result.json")
+        assert json.loads(live.read_text())["status"] == "PASS"
     print("arm-mixed-mode-reference=" + ("PASS_PRODUCTION_BASIC" if args.production else "PASS_RESEARCH_REPRODUCTION") + " " + str(case))
 
 

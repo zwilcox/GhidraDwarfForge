@@ -1530,11 +1530,11 @@ jobs:
         run: |
           for role in exec pie pie-rebased shared shared-rebased; do
               python3 src/test/integration/arm-mixed-mode-reference.py "$GHIDRA_INSTALL_DIR" \
-                  --production --role "$role" --with-controls
+                  --production --role "$role" --with-controls --with-live
           done
           for role in exec pie pie-rebased; do
               python3 src/test/integration/arm-mixed-mode-reference.py "$GHIDRA_INSTALL_DIR" \
-                  --production --role "$role" --sectionless --with-controls
+                  --production --role "$role" --sectionless --with-controls --with-live
           done
 
       - name: Recovered ARM and Thumb instruction modes

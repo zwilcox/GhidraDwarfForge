@@ -177,9 +177,37 @@ CI now invokes all five sectioned roles and all three sectionless roles with
 `--sectionless`. Actionlint and Python/shell syntax checks pass locally.
 Hosted exact-head acceptance and protected integration remain required.
 
+## Fresh live-program acceptance
+
+`arm-mixed-live-export.py` freshly imports each accepted fixture, performs the
+same explicit analyst preparation, and invokes the installed exporter twice
+before closing the analyzed program. The exports must be byte-identical; the
+listing evidence and complete ELF symbol inventory must match the independently
+accepted saved-program case. All ten compiler/Forge debugger phases, raw
+sectionless inventories, GNU/LLVM/pinned strict validation and input/package/
+harness preservation pass. The eight live cases add 736 debugger observations,
+16 injected calls and 16 live exports, without a production change.
+
+| Parent case | Live case |
+| --- | --- |
+| `exec.g58nzakc` | `live.vegg2sy4` |
+| `pie._gmalpk0` | `live.o4ksggrn` |
+| `pie-rebased.xcrtar5n` | `live.gtr8sjaa` |
+| `shared.3aiyrd58` | `live.porpmire` |
+| `shared-rebased.xc3gzoo1` | `live.5i7oyqg_` |
+| `exec.sectionless.33o3o1up` | `live.t3tjxw1z` |
+| `pie.sectionless._vwh3a13` | `live.lxkbeb5a` |
+| `pie-rebased.sectionless.oxz1ert_` | `live.57k4mlur` |
+
+The full `--production --role pie-rebased --sectionless --with-controls
+--with-live` command additionally passes at `pie-rebased.sectionless.s8bwln49`.
+CI enables `--with-live` for all eight layout commands. This verifies live
+analysis/export composition; inherited mappings and discontiguous bodies still
+need their own acceptance evidence.
+
 ## Remaining acceptance
 
-Discontiguous mixed bodies, additional inherited-map and live-session cases,
+Discontiguous mixed bodies and additional inherited-map cases,
 and runtime omission controls beyond the current model coverage still need
 evidence. Sectionless shared-library composition is not covered by this matrix.
 

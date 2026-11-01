@@ -6,9 +6,16 @@ breakpoints, injected function-pointer calls, raw symbol preservation, validator
 determinism and failure/cancellation. This includes shared/rebased libraries and
 sectionless exec/PIE/rebased executables. See `docs/ARM-MIXED-MODE-MAPPINGS.md`
 for 832 observations, exact package receipts and retained failed experiments.
-The producer is unchanged in this expansion. Discontiguous/inherited/live-session
+The producer is unchanged in this expansion. Discontiguous/inherited
 mapping acceptance, remaining ARM/MIPS/i386 requirements, exact-head hosted
 gates and protected integration remain required; #68–#71 are not complete.
+
+**CONFIRMED live-program follow-up:** all eight layouts also pass two exports
+before closing fresh analysis, with identical artifacts, matching saved-program
+mode inventories and 736 additional compiler/Forge observations. The full
+sectionless/rebased/control/live command passes and CI includes live checks for
+every layout. Live-session behavior is now confirmed locally; discontiguous/
+inherited mapping and the full original ABI scope remain open. See the same mapping evidence document.
 
 **CONFIRMED local production ARM32 mixed-body mapping progress:**
 The real exporter now emits complete evidence-backed ARM/Thumb/data section
