@@ -266,3 +266,13 @@ and split bodies. See `ARM-MIXED-MODE-MAPPINGS.md` for source-map limits,
 receipts and retained harness failures. Inherited-map runtime acceptance,
 sectionless shared composition, the remaining original ABI requirements and
 exact-head hosted integration remain open; this does not complete #68–#71.
+
+## ARM32 inherited mapping checkpoint
+
+**CONFIRMED local inherited/omitted ARM mapping acceptance:** five retained-symbol
+split layouts preserve every original symbol and mapping, with 1,045 saved/live/
+failure debugger observations and twenty injected calls. Eight stripped layouts
+pass explicit unknown-data omission controls with 208 instruction observations,
+exact diagnostics and no invented mapping. See `ARM-MIXED-MODE-MAPPINGS.md`.
+Sectionless shared composition, broader ABI profiles and exact-head integration
+remain required; #68–#71 remain open.

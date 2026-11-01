@@ -1,5 +1,13 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local inherited/omitted ARM mapping acceptance:** five retained-symbol
+split layouts preserve every original symbol and mapping, with 1,045 saved/live/
+failure debugger observations and twenty injected calls. Eight stripped layouts
+pass explicit unknown-data omission controls with 208 instruction observations,
+exact diagnostics and no invented mapping. See `docs/ARM-MIXED-MODE-MAPPINGS.md`.
+Sectionless shared composition, broader ABI profiles and exact-head integration
+remain required; #68–#71 remain open.
+
 **CONFIRMED local discontiguous mixed-body acceptance:** eight additional ARM
 layouts pass two-range bodies with an excluded data word, six exact mapping
 boundaries, raw DWARF range/line checks and compiler/Forge runtime comparisons.

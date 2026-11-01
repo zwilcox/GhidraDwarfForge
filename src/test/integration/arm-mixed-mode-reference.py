@@ -6,6 +6,7 @@ not be used as an exporter support gate; production acceptance needs the origina
 sidecar to pass without the separate symbol-table experiment.
 """
 import argparse
+from copy import deepcopy
 import hashlib
 import importlib.util
 import json
@@ -54,6 +55,47 @@ def prepare_arguments(labels):
     return args
 
 
+
+def check_inherited(original, output):
+    """Every original symbol/string byte survives around any new local records."""
+    old = inventory.section(original, '.symtab')
+    new = inventory.section(output, '.symtab')
+    old_local, new_local = old['row'][7], new['row'][7]
+    assert 0 < old_local <= new_local <= len(output['symbols'])
+    assert old['row'][9] == new['row'][9] == 16
+    assert new['data'][:old_local * 16] + new['data'][new_local * 16:] == old['data']
+    assert output['sections'][new['row'][6]]['data'].startswith(original['sections'][old['row'][6]]['data'])
+    inherited = [row for row in original['symbols'] if row['name'].startswith('$')]
+    assert inherited and inherited == [row for row in output['symbols'] if row['name'].startswith('$')]
+    assert all(row['info'] >> 4 == 0 for row in output['symbols'][:new_local])
+    assert all(row['info'] >> 4 != 0 for row in output['symbols'][new_local:])
+    return {'inheritedSymbols': len(original['symbols']), 'inheritedMappings': len(inherited),
+        'insertedLocals': new_local - old_local}
+
+
+def inherited_controls(original, output):
+    rejected = []
+    for kind in ('missing-original-record', 'changed-original-record', 'changed-string-prefix', 'duplicate-mapping'):
+        altered = deepcopy(output)
+        table = inventory.section(altered, '.symtab')
+        if kind == 'missing-original-record':
+            table['data'] = table['data'][:-16]
+        elif kind == 'changed-original-record':
+            table['data'] = table['data'][:-1] + bytes([table['data'][-1] ^ 1])
+        elif kind == 'changed-string-prefix':
+            strings = altered['sections'][table['row'][6]]
+            strings['data'] = bytes([strings['data'][0] ^ 1]) + strings['data'][1:]
+        else:
+            altered['symbols'].append(next(row for row in altered['symbols'] if row['name'].startswith('$')))
+        try:
+            check_inherited(original, altered)
+        except AssertionError:
+            rejected.append(kind)
+        else:
+            raise AssertionError('inherited inventory corruption accepted: ' + kind)
+    return rejected
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("ghidra", type=Path)
@@ -61,8 +103,10 @@ def main():
     parser.add_argument("--role", choices=("exec", "pie", "pie-rebased", "shared", "shared-rebased"), default="exec")
     parser.add_argument("--with-controls", action="store_true")
     parser.add_argument("--with-live", action="store_true")
+    parser.add_argument("--with-omissions", action="store_true")
     parser.add_argument("--sectionless", action="store_true")
     parser.add_argument("--split", action="store_true")
+    parser.add_argument("--retain-symbols", action="store_true")
     args = parser.parse_args()
     if args.sectionless and (not args.production or args.role.startswith("shared")):
         parser.error("sectionless reference currently requires a production executable role")
@@ -72,11 +116,16 @@ def main():
         parser.error("live-session checks require production acceptance")
     if args.split and not args.production:
         parser.error("split-body fixture requires production acceptance")
+    if args.retain_symbols and (not args.production or args.sectionless):
+        parser.error("inherited symbols require a sectioned production fixture")
+    if args.with_omissions and (not args.production or not args.split or args.retain_symbols):
+        parser.error("omission controls require a stripped split production fixture")
     expected = fixture(args.split)
     ghidra = args.ghidra.resolve(strict=True)
     root = repository / "build/test-results/arm-mixed-reference"
     root.mkdir(parents=True, exist_ok=True)
     case = Path(tempfile.mkdtemp(prefix=args.role + (".split" if args.split else "") +
+        (".retained" if args.retain_symbols else "") +
         (".sectionless." if args.sectionless else "."), dir=root))
     print(case, flush=True)
 
@@ -95,6 +144,7 @@ def main():
         source / "arm-mixed-inventory.py", source / "sectionless-alias-check.py",
         source / "arm-mixed-range-check.py", source / "dynamic-parameter-storage-check.py",
         source / "retained-function-aliases-export.py",
+        source / "arm-mixed-omission-controls.py", source / "ghidra_scripts/ExportArmMixedUnknownData.java",
         source / "arm-mixed-live-export.py", source / "ghidra_scripts/RepeatLiveAbiExport.java",
         source / "arm-thumb-mode-check.py", source / "arm-mixed-mode-runtime.sh", source / "qemu-socket.sh",
         source / "ghidra_scripts/PrepareArmMixedBody.java",
@@ -117,7 +167,7 @@ def main():
         model += ["-Wl,--hash-style=both", "-Wl,--section-start=.forge_mixed=0x20000"]
     run("compile", common + model + ["-Wl,--build-id=none", *inputs, "-o", case / "mixed.reference"])
     clean("compile")
-    run("strip", [objcopy, "--strip-all", case / "mixed.reference", case / "mixed.stripped"])
+    run("strip", [objcopy, "--strip-debug" if args.retain_symbols else "--strip-all", case / "mixed.reference", case / "mixed.stripped"])
     clean("strip")
     mapping_allocation = ".forge_mixed"
     if args.sectionless:
@@ -158,7 +208,7 @@ def main():
     assert [(s["name"], s["raw"] - start, s["size"], s["info"]) for s in symbols if s["name"].startswith("$")] == [
         ('$' + tag, at, 0, 0) for tag, at in expected['boundaries']]
     assert section["data"].hex() == expected['hex']
-    labels = {"start": start, "size": expected['size'], "role": args.role, "shared": shared, 'split': args.split,
+    labels = {"start": start, "size": expected['size'], "role": args.role, "shared": shared, 'split': args.split, 'retainSymbols': args.retain_symbols,
         "textAddress": inventory.section(image, ".text")["row"][3],
         "sectionless": args.sectionless, "mappingAllocation": mapping_allocation,
         "symbols": symbols, "hex": section["data"].hex()}
@@ -194,6 +244,11 @@ def main():
         boundaries = [s for s in emitted["symbols"] if s["section"] == allocation["index"] and s["name"].startswith("$")]
         assert [(s["name"][:2], s["raw"] - start, s["size"], s["info"], s["other"]) for s in boundaries] == [
             ('$' + tag, at, 0, 0, 0) for tag, at in expected['boundaries']]
+        if args.retain_symbols:
+            original = inventory.elf(case / 'mixed.stripped')
+            receipt = check_inherited(original, emitted)
+            receipt['rejectedCorruptions'] = inherited_controls(original, emitted)
+            (case / 'inherited-symbols.json').write_text(json.dumps(receipt, indent=4) + '\n')
         if args.sectionless:
             run("raw-inventory", ["python3", source / "arm-mixed-inventory.py", case])
             clean("raw-inventory")
@@ -255,6 +310,10 @@ def main():
         run("live", ["python3", source / "arm-mixed-live-export.py", ghidra, case])
         live, = case.glob("live.*/result.json")
         assert json.loads(live.read_text())["status"] == "PASS"
+    if args.with_omissions:
+        run('omissions', ['python3', source / 'arm-mixed-omission-controls.py', ghidra, case])
+        omission, = case.glob('omissions.*/result.json')
+        assert json.loads(omission.read_text())['status'] == 'PASS'
     print("arm-mixed-mode-reference=" + ("PASS_PRODUCTION_BASIC" if args.production else "PASS_RESEARCH_REPRODUCTION") + " " + str(case))
 
 

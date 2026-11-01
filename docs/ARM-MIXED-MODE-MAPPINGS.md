@@ -203,7 +203,8 @@ The full `--production --role pie-rebased --sectionless --with-controls
 --with-live` command additionally passes at `pie-rebased.sectionless.s8bwln49`.
 CI enables `--with-live` for all eight layout commands. This verifies live
 analysis/export composition. The split-body evidence below extends this to
-discontiguous bodies; inherited mappings still need runtime acceptance.
+discontiguous bodies; the subsequent inherited-mapping section records its
+additional runtime acceptance.
 
 ## Discontiguous mixed-body acceptance
 
@@ -263,10 +264,49 @@ CI runs both contiguous and split shapes over all eight layouts, each with
 `--production --with-controls --with-live`; split adds `--split`. This local
 acceptance requires its own exact-head hosted gate and protected integration.
 
+## Inherited mapping and omission controls
+
+**CONFIRMED locally:** the same v2 package passes five split-body cases using
+`--strip-debug`, retaining the original symbol table and all original mode
+mappings. Every original record and string-table prefix is checked byte for
+byte; inherited mapping records must occur exactly once. Four deliberate
+inventory corruptions are rejected. Saved/live/failure exports contribute
+1,045 debugger observations, twenty injected calls, ten native failure exports
+and five cancellations. The cases are `exec.split.retained.iuca9yoa`,
+`pie.split.retained.us9915lh`, `pie-rebased.split.retained.r6fl4kei`,
+`shared.split.retained.yym0zqtr` and `shared-rebased.split.retained.fuly05uf`.
+Each normal/live run includes compiler-relative static decoding, source stepping,
+address breakpoints and function-pointer calls; validators and deterministic
+original/program preservation pass. The non-PIE case preserves all 94 original
+symbols, including 30 mapping records, without inserting duplicate mappings.
+
+All eight stripped split layouts also pass two explicit unknown-data controls.
+A read-only Ghidra session removes the definition of either the skipped word
+or the trailing literal, without changing its memory bytes or function body.
+The actual exporter must diagnose `unknown bytes cannot be mapped as data` and
+omit the unsupported section mapping. Repeated exports remain identical, raw
+DWARF ranges/lines and structural validators still pass, and saved program/
+original/package bytes are preserved. The 208 instruction observations execute
+all thirteen instructions correctly for both controls in every layout. Static
+decoding is deliberately required to fail the ordinary mapping oracle with its
+exact known missing-width assertion; these controls do not claim full decoding
+support after evidence is removed. Unrelated GDB failures are rejected.
+
+Receipts are in `build/arm-mixed-modes/inherited-omission-matrix-v2.json` and the
+case directories. The first control used the script convenience data lookup,
+which did not expose cleared undefined units. The corrected control uses the
+listing code-unit API and checks each undefined unit explicitly; the initial
+failed attempt is retained as `omissions.i58ldm58`. CI invokes inherited cases
+for all five sectioned roles, and `--with-omissions` for every stripped split
+layout. The final combined sectionless rebased command with controls, live
+exports and omissions passes at `pie-rebased.split.sectionless.1v67x5a6`.
+Exact-head hosted acceptance remains pending.
+
 ## Remaining acceptance
 
-Additional inherited-map cases and runtime omission controls beyond the current model coverage still need
-evidence. Sectionless shared-library composition is not covered by this matrix.
+Inherited mapping preservation and unknown-data omission now have runtime
+evidence. Additional conflict/context-change controls remain model-only.
+Sectionless shared-library composition is not covered by this matrix.
 
 Unknown gaps intentionally prevent complete section mapping. A successful
 homogeneous-function mode hint elsewhere does not establish mixed-body coverage.

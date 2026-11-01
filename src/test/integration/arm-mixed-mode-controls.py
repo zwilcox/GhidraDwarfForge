@@ -108,6 +108,8 @@ def main(ghidra, baseline):
     original = reference.inventory.elf(baseline / "curated.dbg")
     assert [s for s in image["symbols"] if s["name"].startswith("$")] == [
         s for s in original["symbols"] if s["name"].startswith("$")]
+    if labels.get('retainSymbols', False):
+        reference.check_inherited(reference.inventory.elf(case / 'mixed.stripped'), image)
     runtime_log = run("runtime", ["bash", source / "arm-mixed-mode-runtime.sh", case, "curated"])
     warnings = [line for line in runtime_log.splitlines() if line.startswith("warning:")]
     compiler_warnings = (baseline / "compiler-gdb.stderr").read_text().splitlines()

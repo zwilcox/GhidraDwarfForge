@@ -64,6 +64,8 @@ def main(ghidra, baseline):
     emitted = reference.inventory.elf(case / 'curated.dbg')
     baseline_elf = reference.inventory.elf(baseline / 'curated.dbg')
     assert emitted['symbols'] == baseline_elf['symbols'], 'live symbol inventory differs'
+    if labels.get('retainSymbols', False):
+        reference.check_inherited(reference.inventory.elf(case / 'mixed.stripped'), emitted)
     if labels['sectionless']:
         run('raw-inventory', ['python3', source / 'arm-mixed-inventory.py', case])
         assert not (case / 'raw-inventory.stderr').read_bytes()
