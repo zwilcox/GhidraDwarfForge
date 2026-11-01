@@ -20,11 +20,13 @@ def digest(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
+    parser.add_argument('--little-endian', action='store_true', help='paired ARM little-endian regression')
     args = parser.parse_args()
     ghidra = args.ghidra.resolve(strict=True)
     output = repository / 'build/test-results/arm-be8-reference'
     output.mkdir(parents=True, exist_ok=True)
-    case = Path(tempfile.mkdtemp(prefix='scalar.', dir=output))
+    data_order = 'little' if args.little_endian else 'big'
+    case = Path(tempfile.mkdtemp(prefix='scalar.' + data_order + '.', dir=output))
     print(case, flush=True)
 
     def run(label, command, cwd=repository):
@@ -46,9 +48,9 @@ def main():
     before = {str(path): digest(path) for path in protected}
     compiler = os.environ.get('ARM32_CC', 'arm-linux-gnueabihf-gcc')
     objcopy = os.environ.get('ARM32_OBJCOPY', 'arm-linux-gnueabihf-objcopy')
-    run('compile', [compiler, '-mbig-endian', '-march=armv7-a', '-marm', '-mfpu=vfpv3-d16',
+    run('compile', [compiler, '-mlittle-endian' if args.little_endian else '-mbig-endian', '-march=armv7-a', '-marm', '-mfpu=vfpv3-d16',
         '-mfloat-abi=hard', '-O0', '-g3', '-gdwarf-5', '-fno-pic', '-fno-pie', '-nostdlib',
-        '-nostartfiles', '-static', '-no-pie', '-Wl,--be8', '-Wl,--build-id=none', '-Wl,-e,_start',
+        '-nostartfiles', '-static', '-no-pie', *([] if args.little_endian else ['-Wl,--be8']), '-Wl,--build-id=none', '-Wl,-e,_start',
         fixture / 'start.S', fixture / 'probe.c', '-o', case / 'be8.reference'])
     clean('compile')
     run('strip', [objcopy, '--strip-all', case / 'be8.reference', case / 'be8.stripped'])
@@ -66,7 +68,7 @@ def main():
         '-loader', 'ElfLoader', '-analysisTimeoutPerFile', '120'])
     assert 'REPORT: Import succeeded' in text
     text = run('prepare', [headless, project, 'Be8', '-process', 'be8.stripped', '-noanalysis',
-        '-scriptPath', source / 'ghidra_scripts', '-postScript', 'PrepareArmBe8.java', '0x100b8', '0x110ec'])
+        '-scriptPath', source / 'ghidra_scripts', '-postScript', 'PrepareArmBe8.java', '0x100b8', '0x110ec', data_order])
     assert 'REPORT SCRIPT ERROR' not in text
     model = json.JSONDecoder().raw_decode(text.split('ARM_BE8_MODEL=', 1)[1])[0]
     assert model['parameterStorage'] == model['returnStorage'] == 'r0:4'
@@ -97,7 +99,7 @@ def main():
         for phase in ('instructions', 'next', 'step'):
             label = variant + '-' + phase
             # Deliberately load absolute symbols while outside the artifact directory.
-            run(label, ['bash', source / 'arm-be8-runtime.sh', case, variant, phase], cwd='/tmp')
+            run(label, ['bash', source / 'arm-be8-runtime.sh', case, variant, phase, data_order], cwd='/tmp')
             result = json.loads((case / (label + '-gdb.json')).read_text())
             assert result['status'] == 'PASS_SCALAR_CHECKPOINT' and result['exits'] == [0]
             stderr = (case / (label + '.stderr')).read_text()

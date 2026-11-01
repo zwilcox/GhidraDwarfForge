@@ -214,6 +214,17 @@ tasks.register("ghidraTargetAgreementSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.GhidraTargetAgreementSmoke"
 }
 
+tasks.register("terminalStackValueSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks stack value states before opaque terminal effects"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.TerminalStackValueSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/terminal-stack/settings").absolutePath
+}
+
 tasks.register("ghidraArmBe8ProfileSmoke", JavaExec) {
     group = "verification"
     description = "Checks BE8 ELF encoding against real data/instruction endian language descriptions"

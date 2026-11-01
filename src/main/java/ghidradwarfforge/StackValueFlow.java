@@ -130,7 +130,7 @@ final class StackValueFlow {
         if (storage.isRegisterStorage() && (original == null ||
                 original.getLeastSignificantBitInBaseRegister() != 0 ||
                 original.getBaseRegister() == pointer)) return List.of();
-        var decoded = RegisterDefinitionFlow.decodedInstructions(program, function, true, monitor);
+        var decoded = RegisterDefinitionFlow.decodedInstructions(program, function, true, true, monitor);
         if (decoded.isEmpty()) return List.of();
         var calls = DirectLeafCalls.inspect(program, List.copyOf(decoded.values()), monitor);
         if (calls == null) return List.of();
@@ -210,6 +210,13 @@ final class StackValueFlow {
             // reached, including a backedge to an earlier numeric address.
             if (owners.contains(address)) state.retireLocalValue();
             input.put(address, state.boundaryCopy());
+            if (RegisterDefinitionFlow.opaqueTerminalBoundary(decoded.get(address))) {
+                // Only the state before this instruction is observable in the
+                // invocation. Never interpret an opaque return as preserving
+                // its registers/memory or propagate any state after it.
+                if (!successors.get(address).isEmpty()) return List.of();
+                continue;
+            }
             if (!state.advance(decoded.get(address), address.equals(definition), monitor)) return List.of();
             Register assignment = assignments.get(address);
             if (assignment != null) {

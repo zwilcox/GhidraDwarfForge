@@ -72,15 +72,6 @@ lifetimes on both native hosts and the scalar harness in the ARM32 target lane.
 
 ## Remaining required work
 
-- The saved parameter is not recovered after `r0` changes. Offsets 40, 44 and 48
-  are unavailable; offset 40 still has an allocated source-known copy and needs
-  shared lifetime analysis. Later frame release must not manufacture availability.
-  This is an implementation gap, not the desired completed behavior.
-  Read-only raw-pcode inspection (`build/arm-be8-profile/pcode-diagnostic.log`)
-  shows an opaque `CALLOTHER` before the terminal `RETURN` in `bx lr`.
-  `RegisterDefinitionFlow.orderedControl` rejects that entire body. Any correction
-  must retain only proven pre-instruction state and must not assume the opaque
-  operation preserves registers or memory across a call.
 - BE8 debugger calls remain guarded by `DW_CC_nocall` pending per-function
   base/VFP argument and return classification. The required compiler-relative
   call/return validation cannot be replaced with a blanket guard.
@@ -89,3 +80,43 @@ lifetimes on both native hosts and the scalar harness in the ARM32 target lane.
   cancellation controls remain required before broad acceptance.
 - Current-head hosted validation, independent artifact review and protected
   integration remain required. BE32 is outside this selected BE8 profile.
+
+## Saved-parameter lifetime correction
+
+**CONFIRMED locally:** initial v1 exports lost the parameter after `r0` changed,
+although offset 40 still had its allocated stack copy. Read-only raw-pcode
+inspection (`build/arm-be8-profile/pcode-diagnostic.log`) found an opaque
+`CALLOTHER` before terminal `RETURN` in `bx lr`; the CFG decoder rejected the
+entire function. The shared parameter-flow decoder now optionally admits the
+input state of a validated unconditional terminal with no successors. It never
+evaluates or propagates that instruction's opaque effects. Default decoding and
+callee-effect summaries remain strict, with an explicit opaque-callee rejection
+test. There is no processor/userop whitelist in generic analysis.
+
+The v2 package passes the same real exporter/validator/debugger harness for both
+BE8 and ordinary little-endian ARM. GDB now requires parameter 7 at offset 40,
+whose raw location is `DW_OP_bregx 13, 4` over `[0x100e0, 0x100e4)`. Offsets 44
+and 48 must remain unavailable after frame release. All 52 compiler/Forge
+instruction observations and twenty source-step observations pass, with twelve
+normal exits and unchanged originals/programs/packages. Repeated outputs are
+byte-identical. The source-known paired runtime evidence is:
+
+- `build/test-results/arm-be8-reference/scalar.big.ut53dsww/result.json`.
+- `build/test-results/arm-be8-reference/scalar.little.elygwnv7/result.json`.
+
+`terminalStackValueSmoke` passes 74 real-language checks across both encodings,
+including overwritten/unknown stack stores, a nonterminal opaque instruction,
+conditional/overridden returns, caller-effect isolation and cancellation.
+`stackValueFlowSmoke`, `stackControlFlowSmoke`, `directLeafCallSmoke` pass
+332/832/140 checks; `opaqueRegisterEffectsSmoke` also passes, including its 24
+terminal-boundary negatives. `build/arm-be8-profile/terminal-model-v2.log` retains
+the command output. Architecture-neutrality, syntax, actionlint and diff checks
+pass. CI includes the new model and paired runtime checks; hosted acceptance is
+still pending.
+
+v2 package SHA-256:
+`2fbad287f19578b1a5cea882e9d97f6992f91b7cce03f0cbb3d1e6901f14e9ff`;
+production JAR SHA-256:
+`db5da9cda3c31f7fed4ee338ef1df8b8d8924fefe67b352c7ff8a198dd9d6722`.
+The earlier checkpoint/failed experiments remain retained; the original full
+ABI, storage, layout and control requirements remain open.

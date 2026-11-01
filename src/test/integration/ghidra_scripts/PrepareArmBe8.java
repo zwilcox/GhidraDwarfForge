@@ -14,11 +14,13 @@ public class PrepareArmBe8 extends GhidraScript {
     @Override
     protected void run() throws Exception {
         String[] args = getScriptArgs();
-        if (args.length != 2) throw new IllegalArgumentException("function and global addresses required");
+        if (args.length != 3 || !(args[2].equals("big") || args[2].equals("little"))) {
+            throw new IllegalArgumentException("function/global addresses and big|little data encoding required");
+        }
         var entry = toAddr(Long.decode(args[0]));
         var global = toAddr(Long.decode(args[1]));
         var language = currentProgram.getLanguage();
-        if (!language.isBigEndian() || language.getLanguageDescription().getInstructionEndian() !=
+        if (language.isBigEndian() != args[2].equals("big") || language.getLanguageDescription().getInstructionEndian() !=
                 ghidra.program.model.lang.Endian.LITTLE) {
             throw new IllegalStateException("expected BE8 data/instruction encoding");
         }
@@ -49,6 +51,7 @@ public class PrepareArmBe8 extends GhidraScript {
         }
         var result = new LinkedHashMap<String, Object>();
         result.put("language", currentProgram.getLanguageID().toString());
+        result.put("dataOrder", args[2]);
         result.put("compiler", currentProgram.getCompilerSpec().getCompilerSpecID().toString());
         result.put("entry", entry.toString());
         result.put("global", global.toString());

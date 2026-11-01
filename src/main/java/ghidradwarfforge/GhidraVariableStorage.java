@@ -1202,7 +1202,7 @@ public final class GhidraVariableStorage {
     }
 
 
-    private static boolean ordinaryTerminalReturn(Instruction instruction,
+    static boolean ordinaryTerminalReturn(Instruction instruction,
             PcodeOp[] operations) {
         var flow = instruction.getFlowType();
         if (instruction.getFlowOverride() != FlowOverride.NONE ||

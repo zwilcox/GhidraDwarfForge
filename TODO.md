@@ -4,8 +4,10 @@
 EABI5 BE8 ELF/Ghidra instruction/data encoding passes 61 model checks, 32 native
 lifetimes, strict validators and six compiler/Forge debugger runs. Repeated
 artifacts are byte-identical; input/program/package bytes are preserved. Saved
-parameter migration, base/VFP calls/returns and broader storage/layout/control
-cases remain incomplete. See `docs/ARM-BE8-PROFILE.md`; #68–#71 remain open.
+parameter migration now also passes a shared terminal-boundary correction in
+both ARM data orders: the stack copy remains readable until frame release.
+Base/VFP calls/returns and broader storage/layout/control cases remain incomplete.
+See `docs/ARM-BE8-PROFILE.md`; #68–#71 remain open.
 
 **CONFIRMED local sectionless shared composition:** contiguous/split shared and
 rebased shared mixed-body cases pass 810 saved/live/failure debugger observations,

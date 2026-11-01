@@ -7,6 +7,7 @@ from pathlib import Path
 root = Path(os.environ['BE8_CASE'])
 variant = os.environ['BE8_VARIANT']
 phase = os.environ['BE8_PHASE']
+data_order = os.environ.get('BE8_ENDIAN', 'big')
 result = {'status': 'FAILED', 'observations': [], 'exits': []}
 gdb.events.exited.connect(lambda event: result['exits'].append(getattr(event, 'exit_code', None)))
 
@@ -16,7 +17,7 @@ def integer(expression):
 
 
 try:
-    assert 'big endian' in gdb.execute('show endian', to_string=True)
+    assert data_order + ' endian' in gdb.execute('show endian', to_string=True)
     name = 'be8_probe' if variant == 'compiler' else 'recovered_be8_probe'
     start = integer('&' + name)
     assert start == 0x100b8
@@ -45,7 +46,7 @@ try:
                 assert integer('$r2') == 0x11223344
             if offset >= 32:
                 assert integer('$r3') == (7 if offset == 32 else 0x1122334b)
-            assert bytes(gdb.selected_inferior().read_memory(0x110ec, 4)).hex() == '11223344'
+            assert bytes(gdb.selected_inferior().read_memory(0x110ec, 4)) == (0x11223344).to_bytes(4, data_order)
             assert integer('be8_global') == 0x11223344
             assert not integer('$cpsr') & 32
             row = {'offset': offset, 'r0': integer('$r0'),
@@ -54,13 +55,13 @@ try:
             # Compiler O0 storage names the stack slot before its initialization.
             # Require its typed value only after the source-known store executes.
             # Forge must show the incoming register correctly before that store.
-            if (variant == 'compiler' and 16 <= offset < 48) or (variant == 'curated' and offset < 40):
+            if (variant == 'compiler' and 16 <= offset < 48) or (variant == 'curated' and offset < 44):
                 row['value'] = integer('value')
                 assert row['value'] == 7
             elif variant == 'curated':
                 try:
-                    row['value'] = integer('value')
-                    assert row['value'] == 7
+                    integer('value')
+                    raise AssertionError('released stack copy must be unavailable')
                 except gdb.error as error:
                     row['unavailable'] = str(error)
                     assert 'optimized out' in str(error) or 'not available' in str(error)

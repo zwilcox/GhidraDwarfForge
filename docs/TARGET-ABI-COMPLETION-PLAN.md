@@ -2,7 +2,8 @@
 
 **CONFIRMED local BE8 scalar progress:** see `ARM-BE8-PROFILE.md` for the isolated
 encoding policy, real-language/native checks and real packaged scalar export.
-The full requirements below remain active, including saved-parameter migration,
+The scalar saved-parameter case now passes through frame release in both ARM
+data orders. Full requirements below remain active, including broader migration,
 base/VFP arguments/returns, layouts, controls and protected integration. No issue
 is complete merely because this scalar checkpoint passes.
 
