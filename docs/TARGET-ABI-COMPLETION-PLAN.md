@@ -102,3 +102,15 @@ reference CPU bound, diagnostic accounting and receipts are in
 `AARCH64-ABI-SELECTION.md`. This is progress on the first and final rows of #68;
 it does not close that issue or any related target issue. Required exact-head
 hosted validation, protected integration and the full scope audit remain.
+
+## AArch64 SIMD storage component
+
+**CONFIRMED locally; integration pending:** six separate integer/float lane
+functions pass non-PIE, PIE and rebased-PIE runs, including real failure and
+cancellation controls. Full-width register copies, spills, reloads and incoming
+stack storage retain exact values; uncertain aliases and clobbers produce honest
+gaps. The representation is an explicit analyst array layout with guarded
+debugger calls, not an invented native vector type. See
+`AARCH64-VECTOR-STORAGE.md` for the compiler-reference investigation and exact
+acceptance. The full original AArch64 scope audit, hosted gates and protected
+integration remain required, as do all remaining MIPS, ARM32 and i386 rows.

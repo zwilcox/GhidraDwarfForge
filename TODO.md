@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local AArch64 SIMD storage candidate; hosted acceptance pending:**
+Separate integer/float lane fixtures now prove 128-bit register copies,
+spill/reload, ninth-vector stack arguments and conservative alias/clobber gaps
+in non-PIE, PIE and rebased PIE. Real native decompilation failure and production
+copy cancellation preserve neighboring observations and existing outputs.
+The saved analyst types remain ordinary four-element arrays; debugger-injected
+native vector calls are not claimed. The GCC reference boundary correction
+preserves identical executable instructions. See `docs/AARCH64-VECTOR-STORAGE.md`.
+P2.3–P2.3c and issues #68–#71 remain open.
+
 **CONFIRMED local AArch64 selection candidate; full scope remains open:**
 Language/compiler and ELF metadata checks now preserve recovered knowledge while
 restricting unsupported debugger-injected calls, including typed callbacks.
