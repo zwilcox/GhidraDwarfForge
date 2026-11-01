@@ -166,6 +166,9 @@ jobs:
       - name: Validate relocated standalone checker configuration
         run: python3 src/test/integration/dwarfdump-configuration.py "$PWD/validation-tool"
 
+      - name: Validate GNU frame terminators and malformed-prefix rejection
+        run: python3 src/test/integration/dwarfdump-eh-terminators.py "$PWD/validation-tool/bin/dwarfdump"
+
       - name: Validate complete bounded diagnostics and allocation rollback
         run: |
           sources=(build/test-results/validation-tool-build/build.*/libdwarf-2.3.2)
@@ -188,12 +191,14 @@ jobs:
             build/test-results/validation-tool-build/**/patch.log
             build/test-results/validation-tool-build/**/reader-patch.log
             build/test-results/validation-tool-build/**/diagnostic-patch.log
+            build/test-results/validation-tool-build/**/terminator-patch.log
             build/test-results/validation-tool-build/**/config.log
             build/test-results/validation-tool-build/**/make.log
             build/test-results/validation-tool-build/**/dependencies.txt
             build/test-results/validation-tool-build/**/version.txt
             build/test-results/dwarfdump-diagnostic-capacity/
             build/test-results/dwarfdump-configuration/
+            build/test-results/dwarfdump-eh-terminators/
           if-no-files-found: warn
           retention-days: 14
 

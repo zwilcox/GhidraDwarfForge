@@ -1,0 +1,19 @@
+--- a/src/lib/libdwarf/dwarf_frame2.c
++++ b/src/lib/libdwarf/dwarf_frame2.c
+@@ -405,6 +405,16 @@
+     while (frame_ptr < section_ptr_end) {
+ 
+         struct cie_fde_prefix_s prefix;
++
++        /*  GNU .eh_frame terminates at a four-byte zero length, even
++            in a big-endian ELF64 object. Do not send that terminator
++            through the legacy IRIX eight-byte length heuristic.
++            Short prefixes and .debug_frame retain the existing checks. */
++        if (use_gnu_cie_calc && section_ptr_end - frame_ptr >= 4 &&
++            !frame_ptr[0] && !frame_ptr[1] &&
++            !frame_ptr[2] && !frame_ptr[3]) {
++            break;
++        }
+ 
+         /*  First read in the 'common prefix' to
+             figure out what we are

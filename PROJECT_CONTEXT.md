@@ -1,5 +1,13 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED MIPS reference investigation; full profile remains incomplete:**
+Private GCC/glibc N32 and N64 non-PIE compiler references execute and pass typed
+GDB floating-value checks. N64 exposed a validation-consumer bug in four-byte
+GNU frame termination; a validation-only correction and malformed-input controls
+are under test. FPXX runtime-mode experiments retain distinct big/little-endian
+failures rather than claiming a universal reference. See
+`docs/research/MIPS-ABI-COMPLETION.md`. All four target issues remain open.
+
 **CONFIRMED AArch64 computed-allocation defect; candidate acceptance in progress:**
 A register-exhausted structure is split incorrectly by the pinned Ghidra default
 model, causing wrong exported member and following-argument values. An isolated,
