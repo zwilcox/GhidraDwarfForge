@@ -138,3 +138,13 @@ committed head independently.
 integration. The umbrella additionally retains ABI selection,
 short-vector/narrow/alignment cases and the complete original #68 requirement
 map. Issues #69–#71 retain all their distinct architecture work.
+
+
+**CONFIRMED hosted review correction:** PR121's first run reached an older
+`FormalFunctionReturnSmoke` assertion requiring all forced-indirect arguments
+to be omitted. Its safety intent is now checked explicitly: the unchanged
+AArch64 nop/return fixture must keep the 24-byte formal type and emit the
+object's `DW_OP_bregx` address throughout its body, never a `DW_OP_regx` pointer
+value. All five target variants, immutable reopen and cancellation checks pass
+(348 assertions), as do the 34 new indirect-carrier checks. Production code is
+unchanged by this test correction; the full hosted gate must pass the new head.
