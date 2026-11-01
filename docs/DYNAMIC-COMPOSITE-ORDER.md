@@ -1,5 +1,19 @@
 # Ghidra register joins and object order
 
+**CONFIRMED follow-up CI regression correction:** run `41343539954` reached
+an older dynamic-composite runtime assertion that required the O32 scalar to
+be unavailable for its entire body. The delayed-return proof now preserves
+its exact unsigned 64-bit value until `lui a0` overwrites the first carrier.
+The test independently verifies the first five machine instructions, requires
+correct values through the clobber instruction, and requires unavailable values
+from the following PC through return. It also decodes the exact two-register
+DWARF location-list bytes and end marker; it does not accept an omission report
+as its own oracle. Fresh big/little-endian compiler, computed-storage and
+converted-custom-storage runs pass with GNU/LLVM/strict validation,
+deterministic reruns and protected-input checks. Production code is unchanged.
+Receipts: `build/mips-wide-allocation/dynamic-composite-correction-v2.json`.
+The required hosted gate must pass again on the updated test commit.
+
 **CONFIRMED correction accepted in PR #45; main-push gate pending:** admitting Ghidra's valid
 computed parameter storage exposes an ordering error for parameters split across
 registers. An ordinary two-int structure passed as `{-19, 37}` appears in GDB
