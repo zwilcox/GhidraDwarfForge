@@ -591,3 +591,11 @@ The export harness covers exec, PIE and rebased PIE, immutable deterministic
 exports, raw location lists, validators and preservation. The old-package
 `--expect-baseline-gap` option is a reproduction only. Call-memory and broader
 control-flow acceptance remain separate; see `docs/LOCAL-CALL-LIFETIMES.md`.
+
+`stack-call-lifetimes.c` adds compiler-owned stack locals across callee-owned
+stack writes, nested calls and an aliasing write. The shared local-call harness
+uses `--storage stack`; its offset bootstrap reads actual compiler DWARF and
+process memory before Ghidra curation. Canary insertion is explicitly disabled
+to isolate the tested calls from an unsupported external failure path. Register
+mode now also covers conditional calls, loops, body holes and temporary callee
+clobbers. See `docs/CALL-MEMORY-EFFECTS.md` for evidence and remaining controls.

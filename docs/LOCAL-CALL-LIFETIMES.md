@@ -5,6 +5,10 @@ P1.11a/#67 and P3.3/#73 remain open. This component connects saved later-local
 definitions to the existing fully decoded direct-call graph proof. It does not
 finish callee memory effects, stack restoration, or the final integration gate.
 
+**Current extension:** `CALL-MEMORY-EFFECTS.md` supersedes the memory-omission
+limit and missing branch/loop/split controls described in this initial
+checkpoint. Its remaining acceptance list is still open.
+
 ## Behavior and evidence
 
 The previous scope package (`64c91bc6756cac18b9e471949563839fa53be30c39c2afccbbd3006c5c8ac36d`)

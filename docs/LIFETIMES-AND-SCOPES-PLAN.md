@@ -18,6 +18,10 @@ change (`docs/ARTIFICIAL-OBJECT-ROLES.md`); its hosted gate is pending.
 P1.11a and P3.3 remain open.
 
 
+**CONFIRMED local memory extension:** `CALL-MEMORY-EFFECTS.md` records exact
+callee stack/memory effects and their runtime evidence. Keep its remaining
+composition and integration requirements alongside all original rows below.
+
 ## P1.11a requirements
 
 | Requirement | Starting evidence | Remaining acceptance |

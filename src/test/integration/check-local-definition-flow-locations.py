@@ -91,6 +91,22 @@ for function, start in offsets.items():
         actual.append((low, high, expression.hex()))
         cursor += 1 + length
     record = labels[function]
+    if record.get("allowStorageMigration"):
+        coverage = []
+        for low, high, encoded in actual:
+            expression = bytes.fromhex(encoded)
+            if expression[0] == 0x90:
+                assert len(expression) == 2 and expression[1] <= (16 if target == "x86_64" else 31)
+            else:
+                assert expression[0] == 0x92 and expression[1] == (7 if target == "x86_64" else 31)
+                assert len(expression) == 3 and expression[2] < 0x80
+            if coverage and coverage[-1][1] == low:
+                coverage[-1][1] = high
+            else:
+                coverage.append([low, high])
+        assert coverage == record["available"], (function, coverage, record["available"])
+        checked[function] = actual
+        continue
     expected = [(low, high, bytes([0x90, record.get("dwarfRegister", register)]).hex())
         for low, high in record["available"]]
     assert actual == expected, (function, actual, expected)

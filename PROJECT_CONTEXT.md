@@ -1,5 +1,16 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local call-memory checkpoint; full goal remains open:**
+callee-entry-relative writes, released frames and exact return SP now preserve
+proven nonoverlapping caller slots. Twelve x86-64/AArch64 register/stack address
+configurations, twelve runtime regressions and nine actual Java 21 suites pass.
+Conditional/loop/split calls, temporary register clobbers, nested stack effects
+and a real aliasing write are checked against compiler DWARF and GDB. Broader
+call-memory controls, mutable/piece/scope composition, failure/cancellation and
+hosted integration remain required. See `docs/CALL-MEMORY-EFFECTS.md`.
+P1.11a/#67 and P3.3/#73 remain open.
+
+
 **CONFIRMED local call-register checkpoint; full lifetime/scope work incomplete:**
 saved later locals now use inspected call graphs and caller return successors.
 Six x86-64/AArch64 exec/PIE/rebased roles, raw locations, compiler/Forge GDB,

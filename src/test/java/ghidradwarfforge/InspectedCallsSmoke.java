@@ -41,7 +41,7 @@ public final class InspectedCallsSmoke {
             for (int bytes : new int[] { 4, 8 }) {
                 for (String shape : List.of("branch", "loop", "split", "nested", "recursive",
                         "clobber", "nested-clobber", "undecoded", "alternate", "indirect", "unknown-abi",
-                        "caller-branch", "caller-loop", "caller-split", "stack-retirement")) {
+                        "caller-branch", "caller-loop", "caller-split", "stack-retirement", "stack-preservation")) {
                     check(x86, bytes, shape);
                 }
             }
@@ -83,7 +83,7 @@ public final class InspectedCallsSmoke {
                 caller.emit(x86 ? "4d31e4" : "f4031faa"); caller.label("third");
                 caller.emit(nop); caller.call(0x2000); caller.emit(nop + (x86 ? "4d31ed" : "f5031faa"));
                 caller.label("lost"); caller.emit(nop + ret);
-                if (shape.equals("stack-retirement")) {
+                if (shape.startsWith("stack-")) {
                     caller = new Code(x86, 0x1000);
                     caller.emit(x86 ? "4883ec20" : "ff8300d1");
                     caller.emit(x86 ? (bytes == 4 ? "897c2408" : "48897c2408") : (bytes == 4 ? "e00b00b9" : "e00700f9"));
@@ -106,6 +106,14 @@ public final class InspectedCallsSmoke {
                 if (shape.equals("split") || shape.equals("undecoded")) root.emit(x86 ? "cccccc" : "000020d4");
                 root.label("right"); root.emit(nop);
                 root.label("join"); root.emit(nop + ret);
+                // The retirement control includes an actual unproved pointer store;
+                // the otherwise identical preservation case has no such effect.
+                if (shape.equals("stack-retirement")) {
+                    // Insert before the terminal return, keeping all recorded branch labels.
+                    root = new Code(x86, 0x2000);
+                    root.emit(x86 ? "c60600" : "3f000039");
+                    root.emit(ret);
+                }
                 Function callee = install(program, "root", root, shape.equals("split"));
                 if (shape.startsWith("nested")) {
                     var nested = new Code(x86, 0x3000);
@@ -130,16 +138,17 @@ public final class InspectedCallsSmoke {
                 var registers = TargetRegisterMap.forTarget(x86 ? "x86_64" : "aarch64");
                 var parameter = function.getParameter(0);
                 var original = GhidraVariableStorage.stableParameter(program, function, parameter, registers, TaskMonitor.DUMMY);
-                var intervals = shape.startsWith("caller-") || shape.equals("stack-retirement") ? StackValueFlow.prove(program, function, parameter, registers, TaskMonitor.DUMMY) :
+                var intervals = shape.startsWith("caller-") || shape.startsWith("stack-") ? StackValueFlow.prove(program, function, parameter, registers, TaskMonitor.DUMMY) :
                     GhidraVariableStorage.parameterPrefix(program, function, parameter, registers, original, TaskMonitor.DUMMY);
-                if (shape.equals("stack-retirement")) {
+                if (shape.startsWith("stack-")) {
                     require(calls != null && calls.size() == 1, "stack call graph");
                     long before = 0x1000 + caller.at("first");
                     require(intervals.stream().anyMatch(i -> i.start() <= before && before < i.end() &&
                         i.storage() instanceof ghidradwarfforge.locations.VariableStorageModel.RegisterRelativeStorage), "pre-call stack fact " + context);
                     long after = 0x1000 + caller.at("afterCall");
-                    require(intervals.stream().noneMatch(i -> i.end() > after && i.storage().available()),
-                        "callee memory was assumed unchanged " + context + intervals);
+                    boolean survives = intervals.stream().anyMatch(i -> i.start() <= after && after < i.end() && i.storage().available());
+                    require(survives == shape.equals("stack-preservation"),
+                        "callee memory effects disagree " + context + intervals);
                     return;
                 }
                 if (rejected) require(intervals.isEmpty(), "rejected graph escaped " + context);

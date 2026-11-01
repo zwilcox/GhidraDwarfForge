@@ -12,6 +12,12 @@ is historical at b71bfd9 where it says the local decoder rejects calls.
 Remaining call-memory, broader local-call controls and combined acceptance are
 still required; this checkpoint does not close either umbrella.
 
+**CONFIRMED subsequent memory checkpoint:** `CALL-MEMORY-EFFECTS.md` adds
+selected nonaliasing caller-slot survival and exact return SP with twelve
+runtime configurations. The remaining partial/release/unknown-SP, saved mutable
+identity, independent-piece, lexical/failure and hosted acceptance are explicit;
+the original historical table below is not a current failure report.
+
 ## Requirement evidence
 
 | Requirement | Current evidence | Outstanding proof or work |

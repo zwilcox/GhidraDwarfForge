@@ -442,6 +442,18 @@ tasks.register("localCallLifetimeSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/local-call-lifetime/cache").absolutePath
 }
 
+tasks.register("callMemoryEffectsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks exact callee stack and memory effects through raw instruction control flow"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.CallMemoryEffectsSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/call-memory-effects/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/call-memory-effects/cache").absolutePath
+}
+
 tasks.register("definedRegisterLocalSmoke", JavaExec) {
     group = "verification"
     description = "Checks that a curated local's recorded register definition completes before availability"

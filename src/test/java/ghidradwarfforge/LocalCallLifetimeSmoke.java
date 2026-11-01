@@ -32,8 +32,9 @@ public final class LocalCallLifetimeSmoke {
                 check(x86, mode);
             }
             for (String identity : List.of("merged-register", "stack-copy", "stack-only", "merged-stack")) {
-                checkMapped(x86, identity, false);
-                checkMapped(x86, identity, true);
+                for (String effect : List.of("preserve", "clobber", "unknown", "overlap", "adjacent")) {
+                    checkMapped(x86, identity, effect);
+                }
             }
         }
         System.out.println("local-call-lifetime-smoke=PASS checks=" + checks);
@@ -115,7 +116,8 @@ public final class LocalCallLifetimeSmoke {
         finally { program.release(owner); }
     }
 
-    private static void checkMapped(boolean x86, String identity, boolean clobber) throws Exception {
+    private static void checkMapped(boolean x86, String identity, String effect) throws Exception {
+        boolean clobber = effect.equals("clobber");
         boolean stack = !identity.equals("merged-register");
         boolean merged = identity.startsWith("merged-");
         String nop = x86 ? "90" : "1f2003d5";
@@ -152,8 +154,14 @@ public final class LocalCallLifetimeSmoke {
         int lost = code.length() / 2;
         code.append(x86 ? "c3" : "c0035fd6");
         var machine = HexFormat.of().parseHex(code.toString());
-        var calleeCode = HexFormat.of().parseHex((clobber ? (x86 ? "49c7c42a000000" : "530580d2") : "") +
-            (x86 ? "c3" : "c0035fd6"));
+        String calleeEffect = switch (effect) {
+            case "clobber" -> x86 ? "49c7c42a000000" : "530580d2";
+            case "unknown" -> x86 ? "c60600" : "3f000039";
+            case "overlap" -> x86 ? "c644241200" : "ff2b0039";
+            case "adjacent" -> x86 ? "c644241800" : "ff430039";
+            default -> "";
+        };
+        var calleeCode = HexFormat.of().parseHex(calleeEffect + (x86 ? "c3" : "c0035fd6"));
         var language = DefaultLanguageService.getLanguageService().getLanguage(new LanguageID(
             x86 ? "x86:LE:64:default" : "AARCH64:LE:64:v8A"));
         Object owner = new Object();
@@ -199,15 +207,15 @@ public final class LocalCallLifetimeSmoke {
                     var rejected = GhidraVariableStorage.stableLocal(program, function, local, registers, TaskMonitor.DUMMY);
                     locations = StackLocalLifetime.prove(program, function, local, registers, rejected, TaskMonitor.DUMMY);
                 }
-                String context = (x86 ? "x86/" : "arm/") + identity + "/clobber=" + clobber + " " + locations;
+                String context = (x86 ? "x86/" : "arm/") + identity + "/effect=" + effect + " " + locations;
                 require(!available(locations, 0x1000 + definition), "unfinished local " + context);
                 require(available(locations, 0x1000 + ready), "initialized local " + context);
                 require(available(locations, 0x1000 + call), "before call " + context);
-                // Stack-owned identities also need a memory-effect proof: an
-                // unmodeled callee write could change the logical local while
-                // leaving its old register copy untouched. That separate
-                // proof is still pending; do not present stale copies here.
-                boolean survives = !clobber && !stack;
+                // A proven untouched slot survives a register clobber. A saved
+                // assignment that retired the old slot still needs its current
+                // register carrier; stale bytes cannot resurrect that value.
+                boolean survives = (!clobber || identity.equals("stack-copy") || identity.equals("stack-only")) &&
+                    !(stack && (effect.equals("unknown") || effect.equals("overlap")));
                 require(available(locations, 0x1000 + after) == survives, "after call " + context);
                 require(available(locations, 0x1000 + reload) == survives, "stale-slot reload " + context);
                 require(!available(locations, 0x1000 + lost), "restored caller register " + context);
