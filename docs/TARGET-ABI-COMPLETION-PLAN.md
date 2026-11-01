@@ -114,3 +114,14 @@ debugger calls, not an invented native vector type. See
 `AARCH64-VECTOR-STORAGE.md` for the compiler-reference investigation and exact
 acceptance. The full original AArch64 scope audit, hosted gates and protected
 integration remain required, as do all remaining MIPS, ARM32 and i386 rows.
+
+## AArch64 allocation and shared-library follow-up
+
+**CONFIRMED defect; candidate acceptance in progress:** actual narrow/aligned and
+register-exhausted aggregate fixtures exposed a wrong computed split between the
+last integer register and stack. The candidate corrects only the audited dynamic
+prototype, preserving explicit storage and the saved program. Shared-library
+variants explicitly load the sidecar at the real mapped bias. See
+`AARCH64-PARAMETER-ALLOCATION.md` for the full positive/negative contract and
+reference limitations. No issue is closed before final package, regression,
+hosted and protected-integration evidence is reconciled.

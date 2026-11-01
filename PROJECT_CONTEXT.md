@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED AArch64 computed-allocation defect; candidate acceptance in progress:**
+A register-exhausted structure is split incorrectly by the pinned Ghidra default
+model, causing wrong exported member and following-argument values. An isolated,
+read-only prototype correction preserves explicit analyst storage and has passing
+local runtime/model evidence. The expanded fixture includes narrow/aligned,
+chained and named variadic arguments plus shared/rebased-shared loading.
+See `docs/AARCH64-PARAMETER-ALLOCATION.md` for the exact correction, remaining
+acceptance and the unchanged-decompiler-output limitation. P2.3–P2.3c remain open.
+
 **CONFIRMED local AArch64 SIMD storage candidate; hosted acceptance pending:**
 Separate integer/float lane fixtures now prove 128-bit register copies,
 spill/reload, ninth-vector stack arguments and conservative alias/clobber gaps

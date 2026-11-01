@@ -53,6 +53,8 @@ def main(baseline, ghidra):
     for name in ('abi.input', 'abi.reference', 'metadata.json', 'labels.txt', 'curated.json',
             'compiler-observations.json', 'compiler-returns.json', 'compiler-runtime-gdb.log'):
         shutil.copy2(baseline / name, case / name)
+    if (baseline / 'abi.driver').exists():
+        shutil.copy2(baseline / 'abi.driver', case / 'abi.driver')
     scripts = case / 'scripts'
     scripts.mkdir()
     script_names = ('AbiDecompilerFailureExport.java', 'CancelDuringElfCopy.java',
@@ -104,7 +106,7 @@ def main(baseline, ghidra):
     cancel_project = case / 'cancel-project'
     cancel_project.mkdir()
     role = json.loads((case / 'metadata.json').read_text())['role']
-    rebase = ['-postScript', 'RebaseFixtureProgram.java', '0x2000000'] if role == 'pie-rebased' else []
+    rebase = ['-postScript', 'RebaseFixtureProgram.java', '0x2000000'] if role.endswith('-rebased') else []
     log = run('cancel-import', [ghidra / 'support/analyzeHeadless', cancel_project, 'Aarch64Abi',
         '-import', padded, '-loader', 'ElfLoader', '-analysisTimeoutPerFile', '120', '-scriptPath', scripts,
         *rebase, '-postScript', 'ProbeAarch64Abi.java', 'curate', case / 'labels.txt', case / 'cancel-curated.json'], clean=False)

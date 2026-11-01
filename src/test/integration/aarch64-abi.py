@@ -3,6 +3,7 @@
 import argparse
 import importlib.util
 import json
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -19,7 +20,7 @@ spec.loader.exec_module(support)
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
-    parser.add_argument('--role', choices=('exec', 'pie', 'pie-rebased'), default='exec')
+    parser.add_argument('--role', choices=('exec', 'pie', 'pie-rebased', 'shared', 'shared-rebased'), default='exec')
     parser.add_argument('--compiler', default='aarch64-linux-gnu-gcc',
         help='AAPCS64 GCC or clang executable (clang uses the installed AArch64 GNU toolchain)')
     parser.add_argument('--with-controls', action='store_true',
@@ -42,7 +43,7 @@ def main():
             support.require_clean(case / (name + '.log'))
 
     fixture = source.parent / 'fixtures/aarch64-abi.c'
-    protected = [fixture, Path(__file__), source / 'aarch64-abi-gdb.py', source / 'aarch64-abi-gdb.sh',
+    protected = [fixture, fixture.with_suffix('.h'), Path(__file__), source / 'aarch64-abi-gdb.py', source / 'aarch64-abi-gdb.sh',
         source / 'aarch64-abi-oracle.py', source / 'elf-layout-gdb-oracle.sh',
         source / 'aarch64-abi-locations.py', source / 'check-stack-first-use.py',
         source / 'aarch64-abi-controls.py', source / 'ghidra_scripts/AbiDecompilerFailureExport.java',
@@ -56,12 +57,21 @@ def main():
     clang = 'clang' in Path(args.compiler).name
     compiler_flags = ['--target=aarch64-linux-gnu', '--gcc-toolchain=/usr'] if clang else [
         '-gno-variable-location-views', '-fno-ipa-sra', '-fno-ipa-cp']
-    image_flags = ['-fno-pie', '-no-pie'] if args.role == 'exec' else ['-fPIE', '-pie']
+    shared = args.role.startswith('shared')
+    image_flags = ['-fPIC', '-shared', '-DFORGE_ABI_LIBRARY', '-Wl,-soname,abi.input'] if shared else (
+        ['-fno-pie', '-no-pie'] if args.role == 'exec' else ['-fPIE', '-pie'])
     run('compile', [args.compiler, *compiler_flags, '-O1', '-g', '-gdwarf-5',
         '-fno-inline', '-fno-omit-frame-pointer', *image_flags,
         '-Wl,--build-id=sha1', fixture, '-o', reference])
     run('strip', ['aarch64-linux-gnu-objcopy', '--strip-all', reference, binary])
-    run('native-result', ['qemu-aarch64-static', '-L', '/usr/aarch64-linux-gnu', binary])
+    runtime = binary
+    if shared:
+        runtime = case / 'abi.driver'
+        run('compile-driver', [args.compiler, *compiler_flags, '-O1', '-g', '-gdwarf-5',
+            '-DFORGE_ABI_DRIVER', '-fPIE', '-pie', fixture, '-L' + str(case), '-l:abi.input',
+            '-Wl,-rpath,$ORIGIN', '-o', runtime])
+        before[str(runtime)] = support.digest(runtime)
+    run('native-result', ['qemu-aarch64-static', '-L', '/usr/aarch64-linux-gnu', runtime])
     before.update({str(path): support.digest(path) for path in (reference, binary)})
     write('protected-before.json', before)
     run('symbols', ['aarch64-linux-gnu-nm', '-n', reference])
@@ -72,9 +82,15 @@ def main():
             assert fields[1] == 'T' and fields[2] not in symbols, fields
             symbols[fields[2]] = int(fields[0], 16)
     assert set(symbols) == {'abi_words', 'abi_floats', 'abi_pair', 'abi_large',
-        'abi_large_stack', 'abi_large_spill', 'abi_large_spill_alias', 'abi_hfa', 'abi_hfa_exhausted'}
+        'abi_large_stack', 'abi_large_spill', 'abi_large_spill_alias', 'abi_hfa', 'abi_hfa_exhausted',
+        'abi_narrow_stack', 'abi_aligned_stack', 'abi_aligned_register', 'abi_pair_stack', 'abi_pair_chain', 'abi_pair_variadic'}
     (case / 'labels.txt').write_text(''.join(name + ' ' + hex(address) + '\n' for name, address in symbols.items()))
-    write('metadata.json', {'role': args.role, 'compiler': args.compiler, 'symbols': symbols})
+    metadata = {'role': args.role, 'compiler': args.compiler, 'symbols': symbols}
+    if shared:
+        run('shared-sections', ['readelf', '-SW', binary])
+        text, = re.findall(r'\]\s+\.text\s+PROGBITS\s+([0-9a-f]+)\s+', (case / 'shared-sections.log').read_text())
+        metadata.update({'driver': runtime.name, 'textAddress': int(text, 16)})
+    write('metadata.json', metadata)
     for name, command in [('original-elf', ['readelf', '-h', '-SW', '-l', '-n', binary]),
             ('instructions', ['aarch64-linux-gnu-objdump', '-d', reference]),
             ('compiler-info', ['readelf', '--debug-dump=info,loc', reference])]:
@@ -85,7 +101,7 @@ def main():
     scripts.mkdir()
     shutil.copyfile(source / 'ghidra_scripts/ProbeAarch64Abi.java', scripts / 'ProbeAarch64Abi.java')
     shutil.copyfile(source / 'ghidra_scripts/RebaseFixtureProgram.java', scripts / 'RebaseFixtureProgram.java')
-    rebase = ['-postScript', 'RebaseFixtureProgram.java', '0x2000000'] if args.role == 'pie-rebased' else []
+    rebase = ['-postScript', 'RebaseFixtureProgram.java', '0x2000000'] if args.role.endswith('-rebased') else []
     run('import', [ghidra / 'support/analyzeHeadless', project, 'Aarch64Abi', '-import', binary,
         '-analysisTimeoutPerFile', '120', '-scriptPath', scripts, *rebase, '-postScript', 'ProbeAarch64Abi.java',
         'curate', case / 'labels.txt', case / 'curated.json'], clean=False)
@@ -94,7 +110,7 @@ def main():
     curated = json.loads((case / 'curated.json').read_text())
     assert Path(unquote(urlsplit(curated['exporterOrigin']).path)).resolve() == (module / 'lib/GhidraDwarfForge.jar').resolve()
     assert (curated['language'], curated['compiler'], curated['pointerBytes']) == ('AARCH64:LE:64:v8A', 'default', 8)
-    if args.role == 'pie-rebased':
+    if args.role.endswith('-rebased'):
         assert curated['delta'] >= 0x2000000, curated['delta']
     project_before = {str(path.relative_to(project)): support.digest(path) for path in project.rglob('*') if path.is_file()}
     write('project-before.json', project_before)
@@ -114,6 +130,9 @@ def main():
         current = [support.digest(output), support.digest(Path(str(output) + '.c'))]
         assert hashes is None or hashes == current
         hashes = current
+    run('compiler-gnu', ['readelf', '-hSWn', '--debug-dump=info,abbrev,aranges,decodedline,loc', reference])
+    run('compiler-llvm', ['llvm-dwarfdump', '--verify', reference])
+    run('compiler-strict', ['python3', source / 'check-dwarfdump.py', reference, case / 'compiler-strict.log', '--original', binary])
     run('gnu', ['readelf', '-h', '-SW', '-n', '--debug-dump=info,abbrev,aranges,decodedline,loc', output])
     run('llvm', ['llvm-dwarfdump', '--verify', output])
     run('strict-driver', ['python3', source / 'check-dwarfdump.py', output, case / 'strict.log', '--original', binary])

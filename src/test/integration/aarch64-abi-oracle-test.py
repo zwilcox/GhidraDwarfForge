@@ -32,6 +32,18 @@ class AbiOracleTest(unittest.TestCase):
             changed[index] ^= 1
             self.assertIsNone(oracle.reference_window('abi_large_stack', 0, changed))
 
+    def test_chain_pointer_window_requires_exact_load_and_entry(self):
+        load = bytes.fromhex('e71b40f9')
+        self.assertIsNotNone(oracle.reference_window('abi_pair_chain', 0, load))
+        for offset in (-4, 1, 4, 8):
+            self.assertIsNone(oracle.reference_window('abi_pair_chain', offset, load))
+        for index in range(4):
+            changed = bytearray(load)
+            changed[index] ^= 1
+            self.assertIsNone(oracle.reference_window('abi_pair_chain', 0, changed))
+        self.assertIsNone(oracle.reference_window('abi_pair_stack', 0, load))
+        self.assertIsNone(oracle.reference_window('abi_pair_chain', 0, load[:-1]))
+
     def test_raw_words_and_indirect_stack_do_not_round_or_confuse_pointer_with_object(self):
         values = [2**62 + 11, -(2**62) + 13, 17, -19, 23, -29, 31, -37]
         registers = {'x' + str(i): struct.pack('<q', value) for i, value in enumerate(values)}

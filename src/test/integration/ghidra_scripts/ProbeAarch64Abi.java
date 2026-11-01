@@ -14,6 +14,10 @@ import ghidra.program.model.data.DataTypeConflictHandler;
 import ghidra.program.model.data.DoubleDataType;
 import ghidra.program.model.data.FloatDataType;
 import ghidra.program.model.data.LongLongDataType;
+import ghidra.program.model.data.Integer16DataType;
+import ghidra.program.model.data.SignedByteDataType;
+import ghidra.program.model.data.UnsignedShortDataType;
+import ghidra.program.model.data.IntegerDataType;
 import ghidra.program.model.data.StructureDataType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Parameter;
@@ -73,6 +77,10 @@ public class ProbeAarch64Abi extends GhidraScript {
         var manager = currentProgram.getDataTypeManager();
         var word = new LongLongDataType(manager);
         var real = new DoubleDataType(manager);
+        var wide = new Integer16DataType(manager);
+        var tiny = new SignedByteDataType(manager);
+        var half = new UnsignedShortDataType(manager);
+        var integer = new IntegerDataType(manager);
         var pair = structure("AbiPair", word, 2, curate);
         var large = structure("AbiLarge", word, 3, curate);
         var hfa = structure("AbiHfa", new FloatDataType(manager), 4, curate);
@@ -94,12 +102,14 @@ public class ProbeAarch64Abi extends GhidraScript {
         result.put("convention", convention);
         var functions = new ArrayList<Object>();
         for (String name : List.of("abi_words", "abi_floats", "abi_pair", "abi_large",
-                "abi_large_stack", "abi_large_spill", "abi_large_spill_alias", "abi_hfa", "abi_hfa_exhausted")) {
+                "abi_large_stack", "abi_large_spill", "abi_large_spill_alias", "abi_hfa", "abi_hfa_exhausted",
+                "abi_narrow_stack", "abi_aligned_stack", "abi_aligned_register", "abi_pair_stack", "abi_pair_chain", "abi_pair_variadic")) {
             monitor.checkCancelled();
             Function function = getFunctionAt(toAddr(Math.addExact(labels.get(name), delta)));
             if (function == null) throw new IllegalStateException("missing function " + name);
             DataType returnType = switch (name) {
-                case "abi_words", "abi_large_stack" -> word;
+                case "abi_words", "abi_large_stack", "abi_narrow_stack", "abi_pair_stack", "abi_pair_chain", "abi_pair_variadic" -> word;
+                case "abi_aligned_stack", "abi_aligned_register" -> wide;
                 case "abi_floats", "abi_hfa_exhausted" -> real;
                 case "abi_pair" -> pair;
                 case "abi_large", "abi_large_spill", "abi_large_spill_alias" -> large;
@@ -107,18 +117,46 @@ public class ProbeAarch64Abi extends GhidraScript {
             };
             if (curate) {
                 var parameters = new ArrayList<Parameter>();
-                int scalars = name.equals("abi_words") || name.equals("abi_floats") ? 10 :
-                    name.equals("abi_hfa_exhausted") ? 7 : name.equals("abi_large_stack") ? 8 : 0;
-                for (int index = 0; index < scalars; index++) {
-                    parameters.add(new ParameterImpl(Character.toString('a' + index),
-                        name.equals("abi_words") || name.equals("abi_large_stack") ? word : real,
+                if (name.equals("abi_aligned_register")) {
+                    parameters.add(new ParameterImpl("first", word, currentProgram, SourceType.USER_DEFINED));
+                    parameters.add(new ParameterImpl("wide", wide, currentProgram, SourceType.USER_DEFINED));
+                    parameters.add(new ParameterImpl("tail", word, currentProgram, SourceType.USER_DEFINED));
+                }
+                else if (name.equals("abi_narrow_stack") || name.equals("abi_aligned_stack") ||
+                        name.equals("abi_pair_stack") || name.equals("abi_pair_chain") || name.equals("abi_pair_variadic")) {
+                    int words = name.startsWith("abi_pair_") ? 7 : 8;
+                    for (int index = 0; index < words; index++) {
+                        parameters.add(new ParameterImpl(Character.toString('a' + index), word,
+                            currentProgram, SourceType.USER_DEFINED));
+                    }
+                    String[] names = name.equals("abi_narrow_stack") ? new String[] {"low", "high", "middle", "wide"} :
+                        name.equals("abi_aligned_stack") ? new String[] {"lead", "wide", "tail"} : new String[] {"value", "tail"};
+                    DataType[] types = name.equals("abi_narrow_stack") ? new DataType[] {tiny, half, integer, word} :
+                        name.equals("abi_aligned_stack") ? new DataType[] {tiny, wide, tiny} : new DataType[] {pair, word};
+                    for (int index = 0; index < names.length; index++) {
+                        parameters.add(new ParameterImpl(names[index], types[index], currentProgram, SourceType.USER_DEFINED));
+                    }
+                    if (name.equals("abi_pair_chain")) {
+                        parameters.add(new ParameterImpl("wide", wide, currentProgram, SourceType.USER_DEFINED));
+                        parameters.add(new ParameterImpl("object", large, currentProgram, SourceType.USER_DEFINED));
+                        parameters.add(new ParameterImpl("floating", real, currentProgram, SourceType.USER_DEFINED));
+                    }
+                }
+                else {
+                    int scalars = name.equals("abi_words") || name.equals("abi_floats") ? 10 :
+                        name.equals("abi_hfa_exhausted") ? 7 : name.equals("abi_large_stack") ? 8 : 0;
+                    for (int index = 0; index < scalars; index++) {
+                        parameters.add(new ParameterImpl(Character.toString('a' + index),
+                            name.equals("abi_words") || name.equals("abi_large_stack") ? word : real,
+                            currentProgram, SourceType.USER_DEFINED));
+                    }
+                    if (scalars < 10) parameters.add(new ParameterImpl("value",
+                        name.equals("abi_hfa_exhausted") ? hfa : name.equals("abi_large_stack") ? large : returnType,
+                        currentProgram, SourceType.USER_DEFINED));
+                    if (name.equals("abi_hfa_exhausted")) parameters.add(new ParameterImpl("tail", real,
                         currentProgram, SourceType.USER_DEFINED));
                 }
-                if (scalars < 10) parameters.add(new ParameterImpl("value",
-                    name.equals("abi_hfa_exhausted") ? hfa : name.equals("abi_large_stack") ? large : returnType,
-                    currentProgram, SourceType.USER_DEFINED));
-                if (name.equals("abi_hfa_exhausted")) parameters.add(new ParameterImpl("tail", real,
-                    currentProgram, SourceType.USER_DEFINED));
+                function.setVarArgs(name.equals("abi_pair_variadic"));
                 function.setName("curated_" + name, SourceType.USER_DEFINED);
                 function.setReturnType(returnType, SourceType.USER_DEFINED);
                 function.updateFunction(convention, function.getReturn(),

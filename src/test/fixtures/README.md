@@ -639,3 +639,14 @@ whose lack of aliasing is not proven by the exporter. Both programs' actual
 values and returns are checked against source-known constants, raw ABI carriers
 and compiler debug information. See `docs/AARCH64-PROFILE-PLAN.md` for the exact
 consumer limitations, failure/cancellation controls and pending hosted gate.
+
+
+The extended AArch64 ABI fixture shares declarations through `aarch64-abi.h`.
+It additionally tests narrow signed/unsigned arguments after GPR exhaustion,
+128-bit alignment in registers and on the stack, a whole-stack structure after
+seven integer arguments, subsequent aligned/indirect arguments and named
+variadic arguments. Shared and rebased-shared roles build a separate PIE driver
+and explicitly load the stripped library's sidecar at its observed runtime bias.
+The driver result objects are volatile so compiler-reference DWARF also passes
+all required validators. See `docs/AARCH64-PARAMETER-ALLOCATION.md` for the
+computed-storage correction, exact reference boundaries and acceptance evidence.

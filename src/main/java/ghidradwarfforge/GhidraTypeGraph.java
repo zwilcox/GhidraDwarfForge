@@ -133,6 +133,17 @@ public final class GhidraTypeGraph {
             Map<Long, GhidraSyntheticSource.ParameterRecovery> recoveredParameters,
             Map<Long, GhidraStaticRecovery.Result> recoveredStatics)
             throws CancelledException {
+        return extract(program, exportedFunctions, registerMap, rebaseDelta, monitor, diagnostic,
+            recoveredReturns, recoveredParameters, recoveredStatics, GhidraParameterAllocation.UNCHANGED);
+    }
+
+    public static ProgramTypeModel extract(Program program,
+            List<FunctionSymbol> exportedFunctions, TargetRegisterMap registerMap, long rebaseDelta,
+            TaskMonitor monitor, Consumer<String> diagnostic,
+            Map<Long, DataType> recoveredReturns,
+            Map<Long, GhidraSyntheticSource.ParameterRecovery> recoveredParameters,
+            Map<Long, GhidraStaticRecovery.Result> recoveredStatics,
+            GhidraParameterAllocation allocation) throws CancelledException {
         Extractor extractor = new Extractor(program, diagnostic);
         var classScopes = new GhidraClassScopes(program, monitor, diagnostic);
         List<DataType> favoriteTypes = new ArrayList<>(
@@ -182,6 +193,7 @@ public final class GhidraTypeGraph {
             }
             TypeRef returnType = extractor.reserve(formalReturn);
             List<TypeGraph.Parameter> parameters = new ArrayList<>();
+            var correctedStorage = allocation.corrections(function, monitor, diagnostic);
             for (Parameter parameter : function.getParameters()) {
                 DataType formalType = parameter.getFormalDataType();
                 int logicalLength = formalType == null ? parameter.getLength()
@@ -192,18 +204,21 @@ public final class GhidraTypeGraph {
                     parameter.getAutoParameterType() == AutoParameterType.RETURN_STORAGE_PTR,
                     parameter.getAutoParameterType() == AutoParameterType.THIS));
                 if (!parameterName.isBlank() && logicalLength > 0) {
+                    var physical = correctedStorage.getOrDefault(parameter.getOrdinal(), parameter.getVariableStorage());
+                    boolean corrected = correctedStorage.containsKey(parameter.getOrdinal());
                     Storage storage = GhidraVariableStorage.stableParameter(program, function,
-                        parameter, registerMap, monitor);
+                        parameter, physical, registerMap, monitor);
                     boolean indirect = parameter.getVariableStorage() != null &&
                         parameter.getVariableStorage().isForcedIndirect();
                     var prefix = indirect
-                        ? StackValueFlow.proveIndirect(program, function, parameter, registerMap, monitor)
+                        ? StackValueFlow.proveIndirect(program, function, parameter, physical, registerMap, monitor)
+                        : corrected ? List.<GhidraVariableStorage.StorageInterval>of()
                         : GhidraVariableStorage.parameterPrefix(program, function,
                             parameter, registerMap, storage, monitor);
-                    if (prefix.isEmpty() && storage instanceof UnavailableStorage) {
+                    if (!corrected && prefix.isEmpty() && storage instanceof UnavailableStorage) {
                         prefix = StackValueFlow.prove(program, function, parameter, registerMap, monitor);
                     }
-                    if (storage instanceof UnavailableStorage && parameter.getVariableStorage() != null &&
+                    if (!corrected && storage instanceof UnavailableStorage && parameter.getVariableStorage() != null &&
                             parameter.getVariableStorage().getVarnodeCount() > 1) {
                         var pieces = CompositeValueFlow.prove(program, function, parameter, registerMap, monitor);
                         prefix = prefix.isEmpty() ? pieces : StackValueFlow.extendUnavailable(prefix, pieces);
