@@ -52,6 +52,8 @@ cc -O0 -g -gdwarf-5 -fno-pie -no-pie "$work/fixture.c" -o "$work/fixture.elf"
 mkdir "$work/classes"
 javac -d "$work/classes" \
     "$repository_dir/src/main/java/ghidradwarfforge/elf/ElfImage.java" \
+    "$repository_dir/src/main/java/ghidradwarfforge/elf/ElfLocalSymbol.java" \
+    "$repository_dir/src/main/java/ghidradwarfforge/elf/ElfLocalMappingSymbol.java" \
     "$repository_dir/src/main/java/ghidradwarfforge/elf/ElfLocalFunctionSymbol.java" \
     "$repository_dir/src/main/java/ghidradwarfforge/elf/DynamicSymbolMirror.java" \
     "$repository_dir/src/main/java/ghidradwarfforge/elf/ElfLoadAllocations.java" \

@@ -43,3 +43,58 @@ BE32, PIE/shared loading, or any broad ARM big-endian support. Those required
 cases must use source-known runtime values and independent validators, with
 versioned fixtures and harnesses before acceptance. The existing reference
 scripts, source files, logs and hashes are recorded in `reference-receipt.json`.
+
+## Isolated producer endian audit
+
+**CONFIRMED native-only experiment; production support remains PLANNED:** the
+pinned producer's `arm` ISA accepts four-byte target addresses and big-endian
+DWARF data. The header declares `DW_DLC_TARGET_BIGENDIAN = 0x08000000`;
+`dwarf_pro_init.c` selects byte-swapping independently of the ISA relocation
+name. The existing audited JNA declarations were reused without new calls or
+signature changes. An ignored copy of `DwarfProducerSmoke` changes only the
+ARM32 test profile's little-endian boolean to false, leaving production target
+selection and its explicit rejection unchanged.
+
+Using the actual v2 package's Linux native pair and Java 21, all 32 producer
+lifetimes pass initialization, DIE creation, transformation, section collection,
+relocation-record checks, intentional error callbacks and finish. Section
+fingerprints are deterministic; stderr is empty and resident growth is
+8,060,928 bytes against the existing 33,554,432-byte bound. The consumer and
+producer SHA-256 values are respectively
+`613d86accc88ea0fe369b7d6ade0d4fe605a451a7675b0c2453f21b328de81b7` and
+`fa82f4524de69634c7301fa5bdd53327aa89040da92c1d086271df51119531ad`.
+
+The source delta, original source hash, compiled class hashes and raw transcripts
+are retained in the `arm-mixed-modes` worktree under
+`build/arm-mixed-modes/be8-producer-reference/result.json`. This does not emit
+an accepted BE8 sidecar or prove variable/return ABI correctness. The next step
+remains matched-ELF validation and exact Ghidra data/instruction-endian agreement,
+followed by source-known storage/return/call behavior and the required layouts.
+
+## Symbol-only packaging and debugger experiment
+
+**CONFIRMED isolated experiment; production support remains PLANNED:** a
+standalone producer copy emits a symbol-only DIE for the actual compiler-known
+`be8_probe` at `0x100b8`, with its exact 52-byte extent. The smoke fixture's
+synthetic formal parameter is removed; no unproven variable lifetime, type,
+source line or return ABI is emitted. The matched writer preserves ELF32
+big-endian identity and `e_flags=0x05800400`, with no program-header table.
+GNU, LLVM and strict libdwarf accept the artifact with zero reported errors.
+
+Compiler and experimental symbols resolve the same function entry and decode
+all thirteen instructions identically. Two independent QEMU/GDB executions
+check each instruction PC, raw instruction bytes, ARM state and source-known
+register values, the big-endian global bytes `11 22 33 44`, expected return
+`0x1122334b` and normal process exit. All 26 observations agree; original bytes
+are unchanged. Only the exact compiler-corroborated QEMU vDSO warning remains.
+The initial disassembly endpoint included the first inaccessible byte past the
+function; both failing transcripts are retained, and the corrected exclusive
+extent checks all thirteen instructions without extending the function.
+
+The complete experiment sources, binaries, native/validator/debugger transcripts
+and hashes are in the `arm-mixed-modes` worktree's
+`build/arm-mixed-modes/be8-symbol-experiment/result.json`. This is an isolated
+native/packaging experiment, not the production Ghidra exporter. Production BE8
+remains explicitly rejected. Next work is an isolated target/ELF/language
+agreement model and real curated types/storage/runtime, including return/call
+classification, before advertising any supported BE8 profile.

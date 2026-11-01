@@ -686,6 +686,26 @@ tasks.register("arm32ModeSymbolsSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.elf.Arm32ModeSymbolsSmoke"
 }
 
+tasks.register("arm32SectionModesSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks complete ARM mapping records and original ELF binding"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.Arm32SectionModesSmoke"
+}
+
+tasks.register("ghidraArm32SectionModesSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks complete mixed-mode listing evidence and honest gap rejection"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.GhidraArm32SectionModesSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/section-modes/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/section-modes/cache").absolutePath
+}
+
 tasks.register("ghidraArm32FunctionModesSmoke", JavaExec) {
     group = "verification"
     description = "Checks evidence-backed instruction-mode extraction from Ghidra programs"

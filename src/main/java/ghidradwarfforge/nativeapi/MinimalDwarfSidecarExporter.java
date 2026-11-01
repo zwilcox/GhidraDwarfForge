@@ -341,6 +341,18 @@ public final class MinimalDwarfSidecarExporter {
             String sourceFileName, BooleanSupplier cancelled, List<ElfFunctionModeCue> modeCues,
             List<ElfFunctionAlias> aliases, List<ElfFunctionModeCue> aliasModeCues,
             java.util.function.Consumer<String> diagnostic) throws IOException {
+        return export(input, output, consumerLibrary, producerLibrary, functions, syntheticSource,
+            typeModel, sourceFileName, cancelled, modeCues, aliases, aliasModeCues, List.of(), diagnostic);
+    }
+
+    public ExportResult export(Path input, Path output, Path consumerLibrary,
+            Path producerLibrary, List<FunctionSymbol> functions,
+            SyntheticSourceFile syntheticSource, ProgramTypeModel typeModel,
+            String sourceFileName, BooleanSupplier cancelled, List<ElfFunctionModeCue> modeCues,
+            List<ElfFunctionAlias> aliases, List<ElfFunctionModeCue> aliasModeCues,
+            List<ghidradwarfforge.elf.Arm32SectionModes.Evidence> sectionModes,
+            java.util.function.Consumer<String> diagnostic) throws IOException {
+        Objects.requireNonNull(sectionModes, "sectionModes");
         Objects.requireNonNull(cancelled, "cancelled");
         Objects.requireNonNull(modeCues, "modeCues");
         Objects.requireNonNull(aliases, "aliases");
@@ -366,10 +378,14 @@ public final class MinimalDwarfSidecarExporter {
         typeModel = target.applyCallRestrictions(elf, typeModel, cancelled, diagnostic);
         List<ElfLocalFunctionSymbol> modeSymbols = target.planFunctionModeSymbols(
             elf, modeCues, ordered, cancelled, diagnostic);
-        List<ElfLocalFunctionSymbol> supplemental = new ArrayList<>(modeSymbols);
+        List<ghidradwarfforge.elf.ElfLocalSymbol> supplemental = new ArrayList<>(modeSymbols);
         var plannedAliases = target.planFunctionAliases(elf, aliases, ordered, modeSymbols,
             aliasModeCues, cancelled, diagnostic);
         supplemental.addAll(plannedAliases);
+        var reservedFunctions = new ArrayList<>(modeSymbols);
+        reservedFunctions.addAll(plannedAliases);
+        supplemental.addAll(ghidradwarfforge.elf.Arm32SectionModes.plan(
+            elf, sectionModes, reservedFunctions, cancelled, diagnostic));
         var acceptedAliasNames = plannedAliases.stream().map(ElfLocalFunctionSymbol::name)
             .collect(java.util.stream.Collectors.toSet());
         var relatedAliases = aliases.stream().filter(alias -> acceptedAliasNames.contains(alias.name()))

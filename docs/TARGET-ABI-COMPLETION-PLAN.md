@@ -228,3 +228,61 @@ both shared roles. See `ARM-THUMB-EXTENDED-LAYOUTS.md` for receipts and the
 PIC-specific second-argument boundary. Mixed-body modes, per-function ABI/BE8,
 broader storage and exact-head hosted acceptance remain open; #68–#71 retain
 their full original scope.
+
+## ARM32 mixed-body reference
+
+**CONFIRMED ARM32 mixed-body defect and consumer reference:**
+A source-built function switches ARM → Thumb → ARM with twelve independently
+checked executed instructions. The current curated production sidecar passes
+validators but misdecodes Thumb before attachment. A separate standard mapping
+symbol experiment fixes decoding and preserves every DWARF byte; it is not a
+production correction. The reproducible research harness passes and records
+all input/package/program preservation evidence. See
+`docs/research/ARM-MIXED-BODY-MODES.md`. Implementing validated extraction and
+writer support, the remaining ABI profiles and exact-head integration remains
+required; all #68–#71 requirements stay active.
+
+## ARM32 production mixed-body checkpoint
+
+**CONFIRMED local production ARM32 mixed-body mapping progress:**
+The real exporter now emits complete evidence-backed ARM/Thumb/data section
+mappings. Non-PIE, PIE and rebased PIE pass raw mapping checks, compiler-relative
+static decoding, twelve actual instruction observations, strict validators,
+determinism and original/program preservation. Six real decompiler-failure
+exports and three cancellations pass; ELF/writer and real-Ghidra models pass
+33/84 checks. The final package also passes the AArch64 vector/control regression.
+See `docs/ARM-MIXED-MODE-MAPPINGS.md`. Shared/sectionless mixed compositions,
+source-step acceptance, broader ABI requirements and exact-head integration
+remain open; the complete #68–#71 scope is unchanged.
+
+## ARM32 discontiguous mixed-body checkpoint
+
+**CONFIRMED local discontiguous mixed-body acceptance:** eight additional ARM
+layouts pass two-range bodies with an excluded data word, six exact mapping
+boundaries, raw DWARF range/line checks and compiler/Forge runtime comparisons.
+Saved/live/failure exports total 1,672 debugger observations, 32 injected calls,
+16 native failure exports and eight cancellations. CI covers both contiguous
+and split bodies. See `ARM-MIXED-MODE-MAPPINGS.md` for source-map limits,
+receipts and retained harness failures. Inherited-map runtime acceptance,
+sectionless shared composition, the remaining original ABI requirements and
+exact-head hosted integration remain open; this does not complete #68–#71.
+
+## ARM32 inherited mapping checkpoint
+
+**CONFIRMED local inherited/omitted ARM mapping acceptance:** five retained-symbol
+split layouts preserve every original symbol and mapping, with 1,045 saved/live/
+failure debugger observations and twenty injected calls. Eight stripped layouts
+pass explicit unknown-data omission controls with 208 instruction observations,
+exact diagnostics and no invented mapping. See `ARM-MIXED-MODE-MAPPINGS.md`.
+Sectionless shared composition, broader ABI profiles and exact-head integration
+remain required; #68–#71 remain open.
+
+## ARM32 sectionless shared checkpoint
+
+**CONFIRMED local sectionless shared composition:** contiguous/split shared and
+rebased shared mixed-body cases pass 810 saved/live/failure debugger observations,
+sixteen calls, eight native failure exports and four cancellations. The oracle
+measures the loader's live link_map because sectionless objects have no GDB From
+address, and verifies original header/code bytes before using the bias. See
+`ARM-MIXED-MODE-MAPPINGS.md`. Runtime context/conflict controls, broader ABI
+profiles and exact-head hosted integration remain open; #68–#71 are not complete.

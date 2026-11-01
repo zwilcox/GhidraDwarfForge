@@ -9,6 +9,69 @@ symbol-corruption controls, and nine fresh ARM/Thumb/mixed exec/PIE/rebased runs
 Production code is unchanged; a new hosted run is required. See
 `docs/ARM-THUMB-EXTENDED-LAYOUTS.md`. Full #68–#71 scope remains open.
 
+**CONFIRMED local sectionless shared composition:** contiguous/split shared and
+rebased shared mixed-body cases pass 810 saved/live/failure debugger observations,
+sixteen calls, eight native failure exports and four cancellations. The oracle
+measures the loader's live link_map because sectionless objects have no GDB From
+address, and verifies original header/code bytes before using the bias. See
+`docs/ARM-MIXED-MODE-MAPPINGS.md`. Runtime context/conflict controls, broader ABI
+profiles and exact-head hosted integration remain open; #68–#71 are not complete.
+
+**CONFIRMED local inherited/omitted ARM mapping acceptance:** five retained-symbol
+split layouts preserve every original symbol and mapping, with 1,045 saved/live/
+failure debugger observations and twenty injected calls. Eight stripped layouts
+pass explicit unknown-data omission controls with 208 instruction observations,
+exact diagnostics and no invented mapping. See `docs/ARM-MIXED-MODE-MAPPINGS.md`.
+Broader ABI profiles and exact-head integration remain required; #68–#71 remain open.
+
+**CONFIRMED local discontiguous mixed-body acceptance:** eight additional ARM
+layouts pass two-range bodies with an excluded data word, six exact mapping
+boundaries, raw DWARF range/line checks and compiler/Forge runtime comparisons.
+Saved/live/failure exports total 1,672 debugger observations, 32 injected calls,
+16 native failure exports and eight cancellations. CI covers both contiguous
+and split bodies. See `docs/ARM-MIXED-MODE-MAPPINGS.md` for source-map limits,
+receipts and retained harness failures. Runtime context/conflict controls,
+the remaining original ABI requirements and
+exact-head hosted integration remain open; this does not complete #68–#71.
+
+**CONFIRMED local mixed-mode layout/source expansion; full ABI goal remains open:**
+Eight ARM mixed-body layouts pass compiler/Forge source stepping, named/address
+breakpoints, injected function-pointer calls, raw symbol preservation, validators,
+determinism and failure/cancellation. This includes shared/rebased libraries and
+sectionless exec/PIE/rebased executables. See `docs/ARM-MIXED-MODE-MAPPINGS.md`
+for 832 observations, exact package receipts and retained failed experiments.
+The producer is unchanged in this expansion. Remaining ARM/MIPS/i386
+requirements, exact-head hosted
+gates and protected integration remain required; #68–#71 are not complete.
+
+**CONFIRMED live-program follow-up:** all eight layouts also pass two exports
+before closing fresh analysis, with identical artifacts, matching saved-program
+mode inventories and 736 additional compiler/Forge observations. The full
+sectionless/rebased/control/live command passes and CI includes live checks for
+every layout. Live-session behavior is now confirmed locally; inherited mapping and the full original ABI scope remain open. See the same mapping evidence document.
+
+**CONFIRMED local production ARM32 mixed-body mapping progress:**
+The real exporter now emits complete evidence-backed ARM/Thumb/data section
+mappings. Non-PIE, PIE and rebased PIE pass raw mapping checks, compiler-relative
+static decoding, twelve actual instruction observations, strict validators,
+determinism and original/program preservation. Six real decompiler-failure
+exports and three cancellations pass; ELF/writer and real-Ghidra models pass
+33/84 checks. The final package also passes the AArch64 vector/control regression.
+See `docs/ARM-MIXED-MODE-MAPPINGS.md`. Shared/sectionless mixed compositions,
+source-step acceptance, broader ABI requirements and exact-head integration
+remain open; the complete #68–#71 scope is unchanged.
+
+**CONFIRMED ARM32 mixed-body defect and consumer reference:**
+A source-built function switches ARM → Thumb → ARM with twelve independently
+checked executed instructions. The current curated production sidecar passes
+validators but misdecodes Thumb before attachment. A separate standard mapping
+symbol experiment fixes decoding and preserves every DWARF byte; it is not a
+production correction. The reproducible research harness passes and records
+all input/package/program preservation evidence. See
+`docs/research/ARM-MIXED-BODY-MODES.md`. Implementing validated extraction and
+writer support, the remaining ABI profiles and exact-head integration remains
+required; all #68–#71 requirements stay active.
+
 **CONFIRMED local ARM32 shared-library mode acceptance:**
 Stripped shared objects and explicitly rebased shared objects pass static mode
 checks, measured runtime relocation, source stepping, direct/indirect calls and

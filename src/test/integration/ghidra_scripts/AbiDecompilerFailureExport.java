@@ -24,8 +24,9 @@ public class AbiDecompilerFailureExport extends GhidraScript {
         if (getScriptArgs().length < 2 || getScriptArgs().length > 3) {
             throw new IllegalArgumentException("output failed-function [saved-parameter]");
         }
-        String failedName = getScriptArgs()[1];
-        String parameterName = getScriptArgs().length == 3 ? getScriptArgs()[2] : "value";
+        String failureSelection = getScriptArgs()[1];
+        boolean symbolOnlyReference = getScriptArgs().length == 3 && getScriptArgs()[2].equals("--symbol-only");
+        String parameterName = getScriptArgs().length == 3 && !symbolOnlyReference ? getScriptArgs()[2] : "value";
         Path input = Path.of(currentProgram.getExecutablePath());
         Path output = Path.of(getScriptArgs()[0]);
         var elf = ElfImage.read(input);
@@ -33,6 +34,17 @@ public class AbiDecompilerFailureExport extends GhidraScript {
         var natives = PackagedNativeLibraries.resolve();
         long delta = AddressNormalizer.rebaseDelta(currentProgram.getImageBase().getOffset(),
             GhidraImageBase.originalImageBase(currentProgram));
+        String failedName;
+        if (failureSelection.startsWith("@")) {
+            var selected = currentProgram.getFunctionManager().getFunctionAt(toAddr(
+                Math.addExact(Long.decode(failureSelection.substring(1)), delta)));
+            if (selected == null) throw new AssertionError("no analyzed failure-reference function at " + failureSelection);
+            failedName = selected.getName();
+        }
+        else {
+            failedName = failureSelection;
+        }
+        println("abi-decompiler-selected-failure=" + failedName);
         var functions = GhidraFunctionSymbols.extractDetailed(currentProgram, monitor, this::println, delta).functions();
         var failures = new ArrayList<String>();
         var decompilation = GhidraSyntheticSource.decompileDetailed(currentProgram, functions, delta, monitor,
@@ -64,18 +76,20 @@ public class AbiDecompilerFailureExport extends GhidraScript {
             decompilation.recoveredReturns(), decompilation.recoveredParameters(), decompilation.recoveredStatics(),
             ghidradwarfforge.targets.TargetParameterAllocation.forProgram(currentProgram, elf, monitor, this::println));
         var model = GhidraCompilerCallPolicy.apply(currentProgram, target, elf, extracted, monitor, this::println);
-        if (model.variableStorage().variables().stream().noneMatch(variable ->
+        if (!symbolOnlyReference && model.variableStorage().variables().stream().noneMatch(variable ->
                 variable.functionName().equals(failedName) && variable.name().equals(parameterName) &&
                 variable.hasDefensibleLocation())) {
             throw new AssertionError("saved parameter disappeared before failure filtering");
         }
         var modeCues = ghidradwarfforge.GhidraArm32FunctionModes.extract(currentProgram,
             functions, target, delta, monitor, this::println);
+        var sectionModes = ghidradwarfforge.GhidraArm32SectionModes.extract(currentProgram,
+            elf, functions, target, delta, monitor, this::println);
         Path sourceOutput = Path.of(output + ".c");
         ArtifactPairPublisher.stageAndPublish(output, sourceOutput,
             staged -> new MinimalDwarfSidecarExporter().export(input, staged, natives.consumer(), natives.producer(),
                 functions, source, model, sourceOutput.getFileName().toString(), monitor::isCancelled,
-                modeCues, this::println),
+                modeCues, java.util.List.of(), java.util.List.of(), sectionModes, this::println),
             source::writeAtomically, monitor::checkCancelled);
         failures.forEach(message -> println("native-decompiler-failure=" + message));
         println("abi-decompiler-failure=PASS");

@@ -156,6 +156,8 @@ public class GhidraDwarfForge extends GhidraScript {
         var functions = extraction.functions();
         var aliases = GhidraFunctionAliases.extract(currentProgram, functions,
             rebaseDelta, monitor, diagnostic);
+        var sectionModes = ghidradwarfforge.GhidraArm32SectionModes.extract(currentProgram,
+            originalElf, functions, target, rebaseDelta, monitor, diagnostic);
         var modeCues = GhidraArm32FunctionModes.extract(currentProgram, functions,
             target, rebaseDelta, monitor, diagnostic);
         var aliasModeCues = GhidraArm32FunctionModes.extractAliases(currentProgram, aliases,
@@ -180,7 +182,7 @@ public class GhidraDwarfForge extends GhidraScript {
                 input, stagedOutput,
                 consumer, producer, functions, source, typeModel,
                 sourceOutput.getFileName().toString(), monitor::isCancelled,
-                modeCues, aliases, aliasModeCues, diagnostic),
+                modeCues, aliases, aliasModeCues, sectionModes, diagnostic),
             source::writeAtomically, monitor::checkCancelled);
         MinimalDwarfSidecarExporter.ExportResult result = resultHolder[0];
         String outputHash = sha256(output);
