@@ -125,3 +125,12 @@ variants explicitly load the sidecar at the real mapped bias. See
 `AARCH64-PARAMETER-ALLOCATION.md` for the full positive/negative contract and
 reference limitations. No issue is closed before final package, regression,
 hosted and protected-integration evidence is reconciled.
+
+## MIPS independent-reference follow-up
+
+**CONFIRMED compiler references; exporter acceptance pending:** N32 and N64
+non-PIE scalar floating fixtures execute with correct typed compiler-DWARF
+observations. A strict-reader GNU frame-termination defect blocks the original
+N64 validator and has a separate validation-only correction. FPXX FR-mode
+experiments expose different unresolved consumer failures by byte order. See
+`research/MIPS-ABI-COMPLETION.md`; the full #69 row above remains binding.

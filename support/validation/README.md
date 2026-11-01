@@ -294,3 +294,34 @@ compiler fixture's LLVM check. The actual hosted originals now produce exactly
 the sidecars' three x86-64 and five AArch64 frame diagnostics. Neither original
 nor sidecar changed. Full rerun evidence and publication gates belong to the
 integrating change; this local result does not make the failed hosted run pass.
+
+
+## GNU frame terminators in big-endian ELF64
+
+The fifth patch, `0005-honor-eh-frame-zero-terminator.patch`, changes only the
+validation consumer's `src/lib/libdwarf/dwarf_frame2.c`. SHA-256:
+`d69033dbf8b67380c06b51932018c2c024e5610f3e5343cd75915e206ac16b08`.
+The GNU frame-list reader recognizes four zero bytes before invoking the
+historical IRIX length decoder. That decoder interprets a leading zero word
+in big-endian ELF64 as the first half of an unmarked eight-byte length, so a
+valid four-byte terminator previously caused an out-of-section read error.
+The correction applies only to GNU `.eh_frame` traversal. It does not alter
+`.debug_frame`, remove frame data, allow truncated prefixes or suppress a
+validator diagnostic. Unmarked eight-byte IRIX frame entries retain the
+existing parser and checks.
+
+`dwarfdump-eh-terminators.py` tests both ELF classes and byte orders, empty and
+populated terminated frame sections, padding and the end-of-list boundary.
+Truncated prefixes/tails, nonzero incomplete lengths and truncated extended
+lengths remain rejected. A valid IRIX `.debug_frame` still passes and a short
+one still fails. `--previous-tool` proves the prior big-endian ELF64 failures
+and verifies that the valid IRIX case passes both readers. The checker result,
+not just its process status, determines success. Fixture, checker executable,
+configuration and harness hashes are retained and rechecked.
+
+The initiating unmodified GCC 12.4 MIPS N64 executable has exactly four zero
+bytes in `.eh_frame`. GNU readelf and LLVM accept it; the previous strict
+consumer fails; the corrected consumer reports zero errors. N32's identical
+four-byte section already passed. These are compiler-reference observations,
+not claims of complete N32/N64 exporter support. See
+`../../docs/research/MIPS-ABI-COMPLETION.md` for the ongoing ABI investigation.
