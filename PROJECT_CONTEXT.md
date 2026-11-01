@@ -1,5 +1,13 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED active target work:** the user expanded the goal to finish P2.3,
+P2.3a, P2.3b and P2.3c together. `docs/TARGET-ABI-COMPLETION-PLAN.md` retains
+the original remaining requirements for #68–#71 and the shared validation
+contract. The AArch64 indirect-argument candidate passes local
+non-PIE, PIE and rebased-PIE runtime/validator experiments, with explicitly
+calibrated compiler-reference limitations and separate spill/reload controls;
+full component and hosted acceptance remain pending. The Ghidra/Java/native baseline is unchanged.
+
 **CONFIRMED accepted P1.11a and P3.3 implementation:** PR103 is integrated as
 `8f6031c92496550e733b59f8589ce7f3e5428e8a`; its tree equals tested
 `7387a61dd79c6753998c9c89271a42ed295f6ac4`. All twelve jobs in run

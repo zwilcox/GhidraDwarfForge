@@ -5,6 +5,7 @@ import java.nio.ByteOrder;
 import java.util.List;
 
 import ghidradwarfforge.locations.VariableStorageModel.Confidence;
+import ghidradwarfforge.locations.VariableStorageModel.IndirectMemoryStorage;
 import ghidradwarfforge.locations.VariableStorageModel.CompositeStorage;
 import ghidradwarfforge.locations.VariableStorageModel.Evidence;
 import ghidradwarfforge.locations.VariableStorageModel.LocationRange;
@@ -80,6 +81,16 @@ public final class Dwarf5LocationListsSmoke {
                 (byte) DwarfLocationExpression.DW_OP_REGX, 1,
                 (byte) DwarfLocationExpression.DW_OP_BIT_PIECE, 32, 0 })) {
             throw new AssertionError("composite location-list expression is incorrect");
+        }
+        var indirect = new VariableLocation("function", 0x1000, "indirect", VariableKind.PARAMETER, 24,
+            List.of(new LocationRange(0x1000, 0x1004, registers.registerRelative("RAX", 0), analysis),
+                new LocationRange(0x1004, 0x1008,
+                    new IndirectMemoryStorage(registers.registerRelative("RSP", -16)), analysis)));
+        byte[] indirectSection = Dwarf5LocationLists.build(List.of(indirect),
+            8, ByteOrder.LITTLE_ENDIAN).section();
+        if (!contains(indirectSection, new byte[] { 4, (byte) DwarfLocationExpression.DW_OP_BREGX,
+                7, 0x70, DwarfLocationExpression.DW_OP_DEREF, 0 })) {
+            throw new AssertionError("indirect location-list expression must have an operand-free dereference");
         }
         System.out.println("dwarf5-location-lists-smoke=PASS");
     }

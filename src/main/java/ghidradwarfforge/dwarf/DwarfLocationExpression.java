@@ -6,6 +6,7 @@ import java.util.List;
 import ghidradwarfforge.locations.VariableStorageModel.CompositeStorage;
 import ghidradwarfforge.locations.VariableStorageModel.LocationRange;
 import ghidradwarfforge.locations.VariableStorageModel.MemoryStorage;
+import ghidradwarfforge.locations.VariableStorageModel.IndirectMemoryStorage;
 import ghidradwarfforge.locations.VariableStorageModel.OmissionReason;
 import ghidradwarfforge.locations.VariableStorageModel.RegisterRelativeStorage;
 import ghidradwarfforge.locations.VariableStorageModel.RegisterStorage;
@@ -20,6 +21,7 @@ import ghidradwarfforge.locations.VariableStorageModel.VariableLocation;
  * producer uses a relocation-aware API for {@code DW_OP_addr}.
  */
 public final class DwarfLocationExpression {
+    public static final int DW_OP_DEREF = 0x06;
     public static final int DW_OP_REGX = 0x90;
     public static final int DW_OP_BREGX = 0x92;
     public static final int DW_OP_BIT_PIECE = 0x9d;
@@ -108,6 +110,12 @@ public final class DwarfLocationExpression {
         }
         if (first instanceof MemoryStorage memory) {
             return expression(new AddressOperation(memory.address()));
+        }
+        if (first instanceof IndirectMemoryStorage indirect) {
+            Operation address = indirect.pointerLocation() instanceof RegisterRelativeStorage relative
+                ? new GenericOperation(DW_OP_BREGX, relative.register().dwarfNumber(), relative.byteOffset())
+                : new AddressOperation(((MemoryStorage) indirect.pointerLocation()).address());
+            return new Expression(List.of(address, new GenericOperation(DW_OP_DEREF, 0, 0)));
         }
         if (first instanceof StackStorage) {
             return omitted("Ghidra stack coordinates require a proven frame-base " +

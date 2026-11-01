@@ -14,6 +14,7 @@ import ghidradwarfforge.locations.VariableStorageModel.Confidence;
 import ghidradwarfforge.locations.VariableStorageModel.Evidence;
 import ghidradwarfforge.locations.VariableStorageModel.LocationRange;
 import ghidradwarfforge.locations.VariableStorageModel.MemoryStorage;
+import ghidradwarfforge.locations.VariableStorageModel.IndirectMemoryStorage;
 import ghidradwarfforge.locations.VariableStorageModel.OmissionReason;
 import ghidradwarfforge.locations.VariableStorageModel.Piece;
 import ghidradwarfforge.locations.VariableStorageModel.RegisterRelativeStorage;
@@ -167,6 +168,18 @@ public final class VariableStorageSmoke {
             List.of(new LocationRange(0x1000, 0x1004, new CompositeStorage(List.of(
                 new Piece(arm32.register("r3", 0, 31), 31),
                 new Piece(arm32.registerRelative("sp", 8), 33))), analyst))), "resolved byte-aligned");
+
+        var indirect = new VariableLocation("indirect", 0x1000, "aggregate", VariableKind.PARAMETER, 24,
+            List.of(new LocationRange(0x1000, 0x1010,
+                new IndirectMemoryStorage(arm.registerRelative("sp", 16)), analyst)));
+        if (!(DwarfLocationExpression.planStable(indirect) instanceof Expression pointerExpression) ||
+                !pointerExpression.operations().equals(List.of(
+                    new GenericOperation(DwarfLocationExpression.DW_OP_BREGX, 31, 16),
+                    new GenericOperation(DwarfLocationExpression.DW_OP_DEREF, 0, 0)))) {
+            throw new AssertionError("indirect aggregate must dereference the carrier, not describe its bytes");
+        }
+        expectFailure(() -> new IndirectMemoryStorage(new StackStorage(16)));
+        expectFailure(() -> new IndirectMemoryStorage(arm.register("x0", 0, 64)));
 
         List<VariableLocation> input = new ArrayList<>(List.of(changing, omitted,
             pieces, relativeVariable, memory));

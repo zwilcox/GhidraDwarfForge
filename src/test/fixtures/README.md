@@ -627,3 +627,15 @@ immediate caller restoration; neither path receives a post-call location.
 option) to check updated saved identities through a real register clobber and
 callee-owned stack write. Stale-slot and conflicting-owner controls remain gaps.
 See `docs/MUTABLE-CALL-MEMORY.md` and `docs/CALL-MEMORY-BOUNDARIES.md`.
+
+
+The AArch64 `aarch64-abi.c` fixture is built by
+`src/test/integration/aarch64-abi.py`. It exercises LP64 integer/FP register
+exhaustion, direct and indirect structures, HFAs, stack-passed pointers, actual
+pointer spills/reloads and conservative unavailable intervals. Inline assembly
+in the spill controls deliberately clears integer carriers; the compiler
+preserves required callee-saved state. The paired case adds a memory store
+whose lack of aliasing is not proven by the exporter. Both programs' actual
+values and returns are checked against source-known constants, raw ABI carriers
+and compiler debug information. See `docs/AARCH64-PROFILE-PLAN.md` for the exact
+consumer limitations, failure/cancellation controls and pending hosted gate.

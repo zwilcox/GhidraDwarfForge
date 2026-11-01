@@ -12,6 +12,7 @@ import java.util.Map;
 
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSpace;
+import ghidra.program.model.data.Pointer;
 import ghidra.program.model.lang.Register;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
@@ -24,6 +25,7 @@ import ghidra.util.task.TaskMonitor;
 import ghidradwarfforge.GhidraVariableStorage.StorageInterval;
 import ghidradwarfforge.locations.TargetRegisterMap;
 import ghidradwarfforge.locations.VariableStorageModel.OmissionReason;
+import ghidradwarfforge.locations.VariableStorageModel.IndirectMemoryStorage;
 import ghidradwarfforge.locations.VariableStorageModel.RegisterRelativeStorage;
 import ghidradwarfforge.locations.VariableStorageModel.RegisterStorage;
 import ghidradwarfforge.locations.VariableStorageModel.Storage;
@@ -59,6 +61,33 @@ final class StackValueFlow {
 
     static List<StorageInterval> prove(Program program, Function function, Parameter parameter,
             TargetRegisterMap registers, TaskMonitor monitor) throws CancelledException {
+        return proveCarrier(program, function, parameter, registers, false, monitor);
+    }
+
+    /** Track the ABI pointer, then describe the formal object at its current address. */
+    static List<StorageInterval> proveIndirect(Program program, Function function, Parameter parameter,
+            TargetRegisterMap registers, TaskMonitor monitor) throws CancelledException {
+        var carrier = proveCarrier(program, function, parameter, registers, true, monitor);
+        var result = new ArrayList<StorageInterval>();
+        for (var interval : carrier) {
+            monitor.checkCancelled();
+            Storage location = interval.storage();
+            if (location instanceof RegisterStorage register) {
+                location = register.valueBitOffset() == 0 &&
+                    register.bitSize() == parameter.getLength() * Byte.SIZE
+                    ? new RegisterRelativeStorage(register.register(), 0) : UNKNOWN;
+            }
+            else if (location instanceof RegisterRelativeStorage) {
+                location = new IndirectMemoryStorage(location);
+            }
+            result.add(new StorageInterval(interval.start(), interval.end(), location));
+        }
+        return List.copyOf(result);
+    }
+
+    private static List<StorageInterval> proveCarrier(Program program, Function function,
+            Parameter parameter, TargetRegisterMap registers, boolean indirect, TaskMonitor monitor)
+            throws CancelledException {
         monitor.checkCancelled();
         var storage = parameter.getVariableStorage();
         Register pointer = program.getCompilerSpec().getStackPointer();
@@ -67,25 +96,40 @@ final class StackValueFlow {
         if (function.getProgram() != program || parameter.getFunction() != function ||
                 parameter.getOrdinal() < 0 || function.getParameter(parameter.getOrdinal()) != parameter ||
                 parameter.getFirstUseOffset() != 0 || parameter.getFormalDataType() == null ||
-                parameter.getFormalDataType().getLength() != bytes || bytes <= 0 || storage == null ||
+                (!indirect && parameter.getFormalDataType().getLength() != bytes) ||
+                bytes <= 0 || storage == null ||
                 storage.getProgramArchitecture() != program || !storage.isValid() || storage.isBadStorage() ||
-                storage.isForcedIndirect() || !storage.isRegisterStorage() || storage.getVarnodeCount() != 1 ||
+                storage.isForcedIndirect() != indirect ||
+                !(storage.isRegisterStorage() || indirect && storage.isStackStorage()) ||
+                storage.getVarnodeCount() != 1 ||
                 storage.size() != bytes || pointer == null || pointer != pointer.getBaseRegister() ||
                 memory == null || memory.isOverlaySpace() || memory.getType() != AddressSpace.TYPE_RAM ||
                 memory.getAddressableUnitSize() != 1 || memory.getPointerSize() <= 0 ||
                 memory.getPointerSize() > Long.BYTES || pointer.getBitLength() != memory.getPointerSize() * 8 ||
                 program.getAddressFactory().getAddressSpace(memory.getSpaceID()) != memory) return List.of();
+        if (indirect && (!(parameter.getDataType() instanceof Pointer effective) ||
+                effective.getLength() != bytes || effective.getDataType() == null ||
+                !effective.getDataType().isEquivalent(parameter.getFormalDataType()) ||
+                parameter.getFormalDataType().getLength() <= 0 || bytes != memory.getPointerSize())) {
+            return List.of();
+        }
         Varnode incoming = storage.getFirstVarnode();
         Register original = exactRegister(program, incoming);
-        if (original == null || original.getLeastSignificantBitInBaseRegister() != 0 ||
-                original.getBaseRegister() == pointer) return List.of();
+        if (storage.isRegisterStorage() && (original == null ||
+                original.getLeastSignificantBitInBaseRegister() != 0 ||
+                original.getBaseRegister() == pointer)) return List.of();
         var decoded = RegisterDefinitionFlow.decodedInstructions(program, function, true, monitor);
         if (decoded.isEmpty()) return List.of();
         var calls = DirectLeafCalls.inspect(program, List.copyOf(decoded.values()), monitor);
         if (calls == null) return List.of();
         var analysis = new StackValueFlow(program, pointer, memory, bytes);
         analysis.calls = calls;
-        analysis.facts.put(incoming, VALUE);
+        if (storage.isStackStorage()) {
+            analysis.slots.put((long) storage.getStackOffset(), true);
+        }
+        else {
+            analysis.facts.put(incoming, VALUE);
+        }
         analysis.facts.put(new Varnode(pointer.getAddress(), pointer.getMinimumByteSize()),
             new Fact(Kind.STACK_ADDRESS, 0));
         return analysis.acrossControlFlow(function, decoded, null, Set.of(), registers, monitor);
