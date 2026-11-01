@@ -121,11 +121,13 @@ def main():
         _, _, baseline = elf_support.elf(case / 'baseline.dbg')
         _, _, automatic = elf_support.elf(case / 'automatic.dbg')
         records = []
-        if '.symtab' not in original and '.symtab' in baseline:
+        if '.symtab' in baseline and ('.symtab' not in original or
+                baseline['.symtab'][1] != original['.symtab'][1]):
             elf_support.arm_mode_inventory(original, baseline, (base / 'symbols.log').read_text(), metadata['functions'])
             table, payload = baseline['.symtab']
             names = baseline['.strtab'][1]
-            for index in range(original['.dynsym'][0][7], table[7]):
+            original_table = original['.symtab' if '.symtab' in original else '.dynsym'][0]
+            for index in range(original_table[7], table[7]):
                 name, value, size, info, other, section = struct.unpack_from('<IIIBBH', payload, index * 16)
                 assert info == 2 and other == 0
                 records.append([names[name:].split(b'\0', 1)[0].decode(), value & ~1, size, section, value])
