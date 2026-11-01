@@ -228,3 +228,16 @@ both shared roles. See `ARM-THUMB-EXTENDED-LAYOUTS.md` for receipts and the
 PIC-specific second-argument boundary. Mixed-body modes, per-function ABI/BE8,
 broader storage and exact-head hosted acceptance remain open; #68–#71 retain
 their full original scope.
+
+## ARM32 mixed-body reference
+
+**CONFIRMED ARM32 mixed-body defect and consumer reference:**
+A source-built function switches ARM → Thumb → ARM with twelve independently
+checked executed instructions. The current curated production sidecar passes
+validators but misdecodes Thumb before attachment. A separate standard mapping
+symbol experiment fixes decoding and preserves every DWARF byte; it is not a
+production correction. The reproducible research harness passes and records
+all input/package/program preservation evidence. See
+`docs/research/ARM-MIXED-BODY-MODES.md`. Implementing validated extraction and
+writer support, the remaining ABI profiles and exact-head integration remains
+required; all #68–#71 requirements stay active.
