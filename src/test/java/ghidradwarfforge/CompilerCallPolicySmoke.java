@@ -32,11 +32,12 @@ public final class CompilerCallPolicySmoke {
     public static void main(String[] args) throws Exception {
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
             new HeadlessGhidraApplicationConfiguration());
-        var input = ghidradwarfforge.types.FunctionRelationsSmoke.withRelations(ghidradwarfforge.types.ClassScopeModelSmoke.withOwnership(model()));
+        var input = fixtureModel();
         int specifications = 0;
         for (var target : List.of(new Target("x86:LE:64:default", "x86_64", "gcc"),
                 new Target("x86:LE:32:default", "x86", "gcc"),
                 new Target("AARCH64:LE:64:v8A", "aarch64", "default"),
+                new Target("AARCH64:LE:64:AppleSilicon", "aarch64", null),
                 new Target("ARM:LE:32:v8", "arm", "default"),
                 new Target("MIPS:BE:32:default", "mips", "default"),
                 new Target("MIPS:LE:32:default", "mipsel", "default"))) {
@@ -99,17 +100,33 @@ public final class CompilerCallPolicySmoke {
                     catch (CancelledException expected) {
                         checks++;
                     }
+                    if (blocked) {
+                        var duringTraversal = new TaskMonitorAdapter(true);
+                        try {
+                            GhidraCompilerCallPolicy.apply(program, description, input,
+                                duringTraversal, ignored -> duringTraversal.cancel());
+                            throw new AssertionError("mid-traversal cancellation ignored");
+                        }
+                        catch (CancelledException expected) {
+                            checks++;
+                        }
+                    }
                     specifications++;
                 }
                 finally {
                     program.release(owner);
                 }
             }
-            require(!description.compilerSpecCallRestriction("unregistered").isEmpty(), "unknown compiler accepted");
+            require(!description.compilerSpecCallRestriction(target.language(), "unregistered").isEmpty(), "unknown compiler accepted");
             System.out.println("compiler-call-policy-target=PASS " + target.language());
         }
-        require(input.equals(ghidradwarfforge.types.FunctionRelationsSmoke.withRelations(ghidradwarfforge.types.ClassScopeModelSmoke.withOwnership(model()))), "input model mutated");
+        require(input.equals(fixtureModel()), "input model mutated");
         System.out.println("compiler-call-policy-smoke=PASS checks=" + checks + " specifications=" + specifications);
+    }
+
+    public static ProgramTypeModel fixtureModel() {
+        return ghidradwarfforge.types.FunctionRelationsSmoke.withRelations(
+            ghidradwarfforge.types.ClassScopeModelSmoke.withOwnership(model()));
     }
 
     private static ProgramTypeModel model() {

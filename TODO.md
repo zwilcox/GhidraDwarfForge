@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local AArch64 selection candidate; full scope remains open:**
+Language/compiler and ELF metadata checks now preserve recovered knowledge while
+restricting unsupported debugger-injected calls, including typed callbacks.
+Actual Ghidra model and packaged runtime checks are documented in
+`docs/AARCH64-ABI-SELECTION.md`. All twelve local profile cases pass; hosted
+acceptance and protected integration remain required.
+The runtime reference is explicitly Cortex-A53 after retaining a default-CPU
+floating-call failure in compiler DWARF. This does not complete P2.3/#68 or any
+of P2.3a–P2.3c/#69–#71.
+
 **CONFIRMED accepted P1.11a and P3.3 implementation:** PR103 is integrated as
 `8f6031c92496550e733b59f8589ce7f3e5428e8a`; its tree equals tested
 `7387a61dd79c6753998c9c89271a42ed295f6ac4`. All twelve jobs in run

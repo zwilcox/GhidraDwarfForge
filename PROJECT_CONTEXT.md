@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local AArch64 selection candidate; full scope remains open:**
+Language/compiler and ELF metadata checks now preserve recovered knowledge while
+restricting unsupported debugger-injected calls, including typed callbacks.
+Actual Ghidra model and packaged runtime checks are documented in
+`docs/AARCH64-ABI-SELECTION.md`. All twelve local profile cases pass; hosted
+acceptance and protected integration remain required.
+The runtime reference is explicitly Cortex-A53 after retaining a default-CPU
+floating-call failure in compiler DWARF. This does not complete P2.3/#68 or any
+of P2.3a–P2.3c/#69–#71.
+
 **CONFIRMED active target work:** the user expanded the goal to finish P2.3,
 P2.3a, P2.3b and P2.3c together. `docs/TARGET-ABI-COMPLETION-PLAN.md` retains
 the original remaining requirements for #68–#71 and the shared validation
