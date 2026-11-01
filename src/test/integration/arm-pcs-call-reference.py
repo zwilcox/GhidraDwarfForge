@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import struct
 import subprocess
 import tempfile
 
@@ -23,10 +24,33 @@ def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def corroborate_unmapped_vdso_sections(result):
+    """The private upstream QEMU vDSO maps PT_LOAD, not its section table."""
+    memory = bytes.fromhex(result['vdsoMemory'])
+    assert memory[:5] == b'\x7fELF\x01' and memory[5] in (1, 2)
+    order = '<' if memory[5] == 1 else '>'
+    header = struct.unpack_from(order + 'HHIIIIIHHHHHH', memory, 16)
+    assert header[:3] == (3, 40, 1) and header[8] == 32 and header[10] == 40
+    assert 0 < header[9] < 16 and 0 < header[12] < header[11]
+    section_end = header[5] + header[10] * header[11]
+    assert header[4] + header[8] * header[9] <= header[5] < section_end <= len(memory)
+    loads = [row for index in range(header[9])
+        if (row := struct.unpack_from(order + 'IIIIIIII', memory, header[4] + 32 * index))[0] == 1]
+    assert len(loads) == 1
+    load = loads[0]
+    assert load[1] == 0 and load[2] == result['vdsoAddress']
+    assert 0 < load[4] == load[5] <= header[5]
+    assert not any(memory[header[5]:section_end])
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--gdb', type=Path, required=True)
     parser.add_argument('--gdb-data', type=Path, required=True)
+    parser.add_argument('--qemu-arm', default='qemu-arm-static')
+    parser.add_argument('--qemu-armeb', default='qemu-armeb-static')
+    parser.add_argument('--expect-corrected-d-register-writes', action='store_true',
+        help='Differential private-emulator experiment; per-function PCS failures remain required')
     args = parser.parse_args()
     gdb = args.gdb.resolve(strict=True)
     data = args.gdb_data.resolve(strict=True)
@@ -41,7 +65,7 @@ def main():
         repository / 'src/test/fixtures/arm-pcs-start.S',
         repository / 'src/test/fixtures/arm-pcs-call-reference.c']
     protected += [Path(shutil.which(tool)).resolve() for tool in
-        (compiler, 'qemu-arm-static', 'qemu-armeb-static')]
+        (compiler, args.qemu_arm, args.qemu_armeb)]
     protected += [p for p in data.rglob('*') if p.is_file()]
     before = {str(p): digest(p) for p in protected}
     commands = []
@@ -58,7 +82,7 @@ def main():
     run(root, 'gdb-version', [gdb, '--data-directory=' + str(data), '--version'])
     assert '17.1' in (root / 'gdb-version.log').read_text()
     observations = []
-    for order, emulator in [('little', 'qemu-arm-static'), ('big', 'qemu-armeb-static')]:
+    for order, emulator in [('little', args.qemu_arm), ('big', args.qemu_armeb)]:
         case = root / order
         case.mkdir()
         run(case, 'qemu-version', [emulator, '--version'])
@@ -90,13 +114,19 @@ def main():
                 if operation == 'write':
                     wire = re.findall(r'Sending packet: \$P[0-9a-f]+=([0-9a-f]+)#', stderr)
                     assert wire == ['3ff4000000000000' if order == 'big' else '000000000000f43f'], wire
-                    assert result['registerBytes'] == '000000000000f43f'
-                    assert (result['registerValue'] == 1.25) == (order == 'little')
+                    corrected = args.expect_corrected_d_register_writes
+                    assert result['registerBytes'] == (wire[0] if corrected else '000000000000f43f')
+                    assert (result['registerValue'] == 1.25) == (order == 'little' or corrected)
                     result['wireBytes'] = wire[0]
                 else:
                     warnings = stderr.splitlines()
-                    assert all(re.fullmatch(r'warning: BFD: warning: system-supplied DSO at 0x[0-9a-f]+ has a corrupt string table index',
-                        line) for line in warnings), warnings
+                    for line in warnings:
+                        if line == 'Failed to read a valid object file image from memory.':
+                            corroborate_unmapped_vdso_sections(result)
+                        else:
+                            assert re.fullmatch(r'warning: BFD: warning: system-supplied DSO at 0x[0-9a-f]+ has a corrupt string table index',
+                                line), warnings
+                    assert len(warnings) <= 1
                     rows = result['observations']
                     assert [r['function'] for r in rows] == ['base_sum', 'vfp_sum']
                     for index, row in enumerate(rows):
@@ -109,12 +139,14 @@ def main():
                             assert row['s0'] == (0.0 if index == 0 else 7.75)
                         else:
                             correct = [row['seenFirst'], row['seenSecond'], row['returned']] == row['expected']
-                            assert correct == (selected and (order == 'little' or index == 0)), row
+                            assert correct == (selected and (order == 'little' or index == 0
+                                or args.expect_corrected_d_register_writes)), row
                 observations.append({'order': order, **result})
     after = {path: digest(Path(path)) for path in before}
     assert before == after
     (root / 'result.json').write_text(json.dumps({'status': 'PASS_REFERENCE_LIMITATIONS',
         'scope': 'compiler-only calibration; no Forge support claim', 'observations': observations,
+        'correctedDRegisterWrites': args.expect_corrected_d_register_writes,
         'protectedBefore': before, 'protectedAfter': after}, indent=4) + '\n')
     print('arm-pcs-call-reference=PASS_REFERENCE_LIMITATIONS ' + str(root))
 

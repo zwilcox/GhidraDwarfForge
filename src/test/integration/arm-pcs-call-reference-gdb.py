@@ -3,6 +3,7 @@ import gdb
 import json
 import os
 from pathlib import Path
+import re
 
 case = Path(os.environ['FORGE_CALL_CASE'])
 mode = os.environ['FORGE_CALL_MODE']
@@ -16,6 +17,11 @@ try:
     gdb.execute('set arm fpu ' + mode)
     result['fpu'] = gdb.execute('show arm fpu', to_string=True)
     gdb.execute('target remote ' + os.environ['FORGE_CALL_REMOTE'])
+    result['auxv'] = gdb.execute('info auxv', to_string=True)
+    vdso = re.search(r'AT_SYSINFO_EHDR.*?(0x[0-9a-f]+)', result['auxv'])
+    if vdso:
+        result['vdsoAddress'] = int(vdso[1], 16)
+        result['vdsoMemory'] = gdb.selected_inferior().read_memory(result['vdsoAddress'], 4096).tobytes().hex()
     if operation == 'write':
         stop = gdb.Breakpoint('main')
         gdb.execute('continue')

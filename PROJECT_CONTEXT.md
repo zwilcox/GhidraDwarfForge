@@ -1,5 +1,13 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED independent ARM call-reference progress:** mixed base/VFP compiler
+runs reproduce GDB's global PCS selection and QEMU 8.2.2's reversed BE8 floating
+register writes. A private one-line QEMU correction restores the D-register
+round trip and VFP injected-call values in both data orders; ordinary program
+calls and raw returns remain correct. This supplies a corrected consumer
+reference, not Forge acceptance. Per-function exporter classification and the
+full original ABI rows remain open. See `docs/research/ARM-PCS-CALL-REFERENCE.md`.
+
 **CONFIRMED local hosted-oracle correction:** run `41359234173` exposed a
 sectionless alias test that counted analyst aliases but omitted the newly enabled
 primary ARM mode function symbols. The corrected inventory imports independently

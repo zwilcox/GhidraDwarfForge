@@ -83,3 +83,68 @@ validate the real exporter with scalar, wider, aggregate and exhausted-register
 argument/return cases. Keep ordinary value reading, automatic typed returns and
 injected calls separate in the acceptance evidence. The interim blanket BE8
 call guard remains incomplete and does not close #70.
+
+## Corrected private emulator reference
+
+**CONFIRMED locally:** both a private unmodified QEMU 8.2.2 build and a private
+build with one D-register write correction were executed against identical
+compiler fixtures. Changing `ldq_le_p` to the target-order `ldq_p` in
+`vfp_gdb_set_reg` restores the BE8 1.25 register round trip and injected VFP
+arguments 3.25/4.5 with result 7.75. LE remains correct. Base/VFP global-selection
+failures still reproduce, isolating them from the emulator write defect.
+This supersedes the earlier open search for a scalar BE8 injected-call reference;
+actual Forge call-policy implementation and the wider ABI requirements remain.
+
+The source archive SHA-256 is
+`847346c1b82c1a54b2c38f6edbd85549edeb17430b7d4d3da12620e2962bc4f3`.
+`support/validation/build-arm-qemu.py` pins that archive and the single patch,
+records build commands and executable hashes, and only builds private ARM/BE8
+linux-user executables. No system package is installed or replaced. The selected
+QEMU source includes one unused firmware symlink to absolute host headers;
+safe extraction explicitly skips and records that exact link. Every other
+member uses Python's data filter. Locally, development packages were downloaded
+and extracted beneath the experiment directory; their names/hashes are recorded.
+
+The correction deliberately does not change Q-register writes. Scalar D/S
+call-reference success is not vector/NEON acceptance. The emulator is a
+validation tool only; it is not bundled with the extension or native producer.
+
+```bash
+python3 support/validation/build-arm-qemu.py /private/qemu-arm-reference \
+    --correct-d-register-writes
+python3 src/test/integration/arm-pcs-call-reference.py \
+    --gdb /private/gdb17-arm/build/gdb/gdb \
+    --gdb-data /private/gdb17-arm/build/gdb/data-directory \
+    --qemu-arm /private/qemu-arm-reference/build/qemu-arm \
+    --qemu-armeb /private/qemu-arm-reference/build/qemu-armeb \
+    --expect-corrected-d-register-writes
+```
+
+The initial paired receipts are `run.2uow55_4` (unmodified) and `run.d506qehx`
+(corrected) under `build/test-results/arm-pcs-call-reference`. They cover 28
+fresh reference executions, including all deliberate per-function PCS failures.
+Source, dependency, configure and build receipts are under
+`build/arm-be8-profile/qemu-write-reference`. The failed first patch application
+is retained in `maintained-corrected/patch.log`: its hand-written context missed
+a blank line and was correctly rejected with zero fuzz; the canonical patch
+uses the exact pinned archive's context.
+
+The private upstream emulator produces a different synthetic-vDSO diagnostic
+than Ubuntu's installed build. The harness captures `AT_SYSINFO_EHDR` and its
+mapped page. It corroborates that the valid ARM ELF load segment ends before
+the declared section table, whose bytes are absent/zero in memory. Only then
+does it accept the exact memory-object diagnostic in this compiler-reference
+experiment. All other debugger diagnostics still fail. Two actual vDSO pages
+pass and fourteen machine/extent/section-content/load-address corruptions
+reject (`vdso-corroboration-controls.json`). No original ELF validator check is
+weakened, and this corroboration is not a general exporter warning allowance.
+
+The maintained builder subsequently passes in `maintained-corrected-v2/`, and
+its complete 14-process reference run passes at `run.fjqqbzqw`. The final current
+system-emulator regression passes at `run.vywlp9nz`. These are additional runs,
+not replacements for the retained initial failures. The original private
+unmodified emulator/source hashes were rechecked unchanged after all experiments.
+Maintained corrected executable SHA-256 values are:
+
+- `qemu-arm`: `0a5431ec83113c4d12521e55c8cdb4abb7645d4c52ab87ec5ccedea447f15faf`.
+- `qemu-armeb`: `f33d585bc238ea44d33e6606837281840969b6a67ae379f1e829a37b694c5ebc`.

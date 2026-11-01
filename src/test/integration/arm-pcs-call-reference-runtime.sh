@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run one compiler reference in a private QEMU process; never patch its registers.
+# Run one independent compiler reference or register-write control in private QEMU.
 set -euo pipefail
 repository=$(cd "$(dirname "$0")/../../.." && pwd)
 case_dir=$1

@@ -1,0 +1,11 @@
+--- a/target/arm/gdbstub.c
++++ b/target/arm/gdbstub.c
+@@ -136,7 +136,7 @@
+     int nregs = cpu_isar_feature(aa32_simd_r32, cpu) ? 32 : 16;
+ 
+     if (reg < nregs) {
+-        *aa32_vfp_dreg(env, reg) = ldq_le_p(buf);
++        *aa32_vfp_dreg(env, reg) = ldq_p(buf);
+         return 8;
+     }
+     if (arm_feature(env, ARM_FEATURE_NEON)) {
