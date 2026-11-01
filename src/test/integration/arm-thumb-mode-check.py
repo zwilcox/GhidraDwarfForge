@@ -21,7 +21,7 @@ def elf(path):
     data = path.read_bytes()
     assert data[:7] == b"\x7fELF\x01\x01\x01", path
     header = struct.unpack_from("<HHIIIIIHHHHHH", data, 16)
-    assert header[0] == 2 and header[1] == 40, header
+    assert header[0] in (2, 3) and header[1] == 40, header
     offset, width, count, names_index = header[5], header[10], header[11], header[12]
     assert width == 40 and 0 < count < 0xff00 and 0 < names_index < count
     sections = [struct.unpack_from("<10I", data, offset + index * width) for index in range(count)]
@@ -124,9 +124,12 @@ def main():
     reference = elf(directory / "thumb.reference")
     original = elf(directory / "thumb.stripped")
     if args.stage == "labels":
-        labels = {}
+        labels = {"role": (directory / "role.txt").read_text().strip()}
+        labels["shared"] = labels["role"].startswith("shared")
+        labels["textAddress"] = section(reference, ".text")["row"][3]
         for name in ("thumb_add", "arm_call", "main", "arm_after", "thumb_sink", "thumb_pointer"):
-            rows = [row for row in reference["symbols"] if row["name"] == name]
+            original_name = "thumb_fixture_main" if labels["shared"] and name == "main" else name
+            rows = [row for row in reference["symbols"] if row["name"] == original_name]
             assert len(rows) == 1, (name, rows)
             row = dict(rows[0])
             function = name in ("thumb_add", "arm_call", "main", "arm_after")
@@ -134,6 +137,17 @@ def main():
             assert row["size"] > 0
             if function:
                 assert row["info"] & 15 == 2 and row["raw"] & 1 == (name == "thumb_add"), row
+            if function:
+                mappings = [item for item in reference["symbols"] if item["section"] == row["section"]
+                    and (item["name"] == "$d" or item["name"].startswith("$d."))
+                    and row["code"] < item["raw"] < row["code"] + row["size"]]
+                assert len(mappings) <= 1, (name, mappings)
+                row["codeSize"] = (mappings[0]["raw"] - row["code"]) if mappings else row["size"]
+                if mappings:
+                    later_code = [item for item in reference["symbols"] if item["section"] == row["section"]
+                        and item["name"].split(".")[0] in ("$a", "$t")
+                        and mappings[0]["raw"] < item["raw"] < row["code"] + row["size"]]
+                    assert not later_code, ("not a trailing literal pool", name, later_code)
             labels[name] = row
         assert labels["thumb_add"]["code"] + labels["thumb_add"]["size"] == labels["arm_after"]["code"]
         assert labels["thumb_add"]["section"] == labels["arm_after"]["section"]
@@ -146,11 +160,14 @@ def main():
         (directory / "prepare.txt").write_text("\n".join(hex(labels[name]["code"]) for name in
             ("thumb_add", "arm_call", "main", "thumb_sink", "thumb_pointer", "arm_after")) + "\n")
         paths = [directory / "thumb.reference", directory / "thumb.stripped"]
+        if labels["shared"]:
+            paths += [directory / "thumb.driver", args.repository / "src/test/fixtures/arm-thumb-shared-driver.c"]
         paths += sorted(args.module.rglob("*.jar")) + [args.module / "ghidra_scripts/GhidraDwarfForge.java"]
         paths += [args.repository / "src/test/fixtures" / name for name in
                   ("arm-thumb-caller.c", "arm-thumb-leaf.c", "arm-thumb-after.c")]
         paths += [args.repository / "src/test/integration" / name for name in
                   ("arm-thumb-mode-export.sh", "arm-thumb-mode-gdb.py", "arm-thumb-mode-check.py",
+                   "arm-thumb-mode-negative.py",
                    "ghidra_scripts/PrepareArmThumbMode.java")]
         (directory / "protected-before.json").write_text(json.dumps(
             {str(path): snapshot(path) for path in paths}, indent=4) + "\n")
@@ -164,6 +181,8 @@ def main():
     validate_symbol_inventory(original, output)
     inventory_negative_controls(original, output)
     prep = transcript(directory / "export-first.log", "ARM_THUMB_PREP=")
+    if labels["role"].endswith("-rebased"):
+        assert prep["imageBaseDelta"] == 0x200000
     assert prep["language"] == "ARM:LE:32:v8" and len(prep["functions"]) == 4
     jars = list((args.module / "lib").glob("GhidraDwarfForge.jar"))
     origin = urlsplit(prep["exporterClassOrigin"])
@@ -175,15 +194,16 @@ def main():
     for name, recovered in names.items():
         row = labels[name]
         expected = {"name": "__forge_arm_mode_%08x" % row["code"], "raw": row["raw"],
-                    "size": row["size"], "info": 2, "other": 0, "section": row["section"]}
+                    "size": row["codeSize"], "info": 2, "other": 0, "section": row["section"]}
         actual = [symbol for symbol in output["symbols"] if symbol["name"] == expected["name"]]
         assert actual == [expected], (name, expected, actual)
         selected = [entry for entry in prep["functions"] if entry["name"] == recovered]
         assert len(selected) == 1
-        assert int(selected[0]["entry"], 16) == row["code"]
+        assert int(selected[0]["entry"], 16) - prep["imageBaseDelta"] == row["code"]
         assert selected[0]["mode"] == (name == "thumb_add")
-        assert [(int(item["address"], 16), item["length"]) for item in selected[0]["instructions"]] == [
-            (item["address"], item["length"]) for item in compiler_static[name]]
+        assert [(int(item["address"], 16) - prep["imageBaseDelta"], item["length"]) for item in selected[0]["instructions"]] == [
+            (item["address"], item["length"]) for item in compiler_static[name]
+            if item["address"] < row["code"] + row["codeSize"]]
         # Each selected subprogram has an even true code PC, independently of ELF symbol tags.
         dies = re.split(r"(?=^\s*<\d+><[0-9a-f]+>:)", info, flags=re.M)
         matching = [die for die in dies if "DW_TAG_subprogram" in die and
@@ -220,19 +240,28 @@ def main():
                 function, = [item for item in prep["functions"] if item["name"] == "recovered_thumb_add"]
                 write, = [item for item in function["instructions"] if item["text"] == "mov r0,r3"]
                 assert write["length"] == 2
-                boundary = int(write["address"], 16) + write["length"]
+                boundary = int(write["address"], 16) - prep["imageBaseDelta"] + write["length"]
+                right_boundary = None
+                if labels.get("shared", False):
+                    right_write, = [item for item in function["instructions"] if item["text"] == "ldr r1,[r7,#0x4]"]
+                    assert right_write["length"] == 2
+                    right_boundary = int(right_write["address"], 16) - prep["imageBaseDelta"] + 2
                 for values in result["values"]:
+                    if right_boundary is not None:
+                        assert values["rightLifetime"] == {"write": right_boundary - 2 + result["loadBias"],
+                            "end": right_boundary + result["loadBias"], "afterUnavailable": True,
+                            "instructionBytes": "7968"}
                     assert values["right"]["available"] and values["left"]["available"], values
-                    assert values["lifetime"] == {"write": boundary - 2, "end": boundary,
+                    assert values["lifetime"] == {"write": boundary - 2 + result["loadBias"], "end": boundary + result["loadBias"],
                         "afterUnavailable": True, "returnRegister": values["sink"]}
                     for parameter in ("left", "right"):
                         omitted = [item for item in reports[0]["omittedLocations"] if
                                    item["function"] == "recovered_thumb_add" and item["variable"] == parameter]
-                        if parameter == "left":
+                        if parameter == "left" or right_boundary is not None:
                             assert len(omitted) == 1 and omitted[0]["reason"] == "REGISTER_MODIFIED"
                             assert omitted[0]["kind"] == "PARAMETER"
-                            assert int(omitted[0]["startAddress"], 16) == boundary
-                            assert int(omitted[0]["endAddress"], 16) == labels["thumb_add"]["code"] + labels["thumb_add"]["size"]
+                            assert int(omitted[0]["startAddress"], 16) == (boundary if parameter == "left" else right_boundary)
+                            assert int(omitted[0]["endAddress"], 16) == labels["thumb_add"]["code"] + labels["thumb_add"]["codeSize"]
                         else:
                             assert not omitted, omitted
                 owner, = [index for index, die in enumerate(dies) if "DW_TAG_subprogram" in die and
@@ -243,20 +272,24 @@ def main():
                     if depth and int(depth[1]) <= 1:
                         break
                     children.append(die)
-                left, = [die for die in children if "DW_TAG_formal_parameter" in die and
-                    re.search(r"DW_AT_name\s*:.*\bleft\s*$", die, re.M)]
-                location = re.search(r"DW_AT_location\s*:\s*(0x[0-9a-f]+) \(location list\)", left)
-                assert location
-                offset = int(location[1], 16)
-                expected = b"\x07" + struct.pack("<II", labels["thumb_add"]["code"], boundary) + b"\x02\x90\x00\x00"
-                assert section(output, ".debug_loclists")["data"][offset:offset + len(expected)] == expected
+                expected_prefixes = [("left", 0, boundary)]
+                if right_boundary is not None:
+                    expected_prefixes.append(("right", 1, right_boundary))
+                for parameter, register, end in expected_prefixes:
+                    formal, = [die for die in children if "DW_TAG_formal_parameter" in die and
+                        re.search(r"DW_AT_name\s*:.*\b" + parameter + r"\s*$", die, re.M)]
+                    location = re.search(r"DW_AT_location\s*:\s*(0x[0-9a-f]+) \(location list\)", formal)
+                    assert location
+                    offset = int(location[1], 16)
+                    expected = b"\x07" + struct.pack("<II", labels["thumb_add"]["code"], end) + bytes([2, 0x90, register, 0])
+                    assert section(output, ".debug_loclists")["data"][offset:offset + len(expected)] == expected
             records.append(result)
         assert warnings[0] == warnings[1]
     protected = json.loads((directory / "protected-before.json").read_text())
     after = {path: snapshot(Path(path)) for path in protected}
     assert protected == after
     (directory / "protected-after.json").write_text(json.dumps(after, indent=4) + "\n")
-    result = {"status": "PASS", "scope": "mixed ARM/Thumb ELF32 LE ARMv7 hard-float ET_EXEC; no PIE/rebase claim",
+    result = {"status": "PASS", "scope": "mixed ARM/Thumb ELF32 LE ARMv7 hard-float " + labels["role"],
               "labels": labels, "prep": prep, "report": reports[0], "gdb": records,
               "output": snapshot(directory / "thumb.dbg"), "source": snapshot(directory / "thumb.dbg.c"),
               "protectedFiles": len(protected), "strict": json.loads((directory / "strict.log.check.json").read_text())}

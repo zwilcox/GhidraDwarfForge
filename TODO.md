@@ -1,5 +1,45 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local hosted-oracle correction:** run `41359234173` exposed a
+sectionless alias test that counted analyst aliases but omitted the newly enabled
+primary ARM mode function symbols. The corrected inventory imports independently
+compiler-checked sectioned cues and checks the PLT resolver's four instructions
+and mapping boundaries separately. It passes the exact hosted artifact, all six
+symbol-corruption controls, and nine fresh ARM/Thumb/mixed exec/PIE/rebased runs.
+Production code is unchanged; a new hosted run is required. See
+`docs/ARM-THUMB-EXTENDED-LAYOUTS.md`. Full #68–#71 scope remains open.
+
+**CONFIRMED local ARM32 shared-library mode acceptance:**
+Stripped shared objects and explicitly rebased shared objects pass static mode
+checks, measured runtime relocation, source stepping, direct/indirect calls and
+exact register-clobber gaps with the unchanged production package. Both cases
+also pass repeated native decompilation failures and production cancellation.
+The PIE/sectionless regression passes after the harness extension. CI includes
+both shared roles. See `docs/ARM-THUMB-EXTENDED-LAYOUTS.md` for receipts and the
+PIC-specific second-argument boundary. Mixed-body modes, per-function ABI/BE8,
+broader storage and exact-head hosted acceptance remain open; #68–#71 retain
+their full original scope.
+
+**CONFIRMED local ARM32 sectionless and failure/cancellation acceptance:**
+Fresh sectionless imports now pass all four exec/PIE/rebased/dynamic-symbol
+roles, with independent raw inventory and real debugger checks. The combined
+eight-case matrix passes 16 native decompilation-failure exports and eight
+production copy cancellations. A separate empty-GNU-hash control requires an
+honest mode-symbol omission where no complete symbol count exists. The pipeline
+now runs these checks. See `docs/ARM-THUMB-EXTENDED-LAYOUTS.md`; shared loading,
+mixed-body/ABI/BE8 work and exact-head hosted acceptance remain required.
+All original #68–#71 completion requirements remain active.
+
+**CONFIRMED local ARM32 PIE mode progress; full acceptance remains open:**
+The original ET_DYN omission now has a reproduced static-decoding failure and a
+candidate correction using existing byte/owner/mode checks. Four packaged
+exec/PIE/rebased/dynamic-symbol cases pass compiler/Forge runtime, validators,
+determinism and original-preservation checks. See `docs/ARM-THUMB-EXTENDED-LAYOUTS.md`
+for exact evidence and literal-pool oracle boundaries. Sectionless production
+behavior is PRESENT, UNVERIFIED beyond model checks; shared/mixed-body/BE8/ABI
+work, failure/cancellation composition and hosted acceptance remain required.
+All #68–#71 requirements remain active.
+
 **CONFIRMED aligned-aggregate and live-session MIPS defects; correction under validation:**
 Explicit aggregate alignment now skips the required register slot and caps
 argument alignment at 16 without changing formal types. A separate fresh-import
