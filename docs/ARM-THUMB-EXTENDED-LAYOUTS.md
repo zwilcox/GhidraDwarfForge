@@ -210,3 +210,37 @@ The shared failure-script change also passes a fresh AArch64 SIMD exec export,
 strict/GNU/LLVM validation, runtime values and its real failure/cancellation
 composition at `build/test-results/aarch64-vector/exec.fhtol32k`, using the same
 installed package. ARM mode extraction remains empty for that AArch64 target.
+
+## Hosted sectionless alias inventory correction
+
+**CONFIRMED locally:** ARM lane `125008037030` in run `41359234173` failed an
+old raw-inventory count in `sectionless-function-aliases.py`. The sidecar had
+both the analyst's aliases and valid `__forge_arm_mode_*` primary function cues.
+The old expected inventory contained only aliases. These are sized `STT_FUNC`
+mode hints, not `$a/$t/$d` section mappings.
+
+The corrected oracle first revalidates the sectioned baseline's cue inventory
+against independent compiler mapping intervals, then includes those exact
+names/values/sizes. A sectionless import additionally recognizes the PLT resolver
+prefix: its four original ARM instruction words and compiler `$a`/`$d` boundaries
+must match exactly before accepting the additional 16-byte cue. Nothing is
+learned from the sectionless output being tested. Original dynamic records,
+local/global partition, bindings, section remapping, names, bytes and alias
+semantics retain their existing checks.
+
+The exact downloaded hosted artifact passes in
+`build/arm-abi-completion/hosted-alias-correction/inventory.json`, with all six
+corruptions rejected. Nine fresh sectionless runs pass real headless export,
+GNU/LLVM/strict validators, raw inventories, deterministic repeats, saved-project
+and original preservation, and QEMU/GDB alias behavior:
+
+- ARM exec/PIE/rebased cases: `build/test-results/sectionless-alias-correction/`.
+- Thumb and mixed exec/PIE/rebased cases, with six freshly built and independently
+  validated compiler baselines: `build/test-results/sectionless-alias-correction-matrix/`.
+- The latter command/exit receipt is `sectionless-alias-correction-matrix/commands.json`.
+
+The existing private PR130 package is unchanged (JAR SHA-256
+`7b22fdbb111df9d4aba25d8c0fcff4684c8564fcfe761fb481f6e3525631bd7c`).
+The original failed hosted run remains failed; current-head hosted acceptance
+and protected integration remain required. This correction changes only the
+oracle and documentation, not production code or the original ABI scope.

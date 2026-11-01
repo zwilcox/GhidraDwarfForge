@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local hosted-oracle correction:** run `41359234173` exposed a
+sectionless alias test that counted analyst aliases but omitted the newly enabled
+primary ARM mode function symbols. The corrected inventory imports independently
+compiler-checked sectioned cues and checks the PLT resolver's four instructions
+and mapping boundaries separately. It passes the exact hosted artifact, all six
+symbol-corruption controls, and nine fresh ARM/Thumb/mixed exec/PIE/rebased runs.
+Production code is unchanged; a new hosted run is required. See
+`docs/ARM-THUMB-EXTENDED-LAYOUTS.md`. Full #68–#71 scope remains open.
+
 **CONFIRMED local ARM32 shared-library mode acceptance:**
 Stripped shared objects and explicitly rebased shared objects pass static mode
 checks, measured runtime relocation, source stepping, direct/indirect calls and
