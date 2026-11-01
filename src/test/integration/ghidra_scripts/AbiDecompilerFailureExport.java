@@ -62,7 +62,7 @@ public class AbiDecompilerFailureExport extends GhidraScript {
         var registers = TargetRegisterMap.forElf(target.name(), elf, monitor::isCancelled);
         var extracted = GhidraTypeGraph.extract(currentProgram, functions, registers, delta, monitor, this::println,
             decompilation.recoveredReturns(), decompilation.recoveredParameters(), decompilation.recoveredStatics(),
-            ghidradwarfforge.targets.Aarch64ParameterAllocation.forProgram(currentProgram, elf, monitor, this::println));
+            ghidradwarfforge.targets.TargetParameterAllocation.forProgram(currentProgram, elf, monitor, this::println));
         var model = GhidraCompilerCallPolicy.apply(currentProgram, target, extracted, monitor, this::println);
         if (model.variableStorage().variables().stream().noneMatch(variable ->
                 variable.functionName().equals(failedName) && variable.name().equals(parameterName) &&

@@ -205,22 +205,19 @@ public final class GhidraTypeGraph {
                     parameter.getAutoParameterType() == AutoParameterType.THIS));
                 if (!parameterName.isBlank() && logicalLength > 0) {
                     var physical = correctedStorage.getOrDefault(parameter.getOrdinal(), parameter.getVariableStorage());
-                    boolean corrected = correctedStorage.containsKey(parameter.getOrdinal());
                     Storage storage = GhidraVariableStorage.stableParameter(program, function,
                         parameter, physical, registerMap, monitor);
                     boolean indirect = parameter.getVariableStorage() != null &&
                         parameter.getVariableStorage().isForcedIndirect();
                     var prefix = indirect
                         ? StackValueFlow.proveIndirect(program, function, parameter, physical, registerMap, monitor)
-                        : corrected ? List.<GhidraVariableStorage.StorageInterval>of()
                         : GhidraVariableStorage.parameterPrefix(program, function,
-                            parameter, registerMap, storage, monitor);
-                    if (!corrected && prefix.isEmpty() && storage instanceof UnavailableStorage) {
-                        prefix = StackValueFlow.prove(program, function, parameter, registerMap, monitor);
+                            parameter, physical, registerMap, storage, monitor);
+                    if (prefix.isEmpty() && storage instanceof UnavailableStorage) {
+                        prefix = StackValueFlow.prove(program, function, parameter, physical, registerMap, monitor);
                     }
-                    if (!corrected && storage instanceof UnavailableStorage && parameter.getVariableStorage() != null &&
-                            parameter.getVariableStorage().getVarnodeCount() > 1) {
-                        var pieces = CompositeValueFlow.prove(program, function, parameter, registerMap, monitor);
+                    if (storage instanceof UnavailableStorage && physical != null && physical.getVarnodeCount() > 1) {
+                        var pieces = CompositeValueFlow.prove(program, function, parameter, physical, registerMap, monitor);
                         prefix = prefix.isEmpty() ? pieces : StackValueFlow.extendUnavailable(prefix, pieces);
                     }
                     if (prefix.isEmpty() && storage instanceof StackStorage && stackDepths == null) {

@@ -1,5 +1,16 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local wider MIPS progress; component acceptance pending:** an
+isolated N32 positional/aggregate allocation correction and shared delayed-return
+prefix handling restore all 25 entry values in the original reproduction.
+A separate decoded affine proof fixes lost stack depths in declared truncated
+address spaces. Eight N32/N64 endian/stripping cases pass 3,472 instruction observations,
+clean GNU/LLVM/strict-zero validation and the packaged AArch64 regression.
+The wider compiler-reference policy, versioned runtime matrix, remaining ABI
+cases and hosted integration are still required. See
+`docs/MIPS-WIDE-ARGUMENT-ALLOCATION.md`; #68–#71 remain open.
+
+
 **CONFIRMED local MIPS N32/N64 scalar candidate; acceptance pending:** both byte
 orders now pass 20 non-PIE/PIE/rebased/shared/rebased-shared packaged cases, with
 348 compiler and 348 Forge instruction observations, separate source stepping,

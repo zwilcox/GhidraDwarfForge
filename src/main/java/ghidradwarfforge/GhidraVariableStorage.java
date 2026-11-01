@@ -97,7 +97,7 @@ public final class GhidraVariableStorage {
             return unavailable(OmissionReason.UNSUPPORTED_STORAGE,
                 "parameter is neither one direct register nor one stack slot");
         }
-        return stableRegister(program, function, parameter.getRegister(),
+        return stableRegister(program, function, program.getRegister(storage.getFirstVarnode()),
             parameter.getLength(), registers, monitor, "parameter");
     }
 
@@ -113,14 +113,19 @@ public final class GhidraVariableStorage {
     public static List<StorageInterval> parameterPrefix(Program program, Function function,
             Parameter parameter, TargetRegisterMap registers, Storage rejected,
             TaskMonitor monitor) throws CancelledException {
-        if (rejected instanceof UnavailableStorage && hasStackPiece(parameter.getVariableStorage())) {
-            return mixedParameterPrefix(program, function, parameter, registers, monitor);
+        return parameterPrefix(program, function, parameter, parameter.getVariableStorage(), registers, rejected, monitor);
+    }
+
+    static List<StorageInterval> parameterPrefix(Program program, Function function,
+            Parameter parameter, VariableStorage storage, TargetRegisterMap registers, Storage rejected,
+            TaskMonitor monitor) throws CancelledException {
+        if (rejected instanceof UnavailableStorage && hasStackPiece(storage)) {
+            return mixedParameterPrefix(program, function, parameter, storage, registers, monitor);
         }
         if (!(rejected instanceof UnavailableStorage unavailable) ||
                 unavailable.reason() != OmissionReason.REGISTER_MODIFIED) {
             return List.of();
         }
-        VariableStorage storage = parameter.getVariableStorage();
         if (storage == null) {
             return List.of();
         }
@@ -128,7 +133,7 @@ public final class GhidraVariableStorage {
         if (!composite && (storage.getVarnodeCount() != 1 || !storage.isRegisterStorage())) {
             return List.of();
         }
-        Register register = composite ? null : parameter.getRegister();
+        Register register = composite ? null : program.getRegister(storage.getFirstVarnode());
         if ((!composite && register == null) ||
                 function.getBody().getNumAddressRanges() != 1 ||
                 !function.getEntryPoint().equals(function.getBody().getMinAddress())) {
@@ -294,7 +299,7 @@ public final class GhidraVariableStorage {
         }
         if (!composite && result.stream().anyMatch(interval -> !interval.storage().available())) {
             return StackValueFlow.extendUnavailable(result,
-                StackValueFlow.prove(program, function, parameter, registers, monitor));
+                StackValueFlow.prove(program, function, parameter, storage, registers, monitor));
         }
         return List.copyOf(result);
     }
@@ -312,10 +317,9 @@ public final class GhidraVariableStorage {
     }
 
     private static List<StorageInterval> mixedParameterPrefix(Program program, Function function,
-            Parameter parameter, TargetRegisterMap registers, TaskMonitor monitor)
+            Parameter parameter, VariableStorage storage, TargetRegisterMap registers, TaskMonitor monitor)
             throws CancelledException {
         monitor.checkCancelled();
-        VariableStorage storage = parameter.getVariableStorage();
         var formal = parameter.getFormalDataType();
         int bytes = parameter.getLength();
         // Stack analysis and listing instructions must describe the same
@@ -468,7 +472,7 @@ public final class GhidraVariableStorage {
         return false;
     }
 
-    private static List<Instruction> prefixInstructions(Program program, Function function,
+    static List<Instruction> prefixInstructions(Program program, Function function,
             TaskMonitor monitor) throws CancelledException {
         List<Instruction> instructions = new ArrayList<>();
         var instructionsByAddress = new HashMap<ghidra.program.model.address.Address, Instruction>();
@@ -521,7 +525,7 @@ public final class GhidraVariableStorage {
         return registerPrefixEnd(start, end, instructions, List.of(register), false, monitor);
     }
 
-    private static long registerPrefixEnd(long start, long end, List<Instruction> instructions,
+    static long registerPrefixEnd(long start, long end, List<Instruction> instructions,
             List<Register> registers, boolean exactDecodedLength, TaskMonitor monitor)
             throws CancelledException {
         return registerPrefixEnd(start, end, instructions, registers, exactDecodedLength,
@@ -550,10 +554,11 @@ public final class GhidraVariableStorage {
         long expected = start;
         long firstWriteEnd = -1;
         boolean returned = false;
-        for (Instruction instruction : instructions) {
+        for (int index = 0; index < instructions.size(); index++) {
+            Instruction instruction = instructions.get(index);
             monitor.checkCancelled();
             if (returned || instruction.getAddress().getOffset() != expected ||
-                    instruction.isInDelaySlot() || instruction.getDelaySlotDepth() != 0 ||
+                    instruction.isInDelaySlot() || instruction.getDelaySlotDepth() < 0 ||
                     instruction.getFlowOverride() != FlowOverride.NONE ||
                     (exactDecodedLength && (instruction.isLengthOverridden() ||
                         instruction.isFallThroughOverridden() || instruction.getLength() <= 0 ||
@@ -564,6 +569,11 @@ public final class GhidraVariableStorage {
             if (next <= expected || next > end ||
                     (exactDecodedLength && next != Math.addExact(expected, instruction.getLength()))) {
                 return -1;
+            }
+            long terminalEnd = next;
+            if (instruction.getDelaySlotDepth() != 0) {
+                terminalEnd = delayedTerminalEnd(instructions, index, end, monitor);
+                if (terminalEnd < 0) return -1;
             }
             boolean returns = false;
             PcodeOp[] operations = instruction.getPcode();
@@ -608,7 +618,7 @@ public final class GhidraVariableStorage {
             }
             var flow = instruction.getFlowType();
             if (returns) {
-                if (!flow.isTerminal() || flow.isCall() || next != end ||
+                if (!flow.isTerminal() || flow.isCall() || terminalEnd != end ||
                         instruction.getFallThrough() != null) {
                     return -1;
                 }
@@ -633,10 +643,49 @@ public final class GhidraVariableStorage {
                     }
                 }
             }
-            expected = next;
+            if (instruction.getDelaySlotDepth() != 0) {
+                if (!returns) return -1;
+                // Ghidra folds delay-slot effects into the owner's p-code.
+                // A write there ends availability at the slot address, so no
+                // partially executed delayed transfer acquires a location.
+                index += instruction.getDelaySlotDepth();
+            }
+            expected = terminalEnd;
         }
         return returned && expected == end
             ? firstWriteEnd == -1 && stopAtMemoryWrite ? end : firstWriteEnd : -1;
+    }
+
+    /** Only a fully decoded final return and its adjacent ordinary delay slots. */
+    private static long delayedTerminalEnd(List<Instruction> instructions, int index, long end,
+            TaskMonitor monitor) throws CancelledException {
+        Instruction owner = instructions.get(index);
+        int count = owner.getDelaySlotDepth();
+        if (count <= 0 || count > instructions.size() - index - 1 || index + count + 1 != instructions.size() ||
+                !owner.getFlowType().isTerminal() || owner.getFlowType().isCall() || owner.getFallThrough() != null ||
+                owner.isLengthOverridden() || owner.isFallThroughOverridden() || owner.getLength() <= 0 ||
+                owner.getLength() != owner.getParsedLength()) return -1;
+        var next = owner.getMaxAddress().next();
+        for (int slot = 1; slot <= count; slot++) {
+            monitor.checkCancelled();
+            Instruction delayed = instructions.get(index + slot);
+            if (next == null || !next.equals(delayed.getAddress()) || !delayed.isInDelaySlot() ||
+                    delayed.getDelaySlotDepth() != 0 || delayed.getFlowOverride() != FlowOverride.NONE ||
+                    !delayed.getFlowType().isFallthrough() || delayed.isLengthOverridden() ||
+                    delayed.isFallThroughOverridden() || delayed.getLength() <= 0 ||
+                    delayed.getLength() != delayed.getParsedLength() ||
+                    delayed.getMaxAddress().getOffset() + 1 != delayed.getAddress().getOffset() + delayed.getLength()) return -1;
+            for (PcodeOp operation : delayed.getPcode()) {
+                switch (operation.getOpcode()) {
+                    case PcodeOp.BRANCH, PcodeOp.CBRANCH, PcodeOp.BRANCHIND, PcodeOp.CALL, PcodeOp.CALLIND,
+                        PcodeOp.RETURN, PcodeOp.CALLOTHER, PcodeOp.UNIMPLEMENTED -> { return -1; }
+                    default -> { }
+                }
+            }
+            next = delayed.getMaxAddress().next();
+            if (next == null || !next.equals(delayed.getFallThrough())) return -1;
+        }
+        return next.getOffset() == end ? end : -1;
     }
 
     /** Returns one exact stack or provably stable register local. */
@@ -1083,7 +1132,7 @@ public final class GhidraVariableStorage {
         return !declaredTruncatedMemory(program, space, offsetBytes);
     }
 
-    private static boolean declaredTruncatedMemory(Program program, AddressSpace space,
+    static boolean declaredTruncatedMemory(Program program, AddressSpace space,
             int offsetBytes) {
         // A loaded Sleigh language can retain wider STORE operands while its
         // declared RAM space is truncated. Input 0 still selects RAM; input 1
@@ -1266,6 +1315,7 @@ public final class GhidraVariableStorage {
         }
         Register base = pointer.getBaseRegister();
         CallDepthChangeInfo depths = new CallDepthChangeInfo(function, monitor);
+        var truncated = TruncatedStackDepth.prove(program, function, pointer, monitor);
         List<StackDepthInterval> result = new ArrayList<>();
         InstructionIterator instructions = program.getListing()
             .getInstructions(function.getBody(), true);
@@ -1274,7 +1324,7 @@ public final class GhidraVariableStorage {
             Instruction instruction = instructions.next();
             long start = instruction.getAddress().getOffset();
             long end = Math.addExact(instruction.getMaxAddress().getOffset(), 1L);
-            int depth = depths.getSPDepth(instruction.getAddress());
+            int depth = truncated.getOrDefault(instruction.getAddress(), depths.getSPDepth(instruction.getAddress()));
             boolean known = depth != Function.UNKNOWN_STACK_DEPTH_CHANGE &&
                 depth != Function.INVALID_STACK_DEPTH_CHANGE;
             if (!result.isEmpty()) {

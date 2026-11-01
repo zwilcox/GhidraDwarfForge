@@ -758,6 +758,30 @@ tasks.register("aarch64ParameterAllocationSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/aarch64-allocation/cache").absolutePath
 }
 
+tasks.register("mipsN32ParameterAllocationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks isolated N32 positional aggregate allocation and preserved analyst storage"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.MipsN32ParameterAllocationSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/mips-n32-allocation/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/mips-n32-allocation/cache").absolutePath
+}
+
+tasks.register("delayedReturnPrefixSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks incoming value prefixes with actual delayed returns and malformed controls"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.DelayedReturnPrefixSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/delayed-return-prefix/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/delayed-return-prefix/cache").absolutePath
+}
+
 tasks.register("aarch64AbiSelectionSmoke", JavaExec) {
     group = "verification"
     description = "Checks actual ELF metadata against bounded debugger call profiles"
@@ -1281,4 +1305,16 @@ tasks.register("globalScopeNamesSmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.types.GlobalScopeNamesSmoke"
+}
+
+tasks.register("truncatedStackDepthSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks stack depth across narrow operations in declared truncated memory"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.TruncatedStackDepthSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/truncated-stack-depth/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/truncated-stack-depth/cache").absolutePath
 }

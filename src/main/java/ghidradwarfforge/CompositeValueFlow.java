@@ -28,8 +28,13 @@ final class CompositeValueFlow {
 
     static List<StorageInterval> prove(Program program, Function function, Parameter parameter,
             TargetRegisterMap registers, TaskMonitor monitor) throws CancelledException {
+        return prove(program, function, parameter, parameter.getVariableStorage(), registers, monitor);
+    }
+
+    static List<StorageInterval> prove(Program program, Function function, Parameter parameter,
+            ghidra.program.model.listing.VariableStorage storage, TargetRegisterMap registers, TaskMonitor monitor)
+            throws CancelledException {
         monitor.checkCancelled();
-        var storage = parameter.getVariableStorage();
         var formal = parameter.getFormalDataType();
         int bytes = parameter.getLength();
         if (function.getProgram() != program || parameter.getFunction() != function ||

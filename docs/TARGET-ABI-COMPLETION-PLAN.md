@@ -142,3 +142,10 @@ See `MIPS-WIDE-SCALAR-PROFILE.md` for exact package receipts, the explicit PIE
 load-bias workflow, and separate N32 aggregate/mixed failures uncovered by the
 next research fixture. Those failures and all remaining original issue rows
 still require correction and acceptance; this component does not close #69.
+
+**CONFIRMED local wider-argument progress; full acceptance pending:** the N32
+allocation correction and shared delayed-return/truncated-stack proofs pass
+eight fresh endian/ABI/stripping non-PIE cases and 3,472 instruction observations. Compiler
+aggregate-reference calibration, versioned wider runtime coverage and remaining
+ABI/storage cases are still required. See `MIPS-WIDE-ARGUMENT-ALLOCATION.md`.
+The original requirement rows above remain the completion criteria.
