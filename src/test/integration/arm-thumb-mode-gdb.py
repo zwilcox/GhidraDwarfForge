@@ -11,10 +11,13 @@ variant = os.environ["FORGE_THUMB_VARIANT"]
 phase = os.environ["FORGE_THUMB_PHASE"]
 labels = json.loads((directory / "labels.json").read_text())
 compiler = variant == "compiler"
+shared = labels.get("shared", False)
 result = {"variant": variant, "phase": phase, "status": "STARTED", "stops": []}
 
 
 def name(original):
+    if compiler and shared and original == "main":
+        return "thumb_fixture_main"
     return original if compiler or original == "main" else "recovered_" + original
 
 
@@ -90,7 +93,7 @@ try:
         assert result["static"] == oracle["static"], "static ARM/Thumb decoding differs from compiler"
         assert result["functionAddress"] == oracle["functionAddress"], "GDB function address differs"
         assert result["storedPointer"] == oracle["storedPointer"]
-    if labels["role"] == "pie-dynamic":
+    if labels["role"] == "pie-dynamic" or shared:
         result["originalLookup"] = {original: integer("&" + original) - inspection_bias
             for original in ("arm_call", "thumb_add", "arm_after", "thumb_sink", "thumb_pointer")}
         if not compiler:
@@ -110,16 +113,45 @@ try:
         if re.fullmatch(r"mov\s+r0,\s*r3", row["asm"])]
     assert len(writes) == 1 and writes[0]["length"] == 2, writes
     write_pc = writes[0]["addr"] - inspection_bias
+    right_write = None
+    if shared:
+        candidates = [row for row in gdb.selected_inferior().architecture().disassemble(
+            thumb["code"], thumb["code"] + thumb["codeSize"] - 1)
+            if re.fullmatch(r"ldr\s+r1,\s*\[r7,\s*#4\]", row["asm"])]
+        assert len(candidates) == 1 and candidates[0]["length"] == 2, candidates
+        right_write = candidates[0]["addr"]
 
-    if not sectionless:
+    if shared:
+        assert not sectionless
+        gdb.execute("file " + str(directory / "thumb.driver"))
+        gdb.execute("set solib-search-path " + str(directory))
         gdb.execute("target remote " + os.environ["FORGE_THUMB_REMOTE"])
-    bias = integer("&main") - labels["main"]["code"]
-    assert (bias != 0) == labels["role"].startswith("pie"), bias
+        loaded = gdb.Breakpoint("*main", internal=True)
+        gdb.execute("continue")
+        loaded.delete()
+        libraries = gdb.execute("info sharedlibrary", to_string=True)
+        library, = [line for line in libraries.splitlines() if line.split()[-1:] == [str(directory / "thumb.stripped")]]
+        runtime_text = int(library.split()[0], 16)
+        bias = runtime_text - labels["textAddress"]
+        assert bias > 0
+        artifact = directory / ("thumb.reference" if compiler else "thumb.dbg")
+        gdb.execute("symbol-file " + str(artifact) + " -o " + hex(bias))
+        assert integer("&" + name("main")) == labels["main"]["code"] + bias
+        assert integer("thumb_pointer") == labels["thumb_add"]["raw"] + bias
+        result["sharedLoading"] = {"runtimeText": runtime_text, "linkText": labels["textAddress"],
+            "libraries": libraries, "bias": bias, "autoSolibAdd": False}
+    else:
+        if not sectionless:
+            gdb.execute("target remote " + os.environ["FORGE_THUMB_REMOTE"])
+        bias = integer("&main") - labels["main"]["code"]
+        assert (bias != 0) == labels["role"].startswith("pie"), bias
     result["loadBias"] = bias
     for function in ("arm_call", "main", "thumb_add", "arm_after"):
         labels[function]["code"] += bias
         labels[function]["raw"] += bias
     write_pc += bias
+    if right_write is not None:
+        right_write += bias
     if phase == "calls":
         breakpoint = gdb.Breakpoint(name("thumb_add"))
     else:
@@ -139,6 +171,24 @@ try:
                 else:
                     assert actual == expected, (parameter, actual, expected)
                     values[parameter] = {"available": True, "value": actual}
+            if right_write is not None:
+                right_boundary = gdb.Breakpoint("*" + hex(right_write))
+                assert integer("$pc") <= right_write
+                if integer("$pc") != right_write:
+                    gdb.execute("continue")
+                before_right = thumb_stop("before-right-write-" + str(call))
+                assert before_right["pc"] == right_write and integer("right") == right
+                assert bytes(gdb.selected_inferior().read_memory(right_write, 2)) == b"\x79\x68"
+                gdb.execute("stepi")
+                after_right = thumb_stop("after-right-write-" + str(call))
+                assert after_right["pc"] == right_write + 2 and integer("$r1") == left
+                right_value = gdb.parse_and_eval("right")
+                assert bool(right_value.is_optimized_out) == (not compiler)
+                if compiler:
+                    assert int(right_value) == right
+                values["rightLifetime"] = {"write": right_write, "end": right_write + 2,
+                    "afterUnavailable": bool(right_value.is_optimized_out), "instructionBytes": "7968"}
+                right_boundary.delete()
             boundary = gdb.Breakpoint("*" + hex(write_pc))
             for step in range(12):
                 if integer("thumb_sink") == total:
@@ -153,10 +203,14 @@ try:
             if integer("$pc") != write_pc:
                 gdb.execute("continue")
             before = thumb_stop("before-register-write-" + str(call))
-            assert before["pc"] == write_pc and integer("left") == left and integer("right") == right
+            assert before["pc"] == write_pc and integer("left") == left
             gdb.execute("stepi")
             after = thumb_stop("after-register-write-" + str(call))
-            assert after["pc"] == write_pc + 2 and integer("$r0") == total and integer("right") == right
+            assert after["pc"] == write_pc + 2 and integer("$r0") == total
+            right_value = gdb.parse_and_eval("right")
+            assert bool(right_value.is_optimized_out) == (shared and not compiler)
+            if not right_value.is_optimized_out:
+                assert int(right_value) == right
             value = gdb.parse_and_eval("left")
             assert bool(value.is_optimized_out) == (not compiler)
             if compiler:

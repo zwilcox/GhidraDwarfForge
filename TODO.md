@@ -1,5 +1,16 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local ARM32 shared-library mode acceptance:**
+Stripped shared objects and explicitly rebased shared objects pass static mode
+checks, measured runtime relocation, source stepping, direct/indirect calls and
+exact register-clobber gaps with the unchanged production package. Both cases
+also pass repeated native decompilation failures and production cancellation.
+The PIE/sectionless regression passes after the harness extension. CI includes
+both shared roles. See `docs/ARM-THUMB-EXTENDED-LAYOUTS.md` for receipts and the
+PIC-specific second-argument boundary. Mixed-body modes, per-function ABI/BE8,
+broader storage and exact-head hosted acceptance remain open; #68–#71 retain
+their full original scope.
+
 **CONFIRMED local ARM32 sectionless and failure/cancellation acceptance:**
 Fresh sectionless imports now pass all four exec/PIE/rebased/dynamic-symbol
 roles, with independent raw inventory and real debugger checks. The combined

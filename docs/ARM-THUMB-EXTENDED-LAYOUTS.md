@@ -139,7 +139,7 @@ All eight cases also pass `arm-thumb-mode-controls.py`: two real native
 instruction-limit failures followed by a production copy cancellation per case.
 The failed `recovered_arm_after` has its symbol/address but no invented formal
 children or source declaration line; neighboring Thumb source/values still work.
-The unchanged shared failure script now carries actual extracted mode cues to
+The shared failure script now carries actual extracted mode cues to
 the production exporter, as the installed entry point does. The cancellation
 imports a separate padded fixture, stops after bounded copying begins, preserves
 the existing artifact pair and leaves no temporary files. Saved program changes
@@ -151,3 +151,55 @@ ordinary role. Fresh combined PIE and GNU-empty-hash commands pass under
 `combined-pie.log` and `combined-empty-hash.log` in `build/arm-abi-completion`.
 The pipeline runs all four positive roles plus the explicit GNU-only omission
 control. Exact-head hosted acceptance and protected integration remain pending.
+
+## Shared-library runtime checkpoint
+
+**CONFIRMED locally:** stripped shared objects and rebased shared objects pass
+with the same installed v1 production package. The harness builds a small
+non-PIE driver whose SONAME dependency resolves to the stripped library. After
+stopping at the driver entry, it measures the library's mapped `.text` address,
+subtracts the independently read original section address and explicitly loads
+the compiler symbols or Forge sidecar with that bias. `auto-solib-add` remains
+off. Static decoding runs before attachment; runtime function and stored Thumb
+pointer addresses are checked again after relocation. Inherited dynamic names
+remain resolvable beside curated names.
+
+PIC code overwrites the second argument's register earlier than the executable
+fixture does. The test independently decodes `ldr r1,[r7,#4]`, verifies executed
+bytes `79 68`, observes the original argument immediately before it and the new
+register value immediately afterward. Compiler DWARF retains its saved-stack
+value; Forge correctly marks the register-only value unavailable. The original
+`mov r0,r3` boundary is still checked separately. Raw `.debug_loclists` must
+contain exactly the corresponding reg0/reg1 prefixes and end markers; report
+bounds alone are insufficient evidence.
+
+| Role | Runtime/validator case | Failure/cancellation case |
+| --- | --- | --- |
+| shared | `run.JJdP94X7` | `run.ry7x9ls5` |
+| shared-rebased | `run.FV8vsjrq` | `run.4piv54ta` |
+| PIE regression | `run.p6nPedda` | `run.2do21k6n` |
+
+Runtime cases are below `build/test-results/arm-thumb-mode`; controls are below
+`build/test-results/arm-thumb-controls`. The regression also passes fresh
+sectionless import/export/runtime and its controls at
+`build/test-results/arm-thumb-sectionless/pie.xsa921p6`. Each shared role passes
+GNU/LLVM/pinned strict validation with zero errors, deterministic repeated
+exports, original/package/driver preservation and both GDB phases. Its two real
+native failures preserve neighboring Thumb behavior; cancellation preserves the
+previous output pair. Early shared attempts are retained: the first exposed the
+new honest argument gap; the second showed the compiler named breakpoint lands
+exactly on the clobber instruction. The final oracle handles that boundary
+without skipping either the before or after observation.
+
+CI runs all six ordinary roles plus the empty-GNU-hash omission control. The
+sectionless child remains scoped to the four executable roles; sectionless
+shared loading is not claimed. Wrong-function-tag controls are scoped to inputs
+without inherited dynamic function symbols, since those can independently
+supply the correct mode. Raw symbol-inventory corruption controls still run in
+all roles. Mixed-mode bodies, per-function ABI, BE8 and broader storage remain
+required, along with exact-head hosted acceptance and protected integration.
+
+The shared failure-script change also passes a fresh AArch64 SIMD exec export,
+strict/GNU/LLVM validation, runtime values and its real failure/cancellation
+composition at `build/test-results/aarch64-vector/exec.fhtol32k`, using the same
+installed package. ARM mode extraction remains empty for that AArch64 target.

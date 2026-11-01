@@ -44,12 +44,16 @@ def main():
     (case / 'empty-debug').mkdir()
     for leaf in ('thumb.stripped', 'thumb.reference', 'labels.json', 'compiler-calls.json', 'compiler-from-arm.json'):
         shutil.copy2(base / leaf, case / leaf)
+    if (base / 'thumb.driver').is_file():
+        shutil.copy2(base / 'thumb.driver', case / 'thumb.driver')
     shutil.copytree(base / 'project', case / 'project')
     protected = [p for p in base.rglob('*') if p.is_file()] + [p for p in installed.rglob('*') if p.is_file()]
     protected += [case / leaf for leaf in ('thumb.stripped', 'thumb.reference', 'labels.json')]
     protected += [Path(__file__), source / 'arm-thumb-mode-runtime.sh', source / 'arm-thumb-mode-gdb.py',
         source / 'check-dwarfdump.py', source / 'ghidra_scripts/PrepareArmThumbMode.java',
         source / 'ghidra_scripts/AbiDecompilerFailureExport.java', source / 'ghidra_scripts/CancelDuringElfCopy.java']
+    if (case / 'thumb.driver').is_file():
+        protected.append(case / 'thumb.driver')
     before = {str(p): digest(p) for p in protected}
     (case / 'protected-before.json').write_text(json.dumps(before, indent=4) + '\n')
 
@@ -106,7 +110,7 @@ def main():
     cancel_project.mkdir()
     labels = json.loads((case / 'labels.json').read_text())
     prepare = [hex(labels[n]['code']) for n in ('thumb_add', 'arm_call', 'main', 'thumb_sink', 'thumb_pointer', 'arm_after')]
-    if labels['role'] == 'pie-rebased':
+    if labels['role'].endswith('-rebased'):
         prepare.append('0x200000')
     text = run('cancel-import', [ghidra / 'support/analyzeHeadless', cancel_project, 'ThumbModes', '-import', padded,
         '-loader', 'ElfLoader', '-analysisTimeoutPerFile', '120', '-scriptPath', source / 'ghidra_scripts',

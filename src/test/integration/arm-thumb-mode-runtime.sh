@@ -17,7 +17,9 @@ case "$variant" in
     forge) symbols="$case_dir/thumb.dbg" ;;
     *) exit 2 ;;
 esac
-qemu_socket_start "$case_dir/$variant-$phase.qemu" qemu-arm-static "$sysroot" "$input"
+runtime_input=$input
+if [[ -f "$case_dir/thumb.driver" ]]; then runtime_input="$case_dir/thumb.driver"; fi
+qemu_socket_start "$case_dir/$variant-$phase.qemu" qemu-arm-static "$sysroot" "$runtime_input"
 FORGE_THUMB_CASE="$case_dir" FORGE_THUMB_VARIANT="$variant" FORGE_THUMB_PHASE="$phase" \
 FORGE_THUMB_REMOTE="$qemu_socket_path" timeout 60s gdb-multiarch -q -nx -batch \
     -ex 'set pagination off' -ex 'set confirm off' -ex 'set debuginfod enabled off' \

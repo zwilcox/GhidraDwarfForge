@@ -1528,7 +1528,7 @@ jobs:
       - name: Recovered ARM and Thumb instruction modes
         if: matrix.target == 'arm32'
         run: |
-          for role in exec pie pie-rebased pie-dynamic; do
+          for role in exec pie pie-rebased pie-dynamic shared shared-rebased; do
               FORGE_THUMB_ROLE="$role" src/test/integration/arm-thumb-mode-export.sh "$GHIDRA_INSTALL_DIR"
           done
           FORGE_THUMB_ROLE=pie FORGE_THUMB_HASH_STYLE=gnu FORGE_THUMB_EXPECT_MODE_OMISSION=1 \

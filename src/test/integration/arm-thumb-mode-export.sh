@@ -25,6 +25,7 @@ role=${FORGE_THUMB_ROLE:-exec}
 case "$role" in
     exec) code_model=-fno-pie; link_model=-no-pie ;;
     pie|pie-rebased|pie-dynamic) code_model=-fPIE; link_model=-pie ;;
+    shared|shared-rebased) code_model=-fPIC; link_model=-shared ;;
     *) echo "unsupported Thumb role: $role" >&2; exit 2 ;;
 esac
 printf '%s\n' "$role" > "$case_dir/role.txt"
@@ -32,12 +33,15 @@ hash_style=${FORGE_THUMB_HASH_STYLE:-both}
 case "$hash_style" in both|gnu|sysv) ;; *) exit 2 ;; esac
 extra_link=()
 if [[ "$role" == pie-dynamic ]]; then extra_link=(-Wl,--export-dynamic); fi
+if [[ "$role" == shared* ]]; then extra_link=(-Wl,-Bsymbolic -Wl,-soname,thumb.stripped); fi
 common=(-march=armv7-a -mfpu=vfpv3-d16 -mfloat-abi=hard -O0 -g3 -gdwarf-5
     -fno-omit-frame-pointer -funwind-tables "$code_model")
 for unit in caller leaf after; do
     mode=-marm
     if [[ "$unit" == leaf ]]; then mode=-mthumb; fi
-    "$compiler" "${common[@]}" "$mode" -c \
+    unit_flags=()
+    if [[ "$role" == shared* && "$unit" == caller ]]; then unit_flags=(-Dmain=thumb_fixture_main); fi
+    "$compiler" "${common[@]}" "$mode" "${unit_flags[@]}" -c \
         "$repository/src/test/fixtures/arm-thumb-$unit.c" -o "$case_dir/$unit.o" \
         >"$case_dir/compile-$unit.stdout" 2>"$case_dir/compile-$unit.stderr"
     test ! -s "$case_dir/compile-$unit.stderr"
@@ -49,6 +53,13 @@ test ! -s "$case_dir/link.stderr"
 "$objcopy" --strip-all "$case_dir/thumb.reference" "$case_dir/thumb.stripped" \
     >"$case_dir/strip.stdout" 2>"$case_dir/strip.stderr"
 test ! -s "$case_dir/strip.stderr"
+if [[ "$role" == shared* ]]; then
+    "$compiler" "${common[@]}" -marm -fno-pie -no-pie \
+        "$repository/src/test/fixtures/arm-thumb-shared-driver.c" \
+        -L"$case_dir" '-Wl,-rpath,$ORIGIN' -Wl,--build-id=none -l:thumb.reference \
+        -o "$case_dir/thumb.driver" >"$case_dir/driver.stdout" 2>"$case_dir/driver.stderr"
+    test ! -s "$case_dir/driver.stderr"
+fi
 for tool in "$compiler" "$objcopy" readelf llvm-dwarfdump gdb-multiarch qemu-arm-static; do
     "$tool" --version > "$case_dir/$(basename "$tool").version" 2>&1
 done
@@ -62,7 +73,7 @@ for view in header sections notes symbols info rawline; do
 done
 python3 "$repository/src/test/integration/arm-thumb-mode-check.py" labels "$case_dir" "$repository" "$module"
 mapfile -t preparation < "$case_dir/prepare.txt"
-if [[ "$role" == pie-rebased ]]; then preparation+=(0x200000); fi
+if [[ "$role" == *-rebased ]]; then preparation+=(0x200000); fi
 run_gdb() {
     local variant=$1 phase=$2 input symbols
     if [[ "$variant" == compiler ]]; then
@@ -70,7 +81,9 @@ run_gdb() {
     else
         input="$case_dir/thumb.stripped"; symbols="$case_dir/thumb.dbg"
     fi
-    qemu_socket_start "$case_dir/$variant-$phase.qemu" qemu-arm-static "$sysroot" "$input"
+    runtime_input=$input
+    if [[ "$role" == shared* ]]; then runtime_input="$case_dir/thumb.driver"; fi
+    qemu_socket_start "$case_dir/$variant-$phase.qemu" qemu-arm-static "$sysroot" "$runtime_input"
     FORGE_THUMB_CASE="$case_dir" FORGE_THUMB_VARIANT="$variant" FORGE_THUMB_PHASE="$phase" \
     FORGE_THUMB_REMOTE="$qemu_socket_path" timeout 60s gdb-multiarch -q -nx -batch \
         -ex 'set pagination off' -ex 'set confirm off' -ex 'set debuginfod enabled off' \
@@ -120,7 +133,7 @@ run_gdb forge calls
 run_gdb forge from-arm
 python3 "$repository/src/test/integration/arm-thumb-mode-check.py" finish "$case_dir" "$repository" "$module"
 
-if [[ "$role" != pie-dynamic ]]; then
+if [[ "$role" != pie-dynamic && "$role" != shared* ]]; then
     python3 "$repository/src/test/integration/arm-thumb-mode-negative.py" "$case_dir"
 fi
 
@@ -129,4 +142,6 @@ sectionless_options=()
 if [[ ${FORGE_THUMB_EXPECT_MODE_OMISSION:-0} == 1 ]]; then
     sectionless_options+=(--expect-omission)
 fi
-python3 "$repository/src/test/integration/arm-thumb-sectionless.py" "$ghidra" "$case_dir" "${sectionless_options[@]}"
+if [[ "$role" != shared* ]]; then
+    python3 "$repository/src/test/integration/arm-thumb-sectionless.py" "$ghidra" "$case_dir" "${sectionless_options[@]}"
+fi

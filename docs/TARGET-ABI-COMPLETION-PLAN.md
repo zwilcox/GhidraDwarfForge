@@ -215,3 +215,16 @@ honest mode-symbol omission where no complete symbol count exists. The pipeline
 now runs these checks. See `ARM-THUMB-EXTENDED-LAYOUTS.md`; shared loading,
 mixed-body/ABI/BE8 work and exact-head hosted acceptance remain required.
 All original #68–#71 completion requirements remain active.
+
+## ARM32 shared-library checkpoint
+
+**CONFIRMED local ARM32 shared-library mode acceptance:**
+Stripped shared objects and explicitly rebased shared objects pass static mode
+checks, measured runtime relocation, source stepping, direct/indirect calls and
+exact register-clobber gaps with the unchanged production package. Both cases
+also pass repeated native decompilation failures and production cancellation.
+The PIE/sectionless regression passes after the harness extension. CI includes
+both shared roles. See `ARM-THUMB-EXTENDED-LAYOUTS.md` for receipts and the
+PIC-specific second-argument boundary. Mixed-body modes, per-function ABI/BE8,
+broader storage and exact-head hosted acceptance remain open; #68–#71 retain
+their full original scope.
