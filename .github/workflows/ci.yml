@@ -627,8 +627,16 @@ jobs:
                 libc6-dev-mips64el-cross libc6-dev-mipsn32-mips64el-cross)
               ;;
           esac
+          if [[ "$TARGET" == mips32be || "$TARGET" == mips32le ]]; then
+              packages+=(build-essential python3-dev libgmp-dev libmpfr-dev
+                libexpat1-dev libncurses-dev texinfo)
+          fi
           sudo apt-get update -y
           sudo apt-get install --no-install-recommends -y "${packages[@]}"
+
+      - name: Build pinned MIPS register-piece debugger
+        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        run: python3 support/validation/build-mips-gdb.py "$RUNNER_TEMP/mips-gdb"
 
       - name: Cache Ghidra 12.0.3 archive
         uses: actions/cache@v6
@@ -1624,6 +1632,22 @@ jobs:
               done
           done
 
+      - name: MIPS N32 and N64 aggregate layout and alignment
+        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          endian=${TARGET#mips32}
+          for abi in n32 n64; do
+              for role in exec pie pie-rebased shared shared-rebased; do
+                  python3 src/test/integration/mips-layout-arguments.py "$GHIDRA_INSTALL_DIR" \
+                      --abi "$abi" --endian "$endian" --role "$role" \
+                      --gdb "$RUNNER_TEMP/mips-gdb/build/gdb/gdb" \
+                      --gdb-data-directory "$RUNNER_TEMP/mips-gdb/build/gdb/data-directory"
+              done
+          done
+
       - name: ARM per-function dynamic base and VFP parameters
         if: matrix.target == 'arm32'
         run: src/test/integration/arm-dynamic-pcs-export.sh "$GHIDRA_INSTALL_DIR"
@@ -1819,6 +1843,16 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
         run: python3 src/test/integration/capture-primary-fixtures.py "$TARGET"
+
+      - name: Retain MIPS debugger build evidence
+        if: always() && (matrix.target == 'mips32be' || matrix.target == 'mips32le')
+        run: |
+          mkdir -p build/test-results/mips-gdb
+          shopt -s nullglob
+          files=("$RUNNER_TEMP/mips-gdb/"*.log "$RUNNER_TEMP/mips-gdb/"*.json)
+          if [[ ${#files[@]} -gt 0 ]]; then
+              cp "${files[@]}" build/test-results/mips-gdb/
+          fi
 
       - uses: actions/upload-artifact@v7
         if: always()

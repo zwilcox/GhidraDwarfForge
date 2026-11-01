@@ -11,6 +11,8 @@ public class ProbeMipsLayoutArguments extends GhidraScript {
     protected void run() throws Exception {
         var args = getScriptArgs();
         if (args.length != 2) throw new IllegalArgumentException("labels output-json");
+        long delta = currentProgram.getImageBase().getOffset() -
+            ghidradwarfforge.GhidraImageBase.originalImageBase(currentProgram);
         var labels = new LinkedHashMap<String, Long>();
         for (String line : Files.readAllLines(Path.of(args[0]))) {
             String[] fields = line.split(" ");
@@ -50,7 +52,7 @@ public class ProbeMipsLayoutArguments extends GhidraScript {
         var rows = new ArrayList<Object>();
         for (var entry : labels.entrySet()) {
             if (entry.getKey().endsWith("_body")) continue;
-            var function = getFunctionAt(toAddr(entry.getValue()));
+            var function = getFunctionAt(toAddr(Math.addExact(entry.getValue(), delta)));
             if (function == null) throw new IllegalStateException("no function " + entry);
             String name = entry.getKey();
             function.setName(name, SourceType.USER_DEFINED);
@@ -88,6 +90,7 @@ public class ProbeMipsLayoutArguments extends GhidraScript {
             "functions", rows, "language", currentProgram.getLanguageID().toString(),
             "compiler", currentProgram.getCompilerSpec().getCompilerSpecID().toString(),
             "pointerBytes", currentProgram.getDefaultPointerSize(),
+            "delta", delta,
             "exporterOrigin", ghidradwarfforge.GhidraParameterAllocation.class.getProtectionDomain()
                 .getCodeSource().getLocation().toString())) + "\n");
         println("MIPS_LAYOUT_PROBE_PASS");

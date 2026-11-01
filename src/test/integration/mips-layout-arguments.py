@@ -4,6 +4,7 @@ import argparse
 import importlib.util
 import json
 from pathlib import Path
+import re
 import shutil
 import tempfile
 from urllib.parse import unquote, urlsplit
@@ -20,6 +21,7 @@ def main():
     parser.add_argument('ghidra', type=Path)
     parser.add_argument('--abi', choices=('n32', 'n64'), required=True)
     parser.add_argument('--endian', choices=('be', 'le'), required=True)
+    parser.add_argument('--role', choices=('exec', 'pie', 'pie-rebased', 'shared', 'shared-rebased'), default='exec')
     parser.add_argument('--toolchain-root', type=Path)
     parser.add_argument('--gdb', default='gdb-multiarch')
     parser.add_argument('--gdb-data-directory', default='')
@@ -29,7 +31,7 @@ def main():
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
     results = args.results_root.resolve()
     results.mkdir(parents=True, exist_ok=True)
-    case = Path(tempfile.mkdtemp(prefix=args.abi + '.' + args.endian + '.', dir=results))
+    case = Path(tempfile.mkdtemp(prefix='.'.join((args.abi, args.endian, args.role)) + '.', dir=results))
     print(case, flush=True)
 
     def write(name, value):
@@ -53,12 +55,15 @@ def main():
         compiler, objcopy = prefix + '-gcc', prefix + '-objcopy'
         sysroot = Path('/usr') / prefix
     flags += ['-mabi=' + ('64' if args.abi == 'n64' else 'n32'), '-march=mips64r2',
-        '-O1', '-g', '-gdwarf-5', '-fno-pie', '-no-pie', '-Wl,--build-id=sha1']
+        '-O1', '-g', '-gdwarf-5', '-Wl,--build-id=sha1']
     emulator = 'qemu-mips' + ('64' if args.abi == 'n64' else 'n32') + (
         'el' if args.endian == 'le' else '') + '-static'
     fixture = source.parent / 'fixtures/mips_layout_arguments.c'
     protected = [fixture, Path(__file__), source / 'mips-layout-arguments-gdb.py',
-        source / 'mips-layout-arguments-gdb.sh', source / 'ghidra_scripts/ProbeMipsLayoutArguments.java']
+        source / 'mips-layout-arguments-gdb.sh', source / 'mips-layout-arguments-controls.py',
+        source / 'ghidra_scripts/AbiDecompilerFailureExport.java', source / 'ghidra_scripts/CancelDuringElfCopy.java',
+        source / 'ghidra_scripts/ProbeMipsLayoutArguments.java',
+        source / 'ghidra_scripts/RebaseFixtureProgram.java']
     protected += [path for path in module.rglob('*') if path.is_file()]
     debugger = Path(shutil.which(args.gdb) or args.gdb).resolve(strict=True)
     protected.append(debugger)
@@ -66,9 +71,20 @@ def main():
     debugger_data = ['--data-directory=' + args.gdb_data_directory] if args.gdb_data_directory else []
     run('debugger-version', [debugger, *debugger_data, '--version'])
     reference, binary, output = [case / name for name in ('reference', 'input', 'input.dbg')]
-    run('compile', [*environment, compiler, *flags, fixture, '-o', reference])
+    shared = args.role.startswith('shared')
+    image_flags = ['-fPIC', '-shared', '-Dmain=fixture_main', '-Wl,-soname,input'] if shared else (
+        ['-fno-pie', '-no-pie'] if args.role == 'exec' else ['-fPIE', '-pie'])
+    run('compile', [*environment, compiler, *flags, *image_flags, fixture, '-o', reference])
     run('strip', [*environment, objcopy, '--strip-all', reference, binary])
-    run('native', [emulator, '-L', sysroot, binary])
+    runtime = binary
+    if shared:
+        driver = case / 'driver.c'
+        driver.write_text('extern int fixture_main(void);\nint main(void) { return fixture_main(); }\n')
+        runtime = case / 'driver'
+        run('compile-driver', [*environment, compiler, *flags, '-fPIE', '-pie', driver,
+            '-L' + str(case), '-l:input', '-Wl,-rpath,$ORIGIN', '-o', runtime])
+        before[str(runtime)] = support.digest(runtime)
+    run('native', [emulator, '-L', sysroot, runtime])
     before.update({str(path): support.digest(path) for path in (reference, binary)})
     write('protected-before.json', before)
     run('symbols', ['readelf', '-sW', reference])
@@ -85,14 +101,20 @@ def main():
     assert labels.keys() == wanted
     (case / 'labels.txt').write_text(''.join(name + ' ' + hex(address) + '\n'
         for name, address in sorted(labels.items())))
+    run('original-elf', ['readelf', '-hSWln', binary])
+    entry, = re.findall(r'Entry point address:\s+(0x[0-9a-f]+)', (case / 'original-elf.log').read_text())
+    text, = re.findall(r'\]\s+\.text\s+PROGBITS\s+([0-9a-f]+)\s+', (case / 'original-elf.log').read_text())
     write('metadata.json', dict(abi=args.abi, endian=args.endian, labels=labels,
-        sysroot=str(sysroot), emulator=emulator))
+        sysroot=str(sysroot), emulator=emulator, role=args.role, runtime=runtime.name,
+        entryAddress=int(entry, 16), textAddress=int(text, 16)))
     project, scripts = case / 'project', case / 'scripts'
     project.mkdir()
     scripts.mkdir()
-    shutil.copyfile(source / 'ghidra_scripts/ProbeMipsLayoutArguments.java', scripts / 'ProbeMipsLayoutArguments.java')
+    for script in ('ProbeMipsLayoutArguments.java', 'RebaseFixtureProgram.java'):
+        shutil.copyfile(source / 'ghidra_scripts' / script, scripts / script)
+    rebase = ['-postScript', 'RebaseFixtureProgram.java', '0x2000000'] if args.role.endswith('-rebased') else []
     run('import', [ghidra / 'support/analyzeHeadless', project, 'Layout', '-import', binary,
-        '-analysisTimeoutPerFile', '120', '-scriptPath', scripts, '-postScript',
+        '-analysisTimeoutPerFile', '120', '-scriptPath', scripts, *rebase, '-postScript',
         'ProbeMipsLayoutArguments.java', case / 'labels.txt', case / 'curated.json'], clean=False)
     assert 'MIPS_LAYOUT_PROBE_PASS' in (case / 'import.log').read_text()
     curated = json.loads((case / 'curated.json').read_text())
@@ -100,6 +122,8 @@ def main():
     assert (curated['language'], curated['compiler'], curated['pointerBytes']) == (
         'MIPS:' + args.endian.upper() + ':64:' + ('default' if args.abi == 'n64' else '64-32addr'),
         'default' if args.abi == 'n64' else 'n32', 8 if args.abi == 'n64' else 4)
+    if args.role.endswith('-rebased'):
+        assert curated['delta'] >= 0x2000000
     project_before = {str(path.relative_to(project)): support.digest(path)
         for path in project.rglob('*') if path.is_file()}
     write('project-before.json', project_before)
@@ -129,9 +153,16 @@ def main():
     changes = {name for name in project_before.keys() | project_after.keys()
         if project_before.get(name) != project_after.get(name)}
     assert changes <= {'Layout.rep/idata/~index.bak', 'Layout.rep/idata/~journal.bak'}, changes
-    write('result.json', dict(status='PASS', artifactSha256=hashes,
-        scope='compiler body and Forge entry/body values; no whole-lifetime or injected-call claim',
-        unchangedInputsAndProgramDatabase=True, projectBackupChanges=sorted(changes)))
+    result = dict(status='CONTROLS_PENDING', artifactSha256=hashes,
+        scope='compiler body and Forge entry/body values; failure/cancellation; no whole-lifetime or injected-call claim',
+        unchangedInputsAndProgramDatabase=True, projectBackupChanges=sorted(changes))
+    write('result.json', result)
+    run('controls', ['python3', source / 'mips-layout-arguments-controls.py', case, ghidra,
+        debugger, args.gdb_data_directory], clean=False)
+    assert 'mips-layout-arguments-controls=PASS' in (case / 'controls.log').read_text()
+    assert before == {path: support.digest(Path(path)) for path in before}
+    result['status'] = 'PASS'
+    write('result.json', result)
     print('mips-layout-arguments=PASS ' + str(case), flush=True)
 
 

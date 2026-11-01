@@ -69,9 +69,13 @@ DWARF is not distorted to accommodate the old consumer.
 A private GDB 17.1 source build supplies the positive consumer reference; no
 system package was changed. Official archive SHA-256:
 `14996f5f74c9f68f5a543fdc45bca7800207f91f92aeea6c2e791822c7c6d876`.
-Its exact configure/build commands are retained in the ignored research receipt.
-The consumer requirement and its installation in hosted tests must be settled
-before advertising the small big-endian profile as supported.
+`support/validation/build-mips-gdb.py` verifies that archive and builds an
+unmodified, Python-enabled MIPS debugger in a new private directory. It retains
+commands, tool versions, build logs and source/executable hashes, and never
+installs over the system debugger. The versioned builder passes locally; the
+candidate MIPS CI lanes provision it for this layout test while preserving the
+system-debugger coverage of existing fixtures. Hosted provisioning is still
+**PRESENT, UNVERIFIED** until its required run passes.
 
 ## Current evidence and remaining acceptance
 
@@ -93,8 +97,8 @@ The versioned harness is `src/test/integration/mips-layout-arguments.py`. It
 accepts an installed packaged extension, ABI, byte order, optional extracted
 toolchain, debugger executable and debugger data directory. It requires
 compiler body values, Forge entry/body values, structural validation,
-deterministic repeats and unchanged input/program bytes. This initial harness
-is non-PIE only and is not yet wired into hosted CI.
+deterministic repeats and unchanged input/program bytes. The initial non-PIE checkpoint below is superseded by the expanded
+layout and pipeline evidence recorded afterward.
 
 **CONFIRMED follow-up package:** v3 preserves explicit composite alignment in
 its temporary allocation shape. The versioned harness passes all four ABI/byte
@@ -115,9 +119,37 @@ cancellation in the N64 big-endian case. These regressions cover the preceding
 wide fixture; the new layout fixture still needs its own expanded layouts and
 failure/lifetime tests.
 
-**PLANNED acceptance:** add required PIE/rebase/shared, multiple-instruction
-and clobber tests, failure/cancellation controls, broader negative model cases
-and hosted consumer provisioning. Audit explicit composite alignment, wider
+**CONFIRMED expanded local matrix:** the same v3 production package passes
+all 20 N32/N64, big/little-endian, non-PIE/PIE/rebased-PIE/shared/rebased-shared
+combinations. An independent replay of the retained JSON checks the source-known
+literal values: 1,280 Forge entry/body values and 640 compiler-body values.
+GNU/LLVM/pinned strict validation, artifact/input hashes and deterministic
+repeats pass. Receipts: `layout-matrix-v2.json` and
+`layout-matrix-v2-review.json`. The versioned builder's debugger hash is
+`2baa5b2276d963e2ca2f2d32907c6cde96b6212fd6ef7ab540a6bd022c781702`.
+
+The first shared-library run failed because GDB 17's `info sharedlibrary`
+reports the entire mapped image range, whereas the previous test assumed text
+bounds. The corrected oracle reads the original loaded image's relocated
+`.text` from `maintenance info target-sections` before loading either symbol
+file, checks it against the mapped image bounds and subtracts the original
+ELF text address. Compiler and Forge replays and all expanded cases pass;
+the original failure and subsequent section/address evidence remain retained.
+No production address calculation changed for this harness correction.
+
+The versioned failure/cancellation harness composes real decompiler rejection
+with this fixture, requiring the failed function to lose variable locations
+while neighboring functions retain exact values. It also cancels production
+copying of an independently imported padded input, checking that the previous
+artifact pair and both program databases remain unchanged. The main driver
+requires these controls before marking its result successful. All 20 control cases pass: 40 deterministic failure exports, 20 cancellations,
+1,160 exact neighboring values and 120 symbol-only variable absences. The raw
+review checks the failure artifact hashes, strict-reader reports and observation
+rows. Receipts: `layout-controls-matrix.json` and `layout-controls-review.json`.
+A fresh integrated shared-rebased driver replay also passes.
+
+**PLANNED acceptance:** multiple-instruction and clobber tests, broader negative
+model cases and exact-head hosted validation remain. Audit explicit composite alignment, wider
 floating/return types and general delayed control-flow/storage transitions.
 The call policy remains restrictive for the newly inspected aggregate types;
 debugger-injected calls are not established by these argument observations.

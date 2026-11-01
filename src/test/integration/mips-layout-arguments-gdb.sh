@@ -11,13 +11,14 @@ import json,sys
 metadata=json.load(open(sys.argv[1]))
 print(metadata['emulator'])
 print(metadata['sysroot'])
+print(metadata['runtime'])
 PY_CONFIG
 )
 gdb_args=()
 if [[ -n "${4:-}" ]]; then
     gdb_args+=("--data-directory=$4")
 fi
-qemu_socket_start "$case_dir/$mode-qemu" "${config[0]}" "${config[1]}" "$case_dir/input"
+qemu_socket_start "$case_dir/$mode-qemu" "${config[0]}" "${config[1]}" "$case_dir/${config[2]}"
 MIPS_LAYOUT_CASE="$case_dir" MIPS_LAYOUT_MODE="$mode" MIPS_LAYOUT_REMOTE="$qemu_socket_path" \
     timeout 90s "$gdb_command" "${gdb_args[@]}" -q -nx -batch \
     -ex 'set python print-stack full' -x "$script_dir/mips-layout-arguments-gdb.py"

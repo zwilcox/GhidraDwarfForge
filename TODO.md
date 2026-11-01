@@ -1,5 +1,20 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED expanded MIPS layout validation:** the v3 production package now
+passes all 20 ABI/endian/exec/PIE/rebase/shared cases, with 1,280 exact Forge
+values and 640 compiler-body values plus GNU/LLVM/strict validation. A versioned,
+checksum-pinned GDB 17.1 builder passes locally and is wired into candidate CI.
+All 20 failure/cancellation compositions pass locally. Broader lifetime/ABI
+requirements and exact-head hosted acceptance remain in progress. See `docs/MIPS-LAYOUT-ALLOCATION.md`.
+
+**CONFIRMED AArch64 indirect-argument component integrated:** PR121 merged as
+`54dc96313ef497df89f59f0a06fe87622e77e7d8` after all twelve jobs passed in
+run `41332889175`. Independent artifact review checked 3,273 source-known
+available values across three layouts, raw location transitions, validators
+and failure/cancellation evidence. This supersedes older pending statements
+for that component only. PR122 is refreshed onto main at `086eaee98e821f7fa9532d7bb85b1f347963cc39`
+and requires a new exact-head gate. None of issues #68–#71 is closed.
+
 **CONFIRMED further MIPS layout defects; candidate acceptance in progress:**
 N32/N64 now have an owned nested-aggregate/128-bit alignment audit. Candidate
 allocation and unnamed-register-slice corrections pass 256 exact entry/body

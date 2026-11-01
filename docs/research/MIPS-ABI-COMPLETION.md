@@ -115,3 +115,17 @@ an independent trustworthy FP64A/FPXX transport. Then reconcile selected
 ELF/ISA/FPU attributes with actual Ghidra language/compiler storage. PIE/shared,
 rebase, failure/cancellation and the existing big-endian sectionless lane remain
 required; none is implied by these two compiler references.
+
+## GDB 17.1 FPXX reference replay
+
+**CONFIRMED unresolved reference boundary:** the checksum-pinned, unmodified
+GDB 17.1 built for the wider layout tests was also run against the four unchanged
+FPXX/FR compiler-reference executables and the same strict oracle. Results are
+unchanged: little-endian FR=0 passes, big-endian FR=0 reads
+`5.3223122885119116e-315` instead of `21.5`, and both FR=1 cases read zero.
+Raw FR=0 registers still reconstruct the correct double. Original binary hashes
+are unchanged. This rules out that debugger upgrade as a solution to the FPXX
+reference problem; it does not relax the acceptance criterion. Logs and replay
+commands are retained in the layout worktree's
+`build/mips-layout-audit/fpxx-gdb17-reference/`. A trustworthy transport/reference
+and FP64A investigation remain required by the full #69 scope.

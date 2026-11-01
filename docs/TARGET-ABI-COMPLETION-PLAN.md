@@ -171,3 +171,12 @@ exporter correction; a separate GDB 15 big-endian piece defect has a positive
 unmodified GDB 17.1 reference. See `MIPS-LAYOUT-ALLOCATION.md` for exact evidence
 and remaining acceptance. This adds evidence to the original #69 row without
 closing it or narrowing any of the four issues.
+
+**CONFIRMED component integration update:** the AArch64 indirect-argument
+component is integrated through PR121 (`54dc96313ef497df89f59f0a06fe87622e77e7d8`),
+with all twelve required hosted jobs and independent raw artifact review.
+The older pending statements above are historical for that component. PR122
+selection is refreshed onto main and rerunning its exact-head gate. The wider
+MIPS layout matrix now passes 20 local ABI/endian/layout combinations and has
+versioned GDB 17.1 provisioning plus 20 passing failure/cancellation
+compositions; exact-head hosted acceptance remains in progress. All four original requirement rows remain open.
