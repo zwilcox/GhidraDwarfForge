@@ -6,19 +6,18 @@ component does not complete either umbrella. The starting main commit is
 `6c37222304c2abd081b2c800f2354afe3b28c5c0`; Ghidra 12.0.3 and Java 21-compatible
 bytecode remain the supported baseline. No native ABI change is proposed.
 
-**CONFIRMED local composition; final combined acceptance pending:** the original
-call-local and caller-memory gaps now have implementation and runtime evidence.
-Independent aggregate pieces and lexical/failure/cancellation composition also
-pass locally. See `LIFETIME-SCOPE-COMPLETION-AUDIT.md` for the current status of
-every original row, and `PIECE-CALL-MEMORY.md` / `LEXICAL-CALL-LIFETIMES.md` for
-the latest checks. The requirement tables below retain their original scope;
-subsequent checkpoint sections are historical evidence, not current gap lists.
-The full final target/host/package review and protected integration remain
-required. Neither umbrella is complete.
+**CONFIRMED implemented, validated and integrated:** all original rows below
+have accepted implementation, target and host evidence through PR103 at
+`7387a61`, normally merged as `8f6031c`. See `LIFETIME-SCOPE-ACCEPTANCE.md`
+and `LIFETIME-SCOPE-COMPLETION-AUDIT.md` for exact receipts and profile bounds.
+The original criteria remain unchanged. Subsequent component checkpoints are
+historical; their partial/pending status does not supersede final acceptance.
+This documentation reconciliation precedes closing issues #67/#73. Release
+publication remains separate.
 
 ## P1.11a requirements
 
-| Requirement | Starting evidence | Remaining acceptance |
+| Requirement | Starting evidence | Original acceptance criteria |
 | --- | --- | --- |
 | Later-start variable identity | Curated read-start and definition-start register locals have tested prefixes. | Extend evidence-backed later lifetimes and overwrite boundaries, including discontiguous bodies and additional control flow. Test before definition, every transition and after loss. |
 | Register migration | Two incoming copies and one inspected direct-leaf call have bounded accepted proofs. | Compose further copies, then support additional proven call/control-flow shapes. Track value identity rather than register spelling. |
@@ -27,7 +26,7 @@ required. Neither umbrella is complete.
 | Mixed pieces | Attached incoming register/stack joins have bounded prefixes. | Track independently proven pieces and transitions with exact size/order. Do not present a whole value across a missing or stale piece. |
 | Behavioral acceptance | Existing compiler/Forge oracles cover bounded profiles. | Add source-built compiler-oracle fixtures, positive/negative instruction-boundary values, unavailable gaps, real exporter validators, preservation, determinism, cancellation and required target/host CI. |
 
-**PLANNED sequence:** repeated register handoffs; later-local migration;
+**HISTORICAL planned sequence:** repeated register handoffs; later-local migration;
 stack identity and spill/reload transitions; control-flow joins and
 discontiguous bodies; additional inspected call effects; mixed-piece lifetime
 composition. The sequence may change when evidence exposes a dependency, but
@@ -36,12 +35,11 @@ the mere existence of a Ghidra high variable is not proof of a compiler lifetime
 
 ## P3.3 requirements after the location core
 
-The inferred-static API question has twelve passing headless observations;
-see `research/STATIC-RECOVERY.md`. Its production component now has local
-96-export/432-GDB-observation acceptance; see `RECOVERED-STATICS.md`.
-Hosted/full-scope acceptance and every remaining row below stay required.
+The initial inferred-static API research and local production evidence remain
+in `research/STATIC-RECOVERY.md` and `RECOVERED-STATICS.md`. Final combined
+acceptance now covers every original row below; see the acceptance document.
 
-| Requirement | Remaining acceptance |
+| Requirement | Original acceptance criteria |
 | --- | --- |
 | Lexical blocks and shadowed locals | Establish scope ownership and defensible address ranges; GDB must select the correct shadowed object without leaking its lifetime. |
 | Namespace/class/method/object relationships | Go beyond qualified display strings using actual recorded relationships, while preserving existing analyst lookup and synthetic C source behavior. |
@@ -50,13 +48,13 @@ Hosted/full-scope acceptance and every remaining row below stay required.
 | Artificial and object parameters | Preserve tested hidden return-storage behavior; add evidence-backed `this` and other artificial semantics without inventing original source facts. |
 | Same-name disambiguation | Retain distinct types and variables from different recorded categories/scopes; verify GDB lookup without treating category paths as original namespaces. |
 
-**PLANNED:** inspect saved Ghidra and decompiler APIs for the evidence needed by
+**HISTORICAL initial plan:** inspect saved Ghidra and decompiler APIs for the evidence needed by
 each row, implement a scope model with explicit provenance, then validate
 lexical, class/object, static and same-name fixtures. If an API lacks required
 evidence, record that gap and develop an explicit evidence provider rather
 than silently redefining completion as qualified display names alone.
 
-## Current component: repeated incoming register handoffs
+## Historical component: repeated incoming register handoffs
 
 **CONFIRMED locally:** the new decoder fixture fails against the previous
 two-backup implementation. Composing the existing exact-copy proof passes
