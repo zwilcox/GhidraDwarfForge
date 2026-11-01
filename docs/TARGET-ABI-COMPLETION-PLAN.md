@@ -203,4 +203,3 @@ for exact evidence and literal-pool oracle boundaries. Sectionless production
 behavior is PRESENT, UNVERIFIED beyond model checks; shared/mixed-body/BE8/ABI
 work, failure/cancellation composition and hosted acceptance remain required.
 All #68–#71 requirements remain active.
-
