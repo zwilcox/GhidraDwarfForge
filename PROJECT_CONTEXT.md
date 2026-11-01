@@ -1,5 +1,21 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED accepted P1.11a and P3.3 implementation:** PR103 is integrated as
+`8f6031c92496550e733b59f8589ce7f3e5428e8a`; its tree equals tested
+`7387a61dd79c6753998c9c89271a42ed295f6ac4`. All twelve jobs in run
+`41261018738`, exact package/Java 21/native checks, all five target lanes,
+independent raw lifetime/scope reviews and both host/GUI reviews pass.
+All original six lifetime and six scope rows are mapped in
+`docs/LIFETIME-SCOPE-ACCEPTANCE.md` and `docs/LIFETIME-SCOPE-COMPLETION-AUDIT.md`.
+No production/native/profile claim changes in this documentation reconciliation.
+Issues #67/#73 can close after this reconciliation is integrated. Release
+publication remains separate.
+
+**HISTORICAL checkpoint notes follow.** Their partial/pending implementation
+statements retain the evidence available at the time and are superseded by the
+accepted requirement map above; they are not current outstanding work for
+P1.11a/P3.3.
+
 **CONFIRMED combined-gate correction:** PR103's first run stopped before
 compilation because the architecture-neutrality scanner rejects the token `sp`.
 Two generic locals derived from Ghidra are renamed `pointerNode`; comments use
