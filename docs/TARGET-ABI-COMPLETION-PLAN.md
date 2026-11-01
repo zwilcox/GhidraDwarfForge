@@ -203,3 +203,15 @@ for exact evidence and literal-pool oracle boundaries. Sectionless production
 behavior is PRESENT, UNVERIFIED beyond model checks; shared/mixed-body/BE8/ABI
 work, failure/cancellation composition and hosted acceptance remain required.
 All #68–#71 requirements remain active.
+
+## ARM32 sectionless and failure/cancellation checkpoint
+
+**CONFIRMED local ARM32 sectionless and failure/cancellation acceptance:**
+Fresh sectionless imports now pass all four exec/PIE/rebased/dynamic-symbol
+roles, with independent raw inventory and real debugger checks. The combined
+eight-case matrix passes 16 native decompilation-failure exports and eight
+production copy cancellations. A separate empty-GNU-hash control requires an
+honest mode-symbol omission where no complete symbol count exists. The pipeline
+now runs these checks. See `ARM-THUMB-EXTENDED-LAYOUTS.md`; shared loading,
+mixed-body/ABI/BE8 work and exact-head hosted acceptance remain required.
+All original #68–#71 completion requirements remain active.

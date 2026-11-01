@@ -28,6 +28,8 @@ case "$role" in
     *) echo "unsupported Thumb role: $role" >&2; exit 2 ;;
 esac
 printf '%s\n' "$role" > "$case_dir/role.txt"
+hash_style=${FORGE_THUMB_HASH_STYLE:-both}
+case "$hash_style" in both|gnu|sysv) ;; *) exit 2 ;; esac
 extra_link=()
 if [[ "$role" == pie-dynamic ]]; then extra_link=(-Wl,--export-dynamic); fi
 common=(-march=armv7-a -mfpu=vfpv3-d16 -mfloat-abi=hard -O0 -g3 -gdwarf-5
@@ -40,7 +42,7 @@ for unit in caller leaf after; do
         >"$case_dir/compile-$unit.stdout" 2>"$case_dir/compile-$unit.stderr"
     test ! -s "$case_dir/compile-$unit.stderr"
 done
-"$compiler" "${common[@]}" -marm "$link_model" "${extra_link[@]}" -Wl,--build-id=none \
+"$compiler" "${common[@]}" -marm "$link_model" "${extra_link[@]}" -Wl,--build-id=none "-Wl,--hash-style=$hash_style" \
     "$case_dir/caller.o" "$case_dir/leaf.o" "$case_dir/after.o" -o "$case_dir/thumb.reference" \
     >"$case_dir/link.stdout" 2>"$case_dir/link.stderr"
 test ! -s "$case_dir/link.stderr"
@@ -121,3 +123,10 @@ python3 "$repository/src/test/integration/arm-thumb-mode-check.py" finish "$case
 if [[ "$role" != pie-dynamic ]]; then
     python3 "$repository/src/test/integration/arm-thumb-mode-negative.py" "$case_dir"
 fi
+
+python3 "$repository/src/test/integration/arm-thumb-mode-controls.py" "$ghidra" "$case_dir"
+sectionless_options=()
+if [[ ${FORGE_THUMB_EXPECT_MODE_OMISSION:-0} == 1 ]]; then
+    sectionless_options+=(--expect-omission)
+fi
+python3 "$repository/src/test/integration/arm-thumb-sectionless.py" "$ghidra" "$case_dir" "${sectionless_options[@]}"

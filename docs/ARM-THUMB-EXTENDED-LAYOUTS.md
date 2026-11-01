@@ -94,3 +94,60 @@ An independent BE8 compiler/QEMU/GDB reference now passes, and Ghidra selects
 the expected mixed-endian instruction language automatically. Production export
 still rejects that target before native calls. See
 [the BE8 reference](research/ARM-BE8-REFERENCE.md); this does not claim BE8 support.
+
+## Sectionless runtime and failure/cancellation checkpoint
+
+**CONFIRMED locally:** the previously model-only sectionless route now passes
+fresh headless imports, production exports and QEMU/GDB runtime on all four
+roles. This supersedes the earlier sectionless PRESENT, UNVERIFIED paragraph;
+shared/mixed-body/ABI/BE8 and hosted acceptance remain open.
+
+The positive fixture now requests both GNU and SysV hash tables so its dynamic
+symbol count remains explicit after removing section headers. Only a copied
+input has `e_shoff`, `e_shnum` and `e_shstrndx` zeroed. The sectioned original,
+loaded package and test sources remain unchanged. GNU-only empty hash tables do
+not provide a complete symbol count; a separate fresh-import control requires
+the precise omission diagnostic, no replacement `.symtab`, valid DWARF and
+preserved inputs. That control is not counted as successful Thumb mode support.
+
+| Role | Sectioned case | Sectionless case |
+| --- | --- | --- |
+| exec | `run.k1c8wscC` | `exec.v5thlwyy` |
+| pie | `run.iSD5SfIL` | `pie.b3i083kh` |
+| pie-rebased | `run.u80JbScD` | `pie-rebased.nlam34xy` |
+| pie-dynamic | `run.H4fAhEXG` | `pie-dynamic.qvyym2c1` |
+
+Sectioned paths are below `build/test-results/arm-thumb-mode`; sectionless paths
+are below `build/test-results/arm-thumb-sectionless`. The original v1 installed
+JAR/ZIP listed above is unchanged. The sectionless test reads instructions from
+remote memory before continuing execution, because synthetic NOBITS load
+sections cannot supply file-backed bytes. It explicitly selects the fixture's
+ARMv7 architecture after `.ARM.attributes` disappears, while retaining automatic
+ARM/Thumb mode selection. Runtime load bias, source stepping, direct/indirect
+calls, typed values and clobber gaps pass without mode forcing.
+
+The raw inventory oracle verifies all original dynamic records against the
+sectioned compiler artifact, their new load-section indices and the exact
+added mode symbols. The sectionless loader additionally identifies the PLT
+resolver prefix as a function. Its four original machine words and compiler
+`$a`/`$d` boundaries are independently checked; no arbitrary extra emitted symbol
+is accepted. Six inventory corruption variants are rejected per positive case.
+Only the previously corroborated QEMU synthetic-vDSO warning is allowed, and
+Forge may emit fewer instances than the compiler, never additional ones.
+
+All eight cases also pass `arm-thumb-mode-controls.py`: two real native
+instruction-limit failures followed by a production copy cancellation per case.
+The failed `recovered_arm_after` has its symbol/address but no invented formal
+children or source declaration line; neighboring Thumb source/values still work.
+The unchanged shared failure script now carries actual extracted mode cues to
+the production exporter, as the installed entry point does. The cancellation
+imports a separate padded fixture, stops after bounded copying begins, preserves
+the existing artifact pair and leaves no temporary files. Saved program changes
+are restricted to Ghidra filesystem index backups. Totals: 16 deterministic
+failure exports and eight cancellations, all with validators and GDB checks.
+
+The assembled command now runs these controls and sectionless checks after each
+ordinary role. Fresh combined PIE and GNU-empty-hash commands pass under
+`combined-pie.log` and `combined-empty-hash.log` in `build/arm-abi-completion`.
+The pipeline runs all four positive roles plus the explicit GNU-only omission
+control. Exact-head hosted acceptance and protected integration remain pending.

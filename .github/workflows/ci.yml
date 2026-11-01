@@ -1531,6 +1531,8 @@ jobs:
           for role in exec pie pie-rebased pie-dynamic; do
               FORGE_THUMB_ROLE="$role" src/test/integration/arm-thumb-mode-export.sh "$GHIDRA_INSTALL_DIR"
           done
+          FORGE_THUMB_ROLE=pie FORGE_THUMB_HASH_STYLE=gnu FORGE_THUMB_EXPECT_MODE_OMISSION=1 \
+              src/test/integration/arm-thumb-mode-export.sh "$GHIDRA_INSTALL_DIR"
 
       - name: Saved dynamic parameter storage and debugger values
         env:

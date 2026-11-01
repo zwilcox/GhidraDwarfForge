@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local ARM32 sectionless and failure/cancellation acceptance:**
+Fresh sectionless imports now pass all four exec/PIE/rebased/dynamic-symbol
+roles, with independent raw inventory and real debugger checks. The combined
+eight-case matrix passes 16 native decompilation-failure exports and eight
+production copy cancellations. A separate empty-GNU-hash control requires an
+honest mode-symbol omission where no complete symbol count exists. The pipeline
+now runs these checks. See `docs/ARM-THUMB-EXTENDED-LAYOUTS.md`; shared loading,
+mixed-body/ABI/BE8 work and exact-head hosted acceptance remain required.
+All original #68–#71 completion requirements remain active.
+
 **CONFIRMED local ARM32 PIE mode progress; full acceptance remains open:**
 The original ET_DYN omission now has a reproduced static-decoding failure and a
 candidate correction using existing byte/owner/mode checks. Four packaged

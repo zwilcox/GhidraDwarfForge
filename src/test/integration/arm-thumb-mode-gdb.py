@@ -22,12 +22,12 @@ def integer(expression):
     return int(gdb.parse_and_eval(expression))
 
 
-def instructions(original):
+def instructions(original, offset=0):
     row = labels[original]
-    return [{"address": item["addr"], "length": item["length"],
+    return [{"address": item["addr"] - offset, "length": item["length"],
              "mnemonic": item["asm"].split()[0]}
             for item in gdb.selected_inferior().architecture().disassemble(
-                row["code"], row["code"] + row["codeSize"] - 1)]
+                row["code"] + offset, row["code"] + offset + row["codeSize"] - 1)]
 
 
 def stop(label):
@@ -59,16 +59,25 @@ try:
     result["forceMode"] = gdb.execute("show arm force-mode", to_string=True)
     result["fallbackMode"] = gdb.execute("show arm fallback-mode", to_string=True)
     assert '"auto"' in result["forceMode"] and '"auto"' in result["fallbackMode"]
-    result["static"] = {function: instructions(function)
+    sectionless = labels.get("sectionless", False)
+    inspection_bias = 0
+    if sectionless:
+        # No .ARM.attributes survives. This explicit fixture architecture is
+        # independent of the exporter and leaves instruction mode on auto.
+        gdb.execute("set architecture armv7")
+        gdb.execute("target remote " + os.environ["FORGE_THUMB_REMOTE"])
+        inspection_bias = integer("&main") - labels["main"]["code"]
+    result["instructionSource"] = "remote-before-continue" if sectionless else "file-before-attach"
+    result["static"] = {function: instructions(function, inspection_bias)
                         for function in ("arm_call", "main", "thumb_add", "arm_after")}
     # GCC st_size includes literal pools. Compare actual instructions only,
     # bounded independently by compiler $d mapping symbols. Data disassembly
     # is a consumer observation, not evidence of executable instruction mode.
     result["literalPoolDecoding"] = {function: gdb.selected_inferior().architecture().disassemble(
-        row["code"] + row["codeSize"], row["code"] + row["size"] - 1)
+        row["code"] + inspection_bias + row["codeSize"], row["code"] + inspection_bias + row["size"] - 1)
         for function, row in labels.items() if isinstance(row, dict)
         and "codeSize" in row and row["codeSize"] < row["size"]}
-    result["functionAddress"] = integer("&" + name("thumb_add"))
+    result["functionAddress"] = integer("&" + name("thumb_add")) - inspection_bias
     result["storedPointer"] = integer("thumb_pointer")
     assert result["storedPointer"] == labels["thumb_add"]["raw"], result
     assert result["storedPointer"] & 1
@@ -82,7 +91,7 @@ try:
         assert result["functionAddress"] == oracle["functionAddress"], "GDB function address differs"
         assert result["storedPointer"] == oracle["storedPointer"]
     if labels["role"] == "pie-dynamic":
-        result["originalLookup"] = {original: integer("&" + original)
+        result["originalLookup"] = {original: integer("&" + original) - inspection_bias
             for original in ("arm_call", "thumb_add", "arm_after", "thumb_sink", "thumb_pointer")}
         if not compiler:
             assert result["originalLookup"] == oracle["originalLookup"], "inherited dynamic lookup changed"
@@ -94,15 +103,16 @@ try:
             cursor += row["length"]
         assert cursor == labels[function]["code"] + labels[function]["codeSize"], rows
     assert labels["thumb_add"]["code"] + labels["thumb_add"]["size"] == labels["arm_after"]["code"]
-    result["upperBound"] = gdb.execute("x/2i " + hex(labels["arm_after"]["code"]), to_string=True)
+    result["upperBound"] = gdb.execute("x/2i " + hex(labels["arm_after"]["code"] + inspection_bias), to_string=True)
     thumb = labels["thumb_add"]
     writes = [row for row in gdb.selected_inferior().architecture().disassemble(
-        thumb["code"], thumb["code"] + thumb["codeSize"] - 1)
+        thumb["code"] + inspection_bias, thumb["code"] + inspection_bias + thumb["codeSize"] - 1)
         if re.fullmatch(r"mov\s+r0,\s*r3", row["asm"])]
     assert len(writes) == 1 and writes[0]["length"] == 2, writes
-    write_pc = writes[0]["addr"]
+    write_pc = writes[0]["addr"] - inspection_bias
 
-    gdb.execute("target remote " + os.environ["FORGE_THUMB_REMOTE"])
+    if not sectionless:
+        gdb.execute("target remote " + os.environ["FORGE_THUMB_REMOTE"])
     bias = integer("&main") - labels["main"]["code"]
     assert (bias != 0) == labels["role"].startswith("pie"), bias
     result["loadBias"] = bias

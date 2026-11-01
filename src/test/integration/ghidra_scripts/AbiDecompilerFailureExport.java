@@ -69,10 +69,13 @@ public class AbiDecompilerFailureExport extends GhidraScript {
                 variable.hasDefensibleLocation())) {
             throw new AssertionError("saved parameter disappeared before failure filtering");
         }
+        var modeCues = ghidradwarfforge.GhidraArm32FunctionModes.extract(currentProgram,
+            functions, target, delta, monitor, this::println);
         Path sourceOutput = Path.of(output + ".c");
         ArtifactPairPublisher.stageAndPublish(output, sourceOutput,
             staged -> new MinimalDwarfSidecarExporter().export(input, staged, natives.consumer(), natives.producer(),
-                functions, source, model, sourceOutput.getFileName().toString()),
+                functions, source, model, sourceOutput.getFileName().toString(), monitor::isCancelled,
+                modeCues, this::println),
             source::writeAtomically, monitor::checkCancelled);
         failures.forEach(message -> println("native-decompiler-failure=" + message));
         println("abi-decompiler-failure=PASS");
