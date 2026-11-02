@@ -71,7 +71,12 @@ public final class GhidraVariableStorage {
     public static Storage stableParameter(Program program, Function function,
             Parameter parameter, TargetRegisterMap registers, TaskMonitor monitor)
             throws CancelledException {
-        VariableStorage storage = parameter.getVariableStorage();
+        return stableParameter(program, function, parameter, parameter.getVariableStorage(), registers, monitor);
+    }
+
+    static Storage stableParameter(Program program, Function function, Parameter parameter,
+            VariableStorage storage, TargetRegisterMap registers, TaskMonitor monitor)
+            throws CancelledException {
         // Dynamic parameters can have effective storage while their symbol row is unassigned.
         if (storage == null || storage.isUnassignedStorage()) {
             return unavailable(OmissionReason.UNASSIGNED,

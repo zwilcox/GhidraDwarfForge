@@ -382,6 +382,18 @@ tasks.register("compositeValueFlowSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/composite-value-flow/cache").absolutePath
 }
 
+tasks.register("indirectParameterStorageSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks genuine indirect ABI pointer spill, reload and invalidation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.IndirectParameterStorageSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/indirect-parameter/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/indirect-parameter/cache").absolutePath
+}
+
 tasks.register("stackValueFlowSmoke", JavaExec) {
     group = "verification"
     description = "Checks exact stack spill/reload transitions and retired memory facts"
@@ -734,6 +746,26 @@ tasks.register("customCallStorageSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/custom-call-storage/cache").absolutePath
 }
 
+tasks.register("aarch64ParameterAllocationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks isolated AAPCS64 computed aggregate allocation and preserved analyst storage"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.Aarch64ParameterAllocationSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/aarch64-allocation/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/aarch64-allocation/cache").absolutePath
+}
+
+tasks.register("aarch64AbiSelectionSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks actual ELF metadata against bounded debugger call profiles"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.nativeapi.Aarch64AbiSelectionSmoke"
+}
+
 tasks.register("compilerCallPolicySmoke", JavaExec) {
     group = "verification"
     description = "Checks unverified compiler specifications against the ELF call ABI baseline"
@@ -788,6 +820,23 @@ tasks.register("floatingRegisterSliceSmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.nativeapi.FloatingRegisterSliceSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+    doFirst {
+        def required = ["libdwarfPath", "libdwarfpPath", "sidecarInput", "sidecarOutput"]
+        def missing = required.findAll { !project.hasProperty(it) }
+        if (!missing.isEmpty()) {
+            throw new GradleException("Missing Gradle properties: " + missing.join(", "))
+        }
+        args required.collect { project.property(it) }
+    }
+}
+
+tasks.register("indirectStorageSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks indirect pointer expressions in an isolated native producer process"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.nativeapi.IndirectStorageSmoke"
     jvmArgs "--enable-native-access=ALL-UNNAMED"
     doFirst {
         def required = ["libdwarfPath", "libdwarfpPath", "sidecarInput", "sidecarOutput"]

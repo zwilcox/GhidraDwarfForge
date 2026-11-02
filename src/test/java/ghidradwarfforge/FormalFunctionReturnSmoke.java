@@ -25,6 +25,8 @@ import ghidra.program.util.DefaultLanguageService;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 import ghidra.util.task.TaskMonitorAdapter;
+import ghidradwarfforge.dwarf.DwarfLocationExpression;
+import ghidradwarfforge.locations.VariableStorageModel.RegisterRelativeStorage;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
 import ghidradwarfforge.types.ProgramTypeModel;
 import ghidradwarfforge.types.TypeGraph;
@@ -194,10 +196,23 @@ public final class FormalFunctionReturnSmoke {
                     require(types.get(parameter.type().key()) instanceof TypeGraph.AggregateType &&
                         types.get(parameter.type().key()).byteSize() == 24, "by-value parameter lost formal type");
                     if (function.getParameter(0).isForcedIndirect()) {
-                        require(model.variableStorage().variables().stream()
+                        var variables = model.variableStorage().variables().stream()
                             .filter(variable -> variable.functionAddress() == signature.address())
-                            .noneMatch(variable -> variable.hasDefensibleLocation()),
-                            "forced-indirect by-value argument must not become a direct pointer location");
+                            .toList();
+                        require(target.map().equals("aarch64") && variables.size() == 1,
+                            "unexpected forced-indirect fixture ABI");
+                        var variable = variables.getFirst();
+                        require(variable.name().equals("seed") && variable.byteSize() == 24 &&
+                            variable.locations().size() == 1, "formal argument became its pointer carrier");
+                        var range = variable.locations().getFirst();
+                        require(range.start() == signature.address() && range.end() == signature.address() + 8 &&
+                            range.storage() instanceof RegisterRelativeStorage relative &&
+                            relative.register().dwarfNumber() == 0 && relative.byteOffset() == 0,
+                            "unchanged pointer must describe the object at its address throughout nop/ret");
+                        require(DwarfLocationExpression.planStable(variable) instanceof DwarfLocationExpression.Expression expression &&
+                            expression.operations().equals(List.of(new DwarfLocationExpression.GenericOperation(
+                                DwarfLocationExpression.DW_OP_BREGX, 0, 0))),
+                            "formal object location must be bregx, not direct pointer-value regx");
                     }
                 }
                 case "pointer" -> require(returnType instanceof TypeGraph.IndirectionType pointer &&

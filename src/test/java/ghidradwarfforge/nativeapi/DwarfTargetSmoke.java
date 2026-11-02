@@ -32,6 +32,8 @@ public final class DwarfTargetSmoke {
             ByteOrder.BIG_ENDIAN), "requires ELF32");
         expectFailure(() -> DwarfTarget.fromMetadata(62, 8,
             ByteOrder.BIG_ENDIAN), "big-endian producer mode has not been audited");
+        expectFailure(() -> DwarfTarget.fromMetadata(183, 4,
+            ByteOrder.LITTLE_ENDIAN), "requires ELF64");
         expectFailure(() -> DwarfTarget.fromMetadata(183, 8,
             ByteOrder.BIG_ENDIAN), "big-endian producer mode has not been audited");
         expectFailure(() -> DwarfTarget.fromMetadata(40, 4,

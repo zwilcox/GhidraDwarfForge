@@ -1,5 +1,50 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED AArch64 vector-storage integration:** PR #123 passes both complete
+hosted gates at `8b6749e3`, separate package/raw/runtime/both-host review, and
+normal protected merge `3a60eab` with the same tree. Fresh uploaded-artifact
+replays pass 1,071 instruction observations and 33 unchanged-state call
+rejections; ten artifacts pass fresh structural validation. See
+`docs/AARCH64-VECTOR-STORAGE.md` for exact evidence and native-vector call limits.
+All remaining #68–#71 requirements remain open. Historical pending statements
+below are superseded for this component only.
+
+**CONFIRMED AArch64 computed-allocation defect; candidate acceptance in progress:**
+A register-exhausted structure is split incorrectly by the pinned Ghidra default
+model, causing wrong exported member and following-argument values. An isolated,
+read-only prototype correction preserves explicit analyst storage and has passing
+local runtime/model evidence. The expanded fixture includes narrow/aligned,
+chained and named variadic arguments plus shared/rebased-shared loading.
+See `docs/AARCH64-PARAMETER-ALLOCATION.md` for the exact correction, remaining
+acceptance and the unchanged-decompiler-output limitation. P2.3–P2.3c remain open.
+
+**CONFIRMED AArch64 profile-selection integration:** PR #122 passes all twelve
+jobs at `086eaee9` in run `41346340841`, independent package/five-target/both-host
+review, and normal protected merge `a848391`. See
+`docs/AARCH64-ABI-SELECTION.md` for 96 injected-call checks, artifact binding,
+validator diagnostics and host limits. This accepts the selected call-profile
+component; the remaining #68–#71 requirements stay open.
+
+**CONFIRMED local AArch64 SIMD storage candidate; hosted acceptance pending:**
+Separate integer/float lane fixtures now prove 128-bit register copies,
+spill/reload, ninth-vector stack arguments and conservative alias/clobber gaps
+in non-PIE, PIE and rebased PIE. Real native decompilation failure and production
+copy cancellation preserve neighboring observations and existing outputs.
+The saved analyst types remain ordinary four-element arrays; debugger-injected
+native vector calls are not claimed. The GCC reference boundary correction
+preserves identical executable instructions. See `docs/AARCH64-VECTOR-STORAGE.md`.
+P2.3–P2.3c and issues #68–#71 remain open.
+
+**CONFIRMED local AArch64 selection candidate; full scope remains open:**
+Language/compiler and ELF metadata checks now preserve recovered knowledge while
+restricting unsupported debugger-injected calls, including typed callbacks.
+Actual Ghidra model and packaged runtime checks are documented in
+`docs/AARCH64-ABI-SELECTION.md`. All twelve local profile cases pass; hosted
+acceptance and protected integration remain required.
+The runtime reference is explicitly Cortex-A53 after retaining a default-CPU
+floating-call failure in compiler DWARF. This does not complete P2.3/#68 or any
+of P2.3a–P2.3c/#69–#71.
+
 **CONFIRMED accepted P1.11a and P3.3 implementation:** PR103 is integrated as
 `8f6031c92496550e733b59f8589ce7f3e5428e8a`; its tree equals tested
 `7387a61dd79c6753998c9c89271a42ed295f6ac4`. All twelve jobs in run
@@ -2453,6 +2498,13 @@ AArch64, ARM32, and MIPS32 big/little endian.
 ## P2.3 Add AArch64 target support
 
 Tracking: [#68](https://github.com/zwilcox/GhidraDwarfForge/issues/68).
+
+**CONFIRMED active scope:** P2.3–P2.3c are being completed together under
+[the full requirement plan](docs/TARGET-ABI-COMPLETION-PLAN.md). All four
+umbrella issues remain open. The indirect-argument component passes local
+non-PIE/PIE/rebased-PIE value and validator checks, genuine failure/cancellation
+controls, and x86-64/AArch64 shared-flow regressions. Hosted acceptance and
+protected integration remain pending; see [the component evidence](docs/AARCH64-PROFILE-PLAN.md).
 
 The shared [target-profile contract](docs/TARGET-PROFILES.md) records the
 existing five profiles and a finite follow-up order for P2.3/3a/3b. The

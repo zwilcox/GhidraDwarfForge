@@ -1,5 +1,12 @@
 # Tested ELF and ABI profiles
 
+**CONFIRMED local AArch64 selection candidate (2026-11-01), integration pending:**
+`AARCH64-ABI-SELECTION.md` records explicit language/compiler and ELF call-profile
+checks, twelve packaged runtime cases and six x86-64/MIPS regressions. Earlier
+classification gaps below describe their historical checkpoints. The candidate
+does not establish additional operating systems, SVE, ILP32 or big-endian
+AArch64 support; full P2.3–P2.3c acceptance remains open.
+
 **CONFIRMED:** the five Linux target lanes exercise the production exporter,
 independent ELF/DWARF validators, and native or QEMU/GDB behavior. This document
 describes the profiles and storage cases actually tested. An ELF machine number
@@ -203,3 +210,15 @@ automatic mapping or a blanket change to the baseline FPXX profile.
 follow-up](I386-SHARED-PROFILE.md) adds ordinary/rebased library exports from non-PIE and
 PIE drivers, exact typed values and curated/original symbol lookup. It uses the
 unchanged production exporter and does not establish broader libc or ABI support.
+
+## AArch64 SIMD storage component
+
+**CONFIRMED locally; integration pending:** six separate integer/float lane
+functions pass non-PIE, PIE and rebased-PIE runs, including real failure and
+cancellation controls. Full-width register copies, spills, reloads and incoming
+stack storage retain exact values; uncertain aliases and clobbers produce honest
+gaps. The representation is an explicit analyst array layout with guarded
+debugger calls, not an invented native vector type. See
+`AARCH64-VECTOR-STORAGE.md` for the compiler-reference investigation and exact
+acceptance. The full original AArch64 scope audit, hosted gates and protected
+integration remain required, as do all remaining MIPS, ARM32 and i386 rows.

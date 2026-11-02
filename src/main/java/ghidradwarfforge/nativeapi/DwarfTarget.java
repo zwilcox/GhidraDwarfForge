@@ -25,6 +25,7 @@ import ghidradwarfforge.elf.MipsFunctionAliasSymbols;
 import ghidradwarfforge.elf.MipsFloatingCallPolicy;
 import ghidradwarfforge.elf.MipsAggregateCallPolicy;
 import ghidradwarfforge.types.ProgramTypeModel;
+import ghidradwarfforge.types.DebuggerCallRestrictions;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
 
 /** Table-driven libdwarf target description derived from the original ELF. */
@@ -110,13 +111,39 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
     }
 
     /** A program-default name is not proof of the original ELF consumer's ABI. */
-    public String compilerSpecCallRestriction(String compilerSpecId) {
+    public String compilerSpecCallRestriction(String languageId, String compilerSpecId) {
         String baseline = BASELINE_COMPILER_SPECS.get(name);
         if (baseline != null && baseline.equals(compilerSpecId)) {
+            // AppleSilicon/default is a different ABI despite sharing the
+            // processor, pointer width, byte order and compiler ID with v8A.
+            if (name.equals("aarch64") && !"AARCH64:LE:64:v8A".equals(languageId)) {
+                return "selected Ghidra language " + languageId + " with compiler " + compilerSpecId +
+                    " has no validated default debugger ABI mapping for ELF target " + name;
+            }
             return "";
         }
         return "selected Ghidra compiler specification " + compilerSpecId +
             " has no validated default debugger ABI mapping for ELF target " + name;
+    }
+
+    /** Metadata compatibility is not a claim that all instructions or signatures are supported. */
+    public String elfAbiCallRestriction(ElfImage image) {
+        if (!equals(fromElf(image))) throw new IllegalArgumentException("call ABI target disagrees with ELF");
+        if (!name.equals("aarch64")) return "";
+        byte[] header = image.headerBytes();
+        int osAbi = Byte.toUnsignedInt(header[7]);
+        int abiVersion = Byte.toUnsignedInt(header[8]);
+        // AAELF64 2025Q4: processor flags are reserved and must be zero.
+        // OSABI=0 denotes generic ELF, not proof of a particular operating system.
+        // The tested consumer is Linux/System V; other platform/version choices
+        // retain their metadata and recovered knowledge but do not establish calls.
+        if ((image.type() != 2 && image.type() != 3) || image.flags() != 0 ||
+                (osAbi != 0 && osAbi != 3) || abiVersion != 0) {
+            return "AArch64 ELF metadata has no validated LP64 debugger call profile: type=" +
+                image.type() + ", flags=0x" + Long.toHexString(image.flags()) +
+                ", OSABI=" + osAbi + ", ABI-version=" + abiVersion;
+        }
+        return "";
     }
 
     /** Target ABI guards preserve the signature while preventing unverified debugger calls. */
@@ -125,8 +152,9 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
         if (!equals(fromElf(image))) {
             throw new IllegalArgumentException("call ABI target disagrees with ELF");
         }
-        return MipsAggregateCallPolicy.apply(image,
-            MipsFloatingCallPolicy.apply(image, model, cancelled, diagnostic), cancelled, diagnostic);
+        return DebuggerCallRestrictions.applyAll(MipsAggregateCallPolicy.apply(image,
+            MipsFloatingCallPolicy.apply(image, model, cancelled, diagnostic), cancelled, diagnostic),
+            elfAbiCallRestriction(image), cancelled, diagnostic);
     }
 
     /** Direct code-address values only; tagged/descriptor ABIs need their own binding proof. */

@@ -36,6 +36,9 @@ trap cleanup EXIT
 expected_sources=(
     Makefile
     README.md
+    aarch64-abi.c
+    aarch64-abi.h
+    aarch64-vector.c
     aggregate-return-calls.c
     arm-dynamic-pcs.c
     arm-mixed-function-aliases.cpp
