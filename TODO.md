@@ -1,5 +1,16 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local exhausted-stack aggregate contract:** four LE/BE8 ordinary/
+rebased cases pass exact instruction, raw DWARF/carrier and typed-value checks:
+1,012 baseline stops per symbol-file variant, 32 deterministic failure exports,
+3,802 neighboring and 246 symbol-only stops, and four production-copy
+cancellations. The separately named audited prefix requires 492 unavailable
+field observations at proven uncertainty boundaries; the original full-
+availability research failures remain retained. Eight runtime mutation controls
+reject altered gaps, carriers and instructions. CI is wired; exact-head hosted
+acceptance and broader PIE/shared compositions remain required. See `docs/ARM-STACK-AGGREGATES.md`.
+All original P2.3–P2.3c requirements remain in scope.
+
 **CONFIRMED tracker reconciliation:** GitHub #68 is closed as completed by
 `zwilcox` on 2026-11-01; #69–#71 remain open. The inspected #68 event has no
 linked commit or acceptance comment. Earlier statements that all four tracker
@@ -2807,11 +2818,12 @@ AArch64, ARM32, and MIPS32 big/little endian.
 Tracking: [#68](https://github.com/zwilcox/GhidraDwarfForge/issues/68).
 
 **CONFIRMED active scope:** P2.3–P2.3c are being completed together under
-[the full requirement plan](docs/TARGET-ABI-COMPLETION-PLAN.md). All four
-umbrella issues remain open. The indirect-argument component passes local
-non-PIE/PIE/rebased-PIE value and validator checks, genuine failure/cancellation
-controls, and x86-64/AArch64 shared-flow regressions. Hosted acceptance and
-protected integration remain pending; see [the component evidence](docs/AARCH64-PROFILE-PLAN.md).
+[the full requirement plan](docs/TARGET-ABI-COMPLETION-PLAN.md). GitHub #68 is
+externally closed; #69–#71 remain open. The independent full requirement audit
+remains active. AArch64 allocation/shared cases are accepted through PR124's
+exact-head hosted gate and protected merge; see
+[the acceptance evidence](docs/AARCH64-PARAMETER-ALLOCATION.md). Earlier local-only
+component notes below describe historical checkpoints.
 
 The shared [target-profile contract](docs/TARGET-PROFILES.md) records the
 existing five profiles and a finite follow-up order for P2.3/3a/3b. The

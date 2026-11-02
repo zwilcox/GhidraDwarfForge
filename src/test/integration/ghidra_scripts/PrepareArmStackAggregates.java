@@ -13,6 +13,9 @@ public class PrepareArmStackAggregates extends GhidraScript {
         var args = getScriptArgs();
         if (args.length != 3 || !List.of("curate", "inspect").contains(args[0])) throw new IllegalArgumentException();
         boolean curate = args[0].equals("curate");
+        long originalBase = ghidradwarfforge.GhidraImageBase.originalImageBase(currentProgram);
+        long delta = ghidradwarfforge.AddressNormalizer.rebaseDelta(
+            currentProgram.getImageBase().getOffset(), originalBase);
         var labels = new LinkedHashMap<String, Long>();
         for (String line : Files.readAllLines(Path.of(args[1]))) {
             String[] fields = line.split(" ");
@@ -49,14 +52,14 @@ public class PrepareArmStackAggregates extends GhidraScript {
                 parameters.add(new ParameterImpl("tail", floating ? FloatDataType.dataType : IntegerDataType.dataType,
                     currentProgram, SourceType.USER_DEFINED));
                 String convention = pcs.equals("base") ? "__stdcall_softfp" : "__stdcall";
-                var function = getFunctionAt(toAddr(labels.get(name)));
+                var function = getFunctionAt(toAddr(Math.addExact(labels.get(name), delta)));
                 if (function == null) throw new AssertionError("missing function " + name);
                 if (curate) {
                     function.setName(name, SourceType.USER_DEFINED);
                     function.updateFunction(convention, new ReturnParameterImpl(IntegerDataType.dataType, currentProgram),
                         Function.FunctionUpdateType.DYNAMIC_STORAGE_ALL_PARAMS, true, SourceType.USER_DEFINED,
                         parameters.toArray(ParameterImpl[]::new));
-                    createLabel(toAddr(labels.get(name + "_observe")), name + "_observe", true, SourceType.USER_DEFINED);
+                    createLabel(toAddr(Math.addExact(labels.get(name + "_observe"), delta)), name + "_observe", true, SourceType.USER_DEFINED);
                 }
                 if (function.hasCustomVariableStorage() || !function.getCallingConventionName().equals(convention) ||
                         function.getParameterCount() != parameters.size()) throw new AssertionError(name);
@@ -69,7 +72,7 @@ public class PrepareArmStackAggregates extends GhidraScript {
             for (var entry : types.entrySet()) {
                 for (String prefix : List.of("input_", "seen_")) {
                     String name = prefix + entry.getKey();
-                    var address = toAddr(labels.get(name));
+                    var address = toAddr(Math.addExact(labels.get(name), delta));
                     DataUtilities.createData(currentProgram, address, entry.getValue(), entry.getValue().getLength(),
                         DataUtilities.ClearDataMode.CLEAR_ALL_CONFLICT_DATA);
                     createLabel(address, name, true, SourceType.USER_DEFINED);
@@ -77,7 +80,9 @@ public class PrepareArmStackAggregates extends GhidraScript {
             }
         }
         Files.writeString(Path.of(args[2]), new GsonBuilder().setPrettyPrinting().create().toJson(Map.of(
-            "functions", rows, "language", currentProgram.getLanguageID().toString(), "origin",
+            "functions", rows, "language", currentProgram.getLanguageID().toString(),
+            "originalImageBase", originalBase, "imageBase", currentProgram.getImageBase().getOffset(),
+            "rebaseDelta", delta, "origin",
             ghidradwarfforge.GhidraVariableStorage.class.getProtectionDomain().getCodeSource().getLocation().toString())) + "\n");
         println("arm-stack-aggregates-preparation=PASS");
     }

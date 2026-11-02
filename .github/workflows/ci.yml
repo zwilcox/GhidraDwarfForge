@@ -1767,6 +1767,7 @@ jobs:
         if: matrix.target == 'arm32'
         run: |
           python3 src/test/integration/arm-stack-aggregates-reference-test.py
+          python3 src/test/integration/arm-stack-aggregates-contract-test.py
           for order in little big; do
               gdb=$(command -v gdb-multiarch)
               data=/usr/share/gdb
@@ -1779,6 +1780,11 @@ jobs:
               for pcs in softfp hard; do
                   python3 src/test/integration/arm-aggregate-calls.py "$GHIDRA_INSTALL_DIR" \
                       --order "$order" --pcs "$pcs" --gdb "$gdb" --gdb-data "$data" --qemu "$qemu"
+              done
+              for role in exec exec-rebased; do
+                  python3 src/test/integration/arm-stack-aggregates.py "$GHIDRA_INSTALL_DIR" \
+                      --order "$order" --role "$role" --gdb "$gdb" --gdb-data "$data" --qemu "$qemu" \
+                      --availability-contract audited-prefix --with-controls
               done
               python3 src/test/integration/arm-hfa-lifetimes.py "$GHIDRA_INSTALL_DIR" \
                   --order "$order" --gdb "$gdb" --gdb-data "$data" --qemu "$qemu"

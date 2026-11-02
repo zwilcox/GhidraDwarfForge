@@ -1,5 +1,12 @@
 # ARM exhausted-register and partial-aggregate investigation
 
+**CONFIRMED newer local contract:** [the audited aggregate profile](../ARM-STACK-AGGREGATES.md)
+now passes four ordinary/rebased LE/BE8 cases, raw location/carrier and typed
+checks, 32 failure exports and four copy cancellations. It specifies exact
+instruction-derived unavailable boundaries. The strict full-availability
+research failures below remain retained; hosted acceptance and the complete
+ABI goal are still outstanding.
+
 **CONFIRMED local progress; full P2.3b/#70 acceptance remains incomplete.**
 This work retains the complete P2.3–P2.3c requirements in
 [the completion plan](../TARGET-ABI-COMPLETION-PLAN.md). The extension baseline

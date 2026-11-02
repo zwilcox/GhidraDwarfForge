@@ -24,12 +24,20 @@ expected = {
 layouts = {'pair': ('ii', 8), 'aligned': ('Qi4x', 16), 'packed': ('BI', 5),
     'bytes': ('BBB', 3), 'words': ('iii', 12), 'mixed': ('f4xQ', 16), 'floats': ('fff', 12)}
 result = {'status': 'STARTED', 'variant': variant, 'entry': [], 'observations': [],
-    'mismatches': [], 'referenceWindows': [], 'referenceMismatches': []}
+    'mismatches': [], 'referenceWindows': [], 'referenceMismatches': [], 'unavailable': [],
+    'carrierObservations': []}
+audited = profile.get('availabilityContract', 'full-availability') == 'audited-prefix'
 calibrate = variant == 'compiler' and os.environ.get('FORGE_STACK_REFERENCE_CALIBRATION') == '1'
 defer_assertion = variant == 'forge' and os.environ.get('FORGE_STACK_REPORT_ONLY') == '1'
 spec = importlib.util.spec_from_file_location('reference', Path(__file__).with_name('arm-stack-aggregates-reference.py'))
 reference = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(reference)
+spec = importlib.util.spec_from_file_location('contract', Path(__file__).with_name('arm_stack_aggregate_contract.py'))
+contract = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(contract)
+locations = json.loads((case / 'parameter-locations.json').read_text()) if variant == 'forge' and (
+    case / 'parameter-locations.json').exists() else None
+assert not audited or variant != 'forge' or locations is not None
 
 
 def integer(expression):
@@ -42,6 +50,51 @@ def memory(address, size):
 
 def register_bytes(index):
     return (integer('$r' + str(index)) & 0xffffffff).to_bytes(4, order)
+
+
+def physical_bytes(pieces):
+    result = bytearray()
+    for piece in pieces:
+        number, width = piece['register'], piece['bits'] // 8
+        if piece['kind'] == 'stack':
+            assert number == 13 and piece['bitOffset'] == 0
+            payload = memory(integer('$sp') + piece['displacement'], width)
+        else:
+            if 0 <= number <= 15:
+                whole = register_bytes(number)
+            elif 64 <= number <= 95:
+                whole = gdb.parse_and_eval('$s' + str(number - 64)).bytes
+            else:
+                assert 256 <= number <= 287
+                whole = gdb.parse_and_eval('$d' + str(number - 256)).bytes
+            assert piece['bitOffset'] + piece['bits'] <= len(whole) * 8
+            value = int.from_bytes(whole, order) >> piece['bitOffset'] & ((1 << piece['bits']) - 1)
+            payload = value.to_bytes(width, order)
+        result.extend(payload)
+    return bytes(result)
+
+
+def check_carriers(name, kind, offset, wanted):
+    row = {'name': name, 'offset': offset, 'values': {}, 'unavailable': []}
+    for parameter, intervals in locations[name].items():
+        matched = [item for item in intervals if item['start'] <= offset < item['end']]
+        gap = audited and contract.expects_gap(name, order, offset, parameter + '.first')
+        if not matched:
+            assert not audited or gap, (name, offset, parameter, 'unexpected physical-location gap')
+            row['unavailable'].append(parameter)
+            continue
+        assert len(matched) == 1 and not gap, (name, offset, parameter, 'location crosses required gap')
+        payload = physical_bytes(matched[0]['pieces'])
+        if parameter == 'value':
+            observed = dict(zip(('value.' + field for field in expected[kind]),
+                struct.unpack(endian + layouts[kind][0], payload)))
+        else:
+            layout = 'd' if kind == 'floats' and parameter != 'tail' else 'f' if kind == 'floats' else 'i'
+            observed = {parameter: struct.unpack(endian + layout, payload)[0]}
+        for expression, value in observed.items():
+            assert value == wanted[expression], (name, offset, expression, 'raw carrier', value, wanted[expression])
+        row['values'].update(observed)
+    result['carrierObservations'].append(row)
 
 
 def raw_entry(name, pcs, kind):
@@ -83,6 +136,7 @@ try:
     for pcs in ('base', 'vfp'):
         for kind in expected:
             name = pcs + '_' + kind
+            symbol_only = variant == 'forge' and name == profile.get('failedFunction')
             entry = integer('&' + name)
             observe = json.loads((case / 'labels.json').read_text())[name + '_observe'] if (case / 'labels.json').exists() else integer('&' + name + '_observe')
             stop = gdb.Breakpoint('*' + hex(entry))
@@ -90,14 +144,22 @@ try:
             stop.delete()
             result['entry'].append(raw_entry(name, pcs, kind))
             return_pc = integer('$lr') & ~1
-            return_type = gdb.parse_and_eval(name).type.target()
+            return_type = gdb.lookup_type('int') if symbol_only else gdb.parse_and_eval(name).type.target()
             wanted = {'value.' + field: value for field, value in expected[kind].items()}
             wanted.update(dict(zip('abcdefg' if kind == 'floats' else 'abc', range(1, 8) if kind == 'floats' else (7, 11, 13))))
             wanted['tail'] = -8.5 if kind == 'floats' else -41
             code = memory(entry, observe - entry)
+            if audited:
+                labels = json.loads((case / 'labels.json').read_text())
+                contract.validate_prefix(name, order, code, observe - entry, labels['seen_leading'])
             for step in range(200):
                 pc = integer('$pc')
                 row = {'name': name, 'offset': pc-entry, 'atObserve': pc == observe, 'fields': {}}
+                if symbol_only:
+                    assert name not in locations
+                    row['symbolOnly'] = True
+                elif locations is not None:
+                    check_carriers(name, kind, pc-entry, wanted)
                 proof = reference.window(name, pc-entry, order, code) if calibrate else None
                 if proof:
                     raw = reference.carriers(proof, order,
@@ -108,16 +170,30 @@ try:
                     result['referenceWindows'].append({'name': name, 'offset': pc-entry,
                         'reason': proof['reason'], 'raw': raw})
                 for expression, value in wanted.items():
+                    if symbol_only:
+                        try:
+                            gdb.parse_and_eval(expression)
+                        except gdb.error as error:
+                            assert 'No symbol' in str(error), (name, pc-entry, expression, str(error))
+                            row['fields'][expression] = {'symbolOnly': True}
+                        else:
+                            raise AssertionError('failed function retained parameter ' + expression)
+                        continue
                     mismatch = None
+                    gap = audited and variant == 'forge' and contract.expects_gap(name, order, pc-entry, expression)
                     try:
                         actual = gdb.parse_and_eval(expression)
                         observed = float(actual) if isinstance(value, float) or kind == 'floats' and expression in 'abcdefg' else int(actual)
                         row['fields'][expression] = observed
-                        if observed != value:
-                            mismatch = {'name': name, 'offset': pc-entry, 'expression': expression, 'expected': value, 'actual': observed}
+                        if gap or observed != value:
+                            mismatch = {'name': name, 'offset': pc-entry, 'expression': expression,
+                                'expected': 'unavailable' if gap else value, 'actual': observed}
                     except (gdb.error, ValueError) as error:
                         row['fields'][expression] = {'error': str(error)}
-                        mismatch = {'name': name, 'offset': pc-entry, 'expression': expression, 'expected': value, 'error': str(error)}
+                        if gap and str(error) == 'value has been optimized out':
+                            result['unavailable'].append({'name': name, 'offset': pc-entry, 'expression': expression})
+                        else:
+                            mismatch = {'name': name, 'offset': pc-entry, 'expression': expression, 'expected': value, 'error': str(error)}
                     if mismatch:
                         if proof and expression in proof['fields']:
                             result['referenceMismatches'].append({**mismatch, 'reason': proof['reason'], 'raw': raw[expression]})

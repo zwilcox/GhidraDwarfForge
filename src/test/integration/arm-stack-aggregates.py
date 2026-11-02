@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Reproduce natural ARM aggregate coverage; unresolved Forge observations fail.
+"""Reproduce natural ARM aggregates with an explicit availability contract.
 
-This driver deliberately retains the strict full-availability research oracle.
-It is not yet a passing pipeline lane or a broad aggregate-support claim.
+The default retains the strict full-availability research oracle. The optional
+audited-prefix contract requires exact values plus instruction-justified gaps.
 """
 import argparse
 import hashlib
@@ -39,29 +39,42 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
     parser.add_argument('--order', choices=('little', 'big'), required=True)
+    parser.add_argument('--role', choices=('exec', 'exec-rebased'), default='exec')
     parser.add_argument('--qemu', type=Path, required=True)
     parser.add_argument('--gdb', type=Path, required=True)
     parser.add_argument('--gdb-data', type=Path, required=True)
+    parser.add_argument('--availability-contract', choices=('full-availability', 'audited-prefix'),
+        default='full-availability')
+    parser.add_argument('--with-controls', action='store_true')
     parser.add_argument('--results-root', type=Path, default=repository / 'build/test-results/arm-stack-aggregates')
     args = parser.parse_args()
+    if args.with_controls and args.availability_contract != 'audited-prefix':
+        parser.error('--with-controls requires --availability-contract audited-prefix')
     ghidra = args.ghidra.resolve(strict=True)
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
     output = args.results_root.resolve()
     output.mkdir(parents=True, exist_ok=True)
-    case = Path(tempfile.mkdtemp(prefix=args.order + '.', dir=output))
+    case = Path(tempfile.mkdtemp(prefix=args.order + '.' + args.role + '.', dir=output))
     print(case, flush=True)
     facts = load('aggregate_elf', source / 'arm-thumb-mode-check.py')
     vdso = load('aggregate_vdso', source / 'arm-pcs-call-reference.py')
+    contract = load('aggregate_contract', source / 'arm_stack_aggregate_contract.py')
     compiler = os.environ.get('ARM32_CC', 'arm-linux-gnueabihf-gcc')
     objcopy = os.environ.get('ARM32_OBJCOPY', 'arm-linux-gnueabihf-objcopy')
     fixture = repository / 'src/test/fixtures/arm-stack-aggregates.c'
     startup = repository / 'src/test/fixtures/arm-pcs-start.S'
     protected = [Path(__file__), fixture, startup, source / 'arm-stack-aggregates-gdb.py',
-        source / 'arm-stack-aggregates-reference.py', source / 'arm-pcs-profile-runtime.sh',
+        source / 'arm-stack-aggregates-reference.py', source / 'arm_stack_aggregate_contract.py',
+        source / 'arm-stack-aggregates-locations.py', source / 'check-stack-first-use.py',
+        source / 'arm-pcs-profile-runtime.sh',
         source / 'qemu-socket.sh', source / 'arm-thumb-mode-check.py', source / 'arm-pcs-call-reference.py',
         source / 'check-dwarfdump.py', source / 'ghidra_scripts/PrepareArmStackAggregates.java',
+        source / 'ghidra_scripts/RebaseFixtureProgram.java',
         Path(shutil.which(compiler)), Path(shutil.which(objcopy)), args.qemu, args.gdb]
     protected += [p for root in (module, args.gdb_data) for p in root.rglob('*') if p.is_file()]
+    if args.with_controls:
+        protected += [source / 'arm-stack-aggregate-controls.py',
+            source / 'ghidra_scripts/AbiDecompilerFailureExport.java', source / 'ghidra_scripts/CancelDuringElfCopy.java']
     before = {str(p.resolve()): digest(p) for p in protected}
     commands = []
     java = subprocess.run([str(Path(os.environ['JAVA_HOME']) / 'bin/java'), '-Xshare:off', '-version'],
@@ -91,9 +104,9 @@ def main():
         assert result.returncode == 0, (case, label, result.returncode)
         return result.returncode
 
-    write('profile.json', {'order': args.order, 'role': 'exec', 'ghidra': str(ghidra),
+    write('profile.json', {'order': args.order, 'role': args.role, 'ghidra': str(ghidra),
         'qemu': str(args.qemu.resolve()), 'gdb': str(args.gdb.resolve()), 'gdbData': str(args.gdb_data.resolve()),
-        'compilerReferenceCalibration': 'exact live-carrier windows', 'forgeOracle': 'strict full availability'})
+        'compilerReferenceCalibration': 'exact live-carrier windows', 'availabilityContract': args.availability_contract})
     flags = ['-marm', '-march=armv7-a', '-mfpu=vfpv3-d16', '-mfloat-abi=hard', '-O1',
         '-g3', '-gdwarf-5', '-gno-variable-location-views', '-fno-omit-frame-pointer',
         '-fno-inline', '-fno-ipa-sra', '-fno-ipa-cp', '-nostdlib', '-nostartfiles', '-static',
@@ -110,7 +123,7 @@ def main():
     assert not original['symbols'], 'fixture must be completely stripped'
     kinds = ('pair', 'aligned', 'packed', 'bytes', 'words', 'mixed', 'floats')
     names = [pcs + '_' + kind for pcs in ('base', 'vfp') for kind in kinds]
-    required = names + [name + '_observe' for name in names] + [prefix + kind
+    required = ['seen_leading'] + names + [name + '_observe' for name in names] + [prefix + kind
         for prefix in ('input_', 'seen_') for kind in kinds]
     labels, inventory = {}, {}
     for name in required:
@@ -127,6 +140,9 @@ def main():
         observe = labels[name + '_observe']
         assert labels[name] < observe < labels[name] + inventory[name]['size'] and observe % 4 == 0
         inventory[name]['observeOffset'] = observe - labels[name]
+        if args.availability_contract == 'audited-prefix':
+            contract.validate_prefix(name, args.order, bytes.fromhex(inventory[name]['code']),
+                inventory[name]['observeOffset'], labels['seen_leading'])
     write('instruction-inventory.json', inventory)
     write('labels.json', labels)
     (case / 'labels.txt').write_text(''.join(name + ' ' + hex(address) + '\n' for name, address in labels.items()))
@@ -139,7 +155,9 @@ def main():
     project = case / 'project'
     project.mkdir()
     headless = ghidra / 'support/analyzeHeadless'
-    run('import', [headless, project, 'Stack', '-import', case / 'calls.input', '-loader', 'ElfLoader'])
+    rebase = ['-postScript', 'RebaseFixtureProgram.java', '0x2000000'] if args.role == 'exec-rebased' else []
+    run('import', [headless, project, 'Stack', '-import', case / 'calls.input', '-loader', 'ElfLoader',
+        '-scriptPath', source / 'ghidra_scripts', *rebase])
     run('curate', [headless, project, 'Stack', '-process', 'calls.input', '-noanalysis',
         '-scriptPath', source / 'ghidra_scripts', '-postScript', 'PrepareArmStackAggregates.java',
         'curate', case / 'labels.txt', case / 'curate.json'])
@@ -156,6 +174,8 @@ def main():
                 shutil.copy2(case / leaf, case / ('first-' + leaf))
     observation = json.loads((case / 'first.json').read_text())
     assert observation == json.loads((case / 'curate.json').read_text()) == json.loads((case / 'repeat.json').read_text())
+    assert observation['rebaseDelta'] == (0x2000000 if args.role == 'exec-rebased' else 0)
+    assert observation['imageBase'] - observation['originalImageBase'] == observation['rebaseDelta']
     origin = urlsplit(observation['origin'])
     assert origin.scheme == 'file' and Path(unquote(origin.path)) == module / 'lib/GhidraDwarfForge.jar'
     for leaf in ('calls.dbg', 'calls.dbg.c'):
@@ -173,6 +193,7 @@ def main():
     assert exported['header'][:4] == original['header'][:4] and exported['header'][6] == original['header'][6]
     assert exported['header'][4] == exported['header'][9] == 0
     assert facts.section(exported, '.text')['data'] == facts.section(original, '.text')['data']
+    run('physical-locations', ['python3', source / 'arm-stack-aggregates-locations.py', case])
     # Defer the final mismatch assertion until QEMU exit, diagnostics and all
     # preservation checks are collected. The driver still fails below.
     run('forge-runtime', [*runtime, 'forge', *runtime_tail], {'FORGE_STACK_REPORT_ONLY': '1'})
@@ -186,6 +207,12 @@ def main():
             assert offsets == list(range(0, inventory[name]['observeOffset'] + 1, 4)), name
         if variant == 'forge':
             assert not result['referenceWindows'] and not result['referenceMismatches']
+            assert len(result['carrierObservations']) == len(result['observations'])
+            if args.availability_contract == 'audited-prefix':
+                expected_gaps = {(row['name'], row['offset'], expression)
+                    for row in result['observations'] for expression in row['fields']
+                    if contract.expects_gap(row['name'], args.order, row['offset'], expression)}
+                assert {(row['name'], row['offset'], row['expression']) for row in result['unavailable']} == expected_gaps
         warnings = (case / (variant + '.stderr')).read_text().splitlines()
         assert len(warnings) <= 1
         for warning in warnings:
@@ -199,14 +226,20 @@ def main():
     assert project_before == project_after
     write('project-after.json', project_after)
     assert before == {path: digest(Path(path)) for path in before}
-    write('result.json', {'status': results['forge']['status'], 'order': args.order,
+    write('result.json', {'status': results['forge']['status'], 'order': args.order, 'role': args.role,
+        'availabilityContract': args.availability_contract,
         'compilerObservations': len(results['compiler']['observations']),
         'forgeObservations': len(results['forge']['observations']),
+        'physicalCarrierObservations': len(results['forge']['carrierObservations']),
         'referenceMismatchesRetained': len(results['compiler']['referenceMismatches']),
         'unavailable': sum('error' in row for row in results['forge']['mismatches']),
+        'requiredUnavailableFields': len(results['forge']['unavailable']),
         'incorrect': [row for row in results['forge']['mismatches'] if 'actual' in row],
         'deterministic': True, 'protectedFilesUnchanged': True, 'savedProjectUnchanged': True})
     assert results['forge']['status'] == 'PASS', 'unresolved aggregate observations: ' + str(case)
+    if args.with_controls:
+        run('failure-controls', ['python3', source / 'arm-stack-aggregate-controls.py', case])
+        assert before == {path: digest(Path(path)) for path in before}
     print('PASS_ARM_STACK_AGGREGATES', flush=True)
 
 
