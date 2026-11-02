@@ -83,12 +83,21 @@ def artifact_dwarf(case, original, prep, report, target, prefix):
         scalar_clobber = index == 1 and target in ("mips32be", "mips32le")
         if scalar_clobber:
             omission, = omitted
-            assert omission["reason"] == "REGISTER_MODIFIED" and "DW_AT_location" not in attrs
-            assert [int(omission[key], 16) for key in ("startAddress", "endAddress")] == [
-                int(bound, 16) for bound in function["ranges"][0]]
-            write = re.fullmatch(r"function writes parameter piece register a0 at ([0-9a-f]+)", omission["diagnostic"])
-            assert write, omission
-            address = int(write[1], 16)
+            assert omission["reason"] == "REGISTER_MODIFIED" and "DW_AT_location" in attrs
+            start, end = (int(bound, 16) for bound in function["ranges"][0])
+            address = start + 16
+            boundary = address + 4
+            assert [int(omission[key], 16) for key in ("startAddress", "endAddress")] == [boundary, end]
+            assert omission["diagnostic"] == ("proven parameter register storage was overwritten before address " +
+                hex(boundary) + "; later storage is not established")
+            # Decode the actual one-entry DWARF 5 list, including its end marker.
+            offset = int(re.fullmatch(r"0x([0-9a-f]+) \(location list\)", attrs["DW_AT_location"])[1], 16)
+            byte_order = "big" if target == "mips32be" else "little"
+            expression = bytes((0x90, 4, 0x9d, 32, 0, 0x90, 5, 0x9d, 32, 0))
+            expected = (bytes((0x07,)) + start.to_bytes(4, byte_order) + boundary.to_bytes(4, byte_order) +
+                bytes((len(expression),)) + expression + bytes((0,)))
+            payload = output["sections"][".debug_loclists"][1]
+            assert payload[offset:offset + len(expected)] == expected
             instruction, = [item for item in function["instructions"] if int(item["address"], 16) == address]
             assert instruction["text"].startswith("lui a0,"), instruction
             header, payload = original["sections"][".text"]
@@ -256,10 +265,15 @@ def main():
         assert compiler["incoming"] == forge["incoming"]
         states = forge["states"]
         assert 0 < len(states) <= 256 and states[0]["pc"] == int(function["entry"], 16)
-        expected_available = not (index == 1 and args.target in ("mips32be", "mips32le"))
-        assert states[0]["available"] == expected_available
-        if not expected_available:
-            assert all(not state["available"] and state["omission"]["reason"] == "REGISTER_MODIFIED" for state in states)
+        assert states[0]["available"]
+        if index == 1 and args.target in ("mips32be", "mips32le"):
+            boundary = labels["capture_scalar"]["address"] + 20
+            assert compiler["scalarCarrierBoundary"] == forge["scalarCarrierBoundary"]
+            assert forge["scalarCarrierBoundary"]["unavailableFrom"] == boundary
+            assert all(state["available"] == (state["pc"] < boundary) for state in states)
+            assert any(state["available"] for state in states) and any(not state["available"] for state in states)
+            assert all(state["omission"]["reason"] == "REGISTER_MODIFIED"
+                for state in states if not state["available"])
         addresses = {int(item["address"], 16) for item in function["instructions"]}
         assert all(state["pc"] in addresses for state in states) and len({state["pc"] for state in states}) == len(states)
         assert compiler["sourceStop"]["pc"] in {state["pc"] for state in states}

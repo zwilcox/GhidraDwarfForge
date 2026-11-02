@@ -58,7 +58,7 @@ public class ClassDecompilerFailureExport extends GhidraScript {
         var registers = TargetRegisterMap.forElf(target.name(), elf, monitor::isCancelled);
         var extracted = GhidraTypeGraph.extract(currentProgram, functions, registers, delta, monitor, this::println,
             decompilation.recoveredReturns(), decompilation.recoveredParameters(), decompilation.recoveredStatics());
-        var model = GhidraCompilerCallPolicy.apply(currentProgram, target, extracted, monitor, this::println);
+        var model = GhidraCompilerCallPolicy.apply(currentProgram, target, elf, extracted, monitor, this::println);
         if (model.classScopes().methods().stream().noneMatch(method ->
                 method.function().name().equals("inspect_object"))) {
             throw new AssertionError("class method evidence unexpectedly removed before emission");

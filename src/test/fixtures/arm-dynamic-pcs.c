@@ -15,7 +15,7 @@ void vfp_probe(float first, float second)
     vfp_second = second;
 }
 
-/* A real result write and ordinary ARM return retain the conservative tail case. */
+/* A real result write leaves both arguments in surviving logical registers. */
 __attribute__((noinline, pcs("aapcs-vfp")))
 float vfp_sum(float first, float second)
 {

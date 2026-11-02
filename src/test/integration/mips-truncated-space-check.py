@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import re
 import shutil
+import struct
 from urllib.parse import unquote, urlsplit
 
 FUNCTIONS = ("capture_wide", "capture_args")
@@ -86,6 +87,20 @@ def main():
         assert unquote(origin.path) == str((args.module / "lib/GhidraDwarfForge.jar").resolve())
     assert len(prep["functions"]) == 2
     stores = []
+    wide_prefix = None
+    if not n32:
+        entry = labels["capture_wide"]["address"]
+        text, payload = original["sections"][".text"]
+        at = entry - text[3]
+        words = struct.unpack_from((">" if endian == "be" else "<") + "6I", payload, at)
+        # Source-built O0 prologue: adjust frame, save/set frame register, home
+        # both incoming words; only the following LUI overwrites a carrier.
+        assert words[:3] == (0x27bdfff8, 0xafbe0004, 0x03a0f025), words
+        assert set(words[3:5]) == {0xafc5000c, 0xafc40008}, words
+        assert words[5] >> 16 == 0x3c04, words
+        wide_prefix = {"entry": entry, "write": entry + 20, "end": entry + 24,
+            "machineWords": [hex(word) for word in words]}
+        (case / "wide-prefix-proof.json").write_text(json.dumps(wide_prefix, indent=4) + "\n")
     for name, parameters, function in zip(FUNCTIONS, PARAMETERS, prep["functions"]):
         assert function["present"] and function["name"] == "curated_" + name
         assert function["signatureSource"] == "USER_DEFINED" and function["returnType"] == "void"
@@ -164,8 +179,15 @@ def main():
             assert all(o["kind"] == "PARAMETER" and o["reason"] != "UNASSIGNED" for o in omitted)
             if not n32 and unsigned:
                 assert len(omitted) == 1 and omitted[0]["reason"] == "REGISTER_MODIFIED"
-                assert [int(omitted[0][key], 16) for key in ("startAddress", "endAddress")] == [int(x, 16) for x in function["ranges"][0]]
-                assert "DW_AT_location" not in d["attrs"]
+                end = int(function["ranges"][0][1], 16)
+                assert [int(omitted[0][key], 16) for key in ("startAddress", "endAddress")] == [wide_prefix["end"], end]
+                location = re.fullmatch(r"(0x[0-9a-f]+) \(location list\)", d["attrs"]["DW_AT_location"])
+                assert location, d
+                offset = int(location[1], 16)
+                expression = bytes.fromhex("90 04 9d 20 00 90 05 9d 20 00")
+                encoded = b"\x07" + struct.pack((">" if endian == "be" else "<") + "II",
+                    wide_prefix["entry"], wide_prefix["end"]) + bytes([len(expression)]) + expression + b"\0"
+                assert output["sections"][".debug_loclists"][1][offset:offset + len(encoded)] == encoded
             else:
                 assert "DW_AT_location" in d["attrs"]
                 assert not any(int(o["startAddress"], 16) <= int(function["entry"], 16) < int(o["endAddress"], 16) for o in omitted)

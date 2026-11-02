@@ -58,7 +58,7 @@ public class StaticDecompilerFailureExport extends GhidraScript {
         var registers = TargetRegisterMap.forElf(target.name(), elf, monitor::isCancelled);
         var extracted = GhidraTypeGraph.extract(currentProgram, functions, registers, delta, monitor, this::println,
             decompilation.recoveredReturns(), decompilation.recoveredParameters(), decompilation.recoveredStatics());
-        var model = GhidraCompilerCallPolicy.apply(currentProgram, target, extracted, monitor, this::println);
+        var model = GhidraCompilerCallPolicy.apply(currentProgram, target, elf, extracted, monitor, this::println);
         var selected = ghidradwarfforge.source.FunctionStaticPolicy.select(model, source);
         if (model.functionStatics().size() != 5 || selected.exported().size() != 1 || selected.diagnostics().size() != 4 ||
                 !selected.exported().getFirst().block().isEmpty()) throw new AssertionError("failed owner retained statics");

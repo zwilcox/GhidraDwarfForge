@@ -156,13 +156,17 @@ public class GhidraDwarfForge extends GhidraScript {
         var functions = extraction.functions();
         var aliases = GhidraFunctionAliases.extract(currentProgram, functions,
             rebaseDelta, monitor, diagnostic);
+        var sectionModes = ghidradwarfforge.GhidraArm32SectionModes.extract(currentProgram,
+            originalElf, functions, target, rebaseDelta, monitor, diagnostic);
         var modeCues = GhidraArm32FunctionModes.extract(currentProgram, functions,
             target, rebaseDelta, monitor, diagnostic);
         var aliasModeCues = GhidraArm32FunctionModes.extractAliases(currentProgram, aliases,
             target, rebaseDelta, monitor, diagnostic);
         monitor.checkCancelled();
+        var allocation = ghidradwarfforge.targets.TargetParameterAllocation.forProgram(
+            currentProgram, originalElf, monitor, diagnostic);
         var decompilation = GhidraSyntheticSource.decompileDetailed(currentProgram, functions,
-            rebaseDelta, monitor);
+            rebaseDelta, monitor, allocation, diagnostic);
         var source = decompilation.source();
         monitor.checkCancelled();
         var registers = ghidradwarfforge.locations.TargetRegisterMap.forElf(
@@ -170,9 +174,9 @@ public class GhidraDwarfForge extends GhidraScript {
         var extractedTypes = GhidraTypeGraph.extract(currentProgram, functions, registers,
             rebaseDelta, monitor, diagnostic, decompilation.recoveredReturns(),
             decompilation.recoveredParameters(), decompilation.recoveredStatics(),
-            ghidradwarfforge.targets.Aarch64ParameterAllocation.forProgram(currentProgram, originalElf, monitor, diagnostic));
+            allocation);
         var typeModel = ghidradwarfforge.GhidraCompilerCallPolicy.apply(currentProgram,
-            target, extractedTypes, monitor, diagnostic);
+            target, originalElf, extractedTypes, monitor, diagnostic);
         monitor.checkCancelled();
         var resultHolder = new MinimalDwarfSidecarExporter.ExportResult[1];
         ArtifactPairPublisher.stageAndPublish(output, sourceOutput,
@@ -180,7 +184,7 @@ public class GhidraDwarfForge extends GhidraScript {
                 input, stagedOutput,
                 consumer, producer, functions, source, typeModel,
                 sourceOutput.getFileName().toString(), monitor::isCancelled,
-                modeCues, aliases, aliasModeCues, diagnostic),
+                modeCues, aliases, aliasModeCues, sectionModes, diagnostic),
             source::writeAtomically, monitor::checkCancelled);
         MinimalDwarfSidecarExporter.ExportResult result = resultHolder[0];
         String outputHash = sha256(output);

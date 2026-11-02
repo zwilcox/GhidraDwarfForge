@@ -32,10 +32,15 @@ public final class VariableStorageSmoke {
 
     public static void main(String[] args) {
         TargetRegisterMap i386 = TargetRegisterMap.forTarget("x86");
-        if (!i386.dwarfNumbers().equals(java.util.Map.of("EAX", 0, "ECX", 1, "EDX", 2, "EBX", 3,
-                "ESP", 4, "EBP", 5, "ESI", 6, "EDI", 7, "EIP", 8, "eflags", 9)) ||
-                i386.register("ST0", 0, 80).available() || i386.register("XMM0", 0, 128).available()) {
-            throw new AssertionError("i386 general registers or unsupported FP boundaries changed");
+        var i386Expected = new java.util.LinkedHashMap<>(java.util.Map.of("EAX", 0, "ECX", 1, "EDX", 2, "EBX", 3,
+            "ESP", 4, "EBP", 5, "ESI", 6, "EDI", 7, "EIP", 8, "eflags", 9));
+        for (int index = 0; index < 8; index++) {
+            i386Expected.put("XMM" + index, 21 + index);
+            assertRegister(i386.register("XMM" + index, 0, 128), 21 + index);
+        }
+        if (!i386.dwarfNumbers().equals(i386Expected) || i386.register("ST0", 0, 80).available() ||
+                i386.register("XMM8", 0, 128).available() || i386.register("YMM0", 0, 256).available()) {
+            throw new AssertionError("i386 selected register boundary changed");
         }
         TargetRegisterMap x86 = TargetRegisterMap.forTarget("x86_64");
         TargetRegisterMap arm = TargetRegisterMap.forTarget("aarch64");
@@ -61,6 +66,15 @@ public final class VariableStorageSmoke {
         assertRegister(mipsBe.register("a0", 0, 32), 4);
         assertRegister(mipsBe.register("sp", 0, 32), 29);
         assertRegister(mipsLe.register("f31", 0, 32), 63);
+        for (String name : java.util.List.of("mips64", "mips64el")) {
+            var map = TargetRegisterMap.forTarget(name);
+            assertRegister(map.register("a0", 0, 64), 4);
+            assertRegister(map.register("sp", 0, 64), 29);
+            assertRegister(map.register("f31", 0, 64), 63);
+            if (!map.dwarfNumbers().equals(mipsBe.dwarfNumbers()) || !map.registerPairs().isEmpty()) {
+                throw new AssertionError("MIPS64 physical numbering or unexpected FP32 pair policy");
+            }
+        }
 
         Storage unknown = x86.register("NOT_A_GHIDRA_REGISTER", 0, 64);
         if (!(unknown instanceof UnavailableStorage unavailable) ||

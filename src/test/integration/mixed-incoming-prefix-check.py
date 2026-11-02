@@ -1,10 +1,42 @@
-"""Review exact mixed piece order, SP offsets, write cutoff, and runtime values."""
+"""Review complete split-pair locations and the first unproven store boundary."""
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import re
 import sys
 from urllib.parse import unquote, urlsplit
+from mixed_incoming_contract import location_rows, validate_code
+
+spec = importlib.util.spec_from_file_location('mixed_dies', Path(__file__).with_name('dynamic-parameter-storage-check.py'))
+dies = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(dies)
+
+
+def pair_locations(text):
+    records = dies.die_records(text)
+    index, = [i for i, die in enumerate(records) if die['tag'] == 'DW_TAG_subprogram' and dies.die_name(die) == 'mixed']
+    parameters = []
+    for die in records[index + 1:]:
+        if die['depth'] <= records[index]['depth']:
+            break
+        if die['tag'] == 'DW_TAG_formal_parameter' and dies.die_name(die) == 'pair':
+            parameters.append(die)
+    parameter, = parameters
+    location = parameter['attrs']['DW_AT_location']
+    assert '(location list)' in location
+    offset = int(re.search(r'0x[0-9a-f]+', location)[0], 16)
+    rows, active = [], False
+    for line in text.splitlines():
+        row = re.fullmatch(r'\s*([0-9a-f]+) ([0-9a-f]+) ([0-9a-f]+) (\([^\n]+\))', line)
+        if row:
+            active = active or int(row[1], 16) == offset
+            if active:
+                rows.append((int(row[2], 16), int(row[3], 16), row[4]))
+        elif active:
+            assert re.fullmatch(r'\s*[0-9a-f]+ <End of list>', line), line
+            return rows
+    raise AssertionError('unterminated or missing pair location list')
 
 root, ghidra = map(Path, sys.argv[1:])
 jar = ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar'
@@ -40,18 +72,17 @@ for role in ('exec', 'pie'):
                 if 'GhidraDwarfForge report:' in line]
             omission, = [row for row in report['omittedLocations'] if row['function'] == 'mixed'
                 and row['variable'] == 'pair']
-            assert omission['reason'] == 'UNKNOWN_LIFETIME' and int(omission['startAddress'], 16) == boundary
-            rows = re.findall(r'^\s*[0-9a-f]+ ([0-9a-f]+) ([0-9a-f]+) '
-                r'\(DW_OP_regx: 3 \(r3\); DW_OP_bit_piece: size: 32 offset: 0 ; '
-                r'DW_OP_bregx: 13 \(r13\) ([0-9]+); DW_OP_bit_piece: size: 32 offset: 0 \)',
-                (directory / 'readelf.txt').read_text(), re.MULTILINE)
-            assert [(int(start, 16), int(end, 16), int(offset)) for start, end, offset in rows] == [
-                (labels['mixed'], store_pc, 0), (store_pc, boundary, 8)], rows
+            assert omission['reason'] == 'UNKNOWN_LIFETIME' and int(omission['startAddress'], 16) == labels['mixed'] + 24
+            rows = pair_locations((directory / 'readelf.txt').read_text())
+            assert rows == location_rows(labels['mixed']), rows
             runtime = json.loads((directory / 'gdb.txt.json').read_text())
             assert runtime['status'] == 'PASS' and not runtime['compiler']
             assert (runtime['bias'] == 0) == (role == 'exec')
-            assert all(p['fields'] == p['machine'] == expected for p in runtime['points'][:2])
-            assert all(not p['available'] for p in runtime['points'][2:])
+            validate_code(bytes.fromhex(runtime['codeHex']), role == 'pie', labels['mixed'], labels['mixed_low'])
+            assert [p['offset'] for p in runtime['points']] == list(range(0, 40, 4))
+            assert all(p['machine'] == expected for p in runtime['points'])
+            assert all(p['fields'] == expected for p in runtime['points'][:6])
+            assert all(not p['available'] for p in runtime['points'][6:])
             strict = json.loads((directory / 'strict.txt.check.json').read_text())
             assert strict['status'] == 'PASS' and strict['uncorroborated_errors'] == 0
             assert 'No errors.' in (directory / 'llvm.txt').read_text()

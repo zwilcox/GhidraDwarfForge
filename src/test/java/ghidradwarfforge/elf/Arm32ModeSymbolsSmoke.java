@@ -365,7 +365,7 @@ public final class Arm32ModeSymbolsSmoke {
         return NAMES.indexOf(name + "\0");
     }
 
-    private static byte[] fixture(int textIndex) {
+    static byte[] fixture(int textIndex) {
         int count = Math.max(6, textIndex + 2);
         int nameIndex = count - 1;
         byte[] bytes = new byte[0x300 + count * 40];

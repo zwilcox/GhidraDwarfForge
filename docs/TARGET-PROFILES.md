@@ -1,5 +1,53 @@
 # Tested ELF and ABI profiles
 
+**CONFIRMED current candidate audit (2026-11-02):** the bounded profile expansion
+is mapped requirement by requirement in [TARGET-ABI-ACCEPTANCE.md](TARGET-ABI-ACCEPTANCE.md).
+It covers AArch64 ABI/SIMD selection, O32/N32/N64 MIPS, ARM/Thumb and BE8/PCS,
+and libc-backed i386 scalar/SSE/vector/convention behavior. Local component
+runtime evidence and a clean combined build exist; combined hosted acceptance,
+artifact review and protected integration remain pending. The older baseline
+profile inventory below is historical and does not describe all candidate
+capabilities. Consumer limitations and unavailable storage remain explicit in
+the current audit; no broader architecture claim follows from a register table.
+
+**CONFIRMED local ARM incoming-oracle correction:** the PR136 hosted failure
+was an obsolete first-store unavailability expectation. Twelve fresh exports
+pass the independently audited register/spill/reload contract at all ten
+instructions: 140 compiler/Forge observations and 48 required unavailable
+pairs. Six early-gap, late-gap and wrong-carrier controls reject at exact PCs.
+See `MIXED-INCOMING-PREFIX.md`. Production sources are unchanged;
+fresh hosted acceptance, protected integration and the complete original
+P2.3–P2.3c requirements remain open.
+
+**CONFIRMED local ARM context/conflict controls:** twenty controls across ten
+exec/PIE/shared, ordinary/rebased and sectionless layouts pass eighty
+deterministic exports and 390 exact GDB instruction observations. Ten baseline
+runs add 980 observations; two failure/cancellation/live/omission compositions
+add 274. Tests prove Ghidra context-write rejection, conservative omission
+during supported edits, byte-identical restoration and inherited-conflict
+preservation. See `ARM-MIXED-MODE-MAPPINGS.md`. Production code is
+unchanged. Exact-head hosted acceptance, protected integration and the full
+original P2.3–P2.3c requirements remain open.
+
+**CONFIRMED local ARM shared aggregate composition:** a real libc-backed
+loader/driver executes the fourteen-function LE DSO in ordinary/rebased forms.
+Exact GOT relocation, raw carrier and typed checks pass 660 stops per variant,
+16 deterministic failure exports and two cancellations; sixteen deliberate
+shared corruptions reject. Three exec/PIE regressions and twelve PIE corruption
+controls pass with the unchanged production package. See
+`ARM-SHARED-AGGREGATES.md`. Hosted acceptance, protected integration and all remaining original ABI rows
+remain open; the full P2.3–P2.3c goal is unchanged.
+
+**CONFIRMED local exhausted-stack aggregate composition:** eight LE/BE8
+exec/PIE ordinary/rebased cases pass 2,032 instruction observations per
+compiler/Forge variant, raw location/carrier checks, 64 failure exports and
+eight cancellations. Twelve PIE mutation controls fail at the required check.
+The exact prefix contract includes conservative gaps; full-availability
+research failures remain retained. Low-address PIE also requires the pinned
+seventh validation-only libdwarf checker correction. See
+`ARM-STACK-AGGREGATES.md`. Hosted acceptance, shared aggregate composition,
+protected integration and the full P2.3–P2.3c audit remain required.
+
 **CONFIRMED local AArch64 selection candidate (2026-11-01), integration pending:**
 `AARCH64-ABI-SELECTION.md` records explicit language/compiler and ELF call-profile
 checks, twelve packaged runtime cases and six x86-64/MIPS regressions. Earlier

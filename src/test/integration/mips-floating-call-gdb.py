@@ -8,6 +8,15 @@ case = Path(os.environ['MIPS_CALL_CASE'])
 variant = os.environ['MIPS_CALL_VARIANT']
 metadata = json.loads((case / 'metadata.json').read_text())
 profile, scalar = metadata['profile'], metadata['scalar']
+if profile in ('n32', 'n64'):
+    artifact = case / ('call.reference' if variant == 'compiler' else variant + '.dbg')
+    bias = 0
+    if metadata['role'] != 'exec':
+        auxiliary = gdb.execute('info auxv', to_string=True)
+        entry, = [line.split()[-1] for line in auxiliary.splitlines() if 'AT_ENTRY' in line]
+        bias = int(entry, 16) - metadata['entryAddress']
+        assert bias > 0
+    gdb.execute('symbol-file -o ' + hex(bias) + ' ' + str(artifact))
 gdb.execute('set pagination off')
 gdb.execute('set confirm off')
 gdb.execute('set auto-solib-add off')
@@ -53,7 +62,7 @@ result['after'] = state()
 if variant == 'fixed' and profile == 'fpxx':
     assert 'does not follow the target calling convention' in result.get('error', '')
     assert result['after'] == integer_after
-elif profile == 'fp32':
+elif profile in ('fp32', 'n32', 'n64'):
     assert result.get('returned') == 16.25 and result['after'] == {
         **integer_after, 'a': 19.5, 'b': -3.25, 'floatingCalls': 2}
 else:
@@ -85,7 +94,7 @@ if variant == 'fixed' and profile == 'fpxx':
         for item in gdb.selected_frame().architecture().registers()}
     pointer['stackAfter'] = bytes(gdb.selected_inferior().read_memory(sp, 256)).hex()
     assert pointer['registersAfter'] == registers_before and pointer['stackAfter'] == stack_before
-elif profile == 'fp32':
+elif profile in ('fp32', 'n32', 'n64'):
     assert pointer.get('returned') == 16.25 and pointer['after'] == {
         **pointer_integer_after, 'a': 19.5, 'b': -3.25,
         'floatingCalls': pointer_integer_after['floatingCalls'] + 1}

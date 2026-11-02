@@ -214,6 +214,50 @@ tasks.register("ghidraTargetAgreementSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.GhidraTargetAgreementSmoke"
 }
 
+tasks.register("armHfaParameterAllocationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks computed ARM floating aggregate register members"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.ArmHfaParameterAllocationSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/arm-hfa-allocation/settings").absolutePath
+}
+
+tasks.register("upperAliasValueFlowSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks full logical values in upper register aliases"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.UpperAliasValueFlowSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/upper-alias-value/settings").absolutePath
+}
+
+tasks.register("terminalStackValueSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks stack value states before opaque terminal effects"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.TerminalStackValueSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/terminal-stack/settings").absolutePath
+}
+
+tasks.register("ghidraArmBe8ProfileSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks BE8 ELF encoding against real data/instruction endian language descriptions"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.GhidraArmBe8ProfileSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/be8-profile/settings").absolutePath
+}
+
 tasks.register("typeGraphSmoke", JavaExec) {
     group = "verification"
     description = "Checks deterministic canonical and recursive type modeling"
@@ -404,6 +448,42 @@ tasks.register("stackValueFlowSmoke", JavaExec) {
     systemProperty "java.awt.headless", "true"
     systemProperty "application.settingsdir", file("build/tmp/stack-value-flow/settings").absolutePath
     systemProperty "application.cachedir", file("build/tmp/stack-value-flow/cache").absolutePath
+}
+
+tasks.register("intraInstructionFlowSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks must-path incoming values across internal predicated execution"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.IntraInstructionFlowSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/intra-instruction-flow/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/intra-instruction-flow/cache").absolutePath
+}
+
+tasks.register("registerByteSliceFlowSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks partial object bytes across wider register and memory transfers"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.RegisterByteSliceFlowSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/register-byte-slice-flow/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/register-byte-slice-flow/cache").absolutePath
+}
+
+tasks.register("armCompositeParameterAllocationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks partial aggregate padding in computed core and stack arguments"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.ArmCompositeParameterAllocationSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/arm-composite-allocation/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/arm-composite-allocation/cache").absolutePath
 }
 
 tasks.register("localMappingsSmoke", JavaExec) {
@@ -686,6 +766,26 @@ tasks.register("arm32ModeSymbolsSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.elf.Arm32ModeSymbolsSmoke"
 }
 
+tasks.register("arm32SectionModesSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks complete ARM mapping records and original ELF binding"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.Arm32SectionModesSmoke"
+}
+
+tasks.register("ghidraArm32SectionModesSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks complete mixed-mode listing evidence and honest gap rejection"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.GhidraArm32SectionModesSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/section-modes/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/section-modes/cache").absolutePath
+}
+
 tasks.register("ghidraArm32FunctionModesSmoke", JavaExec) {
     group = "verification"
     description = "Checks evidence-backed instruction-mode extraction from Ghidra programs"
@@ -758,12 +858,44 @@ tasks.register("aarch64ParameterAllocationSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/aarch64-allocation/cache").absolutePath
 }
 
+tasks.register("mipsN32ParameterAllocationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks isolated N32 positional aggregate allocation and preserved analyst storage"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.MipsN32ParameterAllocationSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/mips-n32-allocation/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/mips-n32-allocation/cache").absolutePath
+}
+
+tasks.register("delayedReturnPrefixSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks incoming value prefixes with actual delayed returns and malformed controls"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.DelayedReturnPrefixSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/delayed-return-prefix/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/delayed-return-prefix/cache").absolutePath
+}
+
 tasks.register("aarch64AbiSelectionSmoke", JavaExec) {
     group = "verification"
     description = "Checks actual ELF metadata against bounded debugger call profiles"
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.nativeapi.Aarch64AbiSelectionSmoke"
+}
+
+tasks.register("i386AbiSelectionSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks actual ELF metadata against bounded debugger call profiles"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.nativeapi.I386AbiSelectionSmoke"
 }
 
 tasks.register("compilerCallPolicySmoke", JavaExec) {
@@ -913,6 +1045,14 @@ tasks.register("exportReportDetailsSmoke", JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.output.ExportReportDetailsSmoke"
     maxHeapSize = "64m"
+}
+
+tasks.register("arm32CallPolicySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks ARM PCS metadata, malformed attributes and all callable signature forms"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.Arm32CallPolicySmoke"
 }
 
 tasks.register("mipsAbiFlagsSmoke", JavaExec) {
@@ -1281,4 +1421,64 @@ tasks.register("globalScopeNamesSmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.types.GlobalScopeNamesSmoke"
+}
+
+tasks.register("truncatedStackDepthSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks stack depth across narrow operations in declared truncated memory"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.TruncatedStackDepthSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/truncated-stack-depth/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/truncated-stack-depth/cache").absolutePath
+}
+
+tasks.register("mipsWideCallPolicySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks N32/N64 ELF, Ghidra compiler and typed debugger call contracts"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.MipsWideCallPolicySmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/mips-wide-calls/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/mips-wide-calls/cache").absolutePath
+}
+
+tasks.register("i386ParameterAllocationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks isolated i386 computed extended floating-return allocation and preserved analyst storage"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.I386ParameterAllocationSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/i386-allocation/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/i386-allocation/cache").absolutePath
+}
+
+tasks.register("floatingTypeLayoutSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks floating object sizes and meaningful storage widths across actual Ghidra models"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.FloatingTypeLayoutSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/floating-layout/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/floating-layout/cache").absolutePath
+}
+
+tasks.register("allocationDecompilerSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks typed decompiler encoding, bounds and preserved analyst call overrides"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.AllocationDecompilerSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/allocation-decompiler/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/allocation-decompiler/cache").absolutePath
 }

@@ -12,13 +12,22 @@ source = root / "src/main/java"
 # Register/target descriptions and typed ELF metadata readers are the audited
 # architecture-specific boundary. Keep exact paths, not basename exceptions.
 audited = {
+    "ghidradwarfforge/targets/I386ParameterAllocation.java",
     "ghidradwarfforge/targets/Aarch64ParameterAllocation.java",
+    "ghidradwarfforge/targets/ArmHfaParameterAllocation.java",
+    "ghidradwarfforge/targets/ArmCompositeParameterAllocation.java",
+    "ghidradwarfforge/targets/MipsWideParameterAllocation.java",
     "ghidradwarfforge/nativeapi/DwarfTarget.java",
+    "ghidradwarfforge/nativeapi/Arm32EndianProfile.java",
     "ghidradwarfforge/locations/TargetRegisterMap.java",
     "ghidradwarfforge/GhidraArm32FunctionModes.java",
+    "ghidradwarfforge/GhidraArm32SectionModes.java",
     "ghidradwarfforge/elf/Arm32ModeSymbols.java",
+    "ghidradwarfforge/elf/Arm32SectionModes.java",
     "ghidradwarfforge/elf/Arm32FunctionAliasSymbols.java",
     "ghidradwarfforge/elf/Arm32SymbolValues.java",
+    "ghidradwarfforge/elf/Arm32CallAbi.java",
+    "ghidradwarfforge/elf/Arm32CallPolicy.java",
     "ghidradwarfforge/elf/MipsAbiFlags.java",
     "ghidradwarfforge/elf/MipsFunctionAliasSymbols.java",
     "ghidradwarfforge/nativeapi/PackagedNativeLibraries.java",

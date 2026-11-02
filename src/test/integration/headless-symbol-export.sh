@@ -323,14 +323,16 @@ for target in "${targets[@]}"; do
             grep -q "Limited location to proven stack-spill lifetime for recovered_add::right: function writes parameter register x1" \
                 "$log"
         elif [[ "$target" == "arm32" ]]; then
-            grep -q "Limited location to proven incoming-register lifetime for recovered_add::left: function writes parameter register r0" \
-                "$log"
             grep -q "Omitted location for recovered_add::analyst_register: function writes local register r3" \
                 "$log"
             if [[ "$fixture_role" == "shared" ]]; then
-                grep -q "Limited location to proven incoming-register lifetime for recovered_add::right: function writes parameter register r1" \
+                grep -q "Limited location to proven register-copy lifetime for recovered_add::left: function writes parameter register r0" \
+                    "$log"
+                grep -q "Limited location to proven stack-spill lifetime for recovered_add::right: function writes parameter register r1" \
                     "$log"
             else
+                grep -q "Limited location to proven incoming-register lifetime for recovered_add::left: function writes parameter register r0" \
+                    "$log"
                 grep -q "DW_OP_regx: 1" \
                     "$result_dir/$target.$fixture_role.readelf-info.txt"
             fi

@@ -64,7 +64,7 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install --no-install-recommends -y \
             build-essential zlib1g-dev libzstd-dev curl xz-utils patch \
-            autoconf automake libtool pkg-config patchelf
+            autoconf automake libtool pkg-config patchelf llvm
 
       - name: Build pinned libdwarf producer
         run: |
@@ -166,6 +166,15 @@ jobs:
       - name: Validate relocated standalone checker configuration
         run: python3 src/test/integration/dwarfdump-configuration.py "$PWD/validation-tool"
 
+      - name: Validate GNU frame terminators and malformed-prefix rejection
+        run: python3 src/test/integration/dwarfdump-eh-terminators.py "$PWD/validation-tool/bin/dwarfdump"
+      - name: Validate GNU location views and actual DIE-reference controls
+        run: python3 src/test/integration/dwarfdump-locviews.py "$PWD/validation-tool/bin/dwarfdump"
+      - name: Validate low ELF addresses and out-of-range rejection
+        run: python3 src/test/integration/dwarfdump-elf-bounds.py "$PWD/validation-tool/bin/dwarfdump"
+      - name: Validate GNU vector flag forms and invalid metadata rejection
+        run: python3 src/test/integration/dwarfdump-gnu-vector.py "$PWD/validation-tool/bin/dwarfdump"
+
       - name: Validate complete bounded diagnostics and allocation rollback
         run: |
           sources=(build/test-results/validation-tool-build/build.*/libdwarf-2.3.2)
@@ -188,12 +197,20 @@ jobs:
             build/test-results/validation-tool-build/**/patch.log
             build/test-results/validation-tool-build/**/reader-patch.log
             build/test-results/validation-tool-build/**/diagnostic-patch.log
+            build/test-results/validation-tool-build/**/terminator-patch.log
+            build/test-results/validation-tool-build/**/locviews-patch.log
+            build/test-results/validation-tool-build/**/bounds-patch.log
+            build/test-results/validation-tool-build/**/vector-patch.log
             build/test-results/validation-tool-build/**/config.log
             build/test-results/validation-tool-build/**/make.log
             build/test-results/validation-tool-build/**/dependencies.txt
             build/test-results/validation-tool-build/**/version.txt
             build/test-results/dwarfdump-diagnostic-capacity/
             build/test-results/dwarfdump-configuration/
+            build/test-results/dwarfdump-eh-terminators/
+            build/test-results/dwarfdump-locviews/
+            build/test-results/dwarfdump-elf-bounds/
+            build/test-results/dwarfdump-gnu-vector/
           if-no-files-found: warn
           retention-days: 14
 
@@ -479,10 +496,10 @@ jobs:
               matchedElfPrefixSmoke matchedElfAllocationsSmoke executableProgramBytesSmoke \
               debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke \
               syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
-              variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke \
+              variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke intraInstructionFlowSmoke registerByteSliceFlowSmoke armCompositeParameterAllocationSmoke armHfaParameterAllocationSmoke upperAliasValueFlowSmoke terminalStackValueSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke \
               stackFirstUseSmoke \
-              opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
-              functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
+              opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke arm32CallPolicySmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
+              functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke arm32SectionModesSmoke ghidraArm32SectionModesSmoke ghidraArmBe8ProfileSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke i386AbiSelectionSmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke i386ParameterAllocationSmoke allocationDecompilerSmoke floatingTypeLayoutSmoke mipsN32ParameterAllocationSmoke delayedReturnPrefixSmoke truncatedStackDepthSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke mipsWideCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfAddressRangesSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
@@ -597,7 +614,7 @@ jobs:
           packages=(gdb-multiarch llvm dwarfdump)
           case "$TARGET" in
             x86_64)
-              packages+=(gcc g++ binutils gdb libc6-i386 qemu-user-static xvfb openbox x11-utils libxtst6 libxi6 libxrender1)
+              packages+=(gcc g++ gcc-multilib libc6-dev-i386 binutils gdb libc6-i386 qemu-user-static xvfb openbox x11-utils libxtst6 libxi6 libxrender1)
               ;;
             aarch64)
               packages+=(gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
@@ -605,19 +622,54 @@ jobs:
               ;;
             arm32)
               packages+=(gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf binutils-arm-linux-gnueabihf
-                libc6-dev-armhf-cross qemu-user-static)
+                libc6-dev-armhf-cross qemu-user-static libglib2.0-dev zlib1g-dev ninja-build pkg-config)
               ;;
             mips32be)
               packages+=(gcc-mips-linux-gnu g++-mips-linux-gnu binutils-mips-linux-gnu
-                libc6-dev-mips-cross qemu-user-static)
+                libc6-dev-mips-cross qemu-user-static qemu-system-mips gcc-multilib-mips64-linux-gnuabi64
+                libc6-dev-mips64-cross libc6-dev-mipsn32-mips64-cross)
               ;;
             mips32le)
               packages+=(gcc-mipsel-linux-gnu g++-mipsel-linux-gnu binutils-mipsel-linux-gnu
-                libc6-dev-mipsel-cross qemu-user-static)
+                libc6-dev-mipsel-cross qemu-user-static qemu-system-mips gcc-multilib-mips64el-linux-gnuabi64
+                libc6-dev-mips64el-cross libc6-dev-mipsn32-mips64el-cross)
               ;;
           esac
+          if [[ "$TARGET" == mips32be || "$TARGET" == mips32le || "$TARGET" == arm32 ]]; then
+              packages+=(build-essential python3-dev libgmp-dev libmpfr-dev
+                libexpat1-dev libncurses-dev texinfo)
+          fi
           sudo apt-get update -y
           sudo apt-get install --no-install-recommends -y "${packages[@]}"
+
+      - name: Build pinned MIPS register-piece debugger
+        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        run: python3 support/validation/build-mips-gdb.py "$RUNNER_TEMP/mips-gdb"
+
+      - name: Build pinned ARM big-endian register-piece debugger
+        if: matrix.target == 'arm32'
+        run: python3 support/validation/build-mips-gdb.py "$RUNNER_TEMP/arm-gdb" --target-profile arm32
+
+      - name: Build pinned ARM register alias reference emulators
+        if: matrix.target == 'arm32'
+        run: |
+          python3 support/validation/build-arm-qemu.py "$RUNNER_TEMP/arm-qemu-d-only" \
+              --correct-d-register-writes
+          python3 support/validation/build-arm-qemu.py "$RUNNER_TEMP/arm-qemu-aliases" \
+              --archive "$RUNNER_TEMP/arm-qemu-d-only/qemu-8.2.2.tar.xz" \
+              --correct-d-register-writes --correct-q-register-aliases
+
+      - name: Preserve ARM emulator build receipts
+        if: always() && matrix.target == 'arm32'
+        run: |
+          for profile in d-only aliases; do
+              destination="build/test-results/arm-qemu-build/$profile"
+              mkdir -p "$destination"
+              if [[ -d "$RUNNER_TEMP/arm-qemu-$profile" ]]; then
+                  find "$RUNNER_TEMP/arm-qemu-$profile" -maxdepth 1 -type f \
+                      \( -name '*.json' -o -name '*.log' \) -exec cp {} "$destination/" \;
+              fi
+          done
 
       - name: Cache Ghidra 12.0.3 archive
         uses: actions/cache@v6
@@ -704,6 +756,23 @@ jobs:
               -PlibdwarfpPath="$PWD/native-integration/libdwarfp.so.2.3.2" \
               -PtargetProfile="$profile" \
               -PnativeIterations="$iterations"
+          if [[ "$TARGET" == mips32be || "$TARGET" == mips32le ]]; then
+              wide_profile=${TARGET/mips32/mips64}
+              src/test/integration/run-isolated-native-smoke.sh \
+                  "build/test-results/native-producer/$wide_profile" \
+                  ./gradlew nativeProducerSmoke \
+                    -PlibdwarfPath="$PWD/native-integration/libdwarf.so.2.3.2" \
+                    -PlibdwarfpPath="$PWD/native-integration/libdwarfp.so.2.3.2" \
+                    -PtargetProfile="$wide_profile" -PnativeIterations=16
+          fi
+          if [[ "$TARGET" == arm32 ]]; then
+              src/test/integration/run-isolated-native-smoke.sh \
+                  "build/test-results/native-producer/arm32be8" \
+                  ./gradlew nativeProducerSmoke \
+                    -PlibdwarfPath="$PWD/native-integration/libdwarf.so.2.3.2" \
+                    -PlibdwarfpPath="$PWD/native-integration/libdwarfp.so.2.3.2" \
+                    -PtargetProfile=arm32be8 -PnativeIterations=32
+          fi
 
       - name: Install extension
         run: unzip -q dist/*.zip -d "$GHIDRA_INSTALL_DIR/Ghidra/Extensions"
@@ -1007,6 +1076,39 @@ jobs:
           for role in exec sectionless pie pie-rebased; do
               python3 src/test/integration/i386-profile-export.py "$GHIDRA_INSTALL_DIR" --role "$role"
           done
+
+      - name: i386 libc scalar floating arguments and x87 returns
+        if: matrix.target == 'x86_64'
+        run: |
+          set -euo pipefail
+          for role in exec sectionless pie pie-rebased; do
+              python3 src/test/integration/i386-extended-return-export.py "$GHIDRA_INSTALL_DIR" --role "$role"
+          done
+          python3 src/test/integration/i386-extended-return-export.py "$GHIDRA_INSTALL_DIR" --target x86_64 --role exec
+
+      - name: i386 libc vector aggregate and explicit convention matrix
+        if: matrix.target == 'x86_64'
+        run: |
+          set -euo pipefail
+          python3 src/test/integration/i386-abi-matrix-diagnostics-test.py
+          for role in exec sectionless pie pie-rebased; do
+              python3 src/test/integration/i386-abi-matrix-export.py "$GHIDRA_INSTALL_DIR" --role "$role"
+          done
+
+      - name: i386 ELF metadata and compiler ABI selection
+        if: matrix.target == 'x86_64'
+        run: |
+          set -euo pipefail
+          for role in exec pie pie-rebased; do
+              python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --target i386 --role "$role"
+          done
+          for compiler in windows clangwindows; do
+              python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --target i386 --compiler "$compiler"
+          done
+          python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --target i386 --osabi 3
+          python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --target i386 --osabi 9
+          python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --target i386 --abi-version 1
+          python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --target i386 --flags 1
 
       - name: i386 shared-library stack values and curated/original lookup
         if: matrix.target == 'x86_64'
@@ -1497,9 +1599,40 @@ jobs:
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2"
 
+      - name: BE8 scalar data and instruction encoding
+        if: matrix.target == 'arm32'
+        run: |
+          python3 src/test/integration/arm-be8-reference.py "$GHIDRA_INSTALL_DIR"
+          python3 src/test/integration/arm-be8-reference.py "$GHIDRA_INSTALL_DIR" --little-endian
+
+      - name: Mixed ARM and Thumb function section mappings
+        if: matrix.target == 'arm32'
+        run: |
+          for shape in contiguous split; do
+              shape_args=()
+              if [[ "$shape" == split ]]; then shape_args=(--split --with-omissions --with-context-controls); fi
+              for role in exec pie pie-rebased shared shared-rebased; do
+                  python3 src/test/integration/arm-mixed-mode-reference.py "$GHIDRA_INSTALL_DIR" \
+                      --production --role "$role" --with-controls --with-live "${shape_args[@]}"
+              done
+              for role in exec pie pie-rebased shared shared-rebased; do
+                  python3 src/test/integration/arm-mixed-mode-reference.py "$GHIDRA_INSTALL_DIR" \
+                      --production --role "$role" --sectionless --with-controls --with-live "${shape_args[@]}"
+              done
+          done
+          for role in exec pie pie-rebased shared shared-rebased; do
+              python3 src/test/integration/arm-mixed-mode-reference.py "$GHIDRA_INSTALL_DIR" \
+                  --production --role "$role" --split --retain-symbols --with-controls --with-live
+          done
+
       - name: Recovered ARM and Thumb instruction modes
         if: matrix.target == 'arm32'
-        run: src/test/integration/arm-thumb-mode-export.sh "$GHIDRA_INSTALL_DIR"
+        run: |
+          for role in exec pie pie-rebased pie-dynamic shared shared-rebased; do
+              FORGE_THUMB_ROLE="$role" src/test/integration/arm-thumb-mode-export.sh "$GHIDRA_INSTALL_DIR"
+          done
+          FORGE_THUMB_ROLE=pie FORGE_THUMB_HASH_STYLE=gnu FORGE_THUMB_EXPECT_MODE_OMISSION=1 \
+              src/test/integration/arm-thumb-mode-export.sh "$GHIDRA_INSTALL_DIR"
 
       - name: Saved dynamic parameter storage and debugger values
         env:
@@ -1569,9 +1702,183 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: src/test/integration/mips-truncated-space-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
 
+      - name: MIPS N32 and N64 scalar ABI runtime and loader profiles
+        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          endian=${TARGET#mips32}
+          for abi in n32 n64; do
+              for role in exec pie pie-rebased shared shared-rebased; do
+                  python3 src/test/integration/mips-wide-abi.py "$GHIDRA_INSTALL_DIR" \
+                      --abi "$abi" --endian "$endian" --role "$role" --with-controls
+              done
+          done
+
+      - name: MIPS O32 FPXX and FP64A system-emulator references
+        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          for profile in fpxx fp64a; do
+              python3 src/test/integration/mips-fpr-system.py "$GHIDRA_INSTALL_DIR" \
+                  --endian "${TARGET#mips32}" --profile "$profile"
+          done
+
+      - name: MIPS O32 mixed and wide arguments in both byte orders
+        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          python3 src/test/integration/mips-o32-arguments-oracle-test.py
+          for role in exec pie pie-rebased shared shared-rebased; do
+              python3 src/test/integration/mips-wide-arguments.py "$GHIDRA_INSTALL_DIR" \
+                  --abi o32 --endian "${TARGET#mips32}" --role "$role" --with-controls
+          done
+
+      - name: MIPS N32 and N64 wider arguments, returns and debugger calls
+        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          python3 src/test/integration/mips-wide-arguments-oracle-test.py
+          endian=${TARGET#mips32}
+          for abi in n32 n64; do
+              for role in exec pie pie-rebased shared shared-rebased; do
+                  python3 src/test/integration/mips-wide-arguments.py "$GHIDRA_INSTALL_DIR" \
+                      --abi "$abi" --endian "$endian" --role "$role" --with-controls
+              done
+              for scalar in float double; do
+                  for role in exec pie pie-rebased; do
+                      python3 src/test/integration/mips-floating-call-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+                          --profile "$abi" --scalar "$scalar" --role "$role"
+                  done
+              done
+          done
+
+      - name: MIPS N32 and N64 aggregate layout and alignment
+        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          endian=${TARGET#mips32}
+          for abi in n32 n64; do
+              for role in exec pie pie-rebased shared shared-rebased; do
+                  python3 src/test/integration/mips-layout-arguments.py "$GHIDRA_INSTALL_DIR" \
+                      --abi "$abi" --endian "$endian" --role "$role" \
+                      --gdb "$RUNNER_TEMP/mips-gdb/build/gdb/gdb" \
+                      --gdb-data-directory "$RUNNER_TEMP/mips-gdb/build/gdb/data-directory"
+              done
+          done
+
       - name: ARM per-function dynamic base and VFP parameters
         if: matrix.target == 'arm32'
-        run: src/test/integration/arm-dynamic-pcs-export.sh "$GHIDRA_INSTALL_DIR"
+        run: |
+          src/test/integration/arm-dynamic-pcs-export.sh "$GHIDRA_INSTALL_DIR"
+          FORGE_PCS_BE8=1 FORGE_PCS_GDB="$RUNNER_TEMP/arm-gdb/build/gdb/gdb" \
+              FORGE_PCS_GDB_DATA="$RUNNER_TEMP/arm-gdb/build/gdb/data-directory" \
+              src/test/integration/arm-dynamic-pcs-export.sh "$GHIDRA_INSTALL_DIR"
+
+      - name: ARM D and Q alias causal controls
+        if: matrix.target == 'arm32'
+        run: |
+          python3 src/test/integration/arm-q-alias-reference.py \
+              --gdb "$RUNNER_TEMP/arm-gdb/build/gdb/gdb" \
+              --gdb-data "$RUNNER_TEMP/arm-gdb/build/gdb/data-directory" \
+              --d-only-qemu "$RUNNER_TEMP/arm-qemu-d-only/build" \
+              --alias-qemu "$RUNNER_TEMP/arm-qemu-aliases/build"
+
+      - name: ARM scalar PCS calls and exhausted arguments
+        if: matrix.target == 'arm32'
+        run: |
+          for order in little big; do
+              gdb=$(command -v gdb-multiarch)
+              data=/usr/share/gdb
+              if [[ "$order" == big ]]; then
+                  gdb="$RUNNER_TEMP/arm-gdb/build/gdb/gdb"
+                  data="$RUNNER_TEMP/arm-gdb/build/gdb/data-directory"
+              fi
+              for pcs in softfp hard; do
+                  for convention in explicit implicit guards; do
+                      options=()
+                      if [[ "$convention" != explicit ]]; then
+                          options+=(--implicit-default)
+                      fi
+                      if [[ "$convention" == guards ]]; then
+                          options+=(--guard-controls --failure-controls)
+                      fi
+                      python3 src/test/integration/arm-pcs-profile.py "$GHIDRA_INSTALL_DIR" \
+                          --order "$order" --pcs "$pcs" --gdb "$gdb" --gdb-data "$data" --declarations \
+                          --qemu-arm "$RUNNER_TEMP/arm-qemu-aliases/build/qemu-arm" \
+                          --qemu-armeb "$RUNNER_TEMP/arm-qemu-aliases/build/qemu-armeb" "${options[@]}"
+                  done
+                  for metadata in absent conflict; do
+                      python3 src/test/integration/arm-pcs-profile.py "$GHIDRA_INSTALL_DIR" \
+                          --order "$order" --pcs "$pcs" --gdb "$gdb" --gdb-data "$data" \
+                          --declarations --implicit-default --guard-controls --failure-controls --metadata "$metadata" \
+                          --qemu-arm "$RUNNER_TEMP/arm-qemu-aliases/build/qemu-arm" \
+                          --qemu-armeb "$RUNNER_TEMP/arm-qemu-aliases/build/qemu-armeb"
+                  done
+              done
+          done
+
+      - name: ARM aggregate calls and floating storage with compiler references
+        if: matrix.target == 'arm32'
+        run: |
+          python3 src/test/integration/arm-stack-aggregates-reference-test.py
+          python3 src/test/integration/arm-stack-aggregates-contract-test.py
+          python3 src/test/integration/arm-stack-shared-contract-test.py
+          for order in little big; do
+              gdb=$(command -v gdb-multiarch)
+              data=/usr/share/gdb
+              qemu="$RUNNER_TEMP/arm-qemu-aliases/build/qemu-arm"
+              if [[ "$order" == big ]]; then
+                  gdb="$RUNNER_TEMP/arm-gdb/build/gdb/gdb"
+                  data="$RUNNER_TEMP/arm-gdb/build/gdb/data-directory"
+                  qemu="$RUNNER_TEMP/arm-qemu-aliases/build/qemu-armeb"
+              fi
+              for pcs in softfp hard; do
+                  python3 src/test/integration/arm-aggregate-calls.py "$GHIDRA_INSTALL_DIR" \
+                      --order "$order" --pcs "$pcs" --gdb "$gdb" --gdb-data "$data" --qemu "$qemu"
+              done
+              aggregate_roles=(exec exec-rebased pie pie-rebased)
+              if [[ "$order" == little ]]; then
+                  aggregate_roles+=(shared shared-rebased)
+              fi
+              for role in "${aggregate_roles[@]}"; do
+                  python3 src/test/integration/arm-stack-aggregates.py "$GHIDRA_INSTALL_DIR" \
+                      --order "$order" --role "$role" --gdb "$gdb" --gdb-data "$data" --qemu "$qemu" \
+                      --availability-contract audited-prefix --with-controls
+              done
+              pie_cases=(build/test-results/arm-stack-aggregates/"$order".pie.*)
+              test "${#pie_cases[@]}" -eq 1
+              python3 src/test/integration/arm-stack-pie-controls.py "${pie_cases[0]}"
+              if [[ "$order" == little ]]; then
+                  for role in shared shared-rebased; do
+                      shared_cases=(build/test-results/arm-stack-aggregates/"$order.$role".*)
+                      test "${#shared_cases[@]}" -eq 1
+                      python3 src/test/integration/arm-stack-shared-controls.py "${shared_cases[0]}"
+                  done
+              fi
+              python3 src/test/integration/arm-hfa-lifetimes.py "$GHIDRA_INSTALL_DIR" \
+                  --order "$order" --gdb "$gdb" --gdb-data "$data" --qemu "$qemu"
+              for storage in hfa base mixed; do
+                  for control in lower neighbor upper wide reuse adjacent unknown-disjoint unknown-alias; do
+                      failure_controls=()
+                      if [[ "$control" == upper || "$control" == unknown-alias ]]; then
+                          failure_controls=(--failure-controls)
+                      fi
+                      python3 src/test/integration/arm-hfa-lifetimes.py "$GHIDRA_INSTALL_DIR" \
+                          --order "$order" --gdb "$gdb" --gdb-data "$data" --qemu "$qemu" \
+                          --storage "$storage" --control "$control" "${failure_controls[@]}"
+                  done
+              done
+          done
 
       - name: Isolated scalar register bit-piece producer
         if: matrix.target == 'arm32'
@@ -1608,7 +1915,11 @@ jobs:
 
       - name: ARM incoming register and stack pieces
         if: matrix.target == 'arm32'
-        run: src/test/integration/mixed-incoming-prefix-export.sh "$GHIDRA_INSTALL_DIR"
+        run: |
+          src/test/integration/mixed-incoming-prefix-export.sh "$GHIDRA_INSTALL_DIR"
+          cases=(build/test-results/mixed-incoming-prefix/run.*/acceptance.json)
+          test "${#cases[@]}" -eq 1
+          python3 src/test/integration/mixed-incoming-prefix-controls.py "$(dirname "${cases[0]}")"
 
       - name: Explicit MIPS FP32 reference, register pieces, and whole aliases
         if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
@@ -1759,11 +2070,32 @@ jobs:
             FORGE_REPORT_MANIFEST="$PWD/build/test-results/report-handoff/$TARGET.json" \
             src/test/integration/build-id-discovery.sh "$TARGET"
 
+      - name: Verify complete retained validator reports
+        run: |
+          python3 src/test/integration/retained-validator-reports-test.py build/test-results
+          python3 src/test/integration/retained-validator-reports.py build/test-results \
+            --exclude-validator-self-tests \
+            --output build/test-results/retained-validator-reports.json
+
       - name: Retain bounded primary fixture diagnostics
         if: always()
         env:
           TARGET: ${{ matrix.target }}
         run: python3 src/test/integration/capture-primary-fixtures.py "$TARGET"
+
+      - name: Retain target debugger build evidence
+        if: always() && (matrix.target == 'mips32be' || matrix.target == 'mips32le' || matrix.target == 'arm32')
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          profile=mips
+          if [[ "$TARGET" == arm32 ]]; then profile=arm; fi
+          mkdir -p "build/test-results/$profile-gdb"
+          shopt -s nullglob
+          files=("$RUNNER_TEMP/$profile-gdb/"*.log "$RUNNER_TEMP/$profile-gdb/"*.json)
+          if [[ ${#files[@]} -gt 0 ]]; then
+              cp "${files[@]}" "build/test-results/$profile-gdb/"
+          fi
 
       - uses: actions/upload-artifact@v7
         if: always()
@@ -1891,9 +2223,9 @@ jobs:
             -DestinationPath (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions') -Force
           & .\gradlew.bat dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
-            opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
-            functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
-            registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
+            opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke arm32CallPolicySmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
+            functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke arm32SectionModesSmoke ghidraArm32SectionModesSmoke ghidraArmBe8ProfileSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke i386AbiSelectionSmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke i386ParameterAllocationSmoke allocationDecompilerSmoke floatingTypeLayoutSmoke mipsN32ParameterAllocationSmoke delayedReturnPrefixSmoke truncatedStackDepthSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke mipsWideCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
+            registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke intraInstructionFlowSmoke registerByteSliceFlowSmoke armCompositeParameterAllocationSmoke armHfaParameterAllocationSmoke upperAliasValueFlowSmoke terminalStackValueSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
             elfBuildIdSmoke exportReportClaimsSmoke matchedElfPrefixSmoke `
             matchedElfAllocationsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke executableProgramBytesSmoke `
             debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke 2>&1 |
@@ -1973,6 +2305,20 @@ jobs:
           }
           'isolated-native-producer=PASS' |
             Add-Content -Path "$resultDirectory\native-producer-status.txt" -Encoding utf8
+
+          foreach ($wideProfile in @('mips64be', 'mips64le', 'arm32be8')) {
+              & .\gradlew.bat nativeProducerSmoke `
+                "-PlibdwarfPath=$($consumer.FullName)" `
+                "-PlibdwarfpPath=$($producer.FullName)" `
+                "-PtargetProfile=$wideProfile" -PnativeIterations=16 2>&1 |
+                Tee-Object -FilePath "$resultDirectory\$wideProfile.log"
+              $wideStatus = $LASTEXITCODE
+              "exit_status=$wideStatus" |
+                Set-Content -Path "$resultDirectory\$wideProfile-status.txt" -Encoding utf8
+              if ($wideStatus -ne 0) {
+                  throw "isolated $wideProfile producer failed or crashed with exit code $wideStatus"
+              }
+          }
 
           $module = Join-Path $env:GHIDRA_INSTALL_DIR `
             'Ghidra\Extensions\GhidraDwarfForge'

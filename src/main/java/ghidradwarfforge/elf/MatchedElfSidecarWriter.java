@@ -68,13 +68,13 @@ public final class MatchedElfSidecarWriter {
 
     /** Serialize target-planned local symbols against the same image used for planning. */
     public void write(ElfImage image, Path output, Map<String, byte[]> debugSections,
-            List<ElfLocalFunctionSymbol> symbols, BooleanSupplier cancelled) throws IOException {
+            List<? extends ElfLocalSymbol> symbols, BooleanSupplier cancelled) throws IOException {
         write(image, output, debugSections, symbols, cancelled, ignored -> { });
     }
 
     /** Production callers retain diagnostics for unsupported original unwind metadata. */
     public void write(ElfImage image, Path output, Map<String, byte[]> debugSections,
-            List<ElfLocalFunctionSymbol> symbols, BooleanSupplier cancelled,
+            List<? extends ElfLocalSymbol> symbols, BooleanSupplier cancelled,
             java.util.function.Consumer<String> diagnostic) throws IOException {
         Objects.requireNonNull(image, "image");
         Objects.requireNonNull(cancelled, "cancelled");
@@ -153,7 +153,7 @@ public final class MatchedElfSidecarWriter {
 
     /** Plan and validate the append-only layout before copying any input bytes. */
     private Layout prepare(ElfImage image, Map<String, byte[]> debugSections,
-            List<ElfLocalFunctionSymbol> symbols, BooleanSupplier cancelled,
+            List<? extends ElfLocalSymbol> symbols, BooleanSupplier cancelled,
             java.util.function.Consumer<String> diagnostic) throws IOException {
         long offset = image.fileSize();
         List<Section> sections = new ArrayList<>();
@@ -217,7 +217,7 @@ public final class MatchedElfSidecarWriter {
         }
 
         List<byte[]> symbolPayloads = new ArrayList<>();
-        offset = addFunctionSymbols(image, sections, symbols, symbolPayloads, offset, cancelled);
+        offset = addLocalSymbols(image, sections, symbols, symbolPayloads, offset, cancelled);
 
         Section newNameTable = new Section();
         newNameTable.name = ".shstrtab";
@@ -305,8 +305,8 @@ public final class MatchedElfSidecarWriter {
             Set<ByteBuffer> existingNames, boolean synthesized) {
     }
 
-    private static long addFunctionSymbols(ElfImage image, List<Section> sections,
-            List<ElfLocalFunctionSymbol> symbols, List<byte[]> payloads, long offset,
+    private static long addLocalSymbols(ElfImage image, List<Section> sections,
+            List<? extends ElfLocalSymbol> symbols, List<byte[]> payloads, long offset,
             BooleanSupplier cancelled) throws IOException {
         if (symbols.isEmpty()) {
             return offset;
@@ -348,11 +348,17 @@ public final class MatchedElfSidecarWriter {
         boolean extended = old != null && old.extended() != null;
         for (int index = 0; index < symbols.size(); index++) {
             checkCancelled(cancelled);
-            ElfLocalFunctionSymbol symbol = symbols.get(index);
+            ElfLocalSymbol symbol = symbols.get(index);
             if (symbol.sectionIndex() >= sections.size() ||
                     (sections.get(symbol.sectionIndex()).flags & (SHF_ALLOC | SHF_EXECINSTR)) !=
                         (SHF_ALLOC | SHF_EXECINSTR) || !names.add(symbol.name())) {
                 throw new IllegalArgumentException("invalid or duplicate planned local function symbol");
+            }
+            if (symbol instanceof ElfLocalMappingSymbol) {
+                Section allocation = sections.get(symbol.sectionIndex());
+                if (symbol.value() < allocation.address || symbol.value() - allocation.address >= allocation.size) {
+                    throw new IllegalArgumentException("mapping boundary is outside its executable allocation");
+                }
             }
             byte[] name;
             try {
@@ -380,7 +386,7 @@ public final class MatchedElfSidecarWriter {
             table.position((oldLocals + index) * width);
             putUnsignedInt(table, nameOffset);
             if (image.is64Bit()) {
-                table.put((byte) 2); // STB_LOCAL | STT_FUNC; no original linkage assertion.
+                table.put((byte) symbol.type()); // STB_LOCAL with explicit record type.
                 table.put((byte) 0);
                 table.putShort((short) encoded);
                 table.putLong(symbol.value());
@@ -389,7 +395,7 @@ public final class MatchedElfSidecarWriter {
             else {
                 putUnsignedInt(table, symbol.value());
                 putUnsignedInt(table, symbol.size());
-                table.put((byte) 2);
+                table.put((byte) symbol.type());
                 table.put((byte) 0);
                 table.putShort((short) encoded);
             }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate AArch64 ELF/language/compiler call classification through the packaged exporter."""
+"""Validate selected ELF/language/compiler call classification through the packaged exporter."""
 import argparse
 import importlib.util
 import json
@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import shlex
 import tempfile
 from urllib.parse import unquote, urlsplit
 
@@ -20,21 +21,33 @@ spec.loader.exec_module(support)
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
-    parser.add_argument('--language', choices=('v8A', 'AppleSilicon'), default='v8A')
-    parser.add_argument('--compiler', choices=('default', 'windows', 'golang', 'swift'), default='default')
+    parser.add_argument('--target', choices=('aarch64', 'i386'), default='aarch64')
+    parser.add_argument('--language', choices=('v8A', 'AppleSilicon', 'default', 'compat32'))
+    parser.add_argument('--compiler', choices=('default', 'windows', 'clangwindows', 'gcc', 'golang', 'swift'))
     parser.add_argument('--osabi', type=int, default=0)
     parser.add_argument('--abi-version', type=int, default=0)
     parser.add_argument('--flags', type=lambda value: int(value, 0), default=0)
     parser.add_argument('--role', choices=('exec', 'pie', 'pie-rebased'), default='exec')
     args = parser.parse_args()
     assert 0 <= args.osabi <= 255 and 0 <= args.abi_version <= 255 and 0 <= args.flags < 2**32
-    assert args.compiler in ({'default', 'windows', 'golang'} if args.language == 'v8A' else {'default', 'swift', 'golang'})
-    blocked = not (args.language == 'v8A' and args.compiler == 'default' and args.osabi in (0, 3) and args.abi_version == args.flags == 0)
+    args.language = args.language or ('v8A' if args.target == 'aarch64' else 'default')
+    args.compiler = args.compiler or ('default' if args.target == 'aarch64' else 'gcc')
+    if args.target == 'aarch64':
+        assert args.language in ('v8A', 'AppleSilicon')
+        assert args.compiler in ({'default', 'windows', 'golang'} if args.language == 'v8A' else {'default', 'swift', 'golang'})
+        language_id = 'AARCH64:LE:64:' + args.language
+        baseline_pair = args.language == 'v8A' and args.compiler == 'default'
+    else:
+        assert args.language in ('default', 'compat32')
+        assert args.compiler in ({'gcc', 'windows', 'clangwindows', 'golang'} if args.language == 'default' else {'gcc', 'windows'})
+        language_id = 'x86:LE:' + ('64:compat32' if args.language == 'compat32' else '32:default')
+        baseline_pair = args.compiler == 'gcc'
+    blocked = not (baseline_pair and args.osabi in (0, 3) and args.abi_version == args.flags == 0)
     ghidra = args.ghidra.resolve(strict=True)
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
     root = repository / 'build/test-results/abi-profile'
     root.mkdir(parents=True, exist_ok=True)
-    case = Path(tempfile.mkdtemp(prefix='.'.join((args.language, args.compiler, str(args.osabi), str(args.abi_version), hex(args.flags), args.role)) + '.', dir=root))
+    case = Path(tempfile.mkdtemp(prefix='.'.join((args.target, args.language, args.compiler, str(args.osabi), str(args.abi_version), hex(args.flags), args.role)) + '.', dir=root))
     print(case, flush=True)
 
     def write(name, value):
@@ -55,18 +68,21 @@ def main():
     before = {str(p): support.digest(p) for p in protected}
     write('protected-before.json', before)
     reference, binary = case / 'call.reference', case / 'call.input'
-    prefix = 'aarch64-linux-gnu-'
+    compiler = ['aarch64-linux-gnu-gcc'] if args.target == 'aarch64' else shlex.split(os.environ.get('I386_CC', 'gcc -m32'))
+    objcopy = 'aarch64-linux-gnu-objcopy' if args.target == 'aarch64' else 'objcopy'
     flags = ['-fno-pie', '-no-pie'] if args.role == 'exec' else ['-fPIE', '-pie']
-    run('compile', [prefix + 'gcc', '-O1', '-g3', '-gdwarf-5', '-gno-variable-location-views',
+    run('compile', [*compiler, '-O1', '-g3', '-gdwarf-5', '-gno-variable-location-views',
         *flags, '-Wl,--build-id=sha1', fixture, '-o', reference])
     # Mutate only this disposable fixture, before importing or recording hashes.
     # GNU OSABI is an explicit metadata test, not a claim about compiler defaults.
     data = bytearray(reference.read_bytes())
     write('compiler-original.json', {'sha256': support.digest(reference), 'headerHex': bytes(data[:64]).hex()})
     data[7:9] = bytes((args.osabi, args.abi_version))
-    data[48:52] = args.flags.to_bytes(4, 'little')
+    flags_offset = 48 if args.target == 'aarch64' else 36
+    assert data[:6] == b'\x7fELF' + bytes((2 if args.target == 'aarch64' else 1, 1))
+    data[flags_offset:flags_offset + 4] = args.flags.to_bytes(4, 'little')
     reference.write_bytes(data)
-    run('strip', [prefix + 'objcopy', '--strip-debug', reference, binary])
+    run('strip', [objcopy, '--strip-debug', reference, binary])
     before.update({str(p): support.digest(p) for p in (reference, binary)})
     write('protected-before.json', before)
     run('symbols', ['readelf', '-sW', reference])
@@ -79,14 +95,14 @@ def main():
             symbols[fields[7]] = address
     assert len(symbols) == 3
     run('input-header', ['readelf', '-hA', binary])
-    write('metadata.json', {'language': args.language, 'compiler': args.compiler,
+    write('metadata.json', {'target': args.target, 'language': args.language, 'compiler': args.compiler,
         'osabi': args.osabi, 'abiVersion': args.abi_version, 'flags': args.flags, 'blocked': blocked,
         'qemuCpu': os.environ.get('ABI_PROFILE_QEMU_CPU', 'cortex-a53'), 'role': args.role, 'symbols': symbols})
     project = case / 'project'
     project.mkdir()
     rebase = ['-postScript', 'RebaseFixtureProgram.java', '0x2000000'] if args.role == 'pie-rebased' else []
     run('import', [ghidra / 'support/analyzeHeadless', project, 'FloatingCall', '-import', binary,
-        '-processor', 'AARCH64:LE:64:' + args.language, '-cspec', args.compiler,
+        '-processor', language_id, '-cspec', args.compiler,
         '-analysisTimeoutPerFile', '120', '-scriptPath', source / 'ghidra_scripts', *rebase,
         '-postScript', 'PrepareAbiProfile.java', 'curate', 'double', case / 'import.json'], timeout=240)
     import_log = (case / 'import.log').read_text()
@@ -119,7 +135,7 @@ def main():
         assert {k: v for k, v in observed.items() if k != 'origin'} == {k: v for k, v in imported.items() if k != 'origin'}
         expected_jar = installation / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar'
         assert Path(unquote(urlsplit(observed['origin']).path)).resolve() == expected_jar.resolve()
-        assert observed['language'] == 'AARCH64:LE:64:' + args.language and observed['compiler'] == args.compiler
+        assert observed['language'] == language_id and observed['compiler'] == args.compiler
         for name in ('fp_call', 'integer_call'):
             assert ('Debugger-injected calls disabled for ' + name + ':' in text) == blocked
         current = [support.digest(output), support.digest(Path(str(output) + '.c'))]

@@ -22,7 +22,7 @@ public final class Arm32FunctionAliasSymbols {
     private record Key(String owner, long address, long size, String hash) {
     }
 
-    private record Inventory(Map<Integer, TreeMap<Long, Integer>> mappings,
+    record Inventory(Map<Integer, TreeMap<Long, Integer>> mappings,
             Map<Integer, TreeMap<Long, Integer>> functionEntries) {
     }
 
@@ -131,7 +131,7 @@ public final class Arm32FunctionAliasSymbols {
         return List.copyOf(result);
     }
 
-    private static Inventory inventory(ElfImage image, BooleanSupplier cancelled) throws IOException {
+    static Inventory inventory(ElfImage image, BooleanSupplier cancelled) throws IOException {
         var result = new Inventory(new HashMap<>(), new HashMap<>());
         if (image.sections().isEmpty()) {
             var mirror = DynamicSymbolMirror.read(image, cancelled);

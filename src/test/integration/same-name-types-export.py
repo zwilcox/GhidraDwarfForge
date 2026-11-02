@@ -116,7 +116,7 @@ def main():
     run('type-identity', ['python3', harness / 'check-same-name-types.py', case])
     run('llvm', ['llvm-dwarfdump', '--verify', output])
     assert 'No errors.' in (case / 'llvm.log').read_text()
-    run('strict', ['python3', harness / 'check-dwarfdump.py', output, case / 'strict.log', '--original', reference])
+    run('strict-driver', ['python3', harness / 'check-dwarfdump.py', output, case / 'strict.log', '--original', reference])
     run('forge-gdb', ['bash', harness / 'same-name-types-gdb.sh', case, args.target, 'forge', output])
     observations = [json.loads((case / (mode + '-observations.json')).read_text()) for mode in ['compiler', 'forge']]
     for observed in observations:

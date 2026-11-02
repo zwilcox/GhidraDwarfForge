@@ -145,8 +145,20 @@ def main():
     changes = {p for p in before.keys() | after.keys() if before.get(p) != after.get(p)}
     assert changes <= {'Boundary.rep/idata/~index.bak', 'Boundary.rep/idata/~journal.bak'}
     sidecar = case / 'boundary.dbg'
-    aliases = [{'alias': 'alternate_boundary', 'entry': 0x101c, 'size': 4}]
-    values = {'alternate_boundary': 0x101d}
+    # Source-owned instruction bytes and original section addresses establish
+    # both primary mode cues independently of the emitted symbol inventory.
+    assert sections['.text'][0][3] == 0x1000
+    assert sections['.text'][1] == bytes.fromhex(
+        '0700a0e3 040000fa 0c0050e3 0100a013 0000a003 0170a0e3 000000ef')
+    assert sections['.tail'][0][3] == 0x101c
+    assert sections['.tail'][1] == bytes.fromhex('05307047')
+    aliases = [
+        {'alias': '__forge_arm_mode_00001000', 'entry': 0x1000, 'size': 28},
+        {'alias': '__forge_arm_mode_0000101c', 'entry': 0x101c, 'size': 4},
+        {'alias': 'alternate_boundary', 'entry': 0x101c, 'size': 4},
+    ]
+    values = {'__forge_arm_mode_00001000': 0x1000,
+        '__forge_arm_mode_0000101c': 0x101d, 'alternate_boundary': 0x101d}
     if args.conflict:
         _, _, old_sections = inventory.elf_support.elf(binary)
         _, _, emitted = inventory.elf_support.elf(sidecar)

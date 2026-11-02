@@ -13,6 +13,19 @@ import java.util.Map;
  * of nested Java objects, so recursive types never recurse during traversal.
  */
 public record TypeGraph(List<TypeNode> nodes) {
+    /** Meaningful value bytes for location proofs, excluding floating ABI tail padding. */
+    public long valueByteSize(TypeRef reference) {
+        var types = byKey();
+        var seen = new java.util.HashSet<String>();
+        TypeNode node = types.get(reference.key());
+        while (node != null && seen.add(node.key())) {
+            if (node instanceof TypedefType alias) node = types.get(alias.target().key());
+            else if (node instanceof QualifiedType qualified) node = types.get(qualified.target().key());
+            else return node instanceof BaseType base ? base.valueByteSize() : node.byteSize();
+        }
+        throw new IllegalArgumentException("unresolved value size for " + reference.key());
+    }
+
     public enum BaseEncoding {
         ADDRESS, BOOLEAN, FLOAT, SIGNED, SIGNED_CHAR, UNSIGNED, UNSIGNED_CHAR, UTF
     }
@@ -68,12 +81,21 @@ public record TypeGraph(List<TypeNode> nodes) {
         }
     }
 
+    /** Object size includes ABI padding; value size bounds the meaningful storage bits. */
     public record BaseType(String key, String name, long byteSize,
-            BaseEncoding encoding) implements TypeNode {
+            BaseEncoding encoding, long valueByteSize) implements TypeNode {
+        public BaseType(String key, String name, long byteSize, BaseEncoding encoding) {
+            this(key, name, byteSize, encoding, byteSize);
+        }
+
         public BaseType {
             common(key, name, byteSize, false);
             if (encoding == null) {
                 throw new IllegalArgumentException("base encoding is required");
+            }
+            if (valueByteSize <= 0 || valueByteSize > byteSize ||
+                    (encoding != BaseEncoding.FLOAT && valueByteSize != byteSize)) {
+                throw new IllegalArgumentException("invalid base value size");
             }
         }
 
@@ -225,7 +247,13 @@ public record TypeGraph(List<TypeNode> nodes) {
 
     public record SubroutineType(String key, String name, long byteSize,
             TypeRef returnType, List<Parameter> parameters,
-            boolean variadic, String callingConvention, String debuggerCallRestriction) implements TypeNode {
+            boolean variadic, String callingConvention, String debuggerCallRestriction,
+            boolean nonDefaultCallingConvention) implements TypeNode {
+        public SubroutineType(String key, String name, long byteSize,
+                TypeRef returnType, List<Parameter> parameters, boolean variadic,
+                String callingConvention, String debuggerCallRestriction) {
+            this(key, name, byteSize, returnType, parameters, variadic, callingConvention, debuggerCallRestriction, false);
+        }
         public SubroutineType(String key, String name, long byteSize,
                 TypeRef returnType, List<Parameter> parameters, boolean variadic) {
             this(key, name, byteSize, returnType, parameters, variadic, "", "");
@@ -240,7 +268,7 @@ public record TypeGraph(List<TypeNode> nodes) {
         }
 
         public boolean debuggerCallsDisabled() {
-            return !debuggerCallRestriction.isEmpty();
+            return nonDefaultCallingConvention || !debuggerCallRestriction.isEmpty();
         }
 
         public SubroutineType restrictDebuggerCalls(String restriction) {
@@ -250,7 +278,7 @@ public record TypeGraph(List<TypeNode> nodes) {
             }
             return new SubroutineType(key, name, byteSize, returnType, parameters, variadic,
                 callingConvention, debuggerCallRestriction.isEmpty() ? restriction :
-                    debuggerCallRestriction + "; " + restriction);
+                    debuggerCallRestriction + "; " + restriction, nonDefaultCallingConvention);
         }
 
         @Override

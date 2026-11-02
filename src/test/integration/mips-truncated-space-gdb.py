@@ -12,6 +12,7 @@ fixture = json.loads((case / "fixture.json").read_text())
 labels = json.loads((case / "labels.json").read_text())
 prep = json.loads((case / "effective-storage.json").read_text())
 report = json.loads((case / "export-report.json").read_text())
+wide_prefix = None if fixture["abi"] == "n32" else json.loads((case / "wide-prefix-proof.json").read_text())
 n32 = fixture["abi"] == "n32"
 functions = ("capture_wide", "capture_args")
 parameters = ((('value', 0x1122334455667788, 8),), tuple(zip(
@@ -121,7 +122,9 @@ try:
                 state = {"pc": pc, "parameters": [typed(*item, function) for item in wanted]}
                 row["states"].append(state)
                 if step == 0:
-                    assert all(p["available"] for p in state["parameters"]) == (n32 or name == "capture_args"), state
+                    assert all(p["available"] for p in state["parameters"]), state
+                if not n32 and name == "capture_wide":
+                    assert state["parameters"][0]["available"] == (entry <= pc < wide_prefix["end"]), state
                 gdb.execute("stepi")
             else:
                 raise AssertionError("bounded leaf did not return")

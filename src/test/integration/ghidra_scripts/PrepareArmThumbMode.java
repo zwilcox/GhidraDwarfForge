@@ -17,26 +17,33 @@ import ghidra.program.model.listing.ParameterImpl;
 import ghidra.program.model.symbol.SourceType;
 
 public class PrepareArmThumbMode extends GhidraScript {
+    private long imageBaseDelta;
     @Override
     protected void run() throws Exception {
         String[] args = getScriptArgs();
-        if (args.length != 6) {
+        if (args.length != 6 && args.length != 7) {
             throw new IllegalArgumentException("thumb codeVA, arm codeVA, main codeVA, sink, pointer, arm-after codeVA");
         }
+        var original = ghidradwarfforge.elf.ElfImage.read(
+            java.nio.file.Path.of(currentProgram.getExecutablePath()));
+        if (args.length == 7) {
+            currentProgram.setImageBase(toAddr(Math.addExact(original.preferredImageBase(), Long.decode(args[6]))), true);
+        }
+        imageBaseDelta = currentProgram.getImageBase().getOffset() - original.preferredImageBase();
         DataType signedInt = new IntegerDataType(currentProgram.getDataTypeManager());
         var records = new ArrayList<Object>();
         records.add(prepare(args[0], "recovered_thumb_add", 1, signedInt, "left", "right"));
         records.add(prepare(args[1], "recovered_arm_call", 0, signedInt, "value"));
         records.add(prepare(args[2], "main", 0, signedInt));
         records.add(prepare(args[5], "recovered_arm_after", 0, signedInt, "value"));
-        global(toAddr(args[3]), "thumb_sink", signedInt);
+        global(codeAddress(args[3]), "thumb_sink", signedInt);
         var signature = new FunctionDefinitionDataType("thumb_binary_op");
         signature.setReturnType(signedInt);
         signature.setArguments(new ParameterDefinitionImpl[] {
             new ParameterDefinitionImpl("left", signedInt, null),
             new ParameterDefinitionImpl("right", signedInt, null)
         });
-        global(toAddr(args[4]), "thumb_pointer", new PointerDataType(signature,
+        global(codeAddress(args[4]), "thumb_pointer", new PointerDataType(signature,
             currentProgram.getDataTypeManager()));
         var result = new LinkedHashMap<String, Object>();
         result.put("exporterClassOrigin", ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.class
@@ -44,13 +51,18 @@ public class PrepareArmThumbMode extends GhidraScript {
         result.put("language", currentProgram.getLanguageID().toString());
         result.put("compilerSpec", currentProgram.getCompilerSpec().getCompilerSpecID().toString());
         result.put("functions", records);
+        result.put("imageBaseDelta", imageBaseDelta);
         println("ARM_THUMB_PREP=" + new Gson().toJson(result));
+    }
+
+    private Address codeAddress(String original) {
+        return toAddr(Math.addExact(Long.decode(original), imageBaseDelta));
     }
 
     private Object prepare(String addressText, String name, int expectedMode,
             DataType type, String... parameterNames) throws Exception {
         monitor.checkCancelled();
-        Address address = toAddr(addressText);
+        Address address = codeAddress(addressText);
         Function function = currentProgram.getFunctionManager().getFunctionAt(address);
         if (function == null) {
             throw new IllegalStateException("analysis did not create function at " + address);

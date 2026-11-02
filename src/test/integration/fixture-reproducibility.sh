@@ -40,13 +40,26 @@ expected_sources=(
     aarch64-abi.h
     aarch64-vector.c
     aggregate-return-calls.c
+    arm-aggregate-pcs.c
     arm-dynamic-pcs.c
+    arm-hfa-controls.S
+    arm-hfa-controls.c
+    arm-hfa-lifetimes.c
+    arm-mixed-body-driver.c
+    arm-mixed-body.S
     arm-mixed-function-aliases.cpp
+    arm-pcs-call-reference.c
+    arm-pcs-profile.c
+    arm-pcs-start.S
+    arm-stack-aggregates.c
+    arm-stack-shared-before.c
+    arm-stack-shared-driver.c
     arm-symbol-boundary.S
     arm-symbol-boundary.ld
     arm-thumb-after.c
     arm-thumb-caller.c
     arm-thumb-leaf.c
+    arm-thumb-shared-driver.c
     bitfield-values.c
     call-memory-boundaries.c
     calling-convention.c
@@ -69,7 +82,9 @@ expected_sources=(
     function-type-flags.c
     function_entry_ranges.S
     function_entry_ranges.c
+    i386-abi-matrix.c
     i386-alias-entry.cpp
+    i386-extended-return.c
     i386-profile.c
     inspected-call-callees.c
     later-register-local.c
@@ -80,8 +95,11 @@ expected_sources=(
     merged-local-mappings.c
     minimal.c
     mips-floating-call.c
+    mips-fpr-system-start.S
     mips-truncated-space-start.S
     mips-truncated-space.c
+    mips_layout_arguments.c
+    mips_wide_arguments.c
     mixed-incoming-prefix.c
     mutable-stack-mappings.c
     nonzero_load_offset.c

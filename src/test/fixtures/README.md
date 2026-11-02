@@ -193,6 +193,14 @@ Ghidra import by itself is not a complete architecture-support test.
 
 Focused harnesses build additional fixtures independently of the Makefile:
 
+- `mips-wide-arguments.py` uses `mips_wide_arguments.c` for separate O32,
+  N32 and N64 argument contracts. O32 covers both byte orders and executable,
+  PIE/rebased and shared/rebased layouts, including combined integer/floating/
+  aggregate/stack arguments. Natural structure alignment, incoming-value gaps,
+  hidden result buffers and guarded debugger calls are checked independently.
+  See `docs/MIPS-O32-ARGUMENTS.md` for measured compiler-reference limitations
+  and the wrong-location, failure and cancellation controls.
+
 - `bitfield-values-export.sh` uses `bitfield-values.c` on each target. Compiler
   and Forge DWARF must both read initialized `{a=5,b=17}` values from four-byte
   and packed one-byte structures. The applied Ghidra types use four-byte bases
@@ -650,3 +658,49 @@ and explicitly load the stripped library's sidecar at its observed runtime bias.
 The driver result objects are volatile so compiler-reference DWARF also passes
 all required validators. See `docs/AARCH64-PARAMETER-ALLOCATION.md` for the
 computed-storage correction, exact reference boundaries and acceptance evidence.
+
+`arm-aggregate-pcs.c` supplies source-known base/VFP structure, HFA, split core/
+stack and exhausted-HFA arguments and returns in LE and BE8. Its separate
+`arm-aggregate-pcs-reference.py` harness checks raw ABI carriers, typed compiler
+values and name/pointer injected calls. Observation labels follow argument
+capture so the compiler's stack copies have been established. Passing these
+references does not imply Forge support; current exporter omissions and the
+next implementation work are recorded in `docs/research/ARM-AGGREGATE-PCS.md`.
+
+`arm-hfa-lifetimes.c` keeps float/double aggregate parameters immutable while
+result-register writes overwrite their incoming physical storage. Its harness
+checks exact compiler instruction bytes, independent raw carriers, initialized
+compiler locations and Forge values through frame release in LE and BE8.
+See `docs/ARM-HFA-STORAGE.md` for acceptance and remaining scope.
+
+## Natural ARM aggregate investigation
+
+`arm-stack-aggregates.c` exercises base/VFP arguments after core or floating
+register exhaustion, alignment, packed and partial words, mixed fields and
+conditional comparisons. The source-built LE/BE8 reproduction is
+`src/test/integration/arm-stack-aggregates.py`. Its full-availability assertion
+currently fails on documented conservative omissions. The separately selected
+`--availability-contract audited-prefix --with-controls` mode verifies exact
+values, raw carriers and instruction-derived unavailable boundaries in LE/BE8,
+including exec/PIE, rebased projects, decompilation failures and copy
+cancellation. The PIE mode checks relocated literal pools, actual runtime load
+bias and distinct BE8 partial-object lifetimes. Twelve copied-fixture mutation
+controls reject wrong addresses, raw carriers and gap boundaries. See
+[the local contract](../../../docs/ARM-STACK-AGGREGATES.md) and
+[the retained full-availability failures](../../../docs/research/ARM-STACK-AGGREGATES.md).
+
+
+`arm-stack-shared-before.c` and `arm-stack-shared-driver.c` extend the same
+aggregate source into an actually loaded LE shared library. The driver calls
+the leading neighbor before the aggregate entry, so a real decompiler failure
+must leave later functions usable. The shared contract checks source-known GOT
+relocations and live target addresses, with distinct unavailable boundaries.
+See [shared aggregate evidence](../../../docs/ARM-SHARED-AGGREGATES.md).
+
+`mips-fpr-system-start.S` runs the existing `fp_register_aliases.c` fixture as a
+bare-metal O32 program on the 64-bit MIPS system emulator. The actual startup
+sets FR=1, preserving complete FPR transport for independent FPXX/FP64A
+compiler-DWARF references. Both byte orders also run the production exporter;
+unproven Ghidra double-pair locations remain unavailable. Wrong-carrier and
+wrong-mode controls are required. See
+[the reference contract](../../../docs/MIPS-FPR-SYSTEM-REFERENCE.md).

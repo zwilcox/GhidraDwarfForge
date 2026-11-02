@@ -33,7 +33,9 @@ public final class GhidraTargetAgreementSmoke {
                     new Profile(183, 8, true, "AARCH64", "AARCH64:LE:64:v8A", "default"),
                     new Profile(40, 4, true, "ARM", "ARM:LE:32:v8", "default"),
                     new Profile(8, 4, true, "MIPS", "MIPS:LE:32:default", "default"),
-                    new Profile(8, 4, false, "MIPS", "MIPS:BE:32:default", "default"))) {
+                    new Profile(8, 4, false, "MIPS", "MIPS:BE:32:default", "default"),
+                    new Profile(8, 8, false, "MIPS", "MIPS:BE:64:default", "default"),
+                    new Profile(8, 8, true, "MIPS", "MIPS:LE:64:default", "default"))) {
                 byte[] original = image(profile.machine(), profile.bytes(), profile.little());
                 Files.write(input, original);
                 ElfImage elf = ElfImage.read(input);

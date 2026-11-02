@@ -1,0 +1,318 @@
+#!/usr/bin/env python3
+"""Reproduce natural ARM aggregates with an explicit availability contract.
+
+The default retains the strict full-availability research oracle. The optional
+audited-prefix contract requires exact values plus instruction-justified gaps.
+"""
+import argparse
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import subprocess
+import struct
+import tempfile
+from urllib.parse import unquote, urlsplit
+
+source = Path(__file__).resolve().parent
+repository = source.parents[2]
+
+
+def load(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def tree(path):
+    return {str(p.relative_to(path)): digest(p) for p in path.rglob('*') if p.is_file()}
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('ghidra', type=Path)
+    parser.add_argument('--order', choices=('little', 'big'), required=True)
+    parser.add_argument('--role', choices=('exec', 'exec-rebased', 'pie', 'pie-rebased', 'shared', 'shared-rebased'), default='exec')
+    parser.add_argument('--qemu', type=Path, required=True)
+    parser.add_argument('--gdb', type=Path, required=True)
+    parser.add_argument('--gdb-data', type=Path, required=True)
+    parser.add_argument('--availability-contract', choices=('full-availability', 'audited-prefix'),
+        default='full-availability')
+    parser.add_argument('--with-controls', action='store_true')
+    parser.add_argument('--results-root', type=Path, default=repository / 'build/test-results/arm-stack-aggregates')
+    args = parser.parse_args()
+    layout = args.role.split('-')[0]
+    if layout == 'shared' and args.order != 'little':
+        parser.error('shared requires the validated little-endian loader/sysroot profile')
+    if args.with_controls and args.availability_contract != 'audited-prefix':
+        parser.error('--with-controls requires --availability-contract audited-prefix')
+    ghidra = args.ghidra.resolve(strict=True)
+    module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
+    output = args.results_root.resolve()
+    output.mkdir(parents=True, exist_ok=True)
+    case = Path(tempfile.mkdtemp(prefix=args.order + '.' + args.role + '.', dir=output))
+    print(case, flush=True)
+    facts = load('aggregate_elf', source / 'arm-thumb-mode-check.py')
+    vdso = load('aggregate_vdso', source / 'arm-pcs-call-reference.py')
+    contract = load('aggregate_contract', source / 'arm_stack_aggregate_contract.py')
+    shared_contract = load('shared_contract', source / 'arm_stack_shared_contract.py')
+    compiler = os.environ.get('ARM32_CC', 'arm-linux-gnueabihf-gcc')
+    objcopy = os.environ.get('ARM32_OBJCOPY', 'arm-linux-gnueabihf-objcopy')
+    fixture = repository / 'src/test/fixtures/arm-stack-aggregates.c'
+    startup = repository / 'src/test/fixtures/arm-pcs-start.S'
+    protected = [Path(__file__), fixture, startup, source / 'arm-stack-aggregates-gdb.py',
+        source / 'arm-stack-aggregates-reference.py', source / 'arm_stack_aggregate_contract.py',
+        source / 'arm_stack_shared_contract.py',
+        source / 'arm-stack-aggregates-locations.py', source / 'check-stack-first-use.py',
+        source / 'arm-pcs-profile-runtime.sh',
+        source / 'qemu-socket.sh', source / 'arm-thumb-mode-check.py', source / 'arm-pcs-call-reference.py',
+        source / 'check-dwarfdump.py', source / 'ghidra_scripts/PrepareArmStackAggregates.java',
+        source / 'ghidra_scripts/RebaseFixtureProgram.java',
+        Path(shutil.which(compiler)), Path(shutil.which(objcopy)), args.qemu, args.gdb]
+    protected += [p for root in (module, args.gdb_data) for p in root.rglob('*') if p.is_file()]
+    sysroot = Path(os.environ.get('FORGE_ARM32_SYSROOT', '/usr/arm-linux-gnueabihf')).resolve()
+    if layout == 'shared':
+        protected += [source / 'arm-stack-shared-runtime.sh',
+            repository / 'src/test/fixtures/arm-stack-shared-driver.c',
+            repository / 'src/test/fixtures/arm-stack-shared-before.c',
+            sysroot / 'lib/ld-linux-armhf.so.3', sysroot / 'lib/libc.so.6']
+    if args.with_controls:
+        protected += [source / 'arm-stack-aggregate-controls.py',
+            source / 'ghidra_scripts/AbiDecompilerFailureExport.java', source / 'ghidra_scripts/CancelDuringElfCopy.java']
+    before = {str(p.resolve()): digest(p) for p in protected}
+    commands = []
+    java = subprocess.run([str(Path(os.environ['JAVA_HOME']) / 'bin/java'), '-Xshare:off', '-version'],
+        capture_output=True, check=True)
+    assert not java.stdout
+
+    def write(name, value):
+        (case / name).write_text(json.dumps(value, indent=4) + '\n')
+
+    def run(label, command, environment=None):
+        command = list(map(str, command))
+        row = {'label': label, 'command': command, 'environment': environment or {}}
+        commands.append(row)
+        write('commands.json', commands)
+        with (case / (label + '.log')).open('wb') as log, (case / (label + '.err')).open('wb') as err:
+            result = subprocess.run(command, stdout=log, stderr=err, timeout=240,
+                env={**os.environ, **(environment or {})})
+        row['exit'] = result.returncode
+        write('commands.json', commands)
+        stderr = (case / (label + '.err')).read_bytes()
+        if Path(command[0]).name == 'analyzeHeadless':
+            assert stderr == java.stderr, (label, 'unexpected headless stderr')
+            assert not re.search(r'(?m)^ERROR (?!GhidraDwarfForge.java> GhidraDwarfForge: )',
+                (case / (label + '.log')).read_text()), label
+        else:
+            assert not stderr, (label, 'unexpected stderr')
+        assert result.returncode == 0, (case, label, result.returncode)
+        return result.returncode
+
+    profile = {'order': args.order, 'role': args.role, 'layout': layout, 'ghidra': str(ghidra),
+        'qemu': str(args.qemu.resolve()), 'gdb': str(args.gdb.resolve()), 'gdbData': str(args.gdb_data.resolve()),
+        'compilerReferenceCalibration': 'exact live-carrier windows', 'availabilityContract': args.availability_contract}
+    common = ['-marm', '-march=armv7-a', '-mfpu=vfpv3-d16', '-mfloat-abi=hard', '-O1',
+        '-g3', '-gdwarf-5', '-gno-variable-location-views', '-fno-omit-frame-pointer',
+        '-fno-inline', '-fno-ipa-sra', '-fno-ipa-cp']
+    flags = [*common, '-nostdlib', '-nostartfiles',
+        *(['-fPIE', '-pie', '-Wl,--no-dynamic-linker'] if layout == 'pie' else ['-static', '-fno-pie', '-no-pie']),
+        '-Wl,--build-id=none', '-Wl,-e,_start',
+        *(['-mbig-endian', '-Wl,--be8'] if args.order == 'big' else [])]
+    if layout == 'shared':
+        flags = [*common, '-fPIC', '-shared', '-nostdlib', '-nostartfiles', '-Dmain=aggregate_fixture_main',
+            '-Wl,-Bsymbolic', '-Wl,-soname,calls.input', '-Wl,--build-id=none']
+        command = [compiler, *flags, repository / 'src/test/fixtures/arm-stack-shared-before.c', fixture]
+        profile['sysroot'] = str(sysroot)
+    else:
+        run('startup', [compiler, *flags, '-c', startup, '-o', case / 'start.o'])
+        command = [compiler, *flags, case / 'start.o', fixture]
+    run('compile', [*command, '-o', case / 'calls.reference'])
+    run('rebuild', [*command, '-o', case / 'calls.repeat'])
+    assert (case / 'calls.reference').read_bytes() == (case / 'calls.repeat').read_bytes()
+    run('strip', [objcopy, '--strip-all', case / 'calls.reference', case / 'calls.input'])
+    if layout == 'shared':
+        driver_command = [compiler, *common, '-fno-pie', '-no-pie', repository / 'src/test/fixtures/arm-stack-shared-driver.c',
+            '-L' + str(case), '-Wl,-rpath,$ORIGIN', '-Wl,--build-id=none', '-l:calls.reference']
+        run('driver', [*driver_command, '-o', case / 'calls.driver'])
+        run('driver-repeat', [*driver_command, '-o', case / 'calls.driver-repeat'])
+        assert (case / 'calls.driver').read_bytes() == (case / 'calls.driver-repeat').read_bytes()
+        before[str(case / 'calls.driver')] = digest(case / 'calls.driver')
+    original = facts.elf(case / 'calls.input', allow_big_endian=True)
+    compiler_elf = facts.elf(case / 'calls.reference', allow_big_endian=True)
+    assert not original['symbols'], 'fixture must be completely stripped'
+    assert original['header'][0] == (2 if layout == 'exec' else 3)
+    profile['elfEntry'] = original['header'][3]
+    endian = '<' if args.order == 'little' else '>'
+    assert original['header'][8] == 32
+    segments = [struct.unpack_from(endian + '8I', original['data'], original['header'][4] + 32 * index)
+        for index in range(original['header'][9])]
+    assert not any(row[0] == 3 for row in segments), 'runtime entry must not be an interpreter'
+    if layout != 'shared':
+        assert not any(section['row'][1] in (4, 9) and section['row'][5] for section in original['sections'])
+    profile['elfImageBase'] = min(row[2] for row in segments if row[0] == 1)
+    if layout == 'pie':
+        dynamic = facts.section(original, '.dynamic')['data']
+        assert any(tag == 0x6ffffffb and value & 0x8000000 for tag, value in struct.iter_unpack(endian + 'II', dynamic))
+    if layout == 'shared':
+        assert profile['elfEntry'] == 0
+        profile['textAddress'] = facts.section(original, '.text')['row'][3]
+        profile['gotAddress'] = facts.section(original, '.got')['row'][3]
+    write('profile.json', profile)
+    kinds = ('pair', 'aligned', 'packed', 'bytes', 'words', 'mixed', 'floats')
+    names = [pcs + '_' + kind for pcs in ('base', 'vfp') for kind in kinds]
+    required = ['seen_leading'] + names + [name + '_observe' for name in names] + [prefix + kind
+        for prefix in ('input_', 'seen_') for kind in kinds]
+    if layout == 'shared':
+        required += ['seen_tail', 'seen_doubles', 'seen_float_tail', 'aggregate_fixture_main', 'aggregate_fixture_before']
+    labels, inventory = {}, {}
+    for name in required:
+        symbol, = [row for row in compiler_elf['symbols'] if row['name'] == name]
+        labels[name] = symbol['raw']
+        if name in names:
+            assert symbol['info'] & 15 == 2 and symbol['size'] > 0 and symbol['raw'] % 4 == 0
+            section = compiler_elf['sections'][symbol['section']]
+            offset = symbol['raw'] - section['row'][3]
+            code = section['data'][offset:offset + symbol['size']]
+            assert len(code) == symbol['size'] and len(code) % 4 == 0
+            inventory[name] = {'entry': symbol['raw'], 'size': symbol['size'], 'code': code.hex()}
+            if layout in ('pie', 'shared'):
+                pool = contract.literal_offset(name, args.order) if layout == 'pie' else shared_contract.pool_offset(name)
+                assert pool + (4 if layout == 'pie' else 16) == symbol['size']
+                # Compiler mapping symbols independently distinguish the trailing
+                # literal data from instructions; it is not a function-body PC.
+                assert any(row['name'].split('.')[0] == '$d' and row['raw'] == symbol['raw'] + pool
+                    and row['section'] == symbol['section'] for row in compiler_elf['symbols'])
+                inventory[name]['codeSize'] = pool
+    for name in names:
+        observe = labels[name + '_observe']
+        assert labels[name] < observe < labels[name] + inventory[name]['size'] and observe % 4 == 0
+        inventory[name]['observeOffset'] = observe - labels[name]
+        if layout == 'shared':
+            got = facts.section(original, '.got')
+            def got_memory(address, size):
+                offset = address - got['row'][3]
+                assert 0 <= offset <= len(got['data']) - size
+                return got['data'][offset:offset + size]
+            slots = shared_contract.validate_prefix(name, bytes.fromhex(inventory[name]['code']),
+                inventory[name]['observeOffset'], labels[name], profile['gotAddress'], labels, got_memory)
+            relocations = list(struct.iter_unpack('<II', facts.section(original, '.rel.dyn')['data']))
+            assert all(info == 23 for _, info in relocations), 'expected symbol-free R_ARM_RELATIVE'
+            assert all((slot['slot'], 23) in relocations for slot in slots)
+            inventory[name]['gotSlots'] = slots
+        elif args.availability_contract == 'audited-prefix':
+            contract.validate_prefix(name, args.order, bytes.fromhex(inventory[name]['code']),
+                inventory[name]['observeOffset'], labels['seen_leading'], layout, labels[name])
+    write('instruction-inventory.json', inventory)
+    write('labels.json', labels)
+    (case / 'labels.txt').write_text(''.join(name + ' ' + hex(address) + '\n' for name, address in labels.items()))
+    for leaf in ('calls.input', 'calls.reference'):
+        before[str(case / leaf)] = digest(case / leaf)
+    write('protected-before.json', before)
+    runtime = ['bash', source / ('arm-stack-shared-runtime.sh' if layout == 'shared' else 'arm-pcs-profile-runtime.sh'), case]
+    runtime_tail = [args.qemu, args.gdb, args.gdb_data, source / 'arm-stack-aggregates-gdb.py']
+    run('compiler-runtime', [*runtime, 'compiler', *runtime_tail], {'FORGE_STACK_REFERENCE_CALIBRATION': '1'})
+    project = case / 'project'
+    project.mkdir()
+    headless = ghidra / 'support/analyzeHeadless'
+    rebase = ['-postScript', 'RebaseFixtureProgram.java', '0x2000000'] if args.role.endswith('-rebased') else []
+    run('import', [headless, project, 'Stack', '-import', case / 'calls.input', '-loader', 'ElfLoader',
+        '-scriptPath', source / 'ghidra_scripts', '-postScript', 'PrepareArmStackAggregates.java',
+        'image', case / 'labels.txt', case / 'import-image.json', *rebase])
+    run('curate', [headless, project, 'Stack', '-process', 'calls.input', '-noanalysis',
+        '-scriptPath', source / 'ghidra_scripts', '-postScript', 'PrepareArmStackAggregates.java',
+        'curate', case / 'labels.txt', case / 'curate.json'])
+    project_before = tree(project)
+    write('project-before.json', project_before)
+    for phase in ('first', 'repeat'):
+        run(phase, [headless, project, 'Stack', '-process', 'calls.input', '-noanalysis', '-readOnly',
+            '-scriptPath', source / 'ghidra_scripts', '-postScript', 'PrepareArmStackAggregates.java',
+            'inspect', case / 'labels.txt', case / (phase + '.json'),
+            '-postScript', 'GhidraDwarfForge.java', '--packaged-natives', '--output=' + str(case / 'calls.dbg')])
+        assert 'GhidraDwarfForge symbol export PASS' in (case / (phase + '.log')).read_text()
+        if phase == 'first':
+            for leaf in ('calls.dbg', 'calls.dbg.c'):
+                shutil.copy2(case / leaf, case / ('first-' + leaf))
+    observation = json.loads((case / 'first.json').read_text())
+    assert observation == json.loads((case / 'curate.json').read_text()) == json.loads((case / 'repeat.json').read_text())
+    imported = json.loads((case / 'import-image.json').read_text())
+    assert imported['originalImageBase'] == observation['originalImageBase'] == profile['elfImageBase']
+    assert observation['imageBase'] - imported['imageBase'] == (0x2000000 if args.role.endswith('-rebased') else 0)
+    assert observation['imageBase'] - observation['originalImageBase'] == observation['rebaseDelta']
+    origin = urlsplit(observation['origin'])
+    assert origin.scheme == 'file' and Path(unquote(origin.path)) == module / 'lib/GhidraDwarfForge.jar'
+    for leaf in ('calls.dbg', 'calls.dbg.c'):
+        assert (case / leaf).read_bytes() == (case / ('first-' + leaf)).read_bytes()
+    for variant in ('reference', 'dbg'):
+        for view, option in [('header', '-h'), ('sections', '-SW'), ('notes', '-n'), ('info', '--debug-dump=info'),
+                ('abbrev', '--debug-dump=abbrev'), ('aranges', '--debug-dump=aranges'),
+                ('line', '--debug-dump=decodedline'), ('loc', '--debug-dump=loc')]:
+            run(variant + '-' + view, ['readelf', option, case / ('calls.' + variant)])
+        run(variant + '-llvm', ['llvm-dwarfdump', '--verify', case / ('calls.' + variant)])
+        run(variant + '-strict', ['python3', source / 'check-dwarfdump.py', case / ('calls.' + variant),
+            case / (variant + '-strict.txt'), '--original', case / 'calls.input'])
+    exported = facts.elf(case / 'calls.dbg', allow_big_endian=True)
+    assert exported['data'][:16] == original['data'][:16]
+    assert exported['header'][:4] == original['header'][:4] and exported['header'][6] == original['header'][6]
+    assert exported['header'][4] == exported['header'][9] == 0
+    assert facts.section(exported, '.text')['data'] == facts.section(original, '.text')['data']
+    run('physical-locations', ['python3', source / 'arm-stack-aggregates-locations.py', case])
+    # Defer the final mismatch assertion until QEMU exit, diagnostics and all
+    # preservation checks are collected. The driver still fails below.
+    run('forge-runtime', [*runtime, 'forge', *runtime_tail], {'FORGE_STACK_REPORT_ONLY': '1'})
+    results = {}
+    for variant in ('compiler', 'forge'):
+        result = json.loads((case / (variant + '-gdb.json')).read_text())
+        assert len(result['entry']) == 14 and {row['name'] for row in result['entry']} == set(names)
+        assert result['status'] in ('PASS', 'FORGE_MISMATCH'), result.get('error')
+        for name in names:
+            offsets = [row['offset'] for row in result['observations'] if row['name'] == name]
+            assert offsets == list(range(0, inventory[name]['observeOffset'] + 1, 4)), name
+        if variant == 'forge':
+            assert not result['referenceWindows'] and not result['referenceMismatches']
+            assert len(result['carrierObservations']) == len(result['observations'])
+            if args.availability_contract == 'audited-prefix':
+                expected_gaps = {(row['name'], row['offset'], expression)
+                    for row in result['observations'] for expression in row['fields']
+                    if (shared_contract if layout == 'shared' else contract).expects_gap(
+                        row['name'], args.order, row['offset'], expression, layout)}
+                assert {(row['name'], row['offset'], row['expression']) for row in result['unavailable']} == expected_gaps
+        warnings = (case / (variant + '.stderr')).read_text().splitlines()
+        assert len(warnings) <= 1
+        for warning in warnings:
+            assert warning == 'Failed to read a valid object file image from memory.' or re.fullmatch(
+                r'warning: BFD: warning: system-supplied DSO at 0x[0-9a-f]+ has a corrupt string table index', warning)
+            vdso.corroborate_unmapped_vdso_sections(result)
+        assert not (case / (variant + '.qemu.stderr')).read_bytes()
+        assert (case / (variant + '.qemu.status')).read_text() == 'exit=0\n'
+        results[variant] = result
+    project_after = tree(project)
+    assert project_before == project_after
+    write('project-after.json', project_after)
+    assert before == {path: digest(Path(path)) for path in before}
+    write('result.json', {'status': results['forge']['status'], 'order': args.order, 'role': args.role,
+        'availabilityContract': args.availability_contract,
+        'compilerObservations': len(results['compiler']['observations']),
+        'forgeObservations': len(results['forge']['observations']),
+        'physicalCarrierObservations': len(results['forge']['carrierObservations']),
+        'referenceMismatchesRetained': len(results['compiler']['referenceMismatches']),
+        'unavailable': sum('error' in row for row in results['forge']['mismatches']),
+        'requiredUnavailableFields': len(results['forge']['unavailable']),
+        'incorrect': [row for row in results['forge']['mismatches'] if 'actual' in row],
+        'deterministic': True, 'protectedFilesUnchanged': True, 'savedProjectUnchanged': True})
+    assert results['forge']['status'] == 'PASS', 'unresolved aggregate observations: ' + str(case)
+    if args.with_controls:
+        run('failure-controls', ['python3', source / 'arm-stack-aggregate-controls.py', case])
+        assert before == {path: digest(Path(path)) for path in before}
+    print('PASS_ARM_STACK_AGGREGATES', flush=True)
+
+
+if __name__ == '__main__':
+    main()

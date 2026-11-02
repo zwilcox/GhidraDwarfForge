@@ -1,5 +1,516 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED retention-guard fixture separation:** the final guard now explicitly
+distinguishes the two validator self-test directories from production reports.
+It records their receipts without counting them as export passes; malformed
+production receipts still fail. Three positive and ten rejection controls pass,
+along with 535 retained x86 reports using separate fresh checks for the eight
+known namespace collisions. Sixteen fresh i386 integer/shared GDB replays pass
+3,000 instruction observations. Production code is unchanged. The corrected
+exact-head gate, remaining host/artifact review and protected integration remain
+open; see `docs/TARGET-ABI-ACCEPTANCE.md`.
+
+**CONFIRMED namespace validator-retention follow-up:** the independent full
+AArch64 raw-report audit found one additional harness collision affecting eight
+namespace/global variants. Separate driver logs pass fresh packaged x86-64 and
+AArch64 checks, and a new final target-lane guard rejects damaged reports after
+the harnesses return. Five real-report corruption controls pass. Production
+bytes are unchanged; corrected exact-head CI and final integration remain open.
+See `docs/TARGET-ABI-ACCEPTANCE.md`.
+
+**CONFIRMED validator-evidence correction:** five integration harnesses now
+keep checker stdout separate from raw validator reports. Real-validator
+controls reproduce the old collisions and verify complete corrected reports.
+The current packaged AArch64 ABI/vector matrices pass locally; independent ABI
+review corroborates inherited frame diagnostics against original ELF bytes.
+Final hosted acceptance and integration remain open. See
+`docs/TARGET-ABI-ACCEPTANCE.md`.
+
+**CONFIRMED local MIPS system-reference startup correction:** the minimal
+hosted QEMU installation lacks an unused VGA ROM. Disabling the default VGA
+device passes all four FPXX/FP64A byte-order cases with the uploaded combined
+package and replays the exact failed hosted compiler ELF successfully. The
+strict value/omission and corruption controls remain intact; corrected hosted
+acceptance is pending. See `docs/MIPS-FPR-SYSTEM-REFERENCE.md`.
+
+**CONFIRMED combined ABI candidate; final acceptance pending:** the normal
+merge of PR125–PR154 with current main preserves the complete P2.3–P2.3c scope
+and the user logo. The clean combined build passes all 128 Gradle tasks plus
+wrapper, architecture-isolation and release-assembly checks; its exporter JAR
+is byte-identical to the recently tested component package. All twenty original
+requirement rows now map to concrete implementation and behavioral evidence in
+`docs/TARGET-ABI-ACCEPTANCE.md`. Exact-head hosted host/target gates,
+independent uploaded-artifact review and protected integration remain required.
+The goal and #69–#71 remain open; #68's existing closure does not waive its
+combined regression checks. Earlier component status notes below are historical
+checkpoints and must be read with this acceptance audit.
+
+**CONFIRMED local O32 mixed/wide coverage:** ten byte-order/layout cases pass
+40 normal/failure exports, ten cancellations, 24,780 instruction-level parameter
+observations and forty wrong-location/late-gap rejections. Natural fixture type
+alignment is corrected; separate O32 slots, compiler-reference defects and
+existing honest mixed-storage/call guards are explicit. N32/N64 regressions pass
+with unchanged production code. See `docs/MIPS-O32-ARGUMENTS.md`. Hosted acceptance, protected
+integration and the full original P2.3–P2.3c audit remain open.
+
+**CONFIRMED local MIPS FPXX/FP64A reference:** the unmodified 64-bit system
+emulator supplies full FPR values at actual FR=1 for both O32 byte orders.
+Four maintained compiler/Forge cases pass eight exports, strict validation,
+deterministic preservation and wrong-carrier/wrong-mode controls. Forge retains
+correct floats and explicit unavailable double pairs; production code is
+unchanged. See `docs/MIPS-FPR-SYSTEM-REFERENCE.md`. Hosted acceptance,
+integration, broader floating storage and the full P2.3–P2.3c audit remain open.
+
+**CONFIRMED local hosted-i386 reference correction:** PR150's compiler-vector
+finish operation can dereference incidental EAX and emit a GDB memory error.
+The exact independently corroborated consumer failure is now retained as a
+reference limitation, with all Forge/value/error gates intact. Four layouts pass
+sixteen exports, four cancellations, sixteen wrong-location rejections and eight
+deterministic reference controls; GDB 15.1/17.1 controls and twelve diagnostic
+negatives pass. Production code is unchanged. See `docs/I386-ABI-MATRIX.md`.
+Hosted acceptance, protected integration and the full P2.3–P2.3c audit remain open.
+
+**CONFIRMED local i386 ABI-selection correction:** reserved ELF flags previously
+left debugger calls enabled. Nine real i386 selections now pass ordinary values,
+positive calls or unchanged-state rejection through names and callbacks. Three
+AArch64 regressions and the rebased eleven-function i386 failure/cancellation
+matrix pass with the same package; 3,317 new metadata assertions pass. See
+`docs/I386-ABI-SELECTION.md`. A separate compat32 stack-location omission remains
+an open research finding, not a validated profile. Hosted acceptance, protected
+integration and the full original P2.3–P2.3c scope audit remain open.
+
+**CONFIRMED local i386 ABI matrix:** isolated XMM0–7 register mapping enables
+explicit vector/SSE storage. Eleven libc-backed scalar/vector/aggregate and
+additional-convention functions pass exec/sectionless/PIE/rebased-PIE comparisons.
+Sixteen deterministic normal/failure exports, four production cancellations and
+sixteen structurally valid wrong-location rejections pass; the AArch64 regression
+also passes. Compiler automatic vector/SSE return limitations and guarded custom
+calls remain explicit. See `docs/I386-ABI-MATRIX.md`. Exact-head hosted acceptance,
+protected integration, remaining target-ABI classification and the full original
+P2.3–P2.3c scope audit remain open.
+
+**CONFIRMED local GNU-vector validator correction:** the pinned standalone
+reader had no accepted form class for GCC's vector flag. A pinned validation-only
+table correction passes 16 positive and 48 negative metadata cases across both
+ELF classes/byte orders and DWARF4/5, with 128 old/new observations. Existing
+checker regressions and 97 evidence controls pass. Shipped native libraries and
+production code are unchanged. See `docs/GNU-VECTOR-VALIDATION.md`.
+Hosted acceptance, protected integration and the full original P2.3–P2.3c
+requirements remain open; the separate i386 ABI matrix is still under acceptance.
+
+**CONFIRMED local shared Thumb lifetime-oracle correction:** PR146's hosted
+ARM lane expected unavailable parameters after their original registers changed.
+Independent instruction bytes and raw stack/register observations instead prove
+retained values. Ordinary/rebased shared cases now require those exact values,
+full location-list ranges and the later honest unknown-store gap. Four wrong-slot/
+wrong-register controls pass LLVM but fail GDB at the required PCs. Fresh shared,
+rebased shared and PIE/sectionless runs pass validators, deterministic export,
+failure/cancellation and original preservation with unchanged production code.
+See `docs/ARM-THUMB-EXTENDED-LAYOUTS.md`. Exact-head hosted acceptance,
+protected integration and all original P2.3–P2.3c requirements remain open.
+
+**CONFIRMED local i386 decompiler correction:** validated return/argument storage
+now reaches native source generation and analyst call-site overrides without
+editing the saved program. Four i386 layouts and an x86-64 layout regression
+pass ten deterministic exports, strict validators and compiler/Forge GDB checks;
+i386 additionally passes helper stepping, native failure isolation and callback
+cancellation. Six model suites pass. The missing fixture inventory entry that
+failed PR145's hosted target lanes is corrected and locally verified. See
+`docs/I386-DECOMPILER-ALLOCATION.md`. Exact-head hosted acceptance,
+protected integration and every remaining original P2.3–P2.3c row remain open.
+
+**CONFIRMED local floating layout correction:** object size and meaningful value
+width are now distinct. Four i386 layouts and an x86-64 global-layout regression
+pass ten deterministic exports, compiler/Forge sizeof/stride/member/value checks,
+structural validators and six model suites. The previous package fails at the
+expected ten-byte i386 sizeof/stride. See `docs/FLOATING-TYPE-LAYOUT.md`.
+Synthetic decompiler signatures, the remaining original ABI rows, hosted
+acceptance and protected integration remain open; P2.3–P2.3c are not complete.
+
+**CONFIRMED local i386 allocation correction:** a spurious hidden result pointer
+shifted extended floating arguments in the pinned Ghidra model. The read-only
+correction passes four libc-backed exec/sectionless/PIE/rebase cases, eight
+deterministic exports, compiler/Forge entry and return checks, strict validators,
+nine model suites and the existing rebased integer regression. See `docs/I386-EXTENDED-RETURN.md`.
+HISTORICAL: that checkpoint left padding/sizeof and synthetic signatures unresolved;
+the current layout follow-up above fixes the selected sizeof/stride cases;
+vector/extra-convention references expose separate GDB limits. Hosted acceptance,
+protected integration and the full original P2.3–P2.3c requirements remain open.
+
+**CONFIRMED local ARM incoming-oracle correction:** the PR136 hosted failure
+was an obsolete first-store unavailability expectation. Twelve fresh exports
+pass the independently audited register/spill/reload contract at all ten
+instructions: 140 compiler/Forge observations and 48 required unavailable
+pairs. Six early-gap, late-gap and wrong-carrier controls reject at exact PCs.
+See `docs/MIXED-INCOMING-PREFIX.md`. Production sources are unchanged;
+fresh hosted acceptance, protected integration and the complete original
+P2.3–P2.3c requirements remain open.
+
+**CONFIRMED local ARM context/conflict controls:** twenty controls across ten
+exec/PIE/shared, ordinary/rebased and sectionless layouts pass eighty
+deterministic exports and 390 exact GDB instruction observations. Ten baseline
+runs add 980 observations; two failure/cancellation/live/omission compositions
+add 274. Tests prove Ghidra context-write rejection, conservative omission
+during supported edits, byte-identical restoration and inherited-conflict
+preservation. See `docs/ARM-MIXED-MODE-MAPPINGS.md`. Production code is
+unchanged. Exact-head hosted acceptance, protected integration and the full
+original P2.3–P2.3c requirements remain open.
+
+**CONFIRMED local ARM shared aggregate composition:** a real libc-backed
+loader/driver executes the fourteen-function LE DSO in ordinary/rebased forms.
+Exact GOT relocation, raw carrier and typed checks pass 660 stops per variant,
+16 deterministic failure exports and two cancellations; sixteen deliberate
+shared corruptions reject. Three exec/PIE regressions and twelve PIE corruption
+controls pass with the unchanged production package. See
+`docs/ARM-SHARED-AGGREGATES.md`. Hosted acceptance, protected integration and all remaining original ABI rows
+remain open; the full P2.3–P2.3c goal is unchanged.
+
+**CONFIRMED local ARM aggregate PIE composition:** all eight LE/BE8
+exec/PIE and ordinary/rebased cases pass compiler/Forge comparison, raw carrier
+checks, strict validators and preservation: 2,032 stops per variant, 64
+failure exports, 7,632 neighboring/496 symbol-only observations and eight
+cancellations. Twelve PIE corruptions fail at the required checks. A separately
+pinned validation-only correction removes libdwarf's invented low-address
+floor; 20 positive/36 negative cases and 16 old-checker defect reproductions
+pass, alongside existing validator regressions and 97 evidence controls.
+Production sources and the tested package are unchanged. Hosted acceptance,
+shared composition, protected integration and every remaining original
+P2.3–P2.3c requirement remain open. See `docs/ARM-STACK-AGGREGATES.md`.
+
+**CONFIRMED local exhausted-stack aggregate contract:** four LE/BE8 ordinary/
+rebased cases pass exact instruction, raw DWARF/carrier and typed-value checks:
+1,012 baseline stops per symbol-file variant, 32 deterministic failure exports,
+3,802 neighboring and 246 symbol-only stops, and four production-copy
+cancellations. The separately named audited prefix requires 492 unavailable
+field observations at proven uncertainty boundaries; the original full-
+availability research failures remain retained. Eight runtime mutation controls
+reject altered gaps, carriers and instructions. CI is wired; exact-head hosted
+acceptance and broader PIE/shared compositions remain required. See `docs/ARM-STACK-AGGREGATES.md`.
+All original P2.3–P2.3c requirements remain in scope.
+
+**CONFIRMED tracker reconciliation:** GitHub #68 is closed as completed by
+`zwilcox` on 2026-11-01; #69–#71 remain open. The inspected #68 event has no
+linked commit or acceptance comment. Earlier statements that all four tracker
+issues are open are historical. The full user-requested requirement audit stays
+active independently of tracker status; no issue was reopened or scope removed.
+
+**CONFIRMED local byte-slice and reference progress:** shared incoming analysis
+now preserves exact partial-register bytes through wider transfers and proven
+carry-free joins. Twenty-two model suites, 24 LE/BE8 aggregate controls, two
+default HFA cases and three x86/AArch64 runtime regressions pass. The natural
+aggregate investigation has zero wrong numeric values over 506 stops but still
+fails full availability at 130/116 field observations. Exact compiler-only
+windows now have live raw corroboration; Forge receives no exception. See
+`docs/research/ARM-STACK-AGGREGATES.md`. Portable pipeline acceptance and all #68–#71 requirements remain open.
+
+**CONFIRMED AArch64 allocation component accepted:** PR #124 passed all twelve
+exact-head jobs and independent hosted artifact replay, then merged normally as
+`453a7e9be61f1e34f3bae79f43f7ead2192bfcc2`; the merge tree equals tested head
+`035b9eb`. See `docs/AARCH64-PARAMETER-ALLOCATION.md`.
+This component does not close the full #68–#71 objective.
+
+**CONFIRMED local ARM aggregate failure/cancellation compositions:** twelve
+LE/BE8 storage/control combinations pass 48 deterministic native-failure exports
+and twelve cancellations during production copying. Neighboring functions retain
+138 exact aggregate values and 30 gaps; failed aggregate functions expose no
+parameter at all 168 checked PCs. Structural validators, original/program/output
+preservation and both default regressions pass. See
+`docs/ARM-AGGREGATE-STORAGE-CONTROLS.md`. Broader layouts and exhausted-stack
+behavior, hosted integration and all original #68–#71 requirements remain open.
+
+**CONFIRMED local ARM aggregate storage controls:** all 48 LE/BE8 combinations
+of VFP HFA, base-PCS aggregate and mixed integer/float aggregate storage pass.
+GDB checks 582 exact typed aggregate values and 90 unavailable boundaries;
+compiler/raw comparisons, GNU/LLVM/pinned strict validation, deterministic
+repeats and original/program preservation pass. Three deliberate oracle errors
+are rejected at exact PCs; both default lifetime regressions and all five
+fixture inventories pass. See `docs/ARM-AGGREGATE-STORAGE-CONTROLS.md`.
+Additional layouts, exhausted-stack and failure/cancellation compositions,
+hosted integration and the full #68–#71 requirements remain open.
+
+**CONFIRMED local ARM HFA representation and lifetime correction:** the preceding
+package swaps BE8 two-float fields and loses a surviving LE aggregate after a
+result-register write. The candidate normalizes computed HFA members and uses
+shared exact upper-piece facts. Four aggregate cases pass 48 typed entries and
+176 prefix instructions; two immutable HFA cases pass all 56 Forge instruction
+observations through frame release. Model, validator and cross-target runtime
+regressions pass. See `docs/ARM-HFA-STORAGE.md`; hosted acceptance, remaining
+aggregate compositions and the full #68–#71 requirements remain open.
+
+**CONFIRMED local load-boundary oracle correction:** hosted run `41375799121`
+reached the sectionless Thumb boundary fixture but its expected inventory omitted
+two primary mode function symbols. The corrected test independently checks all
+32 instruction bytes and both original section addresses, then requires exactly
+those two cues and the analyst alias. The exact hosted artifact passes raw
+inventory, six corruption controls and compiler/Forge GDB execution. Fresh
+ordinary, function-tag-conflict and mapping-conflict exports pass their distinct
+validator/runtime contracts. Production code is unchanged. See
+`docs/ARM-BE8-PROFILE.md`; exact-head hosted acceptance and all #68–#71
+requirements remain open.
+
+**CONFIRMED local shared-parameter oracle correction:** hosted run `41372370267`
+reached ARM shared export but retained an obsolete incoming-register-only
+expectation. The unchanged packaged exporter preserves a copied first argument
+and a spilled second argument. All 27 instruction boundaries of the exact hosted
+artifact pass source-known GDB value/gap checks; fresh shared/exec exports pass
+strict validators and their existing debugger workflows. Only the shared
+expectations change. See `docs/ARM-BE8-PROFILE.md`; a new hosted gate and all
+remaining #68–#71 requirements are still required.
+
+**CONFIRMED local ARM aggregate call classification:** four packaged LE/BE8
+base/VFP cases now pass raw transfers, captured values, 36 typed returns,
+72 injected calls and 24 unchanged-state rejections. Ordinary mixed structures
+are PCS-independent; HFAs retain precise mismatch and hidden-return guards.
+Focused model and existing scalar/aggregate regressions pass. See
+`docs/ARM-AGGREGATE-CALLS.md`. Q-register locations, saved aggregate lifetimes,
+broader compositions and hosted acceptance remain required; #68–#71 stay open.
+
+**CONFIRMED ARM aggregate compiler references; exporter gaps remain:** four
+LE/BE8 base/VFP combinations pass raw ABI, typed-value, return and injected-call
+checks. Fresh exports identify missing Q-register HFA locations, unavailable
+saved aggregate copies and the existing aggregate call restriction. See
+`docs/research/ARM-AGGREGATE-PCS.md` for exact evidence and retained pilot failures.
+This is an independent reference checkpoint, not completed aggregate support;
+all original #68–#71 requirements remain active.
+
+**CONFIRMED local PCS fixture-inventory correction:** PR132's inventory repair
+is merged, and `arm-pcs-profile.c` is registered in this branch's explicit list.
+All five target reproducibility checks pass. Run `41369300493` remains a failed
+setup run; new hosted acceptance is required. Production code and the validated
+fixture contents are unchanged; #68–#71 remain open.
+
+**CONFIRMED local fixture-inventory correction:** hosted run `41364588706`
+stopped target setup because the reviewed ARM call-reference C/assembly sources
+were missing from the explicit fixture inventory. Both names are now registered;
+all five target reproducibility checks pass, and an unregistered-source control
+still rejects before building. See `docs/ARM-BE8-PROFILE.md`. This repairs test
+setup only; a new hosted gate and the full #68–#71 requirements remain open.
+
+**CONFIRMED local ARM PCS declaration/metadata/failure controls:** twenty
+LE/BE8 base/VFP cases pass the unchanged packaged exporter. Addressless
+prototypes retain types and call policy without fabricated symbols; missing
+attributes select GDB's base PCS, while contradictory flags reject injected
+calls with precise diagnostics. The matrix includes 24 actual native failure
+exports and twelve cancellations preserving existing artifacts. See
+`docs/ARM-PCS-CONTROLS.md` for exact counts, retained reference/harness failures
+and receipts. Hosted acceptance and broader #68–#71 requirements remain open.
+
+**CONFIRMED local implicit ARM convention correction:** extraction now preserves
+recorded unknown convention names separately from the default model Ghidra
+actually uses for dynamic storage. Twelve LE/BE8 base/VFP cases pass real
+export, structural validators and compiler-relative GDB behavior, including
+unresolved custom-storage and callback rejection without target-state changes.
+The old-package failing baseline is retained. CI wiring and full ABI acceptance
+remain pending; see `docs/ARM-PCS-CALL-PROFILE.md`. All #68–#71 requirements
+remain active.
+
+**CONFIRMED local ARM PCS call checkpoint; full ABI work remains open:**
+The bounded original-ELF attribute reader and per-signature PCS policy pass 2,986
+model checks and the complete 120-task model/build run. Four LE/BE8 base/VFP
+executables pass real packaged scalar/wide/exhausted-argument exports, validators,
+natural values, typed returns, injected name/pointer calls and unchanged-state
+rejections. A separately pinned QEMU D/Q alias correction supplies trustworthy
+consumer references. LE uses GDB 15.1; BE8 uses 17.1, with the latter's LE upper
+bit-piece regression retained explicitly. Existing ARM aggregate and non-ARM
+calling-convention regressions pass. Broader profiles/compositions, hosted
+acceptance and protected integration remain required. See
+`docs/ARM-PCS-CALL-PROFILE.md`; #68–#71 remain open.
+
+**CONFIRMED independent ARM call-reference progress:** mixed base/VFP compiler
+runs reproduce GDB's global PCS selection and QEMU 8.2.2's reversed BE8 floating
+register writes. A private one-line QEMU correction restores the D-register
+round trip and VFP injected-call values in both data orders; ordinary program
+calls and raw returns remain correct. This supplies a corrected consumer
+reference, not Forge acceptance. Per-function exporter classification and the
+full original ABI rows remain open. See `docs/research/ARM-PCS-CALL-REFERENCE.md`.
+
+**CONFIRMED local hosted-oracle correction:** run `41359234173` exposed a
+sectionless alias test that counted analyst aliases but omitted the newly enabled
+primary ARM mode function symbols. The corrected inventory imports independently
+compiler-checked sectioned cues and checks the PLT resolver's four instructions
+and mapping boundaries separately. It passes the exact hosted artifact, all six
+symbol-corruption controls, and nine fresh ARM/Thumb/mixed exec/PIE/rebased runs.
+Production code is unchanged; a new hosted run is required. See
+`docs/ARM-THUMB-EXTENDED-LAYOUTS.md`. Full #68–#71 scope remains open.
+
+**CONFIRMED local BE8 floating and upper-register correction:** the shared scalar
+flow preserves logical upper registers across disjoint writes and rejects
+overlap, reused slots and contradictory physical aliases. The BE8 target map
+separates Ghidra's little-endian physical register layout from big-endian data.
+Both base/VFP argument fixtures pass validators and debugger observations through
+frame release. BE8 register bit pieces require the separately pinned, unmodified
+GDB 17.1 validation profile: GDB 15.1 demonstrably displays a wrong upper value.
+The full local model suite passes. Hosted acceptance, injected calls/typed returns
+and the broader ABI requirements remain open; see `docs/ARM-BE8-PROFILE.md`.
+
+**CONFIRMED local BE8 scalar checkpoint; full ABI work remains open:** matching
+EABI5 BE8 ELF/Ghidra instruction/data encoding passes 61 model checks, 32 native
+lifetimes, strict validators and six compiler/Forge debugger runs. Repeated
+artifacts are byte-identical; input/program/package bytes are preserved. Saved
+parameter migration now also passes a shared terminal-boundary correction in
+both ARM data orders: the stack copy remains readable until frame release.
+Base/VFP calls/returns and broader storage/layout/control cases remain incomplete.
+See `docs/ARM-BE8-PROFILE.md`; #68–#71 remain open.
+
+**CONFIRMED local sectionless shared composition:** contiguous/split shared and
+rebased shared mixed-body cases pass 810 saved/live/failure debugger observations,
+sixteen calls, eight native failure exports and four cancellations. The oracle
+measures the loader's live link_map because sectionless objects have no GDB From
+address, and verifies original header/code bytes before using the bias. See
+`docs/ARM-MIXED-MODE-MAPPINGS.md`. Runtime context/conflict controls, broader ABI
+profiles and exact-head hosted integration remain open; #68–#71 are not complete.
+
+**CONFIRMED local inherited/omitted ARM mapping acceptance:** five retained-symbol
+split layouts preserve every original symbol and mapping, with 1,045 saved/live/
+failure debugger observations and twenty injected calls. Eight stripped layouts
+pass explicit unknown-data omission controls with 208 instruction observations,
+exact diagnostics and no invented mapping. See `docs/ARM-MIXED-MODE-MAPPINGS.md`.
+Broader ABI profiles and exact-head integration remain required; #68–#71 remain open.
+
+**CONFIRMED local discontiguous mixed-body acceptance:** eight additional ARM
+layouts pass two-range bodies with an excluded data word, six exact mapping
+boundaries, raw DWARF range/line checks and compiler/Forge runtime comparisons.
+Saved/live/failure exports total 1,672 debugger observations, 32 injected calls,
+16 native failure exports and eight cancellations. CI covers both contiguous
+and split bodies. See `docs/ARM-MIXED-MODE-MAPPINGS.md` for source-map limits,
+receipts and retained harness failures. Runtime context/conflict controls,
+the remaining original ABI requirements and
+exact-head hosted integration remain open; this does not complete #68–#71.
+
+**CONFIRMED local mixed-mode layout/source expansion; full ABI goal remains open:**
+Eight ARM mixed-body layouts pass compiler/Forge source stepping, named/address
+breakpoints, injected function-pointer calls, raw symbol preservation, validators,
+determinism and failure/cancellation. This includes shared/rebased libraries and
+sectionless exec/PIE/rebased executables. See `docs/ARM-MIXED-MODE-MAPPINGS.md`
+for 832 observations, exact package receipts and retained failed experiments.
+The producer is unchanged in this expansion. Remaining ARM/MIPS/i386
+requirements, exact-head hosted
+gates and protected integration remain required; #68–#71 are not complete.
+
+**CONFIRMED live-program follow-up:** all eight layouts also pass two exports
+before closing fresh analysis, with identical artifacts, matching saved-program
+mode inventories and 736 additional compiler/Forge observations. The full
+sectionless/rebased/control/live command passes and CI includes live checks for
+every layout. Live-session behavior is now confirmed locally; inherited mapping and the full original ABI scope remain open. See the same mapping evidence document.
+
+**CONFIRMED local production ARM32 mixed-body mapping progress:**
+The real exporter now emits complete evidence-backed ARM/Thumb/data section
+mappings. Non-PIE, PIE and rebased PIE pass raw mapping checks, compiler-relative
+static decoding, twelve actual instruction observations, strict validators,
+determinism and original/program preservation. Six real decompiler-failure
+exports and three cancellations pass; ELF/writer and real-Ghidra models pass
+33/84 checks. The final package also passes the AArch64 vector/control regression.
+See `docs/ARM-MIXED-MODE-MAPPINGS.md`. Shared/sectionless mixed compositions,
+source-step acceptance, broader ABI requirements and exact-head integration
+remain open; the complete #68–#71 scope is unchanged.
+
+**CONFIRMED ARM32 mixed-body defect and consumer reference:**
+A source-built function switches ARM → Thumb → ARM with twelve independently
+checked executed instructions. The current curated production sidecar passes
+validators but misdecodes Thumb before attachment. A separate standard mapping
+symbol experiment fixes decoding and preserves every DWARF byte; it is not a
+production correction. The reproducible research harness passes and records
+all input/package/program preservation evidence. See
+`docs/research/ARM-MIXED-BODY-MODES.md`. Implementing validated extraction and
+writer support, the remaining ABI profiles and exact-head integration remains
+required; all #68–#71 requirements stay active.
+
+**CONFIRMED local ARM32 shared-library mode acceptance:**
+Stripped shared objects and explicitly rebased shared objects pass static mode
+checks, measured runtime relocation, source stepping, direct/indirect calls and
+exact register-clobber gaps with the unchanged production package. Both cases
+also pass repeated native decompilation failures and production cancellation.
+The PIE/sectionless regression passes after the harness extension. CI includes
+both shared roles. See `docs/ARM-THUMB-EXTENDED-LAYOUTS.md` for receipts and the
+PIC-specific second-argument boundary. Mixed-body modes, per-function ABI/BE8,
+broader storage and exact-head hosted acceptance remain open; #68–#71 retain
+their full original scope.
+
+**CONFIRMED local ARM32 sectionless and failure/cancellation acceptance:**
+Fresh sectionless imports now pass all four exec/PIE/rebased/dynamic-symbol
+roles, with independent raw inventory and real debugger checks. The combined
+eight-case matrix passes 16 native decompilation-failure exports and eight
+production copy cancellations. A separate empty-GNU-hash control requires an
+honest mode-symbol omission where no complete symbol count exists. The pipeline
+now runs these checks. See `docs/ARM-THUMB-EXTENDED-LAYOUTS.md`; shared loading,
+mixed-body/ABI/BE8 work and exact-head hosted acceptance remain required.
+All original #68–#71 completion requirements remain active.
+
+**CONFIRMED local ARM32 PIE mode progress; full acceptance remains open:**
+The original ET_DYN omission now has a reproduced static-decoding failure and a
+candidate correction using existing byte/owner/mode checks. Four packaged
+exec/PIE/rebased/dynamic-symbol cases pass compiler/Forge runtime, validators,
+determinism and original-preservation checks. See `docs/ARM-THUMB-EXTENDED-LAYOUTS.md`
+for exact evidence and literal-pool oracle boundaries. Sectionless production
+behavior is PRESENT, UNVERIFIED beyond model checks; shared/mixed-body/BE8/ABI
+work, failure/cancellation composition and hosted acceptance remain required.
+All #68–#71 requirements remain active.
+
+**CONFIRMED aligned-aggregate and live-session MIPS defects; correction under validation:**
+Explicit aggregate alignment now skips the required register slot and caps
+argument alignment at 16 without changing formal types. A separate fresh-import
+failure was traced to Ghidra lazily serializing an empty killed-register list;
+the fingerprint correction preserves strict rejection of nonempty changes.
+434 model checks, all 20 saved-program layout/control cases and all 20 final
+live-session cases pass locally. Exact-head hosted acceptance remains pending. See
+`docs/MIPS-ALIGNED-COMPOSITES.md`. The full #68–#71 goal remains open.
+
+**CONFIRMED expanded MIPS layout validation:** the v3 production package now
+passes all 20 ABI/endian/exec/PIE/rebase/shared cases, with 1,280 exact Forge
+values and 640 compiler-body values plus GNU/LLVM/strict validation. A versioned,
+checksum-pinned GDB 17.1 builder passes locally and is wired into candidate CI.
+All 20 failure/cancellation compositions pass locally. Broader lifetime/ABI
+requirements and exact-head hosted acceptance remain in progress. See `docs/MIPS-LAYOUT-ALLOCATION.md`.
+
+**CONFIRMED AArch64 indirect-argument component integrated:** PR121 merged as
+`54dc96313ef497df89f59f0a06fe87622e77e7d8` after all twelve jobs passed in
+run `41332889175`. Independent artifact review checked 3,273 source-known
+available values across three layouts, raw location transitions, validators
+and failure/cancellation evidence. This supersedes older pending statements
+for that component only. PR122 is refreshed onto main at `086eaee98e821f7fa9532d7bb85b1f347963cc39`
+and requires a new exact-head gate. None of issues #68–#71 is closed.
+
+**CONFIRMED further MIPS layout defects; candidate acceptance in progress:**
+N32/N64 now have an owned nested-aggregate/128-bit alignment audit. Candidate
+allocation and unnamed-register-slice corrections pass 256 exact entry/body
+values across both ABIs and byte orders with unmodified GDB 17.1. GDB 15.1 has
+a separately reproduced high-register-piece consumer defect. Structural
+validators and local models pass; exact-head broader runtime/hosted acceptance
+and all original issue rows remain required. See `docs/MIPS-LAYOUT-ALLOCATION.md`.
+
+**CONFIRMED local wider MIPS runtime and call progress; acceptance pending:**
+The N32 allocation and truncated-stack corrections now have versioned tests
+covering 20 ABI/endian/layout cases, 9,500 Forge instruction observations and
+320 compiler/Forge injected calls through names and callbacks. Twenty matching
+failure/cancellation compositions pass. Separate float/double returns pass 24
+cases, and eight original unhomed regressions retain 3,472 passing observations.
+GNU/LLVM/pinned strict validation, deterministic reruns and preserved inputs/
+program databases pass locally; the packaged AArch64 regression also passes.
+A bounded ELF/language/type policy fixes previously suppressed N32/N64 returns.
+The validation-only GNU location-view checker correction has 48 controls and
+18 original real-artifact checks. See `docs/MIPS-WIDE-CALL-PROFILE.md` and
+`docs/MIPS-WIDE-ARGUMENT-ALLOCATION.md`. Broader allocation/storage auditing,
+hosted acceptance, protected integration and all original #68–#71 rows remain
+required. The full four-issue goal remains open.
+
+**CONFIRMED local N32/N64 scalar progress; full profile remains incomplete:**
+Both byte orders pass 20 packaged executable-layout cases, with exact typed
+arguments at entry and visited instructions, globals, separate source stepping,
+validators, deterministic reruns and unchanged inputs/program databases. N64
+retains addresses above 4 GiB. Forty failure exports, twenty cancellations and
+the AArch64 regression pass. Hosted validation and integration remain pending;
+separate wider fixtures now reproduce N32 aggregate/mixed allocation defects.
+See `docs/MIPS-WIDE-SCALAR-PROFILE.md`. This does not
+complete #69 or narrow the P2.3–P2.3c goal.
+
+**CONFIRMED MIPS reference investigation; full profile remains incomplete:**
+Private GCC/glibc N32 and N64 non-PIE compiler references execute and pass typed
+GDB floating-value checks. N64 exposed a validation-consumer bug in four-byte
+GNU frame termination; a validation-only correction and malformed-input controls
+are under test. FPXX runtime-mode experiments retain distinct big/little-endian
+failures rather than claiming a universal reference. See
+`docs/research/MIPS-ABI-COMPLETION.md`. All four target issues remain open.
+
 **CONFIRMED AArch64 vector-storage integration:** PR #123 passes both complete
 hosted gates at `8b6749e3`, separate package/raw/runtime/both-host review, and
 normal protected merge `3a60eab` with the same tree. Fresh uploaded-artifact
@@ -2500,20 +3011,22 @@ AArch64, ARM32, and MIPS32 big/little endian.
 Tracking: [#68](https://github.com/zwilcox/GhidraDwarfForge/issues/68).
 
 **CONFIRMED active scope:** P2.3–P2.3c are being completed together under
-[the full requirement plan](docs/TARGET-ABI-COMPLETION-PLAN.md). All four
-umbrella issues remain open. The indirect-argument component passes local
-non-PIE/PIE/rebased-PIE value and validator checks, genuine failure/cancellation
-controls, and x86-64/AArch64 shared-flow regressions. Hosted acceptance and
-protected integration remain pending; see [the component evidence](docs/AARCH64-PROFILE-PLAN.md).
+[the full requirement plan](docs/TARGET-ABI-COMPLETION-PLAN.md). GitHub #68 is
+externally closed; #69–#71 remain open. The independent full requirement audit
+remains active. AArch64 allocation/shared cases are accepted through PR124's
+exact-head hosted gate and protected merge; see
+[the acceptance evidence](docs/AARCH64-PARAMETER-ALLOCATION.md). Earlier local-only
+component notes below describe historical checkpoints.
 
-The shared [target-profile contract](docs/TARGET-PROFILES.md) records the
-existing five profiles and a finite follow-up order for P2.3/3a/3b. The
-read-only audit is **CONFIRMED**; ABI classification/diagnostics, scalar FP,
-stack-passed parameters and real aggregates remain **PLANNED** until their
-specific runtime gates pass. Accepted machine/class metadata is not proof of
-all calling conventions for that processor.
+The shared [target-profile contract](docs/TARGET-PROFILES.md) distinguishes
+accepted baseline profiles from the expanded combined candidate. ABI selection,
+scalar FP, exhausted-register/stack arguments, aggregates, HFA and vectors now
+have concrete implementation and component evidence. The full combined gate
+and uploaded-artifact review remain **PRESENT, UNVERIFIED**; see
+[the requirement-by-requirement audit](docs/TARGET-ABI-ACCEPTANCE.md).
+Accepted machine/class metadata is not proof of all calling conventions.
 
-**Status:** `[~]` — the symbol/source-line/type/signature milestone passes in
+**HISTORICAL baseline status:** `[~]` — the symbol/source-line/type/signature milestone passes in
 hosted CI for ET_EXEC, PIE, shared objects, and no-section inputs. Stack-local
 locations pass. Hosted run `40063017269` additionally proves scalar float/double
 aliases and bounded incoming-register prefixes; values after the proven
@@ -2542,7 +3055,16 @@ this documented profile.
 
 Tracking: [#69](https://github.com/zwilcox/GhidraDwarfForge/issues/69).
 
-**Status:** `[~]` — hosted real headless symbol export, structural validation,
+**Current status:** `[~]` — isolated O32/N32/N64 ABI classification and
+expanded scalar, wide, aggregate, stack and mixed-storage cases have local
+runtime evidence in both byte orders. FPXX/FP64A now has a positive FR=1 system
+emulator reference; production whole-pair aliases remain explicitly unavailable.
+The five-layout matrices, sectionless regressions, failure/cancellation checks
+and combined hosted acceptance are mapped in
+[the full audit](docs/TARGET-ABI-ACCEPTANCE.md). The combined gate and artifact
+review remain **PRESENT, UNVERIFIED**.
+
+**HISTORICAL baseline status:** `[~]` — hosted real headless symbol export, structural validation,
 and QEMU/GDB runtime breakpoints pass for MIPS32 big/little endian ET_EXEC,
 PIE, shared-object, and no-section-table inputs; `ptype`, stable register
 parameters, and stack locals pass. The alpha release validation includes both
@@ -2568,7 +3090,7 @@ all-five-target/both-GUI reviews and exact package audit pass; normal merge
 passes all twelve jobs and independent fresh artifact review.
 See [the bounded contract](docs/TRUNCATED-MEMORY-STORES.md).
 
-**CONFIRMED locally; hosted acceptance pending:** an explicit FP32 profile now
+**HISTORICAL local FP32 checkpoint:** an explicit FP32 profile now
 provides a strict positive compiler double-argument reference in both byte
 orders. Twelve Forge exports across exec/PIE and baseline/rebase/repeat retain
 correct scalar floats and honest paired-double omissions. FPXX still fails the
@@ -2612,7 +3134,15 @@ See `docs/MIPS-FP32-ORACLE.md`.
 
 Tracking: [#70](https://github.com/zwilcox/GhidraDwarfForge/issues/70).
 
-**Status:** `[~]` — the ARMv7 hard-float, little-endian ARM-state profile passes
+**Current status:** `[~]` — Thumb/interworking, mixed ARM/Thumb bodies,
+per-function base/VFP conventions, separate BE8 execution and expanded
+stack/HFA/aggregate storage have local runtime evidence. Positive values,
+clobber gaps, mode cues and omission controls are required. Combined hosted
+acceptance and uploaded-artifact review remain **PRESENT, UNVERIFIED**; see
+[the full audit](docs/TARGET-ABI-ACCEPTANCE.md). BE8 shared-loader support is not
+claimed.
+
+**HISTORICAL baseline status:** `[~]` — the ARMv7 hard-float, little-endian ARM-state profile passes
 the hosted producer, real headless exporter, structural-validator, and
 QEMU/GDB behavior matrix for ET_EXEC, PIE, shared objects, no-build-ID inputs,
 and program-header-only inputs. Thumb, big-endian ARM, and additional ABI or
@@ -2662,14 +3192,23 @@ See `docs/TERMINAL-RETURN-PREFIX.md` and `docs/VALIDATION.md`.
   PIE/shared load bias, and the changing stack location.
 - [x] ARM register mappings are isolated and covered by native-independent
   storage tests.
-- [ ] Thumb, big-endian ARM, and additional ARM ABI/storage profiles are
-  separately modeled and validated before any broader support claim.
+- [~] Thumb, BE8 and additional ARM ABI/storage profiles are separately
+  modeled and locally validated; the combined hosted gate and artifact review
+  remain required before expanding the accepted support claim.
 
 ## P2.3c Add bounded i386 target coverage
 
 Tracking: [#71](https://github.com/zwilcox/GhidraDwarfForge/issues/71).
 
-**Status:** `[~]` — a bounded Linux
+**Current status:** `[~]` — the accepted shared-library integration is
+preserved. Real libc-backed x87/SSE/vector/aggregate cases and additional
+conventions/ELF selection have local runtime and negative-control evidence
+across exec, sectionless, PIE and rebased PIE. Combined hosted acceptance and
+uploaded-artifact review remain **PRESENT, UNVERIFIED**; see
+[the full audit](docs/TARGET-ABI-ACCEPTANCE.md). Measured consumer limitations
+and unsupported compat32 stack storage remain explicit.
+
+**HISTORICAL baseline status:** `[~]` — a bounded Linux
 i386 integer/stack profile now uses isolated ELF and GPR tables. Fully stripped
 exec, sectionless ELF, PIE and rebased PIE pass eight exports, 1,440 debugger
 observations at every fixture instruction, strict-zero validation, twenty actual
@@ -2680,10 +3219,12 @@ floating/vector and broader ABI/host claims remain outside this checkpoint.
 - [x] Local isolated target/GPR model and producer baseline.
 - [x] Local real export/validator/GDB exec, sectionless, PIE and rebase profile.
 - [x] PR63 exact-head full hosted gate and independent package/runtime review.
-- [~] Shared-library exec/PIE drivers with Ghidra rebases: prior local review
-  passes; corrected-exporter rerun passes; exact-head hosted acceptance is pending.
-- [ ] Broader libc, floating/vector and host-specific profiles before expanding
-  the documented support claim.
+- [x] Shared-library exec/PIE drivers with Ghidra rebases: PR77 passed
+  exact-head run `40505333973` and independent artifact review, then merged as
+  `c779c0b93b3f90c8798f9f287cd72ff70002ec0b`. Combined regressions remain required.
+- [~] Libc, floating/vector and additional convention/target-ABI profiles have
+  local evidence; combined hosted acceptance and artifact review remain required
+  before expanding the documented support claim.
 
 ## P2.4 Validate Windows-hosted Ghidra
 

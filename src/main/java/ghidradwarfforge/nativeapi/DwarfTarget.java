@@ -24,6 +24,7 @@ import ghidradwarfforge.elf.FunctionAliasSymbols;
 import ghidradwarfforge.elf.MipsFunctionAliasSymbols;
 import ghidradwarfforge.elf.MipsFloatingCallPolicy;
 import ghidradwarfforge.elf.MipsAggregateCallPolicy;
+import ghidradwarfforge.elf.MipsWideCallPolicy;
 import ghidradwarfforge.types.ProgramTypeModel;
 import ghidradwarfforge.types.DebuggerCallRestrictions;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
@@ -44,14 +45,16 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
         "arm", "default", "mips", "default", "mipsel", "default");
     // Processor identities follow Ghidra 12.0.3's ELF .opinion and .ldefs files.
     // Language variants and compiler-spec IDs are not portable ABI identifiers.
-    private static final Map<Integer, TargetDescription> TARGETS = Map.of(
-        EM_386, new TargetDescription("i386", 4, "x86", null, "x86", false, "x86"),
-        EM_MIPS, new TargetDescription("MIPS32", 4, "mipsel", "mips", "mips", true, "MIPS"),
-        EM_ARM, new TargetDescription("ARM", 4, "arm", null, "arm", false, "ARM"),
-        EM_X86_64,
-            new TargetDescription("x86-64", 8, "x86_64", null, "x86_64", false, "x86"),
-        EM_AARCH64,
-            new TargetDescription("AArch64", 8, "aarch64", null, "arm64", false, "AARCH64"));
+    private static final Map<Integer, List<TargetDescription>> TARGETS = Map.of(
+        EM_386, List.of(new TargetDescription("i386", 4, "x86", null, "x86", false, "x86")),
+        EM_MIPS, List.of(
+            new TargetDescription("MIPS32", 4, "mipsel", "mips", "mips", true, "MIPS"),
+            new TargetDescription("MIPS64", 8, "mips64el", "mips64", "mips", true, "MIPS")),
+        EM_ARM, List.of(new TargetDescription("ARM", 4, "arm", "arm", "arm", true, "ARM")),
+        EM_X86_64, List.of(
+            new TargetDescription("x86-64", 8, "x86_64", null, "x86_64", false, "x86")),
+        EM_AARCH64, List.of(
+            new TargetDescription("AArch64", 8, "aarch64", null, "arm64", false, "AARCH64")));
 
     private record TargetDescription(String displayName, int addressBytes,
             String littleEndianName, String bigEndianName, String producerIsa,
@@ -86,19 +89,29 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
     }
 
     public static DwarfTarget fromElf(ElfImage elf) {
+        Arm32EndianProfile.requireSupportedEncoding(elf);
         int addressBytes = elf.is64Bit() ? 8 : 4;
         return fromMetadata(elf.machine(), addressBytes, elf.byteOrder());
+    }
+
+    /** A mixed-endian ELF can constrain instructions independently of data. */
+    public ByteOrder requiredInstructionByteOrder(ElfImage elf) {
+        if (!equals(fromElf(elf))) throw new IllegalArgumentException("instruction target disagrees with ELF");
+        return Arm32EndianProfile.instructionByteOrder(elf);
     }
 
     static DwarfTarget fromMetadata(int machine, int addressBytes, ByteOrder byteOrder) {
         if (byteOrder == null) {
             throw new IllegalArgumentException("ELF byte order is required");
         }
-        TargetDescription description = TARGETS.get(machine);
-        if (description == null) {
+        List<TargetDescription> descriptions = TARGETS.get(machine);
+        if (descriptions == null) {
             throw new IllegalArgumentException("unsupported ELF machine " + machine +
                 "; add an audited libdwarf target description before exporting");
         }
+        TargetDescription description = descriptions.stream()
+            .filter(candidate -> candidate.addressBytes() == addressBytes)
+            .findFirst().orElse(descriptions.getFirst());
         return description.create(addressBytes, byteOrder);
     }
 
@@ -129,17 +142,21 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
     /** Metadata compatibility is not a claim that all instructions or signatures are supported. */
     public String elfAbiCallRestriction(ElfImage image) {
         if (!equals(fromElf(image))) throw new IllegalArgumentException("call ABI target disagrees with ELF");
-        if (!name.equals("aarch64")) return "";
+        if (!name.equals("aarch64") && !name.equals("x86")) return "";
         byte[] header = image.headerBytes();
         int osAbi = Byte.toUnsignedInt(header[7]);
         int abiVersion = Byte.toUnsignedInt(header[8]);
         // AAELF64 2025Q4: processor flags are reserved and must be zero.
+        // The Intel386 psABI likewise defines no processor flags.
         // OSABI=0 denotes generic ELF, not proof of a particular operating system.
         // The tested consumer is Linux/System V; other platform/version choices
         // retain their metadata and recovered knowledge but do not establish calls.
         if ((image.type() != 2 && image.type() != 3) || image.flags() != 0 ||
                 (osAbi != 0 && osAbi != 3) || abiVersion != 0) {
-            return "AArch64 ELF metadata has no validated LP64 debugger call profile: type=" +
+            String restriction = name.equals("x86")
+                ? "i386 ELF metadata has no validated System V debugger call profile: type="
+                : "AArch64 ELF metadata has no validated LP64 debugger call profile: type=";
+            return restriction +
                 image.type() + ", flags=0x" + Long.toHexString(image.flags()) +
                 ", OSABI=" + osAbi + ", ABI-version=" + abiVersion;
         }
@@ -151,6 +168,12 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
             BooleanSupplier cancelled, Consumer<String> diagnostic) throws IOException {
         if (!equals(fromElf(image))) {
             throw new IllegalArgumentException("call ABI target disagrees with ELF");
+        }
+        if (MipsWideCallPolicy.isWideCandidate(image)) {
+            return MipsWideCallPolicy.apply(image, model, cancelled, diagnostic);
+        }
+        if (image.machine() == 40) {
+            return ghidradwarfforge.elf.Arm32CallPolicy.apply(image, model, cancelled, diagnostic);
         }
         return DebuggerCallRestrictions.applyAll(MipsAggregateCallPolicy.apply(image,
             MipsFloatingCallPolicy.apply(image, model, cancelled, diagnostic), cancelled, diagnostic),
@@ -192,7 +215,7 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
 
     /** Target-specific ELF symbol semantics stay outside generic DWARF/address handling. */
     public List<ElfLocalFunctionSymbol> planFunctionModeSymbols(ElfImage image,
-            List<ElfFunctionModeCue> cues, BooleanSupplier cancelled,
+            List<ElfFunctionModeCue> cues, List<FunctionSymbol> functions, BooleanSupplier cancelled,
             Consumer<String> diagnostic) throws IOException {
         if (cues.isEmpty()) {
             return List.of();
@@ -201,6 +224,9 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
             throw new IllegalArgumentException("function-mode target disagrees with ELF");
         }
         if (image.machine() == EM_ARM) {
+            if (image.type() == 3 || image.sections().isEmpty()) {
+                return Arm32ModeSymbols.planRecovered(image, cues, functions, cancelled, diagnostic);
+            }
             return Arm32ModeSymbols.plan(image, cues, cancelled, diagnostic);
         }
         diagnostic.accept("Omitted function-mode symbols: target " + name +
