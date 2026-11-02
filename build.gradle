@@ -214,6 +214,17 @@ tasks.register("ghidraTargetAgreementSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.GhidraTargetAgreementSmoke"
 }
 
+tasks.register("armHfaParameterAllocationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks computed ARM floating aggregate register members"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.ArmHfaParameterAllocationSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/arm-hfa-allocation/settings").absolutePath
+}
+
 tasks.register("upperAliasValueFlowSmoke", JavaExec) {
     group = "verification"
     description = "Checks full logical values in upper register aliases"

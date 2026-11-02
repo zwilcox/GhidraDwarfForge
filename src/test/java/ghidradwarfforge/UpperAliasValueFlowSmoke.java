@@ -99,6 +99,33 @@ public final class UpperAliasValueFlowSmoke {
                 var exported = GhidraVariableStorage.parameterPrefix(program, function, parameter, map, rejected, TaskMonitor.DUMMY);
                 require(at(exported, 36).available() == !shape.equals("reused"), "public handoff differs");
                 require(at(exported, 44).available() == shape.equals("neighbor"), "public terminal differs");
+                var pair = new ghidra.program.model.data.StructureDataType("FloatPair", 0,
+                    program.getDataTypeManager());
+                pair.add(FloatDataType.dataType, "first", null);
+                pair.add(FloatDataType.dataType, "second", null);
+                var first = program.getRegister("s0");
+                var second = program.getRegister("s1");
+                var joined = new ghidra.program.model.listing.VariableStorage(program,
+                    language.isBigEndian() ? first : second, language.isBigEndian() ? second : first);
+                function.replaceParameters(Function.FunctionUpdateType.CUSTOM_STORAGE, true,
+                    SourceType.USER_DEFINED, new ParameterImpl("pair", pair, joined, program, SourceType.USER_DEFINED));
+                var pieces = CompositeValueFlow.prove(program, function, function.getParameter(0), map, TaskMonitor.DUMMY);
+                require(!pieces.isEmpty(), "upper incoming composite rejected " + id + "/" + shape);
+                for (int offset = 0; offset <= 32; offset += 4) {
+                    require(at(pieces, offset) instanceof ghidradwarfforge.locations.VariableStorageModel.CompositeStorage,
+                        "whole incoming pair lost before write " + offset);
+                }
+                require(at(pieces, 36).available() == !shape.equals("reused"), "saved composite availability " + pieces);
+                require(at(pieces, 40).available() == shape.equals("neighbor") &&
+                    at(pieces, 44).available() == shape.equals("neighbor"),
+                    "released composite slot or surviving copy differs " + pieces);
+                if (shape.equals("neighbor")) {
+                    var joinedValue = (ghidradwarfforge.locations.VariableStorageModel.CompositeStorage) at(pieces, 44);
+                    require(joinedValue.pieces().get(0).storage() instanceof RegisterStorage backup &&
+                        backup.register().dwarfNumber() == 263 && backup.valueBitOffset() == 0,
+                        "completed s14 backup lost after frame release");
+                }
+
             }
             finally { program.endTransaction(tx, true); }
         }

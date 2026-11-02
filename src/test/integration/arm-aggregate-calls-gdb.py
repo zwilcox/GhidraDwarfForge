@@ -1,4 +1,4 @@
-"""Aggregate call/return acceptance; location-lifetime acceptance is separate."""
+"""Aggregate calls, typed entry values and instruction-level HFA prefixes."""
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -33,12 +33,29 @@ try:
         gdb.execute('continue')
         stop.delete()
         row = {'name': name, 'entry': raw_entry(name)}
+        parameter_kind = 'pair' if kind == 'split' else 'float3' if kind == 'exhaust' else kind
+        row['entryParameter'] = fields(gdb.parse_and_eval('value'), parameter_kind)
+        assert row['entryParameter'] == expected(kind), row
+        if name in ('vfp_float3', 'vfp_double2'):
+            row['hfaPrefix'] = []
+            entry_pc = integer('$pc')
+            target_pc = labels[name + '_observe']
+            assert 0 < target_pc - entry_pc < 1024 and (target_pc - entry_pc) % 4 == 0
+            for pc in range(entry_pc, target_pc + 1, 4):
+                assert integer('$pc') == pc, (name, pc, integer('$pc'))
+                observed = fields(gdb.parse_and_eval('value'), kind)
+                assert observed == expected(kind), (name, pc, observed)
+                row['hfaPrefix'].append({'pc': pc, 'value': observed})
+                if pc != target_pc:
+                    gdb.execute('stepi', to_string=True)
+
         # The observation address comes from the independently compiled fixture.
         # It identifies completed capture, without requiring synthetic source to
         # reproduce an original compiler line or inventing a variable location.
-        stop = gdb.Breakpoint('*' + hex(labels[name + '_observe']))
-        gdb.execute('continue')
-        stop.delete()
+        if integer('$pc') != labels[name + '_observe']:
+            stop = gdb.Breakpoint('*' + hex(labels[name + '_observe']))
+            gdb.execute('continue')
+            stop.delete()
         captured_kind = 'pair' if kind == 'split' else 'float3' if kind == 'exhaust' else kind
         row['captured'] = fields(gdb.parse_and_eval('seen_' + captured_kind), captured_kind)
         assert row['captured'] == expected(kind), row
@@ -85,7 +102,7 @@ try:
     result['exitCode'] = integer('$_exitcode')
     assert result['exitCode'] == 0
     result['status'] = 'PASS_AGGREGATE_CALLS'
-    result['scope'] = 'Call classification, raw transfers, captured arguments and typed returns; parameter location lifetimes remain separate'
+    result['scope'] = 'Call classification, raw transfers, captured arguments and typed returns; typed entry values and HFA prefix values; later aggregate lifetimes remain separate'
 except BaseException as error:
     result['status'] = 'FAIL'
     result['error'] = repr(error)

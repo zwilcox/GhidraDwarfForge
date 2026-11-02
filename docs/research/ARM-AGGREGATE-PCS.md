@@ -3,7 +3,11 @@
 **CONFIRMED subsequent call-classification progress:** the isolated policy now
 passes four local packaged call/return cases; see `../ARM-AGGREGATE-CALLS.md`.
 The blanket call restrictions observed below describe the retained v4 baseline.
-Its Q-register and saved-copy location gaps remain active implementation work.
+**CONFIRMED subsequent HFA storage progress:** `../ARM-HFA-STORAGE.md` now
+records locally passing logical HFA members and surviving copies through frame
+release. The Q-register omissions below describe the retained baseline, not the
+current candidate. Ordinary aggregate/mutable/layout compositions and hosted
+acceptance remain active work.
 
 **CONFIRMED compiler/consumer reference; exporter completion remains PLANNED.**
 This checkpoint advances the full #68–#71 scope in

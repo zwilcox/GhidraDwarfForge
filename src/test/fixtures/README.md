@@ -658,3 +658,9 @@ values and name/pointer injected calls. Observation labels follow argument
 capture so the compiler's stack copies have been established. Passing these
 references does not imply Forge support; current exporter omissions and the
 next implementation work are recorded in `docs/research/ARM-AGGREGATE-PCS.md`.
+
+`arm-hfa-lifetimes.c` keeps float/double aggregate parameters immutable while
+result-register writes overwrite their incoming physical storage. Its harness
+checks exact compiler instruction bytes, independent raw carriers, initialized
+compiler locations and Forge values through frame release in LE and BE8.
+See `docs/ARM-HFA-STORAGE.md` for acceptance and remaining scope.

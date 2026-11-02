@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local ARM HFA representation and lifetime correction:** the preceding
+package swaps BE8 two-float fields and loses a surviving LE aggregate after a
+result-register write. The candidate normalizes computed HFA members and uses
+shared exact upper-piece facts. Four aggregate cases pass 48 typed entries and
+176 prefix instructions; two immutable HFA cases pass all 56 Forge instruction
+observations through frame release. Model, validator and cross-target runtime
+regressions pass. See `docs/ARM-HFA-STORAGE.md`; hosted acceptance, remaining
+aggregate compositions and the full #68–#71 requirements remain open.
+
 **CONFIRMED local load-boundary oracle correction:** hosted run `41375799121`
 reached the sectionless Thumb boundary fixture but its expected inventory omitted
 two primary mode function symbols. The corrected test independently checks all

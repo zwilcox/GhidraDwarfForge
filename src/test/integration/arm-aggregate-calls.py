@@ -169,6 +169,10 @@ def main():
     runtime = json.loads((case / 'forge-gdb.json').read_text())
     assert runtime['status'] == 'PASS_AGGREGATE_CALLS' and runtime['exitCode'] == 0
     assert len(runtime['natural']) == 12 and sum('return' in row for row in runtime['natural']) == 9
+    assert all('entryParameter' in row for row in runtime['natural'])
+    prefixes = [row['hfaPrefix'] for row in runtime['natural'] if 'hfaPrefix' in row]
+    assert len(prefixes) == 2 and all(len(rows) > 2 for rows in prefixes)
+
     assert len(runtime['injected']) == 24 and sum('rejected' in row for row in runtime['injected']) == 6
     warnings = (case / 'forge.stderr').read_text().splitlines()
     for warning in warnings:
@@ -180,7 +184,8 @@ def main():
     assert not (case / 'forge.qemu.stderr').read_bytes()
     assert before == {path: digest(Path(path)) for path in before}
     write('result.json', {'status': 'PASS_AGGREGATE_CALLS', 'order': args.order, 'pcs': args.pcs,
-        'rawEntryTransfers': 12, 'capturedArguments': 12, 'typedReturns': 9, 'injectedCalls': 18,
+        'rawEntryTransfers': 12, 'typedEntryParameters': 12, 'hfaInstructionObservations': sum(map(len, prefixes)),
+        'capturedArguments': 12, 'typedReturns': 9, 'injectedCalls': 18,
         'unchangedStateRejections': 6, 'deterministic': True, 'protectedFilesUnchanged': True,
         'scope': 'Aggregate call classification; parameter location lifetimes and broader layouts remain separate'})
     print('PASS_AGGREGATE_CALLS', flush=True)
