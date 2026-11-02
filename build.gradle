@@ -1450,3 +1450,15 @@ tasks.register("i386ParameterAllocationSmoke", JavaExec) {
     systemProperty "application.settingsdir", file("build/tmp/i386-allocation/settings").absolutePath
     systemProperty "application.cachedir", file("build/tmp/i386-allocation/cache").absolutePath
 }
+
+tasks.register("floatingTypeLayoutSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks floating object sizes and meaningful storage widths across actual Ghidra models"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.FloatingTypeLayoutSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/floating-layout/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/floating-layout/cache").absolutePath
+}

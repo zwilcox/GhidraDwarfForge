@@ -96,11 +96,11 @@ records narrowly bounded housekeeping. Checker rules were not relaxed.
 
 ## Required follow-up
 
-**CONFIRMED unresolved:** the recovered type still reports `sizeof(long double)`
+**HISTORICAL at PR144:** the recovered type reports `sizeof(long double)`
 as 10, whereas compiler DWARF reports 12. `extended-size.json` and the two
 `*-extended-size.log` files reproduce this. The correction deliberately retains
-the Ghidra formal type; ABI padding, aggregate/array layout and debugger type
-size need an evidence-backed follow-up. The synthetic decompiler signature still
+the Ghidra formal type. The current [floating-layout follow-up](FLOATING-TYPE-LAYOUT.md)
+validates object size, array indexing and structure fields. The synthetic decompiler signature still
 contains Ghidra's erroneous pointer return/hidden argument. The exporter emits a
 diagnostic rather than silently presenting that source as corrected. Fixing the
 read-only decompiler view remains required before broad floating support claims.

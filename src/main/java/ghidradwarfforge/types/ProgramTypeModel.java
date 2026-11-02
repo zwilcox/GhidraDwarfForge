@@ -353,7 +353,7 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
             long declaredSize = location.kind() == VariableKind.PARAMETER
                 ? function.parameters().stream()
                     .filter(parameter -> parameter.name().equals(location.name()))
-                    .map(parameter -> types.byKey().get(parameter.type().key()).byteSize())
+                    .map(parameter -> types.valueByteSize(parameter.type()))
                     .findFirst().orElse(-1L)
                 : function.locals().stream()
                     .filter(local -> local.name().equals(location.name()))

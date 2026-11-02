@@ -1,11 +1,20 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local floating layout correction:** object size and meaningful value
+width are now distinct. Four i386 layouts and an x86-64 global-layout regression
+pass ten deterministic exports, compiler/Forge sizeof/stride/member/value checks,
+structural validators and six model suites. The previous package fails at the
+expected ten-byte i386 sizeof/stride. See `docs/FLOATING-TYPE-LAYOUT.md`.
+Synthetic decompiler signatures, the remaining original ABI rows, hosted
+acceptance and protected integration remain open; P2.3–P2.3c are not complete.
+
 **CONFIRMED local i386 allocation correction:** a spurious hidden result pointer
 shifted extended floating arguments in the pinned Ghidra model. The read-only
 correction passes four libc-backed exec/sectionless/PIE/rebase cases, eight
 deterministic exports, compiler/Forge entry and return checks, strict validators,
 nine model suites and the existing rebased integer regression. See `docs/I386-EXTENDED-RETURN.md`.
-Type padding/sizeof and synthetic decompiler signatures remain unresolved;
+HISTORICAL: that checkpoint left padding/sizeof and synthetic signatures unresolved;
+the current layout follow-up above fixes the selected sizeof/stride cases;
 vector/extra-convention references expose separate GDB limits. Hosted acceptance,
 protected integration and the full original P2.3–P2.3c requirements remain open.
 

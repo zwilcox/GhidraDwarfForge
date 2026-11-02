@@ -20,13 +20,17 @@ spec.loader.exec_module(support)
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
+    parser.add_argument('--target', choices=('i386', 'x86_64'), default='i386',
+        help='x86_64 is a global-layout and ordinary float/double regression only')
     parser.add_argument('--role', choices=('exec', 'sectionless', 'pie', 'pie-rebased'), default='exec')
     args = parser.parse_args()
+    if args.target == 'x86_64' and args.role != 'exec':
+        parser.error('the cross-target layout regression selects x86_64 exec')
     ghidra = args.ghidra.resolve(strict=True)
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
     root = repository / 'build/test-results/i386-extended-return'
     root.mkdir(parents=True, exist_ok=True)
-    case = Path(tempfile.mkdtemp(prefix=args.role + '.', dir=root))
+    case = Path(tempfile.mkdtemp(prefix=args.target + '-' + args.role + '.', dir=root))
     print(case, flush=True)
     commands = []
 
@@ -48,7 +52,8 @@ def main():
     before = {str(p): support.digest(p) for p in protected}
     reference, binary = case / 'profile.reference', case / 'profile.input'
     flags = ['-fno-pie', '-no-pie'] if args.role in ('exec', 'sectionless') else ['-fPIE', '-pie']
-    compiler = shlex.split(os.environ.get('I386_CC', 'gcc -m32'))
+    compiler = shlex.split(os.environ.get('I386_CC', 'gcc -m32') if args.target == 'i386'
+        else os.environ.get('X86_64_CC', 'gcc'))
     run('compile', [*compiler, '-O1', '-g', '-gdwarf-5', '-fno-builtin', '-msse2', '-mfpmath=sse',
         '-Wall', '-Wextra', '-Werror', *flags, '-Wl,--build-id=sha1', fixture, '-o', reference])
     run('compiler-runtime', [reference])
@@ -65,16 +70,17 @@ def main():
     before.update({str(binary): support.digest(binary), str(reference): support.digest(reference)})
     write('protected-before.json', before)
     run('symbols', ['nm', '-n', reference])
-    names = ('scalar_float', 'scalar_double', 'scalar_extended')
+    names = ('scalar_float', 'scalar_double', 'scalar_extended',
+        'extended_global', 'extended_array', 'extended_record')
     symbols = {}
     for line in (case / 'symbols.log').read_text().splitlines():
         fields = line.split()
         if len(fields) == 3 and fields[2] in names:
             assert fields[2] not in symbols
             symbols[fields[2]] = int(fields[0], 16)
-    assert len(symbols) == 3
+    assert len(symbols) == 6
     (case / 'labels.txt').write_text(''.join(name + ' ' + hex(symbols[name]) + '\n' for name in names))
-    os.environ.update(I386_CASE=str(case), I386_VARIANT='compiler')
+    os.environ.update(I386_CASE=str(case), I386_VARIANT='compiler', I386_TARGET=args.target)
     run('compiler-gdb', ['gdb', '-q', '-nx', '-batch', '-x', source / 'i386-extended-return-gdb.py'])
     assert json.loads((case / 'compiler-gdb.json').read_text())['status'] == 'PASS'
     project = case / 'project'
@@ -98,7 +104,8 @@ def main():
             '-postScript', 'GhidraDwarfForge.java', '--packaged-natives', '--output=' + str(case / 'profile.dbg')], timeout=240)
         log = (case / (phase + '.log')).read_text()
         assert 'GhidraDwarfForge symbol export PASS' in log
-        assert 'Corrected computed extended floating-return parameter allocation for scalar_extended' in log
+        if args.target == 'i386':
+            assert 'Corrected computed extended floating-return parameter allocation for scalar_extended' in log
         assert json.loads((case / (phase + '.json')).read_text()) == original_model
         current = [support.digest(case / name) for name in ('profile.dbg', 'profile.dbg.c')]
         if hashes is not None:
@@ -112,14 +119,15 @@ def main():
         run(variant + '-llvm', ['llvm-dwarfdump', '--verify', artifact])
         run(variant + '-strict', ['python3', source / 'check-dwarfdump.py', artifact,
             case / (variant + '-strict.txt'),
-            *(['--original', binary] if variant == 'forge' else []),
+            '--original', case / 'profile.sectioned' if variant == 'compiler' and args.role == 'sectionless' else binary,
             *(['--frame-reference', case / 'profile.sectioned'] if args.role == 'sectionless' and variant == 'forge' else [])])
     info = (case / 'forge-info.log').read_text()
-    assert '__return_storage_ptr__' not in info.split('scalar_extended', 1)[1].split('DW_TAG_subprogram', 1)[0]
+    if args.target == 'i386':
+        assert '__return_storage_ptr__' not in info.split('scalar_extended', 1)[1].split('DW_TAG_subprogram', 1)[0]
     os.environ['I386_VARIANT'] = 'forge'
     run('forge-gdb', ['gdb', '-q', '-nx', '-batch', '-x', source / 'i386-extended-return-gdb.py'])
     runtime = json.loads((case / 'forge-gdb.json').read_text())
-    assert runtime['status'] == 'PASS' and len(runtime['rows']) == 3
+    assert runtime['status'] == 'PASS' and len(runtime['rows']) == (3 if args.target == 'i386' else 2)
     assert all(support.digest(Path(p)) == value for p, value in before.items())
     project_after = {str(p.relative_to(project)): support.digest(p) for p in project.rglob('*') if p.is_file()}
     write('project-after.json', project_after)
@@ -128,7 +136,7 @@ def main():
     # Ghidra removes these index/journal backups on the first read-only reopen.
     # Compare all persistent program files and record the exact housekeeping changes.
     assert set(changed) <= {'I386.rep/idata/~index.bak', 'I386.rep/idata/~journal.bak'}, changed
-    write('result.json', {'status': 'PASS', 'role': args.role, 'artifactHashes': hashes,
+    write('result.json', {'status': 'PASS', 'target': args.target, 'role': args.role, 'artifactHashes': hashes,
         'runtime': runtime, 'persistentProgramUnchanged': True, 'projectHousekeepingChanges': changed,
         'originalsUnchanged': True})
 

@@ -6,8 +6,12 @@ import gdb
 
 case = Path(os.environ['I386_CASE'])
 variant = os.environ['I386_VARIANT']
+wide = os.environ.get('I386_TARGET', 'i386') == 'x86_64'
 expected = [('scalar_float', 1.25, 2.5, 4.25), ('scalar_double', 8.5, 2.25, 6.5),
     ('scalar_extended', 1.25, 2.5, 3.875)]
+if wide:
+    # Cross-target check covers padded global types, not extended-return allocation.
+    expected = expected[:2]
 result = {'status': 'RUNNING', 'variant': variant, 'rows': []}
 try:
     for command in ('set pagination off', 'set confirm off', 'set debuginfod enabled off', 'set auto-solib-add off'):
@@ -25,6 +29,24 @@ try:
         row = {'function': name, 'arguments': actual, 'expectedArguments': [a, b]}
         result['rows'].append(row)
         assert actual == [a, b], row
+        expected_size = {'scalar_float': 4, 'scalar_double': 8, 'scalar_extended': 12}[name]
+        row['argumentSize'] = int(gdb.parse_and_eval('sizeof(a)'))
+        assert row['argumentSize'] == expected_size, row
+        layout = {
+            'sizeof(extended_global)': 16 if wide else 12,
+            'sizeof(extended_array)': 48 if wide else 36,
+            '(char *)&extended_array[1] - (char *)&extended_array[0]': 16 if wide else 12,
+            'sizeof(extended_record)': 48 if wide else 20,
+            '(char *)&extended_record.value - (char *)&extended_record': 16 if wide else 4,
+            '(char *)&extended_record.tail - (char *)&extended_record': 32 if wide else 16,
+            'extended_record.tag': 17, 'extended_record.tail': -23,
+        }
+        row['layout'] = {expr: int(gdb.parse_and_eval(expr)) for expr in layout}
+        assert row['layout'] == layout, row
+        values = {'extended_global': 6.25, 'extended_array[0]': 1.25,
+            'extended_array[1]': 2.5, 'extended_array[2]': -4.0, 'extended_record.value': 8.75}
+        row['floatingObjects'] = {expr: float(gdb.parse_and_eval(expr)) for expr in values}
+        assert row['floatingObjects'] == values, row
         finish = gdb.FinishBreakpoint(gdb.newest_frame(), internal=True)
         gdb.execute('continue')
         row['returned'] = float(finish.return_value)

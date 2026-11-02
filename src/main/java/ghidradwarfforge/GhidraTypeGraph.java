@@ -866,7 +866,9 @@ public final class GhidraTypeGraph {
                     ? BaseEncoding.SIGNED : BaseEncoding.UNSIGNED);
             }
             if (type instanceof AbstractFloatDataType) {
-                return new BaseType(key, name, positiveSize(type), BaseEncoding.FLOAT);
+                // Ghidra distinguishes encoded floating payload from compiler
+                // sizeof/array stride. DW_AT_byte_size describes the latter.
+                return new BaseType(key, name, Math.max(1, type.getAlignedLength()), BaseEncoding.FLOAT, positiveSize(type));
             }
             if (type instanceof Pointer pointer) {
                 return new IndirectionType(key, name, positiveSize(type),
@@ -990,7 +992,12 @@ public final class GhidraTypeGraph {
         }
 
         private static long nonNegativeSize(DataType type) {
-            return Math.max(0, type.getLength());
+            DataType base = type;
+            var seen = java.util.Collections.newSetFromMap(new IdentityHashMap<DataType, Boolean>());
+            while (base instanceof TypeDef alias && seen.add(base) && seen.size() <= 64) {
+                base = alias.getBaseDataType();
+            }
+            return Math.max(0, base instanceof AbstractFloatDataType ? type.getAlignedLength() : type.getLength());
         }
     }
 }
