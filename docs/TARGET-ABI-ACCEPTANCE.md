@@ -36,6 +36,27 @@ they are not described as zero-warning results. The original damaged compiler
 logs remain available alongside fresh complete reports for unchanged artifacts.
 The combined hosted checks still control final acceptance.
 
+**CONFIRMED additional retained-report correction:** the full AArch64 artifact
+audit from run `41499111462` found the same collision in
+`namespace-globals-native.py`, affecting eight reports. Its driver now writes
+`<variant>-strict-driver.log`, leaving `<variant>-strict.log` intact. Fresh
+packaged x86-64/AArch64 runs pass all sixteen variants, independent cold GDB
+queries and ordinary runtime comparisons. Eight unchanged hosted sidecars pass
+fresh strict validation in a separate review directory; the overwritten logs
+are preserved as failed evidence, not counted as complete reports.
+
+Each target lane now runs `retained-validator-reports.py` after the integration
+harnesses. It requires every passing checker receipt to retain a complete raw
+report with matching completion/error totals and empty stderr. Intentionally
+failed negative receipts are counted separately, never promoted to passes.
+`retained-validator-reports-test.py` uses a real completed report to reject
+empty, wrapper-overwritten, truncated, missing and receipt-mismatched copies.
+The actual namespace runner also reproduces the old collision and passes with
+separate paths. This guard checks evidence retention; individual fixtures still
+prove artifact identity, inherited-diagnostic provenance and debugger behavior.
+Exporter/native bytes are unchanged. The corrected commit's full hosted gate,
+remaining uploaded-artifact review and protected integration remain required.
+
 ## Original requirements and evidence
 
 All paths in the test column are beneath `src/test/integration/`. The workflow

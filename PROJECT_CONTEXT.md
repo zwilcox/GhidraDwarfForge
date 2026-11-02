@@ -1,5 +1,16 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED namespace validator-retention follow-up:** the complete uploaded
+AArch64 report audit found the same driver/raw-log collision in the isolated
+namespace/global harness. Its eight variants now use separate driver logs.
+Fresh packaged x86-64 and AArch64 runs pass all sixteen variants, cold GDB
+lookups and ordinary runtime comparisons; eight retained hosted sidecars also
+pass fresh strict checks. A final target-lane guard now rechecks every passing
+receipt against its complete raw report after all harnesses finish. Real-report
+controls reject empty, wrapper-overwritten, truncated, missing and
+receipt-mismatched evidence. Exporter/native bytes are unchanged. The corrected
+commit still requires the full hosted gate; see `docs/TARGET-ABI-ACCEPTANCE.md`.
+
 **CONFIRMED validator-evidence correction:** independent AArch64 review found
 five harnesses capturing checker stdout into the checker's own raw report path.
 The checker completed its validation, but the wrapper then overwrote the report

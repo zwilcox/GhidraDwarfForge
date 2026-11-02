@@ -1,5 +1,13 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED namespace validator-retention follow-up:** the independent full
+AArch64 raw-report audit found one additional harness collision affecting eight
+namespace/global variants. Separate driver logs pass fresh packaged x86-64 and
+AArch64 checks, and a new final target-lane guard rejects damaged reports after
+the harnesses return. Five real-report corruption controls pass. Production
+bytes are unchanged; corrected exact-head CI and final integration remain open.
+See `docs/TARGET-ABI-ACCEPTANCE.md`.
+
 **CONFIRMED validator-evidence correction:** five integration harnesses now
 keep checker stdout separate from raw validator reports. Real-validator
 controls reproduce the old collisions and verify complete corrected reports.

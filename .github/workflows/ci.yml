@@ -2070,6 +2070,12 @@ jobs:
             FORGE_REPORT_MANIFEST="$PWD/build/test-results/report-handoff/$TARGET.json" \
             src/test/integration/build-id-discovery.sh "$TARGET"
 
+      - name: Verify complete retained validator reports
+        run: |
+          python3 src/test/integration/retained-validator-reports-test.py build/test-results
+          python3 src/test/integration/retained-validator-reports.py build/test-results \
+            --output build/test-results/retained-validator-reports.json
+
       - name: Retain bounded primary fixture diagnostics
         if: always()
         env:
