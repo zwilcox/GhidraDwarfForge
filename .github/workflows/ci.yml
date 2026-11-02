@@ -1855,7 +1855,11 @@ jobs:
 
       - name: ARM incoming register and stack pieces
         if: matrix.target == 'arm32'
-        run: src/test/integration/mixed-incoming-prefix-export.sh "$GHIDRA_INSTALL_DIR"
+        run: |
+          src/test/integration/mixed-incoming-prefix-export.sh "$GHIDRA_INSTALL_DIR"
+          cases=(build/test-results/mixed-incoming-prefix/run.*/acceptance.json)
+          test "${#cases[@]}" -eq 1
+          python3 src/test/integration/mixed-incoming-prefix-controls.py "$(dirname "${cases[0]}")"
 
       - name: Explicit MIPS FP32 reference, register pieces, and whole aliases
         if: matrix.target == 'mips32be' || matrix.target == 'mips32le'

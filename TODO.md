@@ -1,5 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local ARM incoming-oracle correction:** the PR136 hosted failure
+was an obsolete first-store unavailability expectation. Twelve fresh exports
+pass the independently audited register/spill/reload contract at all ten
+instructions: 140 compiler/Forge observations and 48 required unavailable
+pairs. Six early-gap, late-gap and wrong-carrier controls reject at exact PCs.
+See `docs/MIXED-INCOMING-PREFIX.md`. Production sources are unchanged;
+fresh hosted acceptance, protected integration and the complete original
+P2.3–P2.3c requirements remain open.
+
 **CONFIRMED local ARM context/conflict controls:** twenty controls across ten
 exec/PIE/shared, ordinary/rebased and sectionless layouts pass eighty
 deterministic exports and 390 exact GDB instruction observations. Ten baseline

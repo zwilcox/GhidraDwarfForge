@@ -21,7 +21,9 @@ import sys
 repo, ghidra, output = map(Path, sys.argv[1:])
 files = [repo / name for name in ('src/test/fixtures/mixed-incoming-prefix.c',
     'src/test/integration/mixed-incoming-prefix-export.sh', 'src/test/integration/mixed-incoming-prefix-gdb.py',
-    'src/test/integration/mixed-incoming-prefix-check.py', 'src/test/integration/qemu-socket.sh',
+    'src/test/integration/mixed-incoming-prefix-check.py', 'src/test/integration/mixed_incoming_contract.py',
+    'src/test/integration/dynamic-parameter-storage-check.py',
+    'src/test/integration/qemu-socket.sh',
     'src/test/integration/elf-layout-gdb-oracle.sh', 'src/test/integration/check-dwarfdump.py',
     'src/test/integration/ghidra_scripts/RebaseFixtureProgram.java',
     'src/test/integration/ghidra_scripts/PrepareMixedIncomingPrefix.java')]

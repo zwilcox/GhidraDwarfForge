@@ -522,6 +522,6 @@ Retained failures establish why the final contracts differ from the pilots:
 
 A separate hosted review found PR136's old mixed-incoming-prefix oracle still
 expects total unavailability at its first store. Its sidecar instead contains
-longer register/stack locations. This requires raw carrier/value verification
-before revising the oracle; these context controls do not establish that
-separate regression's correctness or clear the integration gate.
+longer register/stack locations. The subsequent raw carrier/value audit and corrected regression are documented
+in `MIXED-INCOMING-PREFIX.md`; its local acceptance does not replace the
+required fresh hosted integration gate.
