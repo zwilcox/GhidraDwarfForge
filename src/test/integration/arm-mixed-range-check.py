@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Independent raw DWARF ranges and source-hole checks for the split fixture."""
+import argparse
 import importlib.util
 import json
 from pathlib import Path
@@ -43,7 +44,7 @@ def check_ranges(raw, offset, start):
     return ranges
 
 
-def check_lines(text, start):
+def check_lines(text, start, entry_only=False):
     rows = []
     for line in text.splitlines():
         match = re.match(r'^\S+\s+(\d+|-)\s+(0x[0-9a-f]+)\s', line)
@@ -53,11 +54,14 @@ def check_lines(text, start):
         if 0 <= offset < 52:
             assert offset in (0, 8, 12, 16, 20, 24, 26, 28, 30, 32, 36, 40, 44), (offset, line)
             rows.append({'offset': offset, 'line': int(match[1])})
-    assert rows and any(row['offset'] == 0 for row in rows) and any(row['offset'] >= 8 for row in rows)
+    if entry_only:
+        assert len(rows) == 1 and rows[0]['offset'] == 0, rows
+    else:
+        assert rows and any(row['offset'] == 0 for row in rows) and any(row['offset'] >= 8 for row in rows)
     return rows
 
 
-def main(case):
+def main(case, entry_only=False):
     labels = json.loads((case / 'labels.json').read_text())
     assert labels['split']
     start = labels['start']
@@ -75,7 +79,7 @@ def main(case):
     offset = range_offset(function['attrs']['DW_AT_ranges'])
     raw = elf.section(elf.elf(artifact), '.debug_rnglists')['data']
     ranges = check_ranges(raw, offset, start)
-    rows = check_lines(texts['decodedline'], start)
+    rows = check_lines(texts['decodedline'], start, entry_only)
     rejected = []
     for name, at, value in (('cover-data-hole', offset + 10, start + 4),
             ('drop-entry-instruction', offset + 1, start + 1),
@@ -88,16 +92,20 @@ def main(case):
             rejected.append(name)
         else:
             raise AssertionError('range oracle accepted corruption: ' + name)
-    for at in (4, 5, 6, 7, 48, 49, 50, 51):
+    for at in ((4, 5, 6, 7, 48, 49, 50, 51) + ((8, 12, 16, 24, 44) if entry_only else ())):
         try:
-            check_lines(texts['decodedline'] + f'\ncurated.dbg.c 82 0x{start + at:x} x\n', start)
+            check_lines(texts['decodedline'] + f'\ncurated.dbg.c 82 0x{start + at:x} x\n', start, entry_only)
         except AssertionError:
             rejected.append('executable-data-byte-' + str(at))
         else:
             raise AssertionError('line oracle accepted data byte')
     (case / 'split-dwarf-ranges.json').write_text(json.dumps({'status': 'PASS', 'rangeListOffset': offset,
-        'ranges': ranges, 'rows': rows, 'rejectedCorruptions': rejected}, indent=4) + '\n')
+        'ranges': ranges, 'rows': rows, 'entryOnly': entry_only, 'rejectedCorruptions': rejected}, indent=4) + '\n')
 
 
 if __name__ == '__main__':
-    main(Path(sys.argv[1]).resolve())
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('case', type=Path)
+    parser.add_argument('--entry-only', action='store_true', help='Require exactly the entry row after the context-edit hole truncates decompilation')
+    args = parser.parse_args()
+    main(args.case.resolve(), args.entry_only)

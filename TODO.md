@@ -1,13 +1,22 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local ARM context/conflict controls:** twenty controls across ten
+exec/PIE/shared, ordinary/rebased and sectionless layouts pass eighty
+deterministic exports and 390 exact GDB instruction observations. Ten baseline
+runs add 980 observations; two failure/cancellation/live/omission compositions
+add 274. Tests prove Ghidra context-write rejection, conservative omission
+during supported edits, byte-identical restoration and inherited-conflict
+preservation. See `docs/ARM-MIXED-MODE-MAPPINGS.md`. Production code is
+unchanged. Exact-head hosted acceptance, protected integration and the full
+original P2.3–P2.3c requirements remain open.
+
 **CONFIRMED local ARM shared aggregate composition:** a real libc-backed
 loader/driver executes the fourteen-function LE DSO in ordinary/rebased forms.
 Exact GOT relocation, raw carrier and typed checks pass 660 stops per variant,
 16 deterministic failure exports and two cancellations; sixteen deliberate
 shared corruptions reject. Three exec/PIE regressions and twelve PIE corruption
 controls pass with the unchanged production package. See
-`docs/ARM-SHARED-AGGREGATES.md`. Hosted acceptance, mixed-body runtime conflict/
-context controls, protected integration and all remaining original ABI rows
+`docs/ARM-SHARED-AGGREGATES.md`. Hosted acceptance, protected integration and all remaining original ABI rows
 remain open; the full P2.3–P2.3c goal is unchanged.
 
 **CONFIRMED local ARM aggregate PIE composition:** all eight LE/BE8

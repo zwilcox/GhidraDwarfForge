@@ -104,6 +104,7 @@ def main():
     parser.add_argument("--with-controls", action="store_true")
     parser.add_argument("--with-live", action="store_true")
     parser.add_argument("--with-omissions", action="store_true")
+    parser.add_argument("--with-context-controls", action="store_true")
     parser.add_argument("--sectionless", action="store_true")
     parser.add_argument("--split", action="store_true")
     parser.add_argument("--retain-symbols", action="store_true")
@@ -120,6 +121,8 @@ def main():
         parser.error("inherited symbols require a sectioned production fixture")
     if args.with_omissions and (not args.production or not args.split or args.retain_symbols):
         parser.error("omission controls require a stripped split production fixture")
+    if args.with_context_controls and (not args.production or not args.split or args.retain_symbols):
+        parser.error("context/conflict controls require a stripped split production fixture")
     expected = fixture(args.split)
     ghidra = args.ghidra.resolve(strict=True)
     root = repository / "build/test-results/arm-mixed-reference"
@@ -145,6 +148,8 @@ def main():
         source / "arm-mixed-range-check.py", source / "dynamic-parameter-storage-check.py",
         source / "retained-function-aliases-export.py",
         source / "arm-mixed-omission-controls.py", source / "ghidra_scripts/ExportArmMixedUnknownData.java",
+        source / "arm-mixed-context-controls.py", source / "ghidra_scripts/ExportArmMixedContext.java",
+        source / "ghidra_scripts/PrepareArmMixedConflict.java",
         source / "arm-mixed-live-export.py", source / "ghidra_scripts/RepeatLiveAbiExport.java",
         source / "arm-thumb-mode-check.py", source / "arm-mixed-mode-runtime.sh", source / "qemu-socket.sh",
         source / "ghidra_scripts/PrepareArmMixedBody.java",
@@ -314,6 +319,11 @@ def main():
         run('omissions', ['python3', source / 'arm-mixed-omission-controls.py', ghidra, case])
         omission, = case.glob('omissions.*/result.json')
         assert json.loads(omission.read_text())['status'] == 'PASS'
+    if args.with_context_controls:
+        run('context-controls', ['python3', source / 'arm-mixed-context-controls.py', ghidra, case,
+            *(['--control', 'context'] if args.sectionless else [])])
+        context, = case.glob('context-controls.*/result.json')
+        assert json.loads(context.read_text())['status'] == 'PASS'
     print("arm-mixed-mode-reference=" + ("PASS_PRODUCTION_BASIC" if args.production else "PASS_RESEARCH_REPRODUCTION") + " " + str(case))
 
 

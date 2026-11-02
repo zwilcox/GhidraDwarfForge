@@ -347,10 +347,10 @@ with control/live/omission composition also passes at
 
 ## Remaining acceptance
 
-Inherited mapping preservation and unknown-data omission now have runtime
-evidence. Additional conflict/context-change controls remain model-only.
-Sectionless shared-library composition is covered by the additional matrix
-above; its exact-head hosted acceptance remains required.
+Inherited mapping preservation and unknown-data omission have runtime evidence.
+The context/conflict controls below extend that evidence; their hosted
+acceptance and protected integration remain required. Sectionless shared-library
+composition is covered by the additional matrix above.
 
 Unknown gaps intentionally prevent complete section mapping. A successful
 homogeneous-function mode hint elsewhere does not establish mixed-body coverage.
@@ -405,3 +405,123 @@ are under `build/test-results/arm-alias-regression-runtime-v2` and
 `build/arm-mixed-modes/alias-regression-matrix-v2.json`. The same preparation
 assumption also failed PR130's run `41355781605`; its harness correction is
 applied there as well. These local fixes still require fresh hosted gates.
+
+
+## Current-context edits and inherited conflicts
+
+The production exporter and native package are unchanged. New tests use real
+headless Ghidra sessions and the ordinary exporter, then run GNU, LLVM and the
+pinned strict validator plus QEMU/GDB. These are deliberately inconsistent
+analyst/ELF cases, not newly supported executable instruction modes.
+
+The pinned Ghidra 12.0.3 source (`ProgramRegisterContextDB.checkContextWrite`
+and `CodeManager.checkContextWrite`) prohibits changing processor context over
+an existing instruction. `ExportArmMixedContext.java` proves that rejection
+leaves the instruction and TMode intact. It then uses the supported editing
+sequence: clear the four-byte ARM instruction at split-body offset 12, set its
+four bytes to Thumb context, and leave them undecoded. The exporter must omit
+complete allocation mappings with the exact unknown-bytes diagnostic. It must
+not treat context alone as a decoded instruction or unknown bytes as data.
+
+The decompiler reports truncated control flow for this hole. The raw DWARF
+oracle still requires exactly the two original function ranges, but now requires
+exactly one source row at the intact entry. It rejects additional executable
+rows in the incomplete second range, as well as rows in either literal pool.
+This explicit `--entry-only` contract does not relax the ordinary range/line
+oracle, which continues to require rows in both code ranges. The parameter's
+location remains unavailable under the existing immutable-incoming policy.
+
+Restoring ARM context and decoding the original instruction must produce
+byte-identical sidecar and source output at the same output path. Both the
+omitted and restored artifacts are retained and independently validated. The
+omitted sidecar executes all thirteen expected instructions with the exact raw
+values, bytes and CPSR mode bits, then fails specifically on static instruction
+widths. Restored output must also recover the correct static decoding.
+
+The conflict controls create a separate owned ELF, changing only one
+non-allocated static symbol-table field. Every PT_LOAD byte must remain
+identical. One control changes the Thumb mapping name at offset 24 to ARM; the
+other changes the function entry's ARM/Thumb tag. Dynamic symbol records are
+preserved because changing them can alter real loader calls. The actual changed
+file is freshly imported, preserving the exporter’s executable identity guard.
+A separate script verifies every source-known instruction byte, explicitly
+curates the intended decode modes, then invokes the usual body preparation
+checks. This models analyst corrections that disagree with inherited metadata.
+
+Every inherited symbol/string byte must survive export. No new allocation
+mapping may override the conflict. The mapping case requires the exact
+inherited-mapping diagnostic and a static-width failure after all thirteen
+runtime observations and normal exit. The function-tag case retains valid
+mapping intervals, so GDB's static decoding and execution must pass. In shared
+libraries, the unchanged dynamic tag and altered static tag conflict with one
+another; the exporter must instead report the exact original-inventory conflict.
+None of these outcomes is a blanket claim that arbitrary contradictory debug
+metadata is usable.
+
+The stored-prototype/current-context disagreement model tests remain useful.
+Normal Ghidra editing cannot create that stale decoded state: the end-to-end
+control tests the actual rejection and clear/change/restore sequence rather
+than bypassing context locking through reflection or a proxy.
+
+The CI split-body matrix invokes these controls for exec, PIE, rebased PIE,
+shared and rebased shared layouts. Each sectionless counterpart runs the real
+context-edit/restore control; it has no inherited static table to corrupt.
+Existing saved/live-session, failure/cancellation, data-omission and source
+stepping gates remain enabled. Exact-head hosted acceptance is still required.
+
+
+### Local acceptance (2026-11-02)
+
+All five sectioned layouts pass the context, mapping and function-tag controls;
+all five sectionless layouts pass context editing/restoration. Twenty controls
+produce eighty deterministic exports and 390 exact instruction observations.
+Ten baseline runs pass 980 compiler/Forge observations, including named and
+address breakpoints, `next`, `step`, function-pointer calls and measured load
+bias. The non-PIE and rebased shared cases additionally pass four native-failure
+exports, two cancellations, four repeated live exports and the existing two
+unknown-data controls per layout, adding 274 debugger observations.
+
+The independently reviewed receipt is
+`build/arm-mixed-context/matrix.review.json`, SHA-256
+`95f4443b4838e23135c2a7e2b4274a7b5b478e23d2fa73a0db1343184c1fb091`.
+All protected files and all 103 production source hashes were rechecked. The
+actual installed JAR remains
+`c3eb4886ebb1d82e1d34131e27d323e80132b6e8c44a50ac4909e83e28650ade`.
+Python compilation, workflow lint and whitespace checks pass. No native or
+production change required a new extension build; the real installed exporter
+was used throughout. Hosted acceptance is not inferred from these local tests.
+
+Reproduce against the same packaged Ghidra baseline and matching ARM tools:
+
+```bash
+python3 src/test/integration/arm-mixed-mode-reference.py "$GHIDRA_INSTALL_DIR" \
+    --production --split --role shared-rebased --with-context-controls \
+    --with-controls --with-live --with-omissions
+```
+
+Repeat for `exec`, `pie`, `pie-rebased` and `shared`, and add `--sectionless` for
+the five corresponding context-only cases. The driver selects the applicable
+controls automatically. GNU/LLVM and the pinned strict checker are required;
+`DWARFDUMP` must point to the seven-correction validation bundle described in
+`support/validation/README.md`.
+
+Retained failures establish why the final contracts differ from the pilots:
+
+- The ordinary line oracle correctly rejected the truncated decompilation;
+  the new entry-only oracle additionally forbids fabricated second-range rows.
+- Pointing a copied project at a different ELF correctly failed its SHA-256
+  identity guard. Conflict inputs now get their own genuine fresh imports.
+- Incorrect inherited modes misled initial analysis. Explicit source-byte-
+  checked analyst curation supplies the independently known mode evidence.
+- A parent process's actively written log was accidentally included in a
+  preservation snapshot. The final inventory names the immutable baseline
+  inputs, artifacts, receipt, compiler oracle and saved program explicitly.
+- Altering a shared dynamic function tag changed loader behavior. The final
+  metadata conflict touches only the non-allocated static table and proves
+  every loaded byte unchanged. The failed dynamic-tag experiment is retained.
+
+A separate hosted review found PR136's old mixed-incoming-prefix oracle still
+expects total unavailability at its first store. Its sidecar instead contains
+longer register/stack locations. This requires raw carrier/value verification
+before revising the oracle; these context controls do not establish that
+separate regression's correctness or clear the integration gate.
