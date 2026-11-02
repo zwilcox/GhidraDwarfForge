@@ -1,5 +1,14 @@
 # P2.3 through P2.3c completion plan
 
+**CONFIRMED local ARM HFA representation and lifetime correction:** the preceding
+package swaps BE8 two-float fields and loses a surviving LE aggregate after a
+result-register write. The candidate normalizes computed HFA members and uses
+shared exact upper-piece facts. Four aggregate cases pass 48 typed entries and
+176 prefix instructions; two immutable HFA cases pass all 56 Forge instruction
+observations through frame release. Model, validator and cross-target runtime
+regressions pass. See `ARM-HFA-STORAGE.md`; hosted acceptance, remaining
+aggregate compositions and the full #68–#71 requirements remain open.
+
 **CONFIRMED local ARM aggregate call classification:** four packaged LE/BE8
 base/VFP cases now pass raw transfers, captured values, 36 typed returns,
 72 injected calls and 24 unchanged-state rejections. Ordinary mixed structures

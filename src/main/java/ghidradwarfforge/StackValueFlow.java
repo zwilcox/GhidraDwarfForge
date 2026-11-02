@@ -298,8 +298,9 @@ final class StackValueFlow {
         state.localOffset = null;
         if (incoming.isRegister()) {
             Register register = exactRegister(program, incoming);
-            if (register == null || register.getLeastSignificantBitInBaseRegister() != 0 ||
-                    register.getBaseRegister() == state.pointer) return null;
+            // A complete logical piece can be an upper physical alias, just
+            // like a scalar parameter. Exact varnode overlap controls kills.
+            if (register == null || register.getBaseRegister() == state.pointer) return null;
             state.facts.put(incoming, VALUE);
         }
         else if (incoming.getAddress().isStackAddress()) state.slots.put(incoming.getOffset(), true);

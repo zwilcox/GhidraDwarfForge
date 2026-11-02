@@ -42,6 +42,7 @@ expected_sources=(
     aggregate-return-calls.c
     arm-aggregate-pcs.c
     arm-dynamic-pcs.c
+    arm-hfa-lifetimes.c
     arm-mixed-body-driver.c
     arm-mixed-body.S
     arm-mixed-function-aliases.cpp
