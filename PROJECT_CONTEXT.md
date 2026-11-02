@@ -1,5 +1,11 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local PCS fixture-inventory correction:** PR132's inventory repair
+is merged, and `arm-pcs-profile.c` is registered in this branch's explicit list.
+All five target reproducibility checks pass. Run `41369300493` remains a failed
+setup run; new hosted acceptance is required. Production code and the validated
+fixture contents are unchanged; #68–#71 remain open.
+
 **CONFIRMED local fixture-inventory correction:** hosted run `41364588706`
 stopped target setup because the reviewed ARM call-reference C/assembly sources
 were missing from the explicit fixture inventory. Both names are now registered;

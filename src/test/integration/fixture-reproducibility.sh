@@ -45,6 +45,7 @@ expected_sources=(
     arm-mixed-body.S
     arm-mixed-function-aliases.cpp
     arm-pcs-call-reference.c
+    arm-pcs-profile.c
     arm-pcs-start.S
     arm-symbol-boundary.S
     arm-symbol-boundary.ld
