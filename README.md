@@ -1,7 +1,7 @@
 # GhidraDwarfForge
 
 <p align="center">
-    <img src="docs/images/ghidra-dwarf-forge.jpg" alt="GhidraDwarfForge logo: a dragon surrounding a dwarf at an anvil" width="320">
+    <img src="ghidra_dwarf_forge_logo.jpg" alt="GhidraDwarfForge logo: a dragon surrounding a dwarf at an anvil" width="320">
 </p>
 
 Hammering debug sections straight into your ELF.
