@@ -34,8 +34,11 @@ public final class GhidraArmBe8ProfileSmoke {
                 require(target.producerIsa().equals("arm"), "audited producer ISA");
                 require(target.requiredInstructionByteOrder(elf) == ByteOrder.LITTLE_ENDIAN,
                     "BE8 instruction representation");
-                require(target.elfAbiCallRestriction(elf).contains("not been validated"),
-                    "encoding alone cannot authorize a debugger call");
+                var callModel = CompilerCallPolicySmoke.fixtureModel();
+                var classified = target.applyCallRestrictions(elf, callModel, () -> false, message -> { });
+                require(classified.functions().get(1).debuggerCallsDisabled() &&
+                    classified.functions().get(1).debuggerCallRestriction().contains("existing custom restriction"),
+                    "BE8 encoding must not erase independent signature restrictions");
                 for (String language : List.of("ARM:LEBE:32:v7LEInstruction", "ARM:LEBE:32:v8LEInstruction")) {
                     agreement(elf, language, true);
                 }

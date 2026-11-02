@@ -13,6 +13,7 @@ import urllib.request
 VERSION = '8.2.2'
 SOURCE_SHA256 = '847346c1b82c1a54b2c38f6edbd85549edeb17430b7d4d3da12620e2962bc4f3'
 PATCH_SHA256 = 'e1b8d5a11ec610961c10bc2b6d2af9c65be86340bf1ecbadb837d98c26b07f2f'
+Q_ALIAS_PATCH_SHA256 = '689c2387dbfb495714b1815c7d648b5337c8b3c2c4e3c565cc53cf3b211665db'
 URL = 'https://download.qemu.org/qemu-' + VERSION + '.tar.xz'
 
 
@@ -28,9 +29,12 @@ def main():
     parser.add_argument('--dependency-root', type=Path, help='optional extracted Ubuntu development packages')
     parser.add_argument('--jobs', type=int, default=4)
     parser.add_argument('--correct-d-register-writes', action='store_true')
+    parser.add_argument('--correct-q-register-aliases', action='store_true')
     args = parser.parse_args()
     if not 1 <= args.jobs <= 32:
         parser.error('--jobs must be between 1 and 32')
+    if args.correct_q_register_aliases and not args.correct_d_register_writes:
+        parser.error('Q alias correction requires the D register correction')
     root = args.directory.resolve()
     root.mkdir(parents=True, exist_ok=False)
     archive = args.archive.resolve(strict=True) if args.archive else root / ('qemu-' + VERSION + '.tar.xz')
@@ -97,6 +101,12 @@ def main():
         patch_digest = digest(patch)
         assert patch_digest == PATCH_SHA256, 'register-write patch does not match pinned SHA-256'
         run('patch', ['patch', '--batch', '--fuzz=0', '-p1', '-i', patch], source)
+    alias_patch_digest = None
+    if args.correct_q_register_aliases:
+        alias_patch = Path(__file__).with_name('qemu-8.2.2-arm-q-register-aliases.patch').resolve()
+        alias_patch_digest = digest(alias_patch)
+        assert alias_patch_digest == Q_ALIAS_PATCH_SHA256, 'Q alias patch does not match pinned SHA-256'
+        run('patch-q-aliases', ['patch', '--batch', '--fuzz=0', '-p1', '-i', alias_patch], source)
     run('configure', [source / 'configure', '--target-list=arm-linux-user,armeb-linux-user',
         '--disable-system', '--disable-docs', '--disable-tools', '--disable-guest-agent',
         '--disable-werror', '--without-default-features'])
@@ -110,6 +120,7 @@ def main():
         'sourceSha256': SOURCE_SHA256, 'patchSha256': patch_digest,
         'originalStubSha256': original_stub, 'finalStubSha256': digest(source / 'target/arm/gdbstub.c'),
         'correctedDRegisterWrites': args.correct_d_register_writes, 'executables': executables,
+        'correctedQRegisterAliases': args.correct_q_register_aliases, 'qAliasPatchSha256': alias_patch_digest,
         'systemInstallationChanged': False, 'environment': {k: env.get(k) for k in
             ('PATH', 'PKG_CONFIG_PATH', 'PKG_CONFIG_SYSROOT_DIR', 'LD_LIBRARY_PATH')}}, indent=4) + '\n')
     print('arm-qemu-build=PASS ' + str(root), flush=True)

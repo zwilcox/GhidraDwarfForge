@@ -1,0 +1,25 @@
+--- a/target/arm/gdbstub.c
++++ b/target/arm/gdbstub.c
+@@ -120,7 +120,7 @@
+         nregs += 16;
+         if (reg < nregs) {
+             uint64_t *q = aa32_vfp_qreg(env, reg - 32);
+-            return gdb_get_reg128(buf, q[0], q[1]);
++            return gdb_get_reg128(buf, q[1], q[0]);
+         }
+     }
+     switch (reg - nregs) {
+@@ -143,8 +143,13 @@
+         nregs += 16;
+         if (reg < nregs) {
+             uint64_t *q = aa32_vfp_qreg(env, reg - 32);
++#if TARGET_BIG_ENDIAN
++            q[1] = ldq_be_p(buf);
++            q[0] = ldq_be_p(buf + 8);
++#else
+             q[0] = ldq_le_p(buf);
+             q[1] = ldq_le_p(buf + 8);
++#endif
+             return 16;
+         }
+     }

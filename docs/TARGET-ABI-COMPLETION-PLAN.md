@@ -1,5 +1,10 @@
 # P2.3 through P2.3c completion plan
 
+**CONFIRMED local PCS classification and runtime progress:** see
+`ARM-PCS-CALL-PROFILE.md` for four scalar/wide/exhausted ARM argument cases,
+consumer corrections, strict validation and remaining acceptance. This does
+not narrow or complete any original requirement row below.
+
 **CONFIRMED call-reference findings:** independent compiler runs separate GDB's
 global base/VFP selection from QEMU's big-endian floating-register write defect.
 Fourteen reference executions retain correct natural-call values, wrong injected

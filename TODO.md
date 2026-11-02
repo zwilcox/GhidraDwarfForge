@@ -1,5 +1,17 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local ARM PCS call checkpoint; full ABI work remains open:**
+The bounded original-ELF attribute reader and per-signature PCS policy pass 2,986
+model checks and the complete 120-task model/build run. Four LE/BE8 base/VFP
+executables pass real packaged scalar/wide/exhausted-argument exports, validators,
+natural values, typed returns, injected name/pointer calls and unchanged-state
+rejections. A separately pinned QEMU D/Q alias correction supplies trustworthy
+consumer references. LE uses GDB 15.1; BE8 uses 17.1, with the latter's LE upper
+bit-piece regression retained explicitly. Existing ARM aggregate and non-ARM
+calling-convention regressions pass. Broader profiles/compositions, hosted
+acceptance and protected integration remain required. See
+`docs/ARM-PCS-CALL-PROFILE.md`; #68–#71 remain open.
+
 **CONFIRMED independent ARM call-reference progress:** mixed base/VFP compiler
 runs reproduce GDB's global PCS selection and QEMU 8.2.2's reversed BE8 floating
 register writes. A private one-line QEMU correction restores the D-register

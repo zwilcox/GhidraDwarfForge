@@ -23,6 +23,8 @@ audited = {
     "ghidradwarfforge/elf/Arm32SectionModes.java",
     "ghidradwarfforge/elf/Arm32FunctionAliasSymbols.java",
     "ghidradwarfforge/elf/Arm32SymbolValues.java",
+    "ghidradwarfforge/elf/Arm32CallAbi.java",
+    "ghidradwarfforge/elf/Arm32CallPolicy.java",
     "ghidradwarfforge/elf/MipsAbiFlags.java",
     "ghidradwarfforge/elf/MipsFunctionAliasSymbols.java",
     "ghidradwarfforge/nativeapi/PackagedNativeLibraries.java",

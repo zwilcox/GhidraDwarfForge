@@ -26,7 +26,7 @@ def records(text):
         if header:
             result.append({"depth": int(header[1]), "offset": int(header[2], 16), "tag": header[3], "attrs": {}})
         elif result:
-            attribute = re.match(r"^\s*<[0-9a-f]+>\s+(DW_AT_\w+)\s+:\s*(.*)", line)
+            attribute = re.match(r"^\s*<[0-9a-f]+>\s+(DW_AT_\w+)\s*:\s*(.*)", line)
             if attribute:
                 result[-1]["attrs"][attribute[1]] = attribute[2]
     return result
