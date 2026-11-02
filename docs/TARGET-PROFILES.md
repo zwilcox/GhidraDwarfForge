@@ -1,14 +1,35 @@
 # Tested ELF and ABI profiles
 
-**CONFIRMED current candidate audit (2026-11-02):** the bounded profile expansion
-is mapped requirement by requirement in [TARGET-ABI-ACCEPTANCE.md](TARGET-ABI-ACCEPTANCE.md).
-It covers AArch64 ABI/SIMD selection, O32/N32/N64 MIPS, ARM/Thumb and BE8/PCS,
-and libc-backed i386 scalar/SSE/vector/convention behavior. Local component
-runtime evidence and a clean combined build exist; combined hosted acceptance,
-artifact review and protected integration remain pending. The older baseline
-profile inventory below is historical and does not describe all candidate
-capabilities. Consumer limitations and unavailable storage remain explicit in
-the current audit; no broader architecture claim follows from a register table.
+**CONFIRMED combined ABI acceptance:** P2.3, P2.3a, P2.3b and P2.3c
+retain all twenty original requirements. Production head `2a74d001e04eeab456b80a5c24063a399b540aa5`
+passed [run 41516782822](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/41516782822)
+and independent artifact review, then integrated through the normal protected
+merge `0447ba02e420118662eadf6d64495bdab40fb5bf`. Ghidra 12.0.3, Java 21-compatible bytecode and the
+pinned libdwarf 2.3.2 producer remain the baseline. This is development-branch
+acceptance; it does not publish a release or change alpha.2.
+
+## Accepted expanded profiles
+
+| Profile | Validated behavior and layouts | Limits |
+| --- | --- | --- |
+| AArch64 LP64/AAPCS64, little endian | Selected ELF/language/compiler ABI; register exhaustion, stack and direct/indirect aggregate arguments and returns, HFA, and SIMD storage. ABI fixtures cover exec, PIE, shared objects and Ghidra rebases; SIMD has its separately recorded layouts. | No ILP32, big-endian AArch64 or SVE claim. Unproven locations and incompatible injected calls remain unavailable. |
+| MIPS O32, big and little endian | Wide integer, stack, aggregate and mixed arguments; natural hidden-buffer returns; exec, PIE, shared and rebased cases; retained sectionless regressions. | Mixed register/stack objects have proven prefixes and explicit gaps. FPXX/FP64A FR=1 compiler references do not establish production whole-pair double locations. |
+| MIPS N32 and N64, big and little endian | Distinct pointer/address models with 64-bit GPR/FPR slots; scalar, mixed, aggregate, nested, array, aligned and 128-bit cases; exec, PIE, shared, rebased and live-session exports. | Only matching selected ABI/ISA/FPU profiles enable the additional allocation and call semantics. |
+| ARM32 little endian, ARM/Thumb and base/VFP PCS | Stripped and sectionless mode cues, interworking, mixed bodies, PIE/shared loading, per-function conventions, exhausted stack arguments, HFA and composite storage. | Proven lifetime prefixes and unsupported-call guards remain explicit. |
+| ARM32 BE8 | Big-endian data with little-endian instructions; scalar, base/VFP PCS, HFA and aggregate cases in exec/PIE and rebased layouts with matching tools. | Requires the documented QEMU register-transport correction and pinned GDB. BE32 and BE8 shared-library loading are not advertised. |
+| Linux i386 | Accepted integer/shared-library profile, plus libc-backed x87/SSE/vector/aggregate and additional-convention cases in exec, sectionless, PIE and rebased PIE. | GDB vector/SSE automatic-return limitations are checked with raw returns and call guards; x87 returns remain typed checks. No `compat32` stack-profile claim. |
+
+[The complete acceptance audit](TARGET-ABI-ACCEPTANCE.md) maps every original
+requirement to its tests and records exact positive and unavailable behavior.
+Windows is a supported Ghidra host; it does not imply Windows target-ABI support.
+The original executable remains unchanged, and `.dbg.c` remains synthetic
+decompiler output. A table entry does not establish every ABI or lifetime for
+the processor.
+
+## Historical profile checkpoints
+
+The following notes preserve earlier evidence and limitations. Their pending
+statements do not supersede the accepted profiles above.
 
 **CONFIRMED local ARM incoming-oracle correction:** the PR136 hosted failure
 was an obsolete first-store unavailability expectation. Twelve fresh exports

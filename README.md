@@ -101,10 +101,11 @@ Stable register locations also require [contained control flow](docs/REGISTER-BO
 An excluded branch block cannot silently clobber an allegedly stable register;
 unproven lifetimes retain names and types without locations.
 
-A bounded [i386 integer/stack profile](docs/I386-INTEGER-PROFILE.md) passes
-stripped exec, sectionless, PIE and rebase tests, including PR63's full hosted gate
-and independent package/runtime review;
-this adds no libc/shared or floating/vector support claim.
+The [i386 integer/stack profile](docs/I386-INTEGER-PROFILE.md) retains its
+stripped exec, sectionless, PIE and rebase coverage. The accepted expansion adds
+shared-library loading and selected libc-backed x87/SSE/vector/aggregate cases;
+see the [ABI matrix and consumer limits](docs/I386-ABI-MATRIX.md) and the
+[combined acceptance audit](docs/TARGET-ABI-ACCEPTANCE.md).
 
 The exporter replaces existing compiler DWARF rather than merging
 it with the recovered view. Old compressed debug sections, indexes, and debug
@@ -238,17 +239,18 @@ The architecture is intentionally broader than those first release gates.
 ARM32/AArch32 now has a hosted end-to-end ARMv7 hard-float, little-endian
 ARM-state lane. MIPS is explicitly in scope as the first ELF32/big-endian
 target. Architecture-specific ABI and register mappings remain isolated and
-table-driven so additional Ghidra-supported ELF processors can follow. Thumb,
-big-endian ARM, and other ARM ABI profiles are not yet claimed.
+table-driven so additional Ghidra-supported ELF processors can follow.
+The selected ARM/Thumb, BE8 and base/VFP profiles now have separate runtime
+validation; this does not imply arbitrary ARM ABI or BE32 support.
 
-[The target-profile contract](docs/TARGET-PROFILES.md) records the exact tested
-ABIs and storage cases, the difference between accepted ELF metadata and
-validated behavior, and the next bounded coverage additions. The expanded
-P2.3–P2.3c candidate includes additional AArch64, MIPS O32/N32/N64, ARM/Thumb/BE8
-and i386 ABI/storage cases. Its component evidence and remaining combined
-hosted acceptance gates are recorded in
-[the ABI acceptance audit](docs/TARGET-ABI-ACCEPTANCE.md); local results do not
-yet expand the accepted hosted support claim above.
+[The target-profile contract](docs/TARGET-PROFILES.md) records the accepted
+P2.3–P2.3c expansion: AArch64 ABI/SIMD selection; distinct MIPS O32/N32/N64
+profiles in both byte orders; ARM/Thumb, BE8 and per-function base/VFP behavior;
+and libc-backed i386 x87/SSE/vector/aggregate/convention cases. It identifies
+each tested layout and the limits of the debugger and recovered storage.
+[The ABI acceptance audit](docs/TARGET-ABI-ACCEPTANCE.md) links the complete
+requirements, combined hosted checks and independent artifact review. These
+development-branch additions are separate from the published alpha.2 release.
 
 CI has Linux lanes for x86-64, AArch64, ARM32, and both MIPS byte orders, plus
 a Windows-hosted x86-64 ELF export lane. Linux runs real headless export,
