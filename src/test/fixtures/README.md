@@ -664,3 +664,16 @@ result-register writes overwrite their incoming physical storage. Its harness
 checks exact compiler instruction bytes, independent raw carriers, initialized
 compiler locations and Forge values through frame release in LE and BE8.
 See `docs/ARM-HFA-STORAGE.md` for acceptance and remaining scope.
+
+## Natural ARM aggregate investigation
+
+`arm-stack-aggregates.c` exercises base/VFP arguments after core or floating
+register exhaustion, alignment, packed and partial words, mixed fields and
+conditional comparisons. The source-built LE/BE8 reproduction is
+`src/test/integration/arm-stack-aggregates.py`. Its full-availability assertion
+currently fails on documented conservative omissions. The separately selected
+`--availability-contract audited-prefix --with-controls` mode verifies exact
+values, raw carriers and instruction-derived unavailable boundaries in LE/BE8,
+including rebased projects, decompilation failures and copy cancellation. See
+[the local contract](../../../docs/ARM-STACK-AGGREGATES.md) and
+[the retained full-availability failures](../../../docs/research/ARM-STACK-AGGREGATES.md).

@@ -1,5 +1,37 @@
 # P2.3 through P2.3c completion plan
 
+**CONFIRMED local exhausted-stack aggregate contract:** four LE/BE8 ordinary/
+rebased cases pass exact instruction, raw DWARF/carrier and typed-value checks:
+1,012 baseline stops per symbol-file variant, 32 deterministic failure exports,
+3,802 neighboring and 246 symbol-only stops, and four production-copy
+cancellations. The separately named audited prefix requires 492 unavailable
+field observations at proven uncertainty boundaries; the original full-
+availability research failures remain retained. Eight runtime mutation controls
+reject altered gaps, carriers and instructions. CI is wired; exact-head hosted
+acceptance and broader PIE/shared compositions remain required. See `ARM-STACK-AGGREGATES.md`.
+All original P2.3–P2.3c requirements remain in scope.
+
+**CONFIRMED tracker reconciliation:** GitHub #68 is closed as completed by
+`zwilcox` on 2026-11-01; #69–#71 remain open. The inspected #68 event has no
+linked commit or acceptance comment. Earlier statements that all four tracker
+issues are open are historical. The full user-requested requirement audit stays
+active independently of tracker status; no issue was reopened or scope removed.
+
+**CONFIRMED local byte-slice and reference progress:** shared incoming analysis
+now preserves exact partial-register bytes through wider transfers and proven
+carry-free joins. Twenty-two model suites, 24 LE/BE8 aggregate controls, two
+default HFA cases and three x86/AArch64 runtime regressions pass. The natural
+aggregate investigation has zero wrong numeric values over 506 stops but still
+fails full availability at 130/116 field observations. Exact compiler-only
+windows now have live raw corroboration; Forge receives no exception. See
+`research/ARM-STACK-AGGREGATES.md`. Portable pipeline acceptance and all #68–#71 requirements remain open.
+
+**CONFIRMED AArch64 allocation component accepted:** PR #124 passed all twelve
+exact-head jobs and independent hosted artifact replay, then merged normally as
+`453a7e9be61f1e34f3bae79f43f7ead2192bfcc2`; the merge tree equals tested head
+`035b9eb`. See `AARCH64-PARAMETER-ALLOCATION.md`.
+This component does not close the full #68–#71 objective.
+
 **CONFIRMED local ARM aggregate failure/cancellation compositions:** twelve
 LE/BE8 storage/control combinations pass 48 deterministic native-failure exports
 and twelve cancellations during production copying. Neighboring functions retain
@@ -84,7 +116,7 @@ base/VFP arguments/returns, layouts, controls and protected integration. No issu
 is complete merely because this scalar checkpoint passes.
 
 **CONFIRMED active scope (2026-11-01):** finish P2.3, P2.3a, P2.3b and
-P2.3c together, following the user's expanded goal. Issues #68–#71 remain open.
+P2.3c together, following the user's expanded goal. All original requirement rows remain in scope; see the current tracker reconciliation above.
 The shared baseline is Ghidra 12.0.3, Java 21-compatible bytecode and the pinned
 libdwarf 2.3.2 producer. This work does not change that baseline or authorize a
 release publication. Starting main is `c227cf34b2d386aa146c55b7c6edd68734ea0f98`.

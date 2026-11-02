@@ -450,6 +450,42 @@ tasks.register("stackValueFlowSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/stack-value-flow/cache").absolutePath
 }
 
+tasks.register("intraInstructionFlowSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks must-path incoming values across internal predicated execution"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.IntraInstructionFlowSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/intra-instruction-flow/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/intra-instruction-flow/cache").absolutePath
+}
+
+tasks.register("registerByteSliceFlowSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks partial object bytes across wider register and memory transfers"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.RegisterByteSliceFlowSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/register-byte-slice-flow/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/register-byte-slice-flow/cache").absolutePath
+}
+
+tasks.register("armCompositeParameterAllocationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks partial aggregate padding in computed core and stack arguments"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.ArmCompositeParameterAllocationSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/arm-composite-allocation/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/arm-composite-allocation/cache").absolutePath
+}
+
 tasks.register("localMappingsSmoke", JavaExec) {
     group = "verification"
     description = "Checks canonical saved Ghidra local identities and all storage mappings"

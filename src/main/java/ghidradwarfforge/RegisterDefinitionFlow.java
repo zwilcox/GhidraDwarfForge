@@ -198,6 +198,13 @@ final class RegisterDefinitionFlow {
     /** Optional terminal input states must never be used as callee effect summaries. */
     static Map<Address, Instruction> decodedInstructions(Program program, Function function,
             boolean directCalls, boolean terminalInputs, TaskMonitor monitor) throws CancelledException {
+        return decodedInstructions(program, function, directCalls, terminalInputs, false, monitor);
+    }
+
+    /** Internal branches require the incoming-value engine's separate must-path proof. */
+    static Map<Address, Instruction> decodedInstructions(Program program, Function function,
+            boolean directCalls, boolean terminalInputs, boolean internalBranches, TaskMonitor monitor)
+            throws CancelledException {
         if (function.getEntryPoint().getAddressSpace().isOverlaySpace()) return Map.of();
         var body = function.getBody();
         var uncovered = new AddressSet(body);
@@ -211,7 +218,8 @@ final class RegisterDefinitionFlow {
                     !body.contains(instruction.getAddress(), instruction.getMaxAddress()) ||
                     !uncovered.contains(instruction.getAddress(), instruction.getMaxAddress()) ||
                     GhidraVariableStorage.hasOpaqueRegisterEffects(program, instruction) ||
-                    !(orderedControl(instruction, directCalls) || terminalInputs && opaqueTerminalBoundary(instruction))) {
+                    !(orderedControl(instruction, directCalls) || terminalInputs && opaqueTerminalBoundary(instruction) ||
+                    internalBranches && IntraInstructionFlow.targets(instruction, monitor) != null)) {
                 return Map.of();
             }
             uncovered.delete(instruction.getAddress(), instruction.getMaxAddress());

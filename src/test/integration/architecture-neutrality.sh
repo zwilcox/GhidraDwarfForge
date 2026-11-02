@@ -14,6 +14,7 @@ source = root / "src/main/java"
 audited = {
     "ghidradwarfforge/targets/Aarch64ParameterAllocation.java",
     "ghidradwarfforge/targets/ArmHfaParameterAllocation.java",
+    "ghidradwarfforge/targets/ArmCompositeParameterAllocation.java",
     "ghidradwarfforge/targets/MipsWideParameterAllocation.java",
     "ghidradwarfforge/nativeapi/DwarfTarget.java",
     "ghidradwarfforge/nativeapi/Arm32EndianProfile.java",

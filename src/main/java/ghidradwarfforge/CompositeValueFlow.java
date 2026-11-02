@@ -53,11 +53,10 @@ final class CompositeValueFlow {
             Varnode node = nodes[index];
             if (node == null || node.getSize() <= 0) return List.of();
             if (node.isRegister()) {
-                var register = program.getRegister(node);
-                if (register == null || register != program.getLanguage().getRegister(node.getAddress(), node.getSize()) ||
-                        register.getBaseRegister() == program.getCompilerSpec().getStackPointer() ||
-                        !(GhidraVariableStorage.mappedRegister(register, node.getSize(), registers,
-                            "incoming composite piece") instanceof RegisterStorage)) return List.of();
+                var view = RegisterByteSlice.mapped(program, node, registers);
+                if (view == null || view.container().getBaseRegister() == program.getCompilerSpec().getStackPointer()) {
+                    return List.of();
+                }
                 hasRegister = true;
             }
             else if (!node.getAddress().isStackAddress() ||
@@ -80,7 +79,7 @@ final class CompositeValueFlow {
         if (!hasRegister || total != bytes) return List.of();
         // As with scalar incoming values, a terminal's input state is useful
         // even when its return effects cannot be propagated to a successor.
-        var decoded = RegisterDefinitionFlow.decodedInstructions(program, function, true, true, monitor);
+        var decoded = RegisterDefinitionFlow.decodedInstructions(program, function, true, true, true, monitor);
         if (decoded.isEmpty()) return List.of();
         var calls = DirectLeafCalls.inspect(program, List.copyOf(decoded.values()), monitor);
         if (calls == null) return List.of();

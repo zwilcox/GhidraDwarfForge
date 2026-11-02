@@ -757,8 +757,8 @@ public final class GhidraTypeGraph {
             var confidence = evidence(source, interval.storage()).confidence();
             Evidence evidence = new Evidence(confidence,
                 "Ghidra listing parameter storage (" + source + "); fully decoded " +
-                    (mixed ? "straight-line leaf with exact register/stack pieces and analyzed " +
-                        "stack-pointer depth; bounded by the first possible memory or register write" :
+                    (mixed ? "instruction paths with exact register/stack pieces and proven " +
+                        "stack-pointer coordinates; each piece must survive every incoming path" :
                         "instruction path with incoming bits and completed exact-bit register " +
                         "copies, stack stores/reloads or inspected direct-leaf preservation, as applicable") + "; unproven intervals are unavailable");
             return new LocationRange(AddressNormalizer.toElfAddress(interval.start(), rebaseDelta),

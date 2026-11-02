@@ -33,7 +33,7 @@ import ghidradwarfforge.locations.VariableStorageModel.UnavailableStorage;
 
 /** Ordered full-value transfers through registers and proven stack slots. */
 final class StackValueFlow {
-    private enum Kind { VALUE, STACK_ADDRESS }
+    private enum Kind { VALUE, STACK_ADDRESS, LITERAL }
     private record Fact(Kind kind, long offset) {
     }
     private static final Fact VALUE = new Fact(Kind.VALUE, 0);
@@ -46,6 +46,8 @@ final class StackValueFlow {
     private final int bytes;
     private final Map<Varnode, Fact> facts = new LinkedHashMap<>();
     private final Map<Long, Boolean> slots = new LinkedHashMap<>();
+    // Instruction-local known-zero bits justify carry-free joins of unrelated pieces.
+    private final Map<Varnode, Long> zeros = new LinkedHashMap<>();
     private Map<Address, DirectLeafCalls.Leaf> calls = Map.of();
     private Long localOffset;
     private boolean initializing;
@@ -114,7 +116,8 @@ final class StackValueFlow {
                 bytes <= 0 || storage == null ||
                 storage.getProgramArchitecture() != program || !storage.isValid() || storage.isBadStorage() ||
                 storage.isForcedIndirect() != indirect ||
-                !(storage.isRegisterStorage() || indirect && storage.isStackStorage()) ||
+                !(storage.getFirstVarnode() != null && storage.getFirstVarnode().isRegister() ||
+                    indirect && storage.isStackStorage()) ||
                 storage.getVarnodeCount() != 1 ||
                 storage.size() != bytes || pointer == null || pointer != pointer.getBaseRegister() ||
                 memory == null || memory.isOverlaySpace() || memory.getType() != AddressSpace.TYPE_RAM ||
@@ -128,13 +131,13 @@ final class StackValueFlow {
             return List.of();
         }
         Varnode incoming = storage.getFirstVarnode();
-        Register original = exactRegister(program, incoming);
+        Register original = RegisterByteSlice.container(program, incoming);
         // A complete logical register can occupy an upper physical slice.
         // Facts track its exact varnode bytes; overlapping outputs still kill
         // those bytes, while disjoint writes need not discard the value.
-        if (storage.isRegisterStorage() && (original == null ||
-                original.getBaseRegister() == pointer)) return List.of();
-        var decoded = RegisterDefinitionFlow.decodedInstructions(program, function, true, true, monitor);
+        if (incoming.isRegister() && (original == null || original.getBaseRegister() == pointer ||
+                RegisterByteSlice.mapped(program, incoming, registers) == null)) return List.of();
+        var decoded = RegisterDefinitionFlow.decodedInstructions(program, function, true, true, true, monitor);
         if (decoded.isEmpty()) return List.of();
         var calls = DirectLeafCalls.inspect(program, List.copyOf(decoded.values()), monitor);
         if (calls == null) return List.of();
@@ -233,7 +236,7 @@ final class StackValueFlow {
                 state.retireLocalValue();
                 Varnode destination = new Varnode(assignment.getAddress(), assignment.getMinimumByteSize());
                 state.facts.keySet().removeIf(node -> overlaps(node, destination));
-                state.facts.put(destination, VALUE);
+                state.facts.put(state.valueSpan(destination, 0), VALUE);
             }
             state = state.boundaryCopy();
             StackValueFlow previous = output.put(address, state);
@@ -254,21 +257,28 @@ final class StackValueFlow {
     }
 
     private StackValueFlow boundaryCopy() {
+        return copy(false);
+    }
+
+    private StackValueFlow copy(boolean temporaries) {
         var result = new StackValueFlow(program, pointer, memory, bytes);
         result.localOffset = localOffset;
         result.calls = calls;
         result.savedAssignments = savedAssignments;
         result.registersBigEndian = registersBigEndian;
         for (var entry : facts.entrySet()) {
-            if (!entry.getKey().isUnique()) result.facts.put(entry.getKey(), entry.getValue());
+            if (temporaries || !entry.getKey().isUnique()) result.facts.put(entry.getKey(), entry.getValue());
         }
         result.slots.putAll(slots);
+        if (temporaries) result.zeros.putAll(zeros);
         return result;
     }
 
     private void intersect(StackValueFlow other) {
         facts.entrySet().removeIf(entry -> !entry.getValue().equals(other.facts.get(entry.getKey())));
         slots.keySet().retainAll(other.slots.keySet());
+        zeros.replaceAll((node, mask) -> mask & other.zeros.getOrDefault(node, 0L));
+        zeros.values().removeIf(mask -> mask == 0);
     }
 
     private boolean sameFacts(StackValueFlow other) {
@@ -297,7 +307,7 @@ final class StackValueFlow {
         if (state == null) return null;
         state.localOffset = null;
         if (incoming.isRegister()) {
-            Register register = exactRegister(program, incoming);
+            Register register = RegisterByteSlice.container(program, incoming);
             // A complete logical piece can be an upper physical alias, just
             // like a scalar parameter. Exact varnode overlap controls kills.
             if (register == null || register.getBaseRegister() == state.pointer) return null;
@@ -332,6 +342,7 @@ final class StackValueFlow {
         // identity continues to retire on frame changes; it needs a separate
         // ownership proof. Unmodelled stack-pointer effects cannot preserve any slot.
         facts.keySet().removeIf(Varnode::isUnique);
+        zeros.clear();
         var inspectedCall = calls.get(instruction.getAddress());
         boolean memoryCall = instruction.getFlowType().isCall() && inspectedCall != null && inspectedCall.memory() != null;
         if (GhidraVariableStorage.writesRegister(instruction, pointer) &&
@@ -341,7 +352,7 @@ final class StackValueFlow {
         // reads. Retire their inputs before interpreting this instruction.
         for (Varnode node : new ArrayList<>(facts.keySet())) {
             monitor.checkCancelled();
-            Register register = exactRegister(program, node);
+            Register register = RegisterByteSlice.container(program, node);
             if (node.isRegister() && (register == null ||
                     !RegisterCopyLifetime.resultsCovered(instruction, register.getBaseRegister(), monitor))) {
                 facts.remove(node);
@@ -350,39 +361,21 @@ final class StackValueFlow {
         for (Object output : instruction.getResultObjects()) {
             if (output instanceof Address address && address.getAddressSpace().isMemorySpace()) invalidateMemory();
         }
-        for (PcodeOp operation : instruction.getPcode()) {
-            monitor.checkCancelled();
-            if (GhidraVariableStorage.unprovenStore(program, operation)) return false;
-            if (operation.getOpcode() == PcodeOp.STORE) store(operation);
-            if (operation.getOpcode() == PcodeOp.CALL) {
-                var effects = calls.get(instruction.getAddress());
-                if (effects == null) return false;
-                applyCall(effects, monitor);
+        int[] targets = IntraInstructionFlow.targets(instruction, monitor);
+        if (targets != null) {
+            // Local definitions and saved assignments still use their existing
+            // straight instruction ownership proof. Only incoming values opt in.
+            if (initialize || localOffset != null || savedAssignments ||
+                    !advancePaths(instruction, targets, monitor)) return false;
+        }
+        else {
+            for (PcodeOp operation : instruction.getPcode()) {
+                if (!advanceOperation(instruction, operation, monitor)) return false;
             }
-            Varnode output = operation.getOutput();
-            if (output == null) continue;
-            Fact derived = derive(operation);
-            Varnode pointerNode = new Varnode(pointer.getAddress(), pointer.getMinimumByteSize());
-            if (overlaps(output, pointerNode)) {
-                Fact previousPointer = read(pointerNode);
-                if (!output.equals(pointerNode) || previousPointer == null || derived == null ||
-                        previousPointer.kind() != Kind.STACK_ADDRESS || derived.kind() != Kind.STACK_ADDRESS) {
-                    invalidateMemory();
-                }
-                else {
-                    long before = previousPointer.offset(), after = derived.offset();
-                    boolean released = program.getCompilerSpec().stackGrowsNegative() ? after > before : after < before;
-                    if (released) slots.keySet().removeIf(slot -> intersects(slot, bytes,
-                        Math.min(before, after), Math.max(before, after)));
-                }
-            }
-            facts.keySet().removeIf(node -> overlaps(node, output));
-            if (output.getAddress().getAddressSpace().isMemorySpace()) invalidateMemory();
-            if (derived != null && (output.isRegister() || output.isUnique())) facts.put(output, derived);
         }
         for (Varnode node : new ArrayList<>(facts.keySet())) {
             monitor.checkCancelled();
-            Register register = exactRegister(program, node);
+            Register register = RegisterByteSlice.container(program, node);
             if (node.isRegister() && (register == null ||
                     !RegisterCopyLifetime.resultsCovered(instruction, register.getBaseRegister(), monitor))) {
                 facts.remove(node);
@@ -398,10 +391,88 @@ final class StackValueFlow {
         return true;
     }
 
+    /** Forward-only control means all predecessor states arrive before a node runs. */
+    private boolean advancePaths(Instruction instruction, int[] targets, TaskMonitor monitor)
+            throws CancelledException {
+        PcodeOp[] operations = instruction.getPcode();
+        var states = new StackValueFlow[operations.length + 1];
+        states[0] = copy(true);
+        for (int index = 0; index < operations.length; index++) {
+            monitor.checkCancelled();
+            StackValueFlow state = states[index];
+            states[index] = null;
+            if (state == null) continue;
+            if (targets[index] >= 0) {
+                mergePath(states, targets[index], state);
+                if (operations[index].getOpcode() == PcodeOp.CBRANCH) mergePath(states, index + 1, state);
+            }
+            else {
+                if (!state.advanceOperation(instruction, operations[index], monitor)) return false;
+                mergePath(states, index + 1, state);
+            }
+        }
+        StackValueFlow result = states[operations.length];
+        if (result == null) return false;
+        facts.clear();
+        facts.putAll(result.facts);
+        slots.clear();
+        slots.putAll(result.slots);
+        zeros.clear();
+        zeros.putAll(result.zeros);
+        return true;
+    }
+
+    private static void mergePath(StackValueFlow[] states, int target, StackValueFlow incoming) {
+        if (states[target] == null) states[target] = incoming.copy(true);
+        else states[target].intersect(incoming);
+    }
+
+    private boolean advanceOperation(Instruction instruction, PcodeOp operation, TaskMonitor monitor)
+            throws CancelledException {
+        monitor.checkCancelled();
+        if (GhidraVariableStorage.unprovenStore(program, operation)) return false;
+        if (operation.getOpcode() == PcodeOp.STORE) store(operation);
+        if (operation.getOpcode() == PcodeOp.CALL) {
+            var effects = calls.get(instruction.getAddress());
+            if (effects == null) return false;
+            applyCall(effects, monitor);
+        }
+        Varnode output = operation.getOutput();
+        if (output == null) return true;
+        List<Fact> derived = derive(operation);
+        long zeroMask = deriveZeros(operation);
+        Varnode pointerNode = new Varnode(pointer.getAddress(), pointer.getMinimumByteSize());
+        if (overlaps(output, pointerNode)) {
+            Fact previousPointer = facts.get(pointerNode);
+            Fact nextPointer = derived.size() == 1 ? derived.getFirst() : null;
+            if (!output.equals(pointerNode) || previousPointer == null || nextPointer == null ||
+                    previousPointer.kind() != Kind.STACK_ADDRESS || nextPointer.kind() != Kind.STACK_ADDRESS) {
+                invalidateMemory();
+            }
+            else {
+                long before = previousPointer.offset(), after = nextPointer.offset();
+                boolean released = program.getCompilerSpec().stackGrowsNegative() ? after > before : after < before;
+                if (released) slots.keySet().removeIf(slot -> intersects(slot, bytes,
+                    Math.min(before, after), Math.max(before, after)));
+            }
+        }
+        facts.keySet().removeIf(node -> overlaps(node, output));
+        zeros.keySet().removeIf(node -> overlaps(node, output));
+        if (output.isUnique() && zeroMask != 0) zeros.put(output, zeroMask);
+        if (output.getAddress().getAddressSpace().isMemorySpace()) invalidateMemory();
+        if (output.isRegister() || output.isUnique()) {
+            for (Fact fact : derived) {
+                if (fact.kind() == Kind.VALUE) facts.put(valueSpan(output, fact.offset()), VALUE);
+                else facts.put(output, fact);
+            }
+        }
+        return true;
+    }
+
     /** Translate callee-entry-relative effects only after CALL's own raw effects. */
     private void applyCall(DirectLeafCalls.Leaf effects, TaskMonitor monitor) throws CancelledException {
         Varnode pointerNode = new Varnode(pointer.getAddress(), pointer.getMinimumByteSize());
-        Fact calledSp = read(pointerNode);
+        Fact calledSp = facts.get(pointerNode);
         Long returnedSp = null;
         var writes = new ArrayList<CallMemoryEffects.Range>();
         if (effects.memory() != null && calledSp != null && calledSp.kind() == Kind.STACK_ADDRESS) {
@@ -428,7 +499,7 @@ final class StackValueFlow {
         }
         for (Varnode node : new ArrayList<>(facts.keySet())) {
             monitor.checkCancelled();
-            Register register = exactRegister(program, node);
+            Register register = RegisterByteSlice.container(program, node);
             if (register == null || !effects.preserves(register, monitor)) facts.remove(node);
         }
         if (returnedSp != null) facts.put(pointerNode, new Fact(Kind.STACK_ADDRESS, returnedSp));
@@ -480,13 +551,19 @@ final class StackValueFlow {
         long end;
         try { end = Math.addExact(offset, value.getSize()); }
         catch (ArithmeticException overflow) { invalidateMemory(); return; }
-        boolean savedValue = savedAssignments && value.getSize() == bytes && VALUE.equals(read(value));
+        boolean savedValue = savedAssignments && value.getSize() == bytes && readValues(value).contains(VALUE);
         if (localOffset != null && intersects(localOffset, bytes, offset, end) && !savedValue) retireLocalValue();
         slots.keySet().removeIf(start -> intersects(start, bytes, offset, end));
         if (initializing && localOffset != null && offset == localOffset && value.getSize() == bytes) {
             slots.put(offset, true);
         }
-        else if (value.getSize() == bytes && VALUE.equals(read(value))) slots.put(offset, true);
+        else if (localOffset == null) {
+            for (Fact fact : readValues(value)) {
+                long displacement = program.getLanguage().isBigEndian() ? value.getSize() - bytes - fact.offset() : fact.offset();
+                slots.put(Math.addExact(offset, displacement), true);
+            }
+        }
+        else if (value.getSize() == bytes && readValues(value).contains(VALUE)) slots.put(offset, true);
     }
 
     private Fact address(PcodeOp operation) {
@@ -496,68 +573,223 @@ final class StackValueFlow {
         long id = operation.getInput(0).getOffset();
         if ((id != (int) id && id != Integer.toUnsignedLong((int) id)) ||
                 (int) id != memory.getSpaceID()) return null;
-        Fact address = read(operation.getInput(1));
+        Fact address = facts.get(operation.getInput(1));
         return address != null && address.kind() == Kind.STACK_ADDRESS ? address : null;
     }
 
-    private Fact derive(PcodeOp operation) {
+    /** VALUE offsets are transient least-significant-byte offsets within an operation value. */
+    private List<Fact> derive(PcodeOp operation) {
         Varnode output = operation.getOutput();
         int opcode = operation.getOpcode();
-        if (opcode == PcodeOp.LOAD && operation.getNumInputs() == 2 && output.getSize() == bytes) {
+        Long literal = instructionLiteral(operation);
+        if (literal != null) return List.of(new Fact(Kind.LITERAL, literal));
+        if (opcode == PcodeOp.LOAD && operation.getNumInputs() == 2 && output.getSize() >= bytes) {
             Fact source = address(operation);
-            if (source != null && slots.containsKey(source.offset())) {
-                return VALUE;
+            if (source == null) return List.of();
+            var values = new ArrayList<Fact>();
+            for (long slot : slots.keySet()) {
+                long delta;
+                try { delta = Math.subtractExact(slot, source.offset()); }
+                catch (ArithmeticException overflow) { continue; }
+                if (delta >= 0 && delta <= output.getSize() - bytes) {
+                    long offset = program.getLanguage().isBigEndian() ? output.getSize() - bytes - delta : delta;
+                    values.add(new Fact(Kind.VALUE, offset));
+                }
             }
-            return null;
+            return values;
         }
         if ((opcode == PcodeOp.COPY || opcode == PcodeOp.INT_ZEXT || opcode == PcodeOp.INT_SEXT) &&
                 operation.getNumInputs() == 1 && operation.getInput(0) != null) {
             Varnode input = operation.getInput(0);
-            if (opcode == PcodeOp.COPY ? input.getSize() != output.getSize() : input.getSize() >= output.getSize()) return null;
-            Fact value = read(input);
-            if (value == null) return null;
-            if (value.kind() == Kind.VALUE) return input.getSize() >= bytes ? value : null;
-            return opcode == PcodeOp.COPY && output.getSize() == memory.getPointerSize() ? value : null;
+            if (opcode == PcodeOp.COPY ? input.getSize() != output.getSize() : input.getSize() >= output.getSize()) return List.of();
+            Fact address = facts.get(input);
+            if (opcode == PcodeOp.COPY && output.getSize() == memory.getPointerSize() &&
+                    address != null && address.kind() == Kind.STACK_ADDRESS) return List.of(address);
+            return readValues(input);
         }
         if (opcode == PcodeOp.SUBPIECE && operation.getNumInputs() == 2 && operation.getInput(0) != null &&
-                operation.getInput(1) != null && operation.getInput(1).isConstant() &&
-                operation.getInput(1).getOffset() == 0 && output.getSize() >= bytes &&
-                output.getSize() <= operation.getInput(0).getSize() && VALUE.equals(read(operation.getInput(0)))) return VALUE;
+                operation.getInput(1) != null && operation.getInput(1).isConstant()) {
+            long removed = operation.getInput(1).getOffset();
+            if (removed < 0 || removed > operation.getInput(0).getSize() - output.getSize()) return List.of();
+            return shiftedValues(operation.getInput(0), -removed, output.getSize());
+        }
+        if (opcode == PcodeOp.PIECE && operation.getNumInputs() == 2 && operation.getInput(0) != null &&
+                operation.getInput(1) != null && (long) operation.getInput(0).getSize() +
+                operation.getInput(1).getSize() == output.getSize()) {
+            var result = new ArrayList<>(readValues(operation.getInput(1)));
+            result.addAll(shiftedValues(operation.getInput(0), operation.getInput(1).getSize(), output.getSize()));
+            return result;
+        }
+        if ((opcode == PcodeOp.INT_LEFT || opcode == PcodeOp.INT_RIGHT || opcode == PcodeOp.INT_SRIGHT) &&
+                operation.getNumInputs() == 2 && operation.getInput(0) != null && operation.getInput(1) != null &&
+                operation.getInput(0).getSize() == output.getSize()) {
+            Long count = literal(operation.getInput(1));
+            if (count == null) return List.of();
+            long bits = count;
+            if (bits < 0 || bits % Byte.SIZE != 0 || bits >= (long) output.getSize() * Byte.SIZE) return List.of();
+            long shift = bits / Byte.SIZE;
+            return shiftedValues(operation.getInput(0), opcode == PcodeOp.INT_LEFT ? shift : -shift, output.getSize());
+        }
+        if ((opcode == PcodeOp.INT_ADD || opcode == PcodeOp.INT_OR) && operation.getNumInputs() == 2 &&
+                operation.getInput(0) != null && operation.getInput(1) != null && output.getSize() <= Long.BYTES &&
+                operation.getInput(0).getSize() == output.getSize() && operation.getInput(1).getSize() == output.getSize()) {
+            Varnode first = operation.getInput(0), second = operation.getInput(1);
+            long firstZeros = zeroBits(first), secondZeros = zeroBits(second);
+            boolean disjoint = (firstZeros | secondZeros) == bitMask(output.getSize());
+            var values = new ArrayList<Fact>();
+            if (opcode == PcodeOp.INT_OR || disjoint) {
+                for (Fact value : readValues(first)) {
+                    long mask = bitMask(bytes) << (value.offset() * Byte.SIZE);
+                    if (disjoint || (secondZeros & mask) == mask) values.add(value);
+                }
+                for (Fact value : readValues(second)) {
+                    long mask = bitMask(bytes) << (value.offset() * Byte.SIZE);
+                    if (disjoint || (firstZeros & mask) == mask) values.add(value);
+                }
+            }
+            if (!values.isEmpty()) return values;
+        }
         if ((opcode != PcodeOp.INT_ADD && opcode != PcodeOp.INT_SUB) || operation.getNumInputs() != 2 ||
-                output.getSize() != memory.getPointerSize()) return null;
+                output.getSize() != memory.getPointerSize()) return List.of();
         Varnode first = operation.getInput(0), second = operation.getInput(1);
-        if (first == null || second == null || first.getSize() != output.getSize() || second.getSize() != output.getSize()) return null;
+        if (first == null || second == null || first.getSize() != output.getSize() || second.getSize() != output.getSize()) return List.of();
         if (opcode == PcodeOp.INT_ADD && first.isConstant()) {
             Varnode swap = first; first = second; second = swap;
         }
-        Fact base = read(first);
-        if (base == null || base.kind() != Kind.STACK_ADDRESS || !second.isConstant()) return null;
+        Fact base = facts.get(first);
+        Long constant = literal(second);
+        if (base == null || base.kind() != Kind.STACK_ADDRESS || constant == null) return List.of();
         int shift = (Long.BYTES - second.getSize()) * 8;
-        long delta = (second.getOffset() << shift) >> shift;
+        long delta = (constant << shift) >> shift;
         try {
             long offset = opcode == PcodeOp.INT_ADD ? Math.addExact(base.offset(), delta) : Math.subtractExact(base.offset(), delta);
-            return ((offset << shift) >> shift) == offset ? new Fact(Kind.STACK_ADDRESS, offset) : null;
+            return ((offset << shift) >> shift) == offset ? List.of(new Fact(Kind.STACK_ADDRESS, offset)) : List.of();
         }
-        catch (ArithmeticException overflow) { return null; }
+        catch (ArithmeticException overflow) { return List.of(); }
     }
 
-    private Fact read(Varnode node) {
-        if (node == null) return null;
-        Fact direct = facts.get(node);
-        if (direct != null) return direct;
-        if (node.getSize() < bytes) return null;
+    /** Decode literal masks used by raw p-code, never infer a runtime register value. */
+    private Long instructionLiteral(PcodeOp operation) {
+        Varnode output = operation.getOutput();
+        if (!output.isUnique() || output.getSize() <= 0 || output.getSize() > Long.BYTES) return null;
+        if (operation.getOpcode() == PcodeOp.COPY && operation.getNumInputs() == 1 &&
+                operation.getInput(0) != null && operation.getInput(0).getSize() == output.getSize()) {
+            return literal(operation.getInput(0));
+        }
+        if (operation.getNumInputs() != 2 || operation.getInput(0) == null || operation.getInput(1) == null ||
+                operation.getInput(0).getSize() != output.getSize() || operation.getInput(1).getSize() != output.getSize()) return null;
+        Long first = literal(operation.getInput(0)), second = literal(operation.getInput(1));
+        if (first == null || second == null) return null;
+        return switch (operation.getOpcode()) {
+            case PcodeOp.INT_AND -> first & second;
+            case PcodeOp.INT_OR -> first | second;
+            case PcodeOp.INT_XOR -> first ^ second;
+            case PcodeOp.INT_ADD -> (first + second) & bitMask(output.getSize());
+            case PcodeOp.INT_SUB -> (first - second) & bitMask(output.getSize());
+            case PcodeOp.INT_MULT -> (first * second) & bitMask(output.getSize());
+            default -> null;
+        };
+    }
+
+    private Long literal(Varnode node) {
+        if (node == null || node.getSize() <= 0 || node.getSize() > Long.BYTES) return null;
+        long mask = node.getSize() == Long.BYTES ? -1L : (1L << node.getSize() * Byte.SIZE) - 1;
+        if (node.isConstant()) return node.getOffset() & mask;
+        Fact fact = facts.get(node);
+        return node.isUnique() && fact != null && fact.kind() == Kind.LITERAL ? fact.offset() & mask : null;
+    }
+
+    private static long bitMask(int width) {
+        return width == Long.BYTES ? -1L : (1L << width * Byte.SIZE) - 1;
+    }
+
+    private long zeroBits(Varnode node) {
+        if (node == null || node.getSize() <= 0 || node.getSize() > Long.BYTES) return 0;
+        Long constant = literal(node);
+        return constant != null ? ~constant & bitMask(node.getSize()) : zeros.getOrDefault(node, 0L);
+    }
+
+    private long deriveZeros(PcodeOp operation) {
+        Varnode output = operation.getOutput();
+        if (!output.isUnique() || output.getSize() <= 0 || output.getSize() > Long.BYTES) return 0;
+        long mask = bitMask(output.getSize());
+        Long constant = instructionLiteral(operation);
+        if (constant != null) return ~constant & mask;
+        if (operation.getNumInputs() == 0 || operation.getInput(0) == null) return 0;
+        Varnode first = operation.getInput(0);
+        long known = zeroBits(first);
+        if (operation.getNumInputs() == 1) {
+            if (operation.getOpcode() == PcodeOp.COPY && first.getSize() == output.getSize()) return known;
+            if (first.getSize() > 0 && first.getSize() < output.getSize()) {
+                long high = mask & ~bitMask(first.getSize());
+                if (operation.getOpcode() == PcodeOp.INT_ZEXT) return high | known;
+                if (operation.getOpcode() == PcodeOp.INT_SEXT && (known & (1L << (first.getSize() * Byte.SIZE - 1))) != 0) {
+                    return high | known;
+                }
+            }
+            return 0;
+        }
+        if (operation.getNumInputs() != 2 || operation.getInput(1) == null) return 0;
+        Varnode second = operation.getInput(1);
+        long other = zeroBits(second);
+        int opcode = operation.getOpcode();
+        if (opcode == PcodeOp.PIECE && first.getSize() > 0 && second.getSize() > 0 &&
+                first.getSize() + second.getSize() == output.getSize()) return (known << (second.getSize() * Byte.SIZE)) | other;
+        Long count = literal(second);
+        if (opcode == PcodeOp.SUBPIECE && count != null && count >= 0 &&
+                count <= first.getSize() - output.getSize() && first.getSize() <= Long.BYTES) return (known >>> (count * Byte.SIZE)) & mask;
+        if (first.getSize() != output.getSize()) return 0;
+        if ((opcode == PcodeOp.INT_LEFT || opcode == PcodeOp.INT_RIGHT || opcode == PcodeOp.INT_SRIGHT) && count != null && count >= 0) {
+            int bits = output.getSize() * Byte.SIZE;
+            boolean signZero = (known & (1L << (bits - 1))) != 0;
+            if (count >= bits) return opcode != PcodeOp.INT_SRIGHT || signZero ? mask : 0;
+            int shift = count.intValue();
+            if (shift == 0) return known;
+            long low = (1L << shift) - 1;
+            if (opcode == PcodeOp.INT_LEFT) return ((known << shift) | low) & mask;
+            long high = mask & ~((1L << (bits - shift)) - 1);
+            return (known >>> shift) | (opcode == PcodeOp.INT_RIGHT || signZero ? high : 0);
+        }
+        if (second.getSize() != output.getSize()) return 0;
+        return switch (opcode) {
+            case PcodeOp.INT_AND -> known | other;
+            case PcodeOp.INT_OR, PcodeOp.INT_XOR -> known & other;
+            case PcodeOp.INT_ADD -> (known | other) == mask ? known & other : 0;
+            default -> 0;
+        };
+    }
+
+    private List<Fact> shiftedValues(Varnode input, long displacement, int outputSize) {
+        var values = new ArrayList<Fact>();
+        for (Fact value : readValues(input)) {
+            long offset = value.offset() + displacement;
+            if (offset >= 0 && offset <= outputSize - bytes) values.add(new Fact(Kind.VALUE, offset));
+        }
+        return values;
+    }
+
+    private List<Fact> readValues(Varnode node) {
+        if (node == null || node.getSize() < bytes) return List.of();
+        var values = new ArrayList<Fact>();
         for (var entry : facts.entrySet()) {
             Varnode known = entry.getKey();
-            if (entry.getValue().kind() == Kind.VALUE && known.getSize() >= bytes &&
-                    known.getAddress().getAddressSpace().equals(node.getAddress().getAddressSpace()) &&
-                    lowAddress(known).equals(lowAddress(node))) return VALUE;
+            if (!VALUE.equals(entry.getValue()) || known.getSize() != bytes ||
+                    !known.getAddress().getAddressSpace().equals(node.getAddress().getAddressSpace())) continue;
+            long delta = known.getAddress().subtract(node.getAddress());
+            if (delta >= 0 && delta <= node.getSize() - bytes) {
+                values.add(new Fact(Kind.VALUE, physicalBigEndian(node) ? node.getSize() - bytes - delta : delta));
+            }
         }
-        return null;
+        return values;
     }
 
-    private Address lowAddress(Varnode node) {
-        boolean bigEndian = node.isRegister() ? registersBigEndian : program.getLanguage().isBigEndian();
-        return node.getAddress().add(bigEndian ? node.getSize() - bytes : 0);
+    private boolean physicalBigEndian(Varnode node) {
+        return node.isRegister() ? registersBigEndian : program.getLanguage().isBigEndian();
+    }
+
+    private Varnode valueSpan(Varnode output, long offset) {
+        long physical = physicalBigEndian(output) ? output.getSize() - bytes - offset : offset;
+        return new Varnode(output.getAddress().add(physical), bytes);
     }
 
     Storage location(TargetRegisterMap registers) {
@@ -565,12 +797,10 @@ final class StackValueFlow {
         ordered.sort(Comparator.comparing(Varnode::getAddress).thenComparingInt(Varnode::getSize));
         for (Varnode node : ordered) {
             if (!VALUE.equals(facts.get(node))) continue;
-            Register register = exactRegister(program, node);
-            if (register == null) continue;
-            Storage mapped = GhidraVariableStorage.mappedRegister(register, bytes, registers, "tracked scalar");
-            if (mapped instanceof RegisterStorage) return mapped;
+            var view = RegisterByteSlice.mapped(program, node, registers);
+            if (view != null) return view.storage();
         }
-        Fact current = read(new Varnode(pointer.getAddress(), pointer.getMinimumByteSize()));
+        Fact current = facts.get(new Varnode(pointer.getAddress(), pointer.getMinimumByteSize()));
         if (current != null && current.kind() == Kind.STACK_ADDRESS) {
             for (long slot : slots.keySet().stream().sorted().toList()) {
                 try {
@@ -581,13 +811,6 @@ final class StackValueFlow {
             }
         }
         return UNKNOWN;
-    }
-
-    private static Register exactRegister(Program program, Varnode node) {
-        if (node == null || !node.isRegister() || node.getSize() <= 0) return null;
-        Register register = program.getRegister(node);
-        return register != null && register.getAddress().equals(node.getAddress()) &&
-            register.getBitLength() == node.getSize() * 8L ? register : null;
     }
 
     private static boolean intersects(long first, int size, long low, long high) {
