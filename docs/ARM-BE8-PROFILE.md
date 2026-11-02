@@ -220,3 +220,50 @@ error before any build. Logs and checked receipts are retained under
 `build/arm-be8-profile/inventory-correction/`, including `acceptance.json`.
 `bash -n` and `git diff --check` also pass. Hosted acceptance requires a new
 run at the corrected head; the failed run is not relabeled as passing.
+
+## Shared-parameter assertion repair
+
+Hosted run `41372370267` at `a5962ea` passes ARM export through the shared
+fixture, then fails an inherited assertion that both parameters have only
+incoming-register lifetimes. The same assertion fails in descendant PR133.
+The unchanged exporter actually tracks `left` into a register copy and `right`
+through a stack spill. This is an oracle correction, not relaxed validation or
+a new production location claim.
+
+Acceptance requires the exact new shared diagnostics, all existing nonshared
+expectations, structural validation, and runtime evidence for the longer
+locations. The exact hosted sidecar passes the existing shared-library GDB
+workflow and an additional instruction-by-instruction check:
+
+- At every one of the 27 instructions, `left` is 19; its physical carrier is
+  `r0` through function offset `0x5c` and `r1` from `0x60` through `0x68`.
+- `right` is 23 through offset `0x40`, including its stack and temporary register
+  locations. It is unavailable from `0x44` onward after the unknown-address
+  global store invalidates the saved memory proof.
+- The function returns normally, and the driver exits zero.
+
+The raw location intervals independently agree with those boundaries. This is
+specific to the retained fixture instruction sequence; it is not a general
+assertion about arbitrary ARM functions. The QEMU synthetic-vDSO warning is the
+same existing compiler-corroborated warning handled by the shared runtime lane.
+The first replay failed because the downloaded driver lacked executable mode;
+only the private copied fixture's mode was corrected, and both logs are retained.
+
+Fresh local shared and non-PIE exports using the exact hosted package also pass
+GNU views, LLVM verification, strict libdwarf checking with zero reported errors,
+original-input preservation, and their maintained GDB workflows. Commands:
+
+```bash
+FIXTURE_ROLE=shared bash src/test/integration/headless-symbol-export.sh "$ghidra" "$consumer" "$producer" arm32
+bash src/test/integration/shared-object-gdb.sh arm32
+FIXTURE_ROLE=exec bash src/test/integration/headless-symbol-export.sh "$ghidra" "$consumer" "$producer" arm32
+FIXTURE_ROLE=exec bash src/test/integration/qemu-gdb-symbols.sh arm32
+```
+
+The installed JAR SHA-256 is
+`575f550f32b22f494c3283946221b7132feac6fb705da004030878fcb184c6d2`.
+Retained commands, debugger scripts, 27 observations, logs and hashed acceptance
+receipt are under `build/arm-be8-profile/shared-lifetime-correction/`.
+The patch changes only the two shared diagnostic expectations; nonshared
+incoming-register assertions and all structural/runtime checks remain active.
+New exact-head hosted validation remains required; the failed run stays failed.
