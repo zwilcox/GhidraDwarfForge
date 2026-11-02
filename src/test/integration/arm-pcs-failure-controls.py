@@ -82,7 +82,7 @@ def main(baseline):
             assert not {'DW_AT_low_pc', 'DW_AT_high_pc', 'DW_AT_ranges', 'DW_AT_location',
                 'DW_AT_decl_file', 'DW_AT_decl_line', 'DW_AT_frame_base'}.intersection(new['attrs'])
     assert 'No errors.' in run('llvm', ['llvm-dwarfdump', '--verify', case / 'calls.dbg'])
-    run('strict', ['python3', source / 'check-dwarfdump.py', case / 'calls.dbg', case / 'strict.log',
+    run('strict-driver', ['python3', source / 'check-dwarfdump.py', case / 'calls.dbg', case / 'strict.log',
         '--original', case / 'calls.input'])
     emulator = profile['qemu_armeb'] if profile['order'] == 'big' else profile['qemu_arm']
     run('runtime', ['bash', source / 'arm-pcs-profile-runtime.sh', case, 'forge', emulator,

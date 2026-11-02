@@ -1,5 +1,13 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED validator-evidence correction:** five integration harnesses now
+keep checker stdout separate from raw validator reports. Real-validator
+controls reproduce the old collisions and verify complete corrected reports.
+The current packaged AArch64 ABI/vector matrices pass locally; independent ABI
+review corroborates inherited frame diagnostics against original ELF bytes.
+Final hosted acceptance and integration remain open. See
+`docs/TARGET-ABI-ACCEPTANCE.md`.
+
 **CONFIRMED local MIPS system-reference startup correction:** the minimal
 hosted QEMU installation lacks an unused VGA ROM. Disabling the default VGA
 device passes all four FPXX/FP64A byte-order cases with the uploaded combined

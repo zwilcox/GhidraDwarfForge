@@ -17,6 +17,25 @@ The other three umbrella issues remain open. Earlier statements that all four
 tracker issues are open are historical; they do not override the full combined
 regression requirement.
 
+**CONFIRMED evidence-retention correction:** the independent acceptance review
+found raw validator log collisions in the AArch64 ABI compiler check,
+same-name-type and object-return checks, ARM mixed-mode failure controls and
+ARM PCS failure controls. Their wrapper output now uses a separate driver log.
+The real pinned validator reproduces five old-path failures to retain complete
+reports and passes five corrected-path controls. Validation was performed before
+the overwritten output, but a passing receipt alone did not preserve reviewable
+raw evidence. Earlier affected logs are not sufficient for final acceptance.
+
+Fresh current-binary AArch64 runs pass all five ABI layouts and three vector
+layouts with real decompiler-failure and cancellation controls. Independent ABI
+review checks source-known values at multiple PCs, raw entries/returns, indirect
+carrier loss, original/output hashes and complete validator evidence. Inherited
+`.eh_frame` alignment diagnostics are retained and matched to the original
+section bytes, addresses, record lengths and original validator diagnostics;
+they are not described as zero-warning results. The original damaged compiler
+logs remain available alongside fresh complete reports for unchanged artifacts.
+The combined hosted checks still control final acceptance.
+
 ## Original requirements and evidence
 
 All paths in the test column are beneath `src/test/integration/`. The workflow

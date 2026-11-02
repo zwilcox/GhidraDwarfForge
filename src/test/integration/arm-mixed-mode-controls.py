@@ -104,7 +104,7 @@ def main(ghidra, baseline):
         assert 'DW_AT_low_pc' in failed['attrs']
     assert dies[index + 1]["depth"] <= failed["depth"]
     assert "No errors." in run("llvm", ["llvm-dwarfdump", "--verify", case / "curated.dbg"])
-    run("strict", ["python3", source / "check-dwarfdump.py", case / "curated.dbg", case / "strict.log",
+    run("strict-driver", ["python3", source / "check-dwarfdump.py", case / "curated.dbg", case / "strict.log",
         "--original", case / "mixed.stripped"])
     image = reference.inventory.elf(case / "curated.dbg")
     original = reference.inventory.elf(baseline / "curated.dbg")

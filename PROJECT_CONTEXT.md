@@ -1,5 +1,13 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED validator-evidence correction:** independent AArch64 review found
+five harnesses capturing checker stdout into the checker's own raw report path.
+The checker completed its validation, but the wrapper then overwrote the report
+prefix or entire report. Separate `*-driver.log` paths preserve both outputs.
+Real-validator controls reproduce all five collisions and verify complete raw
+reports with the corrected paths. Exporter and native binaries are unchanged;
+combined hosted acceptance remains required. See `docs/TARGET-ABI-ACCEPTANCE.md`.
+
 **CONFIRMED local MIPS system-reference startup correction:** the minimal
 hosted QEMU installation lacks an unused VGA ROM. Disabling the default VGA
 device passes all four FPXX/FP64A byte-order cases with the uploaded combined
