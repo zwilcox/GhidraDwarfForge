@@ -1,5 +1,17 @@
 # P2.3 through P2.3c completion plan
 
+**CONFIRMED local implicit ARM storage-model correction:** the final candidate
+passes twelve LE/BE8 base/VFP convention cases, including preserved unknown
+names and independent custom/callback restrictions, plus three non-ARM runtime
+regressions. All requested model/build checks pass after the recorded test
+correction. See `ARM-PCS-CALL-PROFILE.md` for exact package and receipt hashes.
+Hosted acceptance and every remaining original requirement stay open.
+
+**CONFIRMED local PCS classification and runtime progress:** see
+`ARM-PCS-CALL-PROFILE.md` for four scalar/wide/exhausted ARM argument cases,
+consumer corrections, strict validation and remaining acceptance. This does
+not narrow or complete any original requirement row below.
+
 **CONFIRMED call-reference findings:** independent compiler runs separate GDB's
 global base/VFP selection from QEMU's big-endian floating-register write defect.
 Fourteen reference executions retain correct natural-call values, wrong injected

@@ -20,12 +20,39 @@ strict validators and their existing debugger workflows. Only the shared
 expectations change. See `docs/ARM-BE8-PROFILE.md`; a new hosted gate and all
 remaining #68–#71 requirements are still required.
 
+**CONFIRMED local PCS fixture-inventory correction:** PR132's inventory repair
+is merged, and `arm-pcs-profile.c` is registered in this branch's explicit list.
+All five target reproducibility checks pass. Run `41369300493` remains a failed
+setup run; new hosted acceptance is required. Production code and the validated
+fixture contents are unchanged; #68–#71 remain open.
+
 **CONFIRMED local fixture-inventory correction:** hosted run `41364588706`
 stopped target setup because the reviewed ARM call-reference C/assembly sources
 were missing from the explicit fixture inventory. Both names are now registered;
 all five target reproducibility checks pass, and an unregistered-source control
 still rejects before building. See `docs/ARM-BE8-PROFILE.md`. This repairs test
 setup only; a new hosted gate and the full #68–#71 requirements remain open.
+
+**CONFIRMED local implicit ARM convention correction:** extraction now preserves
+recorded unknown convention names separately from the default model Ghidra
+actually uses for dynamic storage. Twelve LE/BE8 base/VFP cases pass real
+export, structural validators and compiler-relative GDB behavior, including
+unresolved custom-storage and callback rejection without target-state changes.
+The old-package failing baseline is retained. CI wiring and full ABI acceptance
+remain pending; see `docs/ARM-PCS-CALL-PROFILE.md`. All #68–#71 requirements
+remain active.
+
+**CONFIRMED local ARM PCS call checkpoint; full ABI work remains open:**
+The bounded original-ELF attribute reader and per-signature PCS policy pass 2,986
+model checks and the complete 120-task model/build run. Four LE/BE8 base/VFP
+executables pass real packaged scalar/wide/exhausted-argument exports, validators,
+natural values, typed returns, injected name/pointer calls and unchanged-state
+rejections. A separately pinned QEMU D/Q alias correction supplies trustworthy
+consumer references. LE uses GDB 15.1; BE8 uses 17.1, with the latter's LE upper
+bit-piece regression retained explicitly. Existing ARM aggregate and non-ARM
+calling-convention regressions pass. Broader profiles/compositions, hosted
+acceptance and protected integration remain required. See
+`docs/ARM-PCS-CALL-PROFILE.md`; #68–#71 remain open.
 
 **CONFIRMED independent ARM call-reference progress:** mixed base/VFP compiler
 runs reproduce GDB's global PCS selection and QEMU 8.2.2's reversed BE8 floating

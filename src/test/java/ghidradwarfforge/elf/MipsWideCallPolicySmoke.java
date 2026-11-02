@@ -188,8 +188,10 @@ public final class MipsWideCallPolicySmoke {
             require(function.debuggerCallRestriction().startsWith(original.debuggerCallRestriction()), "existing restriction lost");
             require(original.equals(new FunctionSignature(function.name(), function.address(), function.returnType(),
                 function.parameters(), function.locals(), function.variadic(), function.noReturn(), function.callingConvention(),
-                function.signatureSource(), function.nonDefaultCallingConvention(), original.debuggerCallRestriction())), "signature changed");
+                function.signatureSource(), function.nonDefaultCallingConvention(), original.debuggerCallRestriction(), function.effectiveCallingConvention())), "signature changed");
             require(after.functionDeclarations().get(index).debuggerCallsDisabled() == blocked, "declaration bypass");
+            require(after.functionDeclarations().get(index).effectiveCallingConvention().equals(
+                before.functionDeclarations().get(index).effectiveCallingConvention()), "declaration storage model lost");
             var callback = (SubroutineType) after.types().byKey().get("callback" + index);
             require(callback.debuggerCallsDisabled() == blocked, "callback bypass");
         }
@@ -246,9 +248,9 @@ public final class MipsWideCallPolicySmoke {
             var result = new TypeRef(selected.result());
             var parameters = List.of(new Parameter("arg", new TypeRef(selected.argument()), false));
             functions.add(new FunctionSignature("function" + index, 0x1000 + index * 16, result, parameters,
-                List.of(), selected.variadic(), false, "default", "USER_DEFINED", false, selected.existing()));
+                List.of(), selected.variadic(), false, "default", "USER_DEFINED", false, selected.existing(), "fixture-resolved-model"));
             declarations.add(new FunctionDeclaration("external" + index, "external" + String.format("%02d", index), result, parameters,
-                selected.variadic(), false, "default", "USER_DEFINED", false, selected.existing()));
+                selected.variadic(), false, "default", "USER_DEFINED", false, selected.existing(), "fixture-resolved-model"));
             nodes.add(new SubroutineType("callback" + index, "callback" + index, 0, result, parameters,
                 selected.variadic(), "default", selected.existing()));
         }

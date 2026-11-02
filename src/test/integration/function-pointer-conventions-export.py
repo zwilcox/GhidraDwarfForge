@@ -100,7 +100,9 @@ def main():
         assert observed == json.loads((case / 'import.json').read_text())
         if args.role == 'pie-rebased':
             assert observed['rebaseDelta'] >= 0x2000000
-        assert 'Debugger-injected calls disabled for microsoft_function:' in log
+        prefix = ('Calling convention requires target ABI classification for ' if args.compiler == 'gcc'
+                  else 'Debugger-injected calls disabled for ')
+        assert prefix + 'microsoft_function:' in log
         current = [support.digest(output), support.digest(Path(str(output) + '.c'))]
         if hashes is not None:
             assert hashes == current

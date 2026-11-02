@@ -443,7 +443,7 @@ public final class GhidraTypeGraph {
             boolean nonDefaultConvention = nonDefaultCallingConvention(program, function);
             String callRestriction = GhidraCustomCallStorage.restriction(program, function, monitor);
             if (nonDefaultConvention) {
-                diagnostic.accept("Debugger-injected calls disabled for " + symbol.name() +
+                diagnostic.accept("Calling convention requires target ABI classification for " + symbol.name() +
                     ": selected Ghidra calling convention " + function.getCallingConventionName() +
                     " differs from the program default; no debugger ABI mapping is established");
             }
@@ -455,7 +455,8 @@ public final class GhidraTypeGraph {
             signatures.add(new ProgramTypeModel.FunctionSignature(symbol.name(), address,
                 returnType, parameters, locals, function.hasVarArgs(), function.hasNoReturn(),
                 nonNull(function.getCallingConventionName()),
-                function.getSignatureSource().name(), nonDefaultConvention, callRestriction));
+                function.getSignatureSource().name(), nonDefaultConvention, callRestriction,
+                effectiveCallingConvention(function)));
         }
         for (FunctionSymbol missing : selected.values()) {
             diagnostic.accept("No Ghidra signature found for exported function " +
@@ -609,7 +610,7 @@ public final class GhidraTypeGraph {
             boolean nonDefaultConvention = nonDefaultCallingConvention(program, external);
             String callRestriction = GhidraCustomCallStorage.restriction(program, external, monitor);
             if (nonDefaultConvention) {
-                diagnostic.accept("Debugger-injected calls disabled for " + external.getName(true) +
+                diagnostic.accept("Calling convention requires target ABI classification for " + external.getName(true) +
                     ": selected Ghidra calling convention " + external.getCallingConventionName() +
                     " differs from the program default; no debugger ABI mapping is established");
             }
@@ -624,7 +625,7 @@ public final class GhidraTypeGraph {
                 extractor.reserve(external.getReturn().getFormalDataType()), parameters,
                 external.hasVarArgs(), external.hasNoReturn(),
                 external.getCallingConventionName(), external.getSignatureSource().name(),
-                nonDefaultConvention, callRestriction));
+                nonDefaultConvention, callRestriction, effectiveCallingConvention(external)));
         }
         classScopes.prepare(extractor::reserve);
         extractor.drain(monitor);
@@ -664,6 +665,19 @@ public final class GhidraTypeGraph {
         var fallback = program.getCompilerSpec().getDefaultCallingConvention();
         return selected != null && fallback != null &&
             !selected.getName().equals(fallback.getName());
+    }
+
+    /**
+     * FunctionDB.updateParametersAndReturn uses this fallback for dynamic storage.
+     * Keep it distinct from the recorded name; unresolved custom storage has no fallback proof.
+     */
+    static String effectiveCallingConvention(Function function) {
+        var selected = function.getCallingConvention();
+        if (selected != null) return selected.getName();
+        if (function.hasCustomVariableStorage() ||
+                !Function.UNKNOWN_CALLING_CONVENTION_STRING.equals(function.getCallingConventionName())) return "";
+        var fallback = function.getProgram().getFunctionManager().getDefaultCallingConvention();
+        return fallback == null ? "" : fallback.getName();
     }
 
     private static List<String> namespacePath(Namespace namespace) {
@@ -887,16 +901,20 @@ public final class GhidraTypeGraph {
                 String convention = function.getCallingConventionName();
                 var selected = function.getCallingConvention();
                 var fallback = program.getCompilerSpec().getDefaultCallingConvention();
+                boolean nonDefaultConvention = selected != null && fallback != null &&
+                    !selected.getName().equals(fallback.getName());
                 String restriction = selected == null || fallback == null ?
-                    "function type has no resolved calling convention" :
-                    selected.getName().equals(fallback.getName()) ? "" :
-                    "function type calling convention " + selected.getName() +
-                        " differs from the program default; no debugger ABI mapping";
+                    "function type has no resolved calling convention" : "";
+                if (nonDefaultConvention) {
+                    diagnostic.accept("Calling convention requires target ABI classification for function type " + name +
+                        ": selected Ghidra calling convention " + selected.getName() +
+                        " differs from the program default; no debugger ABI mapping is established");
+                }
                 if (!restriction.isEmpty()) {
                     diagnostic.accept("Debugger-injected calls disabled for function type " + name + ": " + restriction);
                 }
                 return new SubroutineType(key, name, 0, reserve(function.getReturnType()),
-                    parameters, function.hasVarArgs(), convention == null ? "" : convention, restriction);
+                    parameters, function.hasVarArgs(), convention == null ? "" : convention, restriction, nonDefaultConvention);
             }
             String reason = type instanceof Dynamic ? "dynamic-size Ghidra type" :
                 Undefined.isUndefined(type) ? "undefined Ghidra type" :

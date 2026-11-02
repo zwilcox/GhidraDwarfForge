@@ -142,9 +142,6 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
     /** Metadata compatibility is not a claim that all instructions or signatures are supported. */
     public String elfAbiCallRestriction(ElfImage image) {
         if (!equals(fromElf(image))) throw new IllegalArgumentException("call ABI target disagrees with ELF");
-        if (Arm32EndianProfile.isBe8(image)) {
-            return "ARM BE8 debugger call ABI has not been validated for recovered signatures";
-        }
         if (!name.equals("aarch64")) return "";
         byte[] header = image.headerBytes();
         int osAbi = Byte.toUnsignedInt(header[7]);
@@ -170,6 +167,9 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
         }
         if (MipsWideCallPolicy.isWideCandidate(image)) {
             return MipsWideCallPolicy.apply(image, model, cancelled, diagnostic);
+        }
+        if (image.machine() == 40) {
+            return ghidradwarfforge.elf.Arm32CallPolicy.apply(image, model, cancelled, diagnostic);
         }
         return DebuggerCallRestrictions.applyAll(MipsAggregateCallPolicy.apply(image,
             MipsFloatingCallPolicy.apply(image, model, cancelled, diagnostic), cancelled, diagnostic),

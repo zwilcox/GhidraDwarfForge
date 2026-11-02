@@ -1,5 +1,12 @@
 # ARM per-function call and return references
 
+**Follow-up confirmed locally:** the D-only correction is insufficient for
+repeated wider calls because Q-register aliases can corrupt restored D values.
+The additional pinned correction and all-pair differential controls are described
+in [the PCS checkpoint](../ARM-PCS-CALL-PROFILE.md). Four packaged scalar PCS
+cases now pass; the full mixed-PCS/aggregate/layout goal remains open. Earlier
+reference observations below retain their original tool profiles.
+
 **CONFIRMED compiler-reference limitations; Forge implementation incomplete.**
 The mixed base/VFP requirement remains part of #70 and the full #68–#71 goal.
 Correct parameter displays do not prove debugger-injected calls or automatic

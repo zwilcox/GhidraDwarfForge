@@ -225,7 +225,13 @@ public record TypeGraph(List<TypeNode> nodes) {
 
     public record SubroutineType(String key, String name, long byteSize,
             TypeRef returnType, List<Parameter> parameters,
-            boolean variadic, String callingConvention, String debuggerCallRestriction) implements TypeNode {
+            boolean variadic, String callingConvention, String debuggerCallRestriction,
+            boolean nonDefaultCallingConvention) implements TypeNode {
+        public SubroutineType(String key, String name, long byteSize,
+                TypeRef returnType, List<Parameter> parameters, boolean variadic,
+                String callingConvention, String debuggerCallRestriction) {
+            this(key, name, byteSize, returnType, parameters, variadic, callingConvention, debuggerCallRestriction, false);
+        }
         public SubroutineType(String key, String name, long byteSize,
                 TypeRef returnType, List<Parameter> parameters, boolean variadic) {
             this(key, name, byteSize, returnType, parameters, variadic, "", "");
@@ -240,7 +246,7 @@ public record TypeGraph(List<TypeNode> nodes) {
         }
 
         public boolean debuggerCallsDisabled() {
-            return !debuggerCallRestriction.isEmpty();
+            return nonDefaultCallingConvention || !debuggerCallRestriction.isEmpty();
         }
 
         public SubroutineType restrictDebuggerCalls(String restriction) {
@@ -250,7 +256,7 @@ public record TypeGraph(List<TypeNode> nodes) {
             }
             return new SubroutineType(key, name, byteSize, returnType, parameters, variadic,
                 callingConvention, debuggerCallRestriction.isEmpty() ? restriction :
-                    debuggerCallRestriction + "; " + restriction);
+                    debuggerCallRestriction + "; " + restriction, nonDefaultCallingConvention);
         }
 
         @Override

@@ -490,7 +490,7 @@ jobs:
               syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
               variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke upperAliasValueFlowSmoke terminalStackValueSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke \
               stackFirstUseSmoke \
-              opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
+              opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke arm32CallPolicySmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
               functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke arm32SectionModesSmoke ghidraArm32SectionModesSmoke ghidraArmBe8ProfileSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke mipsN32ParameterAllocationSmoke delayedReturnPrefixSmoke truncatedStackDepthSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke mipsWideCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfAddressRangesSmoke \
@@ -614,7 +614,7 @@ jobs:
               ;;
             arm32)
               packages+=(gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf binutils-arm-linux-gnueabihf
-                libc6-dev-armhf-cross qemu-user-static)
+                libc6-dev-armhf-cross qemu-user-static libglib2.0-dev zlib1g-dev ninja-build pkg-config)
               ;;
             mips32be)
               packages+=(gcc-mips-linux-gnu g++-mips-linux-gnu binutils-mips-linux-gnu
@@ -641,6 +641,27 @@ jobs:
       - name: Build pinned ARM big-endian register-piece debugger
         if: matrix.target == 'arm32'
         run: python3 support/validation/build-mips-gdb.py "$RUNNER_TEMP/arm-gdb" --target-profile arm32
+
+      - name: Build pinned ARM register alias reference emulators
+        if: matrix.target == 'arm32'
+        run: |
+          python3 support/validation/build-arm-qemu.py "$RUNNER_TEMP/arm-qemu-d-only" \
+              --correct-d-register-writes
+          python3 support/validation/build-arm-qemu.py "$RUNNER_TEMP/arm-qemu-aliases" \
+              --archive "$RUNNER_TEMP/arm-qemu-d-only/qemu-8.2.2.tar.xz" \
+              --correct-d-register-writes --correct-q-register-aliases
+
+      - name: Preserve ARM emulator build receipts
+        if: always() && matrix.target == 'arm32'
+        run: |
+          for profile in d-only aliases; do
+              destination="build/test-results/arm-qemu-build/$profile"
+              mkdir -p "$destination"
+              if [[ -d "$RUNNER_TEMP/arm-qemu-$profile" ]]; then
+                  find "$RUNNER_TEMP/arm-qemu-$profile" -maxdepth 1 -type f \
+                      \( -name '*.json' -o -name '*.log' \) -exec cp {} "$destination/" \;
+              fi
+          done
 
       - name: Cache Ghidra 12.0.3 archive
         uses: actions/cache@v6
@@ -1699,6 +1720,42 @@ jobs:
               FORGE_PCS_GDB_DATA="$RUNNER_TEMP/arm-gdb/build/gdb/data-directory" \
               src/test/integration/arm-dynamic-pcs-export.sh "$GHIDRA_INSTALL_DIR"
 
+      - name: ARM D and Q alias causal controls
+        if: matrix.target == 'arm32'
+        run: |
+          python3 src/test/integration/arm-q-alias-reference.py \
+              --gdb "$RUNNER_TEMP/arm-gdb/build/gdb/gdb" \
+              --gdb-data "$RUNNER_TEMP/arm-gdb/build/gdb/data-directory" \
+              --d-only-qemu "$RUNNER_TEMP/arm-qemu-d-only/build" \
+              --alias-qemu "$RUNNER_TEMP/arm-qemu-aliases/build"
+
+      - name: ARM scalar PCS calls and exhausted arguments
+        if: matrix.target == 'arm32'
+        run: |
+          for order in little big; do
+              gdb=$(command -v gdb-multiarch)
+              data=/usr/share/gdb
+              if [[ "$order" == big ]]; then
+                  gdb="$RUNNER_TEMP/arm-gdb/build/gdb/gdb"
+                  data="$RUNNER_TEMP/arm-gdb/build/gdb/data-directory"
+              fi
+              for pcs in softfp hard; do
+                  for convention in explicit implicit guards; do
+                      options=()
+                      if [[ "$convention" != explicit ]]; then
+                          options+=(--implicit-default)
+                      fi
+                      if [[ "$convention" == guards ]]; then
+                          options+=(--guard-controls)
+                      fi
+                      python3 src/test/integration/arm-pcs-profile.py "$GHIDRA_INSTALL_DIR" \
+                          --order "$order" --pcs "$pcs" --gdb "$gdb" --gdb-data "$data" \
+                          --qemu-arm "$RUNNER_TEMP/arm-qemu-aliases/build/qemu-arm" \
+                          --qemu-armeb "$RUNNER_TEMP/arm-qemu-aliases/build/qemu-armeb" "${options[@]}"
+                  done
+              done
+          done
+
       - name: Isolated scalar register bit-piece producer
         if: matrix.target == 'arm32'
         run: |
@@ -2031,7 +2088,7 @@ jobs:
             -DestinationPath (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions') -Force
           & .\gradlew.bat dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
-            opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
+            opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke arm32CallPolicySmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
             functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke arm32SectionModesSmoke ghidraArm32SectionModesSmoke ghidraArmBe8ProfileSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke mipsN32ParameterAllocationSmoke delayedReturnPrefixSmoke truncatedStackDepthSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke mipsWideCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
             registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke upperAliasValueFlowSmoke terminalStackValueSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
             elfBuildIdSmoke exportReportClaimsSmoke matchedElfPrefixSmoke `

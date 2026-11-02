@@ -45,7 +45,7 @@ public final class MipsFloatingCallPolicy {
             functions.add(new FunctionSignature(function.name(), function.address(), function.returnType(),
                 function.parameters(), function.locals(), function.variadic(), function.noReturn(),
                 function.callingConvention(), function.signatureSource(), function.nonDefaultCallingConvention(),
-                combine(function.debuggerCallRestriction(), restriction)));
+                combine(function.debuggerCallRestriction(), restriction), function.effectiveCallingConvention()));
             diagnostic.accept("Debugger-injected calls disabled for " + function.name() + ": " + restriction);
         }
         for (var declaration : model.functionDeclarations()) {
@@ -60,7 +60,7 @@ public final class MipsFloatingCallPolicy {
             declarations.add(new FunctionDeclaration(declaration.key(), declaration.name(), declaration.returnType(),
                 declaration.parameters(), declaration.variadic(), declaration.noReturn(), declaration.callingConvention(),
                 declaration.signatureSource(), declaration.nonDefaultCallingConvention(),
-                combine(declaration.debuggerCallRestriction(), restriction)));
+                combine(declaration.debuggerCallRestriction(), restriction), declaration.effectiveCallingConvention()));
             diagnostic.accept("Debugger-injected calls disabled for " + declaration.name() + ": " + restriction);
         }
         var nodes = new ArrayList<TypeNode>();

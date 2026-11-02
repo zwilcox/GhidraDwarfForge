@@ -992,6 +992,14 @@ tasks.register("exportReportDetailsSmoke", JavaExec) {
     maxHeapSize = "64m"
 }
 
+tasks.register("arm32CallPolicySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks ARM PCS metadata, malformed attributes and all callable signature forms"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.Arm32CallPolicySmoke"
+}
+
 tasks.register("mipsAbiFlagsSmoke", JavaExec) {
     group = "verification"
     description = "Checks explicit MIPS ABI records and conservative FP32 profile selection"
