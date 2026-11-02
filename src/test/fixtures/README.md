@@ -680,3 +680,11 @@ bias and distinct BE8 partial-object lifetimes. Twelve copied-fixture mutation
 controls reject wrong addresses, raw carriers and gap boundaries. See
 [the local contract](../../../docs/ARM-STACK-AGGREGATES.md) and
 [the retained full-availability failures](../../../docs/research/ARM-STACK-AGGREGATES.md).
+
+
+`arm-stack-shared-before.c` and `arm-stack-shared-driver.c` extend the same
+aggregate source into an actually loaded LE shared library. The driver calls
+the leading neighbor before the aggregate entry, so a real decompiler failure
+must leave later functions usable. The shared contract checks source-known GOT
+relocations and live target addresses, with distinct unavailable boundaries.
+See [shared aggregate evidence](../../../docs/ARM-SHARED-AGGREGATES.md).

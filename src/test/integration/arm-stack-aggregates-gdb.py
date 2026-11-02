@@ -33,7 +33,8 @@ defer_assertion = variant == 'forge' and os.environ.get('FORGE_STACK_REPORT_ONLY
 spec = importlib.util.spec_from_file_location('reference', Path(__file__).with_name('arm-stack-aggregates-reference.py'))
 reference = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(reference)
-spec = importlib.util.spec_from_file_location('contract', Path(__file__).with_name('arm_stack_aggregate_contract.py'))
+spec = importlib.util.spec_from_file_location('contract', Path(__file__).with_name(
+    'arm_stack_shared_contract.py' if layout == 'shared' else 'arm_stack_aggregate_contract.py'))
 contract = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(contract)
 locations = json.loads((case / 'parameter-locations.json').read_text()) if variant == 'forge' and (
@@ -131,7 +132,21 @@ def raw_entry(name, pcs, kind):
 try:
     gdb.execute('target remote ' + os.environ['FORGE_PCS_REMOTE'])
     bias = 0
-    if layout == 'pie':
+    if layout == 'shared':
+        stopped = gdb.Breakpoint('*main', internal=True)
+        gdb.execute('continue')
+        stopped.delete()
+        assert integer('$pc') == integer('&main')
+        libraries = gdb.execute('info sharedlibrary', to_string=True)
+        library, = [line for line in libraries.splitlines() if line.split()[-1:] == [str(case / 'calls.input')]]
+        runtime_text = int(library.split()[0], 16)
+        bias = runtime_text - profile['textAddress']
+        assert bias > 0 and bias % 4096 == 0
+        symbols = case / ('calls.reference' if variant == 'compiler' else 'calls.dbg')
+        gdb.execute('symbol-file -o ' + hex(bias) + ' ' + str(symbols))
+        result['sharedLoading'] = {'libraries': libraries, 'runtimeText': runtime_text,
+            'linkText': profile['textAddress'], 'bias': bias}
+    elif layout == 'pie':
         # This fixture has no interpreter or dynamic relocations. QEMU stops
         # at the ELF entry; derive its actual mapping rather than assume a base.
         bias = integer('$pc') - profile['elfEntry']
@@ -162,7 +177,10 @@ try:
             wanted.update(dict(zip('abcdefg' if kind == 'floats' else 'abc', range(1, 8) if kind == 'floats' else (7, 11, 13))))
             wanted['tail'] = -8.5 if kind == 'floats' else -41
             code = memory(entry, inventory[name]['size'])
-            if audited:
+            if layout == 'shared':
+                contract.validate_prefix(name, code, observe - entry, entry,
+                    profile['gotAddress'] + bias, labels, memory)
+            elif audited:
                 contract.validate_prefix(name, order, code, observe - entry, labels['seen_leading'], layout, entry)
             for step in range(200):
                 pc = integer('$pc')

@@ -151,6 +151,7 @@ reproduced. Existing checker regressions, 97 evidence controls and the complete
 [the validator record](../support/validation/README.md#elf-address-bounds).
 
 **PLANNED:** exact-head hosted acceptance, independent artifact review and normal
-protected integration. Shared aggregate compositions remain part of the full ABI work.
-The PIE behavior above is locally validated; hosted acceptance is pending. All original MIPS, ARM and i386 requirements and the AArch64 closure
+protected integration. The additional LE shared-library composition is now locally validated in
+[ARM-SHARED-AGGREGATES.md](ARM-SHARED-AGGREGATES.md). These component results
+remain subject to hosted acceptance and the full ABI audit. All original MIPS, ARM and i386 requirements and the AArch64 closure
 audit remain in scope; this component does not complete the full goal.

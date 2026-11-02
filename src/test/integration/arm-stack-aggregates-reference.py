@@ -11,6 +11,9 @@ from pathlib import Path
 spec = importlib.util.spec_from_file_location('prefix_contract', Path(__file__).with_name('arm_stack_aggregate_contract.py'))
 contract = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(contract)
+spec = importlib.util.spec_from_file_location('shared_contract', Path(__file__).with_name('arm_stack_shared_contract.py'))
+shared_contract = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(shared_contract)
 
 
 PREFIXES = {
@@ -31,9 +34,18 @@ FLOAT_PREFIX = (
 
 def window(function, offset, order, code, layout='exec', entry=None, global_address=None):
     """Return the exact affected fields and carrier kind, without reading DWARF."""
-    if order not in ('little', 'big') or layout not in ('exec', 'pie') or offset < 0 or offset % 4:
+    if order not in ('little', 'big') or layout not in ('exec', 'pie', 'shared') or offset < 0 or offset % 4:
         return None
-    if function == 'base_floats' and 48 <= offset <= 84:
+    if layout == 'shared' and order == 'little' and function == 'base_floats' and 56 <= offset <= 96:
+        # The GOT-offset LDR at +52 overwrites r3; GCC continues naming r2/r3
+        # until the address calculation at +96. d7 retains the exact copy.
+        # Runtime separately checks every pool word and relocated GOT target.
+        expected = shared_contract.prefix(function)
+        if len(code) != shared_contract.pool_offset(function) + 16 or code[:len(expected)] != expected:
+            return None
+        return {'kind': 'double', 'fields': ('b',),
+            'reason': 'GCC keeps b in GOT-clobbered r2/r3 after its exact copy to d7'}
+    if layout != 'shared' and function == 'base_floats' and 48 <= offset <= 84:
         if layout == 'pie':
             # The audited PIC load/add writes only r3, leaving the proven d7
             # copy intact. Check its literal target too, not just opcode masks.
@@ -61,6 +73,13 @@ def window(function, offset, order, code, layout='exec', entry=None, global_addr
     if not separator or pcs not in ('base', 'vfp') or kind not in ('pair', 'packed', 'words', 'bytes'):
         return None
     prefix = PREFIXES[kind + '-' + order if kind == 'bytes' else kind]
+    if layout == 'shared':
+        if order != 'little':
+            return None
+        if kind == 'packed':
+            prefix = (0xe24dd008, 0xe92d4830, 0xe28db00c, 0xe1a0c000, 0xe1a00003, 0xe58b3008)
+        elif kind == 'bytes':
+            prefix = (0xe92d4830, 0xe28db00c, 0xe24dd008, 0xe50b3010)
     if layout == 'pie' and kind == 'bytes' and order == 'big':
         prefix = (0xe92d4830, 0xe28db00c, 0xe24dd008, 0xe1a0c003, 0xe50b3010)
     expected = b''.join(word.to_bytes(4, 'little') for word in prefix)

@@ -56,7 +56,8 @@ def main(baseline):
         return text
 
     image = facts.elf(baseline / 'calls.reference', allow_big_endian=True)
-    start, = [symbol for symbol in image['symbols'] if symbol['name'] == '_start']
+    shared = profile.get('layout') == 'shared'
+    start, = [symbol for symbol in image['symbols'] if symbol['name'] == ('aggregate_fixture_before' if shared else '_start')]
     labels = json.loads((baseline / 'labels.json').read_text())
     results = {}
     baseline_runtime = json.loads((baseline / 'forge-gdb.json').read_text())
@@ -64,7 +65,8 @@ def main(baseline):
         entry = start['raw'] if role == 'neighbor' else labels[role]
         case = root / role
         case.mkdir()
-        for name in ('calls.input', 'calls.reference', 'labels.json', 'instruction-inventory.json'):
+        for name in ('calls.input', 'calls.reference', 'labels.json', 'instruction-inventory.json',
+                *(('calls.driver',) if shared else ())):
             shutil.copy2(baseline / name, case / name)
             protected[str(case / name)] = driver.digest(case / name)
         hashes = None
@@ -93,7 +95,7 @@ def main(baseline):
         assert exported['header'][:4] == image['header'][:4] and exported['header'][6] == image['header'][6]
         assert exported['header'][4] == exported['header'][9] == 0
         assert facts.section(exported, '.text')['data'] == facts.section(image, '.text')['data']
-        run(role + '-runtime', ['bash', source / 'arm-pcs-profile-runtime.sh', case, 'forge',
+        run(role + '-runtime', ['bash', source / ('arm-stack-shared-runtime.sh' if shared else 'arm-pcs-profile-runtime.sh'), case, 'forge',
             profile['qemu'], profile['gdb'], profile['gdbData'], source / 'arm-stack-aggregates-gdb.py'])
         runtime = json.loads((case / 'forge-gdb.json').read_text())
         assert runtime['status'] == 'PASS' and len(runtime['entry']) == 14

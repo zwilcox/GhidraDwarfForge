@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local ARM shared aggregate composition:** a real libc-backed
+loader/driver executes the fourteen-function LE DSO in ordinary/rebased forms.
+Exact GOT relocation, raw carrier and typed checks pass 660 stops per variant,
+16 deterministic failure exports and two cancellations; sixteen deliberate
+shared corruptions reject. Three exec/PIE regressions and twelve PIE corruption
+controls pass with the unchanged production package. See
+`docs/ARM-SHARED-AGGREGATES.md`. Hosted acceptance, mixed-body runtime conflict/
+context controls, protected integration and all remaining original ABI rows
+remain open; the full P2.3–P2.3c goal is unchanged.
+
 **CONFIRMED local ARM aggregate PIE composition:** all eight LE/BE8
 exec/PIE and ordinary/rebased cases pass compiler/Forge comparison, raw carrier
 checks, strict validators and preservation: 2,032 stops per variant, 64

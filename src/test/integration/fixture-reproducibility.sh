@@ -52,6 +52,8 @@ expected_sources=(
     arm-pcs-profile.c
     arm-pcs-start.S
     arm-stack-aggregates.c
+    arm-stack-shared-before.c
+    arm-stack-shared-driver.c
     arm-symbol-boundary.S
     arm-symbol-boundary.ld
     arm-thumb-after.c

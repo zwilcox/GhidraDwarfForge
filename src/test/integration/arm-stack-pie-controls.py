@@ -28,7 +28,8 @@ def main(baseline):
     root = Path(tempfile.mkdtemp(prefix='pie-controls.', dir=baseline))
     files = ('calls.input', 'calls.reference', 'calls.dbg', 'calls.dbg.c', 'profile.json',
         'labels.json', 'instruction-inventory.json', 'parameter-locations.json')
-    helpers = ('arm-stack-aggregates-gdb.py', 'arm-stack-aggregates-reference.py', 'arm_stack_aggregate_contract.py')
+    helpers = ('arm-stack-aggregates-gdb.py', 'arm-stack-aggregates-reference.py',
+        'arm_stack_aggregate_contract.py', 'arm_stack_shared_contract.py')
     protected = {str(baseline / name): driver.digest(baseline / name) for name in files}
     protected.update({str(source / name): driver.digest(source / name) for name in (*helpers, Path(__file__).name)})
     rows = []

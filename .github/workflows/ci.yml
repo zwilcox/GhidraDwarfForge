@@ -1772,6 +1772,7 @@ jobs:
         run: |
           python3 src/test/integration/arm-stack-aggregates-reference-test.py
           python3 src/test/integration/arm-stack-aggregates-contract-test.py
+          python3 src/test/integration/arm-stack-shared-contract-test.py
           for order in little big; do
               gdb=$(command -v gdb-multiarch)
               data=/usr/share/gdb
@@ -1785,7 +1786,11 @@ jobs:
                   python3 src/test/integration/arm-aggregate-calls.py "$GHIDRA_INSTALL_DIR" \
                       --order "$order" --pcs "$pcs" --gdb "$gdb" --gdb-data "$data" --qemu "$qemu"
               done
-              for role in exec exec-rebased pie pie-rebased; do
+              aggregate_roles=(exec exec-rebased pie pie-rebased)
+              if [[ "$order" == little ]]; then
+                  aggregate_roles+=(shared shared-rebased)
+              fi
+              for role in "${aggregate_roles[@]}"; do
                   python3 src/test/integration/arm-stack-aggregates.py "$GHIDRA_INSTALL_DIR" \
                       --order "$order" --role "$role" --gdb "$gdb" --gdb-data "$data" --qemu "$qemu" \
                       --availability-contract audited-prefix --with-controls
@@ -1793,6 +1798,13 @@ jobs:
               pie_cases=(build/test-results/arm-stack-aggregates/"$order".pie.*)
               test "${#pie_cases[@]}" -eq 1
               python3 src/test/integration/arm-stack-pie-controls.py "${pie_cases[0]}"
+              if [[ "$order" == little ]]; then
+                  for role in shared shared-rebased; do
+                      shared_cases=(build/test-results/arm-stack-aggregates/"$order.$role".*)
+                      test "${#shared_cases[@]}" -eq 1
+                      python3 src/test/integration/arm-stack-shared-controls.py "${shared_cases[0]}"
+                  done
+              fi
               python3 src/test/integration/arm-hfa-lifetimes.py "$GHIDRA_INSTALL_DIR" \
                   --order "$order" --gdb "$gdb" --gdb-data "$data" --qemu "$qemu"
               for storage in hfa base mixed; do

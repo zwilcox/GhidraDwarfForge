@@ -40,7 +40,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
     parser.add_argument('--order', choices=('little', 'big'), required=True)
-    parser.add_argument('--role', choices=('exec', 'exec-rebased', 'pie', 'pie-rebased'), default='exec')
+    parser.add_argument('--role', choices=('exec', 'exec-rebased', 'pie', 'pie-rebased', 'shared', 'shared-rebased'), default='exec')
     parser.add_argument('--qemu', type=Path, required=True)
     parser.add_argument('--gdb', type=Path, required=True)
     parser.add_argument('--gdb-data', type=Path, required=True)
@@ -49,7 +49,9 @@ def main():
     parser.add_argument('--with-controls', action='store_true')
     parser.add_argument('--results-root', type=Path, default=repository / 'build/test-results/arm-stack-aggregates')
     args = parser.parse_args()
-    layout = 'pie' if args.role.startswith('pie') else 'exec'
+    layout = args.role.split('-')[0]
+    if layout == 'shared' and args.order != 'little':
+        parser.error('shared requires the validated little-endian loader/sysroot profile')
     if args.with_controls and args.availability_contract != 'audited-prefix':
         parser.error('--with-controls requires --availability-contract audited-prefix')
     ghidra = args.ghidra.resolve(strict=True)
@@ -61,12 +63,14 @@ def main():
     facts = load('aggregate_elf', source / 'arm-thumb-mode-check.py')
     vdso = load('aggregate_vdso', source / 'arm-pcs-call-reference.py')
     contract = load('aggregate_contract', source / 'arm_stack_aggregate_contract.py')
+    shared_contract = load('shared_contract', source / 'arm_stack_shared_contract.py')
     compiler = os.environ.get('ARM32_CC', 'arm-linux-gnueabihf-gcc')
     objcopy = os.environ.get('ARM32_OBJCOPY', 'arm-linux-gnueabihf-objcopy')
     fixture = repository / 'src/test/fixtures/arm-stack-aggregates.c'
     startup = repository / 'src/test/fixtures/arm-pcs-start.S'
     protected = [Path(__file__), fixture, startup, source / 'arm-stack-aggregates-gdb.py',
         source / 'arm-stack-aggregates-reference.py', source / 'arm_stack_aggregate_contract.py',
+        source / 'arm_stack_shared_contract.py',
         source / 'arm-stack-aggregates-locations.py', source / 'check-stack-first-use.py',
         source / 'arm-pcs-profile-runtime.sh',
         source / 'qemu-socket.sh', source / 'arm-thumb-mode-check.py', source / 'arm-pcs-call-reference.py',
@@ -74,6 +78,12 @@ def main():
         source / 'ghidra_scripts/RebaseFixtureProgram.java',
         Path(shutil.which(compiler)), Path(shutil.which(objcopy)), args.qemu, args.gdb]
     protected += [p for root in (module, args.gdb_data) for p in root.rglob('*') if p.is_file()]
+    sysroot = Path(os.environ.get('FORGE_ARM32_SYSROOT', '/usr/arm-linux-gnueabihf')).resolve()
+    if layout == 'shared':
+        protected += [source / 'arm-stack-shared-runtime.sh',
+            repository / 'src/test/fixtures/arm-stack-shared-driver.c',
+            repository / 'src/test/fixtures/arm-stack-shared-before.c',
+            sysroot / 'lib/ld-linux-armhf.so.3', sysroot / 'lib/libc.so.6']
     if args.with_controls:
         protected += [source / 'arm-stack-aggregate-controls.py',
             source / 'ghidra_scripts/AbiDecompilerFailureExport.java', source / 'ghidra_scripts/CancelDuringElfCopy.java']
@@ -109,38 +119,59 @@ def main():
     profile = {'order': args.order, 'role': args.role, 'layout': layout, 'ghidra': str(ghidra),
         'qemu': str(args.qemu.resolve()), 'gdb': str(args.gdb.resolve()), 'gdbData': str(args.gdb_data.resolve()),
         'compilerReferenceCalibration': 'exact live-carrier windows', 'availabilityContract': args.availability_contract}
-    flags = ['-marm', '-march=armv7-a', '-mfpu=vfpv3-d16', '-mfloat-abi=hard', '-O1',
+    common = ['-marm', '-march=armv7-a', '-mfpu=vfpv3-d16', '-mfloat-abi=hard', '-O1',
         '-g3', '-gdwarf-5', '-gno-variable-location-views', '-fno-omit-frame-pointer',
-        '-fno-inline', '-fno-ipa-sra', '-fno-ipa-cp', '-nostdlib', '-nostartfiles',
+        '-fno-inline', '-fno-ipa-sra', '-fno-ipa-cp']
+    flags = [*common, '-nostdlib', '-nostartfiles',
         *(['-fPIE', '-pie', '-Wl,--no-dynamic-linker'] if layout == 'pie' else ['-static', '-fno-pie', '-no-pie']),
         '-Wl,--build-id=none', '-Wl,-e,_start',
         *(['-mbig-endian', '-Wl,--be8'] if args.order == 'big' else [])]
-    run('startup', [compiler, *flags, '-c', startup, '-o', case / 'start.o'])
-    command = [compiler, *flags, case / 'start.o', fixture]
+    if layout == 'shared':
+        flags = [*common, '-fPIC', '-shared', '-nostdlib', '-nostartfiles', '-Dmain=aggregate_fixture_main',
+            '-Wl,-Bsymbolic', '-Wl,-soname,calls.input', '-Wl,--build-id=none']
+        command = [compiler, *flags, repository / 'src/test/fixtures/arm-stack-shared-before.c', fixture]
+        profile['sysroot'] = str(sysroot)
+    else:
+        run('startup', [compiler, *flags, '-c', startup, '-o', case / 'start.o'])
+        command = [compiler, *flags, case / 'start.o', fixture]
     run('compile', [*command, '-o', case / 'calls.reference'])
     run('rebuild', [*command, '-o', case / 'calls.repeat'])
     assert (case / 'calls.reference').read_bytes() == (case / 'calls.repeat').read_bytes()
     run('strip', [objcopy, '--strip-all', case / 'calls.reference', case / 'calls.input'])
+    if layout == 'shared':
+        driver_command = [compiler, *common, '-fno-pie', '-no-pie', repository / 'src/test/fixtures/arm-stack-shared-driver.c',
+            '-L' + str(case), '-Wl,-rpath,$ORIGIN', '-Wl,--build-id=none', '-l:calls.reference']
+        run('driver', [*driver_command, '-o', case / 'calls.driver'])
+        run('driver-repeat', [*driver_command, '-o', case / 'calls.driver-repeat'])
+        assert (case / 'calls.driver').read_bytes() == (case / 'calls.driver-repeat').read_bytes()
+        before[str(case / 'calls.driver')] = digest(case / 'calls.driver')
     original = facts.elf(case / 'calls.input', allow_big_endian=True)
     compiler_elf = facts.elf(case / 'calls.reference', allow_big_endian=True)
     assert not original['symbols'], 'fixture must be completely stripped'
-    assert original['header'][0] == (3 if layout == 'pie' else 2)
+    assert original['header'][0] == (2 if layout == 'exec' else 3)
     profile['elfEntry'] = original['header'][3]
     endian = '<' if args.order == 'little' else '>'
     assert original['header'][8] == 32
     segments = [struct.unpack_from(endian + '8I', original['data'], original['header'][4] + 32 * index)
         for index in range(original['header'][9])]
     assert not any(row[0] == 3 for row in segments), 'runtime entry must not be an interpreter'
-    assert not any(section['row'][1] in (4, 9) and section['row'][5] for section in original['sections'])
+    if layout != 'shared':
+        assert not any(section['row'][1] in (4, 9) and section['row'][5] for section in original['sections'])
     profile['elfImageBase'] = min(row[2] for row in segments if row[0] == 1)
     if layout == 'pie':
         dynamic = facts.section(original, '.dynamic')['data']
         assert any(tag == 0x6ffffffb and value & 0x8000000 for tag, value in struct.iter_unpack(endian + 'II', dynamic))
+    if layout == 'shared':
+        assert profile['elfEntry'] == 0
+        profile['textAddress'] = facts.section(original, '.text')['row'][3]
+        profile['gotAddress'] = facts.section(original, '.got')['row'][3]
     write('profile.json', profile)
     kinds = ('pair', 'aligned', 'packed', 'bytes', 'words', 'mixed', 'floats')
     names = [pcs + '_' + kind for pcs in ('base', 'vfp') for kind in kinds]
     required = ['seen_leading'] + names + [name + '_observe' for name in names] + [prefix + kind
         for prefix in ('input_', 'seen_') for kind in kinds]
+    if layout == 'shared':
+        required += ['seen_tail', 'seen_doubles', 'seen_float_tail', 'aggregate_fixture_main', 'aggregate_fixture_before']
     labels, inventory = {}, {}
     for name in required:
         symbol, = [row for row in compiler_elf['symbols'] if row['name'] == name]
@@ -152,9 +183,9 @@ def main():
             code = section['data'][offset:offset + symbol['size']]
             assert len(code) == symbol['size'] and len(code) % 4 == 0
             inventory[name] = {'entry': symbol['raw'], 'size': symbol['size'], 'code': code.hex()}
-            if layout == 'pie':
-                pool = contract.literal_offset(name, args.order)
-                assert pool + 4 == symbol['size']
+            if layout in ('pie', 'shared'):
+                pool = contract.literal_offset(name, args.order) if layout == 'pie' else shared_contract.pool_offset(name)
+                assert pool + (4 if layout == 'pie' else 16) == symbol['size']
                 # Compiler mapping symbols independently distinguish the trailing
                 # literal data from instructions; it is not a function-body PC.
                 assert any(row['name'].split('.')[0] == '$d' and row['raw'] == symbol['raw'] + pool
@@ -164,7 +195,19 @@ def main():
         observe = labels[name + '_observe']
         assert labels[name] < observe < labels[name] + inventory[name]['size'] and observe % 4 == 0
         inventory[name]['observeOffset'] = observe - labels[name]
-        if args.availability_contract == 'audited-prefix':
+        if layout == 'shared':
+            got = facts.section(original, '.got')
+            def got_memory(address, size):
+                offset = address - got['row'][3]
+                assert 0 <= offset <= len(got['data']) - size
+                return got['data'][offset:offset + size]
+            slots = shared_contract.validate_prefix(name, bytes.fromhex(inventory[name]['code']),
+                inventory[name]['observeOffset'], labels[name], profile['gotAddress'], labels, got_memory)
+            relocations = list(struct.iter_unpack('<II', facts.section(original, '.rel.dyn')['data']))
+            assert all(info == 23 for _, info in relocations), 'expected symbol-free R_ARM_RELATIVE'
+            assert all((slot['slot'], 23) in relocations for slot in slots)
+            inventory[name]['gotSlots'] = slots
+        elif args.availability_contract == 'audited-prefix':
             contract.validate_prefix(name, args.order, bytes.fromhex(inventory[name]['code']),
                 inventory[name]['observeOffset'], labels['seen_leading'], layout, labels[name])
     write('instruction-inventory.json', inventory)
@@ -173,7 +216,7 @@ def main():
     for leaf in ('calls.input', 'calls.reference'):
         before[str(case / leaf)] = digest(case / leaf)
     write('protected-before.json', before)
-    runtime = ['bash', source / 'arm-pcs-profile-runtime.sh', case]
+    runtime = ['bash', source / ('arm-stack-shared-runtime.sh' if layout == 'shared' else 'arm-pcs-profile-runtime.sh'), case]
     runtime_tail = [args.qemu, args.gdb, args.gdb_data, source / 'arm-stack-aggregates-gdb.py']
     run('compiler-runtime', [*runtime, 'compiler', *runtime_tail], {'FORGE_STACK_REFERENCE_CALIBRATION': '1'})
     project = case / 'project'
@@ -238,7 +281,8 @@ def main():
             if args.availability_contract == 'audited-prefix':
                 expected_gaps = {(row['name'], row['offset'], expression)
                     for row in result['observations'] for expression in row['fields']
-                    if contract.expects_gap(row['name'], args.order, row['offset'], expression, layout)}
+                    if (shared_contract if layout == 'shared' else contract).expects_gap(
+                        row['name'], args.order, row['offset'], expression, layout)}
                 assert {(row['name'], row['offset'], row['expression']) for row in result['unavailable']} == expected_gaps
         warnings = (case / (variant + '.stderr')).read_text().splitlines()
         assert len(warnings) <= 1
