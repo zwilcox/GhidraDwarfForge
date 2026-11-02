@@ -1,5 +1,11 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED tracker reconciliation:** GitHub #68 is closed as completed by
+`zwilcox` on 2026-11-01; #69–#71 remain open. The inspected #68 event has no
+linked commit or acceptance comment. Earlier statements that all four tracker
+issues are open are historical. The full user-requested requirement audit stays
+active independently of tracker status; no issue was reopened or scope removed.
+
 **CONFIRMED local byte-slice and reference progress:** shared incoming analysis
 now preserves exact partial-register bytes through wider transfers and proven
 carry-free joins. Twenty-two model suites, 24 LE/BE8 aggregate controls, two

@@ -26,6 +26,7 @@ layouts = {'pair': ('ii', 8), 'aligned': ('Qi4x', 16), 'packed': ('BI', 5),
 result = {'status': 'STARTED', 'variant': variant, 'entry': [], 'observations': [],
     'mismatches': [], 'referenceWindows': [], 'referenceMismatches': []}
 calibrate = variant == 'compiler' and os.environ.get('FORGE_STACK_REFERENCE_CALIBRATION') == '1'
+defer_assertion = variant == 'forge' and os.environ.get('FORGE_STACK_REPORT_ONLY') == '1'
 spec = importlib.util.spec_from_file_location('reference', Path(__file__).with_name('arm-stack-aggregates-reference.py'))
 reference = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(reference)
@@ -139,7 +140,8 @@ try:
     gdb.execute('continue')
     assert integer('$_exitcode') == 0
     result['status'] = 'PASS' if not result['mismatches'] else 'REFERENCE_MISMATCH' if variant == 'compiler' else 'FORGE_MISMATCH'
-    assert not result['mismatches'], str(len(result['mismatches'])) + ' typed observations disagree'
+    if not defer_assertion:
+        assert not result['mismatches'], str(len(result['mismatches'])) + ' typed observations disagree'
 except BaseException as error:
     if result['status'] == 'STARTED':
         result['status'] = 'FAIL'

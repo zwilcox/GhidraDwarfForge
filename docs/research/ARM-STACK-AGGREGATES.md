@@ -180,8 +180,41 @@ functions and incorrect carrier reads. Runtime negative controls reject a
 corrupted raw value and prove that enabling calibration for Forge still leaves
 all 130 LE omissions as failures. The uncalibrated compiler logs are retained.
 
-**PLANNED next work:** build the portable aggregate harness, specify and test
-the raw location/value/gap contract against the independent instructions, and
+## Portable reproduction
+
+**CONFIRMED strict reproduction, not a passing integration lane:** the tracked
+`src/test/integration/arm-stack-aggregates.py` driver now rebuilds and strips the
+fixture, captures an independent instruction inventory, runs the calibrated
+compiler reference, imports and curates a new project, exports twice through
+the installed production extension, validates both symbol files, and observes
+every instruction through each source label. It verifies package/script/input
+hashes, the exact loaded extension JAR, immutable saved projects, target ELF
+identity, unchanged text bytes, output determinism and emulator exit. The only
+accepted debugger warning is independently corroborated against the synthetic
+QEMU vDSO. No prior pilot directory is needed.
+
+```bash
+python3 src/test/integration/arm-stack-aggregates.py "$GHIDRA_INSTALL_DIR" \
+    --order little --qemu /path/to/qemu-arm \
+    --gdb /path/to/gdb-multiarch --gdb-data /path/to/gdb/data-directory
+python3 src/test/integration/arm-stack-aggregates.py "$GHIDRA_INSTALL_DIR" \
+    --order big --qemu /path/to/qemu-armeb \
+    --gdb /path/to/be8-gdb --gdb-data /path/to/be8-gdb/data-directory
+```
+
+Use the validated toolchain/emulator/debugger profiles documented in
+`../ARM-HFA-STORAGE.md`; `ARM32_CC`, `ARM32_OBJCOPY` and `DWARFDUMP` select
+isolated tools. Fresh cases `little.nu_b5wyw` and `big.k8vt1gay` under
+`build/test-results/arm-stack-aggregates` reproduce 250/256 observations,
+90/84 retained compiler-reference defects and 130/116 Forge omissions, with
+no incorrect Forge numeric values. Every subprocess and preservation/validator
+check completes, then the driver's full-availability assertion exits nonzero.
+`FORGE_STACK_REPORT_ONLY=1` defers that assertion from GDB to the driver so it
+can record emulator exit and preservation; it does not change mismatch status
+or excuse any field. This failing driver is not yet enabled as a passing CI lane.
+
+**PLANNED next work:** specify and test the raw location/value/gap contract
+against the independent instructions, and
 extend executable forms and failure/cancellation compositions. Preserve the
 full-availability research failures when adding any honest-omission contract;
 do not silently convert them to general aggregate acceptance. Broader ABI rows,

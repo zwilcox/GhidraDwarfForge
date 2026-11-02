@@ -1,5 +1,11 @@
 # P2.3 through P2.3c completion plan
 
+**CONFIRMED tracker reconciliation:** GitHub #68 is closed as completed by
+`zwilcox` on 2026-11-01; #69–#71 remain open. The inspected #68 event has no
+linked commit or acceptance comment. Earlier statements that all four tracker
+issues are open are historical. The full user-requested requirement audit stays
+active independently of tracker status; no issue was reopened or scope removed.
+
 **CONFIRMED local byte-slice and reference progress:** shared incoming analysis
 now preserves exact partial-register bytes through wider transfers and proven
 carry-free joins. Twenty-two model suites, 24 LE/BE8 aggregate controls, two
@@ -99,7 +105,7 @@ base/VFP arguments/returns, layouts, controls and protected integration. No issu
 is complete merely because this scalar checkpoint passes.
 
 **CONFIRMED active scope (2026-11-01):** finish P2.3, P2.3a, P2.3b and
-P2.3c together, following the user's expanded goal. Issues #68–#71 remain open.
+P2.3c together, following the user's expanded goal. All original requirement rows remain in scope; see the current tracker reconciliation above.
 The shared baseline is Ghidra 12.0.3, Java 21-compatible bytecode and the pinned
 libdwarf 2.3.2 producer. This work does not change that baseline or authorize a
 release publication. Starting main is `c227cf34b2d386aa146c55b7c6edd68734ea0f98`.
