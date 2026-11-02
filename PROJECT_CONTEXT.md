@@ -1,5 +1,13 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED ARM aggregate compiler references; exporter gaps remain:** four
+LE/BE8 base/VFP combinations pass raw ABI, typed-value, return and injected-call
+checks. Fresh exports identify missing Q-register HFA locations, unavailable
+saved aggregate copies and the existing aggregate call restriction. See
+`docs/research/ARM-AGGREGATE-PCS.md` for exact evidence and retained pilot failures.
+This is an independent reference checkpoint, not completed aggregate support;
+all original #68–#71 requirements remain active.
+
 **CONFIRMED local PCS fixture-inventory correction:** PR132's inventory repair
 is merged, and `arm-pcs-profile.c` is registered in this branch's explicit list.
 All five target reproducibility checks pass. Run `41369300493` remains a failed

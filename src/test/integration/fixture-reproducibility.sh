@@ -40,6 +40,7 @@ expected_sources=(
     aarch64-abi.h
     aarch64-vector.c
     aggregate-return-calls.c
+    arm-aggregate-pcs.c
     arm-dynamic-pcs.c
     arm-mixed-body-driver.c
     arm-mixed-body.S

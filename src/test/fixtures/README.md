@@ -650,3 +650,11 @@ and explicitly load the stripped library's sidecar at its observed runtime bias.
 The driver result objects are volatile so compiler-reference DWARF also passes
 all required validators. See `docs/AARCH64-PARAMETER-ALLOCATION.md` for the
 computed-storage correction, exact reference boundaries and acceptance evidence.
+
+`arm-aggregate-pcs.c` supplies source-known base/VFP structure, HFA, split core/
+stack and exhausted-HFA arguments and returns in LE and BE8. Its separate
+`arm-aggregate-pcs-reference.py` harness checks raw ABI carriers, typed compiler
+values and name/pointer injected calls. Observation labels follow argument
+capture so the compiler's stack copies have been established. Passing these
+references does not imply Forge support; current exporter omissions and the
+next implementation work are recorded in `docs/research/ARM-AGGREGATE-PCS.md`.

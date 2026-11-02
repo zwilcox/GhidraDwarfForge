@@ -1,5 +1,13 @@
 # P2.3 through P2.3c completion plan
 
+**CONFIRMED ARM aggregate compiler references; exporter gaps remain:** four
+LE/BE8 base/VFP combinations pass raw ABI, typed-value, return and injected-call
+checks. Fresh exports identify missing Q-register HFA locations, unavailable
+saved aggregate copies and the existing aggregate call restriction. See
+`research/ARM-AGGREGATE-PCS.md` for exact evidence and retained pilot failures.
+This is an independent reference checkpoint, not completed aggregate support;
+all original #68–#71 requirements remain active.
+
 **CONFIRMED local ARM controls:** twenty cases now cover addressless prototypes,
 absent/conflicting PCS metadata, real failure isolation and production-copy
 cancellation with unchanged production code. See `ARM-PCS-CONTROLS.md`.
