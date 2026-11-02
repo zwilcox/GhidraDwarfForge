@@ -469,6 +469,15 @@ are under test. FPXX runtime-mode experiments retain distinct big/little-endian
 failures rather than claiming a universal reference. See
 `docs/research/MIPS-ABI-COMPLETION.md`. All four target issues remain open.
 
+**CONFIRMED AArch64 vector-storage integration:** PR #123 passes both complete
+hosted gates at `8b6749e3`, separate package/raw/runtime/both-host review, and
+normal protected merge `3a60eab` with the same tree. Fresh uploaded-artifact
+replays pass 1,071 instruction observations and 33 unchanged-state call
+rejections; ten artifacts pass fresh structural validation. See
+`docs/AARCH64-VECTOR-STORAGE.md` for exact evidence and native-vector call limits.
+All remaining #68–#71 requirements remain open. Historical pending statements
+below are superseded for this component only.
+
 **CONFIRMED AArch64 computed-allocation defect; candidate acceptance in progress:**
 A register-exhausted structure is split incorrectly by the pinned Ghidra default
 model, causing wrong exported member and following-argument values. An isolated,
@@ -477,6 +486,13 @@ local runtime/model evidence. The expanded fixture includes narrow/aligned,
 chained and named variadic arguments plus shared/rebased-shared loading.
 See `docs/AARCH64-PARAMETER-ALLOCATION.md` for the exact correction, remaining
 acceptance and the unchanged-decompiler-output limitation. P2.3–P2.3c remain open.
+
+**CONFIRMED AArch64 profile-selection integration:** PR #122 passes all twelve
+jobs at `086eaee9` in run `41346340841`, independent package/five-target/both-host
+review, and normal protected merge `a848391`. See
+`docs/AARCH64-ABI-SELECTION.md` for 96 injected-call checks, artifact binding,
+validator diagnostics and host limits. This accepts the selected call-profile
+component; the remaining #68–#71 requirements stay open.
 
 **CONFIRMED local AArch64 SIMD storage candidate; hosted acceptance pending:**
 Separate integer/float lane fixtures now prove 128-bit register copies,
