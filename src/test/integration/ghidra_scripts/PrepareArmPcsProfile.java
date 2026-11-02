@@ -16,14 +16,18 @@ public class PrepareArmPcsProfile extends GhidraScript {
     @Override
     protected void run() throws Exception {
         String[] args = getScriptArgs();
-        if (args.length < 3 || args.length > 5 || !List.of("curate", "inspect").contains(args[0]) ||
-                (args.length >= 4 && !args[3].equals("implicit-default")) ||
-                (args.length == 5 && !args[4].equals("guard-controls"))) {
-            throw new IllegalArgumentException("curate|inspect labels.txt observation.json [implicit-default [guard-controls]]");
+        if (args.length < 3 || args.length > 6 || !List.of("curate", "inspect").contains(args[0])) {
+            throw new IllegalArgumentException("curate|inspect labels.txt observation.json [implicit-default] [guard-controls] [declarations]");
+        }
+        var options = List.of(args).subList(3, args.length);
+        if (!List.of("implicit-default", "guard-controls", "declarations").containsAll(options) ||
+                options.stream().distinct().count() != options.size() ||
+                options.contains("guard-controls") && !options.contains("implicit-default")) {
+            throw new IllegalArgumentException("invalid PCS preparation options");
         }
         boolean curate = args[0].equals("curate");
-        boolean implicit = args.length >= 4;
-        boolean guards = args.length == 5;
+        boolean implicit = options.contains("implicit-default");
+        boolean guards = options.contains("guard-controls");
         var labels = new LinkedHashMap<String, Long>();
         for (String line : Files.readAllLines(Path.of(args[1]))) {
             String[] fields = line.split(" ");
@@ -31,6 +35,7 @@ public class PrepareArmPcsProfile extends GhidraScript {
         }
         var manager = currentProgram.getDataTypeManager();
         var records = new ArrayList<Object>();
+        var declarations = new ArrayList<Object>();
         for (String pcs : List.of("base", "vfp")) {
             for (String kind : List.of("float", "double", "wide", "many")) {
                 String name = pcs + "_" + kind;
@@ -73,6 +78,32 @@ public class PrepareArmPcsProfile extends GhidraScript {
                     "returnStorage", function.getReturn().getVariableStorage().toString(), "parameters",
                     Arrays.stream(function.getParameters()).map(parameter -> Map.of("name", parameter.getName(),
                         "type", parameter.getDataType().getDisplayName(), "storage", parameter.getVariableStorage().toString())).toList()));
+                if (options.contains("declarations")) {
+                    var externals = currentProgram.getExternalManager();
+                    Function external;
+                    if (curate) {
+                        external = externals.addExtFunction("pcs_declarations", name, null,
+                            SourceType.USER_DEFINED).getFunction();
+                        external.updateFunction(recordedConvention, new ReturnParameterImpl(type, currentProgram),
+                            Function.FunctionUpdateType.DYNAMIC_STORAGE_ALL_PARAMS, true, SourceType.USER_DEFINED,
+                            parameters.toArray(ParameterImpl[]::new));
+                        if (customUnknown) external.setCustomVariableStorage(true);
+                    }
+                    else {
+                        external = externals.getUniqueExternalLocation("pcs_declarations", name).getFunction();
+                    }
+                    if (!external.getEntryPoint().isExternalAddress() ||
+                            !external.getCallingConventionName().equals(recordedConvention) ||
+                            external.hasCustomVariableStorage() != customUnknown ||
+                            external.getParameterCount() != count || !external.getReturnType().isEquivalent(type)) {
+                        throw new AssertionError("external PCS changed " + name);
+                    }
+                    declarations.add(Map.of("name", external.getName(true), "convention", external.getCallingConventionName(),
+                        "customStorage", external.hasCustomVariableStorage(), "externalAddress", external.getEntryPoint().isExternalAddress(),
+                        "signature", external.getPrototypeString(false, false), "parameters",
+                        Arrays.stream(external.getParameters()).map(parameter -> Map.of("name", parameter.getName(),
+                            "type", parameter.getDataType().getDisplayName(), "storage", parameter.getVariableStorage().toString())).toList()));
+                }
             }
         }
         data(labels.get("seen_float"), "seen_float", new ArrayDataType(FloatDataType.dataType, 2, 4, manager), curate);
@@ -81,7 +112,7 @@ public class PrepareArmPcsProfile extends GhidraScript {
         data(labels.get("calls"), "calls", UnsignedIntegerDataType.dataType, curate);
         if (curate) getFunctionAt(toAddr(labels.get("marker"))).setName("marker", SourceType.USER_DEFINED);
         Files.writeString(Path.of(args[2]), new GsonBuilder().setPrettyPrinting().create().toJson(Map.of(
-            "functions", records, "language", currentProgram.getLanguageID().toString(),
+            "functions", records, "declarations", declarations, "language", currentProgram.getLanguageID().toString(),
             "compiler", currentProgram.getCompilerSpec().getCompilerSpecID().toString(),
             "origin", ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.class.getProtectionDomain()
                 .getCodeSource().getLocation().toString())) + "\n");

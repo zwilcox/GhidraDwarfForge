@@ -23,7 +23,12 @@ def values(name):
 
 
 def matched(name):
-    return name.endswith('wide') or name.startswith('vfp' if profile['pcs'] == 'hard' else 'base')
+    if variant == 'forge' and profile.get('metadata') == 'conflict':
+        return False
+    # The executable selects GDB's PCS even when symbol-file supplies a
+    # compiler reference whose own build attributes still declare VFP.
+    pcs = 'softfp' if profile.get('metadata') == 'absent' else profile['pcs']
+    return name.endswith('wide') or name.startswith('vfp' if pcs == 'hard' else 'base')
 
 
 def callable_signature(name, pointer=False):
@@ -39,7 +44,18 @@ def state():
 
 
 try:
+    if profile.get('declarations'):
+        result['unlocatedDeclarations'] = []
+        for name in names:
+            declaration = 'pcs_declarations::' + name
+            assert gdb.lookup_global_symbol(declaration) is None and gdb.lookup_static_symbol(declaration) is None
+            result['unlocatedDeclarations'].append(declaration)
     gdb.execute('target remote ' + os.environ['FORGE_PCS_REMOTE'])
+    architecture = gdb.execute('maintenance print architecture', to_string=True)
+    selected, = re.findall(r'arm_dump_tdep: fp_model = (\d+)', architecture)
+    result['selectedFpModel'] = int(selected)
+    expected_model = 3 if profile.get('metadata') == 'absent' or profile['pcs'] == 'softfp' else 4
+    assert result['selectedFpModel'] == expected_model, architecture
     result['auxv'] = gdb.execute('info auxv', to_string=True)
     vdso = re.search(r'AT_SYSINFO_EHDR.*?(0x[0-9a-f]+)', result['auxv'])
     if vdso:

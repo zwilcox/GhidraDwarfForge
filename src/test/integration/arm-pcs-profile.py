@@ -43,6 +43,10 @@ def main():
     parser.add_argument('--pcs', choices=('softfp', 'hard'), required=True)
     parser.add_argument('--implicit-default', action='store_true', help='Preserve unknown recorded conventions with default dynamic VFP storage')
     parser.add_argument('--guard-controls', action='store_true', help='Keep unresolved custom storage and function-pointer types uncallable')
+    parser.add_argument('--declarations', action='store_true', help='Validate addressless external signatures without inventing symbols')
+    parser.add_argument('--metadata', choices=('original', 'absent', 'conflict'), default='original',
+        help='Preserve, remove, or contradict the original floating PCS attributes in a generated fixture')
+    parser.add_argument('--failure-controls', action='store_true', help='Run genuine decompilation failure and production cancellation controls')
     args = parser.parse_args()
     if args.guard_controls and not args.implicit_default:
         parser.error('--guard-controls requires --implicit-default')
@@ -62,6 +66,9 @@ def main():
         repository / 'src/test/fixtures/arm-pcs-profile.c', repository / 'src/test/fixtures/arm-pcs-start.S',
         args.gdb.resolve(strict=True)]
     protected += [Path(shutil.which(tool)).resolve(strict=True) for tool in (compiler, objcopy, emulator)]
+    if args.failure_controls:
+        protected += [source / 'arm-pcs-failure-controls.py', source / 'ghidra_scripts/AbiDecompilerFailureExport.java',
+            source / 'ghidra_scripts/CancelDuringElfCopy.java']
     protected += [p for base in (module, args.gdb_data) for p in base.rglob('*') if p.is_file()]
     before = {str(p): digest(p) for p in protected}
     commands = []
@@ -89,7 +96,7 @@ def main():
             assert not stderr, (label, 'unexpected stderr')
 
     write('profile.json', {'order': args.order, 'pcs': args.pcs, 'implicitDefault': args.implicit_default,
-        'guardControls': args.guard_controls})
+        'guardControls': args.guard_controls, 'declarations': args.declarations, 'metadata': args.metadata})
     run('compile', [compiler, '-marm', '-march=armv7-a', '-mfpu=vfpv3-d16', '-mfloat-abi=' + args.pcs,
         '-O0', '-g3', '-gdwarf-5', '-fno-omit-frame-pointer', '-nostdlib', '-nostartfiles', '-static',
         '-fno-pie', '-no-pie', '-Wl,--build-id=none', '-Wl,-e,_start',
@@ -97,10 +104,26 @@ def main():
         repository / 'src/test/fixtures/arm-pcs-start.S', repository / 'src/test/fixtures/arm-pcs-profile.c',
         '-o', case / 'calls.reference'])
     run('strip', [objcopy, '--strip-all', case / 'calls.reference', case / 'calls.input'])
+    unmodified = (case / 'calls.input').read_bytes()
+    if args.metadata == 'absent':
+        run('remove-attributes', [objcopy, '--remove-section=.ARM.attributes', case / 'calls.input', case / 'calls.control'])
+        (case / 'calls.control').replace(case / 'calls.input')
+    elif args.metadata == 'conflict':
+        changed = bytearray(unmodified)
+        flags = int.from_bytes(changed[36:40], args.order)
+        assert flags & 0x600 == (0x400 if args.pcs == 'hard' else 0x200)
+        changed[36:40] = ((flags & ~0x600) | (0x200 if args.pcs == 'hard' else 0x400)).to_bytes(4, args.order)
+        (case / 'calls.input').write_bytes(changed)
+        assert changed[:36] == unmodified[:36] and changed[40:] == unmodified[40:]
+    write('metadata-control.json', {'mode': args.metadata, 'unmodifiedSha256': hashlib.sha256(unmodified).hexdigest(),
+        'fixtureSha256': digest(case / 'calls.input')})
     before.update({str(p): digest(p) for p in (case / 'calls.reference', case / 'calls.input')})
     write('protected-before.json', before)
     original = facts.elf(case / 'calls.input', allow_big_endian=True)
     compiler_elf = facts.elf(case / 'calls.reference', allow_big_endian=True)
+    allocated = lambda elf: [(row['name'], row['row'][3], row['data']) for row in elf['sections'] if row['row'][2] & 2]
+    assert allocated(original) == allocated(compiler_elf), 'metadata control changed allocated target sections'
+    assert any(row['name'] == '.ARM.attributes' for row in original['sections']) == (args.metadata != 'absent')
     names = [pcs + '_' + kind for pcs in ('base', 'vfp') for kind in ('float', 'double', 'wide', 'many')]
     labels = names + [name + '_pointer' for name in names] + ['seen_float', 'seen_double', 'seen_wide', 'calls', 'marker']
     entries = {}
@@ -118,6 +141,7 @@ def main():
             '-scriptPath', source / 'ghidra_scripts', '-postScript', 'PrepareArmPcsProfile.java', phase,
             case / 'labels.txt', case / (phase + '.json'), *(['implicit-default'] if args.implicit_default else []),
             *(['guard-controls'] if args.guard_controls else []),
+            *(['declarations'] if args.declarations else []),
             '-postScript', 'GhidraDwarfForge.java', '--packaged-natives',
             '--output=' + str(case / 'calls.dbg')])
         log = (case / (phase + '.log')).read_text()
@@ -132,6 +156,13 @@ def main():
     reports = [facts.transcript(case / (phase + '.log'), 'GhidraDwarfForge report: ') for phase in ('curate', 'inspect')]
     assert reports[0] == reports[1] and reports[0]['failure'] is None
     write('report.json', reports[0])
+    if args.metadata == 'conflict':
+        for name in names:
+            for target in [name, 'function type ' + name + '_type',
+                    *(['pcs_declarations::' + name] if args.declarations else [])]:
+                matching = [message for message in reports[0]['diagnostics'] if message.startswith(
+                    'Debugger-injected calls disabled for ' + target + ': ')]
+                assert any('ARM floating PCS flags contradict build attributes' in message for message in matching), target
     observed = json.loads((case / 'inspect.json').read_text())
     for function in observed['functions']:
         name = function['name']
@@ -162,13 +193,17 @@ def main():
     assert exported['data'][:16] == original['data'][:16]
     assert exported['header'][:4] == original['header'][:4] and exported['header'][6] == original['header'][6]
     assert exported['header'][4] == exported['header'][9] == 0
-    for section in ('.text', '.ARM.attributes'):
+    for section in ('.text', *(['.ARM.attributes'] if args.metadata != 'absent' else [])):
         assert facts.section(exported, section)['data'] == facts.section(original, section)['data']
+    assert any(row['name'] == '.ARM.attributes' for row in exported['sections']) == (args.metadata != 'absent')
     records = dies.records((case / 'forge-info.log').read_text())
+    by_offset = {record['offset']: record for record in records if record['tag'] is not None}
     raw = []
     for name in names:
-        for tag, spelling in [('DW_TAG_subprogram', name), ('DW_TAG_subroutine_type', name + '_type')]:
-            blocked = not (name.endswith('wide') or name.startswith('vfp' if args.pcs == 'hard' else 'base'))
+        for tag, spelling in [('DW_TAG_subprogram', name), ('DW_TAG_subroutine_type', name + '_type'),
+                *([('DW_TAG_subprogram', 'pcs_declarations::' + name)] if args.declarations else [])]:
+            consumer = 'base' if args.metadata == 'absent' or args.pcs == 'softfp' else 'vfp'
+            blocked = args.metadata == 'conflict' or not (name.endswith('wide') or name.startswith(consumer))
             blocked |= args.guard_controls and (name == 'vfp_float' or (tag == 'DW_TAG_subroutine_type' and name == 'vfp_double'))
             expected = 3 if blocked else 1
             record, = [row for row in records if row['tag'] == tag and dies.name(row) == spelling]
@@ -181,6 +216,27 @@ def main():
                 assert name.startswith('vfp'), record
             else:
                 assert int(convention.split()[0]) == expected, record
+            if spelling.startswith('pcs_declarations::'):
+                assert record['attrs']['DW_AT_declaration'] == record['attrs']['DW_AT_external'] == '1'
+                forbidden = {'DW_AT_low_pc', 'DW_AT_high_pc', 'DW_AT_ranges', 'DW_AT_entry_pc',
+                    'DW_AT_location', 'DW_AT_frame_base', 'DW_AT_decl_file', 'DW_AT_decl_line'}
+                assert not forbidden.intersection(record['attrs']), record
+                children = []
+                for child in records[records.index(record) + 1:]:
+                    if child['depth'] <= record['depth']:
+                        break
+                    if child['tag'] == 'DW_TAG_formal_parameter':
+                        children.append(child)
+                        assert 'DW_AT_location' not in child['attrs'] and 'DW_AT_const_value' not in child['attrs']
+                assert len(children) == (10 if name.endswith('many') else 2), record
+                expected_names = list('abcdefghij') if name.endswith('many') else ['first', 'second']
+                assert [dies.name(child) for child in children] == expected_names
+                assert all(child['attrs']['DW_AT_type'] == record['attrs']['DW_AT_type'] for child in children)
+                referred = int(re.fullmatch(r'<0x([0-9a-f]+)>', record['attrs']['DW_AT_type'])[1], 16)
+                returned = by_offset[referred]
+                assert returned['tag'] == 'DW_TAG_base_type'
+                assert returned['attrs']['DW_AT_byte_size'] == ('4' if name.endswith('float') else '8')
+                assert int(returned['attrs']['DW_AT_encoding'].split()[0]) == (5 if name.endswith('wide') else 4)
             raw.append(record)
     observations = []
     for variant in ('compiler', 'forge'):
@@ -200,10 +256,17 @@ def main():
         observations.append(observed)
     after = {path: digest(Path(path)) for path in before}
     assert before == after
-    write('result.json', {'status': 'PASS', 'profile': vars(args) | {'ghidra': str(ghidra), 'gdb': str(args.gdb),
+    result = {'status': 'PASS_BASELINE' if args.failure_controls else 'PASS', 'profile': vars(args) | {'ghidra': str(ghidra), 'gdb': str(args.gdb),
         'gdb_data': str(args.gdb_data)}, 'rawCallingConventions': raw, 'gdb': observations,
         'protectedBefore': before, 'protectedAfter': after, 'programBefore': program_before,
-        'programAfter': program_after, 'rotatedBackups': changed})
+        'programAfter': program_after, 'rotatedBackups': changed}
+    write('result.json', result)
+    if args.failure_controls:
+        run('failure-controls', ['python3', source / 'arm-pcs-failure-controls.py', case])
+        result['failureControls'] = json.loads((case / 'failure-controls.json').read_text())
+        assert result['failureControls']['status'] == 'PASS'
+        result['status'] = 'PASS'
+        write('result.json', result)
     print('arm-pcs-profile=PASS ' + str(case))
 
 
