@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local ARM aggregate failure/cancellation compositions:** twelve
+LE/BE8 storage/control combinations pass 48 deterministic native-failure exports
+and twelve cancellations during production copying. Neighboring functions retain
+138 exact aggregate values and 30 gaps; failed aggregate functions expose no
+parameter at all 168 checked PCs. Structural validators, original/program/output
+preservation and both default regressions pass. See
+`docs/ARM-AGGREGATE-STORAGE-CONTROLS.md`. Broader layouts and exhausted-stack
+behavior, hosted integration and all original #68–#71 requirements remain open.
+
 **CONFIRMED local ARM aggregate storage controls:** all 48 LE/BE8 combinations
 of VFP HFA, base-PCS aggregate and mixed integer/float aggregate storage pass.
 GDB checks 582 exact typed aggregate values and 90 unavailable boundaries;

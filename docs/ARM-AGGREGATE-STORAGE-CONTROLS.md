@@ -96,7 +96,7 @@ wrong field value at entry. Their runtime failures are retained under
 `build/arm-hfa-controls/oracle-controls/`.
 
 Remaining scope includes additional aggregate layouts, incoming exhausted-stack
-compositions, failure/cancellation compositions for these new bodies and the
+compositions, broader failure/cancellation compositions and the
 original cross-target requirement audit. Hosted gates and protected integration
 remain required. Passing this matrix alone does not complete ARM32 or any of
 P2.3/P2.3a/P2.3b/P2.3c.
@@ -118,3 +118,50 @@ Receipt `build/arm-hfa-controls/acceptance.json` SHA-256:
 The complete command lists are `full-matrix.commands.json` and
 `default-current.commands.json` beside it. Earlier pilot/matrix runs are retained
 as development evidence, and are not substituted for this final 48-case run.
+
+## Native failure and cancellation compositions
+
+**CONFIRMED locally; hosted acceptance pending:** twelve additional combinations
+cover `upper` and `unknown-alias` in all three storage profiles and both data
+orders. `--failure-controls` first requires the ordinary baseline, then induces
+an actual native instruction-limit failure in a neighboring `_start` function
+and separately in `hfa_control`. Each failure export is repeated deterministically.
+The production source extractor, type/storage model, native producer, ELF writer
+and artifact publisher run unchanged; the existing test adapter only sets the
+native decompiler limit for the selected function and restores it afterward.
+
+A neighboring failure leaves 138 exact aggregate observations and 30 unavailable
+boundaries intact across the twelve cases. Failure of `hfa_control` produces a
+symbol-only DIE with its correct entry, no return type, declaration line, frame
+base or child parameters. GDB executes all fourteen instructions in every case,
+checks the actual registers/memory and typed global input, and cannot resolve
+`value` at any of the 168 failed-function PCs. A deliberately wrong symbol-only
+claim against the normal sidecar is rejected at entry. This is an absence check,
+not an exception allowing fabricated parameter values.
+
+The twelve cases produce 48 passing native-failure exports. All 24 distinct
+failure artifacts pass GNU, LLVM and pinned strict validation, preserve target
+identity/code bytes and execute to result zero. The saved Ghidra program,
+baseline artifacts, fixtures, package and scripts retain their protected hashes.
+Only documented Ghidra filesystem backup rotation is permitted in reopened
+copies; the baseline project remains untouched.
+
+Twelve fresh padded imports exercise real production cancellation after copying
+16 MiB of a 128 MiB input. This retains original-image identity checking and
+verifies bounded cancellation during copying. Both existing output files remain
+byte-identical, padded input and program data are unchanged, and no temporary or
+backup output remains. The two original C lifetime cases also pass after the
+harness extension. Production code and all 100 source hashes match PR136's
+validated package. Actionlint, Python syntax and whitespace checks pass.
+
+Commands: add `--failure-controls` to the normal harness invocation. CI selects
+it for `upper` and `unknown-alias`; the other six ordinary controls still run.
+Direct replay is `python3 src/test/integration/arm-aggregate-failure-controls.py
+<accepted-case-directory>`, requiring that the baseline protected hashes match.
+The local command list and raw receipts are below
+`build/arm-aggregate-failure-controls/`; acceptance receipt SHA-256:
+`8787af66e34db3471f54adc86c8da417485cade07c38b6af7e7b7f4bbb53da1d`.
+
+This completes these failure/cancellation compositions only. Additional layouts,
+incoming exhausted-stack behavior, hosted gates, protected integration and the
+full original #68–#71 scope remain required.

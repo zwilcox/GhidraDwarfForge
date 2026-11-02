@@ -72,7 +72,15 @@ try:
         reference = gdb.parse_and_eval('control_input')
         row['typedInput'] = [int(reference['first']) if mixed else float(reference['first']), float(reference['second'])]
         assert row['typedInput'] == expected_fields
-        if variant == 'forge':
+        if variant == 'forge' and profile.get('symbolOnly'):
+            try:
+                gdb.parse_and_eval('value')
+            except gdb.error as error:
+                assert 'No symbol' in str(error), str(error)
+            else:
+                raise AssertionError('failed function retained a fabricated formal parameter')
+            row['symbolOnly'] = True
+        elif variant == 'forge':
             value = gdb.parse_and_eval('value')
             available = GAP_START[control] is None or offset < GAP_START[control]
             assert value.is_optimized_out == (not available), (control, offset, str(value))
