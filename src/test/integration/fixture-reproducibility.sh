@@ -82,6 +82,7 @@ expected_sources=(
     function-type-flags.c
     function_entry_ranges.S
     function_entry_ranges.c
+    i386-abi-matrix.c
     i386-alias-entry.cpp
     i386-extended-return.c
     i386-profile.c

@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local i386 ABI matrix:** isolated XMM0–7 register mapping enables
+explicit vector/SSE storage. Eleven libc-backed scalar/vector/aggregate and
+additional-convention functions pass exec/sectionless/PIE/rebased-PIE comparisons.
+Sixteen deterministic normal/failure exports, four production cancellations and
+sixteen structurally valid wrong-location rejections pass; the AArch64 regression
+also passes. Compiler automatic vector/SSE return limitations and guarded custom
+calls remain explicit. See `docs/I386-ABI-MATRIX.md`. Exact-head hosted acceptance,
+protected integration, remaining target-ABI classification and the full original
+P2.3–P2.3c scope audit remain open.
+
 **CONFIRMED local GNU-vector validator correction:** the pinned standalone
 reader had no accepted form class for GCC's vector flag. A pinned validation-only
 table correction passes 16 positive and 48 negative metadata cases across both

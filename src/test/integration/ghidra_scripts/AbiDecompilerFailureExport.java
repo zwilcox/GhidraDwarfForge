@@ -64,7 +64,8 @@ public class AbiDecompilerFailureExport extends GhidraScript {
                 finally {
                     if (!decompiler.setOptions(new DecompileOptions())) throw new AssertionError("cannot restore decompiler options");
                 }
-            });
+            }, ghidradwarfforge.targets.TargetParameterAllocation.forProgram(
+                currentProgram, elf, monitor, this::println), this::println);
         var source = decompilation.source();
         var failed = source.functions().stream().filter(f -> f.name().equals(failedName)).findFirst().orElseThrow();
         if (failures.size() != 1 || failed.decompiled() || source.functions().stream().filter(f -> !f.decompiled()).count() != 1 ||

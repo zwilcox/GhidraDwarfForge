@@ -186,8 +186,9 @@ public record TargetRegisterMap(String target, String provenance,
         for (int index = 0; index < general.length; index++) {
             put(result, index, general[index]);
         }
+        putRange(result, 21, 8, "XMM", 0);
         return new TargetRegisterMap("x86",
-            GHIDRA_MAPPING_ROOT + "Processors/x86/data/languages/x86.dwarf; general-register subset", result);
+            GHIDRA_MAPPING_ROOT + "Processors/x86/data/languages/x86.dwarf; general and XMM registers", result);
     }
 
     private static TargetRegisterMap x86_64() {
