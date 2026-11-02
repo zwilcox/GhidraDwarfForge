@@ -1438,3 +1438,15 @@ tasks.register("mipsWideCallPolicySmoke", JavaExec) {
     systemProperty "application.settingsdir", file("build/tmp/mips-wide-calls/settings").absolutePath
     systemProperty "application.cachedir", file("build/tmp/mips-wide-calls/cache").absolutePath
 }
+
+tasks.register("i386ParameterAllocationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks isolated i386 computed extended floating-return allocation and preserved analyst storage"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.I386ParameterAllocationSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/i386-allocation/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/i386-allocation/cache").absolutePath
+}

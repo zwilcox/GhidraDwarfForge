@@ -193,8 +193,13 @@ public final class GhidraTypeGraph {
             }
             TypeRef returnType = extractor.reserve(formalReturn);
             List<TypeGraph.Parameter> parameters = new ArrayList<>();
-            var correctedStorage = allocation.corrections(function, monitor, diagnostic);
+            var allocationResult = allocation.resolve(function, monitor, diagnostic);
+            var correctedStorage = allocationResult.storage();
             for (Parameter parameter : function.getParameters()) {
+                if (allocationResult.omittedAutomaticParameters().contains(parameter.getOrdinal())) {
+                    if (!parameter.isAutoParameter()) throw new IllegalStateException("Cannot omit an explicit parameter");
+                    continue;
+                }
                 DataType formalType = parameter.getFormalDataType();
                 int logicalLength = formalType == null ? parameter.getLength()
                     : formalType.getLength();
@@ -598,7 +603,12 @@ public final class GhidraTypeGraph {
                 continue;
             }
             List<TypeGraph.Parameter> parameters = new ArrayList<>();
+            var allocationResult = allocation.resolveDeclaration(external, monitor, diagnostic);
             for (Parameter parameter : external.getParameters()) {
+                if (allocationResult.omittedAutomaticParameters().contains(parameter.getOrdinal())) {
+                    if (!parameter.isAutoParameter()) throw new IllegalStateException("Cannot omit an explicit parameter");
+                    continue;
+                }
                 monitor.checkCancelled();
                 parameters.add(new TypeGraph.Parameter(safeParameterName(parameter),
                     extractor.reserve(parameter.getFormalDataType()), parameter.isAutoParameter(),

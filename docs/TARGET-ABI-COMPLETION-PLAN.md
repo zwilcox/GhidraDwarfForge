@@ -1,5 +1,14 @@
 # P2.3 through P2.3c completion plan
 
+**CONFIRMED local i386 allocation correction:** a spurious hidden result pointer
+shifted extended floating arguments in the pinned Ghidra model. The read-only
+correction passes four libc-backed exec/sectionless/PIE/rebase cases, eight
+deterministic exports, compiler/Forge entry and return checks, strict validators,
+nine model suites and the existing rebased integer regression. See `I386-EXTENDED-RETURN.md`.
+Type padding/sizeof and synthetic decompiler signatures remain unresolved;
+vector/extra-convention references expose separate GDB limits. Hosted acceptance,
+protected integration and the full original P2.3–P2.3c requirements remain open.
+
 **CONFIRMED local ARM incoming-oracle correction:** the PR136 hosted failure
 was an obsolete first-store unavailability expectation. Twelve fresh exports
 pass the independently audited register/spill/reload contract at all ten

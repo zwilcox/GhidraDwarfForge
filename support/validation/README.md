@@ -6,7 +6,9 @@
 a checksum-pinned GNU archive. Its default MIPS profile remains unchanged.
 `--target-profile arm32` selects `arm-linux-gnueabihf` for the BE8 floating
 register-piece tests; ordinary ARM tests continue using the system debugger.
-Each build records source/executable hashes, command logs, a Python smoke check
+`--target-profile i386` selects a native Linux x86-64 build capable of running
+32-bit Linux inferiors; see `../../docs/I386-EXTENDED-RETURN.md` for retained
+compiler-reference limitations. Each build records source/executable hashes, command logs, a Python smoke check
 and its private data-directory path. It never installs over the system debugger.
 See `../../docs/ARM-BE8-PROFILE.md` for the GDB 15.1 failure and the paired 17.1
 reference. These debugger builds are validation tools, not shipped libraries.

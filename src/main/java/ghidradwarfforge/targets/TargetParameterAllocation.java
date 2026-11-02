@@ -15,7 +15,9 @@ public final class TargetParameterAllocation {
 
     public static GhidraParameterAllocation forProgram(Program program, ElfImage image,
             TaskMonitor monitor, Consumer<String> diagnostic) throws CancelledException, IOException {
-        var policy = Aarch64ParameterAllocation.forProgram(program, image, monitor, diagnostic);
+        var policy = I386ParameterAllocation.forProgram(program, image, monitor, diagnostic);
+        if (policy != GhidraParameterAllocation.UNCHANGED) return policy;
+        policy = Aarch64ParameterAllocation.forProgram(program, image, monitor, diagnostic);
         if (policy != GhidraParameterAllocation.UNCHANGED) return policy;
         policy = MipsWideParameterAllocation.forProgram(program, image, monitor, diagnostic);
         if (policy != GhidraParameterAllocation.UNCHANGED) return policy;

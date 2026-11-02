@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+import platform
 from pathlib import Path
 import signal
 import subprocess
@@ -20,10 +21,12 @@ def main():
     parser.add_argument('directory', type=Path, help='new scratch directory; never the system installation')
     parser.add_argument('--archive', type=Path, help='optional already downloaded, checksum-verified source')
     parser.add_argument('--jobs', type=int, default=2)
-    parser.add_argument('--target-profile', choices=('mips', 'arm32'), default='mips')
+    parser.add_argument('--target-profile', choices=('mips', 'arm32', 'i386'), default='mips')
     args = parser.parse_args()
     if not 1 <= args.jobs <= 32:
         parser.error('--jobs must be between 1 and 32')
+    if args.target_profile == 'i386' and (platform.system(), platform.machine()) != ('Linux', 'x86_64'):
+        parser.error('i386 reference requires the selected native Linux x86-64 debugger host')
     root = args.directory.resolve()
     root.mkdir(parents=True, exist_ok=False)
     archive = args.archive.resolve(strict=True) if args.archive else root / ('gdb-' + VERSION + '.tar.xz')
@@ -71,8 +74,9 @@ def main():
         run(tool + '-version', [tool, '--version'])
     target, targets = ('arm-linux-gnueabihf', 'arm-linux-gnueabihf') if args.target_profile == 'arm32' else (
         'mips64-linux-gnu', 'mips-linux-gnu,mips64-linux-gnu')
+    target_flags = [] if args.target_profile == 'i386' else ['--target=' + target, '--enable-targets=' + targets]
     run('configure', [root / ('gdb-' + VERSION) / 'configure',
-        '--target=' + target, '--enable-targets=' + targets,
+        *target_flags,
         '--with-python=/usr/bin/python3', '--without-guile', '--without-debuginfod',
         '--disable-gdbtk', '--disable-tui', '--disable-werror', '--disable-binutils',
         '--disable-gas', '--disable-ld', '--disable-gprof', '--disable-gold', '--disable-sim'])
