@@ -199,3 +199,15 @@ has the distinct local evidence above.
 Confirm the newly wired hosted tests and complete exact-package host/target
 review before protected integration. All original rows in
 `TARGET-ABI-COMPLETION-PLAN.md` remain binding; no issue is closed here.
+
+## Fixture inventory follow-up
+
+Hosted run `41369300493` stopped all five target lanes at the exact source
+inventory check before exporter tests. After merging PR132's registration of
+the call-reference C/assembly sources, this branch also registers its reviewed
+`arm-pcs-profile.c`. The fixture inventory guard and all fixture contents remain
+unchanged. `bash src/test/integration/fixture-reproducibility.sh <target>` passes
+for x86-64, AArch64, ARM32 and both MIPS byte orders, checking 13 artifacts per
+lane; receipts and logs are under `build/arm-pcs-profile/inventory-correction`.
+`bash -n` and `git diff --check` pass. This is test setup repair, not hosted
+acceptance or completion of any remaining ABI requirement.
