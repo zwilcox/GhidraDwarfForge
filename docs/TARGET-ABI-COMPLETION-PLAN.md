@@ -1,5 +1,21 @@
 # P2.3 through P2.3c completion plan
 
+**CONFIRMED local ARM aggregate call classification:** four packaged LE/BE8
+base/VFP cases now pass raw transfers, captured values, 36 typed returns,
+72 injected calls and 24 unchanged-state rejections. Ordinary mixed structures
+are PCS-independent; HFAs retain precise mismatch and hidden-return guards.
+Focused model and existing scalar/aggregate regressions pass. See
+`ARM-AGGREGATE-CALLS.md`. Q-register locations, saved aggregate lifetimes,
+broader compositions and hosted acceptance remain required; #68–#71 stay open.
+
+**CONFIRMED ARM aggregate compiler references; exporter gaps remain:** four
+LE/BE8 base/VFP combinations pass raw ABI, typed-value, return and injected-call
+checks. Fresh exports identify missing Q-register HFA locations, unavailable
+saved aggregate copies and the existing aggregate call restriction. See
+`research/ARM-AGGREGATE-PCS.md` for exact evidence and retained pilot failures.
+This is an independent reference checkpoint, not completed aggregate support;
+all original #68–#71 requirements remain active.
+
 **CONFIRMED local ARM controls:** twenty cases now cover addressless prototypes,
 absent/conflicting PCS metadata, real failure isolation and production-copy
 cancellation with unchanged production code. See `ARM-PCS-CONTROLS.md`.

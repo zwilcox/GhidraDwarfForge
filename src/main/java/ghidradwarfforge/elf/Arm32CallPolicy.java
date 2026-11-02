@@ -88,7 +88,10 @@ public final class Arm32CallPolicy {
             if (parameter.returnStorage()) {
                 var returned = resolve(types, result, cancelled);
                 var carrier = resolve(types, parameter.type(), cancelled);
-                if (++hidden > 1 || !integerStructure(types, returned, cancelled) || returned.byteSize() <= 4 ||
+                var shape = structureShape(types, returned, cancelled);
+                boolean registerResult = shape != null && shape.homogeneousFloating() &&
+                    selected == Arm32CallAbi.Pcs.VFP && !variadic;
+                if (++hidden > 1 || shape == null || returned.byteSize() <= 4 || registerResult ||
                         !(carrier instanceof TypeGraph.IndirectionType pointer) || pointer.byteSize() != 4 ||
                         pointer.kind() != TypeGraph.IndirectionKind.POINTER ||
                         !returned.equals(resolve(types, pointer.target(), cancelled))) {
@@ -103,9 +106,15 @@ public final class Arm32CallPolicy {
         for (int index = 0; index < references.size(); index++) {
             var node = resolve(types, references.get(index), cancelled);
             if (node instanceof TypeGraph.VoidType && index == 0) continue;
-            // Existing compiler/Forge aggregate-return fixtures cover these integer layouts.
-            // They do not classify aggregate arguments or homogeneous floating aggregates.
-            if (index == 0 && integerStructure(types, node, cancelled)) continue;
+            var shape = structureShape(types, node, cancelled);
+            if (shape != null) {
+                // Only homogeneous floating aggregates use the alternative VFP
+                // transfer. A mixed integer/float structure follows the base
+                // aggregate rules in both variants; containing a float alone
+                // does not make its transfer depend on the selected PCS.
+                floating |= shape.homogeneousFloating();
+                continue;
+            }
             if (node instanceof TypeGraph.IndirectionType pointer && pointer.byteSize() == 4) continue;
             if (node instanceof TypeGraph.EnumType enumeration && scalarWidth(enumeration.byteSize())) continue;
             if (!(node instanceof TypeGraph.BaseType base) || !scalarWidth(base.byteSize())) {
@@ -136,23 +145,41 @@ public final class Arm32CallPolicy {
         return bytes == 1 || bytes == 2 || bytes == 4 || bytes == 8;
     }
 
-    private static boolean integerStructure(Map<String, TypeNode> types, TypeNode node, BooleanSupplier cancelled) {
+    private record StructureShape(boolean homogeneousFloating) { }
+
+    /**
+     * Audited contiguous scalar-member structure envelope. Nested aggregates,
+     * bit fields, explicit padding and vector types need their own layout and
+     * consumer evidence; none is silently treated as an ordinary integer blob.
+     */
+    private static StructureShape structureShape(Map<String, TypeNode> types, TypeNode node,
+            BooleanSupplier cancelled) {
         if (!(node instanceof TypeGraph.AggregateType aggregate) ||
                 aggregate.kind() != TypeGraph.AggregateKind.STRUCTURE ||
-                aggregate.members().isEmpty() || aggregate.members().size() > 3) return false;
+                aggregate.members().isEmpty() || aggregate.members().size() > 4) return null;
         long offset = 0;
+        long alignment = 1;
+        int floatingWidth = 0;
+        boolean homogeneous = true;
         for (var member : aggregate.members()) {
             check(cancelled);
             var field = resolve(types, member.type(), cancelled);
             if (member.bitSize() != 0 || member.byteOffset() != offset ||
                     !(field instanceof TypeGraph.BaseType base) ||
                     (base.byteSize() != 4 && base.byteSize() != 8) ||
-                    (base.encoding() != TypeGraph.BaseEncoding.SIGNED && base.encoding() != TypeGraph.BaseEncoding.UNSIGNED)) {
-                return false;
+                    (base.encoding() != TypeGraph.BaseEncoding.SIGNED &&
+                        base.encoding() != TypeGraph.BaseEncoding.UNSIGNED &&
+                        base.encoding() != TypeGraph.BaseEncoding.FLOAT)) {
+                return null;
             }
+            if (offset % base.byteSize() != 0) return null;
+            alignment = Math.max(alignment, base.byteSize());
+            if (base.encoding() != TypeGraph.BaseEncoding.FLOAT) homogeneous = false;
+            else if (floatingWidth == 0) floatingWidth = Math.toIntExact(base.byteSize());
+            else if (floatingWidth != base.byteSize()) homogeneous = false;
             offset += base.byteSize();
         }
-        return offset == aggregate.byteSize();
+        return offset == aggregate.byteSize() && offset % alignment == 0 ? new StructureShape(homogeneous) : null;
     }
 
     private static TypeNode resolve(Map<String, TypeNode> types, TypeRef reference, BooleanSupplier cancelled) {

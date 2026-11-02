@@ -1763,6 +1763,24 @@ jobs:
               done
           done
 
+      - name: ARM aggregate calls with compiler references
+        if: matrix.target == 'arm32'
+        run: |
+          for order in little big; do
+              gdb=$(command -v gdb-multiarch)
+              data=/usr/share/gdb
+              qemu="$RUNNER_TEMP/arm-qemu-aliases/build/qemu-arm"
+              if [[ "$order" == big ]]; then
+                  gdb="$RUNNER_TEMP/arm-gdb/build/gdb/gdb"
+                  data="$RUNNER_TEMP/arm-gdb/build/gdb/data-directory"
+                  qemu="$RUNNER_TEMP/arm-qemu-aliases/build/qemu-armeb"
+              fi
+              for pcs in softfp hard; do
+                  python3 src/test/integration/arm-aggregate-calls.py "$GHIDRA_INSTALL_DIR" \
+                      --order "$order" --pcs "$pcs" --gdb "$gdb" --gdb-data "$data" --qemu "$qemu"
+              done
+          done
+
       - name: Isolated scalar register bit-piece producer
         if: matrix.target == 'arm32'
         run: |

@@ -20,6 +20,22 @@ strict validators and their existing debugger workflows. Only the shared
 expectations change. See `docs/ARM-BE8-PROFILE.md`; a new hosted gate and all
 remaining #68–#71 requirements are still required.
 
+**CONFIRMED local ARM aggregate call classification:** four packaged LE/BE8
+base/VFP cases now pass raw transfers, captured values, 36 typed returns,
+72 injected calls and 24 unchanged-state rejections. Ordinary mixed structures
+are PCS-independent; HFAs retain precise mismatch and hidden-return guards.
+Focused model and existing scalar/aggregate regressions pass. See
+`docs/ARM-AGGREGATE-CALLS.md`. Q-register locations, saved aggregate lifetimes,
+broader compositions and hosted acceptance remain required; #68–#71 stay open.
+
+**CONFIRMED ARM aggregate compiler references; exporter gaps remain:** four
+LE/BE8 base/VFP combinations pass raw ABI, typed-value, return and injected-call
+checks. Fresh exports identify missing Q-register HFA locations, unavailable
+saved aggregate copies and the existing aggregate call restriction. See
+`docs/research/ARM-AGGREGATE-PCS.md` for exact evidence and retained pilot failures.
+This is an independent reference checkpoint, not completed aggregate support;
+all original #68–#71 requirements remain active.
+
 **CONFIRMED local PCS fixture-inventory correction:** PR132's inventory repair
 is merged, and `arm-pcs-profile.c` is registered in this branch's explicit list.
 All five target reproducibility checks pass. Run `41369300493` remains a failed
