@@ -101,3 +101,14 @@ of the extended workflow remains **PRESENT, UNVERIFIED**.
 Broader aggregate/HFA/mixed transfers, executable layout compositions and final
 host/target acceptance remain required. This component closes no umbrella issue
 and authorizes no release.
+
+## Inherited fixture inventory repair
+
+The PR132/PR133 corrections register the three reviewed PCS fixture sources
+without relaxing the exact source inventory. This branch merges both corrections
+through normal merge history. All five local reproducibility lanes pass again
+(13 artifacts each), with commands/logs and zero exit statuses retained under
+`build/arm-pcs-controls/inventory-correction`. Production, fixture contents,
+workflow and runtime assertions are unchanged by this refresh. The initial
+hosted run `41370489436` encountered the inherited setup failure; it is not
+acceptance evidence. A new run at the refreshed head remains required.
