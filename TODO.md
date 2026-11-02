@@ -1,5 +1,16 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local load-boundary oracle correction:** hosted run `41375799121`
+reached the sectionless Thumb boundary fixture but its expected inventory omitted
+two primary mode function symbols. The corrected test independently checks all
+32 instruction bytes and both original section addresses, then requires exactly
+those two cues and the analyst alias. The exact hosted artifact passes raw
+inventory, six corruption controls and compiler/Forge GDB execution. Fresh
+ordinary, function-tag-conflict and mapping-conflict exports pass their distinct
+validator/runtime contracts. Production code is unchanged. See
+`docs/ARM-BE8-PROFILE.md`; exact-head hosted acceptance and all #68–#71
+requirements remain open.
+
 **CONFIRMED local shared-parameter oracle correction:** hosted run `41372370267`
 reached ARM shared export but retained an obsolete incoming-register-only
 expectation. The unchanged packaged exporter preserves a copied first argument
