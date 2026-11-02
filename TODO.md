@@ -1,12 +1,19 @@
 # TODO.md — GhidraDwarfForge
 
-**CONFIRMED local conditional-flow and partial-aggregate progress:** shared incoming
-analysis now intersects predicated instruction paths; a separate audited ARM
-policy fixes big-endian aggregate padding without changing saved analyst storage.
-Thirteen model suites pass 6,520 checks. The new LE/BE8 runtime investigation
-has no incorrect numeric values over 506 instruction stops, but retains 225/241
-unavailable field observations and failing compiler-reference windows. Full
-aggregate acceptance and all #68–#71 requirements remain open. See `docs/research/ARM-STACK-AGGREGATES.md`.
+**CONFIRMED local byte-slice and reference progress:** shared incoming analysis
+now preserves exact partial-register bytes through wider transfers and proven
+carry-free joins. Twenty-two model suites, 24 LE/BE8 aggregate controls, two
+default HFA cases and three x86/AArch64 runtime regressions pass. The natural
+aggregate investigation has zero wrong numeric values over 506 stops but still
+fails full availability at 130/116 field observations. Exact compiler-only
+windows now have live raw corroboration; Forge receives no exception. See
+`docs/research/ARM-STACK-AGGREGATES.md`. Portable pipeline acceptance and all #68–#71 requirements remain open.
+
+**CONFIRMED AArch64 allocation component accepted:** PR #124 passed all twelve
+exact-head jobs and independent hosted artifact replay, then merged normally as
+`453a7e9be61f1e34f3bae79f43f7ead2192bfcc2`; the merge tree equals tested head
+`035b9eb`. See `docs/AARCH64-PARAMETER-ALLOCATION.md`.
+This component does not close the full #68–#71 objective.
 
 **CONFIRMED local ARM aggregate failure/cancellation compositions:** twelve
 LE/BE8 storage/control combinations pass 48 deterministic native-failure exports

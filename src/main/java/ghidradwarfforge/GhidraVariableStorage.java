@@ -101,27 +101,10 @@ public final class GhidraVariableStorage {
             var node = storage.getFirstVarnode();
             if (node != null && node.isRegister() && node.getSize() == parameter.getLength() &&
                     storage.size() == parameter.getLength()) {
-                Register enclosing = null;
-                RegisterStorage mapped = null;
-                for (String name : registers.dwarfNumbers().keySet()) {
-                    monitor.checkCancelled();
-                    Register candidate = program.getLanguage().getRegister(name);
-                    if (candidate == null || candidate.getBitLength() % Byte.SIZE != 0 ||
-                            !candidate.getAddress().getAddressSpace().equals(node.getAddress().getAddressSpace())) continue;
-                    long delta = node.getAddress().subtract(candidate.getAddress());
-                    int bytes = candidate.getMinimumByteSize();
-                    if (delta < 0 || delta > bytes - node.getSize() ||
-                            (enclosing != null && enclosing.getBitLength() <= candidate.getBitLength())) continue;
-                    Storage whole = mappedRegister(candidate, bytes, registers, "enclosing parameter register");
-                    if (!(whole instanceof RegisterStorage register)) continue;
-                    int offset = Math.toIntExact(candidate.isBigEndian() ? bytes - delta - node.getSize() : delta);
-                    mapped = new RegisterStorage(register.register(),
-                        Math.addExact(register.valueBitOffset(), Math.multiplyExact(offset, Byte.SIZE)),
-                        Math.multiplyExact(node.getSize(), Byte.SIZE));
-                    enclosing = candidate;
-                }
-                if (mapped != null) {
-                    return stableRegister(program, function, enclosing, mapped, monitor, "parameter slice");
+                monitor.checkCancelled();
+                var view = RegisterByteSlice.mapped(program, node, registers);
+                if (view != null) {
+                    return stableRegister(program, function, view.container(), view.storage(), monitor, "parameter slice");
                 }
             }
             return unavailable(OmissionReason.UNSUPPORTED_STORAGE,

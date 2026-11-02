@@ -462,6 +462,18 @@ tasks.register("intraInstructionFlowSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/intra-instruction-flow/cache").absolutePath
 }
 
+tasks.register("registerByteSliceFlowSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks partial object bytes across wider register and memory transfers"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.RegisterByteSliceFlowSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/register-byte-slice-flow/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/register-byte-slice-flow/cache").absolutePath
+}
+
 tasks.register("armCompositeParameterAllocationSmoke", JavaExec) {
     group = "verification"
     description = "Checks partial aggregate padding in computed core and stack arguments"

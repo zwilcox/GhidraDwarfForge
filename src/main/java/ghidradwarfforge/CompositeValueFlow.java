@@ -53,11 +53,10 @@ final class CompositeValueFlow {
             Varnode node = nodes[index];
             if (node == null || node.getSize() <= 0) return List.of();
             if (node.isRegister()) {
-                var register = program.getRegister(node);
-                if (register == null || register != program.getLanguage().getRegister(node.getAddress(), node.getSize()) ||
-                        register.getBaseRegister() == program.getCompilerSpec().getStackPointer() ||
-                        !(GhidraVariableStorage.mappedRegister(register, node.getSize(), registers,
-                            "incoming composite piece") instanceof RegisterStorage)) return List.of();
+                var view = RegisterByteSlice.mapped(program, node, registers);
+                if (view == null || view.container().getBaseRegister() == program.getCompilerSpec().getStackPointer()) {
+                    return List.of();
+                }
                 hasRegister = true;
             }
             else if (!node.getAddress().isStackAddress() ||

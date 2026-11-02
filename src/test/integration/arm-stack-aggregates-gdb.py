@@ -1,5 +1,6 @@
 """Independent entry bytes and instruction-by-instruction typed aggregate observations."""
 import gdb
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -22,7 +23,12 @@ expected = {
 }
 layouts = {'pair': ('ii', 8), 'aligned': ('Qi4x', 16), 'packed': ('BI', 5),
     'bytes': ('BBB', 3), 'words': ('iii', 12), 'mixed': ('f4xQ', 16), 'floats': ('fff', 12)}
-result = {'status': 'STARTED', 'variant': variant, 'entry': [], 'observations': [], 'mismatches': []}
+result = {'status': 'STARTED', 'variant': variant, 'entry': [], 'observations': [],
+    'mismatches': [], 'referenceWindows': [], 'referenceMismatches': []}
+calibrate = variant == 'compiler' and os.environ.get('FORGE_STACK_REFERENCE_CALIBRATION') == '1'
+spec = importlib.util.spec_from_file_location('reference', Path(__file__).with_name('arm-stack-aggregates-reference.py'))
+reference = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(reference)
 
 
 def integer(expression):
@@ -87,19 +93,35 @@ try:
             wanted = {'value.' + field: value for field, value in expected[kind].items()}
             wanted.update(dict(zip('abcdefg' if kind == 'floats' else 'abc', range(1, 8) if kind == 'floats' else (7, 11, 13))))
             wanted['tail'] = -8.5 if kind == 'floats' else -41
+            code = memory(entry, observe - entry)
             for step in range(200):
                 pc = integer('$pc')
                 row = {'name': name, 'offset': pc-entry, 'atObserve': pc == observe, 'fields': {}}
+                proof = reference.window(name, pc-entry, order, code) if calibrate else None
+                if proof:
+                    raw = reference.carriers(proof, order,
+                        lambda name: register_bytes(3) if name == 'r3' else gdb.parse_and_eval('$' + name).bytes,
+                        memory, result['entry'][-1]['stack'])
+                    for expression, value in raw.items():
+                        assert value == wanted[expression], (name, pc-entry, expression, value, wanted[expression])
+                    result['referenceWindows'].append({'name': name, 'offset': pc-entry,
+                        'reason': proof['reason'], 'raw': raw})
                 for expression, value in wanted.items():
+                    mismatch = None
                     try:
                         actual = gdb.parse_and_eval(expression)
                         observed = float(actual) if isinstance(value, float) or kind == 'floats' and expression in 'abcdefg' else int(actual)
                         row['fields'][expression] = observed
                         if observed != value:
-                            result['mismatches'].append({'name': name, 'offset': pc-entry, 'expression': expression, 'expected': value, 'actual': observed})
+                            mismatch = {'name': name, 'offset': pc-entry, 'expression': expression, 'expected': value, 'actual': observed}
                     except (gdb.error, ValueError) as error:
                         row['fields'][expression] = {'error': str(error)}
-                        result['mismatches'].append({'name': name, 'offset': pc-entry, 'expression': expression, 'expected': value, 'error': str(error)})
+                        mismatch = {'name': name, 'offset': pc-entry, 'expression': expression, 'expected': value, 'error': str(error)}
+                    if mismatch:
+                        if proof and expression in proof['fields']:
+                            result['referenceMismatches'].append({**mismatch, 'reason': proof['reason'], 'raw': raw[expression]})
+                        else:
+                            result['mismatches'].append(mismatch)
                 result['observations'].append(row)
                 if pc == observe:
                     for field, value in expected[kind].items():
