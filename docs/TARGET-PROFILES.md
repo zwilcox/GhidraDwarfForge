@@ -1,15 +1,14 @@
 # Tested ELF and ABI profiles
 
-**CONFIRMED local exhausted-stack aggregate contract:** four LE/BE8 ordinary/
-rebased cases pass exact instruction, raw DWARF/carrier and typed-value checks:
-1,012 baseline stops per symbol-file variant, 32 deterministic failure exports,
-3,802 neighboring and 246 symbol-only stops, and four production-copy
-cancellations. The separately named audited prefix requires 492 unavailable
-field observations at proven uncertainty boundaries; the original full-
-availability research failures remain retained. Eight runtime mutation controls
-reject altered gaps, carriers and instructions. CI is wired; exact-head hosted
-acceptance and broader PIE/shared compositions remain required. See `ARM-STACK-AGGREGATES.md`.
-All original P2.3–P2.3c requirements remain in scope.
+**CONFIRMED local exhausted-stack aggregate composition:** eight LE/BE8
+exec/PIE ordinary/rebased cases pass 2,032 instruction observations per
+compiler/Forge variant, raw location/carrier checks, 64 failure exports and
+eight cancellations. Twelve PIE mutation controls fail at the required check.
+The exact prefix contract includes conservative gaps; full-availability
+research failures remain retained. Low-address PIE also requires the pinned
+seventh validation-only libdwarf checker correction. See
+`ARM-STACK-AGGREGATES.md`. Hosted acceptance, shared aggregate composition,
+protected integration and the full P2.3–P2.3c audit remain required.
 
 **CONFIRMED local AArch64 selection candidate (2026-11-01), integration pending:**
 `AARCH64-ABI-SELECTION.md` records explicit language/compiler and ELF call-profile

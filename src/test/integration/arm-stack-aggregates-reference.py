@@ -5,6 +5,12 @@ preserves a substitute carrier is checked; changed code fails closed. ARM and
 BE8 both encode the tested ARM instructions in little-endian byte order.
 """
 import struct
+import importlib.util
+from pathlib import Path
+
+spec = importlib.util.spec_from_file_location('prefix_contract', Path(__file__).with_name('arm_stack_aggregate_contract.py'))
+contract = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(contract)
 
 
 PREFIXES = {
@@ -23,11 +29,20 @@ FLOAT_PREFIX = (
 )
 
 
-def window(function, offset, order, code):
+def window(function, offset, order, code, layout='exec', entry=None, global_address=None):
     """Return the exact affected fields and carrier kind, without reading DWARF."""
-    if order not in ('little', 'big') or offset < 0 or offset % 4:
+    if order not in ('little', 'big') or layout not in ('exec', 'pie') or offset < 0 or offset % 4:
         return None
     if function == 'base_floats' and 48 <= offset <= 84:
+        if layout == 'pie':
+            # The audited PIC load/add writes only r3, leaving the proven d7
+            # copy intact. Check its literal target too, not just opcode masks.
+            try:
+                contract.validate_prefix(function, order, code, 100, global_address, layout, entry)
+            except (AssertionError, TypeError):
+                return None
+            return {'kind': 'double', 'fields': ('b',),
+                'reason': 'GCC keeps b in overwritten r2/r3 after its exact copy to d7'}
         words = list(FLOAT_PREFIX)
         if order == 'big':
             words[3:5] = (0xec401b16, 0xec423b17)
@@ -46,6 +61,8 @@ def window(function, offset, order, code):
     if not separator or pcs not in ('base', 'vfp') or kind not in ('pair', 'packed', 'words', 'bytes'):
         return None
     prefix = PREFIXES[kind + '-' + order if kind == 'bytes' else kind]
+    if layout == 'pie' and kind == 'bytes' and order == 'big':
+        prefix = (0xe92d4830, 0xe28db00c, 0xe24dd008, 0xe1a0c003, 0xe50b3010)
     expected = b''.join(word.to_bytes(4, 'little') for word in prefix)
     if offset >= len(expected) or code[:len(expected)] != expected:
         return None

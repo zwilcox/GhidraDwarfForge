@@ -128,7 +128,7 @@ def main(baseline):
     cancel_project.mkdir()
     text = run('cancel-import', [headless, cancel_project, 'Stack', '-import', padded,
         '-analysisTimeoutPerFile', '120', '-scriptPath', source / 'ghidra_scripts',
-        *(['-postScript', 'RebaseFixtureProgram.java', '0x2000000'] if profile['role'] == 'exec-rebased' else []),
+        *(['-postScript', 'RebaseFixtureProgram.java', '0x2000000'] if profile['role'].endswith('-rebased') else []),
         '-postScript', 'PrepareArmStackAggregates.java', 'curate', baseline / 'labels.txt', root / 'cancel-curate.json'])
     assert 'arm-stack-aggregates-preparation=PASS' in text
     cancel_before = driver.tree(cancel_project)

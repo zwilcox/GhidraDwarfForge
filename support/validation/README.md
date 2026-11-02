@@ -391,3 +391,47 @@ extended-program-header controls at
 now pin the sixth patch and use the explicit six-correction profile. The native
 Linux CI job installs LLVM for the new independent structural controls and
 retains their reports with its existing artifacts.
+
+
+## ELF address bounds
+
+The seventh validation-only patch,
+`0007-preserve-low-elf-address-bounds.patch`, SHA-256
+`f4a81a948702b20e105e2a646eb08e747264e9b028949da287580458fb29360d`,
+changes only `src/bin/dwarfdump/dwarfdump.c` in the standalone checker.
+The shipped libdwarf producer/consumer and Ghidra extension are unchanged.
+
+A freestanding ARM PIE has executable `.text` at `0x100`. Upstream creates a
+zero-filled range slot for every section it skips, sorts those slots ahead of
+real allocated sections, then substitutes `512` for the false zero minimum.
+The resulting interval both excludes valid low code and extends the upper
+bound by 512. The original compiler artifact reports 47 false diagnostics in
+each byte order. Both compiler and Forge artifacts pass unchanged with the
+corrected checker; GNU/LLVM also accept them.
+
+The correction compacts only named, nonempty allocated ELF section records
+before sorting and retains their actual address bounds, including zero. Empty
+low/high sections and nonallocated sections cannot create an address bound.
+The historical non-ELF behavior is untouched. This retains upstream's overall
+allocated-section envelope; it does not newly claim to detect gaps between
+allocated sections or replace LLVM's complementary range checks.
+
+`dwarfdump-elf-bounds.py` independently creates DWARF 5 CUs, subprograms,
+parameter location lists and standard line tables. The CU/function ranges
+agree even in negative cases, isolating the independent ELF bounds check.
+ELF32/64, both byte orders, addresses zero, `0x100`, `0x1fc`, `0x200` and
+`0x1000`, one-past sequence ends and empty/nonallocated distractors are tested.
+Twenty valid artifacts pass GNU/LLVM and strict validation; 36 out-of-range
+artifacts fail strict validation. The predecessor additionally reproduces eight
+false rejections of low code and eight false acceptances just outside high code.
+No original artifact is rewritten to make validation pass.
+
+Local receipt: `build/test-results/dwarfdump-elf-bounds/run.hrxw09w9/result.json`
+in the `arm-stack-pie` worktree. All prior line, extended-header, convention,
+location-view, frame, configuration, strict-helper and diagnostic-capacity
+suites pass, including 65,536-message completion and allocation controls.
+The updated evidence profile pins all seven patches; its 97 controls pass at
+`build/arm-stack-pie/evidence-controls/run.6k2l44t0/`.
+The fresh checker bundle's full checksum manifest passes. CI builds this
+checker from the pinned archive and retains the new test/build diagnostics.
+Hosted exact-head acceptance remains required.

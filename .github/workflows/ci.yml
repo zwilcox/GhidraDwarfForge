@@ -170,6 +170,8 @@ jobs:
         run: python3 src/test/integration/dwarfdump-eh-terminators.py "$PWD/validation-tool/bin/dwarfdump"
       - name: Validate GNU location views and actual DIE-reference controls
         run: python3 src/test/integration/dwarfdump-locviews.py "$PWD/validation-tool/bin/dwarfdump"
+      - name: Validate low ELF addresses and out-of-range rejection
+        run: python3 src/test/integration/dwarfdump-elf-bounds.py "$PWD/validation-tool/bin/dwarfdump"
 
       - name: Validate complete bounded diagnostics and allocation rollback
         run: |
@@ -195,6 +197,7 @@ jobs:
             build/test-results/validation-tool-build/**/diagnostic-patch.log
             build/test-results/validation-tool-build/**/terminator-patch.log
             build/test-results/validation-tool-build/**/locviews-patch.log
+            build/test-results/validation-tool-build/**/bounds-patch.log
             build/test-results/validation-tool-build/**/config.log
             build/test-results/validation-tool-build/**/make.log
             build/test-results/validation-tool-build/**/dependencies.txt
@@ -203,6 +206,7 @@ jobs:
             build/test-results/dwarfdump-configuration/
             build/test-results/dwarfdump-eh-terminators/
             build/test-results/dwarfdump-locviews/
+            build/test-results/dwarfdump-elf-bounds/
           if-no-files-found: warn
           retention-days: 14
 
@@ -1781,11 +1785,14 @@ jobs:
                   python3 src/test/integration/arm-aggregate-calls.py "$GHIDRA_INSTALL_DIR" \
                       --order "$order" --pcs "$pcs" --gdb "$gdb" --gdb-data "$data" --qemu "$qemu"
               done
-              for role in exec exec-rebased; do
+              for role in exec exec-rebased pie pie-rebased; do
                   python3 src/test/integration/arm-stack-aggregates.py "$GHIDRA_INSTALL_DIR" \
                       --order "$order" --role "$role" --gdb "$gdb" --gdb-data "$data" --qemu "$qemu" \
                       --availability-contract audited-prefix --with-controls
               done
+              pie_cases=(build/test-results/arm-stack-aggregates/"$order".pie.*)
+              test "${#pie_cases[@]}" -eq 1
+              python3 src/test/integration/arm-stack-pie-controls.py "${pie_cases[0]}"
               python3 src/test/integration/arm-hfa-lifetimes.py "$GHIDRA_INSTALL_DIR" \
                   --order "$order" --gdb "$gdb" --gdb-data "$data" --qemu "$qemu"
               for storage in hfa base mixed; do

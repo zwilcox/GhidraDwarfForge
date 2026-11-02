@@ -11,6 +11,31 @@ spec.loader.exec_module(reference)
 
 
 class ReferenceTest(unittest.TestCase):
+    def test_pic_double_window_requires_full_address_and_preserves_live_d7(self):
+        for order in ('little', 'big'):
+            target, entry = 0x40002050, 0x40000500
+            prefix = reference.contract.prefix('base_floats', order, target, 'pie')
+            pool = reference.contract.literal_offset('base_floats', order)
+            code = prefix.ljust(pool, b'\x00') + ((target - entry - 56) & 0xffffffff).to_bytes(4, order)
+            for offset in range(48, 88, 4):
+                proof = reference.window('base_floats', offset, order, code, 'pie', entry, target)
+                self.assertEqual(proof['fields'], ('b',))
+            for offset in (44, 49, 88):
+                self.assertIsNone(reference.window('base_floats', offset, order, code, 'pie', entry, target))
+            for index in (*range(len(prefix)), *range(pool, pool + 4)):
+                changed = bytearray(code)
+                changed[index] ^= 1
+                self.assertIsNone(reference.window('base_floats', 48, order, changed, 'pie', entry, target))
+            self.assertIsNone(reference.window('base_floats', 48, order, code, 'pie', entry, target ^ 4))
+
+    def test_be8_pic_home_window_ends_at_the_actual_store(self):
+        prefix = reference.contract.prefix('base_bytes', 'big', 0x2050, 'pie')
+        for pcs in ('base', 'vfp'):
+            for offset in range(0, 20, 4):
+                self.assertIsNotNone(reference.window(pcs + '_bytes', offset, 'big', prefix, 'pie'))
+            self.assertIsNone(reference.window(pcs + '_bytes', 20, 'big', prefix, 'pie'))
+            self.assertIsNone(reference.window(pcs + '_bytes', 0, 'big', prefix, 'exec'))
+
     def test_split_windows_require_every_byte_and_exact_prestate(self):
         for order in ('little', 'big'):
             for kind in ('pair', 'packed', 'words', 'bytes'):

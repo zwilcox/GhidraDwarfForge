@@ -674,6 +674,9 @@ conditional comparisons. The source-built LE/BE8 reproduction is
 currently fails on documented conservative omissions. The separately selected
 `--availability-contract audited-prefix --with-controls` mode verifies exact
 values, raw carriers and instruction-derived unavailable boundaries in LE/BE8,
-including rebased projects, decompilation failures and copy cancellation. See
+including exec/PIE, rebased projects, decompilation failures and copy
+cancellation. The PIE mode checks relocated literal pools, actual runtime load
+bias and distinct BE8 partial-object lifetimes. Twelve copied-fixture mutation
+controls reject wrong addresses, raw carriers and gap boundaries. See
 [the local contract](../../../docs/ARM-STACK-AGGREGATES.md) and
 [the retained full-availability failures](../../../docs/research/ARM-STACK-AGGREGATES.md).
