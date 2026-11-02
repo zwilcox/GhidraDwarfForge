@@ -13,13 +13,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('root', type=Path)
     args = parser.parse_args()
-    receipts = [p for p in sorted(args.root.rglob('*.check.json'))
-        if json.loads(p.read_text())['status'] == 'PASS']
-    assert receipts, 'a real passing validator receipt is required'
-    source = receipts[0]
+    source = next((p for p in sorted(args.root.rglob('*.check.json'))
+        if p.relative_to(args.root).parts[0] not in ('check-dwarfdump', 'validation-evidence-controls') and
+        json.loads(p.read_text())['status'] == 'PASS'), None)
+    assert source is not None, 'a real passing validator receipt is required'
     source_raw = source.with_name(source.name.removesuffix('.check.json'))
     helper = Path(__file__).with_name('retained-validator-reports.py')
-    cases = ('intact', 'empty', 'wrapper-overwrite', 'truncated-tail', 'receipt-mismatch', 'missing-raw')
+    cases = ('intact', 'empty', 'wrapper-overwrite', 'truncated-tail', 'receipt-mismatch', 'missing-raw',
+        'malformed-production', 'checker-fixtures-default', 'checker-fixtures-excluded',
+        'evidence-fixtures-default', 'evidence-fixtures-excluded',
+        'nested-checker-directory', 'different-directory')
     with tempfile.TemporaryDirectory(prefix='forge-retained-validator-') as directory:
         for case in cases:
             root = Path(directory) / case
@@ -40,14 +43,39 @@ def main():
                 receipt.write_text(json.dumps(metadata))
             elif case == 'missing-raw':
                 raw.unlink()
-            result = subprocess.run([sys.executable, helper, root], capture_output=True, text=True, timeout=30)
-            if case == 'intact':
+            elif case == 'malformed-production':
+                receipt.write_text('preserve original ELF control\n')
+            excluded = case in ('checker-fixtures-excluded', 'nested-checker-directory', 'different-directory',
+                'malformed-production', 'evidence-fixtures-excluded')
+            expected_receipt = receipt
+            if case in ('checker-fixtures-default', 'checker-fixtures-excluded',
+                    'nested-checker-directory', 'different-directory',
+                    'evidence-fixtures-default', 'evidence-fixtures-excluded'):
+                folder = {'nested-checker-directory': 'exports/check-dwarfdump',
+                    'different-directory': 'check-dwarfdump-extra',
+                    'evidence-fixtures-default': 'validation-evidence-controls',
+                    'evidence-fixtures-excluded': 'validation-evidence-controls'}.get(case, 'check-dwarfdump')
+                expected_receipt = root / folder / 'run.example/alias-metadata-direct/checker.txt.check.json'
+                expected_receipt.parent.mkdir(parents=True)
+                if case.startswith('evidence-fixtures-'):
+                    shutil.copyfile(source, expected_receipt)
+                    damaged = expected_receipt.with_name('checker.txt')
+                    damaged.write_text('')
+                    damaged.with_name('checker.txt.stderr').write_text('')
+                else:
+                    expected_receipt.write_text('preserve original ELF control\n')
+            command = [sys.executable, helper, root]
+            if excluded:
+                command.append('--exclude-validator-self-tests')
+            result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+            if case in ('intact', 'checker-fixtures-excluded', 'evidence-fixtures-excluded'):
                 assert result.returncode == 0 and 'retained-validator-reports=PASS reports=1' in result.stdout
                 assert not result.stderr
+                assert 'validator-self-test-receipts-not-counted=' + str(int(excluded)) in result.stdout
             else:
-                assert result.returncode != 0 and str(receipt.resolve()) in result.stderr, (case, result.stderr)
+                assert result.returncode != 0 and str(expected_receipt.resolve()) in result.stderr, (case, result.stderr)
                 assert 'retained-validator-reports=PASS' not in result.stdout
-    print('retained-validator-reports-test=PASS positive=1 rejected=5')
+    print('retained-validator-reports-test=PASS positive=3 rejected=10')
 
 
 if __name__ == '__main__':

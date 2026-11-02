@@ -1,5 +1,17 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED retention-guard fixture separation:** the combined x86 artifact
+contains deliberate invalid receipts from the checker and evidence-reader
+self-tests. The final retention step now explicitly excludes only their two
+top-level directories, recording every excluded receipt separately from export
+passes. Default scanning remains strict; malformed production receipts and
+similarly named or nested directories still fail. Thirteen controls pass, and
+the guard accepts 535 export reports from the combined x86 artifact after eight
+known namespace reports are freshly rechecked in a separate directory. Archived
+damaged reports remain unchanged. Sixteen fresh i386 GDB replays also pass all
+eight integer/shared layouts and 3,000 instruction observations. Production
+bytes are unchanged; the corrected commit still requires its full hosted gate.
+
 **CONFIRMED namespace validator-retention follow-up:** the complete uploaded
 AArch64 report audit found the same driver/raw-log collision in the isolated
 namespace/global harness. Its eight variants now use separate driver logs.

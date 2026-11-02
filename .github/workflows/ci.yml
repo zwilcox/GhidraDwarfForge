@@ -2074,6 +2074,7 @@ jobs:
         run: |
           python3 src/test/integration/retained-validator-reports-test.py build/test-results
           python3 src/test/integration/retained-validator-reports.py build/test-results \
+            --exclude-validator-self-tests \
             --output build/test-results/retained-validator-reports.json
 
       - name: Retain bounded primary fixture diagnostics

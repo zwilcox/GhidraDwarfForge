@@ -57,6 +57,31 @@ prove artifact identity, inherited-diagnostic provenance and debugger behavior.
 Exporter/native bytes are unchanged. The corrected commit's full hosted gate,
 remaining uploaded-artifact review and protected integration remain required.
 
+**CONFIRMED validator-fixture separation:** the combined x86 artifact includes
+two deliberately invalid self-test collections: `check-dwarfdump` retains
+original input bytes at aliased receipt paths, and `validation-evidence-controls`
+corrupts copies of completed reports. The final guard explicitly selects
+`--exclude-validator-self-tests` for only these exact top-level directories.
+It lists all excluded receipts separately and does not count them as export
+passes. Default scanning rejects them; malformed production receipts, similarly
+named directories and nested names still fail. Three positive and ten rejection
+controls pass. With separate fresh checks for the eight unchanged namespace
+sidecars, the combined x86 artifact supplies 535 passing retained export reports;
+168 self-test receipts and 81 failed negative receipts are counted separately.
+The old damaged namespace reports remain untouched. The corrected full hosted
+gate remains required.
+
+Independent combined-run MIPS review covers seventy O32/N32/N64 argument,
+layout and scalar cases plus four FPXX/FP64A system references. It checks actual
+instruction bytes, raw carriers, typed values, unavailable boundaries, input and
+package hashes, deterministic exports, failure isolation and seventy production
+cancellations. Forty O32 wrong-carrier/late-gap controls and eight FPR/mode
+controls fail as intended despite structurally valid artifacts. Sixteen fresh
+i386 integer/shared GDB replays additionally pass all eight layouts and 3,000
+instruction observations, including measured shared-library relocation and
+explicit curated-name loading. These are component and predecessor-run evidence;
+they do not replace the current commit's combined acceptance gate.
+
 ## Original requirements and evidence
 
 All paths in the test column are beneath `src/test/integration/`. The workflow

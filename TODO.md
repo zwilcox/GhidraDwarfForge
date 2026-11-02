@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED retention-guard fixture separation:** the final guard now explicitly
+distinguishes the two validator self-test directories from production reports.
+It records their receipts without counting them as export passes; malformed
+production receipts still fail. Three positive and ten rejection controls pass,
+along with 535 retained x86 reports using separate fresh checks for the eight
+known namespace collisions. Sixteen fresh i386 integer/shared GDB replays pass
+3,000 instruction observations. Production code is unchanged. The corrected
+exact-head gate, remaining host/artifact review and protected integration remain
+open; see `docs/TARGET-ABI-ACCEPTANCE.md`.
+
 **CONFIRMED namespace validator-retention follow-up:** the independent full
 AArch64 raw-report audit found one additional harness collision affecting eight
 namespace/global variants. Separate driver logs pass fresh packaged x86-64 and
