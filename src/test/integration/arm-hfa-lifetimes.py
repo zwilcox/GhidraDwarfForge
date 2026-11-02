@@ -34,11 +34,16 @@ def main():
     parser.add_argument('--qemu', type=Path, required=True)
     parser.add_argument('--gdb', type=Path, required=True)
     parser.add_argument('--gdb-data', type=Path, required=True)
+    controls = load('hfa_controls', source / 'arm_hfa_control_oracle.py')
+    parser.add_argument('--control', choices=tuple(controls.CONTROL_IDS))
+    parser.add_argument('--storage', choices=('hfa', 'base', 'mixed'), default='hfa')
     args = parser.parse_args()
+    if args.storage != 'hfa' and not args.control:
+        parser.error('--storage requires --control')
     module = args.ghidra.resolve(strict=True) / 'Ghidra/Extensions/GhidraDwarfForge'
     output = repository / 'build/test-results/arm-hfa-lifetimes'
     output.mkdir(parents=True, exist_ok=True)
-    case = Path(tempfile.mkdtemp(prefix=args.order + '.', dir=output))
+    case = Path(tempfile.mkdtemp(prefix=args.order + '.' + args.storage + '.' + (args.control + '.' if args.control else ''), dir=output))
     print(case, flush=True)
     facts = load('hfa_elf', source / 'arm-thumb-mode-check.py')
     reference = load('hfa_reference', source / 'arm-pcs-call-reference.py')
@@ -50,7 +55,15 @@ def main():
         repository / 'src/test/fixtures/arm-hfa-lifetimes.c', repository / 'src/test/fixtures/arm-pcs-start.S',
         Path(shutil.which(compiler)), Path(shutil.which(objcopy)), args.qemu, args.gdb]
     protected += [p for root in (module, args.gdb_data) for p in root.rglob('*') if p.is_file()]
+    if args.control:
+        protected += [source / 'arm-hfa-controls-gdb.py', source / 'arm_hfa_control_oracle.py',
+            source / 'ghidra_scripts/PrepareArmHfaControls.java',
+            repository / 'src/test/fixtures/arm-hfa-controls.c', repository / 'src/test/fixtures/arm-hfa-controls.S']
+    else:
+        protected.append(source / 'arm_hfa_control_oracle.py')
     before = {str(p): digest(p) for p in protected}
+    runtime_script = source / ('arm-hfa-controls-gdb.py' if args.control else 'arm-hfa-lifetimes-gdb.py')
+    prepare_script = 'PrepareArmHfaControls.java' if args.control else 'PrepareArmHfaLifetimes.java'
     commands = []
     java = subprocess.run([str(Path(os.environ['JAVA_HOME']) / 'bin/java'), '-Xshare:off', '-version'],
         capture_output=True, check=True)
@@ -74,12 +87,23 @@ def main():
         else:
             assert not stderr, (label, 'unexpected stderr')
 
-    write('profile.json', {'order': args.order})
+    write('profile.json', {'order': args.order, 'control': args.control, 'storage': args.storage})
     flags = ['-marm', '-march=armv7-a', '-mfpu=vfpv3-d16', '-mfloat-abi=hard', '-O0', '-g3', '-gdwarf-5',
         '-fno-omit-frame-pointer', '-nostdlib', '-nostartfiles', '-static', '-fno-pie', '-no-pie',
         '-Wl,--build-id=none', '-Wl,-e,_start', *(['-mbig-endian', '-Wl,--be8'] if args.order == 'big' else [])]
     run('startup', [compiler, *flags, '-c', repository / 'src/test/fixtures/arm-pcs-start.S', '-o', case / 'start.o'])
-    command = [compiler, *flags, case / 'start.o', repository / 'src/test/fixtures/arm-hfa-lifetimes.c']
+    objects = [case / 'start.o']
+    if args.control:
+        flags += ['-DFORGE_HFA_CONTROL=' + str(controls.CONTROL_IDS[args.control]),
+            '-DFORGE_HFA_ALIAS=' + str(int(args.control == 'unknown-alias')),
+            '-DFORGE_CORE_STORAGE=' + str(int(args.storage != 'hfa')),
+            '-DFORGE_BASE_PCS=' + str(int(args.storage == 'base')),
+            '-DFORGE_MIXED=' + str(int(args.storage == 'mixed'))]
+        run('control-assembly', [compiler, *flags, '-c', repository / 'src/test/fixtures/arm-hfa-controls.S',
+            '-o', case / 'control.o'])
+        objects.append(case / 'control.o')
+    fixture = 'arm-hfa-controls.c' if args.control else 'arm-hfa-lifetimes.c'
+    command = [compiler, *flags, *objects, repository / 'src/test/fixtures' / fixture]
     run('compile', [*command, '-o', case / 'calls.reference'])
     run('rebuild', [*command, '-o', case / 'calls.repeat'])
     assert (case / 'calls.reference').read_bytes() == (case / 'calls.repeat').read_bytes()
@@ -89,6 +113,8 @@ def main():
     expected_words = {
         'sum_floats': 'e52db004 e28db000 e24dd00c eeb07a40 eef07a60 ed0b7a03 ed4b7a02 ed1b7a03 ed5b7a02 ee777a27 eeb00a67 e28bd000 e49db004 e12fff1e',
         'sum_doubles': 'e52db004 e28db000 e24dd014 eeb06b40 eeb07b41 ed0b6b05 ed0b7b03 ed1b6b05 ed1b7b03 ee367b07 eeb00b47 e28bd000 e49db004 e12fff1e'}
+    if args.control:
+        expected_words = {'hfa_control': ' '.join(controls.instruction_words(args.control, args.storage))}
     labels = {}
     for name, words in expected_words.items():
         symbol, = [row for row in compiler_elf['symbols'] if row['name'] == name]
@@ -97,20 +123,25 @@ def main():
         expected_bytes = b''.join(int(word, 16).to_bytes(4, 'little') for word in words.split())
         assert symbol['size'] == 56 and section['data'][offset:offset + 56] == expected_bytes, name
         labels[name] = symbol['raw']
+    if args.control:
+        for name in ('control_input', 'control_guard'):
+            symbol, = [row for row in compiler_elf['symbols'] if row['name'] == name]
+            labels[name] = symbol['raw']
     write('labels.json', labels)
     (case / 'labels.txt').write_text(''.join(name + ' ' + hex(address) + '\n' for name, address in labels.items()))
     for leaf in ('calls.input', 'calls.reference'):
         before[str(case / leaf)] = digest(case / leaf)
     write('protected-before.json', before)
     run('compiler-runtime', ['bash', source / 'arm-pcs-profile-runtime.sh', case, 'compiler', args.qemu,
-        args.gdb, args.gdb_data, source / 'arm-hfa-lifetimes-gdb.py'])
+        args.gdb, args.gdb_data, runtime_script])
     (case / 'project').mkdir()
     headless = args.ghidra / 'support/analyzeHeadless'
     run('import', [headless, case / 'project', 'Hfa', '-import', case / 'calls.input', '-loader', 'ElfLoader'])
     for phase in ('curate', 'inspect'):
         run(phase, [headless, case / 'project', 'Hfa', '-process', 'calls.input', '-noanalysis',
             *(['-readOnly'] if phase == 'inspect' else []), '-scriptPath', source / 'ghidra_scripts',
-            '-postScript', 'PrepareArmHfaLifetimes.java', phase, case / 'labels.txt', case / (phase + '.json'),
+            '-postScript', prepare_script, phase, case / 'labels.txt', case / (phase + '.json'),
+            *([args.storage] if args.control else []),
             '-postScript', 'GhidraDwarfForge.java', '--packaged-natives', '--output=' + str(case / 'calls.dbg')])
         assert 'GhidraDwarfForge symbol export PASS' in (case / (phase + '.log')).read_text()
         if phase == 'curate':
@@ -144,12 +175,20 @@ def main():
     assert exported['header'][4] == exported['header'][9] == 0
     assert facts.section(exported, '.text')['data'] == facts.section(original, '.text')['data']
     run('forge-runtime', ['bash', source / 'arm-pcs-profile-runtime.sh', case, 'forge', args.qemu,
-        args.gdb, args.gdb_data, source / 'arm-hfa-lifetimes-gdb.py'])
+        args.gdb, args.gdb_data, runtime_script])
     results = {}
     for variant in ('compiler', 'forge'):
         result = json.loads((case / (variant + '-gdb.json')).read_text())
-        assert result['status'] == 'PASS_HFA_LIFETIMES' and len(result['observations']) == 28
-        assert sum('typed' in row for row in result['observations']) == (28 if variant == 'forge' else 10)
+        if args.control:
+            assert result['status'] == 'PASS_HFA_CONTROLS' and len(result['observations']) == 14
+            gap = controls.GAP_START[args.control]
+            unavailable = 0 if gap is None else (56 - gap) // 4
+            assert sum('unavailable' in row for row in result['observations']) == (unavailable if variant == 'forge' else 0)
+            assert sum('typed' in row for row in result['observations']) == (14 - unavailable if variant == 'forge' else 0)
+            assert all('typedInput' in row for row in result['observations'])
+        else:
+            assert result['status'] == 'PASS_HFA_LIFETIMES' and len(result['observations']) == 28
+            assert sum('typed' in row for row in result['observations']) == (28 if variant == 'forge' else 10)
         warnings = (case / (variant + '.stderr')).read_text().splitlines()
         assert len(warnings) <= 1
         for warning in warnings:
@@ -160,10 +199,14 @@ def main():
         assert not (case / (variant + '.qemu.stderr')).read_bytes()
         results[variant] = result
     assert before == {path: digest(Path(path)) for path in before}
-    write('result.json', {'status': 'PASS_HFA_LIFETIMES', 'order': args.order,
-        'forgeTypedInstructions': 28, 'compilerTypedInstructions': 10, 'rawInstructionsPerSymbolFile': 28,
+    write('result.json', {'status': 'PASS_HFA_CONTROLS' if args.control else 'PASS_HFA_LIFETIMES',
+        'order': args.order, 'control': args.control, 'storage': args.storage,
+        'forgeTypedInstructions': 14 - unavailable if args.control else 28,
+        'unavailableInstructions': unavailable if args.control else 0,
+        'compilerTypedInstructions': 0 if args.control else 10,
+        'rawInstructionsPerSymbolFile': 14 if args.control else 28,
         'deterministic': True, 'protectedFilesUnchanged': True})
-    print('PASS_HFA_LIFETIMES', flush=True)
+    print('PASS_HFA_CONTROLS' if args.control else 'PASS_HFA_LIFETIMES', flush=True)
 
 
 if __name__ == '__main__':
