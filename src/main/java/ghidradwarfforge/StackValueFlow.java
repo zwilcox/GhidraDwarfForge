@@ -134,7 +134,7 @@ final class StackValueFlow {
         // those bytes, while disjoint writes need not discard the value.
         if (storage.isRegisterStorage() && (original == null ||
                 original.getBaseRegister() == pointer)) return List.of();
-        var decoded = RegisterDefinitionFlow.decodedInstructions(program, function, true, true, monitor);
+        var decoded = RegisterDefinitionFlow.decodedInstructions(program, function, true, true, true, monitor);
         if (decoded.isEmpty()) return List.of();
         var calls = DirectLeafCalls.inspect(program, List.copyOf(decoded.values()), monitor);
         if (calls == null) return List.of();
@@ -254,13 +254,17 @@ final class StackValueFlow {
     }
 
     private StackValueFlow boundaryCopy() {
+        return copy(false);
+    }
+
+    private StackValueFlow copy(boolean temporaries) {
         var result = new StackValueFlow(program, pointer, memory, bytes);
         result.localOffset = localOffset;
         result.calls = calls;
         result.savedAssignments = savedAssignments;
         result.registersBigEndian = registersBigEndian;
         for (var entry : facts.entrySet()) {
-            if (!entry.getKey().isUnique()) result.facts.put(entry.getKey(), entry.getValue());
+            if (temporaries || !entry.getKey().isUnique()) result.facts.put(entry.getKey(), entry.getValue());
         }
         result.slots.putAll(slots);
         return result;
@@ -350,35 +354,17 @@ final class StackValueFlow {
         for (Object output : instruction.getResultObjects()) {
             if (output instanceof Address address && address.getAddressSpace().isMemorySpace()) invalidateMemory();
         }
-        for (PcodeOp operation : instruction.getPcode()) {
-            monitor.checkCancelled();
-            if (GhidraVariableStorage.unprovenStore(program, operation)) return false;
-            if (operation.getOpcode() == PcodeOp.STORE) store(operation);
-            if (operation.getOpcode() == PcodeOp.CALL) {
-                var effects = calls.get(instruction.getAddress());
-                if (effects == null) return false;
-                applyCall(effects, monitor);
+        int[] targets = IntraInstructionFlow.targets(instruction, monitor);
+        if (targets != null) {
+            // Local definitions and saved assignments still use their existing
+            // straight instruction ownership proof. Only incoming values opt in.
+            if (initialize || localOffset != null || savedAssignments ||
+                    !advancePaths(instruction, targets, monitor)) return false;
+        }
+        else {
+            for (PcodeOp operation : instruction.getPcode()) {
+                if (!advanceOperation(instruction, operation, monitor)) return false;
             }
-            Varnode output = operation.getOutput();
-            if (output == null) continue;
-            Fact derived = derive(operation);
-            Varnode pointerNode = new Varnode(pointer.getAddress(), pointer.getMinimumByteSize());
-            if (overlaps(output, pointerNode)) {
-                Fact previousPointer = read(pointerNode);
-                if (!output.equals(pointerNode) || previousPointer == null || derived == null ||
-                        previousPointer.kind() != Kind.STACK_ADDRESS || derived.kind() != Kind.STACK_ADDRESS) {
-                    invalidateMemory();
-                }
-                else {
-                    long before = previousPointer.offset(), after = derived.offset();
-                    boolean released = program.getCompilerSpec().stackGrowsNegative() ? after > before : after < before;
-                    if (released) slots.keySet().removeIf(slot -> intersects(slot, bytes,
-                        Math.min(before, after), Math.max(before, after)));
-                }
-            }
-            facts.keySet().removeIf(node -> overlaps(node, output));
-            if (output.getAddress().getAddressSpace().isMemorySpace()) invalidateMemory();
-            if (derived != null && (output.isRegister() || output.isUnique())) facts.put(output, derived);
         }
         for (Varnode node : new ArrayList<>(facts.keySet())) {
             monitor.checkCancelled();
@@ -395,6 +381,73 @@ final class StackValueFlow {
         // If the initializing address is unknown at a join, no slot was
         // generated. Keep that path unavailable rather than manufacturing a
         // fixed entry-relative address or retaining a previous local value.
+        return true;
+    }
+
+    /** Forward-only control means all predecessor states arrive before a node runs. */
+    private boolean advancePaths(Instruction instruction, int[] targets, TaskMonitor monitor)
+            throws CancelledException {
+        PcodeOp[] operations = instruction.getPcode();
+        var states = new StackValueFlow[operations.length + 1];
+        states[0] = copy(true);
+        for (int index = 0; index < operations.length; index++) {
+            monitor.checkCancelled();
+            StackValueFlow state = states[index];
+            states[index] = null;
+            if (state == null) continue;
+            if (targets[index] >= 0) {
+                mergePath(states, targets[index], state);
+                if (operations[index].getOpcode() == PcodeOp.CBRANCH) mergePath(states, index + 1, state);
+            }
+            else {
+                if (!state.advanceOperation(instruction, operations[index], monitor)) return false;
+                mergePath(states, index + 1, state);
+            }
+        }
+        StackValueFlow result = states[operations.length];
+        if (result == null) return false;
+        facts.clear();
+        facts.putAll(result.facts);
+        slots.clear();
+        slots.putAll(result.slots);
+        return true;
+    }
+
+    private static void mergePath(StackValueFlow[] states, int target, StackValueFlow incoming) {
+        if (states[target] == null) states[target] = incoming.copy(true);
+        else states[target].intersect(incoming);
+    }
+
+    private boolean advanceOperation(Instruction instruction, PcodeOp operation, TaskMonitor monitor)
+            throws CancelledException {
+        monitor.checkCancelled();
+        if (GhidraVariableStorage.unprovenStore(program, operation)) return false;
+        if (operation.getOpcode() == PcodeOp.STORE) store(operation);
+        if (operation.getOpcode() == PcodeOp.CALL) {
+            var effects = calls.get(instruction.getAddress());
+            if (effects == null) return false;
+            applyCall(effects, monitor);
+        }
+        Varnode output = operation.getOutput();
+        if (output == null) return true;
+        Fact derived = derive(operation);
+        Varnode pointerNode = new Varnode(pointer.getAddress(), pointer.getMinimumByteSize());
+        if (overlaps(output, pointerNode)) {
+            Fact previousPointer = read(pointerNode);
+            if (!output.equals(pointerNode) || previousPointer == null || derived == null ||
+                    previousPointer.kind() != Kind.STACK_ADDRESS || derived.kind() != Kind.STACK_ADDRESS) {
+                invalidateMemory();
+            }
+            else {
+                long before = previousPointer.offset(), after = derived.offset();
+                boolean released = program.getCompilerSpec().stackGrowsNegative() ? after > before : after < before;
+                if (released) slots.keySet().removeIf(slot -> intersects(slot, bytes,
+                    Math.min(before, after), Math.max(before, after)));
+            }
+        }
+        facts.keySet().removeIf(node -> overlaps(node, output));
+        if (output.getAddress().getAddressSpace().isMemorySpace()) invalidateMemory();
+        if (derived != null && (output.isRegister() || output.isUnique())) facts.put(output, derived);
         return true;
     }
 

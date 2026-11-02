@@ -80,7 +80,7 @@ final class CompositeValueFlow {
         if (!hasRegister || total != bytes) return List.of();
         // As with scalar incoming values, a terminal's input state is useful
         // even when its return effects cannot be propagated to a successor.
-        var decoded = RegisterDefinitionFlow.decodedInstructions(program, function, true, true, monitor);
+        var decoded = RegisterDefinitionFlow.decodedInstructions(program, function, true, true, true, monitor);
         if (decoded.isEmpty()) return List.of();
         var calls = DirectLeafCalls.inspect(program, List.copyOf(decoded.values()), monitor);
         if (calls == null) return List.of();

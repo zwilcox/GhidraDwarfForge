@@ -1,5 +1,13 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local conditional-flow and partial-aggregate progress:** shared incoming
+analysis now intersects predicated instruction paths; a separate audited ARM
+policy fixes big-endian aggregate padding without changing saved analyst storage.
+Thirteen model suites pass 6,520 checks. The new LE/BE8 runtime investigation
+has no incorrect numeric values over 506 instruction stops, but retains 225/241
+unavailable field observations and failing compiler-reference windows. Full
+aggregate acceptance and all #68–#71 requirements remain open. See `docs/research/ARM-STACK-AGGREGATES.md`.
+
 **CONFIRMED local ARM aggregate failure/cancellation compositions:** twelve
 LE/BE8 storage/control combinations pass 48 deterministic native-failure exports
 and twelve cancellations during production copying. Neighboring functions retain

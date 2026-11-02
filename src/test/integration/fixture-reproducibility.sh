@@ -51,6 +51,7 @@ expected_sources=(
     arm-pcs-call-reference.c
     arm-pcs-profile.c
     arm-pcs-start.S
+    arm-stack-aggregates.c
     arm-symbol-boundary.S
     arm-symbol-boundary.ld
     arm-thumb-after.c
