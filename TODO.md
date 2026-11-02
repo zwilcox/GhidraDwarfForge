@@ -1,5 +1,12 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local fixture-inventory correction:** hosted run `41364588706`
+stopped target setup because the reviewed ARM call-reference C/assembly sources
+were missing from the explicit fixture inventory. Both names are now registered;
+all five target reproducibility checks pass, and an unregistered-source control
+still rejects before building. See `docs/ARM-BE8-PROFILE.md`. This repairs test
+setup only; a new hosted gate and the full #68–#71 requirements remain open.
+
 **CONFIRMED local implicit ARM convention correction:** extraction now preserves
 recorded unknown convention names separately from the default model Ghidra
 actually uses for dynamic storage. Twelve LE/BE8 base/VFP cases pass real

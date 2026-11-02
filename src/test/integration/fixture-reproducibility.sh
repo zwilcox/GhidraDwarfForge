@@ -44,6 +44,8 @@ expected_sources=(
     arm-mixed-body-driver.c
     arm-mixed-body.S
     arm-mixed-function-aliases.cpp
+    arm-pcs-call-reference.c
+    arm-pcs-start.S
     arm-symbol-boundary.S
     arm-symbol-boundary.ld
     arm-thumb-after.c
