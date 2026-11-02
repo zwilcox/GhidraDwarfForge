@@ -82,12 +82,10 @@ and the new model suite; exact-head hosted acceptance remains pending.
 
 ## Remaining work
 
-The synthetic decompiler output still reflects the saved erroneous hidden-pointer
-signature described in the preceding allocation record. Correcting only its
-printed declaration would leave the body and token mapping based on incorrect
-storage. A read-only decompiler view must preserve analyst overrides, local
-symbols, calling-convention metadata and source correlation while applying the
-same validated allocation. No speculative text rewrite is implemented.
+**HISTORICAL at PR145:** synthetic decompiler output retained the erroneous
+hidden-pointer signature. The subsequent [read-only decompiler correction](I386-DECOMPILER-ALLOCATION.md)
+now passes local helper/source-step and override-preservation checks. Its
+hosted acceptance and integration remain pending.
 
 Broader libc/vector/aggregate/convention/lifetime requirements, the remaining
 AArch64/MIPS/ARM acceptance rows, hosted validation and protected integration

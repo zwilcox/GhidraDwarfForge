@@ -58,6 +58,11 @@ public final class I386ParameterAllocationSmoke {
                                 function.updateFunction(program.getCompilerSpec().getDefaultCallingConvention().getName(),
                                     new ReturnParameterImpl(returned, program), Function.FunctionUpdateType.DYNAMIC_STORAGE_ALL_PARAMS,
                                     true, SourceType.USER_DEFINED, parameters.toArray(Parameter[]::new));
+                                var callSignature = new FunctionDefinitionDataType("CallSignature", manager);
+                                callSignature.setReturnType(returned);
+                                callSignature.setArguments(parameters.stream().map(p ->
+                                    new ParameterDefinitionImpl(p.getName(), p.getFormalDataType(), null)).toArray(ParameterDefinition[]::new));
+                                callSignature.setCallingConvention("__cdecl");
                                 String before = snapshot(function);
                                 for (int osAbi : List.of(0, 3, 9)) {
                                     for (int flags : List.of(0, 1)) {
@@ -67,6 +72,16 @@ public final class I386ParameterAllocationSmoke {
                                         var result = policy.resolve(function, TaskMonitor.DUMMY, ignored -> { });
                                         boolean correct = compiler.equals("gcc") && osAbi != 9 && flags == 0 &&
                                             (returned == extended || returned instanceof TypeDef);
+                                        var call = policy.resolveSignature(callSignature, TaskMonitor.DUMMY);
+                                        require((call != null) == correct, "call override profile selection");
+                                        if (call != null) {
+                                            require(call.returnStorage().getRegister().getName().equals("ST0") &&
+                                                call.returnStorage().size() == 10, "call override result carrier");
+                                            require(call.parameters().size() == count, "call override argument count");
+                                            for (int i = 0; i < count; i++) require(call.parameters().get(i).getStackOffset() == 4 + 12 * i &&
+                                                call.parameters().get(i).size() == 10, "call override argument carrier");
+                                            require(callSignature.getReturnType().isEquivalent(returned), "call override changed formal return type");
+                                        }
                                         require(result.omittedAutomaticParameters().size() == (correct ? 1 : 0), "hidden parameter classification");
                                         require(result.storage().size() == (correct ? count : 0), "parameter count");
                                         if (correct) {
@@ -88,6 +103,12 @@ public final class I386ParameterAllocationSmoke {
                                 }
                                 Files.write(path, header(0, 0));
                                 var policy = I386ParameterAllocation.forProgram(program, ElfImage.read(path), TaskMonitor.DUMMY, ignored -> { });
+                                callSignature.setCallingConvention("__stdcall");
+                                require(policy.resolveSignature(callSignature, TaskMonitor.DUMMY) == null, "nondefault override corrected");
+                                callSignature.setCallingConvention("__cdecl");
+                                callSignature.setVarArgs(true);
+                                require((policy.resolveSignature(callSignature, TaskMonitor.DUMMY) != null) ==
+                                    (compiler.equals("gcc") && (returned == extended || returned instanceof TypeDef)), "variadic call override");
                                 function.setVarArgs(true);
                                 var variadic = policy.resolve(function, TaskMonitor.DUMMY, ignored -> { });
                                 require(variadic.omittedAutomaticParameters().size() ==

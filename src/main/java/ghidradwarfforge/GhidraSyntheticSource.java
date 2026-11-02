@@ -110,6 +110,23 @@ public final class GhidraSyntheticSource {
     public static Decompilation decompileDetailed(Program program,
             List<FunctionSymbol> exportedFunctions, long rebaseDelta, TaskMonitor monitor,
             DecompileOperation operation) throws CancelledException {
+        return decompileDetailed(program, exportedFunctions, rebaseDelta, monitor, operation,
+            GhidraParameterAllocation.UNCHANGED, ignored -> { });
+    }
+
+    public static Decompilation decompileDetailed(Program program,
+            List<FunctionSymbol> exportedFunctions, long rebaseDelta, TaskMonitor monitor,
+            GhidraParameterAllocation allocation, java.util.function.Consumer<String> diagnostic)
+            throws CancelledException {
+        return decompileDetailed(program, exportedFunctions, rebaseDelta, monitor,
+            (decompiler, function, timeoutSeconds, taskMonitor) ->
+                decompiler.decompileFunction(function, timeoutSeconds, taskMonitor), allocation, diagnostic);
+    }
+
+    public static Decompilation decompileDetailed(Program program,
+            List<FunctionSymbol> exportedFunctions, long rebaseDelta, TaskMonitor monitor,
+            DecompileOperation operation, GhidraParameterAllocation allocation,
+            java.util.function.Consumer<String> diagnostic) throws CancelledException {
         Objects.requireNonNull(operation, "decompile operation");
         Map<Long, DataType> recoveredReturns = new HashMap<>();
         Map<Long, ParameterRecovery> recoveredParameters = new HashMap<>();
@@ -119,7 +136,8 @@ public final class GhidraSyntheticSource {
             selected.put(symbol.address(), symbol);
         }
         List<FunctionText> texts = new ArrayList<>();
-        DecompInterface decompiler = new DecompInterface();
+        DecompInterface decompiler = allocation.hasReturnCorrections()
+            ? new GhidraAllocationDecompiler(allocation, monitor, diagnostic) : new DecompInterface();
         try {
             decompiler.setOptions(new DecompileOptions());
             decompiler.toggleCCode(true);
@@ -179,11 +197,11 @@ public final class GhidraSyntheticSource {
                         recoveredStatics.put(symbol.address(), statics);
                     }
                     else {
-                        String diagnostic = result == null ? "no decompiler result" :
+                        String failureDiagnostic = result == null ? "no decompiler result" :
                             result.getErrorMessage();
                         texts.add(new FunctionText(symbol.name(), symbol.address(), null,
-                            diagnostic == null || diagnostic.isBlank()
-                                    ? "decompilation did not complete" : diagnostic));
+                            failureDiagnostic == null || failureDiagnostic.isBlank()
+                                    ? "decompilation did not complete" : failureDiagnostic));
                         decompiler.resetDecompiler();
                     }
                 }

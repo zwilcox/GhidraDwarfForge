@@ -1462,3 +1462,15 @@ tasks.register("floatingTypeLayoutSmoke", JavaExec) {
     systemProperty "application.settingsdir", file("build/tmp/floating-layout/settings").absolutePath
     systemProperty "application.cachedir", file("build/tmp/floating-layout/cache").absolutePath
 }
+
+tasks.register("allocationDecompilerSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks typed decompiler encoding, bounds and preserved analyst call overrides"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.AllocationDecompilerSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/allocation-decompiler/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/allocation-decompiler/cache").absolutePath
+}

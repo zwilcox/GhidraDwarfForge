@@ -15,6 +15,7 @@ import ghidra.program.model.data.DoubleDataType;
 import ghidra.program.model.data.TypeDef;
 import ghidra.program.model.listing.AutoParameterType;
 import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.FunctionSignature;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.listing.VariableStorage;
 import ghidra.program.model.pcode.XmlEncode;
@@ -60,6 +61,45 @@ public final class I386ParameterAllocation {
             throw new IOException("Cannot identify audited parameter allocation", error);
         }
         return new GhidraParameterAllocation() {
+            @Override
+            public boolean hasReturnCorrections() { return true; }
+
+            @Override
+            public SignatureResolution resolveSignature(FunctionSignature signature, TaskMonitor task)
+                    throws CancelledException {
+                task.checkCancelled();
+                if (spec.getCallingConvention(signature.getCallingConventionName()) != original ||
+                        !extended(signature.getReturnType()) || signature.getArguments().length > 4095) return null;
+                var types = new ArrayList<DataType>();
+                types.add(signature.getReturnType());
+                for (var argument : signature.getArguments()) {
+                    task.checkCancelled();
+                    types.add(argument.getDataType());
+                }
+                var expected = original.getStorageLocations(program, types.toArray(DataType[]::new), true);
+                types.set(0, new DoubleDataType(program.getDataTypeManager()));
+                var adjusted = original.getStorageLocations(program, types.toArray(DataType[]::new), true);
+                if (expected.length != types.size() + 1 || adjusted.length != types.size() ||
+                        expected[1].getAutoParameterType() != AutoParameterType.RETURN_STORAGE_PTR ||
+                        !adjusted[0].isRegisterStorage() || adjusted[0].size() != 10 ||
+                        !adjusted[0].getRegister().getName().equals("ST0")) {
+                    throw new IllegalStateException("Call override escaped audited floating-return allocation");
+                }
+                var inputs = new ArrayList<VariableStorage>();
+                for (int index = 1; index < adjusted.length; index++) {
+                    task.checkCancelled();
+                    var storage = adjusted[index];
+                    var prior = expected[index + 1];
+                    if (!storage.isStackStorage() || storage.size() != prior.size() ||
+                            storage.isForcedIndirect() || storage.isAutoStorage() ||
+                            storage.getStackOffset() < 4 || storage.getStackOffset() > prior.getStackOffset()) {
+                        throw new IllegalStateException("Call override escaped audited stack boundary");
+                    }
+                    inputs.add(storage);
+                }
+                return new SignatureResolution(adjusted[0], inputs);
+            }
+
             @Override
             public Map<Integer, VariableStorage> corrections(Function function, TaskMonitor task,
                     Consumer<String> report) throws CancelledException {
@@ -128,10 +168,18 @@ public final class I386ParameterAllocation {
                 }
                 report.accept("Corrected computed extended floating-return parameter allocation for " +
                     function.getName() + "; omitted the spurious automatic return pointer and restored stack arguments; " +
-                    "saved program, formal types and decompiler output remain unchanged");
-                return new Resolution(changes, Set.of(parameters[0].getOrdinal()));
+                    "saved program and formal types remain unchanged");
+                return new Resolution(changes, Set.of(parameters[0].getOrdinal()), adjusted[0]);
             }
         };
+    }
+
+    private static boolean extended(DataType type) {
+        var seen = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<DataType, Boolean>());
+        while (type instanceof TypeDef alias && seen.add(type) && seen.size() <= 64) {
+            type = alias.getBaseDataType();
+        }
+        return type instanceof AbstractFloatDataType && type.getLength() == 10 && type.getAlignedLength() == 12;
     }
 
     private static boolean same(VariableStorage left, VariableStorage right) {

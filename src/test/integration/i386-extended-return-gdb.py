@@ -47,6 +47,23 @@ try:
             'extended_array[1]': 2.5, 'extended_array[2]': -4.0, 'extended_record.value': 8.75}
         row['floatingObjects'] = {expr: float(gdb.parse_and_eval(expr)) for expr in values}
         assert row['floatingObjects'] == values, row
+        if name == 'scalar_extended' and not wide:
+            # Require source-level stepping into the real helper using the emitted line table.
+            for _ in range(24):
+                gdb.execute('step')
+                if gdb.newest_frame().name() == 'source_helper':
+                    break
+            else:
+                raise AssertionError('source stepping did not enter the helper')
+            row['helperValue'] = float(gdb.parse_and_eval('value'))
+            assert row['helperValue'] == 3.75, row
+            row['helperListing'] = gdb.execute('list source_helper', to_string=True)
+            assert '__return_storage_ptr__' not in row['helperListing']
+            helper_finish = gdb.FinishBreakpoint(gdb.newest_frame(), internal=True)
+            gdb.execute('continue')
+            row['helperReturn'] = float(helper_finish.return_value)
+            assert row['helperReturn'] == returned
+            assert gdb.newest_frame().name() == 'scalar_extended'
         finish = gdb.FinishBreakpoint(gdb.newest_frame(), internal=True)
         gdb.execute('continue')
         row['returned'] = float(finish.return_value)

@@ -4,7 +4,8 @@
 
 KEEP float scalar_float(float a, float b) { return a + b + 0.5f; }
 KEEP double scalar_double(double a, double b) { return a - b + 0.25; }
-KEEP long double scalar_extended(long double a, long double b) { return a + b + 0.125L; }
+KEEP long double source_helper(long double value) { return value + 0.125L; }
+KEEP long double scalar_extended(long double a, long double b) { return source_helper(a + b); }
 
 typedef long double ExtendedAlias;
 ExtendedAlias extended_global = 6.25L;

@@ -163,8 +163,10 @@ public class GhidraDwarfForge extends GhidraScript {
         var aliasModeCues = GhidraArm32FunctionModes.extractAliases(currentProgram, aliases,
             target, rebaseDelta, monitor, diagnostic);
         monitor.checkCancelled();
+        var allocation = ghidradwarfforge.targets.TargetParameterAllocation.forProgram(
+            currentProgram, originalElf, monitor, diagnostic);
         var decompilation = GhidraSyntheticSource.decompileDetailed(currentProgram, functions,
-            rebaseDelta, monitor);
+            rebaseDelta, monitor, allocation, diagnostic);
         var source = decompilation.source();
         monitor.checkCancelled();
         var registers = ghidradwarfforge.locations.TargetRegisterMap.forElf(
@@ -172,7 +174,7 @@ public class GhidraDwarfForge extends GhidraScript {
         var extractedTypes = GhidraTypeGraph.extract(currentProgram, functions, registers,
             rebaseDelta, monitor, diagnostic, decompilation.recoveredReturns(),
             decompilation.recoveredParameters(), decompilation.recoveredStatics(),
-            ghidradwarfforge.targets.TargetParameterAllocation.forProgram(currentProgram, originalElf, monitor, diagnostic));
+            allocation);
         var typeModel = ghidradwarfforge.GhidraCompilerCallPolicy.apply(currentProgram,
             target, originalElf, extractedTypes, monitor, diagnostic);
         monitor.checkCancelled();

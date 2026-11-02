@@ -83,6 +83,7 @@ expected_sources=(
     function_entry_ranges.S
     function_entry_ranges.c
     i386-alias-entry.cpp
+    i386-extended-return.c
     i386-profile.c
     inspected-call-callees.c
     later-register-local.c

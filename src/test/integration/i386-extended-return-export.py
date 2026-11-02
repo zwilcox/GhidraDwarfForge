@@ -47,7 +47,8 @@ def main():
 
     fixture = source.parent / 'fixtures/i386-extended-return.c'
     protected = [fixture, Path(__file__).resolve(), source / 'i386-extended-return-gdb.py',
-        source / 'ghidra_scripts/PrepareI386ExtendedReturn.java']
+        source / 'ghidra_scripts/PrepareI386ExtendedReturn.java',
+        source / 'ghidra_scripts/CheckI386SourceView.java']
     protected += [p for p in module.rglob('*') if p.is_file()]
     before = {str(p): support.digest(p) for p in protected}
     reference, binary = case / 'profile.reference', case / 'profile.input'
@@ -70,7 +71,7 @@ def main():
     before.update({str(binary): support.digest(binary), str(reference): support.digest(reference)})
     write('protected-before.json', before)
     run('symbols', ['nm', '-n', reference])
-    names = ('scalar_float', 'scalar_double', 'scalar_extended',
+    names = ('scalar_float', 'scalar_double', 'scalar_extended', 'source_helper',
         'extended_global', 'extended_array', 'extended_record')
     symbols = {}
     for line in (case / 'symbols.log').read_text().splitlines():
@@ -78,7 +79,7 @@ def main():
         if len(fields) == 3 and fields[2] in names:
             assert fields[2] not in symbols
             symbols[fields[2]] = int(fields[0], 16)
-    assert len(symbols) == 6
+    assert len(symbols) == 7
     (case / 'labels.txt').write_text(''.join(name + ' ' + hex(symbols[name]) + '\n' for name in names))
     os.environ.update(I386_CASE=str(case), I386_VARIANT='compiler', I386_TARGET=args.target)
     run('compiler-gdb', ['gdb', '-q', '-nx', '-batch', '-x', source / 'i386-extended-return-gdb.py'])
@@ -96,6 +97,11 @@ def main():
         assert original_model['delta'] >= 0x2000000
     project_before = {str(p.relative_to(project)): support.digest(p) for p in project.rglob('*') if p.is_file()}
     write('project-before.json', project_before)
+    if args.target == 'i386':
+        run('source-controls', [ghidra / 'support/analyzeHeadless', project, 'I386', '-process', binary.name,
+            '-readOnly', '-noanalysis', '-scriptPath', source / 'ghidra_scripts',
+            '-postScript', 'CheckI386SourceView.java', case / 'source-controls.json'], timeout=240)
+        assert json.loads((case / 'source-controls.json').read_text())['status'] == 'PASS'
     hashes = None
     for phase in ('first', 'repeat'):
         run(phase, [ghidra / 'support/analyzeHeadless', project, 'I386', '-process', binary.name,
@@ -106,6 +112,13 @@ def main():
         assert 'GhidraDwarfForge symbol export PASS' in log
         if args.target == 'i386':
             assert 'Corrected computed extended floating-return parameter allocation for scalar_extended' in log
+            assert 'Applied validated allocation to read-only decompiler input for scalar_extended' in log
+            assert 'Applied validated allocation to read-only decompiler input for source_helper' in log
+            assert 'Corrected computed floating-return storage for analyst call override at' in log
+            code = (case / 'profile.dbg.c').read_text()
+            assert 'longdouble scalar_extended(longdouble a,longdouble b)' in code
+            assert 'longdouble source_helper(longdouble value)' in code
+            assert '__return_storage_ptr__' not in code
         assert json.loads((case / (phase + '.json')).read_text()) == original_model
         current = [support.digest(case / name) for name in ('profile.dbg', 'profile.dbg.c')]
         if hashes is not None:

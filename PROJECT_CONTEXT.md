@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local i386 decompiler correction:** validated return/argument storage
+now reaches native source generation and analyst call-site overrides without
+editing the saved program. Four i386 layouts and an x86-64 layout regression
+pass ten deterministic exports, strict validators and compiler/Forge GDB checks;
+i386 additionally passes helper stepping, native failure isolation and callback
+cancellation. Six model suites pass. The missing fixture inventory entry that
+failed PR145's hosted target lanes is corrected and locally verified. See
+`docs/I386-DECOMPILER-ALLOCATION.md`. Exact-head hosted acceptance,
+protected integration and every remaining original P2.3–P2.3c row remain open.
+
 **CONFIRMED local floating layout correction:** object size and meaningful value
 width are now distinct. Four i386 layouts and an x86-64 global-layout regression
 pass ten deterministic exports, compiler/Forge sizeof/stride/member/value checks,

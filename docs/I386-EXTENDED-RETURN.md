@@ -100,10 +100,10 @@ records narrowly bounded housekeeping. Checker rules were not relaxed.
 as 10, whereas compiler DWARF reports 12. `extended-size.json` and the two
 `*-extended-size.log` files reproduce this. The correction deliberately retains
 the Ghidra formal type. The current [floating-layout follow-up](FLOATING-TYPE-LAYOUT.md)
-validates object size, array indexing and structure fields. The synthetic decompiler signature still
-contains Ghidra's erroneous pointer return/hidden argument. The exporter emits a
-diagnostic rather than silently presenting that source as corrected. Fixing the
-read-only decompiler view remains required before broad floating support claims.
+validates object size, array indexing and structure fields. The remaining
+synthetic signature defect at that checkpoint is now addressed locally by the
+[read-only decompiler correction](I386-DECOMPILER-ALLOCATION.md), including
+analyst call overrides. Hosted acceptance and integration remain pending.
 
 The wider eleven-function research fixture remains under
 `build/i386-abi-reference/abi-reference.c`. Both exec and PIE run natively and
