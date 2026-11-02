@@ -1,5 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED AArch64 vector-storage integration:** PR #123 passes both complete
+hosted gates at `8b6749e3`, separate package/raw/runtime/both-host review, and
+normal protected merge `3a60eab` with the same tree. Fresh uploaded-artifact
+replays pass 1,071 instruction observations and 33 unchanged-state call
+rejections; ten artifacts pass fresh structural validation. See
+`docs/AARCH64-VECTOR-STORAGE.md` for exact evidence and native-vector call limits.
+All remaining #68–#71 requirements remain open. Historical pending statements
+below are superseded for this component only.
+
 **CONFIRMED AArch64 computed-allocation defect; candidate acceptance in progress:**
 A register-exhausted structure is split incorrectly by the pinned Ghidra default
 model, causing wrong exported member and following-argument values. An isolated,

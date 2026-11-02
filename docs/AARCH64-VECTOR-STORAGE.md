@@ -118,3 +118,54 @@ The runtime CPU is explicitly `cortex-a53`. Each unique result directory retains
 compiler and Forge observations, return bytes, raw location intervals, all
 validator logs, input/module hashes, before/after project hashes and failure/
 cancellation receipts. CI retains these through the existing target artifacts.
+
+## Accepted component integration
+
+**CONFIRMED:** PR #123 merged normally as
+`3a60eabcf0cad41adeda1a010c9c83ad40a5f6b3`. Its tree equals the reviewed head
+`8b6749e3a858e3b8c4a059200a8c55a3d830a6cc`. Both hosted runs
+[41358257739](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/41358257739)
+and [41358257792](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/41358257792)
+passed all target, package/native, Windows and required-validation jobs.
+The enforced, up-to-date required check remained enabled; no administrative
+bypass or history rewrite was used. The separate main-push gate is not included
+in this acceptance claim.
+
+Separate review bound the uploaded package to 177 release/platform checksum
+entries and Java 21 bytecode. For each of the three vector cases, all seventeen
+fixture/harness source files, 167 installed module files and both original
+inputs matched the retained hashes. Program changes were limited to the
+recorded Ghidra backup rotations. Package ZIP SHA-256 is
+`0f6700b4825cbcf8d964d621061dc50aa02e07f89a8e7edbf7731eae6720c21e`;
+the JAR matches the local-tested `12b76f077e7570f0ee6b7b17396a93589e1c4cb9333df5b05141f033739cd6a6`.
+
+Fresh local replays of copies of the uploaded artifacts passed all nine
+compiler/Forge/failure processes, 1,071 instruction observations and 33
+unchanged-state call rejections. The raw type/location decoder was rerun;
+all six vector sidecars plus four Linux/Windows host artifacts passed fresh
+GNU, LLVM and strict validation. Windows headless, default-import packaged,
+and GUI artifacts and the Linux GUI artifact also passed GDB source lookup,
+breakpoints, `next`, `step` and normal exit. The packaged default import retains
+`FUN_00401136` at the same `0x401136` address that the separately curated
+headless test names `recovered_add`; the review uses those actual names.
+
+Both hosts' GUI selection/cancellation receipts and select-console images were
+inspected. Windows isolated native production and its ninety-task independent
+build pass. The Windows runner's unavailable independent dwarfdump is explicit;
+its emitted artifacts were independently checked on Linux during this review.
+The compiler-only GNU-vector diagnostic explanation remains exactly as bounded
+above; Forge has no validator exception.
+
+Review commands, copied-artifact replays, manifest/source binding and receipts
+are retained in the vector worktree under
+`build/vector-research/hosted-41358257739`, including
+`acceptance-review.json`, `review-bindings.py`, `review-final.py`, `local-replay`
+and `host-replay`. Original downloaded artifacts remain unchanged. The initial
+review-script assumptions about an after-hash filename, a checker status
+spelling, and the uncurated function name are recorded rather than counted as
+passes.
+
+This accepts the vector storage component. It does not establish native-vector
+injected calls or close any #68–#71 umbrella requirement. Earlier pending
+statements describe the historical local checkpoint; the combined goal remains
+active under `TARGET-ABI-COMPLETION-PLAN.md`.
