@@ -203,3 +203,20 @@ The v3 scalar regression also passes in both data orders at
 `build/test-results/arm-be8-reference/scalar.big.kb4ffzso/result.json` and
 `scalar.little.m9jjxyqb/result.json`. The complete four-command scalar/floating
 receipt is `build/arm-be8-profile/v3-current-regressions.json`.
+
+## Fixture inventory repair
+
+Hosted run `41364588706` failed in fixture setup before exporter validation:
+`arm-pcs-call-reference.c` and `arm-pcs-start.S`, introduced by this branch,
+were missing from the explicit source-only inventory. Registering those two
+reviewed source files preserves the guard against unreviewed fixture contents.
+No production code, fixture bytes or validation assertions change.
+
+Local `bash src/test/integration/fixture-reproducibility.sh <target>` passes for
+`x86_64`, `aarch64`, `arm32`, `mips32be` and `mips32le`: each checks 13 artifacts,
+byte-identical rebuilds, partial stripping and ELF metadata. A copied fixture
+tree containing `unreviewed-probe.c` still exits 1 with the exact inventory
+error before any build. Logs and checked receipts are retained under
+`build/arm-be8-profile/inventory-correction/`, including `acceptance.json`.
+`bash -n` and `git diff --check` also pass. Hosted acceptance requires a new
+run at the corrected head; the failed run is not relabeled as passing.

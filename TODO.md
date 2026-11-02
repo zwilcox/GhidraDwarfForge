@@ -1,5 +1,12 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local fixture-inventory correction:** hosted run `41364588706`
+stopped target setup because the reviewed ARM call-reference C/assembly sources
+were missing from the explicit fixture inventory. Both names are now registered;
+all five target reproducibility checks pass, and an unregistered-source control
+still rejects before building. See `docs/ARM-BE8-PROFILE.md`. This repairs test
+setup only; a new hosted gate and the full #68–#71 requirements remain open.
+
 **CONFIRMED independent ARM call-reference progress:** mixed base/VFP compiler
 runs reproduce GDB's global PCS selection and QEMU 8.2.2's reversed BE8 floating
 register writes. A private one-line QEMU correction restores the D-register
