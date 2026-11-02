@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local shared-parameter oracle correction:** hosted run `41372370267`
+reached ARM shared export but retained an obsolete incoming-register-only
+expectation. The unchanged packaged exporter preserves a copied first argument
+and a spilled second argument. All 27 instruction boundaries of the exact hosted
+artifact pass source-known GDB value/gap checks; fresh shared/exec exports pass
+strict validators and their existing debugger workflows. Only the shared
+expectations change. See `docs/ARM-BE8-PROFILE.md`; a new hosted gate and all
+remaining #68–#71 requirements are still required.
+
 **CONFIRMED local fixture-inventory correction:** hosted run `41364588706`
 stopped target setup because the reviewed ARM call-reference C/assembly sources
 were missing from the explicit fixture inventory. Both names are now registered;
