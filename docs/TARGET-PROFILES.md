@@ -1,5 +1,15 @@
 # Tested ELF and ABI profiles
 
+**CONFIRMED current candidate audit (2026-11-02):** the bounded profile expansion
+is mapped requirement by requirement in [TARGET-ABI-ACCEPTANCE.md](TARGET-ABI-ACCEPTANCE.md).
+It covers AArch64 ABI/SIMD selection, O32/N32/N64 MIPS, ARM/Thumb and BE8/PCS,
+and libc-backed i386 scalar/SSE/vector/convention behavior. Local component
+runtime evidence and a clean combined build exist; combined hosted acceptance,
+artifact review and protected integration remain pending. The older baseline
+profile inventory below is historical and does not describe all candidate
+capabilities. Consumer limitations and unavailable storage remain explicit in
+the current audit; no broader architecture claim follows from a register table.
+
 **CONFIRMED local ARM incoming-oracle correction:** the PR136 hosted failure
 was an obsolete first-store unavailability expectation. Twelve fresh exports
 pass the independently audited register/spill/reload contract at all ten

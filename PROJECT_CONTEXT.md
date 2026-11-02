@@ -1,5 +1,17 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED combined ABI candidate; final acceptance pending:** the normal
+merge of PR125–PR154 with current main preserves the complete P2.3–P2.3c scope
+and the user logo. The clean combined build passes all 128 Gradle tasks plus
+wrapper, architecture-isolation and release-assembly checks; its exporter JAR
+is byte-identical to the recently tested component package. All twenty original
+requirement rows now map to concrete implementation and behavioral evidence in
+`docs/TARGET-ABI-ACCEPTANCE.md`. Exact-head hosted host/target gates,
+independent uploaded-artifact review and protected integration remain required.
+The goal and #69–#71 remain open; #68's existing closure does not waive its
+combined regression checks. Earlier component status notes below are historical
+checkpoints and must be read with this acceptance audit.
+
 **CONFIRMED local O32 mixed/wide coverage:** ten byte-order/layout cases pass
 40 normal/failure exports, ten cancellations, 24,780 instruction-level parameter
 observations and forty wrong-location/late-gap rejections. Natural fixture type
