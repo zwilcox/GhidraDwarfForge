@@ -135,3 +135,33 @@ GCC/Windows compiler selections with custom parameter/return storage, and
 MIPS O32 FP32/FPXX double calls in both byte orders. All six use rebased PIE
 and retain their existing structural/runtime/preservation assertions. Commands
 and result paths are recorded under `build/abi-classification/regressions.log`.
+
+## Hosted acceptance and protected integration
+
+**CONFIRMED:** PR #122 head `086eaee98e821f7fa9532d7bb85b1f347963cc39`
+passes all twelve jobs in run `41346340841` and merged normally as
+`a848391ac7463329b11ac20ed0e8ca8f3b47fad9`. Review compared all 86 packaged Java
+sources with that commit, verified the release ZIP manifest and Java 21 class
+versions, and checked 96 injected calls across twelve profile cases: 64 correct
+returns and 32 refusals before register/stack changes. Ordinary typed/source
+observations remain available on the rejected call profiles.
+
+The independent review also checked 30 captured primary sidecars across five
+target lanes, both hosts' GUI selection/cancellation images and reports, native
+Windows results, and local GNU/LLVM/strict validation of three Windows-produced
+sidecars. Independent dwarfdump and Linux ELF execution were not run on Windows.
+The strict AArch64 review retains 168 compiler-corroborated inherited frame
+diagnostics; each Windows sidecar retains three, with zero unexplained errors.
+The review compares original frame bytes and full diagnostic lines. It does
+not report these artifacts as having zero reported diagnostics.
+
+The captured x86 exec artifact comes from a later file-digests export. Its hash
+matches that export and the Windows Linux reference; a separate native GDB replay
+of the captured bytes verifies values, signature, source listing, next/step and
+normal exit. Local receipts are under the `abi-classification` worktree's
+`build/abi-classification/hosted-41346340841`, including
+`independent-aarch64-review.json`, `independent-host-target-review.json`,
+`independent-windows-validators/result.json` and `independent-runtime/result.json`.
+Review setup errors (nested source paths, hidden diagnostic-upload files and
+missing executable permission on downloaded inputs) are retained and resolved
+without a production change. Full #68–#71 requirements remain open.

@@ -210,3 +210,15 @@ automatic mapping or a blanket change to the baseline FPXX profile.
 follow-up](I386-SHARED-PROFILE.md) adds ordinary/rebased library exports from non-PIE and
 PIE drivers, exact typed values and curated/original symbol lookup. It uses the
 unchanged production exporter and does not establish broader libc or ABI support.
+
+## AArch64 SIMD storage component
+
+**CONFIRMED locally; integration pending:** six separate integer/float lane
+functions pass non-PIE, PIE and rebased-PIE runs, including real failure and
+cancellation controls. Full-width register copies, spills, reloads and incoming
+stack storage retain exact values; uncertain aliases and clobbers produce honest
+gaps. The representation is an explicit analyst array layout with guarded
+debugger calls, not an invented native vector type. See
+`AARCH64-VECTOR-STORAGE.md` for the compiler-reference investigation and exact
+acceptance. The full original AArch64 scope audit, hosted gates and protected
+integration remain required, as do all remaining MIPS, ARM32 and i386 rows.
