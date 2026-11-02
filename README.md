@@ -243,7 +243,12 @@ big-endian ARM, and other ARM ABI profiles are not yet claimed.
 
 [The target-profile contract](docs/TARGET-PROFILES.md) records the exact tested
 ABIs and storage cases, the difference between accepted ELF metadata and
-validated behavior, and the next bounded coverage additions.
+validated behavior, and the next bounded coverage additions. The expanded
+P2.3–P2.3c candidate includes additional AArch64, MIPS O32/N32/N64, ARM/Thumb/BE8
+and i386 ABI/storage cases. Its component evidence and remaining combined
+hosted acceptance gates are recorded in
+[the ABI acceptance audit](docs/TARGET-ABI-ACCEPTANCE.md); local results do not
+yet expand the accepted hosted support claim above.
 
 CI has Linux lanes for x86-64, AArch64, ARM32, and both MIPS byte orders, plus
 a Windows-hosted x86-64 ELF export lane. Linux runs real headless export,

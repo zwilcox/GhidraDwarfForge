@@ -2,7 +2,9 @@
 
 **CONFIRMED combined ABI candidate; final acceptance pending:** the normal
 merge of PR125–PR154 with current main preserves the complete P2.3–P2.3c scope
-and the user logo. The clean combined build passes all 128 Gradle tasks plus
+and the user logo. The P2.3–P2.3c TODO sections now separate historical baseline
+notes from expanded candidate evidence, and restore the already accepted PR77
+shared-library checkpoint. The clean combined build passes all 128 Gradle tasks plus
 wrapper, architecture-isolation and release-assembly checks; its exporter JAR
 is byte-identical to the recently tested component package. All twenty original
 requirement rows now map to concrete implementation and behavioral evidence in

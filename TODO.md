@@ -2985,14 +2985,15 @@ exact-head hosted gate and protected merge; see
 [the acceptance evidence](docs/AARCH64-PARAMETER-ALLOCATION.md). Earlier local-only
 component notes below describe historical checkpoints.
 
-The shared [target-profile contract](docs/TARGET-PROFILES.md) records the
-existing five profiles and a finite follow-up order for P2.3/3a/3b. The
-read-only audit is **CONFIRMED**; ABI classification/diagnostics, scalar FP,
-stack-passed parameters and real aggregates remain **PLANNED** until their
-specific runtime gates pass. Accepted machine/class metadata is not proof of
-all calling conventions for that processor.
+The shared [target-profile contract](docs/TARGET-PROFILES.md) distinguishes
+accepted baseline profiles from the expanded combined candidate. ABI selection,
+scalar FP, exhausted-register/stack arguments, aggregates, HFA and vectors now
+have concrete implementation and component evidence. The full combined gate
+and uploaded-artifact review remain **PRESENT, UNVERIFIED**; see
+[the requirement-by-requirement audit](docs/TARGET-ABI-ACCEPTANCE.md).
+Accepted machine/class metadata is not proof of all calling conventions.
 
-**Status:** `[~]` — the symbol/source-line/type/signature milestone passes in
+**HISTORICAL baseline status:** `[~]` — the symbol/source-line/type/signature milestone passes in
 hosted CI for ET_EXEC, PIE, shared objects, and no-section inputs. Stack-local
 locations pass. Hosted run `40063017269` additionally proves scalar float/double
 aliases and bounded incoming-register prefixes; values after the proven
@@ -3021,7 +3022,16 @@ this documented profile.
 
 Tracking: [#69](https://github.com/zwilcox/GhidraDwarfForge/issues/69).
 
-**Status:** `[~]` — hosted real headless symbol export, structural validation,
+**Current status:** `[~]` — isolated O32/N32/N64 ABI classification and
+expanded scalar, wide, aggregate, stack and mixed-storage cases have local
+runtime evidence in both byte orders. FPXX/FP64A now has a positive FR=1 system
+emulator reference; production whole-pair aliases remain explicitly unavailable.
+The five-layout matrices, sectionless regressions, failure/cancellation checks
+and combined hosted acceptance are mapped in
+[the full audit](docs/TARGET-ABI-ACCEPTANCE.md). The combined gate and artifact
+review remain **PRESENT, UNVERIFIED**.
+
+**HISTORICAL baseline status:** `[~]` — hosted real headless symbol export, structural validation,
 and QEMU/GDB runtime breakpoints pass for MIPS32 big/little endian ET_EXEC,
 PIE, shared-object, and no-section-table inputs; `ptype`, stable register
 parameters, and stack locals pass. The alpha release validation includes both
@@ -3047,7 +3057,7 @@ all-five-target/both-GUI reviews and exact package audit pass; normal merge
 passes all twelve jobs and independent fresh artifact review.
 See [the bounded contract](docs/TRUNCATED-MEMORY-STORES.md).
 
-**CONFIRMED locally; hosted acceptance pending:** an explicit FP32 profile now
+**HISTORICAL local FP32 checkpoint:** an explicit FP32 profile now
 provides a strict positive compiler double-argument reference in both byte
 orders. Twelve Forge exports across exec/PIE and baseline/rebase/repeat retain
 correct scalar floats and honest paired-double omissions. FPXX still fails the
@@ -3091,7 +3101,15 @@ See `docs/MIPS-FP32-ORACLE.md`.
 
 Tracking: [#70](https://github.com/zwilcox/GhidraDwarfForge/issues/70).
 
-**Status:** `[~]` — the ARMv7 hard-float, little-endian ARM-state profile passes
+**Current status:** `[~]` — Thumb/interworking, mixed ARM/Thumb bodies,
+per-function base/VFP conventions, separate BE8 execution and expanded
+stack/HFA/aggregate storage have local runtime evidence. Positive values,
+clobber gaps, mode cues and omission controls are required. Combined hosted
+acceptance and uploaded-artifact review remain **PRESENT, UNVERIFIED**; see
+[the full audit](docs/TARGET-ABI-ACCEPTANCE.md). BE8 shared-loader support is not
+claimed.
+
+**HISTORICAL baseline status:** `[~]` — the ARMv7 hard-float, little-endian ARM-state profile passes
 the hosted producer, real headless exporter, structural-validator, and
 QEMU/GDB behavior matrix for ET_EXEC, PIE, shared objects, no-build-ID inputs,
 and program-header-only inputs. Thumb, big-endian ARM, and additional ABI or
@@ -3141,14 +3159,23 @@ See `docs/TERMINAL-RETURN-PREFIX.md` and `docs/VALIDATION.md`.
   PIE/shared load bias, and the changing stack location.
 - [x] ARM register mappings are isolated and covered by native-independent
   storage tests.
-- [ ] Thumb, big-endian ARM, and additional ARM ABI/storage profiles are
-  separately modeled and validated before any broader support claim.
+- [~] Thumb, BE8 and additional ARM ABI/storage profiles are separately
+  modeled and locally validated; the combined hosted gate and artifact review
+  remain required before expanding the accepted support claim.
 
 ## P2.3c Add bounded i386 target coverage
 
 Tracking: [#71](https://github.com/zwilcox/GhidraDwarfForge/issues/71).
 
-**Status:** `[~]` — a bounded Linux
+**Current status:** `[~]` — the accepted shared-library integration is
+preserved. Real libc-backed x87/SSE/vector/aggregate cases and additional
+conventions/ELF selection have local runtime and negative-control evidence
+across exec, sectionless, PIE and rebased PIE. Combined hosted acceptance and
+uploaded-artifact review remain **PRESENT, UNVERIFIED**; see
+[the full audit](docs/TARGET-ABI-ACCEPTANCE.md). Measured consumer limitations
+and unsupported compat32 stack storage remain explicit.
+
+**HISTORICAL baseline status:** `[~]` — a bounded Linux
 i386 integer/stack profile now uses isolated ELF and GPR tables. Fully stripped
 exec, sectionless ELF, PIE and rebased PIE pass eight exports, 1,440 debugger
 observations at every fixture instruction, strict-zero validation, twenty actual
@@ -3159,10 +3186,12 @@ floating/vector and broader ABI/host claims remain outside this checkpoint.
 - [x] Local isolated target/GPR model and producer baseline.
 - [x] Local real export/validator/GDB exec, sectionless, PIE and rebase profile.
 - [x] PR63 exact-head full hosted gate and independent package/runtime review.
-- [~] Shared-library exec/PIE drivers with Ghidra rebases: prior local review
-  passes; corrected-exporter rerun passes; exact-head hosted acceptance is pending.
-- [ ] Broader libc, floating/vector and host-specific profiles before expanding
-  the documented support claim.
+- [x] Shared-library exec/PIE drivers with Ghidra rebases: PR77 passed
+  exact-head run `40505333973` and independent artifact review, then merged as
+  `c779c0b93b3f90c8798f9f287cd72ff70002ec0b`. Combined regressions remain required.
+- [~] Libc, floating/vector and additional convention/target-ABI profiles have
+  local evidence; combined hosted acceptance and artifact review remain required
+  before expanding the documented support claim.
 
 ## P2.4 Validate Windows-hosted Ghidra
 
