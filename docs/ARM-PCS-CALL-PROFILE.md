@@ -188,8 +188,11 @@ not prove implicit convention handling because their functions record explicit
 
 ## Remaining acceptance
 
-**PLANNED / PRESENT, UNVERIFIED:** broaden real ELF/profile negative controls,
-addressless declarations, custom-storage/cancellation compositions, executable
+**CONFIRMED local follow-up:** addressless declarations, absent/conflicting
+metadata and custom-storage/failure/cancellation compositions pass the twenty
+cases in `ARM-PCS-CONTROLS.md`, with no production change.
+
+**PLANNED / PRESENT, UNVERIFIED:** broader ELF/profile metadata, executable
 layouts and aggregate/mixed/HFA cases. Run the existing broader ARM runtime
 matrix against the final candidate. Implicit default-convention recovery now
 has the distinct local evidence above.

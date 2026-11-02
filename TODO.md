@@ -1,5 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local ARM PCS declaration/metadata/failure controls:** twenty
+LE/BE8 base/VFP cases pass the unchanged packaged exporter. Addressless
+prototypes retain types and call policy without fabricated symbols; missing
+attributes select GDB's base PCS, while contradictory flags reject injected
+calls with precise diagnostics. The matrix includes 24 actual native failure
+exports and twelve cancellations preserving existing artifacts. See
+`docs/ARM-PCS-CONTROLS.md` for exact counts, retained reference/harness failures
+and receipts. Hosted acceptance and broader #68–#71 requirements remain open.
+
 **CONFIRMED local implicit ARM convention correction:** extraction now preserves
 recorded unknown convention names separately from the default model Ghidra
 actually uses for dynamic storage. Twelve LE/BE8 base/VFP cases pass real

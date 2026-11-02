@@ -1,5 +1,10 @@
 # P2.3 through P2.3c completion plan
 
+**CONFIRMED local ARM controls:** twenty cases now cover addressless prototypes,
+absent/conflicting PCS metadata, real failure isolation and production-copy
+cancellation with unchanged production code. See `ARM-PCS-CONTROLS.md`.
+Hosted validation and all remaining original ABI rows are still required.
+
 **CONFIRMED local implicit ARM storage-model correction:** the final candidate
 passes twelve LE/BE8 base/VFP convention cases, including preserved unknown
 names and independent custom/callback restrictions, plus three non-ARM runtime
