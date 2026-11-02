@@ -267,3 +267,37 @@ receipt are under `build/arm-be8-profile/shared-lifetime-correction/`.
 The patch changes only the two shared diagnostic expectations; nonshared
 incoming-register assertions and all structural/runtime checks remain active.
 New exact-head hosted validation remains required; the failed run stays failed.
+
+## Sectionless load-boundary inventory correction
+
+**CONFIRMED:** PR132 head `11a87707f362f6de24791ef99aefd87f6c149430`, run
+`41375799121`, ARM job `125057282592` failed in `arm-symbol-boundary.py` because
+the inventory listed only `alternate_boundary`. The emitted table also contains
+`__forge_arm_mode_00001000` (ARM, 28 bytes) and
+`__forge_arm_mode_0000101c` (Thumb, 4 bytes, tagged value `0x101d`). Both are
+required mode cues. The test now independently fixes the original section
+addresses and all 32 instruction bytes before requiring all three records;
+the shared inventory oracle's exact counts and original-record checks remain.
+
+Artifact `13111784624` supplies the actual failing ELF. The revised raw check
+and all six deliberate symbol corruptions pass. The same artifact passes
+compiler and Forge GDB decoding, named breakpoints, source lookup and execution
+with argument 7 and result 12. Local replay restores executable permission lost
+by ZIP extraction and uses GDB `set substitute-path` for the runner's source
+directory; no ELF or DWARF bytes change. The initial replay failed before socket
+startup because the extracted executables lacked their executable bit; it is
+retained and is not counted as passing.
+
+Three fresh exports with the unchanged v3 package pass: normal sectionless,
+contradictory function tag, and contradictory mapping. The last case retains
+its explicit stopped-before-execution rejection, not a successful Forge
+execution claim. GNU/LLVM/pinned strict checks, deterministic repeats and
+original/project preservation pass for all three. Commands and results are in
+`build/arm-be8-profile/boundary-*-current.log`,
+`boundary-correction-results.json` and `boundary-hosted-control/`.
+
+Reproduction: source the retained ARM toolchain environment, set
+`ARM_CC="$ARM32_CC"`, then run `python3 src/test/integration/arm-symbol-boundary.py
+<packaged-ghidra>` once normally and with `--conflict function-tag` and
+`--conflict mapping`. A new exact-head hosted gate is still required. This
+corrects a test expectation; it does not complete any original #68–#71 row.
