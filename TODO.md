@@ -1,5 +1,12 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local MIPS system-reference startup correction:** the minimal
+hosted QEMU installation lacks an unused VGA ROM. Disabling the default VGA
+device passes all four FPXX/FP64A byte-order cases with the uploaded combined
+package and replays the exact failed hosted compiler ELF successfully. The
+strict value/omission and corruption controls remain intact; corrected hosted
+acceptance is pending. See `docs/MIPS-FPR-SYSTEM-REFERENCE.md`.
+
 **CONFIRMED combined ABI candidate; final acceptance pending:** the normal
 merge of PR125–PR154 with current main preserves the complete P2.3–P2.3c scope
 and the user logo. The clean combined build passes all 128 Gradle tasks plus

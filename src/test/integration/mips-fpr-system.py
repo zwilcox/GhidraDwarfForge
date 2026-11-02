@@ -89,10 +89,12 @@ def main():
     def debugger(variant, probe_case=case, invalid=None):
         # The loader consumes the original target in both comparisons. Only
         # GDB's symbol file changes; the processor runs identical instructions.
+        # Disable the unused default VGA device as well as its display: minimal
+        # CI images do not install the optional Cirrus VGA ROM package.
         with tempfile.TemporaryDirectory(prefix='forge-mips-fpr.') as sockets:
             socket = Path(sockets) / 'gdb'
             qcommand = [emulator, '-M', 'malta', '-cpu', 'MIPS64R2-generic', '-m', '128',
-                '-display', 'none', '-serial', 'none', '-monitor', 'none', '-nic', 'none',
+                '-display', 'none', '-vga', 'none', '-serial', 'none', '-monitor', 'none', '-nic', 'none',
                 '-device', 'loader,file=' + str(probe_case / 'original') + ',cpu-num=0', '-S',
                 '-gdb', 'unix:' + str(socket) + ',server=on,wait=off']
             (probe_case / (variant + '-qemu-command.json')).write_text(json.dumps(qcommand, indent=4) + '\n')
@@ -102,7 +104,9 @@ def main():
                     deadline = time.monotonic() + 10
                     while not socket.exists() and qemu.poll() is None and time.monotonic() < deadline:
                         time.sleep(0.05)
-                    assert socket.exists() and qemu.poll() is None
+                    assert socket.exists() and qemu.poll() is None, (
+                        'QEMU system reference did not start', qemu.poll(),
+                        (probe_case / (variant + '-qemu.stderr')).read_text())
                     gcommand = ['gdb-multiarch', '-q', '-nx', '-batch', '-x', str(HERE / 'mips-fpr-system-gdb.py')]
                     (probe_case / (variant + '-gdb-command.json')).write_text(json.dumps(gcommand, indent=4) + '\n')
                     environment = dict(os.environ, MIPS_FPR_CASE=str(probe_case), MIPS_FPR_VARIANT=variant,

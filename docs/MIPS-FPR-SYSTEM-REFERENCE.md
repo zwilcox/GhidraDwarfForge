@@ -7,6 +7,28 @@ This advances the original #69 reference requirement. It does not claim broad
 FPXX/FP64A variable locations, FR=0 compatibility, injected calls, Linux runtime
 support or completion of the full #68–#71 objective.
 
+## Minimal hosted QEMU installation
+
+**CONFIRMED local correction; hosted acceptance pending (2026-11-02):**
+PR154 run `41487109850` reached this reference after the MIPS scalar ABI matrix,
+then QEMU exited before opening its debugger socket because the optional
+`vgabios-cirrus.bin` ROM was absent. `-display none` hides the display but leaves
+the default VGA device enabled. The maintained bare-metal command now also uses
+`-vga none`; this fixture has no graphics requirement. Startup failures retain
+QEMU's exit status and stderr in the assertion instead of an empty assertion.
+
+The exact failed hosted compiler ELF passes all six FR=1 observations locally
+with VGA disabled and a source-directory substitution; its ELF and DWARF bytes
+are unchanged. All four FPXX/FP64A × BE/LE exporter cases also pass using PR155's
+uploaded package at `5472587`: eight deterministic exports, 48 compiler/Forge
+marker observations, four unchanged-copy positives and eight wrong-FPR/FR-mode
+rejections. GNU/LLVM/pinned-libdwarf validation and input/package/program
+preservation pass. Exporter code and all value/omission assertions are unchanged.
+The package SHA-256 is
+`cefc40e448c971998d03c1323bd886c91892e471d89869c3ee3364225e1dea77`.
+The failed hosted run remains a failed gate; the corrected combined head must
+pass the full hosted matrix before acceptance.
+
 ## Why the previous reference failed
 
 The inspected QEMU 8.2.2 `target/mips/gdbstub.c` sends FPR values through
