@@ -169,7 +169,7 @@ def main():
                   ("arm-thumb-caller.c", "arm-thumb-leaf.c", "arm-thumb-after.c")]
         paths += [args.repository / "src/test/integration" / name for name in
                   ("arm-thumb-mode-export.sh", "arm-thumb-mode-gdb.py", "arm-thumb-mode-check.py",
-                   "arm-thumb-mode-negative.py",
+                   "arm-thumb-mode-negative.py", "arm-thumb-shared-location-controls.py",
                    "ghidra_scripts/PrepareArmThumbMode.java")]
         (directory / "protected-before.json").write_text(json.dumps(
             {str(path): snapshot(path) for path in paths}, indent=4) + "\n")
@@ -248,21 +248,33 @@ def main():
                     right_write, = [item for item in function["instructions"] if item["text"] == "ldr r1,[r7,#0x4]"]
                     assert right_write["length"] == 2
                     right_boundary = int(right_write["address"], 16) - prep["imageBaseDelta"] + 2
+                    start = labels["thumb_add"]["code"]
+                    assert right_boundary == start + 16 and boundary == start + 34
+                    assert labels["thumb_add"]["codeSize"] == 44
+                    code_section = original["sections"][labels["thumb_add"]["section"]]
+                    code_offset = start - code_section["row"][3]
+                    # Independently audited PIC body: stack saves, r1/r3 reloads,
+                    # computed-address store, return move and frame release.
+                    expected_code = bytes.fromhex("80b485b000af78603960084a7a4479683b680b44fb60064bd358fa681a60fb6818461437bd465df8047b7047")
+                    assert code_section["data"][code_offset:code_offset + 44] == expected_code
                 for values in result["values"]:
                     if right_boundary is not None:
                         assert values["rightLifetime"] == {"write": right_boundary - 2 + result["loadBias"],
-                            "end": right_boundary + result["loadBias"], "afterUnavailable": True,
-                            "instructionBytes": "7968"}
+                            "end": right_boundary + result["loadBias"], "afterUnavailable": False,
+                            "instructionBytes": "7968", "stackValue": values["right"]["value"]}
                     assert values["right"]["available"] and values["left"]["available"], values
                     assert values["lifetime"] == {"write": boundary - 2 + result["loadBias"], "end": boundary + result["loadBias"],
-                        "afterUnavailable": True, "returnRegister": values["sink"]}
+                        "afterUnavailable": right_boundary is None, "returnRegister": values["sink"],
+                        "retainedR1": values["left"]["value"] if right_boundary is not None else None}
                     for parameter in ("left", "right"):
                         omitted = [item for item in reports[0]["omittedLocations"] if
                                    item["function"] == "recovered_thumb_add" and item["variable"] == parameter]
-                        if parameter == "left" or right_boundary is not None:
+                        expected_omission = (start + 30 if parameter == "right" else None) if right_boundary is not None else (
+                            boundary if parameter == "left" else None)
+                        if expected_omission is not None:
                             assert len(omitted) == 1 and omitted[0]["reason"] == "REGISTER_MODIFIED"
                             assert omitted[0]["kind"] == "PARAMETER"
-                            assert int(omitted[0]["startAddress"], 16) == (boundary if parameter == "left" else right_boundary)
+                            assert int(omitted[0]["startAddress"], 16) == expected_omission
                             assert int(omitted[0]["endAddress"], 16) == labels["thumb_add"]["code"] + labels["thumb_add"]["codeSize"]
                         else:
                             assert not omitted, omitted
@@ -283,7 +295,14 @@ def main():
                     location = re.search(r"DW_AT_location\s*:\s*(0x[0-9a-f]+) \(location list\)", formal)
                     assert location
                     offset = int(location[1], 16)
-                    expected = b"\x07" + struct.pack("<II", labels["thumb_add"]["code"], end) + bytes([2, 0x90, register, 0])
+                    if right_boundary is not None:
+                        ranges = [(0, 34, b"\x90\x00"), (34, 44, b"\x90\x01")] if parameter == "left" else [
+                            (0, 16, b"\x90\x01"), (16, 18, b"\x92\x0d\x00"),
+                            (18, 20, b"\x90\x03"), (20, 30, b"\x92\x0d\x00")]
+                        expected = b"".join(b"\x07" + struct.pack("<II", start + low, start + high) +
+                            bytes([len(expression)]) + expression for low, high, expression in ranges) + b"\x00"
+                    else:
+                        expected = b"\x07" + struct.pack("<II", labels["thumb_add"]["code"], end) + bytes([2, 0x90, register, 0])
                     assert section(output, ".debug_loclists")["data"][offset:offset + len(expected)] == expected
             records.append(result)
         assert warnings[0] == warnings[1]

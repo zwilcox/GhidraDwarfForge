@@ -136,6 +136,9 @@ python3 "$repository/src/test/integration/arm-thumb-mode-check.py" finish "$case
 if [[ "$role" != pie-dynamic && "$role" != shared* ]]; then
     python3 "$repository/src/test/integration/arm-thumb-mode-negative.py" "$case_dir"
 fi
+if [[ "$role" == shared* ]]; then
+    python3 "$repository/src/test/integration/arm-thumb-shared-location-controls.py" "$case_dir"
+fi
 
 python3 "$repository/src/test/integration/arm-thumb-mode-controls.py" "$ghidra" "$case_dir"
 sectionless_options=()

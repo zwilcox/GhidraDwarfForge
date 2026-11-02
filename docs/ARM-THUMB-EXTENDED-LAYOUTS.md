@@ -171,6 +171,7 @@ off. Static decoding runs before attachment; runtime function and stored Thumb
 pointer addresses are checked again after relocation. Inherited dynamic names
 remain resolvable beside curated names.
 
+**HISTORICAL prefix-only checkpoint, superseded by the correction below:**
 PIC code overwrites the second argument's register earlier than the executable
 fixture does. The test independently decodes `ldr r1,[r7,#4]`, verifies executed
 bytes `79 68`, observes the original argument immediately before it and the new
@@ -244,3 +245,67 @@ The existing private PR130 package is unchanged (JAR SHA-256
 The original failed hosted run remains failed; current-head hosted acceptance
 and protected integration remain required. This correction changes only the
 oracle and documentation, not production code or the original ABI scope.
+
+## Shared lifetime oracle correction (2026-11-02)
+
+**CONFIRMED locally; hosted acceptance pending:** PR146 at
+`99200bbb45680f39d098ca008d7f4ae167b26c85` failed the ARM mode step in run
+`41408996431`. Four other target lanes passed; Windows host was skipped.
+The shared oracle still expected the original prefix-only lifetimes, while
+later generic storage proofs correctly retained alternate carriers. Production
+code is unchanged by this correction.
+
+The checker independently fixes the 44-byte PIC function instruction sequence.
+The parameter location lists must match these exact half-open offsets relative
+to the link-time function entry, including final end markers:
+
+| Parameter | Range | Proven storage |
+| --- | --- | --- |
+| left | `[0,34)` | r0 |
+| left | `[34,44)` | r1 |
+| right | `[0,16)` | r1 |
+| right | `[16,18)` | `[sp+0]` |
+| right | `[18,20)` | r3 |
+| right | `[20,30)` | `[sp+0]` |
+| right | `[30,44)` | unavailable after the computed-address store |
+
+At the first overwrite, GDB must read the original right argument, corroborated
+by independent inferior memory at SP and SP=R7. After the return move, GDB must
+read the original left argument, corroborated by R1 rather than the computed
+return value in R0. The right argument must remain unavailable at that later
+stop. Executable fixtures retain their own prefix-only expectations.
+
+Each shared run now creates isolated sidecar copies with either a wrong SP+4
+slot or an incorrect R0 carrier. LLVM accepts both structurally valid mutations;
+GDB must reject them at `after-right-write-0` or `after-register-write-0`.
+An unchanged positive copy must pass. Every original case file remains hashed
+and unchanged. Unexpected GDB/emulator diagnostics fail; only the existing
+compiler-corroborated synthetic-vDSO warning and the exact negative-only QEMU
+GDBstub termination message are accepted.
+
+Final receipt under the `arm-thumb-shared-oracle` worktree:
+`build/arm-thumb-shared-oracle/validation-v4.json`, SHA-256
+`c7788ca80de500d945dbf1e87377546eccb6ae73e93beba4cc33283178b3c660`.
+The unchanged installed production JAR is
+`d8ebbd98ebce2fad1d129dcc597c6752eecf87bfff0d2f3d6bac70d3b656970a`.
+
+| Role | Runtime case | Failure/cancellation case | Mutation controls |
+| --- | --- | --- | --- |
+| shared | `run.SrwPf5nv` | `run.9_381540` | `shared-location-controls.3du3eoix` |
+| shared-rebased | `run.QfXoGHUn` | `run.owpwm1e4` | `shared-location-controls.8q7dc556` |
+| PIE regression | `run.iS3LUK6L` | `run.t2b638sp` | existing instruction-mode controls |
+
+Cases live in the existing `arm-thumb-mode`/`arm-thumb-controls` result roots.
+PIE additionally passes sectionless composition at
+`arm-thumb-sectionless/pie.9oynz2_z`. All three full harness commands exit zero;
+GNU, LLVM and pinned strict validation pass, as do repeat-export identity,
+source stepping, original/package preservation and native failure/cancellation.
+The new controls are called by the existing CI shared-role harness and included
+in protected source hashes. No separate production build is needed for this
+tests-only change; the tested package is the unchanged PR146 package.
+
+Retained failed attempts include an omitted compiler JSON in the copied control
+case, rejection of the expected negative QEMU termination message, and an early
+post-hoc check whose protection hash changed when the harness was edited. None
+is counted as passing evidence. Fresh hosted acceptance, protected integration
+and the complete original #68–#71 scope remain open.

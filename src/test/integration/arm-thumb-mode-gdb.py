@@ -183,11 +183,14 @@ try:
                 after_right = thumb_stop("after-right-write-" + str(call))
                 assert after_right["pc"] == right_write + 2 and integer("$r1") == left
                 right_value = gdb.parse_and_eval("right")
-                assert bool(right_value.is_optimized_out) == (not compiler)
-                if compiler:
-                    assert int(right_value) == right
+                # The overwritten r1 held the incoming right argument, but the
+                # independently checked prologue saved it at [sp]. Require the
+                # recovered stack value, never the replacement left value in r1.
+                assert not right_value.is_optimized_out and int(right_value) == right
+                saved_right = int.from_bytes(bytes(gdb.selected_inferior().read_memory(integer("$sp"), 4)), "little", signed=True)
+                assert saved_right == right and integer("$sp") == integer("$r7")
                 values["rightLifetime"] = {"write": right_write, "end": right_write + 2,
-                    "afterUnavailable": bool(right_value.is_optimized_out), "instructionBytes": "7968"}
+                    "afterUnavailable": False, "instructionBytes": "7968", "stackValue": saved_right}
                 right_boundary.delete()
             boundary = gdb.Breakpoint("*" + hex(write_pc))
             for step in range(12):
@@ -197,8 +200,8 @@ try:
                 thumb_stop("next-" + str(call) + "-" + str(step))
             assert integer("thumb_sink") == total
             values["sink"] = total
-            # The incoming r0 value is valid before the return-value move, then
-            # Forge must stop describing it. Compiler DWARF retains a stack copy.
+            # The shared PIC body retains left in r1 after overwriting r0.
+            # The other fixture bodies still end their proven Forge lifetime here.
             assert integer("$pc") <= write_pc
             if integer("$pc") != write_pc:
                 gdb.execute("continue")
@@ -212,11 +215,14 @@ try:
             if not right_value.is_optimized_out:
                 assert int(right_value) == right
             value = gdb.parse_and_eval("left")
-            assert bool(value.is_optimized_out) == (not compiler)
-            if compiler:
+            assert bool(value.is_optimized_out) == (not compiler and not shared)
+            if not value.is_optimized_out:
                 assert int(value) == left
+            if shared:
+                assert integer("$r1") == left
             values["lifetime"] = {"write": write_pc, "end": write_pc + 2,
-                                  "afterUnavailable": bool(value.is_optimized_out), "returnRegister": total}
+                                  "afterUnavailable": bool(value.is_optimized_out), "returnRegister": total,
+                                  "retainedR1": integer("$r1") if shared else None}
             boundary.delete()
             result["values"].append(values)
             gdb.execute("finish")

@@ -1,5 +1,16 @@
 # P2.3 through P2.3c completion plan
 
+**CONFIRMED local shared Thumb lifetime-oracle correction:** PR146's hosted
+ARM lane expected unavailable parameters after their original registers changed.
+Independent instruction bytes and raw stack/register observations instead prove
+retained values. Ordinary/rebased shared cases now require those exact values,
+full location-list ranges and the later honest unknown-store gap. Four wrong-slot/
+wrong-register controls pass LLVM but fail GDB at the required PCs. Fresh shared,
+rebased shared and PIE/sectionless runs pass validators, deterministic export,
+failure/cancellation and original preservation with unchanged production code.
+See `ARM-THUMB-EXTENDED-LAYOUTS.md`. Exact-head hosted acceptance,
+protected integration and all original P2.3–P2.3c requirements remain open.
+
 **CONFIRMED local i386 decompiler correction:** validated return/argument storage
 now reaches native source generation and analyst call-site overrides without
 editing the saved program. Four i386 layouts and an x86-64 layout regression
