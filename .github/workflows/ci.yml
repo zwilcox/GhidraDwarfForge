@@ -1783,9 +1783,13 @@ jobs:
                   --order "$order" --gdb "$gdb" --gdb-data "$data" --qemu "$qemu"
               for storage in hfa base mixed; do
                   for control in lower neighbor upper wide reuse adjacent unknown-disjoint unknown-alias; do
+                      failure_controls=()
+                      if [[ "$control" == upper || "$control" == unknown-alias ]]; then
+                          failure_controls=(--failure-controls)
+                      fi
                       python3 src/test/integration/arm-hfa-lifetimes.py "$GHIDRA_INSTALL_DIR" \
                           --order "$order" --gdb "$gdb" --gdb-data "$data" --qemu "$qemu" \
-                          --storage "$storage" --control "$control"
+                          --storage "$storage" --control "$control" "${failure_controls[@]}"
                   done
               done
           done

@@ -37,7 +37,10 @@ def main():
     controls = load('hfa_controls', source / 'arm_hfa_control_oracle.py')
     parser.add_argument('--control', choices=tuple(controls.CONTROL_IDS))
     parser.add_argument('--storage', choices=('hfa', 'base', 'mixed'), default='hfa')
+    parser.add_argument('--failure-controls', action='store_true')
     args = parser.parse_args()
+    if args.failure_controls and not args.control:
+        parser.error('--failure-controls requires --control')
     if args.storage != 'hfa' and not args.control:
         parser.error('--storage requires --control')
     module = args.ghidra.resolve(strict=True) / 'Ghidra/Extensions/GhidraDwarfForge'
@@ -61,6 +64,10 @@ def main():
             repository / 'src/test/fixtures/arm-hfa-controls.c', repository / 'src/test/fixtures/arm-hfa-controls.S']
     else:
         protected.append(source / 'arm_hfa_control_oracle.py')
+    if args.failure_controls:
+        protected += [source / 'arm-aggregate-failure-controls.py',
+            source / 'ghidra_scripts/AbiDecompilerFailureExport.java',
+            source / 'ghidra_scripts/CancelDuringElfCopy.java', source / 'arm-dynamic-pcs-check.py']
     before = {str(p): digest(p) for p in protected}
     runtime_script = source / ('arm-hfa-controls-gdb.py' if args.control else 'arm-hfa-lifetimes-gdb.py')
     prepare_script = 'PrepareArmHfaControls.java' if args.control else 'PrepareArmHfaLifetimes.java'
@@ -87,7 +94,9 @@ def main():
         else:
             assert not stderr, (label, 'unexpected stderr')
 
-    write('profile.json', {'order': args.order, 'control': args.control, 'storage': args.storage})
+    write('profile.json', {'order': args.order, 'control': args.control, 'storage': args.storage,
+        'ghidra': str(args.ghidra.resolve()), 'qemu': str(args.qemu.resolve()),
+        'gdb': str(args.gdb.resolve()), 'gdbData': str(args.gdb_data.resolve())})
     flags = ['-marm', '-march=armv7-a', '-mfpu=vfpv3-d16', '-mfloat-abi=hard', '-O0', '-g3', '-gdwarf-5',
         '-fno-omit-frame-pointer', '-nostdlib', '-nostartfiles', '-static', '-fno-pie', '-no-pie',
         '-Wl,--build-id=none', '-Wl,-e,_start', *(['-mbig-endian', '-Wl,--be8'] if args.order == 'big' else [])]
@@ -206,6 +215,9 @@ def main():
         'compilerTypedInstructions': 0 if args.control else 10,
         'rawInstructionsPerSymbolFile': 14 if args.control else 28,
         'deterministic': True, 'protectedFilesUnchanged': True})
+    if args.failure_controls:
+        run('failure-controls', ['python3', source / 'arm-aggregate-failure-controls.py', case])
+        assert before == {path: digest(Path(path)) for path in before}
     print('PASS_HFA_CONTROLS' if args.control else 'PASS_HFA_LIFETIMES', flush=True)
 
 
