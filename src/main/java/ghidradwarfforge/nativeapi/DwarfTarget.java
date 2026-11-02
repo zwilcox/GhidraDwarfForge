@@ -142,17 +142,21 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
     /** Metadata compatibility is not a claim that all instructions or signatures are supported. */
     public String elfAbiCallRestriction(ElfImage image) {
         if (!equals(fromElf(image))) throw new IllegalArgumentException("call ABI target disagrees with ELF");
-        if (!name.equals("aarch64")) return "";
+        if (!name.equals("aarch64") && !name.equals("x86")) return "";
         byte[] header = image.headerBytes();
         int osAbi = Byte.toUnsignedInt(header[7]);
         int abiVersion = Byte.toUnsignedInt(header[8]);
         // AAELF64 2025Q4: processor flags are reserved and must be zero.
+        // The Intel386 psABI likewise defines no processor flags.
         // OSABI=0 denotes generic ELF, not proof of a particular operating system.
         // The tested consumer is Linux/System V; other platform/version choices
         // retain their metadata and recovered knowledge but do not establish calls.
         if ((image.type() != 2 && image.type() != 3) || image.flags() != 0 ||
                 (osAbi != 0 && osAbi != 3) || abiVersion != 0) {
-            return "AArch64 ELF metadata has no validated LP64 debugger call profile: type=" +
+            String restriction = name.equals("x86")
+                ? "i386 ELF metadata has no validated System V debugger call profile: type="
+                : "AArch64 ELF metadata has no validated LP64 debugger call profile: type=";
+            return restriction +
                 image.type() + ", flags=0x" + Long.toHexString(image.flags()) +
                 ", OSABI=" + osAbi + ", ABI-version=" + abiVersion;
         }

@@ -1,5 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local i386 ABI-selection correction:** reserved ELF flags previously
+left debugger calls enabled. Nine real i386 selections now pass ordinary values,
+positive calls or unchanged-state rejection through names and callbacks. Three
+AArch64 regressions and the rebased eleven-function i386 failure/cancellation
+matrix pass with the same package; 3,317 new metadata assertions pass. See
+`docs/I386-ABI-SELECTION.md`. A separate compat32 stack-location omission remains
+an open research finding, not a validated profile. Hosted acceptance, protected
+integration and the full original P2.3–P2.3c scope audit remain open.
+
 **CONFIRMED local i386 ABI matrix:** isolated XMM0–7 register mapping enables
 explicit vector/SSE storage. Eleven libc-backed scalar/vector/aggregate and
 additional-convention functions pass exec/sectionless/PIE/rebased-PIE comparisons.

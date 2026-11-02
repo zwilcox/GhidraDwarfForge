@@ -890,6 +890,14 @@ tasks.register("aarch64AbiSelectionSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.nativeapi.Aarch64AbiSelectionSmoke"
 }
 
+tasks.register("i386AbiSelectionSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks actual ELF metadata against bounded debugger call profiles"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.nativeapi.I386AbiSelectionSmoke"
+}
+
 tasks.register("compilerCallPolicySmoke", JavaExec) {
     group = "verification"
     description = "Checks unverified compiler specifications against the ELF call ABI baseline"
