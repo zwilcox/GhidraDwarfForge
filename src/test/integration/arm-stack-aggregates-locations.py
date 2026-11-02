@@ -93,7 +93,7 @@ def main(case):
         expected = inventory[name]
         low = helper.number(row['attributes']['DW_AT_low_pc'])
         high = low + helper.number(row['attributes']['DW_AT_high_pc'])
-        assert (low, high - low) == (expected['entry'], expected['size']), name
+        assert (low, high - low) == (expected['entry'], expected.get('codeSize', expected['size'])), name
         kind = name.split('_')[1]
         widths = {letter: 8 if kind == 'floats' else 4 for letter in ('abcdefg' if kind == 'floats' else 'abc')}
         widths.update(value=sizes[kind], tail=4)

@@ -11,11 +11,17 @@ import ghidra.program.model.symbol.SourceType;
 public class PrepareArmStackAggregates extends GhidraScript {
     protected void run() throws Exception {
         var args = getScriptArgs();
-        if (args.length != 3 || !List.of("curate", "inspect").contains(args[0])) throw new IllegalArgumentException();
+        if (args.length != 3 || !List.of("curate", "inspect", "image").contains(args[0])) throw new IllegalArgumentException();
         boolean curate = args[0].equals("curate");
         long originalBase = ghidradwarfforge.GhidraImageBase.originalImageBase(currentProgram);
         long delta = ghidradwarfforge.AddressNormalizer.rebaseDelta(
             currentProgram.getImageBase().getOffset(), originalBase);
+        if (args[0].equals("image")) {
+            Files.writeString(Path.of(args[2]), new GsonBuilder().setPrettyPrinting().create().toJson(Map.of(
+                "originalImageBase", originalBase, "imageBase", currentProgram.getImageBase().getOffset(),
+                "rebaseDelta", delta)) + "\n");
+            return;
+        }
         var labels = new LinkedHashMap<String, Long>();
         for (String line : Files.readAllLines(Path.of(args[1]))) {
             String[] fields = line.split(" ");

@@ -11,6 +11,7 @@ case = Path(os.environ['FORGE_PCS_CASE'])
 variant = os.environ['FORGE_PCS_VARIANT']
 profile = json.loads((case / 'profile.json').read_text())
 order = profile['order']
+layout = profile.get('layout', 'exec')
 endian = '<' if order == 'little' else '>'
 expected = {
     'pair': {'first': 17, 'second': -23},
@@ -78,7 +79,7 @@ def check_carriers(name, kind, offset, wanted):
     row = {'name': name, 'offset': offset, 'values': {}, 'unavailable': []}
     for parameter, intervals in locations[name].items():
         matched = [item for item in intervals if item['start'] <= offset < item['end']]
-        gap = audited and contract.expects_gap(name, order, offset, parameter + '.first')
+        gap = audited and contract.expects_gap(name, order, offset, parameter + '.first', layout)
         if not matched:
             assert not audited or gap, (name, offset, parameter, 'unexpected physical-location gap')
             row['unavailable'].append(parameter)
@@ -89,8 +90,8 @@ def check_carriers(name, kind, offset, wanted):
             observed = dict(zip(('value.' + field for field in expected[kind]),
                 struct.unpack(endian + layouts[kind][0], payload)))
         else:
-            layout = 'd' if kind == 'floats' and parameter != 'tail' else 'f' if kind == 'floats' else 'i'
-            observed = {parameter: struct.unpack(endian + layout, payload)[0]}
+            scalar_layout = 'd' if kind == 'floats' and parameter != 'tail' else 'f' if kind == 'floats' else 'i'
+            observed = {parameter: struct.unpack(endian + scalar_layout, payload)[0]}
         for expression, value in observed.items():
             assert value == wanted[expression], (name, offset, expression, 'raw carrier', value, wanted[expression])
         row['values'].update(observed)
@@ -129,6 +130,17 @@ def raw_entry(name, pcs, kind):
 
 try:
     gdb.execute('target remote ' + os.environ['FORGE_PCS_REMOTE'])
+    bias = 0
+    if layout == 'pie':
+        # This fixture has no interpreter or dynamic relocations. QEMU stops
+        # at the ELF entry; derive its actual mapping rather than assume a base.
+        bias = integer('$pc') - profile['elfEntry']
+        assert bias > 0 and bias % 4096 == 0
+        symbols = case / ('calls.reference' if variant == 'compiler' else 'calls.dbg')
+        gdb.execute('symbol-file -o ' + hex(bias) + ' ' + str(symbols))
+    result['loadBias'] = bias
+    labels = {name: address + bias for name, address in json.loads((case / 'labels.json').read_text()).items()}
+    inventory = json.loads((case / 'instruction-inventory.json').read_text())
     vdso = re.search(r'AT_SYSINFO_EHDR.*?(0x[0-9a-f]+)', gdb.execute('info auxv', to_string=True))
     if vdso:
         result['vdsoAddress'] = int(vdso[1], 16)
@@ -138,7 +150,8 @@ try:
             name = pcs + '_' + kind
             symbol_only = variant == 'forge' and name == profile.get('failedFunction')
             entry = integer('&' + name)
-            observe = json.loads((case / 'labels.json').read_text())[name + '_observe'] if (case / 'labels.json').exists() else integer('&' + name + '_observe')
+            assert entry == labels[name], (name, 'wrong relocated function address')
+            observe = labels[name + '_observe']
             stop = gdb.Breakpoint('*' + hex(entry))
             gdb.execute('continue')
             stop.delete()
@@ -148,10 +161,9 @@ try:
             wanted = {'value.' + field: value for field, value in expected[kind].items()}
             wanted.update(dict(zip('abcdefg' if kind == 'floats' else 'abc', range(1, 8) if kind == 'floats' else (7, 11, 13))))
             wanted['tail'] = -8.5 if kind == 'floats' else -41
-            code = memory(entry, observe - entry)
+            code = memory(entry, inventory[name]['size'])
             if audited:
-                labels = json.loads((case / 'labels.json').read_text())
-                contract.validate_prefix(name, order, code, observe - entry, labels['seen_leading'])
+                contract.validate_prefix(name, order, code, observe - entry, labels['seen_leading'], layout, entry)
             for step in range(200):
                 pc = integer('$pc')
                 row = {'name': name, 'offset': pc-entry, 'atObserve': pc == observe, 'fields': {}}
@@ -160,7 +172,7 @@ try:
                     row['symbolOnly'] = True
                 elif locations is not None:
                     check_carriers(name, kind, pc-entry, wanted)
-                proof = reference.window(name, pc-entry, order, code) if calibrate else None
+                proof = reference.window(name, pc-entry, order, code, layout, entry, labels['seen_leading']) if calibrate else None
                 if proof:
                     raw = reference.carriers(proof, order,
                         lambda name: register_bytes(3) if name == 'r3' else gdb.parse_and_eval('$' + name).bytes,
@@ -180,7 +192,7 @@ try:
                             raise AssertionError('failed function retained parameter ' + expression)
                         continue
                     mismatch = None
-                    gap = audited and variant == 'forge' and contract.expects_gap(name, order, pc-entry, expression)
+                    gap = audited and variant == 'forge' and contract.expects_gap(name, order, pc-entry, expression, layout)
                     try:
                         actual = gdb.parse_and_eval(expression)
                         observed = float(actual) if isinstance(value, float) or kind == 'floats' and expression in 'abcdefg' else int(actual)

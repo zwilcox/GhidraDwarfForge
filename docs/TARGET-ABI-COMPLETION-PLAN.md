@@ -1,5 +1,17 @@
 # P2.3 through P2.3c completion plan
 
+**CONFIRMED local ARM aggregate PIE composition:** all eight LE/BE8
+exec/PIE and ordinary/rebased cases pass compiler/Forge comparison, raw carrier
+checks, strict validators and preservation: 2,032 stops per variant, 64
+failure exports, 7,632 neighboring/496 symbol-only observations and eight
+cancellations. Twelve PIE corruptions fail at the required checks. A separately
+pinned validation-only correction removes libdwarf's invented low-address
+floor; 20 positive/36 negative cases and 16 old-checker defect reproductions
+pass, alongside existing validator regressions and 97 evidence controls.
+Production sources and the tested package are unchanged. Hosted acceptance,
+shared composition, protected integration and every remaining original
+P2.3–P2.3c requirement remain open. See `ARM-STACK-AGGREGATES.md`.
+
 **CONFIRMED local exhausted-stack aggregate contract:** four LE/BE8 ordinary/
 rebased cases pass exact instruction, raw DWARF/carrier and typed-value checks:
 1,012 baseline stops per symbol-file variant, 32 deterministic failure exports,

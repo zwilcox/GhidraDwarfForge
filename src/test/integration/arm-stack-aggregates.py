@@ -13,6 +13,7 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import struct
 import tempfile
 from urllib.parse import unquote, urlsplit
 
@@ -39,7 +40,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
     parser.add_argument('--order', choices=('little', 'big'), required=True)
-    parser.add_argument('--role', choices=('exec', 'exec-rebased'), default='exec')
+    parser.add_argument('--role', choices=('exec', 'exec-rebased', 'pie', 'pie-rebased'), default='exec')
     parser.add_argument('--qemu', type=Path, required=True)
     parser.add_argument('--gdb', type=Path, required=True)
     parser.add_argument('--gdb-data', type=Path, required=True)
@@ -48,6 +49,7 @@ def main():
     parser.add_argument('--with-controls', action='store_true')
     parser.add_argument('--results-root', type=Path, default=repository / 'build/test-results/arm-stack-aggregates')
     args = parser.parse_args()
+    layout = 'pie' if args.role.startswith('pie') else 'exec'
     if args.with_controls and args.availability_contract != 'audited-prefix':
         parser.error('--with-controls requires --availability-contract audited-prefix')
     ghidra = args.ghidra.resolve(strict=True)
@@ -104,13 +106,14 @@ def main():
         assert result.returncode == 0, (case, label, result.returncode)
         return result.returncode
 
-    write('profile.json', {'order': args.order, 'role': args.role, 'ghidra': str(ghidra),
+    profile = {'order': args.order, 'role': args.role, 'layout': layout, 'ghidra': str(ghidra),
         'qemu': str(args.qemu.resolve()), 'gdb': str(args.gdb.resolve()), 'gdbData': str(args.gdb_data.resolve()),
-        'compilerReferenceCalibration': 'exact live-carrier windows', 'availabilityContract': args.availability_contract})
+        'compilerReferenceCalibration': 'exact live-carrier windows', 'availabilityContract': args.availability_contract}
     flags = ['-marm', '-march=armv7-a', '-mfpu=vfpv3-d16', '-mfloat-abi=hard', '-O1',
         '-g3', '-gdwarf-5', '-gno-variable-location-views', '-fno-omit-frame-pointer',
-        '-fno-inline', '-fno-ipa-sra', '-fno-ipa-cp', '-nostdlib', '-nostartfiles', '-static',
-        '-fno-pie', '-no-pie', '-Wl,--build-id=none', '-Wl,-e,_start',
+        '-fno-inline', '-fno-ipa-sra', '-fno-ipa-cp', '-nostdlib', '-nostartfiles',
+        *(['-fPIE', '-pie', '-Wl,--no-dynamic-linker'] if layout == 'pie' else ['-static', '-fno-pie', '-no-pie']),
+        '-Wl,--build-id=none', '-Wl,-e,_start',
         *(['-mbig-endian', '-Wl,--be8'] if args.order == 'big' else [])]
     run('startup', [compiler, *flags, '-c', startup, '-o', case / 'start.o'])
     command = [compiler, *flags, case / 'start.o', fixture]
@@ -121,6 +124,19 @@ def main():
     original = facts.elf(case / 'calls.input', allow_big_endian=True)
     compiler_elf = facts.elf(case / 'calls.reference', allow_big_endian=True)
     assert not original['symbols'], 'fixture must be completely stripped'
+    assert original['header'][0] == (3 if layout == 'pie' else 2)
+    profile['elfEntry'] = original['header'][3]
+    endian = '<' if args.order == 'little' else '>'
+    assert original['header'][8] == 32
+    segments = [struct.unpack_from(endian + '8I', original['data'], original['header'][4] + 32 * index)
+        for index in range(original['header'][9])]
+    assert not any(row[0] == 3 for row in segments), 'runtime entry must not be an interpreter'
+    assert not any(section['row'][1] in (4, 9) and section['row'][5] for section in original['sections'])
+    profile['elfImageBase'] = min(row[2] for row in segments if row[0] == 1)
+    if layout == 'pie':
+        dynamic = facts.section(original, '.dynamic')['data']
+        assert any(tag == 0x6ffffffb and value & 0x8000000 for tag, value in struct.iter_unpack(endian + 'II', dynamic))
+    write('profile.json', profile)
     kinds = ('pair', 'aligned', 'packed', 'bytes', 'words', 'mixed', 'floats')
     names = [pcs + '_' + kind for pcs in ('base', 'vfp') for kind in kinds]
     required = ['seen_leading'] + names + [name + '_observe' for name in names] + [prefix + kind
@@ -136,13 +152,21 @@ def main():
             code = section['data'][offset:offset + symbol['size']]
             assert len(code) == symbol['size'] and len(code) % 4 == 0
             inventory[name] = {'entry': symbol['raw'], 'size': symbol['size'], 'code': code.hex()}
+            if layout == 'pie':
+                pool = contract.literal_offset(name, args.order)
+                assert pool + 4 == symbol['size']
+                # Compiler mapping symbols independently distinguish the trailing
+                # literal data from instructions; it is not a function-body PC.
+                assert any(row['name'].split('.')[0] == '$d' and row['raw'] == symbol['raw'] + pool
+                    and row['section'] == symbol['section'] for row in compiler_elf['symbols'])
+                inventory[name]['codeSize'] = pool
     for name in names:
         observe = labels[name + '_observe']
         assert labels[name] < observe < labels[name] + inventory[name]['size'] and observe % 4 == 0
         inventory[name]['observeOffset'] = observe - labels[name]
         if args.availability_contract == 'audited-prefix':
             contract.validate_prefix(name, args.order, bytes.fromhex(inventory[name]['code']),
-                inventory[name]['observeOffset'], labels['seen_leading'])
+                inventory[name]['observeOffset'], labels['seen_leading'], layout, labels[name])
     write('instruction-inventory.json', inventory)
     write('labels.json', labels)
     (case / 'labels.txt').write_text(''.join(name + ' ' + hex(address) + '\n' for name, address in labels.items()))
@@ -155,9 +179,10 @@ def main():
     project = case / 'project'
     project.mkdir()
     headless = ghidra / 'support/analyzeHeadless'
-    rebase = ['-postScript', 'RebaseFixtureProgram.java', '0x2000000'] if args.role == 'exec-rebased' else []
+    rebase = ['-postScript', 'RebaseFixtureProgram.java', '0x2000000'] if args.role.endswith('-rebased') else []
     run('import', [headless, project, 'Stack', '-import', case / 'calls.input', '-loader', 'ElfLoader',
-        '-scriptPath', source / 'ghidra_scripts', *rebase])
+        '-scriptPath', source / 'ghidra_scripts', '-postScript', 'PrepareArmStackAggregates.java',
+        'image', case / 'labels.txt', case / 'import-image.json', *rebase])
     run('curate', [headless, project, 'Stack', '-process', 'calls.input', '-noanalysis',
         '-scriptPath', source / 'ghidra_scripts', '-postScript', 'PrepareArmStackAggregates.java',
         'curate', case / 'labels.txt', case / 'curate.json'])
@@ -174,7 +199,9 @@ def main():
                 shutil.copy2(case / leaf, case / ('first-' + leaf))
     observation = json.loads((case / 'first.json').read_text())
     assert observation == json.loads((case / 'curate.json').read_text()) == json.loads((case / 'repeat.json').read_text())
-    assert observation['rebaseDelta'] == (0x2000000 if args.role == 'exec-rebased' else 0)
+    imported = json.loads((case / 'import-image.json').read_text())
+    assert imported['originalImageBase'] == observation['originalImageBase'] == profile['elfImageBase']
+    assert observation['imageBase'] - imported['imageBase'] == (0x2000000 if args.role.endswith('-rebased') else 0)
     assert observation['imageBase'] - observation['originalImageBase'] == observation['rebaseDelta']
     origin = urlsplit(observation['origin'])
     assert origin.scheme == 'file' and Path(unquote(origin.path)) == module / 'lib/GhidraDwarfForge.jar'
@@ -211,7 +238,7 @@ def main():
             if args.availability_contract == 'audited-prefix':
                 expected_gaps = {(row['name'], row['offset'], expression)
                     for row in result['observations'] for expression in row['fields']
-                    if contract.expects_gap(row['name'], args.order, row['offset'], expression)}
+                    if contract.expects_gap(row['name'], args.order, row['offset'], expression, layout)}
                 assert {(row['name'], row['offset'], row['expression']) for row in result['unavailable']} == expected_gaps
         warnings = (case / (variant + '.stderr')).read_text().splitlines()
         assert len(warnings) <= 1
