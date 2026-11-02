@@ -11,11 +11,15 @@ mode=$2
 source "$script_directory/qemu-socket.sh"
 source "$script_directory/elf-layout-gdb-oracle.sh"
 trap qemu_socket_cleanup EXIT
-qemu_socket_start "$case_directory/$mode.qemu" qemu-aarch64-static /usr/aarch64-linux-gnu "$case_directory/abi.input"
+runtime="$case_directory/abi.input"
+if [[ -f "$case_directory/abi.driver" ]]; then
+    runtime="$case_directory/abi.driver"
+fi
+qemu_socket_start "$case_directory/$mode.qemu" qemu-aarch64-static /usr/aarch64-linux-gnu "$runtime"
 FORGE_AARCH64_ABI_MODE="$mode" FORGE_AARCH64_ABI_CASE="$case_directory" \
     FORGE_AARCH64_ABI_REMOTE="$qemu_socket_path" \
     timeout 90s gdb-multiarch -q -nx -batch -ex 'set python print-stack full' \
         -x "$script_directory/aarch64-abi-gdb.py" 2>&1 | tee "$case_directory/$mode-runtime-gdb.log"
 qemu_socket_wait
-layout_validate_gdb_diagnostics "$case_directory/$mode-runtime-gdb.log" "$case_directory/abi.input" \
+layout_validate_gdb_diagnostics "$case_directory/$mode-runtime-gdb.log" "$runtime" \
     "$mode" aarch64 "$case_directory/compiler-runtime-gdb.log"

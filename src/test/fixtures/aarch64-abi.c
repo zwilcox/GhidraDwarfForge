@@ -1,8 +1,7 @@
 /* Source-built AAPCS64 argument/return probes; no injected register storage. */
-typedef struct { long long first, second; } AbiPair;
-typedef struct { long long first, second, third; } AbiLarge;
-typedef struct { float first, second, third, fourth; } AbiHfa;
+#include "aarch64-abi.h"
 
+#ifndef FORGE_ABI_DRIVER
 volatile unsigned int probe_calls;
 
 #ifdef __clang__
@@ -94,23 +93,86 @@ PROBE double abi_hfa_exhausted(double a, double b, double c, double d,
         value.third + value.fourth + tail;
 }
 
+PROBE long long abi_narrow_stack(long long a, long long b, long long c, long long d,
+    long long e, long long f, long long g, long long h, signed char low,
+    unsigned short high, int middle, long long wide)
+{
+    probe_calls++;
+    return a + b + c + d + e + f + g + h + low + high + middle + wide;
+}
+
+PROBE __int128 abi_aligned_stack(long long a, long long b, long long c, long long d,
+    long long e, long long f, long long g, long long h, signed char lead,
+    __int128 wide, signed char tail)
+{
+    probe_calls++;
+    return wide + a + b + c + d + e + f + g + h + lead + tail;
+}
+
+PROBE __int128 abi_aligned_register(long long first, __int128 wide, long long tail)
+{
+    probe_calls++;
+    return wide + first + tail;
+}
+
+PROBE long long abi_pair_stack(long long a, long long b, long long c, long long d,
+    long long e, long long f, long long g, AbiPair value, long long tail)
+{
+    probe_calls++;
+    return a + b + c + d + e + f + g + value.first + value.second + tail;
+}
+
+PROBE long long abi_pair_chain(long long a, long long b, long long c, long long d,
+    long long e, long long f, long long g, AbiPair value, long long tail,
+    __int128 wide, AbiLarge object, double floating)
+{
+    probe_calls++;
+    return a + b + c + d + e + f + g + value.first + value.second + tail +
+        (long long)wide + object.first + object.second + object.third + (long long)floating;
+}
+
+PROBE long long abi_pair_variadic(long long a, long long b, long long c, long long d,
+    long long e, long long f, long long g, AbiPair value, long long tail, ...)
+{
+    probe_calls++;
+    return a + b + c + d + e + f + g + value.first + value.second + tail;
+}
+
+#endif /* FORGE_ABI_DRIVER */
+
+#ifndef FORGE_ABI_LIBRARY
 int main(void)
 {
     volatile long long words = abi_words(11, 22, 33, 44, 55, 66, 77, 88, 909, -1010);
     volatile double floats = abi_floats(1.25, 2.5, 3.75, 4, 5, 6, 7, 8, 9.5, -10.25);
-    AbiPair pair = abi_pair((AbiPair) { 101, -202 });
-    AbiLarge large = abi_large((AbiLarge) { 303, -404, 505 });
+    volatile AbiPair pair = abi_pair((AbiPair) { 101, -202 });
+    volatile AbiLarge large = abi_large((AbiLarge) { 303, -404, 505 });
     volatile long long large_stack = abi_large_stack(1, 2, 3, 4, 5, 6, 7, 8,
         (AbiLarge) { 303, -404, 505 });
-    AbiLarge spilled = abi_large_spill((AbiLarge) { 303, -404, 505 });
-    AbiLarge alias = abi_large_spill_alias((AbiLarge) { 303, -404, 505 });
-    AbiHfa hfa = abi_hfa((AbiHfa) { 1.25f, -2.5f, 3.75f, 4.5f });
+    volatile AbiLarge spilled = abi_large_spill((AbiLarge) { 303, -404, 505 });
+    volatile AbiLarge alias = abi_large_spill_alias((AbiLarge) { 303, -404, 505 });
+    volatile AbiHfa hfa = abi_hfa((AbiHfa) { 1.25f, -2.5f, 3.75f, 4.5f });
     volatile double exhausted = abi_hfa_exhausted(1, 2, 3, 4, 5, 6, 7,
         (AbiHfa) { 1.25f, -2.5f, 3.75f, 4.5f }, 9.5);
-    return !(probe_calls == 8 && words == 295 && floats == 36.75 && pair.first == 102 && pair.second == -200 &&
+    volatile long long narrow = abi_narrow_stack(1, 2, 3, 4, 5, 6, 7, 8,
+        -37, 50001, -123456, 0x1234567890abcdefLL);
+    volatile __int128 aligned = abi_aligned_stack(1, 2, 3, 4, 5, 6, 7, 8,
+        -19, ABI_WIDE_POS, 23);
+    volatile __int128 aligned_register = abi_aligned_register(11, -ABI_WIDE_POS, -13);
+    volatile long long pair_stack = abi_pair_stack(1, 2, 3, 4, 5, 6, 7,
+        (AbiPair) {101, -202}, -41);
+    volatile long long chain = abi_pair_chain(1, 2, 3, 4, 5, 6, 7,
+        (AbiPair) {101, -202}, -41, ABI_WIDE_POS, (AbiLarge) {13, 24, 35}, 42.5);
+    volatile long long variadic = abi_pair_variadic(1, 2, 3, 4, 5, 6, 7,
+        (AbiPair) {101, -202}, -41, 13, 14.5);
+    return !(probe_calls == 14 && words == 295 && floats == 36.75 && pair.first == 102 && pair.second == -200 &&
         large.first == 304 && large.second == -402 && large.third == 508 && large_stack == 440 &&
         spilled.first == 304 && spilled.second == -402 && spilled.third == 508 &&
         alias.first == 304 && alias.second == -402 && alias.third == 508 &&
         hfa.first == 2.25f && hfa.second == -0.5f && hfa.third == 6.75f &&
-        hfa.fourth == 8.5f && exhausted == 44.5);
+        hfa.fourth == 8.5f && exhausted == 44.5 &&
+        narrow == 0x1234567890abcdefLL - 73456 && aligned == ABI_WIDE_POS + 40 &&
+        aligned_register == -ABI_WIDE_POS - 2 && pair_stack == -114 && chain == 0x0fedcba987654321LL && variadic == -114);
 }
+
+#endif /* FORGE_ABI_LIBRARY */

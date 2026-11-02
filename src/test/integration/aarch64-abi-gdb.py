@@ -19,15 +19,54 @@ assert failed_function is None or mode == 'forge' and failed_function == 'abi_la
 failed_symbols = []
 result_prefix = os.environ.get('FORGE_AARCH64_ABI_RESULT_PREFIX', mode)
 sidecar = os.environ.get('FORGE_AARCH64_ABI_SIDECAR', str(case / 'abi.dbg'))
+metadata = json.loads((case / 'metadata.json').read_text()) if (case / 'metadata.json').exists() else None
+shared = bool(metadata and 'driver' in metadata)
 gdb.execute('set pagination off')
 gdb.execute('set confirm off')
 gdb.execute('set debuginfod enabled off')
 gdb.execute('set auto-solib-add off')
 gdb.execute('set sysroot /usr/aarch64-linux-gnu')
-gdb.execute('file ' + str(case / 'abi.input'))
-gdb.execute('symbol-file ' + (str(case / 'abi.reference') if mode == 'compiler' else sidecar))
+gdb.execute('set solib-search-path ' + str(case))
+gdb.execute('file ' + str(case / (metadata['driver'] if shared else 'abi.input')))
+artifact = str(case / 'abi.reference') if mode == 'compiler' else sidecar
+if not shared:
+    gdb.execute('symbol-file ' + artifact)
 gdb.execute('target remote ' + remote)
 
+if shared:
+    # Wait for the real loader, then explicitly relocate the separate symbol
+    # file. Automatic library symbols remain disabled for both references.
+    stop = gdb.Breakpoint('*main', internal=True)
+    gdb.execute('continue')
+    stop.delete()
+    assert gdb.selected_frame().name() == 'main'
+    libraries = gdb.execute('info sharedlibrary', to_string=True)
+    library, = [line for line in libraries.splitlines() if line.split()[-1:] == [str(case / 'abi.input')]]
+    runtime_text = int(library.split()[0], 16)
+    shared_bias = runtime_text - metadata['textAddress']
+    assert shared_bias > 0
+    if mode == 'forge':
+        for name in metadata['symbols']:
+            try:
+                gdb.parse_and_eval('&curated_' + name)
+            except gdb.error as error:
+                assert 'No symbol' in str(error)
+            else:
+                raise AssertionError('curated symbol available before explicit sidecar load')
+    gdb.execute('add-symbol-file ' + artifact + ' -o ' + hex(shared_bias))
+    bindings = {}
+    for name, link_address in metadata['symbols'].items():
+        original = int(gdb.parse_and_eval('&' + name))
+        assert original == link_address + shared_bias
+        curated = int(gdb.parse_and_eval('&curated_' + name)) if mode == 'forge' else None
+        assert curated is None or curated == original
+        bindings[name] = {'original': original, 'curated': curated, 'linkAddress': link_address}
+    (case / (result_prefix + '-shared-bindings.json')).write_text(json.dumps({
+        'bias': shared_bias, 'library': str(case / 'abi.input'), 'artifact': artifact,
+        'runtimeText': runtime_text, 'linkText': metadata['textAddress'], 'symbols': bindings,
+        'autoSolibAdd': False}, indent=4) + '\n')
+
+wide_positive = (0x1234567890abcdef << 64) | 0x0fedcba987654321
 expected = {
     'abi_words': dict(zip('abcdefghij', (11, 22, 33, 44, 55, 66, 77, 88, 909, -1010))),
     'abi_floats': dict(zip('abcdefghij', (1.25, 2.5, 3.75, 4, 5, 6, 7, 8, 9.5, -10.25))),
@@ -43,6 +82,18 @@ expected = {
         'value.first': 1.25, 'value.second': -2.5, 'value.third': 3.75,
         'value.fourth': 4.5, 'tail': 9.5,
     },
+    'abi_narrow_stack': {**dict(zip('abcdefgh', range(1, 9))), 'low': -37,
+        'high': 50001, 'middle': -123456, 'wide': 0x1234567890abcdef},
+    'abi_aligned_stack': {**dict(zip('abcdefgh', range(1, 9))), 'lead': -19,
+        'wide': wide_positive, 'tail': 23},
+    'abi_aligned_register': {'first': 11, 'wide': -wide_positive, 'tail': -13},
+    'abi_pair_stack': {**dict(zip('abcdefg', range(1, 8))),
+        'value.first': 101, 'value.second': -202, 'tail': -41},
+    'abi_pair_chain': {**dict(zip('abcdefg', range(1, 8))), 'value.first': 101,
+        'value.second': -202, 'tail': -41, 'wide': wide_positive, 'object.first': 13,
+        'object.second': 24, 'object.third': 35, 'floating': 42.5},
+    'abi_pair_variadic': {**dict(zip('abcdefg', range(1, 8))),
+        'value.first': 101, 'value.second': -202, 'tail': -41},
 }
 rows = []
 failures = []
@@ -50,7 +101,6 @@ returns = {}
 entries = {}
 reference_limits = []
 strict_reference = os.environ.get('FORGE_AARCH64_ABI_STRICT_REFERENCE', '0') == '1'
-metadata = json.loads((case / 'metadata.json').read_text()) if (case / 'metadata.json').exists() else None
 biases = {}
 locations = json.loads((case / 'indirect-locations.json').read_text()) if mode == 'forge' else {}
 carriers = []
@@ -63,11 +113,18 @@ expected_returns = {
     'abi_large_spill_alias': {'first': 304, 'second': -402, 'third': 508},
     'abi_hfa': {'first': 2.25, 'second': -0.5, 'third': 6.75, 'fourth': 8.5},
     'abi_hfa_exhausted': 44.5,
+    'abi_narrow_stack': 0x1234567890abcdef - 73456,
+    'abi_aligned_stack': wide_positive + 40, 'abi_aligned_register': -wide_positive - 2,
+    'abi_pair_stack': -114, 'abi_pair_chain': 0x0fedcba987654321, 'abi_pair_variadic': -114,
 }
 
 
 def number(value):
-    return float(value) if value.type.strip_typedefs().code == gdb.TYPE_CODE_FLT else int(value)
+    if value.type.strip_typedefs().code == gdb.TYPE_CODE_FLT:
+        return float(value)
+    # GDB 15's Python int(Value) conversion stops at eight bytes, although
+    # its typed decimal formatter supports the actual 128-bit integer.
+    return int(value.format_string(format='d')) if value.type.sizeof > 8 else int(value)
 
 
 def register(name):
@@ -112,7 +169,7 @@ for name, parameters in expected.items():
     object_address = None
     if name in locations:
         object_address = int.from_bytes(memory(int.from_bytes(register('sp'), 'little'), 8), 'little') \
-            if name == 'abi_large_stack' else int.from_bytes(register('x0'), 'little')
+            if name == 'abi_large_stack' else int.from_bytes(memory(int.from_bytes(register('sp'), 'little') + 48, 8), 'little') if name == 'abi_pair_chain' else int.from_bytes(register('x0'), 'little')
     hidden_buffer = int.from_bytes(register('x8'), 'little') if name in ('abi_large', 'abi_large_spill', 'abi_large_spill_alias') else None
     prefix = memory(entry, 40)
     positive = dict.fromkeys(parameters, 0)
@@ -134,7 +191,7 @@ for name, parameters in expected.items():
                     numeric = number(value)
                     values[expression]['numeric'] = numeric
                     if numeric != wanted:
-                        if window and expression.startswith('value.'):
+                        if window and expression.startswith(('value.', 'object.')):
                             reference_limits.append({'function': name, 'offset': pc - entry,
                                 'expression': expression, 'compilerDisplay': str(value), 'abiValue': raw_window[expression],
                                 'reason': window, 'instruction': instruction})
@@ -146,7 +203,11 @@ for name, parameters in expected.items():
                     failures.append([name, 0, expression, 'unavailable at entry'])
             except gdb.error as error:
                 values[expression] = {'unavailable': str(error)}
-                if index == 0:
+                if window and name == 'abi_pair_chain' and expression.startswith('object.') and str(error).startswith('Cannot access memory at address '):
+                    reference_limits.append({'function': name, 'offset': pc - entry,
+                        'expression': expression, 'compilerError': str(error), 'abiValue': raw_window[expression],
+                        'reason': window, 'instruction': instruction})
+                elif index == 0:
                     failures.append([name, 0, expression, str(error)])
         rows.append({'function': name, 'pc': pc, 'offset': pc - entry,
             'instruction': instruction, 'values': values})
@@ -163,11 +224,11 @@ for name, parameters in expected.items():
                     address = int.from_bytes(memory(address, 8), 'little')
                 assert address == object_address, (name, pc, location, address, object_address)
                 assert all(values[field].get('numeric') == wanted for field, wanted in parameters.items()
-                    if field.startswith('value.')), (name, pc, values)
+                    if field.startswith('object.' if name == 'abi_pair_chain' else 'value.')), (name, pc, values)
                 carrier.update(location=location, address=address)
             else:
                 assert all(values[field].get('optimizedOut') or 'unavailable' in values[field]
-                    for field in parameters if field.startswith('value.')), (name, pc, values)
+                    for field in parameters if field.startswith('object.' if name == 'abi_pair_chain' else 'value.')), (name, pc, values)
             # Observe the actual state after the final deliberate register write.
             # Every possible integer carrier except the frame register is zero.
             if name.startswith('abi_large_spill') and pc > entry and memory(pc - 4, 4) == bytes.fromhex('fe031faa'):
@@ -194,7 +255,7 @@ for name, parameters in expected.items():
                 assert name in ('abi_large_spill', 'abi_large_spill_alias') and hidden_buffer and final_buffer_register == 0, name
                 value = gdb.Value(hidden_buffer).cast(return_type.pointer()).dereference()
             wanted = expected_returns[name]
-            assert value.type.sizeof == {'abi_pair': 16, 'abi_large': 24, 'abi_large_spill': 24, 'abi_large_spill_alias': 24, 'abi_hfa': 16}.get(name, 8), name
+            assert value.type.sizeof == {'abi_pair': 16, 'abi_large': 24, 'abi_large_spill': 24, 'abi_large_spill_alias': 24, 'abi_hfa': 16, 'abi_aligned_stack': 16, 'abi_aligned_register': 16}.get(name, 8), name
             observed = {field: number(value[field]) for field in wanted} if isinstance(wanted, dict) else number(value)
             assert observed == wanted, (name, observed, wanted)
             returns[name] = {'value': observed, 'abiValue': raw_return, 'type': str(value.type),

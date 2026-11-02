@@ -61,13 +61,19 @@ final class StackValueFlow {
 
     static List<StorageInterval> prove(Program program, Function function, Parameter parameter,
             TargetRegisterMap registers, TaskMonitor monitor) throws CancelledException {
-        return proveCarrier(program, function, parameter, registers, false, monitor);
+        return proveCarrier(program, function, parameter, parameter.getVariableStorage(), registers, false, monitor);
     }
 
     /** Track the ABI pointer, then describe the formal object at its current address. */
     static List<StorageInterval> proveIndirect(Program program, Function function, Parameter parameter,
             TargetRegisterMap registers, TaskMonitor monitor) throws CancelledException {
-        var carrier = proveCarrier(program, function, parameter, registers, true, monitor);
+        return proveIndirect(program, function, parameter, parameter.getVariableStorage(), registers, monitor);
+    }
+
+    static List<StorageInterval> proveIndirect(Program program, Function function, Parameter parameter,
+            ghidra.program.model.listing.VariableStorage storage, TargetRegisterMap registers, TaskMonitor monitor)
+            throws CancelledException {
+        var carrier = proveCarrier(program, function, parameter, storage, registers, true, monitor);
         var result = new ArrayList<StorageInterval>();
         for (var interval : carrier) {
             monitor.checkCancelled();
@@ -86,10 +92,10 @@ final class StackValueFlow {
     }
 
     private static List<StorageInterval> proveCarrier(Program program, Function function,
-            Parameter parameter, TargetRegisterMap registers, boolean indirect, TaskMonitor monitor)
+            Parameter parameter, ghidra.program.model.listing.VariableStorage storage,
+            TargetRegisterMap registers, boolean indirect, TaskMonitor monitor)
             throws CancelledException {
         monitor.checkCancelled();
-        var storage = parameter.getVariableStorage();
         Register pointer = program.getCompilerSpec().getStackPointer();
         AddressSpace memory = program.getLanguage().getDefaultDataSpace();
         int bytes = parameter.getLength();

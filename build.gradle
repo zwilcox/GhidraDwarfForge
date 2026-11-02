@@ -746,6 +746,18 @@ tasks.register("customCallStorageSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/custom-call-storage/cache").absolutePath
 }
 
+tasks.register("aarch64ParameterAllocationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks isolated AAPCS64 computed aggregate allocation and preserved analyst storage"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.Aarch64ParameterAllocationSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/aarch64-allocation/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/aarch64-allocation/cache").absolutePath
+}
+
 tasks.register("aarch64AbiSelectionSmoke", JavaExec) {
     group = "verification"
     description = "Checks actual ELF metadata against bounded debugger call profiles"

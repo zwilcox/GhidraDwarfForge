@@ -44,6 +44,7 @@ def main(case, failed=None):
     assert struct.unpack_from('<IHBBI', data) == (size - 4, 5, 8, 0, 0)
     symbols = json.loads((case / 'metadata.json').read_text())['symbols']
     names = {'abi_large', 'abi_large_stack', 'abi_large_spill', 'abi_large_spill_alias'}
+    if 'abi_pair_chain' in symbols: names.add('abi_pair_chain')
     assert failed is None or failed in names
     locations = {}
     failed_range = None
@@ -62,7 +63,7 @@ def main(case, failed=None):
             if name == failed:
                 assert child['tag'] is None, 'failed function retained a child DIE'
             if child['tag'] == 'DW_TAG_formal_parameter' and helper.text_value(
-                    child['attributes'].get('DW_AT_name', '')) == 'value':
+                    child['attributes'].get('DW_AT_name', '')) == ('object' if name == 'abi_pair_chain' else 'value'):
                 assert child['depth'] == row['depth'] + 1
                 parameters.append(child)
         if name == failed:
@@ -115,6 +116,42 @@ def main(case, failed=None):
             length, cursor = leb(data, cursor + 17)
             cursor += length
         assert cursor == len(data)
+    expected_slots = {
+        'abi_narrow_stack': {'low': (0, 1, 5), 'high': (8, 2, 7), 'middle': (16, 4, 5), 'wide': (24, 8, 5)},
+        'abi_aligned_stack': {'lead': (0, 1, 5), 'wide': (16, 16, 5), 'tail': (32, 1, 5)},
+        'abi_pair_stack': {'value': (0, 16, None), 'tail': (16, 8, 5)},
+        'abi_pair_chain': {'value': (0, 16, None), 'tail': (16, 8, 5), 'wide': (32, 16, 5)},
+        'abi_pair_variadic': {'value': (0, 16, None), 'tail': (16, 8, 5)},
+    }
+    slots = {}
+    for index, row in enumerate(records):
+        name = helper.text_value(row['attributes'].get('DW_AT_name', '')).removeprefix('curated_')
+        if row['tag'] != 'DW_TAG_subprogram' or name not in expected_slots:
+            continue
+        wanted = expected_slots[name]
+        observed = {}
+        for child in records[index + 1:]:
+            if child['depth'] <= row['depth']: break
+            parameter = helper.text_value(child['attributes'].get('DW_AT_name', ''))
+            if child['tag'] != 'DW_TAG_formal_parameter' or parameter not in wanted: continue
+            displacement, width, encoding = wanted[parameter]
+            attrs = child['attributes']
+            match = re.search(r'(\d+) byte block: ([0-9a-f ]+)\s+\(DW_OP_', attrs['DW_AT_location'])
+            assert match, (name, parameter, attrs)
+            expression = bytes(int(value, 16) for value in match[2].split())
+            assert len(expression) == int(match[1]) and expression == bytes((0x92, 31, displacement)), (name, parameter, expression.hex())
+            dtype = by_offset[int(re.search(r'<0x([0-9a-f]+)>', attrs['DW_AT_type'])[1], 16)]
+            assert helper.number(dtype['attributes']['DW_AT_byte_size']) == width
+            if encoding is None:
+                assert dtype['tag'] == 'DW_TAG_structure_type'
+            else:
+                assert dtype['tag'] == 'DW_TAG_base_type'
+                assert helper.number(dtype['attributes']['DW_AT_encoding']) == encoding
+            observed[parameter] = {'offset': displacement, 'bytes': width, 'encoding': encoding, 'expression': expression.hex()}
+        assert set(observed) == set(wanted)
+        slots[name] = observed
+    assert set(slots) == set(expected_slots) & set(symbols)
+    (case / 'allocation-locations.json').write_text(json.dumps(slots, indent=4) + '\n')
     (case / 'indirect-locations.json').write_text(json.dumps(locations, indent=4) + '\n')
     print('aarch64-indirect-locations=PASS functions=' + str(len(locations)))
 
