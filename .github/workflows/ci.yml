@@ -172,6 +172,8 @@ jobs:
         run: python3 src/test/integration/dwarfdump-locviews.py "$PWD/validation-tool/bin/dwarfdump"
       - name: Validate low ELF addresses and out-of-range rejection
         run: python3 src/test/integration/dwarfdump-elf-bounds.py "$PWD/validation-tool/bin/dwarfdump"
+      - name: Validate GNU vector flag forms and invalid metadata rejection
+        run: python3 src/test/integration/dwarfdump-gnu-vector.py "$PWD/validation-tool/bin/dwarfdump"
 
       - name: Validate complete bounded diagnostics and allocation rollback
         run: |
@@ -198,6 +200,7 @@ jobs:
             build/test-results/validation-tool-build/**/terminator-patch.log
             build/test-results/validation-tool-build/**/locviews-patch.log
             build/test-results/validation-tool-build/**/bounds-patch.log
+            build/test-results/validation-tool-build/**/vector-patch.log
             build/test-results/validation-tool-build/**/config.log
             build/test-results/validation-tool-build/**/make.log
             build/test-results/validation-tool-build/**/dependencies.txt
@@ -207,6 +210,7 @@ jobs:
             build/test-results/dwarfdump-eh-terminators/
             build/test-results/dwarfdump-locviews/
             build/test-results/dwarfdump-elf-bounds/
+            build/test-results/dwarfdump-gnu-vector/
           if-no-files-found: warn
           retention-days: 14
 

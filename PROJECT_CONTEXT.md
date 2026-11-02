@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local GNU-vector validator correction:** the pinned standalone
+reader had no accepted form class for GCC's vector flag. A pinned validation-only
+table correction passes 16 positive and 48 negative metadata cases across both
+ELF classes/byte orders and DWARF4/5, with 128 old/new observations. Existing
+checker regressions and 97 evidence controls pass. Shipped native libraries and
+production code are unchanged. See `docs/GNU-VECTOR-VALIDATION.md`.
+Hosted acceptance, protected integration and the full original P2.3–P2.3c
+requirements remain open; the separate i386 ABI matrix is still under acceptance.
+
 **CONFIRMED local shared Thumb lifetime-oracle correction:** PR146's hosted
 ARM lane expected unavailable parameters after their original registers changed.
 Independent instruction bytes and raw stack/register observations instead prove

@@ -17,6 +17,8 @@ calling_patch="$support_dir/validation/0004-recognize-subroutine-calling-convent
 terminator_patch="$support_dir/validation/0005-honor-eh-frame-zero-terminator.patch"
 locviews_patch="$support_dir/validation/0006-locviews-are-not-die-references.patch"
 bounds_patch="$support_dir/validation/0007-preserve-low-elf-address-bounds.patch"
+vector_patch="$support_dir/validation/0008-recognize-gnu-vector-flag.patch"
+vector_patch_hash=9b5879be2736ec13d0ed19661a5cf4e27f27220b2f3c02148b5a26fc0f65104a
 bounds_patch_hash=f4a81a948702b20e105e2a646eb08e747264e9b028949da287580458fb29360d
 locviews_patch_hash=54fce0dd7b7f19775cfb2bf95f610a4c3f4b96dd98d28ce99580d30c4e6aa879
 terminator_patch_hash=d69033dbf8b67380c06b51932018c2c024e5610f3e5343cd75915e206ac16b08
@@ -39,6 +41,7 @@ printf '%s  %s\n' "$calling_patch_hash" "$calling_patch" | sha256sum -c -
 printf '%s  %s\n' "$terminator_patch_hash" "$terminator_patch" | sha256sum -c -
 printf '%s  %s\n' "$locviews_patch_hash" "$locviews_patch" | sha256sum -c -
 printf '%s  %s\n' "$bounds_patch_hash" "$bounds_patch" | sha256sum -c -
+printf '%s  %s\n' "$vector_patch_hash" "$vector_patch" | sha256sum -c -
 mkdir -p "$results" "$(dirname "$output")"
 work=$(mktemp -d "$results/build.XXXXXXXX")
 printf 'validation-tool-build=%s\n' "$work"
@@ -53,6 +56,7 @@ source="$work/libdwarf-2.3.2"
     patch -p1 < "$terminator_patch" > "$work/terminator-patch.log" 2>&1
     patch -p1 < "$locviews_patch" > "$work/locviews-patch.log" 2>&1
     patch -p1 < "$bounds_patch" > "$work/bounds-patch.log" 2>&1
+    patch -p1 < "$vector_patch" > "$work/vector-patch.log" 2>&1
     ./configure --enable-static --disable-shared --disable-dwarfgen \
         > "$work/configure.log" 2>&1
     make -j"${FORGE_BUILD_JOBS:-$(nproc)}" > "$work/make.log" 2>&1
@@ -74,6 +78,7 @@ cp "$calling_patch" "$stage/source/support/validation/"
 cp "$terminator_patch" "$stage/source/support/validation/"
 cp "$locviews_patch" "$stage/source/support/validation/"
 cp "$bounds_patch" "$stage/source/support/validation/"
+cp "$vector_patch" "$stage/source/support/validation/"
 cp "$launcher" "$stage/source/support/validation/"
 cp "$support_dir/validation/README.md" "$stage/source/support/validation/"
 cp "$support_dir/../LICENSE" "$stage/source/LICENSE"
@@ -101,6 +106,7 @@ grep -Fq '2.3.2' "$work/version.txt"
         "validation-calling-convention-patch-sha256=$calling_patch_hash" \
         "validation-terminator-patch-sha256=$terminator_patch_hash" \
         "validation-locviews-patch-sha256=$locviews_patch_hash" \
+        "validation-vector-patch-sha256=$vector_patch_hash" \
         "validation-bounds-patch-sha256=$bounds_patch_hash" \
         "validation-configuration-sha256=$configuration_hash" \
         'entry-point=bin/dwarfdump; executable=libexec/dwarfdump' \
@@ -112,7 +118,7 @@ grep -Fq '2.3.2' "$work/version.txt"
 } > "$stage/BUILD-METADATA.txt"
 cat > "$stage/CORRESPONDING_SOURCE.md" <<'EOF'
 This validation-only executable is built from the included libdwarf 2.3.2
-archive and seven explicitly identified validation-only patches: the dwarfdump
+archive and eight explicitly identified validation-only patches: the dwarfdump
 line-sequence correction and bounded PN_XNUM recognition in its static ELF
 consumer, plus complete harmless-diagnostic evidence up to 65536 messages with
 checked allocation and explicit rejection above that bound. The fourth recognizes
@@ -124,7 +130,9 @@ The sixth keeps GNU location-view section offsets out of DIE-reference traversal
 actual DIE references and all other check categories remain enabled.
 The seventh derives ELF address bounds from nonempty allocated sections without
 an invented first-page exclusion; address checks remain enabled.
-This executable and all seven patches are excluded from GhidraDwarfForge release-native inputs;
+The eighth recognizes GNU vector flags in the attribute/form-class extension table.
+Other forms, tag combinations and reference checks remain enabled.
+This executable and all eight patches are excluded from GhidraDwarfForge release-native inputs;
 shipped consumer/producer library sources are unchanged.
 The relocatable bin/dwarfdump launcher checks the pinned upstream configuration
 and selects it explicitly with --file-name, without consulting host defaults.

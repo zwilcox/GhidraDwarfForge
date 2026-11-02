@@ -437,3 +437,35 @@ The updated evidence profile pins all seven patches; its 97 controls pass at
 The fresh checker bundle's full checksum manifest passes. CI builds this
 checker from the pinned archive and retains the new test/build diagnostics.
 Hosted exact-head acceptance remains required.
+
+## GNU vector flag form class
+
+The eighth validation-only patch,
+`0008-recognize-gnu-vector-flag.patch`, SHA-256
+`9b5879be2736ec13d0ed19661a5cf4e27f27220b2f3c02148b5a26fc0f65104a`,
+adds `DW_FORM_CLASS_FLAG` for `DW_AT_GNU_vector` to the extension source table
+and its generated counterpart. The tag/attribute policy already admits this
+attribute on arrays. No other form classes, tags or checks are changed.
+The pinned producer and shipped native libraries remain unchanged.
+
+GCC 13.3.0's [`gen_array_type_die`](https://github.com/gcc-mirror/gcc/blob/releases/gcc-13.3.0/gcc/dwarf2out.cc#L22537)
+emits this attribute with `add_AT_flag` on vector array types. The original
+standalone libdwarf 2.3.2 reader recognizes the name but has an empty allowed
+form-class entry, causing a false strict rejection of the libc-backed i386
+compiler reference. This is a validation-only vendor extension, not a claim
+that Forge exports native vector types or that GDB can automatically return
+all i386 vector/SSE signatures correctly.
+
+`dwarfdump-gnu-vector.py` builds independent DWARF4/5 ELF32/64 fixtures in both
+byte orders. Sixteen positive cases cover both flag and flag-present forms;
+GNU readelf, LLVM and the corrected strict reader must accept them. Forty-eight
+negative cases retain rejection of string/constant/reference/expression forms,
+incorrect tags and invalid type references. An optional previous-tool comparison
+reproduces all sixteen false positive-fixture rejections and checks all negative
+fixtures against the old reader too (128 checker observations in total).
+Every artifact is hashed before and after validation. CI runs the complete
+64-case corrected-reader matrix and retains its evidence.
+
+The evidence profile pins this patch as `gnuVectorPatchSha256` and identifies
+`libdwarf-2.3.2-eight-corrections-and-llvm-verify`. Older receipts retain their
+historical profile; new receipts require the complete eight-patch bundle.
