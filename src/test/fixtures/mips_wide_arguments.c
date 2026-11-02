@@ -1,4 +1,4 @@
-/* Owned N32/N64 aggregate, positional floating and exhausted-slot regression. */
+/* Owned O32/N32/N64 aggregate, mixed floating and exhausted-slot regression. */
 typedef long long word;
 struct Pair { word first; word second; };
 struct Large { word first; word second; word third; };

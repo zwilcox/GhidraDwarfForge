@@ -1,5 +1,13 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local O32 mixed/wide coverage:** ten byte-order/layout cases pass
+40 normal/failure exports, ten cancellations, 24,780 instruction-level parameter
+observations and forty wrong-location/late-gap rejections. Natural fixture type
+alignment is corrected; separate O32 slots, compiler-reference defects and
+existing honest mixed-storage/call guards are explicit. N32/N64 regressions pass
+with unchanged production code. See `docs/MIPS-O32-ARGUMENTS.md`. Hosted acceptance, protected
+integration and the full original P2.3–P2.3c audit remain open.
+
 **CONFIRMED local MIPS FPXX/FP64A reference:** the unmodified 64-bit system
 emulator supplies full FPR values at actual FR=1 for both O32 byte orders.
 Four maintained compiler/Forge cases pass eight exports, strict validation,

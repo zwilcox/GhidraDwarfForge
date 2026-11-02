@@ -193,6 +193,14 @@ Ghidra import by itself is not a complete architecture-support test.
 
 Focused harnesses build additional fixtures independently of the Makefile:
 
+- `mips-wide-arguments.py` uses `mips_wide_arguments.c` for separate O32,
+  N32 and N64 argument contracts. O32 covers both byte orders and executable,
+  PIE/rebased and shared/rebased layouts, including combined integer/floating/
+  aggregate/stack arguments. Natural structure alignment, incoming-value gaps,
+  hidden result buffers and guarded debugger calls are checked independently.
+  See `docs/MIPS-O32-ARGUMENTS.md` for measured compiler-reference limitations
+  and the wrong-location, failure and cancellation controls.
+
 - `bitfield-values-export.sh` uses `bitfield-values.c` on each target. Compiler
   and Forge DWARF must both read initialized `{a=5,b=17}` values from four-byte
   and packed one-byte structures. The applied Ghidra types use four-byte bases

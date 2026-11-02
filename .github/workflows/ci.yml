@@ -1727,6 +1727,18 @@ jobs:
                   --endian "${TARGET#mips32}" --profile "$profile"
           done
 
+      - name: MIPS O32 mixed and wide arguments in both byte orders
+        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          python3 src/test/integration/mips-o32-arguments-oracle-test.py
+          for role in exec pie pie-rebased shared shared-rebased; do
+              python3 src/test/integration/mips-wide-arguments.py "$GHIDRA_INSTALL_DIR" \
+                  --abi o32 --endian "${TARGET#mips32}" --role "$role" --with-controls
+          done
+
       - name: MIPS N32 and N64 wider arguments, returns and debugger calls
         if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
         env:

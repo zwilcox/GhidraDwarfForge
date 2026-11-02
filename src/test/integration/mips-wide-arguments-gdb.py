@@ -47,11 +47,13 @@ if shared:
     assert bias > 0
     gdb.execute('add-symbol-file ' + str(artifact) + ' -o ' + hex(bias))
 
-spec = importlib.util.spec_from_file_location('wide_oracle', Path(__file__).with_name('mips-wide-arguments-oracle.py'))
+o32 = metadata['abi'] == 'o32'
+spec = importlib.util.spec_from_file_location('wide_oracle', Path(__file__).with_name(
+    'mips-o32-arguments-oracle.py' if o32 else 'mips-wide-arguments-oracle.py'))
 oracle = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(oracle)
 endian = 'big' if metadata['endian'] == 'be' else 'little'
-pointer_bytes = 4 if metadata['abi'] == 'n32' else 8
+pointer_bytes = 8 if metadata['abi'] == 'n64' else 4
 raw_order = None
 
 
@@ -74,19 +76,73 @@ if phase == 'calls':
     gdb.Breakpoint('*wide_mixed', temporary=True, internal=True)
     gdb.execute('continue')
     calls = []
-    for name, arguments in [
+    call_cases = [
             ('wide_words', '(11LL,22LL,33LL,44LL,55LL,66LL,77LL,88LL,909LL,-1010LL)'),
             ('wide_pair', '(pair_sink)'), ('wide_large', '(large_sink)'),
-            ('wide_mixed', '(17LL,1.25,-19,-2.5f,pair_sink,23LL,3.75,29LL,-31)')]:
+            ('wide_mixed', '(17LL,1.25,-19,-2.5f,pair_sink,23LL,3.75,29LL,-31)')]
+    if o32:
+        # A compiler-reference aggregate injection can corrupt its own sink.
+        # Exercise the scalar/mixed calls before those independent reference probes.
+        call_cases = [call_cases[index] for index in (0, 3, 1, 2)]
+    for name, arguments in call_cases:
         for binding in (name, name.removeprefix('wide_') + '_callback'):
             wanted = oracle.RETURNS[name]
             before = {register: int(gdb.parse_and_eval('$' + register)) for register in ('pc', 'sp')}
             print("CALL_EXPRESSION", binding + arguments)
+            if o32 and mode == 'forge' and name in ('wide_pair', 'wide_large'):
+                def state():
+                    return {
+                        'registers': {item.name: str(gdb.selected_frame().read_register(item.name))
+                            for item in gdb.selected_frame().architecture().registers()},
+                        'stack': memory(before['sp'], 256).hex(),
+                        'globals': {symbol: memory(int(gdb.parse_and_eval('&' + symbol)),
+                            metadata['sizes'][symbol]).hex() for symbol in
+                            ('integer_sink', 'real_sink', 'pair_sink', 'large_sink')}}
+                unchanged = state()
+                try:
+                    gdb.parse_and_eval(binding + arguments)
+                except gdb.error as error:
+                    assert 'does not follow the target calling convention' in str(error), str(error)
+                    calls.append({'expression': binding + arguments, 'guard': str(error), 'unchanged': True})
+                else:
+                    raise AssertionError('unclassified O32 aggregate call was accepted')
+                assert state() == unchanged
+                continue
+            reference_entry = []
+            probe = None
+            if o32 and mode == 'compiler' and name in ('wide_pair', 'wide_large'):
+                global_name = name.removeprefix('wide_') + '_sink'
+                passed = memory(int(gdb.parse_and_eval('&' + global_name)), metadata['sizes'][global_name])
+
+                class ObserveAggregateCall(gdb.Breakpoint):
+                    def stop(self):
+                        sp = register(29) & 0xffffffff
+                        slots = b''.join(register(number).to_bytes(4, endian) for number in (5, 6, 7))
+                        slots += memory(sp + 16, len(passed))
+                        raw = oracle.entry_arguments(name, register, memory, endian, 4)
+                        correct = slots[4:4 + len(passed)] == passed
+                        # GDB 15's O32 aggregate push neglects this eight-byte
+                        # alignment hole after the hidden return pointer. Prove
+                        # the exact misplaced bytes before accepting a limitation.
+                        assert correct or slots[:len(passed)] == passed
+                        reference_entry.append({'correctTransfer': correct, 'raw': raw,
+                            'passedBytes': passed.hex(), 'slotBytes': slots.hex(), 'buffer': register(4)})
+                        return False
+
+                probe = ObserveAggregateCall('*' + name, internal=True)
             value = gdb.parse_and_eval(binding + arguments)
             actual = {field: int(value[field]) for field in wanted} if isinstance(wanted, dict) else int(value)
-            assert actual == wanted, (mode, binding, str(value))
+            if probe is not None:
+                probe.delete()
+                entry, = reference_entry
+                raw_return = {field: int.from_bytes(memory(entry['buffer'] + index * 8, 8), endian, signed=True)
+                    for index, field in enumerate(wanted)}
+                assert actual == raw_return == {field: entry['raw']['value.' + field] for field in wanted}
+                calls.append({'expression': binding + arguments, 'actual': actual, 'compilerReference': entry})
+            else:
+                assert actual == wanted, (mode, binding, str(value))
+                calls.append({'expression': binding + arguments, 'expected': wanted, 'actual': actual})
             assert before == {register: int(gdb.parse_and_eval('$' + register)) for register in before}
-            calls.append({'expression': binding + arguments, 'expected': wanted, 'actual': actual})
     gdb.execute('continue')
     assert int(gdb.parse_and_eval('$_exitcode')) == 0
     (case / (result_prefix + '-observations.json')).write_text(json.dumps(calls, indent=4) + '\n')
@@ -113,8 +169,9 @@ for function, expected in oracle.EXPECTED.items():
     # GDB 15.1 exposes target-order Value.bytes even though newer manuals
     # specify little endian. Calibrate the buffer representation using a GPR
     # with an independently available integer conversion; never guess for FP.
-    value = gdb.selected_frame().read_register('a0')
-    orders = [order for order in ('big', 'little') if int.from_bytes(value.bytes, order) == register(4)]
+    calibration = 29 if o32 else 4
+    value = gdb.selected_frame().read_register('sp' if o32 else 'a0')
+    orders = [order for order in ('big', 'little') if int.from_bytes(value.bytes, order) == register(calibration)]
     assert len(orders) == 1 and raw_order in (None, orders[0])
     raw_order = orders[0]
     entry_values = oracle.entry_arguments(function, register, memory, endian, pointer_bytes)
@@ -127,26 +184,29 @@ for function, expected in oracle.EXPECTED.items():
         listing = gdb.execute('list ' + function, to_string=True)
         assert function in listing and 'No such file' not in listing
         assert 'type =' in gdb.execute('ptype ' + next(iter(expected)), to_string=True)
-    hidden_buffer = register(4) & ((1 << (pointer_bytes * 8)) - 1) if function == 'wide_large' else None
+    hidden_buffer = register(4) & ((1 << (pointer_bytes * 8)) - 1) if function == 'wide_large' or o32 and function == 'wide_pair' else None
     return_type = gdb.parse_and_eval(function).type.target()
-    finish = gdb.FinishBreakpoint(gdb.newest_frame(), internal=True)
+    guarded_return = o32 and mode == 'forge' and function in ('wide_pair', 'wide_large') and function != failed
+    finish = None if guarded_return else gdb.FinishBreakpoint(gdb.newest_frame(), internal=True)
     positives[function] = dict.fromkeys(expected, 0)
     for step in range(200):
         pc = int(gdb.parse_and_eval('$pc'))
         if not start <= pc < start + proof['size']:
             break
         offset = pc - start
-        raw = oracle.entry_arguments(function, register, memory, endian, pointer_bytes)
+        raw = oracle.entry_arguments(function, register, memory, endian, pointer_bytes,
+            **({'stack_pointer': entry_stack} if o32 else {}))
         # Stack addresses are relative to the captured incoming pointer, not
         # the changing physical register at this instruction.
-        if function == 'wide_words':
+        if not o32 and function == 'wide_words':
             raw.update(i=int.from_bytes(memory(entry_stack, 8), endian, signed=True),
                 j=int.from_bytes(memory(entry_stack + 8, 8), endian, signed=True))
-        if function == 'wide_mixed':
+        if not o32 and function == 'wide_mixed':
             raw.update(h=int.from_bytes(memory(entry_stack, 8), endian, signed=True),
                 tail=int.from_bytes(memory(entry_stack + (12 if endian == 'big' else 8), 4), endian, signed=True))
         for expression, wanted in expected.items():
-            gap = offset >= proof['clobbers'].get(expression, proof['size'])
+            gap = oracle.unavailable(function, expression, offset, proof, mode) if o32 else (
+                offset >= proof['clobbers'].get(expression, proof['size']))
             if not gap:
                 assert raw[expression] == wanted, (function, offset, expression, raw[expression])
             if function == failed:
@@ -163,12 +223,12 @@ for function, expected in oracle.EXPECTED.items():
             row = {'function': function, 'offset': offset, 'expression': expression,
                 'display': str(value), 'expected': wanted, 'unavailable': value.is_optimized_out}
             window = oracle.reference_window(function, expression, offset, proof) if mode == 'compiler' else None
-            if gap:
-                assert value.is_optimized_out, (mode, function, offset, expression, str(value))
-            elif window and not strict_reference:
-                assert raw[expression] == wanted
+            if window and not strict_reference:
+                assert gap or raw[expression] == wanted
                 row['referenceWindow'] = window
                 limitations.append(dict(row))
+            elif gap:
+                assert value.is_optimized_out, (mode, function, offset, expression, str(value))
             else:
                 assert not value.is_optimized_out, (mode, function, offset, expression)
                 actual = float(value) if isinstance(wanted, float) else int(value)
@@ -182,10 +242,12 @@ for function, expected in oracle.EXPECTED.items():
         raise AssertionError('instruction bound exceeded')
     if phase == 'instructions' and function != failed:
         assert all(positives[function].values()), (function, positives[function])
-    returned = finish.return_value
+    returned = None if finish is None else finish.return_value
     if function == failed:
         assert returned is None, 'failed symbol-only function unexpectedly retained a typed return'
-        raw_return = {'first': oracle.signed(register(2), 64), 'second': oracle.signed(register(3), 64)}
+        raw_return = {field: int.from_bytes(memory(hidden_buffer + index * 8, 8), endian, signed=True)
+            for index, field in enumerate(oracle.RETURNS[function])} if o32 else {
+            'first': oracle.signed(register(2), 64), 'second': oracle.signed(register(3), 64)}
         assert raw_return == oracle.RETURNS[function]
         returns[function] = {'value': None, 'automatic': False, 'symbolOnly': True, 'raw': raw_return}
         if finish.is_valid():
@@ -193,14 +255,14 @@ for function, expected in oracle.EXPECTED.items():
         continue
     automatic = returned is not None and not returned.is_optimized_out
     if not automatic:
-        assert function == 'wide_large' and hidden_buffer, (mode, function, 'return unavailable')
+        assert (function == 'wide_large' or o32 and function == 'wide_pair') and hidden_buffer, (mode, function, 'return unavailable')
         returned = gdb.Value(hidden_buffer).cast(return_type.pointer()).dereference()
         assert not returned.is_optimized_out
     wanted = oracle.RETURNS[function]
     actual = {field: int(returned[field]) for field in wanted} if isinstance(wanted, dict) else int(returned)
     assert actual == wanted, (mode, function, 'return', str(returned))
     returns[function] = {'value': actual, 'automatic': automatic}
-    if finish.is_valid():
+    if finish is not None and finish.is_valid():
         finish.delete()
 gdb.execute('continue')
 assert int(gdb.parse_and_eval('$_exitcode')) == 0

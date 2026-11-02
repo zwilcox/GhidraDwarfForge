@@ -27,8 +27,10 @@ public class ProbeMipsWideArguments extends GhidraScript {
         var scalar = new FloatDataType(manager);
         var integer = new IntegerDataType(manager);
         var pair = new StructureDataType("Pair", 0, manager);
+        pair.setPackingEnabled(true);
         pair.add(word,"first",null); pair.add(word,"second",null);
         var large = new StructureDataType("Large", 0, manager);
+        large.setPackingEnabled(true);
         large.add(word,"first",null); large.add(word,"second",null); large.add(word,"third",null);
         println("WIDE_LANGUAGE=" + currentProgram.getLanguageID() + " compiler=" + currentProgram.getCompilerSpec().getCompilerSpecID());
         var result = new LinkedHashMap<String, Object>();

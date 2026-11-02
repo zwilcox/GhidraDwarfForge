@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Packaged N32/N64 wide argument acceptance with compiler and live GDB references."""
+"""Packaged MIPS wide argument acceptance with compiler and live GDB references."""
 import argparse
 import importlib.util
 import json
@@ -43,7 +43,7 @@ def reference_homes(text):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
-    parser.add_argument('--abi', choices=('n32', 'n64'), required=True)
+    parser.add_argument('--abi', choices=('o32', 'n32', 'n64'), required=True)
     parser.add_argument('--endian', choices=('be', 'le'), required=True)
     parser.add_argument('--role', choices=('exec', 'pie', 'pie-rebased', 'shared', 'shared-rebased'), default='exec')
     parser.add_argument('--toolchain-root', type=Path,
@@ -69,7 +69,8 @@ def main():
         if clean:
             support.require_clean(case / (name + '.log'))
 
-    prefix = 'mips64' + ('el' if args.endian == 'le' else '') + '-linux-gnuabi64'
+    prefix = ('mips' if args.abi == 'o32' else 'mips64') + (
+        'el' if args.endian == 'le' else '') + ('-linux-gnu' if args.abi == 'o32' else '-linux-gnuabi64')
     tool_environment, compile_flags = [], []
     if args.toolchain_root:
         toolchain = args.toolchain_root.resolve(strict=True)
@@ -81,15 +82,19 @@ def main():
     else:
         compiler, objcopy = prefix + '-gcc', prefix + '-objcopy'
         sysroot = Path('/usr') / prefix
-    compile_flags += ['-DFORGE_MIPS_AGGREGATE_HOME=1', '-mabi=' + ('64' if args.abi == 'n64' else 'n32'), '-march=mips64r2',
+    compile_flags += ['-DFORGE_MIPS_AGGREGATE_HOME=1', '-mabi=' + {'o32': '32', 'n32': 'n32', 'n64': '64'}[args.abi],
+        '-march=' + ('mips32r2' if args.abi == 'o32' else 'mips64r2'),
         '-O1', '-g', '-gdwarf-5', '-Wl,--build-id=sha1']
-    emulator = 'qemu-mips' + ('64' if args.abi == 'n64' else 'n32') + (
+    if args.abi == 'o32':
+        compile_flags.append('-mfp32')
+    emulator = 'qemu-mips' + {'o32': '', 'n32': 'n32', 'n64': '64'}[args.abi] + (
         'el' if args.endian == 'le' else '') + '-static'
     fixture = source.parent / 'fixtures/mips_wide_arguments.c'
     protected = [fixture, Path(__file__), source / 'mips-wide-arguments-gdb.py', source / 'mips-wide-arguments-gdb.sh',
         source / 'qemu-socket.sh', source / 'elf-layout-gdb-oracle.sh', source / 'check-dwarfdump.py',
         source / 'ghidra_scripts/ProbeMipsWideArguments.java', source / 'ghidra_scripts/RebaseFixtureProgram.java',
-        source / 'mips-wide-arguments-oracle.py', source / 'ghidra_scripts/AbiDecompilerFailureExport.java',
+        source / 'mips-wide-arguments-oracle.py', source / 'mips-o32-arguments-oracle.py', source / 'ghidra_scripts/AbiDecompilerFailureExport.java',
+        source / 'mips-o32-arguments-negative.py',
         source / 'ghidra_scripts/CancelDuringElfCopy.java',
         source.parent / 'performance/export-benchmark.py']
     protected += [path for path in module.rglob('*') if path.is_file()]
@@ -154,8 +159,9 @@ def main():
     curated = json.loads((case / 'curated.json').read_text())
     assert Path(unquote(urlsplit(curated['exporterOrigin']).path)).resolve() == (module / 'lib/GhidraDwarfForge.jar').resolve()
     assert (curated['language'], curated['compiler'], curated['pointerBytes']) == (
-        'MIPS:' + args.endian.upper() + ':64:' + ('default' if args.abi == 'n64' else '64-32addr'),
-        'default' if args.abi == 'n64' else 'n32', 8 if args.abi == 'n64' else 4)
+        'MIPS:' + args.endian.upper() + (':32:default' if args.abi == 'o32' else
+            ':64:' + ('default' if args.abi == 'n64' else '64-32addr')),
+        'n32' if args.abi == 'n32' else 'default', 8 if args.abi == 'n64' else 4)
     assert all(not row['customStorage'] for row in curated['functions'])
     if args.role.endswith('-rebased'):
         assert curated['delta'] >= 0x2000000
@@ -205,6 +211,11 @@ def main():
         control, = case.glob('controls.*/result.json')
         result['controls'] = json.loads(control.read_text())
         assert result['controls']['status'] == 'PASS'
+        if args.abi == 'o32':
+            run('negative', ['python3', source / 'mips-o32-arguments-negative.py', case])
+            negative, = case.glob('negative.*/result.json')
+            result['negative'] = json.loads(negative.read_text())
+            assert result['negative']['status'] == 'PASS'
         result['status'] = 'PASS'
         write('result.json', result)
     print('mips-wide-arguments=PASS ' + str(case), flush=True)
