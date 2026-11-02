@@ -1,5 +1,13 @@
 # MIPS ABI completion investigation
 
+**CONFIRMED local reference follow-up:** unmodified 64-bit system emulation now
+provides correct O32 FPXX/FP64A compiler float/double values in both byte orders
+at actual FR=1. Four real exporter cases retain correct floats and honest double
+omissions, with strict validation and wrong-carrier/wrong-mode controls. See
+`../MIPS-FPR-SYSTEM-REFERENCE.md`. Earlier user-mode failures below remain
+historical evidence; this does not establish FR=0, new production floating
+locations or completion of the full #69 scope.
+
 **CONFIRMED active scope:** P2.3a/#69 remains open, alongside #68/#70/#71.
 The full requirement set is retained in `../TARGET-ABI-COMPLETION-PLAN.md`.
 This investigation establishes independent references before changing target

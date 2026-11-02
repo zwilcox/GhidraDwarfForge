@@ -95,6 +95,7 @@ expected_sources=(
     merged-local-mappings.c
     minimal.c
     mips-floating-call.c
+    mips-fpr-system-start.S
     mips-truncated-space-start.S
     mips-truncated-space.c
     mips_layout_arguments.c

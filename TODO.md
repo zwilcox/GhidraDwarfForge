@@ -1,5 +1,13 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local MIPS FPXX/FP64A reference:** the unmodified 64-bit system
+emulator supplies full FPR values at actual FR=1 for both O32 byte orders.
+Four maintained compiler/Forge cases pass eight exports, strict validation,
+deterministic preservation and wrong-carrier/wrong-mode controls. Forge retains
+correct floats and explicit unavailable double pairs; production code is
+unchanged. See `docs/MIPS-FPR-SYSTEM-REFERENCE.md`. Hosted acceptance,
+integration, broader floating storage and the full P2.3–P2.3c audit remain open.
+
 **CONFIRMED local hosted-i386 reference correction:** PR150's compiler-vector
 finish operation can dereference incidental EAX and emit a GDB memory error.
 The exact independently corroborated consumer failure is now retained as a
