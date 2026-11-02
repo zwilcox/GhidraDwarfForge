@@ -46,6 +46,7 @@ def main():
     objdump = os.environ.get('ARM32_OBJDUMP', 'arm-linux-gnueabihf-objdump')
     reference = load('aggregate_pcs_reference', source / 'arm-pcs-call-reference.py')
     protected = [Path(__file__), source / 'arm-aggregate-pcs-gdb.py',
+        source / 'arm_aggregate_pcs_oracle.py',
         source / 'arm-pcs-profile-runtime.sh', source / 'qemu-socket.sh',
         source / 'arm-pcs-call-reference.py', source / 'check-dwarfdump.py',
         repository / 'src/test/fixtures/arm-aggregate-pcs.c',

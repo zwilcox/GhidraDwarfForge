@@ -1,5 +1,10 @@
 # ARM aggregate PCS references and exporter gaps
 
+**CONFIRMED subsequent call-classification progress:** the isolated policy now
+passes four local packaged call/return cases; see `../ARM-AGGREGATE-CALLS.md`.
+The blanket call restrictions observed below describe the retained v4 baseline.
+Its Q-register and saved-copy location gaps remain active implementation work.
+
 **CONFIRMED compiler/consumer reference; exporter completion remains PLANNED.**
 This checkpoint advances the full #68–#71 scope in
 `../TARGET-ABI-COMPLETION-PLAN.md`. It does not complete #70, advertise aggregate

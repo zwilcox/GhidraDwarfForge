@@ -1763,7 +1763,7 @@ jobs:
               done
           done
 
-      - name: ARM aggregate compiler and consumer references
+      - name: ARM aggregate calls with compiler references
         if: matrix.target == 'arm32'
         run: |
           for order in little big; do
@@ -1776,7 +1776,7 @@ jobs:
                   qemu="$RUNNER_TEMP/arm-qemu-aliases/build/qemu-armeb"
               fi
               for pcs in softfp hard; do
-                  python3 src/test/integration/arm-aggregate-pcs-reference.py \
+                  python3 src/test/integration/arm-aggregate-calls.py "$GHIDRA_INSTALL_DIR" \
                       --order "$order" --pcs "$pcs" --gdb "$gdb" --gdb-data "$data" --qemu "$qemu"
               done
           done

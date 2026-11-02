@@ -124,6 +124,7 @@ public final class Arm32CallPolicySmoke {
             classified(elf, type, "__stdcall", false, "", false, true);
         }
         aggregateReturns(elf);
+        aggregateTransfers(elf, hard);
         classified(elf, "float", "__stdcall_softfp", true, "", true, false);
         classified(elf, "float", "__stdcall", true, "", false, true);
         var input = model("float", "__stdcall", false, "", false);
@@ -194,6 +195,65 @@ public final class Arm32CallPolicySmoke {
                         output.functionDeclarations().getFirst().debuggerCallsDisabled() == mismatch &&
                         ((SubroutineType) output.types().byKey().get("callback")).debuggerCallsDisabled() == mismatch,
                         "aggregate result carrier classification disagrees");
+                }
+            }
+        }
+    }
+
+    private static void aggregateTransfers(ElfImage elf, boolean hard) throws Exception {
+        for (String layout : List.of("pair", "mixed", "float3", "double2", "padding", "bitfield", "union", "too_many", "misaligned")) {
+            boolean homogeneous = layout.equals("float3") || layout.equals("double2");
+            boolean valid = List.of("pair", "mixed", "float3", "double2").contains(layout);
+            for (String convention : List.of("__stdcall", "__stdcall_softfp")) {
+                boolean vfp = convention.equals("__stdcall");
+                for (boolean returned : new boolean[] {false, true}) {
+                    for (boolean wrongCarrier : new boolean[] {false, true}) {
+                        var integer = new TypeRef("integer");
+                        var floating = new TypeRef("floating");
+                        var aggregate = new TypeRef("aggregate");
+                        var alias = new TypeRef("alias");
+                        var pointer = new TypeRef("pointer");
+                        int count = layout.equals("float3") ? 3 : layout.equals("too_many") ? 5 : 2;
+                        int width = layout.equals("double2") ? 8 : 4;
+                        var members = new ArrayList<Member>();
+                        for (int index = 0; index < count; index++) {
+                            var field = homogeneous || List.of("mixed", "misaligned").contains(layout) && index == 1 ? floating : integer;
+                            long offset = index * width + (layout.equals("padding") && index > 0 ? 4 : 0);
+                            members.add(layout.equals("bitfield") && index == 0 ?
+                                new Member("field" + index, field, offset, 3, 0, 4) :
+                                new Member("field" + index, field, offset));
+                        }
+                        long size = count * width + (List.of("padding", "misaligned").contains(layout) ? 4 : 0);
+                        var parameters = new ArrayList<Parameter>();
+                        if (returned && (!homogeneous || !vfp || wrongCarrier)) {
+                            parameters.add(new Parameter("__return_storage_ptr__", pointer, true, true));
+                        }
+                        parameters.add(new Parameter("value", alias, false));
+                        var result = returned ? alias : integer;
+                        var nodes = List.<TypeNode>of(
+                            new BaseType("integer", "int", width, BaseEncoding.SIGNED),
+                            new BaseType("floating", "real", layout.equals("misaligned") ? 8 : width, BaseEncoding.FLOAT),
+                            new AggregateType("aggregate", "aggregate", size,
+                                layout.equals("union") ? AggregateKind.UNION : AggregateKind.STRUCTURE, members),
+                            new TypedefType("alias", "AggregateAlias", size, aggregate),
+                            new IndirectionType("pointer", "aggregate *", 4, IndirectionKind.POINTER,
+                                wrongCarrier ? integer : aggregate),
+                            new SubroutineType("callback", "callback", 0, result, parameters, false, convention, "", !vfp));
+                        var input = new ProgramTypeModel(new TypeGraph(nodes), List.of(new FunctionSignature("aggregate_call", 0x1000,
+                            result, parameters, List.of(), false, false, convention, "USER_DEFINED", !vfp, "")), List.of(),
+                            new ghidradwarfforge.locations.VariableStorageModel(List.of()), List.of(),
+                            List.of(new FunctionDeclaration("external", "declared", result, parameters, false, false,
+                                convention, "USER_DEFINED", !vfp, "")));
+                        boolean blocked = !valid || homogeneous && vfp != hard || returned && wrongCarrier;
+                        var output = Arm32CallPolicy.apply(elf, input, () -> false, message -> { });
+                        String label = layout + "/" + convention + "/return=" + returned + "/wrong=" + wrongCarrier;
+                        require(output.functions().getFirst().debuggerCallsDisabled() == blocked &&
+                            output.functionDeclarations().getFirst().debuggerCallsDisabled() == blocked &&
+                            ((SubroutineType) output.types().byKey().get("callback")).debuggerCallsDisabled() == blocked,
+                            "aggregate transfer mismatch: " + label);
+                        require(output.equals(Arm32CallPolicy.apply(elf, output, () -> false, message -> { })),
+                            "aggregate policy not idempotent: " + label);
+                    }
                 }
             }
         }
