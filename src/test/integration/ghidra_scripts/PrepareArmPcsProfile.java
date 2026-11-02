@@ -16,10 +16,14 @@ public class PrepareArmPcsProfile extends GhidraScript {
     @Override
     protected void run() throws Exception {
         String[] args = getScriptArgs();
-        if (args.length != 3 || !List.of("curate", "inspect").contains(args[0])) {
-            throw new IllegalArgumentException("curate|inspect labels.txt observation.json");
+        if (args.length < 3 || args.length > 5 || !List.of("curate", "inspect").contains(args[0]) ||
+                (args.length >= 4 && !args[3].equals("implicit-default")) ||
+                (args.length == 5 && !args[4].equals("guard-controls"))) {
+            throw new IllegalArgumentException("curate|inspect labels.txt observation.json [implicit-default [guard-controls]]");
         }
         boolean curate = args[0].equals("curate");
+        boolean implicit = args.length >= 4;
+        boolean guards = args.length == 5;
         var labels = new LinkedHashMap<String, Long>();
         for (String line : Files.readAllLines(Path.of(args[1]))) {
             String[] fields = line.split(" ");
@@ -35,6 +39,9 @@ public class PrepareArmPcsProfile extends GhidraScript {
                 DataType type = kind.equals("float") ? FloatDataType.dataType : kind.equals("wide") ?
                     LongLongDataType.dataType : DoubleDataType.dataType;
                 String convention = pcs.equals("base") ? "__stdcall_softfp" : "__stdcall";
+                String recordedConvention = implicit && pcs.equals("vfp") ?
+                    Function.UNKNOWN_CALLING_CONVENTION_STRING : convention;
+                boolean customUnknown = guards && name.equals("vfp_float");
                 var parameters = new ArrayList<ParameterImpl>();
                 int count = kind.equals("many") ? 10 : 2;
                 for (int index = 0; index < count; index++) {
@@ -43,21 +50,26 @@ public class PrepareArmPcsProfile extends GhidraScript {
                 }
                 if (curate) {
                     function.setName(name, SourceType.USER_DEFINED);
-                    function.updateFunction(convention, new ReturnParameterImpl(type, currentProgram),
+                    function.updateFunction(recordedConvention, new ReturnParameterImpl(type, currentProgram),
                         Function.FunctionUpdateType.DYNAMIC_STORAGE_ALL_PARAMS, true, SourceType.USER_DEFINED,
                         parameters.toArray(ParameterImpl[]::new));
+                    if (customUnknown) function.setCustomVariableStorage(true);
                 }
-                if (function.hasCustomVariableStorage() || !function.getCallingConventionName().equals(convention) ||
+                if (function.hasCustomVariableStorage() != customUnknown || !function.getCallingConventionName().equals(recordedConvention) ||
                         function.getParameterCount() != count || !function.getReturnType().isEquivalent(type)) {
                     throw new AssertionError("recorded PCS changed " + name);
                 }
                 var definition = new FunctionDefinitionDataType(name + "_type", manager);
                 definition.setReturnType(type);
-                definition.setCallingConvention(convention);
+                definition.setCallingConvention(guards && List.of("vfp_float", "vfp_double").contains(name) ?
+                    Function.UNKNOWN_CALLING_CONVENTION_STRING : convention);
                 definition.setArguments(parameters.stream().map(parameter -> new ParameterDefinitionImpl(
                     parameter.getName(), parameter.getDataType(), "")).toArray(ParameterDefinition[]::new));
                 data(labels.get(name + "_pointer"), name + "_pointer", new PointerDataType(definition, manager), curate);
-                records.add(Map.of("name", name, "convention", convention, "signature", function.getPrototypeString(false, false),
+                records.add(Map.of("name", name, "convention", function.getCallingConventionName(),
+                    "resolvedConvention", function.getCallingConvention() == null ? "" : function.getCallingConvention().getName(),
+                    "customStorage", function.hasCustomVariableStorage(),
+                    "signature", function.getPrototypeString(false, false),
                     "returnStorage", function.getReturn().getVariableStorage().toString(), "parameters",
                     Arrays.stream(function.getParameters()).map(parameter -> Map.of("name", parameter.getName(),
                         "type", parameter.getDataType().getDisplayName(), "storage", parameter.getVariableStorage().toString())).toList()));

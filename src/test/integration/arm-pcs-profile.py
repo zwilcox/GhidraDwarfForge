@@ -41,7 +41,11 @@ def main():
     parser.add_argument('--qemu-armeb', required=True)
     parser.add_argument('--order', choices=('little', 'big'), required=True)
     parser.add_argument('--pcs', choices=('softfp', 'hard'), required=True)
+    parser.add_argument('--implicit-default', action='store_true', help='Preserve unknown recorded conventions with default dynamic VFP storage')
+    parser.add_argument('--guard-controls', action='store_true', help='Keep unresolved custom storage and function-pointer types uncallable')
     args = parser.parse_args()
+    if args.guard_controls and not args.implicit_default:
+        parser.error('--guard-controls requires --implicit-default')
     ghidra = args.ghidra.resolve(strict=True)
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
     output = repository / 'build/test-results/arm-pcs-profile'
@@ -84,7 +88,8 @@ def main():
         else:
             assert not stderr, (label, 'unexpected stderr')
 
-    write('profile.json', {'order': args.order, 'pcs': args.pcs})
+    write('profile.json', {'order': args.order, 'pcs': args.pcs, 'implicitDefault': args.implicit_default,
+        'guardControls': args.guard_controls})
     run('compile', [compiler, '-marm', '-march=armv7-a', '-mfpu=vfpv3-d16', '-mfloat-abi=' + args.pcs,
         '-O0', '-g3', '-gdwarf-5', '-fno-omit-frame-pointer', '-nostdlib', '-nostartfiles', '-static',
         '-fno-pie', '-no-pie', '-Wl,--build-id=none', '-Wl,-e,_start',
@@ -111,7 +116,9 @@ def main():
         run(phase, [ghidra / 'support/analyzeHeadless', case / 'project', 'Pcs', '-process', 'calls.input',
             '-noanalysis', *(['-readOnly'] if phase == 'inspect' else []),
             '-scriptPath', source / 'ghidra_scripts', '-postScript', 'PrepareArmPcsProfile.java', phase,
-            case / 'labels.txt', case / (phase + '.json'), '-postScript', 'GhidraDwarfForge.java', '--packaged-natives',
+            case / 'labels.txt', case / (phase + '.json'), *(['implicit-default'] if args.implicit_default else []),
+            *(['guard-controls'] if args.guard_controls else []),
+            '-postScript', 'GhidraDwarfForge.java', '--packaged-natives',
             '--output=' + str(case / 'calls.dbg')])
         log = (case / (phase + '.log')).read_text()
         assert 'arm-pcs-profile-preparation=PASS' in log and 'GhidraDwarfForge symbol export PASS' in log
@@ -126,6 +133,13 @@ def main():
     assert reports[0] == reports[1] and reports[0]['failure'] is None
     write('report.json', reports[0])
     observed = json.loads((case / 'inspect.json').read_text())
+    for function in observed['functions']:
+        name = function['name']
+        expected = 'unknown' if args.implicit_default and name.startswith('vfp') else (
+            '__stdcall_softfp' if name.startswith('base') else '__stdcall')
+        assert function['convention'] == expected
+        assert function['resolvedConvention'] == ('' if expected == 'unknown' else expected)
+        assert function['customStorage'] == (args.guard_controls and name == 'vfp_float')
     origin = urlsplit(observed['origin'])
     assert origin.scheme == 'file' and not origin.netloc and not origin.query and not origin.fragment
     assert Path(unquote(origin.path)) == module / 'lib/GhidraDwarfForge.jar'
@@ -153,10 +167,20 @@ def main():
     records = dies.records((case / 'forge-info.log').read_text())
     raw = []
     for name in names:
-        expected = 1 if name.endswith('wide') or name.startswith('vfp' if args.pcs == 'hard' else 'base') else 3
         for tag, spelling in [('DW_TAG_subprogram', name), ('DW_TAG_subroutine_type', name + '_type')]:
+            blocked = not (name.endswith('wide') or name.startswith('vfp' if args.pcs == 'hard' else 'base'))
+            blocked |= args.guard_controls and (name == 'vfp_float' or (tag == 'DW_TAG_subroutine_type' and name == 'vfp_double'))
+            expected = 3 if blocked else 1
             record, = [row for row in records if row['tag'] == tag and dies.name(row) == spelling]
-            assert int(record['attrs']['DW_AT_calling_convention'].split()[0]) == expected, record
+            convention = record['attrs'].get('DW_AT_calling_convention')
+            if convention is None:
+                # An omitted convention means DW_CC_normal. The exporter keeps
+                # the recorded unknown name even when dynamic storage resolves
+                # through Ghidra's default model; it need not emit normal here.
+                assert expected == 1 and args.implicit_default and tag == 'DW_TAG_subprogram', record
+                assert name.startswith('vfp'), record
+            else:
+                assert int(convention.split()[0]) == expected, record
             raw.append(record)
     observations = []
     for variant in ('compiler', 'forge'):

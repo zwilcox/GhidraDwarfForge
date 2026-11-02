@@ -455,7 +455,8 @@ public final class GhidraTypeGraph {
             signatures.add(new ProgramTypeModel.FunctionSignature(symbol.name(), address,
                 returnType, parameters, locals, function.hasVarArgs(), function.hasNoReturn(),
                 nonNull(function.getCallingConventionName()),
-                function.getSignatureSource().name(), nonDefaultConvention, callRestriction));
+                function.getSignatureSource().name(), nonDefaultConvention, callRestriction,
+                effectiveCallingConvention(function)));
         }
         for (FunctionSymbol missing : selected.values()) {
             diagnostic.accept("No Ghidra signature found for exported function " +
@@ -624,7 +625,7 @@ public final class GhidraTypeGraph {
                 extractor.reserve(external.getReturn().getFormalDataType()), parameters,
                 external.hasVarArgs(), external.hasNoReturn(),
                 external.getCallingConventionName(), external.getSignatureSource().name(),
-                nonDefaultConvention, callRestriction));
+                nonDefaultConvention, callRestriction, effectiveCallingConvention(external)));
         }
         classScopes.prepare(extractor::reserve);
         extractor.drain(monitor);
@@ -664,6 +665,19 @@ public final class GhidraTypeGraph {
         var fallback = program.getCompilerSpec().getDefaultCallingConvention();
         return selected != null && fallback != null &&
             !selected.getName().equals(fallback.getName());
+    }
+
+    /**
+     * FunctionDB.updateParametersAndReturn uses this fallback for dynamic storage.
+     * Keep it distinct from the recorded name; unresolved custom storage has no fallback proof.
+     */
+    static String effectiveCallingConvention(Function function) {
+        var selected = function.getCallingConvention();
+        if (selected != null) return selected.getName();
+        if (function.hasCustomVariableStorage() ||
+                !Function.UNKNOWN_CALLING_CONVENTION_STRING.equals(function.getCallingConventionName())) return "";
+        var fallback = function.getProgram().getFunctionManager().getDefaultCallingConvention();
+        return fallback == null ? "" : fallback.getName();
     }
 
     private static List<String> namespacePath(Namespace namespace) {

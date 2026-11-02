@@ -145,6 +145,15 @@ public final class CallingConventionPolicySmoke {
                 declaration.nonDefaultCallingConvention() == row.blocked(), "declaration policy differs: " + row);
             require(signature.signatureSource().equals("USER_DEFINED") &&
                 declaration.signatureSource().equals("USER_DEFINED"), "signature provenance lost");
+            var actual = program.getFunctionManager().getFunctionAt(program.getAddressFactory()
+                .getDefaultAddressSpace().getAddress(row.entry()));
+            String resolved = actual.getCallingConvention() == null ? "" : actual.getCallingConvention().getName();
+            String fallback = program.getCompilerSpec().getDefaultCallingConvention().getName();
+            require(signature.effectiveCallingConvention().equals(resolved),
+                "custom unknown convention acquired a fallback, or resolved convention lost");
+            require(declaration.effectiveCallingConvention().equals(
+                row.convention().equals(Function.UNKNOWN_CALLING_CONVENTION_STRING) ? fallback : resolved),
+                "dynamic external default model lost");
         }
         require(diagnostics.stream().filter(s -> s.startsWith("Calling convention requires target ABI classification for ")).count() ==
             2 * expected.stream().filter(Expected::blocked).count(), "unmapped convention diagnostic multiplicity differs");

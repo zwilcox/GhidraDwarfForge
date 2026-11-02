@@ -1,5 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local implicit ARM convention correction:** extraction now preserves
+recorded unknown convention names separately from the default model Ghidra
+actually uses for dynamic storage. Twelve LE/BE8 base/VFP cases pass real
+export, structural validators and compiler-relative GDB behavior, including
+unresolved custom-storage and callback rejection without target-state changes.
+The old-package failing baseline is retained. CI wiring and full ABI acceptance
+remain pending; see `docs/ARM-PCS-CALL-PROFILE.md`. All #68–#71 requirements
+remain active.
+
 **CONFIRMED local ARM PCS call checkpoint; full ABI work remains open:**
 The bounded original-ELF attribute reader and per-signature PCS policy pass 2,986
 model checks and the complete 120-task model/build run. Four LE/BE8 base/VFP

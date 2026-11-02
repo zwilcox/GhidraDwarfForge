@@ -83,7 +83,7 @@ introduced. A unified corrected debugger profile remains follow-up work.
 
 ## Local evidence
 
-All paths below are in the `arm-pcs-profile` worktree. Current production Java
+All paths below are in the `arm-pcs-profile` worktree. The initial checkpoint Java
 is in `build/arm-pcs-profile/ghidra-v2`; its JAR SHA-256 is
 `23e069fc4029c81c40422514421e433da3cef29d5abfa58f5e717fd6c3b8f5d8`.
 The assembled ZIP SHA-256 is
@@ -115,12 +115,84 @@ classification passes the unchanged behavior oracle. Earlier harness failures
 (Java launch-banner accounting and whitespace before long readelf attributes)
 are retained with their logs. They are not exporter passes.
 
+## Implicit dynamic convention follow-up
+
+**CONFIRMED local correction:** Ghidra may record `unknown` while assigning
+noncustom parameter storage through the program default convention.
+`FunctionDB.updateParametersAndReturn` in the selected Ghidra 12.0.3 source
+explicitly uses this fallback. The previous candidate incorrectly treated the
+recorded name alone as an unmapped PCS and rejected otherwise valid VFP calls.
+The old-package failure is retained at
+`build/test-results/arm-pcs-profile/little.hard.ny59rgi7` and
+`build/arm-pcs-profile/implicit-default-baseline.log`.
+
+Extraction now carries a separate effective storage-model name alongside the
+unchanged recorded convention. A missing selected model falls back only for a
+recorded `unknown` function with dynamic storage. Unresolved custom storage
+has no such proof; function-pointer definitions have no function storage from
+which to derive it. Their independent restrictions remain intact. External
+function declarations use the same extraction rule. All compiler and target
+policy copies preserve the effective name, including the MIPS policies.
+
+The runtime harness exercises three modes for each LE/BE8 and base/VFP pair:
+explicit conventions, unknown recorded conventions with dynamic storage, and
+custom-storage/unknown-callback restriction controls. The guards distinguish
+the callable `vfp_double` function from its unresolved pointer type. Rejected
+calls must leave the captured registers and memory unchanged; natural arguments
+remain readable. Saved and reopened signatures retain their original recorded
+names and storage. The runtime fixture currently covers defined functions and
+callbacks; addressless declaration runtime coverage remains separate work.
+
+A raw-DWARF oracle initially required an explicit normal convention even for
+an unrestricted, recorded-unknown subprogram. The existing emitter omits it;
+GDB 17.1 `dwarf2/read.c` explicitly defaults it to `DW_CC_normal`. The corrected
+oracle allows absence only for the expected normal implicit subprograms and
+still requires explicit `DW_CC_nocall` for every restricted signature. Failed
+`implicit-matrix-v3` cases are retained; they are not counted as passes.
+
+`build/arm-pcs-profile/implicit-accepted-v3.json` lists the twelve passing
+case receipts. The v3 candidate JAR hash is
+`6cbe29a261c8913d96116f509dd2fbf9d160ef93fdcbf814a869a933c1a32616`;
+its assembled ZIP hash is
+`468e85961a6e78cbbf0bd5d035192514652ca24890c1f167fd825eb762ee127f`.
+The four explicit runs and eight corrected-oracle runs all pass real export,
+GNU/LLVM/strict validation, source-known GDB behavior, deterministic repeats
+and input/program/tool preservation. CI now includes all twelve cases;
+that wiring remains **PRESENT, UNVERIFIED** until its hosted run passes.
+
+The final source package is `build/arm-pcs-profile/ghidra-v4`, JAR SHA-256
+`e414c524ef288e0b8a0d2448759b919f48764fb4763f706b180547a02f9bb27c`,
+ZIP SHA-256
+`8504e0870ddd57e962912bae024f4e724e4188b8a3795fd8ad75c5c721d8181f`.
+`final-matrix-v4.{commands,outcomes}.json` records all fifteen passing runs:
+twelve ARM cases and three rebased x86-64 convention/function-pointer controls,
+including the independent Windows compiler-spec guard. The ARM receipts in
+`implicit-accepted-v4.json` contain 192 natural argument observations,
+118 typed returns, 234 successful injected calls and 78 unchanged-state
+rejections. These counts include both compiler and Forge observations.
+
+All 116 requested model/build tasks complete across `full-model-v3.log` and
+`full-model-v3-remainder.log`; `model-coverage-v3.json` records their coverage.
+The first run stopped at the AArch64 test's old signature reconstruction,
+which omitted the new effective field; the corrected test and remaining tasks
+pass. New ARM policy checks total 3,016; MIPS floating/aggregate/wide checks
+are 4,752/7,272/13,964, with distinct recorded/effective names proving metadata
+preservation. Workflow lint, architecture-neutrality and its negative controls,
+and whitespace checks pass. No native ABI signatures changed.
+
+Before the implicit correction, the broader ARM/Thumb exec, rebased PIE and
+rebased shared regressions also passed the v2 package; their commands/outcomes
+are `build/arm-pcs-profile/broader-arm-v2.{commands,outcomes}.json`. These do
+not prove implicit convention handling because their functions record explicit
+`default` conventions.
+
 ## Remaining acceptance
 
 **PLANNED / PRESENT, UNVERIFIED:** broaden real ELF/profile negative controls,
 addressless declarations, custom-storage/cancellation compositions, executable
 layouts and aggregate/mixed/HFA cases. Run the existing broader ARM runtime
-matrix against this candidate, including implicit default-convention recovery.
+matrix against the final candidate. Implicit default-convention recovery now
+has the distinct local evidence above.
 Confirm the newly wired hosted tests and complete exact-package host/target
 review before protected integration. All original rows in
 `TARGET-ABI-COMPLETION-PLAN.md` remain binding; no issue is closed here.

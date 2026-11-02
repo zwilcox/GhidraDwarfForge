@@ -31,21 +31,22 @@ public final class Arm32CallPolicy {
         var nodes = new ArrayList<TypeNode>();
         for (var function : model.functions()) {
             var restriction = restriction(types, function.returnType(), function.parameters(),
-                function.callingConvention(), function.variadic(), abi, cancelled);
+                function.effectiveCallingConvention(), function.variadic(), abi, cancelled);
             boolean unmapped = function.nonDefaultCallingConvention() && !restriction.isEmpty();
             functions.add(new FunctionSignature(function.name(), function.address(), function.returnType(),
                 function.parameters(), function.locals(), function.variadic(), function.noReturn(),
                 function.callingConvention(), function.signatureSource(), unmapped,
-                combine(function.debuggerCallRestriction(), restriction)));
+                combine(function.debuggerCallRestriction(), restriction), function.effectiveCallingConvention()));
             report(function.name(), function.nonDefaultCallingConvention(), restriction, diagnostic);
         }
         for (var declaration : model.functionDeclarations()) {
             var restriction = restriction(types, declaration.returnType(), declaration.parameters(),
-                declaration.callingConvention(), declaration.variadic(), abi, cancelled);
+                declaration.effectiveCallingConvention(), declaration.variadic(), abi, cancelled);
             boolean unmapped = declaration.nonDefaultCallingConvention() && !restriction.isEmpty();
             declarations.add(new FunctionDeclaration(declaration.key(), declaration.name(), declaration.returnType(),
                 declaration.parameters(), declaration.variadic(), declaration.noReturn(), declaration.callingConvention(),
-                declaration.signatureSource(), unmapped, combine(declaration.debuggerCallRestriction(), restriction)));
+                declaration.signatureSource(), unmapped, combine(declaration.debuggerCallRestriction(), restriction),
+                declaration.effectiveCallingConvention()));
             report(declaration.name(), declaration.nonDefaultCallingConvention(), restriction, diagnostic);
         }
         for (var node : model.types().nodes()) {

@@ -85,14 +85,27 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
         }
     }
 
+    /**
+     * The recorded convention remains analyst data. The effective convention is
+     * the resolved storage model, or empty when extraction cannot establish one.
+     */
     public record FunctionSignature(String name, long address, TypeRef returnType,
             List<Parameter> parameters, List<LocalVariable> locals, boolean variadic,
             boolean noReturn, String callingConvention, String signatureSource,
-            boolean nonDefaultCallingConvention, String debuggerCallRestriction) {
+            boolean nonDefaultCallingConvention, String debuggerCallRestriction,
+            String effectiveCallingConvention) {
+        public FunctionSignature(String name, long address, TypeRef returnType,
+                List<Parameter> parameters, List<LocalVariable> locals, boolean variadic,
+                boolean noReturn, String callingConvention, String signatureSource,
+                boolean nonDefaultCallingConvention, String debuggerCallRestriction) {
+            this(name, address, returnType, parameters, locals, variadic, noReturn, callingConvention,
+                signatureSource, nonDefaultCallingConvention, debuggerCallRestriction, callingConvention);
+        }
+
         public FunctionSignature {
             if (name == null || name.isBlank() || address < 0 || returnType == null ||
                     parameters == null || locals == null || callingConvention == null ||
-                    signatureSource == null || debuggerCallRestriction == null) {
+                    signatureSource == null || debuggerCallRestriction == null || effectiveCallingConvention == null) {
                 throw new IllegalArgumentException("invalid function signature");
             }
             parameters = List.copyOf(parameters);
@@ -123,15 +136,27 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
         }
     }
 
-    /** A curated external signature with an identity key, never an image address. */
+    /**
+     * A curated external signature with an identity key, never an image address.
+     * Effective convention has the same storage-model meaning as FunctionSignature.
+     */
     public record FunctionDeclaration(String key, String name, TypeRef returnType,
             List<Parameter> parameters, boolean variadic, boolean noReturn,
             String callingConvention, String signatureSource, boolean nonDefaultCallingConvention,
-            String debuggerCallRestriction) {
+            String debuggerCallRestriction, String effectiveCallingConvention) {
+        public FunctionDeclaration(String key, String name, TypeRef returnType,
+                List<Parameter> parameters, boolean variadic, boolean noReturn,
+                String callingConvention, String signatureSource, boolean nonDefaultCallingConvention,
+                String debuggerCallRestriction) {
+            this(key, name, returnType, parameters, variadic, noReturn, callingConvention, signatureSource,
+                nonDefaultCallingConvention, debuggerCallRestriction, callingConvention);
+        }
+
         public FunctionDeclaration {
             if (key == null || key.isBlank() || name == null || name.isBlank() ||
                     returnType == null || parameters == null || callingConvention == null ||
-                    signatureSource == null || signatureSource.isBlank() || debuggerCallRestriction == null) {
+                    signatureSource == null || signatureSource.isBlank() || debuggerCallRestriction == null ||
+                    effectiveCallingConvention == null) {
                 throw new IllegalArgumentException("invalid external function declaration");
             }
             parameters = List.copyOf(parameters);

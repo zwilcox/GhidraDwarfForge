@@ -26,6 +26,11 @@ def matched(name):
     return name.endswith('wide') or name.startswith('vfp' if profile['pcs'] == 'hard' else 'base')
 
 
+def callable_signature(name, pointer=False):
+    guarded = variant == 'forge' and profile.get('guardControls', False)
+    return matched(name) and not (guarded and (name == 'vfp_float' or (pointer and name == 'vfp_double')))
+
+
 def state():
     registers = ['pc', 'sp', 'lr'] + ['r' + str(n) for n in range(13)] + ['d' + str(n) for n in range(16)]
     return {'registers': {name: gdb.parse_and_eval('$' + name).bytes.hex() for name in registers},
@@ -50,7 +55,7 @@ try:
         observed = [convert(gdb.parse_and_eval(parameter)) for parameter in parameters]
         assert observed == expected, (name, observed, expected)
         row = {'name': name, 'pc': integer('$pc'), 'arguments': observed}
-        if matched(name):
+        if callable_signature(name):
             row['finish'] = gdb.execute('finish', to_string=True)
             row['return'] = convert(gdb.parse_and_eval('$'))
             assert row['return'] == sum(expected), row
@@ -66,7 +71,7 @@ try:
                 str(value) + ('LL' if name.endswith('wide') else '.0' if isinstance(value, int) else '')
                 for value in expected) + ')'
             before = state()
-            allowed = matched(name)
+            allowed = callable_signature(name, pointer)
             if not allowed and variant == 'compiler':
                 continue  # Wrong global PCS is retained in the independent compiler limitation harness.
             if not allowed:

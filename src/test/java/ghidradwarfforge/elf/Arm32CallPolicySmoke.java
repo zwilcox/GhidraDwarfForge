@@ -108,6 +108,7 @@ public final class Arm32CallPolicySmoke {
     }
 
     private static void policy(ElfImage elf, boolean hard) throws Exception {
+        implicitDefault(elf, hard);
         for (String convention : List.of("__stdcall", "__stdcall_softfp", "default", "unregistered")) {
             boolean known = !convention.equals("unregistered");
             boolean selectedHard = convention.equals("__stdcall") || convention.equals("default");
@@ -134,6 +135,37 @@ public final class Arm32CallPolicySmoke {
             }
             catch (CancellationException expected) { checks++; }
         }
+    }
+
+    private static void implicitDefault(ElfImage elf, boolean hard) throws Exception {
+        var input = model("float", "unknown", false, "", false);
+        var function = input.functions().getFirst();
+        var declaration = input.functionDeclarations().getFirst();
+        var functions = List.of(new FunctionSignature(function.name(), function.address(), function.returnType(),
+            function.parameters(), function.locals(), false, false, "unknown", "USER_DEFINED", false, "", "__stdcall"),
+            input.functions().get(1));
+        var declarations = List.of(new FunctionDeclaration(declaration.key(), declaration.name(), declaration.returnType(),
+            declaration.parameters(), false, false, "unknown", "USER_DEFINED", false, "", "__stdcall"));
+        var dynamic = new ProgramTypeModel(input.types(), functions, input.globals(), input.variableStorage(),
+            input.functionStatics(), declarations, input.lexicalScopes(), input.classScopes(), input.functionRelations());
+        var output = Arm32CallPolicy.apply(elf, dynamic, () -> false, message -> { });
+        require(output.functions().getFirst().debuggerCallsDisabled() == !hard &&
+            output.functionDeclarations().getFirst().debuggerCallsDisabled() == !hard,
+            "dynamic default PCS was not classified against the ELF consumer");
+        require(output.functions().getFirst().callingConvention().equals("unknown") &&
+            output.functionDeclarations().getFirst().callingConvention().equals("unknown"), "recorded unknown name rewritten");
+        require(output.functions().getFirst().effectiveCallingConvention().equals("__stdcall") &&
+            output.functionDeclarations().getFirst().effectiveCallingConvention().equals("__stdcall"), "effective model lost");
+        require(((SubroutineType) output.types().byKey().get("callback")).debuggerCallsDisabled(),
+            "unresolved function-pointer type borrowed an unrelated storage fallback");
+        var blocked = ghidradwarfforge.types.DebuggerCallRestrictions.applyAll(dynamic, "independent compiler guard",
+            () -> false, message -> { });
+        blocked = Arm32CallPolicy.apply(elf, blocked, () -> false, message -> { });
+        require(blocked.functions().getFirst().debuggerCallsDisabled() &&
+            blocked.functionDeclarations().getFirst().debuggerCallsDisabled() &&
+            blocked.functions().getFirst().effectiveCallingConvention().equals("__stdcall") &&
+            blocked.functionDeclarations().getFirst().effectiveCallingConvention().equals("__stdcall"),
+            "effective model erased independent restrictions");
     }
 
     private static void aggregateReturns(ElfImage elf) throws Exception {

@@ -1740,10 +1740,19 @@ jobs:
                   data="$RUNNER_TEMP/arm-gdb/build/gdb/data-directory"
               fi
               for pcs in softfp hard; do
-                  python3 src/test/integration/arm-pcs-profile.py "$GHIDRA_INSTALL_DIR" \
-                      --order "$order" --pcs "$pcs" --gdb "$gdb" --gdb-data "$data" \
-                      --qemu-arm "$RUNNER_TEMP/arm-qemu-aliases/build/qemu-arm" \
-                      --qemu-armeb "$RUNNER_TEMP/arm-qemu-aliases/build/qemu-armeb"
+                  for convention in explicit implicit guards; do
+                      options=()
+                      if [[ "$convention" != explicit ]]; then
+                          options+=(--implicit-default)
+                      fi
+                      if [[ "$convention" == guards ]]; then
+                          options+=(--guard-controls)
+                      fi
+                      python3 src/test/integration/arm-pcs-profile.py "$GHIDRA_INSTALL_DIR" \
+                          --order "$order" --pcs "$pcs" --gdb "$gdb" --gdb-data "$data" \
+                          --qemu-arm "$RUNNER_TEMP/arm-qemu-aliases/build/qemu-arm" \
+                          --qemu-armeb "$RUNNER_TEMP/arm-qemu-aliases/build/qemu-armeb" "${options[@]}"
+                  done
               done
           done
 
