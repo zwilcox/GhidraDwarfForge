@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local ARM aggregate storage controls:** all 48 LE/BE8 combinations
+of VFP HFA, base-PCS aggregate and mixed integer/float aggregate storage pass.
+GDB checks 582 exact typed aggregate values and 90 unavailable boundaries;
+compiler/raw comparisons, GNU/LLVM/pinned strict validation, deterministic
+repeats and original/program preservation pass. Three deliberate oracle errors
+are rejected at exact PCs; both default lifetime regressions and all five
+fixture inventories pass. See `docs/ARM-AGGREGATE-STORAGE-CONTROLS.md`.
+Additional layouts, exhausted-stack and failure/cancellation compositions,
+hosted integration and the full #68–#71 requirements remain open.
+
 **CONFIRMED local ARM HFA representation and lifetime correction:** the preceding
 package swaps BE8 two-float fields and loses a surviving LE aggregate after a
 result-register write. The candidate normalizes computed HFA members and uses
