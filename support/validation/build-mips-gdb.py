@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the pinned, unmodified MIPS debugger used by register-piece acceptance."""
+"""Build pinned, unmodified target debuggers used by register-piece acceptance."""
 import argparse
 import hashlib
 import json
@@ -20,6 +20,7 @@ def main():
     parser.add_argument('directory', type=Path, help='new scratch directory; never the system installation')
     parser.add_argument('--archive', type=Path, help='optional already downloaded, checksum-verified source')
     parser.add_argument('--jobs', type=int, default=2)
+    parser.add_argument('--target-profile', choices=('mips', 'arm32'), default='mips')
     args = parser.parse_args()
     if not 1 <= args.jobs <= 32:
         parser.error('--jobs must be between 1 and 32')
@@ -68,8 +69,10 @@ def main():
 
     for tool in ('gcc', 'g++', 'make', 'python3'):
         run(tool + '-version', [tool, '--version'])
+    target, targets = ('arm-linux-gnueabihf', 'arm-linux-gnueabihf') if args.target_profile == 'arm32' else (
+        'mips64-linux-gnu', 'mips-linux-gnu,mips64-linux-gnu')
     run('configure', [root / ('gdb-' + VERSION) / 'configure',
-        '--target=mips64-linux-gnu', '--enable-targets=mips-linux-gnu,mips64-linux-gnu',
+        '--target=' + target, '--enable-targets=' + targets,
         '--with-python=/usr/bin/python3', '--without-guile', '--without-debuginfod',
         '--disable-gdbtk', '--disable-tui', '--disable-werror', '--disable-binutils',
         '--disable-gas', '--disable-ld', '--disable-gprof', '--disable-gold', '--disable-sim'])
@@ -84,8 +87,9 @@ def main():
         executable_sha256 = hashlib.file_digest(stream, 'sha256').hexdigest()
     (root / 'receipt.json').write_text(json.dumps(dict(version=VERSION, sourceUrl=URL,
         sourceSha256=digest, executable=str(executable), executableSha256=executable_sha256,
-        dataDirectory=str(data), modifiedSource=False, systemInstallationChanged=False), indent=4) + '\n')
-    print('mips-gdb-build=PASS ' + str(root), flush=True)
+        dataDirectory=str(data), targetProfile=args.target_profile,
+        modifiedSource=False, systemInstallationChanged=False), indent=4) + '\n')
+    print(args.target_profile + '-gdb-build=PASS ' + str(root), flush=True)
 
 
 if __name__ == '__main__':

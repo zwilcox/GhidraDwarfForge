@@ -38,8 +38,7 @@ public final class DwarfTargetSmoke {
             ByteOrder.LITTLE_ENDIAN), "requires ELF64");
         expectFailure(() -> DwarfTarget.fromMetadata(183, 8,
             ByteOrder.BIG_ENDIAN), "big-endian producer mode has not been audited");
-        expectFailure(() -> DwarfTarget.fromMetadata(40, 4,
-            ByteOrder.BIG_ENDIAN), "big-endian producer mode has not been audited");
+        assertTarget(40, 4, ByteOrder.BIG_ENDIAN, "arm", "arm", false);
         expectFailure(() -> DwarfTarget.fromMetadata(8, 4, null),
             "ELF byte order is required");
         System.out.println("dwarf-target-smoke=PASS");

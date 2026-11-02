@@ -50,6 +50,7 @@ final class StackValueFlow {
     private Long localOffset;
     private boolean initializing;
     private boolean savedAssignments;
+    private boolean registersBigEndian;
 
 
     private StackValueFlow(Program program, Register pointer, AddressSpace memory, int bytes) {
@@ -57,6 +58,7 @@ final class StackValueFlow {
         this.pointer = pointer;
         this.memory = memory;
         this.bytes = bytes;
+        this.registersBigEndian = program.getLanguage().isBigEndian();
     }
 
     static List<StorageInterval> prove(Program program, Function function, Parameter parameter,
@@ -127,10 +129,12 @@ final class StackValueFlow {
         }
         Varnode incoming = storage.getFirstVarnode();
         Register original = exactRegister(program, incoming);
+        // A complete logical register can occupy an upper physical slice.
+        // Facts track its exact varnode bytes; overlapping outputs still kill
+        // those bytes, while disjoint writes need not discard the value.
         if (storage.isRegisterStorage() && (original == null ||
-                original.getLeastSignificantBitInBaseRegister() != 0 ||
                 original.getBaseRegister() == pointer)) return List.of();
-        var decoded = RegisterDefinitionFlow.decodedInstructions(program, function, true, monitor);
+        var decoded = RegisterDefinitionFlow.decodedInstructions(program, function, true, true, monitor);
         if (decoded.isEmpty()) return List.of();
         var calls = DirectLeafCalls.inspect(program, List.copyOf(decoded.values()), monitor);
         if (calls == null) return List.of();
@@ -170,6 +174,9 @@ final class StackValueFlow {
     private List<StorageInterval> acrossControlFlow(Function function, Map<Address, Instruction> decoded,
             Address definition, Set<Address> owners, Map<Address, Register> assignments,
             TargetRegisterMap registers, TaskMonitor monitor) throws CancelledException {
+        if (registers.registerStorageByteOrder() != null) {
+            registersBigEndian = registers.registerStorageByteOrder() == java.nio.ByteOrder.BIG_ENDIAN;
+        }
         if (!decoded.containsKey(function.getEntryPoint())) return List.of();
         Map<Address, Set<Address>> successors = new LinkedHashMap<>();
         Map<Address, Set<Address>> predecessors = new HashMap<>();
@@ -210,6 +217,13 @@ final class StackValueFlow {
             // reached, including a backedge to an earlier numeric address.
             if (owners.contains(address)) state.retireLocalValue();
             input.put(address, state.boundaryCopy());
+            if (RegisterDefinitionFlow.opaqueTerminalBoundary(decoded.get(address))) {
+                // Only the state before this instruction is observable in the
+                // invocation. Never interpret an opaque return as preserving
+                // its registers/memory or propagate any state after it.
+                if (!successors.get(address).isEmpty()) return List.of();
+                continue;
+            }
             if (!state.advance(decoded.get(address), address.equals(definition), monitor)) return List.of();
             Register assignment = assignments.get(address);
             if (assignment != null) {
@@ -244,6 +258,7 @@ final class StackValueFlow {
         result.localOffset = localOffset;
         result.calls = calls;
         result.savedAssignments = savedAssignments;
+        result.registersBigEndian = registersBigEndian;
         for (var entry : facts.entrySet()) {
             if (!entry.getKey().isUnique()) result.facts.put(entry.getKey(), entry.getValue());
         }
@@ -540,7 +555,8 @@ final class StackValueFlow {
     }
 
     private Address lowAddress(Varnode node) {
-        return node.getAddress().add(program.getLanguage().isBigEndian() ? node.getSize() - bytes : 0);
+        boolean bigEndian = node.isRegister() ? registersBigEndian : program.getLanguage().isBigEndian();
+        return node.getAddress().add(bigEndian ? node.getSize() - bytes : 0);
     }
 
     Storage location(TargetRegisterMap registers) {
@@ -549,7 +565,7 @@ final class StackValueFlow {
         for (Varnode node : ordered) {
             if (!VALUE.equals(facts.get(node))) continue;
             Register register = exactRegister(program, node);
-            if (register == null || register.getLeastSignificantBitInBaseRegister() != 0) continue;
+            if (register == null) continue;
             Storage mapped = GhidraVariableStorage.mappedRegister(register, bytes, registers, "tracked scalar");
             if (mapped instanceof RegisterStorage) return mapped;
         }

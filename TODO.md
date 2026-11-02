@@ -1,5 +1,40 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local load-boundary oracle correction:** hosted run `41375799121`
+reached the sectionless Thumb boundary fixture but its expected inventory omitted
+two primary mode function symbols. The corrected test independently checks all
+32 instruction bytes and both original section addresses, then requires exactly
+those two cues and the analyst alias. The exact hosted artifact passes raw
+inventory, six corruption controls and compiler/Forge GDB execution. Fresh
+ordinary, function-tag-conflict and mapping-conflict exports pass their distinct
+validator/runtime contracts. Production code is unchanged. See
+`docs/ARM-BE8-PROFILE.md`; exact-head hosted acceptance and all #68–#71
+requirements remain open.
+
+**CONFIRMED local shared-parameter oracle correction:** hosted run `41372370267`
+reached ARM shared export but retained an obsolete incoming-register-only
+expectation. The unchanged packaged exporter preserves a copied first argument
+and a spilled second argument. All 27 instruction boundaries of the exact hosted
+artifact pass source-known GDB value/gap checks; fresh shared/exec exports pass
+strict validators and their existing debugger workflows. Only the shared
+expectations change. See `docs/ARM-BE8-PROFILE.md`; a new hosted gate and all
+remaining #68–#71 requirements are still required.
+
+**CONFIRMED local fixture-inventory correction:** hosted run `41364588706`
+stopped target setup because the reviewed ARM call-reference C/assembly sources
+were missing from the explicit fixture inventory. Both names are now registered;
+all five target reproducibility checks pass, and an unregistered-source control
+still rejects before building. See `docs/ARM-BE8-PROFILE.md`. This repairs test
+setup only; a new hosted gate and the full #68–#71 requirements remain open.
+
+**CONFIRMED independent ARM call-reference progress:** mixed base/VFP compiler
+runs reproduce GDB's global PCS selection and QEMU 8.2.2's reversed BE8 floating
+register writes. A private one-line QEMU correction restores the D-register
+round trip and VFP injected-call values in both data orders; ordinary program
+calls and raw returns remain correct. This supplies a corrected consumer
+reference, not Forge acceptance. Per-function exporter classification and the
+full original ABI rows remain open. See `docs/research/ARM-PCS-CALL-REFERENCE.md`.
+
 **CONFIRMED local hosted-oracle correction:** run `41359234173` exposed a
 sectionless alias test that counted analyst aliases but omitted the newly enabled
 primary ARM mode function symbols. The corrected inventory imports independently
@@ -8,6 +43,25 @@ and mapping boundaries separately. It passes the exact hosted artifact, all six
 symbol-corruption controls, and nine fresh ARM/Thumb/mixed exec/PIE/rebased runs.
 Production code is unchanged; a new hosted run is required. See
 `docs/ARM-THUMB-EXTENDED-LAYOUTS.md`. Full #68–#71 scope remains open.
+
+**CONFIRMED local BE8 floating and upper-register correction:** the shared scalar
+flow preserves logical upper registers across disjoint writes and rejects
+overlap, reused slots and contradictory physical aliases. The BE8 target map
+separates Ghidra's little-endian physical register layout from big-endian data.
+Both base/VFP argument fixtures pass validators and debugger observations through
+frame release. BE8 register bit pieces require the separately pinned, unmodified
+GDB 17.1 validation profile: GDB 15.1 demonstrably displays a wrong upper value.
+The full local model suite passes. Hosted acceptance, injected calls/typed returns
+and the broader ABI requirements remain open; see `docs/ARM-BE8-PROFILE.md`.
+
+**CONFIRMED local BE8 scalar checkpoint; full ABI work remains open:** matching
+EABI5 BE8 ELF/Ghidra instruction/data encoding passes 61 model checks, 32 native
+lifetimes, strict validators and six compiler/Forge debugger runs. Repeated
+artifacts are byte-identical; input/program/package bytes are preserved. Saved
+parameter migration now also passes a shared terminal-boundary correction in
+both ARM data orders: the stack copy remains readable until frame release.
+Base/VFP calls/returns and broader storage/layout/control cases remain incomplete.
+See `docs/ARM-BE8-PROFILE.md`; #68–#71 remain open.
 
 **CONFIRMED local sectionless shared composition:** contiguous/split shared and
 rebased shared mixed-body cases pass 810 saved/live/failure debugger observations,

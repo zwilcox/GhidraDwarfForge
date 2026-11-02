@@ -4,12 +4,14 @@ import argparse
 from collections import Counter
 import importlib.util
 import json
+import os
 from pathlib import Path
 import re
 import struct
+import shutil
 from urllib.parse import unquote, urlsplit
 
-# Reuse the existing small ELF32 LE fixture reader and strict transcript decoder.
+# Reuse the small ELF32 fixture reader with explicit BE opt-in and strict transcripts.
 spec = importlib.util.spec_from_file_location("arm_fixture", Path(__file__).with_name("arm-thumb-mode-check.py"))
 model = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(model)
@@ -42,9 +44,12 @@ def main():
     parser.add_argument("module", type=Path)
     args = parser.parse_args()
     directory = args.directory.resolve()
-    reference = model.elf(directory / "pcs.reference")
-    original = model.elf(directory / "pcs.stripped")
-    assert original["header"][6] == reference["header"][6] == 0x05000400
+    reference = model.elf(directory / "pcs.reference", allow_big_endian=True)
+    original = model.elf(directory / "pcs.stripped", allow_big_endian=True)
+    big = original['data'][5] == 2
+    endian = ">" if big else "<"
+    assert original['data'][:16] == reference['data'][:16]
+    assert original["header"][6] == reference["header"][6] == (0x05800400 if big else 0x05000400)
     assert "Tag_ABI_VFP_args: VFP registers" in (directory / "compiler-attributes.stdout").read_text()
     assert model.section(reference, ".text")["data"] == model.section(original, ".text")["data"]
     if args.stage == "labels":
@@ -63,15 +68,19 @@ def main():
             for key in (*FUNCTIONS, *GLOBALS)))
         paths = [directory / "pcs.reference", directory / "pcs.stripped",
                  args.repository / "src/test/fixtures/arm-dynamic-pcs.c",
+                 args.repository / "src/test/fixtures/arm-pcs-start.S",
                  args.module / "lib/GhidraDwarfForge.jar", args.module / "ghidra_scripts/GhidraDwarfForge.java"]
         paths += [args.repository / "src/test/integration" / leaf for leaf in (
             "arm-dynamic-pcs-export.sh", "arm-dynamic-pcs-check.py", "arm-dynamic-pcs-gdb.py",
             "arm-thumb-mode-check.py", "ghidra_scripts/PrepareArmDynamicPcs.java")]
+        paths += [p for p in args.module.rglob('*') if p.is_file()]
+        paths.append(Path(shutil.which(os.environ.get('FORGE_PCS_GDB', 'gdb-multiarch'))).resolve())
         (directory / "protected-before.json").write_text(json.dumps(
             {str(path): model.snapshot(path) for path in paths}, indent=4) + "\n")
         return
     labels = json.loads((directory / "labels.json").read_text())
-    output = model.elf(directory / "pcs.dbg")
+    output = model.elf(directory / "pcs.dbg", allow_big_endian=True)
+    assert output['data'][:16] == original['data'][:16]
     assert output["header"][4] == output["header"][9] == 0
     assert output["header"][:4] == original["header"][:4] and output["header"][6] == original["header"][6]
     assert model.section(output, ".text")["data"] == model.section(original, ".text")["data"]
@@ -81,7 +90,7 @@ def main():
     assert {k: v for k, v in observations[0].items() if k != "phase"} == {
         k: v for k, v in observations[1].items() if k != "phase"}
     prep = observations[1]
-    assert prep["language"] == "ARM:LE:32:v8" and prep["compiler"] == "default"
+    assert prep["language"] == ("ARM:LEBE:32:v8LEInstruction" if big else "ARM:LE:32:v8") and prep["compiler"] == "default"
     origin = urlsplit(prep["exporterOrigin"])
     assert origin.scheme == "file" and not origin.netloc and not origin.query and not origin.fragment
     assert unquote(origin.path) == str((args.module / "lib/GhidraDwarfForge.jar").resolve())
@@ -112,7 +121,7 @@ def main():
     assert reports[0] == reports[1]
     report = reports[0]
     assert report["status"] == "PARTIAL" and report["validation"] == {"status": "NOT_RUN"}
-    assert report["target"] == {"architecture": "arm", "addressBits": 32, "byteOrder": "LITTLE_ENDIAN"}
+    assert report["target"] == {"architecture": "arm", "addressBits": 32, "byteOrder": "BIG_ENDIAN" if big else "LITTLE_ENDIAN"}
     assert report["native"]["libdwarfVersion"] == "2.3.2" and report["failure"] is None
     for role, leaf in (("input", "pcs.stripped"), ("output", "pcs.dbg"), ("source", "pcs.dbg.c")):
         path = directory / leaf
@@ -149,17 +158,19 @@ def main():
             assert "DW_AT_const_value" not in attrs
             omitted = [row for row in report["omittedLocations"] if row["function"] == full_name and row["variable"] == name(parameter)]
             if symbol == "vfp_sum":
-                assert "DW_AT_location" in attrs and len(omitted) == 1, (attrs, omitted)
-                omission = omitted[0]
-                assert omission["reason"] == "REGISTER_MODIFIED" and omission["kind"] == "PARAMETER"
-                assert int(omission["startAddress"], 16) == lifetime["end"]
-                assert int(omission["endAddress"], 16) == labels[symbol]["raw"] + labels[symbol]["size"]
-                location = re.fullmatch(r"(0x[0-9a-f]+) \(location list\)", attrs["DW_AT_location"])
-                assert location
-                offset = int(location[1], 16)
-                expression = bytes.fromhex("90 80 02" + (" 9d 20 20" if ordinal else ""))
-                expected = b"\x07" + struct.pack("<II", labels[symbol]["raw"], lifetime["end"]) + bytes([len(expression)]) + expression + b"\x00"
-                assert model.section(output, ".debug_loclists")["data"][offset:offset + len(expected)] == expected
+                assert "DW_AT_location" in attrs and not omitted, (attrs, omitted)
+                if ordinal == 0:
+                    location = re.fullmatch(r"(0x[0-9a-f]+) \(location list\)", attrs["DW_AT_location"])
+                    assert location
+                    offset = int(location[1], 16)
+                    expected = (b"\x07" + struct.pack(endian + "II", labels[symbol]["raw"], lifetime["end"]) +
+                        bytes.fromhex("03 90 80 02") + b"\x07" +
+                        struct.pack(endian + "II", lifetime["end"], labels[symbol]["raw"] + labels[symbol]["size"]) +
+                        bytes.fromhex("03 90 87 02 00"))
+                    assert model.section(output, ".debug_loclists")["data"][offset:offset + len(expected)] == expected
+                else:
+                    block = re.match(r"(\d+) byte block: ((?:[0-9a-f]{1,2}\s+)+)\(", attrs["DW_AT_location"])
+                    assert block and bytes(int(token, 16) for token in block[2].split()) == bytes.fromhex("90 80 02 9d 20 20")
             else:
                 assert not omitted, omitted
                 block = re.match(r"(\d+) byte block: ((?:[0-9a-f]{1,2}\s+)+)\(",
@@ -190,9 +201,17 @@ def main():
     (directory / "protected-after.json").write_text(json.dumps(after, indent=4) + "\n")
     assert (directory / "pcs.dbg").read_bytes() == (directory / "first.dbg").read_bytes()
     assert (directory / "pcs.dbg.c").read_bytes() == (directory / "first.dbg.c").read_bytes()
-    result = {"status": "PASS", "scope": "ARM-state mixed per-function base/VFP PCS in hard-float ET_EXEC; dynamic storage only; no debugger call/return ABI claim",
+    program_before = json.loads((directory / 'program-before.json').read_text())
+    project = directory / 'project'
+    program_after = {str(p.relative_to(project)): model.snapshot(p)['sha256']
+        for p in project.rglob('*') if p.is_file()}
+    changed = sorted(name for name in program_before.keys() | program_after.keys()
+        if program_before.get(name) != program_after.get(name))
+    assert set(changed) <= {'DynamicPcs.rep/idata/~index.bak', 'DynamicPcs.rep/idata/~journal.bak'}, changed
+    result = {"status": "PASS", "scope": "ARM-state mixed per-function base/VFP PCS in hard-float ET_EXEC; dynamic storage only; no debugger call/return ABI claim", "dataByteOrder": "big" if big else "little",
               "labels": labels, "observations": observations, "report": report, "dwarf": checked,
               "gdb": gdb_results, "protectedFiles": len(before),
+              "programBefore": program_before, "programAfter": program_after, "rotatedBackups": changed,
               "strict": json.loads((directory / "strict.log.check.json").read_text()),
               "output": model.snapshot(directory / "pcs.dbg"), "source": model.snapshot(directory / "pcs.dbg.c")}
     (directory / "result.json").write_text(json.dumps(result, indent=4) + "\n")

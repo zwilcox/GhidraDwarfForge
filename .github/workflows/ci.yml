@@ -488,10 +488,10 @@ jobs:
               matchedElfPrefixSmoke matchedElfAllocationsSmoke executableProgramBytesSmoke \
               debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke \
               syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
-              variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke \
+              variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke upperAliasValueFlowSmoke terminalStackValueSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke \
               stackFirstUseSmoke \
               opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
-              functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke arm32SectionModesSmoke ghidraArm32SectionModesSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke mipsN32ParameterAllocationSmoke delayedReturnPrefixSmoke truncatedStackDepthSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke mipsWideCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
+              functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke arm32SectionModesSmoke ghidraArm32SectionModesSmoke ghidraArmBe8ProfileSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke mipsN32ParameterAllocationSmoke delayedReturnPrefixSmoke truncatedStackDepthSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke mipsWideCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfAddressRangesSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
@@ -627,7 +627,7 @@ jobs:
                 libc6-dev-mips64el-cross libc6-dev-mipsn32-mips64el-cross)
               ;;
           esac
-          if [[ "$TARGET" == mips32be || "$TARGET" == mips32le ]]; then
+          if [[ "$TARGET" == mips32be || "$TARGET" == mips32le || "$TARGET" == arm32 ]]; then
               packages+=(build-essential python3-dev libgmp-dev libmpfr-dev
                 libexpat1-dev libncurses-dev texinfo)
           fi
@@ -637,6 +637,10 @@ jobs:
       - name: Build pinned MIPS register-piece debugger
         if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
         run: python3 support/validation/build-mips-gdb.py "$RUNNER_TEMP/mips-gdb"
+
+      - name: Build pinned ARM big-endian register-piece debugger
+        if: matrix.target == 'arm32'
+        run: python3 support/validation/build-mips-gdb.py "$RUNNER_TEMP/arm-gdb" --target-profile arm32
 
       - name: Cache Ghidra 12.0.3 archive
         uses: actions/cache@v6
@@ -731,6 +735,14 @@ jobs:
                     -PlibdwarfPath="$PWD/native-integration/libdwarf.so.2.3.2" \
                     -PlibdwarfpPath="$PWD/native-integration/libdwarfp.so.2.3.2" \
                     -PtargetProfile="$wide_profile" -PnativeIterations=16
+          fi
+          if [[ "$TARGET" == arm32 ]]; then
+              src/test/integration/run-isolated-native-smoke.sh \
+                  "build/test-results/native-producer/arm32be8" \
+                  ./gradlew nativeProducerSmoke \
+                    -PlibdwarfPath="$PWD/native-integration/libdwarf.so.2.3.2" \
+                    -PlibdwarfpPath="$PWD/native-integration/libdwarfp.so.2.3.2" \
+                    -PtargetProfile=arm32be8 -PnativeIterations=32
           fi
 
       - name: Install extension
@@ -1525,6 +1537,12 @@ jobs:
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2"
 
+      - name: BE8 scalar data and instruction encoding
+        if: matrix.target == 'arm32'
+        run: |
+          python3 src/test/integration/arm-be8-reference.py "$GHIDRA_INSTALL_DIR"
+          python3 src/test/integration/arm-be8-reference.py "$GHIDRA_INSTALL_DIR" --little-endian
+
       - name: Mixed ARM and Thumb function section mappings
         if: matrix.target == 'arm32'
         run: |
@@ -1675,7 +1693,11 @@ jobs:
 
       - name: ARM per-function dynamic base and VFP parameters
         if: matrix.target == 'arm32'
-        run: src/test/integration/arm-dynamic-pcs-export.sh "$GHIDRA_INSTALL_DIR"
+        run: |
+          src/test/integration/arm-dynamic-pcs-export.sh "$GHIDRA_INSTALL_DIR"
+          FORGE_PCS_BE8=1 FORGE_PCS_GDB="$RUNNER_TEMP/arm-gdb/build/gdb/gdb" \
+              FORGE_PCS_GDB_DATA="$RUNNER_TEMP/arm-gdb/build/gdb/data-directory" \
+              src/test/integration/arm-dynamic-pcs-export.sh "$GHIDRA_INSTALL_DIR"
 
       - name: Isolated scalar register bit-piece producer
         if: matrix.target == 'arm32'
@@ -1869,14 +1891,18 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: python3 src/test/integration/capture-primary-fixtures.py "$TARGET"
 
-      - name: Retain MIPS debugger build evidence
-        if: always() && (matrix.target == 'mips32be' || matrix.target == 'mips32le')
+      - name: Retain target debugger build evidence
+        if: always() && (matrix.target == 'mips32be' || matrix.target == 'mips32le' || matrix.target == 'arm32')
+        env:
+          TARGET: ${{ matrix.target }}
         run: |
-          mkdir -p build/test-results/mips-gdb
+          profile=mips
+          if [[ "$TARGET" == arm32 ]]; then profile=arm; fi
+          mkdir -p "build/test-results/$profile-gdb"
           shopt -s nullglob
-          files=("$RUNNER_TEMP/mips-gdb/"*.log "$RUNNER_TEMP/mips-gdb/"*.json)
+          files=("$RUNNER_TEMP/$profile-gdb/"*.log "$RUNNER_TEMP/$profile-gdb/"*.json)
           if [[ ${#files[@]} -gt 0 ]]; then
-              cp "${files[@]}" build/test-results/mips-gdb/
+              cp "${files[@]}" "build/test-results/$profile-gdb/"
           fi
 
       - uses: actions/upload-artifact@v7
@@ -2006,8 +2032,8 @@ jobs:
           & .\gradlew.bat dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
-            functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke arm32SectionModesSmoke ghidraArm32SectionModesSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke mipsN32ParameterAllocationSmoke delayedReturnPrefixSmoke truncatedStackDepthSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke mipsWideCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
-            registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
+            functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke arm32SectionModesSmoke ghidraArm32SectionModesSmoke ghidraArmBe8ProfileSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke mipsN32ParameterAllocationSmoke delayedReturnPrefixSmoke truncatedStackDepthSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke mipsWideCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
+            registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke upperAliasValueFlowSmoke terminalStackValueSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
             elfBuildIdSmoke exportReportClaimsSmoke matchedElfPrefixSmoke `
             matchedElfAllocationsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke executableProgramBytesSmoke `
             debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke 2>&1 |
@@ -2088,7 +2114,7 @@ jobs:
           'isolated-native-producer=PASS' |
             Add-Content -Path "$resultDirectory\native-producer-status.txt" -Encoding utf8
 
-          foreach ($wideProfile in @('mips64be', 'mips64le')) {
+          foreach ($wideProfile in @('mips64be', 'mips64le', 'arm32be8')) {
               & .\gradlew.bat nativeProducerSmoke `
                 "-PlibdwarfPath=$($consumer.FullName)" `
                 "-PlibdwarfpPath=$($producer.FullName)" `

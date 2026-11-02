@@ -192,6 +192,12 @@ final class RegisterDefinitionFlow {
     /** Physical decoder; the caller separately establishes saved function ownership. */
     static Map<Address, Instruction> decodedInstructions(Program program, Function function,
             boolean directCalls, TaskMonitor monitor) throws CancelledException {
+        return decodedInstructions(program, function, directCalls, false, monitor);
+    }
+
+    /** Optional terminal input states must never be used as callee effect summaries. */
+    static Map<Address, Instruction> decodedInstructions(Program program, Function function,
+            boolean directCalls, boolean terminalInputs, TaskMonitor monitor) throws CancelledException {
         if (function.getEntryPoint().getAddressSpace().isOverlaySpace()) return Map.of();
         var body = function.getBody();
         var uncovered = new AddressSet(body);
@@ -205,7 +211,7 @@ final class RegisterDefinitionFlow {
                     !body.contains(instruction.getAddress(), instruction.getMaxAddress()) ||
                     !uncovered.contains(instruction.getAddress(), instruction.getMaxAddress()) ||
                     GhidraVariableStorage.hasOpaqueRegisterEffects(program, instruction) ||
-                    !orderedControl(instruction, directCalls)) {
+                    !(orderedControl(instruction, directCalls) || terminalInputs && opaqueTerminalBoundary(instruction))) {
                 return Map.of();
             }
             uncovered.delete(instruction.getAddress(), instruction.getMaxAddress());
@@ -214,6 +220,18 @@ final class RegisterDefinitionFlow {
         if (!uncovered.isEmpty() ||
                 !GhidraVariableStorage.closedRegisterFlow(program, function, decoded, directCalls, monitor)) return Map.of();
         return java.util.Collections.unmodifiableMap(decoded);
+    }
+
+    static boolean opaqueTerminalBoundary(Instruction instruction) {
+        PcodeOp[] operations = instruction.getPcode();
+        if (!GhidraVariableStorage.ordinaryTerminalReturn(instruction, operations)) return false;
+        for (Address[] flows : new Address[][] {instruction.getDefaultFlows(), instruction.getFlows()}) {
+            if (flows != null && flows.length != 0) return false;
+        }
+        for (PcodeOp operation : operations) {
+            if (operation.getOpcode() == PcodeOp.CALLOTHER) return true;
+        }
+        return false;
     }
 
     /** No intra-instruction conditional execution or hidden control effects. */

@@ -214,6 +214,39 @@ tasks.register("ghidraTargetAgreementSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.GhidraTargetAgreementSmoke"
 }
 
+tasks.register("upperAliasValueFlowSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks full logical values in upper register aliases"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.UpperAliasValueFlowSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/upper-alias-value/settings").absolutePath
+}
+
+tasks.register("terminalStackValueSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks stack value states before opaque terminal effects"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.TerminalStackValueSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/terminal-stack/settings").absolutePath
+}
+
+tasks.register("ghidraArmBe8ProfileSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks BE8 ELF encoding against real data/instruction endian language descriptions"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.GhidraArmBe8ProfileSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/be8-profile/settings").absolutePath
+}
+
 tasks.register("typeGraphSmoke", JavaExec) {
     group = "verification"
     description = "Checks deterministic canonical and recursive type modeling"

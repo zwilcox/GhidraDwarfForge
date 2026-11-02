@@ -1202,7 +1202,7 @@ public final class GhidraVariableStorage {
     }
 
 
-    private static boolean ordinaryTerminalReturn(Instruction instruction,
+    static boolean ordinaryTerminalReturn(Instruction instruction,
             PcodeOp[] operations) {
         var flow = instruction.getFlowType();
         if (instruction.getFlowOverride() != FlowOverride.NONE ||
@@ -1245,6 +1245,21 @@ public final class GhidraVariableStorage {
                 requiredBits > Integer.MAX_VALUE) {
             return unavailable(OmissionReason.UNSUPPORTED_STORAGE,
                 description + " size does not fit its Ghidra register");
+        }
+        var logicalSlice = registers.registerSlices().get(register.getName());
+        if (logicalSlice != null) {
+            for (Register parent = register.getParentRegister(); parent != null; parent = parent.getParentRegister()) {
+                if (!parent.getName().equals(logicalSlice.parent())) continue;
+                if (register.getBitLength() != logicalSlice.bitSize() || requiredBits != logicalSlice.bitSize() ||
+                        parent.getBitLength() != logicalSlice.parentBits() || parent.getBaseRegister() != base ||
+                        !parent.getAddress().getAddressSpace().equals(register.getAddress().getAddressSpace()) ||
+                        register.getAddress().subtract(parent.getAddress()) != logicalSlice.byteOffset()) {
+                    break;
+                }
+                return registers.register(parent.getName(), logicalSlice.valueBitOffset(), Math.toIntExact(requiredBits));
+            }
+            return unavailable(OmissionReason.UNSUPPORTED_STORAGE,
+                description + " logical register slice disagrees with the loaded language");
         }
         var pair = registers.registerPairs().get(register.getName());
         if (pair != null) {
