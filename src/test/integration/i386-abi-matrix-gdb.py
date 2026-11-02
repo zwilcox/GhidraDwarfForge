@@ -1,9 +1,14 @@
 """Compiler-relative i386 ABI values, independently read carriers and exact SSE clobbers."""
+import importlib.util
 import json
 import os
 from pathlib import Path
 import struct
 import gdb
+
+spec = importlib.util.spec_from_file_location('diagnostics', Path(__file__).with_name('i386-abi-matrix-diagnostics.py'))
+diagnostics = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(diagnostics)
 
 case = Path(os.environ['I386_CASE'])
 variant = os.environ['I386_VARIANT']
@@ -158,7 +163,15 @@ try:
                     assert all(values[key] == arguments[key] for key in arguments if key != 'a'), row
             assert bytes(gdb.selected_inferior().read_memory(reg('pc'), 1)) == b'\xc3'
         finish = gdb.FinishBreakpoint(gdb.newest_frame(), internal=True)
-        gdb.execute('continue')
+        # Capture only the known compiler-vector consumer boundary, so a GDB
+        # internal exception is tied to this exact operation and retained.
+        # Forge and every other function keep the ordinary strict stderr gate.
+        capture_vector = variant == 'compiler' and name == 'vector_add'
+        if capture_vector:
+            finish.silent = True
+            vector_return_pc = memory(reg('esp'), '<I')[0]
+            vector_eax = reg('eax') & 0xffffffff
+        finish_output = gdb.execute('continue', to_string=True) if capture_vector else gdb.execute('continue')
         row['returned'] = decode(finish.return_value) if finish.return_value is not None else None
         if name == 'vector_add':
             row['rawReturned'] = xmm(0, True)
@@ -168,6 +181,16 @@ try:
             row['rawReturned'] = reg('eax')
         if 'rawReturned' in row:
             assert row['rawReturned'] == returned, row
+        if capture_vector:
+            assert reg('pc') == vector_return_pc and reg('eax') & 0xffffffff == vector_eax
+            unreadable = False
+            if finish_output:
+                try:
+                    gdb.selected_inferior().read_memory(reg('eax') & 0xffffffff, 16)
+                except gdb.MemoryError:
+                    unreadable = True
+            row['finishDiagnostic'] = diagnostics.vector_finish(variant, name, finish_output,
+                row['returned'], row['rawReturned'], returned, reg('eax') & 0xffffffff, unreadable)
         if variant == 'forge' and name in nondefault:
             assert row['returned'] is None, row
         elif variant == 'compiler' and name in ('vector_add', 'sse_parameters') and row['returned'] != returned:

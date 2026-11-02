@@ -41,6 +41,7 @@ def main(ghidra, baseline):
     scripts = ('PrepareI386AbiMatrix.java', 'AbiDecompilerFailureExport.java', 'CancelDuringElfCopy.java',
         'RebaseFixtureProgram.java')
     for p in [Path(__file__), HERE / 'i386-abi-matrix-gdb.py', HERE / 'i386-abi-matrix-export.py',
+            HERE / 'i386-abi-matrix-diagnostics.py',
             *(HERE / 'ghidra_scripts' / name for name in scripts), *case.iterdir(),
             *(baseline / name for name in ('profile.input', 'profile.reference', 'profile.dbg', 'profile.dbg.c'))]:
         if p.is_file():

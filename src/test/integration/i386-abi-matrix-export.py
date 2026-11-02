@@ -55,6 +55,7 @@ def main():
 
     fixture = source.parent / 'fixtures/i386-abi-matrix.c'
     protected = [fixture, Path(__file__).resolve(), source / 'i386-abi-matrix-gdb.py',
+        source / 'i386-abi-matrix-diagnostics.py', source / 'i386-abi-matrix-reference-controls.py',
         source / 'i386-abi-matrix-controls.py', source / 'i386-abi-matrix-negative.py',
         source / 'ghidra_scripts/PrepareI386AbiMatrix.java',
         source / 'ghidra_scripts/AbiDecompilerFailureExport.java', source / 'ghidra_scripts/CancelDuringElfCopy.java']
@@ -92,6 +93,7 @@ def main():
     os.environ.update(I386_CASE=str(case), I386_VARIANT='compiler')
     run('compiler-gdb', ['gdb', '-q', '-nx', '-batch', '-x', source / 'i386-abi-matrix-gdb.py'])
     assert json.loads((case / 'compiler-gdb.json').read_text())['status'] == 'PASS'
+    run('compiler-reference-controls', ['python3', source / 'i386-abi-matrix-reference-controls.py', case])
     project = case / 'project'
     project.mkdir()
     rebase = ['-postScript', 'RebaseFixtureProgram.java', '0x2000000'] if args.role == 'pie-rebased' else []

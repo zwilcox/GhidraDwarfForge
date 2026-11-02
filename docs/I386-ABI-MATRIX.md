@@ -76,6 +76,64 @@ remain unchanged. CI requires all four layouts, controls and retained logs.
 
 ## Local evidence
 
+### Hosted compiler-vector diagnostic correction
+
+**CONFIRMED:** PR150 run `41469749960`, x86-64 job `125365045287`,
+stopped before importing/exporting the new matrix. GDB 15.1 reported
+`Cannot access memory at address 0x1` while its Python finish breakpoint tried
+to decode the compiler's vector return. Its JSON otherwise recorded all eleven
+functions as passing, with the vector automatic return unavailable and the raw
+XMM0 return correct. The strict stderr check correctly rejected that run.
+Artifact `13157115518` retains the original compiler executable and logs.
+
+The consumer failure is reproducible with the unchanged four-byte vector body
+(`addps xmm1,xmm0; ret`). GDB's i386 array-return path reads through EAX;
+the function returns its real vector in XMM0. An incidental readable EAX
+produces a wrong automatic value, while EAX=1 produces the observed exception.
+This extends the already recorded compiler automatic-return limitation; it is
+not a newly validated typed vector return. The locally inspected GDB 17.1
+`gdb/i386-tdep.c` `i386_return_value` and
+`gdb/python/py-finishbreakpoint.c` agree with the runtime reproduction.
+
+The oracle now captures only the compiler-vector finish operation. An exact,
+single `gdb.MemoryError` is recorded in `finishDiagnostic` only when its address
+equals unchanged EAX, inferior memory at that address is independently
+unreadable, the automatic return is unavailable, the real return PC matches,
+and all four XMM0 values are correct. The breakpoint's routine stop message is
+silent so GDB 15.1 and 17.1 expose the same diagnostic boundary. Forge, all other
+functions and unrelated warnings/errors retain their strict gates. Source
+lookup and every existing argument/return/clobber check remain required.
+
+Each layout adds two owned compiler-reference controls: EAX=1 reproduces the
+known consumer failure while actual execution and all eleven functions pass;
+changing a vector argument must still fail the raw-value check. These controls
+verify the exact instruction bytes, alter registers only in their separate
+reference processes, and preserve executable bytes. Twelve parser controls
+reject other functions, Forge, wrong values/addresses, additional diagnostics
+and missing independent evidence. The old oracle reproduces the failing stderr
+gate; both GDB 15.1 and 17.1 pass the corrected controls.
+
+The final local full-matrix cases are `exec.0s4ggs5y`,
+`sectionless.v2su5qzf`, `pie.wifw3nsf` and `pie-rebased.4f21j2dj` under
+`build/test-results/i386-abi-matrix` in the `i386-reference-diagnostics`
+worktree. All sixteen normal/failure exports, four cancellations, sixteen
+wrong-location rejections and eight new reference controls pass. GNU, LLVM,
+pinned strict validation, original/program preservation and deterministic
+reruns pass. Workflow lint, Python compilation and diagnostic controls pass.
+The unchanged PR151 package has JAR SHA-256
+`30d90f1c3d754ffba93c750a00703e1792df9cdd15f04964d3528153b8b4a929`;
+all 106 production-source hashes match that tested package. Receipt:
+`build/i386-reference-diagnostics/validation.json`, SHA-256
+`88acadcc655eb2cc51622ab89c338360b639081b6d4e4bdab5ac0ac4a4e07342`.
+
+Retained failed setup attempts include the hook's initially late-bound
+`__file__`, a GDB 17.1 invocation missing its data directory, and its different
+routine breakpoint display before the silent-stop correction. Only the final
+cases above count as acceptance. Hosted validation, protected integration and
+the full original ABI requirements remain open.
+
+### Earlier matrix checkpoint
+
 Final installed JAR:
 `b1754a51b09ba93a99e3afc17fe2d9e7d70d0ffcfdbe707ad2a071e3e80e87ca`.
 Assembled package ZIP:

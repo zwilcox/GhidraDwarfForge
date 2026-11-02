@@ -1,5 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local hosted-i386 reference correction:** PR150's compiler-vector
+finish operation can dereference incidental EAX and emit a GDB memory error.
+The exact independently corroborated consumer failure is now retained as a
+reference limitation, with all Forge/value/error gates intact. Four layouts pass
+sixteen exports, four cancellations, sixteen wrong-location rejections and eight
+deterministic reference controls; GDB 15.1/17.1 controls and twelve diagnostic
+negatives pass. Production code is unchanged. See `docs/I386-ABI-MATRIX.md`.
+Hosted acceptance, protected integration and the full P2.3–P2.3c audit remain open.
+
 **CONFIRMED local i386 ABI-selection correction:** reserved ELF flags previously
 left debugger calls enabled. Nine real i386 selections now pass ordinary values,
 positive calls or unchanged-state rejection through names and callbacks. Three
