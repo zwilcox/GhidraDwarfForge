@@ -191,6 +191,29 @@ public final class AttachmentReceiptStoreSmoke {
         };
         reject(() -> AttachmentReceiptStore.read(path, wrongContract, () -> false));
         equal(after, AttachmentReceiptStore.read(path, host, () -> false));
+
+        Path refusedPath = root.resolve("host-replace-refused.json");
+        var refused = AttachmentReceiptStore.prepare(refusedPath, prepared(refusedPath), host, () -> false);
+        var rejectingHost = new Host() {
+            @Override public void replaceAtomic(Path stage, Path destination) throws IOException {
+                throw new IOException("host replacement refusal");
+            }
+        };
+        reject(() -> AttachmentReceiptStore.advance(refused, AttachmentReceipt.Phase.COMMITTED, null,
+            rejectingHost, () -> false));
+        equal(refused, AttachmentReceiptStore.read(refusedPath, host, () -> false));
+
+        Path changedMetadata = root.resolve("host-replace-metadata.json");
+        var initial = AttachmentReceiptStore.prepare(changedMetadata, prepared(changedMetadata), host, () -> false);
+        var changingHost = new Host() {
+            @Override public void replaceAtomic(Path stage, Path destination) throws IOException {
+                super.replaceAtomic(stage, destination);
+                Files.setLastModifiedTime(destination, java.nio.file.attribute.FileTime.fromMillis(1000));
+            }
+        };
+        var mismatch = reject(() -> AttachmentReceiptStore.advance(initial, AttachmentReceipt.Phase.COMMITTED, null,
+            changingHost, () -> false));
+        equal(true, mismatch instanceof AttachmentReceiptStore.PublicationFailure);
     }
 
     private static AttachmentReceipt prepared(Path path) {
@@ -354,6 +377,9 @@ public final class AttachmentReceiptStoreSmoke {
         }
         public void publishNew(Path stage, Path destination) throws IOException {
             new LinuxAtomicRename().publishNew(stage, destination);
+        }
+        public void replaceAtomic(Path stage, Path destination) throws IOException {
+            new LinuxAtomicRename().replaceAtomic(stage, destination);
         }
     }
 

@@ -617,3 +617,35 @@ actual namespace operations, concurrent/cancellation/lock controls and handle
 cleanup. Local compilation/transport passes; native execution, complete host
 admission and durability acceptance remain required. See
 [the operation contract](WINDOWS-FILE-RENAME.md).
+
+## Receipt replacement through the host
+
+**CONFIRMED locally:** advancing an existing receipt now uses the required
+Host `replaceAtomic` operation instead of bypassing the adapter with
+`Files.move`. Readback must match the entire staged fingerprint, including
+preservation metadata. A refusing host must leave the old receipt intact; a
+host that changes metadata during replacement causes a publication failure.
+
+The existing target-removal fault initially also intercepted recovery-receipt
+replacement after this change and correctly returned RECOVERY_REQUIRED. The
+fixture now distinguishes a target-only native failure (successful rollback)
+from a persistent failure that also prevents recording recovery (complete
+restored target/retained backup, but RECOVERY_REQUIRED). Neither outcome is
+relabelled to force a successful transaction claim.
+
+Actual Java21 runs compiled with `javac --release 21` pass receipt105, file75,
+target63, transaction532 and operation80 checks. Logs are under
+`build/test-results/receipt-host-replacement/*-java21.*`. The first direct
+Java21 launch against default-JDK25 Gradle test classes failed the bytecode
+version check; those classes were then rebuilt explicitly for Java21. The
+extension's production bytecode baseline remains Java21-compatible.
+
+`attachment-elf-controller.py` with the current built JAR, x86_64/exec fixture,
+actual Java21 and the supervised live validator passes fresh GNU/LLVM/pinned
+checks, runtime GDB discovery/value/CRC checks and rollback. Exact commands,
+inputs and outputs are retained under
+`build/test-results/receipt-host-replacement/controller-x86-exec`. Its Linux
+metadata host remains deliberately limited; this is no full production-host
+claim. The Windows Host fixture now adds native receipt preparation, phase
+update, raw descriptor preservation and exact readback. Hosted acceptance of
+that integration remains required.

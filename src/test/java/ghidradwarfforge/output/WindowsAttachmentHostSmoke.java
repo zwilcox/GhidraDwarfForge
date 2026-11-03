@@ -8,6 +8,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CancellationException;
 
 /** Actual store/host integration in an isolated JVM, using exclusively owned files. */
@@ -73,6 +75,32 @@ public final class WindowsAttachmentHostSmoke {
             facts.put("directory", host.directoryIdentity(root));
             facts.put("contract", host.contract());
             facts.put("durability", host.durability());
+            // Receipt-store fixture only: these sentinel files are not an ELF
+            // export or validator approval. Test phase updates and native metadata.
+            var claims = new LinkedHashMap<String, AttachmentReceipt.Artifact>();
+            claims.put("targetBefore", original.artifact());
+            var afterArtifact = installed.artifact();
+            claims.put("targetAfter", afterArtifact);
+            claims.put("originalBackup", backup.artifact());
+            for (String role : new String[] { "sidecar", "source", "exportReport", "validationEvidence" }) {
+                Path file = root.resolve("receipt-fixture-" + role);
+                Files.writeString(file, "receipt-store fixture " + role, StandardOpenOption.CREATE_NEW);
+                claims.put(role, AttachmentFileStore.observe(file, host, () -> false).artifact());
+            }
+            Path receiptPath = root.resolve("receipt-store-only.json");
+            var receipt = new AttachmentReceipt(UUID.randomUUID().toString(), AttachmentReceipt.Mode.INITIAL,
+                AttachmentReceipt.Phase.PREPARED, receiptPath.toString(), "owned-append-v1",
+                host.contract(), host.durability(), 0, claims, null);
+            var prepared = AttachmentReceiptStore.prepare(receiptPath, receipt, host, () -> false);
+            var receiptMetadata = metadata.inspect(receiptPath, () -> false);
+            var committed = AttachmentReceiptStore.advance(prepared, AttachmentReceipt.Phase.COMMITTED, null, host, () -> false);
+            require(committed.fingerprint().metadataSha256().equals(prepared.fingerprint().metadataSha256()),
+                "receipt update changed preservation metadata");
+            require(!committed.fingerprint().identity().equals(prepared.fingerprint().identity()), "receipt did not replace owned stage");
+            require(metadata.inspect(receiptPath, () -> false).preservation().equals(receiptMetadata.preservation()),
+                "receipt update changed raw security descriptor");
+            require(AttachmentReceiptStore.read(receiptPath, host, () -> false).equals(committed), "receipt readback differs");
+            facts.put("receiptStoreOnly", Map.of("prepared", prepared, "committed", committed));
             var observer = new WindowsFileMetadata();
             for (int i = 0; i < 32; i++) host.inspect(target);
             long handles = observer.processHandleCount();

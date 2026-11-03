@@ -41,3 +41,9 @@ Still required: native acceptance, receipt/coordinator integration and fault
 coverage, Windows sharing-lock behavior under the full host, documented crash
 recovery tests, complete Linux host, public opt-in controls, real exported ELF/
 GDB refresh/discovery acceptance and the final protected integration gate.
+
+The fixture additionally exercises receipt preparation and atomic phase update
+through the host, comparing complete fingerprints and raw descriptors. These
+receipt-store sentinel records are explicitly test fixtures, not valid ELF
+exports or validator approvals. Actual Linux regression and GDB evidence for
+the shared receipt change is recorded in `ATTACHMENT-TRANSACTION-PROTOCOL.md`.

@@ -8,7 +8,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -51,6 +50,12 @@ public final class AttachmentReceiptStore {
          * links and make the prepared recovery record unreadable.
          */
         void publishNew(Path stage, Path destination) throws IOException;
+        /**
+         * Replace an observed existing record/target in one atomic namespace
+         * operation, preserving the stage's complete supported metadata. No
+         * copy fallback. Failure after mutation requires reconciliation.
+         */
+        void replaceAtomic(Path stage, Path destination) throws IOException;
         /** A failure must propagate; implementations must document namespace durability. */
         void syncDirectory(Path directory) throws IOException;
     }
@@ -201,7 +206,7 @@ public final class AttachmentReceiptStore {
                 host.publishNew(stage, path);
             }
             else {
-                Files.move(stage, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+                host.replaceAtomic(stage, path);
             }
             hook.at(Boundary.AFTER_PUBLICATION, stage, path);
             // After namespace mutation, finish reconciliation without allowing a
@@ -209,7 +214,7 @@ public final class AttachmentReceiptStore {
             host.syncDirectory(path.getParent());
             State installed = read(path, host, () -> false);
             if (!installed.receipt().equals(next) || !installed.sha256().equals(sha256(bytes)) ||
-                    !installed.fingerprint().identity().equals(stagedFingerprint.identity())) {
+                    !installed.fingerprint().equals(stagedFingerprint)) {
                 throw new IOException("published receipt differs from the owned staged record");
             }
             return installed;

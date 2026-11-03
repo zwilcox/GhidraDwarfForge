@@ -357,6 +357,10 @@ public final class AttachmentTransactionSmoke {
         var fixture = fixture(root, "missing-target", false);
         var host = new Host() {
             @Override public void replaceAtomic(Path stage, Path target) throws IOException {
+                if (!target.equals(fixture.snapshots().get("targetBefore").path())) {
+                    super.replaceAtomic(stage, target);
+                    return;
+                }
                 Files.move(target, target.resolveSibling("retained-native-original"));
                 throw new IOException("injected native failure after removal of original name");
             }
@@ -364,6 +368,18 @@ public final class AttachmentTransactionSmoke {
         var result = AttachmentTransaction.commit(fixture.request(), host, () -> false);
         rolledBack(fixture, result);
         retained(fixture);
+
+        var repeated = fixture(root, "missing-target-and-receipt-failure", false);
+        var persistentFailure = new Host() {
+            @Override public void replaceAtomic(Path stage, Path target) throws IOException {
+                Files.move(target, target.resolveSibling("retained-native-original"));
+                throw new IOException("injected native failure also affects recovery receipt");
+            }
+        };
+        var incomplete = AttachmentTransaction.commit(repeated.request(), persistentFailure, () -> false);
+        equal(AttachmentReceipt.Phase.RECOVERY_REQUIRED, incomplete.outcome());
+        equal(repeated.snapshots().get("targetBefore").digest(), incomplete.observedTarget().digest());
+        retained(repeated);
     }
 
     private static void rolledBack(Fixture fixture, AttachmentTransaction.Result result) throws Exception {

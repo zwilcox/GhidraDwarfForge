@@ -1,5 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local #72 receipt integration:** receipt updates now use the
+mandatory host atomic-replacement operation and verify the full installed
+fingerprint. Actual Java21 receipt/file/target/transaction/operation suites pass
+105/75/63/532/80 checks, including persistent recovery-record failure. A fresh
+real x86-64 exporter-artifact replay passes GNU/LLVM/pinned validation and GDB
+attachment/CRC behavior with the limited Linux test host. Windows Host receipt
+coverage is added but remains **PRESENT, UNVERIFIED**. See
+`docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`.
+
 **CONFIRMED #72 volume component:** native Windows job41634160584 at
 `380d272` passes exact-source artifact review, native/C#/Java volume identity,
 flush/refusal checks and 128 stable handle cycles. The new complete Host/store
