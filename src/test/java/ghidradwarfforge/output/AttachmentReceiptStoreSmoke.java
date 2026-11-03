@@ -336,11 +336,7 @@ public final class AttachmentReceiptStoreSmoke {
             catch (java.security.NoSuchAlgorithmException impossible) { throw new AssertionError(impossible); }
         }
         public String directoryIdentity(Path path) throws IOException {
-            var attributes = Files.readAttributes(path, "unix:dev,ino,mode", LinkOption.NOFOLLOW_LINKS);
-            if ((((Number) attributes.get("mode")).intValue() & 0170000) != 0040000) {
-                throw new IOException("expected directory");
-            }
-            return attributes.get("dev") + ":" + attributes.get("ino");
+            return new LinuxDirectorySync().inspect(path, () -> false).identity();
         }
         public void preserveMetadata(Path source, AttachmentReceiptStore.Fingerprint expected, Path stage)
                 throws IOException {
@@ -352,9 +348,8 @@ public final class AttachmentReceiptStoreSmoke {
             }
         }
         public void syncDirectory(Path path) throws IOException {
-            try (FileChannel directory = FileChannel.open(path, StandardOpenOption.READ)) {
-                directory.force(true);
-            }
+            var directory = new LinuxDirectorySync();
+            directory.sync(path, directory.inspect(path, () -> false), () -> false);
             syncs++;
         }
         public void publishNew(Path stage, Path destination) throws IOException {

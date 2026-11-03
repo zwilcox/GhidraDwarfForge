@@ -1,10 +1,13 @@
 # Windows opened-file metadata
 
-**PRESENT, UNVERIFIED on native Windows:** `WindowsFileMetadata` implements
-opened-handle identity and accessible metadata inspection/application. The
-extension and isolated Java probe compile; the Windows C ABI assertions
-cross-compile. Those checks do not prove Windows runtime behavior. The native
-Windows CI job runs the probe before building the producer libraries.
+**CONFIRMED on native Windows:** `WindowsFileMetadata` passes the isolated
+Java 21/C ABI harness in run 41601490096 at `0e2d404`, including 13 independently
+observed snapshots, all four inheritance/attribute application profiles,
+negative/cancellation controls and 128 native handle-lifetime cycles. Artifact
+13215196834 was downloaded and reviewed: raw provenance hashes match; retained
+source matches Git after Windows checkout newline conversion; probe classes
+are Java 21. The independent C# native security/stream/file-ID observations
+match the Java values. See [the receipt](evidence/windows-metadata-41601490096.json).
 
 This is a primitive for A1 in the [completion ledger](DEBUG-LOADING-COMPLETION-PLAN.md),
 not a complete attachment host or permission to replace an executable. A1–A7
@@ -70,7 +73,13 @@ extension/test compilation, the cross-compiled C contract and a portable
 PowerShell parser/process-capture check on Linux. None substitutes for the
 native Windows run or the complete Linux/Windows attachment acceptance matrix.
 
-## First native attempt and Unicode correction
+## Historical native attempts
+
+The attempts below record failures and their resolutions. Their pending
+statements are **HISTORICAL**; the current primitive acceptance is above.
+They do not imply that complete host admission or durability is implemented.
+
+### First native attempt and Unicode correction
 
 Run `41597206175` at `961acfc` passed the native Windows C ABI contract and
 isolated Java compilation. It failed before the first metadata inspection:
@@ -87,7 +96,7 @@ name/size observations are also compared with the Java snapshot. Actual Java
 and extension build pass. Corrected native Windows behavior remains pending.
 This is a test transport correction, not a product CLI encoding claim.
 
-## Inheritance-control mismatch
+### Inheritance-control mismatch
 
 Run `41597816863` at `13f45d4` proves the UTF-8 transport and first native
 inspection against independent .NET/C# observations, including data streams.

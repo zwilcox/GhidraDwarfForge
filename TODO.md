@@ -1,19 +1,24 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local #72 directory operations:** the production Linux primitive
+now supplies opened-directory/mount identity and explicit fsync with changed-path
+refusal. The independent C/Java 21 harness passes 494 assertions and 128 cleanup
+cycles. Receipt/backup/target/transaction/operation suites and a real live-validator/
+GDB replay pass using these calls. Full host admission and durability acceptance
+remain incomplete; see `docs/LINUX-DIRECTORY-SYNC.md`.
+
 **CONFIRMED local #72 Linux replacement integration:** commit/rollback,
 refresh and crash-recovery tests now use the production `renameat2` replacement
 primitive. Actual Java 21 suites and a real x86-64 live-validator/GDB/CRC replay
 pass. This supplies namespace replacement, not complete metadata admission or
 host durability. See `docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`.
 
-**CONFIRMED native Windows #72 metadata application cases:** run 41600700215
-passes legacy/protected/modern ACL copying, readonly/hidden attributes, exact
-independent readback and stale/cancellation/link/stream/lock controls. The final
-handle-lifetime probe failed to start because its PowerShell argument array
-became a string; the corrected runner passes local normal/interpreted Java 21
-transport tests, with native handle acceptance pending. This is not a complete
-host: SACLs/EAs, visibility policy, durability and public CLI/GUI remain open.
-See `docs/WINDOWS-FILE-METADATA.md`.
+**CONFIRMED native Windows #72 metadata acceptance:** run 41601490096 at
+`0e2d404` passes all four ACL/attribute application profiles, 13 independent
+snapshots, negative/cancellation cases and 128 handle-lifetime cycles. Raw
+artifact/source/dependency/Java 21 evidence was reviewed; see
+`docs/WINDOWS-FILE-METADATA.md`. The failed prior runs remain failed. SACLs/EAs,
+visibility policy, full host durability and public controls are still required.
 
 **CONFIRMED local #72 Linux metadata primitive:** `LinuxFileMetadata` now reads
 native opened-file identity and bounded visible attributes, and applies ordinary

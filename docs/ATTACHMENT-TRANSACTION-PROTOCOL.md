@@ -597,3 +597,12 @@ with the new operation. Evidence: `build/test-results/linux-native-replacement/`
 The metadata adapters in these tests remain explicitly limited. Full Linux/
 Windows host admission, durability acceptance and public CLI/GUI are still
 required. No ELF/DWARF or default-export behavior changed.
+
+## Production Linux directory identity and flush
+
+**CONFIRMED locally:** the shared transaction test host now delegates directory
+identity and flush to `LinuxDirectorySync`, retaining opened directory/mount
+checks and propagating native errors. The standalone independent C/Java 21
+harness, all five transaction suites and the real x86-64 live-validator/GDB
+replay pass. This supplies a required host mechanism, not complete filesystem
+admission or power-loss acceptance. See [the contract and commands](LINUX-DIRECTORY-SYNC.md).

@@ -1,6 +1,6 @@
 # Linux opened-file metadata
 
-**CONFIRMED locally:** `LinuxFileMetadata` is a production-code primitive for
+**CONFIRMED locally and on hosted Linux:** `LinuxFileMetadata` is a production-code primitive for
 native inspection and private-stage metadata application. It is deliberately
 not an `AttachmentOperation.Host`, admission decision or public action. A1 in
 the [completion ledger](DEBUG-LOADING-COMPLETION-PLAN.md) remains incomplete.
@@ -102,7 +102,11 @@ bridge, and the failed evidence remains retained. Production serialization was
 not involved. `run-v2`, `run-v3` and the final strengthened run pass.
 
 The extension-build CI job now runs this isolated harness after building the
-production JAR. Hosted execution of these new sources is **PRESENT, UNVERIFIED**.
+production JAR. Hosted run 41597206175 passes all eleven observations, supplementary-group
+application and 128 descriptor cycles. Artifact 13213530428 was independently
+reviewed against retained source/dependency hashes, actual Java 21 and raw
+native observations. The archive SHA-256 is
+`37705fdf37c31ee230b9773d81567cd7b7666d71dadbb58af9264ba0ebb4de03`.
 The extension build, workflow lint, architecture isolation and diff checks pass
 locally. There is no new Ghidra native call, target ELF/DWARF change, public host
 support or complete metadata-preservation claim from this checkpoint.
