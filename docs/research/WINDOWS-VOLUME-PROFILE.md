@@ -1,5 +1,12 @@
 # Opened Windows volume profile experiment
 
+**CONFIRMED native experiment:** completed Windows job41632042195 at
+`77a3c0f` passes the GUID-root/fixed-drive experiment, independent C# volume-ID
+agreement and 128 cycles with 57 handles before/after. Archive/source review is
+recorded in `../evidence/windows-security-raw-ace-41632042195.json`. This validates
+the native experiment only; production JNA admission and recovery remain open.
+The earlier pending description below records the pre-execution checkpoint.
+
 **PRESENT, UNVERIFIED on Windows:** the native directory fixture has an explicit
 `--volume-profile` mode. It cross-compiles with warnings as errors; the updated
 PowerShell harness parses. The ordinary directory fixture keeps its existing

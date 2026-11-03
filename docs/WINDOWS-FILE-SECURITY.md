@@ -201,3 +201,30 @@ Before/after states and completed profile results are now retained immediately,
 even if a later profile fails. Java probe exceptions with suppressed cleanup
 failures are rejected by the harness. Native validation of these corrections
 and all staged metadata cases remains pending.
+
+## Raw inherited ACE preservation defect
+
+**CONFIRMED:** the completed Windows job41632042195 at `77a3c0f` passes
+its original assertions, including protected-DACL application, ten refusals and
+128 full-security cleanup cycles. Independent raw artifact review found that
+the inherited case changes three ACE flags from `0` to `INHERITED_ACE (0x10)`.
+The ordinary GetSecurityInfo view synthesizes those flags for the source, so
+its comparison accepts the changed stage. The raw GetKernelObjectSecurity
+source and stage disagree. The protected case matches byte for byte.
+
+The receipt `evidence/windows-security-raw-ace-41632042195.json` records archive
+SHA-256 verification, all 27 retained source comparisons, exact descriptor bytes
+and changed offsets. A green job therefore does not establish complete metadata
+preservation. Prior component observations retain their original scope.
+
+The composed attachment path now supplies the complete kernel descriptor to
+the existing legacy SetFileSecurityW branch, rather than writing synthesized
+GetSecurityInfo bytes. The fields mask still requests only owner/group/DACL.
+Complete raw descriptor equality is required in production preservation and
+in the native integration harness. The ordinary metadata-only API retains its
+existing contract; it is not sufficient for complete attachment admission.
+
+Local `javac --release 21`, `./gradlew buildExtension` with Ghidra12.0.3,
+PowerShell AST parsing, architecture neutrality and whitespace checks pass.
+The correction's actual Windows execution is **PRESENT, UNVERIFIED** until a
+new hosted run succeeds. No public attachment or privilege policy is selected.

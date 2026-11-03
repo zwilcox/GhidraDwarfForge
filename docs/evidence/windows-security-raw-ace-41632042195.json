@@ -1,0 +1,150 @@
+{
+    "status": "REVIEW FOUND raw inherited ACE preservation defect despite successful Windows job",
+    "head": "77a3c0f029e026f195eb5157e81f7cde302fb994",
+    "run": 41632042195,
+    "artifactId": 13229001834,
+    "artifactSha256": "d158efc17c5d4811bc1b8fbdce718c0ea5efe5dc4f56f6f4cd6b872ef82eb3ec",
+    "sourceFilesVerified": 27,
+    "profiles": [
+        {
+            "profile": "inherited",
+            "highLevelPreservation": true,
+            "rawDescriptorEqual": false,
+            "rawDifferences": [
+                {
+                    "offset": 73,
+                    "before": 0,
+                    "after": 16
+                },
+                {
+                    "offset": 97,
+                    "before": 0,
+                    "after": 16
+                },
+                {
+                    "offset": 117,
+                    "before": 0,
+                    "after": 16
+                }
+            ],
+            "sourceRaw": "01000480140000002400000000000000400000000102000000000005200000002002000001050000000000051500000039b56eb772b843da7008a7f70102000002004c000300000000001800ff011f000102000000000005200000002002000000001400ff011f0001010000000000051200000000001800a900120001020000000000052000000021020000",
+            "stageRaw": "01000480140000002400000000000000400000000102000000000005200000002002000001050000000000051500000039b56eb772b843da7008a7f70102000002004c000300000000101800ff011f000102000000000005200000002002000000101400ff011f0001010000000000051200000000101800a900120001020000000000052000000021020000"
+        },
+        {
+            "profile": "protected",
+            "highLevelPreservation": true,
+            "rawDescriptorEqual": true,
+            "rawDifferences": [],
+            "sourceRaw": "01000494140000002400000000000000400000000102000000000005200000002002000001050000000000051500000039b56eb772b843da7008a7f70102000002004c000300000000001800ff011f000102000000000005200000002002000000001400ff011f0001010000000000051200000000001800a900120001020000000000052000000021020000",
+            "stageRaw": "01000494140000002400000000000000400000000102000000000005200000002002000001050000000000051500000039b56eb772b843da7008a7f70102000002004c000300000000001800ff011f000102000000000005200000002002000000001400ff011f0001010000000000051200000000001800a900120001020000000000052000000021020000"
+        }
+    ],
+    "expectedRefusals": 10,
+    "securityCycles": "windows-security-handles=PASS cycles=128 baseline=294",
+    "nativeVolumeExperiment": {
+        "status": "OBSERVED",
+        "root": "\\\\?\\Volume{bd34e630-0000-0000-0000-100000000000}\\",
+        "native": {
+            "status": "OBSERVED",
+            "volume128": "d4ae7603ae75de84",
+            "fileId128": "1ad60000000001000000000000000000",
+            "fileSystemUtf16": "004e005400460053",
+            "volumeRootUtf16": "005c005c003f005c0056006f006c0075006d0065007b00620064003300340065003600330030002d0030003000300030002d0030003000300030002d0030003000300030002d003100300030003000300030003000300030003000300030007d005c",
+            "driveType": 3,
+            "volumeRootIdentityMatched": true,
+            "volumeProfileCycles": 128,
+            "volumeSerial": 2926960260,
+            "maximumNameUnits": 255,
+            "fileSystemFlags": 65482495,
+            "beforeRename": [
+                {
+                    "access": 128,
+                    "opened": true,
+                    "openError": 0,
+                    "flushed": false,
+                    "flushError": 5
+                },
+                {
+                    "access": 1073741952,
+                    "opened": true,
+                    "openError": 0,
+                    "flushed": true,
+                    "flushError": 0
+                },
+                {
+                    "access": 3221225472,
+                    "opened": true,
+                    "openError": 0,
+                    "flushed": true,
+                    "flushError": 0
+                }
+            ],
+            "afterRename": [
+                {
+                    "access": 128,
+                    "opened": true,
+                    "openError": 0,
+                    "flushed": false,
+                    "flushError": 5
+                },
+                {
+                    "access": 1073741952,
+                    "opened": true,
+                    "openError": 0,
+                    "flushed": true,
+                    "flushError": 0
+                },
+                {
+                    "access": 3221225472,
+                    "opened": true,
+                    "openError": 0,
+                    "flushed": true,
+                    "flushError": 0
+                }
+            ],
+            "fileFlush": true,
+            "readOnlyFileError": 5,
+            "handleCycles": 128,
+            "handlesBefore": 57,
+            "handlesAfter": 57,
+            "powerLossRecoveryProven": false
+        },
+        "independentRoot": {
+            "path": "\\\\?\\Volume{bd34e630-0000-0000-0000-100000000000}\\",
+            "followLeaf": false,
+            "desiredAccess": 0,
+            "shareMode": 7,
+            "creationDisposition": 3,
+            "flags": 35651584,
+            "identityLifetime": "Opened-handle observation only; no enduring identity or lock claim",
+            "openWin32Error": 0,
+            "status": "OBSERVED",
+            "attributes": 22,
+            "links": 1,
+            "size": 4096,
+            "legacyVolume": "ae75de84",
+            "legacyFileId": "0005000000000005",
+            "legacyIdentityScope": "64-bit file ID is not guaranteed unique on ReFS; no fallback acceptance",
+            "creationTime": 134381806317501619,
+            "accessTime": 134381807228570037,
+            "writeTime": 134381807228570037,
+            "attributeTagStatus": "OBSERVED",
+            "reparseTag": 0,
+            "tagAttributes": 22,
+            "secondSimultaneousHandle": {
+                "openWin32Error": 0,
+                "status": "OBSERVED",
+                "legacyVolume": "ae75de84",
+                "legacyFileId": "0005000000000005",
+                "links": 1,
+                "volume128": "d4ae7603ae75de84",
+                "fileId128": "05000000000005000000000000000000"
+            },
+            "fileIdStatus": "OBSERVED",
+            "volume128": "d4ae7603ae75de84",
+            "fileId128": "05000000000005000000000000000000"
+        },
+        "scope": "Native opened-volume profile experiment on owned local directory; no JNA admission or power-loss claim"
+    },
+    "interpretation": "GetSecurityInfo ordinary comparison passed while the complete GetKernelObjectSecurity descriptor changed all three inherited ACE flags from 0 to 0x10. Protected DACL raw bytes matched. New attachment path must write the raw legacy descriptor and require complete raw equality. This run does not establish correct full metadata preservation or public attachment. Native volume experiment passed; no power-loss claim."
+}

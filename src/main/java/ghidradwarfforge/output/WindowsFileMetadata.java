@@ -95,6 +95,14 @@ public final class WindowsFileMetadata {
 
     public Snapshot applyToOwnedStage(Path source, Snapshot expected, Path stage, BooleanSupplier cancelled)
             throws IOException {
+        return applyToOwnedStage(source, expected, stage, cancelled, null);
+    }
+
+    // Attachment admission supplies the complete kernel descriptor and verifies
+    // exact raw readback afterwards. GetSecurityInfo can synthesize inherited
+    // ACE flags for a legacy DACL; those synthesized bytes must not be written.
+    Snapshot applyToOwnedStage(Path source, Snapshot expected, Path stage, BooleanSupplier cancelled,
+            String completeDescriptor) throws IOException {
         check(cancelled);
         supported(expected);
         try (var input = open(source, false, cancelled); var output = open(stage, true, cancelled)) {
@@ -114,7 +122,7 @@ public final class WindowsFileMetadata {
             // exact readback, and never retry a failed API through the other one.
             int fields = 7 | ((wanted.control() & 0x1000) != 0 ? 0x80000000 : 0x20000000);
             if ((wanted.control() & 0x400) == 0) {
-                try (var descriptor = bytes(wanted.rawDescriptor())) {
+                try (var descriptor = bytes(completeDescriptor == null ? wanted.rawDescriptor() : completeDescriptor)) {
                     checkPath(stage, prior.facts(), cancelled);
                     check(cancelled);
                     success(security.SetFileSecurityW(new WString("\\\\?\\" + stage.toAbsolutePath()), fields, descriptor),

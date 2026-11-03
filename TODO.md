@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED #72 review finding:** Windows job41632042195 at `77a3c0f`
+passed its assertions, but independent artifact review found three inherited
+ACE flags changed in the raw security descriptor. High-level DACL comparison
+hid the change. The attachment path now supplies the kernel-read legacy
+descriptor and requires complete raw descriptor equality; native acceptance of
+this correction is **PRESENT, UNVERIFIED**. Protected-DACL raw equality, ten
+intended refusals and the native fixed-volume identity experiment passed in the
+reviewed artifact. See `docs/evidence/windows-security-raw-ace-41632042195.json`.
+Full production hosts, public controls and complete #72 acceptance remain open.
+
 **CONFIRMED #72 raw-reader progress:** run41630413755 at `1fe9635`
 passes raw Java/native agreement, cleanup and inherited-DACL stage application.
 The protected fixture's PowerShell Set-Acl also introduced a present-null SACL,

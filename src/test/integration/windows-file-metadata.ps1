@@ -687,6 +687,7 @@ foreach ($profile in @('inherited','protected')) {
 
     $applied = Run-Security "admission-apply-$profile" @('admission-apply',$admissionSource,$admissionStage)
     $appliedFacts = ConvertFrom-Json $applied.stdout
+    Require ($appliedFacts.security.rawDescriptor -ceq $sourceJavaFacts.security.rawDescriptor) 'Complete raw descriptor bytes changed during application'
     $afterAdmission = Independent-State $admissionStage
     Save-Json (Join-Path $root "admission-state-after-$profile.json") $afterAdmission
     foreach ($key in @('attributes','created','modified','control','owner','group','dacl')) {

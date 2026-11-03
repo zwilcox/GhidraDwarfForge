@@ -20,7 +20,8 @@ public final class WindowsAttachmentMetadata {
     private final WindowsFileSecurity security;
     private final WindowsBackupStreams streams;
 
-    public record Preservation(WindowsFileMetadata.Preservation ordinary, int fullControl) { }
+    public record Preservation(WindowsFileMetadata.Preservation ordinary, int fullControl,
+            String rawDescriptor) { }
     public record Snapshot(WindowsFileMetadata.Snapshot ordinary,
             WindowsFileSecurity.Descriptor security, WindowsBackupStreams.Inventory streams) {
         public Snapshot {
@@ -28,7 +29,9 @@ public final class WindowsAttachmentMetadata {
             Objects.requireNonNull(security);
             Objects.requireNonNull(streams);
         }
-        public Preservation preservation() { return new Preservation(ordinary.preservation(), security.control()); }
+        public Preservation preservation() {
+            return new Preservation(ordinary.preservation(), security.control(), security.rawDescriptor());
+        }
     }
 
     public WindowsAttachmentMetadata() throws IOException {
@@ -67,7 +70,8 @@ public final class WindowsAttachmentMetadata {
             "Windows attachment metadata stage aliases source");
         require((before.security().control() & SACL_FLAGS) == (prior.security().control() & SACL_FLAGS),
             "Windows attachment stage has different SACL control flags");
-        metadata.applyToOwnedStage(source, before.ordinary(), stage, cancelled);
+        metadata.applyToOwnedStage(source, before.ordinary(), stage, cancelled,
+            before.security().rawDescriptor());
         var after = inspect(stage, cancelled);
         require(after.ordinary().facts().identity().equals(prior.ordinary().facts().identity()) &&
             after.ordinary().facts().bytes() == prior.ordinary().facts().bytes(),
