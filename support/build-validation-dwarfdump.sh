@@ -16,6 +16,9 @@ case "$(uname -s)" in
     MINGW64_NT-*) host=windows; executable=dwarfdump.exe; configure_options=(--enable-shared --disable-static --disable-dwarfgen) ;;
     *) echo 'unsupported validation-tool build host' >&2; exit 1 ;;
 esac
+manifest_hash=62a8a314f215788727cbe5a6659c16ed5dbd54eaada758e69aceb484096d63a1
+resource_hash=60f94332b0833ca6564b170c59b70612e1e12bf89a3d61cbc2e90dd821ddcaeb
+utf8_guard_hash=5cc6dcb08c290555eaf8b0d8f9b162a4beec5e314c140fd9b00d14ad6a81142d
 checker_patch="$support_dir/validation/0001-check-line-sequences.patch"
 reader_patch="$support_dir/validation/0002-accept-bounded-extended-program-count.patch"
 diagnostic_patch="$support_dir/validation/0003-preserve-bounded-harmless-diagnostics.patch"
@@ -48,6 +51,9 @@ printf '%s  %s\n' "$terminator_patch_hash" "$terminator_patch" | sha256sum -c -
 printf '%s  %s\n' "$locviews_patch_hash" "$locviews_patch" | sha256sum -c -
 printf '%s  %s\n' "$bounds_patch_hash" "$bounds_patch" | sha256sum -c -
 printf '%s  %s\n' "$vector_patch_hash" "$vector_patch" | sha256sum -c -
+printf '%s  %s\n' "$manifest_hash" "$support_dir/validation/dwarfdump-windows.manifest" | sha256sum -c -
+printf '%s  %s\n' "$resource_hash" "$support_dir/validation/dwarfdump-windows.rc" | sha256sum -c -
+printf '%s  %s\n' "$utf8_guard_hash" "$support_dir/validation/dwarfdump-windows-utf8.c" | sha256sum -c -
 mkdir -p "$results" "$(dirname "$output")"
 work=$(mktemp -d "$results/build.XXXXXXXX")
 printf 'validation-tool-build=%s\n' "$work"
@@ -65,7 +71,18 @@ source="$work/libdwarf-2.3.2"
     patch -p1 < "$vector_patch" > "$work/vector-patch.log" 2>&1
     ./configure "${configure_options[@]}" \
         > "$work/configure.log" 2>&1
-    make -j"${FORGE_BUILD_JOBS:-$(nproc)}" > "$work/make.log" 2>&1
+    if [[ "$host" == windows ]]; then
+        windres -I "$support_dir/validation" -i "$support_dir/validation/dwarfdump-windows.rc" \
+            -O coff -o "$work/windows-utf8-manifest.o" > "$work/resource.log" 2>&1
+        cc -std=c11 -Wall -Wextra -Werror -c "$support_dir/validation/dwarfdump-windows-utf8.c" \
+            -o "$work/windows-utf8-guard.o" > "$work/guard.log" 2>&1
+        make -C src/lib/libdwarf -j"${FORGE_BUILD_JOBS:-$(nproc)}" > "$work/make-library.log" 2>&1
+        # Apply the manifest/startup guard only to the checker executable.
+        make -C src/bin/dwarfdump -j"${FORGE_BUILD_JOBS:-$(nproc)}" \
+            LDFLAGS="\"$work/windows-utf8-manifest.o\" \"$work/windows-utf8-guard.o\"" > "$work/make.log" 2>&1
+    else
+        make -j"${FORGE_BUILD_JOBS:-$(nproc)}" > "$work/make.log" 2>&1
+    fi
 )
 stage="$work/output"
 mkdir -p "$stage/bin" "$stage/libexec" "$stage/share/dwarfdump" \
@@ -97,6 +114,9 @@ cp "$locviews_patch" "$stage/source/support/validation/"
 cp "$bounds_patch" "$stage/source/support/validation/"
 cp "$vector_patch" "$stage/source/support/validation/"
 cp "$launcher" "$stage/source/support/validation/"
+cp "$support_dir/validation/dwarfdump-windows.manifest" "$stage/source/support/validation/"
+cp "$support_dir/validation/dwarfdump-windows.rc" "$stage/source/support/validation/"
+cp "$support_dir/validation/dwarfdump-windows-utf8.c" "$stage/source/support/validation/"
 cp "$support_dir/validation/README.md" "$stage/source/support/validation/"
 cp "$support_dir/../LICENSE" "$stage/source/LICENSE"
 cp "$source/COPYING" "$stage/licenses/UPSTREAM-COPYING"
@@ -178,6 +198,9 @@ grep -Fq '2.3.2' "$work/version.txt"
         "validation-vector-patch-sha256=$vector_patch_hash" \
         "validation-bounds-patch-sha256=$bounds_patch_hash" \
         "validation-configuration-sha256=$configuration_hash" \
+        "windows-manifest-sha256=$manifest_hash" \
+        "windows-resource-sha256=$resource_hash" \
+        "windows-utf8-guard-sha256=$utf8_guard_hash" \
         "host=$host" \
         "entry-point=bin/dwarfdump; executable=libexec/$executable" \
         "configure=${configure_options[*]}" \
@@ -212,6 +235,12 @@ Windows; configuration is under share/dwarfdump. Windows also includes its
 private patched libdwarf DLL beside the real executable, because this pinned
 release rejects static libdwarf on Windows. Windows callers can invoke
 the raw executable directly with the explicit pinned --file-name configuration.
+The Windows executable embeds an activeCodePage UTF-8 manifest and a startup
+check refusing any process code page other than UTF-8. No lossy path fallback
+is permitted. These files are included under source/support/validation and
+identified by SHA-256; they do not change DWARF checks or shipped libraries.
+Per-process UTF-8 selection requires Windows10 version1903 or later unless the
+system already supplies UTF-8. Actual runtime admission is checked by GetACP.
 The Bash launcher requires MSYS2 on Windows. Compression DLLs are beside the
 Windows executable and their package versions/notices are under licenses/.
 Both executable and launcher/configuration are covered by SHA256SUMS.

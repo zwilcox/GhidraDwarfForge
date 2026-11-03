@@ -1,5 +1,27 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED Windows checker ASCII success and Unicode failure:** run41645197563
+passes raw version and complete strict validation of the compiler ELF, then
+loses λ/字 path characters as question marks and fails to open the selected
+configuration/input. See `docs/evidence/windows-checker-unicode-41645197563.json`.
+The private checker now embeds a per-process UTF-8 manifest plus an early
+GetACP check refusing lossy fallback. Windows10 version1903+ supports that
+manifest; older hosts are admitted only if the actual process code page is
+UTF-8. This is a validation-tool policy, not a changed Ghidra release baseline.
+Cross-compilation/resource linkage and local checks pass; corrected native
+runtime remains **PRESENT, UNVERIFIED**.
+
+
+**CONFIRMED Linux visibility experiment:** completed native-linux job41645197563
+passes owned-canary read/list, child-only capability-drop and unchanged-parent
+controls on ext4. Independent source/manifest/output review is recorded in
+`docs/evidence/linux-metadata-visibility-41645197563.json`. This establishes the
+bounded mechanism only; production lifecycle/admission and privilege policy
+remain open. The same workflow fails a separate ShellCheck redirect warning;
+the corrected pipeline uses unprivileged tee with pipefail. Local actionlint
+now runs with a private ShellCheck0.9.0 and passes. No full gate is claimed.
+
+
 **CONFIRMED Windows checker build; runtime harness correction pending:**
 41643748238 builds the private patched consumer/checker with audited imports.
 Its raw-tool harness then fails before invoking the checker because a copied

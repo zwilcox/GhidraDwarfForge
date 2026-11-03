@@ -75,7 +75,7 @@ jobs:
           cc -std=c11 -O2 -Wall -Wextra -Werror \
             "$results/linux-metadata-visibility.c" -o "$results/probe"
           "$results/probe" --unprivileged "$results" > "$results/unprivileged.json"
-          sudo -n "$results/probe" --privileged "$results" > "$results/privileged.json"
+          sudo -n "$results/probe" --privileged "$results" | tee "$results/privileged.json"
           sha256sum "$results/linux-metadata-visibility.c" "$results/probe" > "$results/SHA256SUMS"
 
       - name: Build pinned libdwarf producer

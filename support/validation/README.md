@@ -493,3 +493,27 @@ PATH and parses complete strict results. A DWARF-version corruption must produce
 and fail the strict parser. Inputs and tool/configuration hashes stay unchanged.
 This establishes checker execution only; full Windows exporter/attachment remains a separate requirement. Linux `cc` runtime and the
 existing configuration regression pass locally; native Windows CI is pending.
+
+### Windows process encoding
+
+Run41645197563 passes raw native strict validation with ASCII/space paths, but
+replaces λ/字 with question marks in the explicit configuration/input paths.
+The Unicode fixture bytes equal the successful ASCII fixture; the checker
+fails to open the intended files. See
+`../../docs/evidence/windows-checker-unicode-41645197563.json`.
+
+**PRESENT, UNVERIFIED correction:** the private Windows executable embeds
+`dwarfdump-windows.manifest` through its resource object. It requests the
+[documented per-process UTF-8 code page](https://learn.microsoft.com/en-us/windows/apps/design/globalizing/use-utf8-code-page).
+A separate startup object checks `GetACP() == CP_UTF8` before the checker main
+function and refuses execution otherwise. The manifest works from Windows10
+version1903; older systems need an already-active UTF-8 process code page or
+receive a clear failure. No legacy best-fit path conversion is accepted.
+This is the private validation-tool runtime contract; it does not silently
+change the Ghidra/Java release baseline or ship a patched producer library.
+
+Manifest/resource/guard sources are checksum-pinned, included in corresponding
+source and recorded in build metadata. Only the checker link receives those
+objects; its private consumer DLL and release natives do not. Local MinGW64
+compilation, linking and PE-resource/import inspection pass. Native Windows
+Unicode execution and the remaining malformed-input case are still required.

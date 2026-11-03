@@ -41,3 +41,34 @@ its exclusively owned workspace, select supported filesystems, and separately
 reject unsupported target metadata. Source/stage attributes, identities,
 backups, replacement and recovery must all pass the existing A1–A7 contract.
 The outstanding public privilege-invocation decision remains unchanged.
+
+**CONFIRMED hosted experiment:** native-linux41645197563 at `89567c0` passes
+both controls on ext4. The privileged parent reads all32 marker bytes and lists
+the name before/after the child. The child drops its own capabilities and gets
+ENODATA=61 with no listed marker on the same opened inode. Retained source and
+binary hashes match, and successful exit includes identity-checked cleanup.
+See [the review receipt](../evidence/linux-metadata-visibility-41645197563.json).
+The separate workflow lint failed SC2024 for redirecting sudo output; that
+redirect was intentionally unprivileged. An unprivileged tee pipeline now makes
+the intended ownership explicit. The experiment passed, not the full workflow.
+
+## Planned session boundary
+
+**PLANNED, not implemented:** initialize an exclusively owned temporary
+workspace only after caller path preflight, on the selected supported ext4
+filesystem. Keep a regular, single-link canary containing a random trusted
+attribute alive for the entire host transaction. A platform-thread-bound
+session would verify its native identity, complete snapshot and exact attribute
+value before and after metadata reads; loss of visibility or mutation would
+fail the operation. An empty attribute list would never become evidence of
+absence. The same already-authorized caller must perform these observations;
+no privilege adjustment or automatic elevation belongs in the session.
+
+The native setters/readers already audited for LinuxFileMetadata can support
+this experiment without new libdwarf/JNA declarations. Creation, cancellation,
+metadata changes, thread changes, alias protection and identity-checked cleanup
+need isolated Java21 tests before connecting the session to LinuxAttachmentHost.
+That adapter must then use the existing native rename and directory-fsync
+mechanisms and pass real ELF/validator/GDB plus recovery tests. Testing a
+privileged internal session does not settle how a user explicitly invokes the
+public operation; that separate product decision remains pending.
