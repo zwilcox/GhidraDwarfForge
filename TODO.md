@@ -1,5 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
+**PRESENT, UNVERIFIED Linux public launcher:** the installed
+`support/ghidra-dwarf-forge-attach` previews the pinned request, requires explicit
+target-change confirmation and offers explicitly selected sudo/pkexec authorization
+for the separate helper. No automatic elevation retry is added. Local routing
+controls, actual Java21 read-only preview/refusal, helper108 checks, executable
+base-ZIP inspection and release assembly pass. Linux production CI now invokes
+the packaged launcher. Hosted execution, actual authorization journeys, Windows
+launcher and GUI acceptance remain incomplete. See `docs/ATTACHMENT-HELPER.md`.
+
 **PRESENT, UNVERIFIED native saved-recovery execution:** ATTACH/REFRESH requests
 now explicitly select a fresh recoveryInvocation destination. The helper
 exclusively publishes and verifies its recovery selections before PREPARED or

@@ -31,12 +31,12 @@ public final class AttachmentHelper {
     private static final int REQUEST_LIMIT = 256 * 1024;
     private static final String HELP = "Attachment changes the selected executable and retains an independent backup.\n" +
         "Usage: AttachmentHelper --request ABSOLUTE_JSON --request-sha256 SHA256 --confirm-target-change " +
-        "[--cancel-on-stdin] [--recover]\n" +
+        "[--cancel-on-stdin] [--recover] [--preview]\n" +
         "Run only in a separately authorized process. This command never requests elevation.\n" +
         "--cancel-on-stdin: any input byte or EOF requests cancellation; keep stdin open while running.\n" +
         "Retain the request, backups, validation evidence and transaction/recovery receipts on failure.\n";
 
-    record Command(Path request, String sha256, boolean cancelOnStdin, boolean recovery) { }
+    record Command(Path request, String sha256, boolean cancelOnStdin, boolean recovery, boolean preview) { }
     record Admitted(Command command, AttachmentInvocation invocation, AttachmentPaths.Plan plan) { }
 
     private AttachmentHelper() { }
@@ -67,6 +67,7 @@ public final class AttachmentHelper {
             output.print(HELP);
             return output.checkError() ? 1 : 0;
         }
+        if (java.util.Arrays.asList(args).contains("--preview")) return preview(args, cancelled, output);
         if (java.util.Arrays.asList(args).contains("--recover")) return recover(args, cancelled, output);
         AttachmentOperation.Result completed = null;
         AttachmentInvocation invocation = null;
@@ -164,6 +165,7 @@ public final class AttachmentHelper {
         boolean confirmed = false;
         boolean control = false;
         boolean recovery = false;
+        boolean preview = false;
         for (int index = 0; index < args.length; index++) {
             switch (args[index]) {
                 case "--request" -> {
@@ -178,6 +180,10 @@ public final class AttachmentHelper {
                     if (confirmed) throw new IOException("duplicate target-change confirmation");
                     confirmed = true;
                 }
+                case "--preview" -> {
+                    if (preview) throw new IOException("duplicate preview action");
+                    preview = true;
+                }
                 case "--recover" -> {
                     if (recovery) throw new IOException("duplicate recovery action");
                     recovery = true;
@@ -189,10 +195,43 @@ public final class AttachmentHelper {
                 default -> throw new IOException("unknown attachment helper argument");
             }
         }
-        if (!confirmed || request == null || !request.isAbsolute() || sha == null || !sha.matches("[0-9a-f]{64}")) {
+        if ((!confirmed && !preview) || request == null || !request.isAbsolute() || sha == null || !sha.matches("[0-9a-f]{64}")) {
             throw new IOException("explicit --confirm-target-change, absolute --request and lowercase --request-sha256 are required");
         }
-        return new Command(request, sha, control, recovery);
+        return new Command(request, sha, control, recovery, preview);
+    }
+
+    /** Read-only user review, including path/receipt checks but no native host or validator execution. */
+    private static int preview(String[] args, BooleanSupplier cancelled, PrintStream output) {
+        var response = new JsonObject();
+        response.addProperty("schemaVersion", 1);
+        int status;
+        try {
+            var command = command(args);
+            if (command.recovery()) {
+                var invocation = AttachmentRecoveryInvocation.read(new ByteArrayInputStream(
+                    readPinned(command.request(), command.sha256(), REQUEST_LIMIT, cancelled)), cancelled);
+                invocation.preflight(invocation.transaction(cancelled), command.request()).recheck();
+                response.add("selection", JsonParser.parseString(invocation.toJson()));
+            }
+            else {
+                var admitted = admit(args, cancelled);
+                admitted.plan().recheck();
+                response.add("selection", JsonParser.parseString(admitted.invocation().toJson()));
+            }
+            response.addProperty("requestSha256", command.sha256());
+            response.addProperty("outcome", "PREVIEW");
+            response.addProperty("notice", "This selection changes the executable only after explicit confirmation and successful live validation. Preview is read-only.");
+            status = 0;
+        }
+        catch (IOException | RuntimeException failure) {
+            status = failure instanceof CancellationException ? 130 : 1;
+            response.addProperty("outcome", status == 130 ? "CANCELLED" : "FAILED");
+            response.addProperty("error", failure.toString());
+        }
+        response.addProperty("exitCode", status);
+        output.println(response);
+        return output.checkError() ? 1 : status;
     }
 
     private static int recover(String[] args, BooleanSupplier cancelled, PrintStream output) {

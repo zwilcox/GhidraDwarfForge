@@ -59,6 +59,12 @@ for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java; do
     }
 done
 
+[[ -s "$module/support/ghidra-dwarf-forge-attach" ]] || {
+    echo 'base ZIP is missing the explicit attachment launcher' >&2
+    exit 1
+}
+chmod 755 "$module/support/ghidra-dwarf-forge-attach"
+
 for bundled_directory in os third_party/libdwarf third_party/windows-runtime; do
     if [[ -e "$module/$bundled_directory" || -L "$module/$bundled_directory" ]]; then
         echo "base ZIP already contains $bundled_directory; supply the unbundled Gradle extension ZIP" >&2

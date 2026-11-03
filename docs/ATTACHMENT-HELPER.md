@@ -1,6 +1,6 @@
 # Isolated attachment invocation
 
-**PLANNED public flow:** keep Ghidra unprivileged and perform attachment in a
+**PRESENT, UNVERIFIED complete public flow:** keep Ghidra unprivileged and perform attachment in a
 separate helper process. A user explicitly requests OS authorization when
 needed; an existing authorized context can invoke the helper directly. There
 is no silent elevation retry, readable-metadata fallback, or automatic target
@@ -14,10 +14,10 @@ show its selected pair, original backup and receipt, and require an explicit
 action. A successful export alone is insufficient: the helper must run the
 complete production validator and host transaction. Refresh must retain the
 previous generation and export against the original backup as ADR-0004 requires.
-The convenience launchers, OS authorization and GUI journey remain **PLANNED**.
-The standalone recovery interface and saved selections are implemented below;
-their native execution remains **PRESENT, UNVERIFIED**. The standalone helper below is implemented;
-its actual native execution is **PRESENT, UNVERIFIED** until hosted tests pass. The metadata policy and Ghidra/Java/native producer baselines
+The Linux launcher, standalone helper, recovery interface and saved selections
+are implemented below; their complete native execution remains **PRESENT,
+UNVERIFIED** until hosted tests pass. Windows authorization and both GUI journeys
+remain **PLANNED**. The metadata policy and Ghidra/Java/native producer baselines
 are unchanged.
 
 ## Explicit selection transport
@@ -213,3 +213,49 @@ child and recover via a fresh helper using those retained bytes. Production
 initial cases additionally verify their saved document binds the actual committed
 receipt. Hosted execution remains pending; generic tests do not establish native
 metadata or real ELF acceptance. See `build/attachment-saved-recovery-validation.log`.
+
+## Linux launcher
+
+The installed extension includes executable `support/ghidra-dwarf-forge-attach`.
+Prepare an explicit selection JSON as above, then review it without changing any
+files or acquiring native privileges:
+
+```sh
+support/ghidra-dwarf-forge-attach \
+    --ghidra-dir=/path/to/ghidra_12.0.3_PUBLIC \
+    --request=/absolute/attachment-request.json \
+    --request-sha256=<sha256-of-that-file> --preview
+```
+
+To perform the selected operation, replace `--preview` with
+`--confirm-target-change`. Add `--authorize=sudo` to explicitly request terminal
+OS authorization, or `--authorize=pkexec` to use an installed desktop authorizer.
+The launcher previews the same pinned request before invoking either authorizer.
+With no authorization option it uses the current process authority and never
+retries elevation after failure. `--recover` selects the recovery format instead
+of ATTACH/REFRESH. Every modifying invocation requires confirmation; missing
+confirmation displays the selection and exits64 without starting a native host.
+`--preview` remains read-only even if authorization/confirmation flags are present.
+
+`--extension-dir` selects an installed extension when invoking the launcher from
+another checkout. `--java` selects the Java executable explicitly; otherwise it
+uses JAVA_HOME/bin/java or Java on PATH. Dependency locations match Ghidra12.0.3.
+Installation/classpath paths containing a colon are rejected on Linux because
+Java treats that character as a classpath separator; target/request paths remain
+literal arguments. Paths with spaces, quotes, Unicode and shell metacharacters
+are passed as argument-array elements, never evaluated as shell code. The launcher
+opens no requested log or output file. Its stdout is a preview JSON followed by
+the helper result on an executing invocation. Preserve the selected saved recovery
+request and inspect the durable receipt if the process or terminal is interrupted.
+
+**CONFIRMED local routing/package checks:** ten owned fake-authorizer controls
+prove no consent/no automatic elevation, preview failure, exit-status forwarding,
+exact argument preservation and explicit sudo/pkexec routing. They do not acquire
+privileges. An actual Java21 launcher preview and no-consent run pass with every
+selected input unchanged. Helper108 checks pass, and both base ZIP and release
+assembly preserve the executable launcher and its exact bytes. A stale cached
+ZIP initially retained mode0644; a fresh Gradle rebuild proves the new permission
+rule. The release assembler independently enforces the mode. The Linux production
+matrix now invokes the packaged launcher for actual attachment, keeping its existing
+validator/GDB/CRC/metadata oracles. That hosted execution and actual OS authorization
+journeys remain pending; Windows launcher and GUI acceptance remain incomplete.

@@ -1302,7 +1302,8 @@ tasks.register("packagedNativeLibrariesSmoke", JavaExec) {
 // Keep repository-only development inputs out of releases.
 buildExtension {
     eachFile { details ->
-        if (details.path == "GhidraDwarfForge/support/ghidra-dwarf-forge-headless") {
+        if (details.path in ["GhidraDwarfForge/support/ghidra-dwarf-forge-headless",
+                "GhidraDwarfForge/support/ghidra-dwarf-forge-attach"]) {
             details.permissions { permissions ->
                 permissions.unix("rwxr-xr-x")
             }

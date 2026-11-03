@@ -40,6 +40,13 @@ public final class AttachmentHelperSmoke {
             equal(invocation, admitted.invocation());
             admitted.plan().recheck();
             equal(before, snapshot(root));
+            var previewOutput = new ByteArrayOutputStream();
+            equal(0, AttachmentHelper.run(append(Arrays.copyOf(command, 4), "--preview"), () -> false, new PrintStream(previewOutput)));
+            var preview = JsonParser.parseString(previewOutput.toString(StandardCharsets.UTF_8)).getAsJsonObject();
+            equal("PREVIEW", preview.get("outcome").getAsString());
+            equal(JsonParser.parseString(invocation.toJson()), preview.get("selection"));
+            equal(false, preview.has("recoverySelection"));
+            equal(before, snapshot(root));
             for (String[] rejected : new String[][] {
                     {}, {"--confirm-target-change"}, Arrays.copyOf(command, 4),
                     {"--request", selection.toString(), "--confirm-target-change"},
@@ -50,6 +57,7 @@ public final class AttachmentHelperSmoke {
                     append(command, "--request", selection.toString()), append(command, "--request"),
                     append(command, "--request-sha256", digest(selection)),
                     append(command, "--recover"), append(command, "--recover", "--recover"),
+                    append(command, "--preview", "--preview"),
                     append(command, "--cancel-on-stdin", "--cancel-on-stdin") }) {
                 failure(rejected, false, "FAILED", 1);
                 equal(before, snapshot(root));

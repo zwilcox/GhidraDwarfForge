@@ -28,6 +28,8 @@ printf 'corresponding source instructions\n' \
     > "$work/base/GhidraDwarfForge/third_party/CORRESPONDING_SOURCE.md"
 printf '#!/usr/bin/env bash\n' > "$work/base/GhidraDwarfForge/support/wrapper"
 chmod 755 "$work/base/GhidraDwarfForge/support/wrapper"
+cp "$repository_dir/support/ghidra-dwarf-forge-attach" "$work/base/GhidraDwarfForge/support/ghidra-dwarf-forge-attach"
+chmod 644 "$work/base/GhidraDwarfForge/support/ghidra-dwarf-forge-attach"
 for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java; do
     printf '// fixture %s\n' "$entry_point" \
         > "$work/base/GhidraDwarfForge/ghidra_scripts/$entry_point"
@@ -266,6 +268,8 @@ grep -Fxq 'consumer=libdwarf.so.2.3.2' \
 grep -Fxq 'producer=libdwarfp-2.dll' \
     "$module/os/win_x86_64/NATIVE-PAIR.properties"
 test -s "$module/THIRD_PARTY_NOTICES.md"
+test -x "$module/support/ghidra-dwarf-forge-attach"
+cmp "$repository_dir/support/ghidra-dwarf-forge-attach" "$module/support/ghidra-dwarf-forge-attach"
 for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java; do
     cmp "$work/base/GhidraDwarfForge/ghidra_scripts/$entry_point" \
         "$module/ghidra_scripts/$entry_point"

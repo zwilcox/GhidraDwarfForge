@@ -92,6 +92,8 @@ def main():
     source = Path(str(sidecar) + '.c')
     reference = Path(str(stem) + '.reference')
     jar = args.jar.resolve(strict=True)
+    launcher = jar.parent.parent / 'support/ghidra-dwarf-forge-attach'
+    launcher_sources = [launcher] if args.production_linux_host else []
     gson = args.ghidra.resolve() / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar'
     jna = args.ghidra.resolve() / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar'
     sources = [ROOT / 'src/test/java/ghidradwarfforge/output' / (name + '.java') for name in
@@ -100,17 +102,17 @@ def main():
     oracle = ROOT / 'src/test/integration/automatic-association-gdb.py'
     policy_controls = ROOT / 'src/test/integration/attachment-validator-controls.py'
     protected = {str(p): digest(p) for p in [original, sidecar, source, reference, jar, gson, jna,
-                                           args.report_log, args.strict_validator, Path(__file__), oracle, policy_controls, *sources]}
+                                           args.report_log, args.strict_validator, Path(__file__), oracle, policy_controls, *launcher_sources, *sources]}
     provenance = work / 'provenance'
     provenance.mkdir()
-    for path in [jar, gson, jna, Path(__file__), oracle, policy_controls, *sources]:
+    for path in [jar, gson, jna, Path(__file__), oracle, policy_controls, *launcher_sources, *sources]:
         shutil.copyfile(path, provenance / path.name)
         require(digest(provenance / path.name) == protected[str(path)], 'retained runtime/source differs')
-    # Run the exact retained production JAR and dependencies. Preserve their
-    # input origin/hash above; subsequent local builds cannot erase this proof.
+    # Test probes run the retained JAR/dependencies. The public launcher uses
+    # their protected installed originals; both copies must retain these hashes.
     runtime_files = [provenance / path.name for path in [jar, gson, jna]]
     (provenance / 'origin.json').write_text(json.dumps({str(path): protected[str(path)]
-        for path in [jar, gson, jna, Path(__file__), oracle, policy_controls, *sources]}, indent=4) + '\n')
+        for path in [jar, gson, jna, Path(__file__), oracle, policy_controls, *launcher_sources, *sources]}, indent=4) + '\n')
     commands = []
 
     def run(label, argv, env=None, timeout=60, success=True, input_bytes=None):
@@ -298,16 +300,23 @@ def main():
             command = [java, '--enable-native-access=ALL-UNNAMED', '-cp', runtime,
                 'ghidradwarfforge.output.AttachmentHelper', '--request', request_file,
                 '--request-sha256', digest(request_file)]
+            public_command = [launcher, '--ghidra-dir=' + str(args.ghidra.resolve()), '--java=' + str(Path(shutil.which(java) or java).resolve()),
+                '--extension-dir=' + str(jar.parent.parent), '--request=' + str(request_file),
+                '--request-sha256=' + digest(request_file)]
             before_admission = {str(path): file_state(path) for path in directory.iterdir()}
             for label, extra in [('no-consent', []), ('cancelled', ['--confirm-target-change', '--cancel-on-stdin'])]:
-                refused = run('helper-' + label, command + extra, success=False, input_bytes=b'')
+                refused = run('helper-' + label, public_command if label == 'no-consent' else command + extra,
+                              success=False, input_bytes=b'')
                 response = json.loads(refused.stdout)
-                require(response['outcome'] == ('CANCELLED' if label == 'cancelled' else 'FAILED'),
+                require(response['outcome'] == ('CANCELLED' if label == 'cancelled' else 'PREVIEW'),
                         'helper admission returned the wrong outcome')
                 require(before_admission == {str(path): file_state(path) for path in directory.iterdir()},
                         'helper refusal changed a selected file or created an output')
-            outcome = run(action, command + ['--confirm-target-change'], timeout=300)
-            response = json.loads(outcome.stdout)
+            outcome = run(action, public_command + ['--confirm-target-change'], timeout=300)
+            output_records = [json.loads(line) for line in outcome.stdout.splitlines()]
+            require(len(output_records) == 2 and output_records[0]['outcome'] == 'PREVIEW' and
+                    output_records[0]['selection'] == invocation, 'launcher did not show the exact selection')
+            response = output_records[1]
             require(response['outcome'] == 'COMMITTED' and response['exitCode'] == 0 and
                     response['requestSha256'] == digest(request_file), 'helper did not commit the selected request')
             require(response['selection'] == invocation, 'helper used different explicit selections')
