@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**PRESENT, UNVERIFIED native Windows GUI journeys:** the shared Script Manager
+harness now selects PowerShell7/RunAs, checks durable receipt phases and exercises
+initial attachment, curated refresh and saved recovery on the existing runner
+token. The required Linux consumer checks both GUI-produced generations with
+pinned validators, automatic GDB source/stepping and CRC refusal, without changing
+downloaded artifacts. This does not claim an interactive standard-user UAC prompt.
+Java21 compilation, PowerShell parsing and lint pass; local compiler controls
+verify Windows-style source relocation and quoted directories containing spaces.
+Native Windows execution remains pending.
+
 **CONFIRMED Linux GUI harness admission failure; corrected query pending:**
 job126100727964/run41686788301 passes the real reference export but stops before
 Ghidra GUI launch. Polkit refuses an unprivileged `pkcheck` query carrying action

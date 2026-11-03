@@ -24,6 +24,8 @@ def digest(path):
 def main():
     work, original = (Path(value).resolve(strict=True) for value in sys.argv[1:3])
     address = int(sys.argv[3], 16)
+    windows_transfer = sys.argv[4:] == ['--windows-transfer']
+    require(not sys.argv[4:] or windows_transfer, 'unknown GUI consumer option')
     require('gui-saved-recovery=PASS' in (work / 'result.txt').read_text(), 'GUI journey did not finish')
     spec = importlib.util.spec_from_file_location('elf_oracle', Path(__file__).with_name('attachment-elf-controller.py'))
     oracle = importlib.util.module_from_spec(spec)
@@ -74,7 +76,8 @@ else:
     print('GUI_AUTOMATIC_RUNTIME_PASS')
 ''')
     for index, (generation, record) in enumerate(zip(('initial', 'refreshed'), receipts)):
-        require(record['phase'] == 'COMMITTED' and record['hostContract'] == 'linux-x64-ext4-protected-metadata-v1',
+        host_contract = 'windows-x64-local-ntfs-raw-security-v1' if windows_transfer else 'linux-x64-ext4-protected-metadata-v1'
+        require(record['phase'] == 'COMMITTED' and record['hostContract'] == host_contract,
                 'GUI did not use the production host/commit')
         target = work / (generation + '-target')
         sidecar = work / (generation + '.dbg')
@@ -101,6 +104,10 @@ else:
             selected_sidecar = directory / sidecar.name
             shutil.copy2(target, selected_target)
             shutil.copy2(sidecar, selected_sidecar)
+            # Only new Linux runtime copies acquire execute permission; retain
+            # all downloaded Windows inputs and metadata claims unchanged.
+            if windows_transfer:
+                selected_target.chmod(0o700)
             if corrupt:
                 with selected_sidecar.open('ab') as stream:
                     stream.write(b'GUI negative CRC control')
@@ -109,6 +116,7 @@ else:
                 'GUI_SOURCE': str(source)}
             output, errors = run(label, ['gdb', '-nx', '-nh', '-batch', '-iex', 'set debuginfod enabled off',
                 '-iex', 'set auto-load off', '-iex', 'set debug-file-directory ' + str(empty),
+                '-ex', 'directory "' + str(work).replace('\\', '\\\\').replace('"', '\\"') + '"',
                 '-ex', 'file "' + str(selected_target) + '"', '-ex', 'source ' + str(script)], env)
             if corrupt:
                 require(b'GUI_CRC_REJECTED' in output and b'CRC mismatch' in errors, 'CRC refusal missing')
@@ -119,7 +127,8 @@ else:
     recovery = json.loads((records[1] / 'recovery-receipt.json').read_text())
     require(recovery['phase'] == 'ROLLED_BACK' and digest(work / 'fixture') == digest(work / 'initial-target'),
             'saved GUI recovery did not restore initial association')
-    (work / 'verification.json').write_text(json.dumps({'status': 'PASS', 'checks':
+    (work / 'verification.json').write_text(json.dumps({'status': 'PASS', 'hostContract': host_contract,
+        'sourceRelocatedFromWindows': windows_transfer, 'checks':
         ['native GUI initial/refresh/recovery', 'retained receipt chain', 'changed target-endian CRC',
          'both pairs GNU/LLVM/pinned libdwarf', 'fresh automatic GDB source/type/break/next/step/exit',
          'both CRC negative controls']}, indent=4) + '\n')

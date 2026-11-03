@@ -2790,17 +2790,20 @@ jobs:
 
       - name: Native Windows Script Manager export, console, and chooser cancellation
         shell: pwsh
-        timeout-minutes: 15
+        timeout-minutes: 25
         env:
           MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
         run: |
           $mingwBin = Join-Path $env:MSYS2_LOCATION 'mingw64\bin'
           $env:PATH = "$mingwBin;$env:PATH"
+          $env:GHIDRA_GUI_NATIVE_ATTACHMENT = '1'
+          $env:FORGE_GUI_CHECKER_BUNDLE = (Resolve-Path 'validation-tool-windows').Path
           .\src\test\integration\windows-gui-script-manager.ps1 `
             -GhidraDirectory $env:GHIDRA_INSTALL_DIR `
             -ModuleDirectory (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions\GhidraDwarfForge') `
             -Fixture (Resolve-Path 'linux-reference\semantic.exec.stripped').Path `
             -Reference (Resolve-Path 'linux-reference\semantic.exec.reference').Path
+          Remove-Item Env:\GHIDRA_GUI_NATIVE_ATTACHMENT
           $env:GHIDRA_GUI_GDB_LOADER = '1'
           .\src\test\integration\windows-gui-script-manager.ps1 `
             -GhidraDirectory $env:GHIDRA_INSTALL_DIR `
@@ -2871,12 +2874,19 @@ jobs:
         with:
           name: windows-host-validation
           path: windows-artifacts
+      - uses: actions/download-artifact@v8
+        with:
+          name: dwarfdump-linux-validation
+          path: validation-tool
       - name: Install Linux target debugger and validators
         run: |
           sudo apt-get update
           sudo apt-get install -y gdb llvm binutils
       - name: Execute both Windows attachment generations and reject wrong CRC
         run: |
+          (cd validation-tool && sha256sum -c SHA256SUMS)
+          chmod 755 validation-tool/bin/dwarfdump validation-tool/libexec/dwarfdump
+          export DWARFDUMP="$PWD/validation-tool/bin/dwarfdump"
           python3 src/test/integration/windows-attachment-gdb.py \
               --windows-results "$PWD/windows-artifacts/windows-host" \
               --results "$PWD/build/test-results/windows-attachment-gdb"

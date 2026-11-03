@@ -85,6 +85,20 @@ $symbol = Get-Content -LiteralPath (Join-Path $work 'reference-symbols.txt') |
     Where-Object { $_ -match '\srecovered_add$' } | Select-Object -First 1
 if ($null -eq $symbol) { throw 'compiler reference has no recovered_add symbol' }
 $functionAddress = ($symbol.Trim() -split '\s+')[1]
+if ($env:GHIDRA_GUI_NATIVE_ATTACHMENT -eq '1') {
+    if ([string]::IsNullOrWhiteSpace($env:FORGE_GUI_CHECKER_BUNDLE)) {
+        throw 'Explicit pinned checker bundle required for native GUI attachment'
+    }
+    $checker = (Resolve-Path -LiteralPath $env:FORGE_GUI_CHECKER_BUNDLE).ProviderPath
+    $env:FORGE_GUI_READELF = (Get-Command readelf.exe).Source
+    $env:FORGE_GUI_LLVM = (Get-Command llvm-dwarfdump.exe).Source
+    $env:FORGE_GUI_STRICT = Join-Path $checker 'libexec/dwarfdump.exe'
+    $env:FORGE_GUI_CONFIGURATION = Join-Path $checker 'share/dwarfdump/dwarfdump.conf'
+    $env:FORGE_GUI_POWERSHELL = (Get-Command pwsh.exe).Source
+    foreach ($selected in @($env:FORGE_GUI_STRICT, $env:FORGE_GUI_CONFIGURATION)) {
+        if (-not (Test-Path -LiteralPath $selected -PathType Leaf)) { throw "Missing native GUI tool: $selected" }
+    }
+}
 $runArgs = Join-Path $work 'java.args'
 Write-JavaArguments $runArgs @('--enable-native-access=ALL-UNNAMED',
     '-Djava.awt.headless=false', '-Duser.language=en', '-Duser.country=US',

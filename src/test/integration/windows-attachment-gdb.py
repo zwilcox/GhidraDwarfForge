@@ -130,10 +130,20 @@ def main():
                 require(digest(sidecar) == files['sidecar']['sha256'], 'runtime changed sidecar')
             outcomes.append({'case': label, 'targetSha256': digest(target), 'sidecarSha256': digest(sidecar),
                 'sourceSha256': digest(source)})
+    gui_cases = sorted((incoming / 'gui-script-manager').glob('run.*/select/attachment-native'))
+    require(len(gui_cases) == 1, 'expected exactly one native Windows GUI attachment/refresh/recovery journey')
+    gui_work = work / 'gui-native'
+    shutil.copytree(gui_cases[0], gui_work)
+    gui_oracle = Path(__file__).with_name('gui-attachment-verify.py').resolve(strict=True)
+    run('windows-gui-consumer', [shutil.which('python3'), gui_oracle, gui_work,
+        incoming / 'work/semantic.exec.stripped', function_address, '--windows-transfer'])
+    gui_result = json.loads((gui_work / 'verification.json').read_text())
+    require(gui_result['status'] == 'PASS' and gui_result['sourceRelocatedFromWindows'],
+            'Windows GUI artifacts did not pass the Linux consumer')
     for path, expected in protected.items():
         require(digest(Path(path)) == expected, 'consumer changed downloaded Windows evidence')
     (work / 'result.json').write_text(json.dumps({'status': 'PASS', 'outcomes': outcomes,
-        'protectedWindowsArtifacts': protected,
+        'protectedWindowsArtifacts': protected, 'guiConsumer': gui_result,
         'scope': 'Windows-produced initial and changed-CRC refresh generations; actual Linux GDB discovery/source/types/arguments and CRC refusal; source explicitly relocated with GDB directory'}, indent=4) + '\n')
     print('windows-attachment-linux-gdb=PASS generations=2 crc-controls=2')
 

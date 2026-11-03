@@ -42,6 +42,7 @@ public final class GuiScriptManagerSmoke {
     private static final String RECOVER = "RecoverGhidraDwarfForgeAttachment.java";
     private static final String PREPARE = "ExportAndAttachGhidraDwarfForge.java";
     private static final boolean WITH_LOADER = "1".equals(System.getenv("GHIDRA_GUI_GDB_LOADER"));
+    private static final boolean WINDOWS = System.getProperty("os.name").startsWith("Windows");
 
     private static final class ProbeFrontEnd extends FrontEndTool {
         ProbeFrontEnd(ProjectManager manager) {
@@ -447,11 +448,12 @@ public final class GuiScriptManagerSmoke {
 
     private static void runNativeAttachment(ProbeTool tool, Program program, Path input,
             Path caseDirectory, String functionAddress) throws Exception {
-        GuiTestSupport.require(System.getProperty("os.name").equals("Linux"),
-            "this authorization fixture is Linux-only");
-        GuiTestSupport.require(!Files.readString(Path.of("/proc/self/status")).lines()
-            .filter(line -> line.startsWith("Uid:")).findFirst().orElseThrow().split("\\s+")[1].equals("0"),
-            "Ghidra must run unprivileged during the authorization journey");
+        GuiTestSupport.require(WINDOWS || System.getProperty("os.name").equals("Linux"), "unsupported GUI fixture host");
+        if (!WINDOWS) {
+            GuiTestSupport.require(!Files.readString(Path.of("/proc/self/status")).lines()
+                .filter(line -> line.startsWith("Uid:")).findFirst().orElseThrow().split("\\s+")[1].equals("0"),
+                "Ghidra must run unprivileged during the authorization journey");
+        }
         Path work = Files.createDirectory(caseDirectory.resolve("attachment-native"));
         Path target = Files.copy(input, work.resolve("fixture"));
         String original = GuiTestSupport.sha256(input);
@@ -493,6 +495,7 @@ public final class GuiScriptManagerSmoke {
         launchFromTable(tool, RECOVER, work.resolve("recovery-manager.png"));
         interaction.get(180, TimeUnit.SECONDS);
         awaitNativeCompletion(console, work.resolve("recovery-console.txt"), "ROLLED_BACK");
+        requireNativeReceipt(refresh.operation().recoveryReceipt(), "ROLLED_BACK");
         GuiTestSupport.require(GuiTestSupport.sha256(target).equals(firstTarget), "GUI recovery did not restore prior generation");
         GuiTestSupport.require(Files.isRegularFile(refresh.operation().recoveryReceipt()), "durable recovery receipt missing");
         for (var retainedFile : retained.entrySet()) {
@@ -501,7 +504,9 @@ public final class GuiScriptManagerSmoke {
         }
         GuiTestSupport.require(GuiTestSupport.sha256(input).equals(original), "GUI attachment changed source fixture");
         Files.writeString(work.resolve("generations.txt"), first + "\n" + second + "\n");
-        Files.writeString(work.resolve("result.txt"), "unprivileged-ghidra=PASS\nexplicit-os-authorization=PASS\n" +
+        Files.writeString(work.resolve("result.txt"), (WINDOWS ?
+            "windows-existing-runner-token=true\ninteractive-standard-user-uac=NOT_PROVEN\n" : "unprivileged-ghidra=PASS\n") +
+            "explicit-os-authorization=PASS\n" +
             "gui-initial-attachment=PASS\ngui-curated-refresh=PASS\ngui-saved-recovery=PASS\nretained-generations=PASS\n");
     }
 
@@ -539,6 +544,7 @@ public final class GuiScriptManagerSmoke {
         try (var children = Files.list(records)) {
             var directories = children.toList();
             GuiTestSupport.require(directories.size() == 1, "wrong native preparation directory count");
+            requireNativeReceipt(directories.getFirst().resolve("receipt.json"), "COMMITTED");
             return directories.getFirst();
         }
     }
@@ -548,6 +554,15 @@ public final class GuiScriptManagerSmoke {
         GuiTestSupport.screenshot(new Robot(), review, screenshot);
         GuiTestSupport.clickButton(new Robot(), review, recovery ? "Restore selected image" : "Attach selected sidecar");
         GuiTestSupport.choose("Attachment helper authorization", "Request OS authorization");
+        if (WINDOWS) GuiTestSupport.selectFile("Select PowerShell 7 executable", Path.of(System.getenv("FORGE_GUI_POWERSHELL")));
+    }
+
+    private static void requireNativeReceipt(Path receipt, String phase) throws Exception {
+        var record = com.google.gson.JsonParser.parseString(Files.readString(receipt)).getAsJsonObject();
+        GuiTestSupport.require(record.get("phase").getAsString().equals(phase) &&
+            record.get("hostContract").getAsString().equals(WINDOWS ?
+                "windows-x64-local-ntfs-raw-security-v1" : "linux-x64-ext4-protected-metadata-v1"),
+            "native GUI receipt phase or host differs");
     }
 
     private static void awaitNativeCompletion(ConsoleService console, Path log, String outcome) throws Exception {
@@ -556,7 +571,9 @@ public final class GuiScriptManagerSmoke {
             String text = consoleText(console);
             Files.writeString(log, text);
             if (text.contains("Finished!") || text.contains("Error running script")) {
-                GuiTestSupport.require(text.contains("\"outcome\":\"" + outcome + "\"") &&
+                // RunAs cannot redirect the elevated console. The caller also
+                // checks the selected durable receipt, never just the exit code.
+                GuiTestSupport.require(text.contains(WINDOWS ? "\"launcherExitCode\":0" : "\"outcome\":\"" + outcome + "\"") &&
                     text.contains("Attachment helper exit=0"), "native GUI operation failed; inspect " + log);
                 return;
             }

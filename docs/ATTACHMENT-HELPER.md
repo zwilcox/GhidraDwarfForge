@@ -370,3 +370,14 @@ The independent `gui-attachment-verify.py` checks retained receipts, both
 generations' target-endian CRCs, GNU/LLVM/pinned-libdwarf results, automatic GDB
 source/type/break/next/step/exit and CRC-negative controls. Local compilation and
 objcopy/GDB consumer controls pass; actual native GUI execution is still pending.
+
+**PRESENT, UNVERIFIED Windows GUI coverage:** the native Windows driver uses the
+same real preparation/attachment/refresh/recovery scripts and explicitly selects
+PowerShell7/RunAs. Because an elevated console cannot be redirected, the harness
+checks the launcher exit and selected durable receipt, plus retained bytes. The
+existing runner token does not establish standard-user UAC interaction. The
+required Linux consumer copies the Windows evidence into its own workspace and
+checks both generations with fresh GNU/LLVM/pinned-libdwarf and GDB, explicitly
+relocating the Windows source directory. The original downloaded evidence is
+hash-checked for preservation. Source relocation/space-path consumer controls
+pass locally; actual native Windows GUI acceptance remains pending.
