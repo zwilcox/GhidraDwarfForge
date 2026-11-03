@@ -15,8 +15,15 @@ public final class StrictDwarfReportSmoke {
         String clean = Files.readString(fixtures.resolve("clean-2.3.2.txt"));
         var analysis = StrictDwarfReport.inspect(clean, false);
         require(analysis.compilers() == 1 && analysis.checkTables() == 2 && analysis.frameDiagnostics().isEmpty());
+        // Git may check out this retained text fixture with CRLF on Windows.
+        // Check those original bytes above, then construct each line-ending
+        // variant from LF so CRLF never becomes the malformed CRCRLF.
+        clean = clean.replace("\r\n", "\n");
+        StrictDwarfReport.inspect(clean, false);
+        checks++;
         StrictDwarfReport.inspect(clean.replace("\n", "\r\n"), false);
         checks++;
+        reject(clean.replace("\n", "\r\r\n"));
         reject(Files.readString(fixtures.resolve("exit-zero-errors-20210528.txt")));
         reject("");
         reject(clean + "\0");

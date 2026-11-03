@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED Windows smoke-test failure reproduced and corrected locally:**
+job126047872007 failed in the CRLF variant of `StrictDwarfReportSmoke` before
+attachment execution. Windows checkout had already converted the retained
+fixture to CRLF; the test converted it again to CRCRLF. The test now checks
+the checkout bytes first, normalizes only its mutation baseline to LF, checks
+both LF/CRLF and explicitly rejects CRCRLF. Actual Java21 passes260 checks
+against both the repository fixture and a separate CRLF checkout simulation.
+Production parser acceptance is unchanged. Native Windows rerun is pending.
+
 **PRESENT, UNVERIFIED Windows public launcher:** a PowerShell7 script now
 previews explicit selections, requires confirmation and requests RunAs only with
 an explicit authorization option. The isolated helper can enable only its own
