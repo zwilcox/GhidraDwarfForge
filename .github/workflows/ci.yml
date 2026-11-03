@@ -2496,7 +2496,6 @@ jobs:
           name: linux-x86-export-reference-diagnostics
           path: |
             build/test-results/headless-symbol-export/
-            build/test-results/gui-script-manager/
             build/test-results/gui-authorization/
           if-no-files-found: warn
           retention-days: 14
@@ -2612,6 +2611,8 @@ jobs:
           $resultDirectory = 'build\test-results\windows-host'
           New-Item -ItemType Directory -Force $resultDirectory | Out-Null
           [scriptblock]::Create((Get-Content -Raw .\support\ghidra-dwarf-forge-headless.ps1)) | Out-Null
+          & .\src\test\integration\attachment-path-argument.ps1 |
+            Tee-Object -FilePath "$resultDirectory\path-argument.log"
           $extension = Get-ChildItem dist -Filter '*.zip' | Select-Object -First 1
           if ($null -eq $extension) { throw 'extension ZIP is missing' }
           Expand-Archive -Path $extension.FullName `

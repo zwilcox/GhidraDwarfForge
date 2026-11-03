@@ -35,6 +35,7 @@ public final class AttachmentHelper {
         "Run only in a separately authorized process. This command never requests elevation.\n" +
         "--cancel-on-stdin: any input byte or EOF requests cancellation; keep stdin open while running.\n" +
         "--cancel-file: changes/removal of the caller's fresh empty file request cooperative cancellation.\n" +
+        "Windows launchers use --request-utf8-base64 and --cancel-file-utf8-base64 for lossless path transport.\n" +
         "Retain the request, backups, validation evidence and transaction/recovery receipts on failure.\n";
 
     record Command(Path request, String sha256, boolean cancelOnStdin, boolean recovery, boolean preview, boolean securityPrivilege,
@@ -200,14 +201,16 @@ public final class AttachmentHelper {
         Path cancelFile = null;
         for (int index = 0; index < args.length; index++) {
             switch (args[index]) {
-                case "--cancel-file" -> {
+                case "--cancel-file", "--cancel-file-utf8-base64" -> {
+                    boolean encoded = args[index].equals("--cancel-file-utf8-base64");
                     if (cancelFile != null || ++index == args.length) throw new IOException("select exactly one cancellation file");
-                    cancelFile = Path.of(args[index]);
+                    cancelFile = Path.of(encoded ? AttachmentPathArgument.decode(args[index]) : args[index]);
                     if (!cancelFile.isAbsolute()) throw new IOException("cancellation file must be absolute");
                 }
-                case "--request" -> {
+                case "--request", "--request-utf8-base64" -> {
+                    boolean encoded = args[index].equals("--request-utf8-base64");
                     if (request != null || ++index == args.length) throw new IOException("select exactly one request");
-                    request = Path.of(args[index]);
+                    request = Path.of(encoded ? AttachmentPathArgument.decode(args[index]) : args[index]);
                 }
                 case "--request-sha256" -> {
                     if (sha != null || ++index == args.length) throw new IOException("select exactly one request SHA-256");
@@ -252,8 +255,11 @@ public final class AttachmentHelper {
             if (command.recovery()) {
                 var invocation = AttachmentRecoveryInvocation.read(new ByteArrayInputStream(
                     readPinned(command.request(), command.sha256(), REQUEST_LIMIT, cancelled)), cancelled);
-                withCancellation(invocation.preflight(invocation.transaction(cancelled), command.request()), command).recheck();
+                withCancellation(invocation.preview(invocation.transaction(cancelled), command.request()), command).recheck();
                 response.add("selection", JsonParser.parseString(invocation.toJson()));
+                var deferred = new com.google.gson.JsonArray();
+                deferred.add("targetAfter");
+                response.add("deferredPathChecks", deferred);
             }
             else {
                 var admitted = admit(args, cancelled);
@@ -262,7 +268,9 @@ public final class AttachmentHelper {
             }
             response.addProperty("requestSha256", command.sha256());
             response.addProperty("outcome", "PREVIEW");
-            response.addProperty("notice", "This selection changes the executable only after explicit confirmation and successful live validation. Preview is read-only.");
+            response.addProperty("notice", command.recovery() ?
+                "Read-only review: private candidate path checks are deferred until authorization. All selected paths, the native target and backups must pass verification before recovery writes." :
+                "This selection changes the executable only after explicit confirmation and successful live validation. Preview is read-only.");
             status = 0;
         }
         catch (IOException | RuntimeException failure) {

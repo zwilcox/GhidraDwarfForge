@@ -75,8 +75,22 @@ public final class AttachmentTransaction {
 
     /** Read-only explicit-role preflight before creating a host recovery session. */
     public static AttachmentPaths.Plan preflightRecoveryPaths(Request request) throws IOException {
+        return preflightRecoveryPaths(request, false);
+    }
+
+    /** Read-only review cannot traverse a privileged helper's private candidate directory. */
+    static AttachmentPaths.Plan preflightRecoveryPreviewPaths(Request request) throws IOException {
+        return preflightRecoveryPaths(request, true);
+    }
+
+    private static AttachmentPaths.Plan preflightRecoveryPaths(Request request, boolean preview) throws IOException {
         var selected = new ArrayList<AttachmentPaths.Selection>();
         for (var entry : request.files().entrySet()) {
+            // The installed image is identified from the pinned receipt. This
+            // private staging pathname is not recovery material and may no
+            // longer exist. Actual execution still preflights every role before
+            // opening a native host session or writing anything.
+            if (preview && entry.getKey().equals("targetAfter")) continue;
             boolean exists = Files.exists(entry.getValue(), LinkOption.NOFOLLOW_LINKS);
             selected.add(new AttachmentPaths.Selection(entry.getKey(), entry.getValue(),
                 !exists ? AttachmentPaths.Kind.NEW_FILE : entry.getKey().equals("targetBefore") ?

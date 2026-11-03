@@ -56,6 +56,7 @@ public final class AttachmentRecoveryInvocationSmoke {
                     Files.writeString(requestFile, json);
                     invocation.preflight(transaction, requestFile).recheck();
                     checks++;
+                    deferredCandidatePreview(invocation, requestFile, directory);
                     rejects(() -> invocation.preflight(transaction, paths.get("targetBefore")));
                     var aliases = new HashMap<>(paths);
                     aliases.put("targetAfter", paths.get("targetBefore"));
@@ -97,6 +98,58 @@ public final class AttachmentRecoveryInvocationSmoke {
                 for (var path : paths.sorted(Comparator.reverseOrder()).toList()) Files.delete(path);
             }
         }
+    }
+
+    private static void deferredCandidatePreview(AttachmentRecoveryInvocation original,
+            Path requestFile, Path directory) throws Exception {
+        Path obstruction = Files.writeString(directory.resolve("candidate-parent-file"), "not a directory");
+        try {
+            checkDeferredCandidate(original, requestFile, obstruction.resolve("candidate"));
+        }
+        finally { Files.delete(obstruction); }
+        if (Files.getFileAttributeView(directory, java.nio.file.attribute.PosixFileAttributeView.class) != null) {
+            Path privateDirectory = Files.createDirectory(directory.resolve("private-candidate-directory"));
+            var permissions = Files.getPosixFilePermissions(privateDirectory);
+            try {
+                Files.setPosixFilePermissions(privateDirectory, java.util.Set.of());
+                equal(false, Files.isReadable(privateDirectory));
+                checkDeferredCandidate(original, requestFile, privateDirectory.resolve("candidate.elf"));
+            }
+            finally {
+                Files.setPosixFilePermissions(privateDirectory, permissions);
+                Files.delete(privateDirectory);
+            }
+        }
+        Files.writeString(requestFile, original.toJson());
+    }
+
+    private static void checkDeferredCandidate(AttachmentRecoveryInvocation original,
+            Path requestFile, Path candidate) throws Exception {
+        var paths = new HashMap<>(original.paths());
+        paths.put("targetAfter", candidate);
+        var invocation = new AttachmentRecoveryInvocation(paths, original.receiptSha256(), original.committedReceiptSha256());
+        Files.writeString(requestFile, invocation.toJson());
+        String targetBefore = FileDigests.read(paths.get("targetBefore"), () -> false).sha256();
+        var transaction = invocation.transaction(() -> false);
+        invocation.preview(transaction, requestFile).recheck();
+        checks++;
+        rejects(() -> invocation.preflight(transaction, requestFile));
+        String hash = FileDigests.read(requestFile, () -> false).sha256();
+        var output = new java.io.ByteArrayOutputStream();
+        equal(0, AttachmentHelper.run(new String[] {"--recover", "--preview", "--request", requestFile.toString(),
+            "--request-sha256", hash}, () -> false, new java.io.PrintStream(output)));
+        var response = com.google.gson.JsonParser.parseString(output.toString(StandardCharsets.UTF_8)).getAsJsonObject();
+        equal("PREVIEW", response.get("outcome").getAsString());
+        equal("targetAfter", response.getAsJsonArray("deferredPathChecks").get(0).getAsString());
+        output.reset();
+        equal(1, AttachmentHelper.run(new String[] {"--recover", "--confirm-target-change", "--request",
+            requestFile.toString(), "--request-sha256", hash}, () -> false, new java.io.PrintStream(output)));
+        equal("FAILED", com.google.gson.JsonParser.parseString(output.toString(StandardCharsets.UTF_8))
+            .getAsJsonObject().get("outcome").getAsString());
+        equal(targetBefore, FileDigests.read(paths.get("targetBefore"), () -> false).sha256());
+        equal(false, Files.exists(paths.get("recoveryReceipt")));
+        equal(false, Files.exists(paths.get("restoreImage")));
+        equal(original.receiptSha256(), FileDigests.read(paths.get("receipt"), () -> false).sha256());
     }
 
     private static AttachmentRecoveryInvocation read(String value) throws IOException {

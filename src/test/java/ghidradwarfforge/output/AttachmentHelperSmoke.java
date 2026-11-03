@@ -21,6 +21,7 @@ public final class AttachmentHelperSmoke {
     private static int checks;
 
     public static void main(String[] args) throws Exception {
+        pathArguments();
         Path root = Files.createTempDirectory("forge-helper-λ ");
         try {
             for (String role : new String[] {"target", "sidecar", "source", "report", "helper", "readelf", "llvm", "strict", "configuration"}) {
@@ -39,6 +40,15 @@ public final class AttachmentHelperSmoke {
             var admitted = AttachmentHelper.admit(command, () -> false);
             equal(invocation, admitted.invocation());
             admitted.plan().recheck();
+            String[] encodedCommand = command.clone();
+            encodedCommand[0] = "--request-utf8-base64";
+            encodedCommand[1] = AttachmentPathArgument.encode(selection.toString());
+            equal(invocation, AttachmentHelper.admit(encodedCommand, () -> false).invocation());
+            var encodedOutput = new ByteArrayOutputStream();
+            equal(0, AttachmentHelper.run(append(Arrays.copyOf(encodedCommand, 4), "--preview"),
+                () -> false, new PrintStream(encodedOutput)));
+            equal("PREVIEW", JsonParser.parseString(encodedOutput.toString(StandardCharsets.UTF_8))
+                .getAsJsonObject().get("outcome").getAsString());
             equal(before, snapshot(root));
             var previewOutput = new ByteArrayOutputStream();
             equal(0, AttachmentHelper.run(append(Arrays.copyOf(command, 4), "--preview"), () -> false, new PrintStream(previewOutput)));
@@ -59,6 +69,11 @@ public final class AttachmentHelperSmoke {
                     {"--request", selection.toString(), "--request-sha256", "invalid", "--confirm-target-change"},
                     append(command, "--confirm-target-change"), append(command, "--elevate"),
                     append(command, "--request", selection.toString()), append(command, "--request"),
+                    append(command, "--request-utf8-base64", AttachmentPathArgument.encode(selection.toString())),
+                    append(encodedCommand, "--request", selection.toString()),
+                    {"--request-utf8-base64", "%%%", "--request-sha256", digest(selection), "--preview"},
+                    {"--request-utf8-base64", AttachmentPathArgument.encode("relative"),
+                        "--request-sha256", digest(selection), "--preview"},
                     append(command, "--request-sha256", digest(selection)),
                     append(command, "--recover"), append(command, "--recover", "--recover"),
                     append(command, "--preview", "--preview"),
@@ -109,6 +124,27 @@ public final class AttachmentHelperSmoke {
         }
     }
 
+    private static void pathArguments() throws Exception {
+        for (String literal : new String[] {"/tmp/λ 空 😀 [literal] $() ` ;.json", "C:\\path with spaces\\λ.json",
+                "a".repeat(16384), "空".repeat(16384)}) {
+            String encoded = AttachmentPathArgument.encode(literal);
+            equal(true, encoded.chars().allMatch(value -> value < 128));
+            equal(literal, AttachmentPathArgument.decode(encoded));
+        }
+        // Fixed external UTF-8/Base64 vector, also consumed by the PowerShell test.
+        equal("L3RtcC/OuyDnqbog8J+YgC5qc29u", AttachmentPathArgument.encode("/tmp/λ 空 😀.json"));
+        for (String invalid : new String[] {null, "", "bad\0path", "a".repeat(16385), "\uD800"}) {
+            try { AttachmentPathArgument.encode(invalid); throw new AssertionError("invalid literal admitted"); }
+            catch (IOException expected) { checks++; }
+        }
+        for (String invalid : new String[] {null, "", "%%%", "YQ", "YR==", "YQ==\n", "AA==", "/w==",
+                "7aCA", "QQ==".repeat(16385), java.util.Base64.getEncoder().encodeToString(
+                    "a".repeat(16385).getBytes(StandardCharsets.UTF_8))}) {
+            try { AttachmentPathArgument.decode(invalid); throw new AssertionError("invalid transport admitted"); }
+            catch (IOException expected) { checks++; }
+        }
+    }
+
     private static void failure(String[] args, boolean cancelled, String outcome, int status) {
         var output = new ByteArrayOutputStream();
         equal(status, AttachmentHelper.run(args, () -> cancelled, new PrintStream(output)));
@@ -125,13 +161,19 @@ public final class AttachmentHelperSmoke {
             var channel = new AttachmentCancellationFile(file);
             equal(false, channel.getAsBoolean());
             var arguments = append(command, "--cancel-file", file.toString());
+            var encodedArguments = append(command, "--cancel-file-utf8-base64", AttachmentPathArgument.encode(file.toString()));
+            equal(file, AttachmentHelper.command(encodedArguments).cancelFile());
+            AttachmentHelper.admit(encodedArguments, () -> false).plan().recheck();
             var output = new ByteArrayOutputStream();
+            equal(0, AttachmentHelper.run(append(encodedArguments, "--preview"), () -> false, new PrintStream(output)));
+            output.reset();
             equal(0, AttachmentHelper.run(append(arguments, "--preview"), () -> false, new PrintStream(output)));
             equal(0L, Files.size(file));
             AttachmentHelper.admit(arguments, () -> false).plan().recheck();
             Files.writeString(file, "cancel");
             equal(true, channel.getAsBoolean());
             failure(arguments, false, "CANCELLED", 130);
+            failure(encodedArguments, false, "CANCELLED", 130);
             Files.writeString(file, "");
             equal(true, channel.getAsBoolean()); // A request cannot be withdrawn.
             var removed = new AttachmentCancellationFile(file);
@@ -150,6 +192,10 @@ public final class AttachmentHelperSmoke {
             finally { Files.delete(retained); }
             for (String[] invalid : new String[][] {
                     append(arguments, "--cancel-file", file.toString()),
+                    append(arguments, "--cancel-file-utf8-base64", AttachmentPathArgument.encode(file.toString())),
+                    append(encodedArguments, "--cancel-file", file.toString()),
+                    append(command, "--cancel-file-utf8-base64", "%%%"),
+                    append(command, "--cancel-file-utf8-base64", AttachmentPathArgument.encode("relative")),
                     append(command, "--cancel-file"), append(command, "--cancel-file", "relative"),
                     append(command, "--cancel-file", root.toString()),
                     append(command, "--cancel-file", root.resolve("absent").toString()) }) {

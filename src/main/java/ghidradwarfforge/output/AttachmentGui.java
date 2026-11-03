@@ -150,7 +150,8 @@ public final class AttachmentGui {
         }
         var previewCommand = new ArrayList<>(List.of(java.toString(), "-cp",
             String.join(File.pathSeparator, dependencies.stream().map(Path::toString).toList()),
-            "ghidradwarfforge.output.AttachmentHelper", "--request", request.toString(), "--request-sha256", sha,
+            "ghidradwarfforge.output.AttachmentHelper", windows ? "--request-utf8-base64" : "--request",
+            windows ? AttachmentPathArgument.encode(request.toString()) : request.toString(), "--request-sha256", sha,
             "--preview"));
         if (recovery) previewCommand.add("--recover");
         monitor.setMessage("Checking attachment selections without changing the executable");
@@ -234,7 +235,9 @@ public final class AttachmentGui {
             content.add(new JLabel(recovery ? "Recovery changes the executable back to the selected pre-operation image." :
                 "Attachment changes the selected executable. Live validation and an independent backup are required."), BorderLayout.NORTH);
             content.add(new JScrollPane(paths), BorderLayout.CENTER);
-            content.add(new JLabel("Keep all backups and receipts. Cancel is the default; ordinary export remains unchanged."), BorderLayout.SOUTH);
+            content.add(new JLabel(recovery ?
+                "Private candidate checks run after authorization. Recovery changes the target only after verification. Cancel is the default." :
+                "Keep all backups and receipts. Cancel is the default; ordinary export remains unchanged."), BorderLayout.SOUTH);
             String action = recovery ? "Restore selected image" : "Attach selected sidecar";
             return JOptionPane.showOptionDialog(null, content, "Review GhidraDwarfForge target change",
                 JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, new String[] {"Cancel", action}, "Cancel") == 1;

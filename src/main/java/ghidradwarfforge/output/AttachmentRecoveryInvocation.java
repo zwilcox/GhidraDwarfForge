@@ -124,7 +124,16 @@ public record AttachmentRecoveryInvocation(Map<String, Path> paths, String recei
     }
 
     public AttachmentPaths.Plan preflight(AttachmentTransaction.Request transaction, Path requestFile) throws IOException {
-        var selections = new ArrayList<>(AttachmentTransaction.preflightRecoveryPaths(transaction).selections());
+        return withRequest(AttachmentTransaction.preflightRecoveryPaths(transaction), requestFile);
+    }
+
+    /** Review only; all-role preflight remains mandatory in the modifying helper. */
+    AttachmentPaths.Plan preview(AttachmentTransaction.Request transaction, Path requestFile) throws IOException {
+        return withRequest(AttachmentTransaction.preflightRecoveryPreviewPaths(transaction), requestFile);
+    }
+
+    private static AttachmentPaths.Plan withRequest(AttachmentPaths.Plan plan, Path requestFile) throws IOException {
+        var selections = new ArrayList<>(plan.selections());
         selections.add(new AttachmentPaths.Selection("invocation", requestFile, AttachmentPaths.Kind.INPUT));
         return AttachmentPaths.preflight(selections);
     }

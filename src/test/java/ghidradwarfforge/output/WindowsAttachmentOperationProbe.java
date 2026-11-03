@@ -89,7 +89,7 @@ public final class WindowsAttachmentOperationProbe {
             "strict", Path.of(args[7]), "configuration", Path.of(args[8]));
         Path saved = directory.resolve("saved-recovery.json");
         var invocation = new AttachmentInvocation(request, tools, saved);
-        Path transport = Files.writeString(directory.resolve("attachment-request.json"), invocation.toJson(), StandardOpenOption.CREATE_NEW);
+        Path transport = Files.writeString(directory.resolve("attachment-request-λ space.json"), invocation.toJson(), StandardOpenOption.CREATE_NEW);
         var command = new ArrayList<String>(java.util.List.of(args[12], "-NoLogo", "-NoProfile", "-File",
             Path.of(args[11], "support", "ghidra-dwarf-forge-attach.ps1").toString(), "-GhidraDirectory", args[10],
             "-ExtensionDirectory", args[11], "-JavaExecutable", Path.of(System.getProperty("java.home"), "bin", "java.exe").toString(),

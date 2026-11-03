@@ -39,15 +39,23 @@ foreach ($dependency in $dependencies) {
     if ($dependency.Contains(';')) { throw 'Java classpath installation paths cannot contain a semicolon' }
 }
 $arguments = [Collections.Generic.List[string]]::new()
+function Encode-PathArgument([string]$Value) {
+    if ($Value.Length -eq 0 -or $Value.Length -gt 16384 -or $Value.Contains([char]0)) {
+        throw 'Path argument must be nonempty, bounded and contain no NUL'
+    }
+    # Java 21's Windows launcher converts argv through the active ANSI code
+    # page. Keep literal selected paths in ASCII transport until Java decodes.
+    return [Convert]::ToBase64String([Text.UTF8Encoding]::new($false, $true).GetBytes($Value))
+}
 foreach ($argument in @('--enable-native-access=ALL-UNNAMED','-cp',($dependencies -join ';'),
-        'ghidradwarfforge.output.AttachmentHelper','--request',$RequestFile,'--request-sha256',$RequestSha256)) {
+        'ghidradwarfforge.output.AttachmentHelper','--request-utf8-base64',(Encode-PathArgument $RequestFile),'--request-sha256',$RequestSha256)) {
     $arguments.Add($argument)
 }
 if ($Recover) { $arguments.Add('--recover') }
 if (-not [string]::IsNullOrWhiteSpace($CancellationFile)) {
     if (-not [IO.Path]::IsPathFullyQualified($CancellationFile)) { throw 'CancellationFile must be absolute' }
-    $arguments.Add('--cancel-file')
-    $arguments.Add($CancellationFile)
+    $arguments.Add('--cancel-file-utf8-base64')
+    $arguments.Add((Encode-PathArgument $CancellationFile))
 }
 
 # ArgumentList performs Windows argument quoting. No cmd.exe, -Command,

@@ -1,5 +1,31 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED defects in run41689061371; corrections locally verified, hosted acceptance pending:**
+Linux GUI job126107904107 committed both initial attachment and curated refresh,
+then recovery preview failed while traversing the root-private candidate directory.
+The read-only review now labels and defers only that staging-path check. Modifying
+recovery still preflights every role before opening a native host or writing.
+Regression cases cover both receipt phases, initial/refresh, an inaccessible
+private directory and a non-directory parent; refused execution preserves the
+target/receipt and creates no recovery outputs. CI diagnostics upload the existing
+owned archive instead of trying to traverse root-private staging directories.
+
+Windows job126110049339 passed the native cancellation identity checks but its
+child process received `?` instead of `λ` in a filename. GUI preview and the
+PowerShell launcher now transport literal request/control paths as bounded,
+canonical UTF-8 Base64 arguments, decoded before the existing absolute-path,
+alias, content-pin and consent checks. Unicode remains in the child fixture;
+the native Windows public-launcher fixture now also selects a Unicode request
+filename. This changes application arguments, not JVM installation/classpath
+support. Actual Java21 local helper219, recovery204, transaction532 (eight abrupt
+exits) and child cleanup/drain checks pass, as do extension build, eight PowerShell
+encoding controls and workflow lint. Native Windows execution, complete GUI
+recovery/consumer validation and the final required gate remain **PRESENT,
+UNVERIFIED**. The installed Linux GUI regression also passes export, default
+declines, validators and GDB stepping; see
+`docs/evidence/attachment-path-recovery-local-20261103.json`. Earlier
+pending-cause/readiness notes below are historical.
+
 **PRESENT, UNVERIFIED native Windows GUI journeys:** the shared Script Manager
 harness now selects PowerShell7/RunAs, checks durable receipt phases and exercises
 initial attachment, curated refresh and saved recovery on the existing runner

@@ -62,6 +62,24 @@ option. Authorization is never retried automatically. Ordinary export never
 enters this flow. The helper still requires live validators and full native host
 admission; a successful preview alone cannot authorize a commit.
 
+Recovery review cannot traverse a privileged helper's private candidate directory.
+It explicitly defers only `targetAfter` path inspection until authorization; the
+installed target and selected backups remain the recovery inputs. The modifying
+helper still repeats the full all-role preflight before native host creation or
+writes. Preview success is not a promise that authorized recovery will succeed.
+
+Windows helper application paths use strict, bounded UTF-8/Base64 transport via
+`--request-utf8-base64` and `--cancel-file-utf8-base64`. The GUI and PowerShell
+launcher encode literal paths without shell evaluation; decoding precedes all
+existing admission checks. Malformed Unicode/Base64, empty/NUL/overlong values,
+relative decoded paths and duplicate raw/encoded options are refused. This
+addresses the observed native child failure in job126110049339 (`λ` became `?`),
+consistent with the [OpenJDK21 Windows launcher conversion through CP_ACP](https://raw.githubusercontent.com/openjdk/jdk21u/master/src/java.base/share/native/launcher/main.c).
+It does not extend Java/Ghidra installation or classpath filename support.
+Actual Java21 Linux helper219/recovery204/transaction532 and the separate child
+cleanup test pass; `attachment-path-argument.ps1` passes eight production-encoder
+controls including a shared fixed UTF-8 vector. Native Windows rerun is pending.
+
 The GUI owns a fresh empty cancellation file and an open write handle. The
 launchers forward `--cancel-file=<absolute-path>` / `-CancellationFile` literally.
 The helper includes that file in all-role alias preflight, reads no commands from

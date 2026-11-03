@@ -11,8 +11,8 @@ import java.util.List;
 public final class AttachmentGuiProcessSmoke {
     public static void main(String[] args) throws Exception {
         if (args.length != 0) {
-            Path control = Path.of(args[1]);
-            Path receipt = Path.of(args[2]);
+            Path control = Path.of(AttachmentPathArgument.decode(args[1]));
+            Path receipt = Path.of(AttachmentPathArgument.decode(args[2]));
             // More than an OS pipe buffer on both streams exposes deadlocks.
             System.out.print("x".repeat(128 * 1024));
             System.err.print("y".repeat(128 * 1024));
@@ -33,7 +33,8 @@ public final class AttachmentGuiProcessSmoke {
         boolean windows = System.getProperty("os.name").startsWith("Windows");
         Path java = Path.of(System.getProperty("java.home"), "bin", windows ? "java.exe" : "java");
         var command = new ArrayList<>(List.of(java.toString(), "-cp", System.getProperty("java.class.path"),
-            AttachmentGuiProcessSmoke.class.getName(), "child", control.toString(), receipt.toString()));
+            AttachmentGuiProcessSmoke.class.getName(), "child", AttachmentPathArgument.encode(control.toString()),
+            AttachmentPathArgument.encode(receipt.toString())));
         try (var channel = FileChannel.open(control, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
             var result = AttachmentGui.process(command, () -> Files.exists(root.resolve("ready")), channel, false);
             Path diagnostics = Path.of("build", "test-results", "windows-host", "gui-helper-process");
