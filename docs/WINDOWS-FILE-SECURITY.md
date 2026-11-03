@@ -52,3 +52,46 @@ The strict attachment contract and unresolved product privilege/visibility
 choice remain unchanged. Full A1 host admission and A2–A7 public attachment,
 recovery and matrix acceptance are still required; this reader alone does not
 close #72 or enable attachment.
+
+## Retained Java transport failure
+
+**CONFIRMED failed native run:** run41626330294 at `2bfbada` passes the native
+C fixture but the Java probe fails in Path.of: its direct command-line argument
+contains `?` where the owned fixture path contains lambda. This happens before
+production inspection, so it proves neither a reader pass nor a reader failure.
+All 26 source files and the raw failing command are verified in
+[the failure receipt](evidence/windows-security-java-41626330294.json).
+
+The probe now uses the existing UTF-8 JSON request-file convention shared by
+other Windows metadata probes. The Unicode fixture is retained. Native tests
+require normal/interpreted request round trips with Windows-1252 as the default
+encoding; corresponding actual Java 21 local tests pass. Reader execution and
+all native preservation/cleanup controls still require a corrected hosted run.
+
+## Complete metadata composition for private stages
+
+**PRESENT, UNVERIFIED:** `WindowsAttachmentMetadata` combines ordinary metadata,
+complete security and backup-stream observations. It requires the same native
+file facts across them, one hard link, supported ordinary attributes and only
+ordinary data streams. Present SACLs (including null/empty ACLs), resource-manager
+controls and unsupported control bits are rejected before metadata application.
+This is the documented initial unsupported-metadata refusal boundary, not a
+claim that SACLs or extended attributes are copied.
+
+An absent SACL does not mean its control flags can be ignored. The pinned
+header identifies `0x2a30` as presence/defaulted, auto-inherit request/result and
+SACL protection. These source/stage flags must match before applying ordinary
+metadata. Full control and ordinary preservation values must match after
+application, with source readback and unchanged stage identity/size. The
+existing setter changes only the private stage; no target is published. Complete
+security reads require already authorized access and never adjust privileges.
+
+Native tests independently inspect ordinary permissions, timestamps, attributes,
+owner/group/DACL, content and file identity for inherited/protected DACL profiles.
+The C observer's new read-only `observe` mode compares complete source/stage
+security control even for absent SACLs. SACL and EA source/stage refusals,
+insufficient privilege, aliases, stale source and cancellation must preserve the
+unmodified inputs/stage; native re-reads verify retained SACL and EA payloads.
+These controls are implemented and compile locally but are not yet native
+acceptance. Full filesystem admission/durability, production privilege policy
+and public attachment remain separate unfinished requirements.

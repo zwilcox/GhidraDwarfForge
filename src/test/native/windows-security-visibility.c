@@ -33,6 +33,9 @@ _Static_assert(COMPLETE_SECURITY_FIELDS == 0x101ff, "complete descriptor query f
 _Static_assert(sizeof(LUID) == 8 && sizeof(TOKEN_PRIVILEGES) == 16 &&
     offsetof(TOKEN_PRIVILEGES, Privileges) == 4 && offsetof(LUID_AND_ATTRIBUTES, Attributes) == 8,
     "isolated Java own-token fixture layout");
+_Static_assert((SE_SACL_PRESENT | SE_SACL_DEFAULTED | SE_SACL_AUTO_INHERIT_REQ |
+    SE_SACL_AUTO_INHERITED | SE_SACL_PROTECTED) == 0x2a30 && SE_RM_CONTROL_VALID == 0x4000,
+    "complete attachment security control mask");
 
 static void require(BOOL value, const char *operation) {
     if (!value) { fprintf(stderr, "%s failed: win32=%lu\n", operation, GetLastError()); exit(1); }
@@ -173,7 +176,7 @@ int wmain(int argc, WCHAR **argv) {
     BOOL (WINAPI *adjust_token)(HANDLE, BOOL, PTOKEN_PRIVILEGES, DWORD, PTOKEN_PRIVILEGES, PDWORD) = AdjustTokenPrivileges;
     (void)read_sacl; (void)valid_acl; (void)adjust_token;
 
-    require(argc == 3 && (!wcscmp(argv[1], L"create") || !wcscmp(argv[1], L"read")), "mode and owned path required");
+    require(argc == 3 && (!wcscmp(argv[1], L"create") || !wcscmp(argv[1], L"read") || !wcscmp(argv[1], L"observe")), "mode and owned path required");
     BOOL creating = !wcscmp(argv[1], L"create");
     fixture_path = argv[2];
     if (creating) {
@@ -232,7 +235,7 @@ int wmain(int argc, WCHAR **argv) {
     opened_snapshot(complete, COMPLETE_SECURITY_FIELDS, &full);
     path_snapshot(argv[2], &independent);
     same(&full, &independent);
-    if (!full.present || full.audits != 1 || full.labels != 1) {
+    if (wcscmp(argv[1], L"observe") && (!full.present || full.audits != 1 || full.labels != 1)) {
         fprintf(stderr, "whole descriptor control=%04x present=%d audit=%lu label=%lu bytes=%lu\n",
             (unsigned int)full.control, full.present, full.audits, full.labels, full.bytes);
         require(FALSE, "whole descriptor must include audit and label");

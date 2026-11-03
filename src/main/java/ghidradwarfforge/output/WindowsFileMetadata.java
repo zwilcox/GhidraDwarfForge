@@ -251,7 +251,7 @@ public final class WindowsFileMetadata {
         return result;
     }
 
-    private static void supported(Snapshot snapshot) throws IOException {
+    static void supported(Snapshot snapshot) throws IOException {
         require((snapshot.facts().attributes() & ~0x20a7) == 0, "special Windows attributes require separate policy");
         require(snapshot.dataStreams().equals(Map.of("::$DATA", snapshot.facts().bytes())),
             "Windows metadata application rejects named or missing data streams");

@@ -96,12 +96,32 @@ public final class WindowsFileSecurityProbe {
         }
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] arguments) throws Exception {
         System.setOut(new java.io.PrintStream(System.out, true, java.nio.charset.StandardCharsets.UTF_8));
-        if (args.length != 2) throw new IllegalArgumentException("mode owned-file");
+        System.setErr(new java.io.PrintStream(System.err, true, java.nio.charset.StandardCharsets.UTF_8));
+        if (arguments.length != 2 || !arguments[0].equals("--request-file")) {
+            throw new IllegalArgumentException("UTF-8 request file required");
+        }
+        String[] args = new Gson().fromJson(Files.readString(Path.of(arguments[1]),
+            java.nio.charset.StandardCharsets.UTF_8), String[].class);
+        if (args[0].equals("request-roundtrip")) { System.out.println(new Gson().toJson(args)); return; }
+        if (args.length != 2 && args.length != 3) throw new IllegalArgumentException("mode owned-file");
         var security = new WindowsFileSecurity();
         Path path = Path.of(args[1]);
-        try (var privilege = new OwnPrivilege(!args[0].equals("denied"))) {
+        try (var privilege = new OwnPrivilege(!args[0].equals("denied") && !args[0].equals("admission-denied"))) {
+            if (args[0].startsWith("admission")) {
+                var admission = new WindowsAttachmentMetadata();
+                var before = admission.inspect(path, () -> false);
+                if (args.length == 2) System.out.println(new Gson().toJson(before));
+                else {
+                    if (args[0].equals("admission-stale")) Files.writeString(path, "stale source sentinel");
+                    var after = admission.applyToOwnedStage(path, before, Path.of(args[2]),
+                        () -> args[0].equals("admission-cancel"));
+                    if (!after.preservation().equals(before.preservation())) throw new AssertionError("complete metadata differs");
+                    System.out.println(new Gson().toJson(after));
+                }
+                return;
+            }
             if (args[0].equals("cycles")) {
                 var metadata = new WindowsFileMetadata();
                 for (int i = 0; i < 32; i++) cycle(security, path);

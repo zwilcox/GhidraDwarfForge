@@ -26,6 +26,7 @@ $sources = @(
     (Join-Path $repo 'src/test/java/ghidradwarfforge/output/DebuglinkBasenameSmoke.java'),
     (Join-Path $repo 'src/main/java/ghidradwarfforge/output/WindowsFileMetadata.java'),
     (Join-Path $repo 'src/main/java/ghidradwarfforge/output/WindowsFileSecurity.java'),
+    (Join-Path $repo 'src/main/java/ghidradwarfforge/output/WindowsAttachmentMetadata.java'),
     (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsFileSecurityProbe.java'),
     (Join-Path $repo 'src/main/java/ghidradwarfforge/output/WindowsBackupStreams.java'),
     (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsBackupStreamsProbe.java'),
@@ -114,6 +115,7 @@ $null = Run-Captured 'compile-java' $JavacExe @('--release','21','-cp',$dependen
     (Join-Path $provenance 'WindowsDirectorySync.java'), (Join-Path $provenance 'WindowsDirectorySyncProbe.java'),
     (Join-Path $provenance 'WindowsFileMetadata.java'), (Join-Path $provenance 'WindowsFileMetadataProbe.java'),
     (Join-Path $provenance 'WindowsFileSecurity.java'), (Join-Path $provenance 'WindowsFileSecurityProbe.java'),
+    (Join-Path $provenance 'WindowsAttachmentMetadata.java'),
     (Join-Path $provenance 'WindowsBackupStreams.java'), (Join-Path $provenance 'WindowsBackupStreamsProbe.java'),
     (Join-Path $provenance 'WindowsFileRename.java'), (Join-Path $provenance 'WindowsFileRenameProbe.java'))
 $version = Run-Captured 'java-version' $JavaExe @('-version')
@@ -599,7 +601,20 @@ Save-Json (Join-Path $root 'security-visibility.json') ([ordered]@{status='OBSER
 # its own already-owned privilege, and restores it before exiting. No parent
 # token, product process or account policy is changed.
 $securityPrefix = @('-cp', ($classes + ';' + $dependencies), 'ghidradwarfforge.output.WindowsFileSecurityProbe')
-$securityJava = Run-Captured 'security-java-inspect' $JavaExe ($securityPrefix + @('inspect',$securityPath))
+function Run-Security([string]$Label, [string[]]$Arguments, [bool]$Success=$true, [bool]$Cycles=$false) {
+    $request = Join-Path $root "$Label.request.json"
+    Save-Json $request $Arguments
+    $options = @()
+    if ($Cycles) { $options = @('-Xint','-XX:+UseSerialGC') }
+    if ($Arguments[0] -eq 'request-roundtrip') { $options += '-Dfile.encoding=windows-1252' }
+    return Run-Captured $Label $JavaExe ($options + $securityPrefix + @('--request-file',$request)) $Success
+}
+foreach ($interpreted in @($false,$true)) {
+    $roundTrip = Run-Security "security-request-roundtrip-$interpreted" @('request-roundtrip',$securityPath) $true $interpreted
+    Require ((ConvertFrom-Json $roundTrip.stdout)[1] -ceq $securityPath) 'Security probe Unicode request changed'
+}
+
+$securityJava = Run-Security 'security-java-inspect' @('inspect',$securityPath)
 $securityJavaFacts = ConvertFrom-Json $securityJava.stdout
 Require ($securityJavaFacts.descriptor.control -eq $securityFacts.complete.control -and
     $securityJavaFacts.descriptor.saclPresent -eq $securityFacts.complete.saclPresent -and
@@ -607,7 +622,7 @@ Require ($securityJavaFacts.descriptor.control -eq $securityFacts.complete.contr
     $securityJavaFacts.descriptor.saclHex -ceq $securityFacts.complete.saclHex) 'Java full-security bytes differ from independent native APIs'
 Same-State $securityBefore $securityPath
 foreach ($mode in @('denied','cancel-before','cancel-open')) {
-    $negative = Run-Captured "security-java-$mode" $JavaExe ($securityPrefix + @($mode,$securityPath)) $false
+    $negative = Run-Security "security-java-$mode" @($mode,$securityPath) $false
     if ($mode -eq 'denied') { Require ($negative.stderr.Contains('error=1314')) 'Insufficient privilege did not fail at open' }
     else { Require ($negative.stderr.Contains('CancellationException')) 'Security cancellation was not honored' }
     Same-State $securityBefore $securityPath
@@ -615,13 +630,13 @@ foreach ($mode in @('denied','cancel-before','cancel-open')) {
 $securityLate = Join-Path $owned 'security late path'
 [IO.File]::WriteAllText($securityLate, 'retained security sentinel', $utf8)
 $lateHash = Hash $securityLate
-$late = Run-Captured 'security-java-late' $JavaExe ($securityPrefix + @('late',$securityLate)) $false
+$late = Run-Security 'security-java-late' @('late',$securityLate) $false
 Require ($late.stderr.Contains('selected metadata path changed')) 'Changed security path was not rejected'
 Require ((Hash "$securityLate.retained") -eq $lateHash -and
     [IO.File]::ReadAllText($securityLate) -ceq 'replacement sentinel') 'Late-path control changed retained data'
-$directoryRefused = Run-Captured 'security-java-directory' $JavaExe ($securityPrefix + @('inspect',$owned)) $false
+$directoryRefused = Run-Security 'security-java-directory' @('inspect',$owned) $false
 Require ($directoryRefused.stderr.Contains('regular non-link file')) 'Directory security input was not refused'
-$securityCycles = Run-Captured 'security-java-cycles' $JavaExe (@('-Xint','-XX:+UseSerialGC') + $securityPrefix + @('cycles',$securityPath))
+$securityCycles = Run-Security 'security-java-cycles' @('cycles',$securityPath) $true $true
 Require ($securityCycles.stdout.Contains('windows-security-handles=PASS cycles=128')) 'Security resource cycles incomplete'
 Same-State $securityBefore $securityPath
 $nativeAfterJava = Run-Captured 'security-native-after-java' $securityProbe @('read',$securityPath)
@@ -631,6 +646,76 @@ Require ($nativeAfterJavaFacts.complete.saclHex -ceq $securityFacts.complete.sac
 Save-Json (Join-Path $root 'security-java.json') ([ordered]@{status='OBSERVED'; snapshot=$securityJavaFacts;
     nativeAfter=$nativeAfterJavaFacts; cycles=128;
     scope='Complete descriptor JNA observation with native SACL agreement, insufficient privilege, cancellation, changed path and lifetime controls; not a production Host or elevation policy'})
+
+# Composed admission and application, still restricted to owned private stages.
+$admissionResults = [Collections.Generic.List[object]]::new()
+foreach ($profile in @('inherited','protected')) {
+    $admissionSource = Join-Path $owned "complete metadata $profile source λ"
+    $admissionStage = Join-Path $stageParent "complete metadata $profile stage"
+    [IO.File]::WriteAllText($admissionSource, 'original preserved source', $utf8)
+    [IO.File]::WriteAllText($admissionStage, 'different candidate image', $utf8)
+    [IO.File]::SetCreationTimeUtc($admissionSource, [DateTime]::FromFileTimeUtc(133713240001234567L))
+    [IO.File]::SetLastWriteTimeUtc($admissionSource, [DateTime]::FromFileTimeUtc(133713240009876543L))
+    [IO.File]::SetAttributes($admissionSource, [IO.FileAttributes]::Hidden -bor [IO.FileAttributes]::Archive)
+    if ($profile -eq 'protected') {
+        $acl = Get-Acl -LiteralPath $admissionSource
+        $acl.SetAccessRuleProtection($true, $true)
+        Set-Acl -LiteralPath $admissionSource -AclObject $acl
+    }
+    $beforeAdmission = Independent-State $admissionSource
+    $priorAdmission = Independent-State $admissionStage
+    $nativeSource = Run-Captured "admission-native-source-$profile" $securityProbe @('observe',$admissionSource)
+    $nativeSourceFacts = ConvertFrom-Json $nativeSource.stdout
+    Require (-not $nativeSourceFacts.complete.saclPresent) 'Ordinary admission fixture has unsupported SACL'
+    $applied = Run-Security "admission-apply-$profile" @('admission-apply',$admissionSource,$admissionStage)
+    $appliedFacts = ConvertFrom-Json $applied.stdout
+    $afterAdmission = Independent-State $admissionStage
+    foreach ($key in @('attributes','created','modified','control','owner','group','dacl')) {
+        Require ($afterAdmission[$key] -ceq $beforeAdmission[$key]) "Complete metadata application differs: $key"
+    }
+    foreach ($key in @('sha256','bytes','volume','fileId','links')) {
+        Require ($afterAdmission[$key] -ceq $priorAdmission[$key]) "Complete metadata stage changed: $key"
+    }
+    Same-State $beforeAdmission $admissionSource
+    $nativeStage = Run-Captured "admission-native-stage-$profile" $securityProbe @('observe',$admissionStage)
+    $nativeStageFacts = ConvertFrom-Json $nativeStage.stdout
+    Require ($nativeStageFacts.complete.control -eq $nativeSourceFacts.complete.control -and
+        -not $nativeStageFacts.complete.saclPresent -and
+        $appliedFacts.security.control -eq $nativeSourceFacts.complete.control) 'Complete security control was not preserved'
+    $admissionResults.Add([ordered]@{profile=$profile; source=$beforeAdmission; prior=$priorAdmission; after=$afterAdmission;
+        nativeSource=$nativeSourceFacts; nativeStage=$nativeStageFacts; java=$appliedFacts})
+}
+$negativeCases = @(
+    @{name='sacl-source'; source=$securityPath; stage=$admissionStage; mode='admission-apply'; message='SACL'},
+    @{name='sacl-stage'; source=$admissionSource; stage=$securityPath; mode='admission-apply'; message='SACL'},
+    @{name='ea-source'; source=$eaSource; stage=$admissionStage; mode='admission-apply'; message='unsupported metadata streams'},
+    @{name='ea-stage'; source=$admissionSource; stage=$eaSource; mode='admission-apply'; message='unsupported metadata streams'},
+    @{name='alias'; source=$admissionSource; stage=$admissionSource; mode='admission-apply'; message='aliases source'},
+    @{name='denied'; source=$admissionSource; stage=$admissionStage; mode='admission-denied'; message='error=1314'},
+    @{name='cancel'; source=$admissionSource; stage=$admissionStage; mode='admission-cancel'; message='CancellationException'}
+)
+foreach ($case in $negativeCases) {
+    $sourceBefore = Independent-State $case.source
+    $stageBefore = Independent-State $case.stage
+    $refused = Run-Security "admission-reject-$($case.name)" @($case.mode,$case.source,$case.stage) $false
+    Require ($refused.stderr.Contains($case.message)) "Admission refusal differs: $($case.name)"
+    Same-State $sourceBefore $case.source
+    Same-State $stageBefore $case.stage
+}
+$admissionEaAfter = Run-Captured 'admission-ea-after' $eaFixture @('query',$eaSource)
+Require ((ConvertFrom-Json $admissionEaAfter.stdout).eaBytes -eq $eaBytes) 'Admission rejection changed EA payload'
+$admissionSaclAfter = Run-Captured 'admission-sacl-after' $securityProbe @('read',$securityPath)
+Require ((ConvertFrom-Json $admissionSaclAfter.stdout).complete.saclHex -ceq $securityFacts.complete.saclHex) 'Admission rejection changed SACL bytes'
+$staleAdmission = Join-Path $owned 'admission stale source'
+[IO.File]::WriteAllText($staleAdmission, 'initial stale source', $utf8)
+$stageBefore = Independent-State $admissionStage
+$refused = Run-Security 'admission-stale-source' @('admission-stale',$staleAdmission,$admissionStage) $false
+Require ($refused.stderr.Contains('source changed') -and
+    [IO.File]::ReadAllText($staleAdmission) -ceq 'stale source sentinel') 'Stale admission control differs'
+Same-State $stageBefore $admissionStage
+Save-Json (Join-Path $root 'attachment-metadata.json') ([ordered]@{status='OBSERVED'; applications=$admissionResults.ToArray();
+    refusalCases=$negativeCases.Count + 1;
+    scope='Complete-security/ordinary-metadata/backup-stream composition and private-stage application; not public attachment, elevation or filesystem durability'})
 
 foreach ($sourcePath in $hashes.Keys) { Require ((Hash $sourcePath) -eq $hashes[$sourcePath]) 'Protected source/dependency changed' }
 Save-Json (Join-Path $root 'result.json') ([ordered]@{status='PASS'; observations=$observations.ToArray();
