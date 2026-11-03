@@ -14,8 +14,9 @@ show its selected pair, original backup and receipt, and require an explicit
 action. A successful export alone is insufficient: the helper must run the
 complete production validator and host transaction. Refresh must retain the
 previous generation and export against the original backup as ADR-0004 requires.
-The launcher, OS authorization, cancellation/recovery interface and GUI journey
-remain **PLANNED**. The metadata policy and Ghidra/Java/native producer baselines
+The convenience launchers, OS authorization, durable public recovery interface
+and GUI journey remain **PLANNED**. The standalone helper below is implemented;
+its actual native execution is **PRESENT, UNVERIFIED** until hosted tests pass. The metadata policy and Ghidra/Java/native producer baselines
 are unchanged.
 
 ## Explicit selection transport
@@ -63,3 +64,60 @@ are corrected. Commands and outcomes are in
 `build/attachment-invocation-validation.log`. CI runs the new task on both Linux
 and Windows; native Windows execution remains pending. This is request/path
 admission evidence, not helper execution or complete A2/A5 acceptance.
+
+## Standalone helper entry point
+
+**PRESENT, UNVERIFIED native execution:** the extension JAR now includes
+`ghidradwarfforge.output.AttachmentHelper`. Run it only in a separate Java21+
+process with the extension JAR and Ghidra's JNA/Gson JARs on the classpath:
+
+```text
+java --enable-native-access=ALL-UNNAMED -cp <extension-and-Ghidra-dependencies> \
+    ghidradwarfforge.output.AttachmentHelper \
+    --request <absolute-request.json> --request-sha256 <exact-lowercase-sha256> \
+    --confirm-target-change
+```
+
+`--help` explains target mutation and retained recovery material. There is no
+implicit confirmation, privilege request, shell evaluation, test-host switch or
+captured-success validator. The helper selects the native host and the required
+live GNU/LLVM/pinned-libdwarf validator. On Windows the caller currently must
+provide an already authorized token with the required privileges enabled; the
+public UAC launcher/privilege scope is still required. On Linux the existing
+strict ext4/protected-metadata contract applies. Running the helper inside
+Ghidra is unsupported; its `main` terminates its standalone JVM.
+
+The request bytes are read with a 256KiB bound and must match the digest the
+invoker explicitly selected. Full role/tool/request alias preflight precedes
+host workspace creation. Native request/tool snapshots are then retained and
+rechecked around validation and transaction boundaries; the request hash is
+rechecked against the selection before execution. The helper does not reuse an
+absence check after its own transaction has created a selected output.
+
+`--cancel-on-stdin` enables a launcher-owned control channel. Any byte or EOF
+requests cooperative cancellation; a launcher must keep the pipe open while
+running. The existing supervisor cancels validators and the transaction handles
+rollback without interrupting recovery. Abrupt process death still requires
+explicit recovery; a durable user-facing recovery invocation remains incomplete.
+Neither Ctrl-C handling nor a GUI cancellation journey is claimed by this flag.
+
+Stdout contains one JSON result including the request selection/digest, outcome,
+retained paths and, when the transaction returned, the explicit recovery
+selection. Exit0 means committed with successful host cleanup; nonzero includes
+refusal, rollback, cancellation (130), recovery-required and reporting/cleanup
+failure. A cleanup failure after a committed transaction preserves the COMMITTED
+outcome in the response and exits nonzero. If stdout is lost, inspect the durable
+receipt and preserve every selected backup/generation; never assume a failed
+process exit proves that the target is unchanged. The helper opens no log or
+result destination that could truncate an input.
+
+**CONFIRMED locally:** actual Java21 passes88 helper admission/refusal checks,
+72 invocation checks and80 operation checks, and builds the extension. Python
+AST and workflow/actionlint/ShellCheck checks pass. The Linux production matrix
+now uses the standalone helper for all15 initial attachments, then applies its
+existing independent ELF/receipt/validator/GDB/CRC oracles. It also checks
+no-consent and stdin-cancellation refusals preserve inputs and create no output.
+Rollback fault injection retains the test bridge. Hosted helper execution,
+Windows helper execution, convenience CLI/GUI and full A2/A5/C1 acceptance
+remain pending. Local commands are retained in
+`build/attachment-helper-validation.log`.

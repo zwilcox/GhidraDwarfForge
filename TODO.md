@@ -1,5 +1,17 @@
 # TODO.md — GhidraDwarfForge
 
+**PRESENT, UNVERIFIED native helper execution:** `AttachmentHelper` now runs
+explicit SHA-256-pinned ATTACH/REFRESH selections in a separate process through
+the real host/validator/transaction. Explicit target-change consent is mandatory;
+no automatic elevation or fallback is introduced. It retains request/tool
+bindings, supports an opt-in stdin cancellation channel and reports committed
+outcomes even if subsequent host cleanup fails. Actual Java21 passes88 admission,
+72 request and80 operation checks; extension build and workflow lint pass.
+CI now routes all15 Linux production initial cases through the helper and keeps
+the existing GDB/CRC/metadata oracles. Native helper evidence, authorization
+launchers, durable public recovery, GUI journeys and final C1 remain pending.
+See `docs/ATTACHMENT-HELPER.md`.
+
 **CONFIRMED scoped production Linux attachment:** independent artifact review
 at `e3601f9` /41660525292 accepts fifteen real initial/rollback cases across
 x86-64, AArch64, ARM32 and both MIPS32 byte orders (exec/PIE/no-build-ID), two saved

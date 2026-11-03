@@ -220,6 +220,14 @@ tasks.register("attachmentOperationSmoke", JavaExec) {
     jvmArgs "--enable-native-access=ALL-UNNAMED"
 }
 
+tasks.register("attachmentHelperSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit helper consent, pinned request admission and no-write refusals"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentHelperSmoke"
+}
+
 tasks.register("attachmentInvocationSmoke", JavaExec) {
     group = "verification"
     description = "Checks bounded helper selections and all-role transport/tool path preflight"

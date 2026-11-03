@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Real-export controller test, not the product attachment entry point.
 
-Fresh validators gate the test-only Java bridge. The Linux host adapter is
-explicitly limited; this does not establish production metadata preservation.
+Fresh validators gate each transaction. Production Linux initial attachment
+runs the isolated product helper; rollback injection uses the test-only bridge.
+The historical default bridge retains its explicitly limited test host.
 """
 import argparse
 import hashlib
@@ -112,9 +113,9 @@ def main():
         for path in [jar, gson, jna, Path(__file__), oracle, policy_controls, *sources]}, indent=4) + '\n')
     commands = []
 
-    def run(label, argv, env=None, timeout=60, success=True):
+    def run(label, argv, env=None, timeout=60, success=True, input_bytes=None):
         command = list(map(str, argv))
-        completed = subprocess.run(command, capture_output=True, timeout=timeout, env=env, cwd=work)
+        completed = subprocess.run(command, capture_output=True, timeout=timeout, env=env, cwd=work, input=input_bytes)
         (work / (label + '.stdout')).write_bytes(completed.stdout)
         (work / (label + '.stderr')).write_bytes(completed.stderr)
         commands.append({'label': label, 'argv': command, 'exit': completed.returncode})
@@ -277,12 +278,49 @@ def main():
             '-Dforge.test.attachment.sidecarBasename=' + args.sidecar_basename]
         if args.production_linux_host:
             basename_option.append('-Dforge.test.attachment.productionLinuxHost=true')
-        outcome = run(action, [java, *basename_option, '--enable-native-access=ALL-UNNAMED', '-cp', runtime,
-            'ghidradwarfforge.output.AttachmentElfTransactionProbe', report_path, original,
-            sidecar, source, evidence, directory, action, *live_validator_arguments], timeout=300)
-        require(b'attachment-elf-controller=PASS' in outcome.stdout, 'controller did not complete')
+        if args.production_linux_host and action == 'commit':
+            target = directory / original.name
+            selected_sidecar = directory / (args.sidecar_basename or sidecar.name)
+            selected_report = directory / report_path.name
+            for src, dst in [(original, target), (sidecar, selected_sidecar), (report_path, selected_report)]:
+                shutil.copy2(src, dst)
+            invocation = {
+                'schemaVersion': 1, 'operation': 'ATTACH',
+                'paths': {name: str(path) for name, path in {
+                    'target': target, 'sidecar': selected_sidecar, 'source': source, 'exportReport': selected_report,
+                    'originalBackup': directory / 'original.backup', 'validationEvidence': directory / 'validation.json',
+                    'receipt': directory / 'transaction.json', 'recoveryReceipt': directory / 'recovery.json',
+                    'restoreImage': directory / 'restore.elf'}.items()},
+                'validatorTools': dict(zip(['helper', 'readelf', 'llvm', 'strict', 'configuration'],
+                                          map(str, live_validator_arguments)))}
+            request_file = directory / 'attachment-request.json'
+            request_file.write_text(json.dumps(invocation, ensure_ascii=True) + '\n')
+            command = [java, '--enable-native-access=ALL-UNNAMED', '-cp', runtime,
+                'ghidradwarfforge.output.AttachmentHelper', '--request', request_file,
+                '--request-sha256', digest(request_file)]
+            before_admission = {str(path): file_state(path) for path in directory.iterdir()}
+            for label, extra in [('no-consent', []), ('cancelled', ['--confirm-target-change', '--cancel-on-stdin'])]:
+                refused = run('helper-' + label, command + extra, success=False, input_bytes=b'')
+                response = json.loads(refused.stdout)
+                require(response['outcome'] == ('CANCELLED' if label == 'cancelled' else 'FAILED'),
+                        'helper admission returned the wrong outcome')
+                require(before_admission == {str(path): file_state(path) for path in directory.iterdir()},
+                        'helper refusal changed a selected file or created an output')
+            outcome = run(action, command + ['--confirm-target-change'], timeout=300)
+            response = json.loads(outcome.stdout)
+            require(response['outcome'] == 'COMMITTED' and response['exitCode'] == 0 and
+                    response['requestSha256'] == digest(request_file), 'helper did not commit the selected request')
+            require(response['selection'] == invocation, 'helper used different explicit selections')
+            require(response['recoverySelection']['prepared']['hostContract'] ==
+                    'linux-x64-ext4-protected-metadata-v1', 'helper used an incorrect host')
+        else:
+            outcome = run(action, [java, *basename_option, '--enable-native-access=ALL-UNNAMED', '-cp', runtime,
+                'ghidradwarfforge.output.AttachmentElfTransactionProbe', report_path, original,
+                sidecar, source, evidence, directory, action, *live_validator_arguments], timeout=300)
+            require(b'attachment-elf-controller=PASS' in outcome.stdout, 'controller did not complete')
+            if args.production_linux_host:
+                require(b'host=production-linux' in outcome.stdout, 'controller did not use the production host')
         if args.production_linux_host:
-            require(b'host=production-linux' in outcome.stdout, 'controller did not use the production host')
             receipt = json.loads((directory / 'transaction.json').read_text())
             require(receipt['hostContract'] == 'linux-x64-ext4-protected-metadata-v1', 'wrong receipt host contract')
             require(not list(directory.glob('.forge-visibility-*')), 'production host visibility workspace leaked')
@@ -443,6 +481,7 @@ def main():
     (work / 'result.json').write_text(json.dumps({'status': 'PASS', 'target': args.target, 'role': args.role,
         'preserved': protected, 'strict': strict_result,
         'host': 'production Linux ext4 host' if args.production_linux_host else 'limited Linux test host',
+        'entryPoint': 'AttachmentHelper' if args.production_linux_host else 'test bridge',
         'runtime': True, 'debuglinkBasename': installed_sidecar.name, 'debuglinkPayloadHex': payload.hex(),
         'validator': 'production-live' if live_validator_arguments else 'captured-test-adapter',
         'scope': 'real ELF initial commit/rollback and GDB discovery/runtime/CRC rejection; public UI and refresh acceptance remain separate'}, indent=4) + '\n')
