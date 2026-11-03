@@ -213,8 +213,12 @@ int wmain(int argc, wchar_t **argv) {
             if (exceeded) reason = "output_limit";
             else if (interrupted || available || (!control_ok && GetLastError() == ERROR_BROKEN_PIPE)) reason = "cancelled";
             else if (!control_ok) { reason = "internal_error"; cleanup_ok = false; }
-            else if (root_done && !all_gone) reason = "descendants";
-            else if (now - started >= timeout) reason = "timeout";
+            /* Root exit and job-accounting updates are not one atomic
+             * observation. Allow the whole job to finish within the original
+             * execution deadline; never infer surviving children from the
+             * first nonzero sample after root exit. At the deadline, terminate
+             * unresolved membership and still require zero plus both EOFs. */
+            else if (now - started >= timeout) reason = root_done && !all_gone ? "descendants" : "timeout";
         }
         if (all_gone && root_done && outputs[0].eof && outputs[1].eof) break;
         if (reason && !cleanup_started) cleanup_started = now;

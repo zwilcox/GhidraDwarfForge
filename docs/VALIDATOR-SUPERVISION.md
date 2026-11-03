@@ -170,6 +170,17 @@ successful-exit controls supplement the existing orphan, timeout, cancellation,
 breakaway and output-limit cases. Cross-compilation passes; corrected native
 Windows runtime acceptance remains **PRESENT, UNVERIFIED**.
 
+The repeated-exit controls in run 41587157999 caught a remaining race after
+the handle correction: job accounting need not settle in the same observation
+as the root's signaled exit. The helper now allows the entire job to finish
+within the original execution deadline. It does not add a fixed sleep or accept
+a nonzero count as cleanup. At expiry, unresolved membership is terminated and
+reported as `descendants`; active-root expiry remains `timeout`. Either failure
+still requires verified job-zero and both pipe EOFs before cleanup is reported
+complete. Existing persistent-orphan tests retain their failure expectation.
+The failed raw log is `build/supervisor/windows-root-fix-ci.log`; corrected
+native Windows evidence remains required.
+
 ## Fresh strict DWARF check component
 
 `StrictDwarfCheck` runs an explicitly selected raw libdwarf 2.3.2 checker through
