@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local #72 receipt publication:** complete prepared records and
+conditional phase updates pass 101 Linux filesystem controls, including six
+abrupt child-process terminations, actual directory fsync, concurrent creators,
+metadata readback and cancellation. An audited isolated libc `renameat2`
+binding avoids the temporary-hardlink crash window found during review.
+The full host metadata/identity adapters and executable backup/replacement,
+recovery, refresh and UI integration remain required. No target is modified
+and no attachment option is enabled. See `docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`.
+
 **CONFIRMED local #72 protocol checkpoint:** `AttachmentPaths` and
 `AttachmentReceipt` pass 116 path/receipt controls, including refresh roles,
 immutable committed receipts, independent-backup claims, malformed inputs,

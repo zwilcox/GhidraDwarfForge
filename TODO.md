@@ -1,5 +1,12 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local #72 receipt publication progress:** 101 Linux filesystem
+controls pass for complete record publication, conditional phase updates,
+process interruption and cancellation. Native atomic no-overwrite publication
+has a checked header contract and isolated runtime tests. Windows publication,
+both complete host adapters and the actual verified backup/attachment/recovery/
+refresh transaction remain required; this does not complete A1–A7 or #72.
+
 **CONFIRMED local #72 protocol progress:** all-role path preflight and strict
 initial/refresh receipt parsing and transitions pass 116 controls. Receipt
 publication, host identity/metadata preservation, verified backup, atomic

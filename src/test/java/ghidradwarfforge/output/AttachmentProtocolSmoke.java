@@ -35,7 +35,7 @@ public final class AttachmentProtocolSmoke {
         System.out.println("attachment-protocol-smoke=PASS checks=" + checks);
     }
 
-    private static AttachmentReceipt fixture(AttachmentReceipt.Mode mode) {
+    static AttachmentReceipt fixture(AttachmentReceipt.Mode mode) {
         Map<String, AttachmentReceipt.Artifact> files = new HashMap<>();
         for (String role : List.of("targetBefore", "targetAfter", "originalBackup", "sidecar",
                 "source", "exportReport", "validationEvidence")) {

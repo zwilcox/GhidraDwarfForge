@@ -123,6 +123,15 @@ tasks.register("attachmentProtocolSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.output.AttachmentProtocolSmoke"
 }
 
+tasks.register("attachmentReceiptStoreSmoke", JavaExec) {
+    group = "verification"
+    description = "Exercises receipt publication and failure recovery on an owned Linux filesystem"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentReceiptStoreSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+}
+
 tasks.register("extendedSectionNumberingSmoke", JavaExec) {
     group = "verification"
     description = "Checks extended ELF section numbering and optionally builds target fixtures"

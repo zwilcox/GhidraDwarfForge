@@ -490,8 +490,10 @@ jobs:
             src/test/integration/architecture-neutrality.sh
             python3 src/test/integration/architecture-neutrality-smoke.py
             python3 -B -m unittest discover -s src/test/python -p test_gdb_loader.py -v
+            cc -std=c11 -Wall -Wextra -Werror src/test/native/linux-rename-contract.c -o build/linux-rename-contract
+            build/linux-rename-contract
             ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke \
-              ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke companionArtifactPublisherSmoke attachmentProtocolSmoke \
+              ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke companionArtifactPublisherSmoke attachmentProtocolSmoke attachmentReceiptStoreSmoke \
               exportReportSmoke exportReportClaimsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke \
               fileDigestsSmoke elfBuildIdSmoke \
               matchedElfPrefixSmoke matchedElfAllocationsSmoke executableProgramBytesSmoke \
