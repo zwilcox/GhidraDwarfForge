@@ -1,5 +1,17 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local #72 fresh strict checking:** production supervision now runs
+the selected raw pinned checker with a checksum-pinned configuration and binds
+complete report interpretation to unchanged export files. x86-64, AArch64 and
+MIPS big-endian checks pass; inherited frame diagnostics require matching named
+frame bytes/ELF metadata and fresh original diagnostics. Real corrupted DWARF,
+empty/truncated exit-zero output, changed configuration and mismatched frame
+diagnostics are rejected. These checks run alongside real attachment/rollback
+and native/QEMU GDB tests using the explicitly limited test host. GNU/LLVM
+policy, sectionless-frame corroboration, combined evidence publication, production
+hosts and public CLI/GUI remain required; neither issue is complete. See
+`docs/VALIDATOR-SUPERVISION.md`.
+
 **CONFIRMED hosted #107 target results:** all five target lanes passed at
 `a198328` in run 41569991085. The required gate failed in the Windows companion
 publisher smoke test's lexical parent-path assertion before Windows GUI

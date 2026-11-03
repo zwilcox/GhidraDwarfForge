@@ -137,6 +137,15 @@ tasks.register("validatorSupervisorSmoke", JavaExec) {
     }
 }
 
+tasks.register("strictDwarfReportSmoke", JavaExec) {
+    group = "verification"
+    description = "Rejects incomplete/error-bearing pinned checker reports using real retained output"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.StrictDwarfReportSmoke"
+    args file("src/test/fixtures/dwarfdump").absolutePath
+}
+
 tasks.register("attachmentReceiptStoreSmoke", JavaExec) {
     group = "verification"
     description = "Exercises receipt publication and failure recovery on an owned Linux filesystem"

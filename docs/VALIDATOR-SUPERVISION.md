@@ -169,3 +169,64 @@ the correction does not reinterpret a nonzero count as success. Twenty repeated
 successful-exit controls supplement the existing orphan, timeout, cancellation,
 breakaway and output-limit cases. Cross-compilation passes; corrected native
 Windows runtime acceptance remains **PRESENT, UNVERIFIED**.
+
+## Fresh strict DWARF check component
+
+`StrictDwarfCheck` runs an explicitly selected raw libdwarf 2.3.2 checker through
+`ValidatorSupervisor`, with `--file-name` selecting the existing pinned
+configuration (SHA-256 `842bba9230de82059dfcef1485114cf3c33eae8be2973c649d176f4ad18972ef`).
+It preflights checker/configuration paths against every bound export input,
+rechecks the full `AttachmentExportBinding` before/after validation, retains raw
+bounded streams and rechecks their hashes. Empty stderr, successful process
+cleanup and complete report interpretation are all required. The two-minute
+execution deadline and 32 MiB per-stream cap are explicit resource limits;
+exceeding either is failure, not partial validation.
+
+The package-private `StrictDwarfReport` reads the pinned modern output format,
+requiring compiler completion, every category in every check table, table sums
+and the final tag-use report. Its returned analysis explicitly carries frame
+diagnostics needing proof; parsing alone does not approve them. Other diagnostics,
+unknown/missing/duplicate categories, truncation and overflowing counters fail.
+The first local run exposed an invalid added assumption that global check counts
+must equal the compiler-scoped counts: the retained clean 2.3.2 fixture has
+function_coverage 20 for its compiler and 21 globally. The corrected parser
+checks each table's complete arithmetic, matching the existing Python oracle.
+
+For named `.eh_frame` sections, `InheritedFrameBytes` requires matching ELF
+identity, PROGBITS section address/flags/size and exact payload bytes. The same
+supervised checker must independently produce the same diagnostic multiset from
+the unmodified original. The tool/helper hashes must agree across both runs.
+This component does not yet corroborate frames in sectionless originals: the
+complete validator still needs an independently bound section oracle path.
+No requirement for sectionless attachment is waived by that implementation gap.
+
+Local evidence under `build/test-results/strict-report/`:
+
+- `runtime.log`: 271 actual Java 21 parser checks using retained clean, exit-zero
+  failing, original-only, x86-64, AArch64 and MIPS BE reports and damaged copies.
+- `*-java21/`: fresh supervised checks on three real Forge exports; three x86
+  and five AArch64 frame diagnostics are independently corroborated, MIPS has zero.
+  The initial direct Gradle test-class launch used local Java 25 test bytecode
+  and failed on Java 21 before execution. The corrected probe is explicitly
+  compiled with `javac --release 21` against the built production JAR.
+- `controller-*-exec-final/`: full x86-64/AArch64/MIPS BE harness runs, including
+  fresh GNU/LLVM/strict validation, supervised production checks, independent
+  Python report interpretation, commit/rollback, automatic GDB source/type/value
+  behavior and CRC mismatch rejection. The host and commit-time validator adapter
+  are still explicitly test-only. Raw supervised evidence and tool/configuration
+  provenance are retained separately from driver logs.
+- Negative cases reject empty/truncated exit-zero reports, a modified configuration
+  before launch, different original/sidecar frame diagnostic offsets, and an
+  actual oversized DWARF unit with a freshly matching export-report hash. The
+  latter reaches the real checker; a stale hash is not its rejection reason.
+
+Target CI invokes this component with the helper in the installed release and
+adds its controls to the existing real-ELF harness. Linux/Windows parser smoke
+lists include the new test. Diagnostic artifact uploads explicitly retain the
+owned hidden supervisor directories; otherwise their raw reports would be absent.
+Native Linux supervisor regression (13 cases), extension build, workflow lint,
+architecture isolation and diff checks pass. Corrected exact-head hosted checks
+remain required. Neither this component nor its test adapters constitute the
+complete `AttachmentOperation.Validator`: GNU/LLVM result policy, sectionless
+frame corroboration, combined evidence publication, production host metadata and
+public CLI/GUI remain open. Default export never invokes attachment.

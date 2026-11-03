@@ -6,11 +6,13 @@ explicitly limited; this does not establish production metadata preservation.
 """
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 import re
 from pathlib import Path
 import shutil
+import struct
 import subprocess
 import tempfile
 import time
@@ -47,6 +49,7 @@ def main():
     parser.add_argument('--role', choices=['exec', 'pie', 'exec.no-build-id'], required=True)
     parser.add_argument('--report-log', type=Path, required=True)
     parser.add_argument('--strict-validator', type=Path, required=True)
+    parser.add_argument('--supervised-validator-helper', type=Path)
     parser.add_argument('--result-dir', type=Path, required=True)
     args = parser.parse_args()
     work = args.result_dir.absolute()
@@ -60,7 +63,8 @@ def main():
     gson = args.ghidra.resolve() / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar'
     jna = args.ghidra.resolve() / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar'
     sources = [ROOT / 'src/test/java/ghidradwarfforge/output' / (name + '.java') for name in
-               ['AttachmentProtocolSmoke', 'AttachmentReceiptStoreSmoke', 'AttachmentElfTransactionProbe']]
+               ['AttachmentProtocolSmoke', 'AttachmentReceiptStoreSmoke', 'AttachmentElfTransactionProbe',
+                'StrictDwarfCheckProbe']]
     oracle = ROOT / 'src/test/integration/automatic-association-gdb.py'
     protected = {str(p): digest(p) for p in [original, sidecar, source, reference, jar, gson, jna,
                                            args.report_log, args.strict_validator, Path(__file__), oracle, *sources]}
@@ -76,14 +80,14 @@ def main():
         for path in [jar, gson, jna, Path(__file__), oracle, *sources]}, indent=4) + '\n')
     commands = []
 
-    def run(label, argv, env=None, timeout=60):
+    def run(label, argv, env=None, timeout=60, success=True):
         command = list(map(str, argv))
         completed = subprocess.run(command, capture_output=True, timeout=timeout, env=env, cwd=work)
         (work / (label + '.stdout')).write_bytes(completed.stdout)
         (work / (label + '.stderr')).write_bytes(completed.stderr)
         commands.append({'label': label, 'argv': command, 'exit': completed.returncode})
         (work / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
-        require(completed.returncode == 0, label + ' failed; inspect retained stdout/stderr')
+        require((completed.returncode == 0) == success, label + ' had unexpected status; inspect retained stdout/stderr')
         return completed
 
     for tool in ['readelf', 'llvm-dwarfdump', 'gdb-multiarch']:
@@ -138,6 +142,93 @@ def main():
     version = run('java-version', [java, '-version'])
     require(b'version "21.' in version.stderr, 'this harness requires actual Java 21')
     runtime = os.pathsep.join([str(classes), dependencies])
+    if args.supervised_validator_helper is not None:
+        helper = args.supervised_validator_helper.resolve(strict=True)
+        checker_bundle = args.strict_validator.resolve(strict=True).parents[1]
+        raw_checker = checker_bundle / 'libexec/dwarfdump'
+        configuration = checker_bundle / 'share/dwarfdump/dwarfdump.conf'
+        for path in [helper, raw_checker, configuration]:
+            protected[str(path)] = digest(path)
+            shutil.copyfile(path, provenance / path.name)
+        checks = work / 'supervised-strict'
+        checks.mkdir()
+
+        def strict_case(label, selected_report=report_path, selected_sidecar=sidecar,
+                        selected_tool=raw_checker, selected_config=configuration, success=True):
+            directory = checks / label
+            directory.mkdir()
+            outcome = run('supervised-' + label, [java, '--enable-native-access=ALL-UNNAMED', '-cp', runtime,
+                'ghidradwarfforge.output.StrictDwarfCheckProbe', selected_report, original,
+                selected_sidecar, source, helper, selected_tool, selected_config, directory],
+                timeout=300, success=success)
+            require((directory / 'result.json').exists() == success, 'unexpected strict result publication')
+            return directory, outcome
+
+        successful, _ = strict_case('actual')
+        observed = json.loads((successful / 'result.json').read_text())
+        strict_output = Path(observed['sidecarCheck']['directory']) / 'tool.stdout'
+        require(digest(strict_output) == observed['sidecarCheck']['stdoutSha256'], 'strict raw log hash differs')
+        spec = importlib.util.spec_from_file_location('strict_report_oracle', ROOT / 'src/test/integration/check-dwarfdump.py')
+        checker = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(checker)
+        inherited = strict_result.get('inherited_frame_evidence', {}).get('diagnostics', [])
+        require(observed['corroboratedDiagnostics'] == inherited, 'supervised and independent diagnostics disagree')
+        checker.validate_output(strict_output.read_text(), inherited)
+        if inherited:
+            original_output = Path(observed['originalCheck']['directory']) / 'tool.stdout'
+            checker.validate_output(original_output.read_text(), inherited, original=True)
+            # Same bytes and valid complete reports are insufficient when the
+            # observed diagnostic offsets differ between original and sidecar.
+            changed = checks / 'different-frame-report.txt'
+            changed.write_text(original_output.read_text().replace(inherited[0],
+                re.sub(r'offset 0x[0-9a-f]+', 'offset 0xffffffffffffffff', inherited[0]), 1))
+            mismatch = checks / 'different-frame-tool'
+            mismatch.write_text('#!/usr/bin/env python3\nfrom pathlib import Path\nimport sys\n' +
+                'selected = ' + repr(str(changed)) + ' if sys.argv[-1] == ' + repr(str(original)) +
+                ' else ' + repr(str(strict_output)) + '\n' +
+                'sys.stdout.buffer.write(Path(selected).read_bytes())\n')
+            mismatch.chmod(0o755)
+            directory, failure = strict_case('different-frame-diagnostics', selected_tool=mismatch, success=False)
+            require(b'diagnostic identities/multiplicities differ' in failure.stderr,
+                    'frame mismatch did not reach independent corroboration')
+        # Exit-zero replay tools deliberately provide unusable reports. Their
+        # outputs cannot become success evidence or reach target replacement.
+        for label, payload in [('empty-report', b''),
+                               ('truncated-report', strict_output.read_bytes().split(b'** Summarize **', 1)[0])]:
+            replay = checks / (label + '.txt')
+            replay.write_bytes(payload)
+            fake = checks / (label + '-tool')
+            fake.write_text('#!/usr/bin/env python3\nfrom pathlib import Path\nimport sys\n' +
+                            'sys.stdout.buffer.write(Path(' + repr(str(replay)) + ').read_bytes())\n')
+            fake.chmod(0o755)
+            directory, _ = strict_case(label, selected_tool=fake, success=False)
+            require(list(directory.glob('.forge-validation-*/status.json')), 'replay was not actually executed')
+        bad_config = checks / 'changed.conf'
+        bad_config.write_bytes(configuration.read_bytes() + b'\n# changed configuration\n')
+        directory, _ = strict_case('wrong-config', selected_config=bad_config, success=False)
+        require(not list(directory.iterdir()), 'wrong configuration launched a checker')
+        # Keep report hashes current while corrupting only newly emitted DWARF:
+        # binding must succeed, then the actual checker must reject the bytes.
+        corrupted = checks / 'invalid-dwarf.dbg'
+        data = bytearray(sidecar.read_bytes())
+        wide = data[4] == 2
+        endian = '<' if data[5] == 1 else '>'
+        section_offset = struct.unpack_from(endian + ('Q' if wide else 'I'), data, 40 if wide else 32)[0]
+        entry_size, count, names_index = struct.unpack_from(endian + 'HHH', data, 58 if wide else 46)
+        format_ = endian + ('IIQQQQIIQQ' if wide else 'IIIIIIIIII')
+        sections = [struct.unpack_from(format_, data, section_offset + index * entry_size) for index in range(count)]
+        names = sections[names_index]
+        strings = data[names[4]:names[4] + names[5]]
+        info = [section for section in sections if strings[section[0]:].split(b'\0', 1)[0] == b'.debug_info']
+        require(len(info) == 1 and info[0][5] >= 4, 'fixture lacks one debug_info section')
+        struct.pack_into(endian + 'I', data, info[0][4], 0x7ffffffe)
+        corrupted.write_bytes(data)
+        corrupt_report = json.loads(raw_report)
+        corrupt_report['artifacts']['outputSha256'] = digest(corrupted)
+        bad_report = checks / 'invalid-dwarf-report.json'
+        bad_report.write_text(json.dumps(corrupt_report) + '\n')
+        directory, _ = strict_case('invalid-dwarf', selected_report=bad_report, selected_sidecar=corrupted, success=False)
+        require(list(directory.glob('.forge-validation-*/status.json')), 'invalid DWARF did not reach the actual checker')
     for action in ['commit', 'rollback']:
         directory = work / action
         directory.mkdir()
