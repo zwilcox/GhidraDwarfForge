@@ -749,7 +749,7 @@ Save-Json (Join-Path $root 'attachment-metadata.json') ([ordered]@{status='OBSER
     refusalCases=$negativeCases.Count + 1;
     scope='Complete-security/ordinary-metadata/backup-stream composition and private-stage application; not public attachment, elevation or filesystem durability'})
 
-# Native-only filesystem admission experiment runs after all metadata tests.
+# Independent native volume observation followed by the production Java binding.
 $volumeProfilePath = Join-Path $owned 'fixed volume profile λ'
 $volumeProfileRun = Run-Captured 'directory-volume-profile' $directoryProbe @('--volume-profile',$volumeProfilePath)
 $volumeProfileFacts = ConvertFrom-Json $volumeProfileRun.stdout
@@ -763,6 +763,13 @@ Require ($volumeRootNative.status -eq 'OBSERVED' -and $volumeRootNative.volume12
 Save-Json (Join-Path $root 'directory-volume.json') ([ordered]@{status='OBSERVED'; root=$volumeRoot;
     native=$volumeProfileFacts; independentRoot=$volumeRootNative;
     scope='Native opened-volume profile experiment on owned local directory; no JNA admission or power-loss claim'})
+$volumeJavaRun = Run-Directory 'directory-volume-java' @('sync',$volumeProfilePath)
+$volumeJava = ConvertFrom-Json $volumeJavaRun.stdout
+Require ($volumeJava.volume.root -ceq $volumeRoot -and $volumeJava.volume.driveType -eq $volumeProfileFacts.driveType -and
+    $volumeJava.identity -ceq (([Convert]::ToUInt64($volumeProfileFacts.volume128,16).ToString('x')) + ':' + $volumeProfileFacts.fileId128)) 'Java opened-volume profile differs from native observations'
+Save-Json (Join-Path $root 'directory-volume-java.json') ([ordered]@{status='OBSERVED'; java=$volumeJava;
+    native=$volumeProfileFacts; independentRoot=$volumeRootNative;
+    scope='Opened volume identity binding and directory flush; complete host admission and power-loss recovery remain unproven'})
 
 foreach ($sourcePath in $hashes.Keys) { Require ((Hash $sourcePath) -eq $hashes[$sourcePath]) 'Protected source/dependency changed' }
 Save-Json (Join-Path $root 'result.json') ([ordered]@{status='PASS'; observations=$observations.ToArray();

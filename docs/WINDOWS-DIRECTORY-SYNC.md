@@ -59,3 +59,22 @@ see [the research scope](research/WINDOWS-VOLUME-PROFILE.md). It uses a separate
 explicit fixture mode after the metadata suite. The production directory
 binding and its accepted flush/identity behavior are unchanged, and no new
 filesystem support is claimed before native review.
+
+## Opened-volume binding
+
+**PRESENT, UNVERIFIED on Windows:** following the reviewed native experiment
+at `77a3c0f`/run41632042195, directory snapshots now include the opened volume's
+GUID root and drive type. GetFinalPathNameByHandleW uses bounded WCHAR counts;
+GetDriveTypeW uses the resolved GUID root. An attributes-only root-directory
+handle must identify the same volume as the original opened directory. All
+resources are scoped, and repeated snapshots before/after flushing include the
+volume profile. The root is a directory, never a raw volume-device handle.
+
+The two signatures and DWORD/UINT/WCHAR widths were checked against the pinned
+fileapi.h SHA-256 in `windows-directory-api.json` after the native experiment.
+Standalone Java 21-compatible compilation, extension build and PowerShell AST
+parsing pass locally. The Windows harness compares Java/native/C# observations
+on the same owned directory; existing stale-path, denied-write, cancellation
+and 128 lifetime cycles also exercise the added root handles. Native execution
+of this binding remains required. This records filesystem identity; complete
+Host admission and the durability/recovery contract remain open.

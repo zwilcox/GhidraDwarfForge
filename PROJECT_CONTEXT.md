@@ -1,5 +1,11 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**PRESENT, UNVERIFIED #72 volume binding:** the reviewed native fixed-volume
+experiment now has a bounded JNA implementation in directory snapshots, with
+same-directory native/C#/Java comparison and existing cleanup/failure coverage.
+Local standalone compilation, extension build and PowerShell parsing pass;
+Windows execution remains required. See `docs/WINDOWS-DIRECTORY-SYNC.md`.
+
 **CONFIRMED #72 review finding:** Windows job41632042195 at `77a3c0f`
 passed its assertions, but independent artifact review found three inherited
 ACE flags changed in the raw security descriptor. High-level DACL comparison

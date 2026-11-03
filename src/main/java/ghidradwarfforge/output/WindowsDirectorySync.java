@@ -35,11 +35,14 @@ public final class WindowsDirectorySync {
         int GetFileInformationByHandleEx(Pointer handle, int kind, Pointer info, int bytes);
         int GetVolumeInformationByHandleW(Pointer handle, Pointer label, int labelUnits,
             Pointer serial, Pointer maximumNameUnits, Pointer flags, Pointer fileSystem, int fileSystemUnits);
+        int GetFinalPathNameByHandleW(Pointer handle, Pointer path, int pathUnits, int flags);
+        int GetDriveTypeW(WString root);
         int FlushFileBuffers(Pointer handle);
     }
 
+    public record VolumeProfile(String root, int driveType) { }
     public record Snapshot(String identity, long volumeSerial, long maximumNameUnits,
-            long fileSystemFlags, String fileSystem) { }
+            long fileSystemFlags, String fileSystem, VolumeProfile volume) { }
 
     @FunctionalInterface interface Hook { void opened() throws IOException; }
     private static final Hook NO_HOOK = () -> { };
@@ -110,14 +113,52 @@ public final class WindowsDirectorySync {
             require(maximumUnits > 0 && maximumUnits <= 32767, "Windows filename bound is unavailable");
             return new Snapshot(Long.toUnsignedString(id.getLong(0), 16) + ":" +
                 HexFormat.of().formatHex(id.getByteArray(8, 16)), Integer.toUnsignedLong(serial.getInt(0)),
-                maximumUnits, Integer.toUnsignedLong(flags.getInt(0)), fileSystem);
+                maximumUnits, Integer.toUnsignedLong(flags.getInt(0)), fileSystem, volume(handle, id.getLong(0)));
         }
     }
 
+    private VolumeProfile volume(Pointer handle, long expectedVolume) throws IOException {
+        // VOLUME_NAME_GUID. Sizes are WCHAR units; DWORD/UINT stay 32-bit on Win64.
+        long capacity = Integer.toUnsignedLong(kernel.GetFinalPathNameByHandleW(handle, null, 0, 1));
+        if (capacity == 0) throw error("GetFinalPathNameByHandleW size");
+        require(capacity > 49 && capacity <= 32768, "Windows final volume path exceeds bound");
+        String root;
+        try (var path = new Memory(capacity * 2)) {
+            path.clear();
+            long length = Integer.toUnsignedLong(kernel.GetFinalPathNameByHandleW(handle, path, (int) capacity, 1));
+            if (length == 0) throw error("GetFinalPathNameByHandleW");
+            require(length >= 49 && length < capacity && path.getShort(length * 2) == 0,
+                "Windows final volume path changed or exceeds bound");
+            String resolved = StandardCharsets.UTF_16LE.newDecoder().decode(
+                ByteBuffer.wrap(path.getByteArray(0, (int) length * 2))).toString();
+            require(resolved.indexOf('\0') < 0 && resolved.startsWith("\\\\?\\Volume{") &&
+                resolved.charAt(47) == '}' && resolved.charAt(48) == '\\' &&
+                resolved.substring(11, 47).matches("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"),
+                "Windows final path requires a volume GUID root");
+            root = resolved.substring(0, 49);
+        }
+        int driveType = kernel.GetDriveTypeW(new WString(root));
+        require(driveType >= 2 && driveType <= 6, "Windows volume drive type is unavailable");
+        try (var opened = openNative(root, false); var id = new Memory(24); var tag = new Memory(8)) {
+            id.clear(); tag.clear();
+            require(kernel.GetFileType(opened.handle) == 1, "Windows volume root requires a disk directory");
+            success(kernel.GetFileInformationByHandleEx(opened.handle, 9, tag, 8), "FileAttributeTagInfo volume root");
+            require((tag.getInt(0) & 0x410) == 0x10 && tag.getInt(4) == 0,
+                "Windows volume root rejects reparse and non-directory handles");
+            success(kernel.GetFileInformationByHandleEx(opened.handle, 18, id, 24), "FileIdInfo volume root");
+            require(id.getLong(0) == expectedVolume, "Windows resolved volume root identity differs");
+        }
+        return new VolumeProfile(root, driveType);
+    }
+
     private Opened open(String path, boolean write) throws IOException {
+        return openNative("\\\\?\\" + path, write);
+    }
+
+    private Opened openNative(String path, boolean write) throws IOException {
         // FILE_READ_ATTRIBUTES, optionally GENERIC_WRITE; shared read/write/delete;
         // OPEN_EXISTING and OPEN_REPARSE_POINT | BACKUP_SEMANTICS. No privilege enabling.
-        Pointer handle = kernel.CreateFileW(new WString("\\\\?\\" + path), write ? 0x40000080 : 0x80,
+        Pointer handle = kernel.CreateFileW(new WString(path), write ? 0x40000080 : 0x80,
             7, null, 3, 0x02200000, null);
         if (handle == null || Pointer.nativeValue(handle) == -1L) throw error("CreateFileW directory");
         return new Opened(handle);

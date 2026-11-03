@@ -41,3 +41,9 @@ path; network shares do not have volume GUID paths. The
 distinguishes fixed, removable, remote and other drive types. Those documented
 properties motivate the experiment; they do not substitute for native test
 results or justify assuming that every drive-letter path is local NTFS.
+
+The reviewed native experiment now precedes a Java implementation in
+`WindowsDirectorySync`; its snapshot includes the GUID root/drive type and
+checks the root directory's volume identity. A same-directory C/C#/Java oracle
+has been added. The binding compiles locally but its Windows execution is
+**PRESENT, UNVERIFIED**. See `../WINDOWS-DIRECTORY-SYNC.md`.
