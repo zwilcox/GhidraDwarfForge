@@ -1,5 +1,12 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local #72 backup progress:** independently copied backups with
+byte/metadata verification and atomic no-overwrite publication pass 75 controls
+on Java 25 and Java 21. Read-only metadata is applied before flushing through an
+already-open channel, including receipt updates. Published backups survive
+post-publication failures. A4's full target replacement and the remaining
+A1–A7 host/transaction/consumer requirements remain incomplete.
+
 **CONFIRMED local #72 receipt publication progress:** 101 Linux filesystem
 controls pass for complete record publication, conditional phase updates,
 process interruption and cancellation. Native atomic no-overwrite publication

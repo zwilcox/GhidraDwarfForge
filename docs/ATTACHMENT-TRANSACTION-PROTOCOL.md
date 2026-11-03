@@ -144,6 +144,47 @@ stages. These are process-termination tests, not power-cut or executable-rollbac
 tests. Native Windows receipt publication and the full Linux/Windows identity,
 metadata, backup, attachment, rollback, refresh and UI contracts remain required.
 
+## Independent backup publication
+
+`AttachmentFileStore` now provides the transaction's independent copy operation.
+Its snapshot records a canonical selected path, streamed SHA-256/CRC/byte count,
+and the mandatory host identity/metadata/link observation. Native regular-file
+and single-link checks surround each digest; selected leaf links are not followed.
+The transaction still must preflight all of its roles and validate its selected
+ELF, export report and validator evidence before calling this operation.
+
+The backup destination must be absent, including dangling links. Copying uses a
+64 KiB buffer and a CREATE_NEW stage in an owned private directory beside the
+destination. Growth beyond the expected byte count, truncation, no-progress I/O,
+cancellation, changed source/stage identity and digest mismatches reject the
+operation. The complete source is rechecked before metadata application and
+again before publication. The host applies supported metadata and the store
+independently verifies its hash, source/copy content equality and different file
+identities. The writable channel is opened before applying read-only metadata,
+so a supported read-only file can still be flushed without reopening it for
+writing. Receipt updates use the same ordering.
+
+Only a verified and flushed complete copy reaches the final backup name through
+the host's atomic no-overwrite rename. The directory is synchronized and the
+published file is read back. The backup is never a hardlink and never overwrites
+an existing name. Post-publication cancellation finishes synchronization and
+verification; failures after a publication attempt return `PublicationFailure`
+with the backup path. A published backup is retained on failure. Cleanup checks
+ownership and retains a concurrent stage replacement. The caller must reconcile
+retained recovery material rather than retry by overwriting it.
+
+**CONFIRMED locally:** 75 backup controls pass on Java 25 and actual Java 21,
+including four abrupt child-process exits, read-only permission/mtime
+preservation, original hashes/identity, existing/dangling/hardlink collisions,
+a competing creator after preflight, failed metadata application, directory
+flush failures, a 16 MiB copy cancellation, source mutation and stage replacement.
+The 101 receipt controls still pass, now updating a deliberately read-only
+receipt. Logs are `build/attachment-file-store.log` and
+`build/attachment-file-store-java21.log`. The tests use the explicitly limited
+Linux smoke metadata adapter above; they do not establish production ACL/xattr
+preservation or native Windows backup support. This class does not replace the
+target or implement the complete attachment/rollback state machine.
+
 The Windows replacement adapter must handle documented non-success states,
 including errors where file names have already changed, and must not use flags
 that ignore metadata/ACL errors. `REPLACEFILE_WRITE_THROUGH` is documented as
@@ -155,7 +196,7 @@ parameter alone does not satisfy this project's pre-replacement backup contract.
 
 ```sh
 GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC ./gradlew \
-    attachmentReceiptStoreSmoke attachmentProtocolSmoke exportReportClaimsSmoke companionArtifactPublisherSmoke \
+    attachmentFileStoreSmoke attachmentReceiptStoreSmoke attachmentProtocolSmoke exportReportClaimsSmoke companionArtifactPublisherSmoke \
     buildExtension
 cc -std=c11 -Wall -Wextra -Werror src/test/native/linux-rename-contract.c -o build/linux-rename-contract
 build/linux-rename-contract

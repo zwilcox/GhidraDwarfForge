@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local #72 independent backup component:** `AttachmentFileStore`
+passes 75 Linux filesystem controls, including four abrupt process exits,
+concurrent source/stage changes, read-only metadata, failed publication/flush
+and bounded-copy cancellation. Backups use independent copied bytes and atomic
+no-overwrite publication; published backups are retained on failure. Both the
+backup and 101 receipt controls pass on actual Java 21. The host in these tests
+is explicitly limited; production Linux/Windows metadata contracts, complete
+attachment/recovery/refresh, validation/UI integration and hosted acceptance
+remain required. See `docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`.
+
 **CONFIRMED local #72 receipt publication:** complete prepared records and
 conditional phase updates pass 101 Linux filesystem controls, including six
 abrupt child-process terminations, actual directory fsync, concurrent creators,

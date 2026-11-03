@@ -176,7 +176,7 @@ public final class AttachmentReceiptStoreSmoke {
     private static void metadataAndReadControls(Path root, Host host) throws Exception {
         Path path = root.resolve("metadata.json");
         AttachmentReceiptStore.prepare(path, prepared(path), host, () -> false);
-        Files.setPosixFilePermissions(path, java.nio.file.attribute.PosixFilePermissions.fromString("rw-r-----"));
+        Files.setPosixFilePermissions(path, java.nio.file.attribute.PosixFilePermissions.fromString("r--r-----"));
         Files.setLastModifiedTime(path, java.nio.file.attribute.FileTime.fromMillis(1234567890000L));
         var before = AttachmentReceiptStore.read(path, host, () -> false);
         var after = AttachmentReceiptStore.advance(before, AttachmentReceipt.Phase.COMMITTED, null, host, () -> false);
@@ -317,7 +317,7 @@ public final class AttachmentReceiptStoreSmoke {
         equal("unrelated staged replacement", Files.readString(preserved[0]));
     }
 
-    private static class Host implements AttachmentReceiptStore.Host {
+    static class Host implements AttachmentReceiptStore.Host {
         private int syncs;
         public String contract() { return "linux-store-test-v1"; }
         public String durability() { return "linux-test-directory-fsync"; }

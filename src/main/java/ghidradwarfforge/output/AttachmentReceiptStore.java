@@ -172,8 +172,8 @@ public final class AttachmentReceiptStore {
                 channel.force(true);
             }
             if (previous != null) {
-                host.preserveMetadata(path, previous.fingerprint(), stage);
-                try (var channel = FileChannel.open(stage, StandardOpenOption.WRITE)) {
+                try (var channel = FileChannel.open(stage, StandardOpenOption.WRITE, LinkOption.NOFOLLOW_LINKS)) {
+                    host.preserveMetadata(path, previous.fingerprint(), stage);
                     channel.force(true);
                 }
             }
