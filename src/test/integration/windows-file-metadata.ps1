@@ -23,6 +23,11 @@ function Save-Json([string]$Path, $Value) {
 function Hash([string]$Path) { return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant() }
 $sources = @(
     (Join-Path $repo 'src/main/java/ghidradwarfforge/output/WindowsFileMetadata.java'),
+    (Join-Path $repo 'src/main/java/ghidradwarfforge/output/WindowsBackupStreams.java'),
+    (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsBackupStreamsProbe.java'),
+    (Join-Path $repo 'src/test/native/windows-backup-contract.c'),
+    (Join-Path $repo 'src/test/native/windows-ea-fixture.c'),
+    (Join-Path $repo 'src/test/native/windows-backup-api.json'),
     (Join-Path $repo 'src/main/java/ghidradwarfforge/output/WindowsFileRename.java'),
     (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsFileRenameProbe.java'),
     (Join-Path $repo 'src/test/native/windows-rename-contract.c'),
@@ -85,10 +90,18 @@ $renameContract = Join-Path $root 'rename-contract.exe'
 $null = Run-Captured 'compile-rename-contract' $Compiler @('-std=c11','-Wall','-Wextra','-Werror',
     (Join-Path $provenance 'windows-rename-contract.c'),'-o',$renameContract)
 $null = Run-Captured 'rename-contract' $renameContract @()
+$backupContract = Join-Path $root 'backup-contract.exe'
+$null = Run-Captured 'compile-backup-contract' $Compiler @('-std=c11','-Wall','-Wextra','-Werror',
+    (Join-Path $provenance 'windows-backup-contract.c'),'-o',$backupContract)
+$null = Run-Captured 'backup-contract' $backupContract @()
+$eaFixture = Join-Path $root 'ea-fixture.exe'
+$null = Run-Captured 'compile-ea-fixture' $Compiler @('-std=c11','-Wall','-Wextra','-Werror','-municode',
+    (Join-Path $provenance 'windows-ea-fixture.c'),'-lntdll','-o',$eaFixture)
 $dependencies = (Join-Path $provenance ([IO.Path]::GetFileName($Jna))) + ';' +
     (Join-Path $provenance ([IO.Path]::GetFileName($Gson)))
 $null = Run-Captured 'compile-java' $JavacExe @('--release','21','-cp',$dependencies,'-d',$classes,
     (Join-Path $provenance 'WindowsFileMetadata.java'), (Join-Path $provenance 'WindowsFileMetadataProbe.java'),
+    (Join-Path $provenance 'WindowsBackupStreams.java'), (Join-Path $provenance 'WindowsBackupStreamsProbe.java'),
     (Join-Path $provenance 'WindowsFileRename.java'), (Join-Path $provenance 'WindowsFileRenameProbe.java'))
 $version = Run-Captured 'java-version' $JavaExe @('-version')
 Require ($version.stderr -match 'version "21[.]') 'Actual Java 21 required'
@@ -359,8 +372,76 @@ $null = Run-Rename 'rename-handle-lifetime' @('lifetime',$renameStage,$renameTar
 Same-State $beforeStage $renameStage
 Require (-not (Test-Path -LiteralPath $renameTarget)) 'Lifetime test left a target'
 
+$backupPrefix = @('-cp', ($classes + ';' + $dependencies), 'ghidradwarfforge.output.WindowsBackupStreamsProbe')
+function Run-Backup([string]$Label, [string[]]$Arguments, [bool]$Success=$true, [bool]$Interpreted=$false) {
+    $request = Join-Path $root "$Label.request.json"
+    Save-Json $request $Arguments
+    $options = @()
+    if ($Interpreted) { $options = @('-Xint') }
+    return Run-Captured $Label $JavaExe ($options + $backupPrefix + @('--request-file',$request)) $Success
+}
+$eaSource = Join-Path $owned 'EA source λ [literal]'
+$eaStage = Join-Path $stageParent 'EA stage'
+[IO.File]::WriteAllText($eaSource, 'source must remain unchanged', $utf8)
+[IO.File]::WriteAllText($eaStage, 'private stage must remain unchanged', $utf8)
+$beforeEaSource = Independent-State $eaSource
+$beforeEaStage = Independent-State $eaStage
+$ordinaryEa = Run-Captured 'ea-ordinary-query' $eaFixture @('query',$eaSource)
+Require ($null -eq (ConvertFrom-Json $ordinaryEa.stdout).eaBytes) 'Ordinary file unexpectedly has EAs'
+$ordinaryBackup = Run-Backup 'backup-ordinary' @('ordinary',$eaSource)
+$inventory = ConvertFrom-Json $ordinaryBackup.stdout
+Require ($inventory.streams.Count -eq 1 -and $inventory.streams[0].kind -eq 1 -and
+    $inventory.streams[0].bytes -eq $beforeEaSource.bytes) 'Ordinary backup inventory differs'
+Same-State $beforeEaSource $eaSource
+$empty = Join-Path $owned 'empty backup source'
+[IO.File]::WriteAllBytes($empty, [byte[]]::new(0))
+$null = Run-Backup 'backup-empty' @('ordinary',$empty)
+$setEa = Run-Captured 'ea-source-set' $eaFixture @('set',$eaSource)
+$eaBytes = (ConvertFrom-Json $setEa.stdout).eaBytes
+Require ($eaBytes -eq '00000000000a0500464f5247455f544553540000ff420a19') 'Independent EA payload differs'
+$eaBefore = Independent-State $eaSource
+$eaInventory = Run-Backup 'backup-ea' @('inspect',$eaSource)
+$eaStreams = @((ConvertFrom-Json $eaInventory.stdout).streams | Where-Object { $_.kind -eq 2 })
+Require ($eaStreams.Count -eq 1 -and $eaStreams[0].bytes -gt 0) 'Backup inventory missed actual EA data'
+$refused = Run-Backup 'backup-ea-reject' @('ordinary',$eaSource) $false
+Require ($refused.stderr.Contains('unsupported metadata streams')) 'EA rejection did not identify unsupported streams'
+$snapshot = Inspect-Case 'ea-source-snapshot' $eaSource
+$refused = Run-Probe 'ea-source-apply-reject' @('apply',$eaSource,$eaStage,$snapshot,'-1') $false
+Require ($refused.stderr.Contains('unsupported metadata streams')) 'Source EA application was not refused'
+Same-State $eaBefore $eaSource
+Same-State $beforeEaStage $eaStage
+$queryEa = Run-Captured 'ea-source-after' $eaFixture @('query',$eaSource)
+Require ((ConvertFrom-Json $queryEa.stdout).eaBytes -eq $eaBytes) 'Source EA changed during refusal'
+# Swap roles: the source has no EA and the owned stage has one. Admission must
+# reject before applying even ordinary metadata to that stage.
+$snapshot = Inspect-Case 'ea-stage-source-snapshot' $eaStage
+$refused = Run-Probe 'ea-stage-apply-reject' @('apply',$eaStage,$eaSource,$snapshot,'-1') $false
+Require ($refused.stderr.Contains('unsupported metadata streams')) 'Stage EA application was not refused'
+Same-State $eaBefore $eaSource
+Same-State $beforeEaStage $eaStage
+$queryEa = Run-Captured 'ea-stage-after' $eaFixture @('query',$eaSource)
+Require ((ConvertFrom-Json $queryEa.stdout).eaBytes -eq $eaBytes) 'Stage EA changed during refusal'
+$null = Run-Backup 'backup-cancel' @('cancel',$eaSource)
+$null = Run-Backup 'backup-lifetime' @('lifetime',$eaSource) $true $true
+Same-State $eaBefore $eaSource
+$adsSource = Join-Path $owned 'backup named stream'
+[IO.File]::WriteAllText($adsSource, 'ordinary bytes', $utf8)
+[IO.File]::WriteAllText(($adsSource + ':extra λ'), 'alternate bytes', $utf8)
+$adsBefore = Independent-State $adsSource
+$adsInventory = Run-Backup 'backup-ads' @('inspect',$adsSource)
+$adsStreams = @((ConvertFrom-Json $adsInventory.stdout).streams | Where-Object { $_.kind -eq 4 })
+Require ($adsStreams.Count -eq 1 -and $adsStreams[0].name -ceq ':extra λ:$DATA' -and
+    $adsStreams[0].bytes -eq $utf8.GetByteCount('alternate bytes')) 'Backup named stream differs'
+$null = Run-Backup 'backup-ads-reject' @('ordinary',$adsSource) $false
+Same-State $adsBefore $adsSource
+Require ([IO.File]::ReadAllText(($adsSource + ':extra λ'), $utf8) -ceq 'alternate bytes') 'Named stream changed'
+$backupResults = [ordered]@{ordinary=(ConvertFrom-Json $ordinaryBackup.stdout);
+    extendedAttributes=(ConvertFrom-Json $eaInventory.stdout); independentEaBytes=$eaBytes;
+    alternateStreams=(ConvertFrom-Json $adsInventory.stdout); cancellationAfterHeader=$true; handleCycles=128}
+Save-Json (Join-Path $root 'backup-streams.json') $backupResults
+
 foreach ($sourcePath in $hashes.Keys) { Require ((Hash $sourcePath) -eq $hashes[$sourcePath]) 'Protected source/dependency changed' }
 Save-Json (Join-Path $root 'result.json') ([ordered]@{status='PASS'; observations=$observations.ToArray();
-    renameObservations=$renameResults.ToArray(); renameCrossVolume=$crossResult;
-    scope='Opened Windows identity, accessible metadata and verified-stage rename; not complete host admission, SACL/EA preservation or durability'})
+    renameObservations=$renameResults.ToArray(); renameCrossVolume=$crossResult; backupStreams=$backupResults;
+    scope='Opened Windows identity, accessible metadata and verified-stage rename; unsupported backup-stream rejection; not complete host admission, SACL preservation or durability'})
 Write-Output 'windows-file-metadata=PASS'

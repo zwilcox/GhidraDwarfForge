@@ -183,3 +183,11 @@ PowerShell test extracts the actual `Run-Probe` function and successfully runs
 actual Java 21 in normal and interpreted modes. Corrected Windows handle-lifetime
 acceptance remains pending. Artifact `13213954801` retains the preceding native
 case outputs and the exact malformed final arguments.
+
+## Backup-stream admission follow-up
+
+The stage applicator now rejects non-ordinary backup streams on both source
+and stage. This is **PRESENT, UNVERIFIED** on native Windows; the prior native
+acceptance above applies to its recorded commit. See
+[the new contract and native controls](WINDOWS-BACKUP-STREAMS.md). It does not
+establish SACL visibility or complete host admission.

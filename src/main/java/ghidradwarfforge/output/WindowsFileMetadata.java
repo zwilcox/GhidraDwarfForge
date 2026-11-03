@@ -24,7 +24,8 @@ import java.util.function.BooleanSupplier;
 /**
  * Opened-handle Windows metadata primitive, NOT an attachment Host/admission
  * decision. Reads owner/group/DACL, ordinary attributes/times and data streams.
- * It neither queries SACLs/extended attributes nor proves their absence. Full
+ * Inspection alone neither queries SACLs/EAs nor proves their absence. Stage
+ * application additionally rejects non-data backup streams, including EAs. Full
  * protected-metadata admission and host durability remain separate requirements.
  * Never enables privileges, creates a file or replaces a target. Application is
  * restricted to a caller-owned private stage; failures may leave that stage
@@ -103,6 +104,9 @@ public final class WindowsFileMetadata {
             supported(prior);
             require(!before.facts().identity().equals(prior.facts().identity()), "Windows metadata stage aliases source");
             require(before.facts().links() == 1 && prior.facts().links() == 1, "Windows metadata rejects hardlinks");
+            var backup = new WindowsBackupStreams(this);
+            WindowsBackupStreams.requireOrdinaryData(backup.inspectOpened(input.handle, before.facts(), cancelled));
+            WindowsBackupStreams.requireOrdinaryData(backup.inspectOpened(output.handle, prior.facts(), cancelled));
             var wanted = before.security();
             // Match the source's inheritance model. SetSecurityInfo upgrades
             // legacy controls; SetFileSecurityW clears the modern inherited bit.
@@ -137,6 +141,8 @@ public final class WindowsFileMetadata {
             require(after.facts().identity().equals(prior.facts().identity()) && after.facts().links() == 1 &&
                 after.facts().bytes() == prior.facts().bytes(), "Windows stage identity/size changed");
             require(after.preservation().equals(before.preservation()), "Windows metadata application readback differs");
+            WindowsBackupStreams.requireOrdinaryData(backup.inspectOpened(output.handle, after.facts(), cancelled));
+            WindowsBackupStreams.requireOrdinaryData(backup.inspectOpened(input.handle, before.facts(), cancelled));
             require(observe(input.handle, cancelled).equals(before), "Windows source metadata changed during application");
             checkPath(source, before.facts(), cancelled);
             checkPath(stage, after.facts(), cancelled);

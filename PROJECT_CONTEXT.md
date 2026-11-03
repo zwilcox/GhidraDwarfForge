@@ -1,5 +1,12 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**PRESENT, UNVERIFIED native #72 backup-stream admission:** the Windows
+metadata stage applicator now checks source/stage backup streams and refuses
+EAs or other unsupported metadata before mutation. Local ABI compilation and
+Java 21/request-transport checks pass; native Windows execution remains pending.
+SACL visibility and full host admission/durability are still incomplete. See
+`docs/WINDOWS-BACKUP-STREAMS.md`.
+
 **CONFIRMED #107 implementation and acceptance:** production head
 `5654f537a1bd02683eccd751cd9b7b9610fa4dc3` passed the complete required gate
 in run 41586083925. Independent review covers all five target artifacts,
