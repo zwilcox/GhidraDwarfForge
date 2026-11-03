@@ -263,6 +263,7 @@ jobs:
           install: >-
             base-devel
             curl
+            git
             mingw-w64-x86_64-toolchain
             mingw-w64-x86_64-zlib
             mingw-w64-x86_64-zstd

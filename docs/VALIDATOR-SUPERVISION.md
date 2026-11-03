@@ -142,3 +142,15 @@ Neither failure is counted as passing validation.
 policy to `AttachmentOperation.Validator`, bind tool/output evidence to the
 selected export, implement both production metadata hosts and expose explicit
 CLI/GUI attachment. The helper and runner do not complete #72 or its A1–A7 rows.
+
+### First hosted helper build follow-up
+
+Run 41585498613 at `61e56f5` passed the Linux helper's build and lifecycle
+checks. Windows compiled both helper copies and compared them successfully,
+but metadata capture failed because the MSYS2 environment did not contain
+`git`. Its native runtime tests therefore did not run. The raw job log is
+retained locally at `build/supervisor/windows-ci.log`. The workflow now
+explicitly installs MSYS2 Git; source revision capture remains mandatory.
+Workflow lint passes. Corrected native Windows execution remains **PRESENT,
+UNVERIFIED**, and this dependency correction does not complete live validation
+or attachment host support.
