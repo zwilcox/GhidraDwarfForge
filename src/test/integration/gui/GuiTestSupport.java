@@ -222,10 +222,13 @@ final class GuiTestSupport {
         // appended MouseListener would then run only after that action returns,
         // while Robot.waitForIdle() can complete in the nested EDT loop.
         // Observe the real event before component dispatch without consuming it.
+        // Match GMouseListenerAdapter: rapid consecutive gestures can retain
+        // click counts 3/4, and every positive even count triggers the action.
         AWTEventListener listener = deliveredEvent -> {
             if (deliveredEvent instanceof MouseEvent event && event.getSource() == table &&
                     event.getID() == MouseEvent.MOUSE_CLICKED &&
-                    event.getButton() == MouseEvent.BUTTON1 && event.getClickCount() == 2) {
+                    event.getButton() == MouseEvent.BUTTON1 && event.getClickCount() > 0 &&
+                    event.getClickCount() % 2 == 0) {
                 delivered.incrementAndGet();
                 int clickedRow = table.rowAtPoint(event.getPoint());
                 int clickedColumn = table.columnAtPoint(event.getPoint());

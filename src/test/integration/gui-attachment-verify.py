@@ -91,7 +91,8 @@ else:
         require(payload[:len(name) + 1] == name + b'\0' and not any(payload[len(name) + 1:offset]), 'bad debuglink name/padding')
         require(len(payload) == offset + 4 and struct.unpack_from(order + 'I', payload, offset)[0] ==
                 record['debuglinkCrc32'] == zlib.crc32(sidecar.read_bytes()), 'bad target-endian CRC')
-        run(generation + '-readelf', ['readelf', '-h', '-S', '-n', '--debug-dump=info', sidecar])
+        _, errors = run(generation + '-readelf', ['readelf', '-h', '-S', '-n', '--debug-dump=info', sidecar])
+        require(not errors, 'GNU ELF/DWARF inspection produced diagnostics')
         output, errors = run(generation + '-llvm', ['llvm-dwarfdump', '--verify', sidecar])
         require(b'No errors.' in output and not errors, 'DWARF verification failed')
         run(generation + '-strict', [sys.executable, Path(__file__).with_name('check-dwarfdump.py'),

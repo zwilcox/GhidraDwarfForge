@@ -31,6 +31,49 @@ public final class GuiTableClickSmoke {
     static void run(Path results) throws Exception {
         runFilterFocus(results);
         runModalDispatch(Files.createDirectory(results.resolve("modal-dispatch")));
+        runRepeatedDoubleClick(Files.createDirectory(results.resolve("repeated-double-click")));
+    }
+
+    private static void runRepeatedDoubleClick(Path results) throws Exception {
+        AtomicInteger launches = new AtomicInteger();
+        var counts = new java.util.concurrent.CopyOnWriteArrayList<Integer>();
+        JTable table = GuiTestSupport.onSwing(() -> new JTable(new Object[][] {
+            { "GhidraDwarfForge.java" }
+        }, new Object[] { "Name" }));
+        JFrame frame = GuiTestSupport.onSwing(() -> {
+            JFrame created = new JFrame("Repeated script double-click control");
+            table.setDefaultEditor(Object.class, null);
+            table.setRowSelectionInterval(0, 0);
+            table.addMouseListener(new MouseAdapter() {
+                @Override public void mouseClicked(MouseEvent event) { counts.add(event.getClickCount()); }
+            });
+            table.addMouseListener(new GMouseListenerAdapter() {
+                @Override public void doubleClickTriggered(MouseEvent event) { launches.incrementAndGet(); }
+            });
+            created.add(new JScrollPane(table));
+            created.setBounds(160, 160, 600, 260);
+            created.setVisible(true);
+            return created;
+        });
+        try {
+            Robot robot = new Robot();
+            GuiTestSupport.foregroundWindow(table);
+            // Same cell, within the desktop's multi-click interval: Ghidra
+            // launches on counts 2 and 4, rather than requiring exactly 2.
+            GuiTestSupport.doubleClickCell(robot, table, 0, 0, "GhidraDwarfForge.java");
+            GuiTestSupport.doubleClickCell(robot, table, 0, 0, "GhidraDwarfForge.java");
+            GuiTestSupport.require(counts.equals(List.of(1, 2, 3, 4)) && launches.get() == 2,
+                "repeated native gestures did not exercise counts 2 and 4: " + counts);
+            Files.writeString(results.resolve("result.txt"),
+                "consecutive-real-click-counts=" + counts + "\nghidra-invocations=2\nexactly-one-observed-launch-per-gesture=PASS\n");
+            System.out.println("repeated-double-click-dispatch=PASS");
+        }
+        catch (Exception | Error failure) {
+            Files.writeString(results.resolve("failure-counts.txt"), "counts=" + counts + "\nlaunches=" + launches.get() + "\n");
+            GuiTestSupport.captureDesktop(results);
+            throw failure;
+        }
+        finally { GuiTestSupport.onSwing(() -> { frame.dispose(); return null; }); }
     }
 
     private static void runFilterFocus(Path results) throws Exception {

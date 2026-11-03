@@ -1,5 +1,18 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED scoped native Linux GUI attachment/refresh/recovery:** run41693381663
+at `0f70308` proves the unprivileged Script Manager/pkexec initial and curated
+refresh commits, then saved-request restoration. Independent checks of retained
+artifacts prove unchanged program headers/original prefixes, receipt chains,
+GNU/LLVM/pinned-strict acceptance, both automatic GDB source/step journeys and
+CRC refusal. See `docs/evidence/linux-gui-attachment-41693381663.json`.
+The complete hosted job still failed afterward: the test observer accepted only
+click count2, while Ghidra also launches on positive even counts such as4. A new
+real-mouse control reproduces the old failure with counts1/2/3/4 and two actual
+launches. Matching Ghidra's event policy fixes it; the local installed GUI,
+validators and GDB regression pass. No product dispatch is changed or retried.
+Windows real-operation/GUI acceptance and the final required gate remain pending.
+
 **CONFIRMED defects in run41689061371; corrections locally verified, hosted acceptance pending:**
 Linux GUI job126107904107 committed both initial attachment and curated refresh,
 then recovery preview failed while traversing the root-private candidate directory.
