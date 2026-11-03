@@ -1,5 +1,13 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED Windows checker checkout failure:** run41647056047 stops before
+compilation because the newly pinned manifest digest differs on Windows. A
+fresh Git checkout with core.autocrlf=true reproduces CRLF conversion for all
+three UTF-8 input files; explicit LF attributes retain their pinned digests.
+The corrected checkout experiment and workflow lint pass locally. Native
+compilation/Unicode execution remain **PRESENT, UNVERIFIED**. See
+`docs/evidence/windows-checker-checkout-41647056047.json`.
+
 **CONFIRMED Windows checker ASCII success and Unicode failure:** run41645197563
 passes raw version and complete strict validation of the compiler ELF, then
 loses λ/字 path characters as question marks and fails to open the selected
