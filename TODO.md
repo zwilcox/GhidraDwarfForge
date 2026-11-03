@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local Linux mount binding; hosted acceptance pending:** the
+visibility session now matches native mount ID/device to the current platform
+thread's mountinfo record and requires writable ext4. It rejects ext2/ext3,
+missing/duplicate IDs, mismatched devices and unreviewed optional mount fields;
+full selected records and opened-directory observations must remain stable.
+Actual Java21 passes154 mount controls with native stat/findmnt comparison and
+128 descriptor cycles, plus unprivileged session refusal/cleanup. Privileged
+session/Host acceptance remains **PRESENT, UNVERIFIED**. See
+`docs/research/LINUX-METADATA-VISIBILITY.md`.
+
 **CONFIRMED Windows strict-checker acceptance:** completed native-windows
 41648274797 passes raw ASCII/Unicode valid checks and malformed-version refusal.
 Independent bundle/source/hash/manifest/import review, strict-output replay and

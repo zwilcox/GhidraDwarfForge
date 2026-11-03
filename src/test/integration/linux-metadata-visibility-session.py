@@ -25,11 +25,12 @@ def main():
     provenance = results / 'provenance'
     provenance.mkdir()
     source = ROOT / 'src/test/java/ghidradwarfforge/output/LinuxMetadataVisibilitySmoke.java'
+    mount_source = ROOT / 'src/test/java/ghidradwarfforge/output/LinuxAttachmentMountSmoke.java'
     contract = ROOT / 'src/test/native/linux-metadata-contract.c'
     inputs = [args.jar.resolve(), args.ghidra / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar',
-              source, contract, Path(__file__),
+              source, contract, Path(__file__), mount_source,
               *[ROOT / f'src/main/java/ghidradwarfforge/output/{name}.java' for name in
-                ['LinuxMetadataVisibility', 'LinuxFileMetadata', 'LinuxDirectorySync']]]
+                ['LinuxMetadataVisibility', 'LinuxFileMetadata', 'LinuxDirectorySync', 'LinuxAttachmentMount']]]
     hashes = {}
     for path in inputs:
         hashes[str(path)] = hashlib.sha256(path.read_bytes()).hexdigest()
@@ -55,11 +56,20 @@ def main():
     classes.mkdir()
     dependencies = os.pathsep.join(str(provenance / path.name) for path in inputs[:2])
     run('compile-java', [os.environ.get('JAVAC', 'javac'), '--release', '21', '-cp', dependencies,
-                        '-d', classes, provenance / source.name])
+                        '-d', classes, provenance / source.name, provenance / mount_source.name])
     java = Path(shutil.which(os.environ.get('JAVA', 'java'))).resolve()
     assert b'version "21.' in run('java-version', [java, '-version']).stderr
     prefix = [java, '-cp', str(classes) + os.pathsep + dependencies,
               'ghidradwarfforge.output.LinuxMetadataVisibilitySmoke']
+    mount = run('mount-binding', [*prefix[:-1], 'ghidradwarfforge.output.LinuxAttachmentMountSmoke',
+                                  results / 'mount λ directory'])
+    fields = dict(line.split('=', 1) for line in mount.stdout.decode().splitlines())
+    native = os.stat(results / 'mount λ directory')
+    assert fields['identity'].split('@')[0] == f'{os.major(native.st_dev)}:{os.minor(native.st_dev)}:{native.st_ino}'
+    findmnt = run('findmnt', ['findmnt', '-n', '-T', results / 'mount λ directory', '-o', 'ID,MAJ:MIN,FSTYPE'])
+    mount_id, device, fs_type = findmnt.stdout.decode().split()
+    assert fields['identity'].split('@')[1] == mount_id
+    assert fields['mountRecord'].split()[2] == device and fs_type == 'ext4'
     run('unprivileged', [*prefix, 'unprivileged', results / 'unprivileged'])
     if args.privileged:
         run('privileged', ['sudo', '-n', *prefix, 'privileged', results / 'privileged'])

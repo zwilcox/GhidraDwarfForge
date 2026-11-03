@@ -84,7 +84,7 @@ and directory/mount identity before and after observation. Virtual threads,
 other platform threads, closed sessions, cancellation and changed/hidden
 metadata are refused. It does not adjust capabilities or open a target.
 
-The filesystem magic check admits the ext family; it does not distinguish
+**HISTORICAL initial session boundary:** the filesystem magic check admitted the ext family; it did not distinguish
 ext2/ext3/ext4 or establish full mount admission. The existing native experiment
 runs on ext4. The eventual Host must separately bind actual target/filesystem
 admission and bracket its operations with these checks. This component does
@@ -113,3 +113,35 @@ execution is required and no full A1 or attachment completion is claimed.
 The existing independent Linux metadata regression also passes against the new
 production JAR (fourteen observations, ACL/group/inode-policy and128 descriptor
 cycles), as do actionlint with ShellCheck, architecture isolation and diff checks.
+
+## Native mount identity binding
+
+**CONFIRMED locally, hosted acceptance pending:** the session now uses
+`LinuxAttachmentMount` to distinguish ext4 from the shared ext-family magic.
+It selects the record matching the opened directory's statx mount ID, checks
+the native device major/minor, and requires ext4 plus writable per-mount and
+superblock options. Directory/mount snapshots and the exact selected record
+are checked twice. There is no path-prefix guess or first-record selection.
+
+The [kernel interface documentation](https://man7.org/linux/man-pages/man5/proc_pid_mountinfo.5.html)
+defines mount ID, device, filesystem type and the two option sets. Reading
+[`/proc/thread-self/mountinfo`](https://man7.org/linux/man-pages/man5/proc_thread-self.5.html)
+uses the accessing thread's view; virtual threads are refused. Reads are bounded
+to2MiB and require a complete final record. Path/source fields remain escaped,
+lossless opaque bytes, never input paths. Missing/duplicate selected IDs, device
+mismatch and malformed records fail. Ordinary propagation fields are admitted;
+unknown optional fields are conservatively refused for attachment until their
+metadata consequences are reviewed. This is stricter than a general-purpose
+mountinfo parser. The exact selected record participates in snapshot equality.
+
+Actual Java21 `LinuxAttachmentMountSmoke` passes154 checks locally, including
+ext2/ext3/read-only/mismatched/ambiguous records, escaped and non-UTF8 opaque
+fields, actual procfs and leaf-symlink refusal, cancellation and128 repeated
+native observations without descriptor growth. Python independently compares
+the real directory identity through stat and the mount ID/device/type through
+findmnt. The updated unprivileged session still refuses and cleans up correctly.
+Evidence is under `build/test-results/linux-visibility-session/mount-v2/`.
+No new JNA mapping is introduced. Extension build, Python parsing, workflow lint
+and diff checks pass. Privileged execution remains assigned to CI; target
+metadata preservation, native replacement, recovery and the full Linux Host
+remain separate incomplete acceptance work.

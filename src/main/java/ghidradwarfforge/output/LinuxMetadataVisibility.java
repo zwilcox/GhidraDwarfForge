@@ -14,24 +14,24 @@ import java.util.function.BooleanSupplier;
  * Internal protected-attribute visibility session for an already authorized
  * platform thread. No elevation, target mutation or complete Host admission.
  * Caller must preflight the workspace parent before creating this owned canary.
- * The filesystem magic check admits the ext family, not proof of ext4 itself;
- * full host filesystem admission is separate. Native tests currently use ext4.
+ * Opened mount ID/device and thread-local mount records require writable ext4.
+ * Full target metadata/transaction admission is a separate Host responsibility.
  */
 final class LinuxMetadataVisibility implements AutoCloseable {
     private final Thread owner = Thread.currentThread();
     private final LinuxFileMetadata metadata;
-    private final LinuxDirectorySync directories;
+    private final LinuxAttachmentMount mounts;
     private final Path workspace;
     private final Path canary;
-    private final LinuxDirectorySync.Snapshot directory;
+    private final LinuxAttachmentMount.Snapshot directory;
     private final LinuxFileMetadata.Snapshot expected;
     private boolean closed;
 
-    private LinuxMetadataVisibility(LinuxFileMetadata metadata, LinuxDirectorySync directories,
-            Path workspace, Path canary, LinuxDirectorySync.Snapshot directory,
+    private LinuxMetadataVisibility(LinuxFileMetadata metadata, LinuxAttachmentMount mounts,
+            Path workspace, Path canary, LinuxAttachmentMount.Snapshot directory,
             LinuxFileMetadata.Snapshot expected) {
         this.metadata = metadata;
-        this.directories = directories;
+        this.mounts = mounts;
         this.workspace = workspace;
         this.canary = canary;
         this.directory = directory;
@@ -42,10 +42,9 @@ final class LinuxMetadataVisibility implements AutoCloseable {
         checkCancelled(cancelled);
         require(!Thread.currentThread().isVirtual(), "visibility session requires a platform thread");
         var metadata = new LinuxFileMetadata();
-        var directories = new LinuxDirectorySync();
+        var mounts = new LinuxAttachmentMount(new LinuxDirectorySync());
         Path parent = selectedParent.toRealPath();
-        var parentBefore = directories.inspect(parent, cancelled);
-        require(parentBefore.fileSystemType() == 0xef53, "visibility session requires an ext-family filesystem");
+        var parentBefore = mounts.inspect(parent, cancelled);
         Path workspace = Files.createTempDirectory(parent, ".forge-visibility-",
             PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------")));
         Path canary = workspace.resolve("canary");
@@ -54,9 +53,10 @@ final class LinuxMetadataVisibility implements AutoCloseable {
         try {
             directoryKey = key(workspace, true);
             checkCancelled(cancelled);
-            var directory = directories.inspect(workspace, cancelled);
-            require(directory.fileSystemType() == parentBefore.fileSystemType() &&
-                directory.fileSystemId().equals(parentBefore.fileSystemId()), "visibility workspace filesystem changed");
+            var directory = mounts.inspect(workspace, cancelled);
+            require(directory.mountRecord().equals(parentBefore.mountRecord()) &&
+                directory.directory().fileSystemId().equals(parentBefore.directory().fileSystemId()),
+                "visibility workspace filesystem changed");
             Files.createFile(canary,
                 PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
             fileKey = key(canary, false);
@@ -64,9 +64,9 @@ final class LinuxMetadataVisibility implements AutoCloseable {
             byte[] nonce = new byte[32];
             new SecureRandom().nextBytes(nonce);
             var expected = metadata.markOwnedCanary(canary, before, nonce, cancelled);
-            var session = new LinuxMetadataVisibility(metadata, directories, workspace, canary, directory, expected);
+            var session = new LinuxMetadataVisibility(metadata, mounts, workspace, canary, directory, expected);
             session.check(cancelled);
-            require(parentBefore.equals(directories.inspect(parent, cancelled)), "visibility parent changed");
+            require(parentBefore.equals(mounts.inspect(parent, cancelled)), "visibility parent changed");
             return session;
         }
         catch (IOException | RuntimeException failure) {
@@ -92,10 +92,10 @@ final class LinuxMetadataVisibility implements AutoCloseable {
         requireOwner();
         require(!closed, "visibility session is closed");
         checkCancelled(cancelled);
-        require(directory.equals(directories.inspect(workspace, cancelled)), "visibility workspace changed");
+        require(directory.equals(mounts.inspect(workspace, cancelled)), "visibility workspace changed");
         require(expected.equals(metadata.inspect(canary, cancelled)),
             "protected metadata visibility lost or canary changed");
-        require(directory.equals(directories.inspect(workspace, cancelled)), "visibility workspace changed");
+        require(directory.equals(mounts.inspect(workspace, cancelled)), "visibility workspace changed");
         checkCancelled(cancelled);
     }
 
