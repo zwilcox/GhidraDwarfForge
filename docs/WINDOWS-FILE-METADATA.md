@@ -187,7 +187,8 @@ case outputs and the exact malformed final arguments.
 ## Backup-stream admission follow-up
 
 The stage applicator now rejects non-ordinary backup streams on both source
-and stage. This is **PRESENT, UNVERIFIED** on native Windows; the prior native
-acceptance above applies to its recorded commit. See
+and stage. This additional contract is **CONFIRMED** by native run 41611451207
+at `440df66` and independent artifact review. Prior native acceptance above
+still applies to its recorded commit. See
 [the new contract and native controls](WINDOWS-BACKUP-STREAMS.md). It does not
 establish SACL visibility or complete host admission.

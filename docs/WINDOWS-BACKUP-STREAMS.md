@@ -1,10 +1,12 @@
 # Windows backup-stream admission
 
-**PRESENT, UNVERIFIED on native Windows:** `WindowsBackupStreams` inventories
-non-security backup streams through the audited Windows64 BackupRead/BackupSeek
-API. Local C cross-compilation, Java 21 compilation, PowerShell parsing and
-actual normal/interpreted request transport pass. Native hosted execution is
-required before this mechanism is accepted.
+**CONFIRMED on native Windows:** run 41611451207 at `440df66` passes the
+complete isolated metadata/rename/backup-stream harness. Independent artifact
+review verifies 16 exact source files and dependency hashes, actual Java 21,
+native C ABI checks, 15 metadata observations, ten namespace cases and the new
+EA/Unicode/cancellation/cleanup controls. See
+[the review receipt](evidence/windows-backup-streams-41611451207.json).
+This accepts the component, not the complete host contract or full PR gate.
 
 The initial attachment metadata application rejects extended attributes,
 object IDs and any other non-ordinary backup stream before changing a private
@@ -54,7 +56,7 @@ not the production backup API. Its fixed binary EA payload includes NUL and
 non-ASCII bytes. Full ordinary-file hashes/identity/security metadata and raw
 EA values must survive both source and stage rejection. The harness retains
 all sources/dependencies, native contract results and exact command output.
-No native pass is claimed until those artifacts are reviewed.
+Those artifacts pass the review recorded above; full host admission remains incomplete.
 
 Primary references: [BackupRead](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-backupread),
 [BackupSeek](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-backupseek),
@@ -62,7 +64,7 @@ Primary references: [BackupRead](https://learn.microsoft.com/en-us/windows/win32
 
 ## Native investigation
 
-**CONFIRMED partial native evidence, full acceptance pending:** runs
+**HISTORICAL failed attempts, superseded by the accepted run above:** runs
 41609040809/41609824856 pass real EA detection and source/stage refusal, then
 fail the original process-handle assertion. The diagnostic native C control
 remains at 57 handles through 128 cycles; Java grows once by nine, rather than
@@ -76,5 +78,7 @@ That run then fails the Unicode named-stream comparison: the test probe uses
 the Windows default output code page and narrows lambda to a question mark.
 The probe now explicitly writes UTF-8 stdout/stderr and the native harness
 requires a Unicode request/output round trip in both JVM modes. This changes
-test transport only. The failed runs remain failed; the corrected native
-harness still requires a passing run and artifact review.
+test transport only. The failed runs remain failed. The corrected native harness and artifact
+review pass in run 41611451207. The native C process remains at 57 handles and
+the serial-GC Java process at 296 for every one of 128 full/cancel cycles.
+Both Unicode round trips and the exact `:extra λ:$DATA` stream name pass.
