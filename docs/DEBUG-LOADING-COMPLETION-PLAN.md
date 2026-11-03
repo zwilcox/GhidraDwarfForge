@@ -1,8 +1,9 @@
 # GDB loading and explicit debuglink completion
 
 **CONFIRMED scope:** complete issues [#107](https://github.com/zwilcox/GhidraDwarfForge/issues/107)
-and [#72](https://github.com/zwilcox/GhidraDwarfForge/issues/72). Neither issue is
-complete. This ledger supplements, and does not narrow, their acceptance
+and [#72](https://github.com/zwilcox/GhidraDwarfForge/issues/72). #107 is integrated
+through PR157 at `c8e3afae3108ffe7d6a4b4d335463040426bc49c`; #72 remains
+incomplete. This ledger supplements, and does not narrow, their acceptance
 criteria or ADR-0004/ADR-0005. Performance issue #74 is outside this goal.
 
 The selected baseline remains Ghidra 12.0.3, Java 21-compatible bytecode,
@@ -13,8 +14,9 @@ declarations are needed for the loader.
 
 **CONFIRMED:** L1–L7 are proven for the documented profiles by
 [the acceptance record](GDB-LOADER-ACCEPTANCE.md), including the complete hosted
-gate at `5654f53` and independent artifact review. C1 remains pending protected
-integration of the final documentation update. A1–A7 remain incomplete; the
+gate at `5654f53`, final-head gate41602638145 at `caa4916`, independent artifact
+review and normal protected merge157. Loader C1 is complete; attachment C1 and
+A1–A7 remain incomplete. The
 separate attachment branch's component evidence does not establish those rows.
 The checkpoint sections below are **HISTORICAL**, recording evidence as it
 became available; their pending statements do not supersede this status.

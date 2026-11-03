@@ -28,22 +28,20 @@ artifact/source/command review passes. The earlier GC-count and test-output
 failures remain recorded; SACL visibility and full host admission/durability
 are still incomplete. See `docs/WINDOWS-BACKUP-STREAMS.md`.
 
-**CONFIRMED #107 implementation and acceptance:** production head
-`5654f537a1bd02683eccd751cd9b7b9610fa4dc3` passed the complete required gate
-in run 41586083925. Independent review covers all five target artifacts,
-Linux/Windows default and optional GUI journeys, package provenance and fresh
-GNU/LLVM/pinned strict validation. See [the acceptance record](docs/GDB-LOADER-ACCEPTANCE.md)
-for each original requirement and explicit host/runtime limits. Final
-protected integration of this documentation update remains required; no
-release has been published by this work.
+**CONFIRMED #107 integrated:** final loader head `caa4916` passed complete
+required-validation run41602638145. All five target artifacts, package, both
+host GUI journeys and fresh GNU/LLVM/pinned strict checks were independently
+reviewed. PR157 merged normally as `c8e3afae3108ffe7d6a4b4d335463040426bc49c`
+on 2026-11-03; issue107 is closed. See `docs/GDB-LOADER-ACCEPTANCE.md` and
+`docs/evidence/gdb-loader-41602638145.json`. No release was published.
 
-**CONFIRMED active scope:** finish #107 integration and the full #72 opt-in
-debuglink transaction. #72 remains incomplete: the loader's three-artifact
-publisher does not modify the executable or implement its backup/receipt/
-recovery contract. The separate attachment branch contains transaction and
-validator work but still needs complete production hosts, public controls,
-and full acceptance. All original criteria remain in
-`docs/DEBUG-LOADING-COMPLETION-PLAN.md`.
+**CONFIRMED remaining goal work:** complete the full #72 opt-in attachment
+contract. Its branch includes the integrated loader plus transaction, validator
+and native mechanisms, but still needs complete production hosts, protected
+metadata admission, durability/recovery integration, public controls and full
+acceptance. The original #107/#72 scope is retained in
+`docs/DEBUG-LOADING-COMPLETION-PLAN.md`; the loader's companion publisher does
+not satisfy the executable attachment/backup/receipt contract.
 
 **CONFIRMED native Windows #72 namespace acceptance:** run 41604998416 at
 `a473949` passes opened-stage publication/replacement, ten namespace scenarios,
