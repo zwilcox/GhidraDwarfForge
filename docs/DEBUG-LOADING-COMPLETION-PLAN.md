@@ -24,10 +24,12 @@ became available; their pending statements do not supersede this status.
 **PRESENT, UNVERIFIED complete attachment UI:** separate Linux/Windows launchers
 and Script Manager request review/launch controls now exist. Local installed
 Linux preview/default-decline and cooperative child cleanup pass; full modifying
-GUI/authorization journeys, request preparation/report capture and current-head
-Windows/full-gate acceptance remain incomplete. See
+GUI/authorization journeys and current-head Windows/full-gate acceptance remain
+incomplete. GUI request preparation/report capture now has local real-export,
+preview/decline, validator and GDB evidence. See
 [the invocation guide](ATTACHMENT-HELPER.md) and
-[local evidence](evidence/attachment-gui-local-20261103.json).
+[preview evidence](evidence/attachment-gui-local-20261103.json) and
+[preparation evidence](evidence/attachment-preparation-local-20261103.json).
 
 | ID | Required outcome | Evidence required |
 | --- | --- | --- |

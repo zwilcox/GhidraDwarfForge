@@ -23,12 +23,35 @@ are unchanged.
 
 ## Script Manager and cooperative cancellation
 
-**PRESENT, UNVERIFIED full modifying GUI flow:** run `AttachGhidraDwarfForge.java`
-and select an explicitly prepared ATTACH/REFRESH JSON request, or run
+**PRESENT, UNVERIFIED full modifying GUI flow:** run
+`ExportAndAttachGhidraDwarfForge.java` with the analyzed program open to prepare
+an initial attachment or refresh. Select the executable, a fresh sidecar filename,
+records directory and validator tools. For refresh, also select the original
+backup and previous committed receipt/pair; the export uses that original backup
+and retains Ghidra's imported-input SHA-256 check. The packaged validator process
+supervisor is selected from the verified installation. The strict checker must be
+the raw executable from the pinned2.3.2 bundle, with its pinned configuration.
+
+The script exports the current curated program, captures that completed report
+directly in script state, binds its hashes to the actual selected input/pair,
+and publishes `export.json` and `request.json` in a fresh records subdirectory.
+The original executable is not changed during preparation. SUCCESS/PARTIAL and
+NOT_RUN keep their meanings; live structural validation remains mandatory in
+the isolated attachment helper after the later confirmation. A failed/cancelled
+export, missing report or changed/mismatched bytes cannot produce a request.
+The temporary script-state report is cleared on success, failure and cancellation.
+
+Fresh pair/report/request publication uses exclusive hard-link creation from
+complete owned stages, with rollback when the second installation fails. Existing
+destinations, including files appearing after preflight, are never overwritten.
+Staging links are removed before return. The selected filesystem must support
+same-directory hard links; failure does not fall back to overwrite/copy. This is
+separate from the helper's retained independent executable backup and native
+atomic target replacement. Ordinary export retains its existing output behavior.
+
+To use an existing request, run `AttachGhidraDwarfForge.java`; to recover, run
 `RecoverGhidraDwarfForgeAttachment.java` and select the saved recovery request.
-The initial UI consumes the request format below; it does not yet build those
-requests or capture the export report for the user. This convenience work and
-successful native GUI attachment/refresh/recovery acceptance remain incomplete.
+Successful native GUI attachment/refresh/recovery acceptance remains incomplete.
 
 The installed helper first previews the SHA-256-pinned request in a separate,
 unprivileged JVM. The GUI displays the executable, pair, backups, receipts and
@@ -44,6 +67,11 @@ launchers forward `--cancel-file=<absolute-path>` / `-CancellationFile` literall
 The helper includes that file in all-role alias preflight, reads no commands from
 it, and never writes it. A nonempty file, observed identity/mtime change, removal
 or inspection failure latches cancellation at the existing safe boundaries.
+Windows Java file attributes can omit `fileKey`; Windows cancellation therefore
+uses the already audited read-only volume/file-ID/size/time handle reader. It
+does not enable privileges or query protected security metadata. Native Windows
+acceptance of this correction remains pending after job126079953727 exposed the
+null Java identity; no pathname/mtime-only identity fallback is used.
 The GUI signals cancellation without terminating a modifying helper, waits for
 its outcome and drains both output streams. Recovery already in progress finishes
 restoring the selected image. Closing an authorization console can lose output;
@@ -59,6 +87,13 @@ Actual installed Linux Script Manager preview/default-Enter decline, unchanged
 selected inputs, absent transaction outputs and the existing export/GDB regression
 pass under Java21/Xvfb/Openbox. See
 [`attachment-gui-local-20261103.json`](evidence/attachment-gui-local-20261103.json).
+The subsequent preparation journey also passes: actual curated export, direct
+captured report, byte agreement, separate default decline, no executable change
+and no transaction outputs. Both the ordinary/loader pair and newly prepared pair
+pass GNU/LLVM/pinned-libdwarf and GDB names/source/next/step/normal-exit checks.
+Unit controls cover fresh publication collisions/rollback and27 preparation
+checks, including fatal, cancellation, changed source and mismatched report.
+See [`attachment-preparation-local-20261103.json`](evidence/attachment-preparation-local-20261103.json).
 
 ## Explicit selection transport
 

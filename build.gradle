@@ -244,6 +244,14 @@ tasks.register("attachmentGuiProcessSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.output.AttachmentGuiProcessSmoke"
 }
 
+tasks.register("attachmentPreparationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks fresh GUI request/report preparation and unchanged inputs on failure"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentPreparationSmoke"
+}
+
 tasks.register("attachmentInvocationSmoke", JavaExec) {
     group = "verification"
     description = "Checks bounded helper selections and all-role transport/tool path preflight"

@@ -99,7 +99,8 @@ public final class AttachmentHelperSmoke {
             var help = new ByteArrayOutputStream();
             equal(0, AttachmentHelper.run(new String[] {"--help"}, () -> false, new PrintStream(help)));
             equal(true, help.toString(StandardCharsets.UTF_8).contains("changes the selected executable"));
-            System.out.println("attachment-helper-smoke=PASS checks=" + checks + " admission-only=true native-execution=false");
+            System.out.println("attachment-helper-smoke=PASS checks=" + checks +
+                " admission-only=true native-attachment=false cancellation-native-identity=" + com.sun.jna.Platform.isWindows());
         }
         finally {
             try (var paths = Files.walk(root)) {

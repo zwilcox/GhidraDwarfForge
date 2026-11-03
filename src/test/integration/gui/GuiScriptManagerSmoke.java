@@ -40,6 +40,7 @@ public final class GuiScriptManagerSmoke {
     private static final String LOADER_EXPORT = "ExportGhidraDwarfForgeWithGdbLoader.java";
     private static final String ATTACH = "AttachGhidraDwarfForge.java";
     private static final String RECOVER = "RecoverGhidraDwarfForgeAttachment.java";
+    private static final String PREPARE = "ExportAndAttachGhidraDwarfForge.java";
     private static final boolean WITH_LOADER = "1".equals(System.getenv("GHIDRA_GUI_GDB_LOADER"));
 
     private static final class ProbeFrontEnd extends FrontEndTool {
@@ -117,7 +118,7 @@ public final class GuiScriptManagerSmoke {
                 return result;
             });
             try {
-                for (String script : new String[] { PREFLIGHT, EXPORT, LOADER_EXPORT, ATTACH, RECOVER }) {
+                for (String script : new String[] { PREFLIGHT, EXPORT, LOADER_EXPORT, ATTACH, RECOVER, PREPARE }) {
                     var found = GhidraScriptUtil.findScriptByName(script);
                     GuiTestSupport.require(found != null, "installed script was not discovered: " + script);
                     GuiTestSupport.require(found.getFile(false).toPath().toRealPath().equals(
@@ -225,6 +226,7 @@ public final class GuiScriptManagerSmoke {
                         }
                         runAttachmentDecline(tool, input, chosen.resolve("fixture.dbg"),
                             chosen.resolve("fixture.dbg.c"), caseDirectory, transcript);
+                        runPreparationDecline(tool, input, caseDirectory);
                     }
                     ComponentProvider provider = tool.getComponentProvider("Console");
                     GuiTestSupport.onSwing(() -> {
@@ -341,6 +343,75 @@ public final class GuiScriptManagerSmoke {
             GuiTestSupport.require(!Files.exists(work.resolve(name)), "declined GUI operation created " + name);
         }
         Files.writeString(work.resolve("result.txt"), "packaged-helper-preview=PASS\ndefault-enter-declines=PASS\nselected-inputs-unchanged=PASS\nno-transaction-outputs=PASS\n");
+    }
+
+    private static void runPreparationDecline(ProbeTool tool, Path input, Path caseDirectory) throws Exception {
+        Path work = Files.createDirectory(caseDirectory.resolve("attachment-prepare"));
+        Path target = Files.copy(input, work.resolve("fixture"));
+        Path records = Files.createDirectory(work.resolve("records"));
+        var selectedTools = new java.util.HashMap<String, Path>();
+        for (String role : java.util.List.of("readelf", "llvm", "strict", "configuration")) {
+            selectedTools.put(role, Files.writeString(work.resolve(role), "not executed until attachment consent"));
+        }
+        String before = GuiTestSupport.sha256(target);
+        ConsoleService console = tool.getService(ConsoleService.class);
+        clearConsole(console);
+        var interaction = CompletableFuture.runAsync(() -> {
+            try {
+                GuiTestSupport.choose("Prepare sidecar attachment", "Initial attachment");
+                GuiTestSupport.selectFile("Select executable to attach", target);
+                GuiTestSupport.enterText("Fresh sidecar filename", "prepared.dbg");
+                GuiTestSupport.operateChooser(records, work, false, "Select directory for attachment records and backups");
+                GuiTestSupport.selectFile("Select GNU readelf executable", selectedTools.get("readelf"));
+                GuiTestSupport.selectFile("Select llvm-dwarfdump executable", selectedTools.get("llvm"));
+                GuiTestSupport.selectFile("Select pinned libdwarf 2.3.2 raw checker executable", selectedTools.get("strict"));
+                GuiTestSupport.selectFile("Select pinned dwarfdump configuration", selectedTools.get("configuration"));
+                var export = GuiTestSupport.dialog("Export and prepare attachment");
+                GuiTestSupport.clickButton(new Robot(), export, "Yes");
+                var review = (javax.swing.JDialog) GuiTestSupport.dialog("Review GhidraDwarfForge target change");
+                GuiTestSupport.onSwing(() -> {
+                    GuiTestSupport.require(review.getRootPane().getDefaultButton().getText().equals("Cancel"),
+                        "prepared export silently enabled attachment");
+                    return null;
+                });
+                Robot robot = new Robot();
+                GuiTestSupport.foregroundWindow(review.getRootPane());
+                GuiTestSupport.screenshot(robot, review, work.resolve("prepared-review.png"));
+                robot.keyPress(java.awt.event.KeyEvent.VK_ENTER);
+                robot.keyRelease(java.awt.event.KeyEvent.VK_ENTER);
+            }
+            catch (Exception failure) { throw new RuntimeException(failure); }
+        });
+        launchFromTable(tool, PREPARE, work.resolve("script-manager.png"));
+        interaction.get(130, TimeUnit.SECONDS);
+        awaitConsole(console, "attachment declined; modifying helper was not started.");
+        awaitConsole(console, "Finished!");
+        String transcript = consoleText(console);
+        Files.writeString(work.resolve("console.txt"), transcript);
+        GuiTestSupport.require(transcript.contains("Prepared attachment request:") &&
+            transcript.contains("GhidraDwarfForge symbol export PASS") && !transcript.contains("Starting explicit target change"),
+            "prepared request did not follow a real completed export and separate decline");
+        Path directory;
+        try (var children = Files.list(records)) {
+            var found = children.toList();
+            GuiTestSupport.require(found.size() == 1, "wrong preparation directory count");
+            directory = found.getFirst();
+        }
+        var request = ghidradwarfforge.output.AttachmentInvocation.read(directory.resolve("request.json"), () -> false);
+        request.preflight(directory.resolve("request.json")).recheck();
+        var binding = ghidradwarfforge.output.ExportArtifactHashBinding.observe(request.operation().exportReport(),
+            target, request.operation().sidecar(), request.operation().source());
+        for (var artifact : java.util.List.of(binding.original(), binding.sidecar(), binding.source())) {
+            GuiTestSupport.require(artifact.agreement() == ghidradwarfforge.output.ExportArtifactHashBinding.Agreement.MATCHING_REPORTED_SHA256,
+                "captured report differs from actual exported bytes");
+        }
+        GuiTestSupport.require(before.equals(GuiTestSupport.sha256(target)) && before.equals(GuiTestSupport.sha256(input)),
+            "preparation/decline changed executable bytes");
+        try (var files = Files.list(directory)) {
+            GuiTestSupport.require(files.map(path -> path.getFileName().toString()).sorted().toList()
+                .equals(java.util.List.of("export.json", "request.json")), "declined preparation started transaction or left stages");
+        }
+        Files.writeString(work.resolve("result.txt"), "real-curated-export=PASS\ncaptured-report-bound-to-files=PASS\nseparate-default-decline=PASS\noriginal-unchanged=PASS\nno-transaction-outputs=PASS\n");
     }
 
     private static void launchFromTable(ProbeTool tool, String filename, Path screenshot)

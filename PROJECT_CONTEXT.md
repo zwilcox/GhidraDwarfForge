@@ -1,5 +1,26 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local GUI preparation; native modifying GUI acceptance remains unverified:**
+`ExportAndAttachGhidraDwarfForge.java` selects an initial/refresh operation, exports
+the current program to a fresh pair, captures the completed report directly from
+script state, binds its hashes and publishes an explicit request. Refresh selects
+the original backup for export; the prior pair is retained. Publication rejects
+existing/late destinations and rolls back a failed second installation. Local
+Java21 passes27 preparation controls and fresh-pair collision/cancellation tests.
+Installed Linux Script Manager passes real preparation and separate default
+decline in ordinary and GDB-loader regressions; every generated pair passes
+GNU/LLVM/pinned-libdwarf and native GDB. See
+`docs/evidence/attachment-preparation-local-20261103.json`.
+
+**CONFIRMED native Windows cancellation defect; correction awaiting rerun:**
+job126079953727 fails because Windows Java `BasicFileAttributes.fileKey()` is null.
+The cancellation channel now reuses the existing audited Windows opened-handle
+volume/file-ID/size/time reader, without new native signatures, security privilege
+changes or a weaker identity fallback. Local Linux helper149 and recovery112
+checks/build pass; they do not prove Windows execution. Native modifying GUI,
+Windows real-operation/refresh/GDB artifact acceptance and the final gate remain
+incomplete; A1–A7/C1 are not closed.
+
 **CONFIRMED local GUI preview/decline; full native GUI flow remains unverified:**
 the installed Script Manager discovers attachment/recovery scripts. The attachment
 script previews the selected request in a separate JVM, displays readable paths
@@ -10,8 +31,8 @@ The GUI can explicitly request pkexec/RunAs and forwards a cooperative file-base
 cancellation channel. Helper149, recovery112, separate-child stop/drain tests,
 launcher12 routing cases, extension build, release assembly and lint pass locally.
 See `docs/evidence/attachment-gui-local-20261103.json` and `docs/ATTACHMENT-HELPER.md`.
-Request preparation/report capture, successful modifying GUI attachment/refresh/
-recovery, native authorization/cancellation, current Windows artifacts and the
+Successful modifying GUI attachment/refresh/recovery, native authorization/
+cancellation, current Windows artifacts and the
 complete final gate remain incomplete. No A1–A7/C1 row is closed by this checkpoint.
 
 **CONFIRMED further Windows fixture failure; correction pending native rerun:**

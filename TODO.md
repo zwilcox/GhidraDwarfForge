@@ -1,5 +1,17 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local GUI preparation; remaining native acceptance pending:** the
+installed preparation script exports the current curated program, captures and
+hash-binds its report, publishes fresh request/report files and separately defaults
+to Cancel at attachment review. Actual Java21 preparation27/helper149 and exclusive
+publication collision/rollback/cancellation checks pass. Both exported pairs pass
+GNU/LLVM/pinned-libdwarf and native GDB. See
+`docs/evidence/attachment-preparation-local-20261103.json`.
+The Windows cancellation identity defect is corrected using the audited native
+handle reader, but its native rerun remains pending. Successful modifying GUI
+attach/refresh/recovery, current Windows artifact review and the final gate remain
+incomplete. Earlier pending notes below retain their historical checkpoint scope.
+
 **PRESENT, UNVERIFIED Windows public launcher:** a PowerShell7 script now
 previews explicit selections, requires confirmation and requests RunAs only with
 an explicit authorization option. The isolated helper can enable only its own
@@ -3988,8 +4000,9 @@ feature** in draft PR158. The production transaction, separate helper, Linux and
 Windows launchers and initial Script Manager request review/launch controls exist.
 Earlier native Linux attachment/refresh/recovery evidence is recorded in
 `PROJECT_CONTEXT.md`; it does not prove current-head Windows or full GUI acceptance.
-GUI request preparation/export-report capture, native modifying GUI journeys,
-current-head artifact review and the final protected gate remain incomplete.
+GUI request preparation/report capture is implemented and passes local installed
+Linux preview/decline plus validators/GDB. Native modifying GUI journeys,
+current-head Windows/artifact review and the final protected gate remain incomplete.
 The explicit transaction design and remaining acceptance tests are in
 [`ADR-0004`](docs/ADR-0004-DEBUGLINK-ATTACHMENT.md) and the
 [completion ledger](docs/DEBUG-LOADING-COMPLETION-PLAN.md).

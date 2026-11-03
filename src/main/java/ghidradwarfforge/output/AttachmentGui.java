@@ -44,6 +44,86 @@ public final class AttachmentGui {
         if (script.isRunningHeadless()) throw new IOException("Use the attachment launcher for headless operation");
         Path request = script.askFile(recovery ? "Select saved attachment recovery request" :
             "Select attachment or refresh request", "Select").toPath().toAbsolutePath();
+        reviewRequest(script, monitor, recovery, request);
+    }
+
+    public static void prepare(GhidraScript script, TaskMonitor monitor) throws Exception {
+        if (script.isRunningHeadless() || script.getState().getCurrentProgram() == null) {
+            throw new IOException("Open the analyzed program and run this script from Script Manager");
+        }
+        String mode = script.askChoice("Prepare sidecar attachment", "Choose the operation to prepare",
+            List.of("Cancel", "Initial attachment", "Refresh existing attachment"), "Cancel");
+        if (mode.equals("Cancel")) return;
+        Path target = selectFile(script, "Select executable to attach");
+        AttachmentPreparation.Previous previous = null;
+        if (mode.equals("Refresh existing attachment")) {
+            previous = new AttachmentPreparation.Previous(selectFile(script, "Select retained original executable backup"),
+                selectFile(script, "Select previous committed receipt"), selectFile(script, "Select previous sidecar to retain"),
+                selectFile(script, "Select previous synthetic source to retain"));
+        }
+        Path exportInput = previous == null ? target : previous.originalBackup();
+        String importedHash = script.getState().getCurrentProgram().getExecutableSHA256();
+        if (importedHash != null && !importedHash.isBlank() &&
+                !importedHash.equalsIgnoreCase(FileDigests.read(exportInput, monitor::isCancelled).sha256())) {
+            throw new IOException("Selected export input does not match the program's imported executable SHA-256");
+        }
+        Path targetParent = target.toRealPath().getParent();
+        var destinations = new ArrayList<Path>();
+        destinations.add(targetParent);
+        if (Files.isDirectory(targetParent.resolve(".debug"))) destinations.add(targetParent.resolve(".debug"));
+        Path sidecarDirectory = destinations.size() == 1 ? targetParent : script.askChoice("Sidecar location",
+            "Select a directory where GDB can discover the sidecar", destinations, targetParent);
+        String defaultName = target.getFileName() + (previous == null ? ".dbg" : ".forge-" + java.util.UUID.randomUUID() + ".dbg");
+        String name = script.askString("Fresh sidecar filename", "Existing sidecar/source files will not be overwritten", defaultName);
+        Path basename = Path.of(name);
+        if (name.isBlank() || basename.getRoot() != null || basename.getNameCount() != 1 ||
+                !basename.getFileName().toString().equals(name) || name.equals(".") || name.equals("..")) {
+            throw new IOException("Select a single sidecar filename, not a path");
+        }
+        Path sidecar = sidecarDirectory.resolve(basename);
+        Path records = script.askDirectory("Select directory for attachment records and backups", "Select").toPath().toAbsolutePath();
+        Path module = Application.getModuleRootDir("GhidraDwarfForge").getFile(false).toPath();
+        var tools = new java.util.LinkedHashMap<String, Path>();
+        tools.put("helper", ghidradwarfforge.nativeapi.PackagedNativeLibraries.resolveSupervisor(module,
+            ghidra.framework.Platform.CURRENT_PLATFORM.getDirectoryName()));
+        tools.put("readelf", selectFile(script, "Select GNU readelf executable"));
+        tools.put("llvm", selectFile(script, "Select llvm-dwarfdump executable"));
+        tools.put("strict", selectFile(script, "Select pinned libdwarf 2.3.2 raw checker executable"));
+        tools.put("configuration", selectFile(script, "Select pinned dwarfdump configuration"));
+        monitor.checkCancelled();
+        int choice = docking.widgets.OptionDialog.showYesNoDialogWithNoAsDefaultButton(null, "Export and prepare attachment",
+            "Export the current program to " + sidecar + " and prepare records in " + records +
+            "?\nThe executable changes only after the later attachment confirmation and successful live validation.");
+        if (choice != docking.widgets.OptionDialog.OPTION_ONE) return;
+        var plan = AttachmentPreparation.begin(target, sidecar, records, tools, previous);
+        script.println("Attachment preparation directory: " + plan.directory());
+        var state = script.getState();
+        state.removeEnvironmentVar(AttachmentPreparation.EXPORT_REPORT_KEY);
+        try {
+            monitor.checkCancelled();
+            plan.recheckBeforeExport();
+            script.runScript("GhidraDwarfForge.java", new String[] {"--packaged-natives", "--attachment-preparation",
+                "--input=" + plan.exportInput(), "--output=" + plan.sidecar()});
+            Object captured = state.getEnvironmentVar(AttachmentPreparation.EXPORT_REPORT_KEY);
+            if (!(captured instanceof String report)) throw new IOException("Export did not complete; attachment was not prepared");
+            Path request = plan.finish(report, monitor::isCancelled);
+            script.println("Prepared attachment request: " + request);
+            script.println("Prepared request SHA-256: " + FileDigests.read(request, monitor::isCancelled).sha256());
+            reviewRequest(script, monitor, false, request);
+        }
+        catch (Exception failure) {
+            script.printerr("Retain completed exports and preparation records in " + plan.directory() +
+                ". No attachment success is implied; inspect any transaction/recovery receipts.");
+            throw failure;
+        }
+        finally { state.removeEnvironmentVar(AttachmentPreparation.EXPORT_REPORT_KEY); }
+    }
+
+    private static Path selectFile(GhidraScript script, String title) throws Exception {
+        return script.askFile(title, "Select").toPath().toAbsolutePath();
+    }
+
+    private static void reviewRequest(GhidraScript script, TaskMonitor monitor, boolean recovery, Path request) throws Exception {
         // Read a bounded, non-link selection. The helper checks the same digest
         // both during preview and again after the consent/authorization dialogs.
         if (!Files.isRegularFile(request, LinkOption.NOFOLLOW_LINKS)) throw new IOException("Select a regular request file");

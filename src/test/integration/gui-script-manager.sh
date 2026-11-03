@@ -55,7 +55,7 @@ javac --release 21 -cp "$classpath" -d "$work/classes" \
 "$xvfb" -displayfd 3 -screen 0 1280x1024x24 -nolisten tcp \
     3>"$work/display.txt" >"$work/xvfb.log" 2>&1 &
 xvfb_pid=$!
-for attempt in {1..100}; do
+for ((attempt=0; attempt<100; attempt++)); do
     if [[ -s "$work/display.txt" ]]; then
         break
     fi
@@ -88,7 +88,7 @@ DISPLAY=":$display" XDG_CONFIG_HOME="$work/wm-config" XDG_CACHE_HOME="$work/wm-c
     "$openbox" --sm-disable --config-file "$work/openbox.xml" \
     >"$work/openbox.log" 2>&1 &
 openbox_pid=$!
-for attempt in {1..100}; do
+for ((attempt=0; attempt<100; attempt++)); do
     kill -0 "$openbox_pid"
     LC_ALL=C DISPLAY=":$display" xprop -root _NET_SUPPORTING_WM_CHECK > "$work/wm-ready.txt"
     if grep -Eq '^_NET_SUPPORTING_WM_CHECK\(WINDOW\): window id # 0x[1-9a-fA-F][0-9a-fA-F]*$' "$work/wm-ready.txt"; then
@@ -111,42 +111,51 @@ DISPLAY=":$display" timeout 300 "$java" --enable-native-access=ALL-UNNAMED \
     "$ghidra" "$module" "$fixture" "$work" "$function_address" \
     2>&1 | tee "$work/gui.log"
 kill -0 "$openbox_pid"
-input="$work/select/readonly/fixture"
-sidecar="$work/select/chosen/fixture.dbg"
-readelf -h -S -n "$input" > "$work/input-elf.txt" 2> "$work/readelf.stderr"
-readelf -h -S -n "$sidecar" > "$work/sidecar-elf.txt" 2>> "$work/readelf.stderr"
-readelf --debug-dump=info --debug-dump=abbrev --debug-dump=aranges \
-    --debug-dump=decodedline --debug-dump=Ranges --debug-dump=loc "$sidecar" \
-    > "$work/readelf-dwarf.txt" 2>> "$work/readelf.stderr"
-test ! -s "$work/readelf.stderr"
-llvm-dwarfdump --verify "$sidecar" > "$work/llvm-verify.txt" 2>&1
-python3 "$repository/src/test/integration/check-dwarfdump.py" \
-    "$sidecar" "$work/dwarfdump.txt" --original "$input"
-load_commands=(-ex "symbol-file $sidecar")
-start_command=run
-if [[ "${GHIDRA_GUI_GDB_LOADER:-0}" == 1 ]]; then
-    load_commands=(-ex starti -ex "source $sidecar.gdb.py" -ex forge-load)
-    start_command=continue
-fi
-gdb --nx --batch \
-    -ex 'set pagination off' -ex 'set confirm off' -ex 'set debuginfod enabled off' \
-    -ex "file $input" -ex 'set auto-solib-add off' "${load_commands[@]}" \
-    -ex 'info functions gui_recovered_add' -ex 'ptype gui_recovered_add' \
-    -ex 'list gui_recovered_add' -ex 'break gui_recovered_add' \
-    -ex 'python exits=[]; gdb.events.exited.connect(lambda event: exits.append(event.exit_code))' \
-    -ex "$start_command" -ex 'python assert gdb.selected_frame().name() == "gui_recovered_add"' \
-    -ex 'python import os; assert os.path.isfile(gdb.selected_frame().find_sal().symtab.fullname())' \
-    -ex 'python before=int(gdb.parse_and_eval("$pc"))' -ex next \
-    -ex 'python assert int(gdb.parse_and_eval("$pc")) != before' \
-    -ex 'python before=int(gdb.parse_and_eval("$pc"))' -ex step \
-    -ex 'python assert int(gdb.parse_and_eval("$pc")) != before' \
-    -ex 'disable breakpoints' -ex continue -ex 'python assert exits == [0], exits' \
-    -ex 'echo SCRIPT_MANAGER_GDB_PASS\n' > "$work/gdb.txt" 2> "$work/gdb.stderr"
-test ! -s "$work/gdb.stderr"
-grep -Fxq 'SCRIPT_MANAGER_GDB_PASS' "$work/gdb.txt"
-if grep -Ei '^[[:space:]]*(warning:|Error|Traceback|AssertionError)|No such file' "$work/gdb.txt"; then
-    exit 1
-fi
-printf '%s\n' 'script-manager-structural-validation=PASS' 'script-manager-gdb=PASS' \
-    >> "$work/result.txt"
+validate_pair() {
+    local work=$1 input=$2 sidecar=$3 validation_case=$4
+    local start_command
+    local -a load_commands
+    readelf -h -S -n "$input" > "$work/input-elf.txt" 2> "$work/readelf.stderr"
+    readelf -h -S -n "$sidecar" > "$work/sidecar-elf.txt" 2>> "$work/readelf.stderr"
+    readelf --debug-dump=info --debug-dump=abbrev --debug-dump=aranges \
+        --debug-dump=decodedline --debug-dump=Ranges --debug-dump=loc "$sidecar" \
+        > "$work/readelf-dwarf.txt" 2>> "$work/readelf.stderr"
+    test ! -s "$work/readelf.stderr"
+    llvm-dwarfdump --verify "$sidecar" > "$work/llvm-verify.txt" 2>&1
+    python3 "$repository/src/test/integration/check-dwarfdump.py" \
+        "$sidecar" "$work/dwarfdump.txt" --original "$input"
+    load_commands=(-ex "symbol-file $sidecar")
+    start_command=run
+    if [[ "$validation_case" == export && "${GHIDRA_GUI_GDB_LOADER:-0}" == 1 ]]; then
+        load_commands=(-ex starti -ex "source $sidecar.gdb.py" -ex forge-load)
+        start_command='continue'
+    fi
+    # $pc belongs to GDB Python, not the launching shell.
+    # shellcheck disable=SC2016
+    gdb --nx --batch \
+        -ex 'set pagination off' -ex 'set confirm off' -ex 'set debuginfod enabled off' \
+        -ex "file $input" -ex 'set auto-solib-add off' "${load_commands[@]}" \
+        -ex 'info functions gui_recovered_add' -ex 'ptype gui_recovered_add' \
+        -ex 'list gui_recovered_add' -ex 'break gui_recovered_add' \
+        -ex 'python exits=[]; gdb.events.exited.connect(lambda event: exits.append(event.exit_code))' \
+        -ex "$start_command" -ex 'python assert gdb.selected_frame().name() == "gui_recovered_add"' \
+        -ex 'python import os; assert os.path.isfile(gdb.selected_frame().find_sal().symtab.fullname())' \
+        -ex 'python before=int(gdb.parse_and_eval("$pc"))' -ex next \
+        -ex 'python assert int(gdb.parse_and_eval("$pc")) != before' \
+        -ex 'python before=int(gdb.parse_and_eval("$pc"))' -ex step \
+        -ex 'python assert int(gdb.parse_and_eval("$pc")) != before' \
+        -ex 'disable breakpoints' -ex continue -ex 'python assert exits == [0], exits' \
+        -ex 'echo SCRIPT_MANAGER_GDB_PASS\n' > "$work/gdb.txt" 2> "$work/gdb.stderr"
+    test ! -s "$work/gdb.stderr"
+    grep -Fxq 'SCRIPT_MANAGER_GDB_PASS' "$work/gdb.txt"
+    if grep -Ei '^[[:space:]]*(warning:|Error|Traceback|AssertionError)|No such file' "$work/gdb.txt"; then
+        exit 1
+    fi
+    printf '%s\n' 'script-manager-structural-validation=PASS' 'script-manager-gdb=PASS' \
+        >> "$work/result.txt"
+}
+validate_pair "$work" "$work/select/readonly/fixture" "$work/select/chosen/fixture.dbg" export
+prepared="$work/select/attachment-prepare"
+mkdir -p "$prepared/validation"
+validate_pair "$prepared/validation" "$prepared/fixture" "$prepared/prepared.dbg" prepared
 echo "gui-script-manager-integration=PASS"

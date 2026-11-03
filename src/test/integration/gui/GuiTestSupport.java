@@ -115,10 +115,14 @@ final class GuiTestSupport {
     }
 
     static void operateChooser(Path selected, Path results, boolean cancel) throws Exception {
+        operateChooser(selected, results, cancel, "Select GhidraDwarfForge output directory");
+    }
+
+    static void operateChooser(Path selected, Path results, boolean cancel, String title) throws Exception {
         Dialog dialog = await("output chooser", () -> Arrays.stream(Window.getWindows())
             .filter(window -> window instanceof Dialog && window.isShowing())
             .map(window -> (Dialog) window)
-            .filter(window -> "Select GhidraDwarfForge output directory".equals(window.getTitle()))
+            .filter(window -> title.equals(window.getTitle()))
             .findFirst().orElse(null));
         Robot robot = new Robot();
         robot.setAutoDelay(80);
@@ -140,6 +144,48 @@ final class GuiTestSupport {
         }
         screenshot(robot, dialog, results.resolve("chooser.png"));
         clickButton(robot, dialog, cancel ? "Cancel" : "Select");
+    }
+
+    static Dialog dialog(String title) throws Exception {
+        return await(title, () -> Arrays.stream(Window.getWindows())
+            .filter(window -> window instanceof Dialog && window.isShowing())
+            .map(window -> (Dialog) window).filter(window -> title.equals(window.getTitle()))
+            .findFirst().orElse(null));
+    }
+
+    static void selectFile(String title, Path selected) throws Exception {
+        Dialog dialog = dialog(title);
+        onSwing(() -> {
+            JTextField filename = (JTextField) find(dialog, component -> component instanceof JTextField &&
+                "filenameTextField".equals(component.getName()));
+            require(filename != null, "missing file chooser field: " + title);
+            filename.setText(selected.toString());
+            return null;
+        });
+        clickButton(new Robot(), dialog, "Select");
+    }
+
+    static void choose(String title, String choice) throws Exception {
+        Dialog dialog = dialog(title);
+        onSwing(() -> {
+            var choices = (javax.swing.JComboBox<?>) find(dialog, component -> component instanceof javax.swing.JComboBox<?>);
+            require(choices != null, "missing choice list: " + title);
+            choices.setSelectedItem(choice);
+            require(choice.equals(choices.getSelectedItem()), "choice was not offered: " + choice);
+            return null;
+        });
+        clickButton(new Robot(), dialog, "OK");
+    }
+
+    static void enterText(String title, String text) throws Exception {
+        Dialog dialog = dialog(title);
+        onSwing(() -> {
+            var field = (JTextField) find(dialog, component -> component instanceof JTextField);
+            require(field != null, "missing input field: " + title);
+            field.setText(text);
+            return null;
+        });
+        clickButton(new Robot(), dialog, "OK");
     }
 
     static void clickButton(Robot robot, Container parent, String text) throws Exception {

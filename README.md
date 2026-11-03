@@ -143,9 +143,12 @@ Opt-in executable attachment is under development in PR158. The Linux
 `support/ghidra-dwarf-forge-attach` and PowerShell7
 `support/ghidra-dwarf-forge-attach.ps1` launchers provide read-only preview and
 explicit attachment/recovery commands; see [the invocation guide](docs/ATTACHMENT-HELPER.md).
-Script Manager also provides `AttachGhidraDwarfForge.java` and
-`RecoverGhidraDwarfForgeAttachment.java` to review an explicitly selected request,
-confirm the target change and launch the separate helper. Cancel is the default.
+Script Manager provides `ExportAndAttachGhidraDwarfForge.java` to export the
+current program to a fresh pair and prepare the request/report. Use
+`AttachGhidraDwarfForge.java` for an existing request and
+`RecoverGhidraDwarfForgeAttachment.java` for saved recovery selections. Each
+reviews the selected files and requires confirmation before launching the
+modifying helper. Cancel is the default.
 Complete Windows/GUI and hosted acceptance are still pending. Ordinary export
 continues to leave the executable unchanged.
 

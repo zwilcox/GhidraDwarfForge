@@ -5,7 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.FileTime;
 import java.util.function.BooleanSupplier;
 
 /**
@@ -16,36 +15,42 @@ import java.util.function.BooleanSupplier;
  */
 final class AttachmentCancellationFile implements BooleanSupplier {
     private final Path path;
-    private final Object identity;
-    private final FileTime modified;
+    private final WindowsFileMetadata windows;
+    private final Observation initial;
     private boolean stopped;
+    private record Observation(Object identity, long bytes, Object modified) { }
 
     AttachmentCancellationFile(Path selected) throws IOException {
         if (!selected.isAbsolute()) throw new IOException("cancellation file must be absolute");
-        path = selected;
-        var attributes = attributes();
-        if (!attributes.isRegularFile() || attributes.fileKey() == null) {
-            throw new IOException("cancellation file must be a regular non-link file with an observable identity");
-        }
-        identity = attributes.fileKey();
-        modified = attributes.lastModifiedTime();
-        stopped = attributes.size() != 0;
+        path = FileSystemPaths.resolveLeaf(selected, "cancellation file");
+        // Windows' Java provider can return null fileKey even for local NTFS.
+        // Reuse the already audited handle-based volume/file-ID reader; do not
+        // substitute a pathname or timestamp for replacement identity.
+        windows = com.sun.jna.Platform.isWindows() ? new WindowsFileMetadata() : null;
+        initial = observe();
+        stopped = initial.bytes() != 0;
     }
 
     @Override
     public synchronized boolean getAsBoolean() {
         if (!stopped) {
             try {
-                var current = attributes();
-                stopped = !current.isRegularFile() || !identity.equals(current.fileKey()) ||
-                    current.size() != 0 || !modified.equals(current.lastModifiedTime());
+                stopped = !initial.equals(observe());
             }
             catch (IOException | SecurityException unavailable) { stopped = true; }
         }
         return stopped;
     }
 
-    private BasicFileAttributes attributes() throws IOException {
-        return Files.readAttributes(path, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+    private Observation observe() throws IOException {
+        if (windows != null) {
+            var observed = windows.inspectFacts(path, () -> false);
+            return new Observation(observed.identity(), observed.bytes(), observed.modified());
+        }
+        var attributes = Files.readAttributes(path, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+        if (!attributes.isRegularFile() || attributes.fileKey() == null) {
+            throw new IOException("cancellation file must be a regular non-link file with an observable identity");
+        }
+        return new Observation(attributes.fileKey(), attributes.size(), attributes.lastModifiedTime());
     }
 }

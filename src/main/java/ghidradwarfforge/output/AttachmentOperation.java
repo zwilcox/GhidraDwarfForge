@@ -92,12 +92,22 @@ public final class AttachmentOperation {
 
     /** Read-only all-role preflight, also required before a host creates a visibility workspace. */
     public static AttachmentPaths.Plan preflightPaths(Request request) throws IOException {
+        return preflightPaths(request, false);
+    }
+
+    /** Before a GUI export, require a fresh pair/report instead of existing inputs. */
+    static AttachmentPaths.Plan preflightExportPaths(Request request) throws IOException {
+        return preflightPaths(request, true);
+    }
+
+    private static AttachmentPaths.Plan preflightPaths(Request request, boolean beforeExport) throws IOException {
         boolean refresh = request.refresh() != null;
         var selections = new ArrayList<AttachmentPaths.Selection>();
         select(selections, "targetBefore", request.target(), AttachmentPaths.Kind.TARGET);
-        select(selections, "sidecar", request.sidecar(), AttachmentPaths.Kind.INPUT);
-        select(selections, "source", request.source(), AttachmentPaths.Kind.INPUT);
-        select(selections, "exportReport", request.exportReport(), AttachmentPaths.Kind.INPUT);
+        var exportKind = beforeExport ? AttachmentPaths.Kind.NEW_FILE : AttachmentPaths.Kind.INPUT;
+        select(selections, "sidecar", request.sidecar(), exportKind);
+        select(selections, "source", request.source(), exportKind);
+        select(selections, "exportReport", request.exportReport(), exportKind);
         select(selections, "originalBackup", request.originalBackup(), refresh ? AttachmentPaths.Kind.INPUT : AttachmentPaths.Kind.NEW_FILE);
         select(selections, "validationEvidence", request.validationEvidence(), AttachmentPaths.Kind.NEW_FILE);
         select(selections, "receipt", request.receipt(), AttachmentPaths.Kind.NEW_FILE);

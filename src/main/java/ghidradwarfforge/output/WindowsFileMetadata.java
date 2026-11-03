@@ -93,6 +93,15 @@ public final class WindowsFileMetadata {
         }
     }
 
+    /** Read-only identity/size/time observation; does not query or change security privileges. */
+    Facts inspectFacts(Path path, BooleanSupplier cancelled) throws IOException {
+        try (var file = open(path, false, cancelled)) {
+            var result = facts(file.handle);
+            checkPath(path, result, cancelled);
+            return result;
+        }
+    }
+
     public Snapshot applyToOwnedStage(Path source, Snapshot expected, Path stage, BooleanSupplier cancelled)
             throws IOException {
         return applyToOwnedStage(source, expected, stage, cancelled, null);

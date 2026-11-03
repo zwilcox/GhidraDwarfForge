@@ -101,37 +101,43 @@ if ((Get-FileHash -LiteralPath $fixturePath -Algorithm SHA256).Hash -ne $before)
     throw 'Windows GUI journey modified the source fixture'
 }
 
-$inputElf = Join-Path $work 'select\readonly\fixture'
-$sidecar = Join-Path $work 'select\chosen\fixture.dbg'
-Invoke-Validator 'readelf.exe' @('-h', '-S', '-n', $inputElf) 'input-elf'
-Invoke-Validator 'readelf.exe' @('-h', '-S', '-n', $sidecar) 'sidecar-elf'
-Invoke-Validator 'readelf.exe' @('--debug-dump=info', '--debug-dump=abbrev',
-    '--debug-dump=aranges', '--debug-dump=decodedline', '--debug-dump=Ranges',
-    '--debug-dump=loc', $sidecar) 'readelf-dwarf'
-Invoke-Validator 'llvm-dwarfdump.exe' @('--verify', $sidecar) 'llvm-verify'
-$inputMetadata = Get-Content -LiteralPath (Join-Path $work 'input-elf.txt')
-$outputMetadata = Get-Content -LiteralPath (Join-Path $work 'sidecar-elf.txt')
-foreach ($field in @('Class', 'Data', 'OS/ABI', 'Machine', 'Flags', 'Build ID')) {
-    $pattern = '^\s*' + [regex]::Escape($field) + ':\s*(.+)$'
-    $inputValue = @($inputMetadata | Where-Object { $_ -match $pattern } |
-        ForEach-Object { $_.Trim() })
-    $outputValue = @($outputMetadata | Where-Object { $_ -match $pattern } |
-        ForEach-Object { $_.Trim() })
-    if ($inputValue.Count -ne 1 -or $outputValue.Count -ne 1 -or
-            $inputValue[0] -ne $outputValue[0]) {
-        throw "Windows GUI sidecar ELF identity mismatch: $field"
+function Test-ExportedPair {
+    param([string] $work, [string] $inputElf, [string] $sidecar)
+    Invoke-Validator 'readelf.exe' @('-h', '-S', '-n', $inputElf) 'input-elf'
+    Invoke-Validator 'readelf.exe' @('-h', '-S', '-n', $sidecar) 'sidecar-elf'
+    Invoke-Validator 'readelf.exe' @('--debug-dump=info', '--debug-dump=abbrev',
+        '--debug-dump=aranges', '--debug-dump=decodedline', '--debug-dump=Ranges',
+        '--debug-dump=loc', $sidecar) 'readelf-dwarf'
+    Invoke-Validator 'llvm-dwarfdump.exe' @('--verify', $sidecar) 'llvm-verify'
+    $inputMetadata = Get-Content -LiteralPath (Join-Path $work 'input-elf.txt')
+    $outputMetadata = Get-Content -LiteralPath (Join-Path $work 'sidecar-elf.txt')
+    foreach ($field in @('Class', 'Data', 'OS/ABI', 'Machine', 'Flags', 'Build ID')) {
+        $pattern = '^\s*' + [regex]::Escape($field) + ':\s*(.+)$'
+        $inputValue = @($inputMetadata | Where-Object { $_ -match $pattern } |
+            ForEach-Object { $_.Trim() })
+        $outputValue = @($outputMetadata | Where-Object { $_ -match $pattern } |
+            ForEach-Object { $_.Trim() })
+        if ($inputValue.Count -ne 1 -or $outputValue.Count -ne 1 -or
+                $inputValue[0] -ne $outputValue[0]) {
+            throw "Windows GUI sidecar ELF identity mismatch: $field"
+        }
     }
+    $independent = Get-Command dwarfdump.exe -ErrorAction SilentlyContinue
+    if ($null -eq $independent) {
+        'independent-dwarfdump=UNAVAILABLE_ON_WINDOWS_RUNNER' |
+            Add-Content -LiteralPath (Join-Path $work 'result.txt')
+    }
+    else {
+        Invoke-Validator $independent.Source @($sidecar) 'dwarfdump'
+        'independent-dwarfdump=PASS' | Add-Content -LiteralPath (Join-Path $work 'result.txt')
+    }
+    @('windows-script-manager-structural-validation=PASS',
+        'gdb-linux-elf-runtime=NOT_RUN_ON_WINDOWS_HOST',
+        "source-fixture-sha256=$before") | Add-Content -LiteralPath (Join-Path $work 'result.txt')
 }
-$independent = Get-Command dwarfdump.exe -ErrorAction SilentlyContinue
-if ($null -eq $independent) {
-    'independent-dwarfdump=UNAVAILABLE_ON_WINDOWS_RUNNER' |
-        Add-Content -LiteralPath (Join-Path $work 'result.txt')
-}
-else {
-    Invoke-Validator $independent.Source @($sidecar) 'dwarfdump'
-    'independent-dwarfdump=PASS' | Add-Content -LiteralPath (Join-Path $work 'result.txt')
-}
-@('windows-script-manager-structural-validation=PASS',
-    'gdb-linux-elf-runtime=NOT_RUN_ON_WINDOWS_HOST',
-    "source-fixture-sha256=$before") | Add-Content -LiteralPath (Join-Path $work 'result.txt')
-Write-Output 'windows-gui-script-manager-integration=PASS'
+Test-ExportedPair $work (Join-Path $work "select/readonly/fixture") (Join-Path $work "select/chosen/fixture.dbg")
+$prepared = Join-Path $work "select/attachment-prepare"
+$validation = Join-Path $prepared "validation"
+New-Item -ItemType Directory $validation | Out-Null
+Test-ExportedPair $validation (Join-Path $prepared "fixture") (Join-Path $prepared "prepared.dbg")
+Write-Output "windows-gui-script-manager-integration=PASS"

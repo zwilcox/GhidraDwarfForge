@@ -34,6 +34,19 @@ public final class ArtifactPairPublisher {
     public static void stageAndPublish(Path artifact, Path source,
             StagedWriter artifactWriter, StagedWriter sourceWriter,
             PrePublishCheck prePublishCheck) throws Exception {
+        stageAndPublish(artifact, source, artifactWriter, sourceWriter, prePublishCheck, false);
+    }
+
+    /** Fresh attachment generations must never overwrite an earlier pair. */
+    public static void stageAndPublishNew(Path artifact, Path source,
+            StagedWriter artifactWriter, StagedWriter sourceWriter,
+            PrePublishCheck prePublishCheck) throws Exception {
+        stageAndPublish(artifact, source, artifactWriter, sourceWriter, prePublishCheck, true);
+    }
+
+    private static void stageAndPublish(Path artifact, Path source,
+            StagedWriter artifactWriter, StagedWriter sourceWriter,
+            PrePublishCheck prePublishCheck, boolean exclusive) throws Exception {
         Path artifactTarget = resolve(artifact);
         Path sourceTarget = resolve(source);
         Path artifactParent = artifactTarget.getParent();
@@ -48,6 +61,10 @@ public final class ArtifactPairPublisher {
         requireDistinct(artifactTarget, sourceTarget);
         requireDestination(artifactTarget);
         requireDestination(sourceTarget);
+        if (exclusive) {
+            requireAbsent(artifactTarget);
+            requireAbsent(sourceTarget);
+        }
         Path stagedArtifact = Files.createTempFile(artifactParent,
             "." + artifactTarget.getFileName() + "-", ".staged");
         Path stagedSource = null;
@@ -57,7 +74,8 @@ public final class ArtifactPairPublisher {
             artifactWriter.write(stagedArtifact);
             sourceWriter.write(stagedSource);
             prePublishCheck.check();
-            publish(stagedArtifact, artifactTarget, stagedSource, sourceTarget);
+            if (exclusive) publishNew(stagedArtifact, artifactTarget, stagedSource, sourceTarget, () -> { });
+            else publish(stagedArtifact, artifactTarget, stagedSource, sourceTarget);
         }
         finally {
             Files.deleteIfExists(stagedArtifact);
@@ -65,6 +83,52 @@ public final class ArtifactPairPublisher {
                 Files.deleteIfExists(stagedSource);
             }
         }
+    }
+
+    static void publishNew(Path stagedArtifact, Path artifact, Path stagedSource, Path source,
+            PublishHook hook) throws IOException {
+        Path artifactStage = resolve(stagedArtifact);
+        Path artifactTarget = resolve(artifact);
+        Path sourceStage = resolve(stagedSource);
+        Path sourceTarget = resolve(source);
+        requireDistinct(artifactStage, artifactTarget, sourceStage, sourceTarget);
+        requireStagedFile(artifactStage, artifactTarget);
+        requireStagedFile(sourceStage, sourceTarget);
+        requireAbsent(artifactTarget);
+        requireAbsent(sourceTarget);
+        if (hook == null) throw new IllegalArgumentException("publish hook is required");
+        FileTime sourceTime = Files.getLastModifiedTime(sourceStage);
+        if (Files.getLastModifiedTime(artifactStage).compareTo(sourceTime) < 0) {
+            Files.setLastModifiedTime(artifactStage, sourceTime);
+        }
+        // link(2)/CreateHardLink publishes complete bytes exclusively. Unlike
+        // ATOMIC_MOVE, it cannot replace a file that appeared after preflight.
+        // Staging links are removed by their owner before returning the pair.
+        boolean installed = false;
+        try {
+            Files.createLink(artifactTarget, artifactStage);
+            installed = true;
+            hook.afterArtifactInstall();
+            Files.createLink(sourceTarget, sourceStage);
+        }
+        catch (IOException | RuntimeException failure) {
+            if (installed) {
+                try {
+                    if (!Files.isSameFile(artifactTarget, artifactStage)) {
+                        throw new IOException("fresh artifact changed before rollback; preserve selected files");
+                    }
+                    Files.delete(artifactTarget);
+                }
+                catch (IOException cleanup) { failure.addSuppressed(cleanup); }
+            }
+            throw failure;
+        }
+    }
+
+    private static void requireAbsent(Path path) throws IOException {
+        try { Files.readAttributes(path, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS); }
+        catch (NoSuchFileException missing) { return; }
+        throw new IOException("fresh output already exists: " + path);
     }
 
     public static void publish(Path stagedArtifact, Path artifact,
