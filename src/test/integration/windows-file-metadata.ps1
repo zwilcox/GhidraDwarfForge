@@ -608,7 +608,9 @@ function Run-Security([string]$Label, [string[]]$Arguments, [bool]$Success=$true
     $options = @()
     if ($Cycles) { $options = @('-Xint','-XX:+UseSerialGC') }
     if ($Arguments[0] -eq 'request-roundtrip') { $options += '-Dfile.encoding=windows-1252' }
-    return Run-Captured $Label $JavaExe ($options + $securityPrefix + @('--request-file',$request)) $Success
+    $captured = Run-Captured $Label $JavaExe ($options + $securityPrefix + @('--request-file',$request)) $Success
+    Require (-not $captured.stderr.Contains('Suppressed:')) 'Security probe suppressed a cleanup failure'
+    return $captured
 }
 foreach ($interpreted in @($false,$true)) {
     $roundTrip = Run-Security "security-request-roundtrip-$interpreted" @('request-roundtrip',$securityPath) $true $interpreted
@@ -666,12 +668,15 @@ foreach ($profile in @('inherited','protected')) {
     [IO.File]::SetLastWriteTimeUtc($admissionSource, [DateTime]::FromFileTimeUtc(133713240009876543L))
     [IO.File]::SetAttributes($admissionSource, [IO.FileAttributes]::Hidden -bor [IO.FileAttributes]::Archive)
     if ($profile -eq 'protected') {
-        $acl = Get-Acl -LiteralPath $admissionSource
-        $acl.SetAccessRuleProtection($true, $true)
-        Set-Acl -LiteralPath $admissionSource -AclObject $acl
+        $protectedRun = Run-Captured 'admission-protect-dacl-only' $securityProbe @('protect-dacl',$admissionSource)
+        $protectedFacts = ConvertFrom-Json $protectedRun.stdout
+        Require (($protectedFacts.complete.control -band 0x1000) -ne 0 -and
+            -not $protectedFacts.complete.saclPresent -and
+            ($protectedFacts.complete.control -band 0x2a30) -eq ($protectedFacts.before.control -band 0x2a30)) 'DACL-only fixture changed SACL state'
     }
     $beforeAdmission = Independent-State $admissionSource
     $priorAdmission = Independent-State $admissionStage
+    Save-Json (Join-Path $root "admission-state-before-$profile.json") ([ordered]@{source=$beforeAdmission; stage=$priorAdmission})
     $nativeSource = Run-Captured "admission-native-source-$profile" $securityProbe @('observe',$admissionSource)
     $nativeSourceFacts = ConvertFrom-Json $nativeSource.stdout
     Require (-not $nativeSourceFacts.complete.saclPresent) 'Ordinary admission fixture has unsupported SACL'
@@ -683,6 +688,7 @@ foreach ($profile in @('inherited','protected')) {
     $applied = Run-Security "admission-apply-$profile" @('admission-apply',$admissionSource,$admissionStage)
     $appliedFacts = ConvertFrom-Json $applied.stdout
     $afterAdmission = Independent-State $admissionStage
+    Save-Json (Join-Path $root "admission-state-after-$profile.json") $afterAdmission
     foreach ($key in @('attributes','created','modified','control','owner','group','dacl')) {
         Require ($afterAdmission[$key] -ceq $beforeAdmission[$key]) "Complete metadata application differs: $key"
     }
@@ -697,8 +703,16 @@ foreach ($profile in @('inherited','protected')) {
         $appliedFacts.security.control -eq $nativeSourceFacts.complete.control) 'Complete security control was not preserved'
     $admissionResults.Add([ordered]@{profile=$profile; source=$beforeAdmission; prior=$priorAdmission; after=$afterAdmission;
         nativeSource=$nativeSourceFacts; nativeStage=$nativeStageFacts; sourceJava=$sourceJavaFacts; java=$appliedFacts})
+    Save-Json (Join-Path $root 'attachment-metadata-progress.json') $admissionResults.ToArray()
 }
+$nullSaclSource = Join-Path $owned 'explicit null SACL source'
+[IO.File]::WriteAllText($nullSaclSource, 'null SACL sentinel', $utf8)
+$nullSaclRun = Run-Captured 'admission-null-sacl-fixture' $securityProbe @('null-sacl',$nullSaclSource)
+$nullSaclFacts = ConvertFrom-Json $nullSaclRun.stdout
+Require ($nullSaclFacts.complete.saclPresent -and $null -eq $nullSaclFacts.complete.saclHex) 'Explicit null SACL was not created'
 $negativeCases = @(
+    @{name='null-sacl-source'; source=$nullSaclSource; stage=$admissionStage; mode='admission-apply'; message='SACL'},
+    @{name='null-sacl-stage'; source=$admissionSource; stage=$nullSaclSource; mode='admission-apply'; message='SACL'},
     @{name='sacl-source'; source=$securityPath; stage=$admissionStage; mode='admission-apply'; message='SACL'},
     @{name='sacl-stage'; source=$admissionSource; stage=$securityPath; mode='admission-apply'; message='SACL'},
     @{name='ea-source'; source=$eaSource; stage=$admissionStage; mode='admission-apply'; message='unsupported metadata streams'},
@@ -715,6 +729,10 @@ foreach ($case in $negativeCases) {
     Same-State $sourceBefore $case.source
     Same-State $stageBefore $case.stage
 }
+$nullSaclAfter = Run-Captured 'admission-null-sacl-after' $securityProbe @('observe',$nullSaclSource)
+$nullSaclAfterFacts = ConvertFrom-Json $nullSaclAfter.stdout
+Require ($nullSaclAfterFacts.complete.control -eq $nullSaclFacts.complete.control -and
+    $nullSaclAfterFacts.complete.saclPresent -and $null -eq $nullSaclAfterFacts.complete.saclHex) 'Null SACL changed on refusal'
 $admissionEaAfter = Run-Captured 'admission-ea-after' $eaFixture @('query',$eaSource)
 Require ((ConvertFrom-Json $admissionEaAfter.stdout).eaBytes -eq $eaBytes) 'Admission rejection changed EA payload'
 $admissionSaclAfter = Run-Captured 'admission-sacl-after' $securityProbe @('read',$securityPath)

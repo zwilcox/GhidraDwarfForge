@@ -171,3 +171,33 @@ control with the raw oracle before staged application, so the old representation
 fails even before that application begins. Full Java/runtime/staging acceptance
 of this API correction remains **PRESENT, UNVERIFIED** until its hosted run and
 artifact review pass. The complete metadata requirement has not changed.
+
+## Separate DACL protection from null-SACL fixture setup
+
+**CONFIRMED native progress:** run41630413755 at `1fe9635` passes the corrected
+raw reader's audit/label comparison and cleanup controls. The inherited-DACL
+source and applied stage both report raw control `0x8004` through Java and the
+independent kernel/path observer. The application returns success and the
+harness's ordinary metadata/content/identity assertions pass. Its before/after
+states were still only in parent memory, so this does not substitute for the
+complete per-profile retained evidence now added to the harness.
+
+The following protected fixture has a present-null SACL after PowerShell
+Set-Acl; raw control is `0xbc14`, SACL-present is true and ACL bytes are null.
+The harness's required ordinary-fixture precondition correctly fails before
+production protected-stage application. The source/artifact review is retained
+in [the receipt](evidence/windows-security-staging-41630413755.json).
+
+The native fixture's new `protect-dacl` mode selects only DACL protection on
+an explicitly owned file. It verifies that all SACL flags/presence/defaulted
+state/bytes remain unchanged. A separate `null-sacl` mode deliberately creates
+a present-null SACL on another owned file; source and stage admission must
+reject it, preserving its full native security state and file bytes. Neither
+mode is installed as a product helper or changes account/parent-token policy.
+These replace an accidentally mixed positive fixture with distinct positive
+and negative cases without admitting unsupported SACLs.
+
+Before/after states and completed profile results are now retained immediately,
+even if a later profile fails. Java probe exceptions with suppressed cleanup
+failures are rejected by the harness. Native validation of these corrections
+and all staged metadata cases remains pending.

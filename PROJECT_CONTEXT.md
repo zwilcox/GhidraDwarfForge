@@ -1,12 +1,13 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
-**CONFIRMED #72 descriptor representation:** run41629294907 at `4310f20`
-shows GetSecurityInfo adding SACL_PROTECTED for an absent SACL (`0xa004`),
-while independent GetFileSecurityW and GetKernelObjectSecurity agree on raw
-control `0x8004`. The production reader now uses the raw kernel API without
-masking descriptor flags; native tests retain path/kernel agreement and the
-high-level diagnostic. Java binding/staged preservation validation is pending.
-See `docs/WINDOWS-FILE-SECURITY.md`. Product privilege policy remains pending.
+**CONFIRMED #72 raw-reader progress:** run41630413755 at `1fe9635`
+passes raw Java/native agreement, cleanup and inherited-DACL stage application.
+The protected fixture's PowerShell Set-Acl also introduced a present-null SACL,
+so its absent-SACL precondition failed before protected application. Native
+DACL-only fixture setup now verifies unchanged SACL state; explicit null-SACL
+source/stage refusals are retained. Per-profile before/after evidence is saved
+immediately. Full corrected native acceptance remains pending; see
+`docs/WINDOWS-FILE-SECURITY.md`. Product privilege policy is still pending.
 
 **CONFIRMED native #72 directory mechanism:** JNA implementation at `373f33b`
 and completed Windows job41619066926 pass independent raw source/artifact review:

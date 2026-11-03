@@ -9,9 +9,10 @@
 #include <wchar.h>
 
 /* Test-only fixture/observer, never installed as a production helper. Changes
- * only its own process token and, in create mode, one exclusively created file.
+ * only its own token and explicitly selected owned fixtures. Create is exclusive;
+ * protect-dacl and null-sacl adjust only their named fixture security fields.
  * The original SeSecurityPrivilege enabled state is restored before success.
- * No elevation, impersonation, owner/DACL changes or target replacement. */
+ * No elevation, impersonation, owner changes or executable replacement. */
 _Static_assert(sizeof(HANDLE) == 8 && sizeof(BOOL) == 4 && sizeof(DWORD) == 4 &&
     sizeof(WCHAR) == 2 && sizeof(SECURITY_DESCRIPTOR_CONTROL) == 2, "Windows64 ABI");
 _Static_assert(BACKUP_SECURITY_INFORMATION == 0x10000 && ACCESS_SYSTEM_SECURITY == 0x1000000 &&
@@ -192,8 +193,11 @@ int wmain(int argc, WCHAR **argv) {
     BOOL (WINAPI *adjust_token)(HANDLE, BOOL, PTOKEN_PRIVILEGES, DWORD, PTOKEN_PRIVILEGES, PDWORD) = AdjustTokenPrivileges;
     (void)read_sacl; (void)valid_acl; (void)adjust_token;
 
-    require(argc == 3 && (!wcscmp(argv[1], L"create") || !wcscmp(argv[1], L"read") || !wcscmp(argv[1], L"observe")), "mode and owned path required");
+    require(argc == 3 && (!wcscmp(argv[1], L"create") || !wcscmp(argv[1], L"read") || !wcscmp(argv[1], L"observe") ||
+        !wcscmp(argv[1], L"protect-dacl") || !wcscmp(argv[1], L"null-sacl")), "mode and owned path required");
     BOOL creating = !wcscmp(argv[1], L"create");
+    BOOL protecting = !wcscmp(argv[1], L"protect-dacl");
+    BOOL null_sacl = !wcscmp(argv[1], L"null-sacl");
     fixture_path = argv[2];
     if (creating) {
         HANDLE file = CreateFileW(argv[2], GENERIC_WRITE, 7, NULL, CREATE_NEW, FILE_FLAG_OPEN_REPARSE_POINT, NULL);
@@ -237,7 +241,7 @@ int wmain(int argc, WCHAR **argv) {
     enable(token, luid, TRUE);
     DWORD query_access = 0;
     QuerySecurityAccessMask(BACKUP_SECURITY_INFORMATION, &query_access);
-    requested_open_access = READ_CONTROL | ACCESS_SYSTEM_SECURITY | query_access | (creating ? WRITE_OWNER : 0);
+    requested_open_access = READ_CONTROL | ACCESS_SYSTEM_SECURITY | query_access | (creating ? WRITE_OWNER : 0) | (protecting ? WRITE_DAC : 0);
     HANDLE complete = CreateFileW(argv[2], requested_open_access, 7, NULL, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT, NULL);
     require(complete != INVALID_HANDLE_VALUE, "complete-security open");
     security_snapshot before, full, independent, visible;
@@ -256,10 +260,35 @@ int wmain(int argc, WCHAR **argv) {
         require(LocalFree(seed) == NULL, "seed descriptor release");
         if (error) { SetLastError(error); require(FALSE, "owned audit/label fixture"); }
     }
+    if (protecting) {
+        PSECURITY_DESCRIPTOR descriptor = NULL;
+        PACL dacl = NULL;
+        DWORD error = GetSecurityInfo(complete, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION,
+            NULL, NULL, &dacl, NULL, &descriptor);
+        if (error) { SetLastError(error); require(FALSE, "owned DACL read"); }
+        require(descriptor && dacl && IsValidAcl(dacl), "owned DACL validity");
+        error = SetSecurityInfo(complete, SE_FILE_OBJECT,
+            DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION, NULL, NULL, dacl, NULL);
+        require(LocalFree(descriptor) == NULL, "owned DACL descriptor release");
+        if (error) { SetLastError(error); require(FALSE, "owned DACL-only protection"); }
+    }
+    if (null_sacl) {
+        DWORD error = SetSecurityInfo(complete, SE_FILE_OBJECT,
+            SACL_SECURITY_INFORMATION | PROTECTED_SACL_SECURITY_INFORMATION, NULL, NULL, NULL, NULL);
+        if (error) { SetLastError(error); require(FALSE, "owned null SACL fixture"); }
+    }
     query_phase = "after-audit-label";
     kernel_snapshot(complete, &full);
     path_snapshot(argv[2], &independent);
     same(&full, &independent);
+    if (protecting) {
+        require((full.control & SE_DACL_PROTECTED) &&
+            (full.control & 0x2a30) == (before.control & 0x2a30) &&
+            full.present == before.present && full.defaulted == before.defaulted &&
+            full.bytes == before.bytes && !memcmp(full.acl, before.acl, full.bytes),
+            "DACL-only fixture changed SACL state");
+    }
+    if (null_sacl) require(full.present && !full.bytes, "explicit null SACL fixture");
     // Retain the high-level API as a diagnostic, never as canonical input.
     // Its extra SACL_PROTECTED bit on absent SACLs was independently observed.
     security_snapshot high_level;
@@ -269,7 +298,7 @@ int wmain(int argc, WCHAR **argv) {
         (high_level.control == full.control || (!full.present &&
             (high_level.control ^ full.control) == SE_SACL_PROTECTED)),
         "high-level diagnostic differs beyond observed absent-SACL protection behavior");
-    if (wcscmp(argv[1], L"observe") && (!full.present || full.audits != 1 || full.labels != 1)) {
+    if ((creating || !wcscmp(argv[1], L"read")) && (!full.present || full.audits != 1 || full.labels != 1)) {
         fprintf(stderr, "whole descriptor control=%04x present=%d audit=%lu label=%lu bytes=%lu\n",
             (unsigned int)full.control, full.present, full.audits, full.labels, full.bytes);
         require(FALSE, "whole descriptor must include audit and label");
