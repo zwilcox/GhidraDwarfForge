@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local loader rebase/sectionless/cancellation evidence:** companions
+from actual x86-64, AArch64 and MIPS32 big-endian exports pass sectionless
+source stepping and explicitly rebased PIE/shared runtime checks. Native PIE
+reuses one sidecar across three ASLR launches. Real cancellation during ELF
+copying preserves an existing three-file generation. Exact runtime artifacts
+are now retained before later tests can overwrite shared fixture paths. The
+headless test harness's rebase assertion now includes the fixture import base;
+production address normalization is unchanged. Hosted matrix/Windows evidence
+and #72's attachment transaction remain outstanding; see the completion ledger.
+
 **CONFIRMED local loader lifecycle evidence:** real curated Forge companions
 pass QEMU AArch64 and MIPS32 big-endian exec/PIE loading, plus native x86-64
 and both remote targets' shared-library unload/reload and duplicate-instance

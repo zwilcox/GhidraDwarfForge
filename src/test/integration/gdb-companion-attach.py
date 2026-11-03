@@ -33,6 +33,12 @@ def main():
         for path in (original, sidecar, source, companion)}
     args.results.mkdir(parents=True, exist_ok=True)
     directory = Path(tempfile.mkdtemp(prefix="run.", dir=args.results.resolve()))
+    artifacts = directory / "artifacts"
+    artifacts.mkdir()
+    for path, digest in before.items():
+        retained = artifacts / Path(path).name
+        shutil.copyfile(path, retained)
+        assert hashlib.sha256(retained.read_bytes()).hexdigest() == digest, path
     hook = directory / "lifecycle.so"
     compile_result = subprocess.run(["gcc", "-shared", "-fPIC", "-O0", "-Wall", "-Wextra", "-Werror",
         str(ROOT / "src/test/fixtures/gdb-loader-lifecycle.c"), "-o", str(hook)],

@@ -6,6 +6,7 @@ import hashlib
 import json
 from pathlib import Path
 import subprocess
+import shutil
 import tempfile
 
 
@@ -32,14 +33,26 @@ def main():
         for path in (original, sidecar, source, companion)}
     args.results.mkdir(parents=True, exist_ok=True)
     directory = Path(tempfile.mkdtemp(prefix="run.", dir=args.results.resolve()))
+    configuration = directory / ".gdbinit"
+    configuration.write_text("# Owned sentinel: companion must not edit debugger configuration.\nset confirm on\n")
+    configuration_bytes = configuration.read_bytes()
+    (directory / "gdbinit-before.txt").write_bytes(configuration_bytes)
+    artifacts = directory / "artifacts"
+    artifacts.mkdir()
+    for path, digest in snapshots.items():
+        retained = artifacts / Path(path).name
+        shutil.copyfile(path, retained)
+        assert hashlib.sha256(retained.read_bytes()).hexdigest() == digest, path
+    shutil.copyfile(args.reference, artifacts / "compiler.reference")
     symbols = subprocess.check_output(["nm", "-n", str(args.reference.resolve(strict=True))], text=True)
     address = next(int(line.split()[0], 16) for line in symbols.splitlines()
         if len(line.split()) == 3 and line.split()[2] == "recovered_add")
-    commands = ["set pagination off", "set confirm off", "set debuginfod enabled off",
+    commands = ["set pagination off", "set confirm on", "set debuginfod enabled off",
         "set auto-solib-add off", "set disable-randomization off", "file " + quoted(original),
         "source " + str(companion), "python biases=[]"]
     for iteration in range(3):
         commands += ["starti", "forge-load", block(
+            "assert gdb.parameter('confirm') is True, 'companion changed user confirmation setting'\n"
             "state = next(iter(gdb._forge_loader_registry_v1.loaded.values()))\n"
             "biases.append(state['bias'])\n"
             f"assert int(gdb.parse_and_eval('&recovered_add')) == state['bias'] + {address}\n"
@@ -69,6 +82,9 @@ def main():
     for path, digest in snapshots.items():
         if hashlib.sha256(Path(path).read_bytes()).hexdigest() != digest:
             raise AssertionError(f"changed fixture artifact: {path}")
+    if configuration.read_bytes() != configuration_bytes:
+        raise AssertionError("companion modified existing debugger configuration")
+    (directory / "gdbinit-after.txt").write_bytes(configuration.read_bytes())
     (directory / "result.json").write_text(json.dumps({"status": "PASS", "preserved": snapshots,
         "transcript": result.stdout.split("FORGE_NATIVE_COMPANION=", 1)[1].splitlines()[0]}, indent=4) + "\n")
     print(f"gdb-companion-native=PASS {directory}")

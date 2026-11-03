@@ -24,8 +24,9 @@ fixture="$repository/build/fixtures/$target"
 root="$repository/build/test-results/gdb-companion-shared"
 mkdir -p "$root"
 result=$(mktemp -d "$root/$target.$mode.$transport.XXXXXXXX")
+sidecar="$fixture/libsemantic.so.${FORGE_SYMBOL_SUFFIX:-ghidra-forge.dbg}"
 for file in "$fixture/semantic.loader-driver.stripped" "$fixture/semantic.loader-driver.reference" \
-        "$fixture/libsemantic.so.stripped" "$fixture/libsemantic.so.ghidra-forge.dbg.gdb.py"; do
+        "$fixture/libsemantic.so.stripped" "$sidecar.gdb.py"; do
     test -s "$file"
 done
 if [[ -n "$emulator" ]]; then
@@ -33,6 +34,7 @@ if [[ -n "$emulator" ]]; then
         "$fixture/semantic.loader-driver.stripped" "$fixture/libsemantic.so.stripped" "$mode"
 fi
 FORGE_SHARED_FIXTURE="$fixture" FORGE_SHARED_RESULT="$result" FORGE_SHARED_MODE="$mode" \
+    FORGE_SHARED_SIDECAR="$sidecar" \
     FORGE_SHARED_REMOTE="$qemu_socket_path" FORGE_SHARED_SYSROOT="$sysroot" \
     FORGE_SHARED_TRANSPORT="$transport" \
     timeout 90s "${FORGE_LOADER_GDB:-gdb-multiarch}" -nx -q -batch \

@@ -276,3 +276,78 @@ final remote/shared replay additionally requires the actual target's exit
 status to be zero. Seventeen pure mapping/identity cases, `actionlint`, shell
 syntax and `git diff --check` pass. These changes add tests and CI coverage;
 production exporter/runtime bytes are unchanged from `6861f39`.
+
+## Rebased, sectionless and in-progress cancellation checkpoint
+
+**CONFIRMED locally:** actual production companions now pass x86-64, AArch64
+and MIPS32 big-endian sectionless import/export, independent validators and
+GDB named breakpoints/source stepping. These uncurated sectionless programs
+use the existing extraction contract: the recovered `main` on AArch64 and
+ARM32, and the recovered add function on x86/MIPS. The test does not invent
+curated parameters/globals absent from those programs. The companion needs the
+ELF program table, not a section-header table.
+
+Six additional curated exports explicitly rebase Ghidra by `0x400000`, across
+PIE/shared and the same three targets. GNU/LLVM/pinned strict validation and
+actual companion GDB behavior pass, including three ASLR launches from the
+same native PIE sidecar and ambiguous-library instance switching/reload. The
+new `FORGE_SYMBOL_SUFFIX` and `FORGE_SYMBOL_RESULTS` test controls retain these
+outputs/reports separately from ordinary exports. Initial rebased x86 evidence
+is retained under `gdb-companion-rebased-export`; it exposed a harness assertion
+that incorrectly equated Ghidra's total analysis-to-ELF delta with only the
+additional rebase. `analysis_delta` now includes the existing fixture import
+base in both address preparation and that assertion. Production normalization
+was correct and unchanged. The complete corrected exports are retained under
+`build/test-results/gdb-companion-rebased-v2-export` and use suffix
+`gdb-rebased-v2.dbg` locally (`gdb-rebased.dbg` in CI).
+
+Successful final runtime examples with retained artifact copies:
+
+| Case | Result under `build/test-results` |
+| --- | --- |
+| x86 sectionless | `gdb-companion-remote/x86_64.exec.no-sections.normal.weHEiRCc` |
+| AArch64 sectionless | `gdb-companion-remote/aarch64.exec.no-sections.normal.1jloJaJC` |
+| MIPS big-endian sectionless | `gdb-companion-remote/mips32be.exec.no-sections.normal.dflsuwJF` |
+| Native rebased PIE, three ASLR launches | `gdb-companion-rebased-native/run.65pno74g` |
+| AArch64 rebased PIE | `gdb-companion-remote/aarch64.pie.normal.QWNFmxa0` |
+| MIPS rebased PIE | `gdb-companion-remote/mips32be.pie.normal.gn8vNkKW` |
+| Native rebased shared instances/reload | `gdb-companion-shared/x86_64.ambiguous.normal.myJnZit6` |
+| AArch64 rebased shared instances/reload | `gdb-companion-shared/aarch64.ambiguous.normal.7mj8kmsh` |
+| MIPS rebased shared instances/reload | `gdb-companion-shared/mips32be.ambiguous.normal.5EX65AGe` |
+| Native attach/exec | `gdb-companion-attach/run.m1qlxjdd` |
+
+Each runtime harness now retains the exact original/sidecar/source/companion
+bytes it checks, so later fixture exports cannot replace that evidence. The
+end-of-job bounded diagnostic capture also includes companion files, rebased
+outputs and the new source-built library driver; that snapshot is still not a
+substitute for earlier invocation hashes. Its local x86 capture has 35 files,
+9 absent optional outputs and zero errors; local rebased files deliberately
+use the separately retained `-v2` suffix.
+
+The real installed exporter cancels during copying of a 128 MiB owned input,
+with an existing three-file generation. All three old files and original bytes
+remain unchanged, no staging/backup files remain, and the report is CANCELLED.
+The monitor observes 16 MiB copied before cancellation. Command:
+
+```sh
+GHIDRA_GDB_LOADER=1 src/test/integration/copy-cancellation-export.sh \
+    "$PWD/build/ghidra-loader-test"
+```
+
+Evidence: `build/test-results/copy-cancellation-export/run.ekKuATPa` (the test
+removes its disposable padded input after retaining hashes and diagnostics).
+This complements chooser cancellation and publisher fault tests; it does not
+prove crash-atomic publication or #72 recovery. The default two-file
+cancellation path is retained in CI alongside the new companion path.
+
+**PRESENT, UNVERIFIED on the updated hosted head:** all five target lanes now
+include sectionless and rebased companion behavior; Windows GUI and all
+required exact-head results/artifact review remain required before closing
+#107. #72's complete attachment/refresh/receipt/recovery transaction is still
+**PLANNED**. No new host/architecture release claim or issue closure is made.
+
+A final native replay (`gdb-companion-rebased-native/run.t3b2_74f`) also sets
+GDB confirmation on, verifies it remains on after each companion load and
+checks an owned pre-existing `.gdbinit` sentinel remains byte-identical. The
+sentinel is not executed (`-nx`); before/after text is retained separately.
+This test does not edit or replace the user's actual configuration.

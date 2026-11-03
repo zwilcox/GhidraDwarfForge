@@ -24,8 +24,10 @@ INPUTS = (
     "semantic.partial.stripped", "semantic.pie.reference", "semantic.pie.stripped",
     "libsemantic.so.reference", "libsemantic.so.stripped",
     "semantic.shared-driver.reference", "semantic.shared-driver.stripped",
+    "semantic.loader-driver.reference", "semantic.loader-driver.stripped",
 )
-SOURCES = ("semantic.c", "shared_semantic.c", "shared_driver.c")
+SOURCES = ("semantic.c", "shared_semantic.c", "shared_driver.c",
+    "gdb-loader-shared-driver.c", "gdb-loader-lifecycle.c")
 
 
 def metadata(value):
@@ -101,7 +103,9 @@ def capture(repository, target):
     (output / "sources").mkdir()
     fixture = repository / "build/fixtures" / target
     names = list(INPUTS) + [f"{stem}.ghidra-forge.dbg{suffix}"
-                           for stem in STEMS for suffix in ("", ".c")]
+                           for stem in STEMS for suffix in ("", ".c", ".gdb.py")]
+    names += [f"{stem}.gdb-rebased.dbg{suffix}" for stem in ("semantic.pie", "libsemantic.so")
+              for suffix in ("", ".c", ".gdb.py")]
     records = [capture_file(fixture / name, output / name) for name in names]
     records.extend(capture_file(repository / "src/test/fixtures" / name,
                                 output / "sources" / name) for name in SOURCES)

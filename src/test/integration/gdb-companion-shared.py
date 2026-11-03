@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import shutil
 
 import gdb
 
@@ -30,11 +31,19 @@ restricted = os.environ["FORGE_SHARED_TRANSPORT"] == "no-hostio"
 remote = os.environ["FORGE_SHARED_REMOTE"]
 driver = fixture / "semantic.loader-driver.stripped"
 original = fixture / "libsemantic.so.stripped"
-sidecar = fixture / "libsemantic.so.ghidra-forge.dbg"
+sidecar = Path(os.environ["FORGE_SHARED_SIDECAR"])
 source = Path(str(sidecar) + ".c")
 companion = Path(str(sidecar) + ".gdb.py")
 before = {str(path): hashlib.sha256(path.read_bytes()).hexdigest()
     for path in (driver, original, sidecar, source, companion)}
+artifacts = result / "artifacts"
+artifacts.mkdir()
+for path, digest in before.items():
+    retained = artifacts / Path(path).name
+    shutil.copyfile(path, retained)
+    assert hashlib.sha256(retained.read_bytes()).hexdigest() == digest, path
+for name in ("semantic.loader-driver.reference", "libsemantic.so.reference"):
+    shutil.copyfile(fixture / name, artifacts / name)
 driver_symbols = symbols(fixture / "semantic.loader-driver.reference")
 library_symbols = symbols(fixture / "libsemantic.so.reference")
 with driver.open("rb") as stream:

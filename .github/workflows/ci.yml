@@ -916,6 +916,7 @@ jobs:
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2"
           src/test/integration/copy-cancellation-export.sh "$GHIDRA_INSTALL_DIR"
+          GHIDRA_GDB_LOADER=1 src/test/integration/copy-cancellation-export.sh "$GHIDRA_INSTALL_DIR"
 
       - name: Reject definite ELF and Ghidra processor disagreement
         if: matrix.target == 'x86_64' || matrix.target == 'mips32le'
@@ -944,7 +945,7 @@ jobs:
                       capture=("FORGE_VALIDATION_EVIDENCE_DIR=$evidence_root/cases/$role"
                           "FORGE_VALIDATION_TOOLSET=$evidence_root/tools/toolset.json") ;;
               esac
-              if [[ "$role" == exec || "$role" == pie || "$role" == shared ]]; then
+              if [[ "$role" == exec || "$role" == pie || "$role" == shared || "$role" == exec.no-sections ]]; then
                   capture+=("GHIDRA_GDB_LOADER=1")
               fi
               env "${capture[@]}" FIXTURE_ROLE="$role" src/test/integration/headless-symbol-export.sh \
@@ -975,7 +976,7 @@ jobs:
                       --input "build/fixtures/$TARGET/semantic.pie.stripped" \
                       --sidecar "build/fixtures/$TARGET/semantic.pie.ghidra-forge.dbg" \
                       --results build/test-results/gdb-companion-attach
-              elif [[ "$TARGET" != x86_64 && ( "$role" == exec || "$role" == pie ) ]]; then
+              elif [[ "$role" == exec.no-sections || ( "$TARGET" != x86_64 && ( "$role" == exec || "$role" == pie ) ) ]]; then
                   src/test/integration/gdb-companion-remote.sh "$TARGET" "$role"
                   if [[ "$role" == pie ]]; then
                       src/test/integration/gdb-companion-remote.sh "$TARGET" "$role" no-hostio
@@ -1011,6 +1012,33 @@ jobs:
             --capture "exec.no-build-id=$evidence_root/cases/exec.no-build-id/receipt.json" \
             --output "$evidence_root/index.json"
           echo "FORGE_VALIDATION_EVIDENCE_INDEX=$evidence_root/index.json" >> "$GITHUB_ENV"
+
+      - name: GDB companions from rebased PIE and shared-library analysis
+        env:
+          TARGET: ${{ matrix.target }}
+          GHIDRA_GDB_LOADER: '1'
+          GHIDRA_REBASE_DELTA: '0x400000'
+          FORGE_SYMBOL_SUFFIX: gdb-rebased.dbg
+        run: |
+          set -euo pipefail
+          export FORGE_SYMBOL_RESULTS="$PWD/build/test-results/gdb-companion-rebased-export"
+          consumer="$PWD/native-integration/libdwarf.so.2.3.2"
+          producer="$PWD/native-integration/libdwarfp.so.2.3.2"
+          for role in pie shared; do
+              FIXTURE_ROLE="$role" src/test/integration/headless-symbol-export.sh \
+                  "$GHIDRA_INSTALL_DIR" "$consumer" "$producer" "$TARGET"
+              if [[ "$role" == shared ]]; then
+                  src/test/integration/gdb-companion-shared.sh "$TARGET" ambiguous
+              elif [[ "$TARGET" == x86_64 ]]; then
+                  python3 -B src/test/integration/gdb-companion-native.py \
+                      --input "build/fixtures/$TARGET/semantic.pie.stripped" \
+                      --sidecar "build/fixtures/$TARGET/semantic.pie.$FORGE_SYMBOL_SUFFIX" \
+                      --reference "build/fixtures/$TARGET/semantic.pie.reference" \
+                      --results build/test-results/gdb-companion-rebased-native
+              else
+                  src/test/integration/gdb-companion-remote.sh "$TARGET" pie
+              fi
+          done
 
       # Consume primary export reports before later x86 regressions reuse their log paths.
       - name: Streamed file digests and target-endian GNU debuglink CRC

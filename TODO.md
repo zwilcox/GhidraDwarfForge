@@ -1,5 +1,11 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED additional local #107 coverage:** sectionless and rebased
+PIE/shared companions pass real export/validator/GDB tests on x86-64,
+AArch64 and MIPS32 big-endian. Cancellation during production copying retains
+the prior complete generation. Hosted acceptance and artifact review remain
+required; #72's complete transaction is still **PLANNED**.
+
 **CONFIRMED local #107 progress:** real companion loading now has native
 attach/exec and cross-target shared-library unload/reload evidence, including
 ambiguous instances and missing remote mappings. Linux Script Manager export
