@@ -37,10 +37,11 @@
             "bytes": 35721
         }
     },
-    "scope": "Test-only whole-security-descriptor visibility experiment on exclusively created file. Scoped child token adjustment seeds/queries audit and integrity-label fixtures; not production elevation or host admission.",
+    "scope": "Test-only whole-security-descriptor visibility experiment on exclusively created file. Scoped child token adjustment seeds/queries audit and integrity-label fixtures; not production elevation or host admission. Native diagnostics also compare GetKernelObjectSecurity(BACKUP) on the same opened handle against complete path and high-level handle observations; mismatch remains a failure.",
     "documentation": [
         "https://learn.microsoft.com/en-us/windows/win32/secauthz/security-information",
         "https://learn.microsoft.com/en-us/windows/win32/api/aclapi/nf-aclapi-getsecurityinfo",
-        "https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-adjusttokenprivileges"
+        "https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-adjusttokenprivileges",
+        "https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-getkernelobjectsecurity"
     ]
 }

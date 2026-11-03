@@ -1,13 +1,12 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
-**CONFIRMED partial #72 native Java security evidence:** run41627414752 at
-`f09791b` passes Unicode transport, native/Java audit-label bytes, insufficient
-privilege and cancellation controls. Its path-replacement case correctly rejects
-at the earlier opened-file facts check; the harness incorrectly required only
-the later path-check error. The assertion is corrected with independent retained/
-replacement identity checks. Reader lifetime and composed metadata staging remain
-unverified because the suite stopped there. See `docs/WINDOWS-FILE-SECURITY.md`.
-No production privilege policy is selected.
+**CONFIRMED bounded #72 Java reader evidence:** run41628187930 at `934f251`
+passes audit/label byte agreement, privilege/cancellation/path refusals and128
+cycles at302 handles. The ordinary-file native descriptor comparison then fails
+before staged application; exact differing fields were not logged. Complete
+ordinary-file admission remains unverified. A diagnostic adds raw snapshots and
+GetKernelObjectSecurity as a third observer without accepting the mismatch.
+See `docs/WINDOWS-FILE-SECURITY.md`. Product privilege policy remains pending.
 
 **CONFIRMED native #72 directory mechanism:** JNA implementation at `373f33b`
 and completed Windows job41619066926 pass independent raw source/artifact review:

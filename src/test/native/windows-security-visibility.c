@@ -153,24 +153,40 @@ static void path_snapshot(const WCHAR *path, security_snapshot *result) {
     free(descriptor);
 }
 
+static void kernel_snapshot(HANDLE handle, security_snapshot *result) {
+    DWORD bytes = 0;
+    require(!GetKernelObjectSecurity(handle, BACKUP_SECURITY_INFORMATION, NULL, 0, &bytes) &&
+        GetLastError() == ERROR_INSUFFICIENT_BUFFER && bytes >= SECURITY_DESCRIPTOR_MIN_LENGTH &&
+        bytes <= 1024 * 1024, "kernel security buffer bound");
+    DWORD capacity = bytes;
+    PSECURITY_DESCRIPTOR descriptor = malloc(capacity);
+    require(descriptor != NULL, "kernel security allocation");
+    require(GetKernelObjectSecurity(handle, BACKUP_SECURITY_INFORMATION, descriptor, capacity, &bytes) &&
+        bytes <= capacity, "GetKernelObjectSecurity");
+    snapshot(descriptor, result);
+    free(descriptor);
+}
+
 static void same(const security_snapshot *a, const security_snapshot *b) {
     require(a->control == b->control && a->present == b->present && a->defaulted == b->defaulted &&
         a->bytes == b->bytes && !memcmp(a->acl, b->acl, a->bytes), "independent complete SACL observations agree");
 }
 
-static void print_snapshot(const security_snapshot *value) {
-    printf("{\"control\":%u,\"saclPresent\":%s,\"saclDefaulted\":%s,\"auditAces\":%lu,"
+static void print_snapshot(FILE *out, const security_snapshot *value) {
+    fprintf(out, "{\"control\":%u,\"saclPresent\":%s,\"saclDefaulted\":%s,\"auditAces\":%lu,"
         "\"labelAces\":%lu,\"saclHex\":", (unsigned int)value->control, value->present ? "true" : "false",
         value->defaulted ? "true" : "false", value->audits, value->labels);
     if (value->bytes) {
-        putchar('"');
-        for (DWORD i = 0; i < value->bytes; i++) printf("%02x", value->acl[i]);
-        putchar('"');
-    } else printf("null");
-    putchar('}');
+        fputc('"', out);
+        for (DWORD i = 0; i < value->bytes; i++) fprintf(out, "%02x", value->acl[i]);
+        fputc('"', out);
+    } else fprintf(out, "null");
+    fputc('}', out);
 }
 
 int wmain(int argc, WCHAR **argv) {
+    BOOL (WINAPI *read_kernel)(HANDLE, SECURITY_INFORMATION, PSECURITY_DESCRIPTOR, DWORD, LPDWORD) = GetKernelObjectSecurity;
+    (void)read_kernel;
     BOOL (WINAPI *read_sacl)(PSECURITY_DESCRIPTOR, LPBOOL, PACL *, LPBOOL) = GetSecurityDescriptorSacl;
     BOOL (WINAPI *valid_acl)(PACL) = IsValidAcl;
     BOOL (WINAPI *adjust_token)(HANDLE, BOOL, PTOKEN_PRIVILEGES, DWORD, PTOKEN_PRIVILEGES, PDWORD) = AdjustTokenPrivileges;
@@ -234,6 +250,18 @@ int wmain(int argc, WCHAR **argv) {
     query_phase = "after-audit-label";
     opened_snapshot(complete, COMPLETE_SECURITY_FIELDS, &full);
     path_snapshot(argv[2], &independent);
+    security_snapshot kernel;
+    kernel_snapshot(complete, &kernel);
+    if (full.control != independent.control || full.present != independent.present ||
+            full.defaulted != independent.defaulted || full.bytes != independent.bytes ||
+            memcmp(full.acl, independent.acl, full.bytes)) {
+        fprintf(stderr, "security-api-difference mode=%ls GetSecurityInfo=", argv[1]);
+        print_snapshot(stderr, &full);
+        fprintf(stderr, " GetFileSecurityW="); print_snapshot(stderr, &independent);
+        fprintf(stderr, " GetKernelObjectSecurity="); print_snapshot(stderr, &kernel);
+        fputc('\n', stderr);
+    }
+    same(&kernel, &independent);
     same(&full, &independent);
     if (wcscmp(argv[1], L"observe") && (!full.present || full.audits != 1 || full.labels != 1)) {
         fprintf(stderr, "whole descriptor control=%04x present=%d audit=%lu label=%lu bytes=%lu\n",
@@ -259,8 +287,8 @@ int wmain(int argc, WCHAR **argv) {
         "\"insufficientHandleQueryError\":%lu,\"initialPrivilegeAttributes\":%lu,"
         "\"restoredPrivilegeAttributes\":%lu,\"before\":", creating ? "true" : "false", open_error,
         query_error, original_attributes, restored_attributes);
-    print_snapshot(&before); printf(",\"complete\":"); print_snapshot(&full);
-    printf(",\"ordinary\":"); print_snapshot(&visible);
+    print_snapshot(stdout, &before); printf(",\"complete\":"); print_snapshot(stdout, &full);
+    printf(",\"ordinary\":"); print_snapshot(stdout, &visible);
     printf(",\"queryFields\":%lu,\"queryAccess\":%lu,\"openedAccess\":%lu,\"handleCycles\":128,\"handlesBefore\":%lu,\"handlesAfter\":%lu}\n", (DWORD)COMPLETE_SECURITY_FIELDS, query_access, requested_open_access, baseline, after);
     return 0;
 }

@@ -112,3 +112,31 @@ retained and replacement file states: original bytes and file identity must
 remain under the retained name and a different identity with the exact sentinel
 must occupy the selected path. No production check changes. Remaining cleanup
 and composed-stage cases were not reached and retain their unverified status.
+
+## Ordinary-file descriptor disagreement
+
+**CONFIRMED bounded reader evidence:** run41628187930 at `934f251` passes
+the audit-bearing fixture's production Java inspection, independent control/ACE
+byte comparison, privilege refusal, before/after-open cancellation, retained
+versus replacement file identity, directory refusal and 128 cycles at302 handles.
+A final native read proves the fixture security data unchanged. All27 retained
+sources match Git; see
+[the evidence receipt](evidence/windows-security-java-41628187930.json).
+
+The following ordinary-file native control fails before Java staged application:
+GetSecurityInfo and GetFileSecurityW disagree on descriptor state. Its original
+log does not identify which control/presence/defaulted/ACL field differs. The
+printed win32=122 is stale from buffer sizing, not proof of an access or sizing
+failure. This contradicts treating the high-level descriptor representation as
+universally canonical. Ordinary-file admission and complete reader acceptance
+remain unverified even though the populated audit/label fixture passes.
+
+The diagnostic now prints all compared snapshot fields and independently calls
+[GetKernelObjectSecurity](https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-getkernelobjectsecurity)
+with BACKUP_SECURITY_INFORMATION on the same opened handle. Its signature is
+audited against the pinned securitybaseapi.h and compiled in the native fixture
+before any Java mapping is considered. Kernel/path and original high-level/path
+comparisons must both still pass; no mismatch is ignored. Production code is
+unchanged pending the native evidence. The kernel API uses caller-owned bounded
+buffers and returns a self-relative descriptor with the same access-rights
+requirements; it does not grant privileges or alter the file.
