@@ -1,5 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED Windows cancellation identity correction; new child-test failure:**
+job126097709777/run41685703952 passes149 helper checks with
+`cancellation-native-identity=true`, then fails `attachmentGuiProcessSmoke`
+before preparation/recovery and real-export tests. Its old assertion discarded
+the child exit/output details. The fixture now retains stdout, stderr and exit/
+cancellation status and includes a bounded stderr tail in failures; the actual
+Java21 Linux control still passes. The Windows child-failure cause is UNCERTAIN
+until the diagnostic rerun. This is not a complete Windows or GUI acceptance.
+
 **CONFIRMED scoped authorization checks:** independent Windows artifacts from
 run41680805435 prove own-token privilege restoration, nested/exceptional cleanup
 and128 cycles without handle growth. The local installed Linux GUI additionally

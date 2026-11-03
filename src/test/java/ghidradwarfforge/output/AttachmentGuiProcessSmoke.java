@@ -36,7 +36,15 @@ public final class AttachmentGuiProcessSmoke {
             AttachmentGuiProcessSmoke.class.getName(), "child", control.toString(), receipt.toString()));
         try (var channel = FileChannel.open(control, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
             var result = AttachmentGui.process(command, () -> Files.exists(root.resolve("ready")), channel, false);
-            require(result.exitCode() == 0 && result.cancellationRequested(), "child was killed or cancellation lost");
+            Path diagnostics = Path.of("build", "test-results", "windows-host", "gui-helper-process");
+            Files.createDirectories(diagnostics);
+            Files.writeString(diagnostics.resolve("child.stdout"), result.output());
+            Files.writeString(diagnostics.resolve("child.stderr"), result.errors());
+            Files.writeString(diagnostics.resolve("result.txt"), "exit=" + result.exitCode() +
+                "\ncancellationRequested=" + result.cancellationRequested() + "\n");
+            require(result.exitCode() == 0 && result.cancellationRequested(),
+                "child exit=" + result.exitCode() + "; cancellation requested=" + result.cancellationRequested() +
+                "; stderr tail=" + result.errors().substring(Math.max(0, result.errors().length() - 4096)));
             require(Files.readString(receipt).equals("cleanup-completed"), "returned before safe cleanup");
             require(result.output().endsWith("SAFE_STOP\n") && result.output().length() > 128 * 1024 &&
                 result.errors().length() == 128 * 1024, "child output was lost or pipe blocked");

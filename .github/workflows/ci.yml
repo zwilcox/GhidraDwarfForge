@@ -2601,7 +2601,7 @@ jobs:
         shell: pwsh
         run: ./src/test/integration/windows-desktop-acl.ps1
 
-      - name: Install extension and run native-independent Windows checks
+      - name: Install extension and run focused Windows checks
         shell: pwsh
         run: |
           $resultDirectory = 'build\test-results\windows-host'
@@ -2621,7 +2621,7 @@ jobs:
             debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke 2>&1 |
             Tee-Object -FilePath "$resultDirectory\native-independent.log"
           if ($LASTEXITCODE -ne 0) {
-            throw "native-independent Windows checks failed with exit code $LASTEXITCODE"
+            throw "focused Windows checks failed with exit code $LASTEXITCODE"
           }
 
       - name: Windows file-lock publication rollback
