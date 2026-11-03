@@ -1,13 +1,13 @@
 # TODO.md — GhidraDwarfForge
 
-**CONFIRMED local #72 ELF/report and consumer progress:** seven real-export
-initial commit/rollback cases pass fresh GNU/LLVM/pinned-strict checks and
-native/QEMU GDB discovery, source/types/arguments and CRC rejection. Committed
-and rolled-back generations retain bytes and test-host metadata throughout
-debugger checks. CI now schedules the test bridge for exec/PIE/no-ID on all five
-target lanes; new hosted results are **PRESENT, UNVERIFIED**. This does not enable
-the public attachment operation or complete production metadata, validator
-supervision, curated refresh or CLI/GUI acceptance.
+**CONFIRMED local #72 production coordinator progress:** initial and refresh
+preparation now share `AttachmentOperation`, including validator ordering,
+independent backup, candidate metadata/flush, previous-association checks and
+transaction/recovery handoff. Seventy-two Java 21 controls and seven real ELF
+validator/native-QEMU GDB cases pass; the test bridge no longer assembles a
+transaction itself. Production host and live validator adapters remain mandatory
+and unimplemented, and saved-program curated refresh, public CLI/GUI and hosted
+acceptance remain open. A test-supplied adapter does not complete these rows.
 
 **CONFIRMED local #72 commit/recovery progress:** the filesystem controller
 passes 525 Java 21 checks, including initial/refresh failure handling, separate

@@ -1,14 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
-**CONFIRMED local #72 real-ELF controller integration:** initial commit and
-post-replacement rollback pass seven validator/GDB cases: x86-64 exec/PIE/no-ID,
-AArch64 exec/PIE and MIPS32 big-endian exec/PIE. All have actual runtime argument
-checks, automatic discovery and CRC rejection. A new read-only production
-binding checks report SHA claims, copied ELF bytes, allocations, build identity,
-target and host observations; 30 Java 21 controls pass. The integration bridge
-still uses a limited Linux test host and externally supervised validators.
-Production host/validator integration, curated refresh, CLI/GUI and hosted
-acceptance remain required. See `docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`.
+**CONFIRMED local #72 production coordination:** `AttachmentOperation` now
+owns all-role preflight, export binding, the mandatory validator call, verified
+backup/candidate preparation and transaction handoff. It also verifies retained
+refresh ancestry, the actual prior debuglink, fresh basenames and source path.
+Seventy-two Java 21 ordering/failure/refresh controls pass. Seven real ELF cases
+pass fresh validators and native/QEMU GDB through this coordinator; exact runtime
+JAR/dependencies/test sources are retained. Production host metadata and live
+validator adapters, curated saved-program refresh, CLI/GUI and hosted acceptance
+remain required. The integration test still supplies limited test adapters; no
+public attachment option is enabled. See `docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`.
 
 **CONFIRMED local #72 filesystem controller:** 525 Java 21 checks pass for
 initial/refresh commit, failure rollback and explicit interrupted-operation

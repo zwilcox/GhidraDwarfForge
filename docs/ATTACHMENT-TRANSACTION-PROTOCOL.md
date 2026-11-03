@@ -432,3 +432,65 @@ that exact workflow runs. Hosted acceptance, production Linux/Windows host
 metadata, production validator supervision/binding, fresh curated re-export and
 refresh, and public CLI/GUI controls remain required. This test bridge does not
 enable attachment or close #72.
+
+
+## Production preparation coordinator
+
+**CONFIRMED locally:** `AttachmentOperation` replaces manual preparation in the
+real-ELF test bridge. One production operation now preflights every requested
+input/output/backup/receipt path before invoking its mandatory validator,
+observes native host identities and parent identities, binds the report/ELF
+pair, requires the selected source to match its recorded path, checks sidecar
+placement and rejects a shadowing file before `.debug` lookup. It rechecks
+inputs after validation, creates the independent backup, constructs from that
+unmodified backup, applies/flushes metadata and hands complete claims to the
+transaction controller. Failures before handoff retain complete recovery files
+and report selected stage paths; a failure just before receipt publication also
+retains those paths. No preparation failure replaces the target.
+
+Refresh uses the retained original backup for the new export/candidate and
+creates a separate backup of the current attached image. Before validation it
+requires the committed prior receipt and unchanged original backup/old pair,
+matching current bytes/metadata, a matching actual prior GNU debuglink and
+fresh sidecar/source basenames. A previously restored target may have a new
+inode; the operation reobserves and protects that current identity while
+preserving the older committed receipt. Initial/refresh selection does not
+change Ghidra's imported executable hash.
+
+Host metadata/namespace operations, consumer basename encoding and a live
+validator service are mandatory dependencies. There is no production default
+that accepts arbitrary JSON or uses the Linux test metadata adapter. The real
+integration bridge supplies a fixture adapter that binds the controlling
+harness's freshly produced validator evidence; it is not a production validator
+implementation. The source remains at its actual recorded path rather than
+moving an identical copy and assuming DWARF lookup will find it.
+
+`attachmentOperationSmoke` passes 72 actual Java 21 controls for initial and
+refresh sequencing, rollback and refresh after rollback, validation rejection,
+cancellation, missing evidence, concurrent changed input, metadata failure,
+unsafe selections, recorded-source mismatch, shadowing lookup and retained
+artifacts on a pre-publication handoff failure. Its validator is an explicit
+unit-test seam, and its small ELF fixture is not a DWARF validity claim.
+The 525 controller and 30 export-binding regressions and extension build pass.
+
+Seven real cases are separately rerun through the coordinator in
+`build/test-results/attachment-operation/*-retained/`: x86-64 exec/PIE/no-ID,
+AArch64 exec/PIE and MIPS32 big-endian exec/PIE. Fresh GNU/LLVM/pinned-strict
+checks, actual automatic GDB lookup/source/types/arguments, native/QEMU runtime,
+CRC rejection, original preservation and stable completed-generation metadata
+pass. The same 17 independently corroborated frame diagnostics remain visible.
+Every case retains and runs its exact production JAR and dependency copies,
+plus Java test sources, GDB oracle and Python driver. Earlier local runs recorded
+JAR hashes without retaining a copy; they are not substituted for this retained
+checkpoint. The raw-report retention guard passes all 15 receipts in this new
+directory, including the earlier coordinator calibrations.
+
+The first compilation used a nonpublic ELF section field; it was corrected to
+the existing public accessor before any runtime test. The compile failure is
+retained in `build/attachment-operation-compile.log`; the final build/smoke log
+is `build/attachment-operation-final.log`. Workflow lint, architecture isolation
+and diff checks pass. CI includes the operation smoke and uses this coordinator
+in the existing five-target real-ELF bridge. Exact-head hosted acceptance is
+**PRESENT, UNVERIFIED**. Production metadata/live validation adapters, actual
+curated saved-program re-export/refresh and the CLI/GUI remain required; neither
+#72 nor any complete A1–A7 row is closed by this checkpoint.

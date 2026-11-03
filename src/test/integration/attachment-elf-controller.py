@@ -64,6 +64,16 @@ def main():
     oracle = ROOT / 'src/test/integration/automatic-association-gdb.py'
     protected = {str(p): digest(p) for p in [original, sidecar, source, reference, jar, gson, jna,
                                            args.report_log, args.strict_validator, Path(__file__), oracle, *sources]}
+    provenance = work / 'provenance'
+    provenance.mkdir()
+    for path in [jar, gson, jna, Path(__file__), oracle, *sources]:
+        shutil.copyfile(path, provenance / path.name)
+        require(digest(provenance / path.name) == protected[str(path)], 'retained runtime/source differs')
+    # Run the exact retained production JAR and dependencies. Preserve their
+    # input origin/hash above; subsequent local builds cannot erase this proof.
+    runtime_files = [provenance / path.name for path in [jar, gson, jna]]
+    (provenance / 'origin.json').write_text(json.dumps({str(path): protected[str(path)]
+        for path in [jar, gson, jna, Path(__file__), oracle, *sources]}, indent=4) + '\n')
     commands = []
 
     def run(label, argv, env=None, timeout=60):
@@ -121,7 +131,7 @@ def main():
         'checks': validation, 'strict': strict_result}, indent=4) + '\n')
     classes = work / 'classes'
     classes.mkdir()
-    dependencies = os.pathsep.join(map(str, [jar, gson, jna]))
+    dependencies = os.pathsep.join(map(str, runtime_files))
     run('compile', [os.environ.get('JAVAC', 'javac'), '--release', '21', '-cp', dependencies,
                     '-d', classes, *sources])
     java = os.environ.get('JAVA', 'java')

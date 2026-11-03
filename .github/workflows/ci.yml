@@ -493,7 +493,7 @@ jobs:
             cc -std=c11 -Wall -Wextra -Werror src/test/native/linux-rename-contract.c -o build/linux-rename-contract
             build/linux-rename-contract
             ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke \
-              ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke companionArtifactPublisherSmoke attachmentProtocolSmoke attachmentReceiptStoreSmoke attachmentFileStoreSmoke attachmentTargetStoreSmoke attachmentTransactionSmoke attachmentExportBindingSmoke \
+              ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke companionArtifactPublisherSmoke attachmentProtocolSmoke attachmentReceiptStoreSmoke attachmentFileStoreSmoke attachmentTargetStoreSmoke attachmentTransactionSmoke attachmentExportBindingSmoke attachmentOperationSmoke \
               exportReportSmoke exportReportClaimsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke \
               fileDigestsSmoke elfBuildIdSmoke \
               matchedElfPrefixSmoke matchedElfAllocationsSmoke executableProgramBytesSmoke \

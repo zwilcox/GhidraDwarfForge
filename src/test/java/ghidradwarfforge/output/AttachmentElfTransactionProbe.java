@@ -1,18 +1,15 @@
 package ghidradwarfforge.output;
 
-import ghidradwarfforge.elf.OwnedDebuglinkCandidate;
+import com.google.gson.JsonParser;
 
 import java.io.IOException;
-import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Test-only bridge from a retained real export to the filesystem controller.
@@ -21,7 +18,10 @@ import java.util.UUID;
  * a production host metadata contract, or an attachment CLI.
  */
 public final class AttachmentElfTransactionProbe {
-    private static final class Host extends AttachmentReceiptStoreSmoke.Host implements AttachmentTargetStore.Host {
+    private static final class Host extends AttachmentReceiptStoreSmoke.Host implements AttachmentOperation.Host {
+        public byte[] debuglinkBasename(Path sidecar) {
+            return sidecar.getFileName().toString().getBytes(StandardCharsets.UTF_8);
+        }
         public void replaceAtomic(Path stage, Path target) throws IOException {
             Files.move(stage, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
         }
@@ -51,64 +51,60 @@ public final class AttachmentElfTransactionProbe {
         }
         Map<String, Path> paths = new HashMap<>();
         for (var entry : protectedInputs.entrySet()) {
-            Path destination = parent.resolve(entry.getValue().path().getFileName());
-            Files.copy(entry.getValue().path(), destination, StandardCopyOption.COPY_ATTRIBUTES);
-            paths.put(entry.getKey(), destination);
+            if (entry.getKey().equals("source") || entry.getKey().equals("validationEvidence")) {
+                paths.put(entry.getKey(), entry.getValue().path());
+            }
+            else {
+                Path destination = parent.resolve(entry.getValue().path().getFileName());
+                Files.copy(entry.getValue().path(), destination, StandardCopyOption.COPY_ATTRIBUTES);
+                paths.put(entry.getKey(), destination);
+            }
         }
         var binding = AttachmentExportBinding.observe(paths.get("exportReport"), paths.get("exportOriginal"),
             paths.get("sidecar"), paths.get("source"), host, () -> false);
         var original = binding.files().get("exportOriginal");
-        var all = new ArrayList<AttachmentPaths.Selection>();
-        for (var entry : paths.entrySet()) {
-            all.add(new AttachmentPaths.Selection(entry.getKey(), entry.getValue(), AttachmentPaths.Kind.INPUT));
-        }
-        all.add(new AttachmentPaths.Selection("originalBackup", parent.resolve("original.backup"), AttachmentPaths.Kind.NEW_FILE));
-        all.add(new AttachmentPaths.Selection("receipt", parent.resolve("transaction.json"), AttachmentPaths.Kind.NEW_FILE));
-        all.add(new AttachmentPaths.Selection("recoveryReceipt", parent.resolve("recovery.json"), AttachmentPaths.Kind.NEW_FILE));
-        all.add(new AttachmentPaths.Selection("restoreImage", parent.resolve("restore.elf"), AttachmentPaths.Kind.NEW_FILE));
-        var preflight = AttachmentPaths.preflight(all);
-        preflight.recheck();
-        var backup = AttachmentFileStore.backup(original, preflight.paths().get("originalBackup"), host, () -> false);
-        var candidate = OwnedDebuglinkCandidate.create(backup.path(), paths.get("sidecar"),
-            paths.get("sidecar").getFileName().toString().getBytes(StandardCharsets.UTF_8), parent);
-        try (var output = FileChannel.open(candidate.candidate(), StandardOpenOption.WRITE)) {
-            host.preserveMetadata(original.path(), original.fingerprint(), candidate.candidate());
-            output.force(true);
-        }
-        host.syncDirectory(candidate.directory());
-        var after = AttachmentFileStore.observe(candidate.candidate(), host, () -> false);
-        Map<String, AttachmentReceipt.Artifact> files = new HashMap<>();
-        for (String role : new String[] {"exportReport", "sidecar", "source"}) {
-            files.put(role, binding.files().get(role).artifact());
-        }
-        files.put("validationEvidence", AttachmentFileStore.observe(paths.get("validationEvidence"), host, () -> false).artifact());
-        files.put("targetBefore", original.artifact());
-        files.put("targetAfter", new AttachmentReceipt.Artifact(original.path().toString(), after.digest().sha256(),
-            after.digest().byteCount(), after.fingerprint().identity(), after.fingerprint().metadataSha256()));
-        files.put("originalBackup", backup.artifact());
-        paths.remove("exportOriginal");
-        paths.put("targetBefore", original.path());
-        paths.put("targetAfter", after.path());
-        paths.put("originalBackup", backup.path());
-        var receipt = new AttachmentReceipt(UUID.randomUUID().toString(), AttachmentReceipt.Mode.INITIAL,
-            AttachmentReceipt.Phase.PREPARED, preflight.paths().get("receipt").toString(), "owned-append-v1",
-            host.contract(), host.durability(), binding.files().get("sidecar").digest().gnuDebuglinkCrc32(), files, null);
-        var request = new AttachmentTransaction.Request(receipt, paths, preflight.paths().get("receipt"),
-            preflight.paths().get("recoveryReceipt"), preflight.paths().get("restoreImage"));
-        binding.recheck(host, () -> false);
-        var result = AttachmentTransaction.commit(request, host, () -> false,
+        var request = new AttachmentOperation.Request(original.path(), paths.get("sidecar"), paths.get("source"),
+            paths.get("exportReport"), parent.resolve("original.backup"), parent.resolve("validation.json"),
+            parent.resolve("transaction.json"), parent.resolve("recovery.json"), parent.resolve("restore.elf"), null);
+        // Fixture adapter only: the controlling harness just ran real validators.
+        // Rebind its retained evidence before handing it to the operation. This
+        // is not a production substitute for live validator execution.
+        AttachmentOperation.Validator validator = (selectedExport, evidence, selectedHost, cancelled) -> {
+            var captured = JsonParser.parseString(Files.readString(paths.get("validationEvidence"))).getAsJsonObject();
+            if (!captured.getAsJsonObject("strict").get("status").getAsString().equals("PASS")) {
+                throw new IOException("fixture validator evidence did not pass");
+            }
+            Map<String, String> expectedHashes = new HashMap<>();
+            for (var entry : captured.getAsJsonObject("inputs").entrySet()) {
+                if (expectedHashes.put(Path.of(entry.getKey()).getFileName().toString(), entry.getValue().getAsString()) != null) {
+                    throw new IOException("fixture evidence repeats a basename");
+                }
+            }
+            for (var file : selectedExport.files().values()) {
+                if (!file.digest().sha256().equals(expectedHashes.get(file.path().getFileName().toString()))) {
+                    throw new IOException("fixture validation does not bind selected bytes");
+                }
+            }
+            AttachmentFileStore.unchanged(protectedInputs.get("validationEvidence"), host, cancelled);
+            AttachmentFileStore.backup(protectedInputs.get("validationEvidence"), evidence, selectedHost, cancelled);
+        };
+        var operation = AttachmentOperation.execute(request, host, validator, () -> false,
             boundary -> {
                 if (args[6].equals("rollback") && boundary == AttachmentTransaction.Boundary.TARGET_REPLACED) {
                     throw new IOException("test fault after real ELF replacement");
                 }
-            }, AttachmentTransaction.RECEIPTS);
+            });
+        var result = operation.transaction();
+        var after = operation.recoveryRequest().prepared().files().get("targetAfter");
         var expected = args[6].equals("commit") ? AttachmentReceipt.Phase.COMMITTED : AttachmentReceipt.Phase.ROLLED_BACK;
         if (result.outcome() != expected) throw new AssertionError(result);
         var installed = AttachmentFileStore.observe(original.path(), host, () -> false);
-        if (!installed.digest().equals(args[6].equals("commit") ? after.digest() : original.digest())) {
+        if (!installed.digest().sha256().equals(args[6].equals("commit") ? after.sha256() : original.digest().sha256())) {
             throw new AssertionError("unexpected installed ELF bytes");
         }
-        AttachmentFileStore.unchanged(backup, host, () -> false);
+        if (!AttachmentFileStore.observe(request.originalBackup(), host, () -> false).digest().equals(original.digest())) {
+            throw new AssertionError("independent original backup changed");
+        }
         for (var input : protectedInputs.values()) AttachmentFileStore.unchanged(input, host, () -> false);
         System.out.println("attachment-elf-controller=PASS outcome=" + result.outcome() +
             " target=" + original.path() + " report-status=" + binding.claims().status() +
