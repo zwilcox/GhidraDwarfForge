@@ -1,5 +1,16 @@
 # TODO.md — GhidraDwarfForge
 
+**PRESENT, UNVERIFIED public recovery helper:** `AttachmentHelper --recover`
+now accepts an explicit bounded recovery request plus request/receipt SHA-256
+pins and mandatory target-change consent. It reconstructs claims from the
+selected interruption record without following embedded artifact paths, then
+runs the native recovery coordinator. JSON output is explicitly UTF-8. Actual
+Java21 passes108 recovery admission checks; the existing532 coordinator checks
+pass. CI's8 native Linux interruption cases now recover via fresh helper JVMs
+and independently verify durable receipts and restored bytes/metadata. Native
+helper evidence, pre-replacement recovery-selection persistence, authorization
+launchers and GUI integration remain incomplete. See `docs/ATTACHMENT-HELPER.md`.
+
 **PRESENT, UNVERIFIED native helper execution:** `AttachmentHelper` now runs
 explicit SHA-256-pinned ATTACH/REFRESH selections in a separate process through
 the real host/validator/transaction. Explicit target-change consent is mandatory;

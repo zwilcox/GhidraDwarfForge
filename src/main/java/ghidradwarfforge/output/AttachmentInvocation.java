@@ -153,7 +153,7 @@ public record AttachmentInvocation(AttachmentOperation.Request operation, Map<St
         json.endObject();
     }
 
-    private static Map<String, Path> readPaths(JsonReader json) throws IOException {
+    static Map<String, Path> readPaths(JsonReader json) throws IOException {
         var paths = new TreeMap<String, Path>();
         var names = new HashSet<String>();
         json.beginObject();
@@ -162,13 +162,13 @@ public record AttachmentInvocation(AttachmentOperation.Request operation, Map<St
         return paths;
     }
 
-    private static String unique(JsonReader json, Set<String> names) throws IOException {
+    static String unique(JsonReader json, Set<String> names) throws IOException {
         String name = json.nextName();
         require(names.add(name), "duplicate attachment invocation field: " + name);
         return name;
     }
 
-    private static String string(JsonReader json) throws IOException {
+    static String string(JsonReader json) throws IOException {
         require(json.peek() == JsonToken.STRING, "invocation field must be a string");
         return json.nextString();
     }

@@ -49,6 +49,7 @@ public final class AttachmentHelperSmoke {
                     append(command, "--confirm-target-change"), append(command, "--elevate"),
                     append(command, "--request", selection.toString()), append(command, "--request"),
                     append(command, "--request-sha256", digest(selection)),
+                    append(command, "--recover"), append(command, "--recover", "--recover"),
                     append(command, "--cancel-on-stdin", "--cancel-on-stdin") }) {
                 failure(rejected, false, "FAILED", 1);
                 equal(before, snapshot(root));

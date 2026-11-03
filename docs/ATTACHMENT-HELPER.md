@@ -41,9 +41,8 @@ operation checks; it does not waive native identity, content or metadata binding
 Reading never runs a tool or requests privileges. The file is an explicit
 selection document, not proof of authorization or validator success. In
 particular, an `elevate` property is rejected as an unknown field; OS permission
-must be requested separately by the invoking user interface. Recovery transport
-is not implemented by interpreting arbitrary receipt paths; RECOVER currently
-rejects rather than guessing selections.
+must be requested separately by the invoking user interface. The ATTACH/REFRESH parser rejects RECOVER. The distinct recovery format below
+requires every path explicitly and never follows artifact paths from a receipt.
 
 The parser reuses the existing bounded strict UTF-8/JSON lexical guard: at most
 256KiB, 16384 UTF-16 units per string, depth3 and128 values. It rejects duplicate
@@ -121,3 +120,52 @@ Rollback fault injection retains the test bridge. Hosted helper execution,
 Windows helper execution, convenience CLI/GUI and full A2/A5/C1 acceptance
 remain pending. Local commands are retained in
 `build/attachment-helper-validation.log`.
+
+## Explicit interrupted recovery
+
+**PRESENT, UNVERIFIED native helper execution:** invoke `AttachmentHelper` with
+`--recover --request <absolute-recovery.json> --request-sha256 <sha256>` and
+`--confirm-target-change`. Recovery can replace the target with the verified
+pre-operation image. A request has exactly schemaVersion1, operation RECOVER,
+receiptSha256 and paths. Paths explicitly selects targetBefore, targetAfter,
+originalBackup, sidecar, source, exportReport, validationEvidence, receipt,
+recoveryReceipt and restoreImage; refresh also selects previousReceipt,
+previousSidecar, previousSource and priorTargetBackup. `targetAfter` selects the
+private candidate's former path, which may now be absent after replacement.
+Every other selection must match the canonical path recorded for that role.
+No artifact path is taken from the receipt as an instruction to open a file.
+
+The bounded request and selected receipt each require an exact SHA-256 pin.
+Only normal PREPARED/COMMITTED interruption records are admitted. Reconstruction
+of PREPARED claims preserves every original field, hash, identity and metadata
+claim; native recovery compares the actual receipt again before acting.
+All-role preflight includes the request before a native host is opened. A fresh
+host verifies the selected request and receipt, and the coordinator independently
+checks the retained backup and current target. A concurrent unrelated target is
+preserved. The original interrupted receipt is immutable; use fresh recovery
+receipt and restore destinations. Reusing an existing recovery destination fails.
+
+On success the result is ROLLED_BACK and exit0. RECOVERY_REQUIRED or any
+refusal/cleanup failure exits nonzero. Cancellation is honored before recovery
+starts; it cannot interrupt restoration halfway through. JSON output is explicitly
+UTF-8 on both hosts. Successful attachment responses include a `recoveryInvocation`
+selection document in addition to their diagnostic `recoverySelection` data.
+Save and inspect that document before invoking recovery; it is not itself consent.
+
+The convenience launcher still needs to retain an explicit recovery selection
+before replacement, so an abrupt death before stdout does not force manual
+selection of the retained candidate path. The durable transaction receipt and
+backups already exist before replacement; this remaining UX task does not change
+or weaken the recovery verification. GUI/authorization integration also remains
+incomplete. A failure before any PREPARED receipt is published cannot have replaced
+the target and is not admitted as an interrupted transaction.
+
+**CONFIRMED local admission:** actual Java21 passes108 recovery selection checks,
+including both initial/refresh and PREPARED/COMMITTED records, wrong pins, paths,
+aliases, malformed requests, terminal records, cancellation and stream closure.
+The existing532 coordinator checks (including8 abrupt exits) pass; these are
+not new native-helper acceptance. CI's8 production Linux crash cases now launch
+a fresh helper JVM for recovery and independently compare target bytes/metadata,
+backup retention, immutable interrupted receipt and actual recovery record.
+Hosted helper recovery and Windows recovery-helper evidence remain pending.
+Commands/results are in `build/attachment-helper-recovery-validation.log`.

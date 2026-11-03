@@ -10,6 +10,7 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
@@ -30,17 +31,21 @@ public final class AttachmentHelper {
     private static final int REQUEST_LIMIT = 256 * 1024;
     private static final String HELP = "Attachment changes the selected executable and retains an independent backup.\n" +
         "Usage: AttachmentHelper --request ABSOLUTE_JSON --request-sha256 SHA256 --confirm-target-change " +
-        "[--cancel-on-stdin]\n" +
+        "[--cancel-on-stdin] [--recover]\n" +
         "Run only in a separately authorized process. This command never requests elevation.\n" +
         "--cancel-on-stdin: any input byte or EOF requests cancellation; keep stdin open while running.\n" +
         "Retain the request, backups, validation evidence and transaction/recovery receipts on failure.\n";
 
-    record Command(Path request, String sha256, boolean cancelOnStdin) { }
+    record Command(Path request, String sha256, boolean cancelOnStdin, boolean recovery) { }
     record Admitted(Command command, AttachmentInvocation invocation, AttachmentPaths.Plan plan) { }
 
     private AttachmentHelper() { }
 
     public static void main(String[] args) {
+        // Windows console/pipe encodings must not corrupt literal selected paths
+        // in the launcher protocol, even when the host uses a legacy code page.
+        System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));
+        System.setErr(new PrintStream(System.err, true, StandardCharsets.UTF_8));
         var cancelled = new AtomicBoolean();
         // The opt-in channel is deliberately inert data: no command, path or
         // receipt is ever interpreted from stdin. Closing the launcher cancels.
@@ -62,6 +67,7 @@ public final class AttachmentHelper {
             output.print(HELP);
             return output.checkError() ? 1 : 0;
         }
+        if (java.util.Arrays.asList(args).contains("--recover")) return recover(args, cancelled, output);
         AttachmentOperation.Result completed = null;
         AttachmentInvocation invocation = null;
         JsonObject response = new JsonObject();
@@ -123,6 +129,14 @@ public final class AttachmentHelper {
             recovery.addProperty("recoveryReceipt", completed.recoveryRequest().recoveryReceipt().toString());
             recovery.addProperty("restoreImage", completed.recoveryRequest().restoreImage().toString());
             response.add("recoverySelection", recovery);
+            if (completed.transaction().outcome() == AttachmentReceipt.Phase.COMMITTED && completed.transaction().receipt() != null) {
+                var selected = new TreeMap<>(completed.recoveryRequest().files());
+                selected.put("receipt", completed.recoveryRequest().receipt());
+                selected.put("recoveryReceipt", completed.recoveryRequest().recoveryReceipt());
+                selected.put("restoreImage", completed.recoveryRequest().restoreImage());
+                response.add("recoveryInvocation", JsonParser.parseString(new AttachmentRecoveryInvocation(selected,
+                    completed.transaction().receipt().sha256()).toJson()));
+            }
         }
         else response.addProperty("outcome", status == 130 ? "CANCELLED" : "FAILED");
         response.addProperty("exitCode", status);
@@ -132,18 +146,7 @@ public final class AttachmentHelper {
 
     static Admitted admit(String[] args, BooleanSupplier cancelled) throws IOException {
         Command command = command(args);
-        check(cancelled);
-        if (!Files.isRegularFile(command.request(), LinkOption.NOFOLLOW_LINKS)) {
-            throw new IOException("attachment request must be a regular non-link file");
-        }
-        byte[] bytes;
-        try (var input = Files.newInputStream(command.request(), LinkOption.NOFOLLOW_LINKS)) {
-            bytes = input.readNBytes(REQUEST_LIMIT + 1);
-        }
-        check(cancelled);
-        if (bytes.length > REQUEST_LIMIT || !sha256(bytes).equals(command.sha256())) {
-            throw new IOException("attachment request exceeds limit or differs from the explicitly selected SHA-256");
-        }
+        byte[] bytes = readPinned(command.request(), command.sha256(), REQUEST_LIMIT, cancelled);
         var invocation = AttachmentInvocation.read(new ByteArrayInputStream(bytes), cancelled);
         return new Admitted(command, invocation, invocation.preflight(command.request()));
     }
@@ -153,6 +156,7 @@ public final class AttachmentHelper {
         String sha = null;
         boolean confirmed = false;
         boolean control = false;
+        boolean recovery = false;
         for (int index = 0; index < args.length; index++) {
             switch (args[index]) {
                 case "--request" -> {
@@ -167,6 +171,10 @@ public final class AttachmentHelper {
                     if (confirmed) throw new IOException("duplicate target-change confirmation");
                     confirmed = true;
                 }
+                case "--recover" -> {
+                    if (recovery) throw new IOException("duplicate recovery action");
+                    recovery = true;
+                }
                 case "--cancel-on-stdin" -> {
                     if (control) throw new IOException("duplicate cancellation channel");
                     control = true;
@@ -177,7 +185,80 @@ public final class AttachmentHelper {
         if (!confirmed || request == null || !request.isAbsolute() || sha == null || !sha.matches("[0-9a-f]{64}")) {
             throw new IOException("explicit --confirm-target-change, absolute --request and lowercase --request-sha256 are required");
         }
-        return new Command(request, sha, control);
+        return new Command(request, sha, control, recovery);
+    }
+
+    private static int recover(String[] args, BooleanSupplier cancelled, PrintStream output) {
+        var response = new JsonObject();
+        response.addProperty("schemaVersion", 1);
+        AttachmentTransaction.Result completed = null;
+        int status;
+        try {
+            var command = command(args);
+            byte[] bytes = readPinned(command.request(), command.sha256(), REQUEST_LIMIT, cancelled);
+            var invocation = AttachmentRecoveryInvocation.read(new ByteArrayInputStream(bytes), cancelled);
+            var transaction = invocation.transaction(cancelled);
+            var plan = invocation.preflight(transaction, command.request());
+            response.addProperty("requestSha256", command.sha256());
+            response.add("selection", JsonParser.parseString(invocation.toJson()));
+            plan.recheck();
+            check(cancelled);
+            try (var session = openRecovery(transaction)) {
+                plan.recheck();
+                var host = session.host();
+                var request = AttachmentFileStore.observe(plan.paths().get("invocation"), host, cancelled);
+                if (!request.digest().sha256().equals(command.sha256()) ||
+                        !AttachmentReceiptStore.read(transaction.receipt(), host, cancelled).sha256().equals(invocation.receiptSha256())) {
+                    throw new IOException("recovery request or interrupted receipt changed");
+                }
+                AttachmentFileStore.unchanged(request, host, cancelled);
+                check(cancelled);
+                // Recovery cannot be cancelled halfway through restoring an image.
+                // It rechecks native backup/target/receipt bindings internally.
+                completed = AttachmentTransaction.recoverInterrupted(transaction, host);
+            }
+            status = completed.outcome() == AttachmentReceipt.Phase.ROLLED_BACK ? 0 : 1;
+        }
+        catch (IOException | RuntimeException failure) {
+            response.addProperty("error", failure.toString());
+            if (failure.getCause() != null) response.addProperty("cause", failure.getCause().toString());
+            status = failure instanceof CancellationException ? 130 : 1;
+        }
+        response.addProperty("outcome", completed != null ? completed.outcome().name() : status == 130 ? "CANCELLED" : "FAILED");
+        if (completed != null) {
+            response.addProperty("diagnostic", completed.diagnostic());
+            if (completed.recoveryReceipt() != null) {
+                response.add("recoveryReceipt", JsonParser.parseString(completed.recoveryReceipt().receipt().toJson()));
+            }
+        }
+        response.addProperty("exitCode", status);
+        output.println(response);
+        return output.checkError() ? 1 : status;
+    }
+
+    static byte[] readPinned(Path selected, String sha, int limit, BooleanSupplier cancelled) throws IOException {
+        check(cancelled);
+        if (!Files.isRegularFile(selected, LinkOption.NOFOLLOW_LINKS)) {
+            throw new IOException("attachment selection must be a regular non-link file");
+        }
+        byte[] bytes;
+        try (var input = Files.newInputStream(selected, LinkOption.NOFOLLOW_LINKS)) {
+            bytes = input.readNBytes(limit + 1);
+        }
+        check(cancelled);
+        if (bytes.length > limit || !sha256(bytes).equals(sha)) {
+            throw new IOException("attachment selection exceeds limit or differs from the explicitly selected SHA-256");
+        }
+        return bytes;
+    }
+
+    private static Session openRecovery(AttachmentTransaction.Request request) throws IOException {
+        if (Platform.isLinux()) {
+            var host = LinuxAttachmentHost.openRecovery(request);
+            return new Session(host, host);
+        }
+        if (Platform.isWindows()) return new Session(new WindowsAttachmentHost(), () -> { });
+        throw new IOException("attachment recovery requires a validated Linux or Windows native host");
     }
 
     private record Session(AttachmentOperation.Host host, AutoCloseable lifetime) implements AutoCloseable {

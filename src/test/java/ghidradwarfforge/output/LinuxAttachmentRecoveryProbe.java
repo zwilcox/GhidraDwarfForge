@@ -63,7 +63,39 @@ public final class LinuxAttachmentRecoveryProbe {
                     }
                     try (var recoveryHost = LinuxAttachmentHost.openRecovery(fixture.request())) {
                         var before = AttachmentReceiptStore.read(fixture.request().receipt(), recoveryHost, () -> false);
-                        var recovered = AttachmentTransaction.recoverInterrupted(fixture.request(), recoveryHost);
+                        var selectedPaths = new java.util.TreeMap<>(fixture.request().files());
+                        selectedPaths.put("receipt", fixture.request().receipt());
+                        selectedPaths.put("recoveryReceipt", fixture.request().recoveryReceipt());
+                        selectedPaths.put("restoreImage", fixture.request().restoreImage());
+                        var invocation = new AttachmentRecoveryInvocation(selectedPaths, before.sha256());
+                        Path requestFile = Files.writeString(directory.resolve("helper-recovery-request.json"), invocation.toJson(),
+                            StandardOpenOption.CREATE_NEW);
+                        Path helperOutput = directory.resolve("helper-recovery.stdout");
+                        var recoveryChild = new ProcessBuilder(Path.of(System.getProperty("java.home"), "bin/java").toString(),
+                            "--enable-native-access=ALL-UNNAMED", "-cp", System.getProperty("java.class.path"),
+                            AttachmentHelper.class.getName(), "--recover", "--request", requestFile.toString(),
+                            "--request-sha256", FileDigests.read(requestFile, () -> false).sha256(), "--confirm-target-change")
+                            .redirectOutput(helperOutput.toFile()).redirectError(directory.resolve("helper-recovery.stderr").toFile()).start();
+                        try {
+                            require(recoveryChild.waitFor(60, TimeUnit.SECONDS), "recovery helper timeout");
+                            require(recoveryChild.exitValue() == 0, "recovery helper failed: " + Files.readString(helperOutput));
+                        }
+                        finally {
+                            if (recoveryChild.isAlive()) {
+                                recoveryChild.destroyForcibly();
+                                require(recoveryChild.waitFor(5, TimeUnit.SECONDS), "recovery helper could not be reaped");
+                            }
+                        }
+                        require(Files.size(directory.resolve("helper-recovery.stderr")) == 0, "unexplained helper stderr");
+                        var response = com.google.gson.JsonParser.parseString(Files.readString(helperOutput)).getAsJsonObject();
+                        require(response.get("outcome").getAsString().equals("ROLLED_BACK") &&
+                            response.get("exitCode").getAsInt() == 0, "recovery helper did not report restoration");
+                        var recoveryRecord = AttachmentReceiptStore.read(fixture.request().recoveryReceipt(), recoveryHost, () -> false);
+                        require(response.get("recoveryReceipt").equals(com.google.gson.JsonParser.parseString(recoveryRecord.receipt().toJson())),
+                            "reported recovery record differs from actual durable receipt");
+                        var recovered = new AttachmentTransaction.Result(recoveryRecord.receipt().phase(), before, recoveryRecord,
+                            AttachmentFileStore.observe(fixture.request().files().get("targetBefore"), recoveryHost, () -> false),
+                            false, recoveryRecord.receipt().diagnostic());
                         require(recovered.outcome() == AttachmentReceipt.Phase.ROLLED_BACK, "recovery failed: " + recovered.diagnostic());
                         var prior = fixture.snapshots().get("targetBefore");
                         require(recovered.observedTarget().digest().equals(prior.digest()), "recovered bytes differ");
