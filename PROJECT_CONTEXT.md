@@ -1,5 +1,11 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**PRESENT, UNVERIFIED #72 protected-security experiment:** a native owned-file
+fixture now compares complete Windows descriptors with ordinary ACL reads,
+including audit/label metadata and disabled-privilege controls. Only the test
+child token is adjusted and restored; no product elevation policy is selected.
+Native execution remains pending. See `docs/research/WINDOWS-SECURITY-VISIBILITY.md`.
+
 **CONFIRMED native #72 directory mechanism:** JNA implementation at `373f33b`
 and completed Windows job41619066926 pass independent raw source/artifact review:
 C/C# identity/filesystem agreement, real write denial, stale/late paths,

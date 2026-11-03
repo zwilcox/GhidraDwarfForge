@@ -1,0 +1,214 @@
+#define _WIN32_WINNT 0x0a00
+#include <windows.h>
+#include <aclapi.h>
+#include <sddl.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <wchar.h>
+
+/* Test-only fixture/observer, never installed as a production helper. Changes
+ * only its own process token and, in create mode, one exclusively created file.
+ * The original SeSecurityPrivilege enabled state is restored before success.
+ * No elevation, impersonation, owner/DACL changes or target replacement. */
+_Static_assert(sizeof(HANDLE) == 8 && sizeof(BOOL) == 4 && sizeof(DWORD) == 4 &&
+    sizeof(WCHAR) == 2 && sizeof(SECURITY_DESCRIPTOR_CONTROL) == 2, "Windows64 ABI");
+_Static_assert(BACKUP_SECURITY_INFORMATION == 0x10000 && ACCESS_SYSTEM_SECURITY == 0x1000000 &&
+    READ_CONTROL == 0x20000 && SACL_SECURITY_INFORMATION == 8 && LABEL_SECURITY_INFORMATION == 16,
+    "complete security information/access");
+_Static_assert(sizeof(ACL) == 8 && sizeof(ACE_HEADER) == 4 &&
+    SYSTEM_AUDIT_ACE_TYPE == 2 && SYSTEM_MANDATORY_LABEL_ACE_TYPE == 17, "audit/label layout");
+
+static void require(BOOL value, const char *operation) {
+    if (!value) { fprintf(stderr, "%s failed: win32=%lu\n", operation, GetLastError()); exit(1); }
+}
+
+static DWORD attributes(HANDLE token, LUID luid) {
+    DWORD bytes = 0;
+    require(!GetTokenInformation(token, TokenPrivileges, NULL, 0, &bytes) &&
+        GetLastError() == ERROR_INSUFFICIENT_BUFFER && bytes >= sizeof(TOKEN_PRIVILEGES) &&
+        bytes <= 1024 * 1024, "token buffer bound");
+    TOKEN_PRIVILEGES *data = malloc(bytes);
+    require(data != NULL, "token allocation");
+    require(GetTokenInformation(token, TokenPrivileges, data, bytes, &bytes), "token privileges");
+    require(data->PrivilegeCount <= (bytes - offsetof(TOKEN_PRIVILEGES, Privileges)) /
+        sizeof(LUID_AND_ATTRIBUTES), "token privilege count");
+    DWORD found = 0;
+    BOOL present = FALSE;
+    for (DWORD i = 0; i < data->PrivilegeCount; i++) {
+        if (data->Privileges[i].Luid.LowPart == luid.LowPart &&
+                data->Privileges[i].Luid.HighPart == luid.HighPart) {
+            require(!present, "duplicate security privilege");
+            found = data->Privileges[i].Attributes;
+            present = TRUE;
+        }
+    }
+    free(data);
+    require(present, "test runner lacks SeSecurityPrivilege; cannot seed full-security fixture");
+    return found;
+}
+
+static void enable(HANDLE token, LUID luid, BOOL enabled) {
+    TOKEN_PRIVILEGES state = {0};
+    state.PrivilegeCount = 1;
+    state.Privileges[0].Luid = luid;
+    state.Privileges[0].Attributes = enabled ? SE_PRIVILEGE_ENABLED : 0;
+    SetLastError(ERROR_SUCCESS);
+    require(AdjustTokenPrivileges(token, FALSE, &state, 0, NULL, NULL) &&
+        GetLastError() == ERROR_SUCCESS, "scoped security privilege adjustment");
+    require(((attributes(token, luid) & SE_PRIVILEGE_ENABLED) != 0) == enabled, "privilege readback");
+}
+
+typedef struct security_snapshot {
+    SECURITY_DESCRIPTOR_CONTROL control;
+    BOOL present, defaulted;
+    DWORD bytes, audits, labels;
+    BYTE acl[65536];
+} security_snapshot;
+
+static void snapshot(PSECURITY_DESCRIPTOR descriptor, security_snapshot *result) {
+    memset(result, 0, sizeof(*result));
+    require(IsValidSecurityDescriptor(descriptor), "valid security descriptor");
+    DWORD revision = 0, length = GetSecurityDescriptorLength(descriptor);
+    require(length >= SECURITY_DESCRIPTOR_MIN_LENGTH && length <= 1024 * 1024, "descriptor length");
+    require(GetSecurityDescriptorControl(descriptor, &result->control, &revision) && revision == 1 &&
+        (result->control & SE_SELF_RELATIVE), "self-relative descriptor control");
+    PACL acl = NULL;
+    require(GetSecurityDescriptorSacl(descriptor, &result->present, &acl, &result->defaulted), "SACL read");
+    if (acl) {
+        require(result->present && IsValidAcl(acl) && acl->AclSize >= sizeof(ACL) &&
+            acl->AceCount <= 4096, "SACL validity");
+        result->bytes = acl->AclSize;
+        memcpy(result->acl, acl, result->bytes);
+        for (DWORD i = 0; i < acl->AceCount; i++) {
+            ACE_HEADER *ace = NULL;
+            require(GetAce(acl, i, (PVOID *)&ace), "SACL ACE");
+            size_t offset = (BYTE *)ace - (BYTE *)acl;
+            require(offset <= result->bytes - sizeof(ACE_HEADER) && ace->AceSize >= sizeof(ACE_HEADER) &&
+                ace->AceSize <= result->bytes - offset, "SACL ACE bound");
+            if (ace->AceType == SYSTEM_AUDIT_ACE_TYPE) result->audits++;
+            if (ace->AceType == SYSTEM_MANDATORY_LABEL_ACE_TYPE) result->labels++;
+        }
+    }
+}
+
+static void opened_snapshot(HANDLE handle, DWORD fields, security_snapshot *result) {
+    PSECURITY_DESCRIPTOR descriptor = NULL;
+    DWORD error = GetSecurityInfo(handle, SE_FILE_OBJECT, fields, NULL, NULL, NULL, NULL, &descriptor);
+    if (error) { SetLastError(error); require(FALSE, "GetSecurityInfo"); }
+    snapshot(descriptor, result);
+    require(LocalFree(descriptor) == NULL, "security descriptor release");
+}
+
+static void path_snapshot(const WCHAR *path, security_snapshot *result) {
+    DWORD bytes = 0;
+    require(!GetFileSecurityW(path, BACKUP_SECURITY_INFORMATION, NULL, 0, &bytes) &&
+        GetLastError() == ERROR_INSUFFICIENT_BUFFER && bytes >= SECURITY_DESCRIPTOR_MIN_LENGTH &&
+        bytes <= 1024 * 1024, "path security buffer bound");
+    PSECURITY_DESCRIPTOR descriptor = malloc(bytes);
+    require(descriptor != NULL, "path security allocation");
+    require(GetFileSecurityW(path, BACKUP_SECURITY_INFORMATION, descriptor, bytes, &bytes), "GetFileSecurityW");
+    snapshot(descriptor, result);
+    free(descriptor);
+}
+
+static void same(const security_snapshot *a, const security_snapshot *b) {
+    require(a->control == b->control && a->present == b->present && a->defaulted == b->defaulted &&
+        a->bytes == b->bytes && !memcmp(a->acl, b->acl, a->bytes), "independent complete SACL observations agree");
+}
+
+static void print_snapshot(const security_snapshot *value) {
+    printf("{\"control\":%u,\"saclPresent\":%s,\"saclDefaulted\":%s,\"auditAces\":%lu,"
+        "\"labelAces\":%lu,\"saclHex\":", (unsigned int)value->control, value->present ? "true" : "false",
+        value->defaulted ? "true" : "false", value->audits, value->labels);
+    if (value->bytes) {
+        putchar('"');
+        for (DWORD i = 0; i < value->bytes; i++) printf("%02x", value->acl[i]);
+        putchar('"');
+    } else printf("null");
+    putchar('}');
+}
+
+int wmain(int argc, WCHAR **argv) {
+    require(argc == 3 && (!wcscmp(argv[1], L"create") || !wcscmp(argv[1], L"read")), "mode and owned path required");
+    BOOL creating = !wcscmp(argv[1], L"create");
+    if (creating) {
+        HANDLE file = CreateFileW(argv[2], GENERIC_WRITE, 7, NULL, CREATE_NEW, FILE_FLAG_OPEN_REPARSE_POINT, NULL);
+        require(file != INVALID_HANDLE_VALUE, "exclusive security fixture creation");
+        const BYTE payload[] = {0x41, 0, 0xff, 0x19, 0x0a};
+        DWORD written;
+        require(WriteFile(file, payload, sizeof(payload), &written, NULL) && written == sizeof(payload), "fixture bytes");
+        require(FlushFileBuffers(file), "fixture flush");
+        require(CloseHandle(file), "fixture close");
+    }
+    HANDLE token = NULL;
+    LUID luid;
+    require(OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY | TOKEN_ADJUST_PRIVILEGES, &token), "open own token");
+    require(LookupPrivilegeValueW(NULL, L"SeSecurityPrivilege", &luid), "security privilege LUID");
+    DWORD original_attributes = attributes(token, luid);
+    enable(token, luid, FALSE);
+    HANDLE inaccessible = CreateFileW(argv[2], READ_CONTROL | ACCESS_SYSTEM_SECURITY, 7, NULL,
+        OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT, NULL);
+    DWORD open_error = inaccessible == INVALID_HANDLE_VALUE ? GetLastError() : 0;
+    if (inaccessible != INVALID_HANDLE_VALUE) require(CloseHandle(inaccessible), "unexpected handle cleanup");
+    require(open_error == ERROR_PRIVILEGE_NOT_HELD, "disabled privilege must refuse full-security open");
+    HANDLE ordinary = CreateFileW(argv[2], READ_CONTROL, 7, NULL, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT, NULL);
+    require(ordinary != INVALID_HANDLE_VALUE, "ordinary control open");
+    PSECURITY_DESCRIPTOR denied = NULL;
+    DWORD query_error = GetSecurityInfo(ordinary, SE_FILE_OBJECT, BACKUP_SECURITY_INFORMATION,
+        NULL, NULL, NULL, NULL, &denied);
+    if (denied) require(LocalFree(denied) == NULL, "denied descriptor cleanup");
+    SetLastError(query_error);
+    require(query_error == ERROR_ACCESS_DENIED, "ordinary handle must refuse complete security");
+    require(CloseHandle(ordinary), "ordinary control close");
+
+    enable(token, luid, TRUE);
+    HANDLE complete = CreateFileW(argv[2], READ_CONTROL | ACCESS_SYSTEM_SECURITY |
+        (creating ? WRITE_OWNER : 0), 7, NULL, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT, NULL);
+    require(complete != INVALID_HANDLE_VALUE, "complete-security open");
+    security_snapshot before, full, independent, visible;
+    opened_snapshot(complete, BACKUP_SECURITY_INFORMATION, &before);
+    if (creating) {
+        PSECURITY_DESCRIPTOR seed = NULL;
+        require(ConvertStringSecurityDescriptorToSecurityDescriptorW(
+            L"S:P(AU;SA;FR;;;WD)(ML;;NW;;;ME)", SDDL_REVISION_1, &seed, NULL), "audit/label seed");
+        BOOL present, defaulted;
+        PACL sacl = NULL;
+        require(GetSecurityDescriptorSacl(seed, &present, &sacl, &defaulted) && present && sacl, "seed SACL");
+        DWORD error = SetSecurityInfo(complete, SE_FILE_OBJECT,
+            SACL_SECURITY_INFORMATION | LABEL_SECURITY_INFORMATION | PROTECTED_SACL_SECURITY_INFORMATION,
+            NULL, NULL, NULL, sacl);
+        require(LocalFree(seed) == NULL, "seed descriptor release");
+        if (error) { SetLastError(error); require(FALSE, "owned audit/label fixture"); }
+    }
+    opened_snapshot(complete, BACKUP_SECURITY_INFORMATION, &full);
+    path_snapshot(argv[2], &independent);
+    same(&full, &independent);
+    if (!full.present || full.audits != 1 || full.labels != 1) {
+        fprintf(stderr, "whole descriptor control=%04x present=%d audit=%lu label=%lu bytes=%lu\n",
+            (unsigned int)full.control, full.present, full.audits, full.labels, full.bytes);
+        require(FALSE, "whole descriptor must include audit and label");
+    }
+    opened_snapshot(complete, OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION, &visible);
+    require(!visible.present && !visible.bytes, "ordinary descriptor must not invent SACL visibility");
+    DWORD baseline, after;
+    require(GetProcessHandleCount(GetCurrentProcess(), &baseline), "initial security handles");
+    for (int i = 0; i < 128; i++) {
+        opened_snapshot(complete, BACKUP_SECURITY_INFORMATION, &independent); same(&full, &independent);
+        path_snapshot(argv[2], &independent); same(&full, &independent);
+        require(GetProcessHandleCount(GetCurrentProcess(), &after) && after == baseline, "security handle cleanup");
+    }
+    require(CloseHandle(complete), "complete security close");
+    enable(token, luid, (original_attributes & SE_PRIVILEGE_ENABLED) != 0);
+    DWORD restored_attributes = attributes(token, luid);
+    require(CloseHandle(token), "own token close");
+    printf("{\"status\":\"OBSERVED\",\"created\":%s,\"disabledPrivilegeOpenError\":%lu,"
+        "\"insufficientHandleQueryError\":%lu,\"initialPrivilegeAttributes\":%lu,"
+        "\"restoredPrivilegeAttributes\":%lu,\"before\":", creating ? "true" : "false", open_error,
+        query_error, original_attributes, restored_attributes);
+    print_snapshot(&before); printf(",\"complete\":"); print_snapshot(&full);
+    printf(",\"ordinary\":"); print_snapshot(&visible);
+    printf(",\"handleCycles\":128,\"handlesBefore\":%lu,\"handlesAfter\":%lu}\n", baseline, after);
+    return 0;
+}

@@ -31,6 +31,8 @@ $sources = @(
     (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsDirectorySyncProbe.java'),
     (Join-Path $repo 'src/test/native/windows-directory-flush.c'),
     (Join-Path $repo 'src/test/native/windows-directory-api.json'),
+    (Join-Path $repo 'src/test/native/windows-security-visibility.c'),
+    (Join-Path $repo 'src/test/native/windows-security-visibility-api.json'),
     (Join-Path $repo 'src/test/native/windows-backup-contract.c'),
     (Join-Path $repo 'src/test/native/windows-ea-fixture.c'),
     (Join-Path $repo 'src/test/native/windows-backup-api.json'),
@@ -557,6 +559,37 @@ Same-State $directoryBefore $directoryChild
 Save-Json (Join-Path $root 'directory-java.json') ([ordered]@{status='PASS';
     observations=$directorySyncResults.ToArray(); cycles=128; deniedWritePreserved=$true;
     scope='Opened-directory JNA identity/flush/cancellation and refusal; not a complete production Host or power-loss recovery'})
+
+# This native child adjusts only its own token, on an exclusively created
+# fixture. It is a security-visibility experiment, not a product elevation path.
+$securityProbe = Join-Path $root 'security-visibility.exe'
+$null = Run-Captured 'compile-security-visibility' $Compiler @('-std=c11','-Wall','-Wextra','-Werror','-municode',
+    (Join-Path $provenance 'windows-security-visibility.c'),'-ladvapi32','-o',$securityProbe)
+$securityPath = Join-Path $owned 'full security λ'
+$securityRun = Run-Captured 'security-visibility-create' $securityProbe @('create',$securityPath)
+$securityFacts = ConvertFrom-Json $securityRun.stdout
+Require ($securityFacts.status -eq 'OBSERVED' -and $securityFacts.created -and
+    $securityFacts.disabledPrivilegeOpenError -eq 1314 -and $securityFacts.insufficientHandleQueryError -eq 5 -and
+    $securityFacts.complete.saclPresent -and $securityFacts.complete.auditAces -eq 1 -and
+    $securityFacts.complete.labelAces -eq 1 -and -not $securityFacts.ordinary.saclPresent -and
+    $securityFacts.initialPrivilegeAttributes -eq $securityFacts.restoredPrivilegeAttributes -and
+    $securityFacts.handlesBefore -eq $securityFacts.handlesAfter -and $securityFacts.handleCycles -eq 128) 'Full-security visibility controls differ'
+Require ([Convert]::ToHexString([IO.File]::ReadAllBytes($securityPath)) -ceq '4100FF190A') 'Security fixture bytes changed'
+$securityBefore = Independent-State $securityPath
+$refused = Run-Captured 'security-existing-reject' $securityProbe @('create',$securityPath) $false
+Require ($refused.stderr.Contains('exclusive security fixture creation failed')) 'Existing security fixture was not refused'
+Same-State $securityBefore $securityPath
+$securityRead = Run-Captured 'security-visibility-read' $securityProbe @('read',$securityPath)
+$securityAfter = ConvertFrom-Json $securityRead.stdout
+Require (-not $securityAfter.created -and $securityAfter.complete.saclHex -ceq $securityFacts.complete.saclHex -and
+    $securityAfter.complete.control -eq $securityFacts.complete.control -and
+    $securityAfter.before.saclHex -ceq $securityFacts.complete.saclHex -and
+    $securityAfter.initialPrivilegeAttributes -eq $securityAfter.restoredPrivilegeAttributes -and
+    $securityAfter.handlesBefore -eq $securityAfter.handlesAfter -and $securityAfter.handleCycles -eq 128) 'Read-only whole-security observation changed'
+Same-State $securityBefore $securityPath
+Save-Json (Join-Path $root 'security-visibility.json') ([ordered]@{status='OBSERVED';
+    create=$securityFacts; read=$securityAfter;
+    scope='Test-only child token and owned audit/label fixture; complete descriptor agrees across two native APIs. No production elevation, host admission or metadata-preservation claim'})
 
 foreach ($sourcePath in $hashes.Keys) { Require ((Hash $sourcePath) -eq $hashes[$sourcePath]) 'Protected source/dependency changed' }
 Save-Json (Join-Path $root 'result.json') ([ordered]@{status='PASS'; observations=$observations.ToArray();
