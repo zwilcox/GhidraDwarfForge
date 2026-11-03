@@ -1,5 +1,13 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED Linux GUI harness admission failure; corrected query pending:**
+job126100727964/run41686788301 passes the real reference export but stops before
+Ghidra GUI launch. Polkit refuses an unprivileged `pkcheck` query carrying action
+details. The runner now performs only that readiness query through its existing
+sudo authority, retaining the unprivileged script PID as the checked subject.
+Ghidra and its actual confirmation flow remain unprivileged. Local ShellCheck/
+actionlint pass; native GUI execution is still unverified.
+
 **CONFIRMED Windows cancellation identity correction; new child-test failure:**
 job126097709777/run41685703952 passes149 helper checks with
 `cancellation-native-identity=true`, then fails `attachmentGuiProcessSmoke`

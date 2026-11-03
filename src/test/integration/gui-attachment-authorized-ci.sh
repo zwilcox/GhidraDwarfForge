@@ -41,16 +41,23 @@ Path(destination).write_text('polkit.addRule(function(action, subject) {\n' +
     '        return polkit.Result.YES;\n    }\n});\n')
 PY
 sudo -n install -o root -g root -m 0644 "$work/policy.rules" "$policy"
-# Observe rule reload without executing a privileged command. Do not silently
-# fall back to running Ghidra under sudo if authorization is unavailable.
+# A query containing action details requires a trusted caller. Query via the
+# runner's existing sudo authority, but retain this unprivileged script PID as
+# the subject. This does not launch Java or run Ghidra under sudo.
 ready=0
 for ((attempt=0; attempt<50; attempt++)); do
-    if pkcheck --action-id org.freedesktop.policykit.exec --process "$$" \
+    # Diagnostic files deliberately remain owned by the unprivileged caller.
+    # shellcheck disable=SC2024
+    if sudo -n pkcheck --action-id org.freedesktop.policykit.exec --process "$$" \
         --detail program "$java" > "$work/policy-check.stdout" 2> "$work/policy-check.stderr"; then
         ready=1
         break
     fi
     sleep 0.1
 done
-((ready)) || { echo 'test authorization policy was not observed' >&2; exit 1; }
+if ((!ready)); then
+    cat "$work/policy-check.stderr" >&2
+    echo 'test authorization policy was not observed' >&2
+    exit 1
+fi
 GHIDRA_GUI_NATIVE_ATTACHMENT=1 "$repository/src/test/integration/gui-script-manager.sh" "$@"
