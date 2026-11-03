@@ -103,8 +103,9 @@ exit /b %FAKE_HEADLESS_EXIT%
     $packagedDirectory = Join-Path $fakeGhidra 'Ghidra\Extensions\GhidraDwarfForge\os\win_x86_64'
     $packagedLibrary = Join-Path $packagedDirectory 'libdwarf.dll'
     New-Item -ItemType Directory -Path $databaseDirectory, $packagedDirectory -Force | Out-Null
-    foreach ($path in @($consumer, $producer, $inputElf, $override, $output, "$output.c",
-            "$inputElf.dbg", "$inputElf.dbg.c", "$override.dbg", "$override.dbg.c",
+    foreach ($path in @($consumer, $producer, $inputElf, $override, $output, "$output.c", "$output.gdb.py",
+            "$inputElf.dbg", "$inputElf.dbg.c", "$inputElf.dbg.gdb.py",
+            "$override.dbg", "$override.dbg.c", "$override.dbg.gdb.py",
             (Join-Path $project 'Existing.gpr'), (Join-Path $project 'Existing.lock'),
             $database, $packagedLibrary)) {
         Preserve-File $path
@@ -162,13 +163,15 @@ exit /b %FAKE_HEADLESS_EXIT%
     }
     Assert-RejectedLog $inputElf ($importOptions + @('-OriginalElf', $override))
     Assert-RejectedLog $override ($importOptions + @('-OriginalElf', $override))
-    foreach ($log in @($output, "$output.c")) {
+    $null = Invoke-Wrapper 0 ($importOptions + @('-GdbLoader'))
+    Assert-Condition ((Get-Content -LiteralPath $argumentLog -Raw) -match '--gdb-loader') 'loader flag was not forwarded'
+    foreach ($log in @($output, "$output.c", "$output.gdb.py")) {
         Assert-RejectedLog $log ($importOptions + @('-Output', $output))
     }
-    foreach ($log in @("$inputElf.dbg", "$inputElf.dbg.c")) {
+    foreach ($log in @("$inputElf.dbg", "$inputElf.dbg.c", "$inputElf.dbg.gdb.py")) {
         Assert-RejectedLog $log $importOptions
     }
-    foreach ($log in @("$override.dbg", "$override.dbg.c")) {
+    foreach ($log in @("$override.dbg", "$override.dbg.c", "$override.dbg.gdb.py")) {
         Assert-RejectedLog $log ($importOptions + @('-OriginalElf', $override))
     }
     $newOutput = Join-Path $work 'new.dbg'

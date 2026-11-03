@@ -14,6 +14,7 @@ Common options:
   --libdwarfp=<path>      Override packaged libdwarfp (requires --libdwarf)
   --input=<elf>           Original ELF override (defaults to --import value)
   --output=<path>         Sidecar path (default: <input>.dbg)
+  --gdb-loader            Also generate <sidecar>.gdb.py for explicit GDB loading
   --log=<path>            Preserve the complete headless transcript
   --analysis-timeout=<s> Import-mode analysis timeout (default: 120)
 
@@ -94,6 +95,7 @@ validate_log_path() {
     done
     if [[ -n "$selected_output" ]]; then
         reject_log_alias "$selected_output.c"
+        reject_log_alias "$selected_output.gdb.py"
     fi
     if ((project_mode)); then
         reject_log_alias "$project_dir/$project_name.gpr"
@@ -112,6 +114,7 @@ consumer=
 producer=
 input=
 output=
+gdb_loader=0
 import_path=
 project_dir=
 project_name=
@@ -126,6 +129,7 @@ for argument in "$@"; do
         --libdwarfp=*) producer=${argument#*=} ;;
         --input=*) input=${argument#*=} ;;
         --output=*) output=${argument#*=} ;;
+        --gdb-loader) gdb_loader=1 ;;
         --import=*) import_path=${argument#*=} ;;
         --project-dir=*) project_dir=${argument#*=} ;;
         --project-name=*) project_name=${argument#*=} ;;
@@ -206,6 +210,7 @@ else
 fi
 [[ -n "$input" ]] && export_options+=("--input=$input")
 [[ -n "$output" ]] && export_options+=("--output=$output")
+((gdb_loader)) && export_options+=("--gdb-loader")
 
 if ((import_mode)); then
     [[ -f "$import_path" ]] || die_usage "import ELF does not exist: $import_path"

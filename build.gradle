@@ -21,6 +21,15 @@ task distributeExtension {
     dependsOn ":buildExtension"
 }
 
+// The GDB companion is shipped as source. Local Python/GDB imports must not
+// leak host-version bytecode into either the resource JAR or source archive.
+tasks.named("processResources") {
+    exclude "**/__pycache__/**", "**/*.pyc"
+}
+tasks.named("zipSource") {
+    exclude "**/__pycache__/**", "**/*.pyc"
+}
+
 tasks.register("nativeProducerSmoke", JavaExec) {
     group = "verification"
     description = "Runs the libdwarf producer ABI smoke test in an isolated JVM"
@@ -96,6 +105,14 @@ tasks.register("existingDebugSidecarSmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.elf.ExistingDebugSidecarSmoke"
+}
+
+tasks.register("companionArtifactPublisherSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks complete companion generations, rollback and alias/concurrent-change rejection"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CompanionArtifactPublisherSmoke"
 }
 
 tasks.register("extendedSectionNumberingSmoke", JavaExec) {

@@ -126,6 +126,12 @@ public class GhidraDwarfForge extends GhidraScript {
         Path input = paths.input();
         Path output = paths.artifact();
         Path sourceOutput = paths.source();
+        boolean gdbLoader = options.containsKey("gdb-loader");
+        Path companionOutput = output.resolveSibling(output.getFileName() + ".gdb.py");
+        if (gdbLoader) {
+            ghidradwarfforge.output.CompanionArtifactPublisher.validate(
+                input, output, sourceOutput, companionOutput, consumer, producer);
+        }
         String inputHash = sha256(input);
         String importedHash = currentProgram.getExecutableSHA256();
         if (importedHash != null && !importedHash.isBlank() &&
@@ -179,13 +185,29 @@ public class GhidraDwarfForge extends GhidraScript {
             target, originalElf, extractedTypes, monitor, diagnostic);
         monitor.checkCancelled();
         var resultHolder = new MinimalDwarfSidecarExporter.ExportResult[1];
-        ArtifactPairPublisher.stageAndPublish(output, sourceOutput,
+        ArtifactPairPublisher.StagedWriter sidecarWriter =
             stagedOutput -> resultHolder[0] = new MinimalDwarfSidecarExporter().export(
                 input, stagedOutput,
                 consumer, producer, functions, source, typeModel,
                 sourceOutput.getFileName().toString(), monitor::isCancelled,
-                modeCues, aliases, aliasModeCues, sectionModes, diagnostic),
-            source::writeAtomically, monitor::checkCancelled);
+                modeCues, aliases, aliasModeCues, sectionModes, diagnostic);
+        if (gdbLoader) {
+            ghidradwarfforge.output.CompanionArtifactPublisher.stageAndPublish(
+                input, output, sourceOutput, companionOutput, (stagedSidecar, stagedSource, stagedCompanion) -> {
+                    sidecarWriter.write(stagedSidecar);
+                    source.writeAtomically(stagedSource);
+                    String companion = ghidradwarfforge.elf.GdbCompanion.render(input,
+                        stagedSidecar, stagedSource, output, sourceOutput, monitor::isCancelled);
+                    if (!inputHash.equals(sha256(input))) {
+                        throw new IOException("Original ELF changed after Ghidra import identity verification");
+                    }
+                    Files.writeString(stagedCompanion, companion, java.nio.charset.StandardCharsets.UTF_8);
+                }, monitor::checkCancelled);
+        }
+        else {
+            ArtifactPairPublisher.stageAndPublish(output, sourceOutput,
+                sidecarWriter, source::writeAtomically, monitor::checkCancelled);
+        }
         MinimalDwarfSidecarExporter.ExportResult result = resultHolder[0];
         String outputHash = sha256(output);
         String sourceHash = sha256(sourceOutput);
@@ -202,6 +224,11 @@ public class GhidraDwarfForge extends GhidraScript {
         println("  sections: " + result.sectionNames());
         println("  source: " + sourceOutput);
         println("  source SHA-256: " + sourceHash);
+        if (gdbLoader) {
+            println("  GDB companion: " + companionOutput);
+            println("  GDB companion SHA-256: " + sha256(companionOutput));
+            println("  Load explicitly in GDB with: source " + companionOutput);
+        }
         println("  decompiled functions: " + source.functions().stream()
             .filter(function -> function.decompiled()).count());
         println("  mapped source lines: " + source.mappedLines().size());
@@ -237,7 +264,7 @@ public class GhidraDwarfForge extends GhidraScript {
             }
             else {
                 name = argument.substring(2);
-                if (name.equals("packaged-natives")) {
+                if (name.equals("packaged-natives") || name.equals("gdb-loader")) {
                     value = "true";
                 }
                 else {
@@ -254,11 +281,12 @@ public class GhidraDwarfForge extends GhidraScript {
         for (String name : result.keySet()) {
             if (!name.equals("libdwarf") && !name.equals("libdwarfp") &&
                     !name.equals("input") && !name.equals("output") &&
-                    !name.equals("packaged-natives")) {
+                    !name.equals("packaged-natives") && !name.equals("gdb-loader")) {
                 throw new IllegalArgumentException("unknown option --" + name);
             }
-            if (name.equals("packaged-natives") && !result.get(name).equals("true")) {
-                throw new IllegalArgumentException("--packaged-natives does not take a value");
+            if ((name.equals("packaged-natives") || name.equals("gdb-loader")) &&
+                    !result.get(name).equals("true")) {
+                throw new IllegalArgumentException("--" + name + " does not take a value");
             }
         }
         return result;

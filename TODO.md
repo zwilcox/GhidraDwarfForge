@@ -1,5 +1,22 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED #107 implementation and acceptance:** production head
+`5654f537a1bd02683eccd751cd9b7b9610fa4dc3` passed the complete required gate
+in run 41586083925. Independent review covers all five target artifacts,
+Linux/Windows default and optional GUI journeys, package provenance and fresh
+GNU/LLVM/pinned strict validation. See [the acceptance record](docs/GDB-LOADER-ACCEPTANCE.md)
+for each original requirement and explicit host/runtime limits. Final
+protected integration of this documentation update remains required; no
+release has been published by this work.
+
+**CONFIRMED active scope:** finish #107 integration and the full #72 opt-in
+debuglink transaction. #72 remains incomplete: the loader's three-artifact
+publisher does not modify the executable or implement its backup/receipt/
+recovery contract. The separate attachment branch contains transaction and
+validator work but still needs complete production hosts, public controls,
+and full acceptance. All original criteria remain in
+`docs/DEBUG-LOADING-COMPLETION-PLAN.md`.
+
 **CONFIRMED combined ABI acceptance:** P2.3, P2.3a, P2.3b and P2.3c
 retain all twenty original requirements. Production head `2a74d001e04eeab456b80a5c24063a399b540aa5`
 passed [run 41516782822](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/41516782822)

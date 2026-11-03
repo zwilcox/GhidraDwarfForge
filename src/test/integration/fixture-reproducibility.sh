@@ -82,6 +82,8 @@ expected_sources=(
     function-type-flags.c
     function_entry_ranges.S
     function_entry_ranges.c
+    gdb-loader-lifecycle.c
+    gdb-loader-shared-driver.c
     i386-abi-matrix.c
     i386-alias-entry.cpp
     i386-extended-return.c

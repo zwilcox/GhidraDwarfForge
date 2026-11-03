@@ -18,7 +18,12 @@ fi
 
 repository_dir=$(realpath "$(dirname "$0")/../../..")
 fixture_dir="$repository_dir/build/fixtures"
-result_dir="$repository_dir/build/test-results/headless-symbol-export"
+result_dir=${FORGE_SYMBOL_RESULTS:-"$repository_dir/build/test-results/headless-symbol-export"}
+artifact_suffix=${FORGE_SYMBOL_SUFFIX:-ghidra-forge.dbg}
+[[ "$artifact_suffix" =~ ^[a-zA-Z0-9_-][a-zA-Z0-9_.-]*[.]dbg$ ]] || {
+    echo 'invalid symbol export artifact suffix' >&2
+    exit 64
+}
 temporary_projects=$(mktemp -d -t ghidra-dwarf-forge-symbols.XXXXXXXX)
 fixture_role=${FIXTURE_ROLE:-exec}
 fixture_input_suffix=${FIXTURE_INPUT_SUFFIX:-stripped}
@@ -40,16 +45,8 @@ fixture_stem() {
     fi
 }
 
-analysis_address() {
-    local target=$1 role=$2 symbol=$3
-    local reference="$fixture_dir/$target/$(fixture_stem "$role").reference"
-    local link_hex
-    link_hex=$(readelf -Ws "$reference" | awk -v symbol="$symbol" \
-        '$8 == symbol && !found { print $2; found = 1 }')
-    if [[ -z "$link_hex" ]]; then
-        echo "missing fixture symbol $symbol in $reference" >&2
-        return 1
-    fi
+analysis_delta() {
+    local target=$1 role=$2
     local rebase=0
     if [[ "$role" == "pie" || "$role" == "shared" ]]; then
         case "$target" in
@@ -58,7 +55,21 @@ analysis_address() {
             *) echo "unknown target: $target" >&2; return 2 ;;
         esac
     fi
-    printf '0x%x\n' "$((16#$link_hex + rebase + project_rebase_delta))"
+    printf '%d\n' "$((rebase + project_rebase_delta))"
+}
+
+analysis_address() {
+    local target=$1 role=$2 symbol=$3
+    local reference="$fixture_dir/$target/$(fixture_stem "$role").reference"
+    local link_hex delta
+    link_hex=$(readelf -Ws "$reference" | awk -v symbol="$symbol" \
+        '$8 == symbol && !found { print $2; found = 1 }')
+    if [[ -z "$link_hex" ]]; then
+        echo "missing fixture symbol $symbol in $reference" >&2
+        return 1
+    fi
+    delta=$(analysis_delta "$target" "$role")
+    printf '0x%x\n' "$((16#$link_hex + delta))"
 }
 
 cleanup() {
@@ -81,7 +92,7 @@ for target in "${targets[@]}"; do
     if [[ "$use_default_output" == 1 ]]; then
         output="$input.dbg"
     else
-        output="$fixture_dir/$target/$stem.ghidra-forge.dbg"
+        output="$fixture_dir/$target/$stem.$artifact_suffix"
     fi
     source="$output.c"
     log="$result_dir/$target.$fixture_role.log"
@@ -112,6 +123,9 @@ for target in "${targets[@]}"; do
     fi
 
     export_options=("--libdwarf=$consumer" "--libdwarfp=$producer")
+    if [[ "${GHIDRA_GDB_LOADER:-0}" == 1 ]]; then
+        export_options+=("--gdb-loader")
+    fi
     if [[ -n "$stale_executable_path" ]]; then
         export_options+=("--input=$input")
     fi
@@ -152,7 +166,8 @@ for target in "${targets[@]}"; do
     if ((project_rebase_delta != 0)); then
         grep -q "Rebased fixture image .* by $(printf '0x%x' "$project_rebase_delta")" \
             "$log"
-        grep -q "Ghidra-to-ELF address delta: $(printf '0x%x' "$project_rebase_delta")" \
+        expected_delta=$(analysis_delta "$target" "$fixture_role")
+        grep -q "Ghidra-to-ELF address delta: $(printf '0x%x' "$expected_delta")" \
             "$log"
     fi
     grep -Eq "mapped source lines: [1-9][0-9]*" "$log"

@@ -52,6 +52,8 @@ grep -Fxq -- '-analysisTimeoutPerFile' "$argument_log"
 grep -Fxq -- '45' "$argument_log"
 grep -Fxq -- "--input=$input" "$argument_log"
 grep -Fxq -- "--output=$output" "$argument_log"
+run_status 0 SUCCESS 0 --import="$input" --output="$output" --gdb-loader
+grep -Fxq -- '--gdb-loader' "$argument_log"
 
 run_status 0 PARTIAL 0 --import="$input"
 run_status 10 FATAL 0 --import="$input"
@@ -97,8 +99,9 @@ mkdir -p "$work/lexical" "$work/physical/child"
 ln -s "$work/physical/child" "$work/lexical/alias"
 ambiguous_input="$work/lexical/alias/../original.elf"
 protected=("$input" "$consumer" "$producer" "$fake_ghidra/support/analyzeHeadless")
-for protected_file in "$override" "$output" "$output.c" \
-        "$override.dbg" "$override.dbg.c" "$explicit_output" "$explicit_output.c" \
+for protected_file in "$override" "$output" "$output.c" "$output.gdb.py" \
+        "$override.dbg" "$override.dbg.c" "$override.dbg.gdb.py" \
+        "$explicit_output" "$explicit_output.c" "$explicit_output.gdb.py" \
         "$project_dir/Existing.gpr" "$project_dir/Existing.lock" \
         "$project_database" "$packaged_library" \
         "$work/lexical/original.elf" "$work/physical/original.elf" \
@@ -153,18 +156,27 @@ reject_log "$input" --import="$input" --input="$override"
 reject_log "$override" --import="$input" --input="$override"
 reject_log "$explicit_output" --import="$input" --output="$explicit_output"
 reject_log "$explicit_output.c" --import="$input" --output="$explicit_output"
+reject_log "$explicit_output.gdb.py" --import="$input" --output="$explicit_output" --gdb-loader
+ln "$explicit_output.gdb.py" "$work/companion-hardlink.log"
+reject_log "$work/companion-hardlink.log" --import="$input" --output="$explicit_output"
+ln -s "$explicit_output.gdb.py" "$work/companion-symlink.log"
+reject_log "$work/companion-symlink.log" --import="$input" --output="$explicit_output"
 ln "$explicit_output" "$work/output-hardlink.log"
 reject_log "$work/output-hardlink.log" --import="$input" --output="$explicit_output"
 ln -s "$explicit_output.c" "$work/source-symlink.log"
 reject_log "$work/source-symlink.log" --import="$input" --output="$explicit_output"
 reject_log "$output" --import="$input"
 reject_log "$output.c" --import="$input"
+reject_log "$output.gdb.py" --import="$input"
 reject_log "$override.dbg" --import="$input" --input="$override"
 reject_log "$override.dbg.c" --import="$input" --input="$override"
+reject_log "$override.dbg.gdb.py" --import="$input" --input="$override"
 reject_log "$work/new.dbg" --import="$input" --output="$work/new.dbg"
 test ! -e "$work/new.dbg"
 reject_log "$work/new.dbg.c" --import="$input" --output="$work/new.dbg"
 test ! -e "$work/new.dbg.c"
+reject_log "$work/new.dbg.gdb.py" --import="$input" --output="$work/new.dbg" --gdb-loader
+test ! -e "$work/new.dbg.gdb.py"
 ln -s "$work/new.dbg" "$work/dangling-output.log"
 reject_log "$work/dangling-output.log" --import="$input" --output="$work/new.dbg"
 test ! -e "$work/new.dbg"

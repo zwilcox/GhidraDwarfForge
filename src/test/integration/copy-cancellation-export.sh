@@ -36,13 +36,20 @@ truncate -s 134217728 "$work/input.elf"
 sha256sum "$work/input.elf" >"$work/input.sha256"
 printf 'previous sidecar\n' >"$work/output/previous.dbg"
 printf 'previous source\n' >"$work/output/previous.dbg.c"
-sha256sum "$work/output/previous.dbg" "$work/output/previous.dbg.c" \
-    >"$work/prior-output.sha256"
+previous=("$work/output/previous.dbg" "$work/output/previous.dbg.c")
+loader_options=()
+if [[ "${GHIDRA_GDB_LOADER:-0}" == 1 ]]; then
+    printf 'previous companion\n' >"$work/output/previous.dbg.gdb.py"
+    previous+=("$work/output/previous.dbg.gdb.py")
+    loader_options=(--gdb-loader)
+fi
+sha256sum "${previous[@]}" >"$work/prior-output.sha256"
 "$ghidra_dir/support/analyzeHeadless" "$work/projects" CopyCancellation \
     -deleteProject -import "$work/input.elf" -loader ElfLoader \
     -analysisTimeoutPerFile 120 \
     -scriptPath "$repository_dir/src/test/integration/ghidra_scripts" \
     -postScript CancelDuringElfCopy.java "$work/input.elf" "$work/output/previous.dbg" \
+        "${loader_options[@]}" \
     >"$work/export.log" 2>&1
 grep -Fq 'production-copy-cancellation=PASS' "$work/export.log"
 grep -Fq '"status":"CANCELLED"' "$work/export.log"
@@ -53,11 +60,11 @@ if grep -Eq '"status":"(SUCCESS|PARTIAL|FATAL)"|OutOfMemoryError|SIGSEGV|access 
 fi
 sha256sum -c "$work/input.sha256" >"$work/input-preservation.txt"
 sha256sum -c "$work/prior-output.sha256" >"$work/output-preservation.txt"
-test "$(find "$work/output" -maxdepth 1 -type f | wc -l)" = 2
+test "$(find "$work/output" -maxdepth 1 -type f | wc -l)" = "${#previous[@]}"
 {
     grep -F 'copy-cancelled-after-bytes=' "$work/export.log"
     echo 'report=CANCELLED'
-    echo 'original-and-prior-pair-preserved=PASS'
+    echo 'original-and-prior-generation-preserved=PASS'
     echo 'copy-cancellation-export=PASS'
 } >"$work/result.txt"
 cat "$work/result.txt"

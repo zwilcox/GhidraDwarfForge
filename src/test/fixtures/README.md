@@ -8,6 +8,15 @@ including their `main`; `shared_semantic.c` supplies the ET_DYN library and
 intentionally defines no `main`. The separate `shared_driver.c` executable
 loads the stripped library and calls its exported `recovered_add` function.
 
+`gdb-loader-shared-driver.c` is a Linux/glibc loader lifecycle fixture. It uses
+`dlopen`, `dlmopen` and `dlinfo` to expose independent runtime library biases,
+exercise duplicate instances and unload/reload them. It is built and compared
+byte-for-byte by the ordinary fixture reproducibility gate. The separate
+`gdb-loader-lifecycle.c` preload is compiled by the native attach/exec test; it
+permits tracing its owned child, stops it for attachment and execs the explicitly
+selected replacement image after exit. Neither fixture patches the original
+target executable or changes the production exporter's platform assumptions.
+
 The integration preparation script applies explicit analyst register storage
 to `recovered_add` parameters using each target ABI's input registers. The
 exporter may emit those locations only when its instruction/p-code scan proves

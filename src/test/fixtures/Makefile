@@ -51,7 +51,17 @@ $(TARGETS): %: \
 	$(BUILD_DIR)/%/libsemantic.so.reference \
 	$(BUILD_DIR)/%/libsemantic.so.stripped \
 	$(BUILD_DIR)/%/semantic.shared-driver.reference \
-	$(BUILD_DIR)/%/semantic.shared-driver.stripped
+    $(BUILD_DIR)/%/semantic.shared-driver.stripped \
+    $(BUILD_DIR)/%/semantic.loader-driver.reference \
+    $(BUILD_DIR)/%/semantic.loader-driver.stripped
+
+$(BUILD_DIR)/%/semantic.loader-driver.reference: gdb-loader-shared-driver.c Makefile
+	@mkdir -p "$(@D)"
+	$($*_CC) $($*_CFLAGS) $(COMMON_CFLAGS) $(NON_PIE_FLAGS) "$<" -ldl -o "$@"
+
+$(BUILD_DIR)/%/semantic.loader-driver.stripped: $(BUILD_DIR)/%/semantic.loader-driver.reference
+	cp "$<" "$@"
+	$($*_STRIP) --strip-all "$@"
 
 $(BUILD_DIR)/%/semantic.exec.reference: $(EXECUTABLE_SOURCE) Makefile
 	@mkdir -p "$(@D)"
