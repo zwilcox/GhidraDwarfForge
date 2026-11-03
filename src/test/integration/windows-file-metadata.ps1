@@ -121,6 +121,7 @@ function Independent-State([string]$Path) {
 }
 function Inspect-Case([string]$Label, [string]$Path) {
     $before = Independent-State $Path
+    Save-Json (Join-Path $root "$Label.independent.json") $before
     $capture = Run-Probe $Label @('inspect',$Path)
     $snapshot = ConvertFrom-Json -AsHashtable $capture.stdout
     foreach ($key in @('bytes','attributes','created','modified','links')) {
@@ -130,7 +131,7 @@ function Inspect-Case([string]$Label, [string]$Path) {
     Require ($parts[0].PadLeft(16,'0') -eq $before.volume -and $parts[1] -eq $before.fileId) 'Native identity differs'
     foreach ($key in @('control','owner','group','dacl')) {
         $actual = if ($snapshot.security.ContainsKey($key)) { $snapshot.security[$key] } else { $null }
-        Require ($actual -eq $before[$key]) "Native security observation differs: $key"
+        Require ($actual -eq $before[$key]) "Native security observation differs: $key expected=$($before[$key]) actual=$actual"
     }
     $streams = [ForgeHostResearch.NativeWindowsHostFacts]::DataStreams($Path)
     Require ($streams.status -eq 'OBSERVED') 'Independent data-stream enumeration unavailable'

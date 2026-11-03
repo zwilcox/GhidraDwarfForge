@@ -106,3 +106,12 @@ the C contract now checks that declaration. This is a path-based operation on
 the owned regular stage, bracketed by opened identity checks; it is not an
 adversarial path-race guarantee. No directory propagation or SACL operation is
 requested. Corrected native application remains **PRESENT, UNVERIFIED**.
+
+Run `41598353308` at `e1b4db6` now passes ordinary inherited-descriptor
+application and exact independent readback, preserving the previously changed
+control bit. It then fails during inspection of the independently prepared
+protected-ACL source, before applying that source to the stage: Java's DACL
+bytes differ from the .NET oracle. This remains unresolved; the harness now
+retains the independent snapshot before assertions and includes expected/actual
+security bytes in the error so the next native run can locate the difference.
+No comparison or protected-ACL acceptance criterion is weakened.
