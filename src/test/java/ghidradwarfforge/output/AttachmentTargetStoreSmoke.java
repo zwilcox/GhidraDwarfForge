@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermissions;
@@ -242,7 +241,7 @@ public final class AttachmentTargetStoreSmoke {
 
     private static class Host extends AttachmentReceiptStoreSmoke.Host implements AttachmentTargetStore.Host {
         public void replaceAtomic(Path stage, Path target) throws IOException {
-            Files.move(stage, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            new LinuxAtomicRename().replaceAtomic(stage, target);
         }
     }
 

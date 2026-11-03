@@ -6,7 +6,6 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -385,7 +384,7 @@ public final class AttachmentTransactionSmoke {
 
     private static class Host extends AttachmentReceiptStoreSmoke.Host implements AttachmentTargetStore.Host {
         public void replaceAtomic(Path stage, Path target) throws IOException {
-            Files.move(stage, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            new LinuxAtomicRename().replaceAtomic(stage, target);
         }
     }
 

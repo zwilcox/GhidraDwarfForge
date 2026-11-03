@@ -1,5 +1,11 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local #72 Linux replacement integration:** commit/rollback,
+refresh and crash-recovery tests now use the production `renameat2` replacement
+primitive. Actual Java 21 suites and a real x86-64 live-validator/GDB/CRC replay
+pass. This supplies namespace replacement, not complete metadata admission or
+host durability. See `docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`.
+
 **PRESENT, UNVERIFIED full Windows #72 metadata application:** the native C
 ABI contract and independent Java/.NET identity, security, timestamp and stream
 inspection pass in run 41597816863 after correcting Unicode test transport.

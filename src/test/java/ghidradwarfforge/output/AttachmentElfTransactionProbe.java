@@ -24,7 +24,7 @@ public final class AttachmentElfTransactionProbe {
             return sidecar.getFileName().toString().getBytes(StandardCharsets.UTF_8);
         }
         public void replaceAtomic(Path stage, Path target) throws IOException {
-            Files.move(stage, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            new LinuxAtomicRename().replaceAtomic(stage, target);
         }
     }
 

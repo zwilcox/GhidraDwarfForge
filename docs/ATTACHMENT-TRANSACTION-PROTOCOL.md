@@ -576,3 +576,24 @@ previous target backup and prior generations remain intact. The workflow now
 requires the installed helper for both cases. These results still use the
 explicit limited Linux metadata host, not a production host adapter. Windows,
 public controls and full protected integration remain required.
+
+## Production Linux replacement namespace primitive
+
+**CONFIRMED locally:** `LinuxAtomicRename.replaceAtomic` uses the already
+audited `renameat2` declaration with flags zero to consume a verified stage in
+one replacement. `publishNew` retains `RENAME_NOREPLACE`. Both operations reject
+non-UTF-8 native path configurations and propagate native failures without a
+copy fallback. This primitive does not authorize attachment: callers must still
+bind/recheck files and metadata, establish host admission, and synchronize both
+affected directories under the documented durability contract.
+
+The target-store, transaction, operation and real-ELF test hosts now use this
+production namespace operation instead of their previous Java move seam. On
+actual Java 21, receipt/store/target/transaction/operation suites pass
+101/75/63/525/72 controls, including process termination, rollback, refresh and
+retained backups. The x86-64 executable replay passes live GNU/LLVM/pinned-strict
+validation, automatic GDB discovery/runtime, CRC mismatch rejection and rollback
+with the new operation. Evidence: `build/test-results/linux-native-replacement/`.
+The metadata adapters in these tests remain explicitly limited. Full Linux/
+Windows host admission, durability acceptance and public CLI/GUI are still
+required. No ELF/DWARF or default-export behavior changed.

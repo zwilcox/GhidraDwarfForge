@@ -3,6 +3,7 @@ package ghidradwarfforge.output;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -25,6 +26,9 @@ public final class LinuxAtomicRename {
         if (!System.getProperty("os.name").equals("Linux")) {
             throw new IOException("Linux atomic rename requires a Linux host");
         }
+        if (!Charset.forName(System.getProperty("sun.jnu.encoding")).equals(StandardCharsets.UTF_8)) {
+            throw new IOException("Linux atomic rename requires UTF-8 native paths");
+        }
         try {
             libc = Native.load("c", LibC.class);
         }
@@ -35,19 +39,32 @@ public final class LinuxAtomicRename {
 
     /** The caller owns and validates stage and destination; this only changes names. */
     public void publishNew(Path stage, Path destination) throws IOException {
+        rename(stage, destination, RENAME_NOREPLACE, "no-replace");
+    }
+
+    /**
+     * Consume an owned verified stage in one replacement rename. The caller
+     * must bind/recheck the prior target, preserve metadata and flush both
+     * affected directories. No copy fallback or durability claim is made here.
+     */
+    public void replaceAtomic(Path stage, Path target) throws IOException {
+        rename(stage, target, 0, "replacement");
+    }
+
+    private void rename(Path stage, Path destination, int flags, String operation) throws IOException {
         byte[] sourceBytes = pathBytes(stage);
         byte[] destinationBytes = pathBytes(destination);
         final int result;
         final int error;
         try {
-            result = libc.renameat2(AT_FDCWD, sourceBytes, AT_FDCWD, destinationBytes, RENAME_NOREPLACE);
+            result = libc.renameat2(AT_FDCWD, sourceBytes, AT_FDCWD, destinationBytes, flags);
             error = Native.getLastError();
         }
         catch (LinkageError | RuntimeException unavailable) {
-            throw new IOException("Linux atomic no-replace rename is unavailable", unavailable);
+            throw new IOException("Linux atomic " + operation + " rename is unavailable", unavailable);
         }
         if (result != 0) {
-            throw new IOException("Linux atomic no-replace rename failed (errno=" + error +
+            throw new IOException("Linux atomic " + operation + " rename failed (errno=" + error +
                 ") from " + stage + " to " + destination);
         }
     }
