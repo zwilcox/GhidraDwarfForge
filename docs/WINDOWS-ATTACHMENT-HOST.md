@@ -195,3 +195,12 @@ expected CRC mismatch and absent DWARF symbol. Commands, source and raw logs are
 retained there. This is a compiler control, not Windows exporter/Host acceptance.
 Both Python harnesses parse, workflow lint with ShellCheck and diff checks pass.
 The real two-generation consumer remains pending hosted evidence.
+
+**CONFIRMED local consumer correction:** the receipt serializer writes byte
+counts as canonical decimal strings. The first consumer compared those fields
+to Python integers and would reject every retained image. Comparing to the
+canonical `str(stat_size)` preserves the schema and rejects mismatches. The
+owned compiler model in `build/test-results/windows-consumer-compiler-model`
+reproduces the old failure and passes all four corrected initial/refresh
+runtime/CRC cases. Its producer records are explicitly synthetic; this proves
+the consumer orchestration, not native Windows or Ghidra acceptance.

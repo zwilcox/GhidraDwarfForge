@@ -83,7 +83,7 @@ def main():
         source_input = (incoming / 'work/semantic.exec.ghidra-forge.dbg.c' if generation == 'initial'
                         else operation / 'owned/commit/refreshed.dbg.c')
         for role, path in [('targetAfter', target_input), ('sidecar', sidecar_input), ('source', source_input)]:
-            require(digest(path) == files[role]['sha256'] and path.stat().st_size == files[role]['bytes'],
+            require(digest(path) == files[role]['sha256'] and str(path.stat().st_size) == files[role]['bytes'],
                     'Windows generation bytes differ: ' + generation + '/' + role)
         require(PureWindowsPath(files['sidecar']['path']).name == sidecar_input.name and
                 PureWindowsPath(files['source']['path']).name == source_input.name,
