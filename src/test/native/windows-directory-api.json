@@ -17,10 +17,12 @@
             "bytes": 13500
         }
     },
-    "scope": "Windows64 WindowsDirectorySync mapping: DWORD/BOOL32, HANDLE64, WCHAR16; FileAttributeTagInfo8 and FileIdInfo24. Native C signature/layout and directory experiment precede isolated Java binding tests. Mechanism only; no volume flush, privilege adjustment or power-loss recovery claim.",
+    "scope": "Windows64 WindowsDirectorySync mapping: DWORD/BOOL32, HANDLE64, WCHAR16; FileAttributeTagInfo8 and FileIdInfo24. Native C signature/layout and directory experiment precede isolated Java binding tests. Mechanism only; no volume flush, privilege adjustment or power-loss recovery claim. Native-first filesystem-profile experiment also audits GetFinalPathNameByHandleW (DWORD, WCHAR units) and GetDriveTypeW (UINT32), comparing GUID-root identity with the opened directory. No production volume-profile binding yet.",
     "documentation": [
         "https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-flushfilebuffers",
         "https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getvolumeinformationbyhandlew",
-        "https://learn.microsoft.com/en-us/windows/win32/fileio/obtaining-a-handle-to-a-directory"
+        "https://learn.microsoft.com/en-us/windows/win32/fileio/obtaining-a-handle-to-a-directory",
+        "https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getfinalpathnamebyhandlew",
+        "https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getdrivetypew"
     ]
 }

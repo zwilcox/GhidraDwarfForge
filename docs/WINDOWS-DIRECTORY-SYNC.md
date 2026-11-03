@@ -52,3 +52,10 @@ guard. All other listed native checks pass with individually reviewed errors.
 Full host metadata admission,
 filesystem durability selection, public controls and end-to-end recovery remain
 required before #72 is complete.
+
+
+A native-only opened-volume experiment is now prepared for filesystem admission;
+see [the research scope](research/WINDOWS-VOLUME-PROFILE.md). It uses a separate
+explicit fixture mode after the metadata suite. The production directory
+binding and its accepted flush/identity behavior are unchanged, and no new
+filesystem support is claimed before native review.

@@ -748,6 +748,21 @@ Save-Json (Join-Path $root 'attachment-metadata.json') ([ordered]@{status='OBSER
     refusalCases=$negativeCases.Count + 1;
     scope='Complete-security/ordinary-metadata/backup-stream composition and private-stage application; not public attachment, elevation or filesystem durability'})
 
+# Native-only filesystem admission experiment runs after all metadata tests.
+$volumeProfilePath = Join-Path $owned 'fixed volume profile λ'
+$volumeProfileRun = Run-Captured 'directory-volume-profile' $directoryProbe @('--volume-profile',$volumeProfilePath)
+$volumeProfileFacts = ConvertFrom-Json $volumeProfileRun.stdout
+Require ($volumeProfileFacts.driveType -eq 3 -and $volumeProfileFacts.volumeRootIdentityMatched -and
+    $volumeProfileFacts.volumeProfileCycles -eq 128 -and $volumeProfileFacts.volumeRootUtf16.Length -eq 196) 'Native fixed-volume profile incomplete'
+$volumeRoot = [Text.Encoding]::BigEndianUnicode.GetString([Convert]::FromHexString($volumeProfileFacts.volumeRootUtf16))
+Require ($volumeRoot.Length -eq 49 -and $volumeRoot.StartsWith('\\?\Volume{') -and $volumeRoot.EndsWith('}\')) 'Native volume GUID root is malformed'
+$null = [Guid]::ParseExact($volumeRoot.Substring(11,36), 'D')
+$volumeRootNative = [ForgeHostResearch.NativeWindowsHostFacts]::Observe($volumeRoot, $false, $false)
+Require ($volumeRootNative.status -eq 'OBSERVED' -and $volumeRootNative.volume128 -ceq $volumeProfileFacts.volume128) 'Independent root volume differs from opened directory'
+Save-Json (Join-Path $root 'directory-volume.json') ([ordered]@{status='OBSERVED'; root=$volumeRoot;
+    native=$volumeProfileFacts; independentRoot=$volumeRootNative;
+    scope='Native opened-volume profile experiment on owned local directory; no JNA admission or power-loss claim'})
+
 foreach ($sourcePath in $hashes.Keys) { Require ((Hash $sourcePath) -eq $hashes[$sourcePath]) 'Protected source/dependency changed' }
 Save-Json (Join-Path $root 'result.json') ([ordered]@{status='PASS'; observations=$observations.ToArray();
     renameObservations=$renameResults.ToArray(); renameCrossVolume=$crossResult; backupStreams=$backupResults; directoryFlush=$directoryFacts;
