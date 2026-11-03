@@ -3,7 +3,8 @@
 **CONFIRMED active priority:** #107 (optional GDB loader), then #72 (opt-in
 debuglink transaction), with all original acceptance criteria retained in
 `docs/DEBUG-LOADING-COMPLETION-PLAN.md`. Initial mapping arithmetic has local
-unit/native compiler-reference evidence; both product features remain open.
+unit/native compiler-reference evidence, including packaged generation and GDB
+identity/lifecycle checks; both product features remain open.
 Hosted acceptance and actual Forge companion integration are **PLANNED**.
 
 **CONFIRMED combined ABI acceptance:** P2.3, P2.3a, P2.3b and P2.3c

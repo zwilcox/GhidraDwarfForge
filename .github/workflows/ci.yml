@@ -718,10 +718,6 @@ jobs:
         if: matrix.target == 'x86_64'
         run: python3 src/test/integration/check-dwarfdump-test.py
 
-      - name: Check GDB loader mapping arithmetic against live compiler references
-        if: matrix.target == 'x86_64'
-        run: python3 -B src/test/integration/gdb-loader-mappings.py
-
       - name: Capture validator evidence and reject changed or incomplete handoffs
         if: matrix.target == 'x86_64'
         run: |
@@ -781,6 +777,12 @@ jobs:
 
       - name: Install extension
         run: unzip -q dist/*.zip -d "$GHIDRA_INSTALL_DIR/Ghidra/Extensions"
+
+      - name: Check packaged GDB companion with live compiler references
+        if: matrix.target == 'x86_64'
+        run: |
+          python3 -B src/test/integration/gdb-loader-mappings.py \
+            --companion-jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar"
 
       - name: Isolated class producer specifications and conflicting lookup aliases
         if: matrix.target == 'x86_64'

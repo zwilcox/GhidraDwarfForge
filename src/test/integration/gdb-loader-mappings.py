@@ -7,6 +7,7 @@ All files are newly created under build/test-results; input copies are hashed.
 The reference is the complete compiler ELF, preserving valid program headers.
 """
 
+import argparse
 import hashlib
 import json
 import os
@@ -15,6 +16,7 @@ import shutil
 import struct
 import subprocess
 import tempfile
+from zipfile import ZipFile
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -48,14 +50,28 @@ def elf_loads(path):
         size, count = struct.unpack_from(order + "HH", raw, 42)
         layout = "IIIIIIII"
     segments = []
+    checks = []
     for index in range(count):
         entry = struct.unpack_from(order + layout, raw, offset + size * index)
         if entry[0] == 1:
             if bits == 64:
-                segments.append([entry[2], entry[3], entry[5], entry[6]])
+                segment = [entry[2], entry[3], entry[5], entry[6]]
+                flags = entry[1]
             else:
-                segments.append([entry[1], entry[2], entry[4], entry[5]])
-    return bits, segments
+                segment = [entry[1], entry[2], entry[4], entry[5]]
+                flags = entry[6]
+            segments.append(segment)
+            if flags & 1 and not flags & 2 and segment[2]:
+                checks.append({"address": segment[1], "size": segment[2],
+                    "sha256": hashlib.sha256(raw[segment[0]:segment[0] + segment[2]]).hexdigest()})
+    return bits, segments, checks
+
+
+def manifest(original, sidecar, source, bits, segments, checks):
+    result = {"schema": 1, "address_bits": bits, "segments": segments, "checks": checks}
+    for role, path in (("target", original), ("sidecar", sidecar), ("source", source)):
+        result[role] = {"path": str(path), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+    return result
 
 
 def quote(path):
@@ -85,7 +101,58 @@ def validate_reference(original, sidecar, directory):
         directory / "dwarfdump.txt")
 
 
-def live_check(directory, role):
+def generated_companion(directory, original, reference, source, classpath):
+    if classpath is None:
+        return reference, None
+    sidecar = directory / "matched companion.dbg"
+    companion = directory / "matched companion.dbg.gdb.py"
+    run(["java", "-cp", classpath, "ghidradwarfforge.elf.GdbCompanionSmoke",
+        str(original), str(reference), str(source), str(sidecar), str(companion)],
+        directory, directory / "companion-generation.txt")
+    return sidecar, companion
+
+
+def registration(binding, companion):
+    if companion is None:
+        return python_command(f"identifier = loader.register({binding!r})")
+    # Exercise the documented source command twice: sourcing an unchanged
+    # companion must not duplicate commands, manifests or event handlers.
+    return "source " + str(companion) + "\nsource " + str(companion) + "\n" + python_command(
+        "assert len(gdb._forge_loader_registry_v1.manifests) == 1\n"
+        "identifier = next(iter(gdb._forge_loader_registry_v1.manifests))")
+
+
+def rejection_checks():
+    return python_command("""registry = gdb._forge_loader_registry_v1
+assert not registry.loaded
+before = list(gdb.objfiles())
+for option in (' --bias 0x1', ' --module /definitely/not/the/selected/module'):
+    try:
+        gdb.execute('forge-load ' + identifier + option)
+    except gdb.error:
+        pass
+    else:
+        raise AssertionError('contradictory runtime mapping accepted')
+    assert list(gdb.objfiles()) == before
+for role in ('target', 'sidecar', 'source', 'checks'):
+    bad = json.loads(json.dumps(registry.manifests[identifier]))
+    if role == 'checks':
+        bad[role][-1]['sha256'] = '0' * 64
+    else:
+        bad[role]['sha256'] = '0' * 64
+    bad_id = registry.register(bad)
+    try:
+        gdb.execute('forge-load ' + bad_id)
+    except gdb.error as error:
+        assert 'mismatch' in str(error)
+    else:
+        raise AssertionError('mismatched companion accepted: ' + role)
+    assert list(gdb.objfiles()) == before
+    assert not registry.loaded
+print('FORGE_REJECTIONS=PASS')""")
+
+
+def live_check(directory, role, classpath):
     source = directory / "mapping fixture.c"
     source.write_text("""volatile int mapping_global = 7;
 __attribute__((noinline)) int mapping_function(int left, int right) {
@@ -104,8 +171,10 @@ int main(void) { return mapping_function(19, 23) == 42 ? 0 : 1; }
         for line in symbols.splitlines() if len(line.split()) == 3}
     shutil.copyfile(original, sidecar)
     run(["strip", "--strip-all", str(original)], directory, directory / "strip.txt")
+    sidecar, companion = generated_companion(directory, original, sidecar, source, classpath)
     validate_reference(original, sidecar, directory)
-    bits, segments = elf_loads(original)
+    bits, segments, checks = elf_loads(original)
+    binding = manifest(original, sidecar, source, bits, segments, checks)
     before = {str(path): hashlib.sha256(path.read_bytes()).hexdigest()
         for path in (original, sidecar, source)}
     commands = ["set pagination off", "set confirm off", "set debuginfod enabled off",
@@ -116,14 +185,20 @@ int main(void) { return mapping_function(19, 23) == 42 ? 0 : 1; }
         "loader = importlib.util.module_from_spec(spec)\nspec.loader.exec_module(loader)\n"
         f"segments = [loader.LoadSegment(*row) for row in {segments!r}]\n"
         "biases = []"))
+    commands.append(registration(binding, companion))
     for iteration in range(3):
         commands.append("starti")
+        if iteration == 0:
+            commands.append(rejection_checks())
         commands.append(python_command(
             "maps = loader.parse_mappings(gdb.execute('info proc mappings', to_string=True))\n"
             f"selected = [row for row in maps if row.path == {str(original)!r}]\n"
             f"bias = loader.select_bias(segments, selected, {bits})\n"
             "biases.append(bias)\n"
-            f"gdb.execute({('add-symbol-file ' + quote(sidecar) + ' -o ')!r} + hex(bias))\n"
+            "gdb.execute('forge-load ' + identifier)\n"
+            "objects = list(gdb.objfiles())\n"
+            "gdb.execute('forge-load ' + identifier)\n"
+            "assert list(gdb.objfiles()) == objects, 'duplicate symbol load'\n"
             f"assert int(gdb.parse_and_eval('&mapping_function')) == bias + {addresses['mapping_function']}\n"
             f"assert int(gdb.parse_and_eval('&mapping_global')) == bias + {addresses['mapping_global']}\n"
             "assert int(gdb.parse_and_eval('mapping_global')) == 7\n"
@@ -137,7 +212,9 @@ int main(void) { return mapping_function(19, 23) == 42 ? 0 : 1; }
         commands.extend(["next", "next"])
         commands.append(python_command("assert int(gdb.parse_and_eval('mapping_global')) == 42\npoint.delete()"))
         commands.append("continue")
-        commands.append("remove-symbol-file " + quote(sidecar))
+        commands.append(python_command(
+            "assert not gdb._forge_loader_registry_v1.loaded, 'exit retained symbols'\n"
+            f"assert not any(obj.filename == {str(sidecar)!r} for obj in gdb.objfiles())"))
     commands.append(python_command(
         ("assert len(set(biases)) > 1, 'ASLR did not produce distinct biases'\n" if role == "pie"
             else "assert biases == [0, 0, 0]\n") +
@@ -146,8 +223,10 @@ int main(void) { return mapping_function(19, 23) == 42 ? 0 : 1; }
     script.write_text("\n".join(commands) + "\n")
     text = run(["gdb-multiarch", "-nx", "-q", "-batch", "-x", str(script)],
         directory, directory / "gdb.txt")
-    if "FORGE_MAPPING_RESULT=" not in text:
+    if "FORGE_MAPPING_RESULT=" not in text or "FORGE_REJECTIONS=PASS" not in text:
         raise AssertionError("missing GDB completion marker")
+    if "Python Exception" in text or "Traceback" in text:
+        raise AssertionError("GDB Python callback failed")
     for path, digest in before.items():
         if hashlib.sha256(Path(path).read_bytes()).hexdigest() != digest:
             raise AssertionError(f"fixture changed: {path}")
@@ -156,7 +235,7 @@ int main(void) { return mapping_function(19, 23) == 42 ? 0 : 1; }
             if line.startswith("FORGE_MAPPING_RESULT=")))}
 
 
-def shared_check(directory):
+def shared_check(directory, classpath):
     source = directory / "library source.c"
     source.write_text("""volatile int shared_value = 7;
 __attribute__((noinline)) int shared_function(int left, int right) {
@@ -194,8 +273,10 @@ int main(int argc, char **argv) {
         for line in symbols.splitlines() if len(line.split()) == 3}
     shutil.copyfile(original, sidecar)
     run(["strip", "--strip-all", str(original)], directory, directory / "strip.txt")
+    sidecar, companion = generated_companion(directory, original, sidecar, source, classpath)
     validate_reference(original, sidecar, directory)
-    bits, segments = elf_loads(original)
+    bits, segments, checks = elf_loads(original)
+    binding = manifest(original, sidecar, source, bits, segments, checks)
     before = {str(path): hashlib.sha256(path.read_bytes()).hexdigest()
         for path in (original, sidecar, source, driver, driver_source)}
     commands = ["set pagination off", "set confirm off", "set debuginfod enabled off",
@@ -207,15 +288,18 @@ int main(int argc, char **argv) {
         "loader = importlib.util.module_from_spec(spec)\nspec.loader.exec_module(loader)\n"
         f"segments = [loader.LoadSegment(*row) for row in {segments!r}]\n"
         "biases = []"))
+    commands.append(registration(binding, companion))
     commands.append("run")
     for iteration in range(2):
+        if iteration == 0:
+            commands.append(rejection_checks())
         commands.append(python_command(
             "assert gdb.selected_frame().name() == 'after_load'\n"
             "maps = loader.parse_mappings(gdb.execute('info proc mappings', to_string=True))\n"
             f"selected = [row for row in maps if row.path == {str(original)!r}]\n"
             f"bias = loader.select_bias(segments, selected, {bits})\n"
             "biases.append(bias)\n"
-            f"gdb.execute({('add-symbol-file ' + quote(sidecar) + ' -o ')!r} + hex(bias))\n"
+            "gdb.execute('forge-load ' + identifier)\n"
             f"assert int(gdb.parse_and_eval('&shared_function')) == bias + {addresses['shared_function']}\n"
             f"assert int(gdb.parse_and_eval('&shared_value')) == bias + {addresses['shared_value']}\n"
             "assert int(gdb.parse_and_eval('shared_value')) == 7\n"
@@ -233,13 +317,17 @@ int main(int argc, char **argv) {
             "assert gdb.selected_frame().name() == 'after_unload'\n"
             "maps = loader.parse_mappings(gdb.execute('info proc mappings', to_string=True))\n"
             f"selected = [row for row in maps if row.path == {str(original)!r}]\n"
-            f"assert loader.mapping_biases(segments, selected, {bits}) == ()"))
-        commands.extend(["remove-symbol-file " + quote(sidecar), "continue"])
+            f"assert loader.mapping_biases(segments, selected, {bits}) == ()\n"
+            "assert not gdb._forge_loader_registry_v1.loaded, 'unload retained symbols'\n"
+            f"assert not any(obj.filename == {str(sidecar)!r} for obj in gdb.objfiles())"))
+        commands.append("continue")
     commands.append(python_command("print('FORGE_MAPPING_RESULT=' + json.dumps(biases))"))
     script = directory / "commands.gdb"
     script.write_text("\n".join(commands) + "\n")
     text = run(["gdb-multiarch", "-nx", "-q", "-batch", "-x", str(script)],
         directory, directory / "gdb.txt")
+    if "FORGE_REJECTIONS=PASS" not in text or "Python Exception" in text or "Traceback" in text:
+        raise AssertionError("GDB rejection checks or callback failed")
     for path, digest in before.items():
         if hashlib.sha256(Path(path).read_bytes()).hexdigest() != digest:
             raise AssertionError(f"fixture changed: {path}")
@@ -249,22 +337,40 @@ int main(int argc, char **argv) {
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--companion-jar", type=Path,
+        help="exercise generator and packaged runtime from this extension JAR")
+    args = parser.parse_args()
     for executable in ("gcc", "strip", "nm", "gdb-multiarch", "readelf",
             "llvm-dwarfdump", os.environ.get("DWARFDUMP", "dwarfdump")):
         if shutil.which(executable) is None:
             raise SystemExit(f"required tool unavailable: {executable}")
     RESULTS.mkdir(parents=True, exist_ok=True)
     directory = Path(tempfile.mkdtemp(prefix="run.", dir=RESULTS))
+    classpath = None
+    if args.companion_jar is not None:
+        jar = args.companion_jar.resolve(strict=True)
+        with ZipFile(jar) as archive:
+            if archive.read("ghidradwarfforge/gdb/loader.py") != ENGINE.read_bytes():
+                raise AssertionError("packaged runtime does not match selected source")
+        classes = directory / "classes"
+        classes.mkdir()
+        run(["javac", "-cp", str(jar), "-d", str(classes),
+            str(ROOT / "src/test/java/ghidradwarfforge/elf/GdbCompanionSmoke.java")],
+            directory, directory / "compile-helper.txt")
+        classpath = os.pathsep.join((str(jar), str(classes)))
     results = []
     for role in ("exec", "pie"):
         case = directory / role
         case.mkdir()
-        results.append(live_check(case, role))
+        results.append(live_check(case, role, classpath))
     shared = directory / "shared"
     shared.mkdir()
-    results.append(shared_check(shared))
+    results.append(shared_check(shared, classpath))
     (directory / "result.json").write_text(json.dumps({"status": "PASS",
         "engineSha256": hashlib.sha256(ENGINE.read_bytes()).hexdigest(),
+        "packagedGenerator": classpath is not None,
+        "jarSha256": hashlib.sha256(jar.read_bytes()).hexdigest() if classpath else None,
         "cases": results}, indent=4) + "\n")
     print(f"gdb-loader-mappings=PASS {directory}")
 

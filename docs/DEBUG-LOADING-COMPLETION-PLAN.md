@@ -103,3 +103,49 @@ bytecode, even after local imports. The new unit and live-reference CI steps
 are **PRESENT, UNVERIFIED** on hosted runners. Actual GDB integration, complete
 artifact-set publication, all loader acceptance lanes and the full attachment
 transaction remain required.
+
+## Generated companion and runtime identity checkpoint
+
+**PRESENT, UNVERIFIED as a product feature:** `GdbCompanion.render` now builds
+a deterministic self-contained `<sidecar>.gdb.py` from completed staging bytes
+and their selected final paths. It requires copied-prefix and allocated-metadata
+agreement with the selected original. The caller still needs three-artifact
+publication and CLI/GUI controls; the ordinary exporter does not call it yet.
+
+The generated file embeds the packaged Python runtime and inert base64 JSON.
+Sourcing registers `forge-load [ID] [--bias INTEGER] [--module EXACT_RUNTIME_PATH]`
+and `forge-unload [ID]`; it does not load symbols. Repeated sourcing reuses the
+registry; mixed runtime revisions require a fresh GDB session. `forge-load`
+checks all three selected file hashes and relocated immutable executable bytes
+before adding symbols. It includes mapped ELF header identity where available,
+excluding section-table fields that an eventual attachment changes. These memory
+exceptions do not waive the selected original's full file hash.
+
+Current bounded runtime contract: one stopped inferior, Python-enabled GDB with
+the inspected lifecycle events and scoped parameter API, exact mapping paths,
+at most 1 GiB of streamed immutable identity checks. Writable executable LOADs,
+text relocations/changed code and unreadable identity bytes are diagnosed rather
+than accepted without evidence. An explicit override permits unavailable mapping
+queries, but does not bypass contradictory mappings, target width, file identity
+or runtime byte checks. Native launch/restart and shared unload/reload have local
+reference evidence; attach, exec, remote override and additional architectures
+still require actual tests. Windows-host generation/control acceptance remains
+open. These boundaries must be reconciled against the complete issue before
+claiming completion.
+
+Local tests now exercise the actual generated script through GDB's `source`
+command, twice, from a built extension JAR. The smoke helper puts compiler DWARF
+through the production matched sidecar writer, then calls the production
+generator. It checks deterministic rendering, cancellation and rejection of an
+unmatched compiler ELF. This proves neither Ghidra extraction nor final
+artifact-set publication. The runtime tests retain function/global/source/
+argument/stepping assertions, plus no duplicate objfiles, exit/unload removal,
+wrong bias/module rejection, mismatched target/sidecar/source checks and wrong
+runtime-code checks. Rejections leave the objfile list unchanged.
+
+Seventeen Python unit tests pass. The generated-reference run
+`build/test-results/gdb-loader-mappings/run.e1y_3jc7/` passes all three roles;
+all three produced sidecars pass GNU/LLVM and local dwarfdump inspection. The
+workflow now selects the installed extension JAR for this check, after package
+installation. Hosted acceptance is **PLANNED**. No L1–L7/A1–A7 row is closed by
+this component checkpoint.

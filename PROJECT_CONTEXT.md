@@ -4,9 +4,12 @@
 opt-in debuglink attachment (#72). `docs/DEBUG-LOADING-COMPLETION-PLAN.md` retains
 all acceptance rows, including both-host attachment recovery and cross-target
 runtime loading. The baseline is unchanged. The initial companion mapping
-arithmetic passes local unit and native GDB compiler-reference checks; public
-generation, runtime identity/lifecycle integration and attachment remain
-**PLANNED**. This checkpoint does not establish either feature's completion.
+arithmetic and generated companion now pass local unit and native GDB
+compiler-reference checks through the packaged Java generator and runtime.
+File/runtime identity, duplicate-load rejection, exit and library-unload cleanup
+have local evidence. Exporter/CLI/GUI integration, three-artifact publication,
+remaining runtime/host/target lanes and attachment remain **PLANNED**. This
+checkpoint does not establish either feature's completion.
 
 **CONFIRMED combined ABI acceptance:** P2.3, P2.3a, P2.3b and P2.3c
 retain all twenty original requirements. Production head `2a74d001e04eeab456b80a5c24063a399b540aa5`

@@ -1,8 +1,12 @@
 """Independent file-offset/address fixtures for the companion loader."""
 
 import importlib.util
+import hashlib
+import json
+import os
 from pathlib import Path
 import sys
+import tempfile
 import unittest
 
 
@@ -102,6 +106,93 @@ Start Addr End Addr Size Offset Perms objfile
                 [Load(0, 0, 0, 1)], [Load(0, 0xffffffff, 1, 2)]):
             with self.subTest(segments=segments), self.assertRaises(loader.LoaderError):
                 loader.mapping_biases(segments, [], 32)
+
+
+class IdentityTests(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+        self.code = bytes(range(256)) * 257
+        self.manifest = {"schema": 1, "address_bits": 32,
+            "segments": [[0, 0x1000, len(self.code), len(self.code) + 16]],
+            "checks": [{"address": 0x1000, "size": len(self.code),
+                "sha256": hashlib.sha256(self.code).hexdigest()}]}
+        for role in ("target", "sidecar", "source"):
+            path = self.root / (role + ' "with spaces"')
+            path.write_bytes(role.encode() + self.code)
+            self.manifest[role] = {"path": str(path),
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+
+    def test_bound_files_and_detached_manifest(self):
+        detached = loader.validate_manifest(self.manifest)
+        self.assertEqual(detached, self.manifest)
+        loader.verify_files(detached)
+        self.manifest["segments"][0][1] = 5
+        self.assertEqual(detached["segments"][0][1], 0x1000)
+
+    def test_changed_artifacts_are_rejected(self):
+        for role in ("target", "sidecar", "source"):
+            path = Path(self.manifest[role]["path"])
+            old = path.read_bytes()
+            path.write_bytes(old + b"changed")
+            with self.assertRaisesRegex(loader.LoaderError, role + " SHA-256 mismatch"):
+                loader.verify_files(self.manifest)
+            path.write_bytes(old)
+
+    def test_missing_nonregular_and_aliased_files(self):
+        target = Path(self.manifest["target"]["path"])
+        sidecar = Path(self.manifest["sidecar"]["path"])
+        sidecar.unlink()
+        with self.assertRaisesRegex(loader.LoaderError, "cannot verify sidecar"):
+            loader.verify_files(self.manifest)
+        sidecar.mkdir()
+        with self.assertRaisesRegex(loader.LoaderError, "not a regular file"):
+            loader.verify_files(self.manifest)
+        sidecar.rmdir()
+        os.link(target, sidecar)
+        self.manifest["sidecar"]["sha256"] = self.manifest["target"]["sha256"]
+        with self.assertRaisesRegex(loader.LoaderError, "alias"):
+            loader.verify_files(self.manifest)
+
+    def test_chunked_runtime_checks(self):
+        reads = []
+        def read(address, size):
+            reads.append((address, size))
+            return memoryview(self.code)[address - 0x201000:address - 0x201000 + size]
+        loader.verify_memory(self.manifest, 0x200000, read)
+        self.assertEqual(reads, [(0x201000, 65536), (0x211000, 256)])
+
+    def test_runtime_mismatch_short_unreadable_and_overflow(self):
+        def unreadable(address, size):
+            raise RuntimeError("unmapped")
+        for reader in (lambda address, size: b"\0" * size,
+                lambda address, size: b"", unreadable):
+            with self.assertRaises(loader.LoaderError):
+                loader.verify_memory(self.manifest, 0, reader)
+        with self.assertRaisesRegex(loader.LoaderError, "address width"):
+            loader.verify_memory(self.manifest, 0xfffff000, lambda address, size: b"")
+
+    def test_unsupported_or_unbound_manifest(self):
+        mutations = [lambda m: m.update(schema=2), lambda m: m.update(extra=True),
+            lambda m: m.update(checks=[]),
+            lambda m: m["target"].update(path="relative"),
+            lambda m: m["source"].update(path="/tmp/a\nquit"),
+            lambda m: m["sidecar"].update(sha256="0"),
+            lambda m: m["checks"][0].update(address=0),
+            lambda m: m["checks"][0].update(size=-1),
+            lambda m: m["segments"][0].append(5)]
+        for mutate in mutations:
+            changed = json.loads(json.dumps(self.manifest))
+            mutate(changed)
+            with self.assertRaises(loader.LoaderError):
+                loader.validate_manifest(changed)
+
+    def test_identifier_is_deterministic_and_binding_specific(self):
+        first = loader.manifest_id(self.manifest)
+        self.assertEqual(first, loader.manifest_id(dict(reversed(list(self.manifest.items())))))
+        self.manifest["target"]["sha256"] = "0" * 64
+        self.assertNotEqual(first, loader.manifest_id(self.manifest))
 
 
 if __name__ == "__main__":
