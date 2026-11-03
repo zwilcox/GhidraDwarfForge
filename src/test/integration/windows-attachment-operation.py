@@ -60,7 +60,7 @@ def main():
         ("WindowsFileSecurityProbe.java", "WindowsAttachmentOperationProbe.java", "WindowsAttachmentRefreshProbe.java")]
     scripts = repo / "src/test/integration/ghidra_scripts"
     retained = [*dependencies, *sources, Path(__file__), args.report_log, args.reference, module / "lib/GhidraDwarfForge-src.zip",
-        Path(__file__).with_name("windows-attachment-headless.ps1"), scripts / "CurateAttachmentRefresh.java",
+        module / "support/ghidra-dwarf-forge-attach.ps1", Path(__file__).with_name("windows-attachment-headless.ps1"), scripts / "CurateAttachmentRefresh.java",
         scripts / "RenameFixtureFunction.java", Path(__file__).with_name("check-dwarfdump.py")]
     origin = {}
     for path in retained:
@@ -109,7 +109,8 @@ def main():
         str(classes) + os.pathsep + classpath, "ghidradwarfforge.output.WindowsAttachmentOperationProbe",
         report_file, originals["original"], originals["sidecar"], originals["source"], args.helper.resolve(strict=True),
         args.readelf.resolve(strict=True), args.llvm.resolve(strict=True), checker / "libexec/dwarfdump.exe",
-        checker / "share/dwarfdump/dwarfdump.conf", root / "owned"])
+        checker / "share/dwarfdump/dwarfdump.conf", root / "owned", args.ghidra.resolve(), module,
+        Path(shutil.which("pwsh.exe")).resolve()])
     require(not result.stderr, "unexpected native operation diagnostics")
     results = json.loads((root / "owned/result.json").read_text(encoding="utf-8"))
     require(len(results["outcomes"]) == 2, "missing operation outcome")

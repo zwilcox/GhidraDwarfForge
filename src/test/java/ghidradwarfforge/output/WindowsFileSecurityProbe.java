@@ -63,7 +63,7 @@ public final class WindowsFileSecurityProbe {
                 }
             }
         }
-        private int attributes() throws IOException {
+        int attributes() throws IOException {
             try (var needed = new Memory(4)) {
                 int first = tokens.GetTokenInformation(token, 3, null, 0, needed);
                 int error = Native.getLastError();

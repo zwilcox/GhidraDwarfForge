@@ -23,6 +23,7 @@ $paths = @(
     (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsAttachmentHostSmoke.java'),
     (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsAttachmentTransactionSmoke.java'),
     (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsFileSecurityProbe.java'),
+    (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsAttachmentPrivilegeProbe.java'),
     $PSCommandPath
 )
 $hashes = [ordered]@{}
@@ -67,7 +68,13 @@ Run 'java-version' (Join-Path $env:JAVA_HOME 'bin/java.exe') @('-version')
 if (-not ([IO.File]::ReadAllText((Join-Path $root 'java-version.stderr')) -match 'version "21[.]')) { throw 'Java 21 required' }
 Run 'compile' (Join-Path $env:JAVA_HOME 'bin/javac.exe') @('--release','21','-cp',$dependencies,'-d',$classes,
     (Join-Path $provenance 'WindowsFileSecurityProbe.java'), (Join-Path $provenance 'WindowsAttachmentHostSmoke.java'),
-    (Join-Path $provenance 'WindowsAttachmentTransactionSmoke.java'))
+    (Join-Path $provenance 'WindowsAttachmentTransactionSmoke.java'), (Join-Path $provenance 'WindowsAttachmentPrivilegeProbe.java'))
+Run 'helper-privilege' (Join-Path $env:JAVA_HOME 'bin/java.exe') @('-Xint','-XX:+UseSerialGC','--enable-native-access=ALL-UNNAMED',
+    '-cp',($classes + ';' + $dependencies),'ghidradwarfforge.output.WindowsAttachmentPrivilegeProbe')
+if ([IO.File]::ReadAllText((Join-Path $root 'helper-privilege.stderr')).Length -ne 0) { throw 'Unexpected helper privilege diagnostics' }
+if (-not [IO.File]::ReadAllText((Join-Path $root 'helper-privilege.stdout')).Contains('windows-attachment-privilege=PASS')) {
+    throw 'Missing helper privilege acceptance result'
+}
 Run 'host-stores' (Join-Path $env:JAVA_HOME 'bin/java.exe') @('-Xint','-XX:+UseSerialGC','--enable-native-access=ALL-UNNAMED',
     '-cp',($classes + ';' + $dependencies),'ghidradwarfforge.output.WindowsAttachmentHostSmoke',(Join-Path $root 'owned'))
 if ([IO.File]::ReadAllText((Join-Path $root 'host-stores.stderr')).Length -ne 0) { throw 'Unexpected host diagnostics' }

@@ -46,6 +46,10 @@ public final class AttachmentHelperSmoke {
             equal("PREVIEW", preview.get("outcome").getAsString());
             equal(JsonParser.parseString(invocation.toJson()), preview.get("selection"));
             equal(false, preview.has("recoverySelection"));
+            previewOutput.reset();
+            equal(0, AttachmentHelper.run(append(Arrays.copyOf(command, 4), "--preview", "--enable-security-privilege"),
+                () -> false, new PrintStream(previewOutput)));
+            equal("PREVIEW", JsonParser.parseString(previewOutput.toString(StandardCharsets.UTF_8)).getAsJsonObject().get("outcome").getAsString());
             equal(before, snapshot(root));
             for (String[] rejected : new String[][] {
                     {}, {"--confirm-target-change"}, Arrays.copyOf(command, 4),
@@ -58,6 +62,7 @@ public final class AttachmentHelperSmoke {
                     append(command, "--request-sha256", digest(selection)),
                     append(command, "--recover"), append(command, "--recover", "--recover"),
                     append(command, "--preview", "--preview"),
+                    append(command, "--enable-security-privilege", "--enable-security-privilege"),
                     append(command, "--cancel-on-stdin", "--cancel-on-stdin") }) {
                 failure(rejected, false, "FAILED", 1);
                 equal(before, snapshot(root));

@@ -64,6 +64,10 @@ done
     exit 1
 }
 chmod 755 "$module/support/ghidra-dwarf-forge-attach"
+[[ -s "$module/support/ghidra-dwarf-forge-attach.ps1" ]] || {
+    echo 'base ZIP is missing the Windows attachment launcher' >&2
+    exit 1
+}
 
 for bundled_directory in os third_party/libdwarf third_party/windows-runtime; do
     if [[ -e "$module/$bundled_directory" || -L "$module/$bundled_directory" ]]; then

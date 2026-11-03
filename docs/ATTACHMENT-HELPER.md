@@ -16,8 +16,8 @@ complete production validator and host transaction. Refresh must retain the
 previous generation and export against the original backup as ADR-0004 requires.
 The Linux launcher, standalone helper, recovery interface and saved selections
 are implemented below; their complete native execution remains **PRESENT,
-UNVERIFIED** until hosted tests pass. Windows authorization and both GUI journeys
-remain **PLANNED**. The metadata policy and Ghidra/Java/native producer baselines
+UNVERIFIED** until hosted tests pass. The Windows launcher/owned-token scope are also implemented but await native
+acceptance; both GUI journeys remain **PLANNED**. The metadata policy and Ghidra/Java/native producer baselines
 are unchanged.
 
 ## Explicit selection transport
@@ -81,9 +81,10 @@ java --enable-native-access=ALL-UNNAMED -cp <extension-and-Ghidra-dependencies> 
 `--help` explains target mutation and retained recovery material. There is no
 implicit confirmation, privilege request, shell evaluation, test-host switch or
 captured-success validator. The helper selects the native host and the required
-live GNU/LLVM/pinned-libdwarf validator. On Windows the caller currently must
-provide an already authorized token with the required privileges enabled; the
-public UAC launcher/privilege scope is still required. On Linux the existing
+live GNU/LLVM/pinned-libdwarf validator. On Windows, `--enable-security-privilege` explicitly enables the helper's
+already-owned security privilege for its lifetime and restores the previous
+state. The PowerShell launcher can request UAC only when explicitly selected;
+its native acceptance remains pending. On Linux the existing
 strict ext4/protected-metadata contract applies. Running the helper inside
 Ghidra is unsupported; its `main` terminates its standalone JVM.
 
@@ -259,3 +260,23 @@ rule. The release assembler independently enforces the mode. The Linux productio
 matrix now invokes the packaged launcher for actual attachment, keeping its existing
 validator/GDB/CRC/metadata oracles. That hosted execution and actual OS authorization
 journeys remain pending; Windows launcher and GUI acceptance remain incomplete.
+
+## Windows launcher
+
+PowerShell7 users can invoke the installed script with explicit selections:
+
+```powershell
+./support/ghidra-dwarf-forge-attach.ps1 `
+    -GhidraDirectory C:\tools\ghidra_12.0.3_PUBLIC `
+    -RequestFile C:\analysis\attachment-request.json `
+    -RequestSha256 <lowercase-sha256> -Preview
+```
+
+Replace `-Preview` with `-ConfirmTargetChange` to execute; add `-Authorize` only
+when requesting OS authorization for the separate helper. `-Recover` selects a
+saved recovery request. Ghidra stays in its existing process. The launcher shows
+the selected paths before either execution or authorization and opens no log or
+result destination. See [the native mapping and authorization contract](WINDOWS-ATTACHMENT-AUTHORIZATION.md)
+for the owned security-privilege scope, PowerShell7 dependency, UAC output limits
+and exact pending validation. Native Windows launcher/authorization and GUI
+acceptance remain incomplete.

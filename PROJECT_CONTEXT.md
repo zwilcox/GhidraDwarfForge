@@ -1,5 +1,16 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**PRESENT, UNVERIFIED Windows public launcher:** a PowerShell7 script now
+previews explicit selections, requires confirmation and requests RunAs only with
+an explicit authorization option. The isolated helper can enable only its own
+already-held SeSecurityPrivilege and restores/verifies the original state.
+Microsoft API/header audit and Windows x64 ABI assertions pass; Java21 helper115
+checks, build, PowerShell parsing, release assembly and workflow lint pass locally.
+CI now exercises native token scope cleanup and invokes the packaged launcher on
+the real Windows export. Native artifact acceptance, interactive UAC/cancellation
+and Ghidra GUI journeys remain incomplete. See
+`docs/WINDOWS-ATTACHMENT-AUTHORIZATION.md`.
+
 **PRESENT, UNVERIFIED Linux public launcher:** the installed
 `support/ghidra-dwarf-forge-attach` previews the pinned request, requires explicit
 target-change confirmation and offers explicitly selected sudo/pkexec authorization

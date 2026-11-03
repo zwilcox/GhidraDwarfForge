@@ -30,6 +30,7 @@ printf '#!/usr/bin/env bash\n' > "$work/base/GhidraDwarfForge/support/wrapper"
 chmod 755 "$work/base/GhidraDwarfForge/support/wrapper"
 cp "$repository_dir/support/ghidra-dwarf-forge-attach" "$work/base/GhidraDwarfForge/support/ghidra-dwarf-forge-attach"
 chmod 644 "$work/base/GhidraDwarfForge/support/ghidra-dwarf-forge-attach"
+cp "$repository_dir/support/ghidra-dwarf-forge-attach.ps1" "$work/base/GhidraDwarfForge/support/ghidra-dwarf-forge-attach.ps1"
 for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java; do
     printf '// fixture %s\n' "$entry_point" \
         > "$work/base/GhidraDwarfForge/ghidra_scripts/$entry_point"

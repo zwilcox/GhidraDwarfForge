@@ -140,7 +140,8 @@ publication remains a separate step.
 ## Headless entry point
 
 Opt-in executable attachment is under development in PR158. The Linux
-`support/ghidra-dwarf-forge-attach` launcher provides a read-only preview and
+`support/ghidra-dwarf-forge-attach` and PowerShell7
+`support/ghidra-dwarf-forge-attach.ps1` launchers provide read-only preview and
 explicit attachment/recovery commands; see [the invocation guide](docs/ATTACHMENT-HELPER.md).
 Complete Windows/GUI and hosted acceptance are still pending. Ordinary export
 continues to leave the executable unchanged.

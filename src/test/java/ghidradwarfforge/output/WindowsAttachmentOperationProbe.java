@@ -13,8 +13,8 @@ import java.util.Map;
 /** Owned native Windows real-ELF fixture; the public attachment entry point is separate. */
 public final class WindowsAttachmentOperationProbe {
     public static void main(String[] args) throws Exception {
-        if (args.length != 10) throw new IllegalArgumentException(
-            "report original sidecar source helper readelf llvm strict configuration fresh-results");
+        if (args.length != 13) throw new IllegalArgumentException(
+            "report original sidecar source helper readelf llvm strict configuration fresh-results ghidra-directory extension-directory powershell-executable");
         if (!System.getProperty("os.name").startsWith("Windows")) throw new IllegalStateException("requires native Windows");
         // Test-only adjustment of an already owned token privilege. Production
         // host/validator code does not enable privileges or request elevation.
@@ -48,11 +48,11 @@ public final class WindowsAttachmentOperationProbe {
                 var request = new AttachmentOperation.Request(target, selected.get("sidecar"), selected.get("source"),
                     selected.get("exportReport"), directory.resolve("original.backup"), directory.resolve("validation.json"),
                     directory.resolve("transaction.json"), directory.resolve("recovery.json"), directory.resolve("restore.elf"), null);
-                var result = AttachmentOperation.execute(request, host, validator, () -> false, boundary -> {
-                    if (rollback && boundary == AttachmentTransaction.Boundary.TARGET_REPLACED) {
+                var result = rollback ? AttachmentOperation.execute(request, host, validator, () -> false, boundary -> {
+                    if (boundary == AttachmentTransaction.Boundary.TARGET_REPLACED) {
                         throw new IOException("owned Windows real-ELF rollback control");
                     }
-                });
+                }) : launchPublic(request, args, host, before);
                 var expected = rollback ? AttachmentReceipt.Phase.ROLLED_BACK : AttachmentReceipt.Phase.COMMITTED;
                 require(result.transaction().outcome() == expected, "unexpected native ELF outcome: " + result.transaction());
                 var after = AttachmentFileStore.observe(target, host, () -> false);
@@ -80,6 +80,61 @@ public final class WindowsAttachmentOperationProbe {
         return new GsonBuilder().registerTypeHierarchyAdapter(Path.class,
             (com.google.gson.JsonSerializer<Path>) (path, type, context) -> new com.google.gson.JsonPrimitive(path.toString()))
             .setPrettyPrinting().create().toJson(value);
+    }
+
+    private static AttachmentOperation.Result launchPublic(AttachmentOperation.Request request, String[] args,
+            WindowsAttachmentHost host, AttachmentFileStore.Snapshot before) throws Exception {
+        Path directory = request.target().getParent();
+        var tools = Map.of("helper", Path.of(args[4]), "readelf", Path.of(args[5]), "llvm", Path.of(args[6]),
+            "strict", Path.of(args[7]), "configuration", Path.of(args[8]));
+        Path saved = directory.resolve("saved-recovery.json");
+        var invocation = new AttachmentInvocation(request, tools, saved);
+        Path transport = Files.writeString(directory.resolve("attachment-request.json"), invocation.toJson(), StandardOpenOption.CREATE_NEW);
+        var command = new ArrayList<String>(java.util.List.of(args[12], "-NoLogo", "-NoProfile", "-File",
+            Path.of(args[11], "support", "ghidra-dwarf-forge-attach.ps1").toString(), "-GhidraDirectory", args[10],
+            "-ExtensionDirectory", args[11], "-JavaExecutable", Path.of(System.getProperty("java.home"), "bin", "java.exe").toString(),
+            "-RequestFile", transport.toString(), "-RequestSha256", FileDigests.read(transport, () -> false).sha256()));
+        for (String mode : java.util.List.of("preview", "no-consent", "execute")) {
+            var actual = new ArrayList<>(command);
+            if (mode.equals("preview")) actual.add("-Preview");
+            if (mode.equals("execute")) { actual.add("-ConfirmTargetChange"); actual.add("-Authorize"); }
+            Path stdout = directory.resolve("launcher-" + mode + ".stdout");
+            Files.writeString(directory.resolve("launcher-" + mode + ".argv.json"),
+                new com.google.gson.Gson().toJson(actual), StandardOpenOption.CREATE_NEW);
+            var child = new ProcessBuilder(actual).redirectOutput(stdout.toFile())
+                .redirectError(directory.resolve("launcher-" + mode + ".stderr").toFile()).start();
+            try {
+                require(child.waitFor(180, java.util.concurrent.TimeUnit.SECONDS), "public Windows launcher timed out");
+                require(child.exitValue() == (mode.equals("no-consent") ? 64 : 0),
+                    "public Windows launcher failed: " + mode + " exit=" + child.exitValue());
+            }
+            finally {
+                if (child.isAlive()) {
+                    child.destroyForcibly();
+                    require(child.waitFor(5, java.util.concurrent.TimeUnit.SECONDS), "launcher did not exit after timeout");
+                }
+            }
+            var records = Files.readAllLines(stdout).stream().filter(line -> !line.isBlank())
+                .map(com.google.gson.JsonParser::parseString).map(com.google.gson.JsonElement::getAsJsonObject).toList();
+            require(records.stream().filter(record -> record.has("outcome") && record.get("outcome").getAsString().equals("PREVIEW"))
+                .count() == 1, "launcher did not preview the selection exactly once");
+            if (!mode.equals("execute")) {
+                AttachmentFileStore.unchanged(before, host, () -> false);
+                require(!Files.exists(request.originalBackup()) && !Files.exists(request.receipt()) && !Files.exists(saved),
+                    "read-only launcher created transaction outputs");
+            }
+            else require(records.stream().anyMatch(record -> record.has("launcherExitCode") &&
+                record.get("launcherExitCode").getAsInt() == 0), "missing successful explicit RunAs result");
+        }
+        var recovery = AttachmentRecoveryInvocation.read(Files.newInputStream(saved), () -> false).transaction(() -> false);
+        var receipt = AttachmentReceiptStore.read(request.receipt(), host, () -> false);
+        require(receipt.receipt().phase() == AttachmentReceipt.Phase.COMMITTED, "launcher did not commit native receipt");
+        var selected = new LinkedHashMap<>(recovery.files());
+        selected.put("receipt", request.receipt());
+        selected.put("recoveryReceipt", request.recoveryReceipt());
+        selected.put("restoreImage", request.restoreImage());
+        return new AttachmentOperation.Result(new AttachmentTransaction.Result(receipt.receipt().phase(), receipt, null,
+            AttachmentFileStore.observe(request.target(), host, () -> false), false, null), recovery, selected);
     }
 
     private static void require(boolean condition, String message) {

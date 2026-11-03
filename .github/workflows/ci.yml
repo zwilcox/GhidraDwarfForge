@@ -309,6 +309,13 @@ jobs:
             libtool
             pkgconf
 
+      - name: Check isolated helper token ABI against Windows headers
+        run: |
+          mkdir -p build/test-results/native-windows/token-abi
+          gcc -std=c11 -Wall -Wextra -Werror -c support/validation/windows-token-layout.c \
+              -o build/test-results/native-windows/token-abi/layout.o
+          cp support/validation/windows-token-layout.c build/test-results/native-windows/token-abi/
+
       - name: Locate audited Windows metadata compiler
         run: printf 'FORGE_METADATA_CC=%s\n' "$(cygpath -w "$(command -v gcc)")" >> "$GITHUB_ENV"
 

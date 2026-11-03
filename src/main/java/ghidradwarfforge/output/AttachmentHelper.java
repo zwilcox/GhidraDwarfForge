@@ -31,12 +31,12 @@ public final class AttachmentHelper {
     private static final int REQUEST_LIMIT = 256 * 1024;
     private static final String HELP = "Attachment changes the selected executable and retains an independent backup.\n" +
         "Usage: AttachmentHelper --request ABSOLUTE_JSON --request-sha256 SHA256 --confirm-target-change " +
-        "[--cancel-on-stdin] [--recover] [--preview]\n" +
+        "[--cancel-on-stdin] [--recover] [--preview] [--enable-security-privilege]\n" +
         "Run only in a separately authorized process. This command never requests elevation.\n" +
         "--cancel-on-stdin: any input byte or EOF requests cancellation; keep stdin open while running.\n" +
         "Retain the request, backups, validation evidence and transaction/recovery receipts on failure.\n";
 
-    record Command(Path request, String sha256, boolean cancelOnStdin, boolean recovery, boolean preview) { }
+    record Command(Path request, String sha256, boolean cancelOnStdin, boolean recovery, boolean preview, boolean securityPrivilege) { }
     record Admitted(Command command, AttachmentInvocation invocation, AttachmentPaths.Plan plan) { }
 
     private AttachmentHelper() { }
@@ -80,7 +80,7 @@ public final class AttachmentHelper {
             response.addProperty("requestSha256", admitted.command().sha256());
             response.add("selection", JsonParser.parseString(invocation.toJson()));
             admitted.plan().recheck();
-            try (var session = open(invocation.operation(), cancelled)) {
+            try (var session = open(invocation.operation(), cancelled, admitted.command().securityPrivilege())) {
                 admitted.plan().recheck();
                 var host = session.host();
                 // Hold just the immutable helper inputs after preparation starts;
@@ -166,6 +166,7 @@ public final class AttachmentHelper {
         boolean control = false;
         boolean recovery = false;
         boolean preview = false;
+        boolean securityPrivilege = false;
         for (int index = 0; index < args.length; index++) {
             switch (args[index]) {
                 case "--request" -> {
@@ -179,6 +180,10 @@ public final class AttachmentHelper {
                 case "--confirm-target-change" -> {
                     if (confirmed) throw new IOException("duplicate target-change confirmation");
                     confirmed = true;
+                }
+                case "--enable-security-privilege" -> {
+                    if (securityPrivilege) throw new IOException("duplicate security privilege selection");
+                    securityPrivilege = true;
                 }
                 case "--preview" -> {
                     if (preview) throw new IOException("duplicate preview action");
@@ -198,7 +203,7 @@ public final class AttachmentHelper {
         if ((!confirmed && !preview) || request == null || !request.isAbsolute() || sha == null || !sha.matches("[0-9a-f]{64}")) {
             throw new IOException("explicit --confirm-target-change, absolute --request and lowercase --request-sha256 are required");
         }
-        return new Command(request, sha, control, recovery, preview);
+        return new Command(request, sha, control, recovery, preview, securityPrivilege);
     }
 
     /** Read-only user review, including path/receipt checks but no native host or validator execution. */
@@ -249,7 +254,7 @@ public final class AttachmentHelper {
             response.add("selection", JsonParser.parseString(invocation.toJson()));
             plan.recheck();
             check(cancelled);
-            try (var session = openRecovery(transaction)) {
+            try (var session = openRecovery(transaction, command.securityPrivilege())) {
                 plan.recheck();
                 var host = session.host();
                 var request = AttachmentFileStore.observe(plan.paths().get("invocation"), host, cancelled);
@@ -303,12 +308,13 @@ public final class AttachmentHelper {
         return bytes;
     }
 
-    private static Session openRecovery(AttachmentTransaction.Request request) throws IOException {
+    private static Session openRecovery(AttachmentTransaction.Request request, boolean securityPrivilege) throws IOException {
+        requireWindowsPrivilegeOption(securityPrivilege);
         if (Platform.isLinux()) {
             var host = LinuxAttachmentHost.openRecovery(request);
             return new Session(host, host);
         }
-        if (Platform.isWindows()) return new Session(new WindowsAttachmentHost(), () -> { });
+        if (Platform.isWindows()) return windowsSession(securityPrivilege);
         throw new IOException("attachment recovery requires a validated Linux or Windows native host");
     }
 
@@ -320,14 +326,30 @@ public final class AttachmentHelper {
         }
     }
 
-    private static Session open(AttachmentOperation.Request request, BooleanSupplier cancelled) throws IOException {
+    private static Session open(AttachmentOperation.Request request, BooleanSupplier cancelled, boolean securityPrivilege) throws IOException {
+        requireWindowsPrivilegeOption(securityPrivilege);
         check(cancelled);
         if (Platform.isLinux()) {
             var host = LinuxAttachmentHost.open(request, cancelled);
             return new Session(host, host);
         }
-        if (Platform.isWindows()) return new Session(new WindowsAttachmentHost(), () -> { });
+        if (Platform.isWindows()) return windowsSession(securityPrivilege);
         throw new IOException("attachment helper requires a validated Linux or Windows native host");
+    }
+
+    private static void requireWindowsPrivilegeOption(boolean requested) throws IOException {
+        if (requested && !Platform.isWindows()) throw new IOException("--enable-security-privilege is Windows-only");
+    }
+
+    private static Session windowsSession(boolean securityPrivilege) throws IOException {
+        WindowsAttachmentPrivilege privilege = securityPrivilege ? new WindowsAttachmentPrivilege() : null;
+        try { return new Session(new WindowsAttachmentHost(), privilege == null ? () -> { } : privilege); }
+        catch (IOException | RuntimeException failure) {
+            if (privilege != null) {
+                try { privilege.close(); } catch (IOException cleanup) { failure.addSuppressed(cleanup); }
+            }
+            throw failure;
+        }
     }
 
     private static void recheck(AttachmentPaths.Plan plan, Map<String, AttachmentFileStore.Snapshot> inputs,
