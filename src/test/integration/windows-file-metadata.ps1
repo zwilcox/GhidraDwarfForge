@@ -23,6 +23,10 @@ function Save-Json([string]$Path, $Value) {
 function Hash([string]$Path) { return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant() }
 $sources = @(
     (Join-Path $repo 'src/main/java/ghidradwarfforge/output/WindowsFileMetadata.java'),
+    (Join-Path $repo 'src/main/java/ghidradwarfforge/output/WindowsFileRename.java'),
+    (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsFileRenameProbe.java'),
+    (Join-Path $repo 'src/test/native/windows-rename-contract.c'),
+    (Join-Path $repo 'src/test/native/windows-rename-api.json'),
     (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsFileMetadataProbe.java'),
     (Join-Path $repo 'src/test/native/windows-metadata-contract.c'),
     (Join-Path $repo 'src/test/native/windows-metadata-api.json'),
@@ -77,10 +81,15 @@ $contract = Join-Path $root 'native-contract.exe'
 $null = Run-Captured 'compile-contract' $Compiler @('-std=c11','-Wall','-Wextra','-Werror',
     (Join-Path $provenance 'windows-metadata-contract.c'),'-ladvapi32','-o',$contract)
 $null = Run-Captured 'native-contract' $contract @()
+$renameContract = Join-Path $root 'rename-contract.exe'
+$null = Run-Captured 'compile-rename-contract' $Compiler @('-std=c11','-Wall','-Wextra','-Werror',
+    (Join-Path $provenance 'windows-rename-contract.c'),'-o',$renameContract)
+$null = Run-Captured 'rename-contract' $renameContract @()
 $dependencies = (Join-Path $provenance ([IO.Path]::GetFileName($Jna))) + ';' +
     (Join-Path $provenance ([IO.Path]::GetFileName($Gson)))
 $null = Run-Captured 'compile-java' $JavacExe @('--release','21','-cp',$dependencies,'-d',$classes,
-    (Join-Path $provenance 'WindowsFileMetadata.java'), (Join-Path $provenance 'WindowsFileMetadataProbe.java'))
+    (Join-Path $provenance 'WindowsFileMetadata.java'), (Join-Path $provenance 'WindowsFileMetadataProbe.java'),
+    (Join-Path $provenance 'WindowsFileRename.java'), (Join-Path $provenance 'WindowsFileRenameProbe.java'))
 $version = Run-Captured 'java-version' $JavaExe @('-version')
 Require ($version.stderr -match 'version "21[.]') 'Actual Java 21 required'
 $prefix = @('-cp', ($classes + ';' + $dependencies), 'ghidradwarfforge.output.WindowsFileMetadataProbe')
@@ -223,7 +232,116 @@ try {
 }
 finally { $locked.Dispose() }
 $null = Run-Probe 'native-handle-lifetime' @('leak-controls',$original) $true $true
+# Actual namespace operations on exclusively owned fixture paths. They do not
+# provide the complete host metadata or durability policy.
+function Run-Rename([string]$Label, [string[]]$Arguments, [bool]$Success=$true, [bool]$Interpreted=$false) {
+    $request = Join-Path $root "$Label.rename-request.json"
+    Save-Json $request $Arguments
+    $options = @()
+    if ($Interpreted) { $options = @('-Xint') }
+    $renameArgs = @('-cp', ($classes + [IO.Path]::PathSeparator + $dependencies),
+        'ghidradwarfforge.output.WindowsFileRenameProbe', '--request-file', $request)
+    return Run-Captured $Label $JavaExe ($options + $renameArgs) $Success
+}
+function Same-State($Expected, [string]$Path) {
+    Require ((ConvertTo-Json -Compress (Independent-State $Path)) -ceq
+        (ConvertTo-Json -Compress $Expected)) "Namespace changed protected bytes/metadata/identity: $Path"
+}
+$renameResults = [Collections.Generic.List[object]]::new()
+function Rename-Case([string]$Label, [string]$Mode, [bool]$Existing=$false, [bool]$Success=$true) {
+    $dir = (New-Item -ItemType Directory -Path (Join-Path $owned ('rename-' + $Label))).FullName
+    $stageDir = (New-Item -ItemType Directory -Path (Join-Path $dir 'private stage')).FullName
+    $renameStage = Join-Path $stageDir 'image λ'
+    $renameTarget = Join-Path $dir 'final λ ;$[ ] image.dbg'
+    [IO.File]::WriteAllText($renameStage, 'complete owned new image', $utf8)
+    [IO.File]::SetLastWriteTimeUtc($renameStage, [DateTime]::FromFileTimeUtc(133713240009876543L))
+    if ($Existing) { [IO.File]::WriteAllText($renameTarget, 'complete prior image', $utf8) }
+    $stageState = Independent-State $renameStage
+    $targetState = if ($Existing) { Independent-State $renameTarget } else { $null }
+    $outcome = Run-Rename $Label @($Mode,$renameStage,$renameTarget) $Success
+    if ($Success) {
+        Require (-not (Test-Path -LiteralPath $renameStage)) 'Successful rename retained stage name'
+        Same-State $stageState $renameTarget
+    }
+    else {
+        if ($Mode -eq 'stale-stage') {
+            Require ([IO.File]::ReadAllText($renameStage) -ceq 'changed stage after snapshot; must remain') 'Stale stage was lost'
+        }
+        elseif ($Mode -eq 'late-stage') {
+            Require ([IO.File]::ReadAllText($renameStage) -ceq 'concurrent stage; must remain') 'Concurrent stage was lost'
+            Same-State $stageState ($renameStage + '.retained')
+        }
+        else { Same-State $stageState $renameStage }
+        if ($Mode -in @('stale-target','late-target','last-moment-collision')) {
+            $expectedText = switch ($Mode) {
+                'stale-target' { 'changed target after snapshot; must remain' }
+                'late-target' { 'concurrent target; must remain' }
+                'last-moment-collision' { 'concurrent new target; must remain' }
+            }
+            Require ([IO.File]::ReadAllText($renameTarget) -ceq $expectedText) 'Concurrent target was lost'
+        }
+        elseif ($Existing) { Same-State $targetState $renameTarget }
+        else { Require (-not (Test-Path -LiteralPath $renameTarget)) 'Failed rename created a final target' }
+        if ($Mode -like 'cancel-*') { Require ($outcome.stderr.Contains('CancellationException')) 'Cancellation not propagated' }
+        if ($Mode -eq 'last-moment-collision') { Require ($outcome.stderr.Contains('FileRenameInfo failed')) 'Collision did not reach native no-overwrite request' }
+    }
+    $row = [ordered]@{case=$Label; mode=$Mode; success=$Success; stageBefore=$stageState; targetBefore=$targetState;
+        stageAfter=$(if (Test-Path -LiteralPath $renameStage) { Independent-State $renameStage } else { $null });
+        targetAfter=$(if (Test-Path -LiteralPath $renameTarget) { Independent-State $renameTarget } else { $null })}
+    $renameResults.Add($row)
+    Save-Json (Join-Path $root 'rename-observations.json') $renameResults.ToArray()
+    return [pscustomobject]@{stage=$renameStage; target=$renameTarget; directory=$dir}
+}
+$null = Rename-Case 'publish-new' 'publish'
+$null = Rename-Case 'replace-existing' 'replace' $true
+$null = Rename-Case 'existing-refusal' 'publish' $true $false
+$null = Rename-Case 'stale-stage' 'stale-stage' $false $false
+$null = Rename-Case 'stale-target' 'stale-target' $true $false
+$null = Rename-Case 'late-stage' 'late-stage' $false $false
+$null = Rename-Case 'late-target' 'late-target' $true $false
+$null = Rename-Case 'collision-at-native-call' 'last-moment-collision' $false $false
+$null = Rename-Case 'cancel-before-rename' 'cancel-before' $false $false
+$control = Rename-Case 'cancel-open-rename' 'cancel-open' $false $false
+$renameStage = $control.stage
+$renameTarget = $control.target
+$beforeStage = Independent-State $renameStage
+$null = Run-Rename 'rename-alias' @('replace',$renameStage,$renameStage) $false
+Same-State $beforeStage $renameStage
+$hard = Join-Path $control.directory 'hardlink'
+$null = New-Item -ItemType HardLink -Path $hard -Target $renameStage
+$linkedBefore = Independent-State $renameStage
+$null = Run-Rename 'rename-hardlink' @('publish',$renameStage,$renameTarget) $false
+Same-State $linkedBefore $renameStage
+Remove-Item -LiteralPath $hard
+$dangling = Join-Path $control.directory 'dangling'
+$null = New-Item -ItemType SymbolicLink -Path $dangling -Target (Join-Path $control.directory 'absent')
+$null = Run-Rename 'rename-dangling' @('publish',$renameStage,$dangling) $false
+Require ((Get-Item -LiteralPath $dangling -Force).LinkType -eq 'SymbolicLink') 'Dangling destination was removed'
+$null = Run-Rename 'rename-stream-path' @('publish',$renameStage,($renameTarget + ':named')) $false
+[IO.File]::WriteAllText($renameTarget, 'locked prior image', $utf8)
+$beforeTarget = Independent-State $renameTarget
+# Allow reads so metadata succeeds; deny deletion so the actual namespace call fails.
+$locked = [IO.File]::Open($renameTarget, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::ReadWrite)
+try {
+    $refused = Run-Rename 'rename-sharing-lock' @('replace',$renameStage,$renameTarget) $false
+    Require ($refused.stderr.Contains('FileRenameInfo failed')) 'Sharing-lock control did not reach rename'
+}
+finally { $locked.Dispose() }
+Same-State $beforeStage $renameStage
+Same-State $beforeTarget $renameTarget
+[IO.File]::SetAttributes($renameTarget, [IO.FileAttributes]::ReadOnly)
+$readonlyBefore = Independent-State $renameTarget
+$null = Run-Rename 'rename-readonly-target' @('replace',$renameStage,$renameTarget) $false
+Same-State $readonlyBefore $renameTarget
+Same-State $beforeStage $renameStage
+[IO.File]::SetAttributes($renameTarget, [IO.FileAttributes]::Archive)
+Remove-Item -LiteralPath $renameTarget
+$null = Run-Rename 'rename-handle-lifetime' @('lifetime',$renameStage,$renameTarget) $true $true
+Same-State $beforeStage $renameStage
+Require (-not (Test-Path -LiteralPath $renameTarget)) 'Lifetime test left a target'
+
 foreach ($sourcePath in $hashes.Keys) { Require ((Hash $sourcePath) -eq $hashes[$sourcePath]) 'Protected source/dependency changed' }
 Save-Json (Join-Path $root 'result.json') ([ordered]@{status='PASS'; observations=$observations.ToArray();
-    scope='Opened Windows identity and accessible owner/group/DACL/attribute/time copying; not complete host admission, SACL/EA preservation or durability'})
+    renameObservations=$renameResults.ToArray();
+    scope='Opened Windows identity, accessible metadata and verified-stage rename; not complete host admission, SACL/EA preservation or durability'})
 Write-Output 'windows-file-metadata=PASS'

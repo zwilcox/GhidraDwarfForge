@@ -17,6 +17,13 @@ validator work but still needs complete production hosts, public controls,
 and full acceptance. All original criteria remain in
 `docs/DEBUG-LOADING-COMPLETION-PLAN.md`.
 
+**PRESENT, UNVERIFIED #72 Windows namespace implementation:** an opened-stage
+`FileRenameInfo` primitive and isolated native test cases now cover replacement,
+no-overwrite publication, identity/metadata readback, collisions, sharing and
+cancellation. Java 21/C cross-compilation and request transport pass locally;
+native execution remains required. This is not complete host admission or
+durability. See `docs/WINDOWS-FILE-RENAME.md`.
+
 **CONFIRMED local #72 directory operations:** the production Linux primitive
 now supplies opened-directory/mount identity and explicit fsync with changed-path
 refusal. The independent C/Java 21 harness passes 494 assertions and 128 cleanup

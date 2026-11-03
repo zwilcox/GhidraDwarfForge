@@ -606,3 +606,14 @@ checks and propagating native errors. The standalone independent C/Java 21
 harness, all five transaction suites and the real x86-64 live-validator/GDB
 replay pass. This supplies a required host mechanism, not complete filesystem
 admission or power-loss acceptance. See [the contract and commands](LINUX-DIRECTORY-SYNC.md).
+
+## Windows opened-stage namespace implementation
+
+**PRESENT, UNVERIFIED:** `WindowsFileRename` implements no-overwrite publication
+and conditional replacement through one `FileRenameInfo` request, followed by
+identity/preservation readback. It neither merges target metadata nor falls back
+to copying. The native ABI is audited and the isolated Windows job now tests
+actual namespace operations, concurrent/cancellation/lock controls and handle
+cleanup. Local compilation/transport passes; native execution, complete host
+admission and durability acceptance remain required. See
+[the operation contract](WINDOWS-FILE-RENAME.md).

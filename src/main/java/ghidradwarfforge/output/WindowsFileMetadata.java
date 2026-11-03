@@ -163,7 +163,8 @@ public final class WindowsFileMetadata {
         return new Snapshot(before, descriptor, streams);
     }
 
-    private Facts facts(Pointer handle) throws IOException {
+    // Shared by the opened-stage rename primitive; caller retains handle ownership.
+    Facts facts(Pointer handle) throws IOException {
         require(kernel.GetFileType(handle) == 1, "Windows metadata requires a disk file");
         try (var basic = info(handle, 0, 40); var standard = info(handle, 1, 24);
                 var identity = info(handle, 18, 24); var tag = info(handle, 9, 8)) {
