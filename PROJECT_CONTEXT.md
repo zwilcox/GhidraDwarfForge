@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**PRESENT, UNVERIFIED native Windows #72 metadata:** `WindowsFileMetadata`
+now implements opened-file identity and accessible owner/group/DACL, attribute
+and timestamp application to an owned stage. Java compilation and Windows64 C
+ABI cross-compilation pass; the new early Windows CI test independently checks
+native metadata, rejection, cancellation and handle cleanup. Native execution
+is still required. This is not host admission: SACLs/EAs, visibility policy,
+durability, public CLI/GUI and full acceptance remain open. The strict metadata
+contract is unchanged. See `docs/WINDOWS-FILE-METADATA.md`.
+
 **CONFIRMED local #72 Linux metadata primitive:** `LinuxFileMetadata` now reads
 native opened-file identity and bounded visible attributes, and applies ordinary
 permissions/ownership/mtime, user xattrs and access ACLs to an already owned

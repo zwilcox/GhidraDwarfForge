@@ -296,6 +296,27 @@ jobs:
             libtool
             pkgconf
 
+      - name: Locate audited Windows metadata compiler
+        run: printf 'FORGE_METADATA_CC=%s\n' "$(cygpath -w "$(command -v gcc)")" >> "$GITHUB_ENV"
+
+      - name: Isolated Windows identity and metadata application
+        shell: pwsh
+        run: |
+          $dependencies = Join-Path $PWD 'build/test-dependencies'
+          New-Item -ItemType Directory -Force $dependencies | Out-Null
+          $jna = Join-Path $dependencies 'jna-5.14.0.jar'
+          $gson = Join-Path $dependencies 'gson-2.9.0.jar'
+          Invoke-WebRequest 'https://repo.maven.apache.org/maven2/net/java/dev/jna/jna/5.14.0/jna-5.14.0.jar' -OutFile $jna
+          Invoke-WebRequest 'https://repo.maven.apache.org/maven2/com/google/code/gson/gson/2.9.0/gson-2.9.0.jar' -OutFile $gson
+          if ((Get-FileHash $jna -Algorithm SHA256).Hash.ToLowerInvariant() -ne '34ed1e1f27fa896bca50dbc4e99cf3732967cec387a7a0d5e3486c09673fe8c6' -or
+              (Get-FileHash $gson -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'c96d60551331a196dac54b745aa642cd078ef89b6f267146b705f2c2cbef052d') {
+              throw 'Test dependency differs from the selected Ghidra JNA/Gson bytes'
+          }
+          & ./src/test/integration/windows-file-metadata.ps1 `
+              -JavaExe (Get-Command java).Source -JavacExe (Get-Command javac).Source `
+              -Compiler $env:FORGE_METADATA_CC -Jna $jna -Gson $gson `
+              -Results (Join-Path $PWD 'build/test-results/native-windows/file-metadata')
+
       - name: Build and audit pinned Windows DLLs
         run: |
           set -euo pipefail
