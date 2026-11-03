@@ -44,3 +44,16 @@ when the control assertions pass. The next implementation decision must use
 the actual results plus the documented filesystem behavior; process-kill tests
 alone cannot prove power-loss recovery. Public attachment, full metadata
 admission and the original A1–A7 requirements remain incomplete.
+
+## Related API boundaries
+
+Microsoft's [file caching documentation](https://learn.microsoft.com/en-us/windows/win32/fileio/file-caching)
+distinguishes cached file data from metadata and directs callers to
+`FlushFileBuffers` for metadata flushing. The
+[`NtFlushBuffersFileEx` documentation](https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/nf-ntifs-ntflushbuffersfileex)
+states that flags zero flushes data and metadata and synchronizes the underlying
+storage. Its data-sync-only variant explicitly excludes directory handles and
+omits some metadata. Those alternatives must not be substituted silently.
+The current experiment calls Win32 `FlushFileBuffers` only; it does not audit,
+map or execute either native-system-service variant. The result must distinguish
+actual directory access refusal from successful file-content flushing.

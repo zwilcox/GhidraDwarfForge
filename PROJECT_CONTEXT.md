@@ -6,11 +6,12 @@ owned file rename, with independent identity and file-flush/handle controls.
 It cross-compiles and the harness parses; Windows execution is pending. No
 production durability claim follows. See `docs/research/WINDOWS-DIRECTORY-FLUSH.md`.
 
-**CONFIRMED local #72 filename policy:** production Linux UTF-8 and portable
+**CONFIRMED local/hosted #72 filename policy:** production Linux UTF-8 and portable
 ASCII basename policies reject lossy native-byte aliases and unsupported names
 before attachment writes. Actual Java 21 refusal/transaction controls and real
-x86 no-build-ID plus MIPS big-endian validator/GDB cases pass; the hosted/native
-Windows policy gate remains pending. Full metadata admission, durability and
+x86 no-build-ID plus MIPS big-endian validator/GDB cases pass. Completed Linux
+and native Windows jobs in run41615861678 also pass independent artifact/source
+review; this is component acceptance, not a full gate. Full metadata admission, durability and
 public controls are still required. See `docs/DEBUGLINK-BASENAME.md`.
 
 **CONFIRMED native #72 backup-stream admission:** completed Windows job

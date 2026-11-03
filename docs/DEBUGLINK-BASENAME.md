@@ -1,6 +1,6 @@
 # Debuglink filename encoding
 
-**CONFIRMED locally:** the transaction's Linux test hosts now use
+**CONFIRMED locally and on hosted Linux/Windows:** the transaction's Linux test hosts now use
 `DebuglinkBasename.linuxUtf8` instead of unchecked string-to-byte conversion.
 The production encoding component also provides `portableAscii` for the initial
 Windows host. Complete host adapters and public attachment remain incomplete.
@@ -28,9 +28,9 @@ output name explicitly. Reserved DOS devices, stream/path separators, wildcard
 and other reserved characters, and ambiguous trailing dots/spaces are rejected
 using the [Windows naming rules](https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file).
 This is an initial attachment restriction; ordinary export retains its existing
-filename behavior. Native Windows policy execution is **PRESENT, UNVERIFIED**
-until its isolated CI result is reviewed; Windows-hosted GDB runtime is not
-claimed by this component.
+filename behavior. Native Windows policy execution passes the independently reviewed completed
+job from run `41615861678`; Windows-hosted GDB runtime is not claimed by this
+component.
 
 Both policies reject empty/dot-directory leaves and control characters. They
 encode only the selected leaf and do not rename files, relocate source, choose
@@ -74,3 +74,17 @@ GDB's CRC-mismatch diagnostic; merely failing to find a file is insufficient.
 No native producer ABI, default exporter address or source mapping changes are
 introduced. The target bytes remain unchanged in ordinary export, and all
 transaction experiments modify only owned fixture copies.
+
+## Hosted component acceptance
+
+The completed extension and native Windows jobs from run `41615861678` at
+`d70bf34` pass the filename policy. Independent archive-digest, exact source,
+Java 21 bytecode/runtime and raw-command review passes. Linux's two real native
+names have the same printable replacement-character representation but distinct
+bytes; the intended refusal/acceptance and preserved fixture hashes agree.
+Windows executes all 31 portable-policy checks. See
+[`debuglink-basename-41615861678.json`](evidence/debuglink-basename-41615861678.json).
+
+The superseded full workflow was cancelled after those jobs completed and their
+artifacts were reviewed. It is not a full required-validation pass, and these
+component results do not close A1–A7 or #72.
