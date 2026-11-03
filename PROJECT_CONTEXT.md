@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED #72 Windows initial recovery:** completed job41637595188 at
+`1ca676f` passes independent source/JAR and retained-byte/receipt review: real
+sharing-lock refusal, commit/rollback/cancel/concurrent target and four abrupt
+process exits with explicit recovery. Native receipt update acceptance from
+41636333521 is also recorded. The new refresh scenarios and lost/changed prior
+pair controls are **PRESENT, UNVERIFIED** on Windows. See
+`docs/WINDOWS-ATTACHMENT-HOST.md` and its evidence receipts. Full A1–A7/C1 remain
+incomplete.
+
 **CONFIRMED initial #72 Windows Host integration:** completed
 attachment-windows job41635698690 at `5412e20` passes independent review of the
 artifact, 133 production sources, three test sources, raw descriptors, retained

@@ -81,3 +81,32 @@ independently, and verifies retained backup/target bytes. See
 `evidence/windows-attachment-host-41635698690.json`. This is the initial store
 fixture; subsequent receipt, lock and coordinator additions need their own
 passing native artifacts. Full A1–A7/C1 remain incomplete.
+
+**CONFIRMED native receipt acceptance:** completed job41636333521 at `f029b62`
+passes272 checks and128 cleanup cycles. Independent source/JAR review verifies
+the retained COMMITTED receipt bytes, unchanged transaction claims, replacement
+identity and preserved metadata. Wire byte counts are checked as canonical
+decimal strings, as specified by the receipt schema. See
+`evidence/windows-attachment-receipt-41636333521.json`.
+
+**CONFIRMED native initial recovery acceptance:** completed job41637595188 at
+`1ca676f` passes273 host checks,84 coordinator checks and four abrupt child exits.
+The actual no-delete-sharing handle causes FileRenameInfo error5, leaves all
+three files unchanged and permits replacement after close. Independent review
+verifies source/JAR identity, all eight outcomes, exact target/backup/input
+hashes, recovery-record binding and immutable interrupted receipts. See
+`evidence/windows-attachment-recovery-41637595188.json`. This establishes the
+initial process-interruption cases, not power loss or the full attachment UI.
+
+**PRESENT, UNVERIFIED native refresh extension:** the same commit/rollback/
+cancellation/concurrent-target/four-crash scenarios now run for refresh after
+an actual initial coordinator commit. Fixtures retain the original backup,
+independent prior-image backup, previous committed receipt and previous pair.
+The new pair has a different CRC. Missing previous-sidecar input must fail
+before publishing the new receipt without changing other selected files; a
+previous pair changed after replacement must leave the complete new image and
+report RECOVERY_REQUIRED instead of restoring an invalid association. Each
+successful case immediately saves progress, and crash records retain child exit
+codes. Standalone Java21 compilation and extension/test builds pass locally;
+hosted execution/review remains required. These are coordinator fixtures;
+actual Ghidra export/refresh and GDB acceptance remain required separately.
