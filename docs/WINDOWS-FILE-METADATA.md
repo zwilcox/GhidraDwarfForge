@@ -159,3 +159,18 @@ field still must match on readback. The native fixture now also transitions
 from protected to modern unprotected inheritance. Corrected application and
 all later negative/cancellation controls remain **PRESENT, UNVERIFIED** until
 the new native run completes.
+
+Run `41600700215` at `ecd17e2` passes all four application profiles (ordinary
+legacy, protected modern, unprotected modern, readonly/hidden), independent raw
+readback, stale-snapshot and six cancellation controls, alias/link/stream/path
+rejections, empty-file inspection and sharing-lock refusal. The final native
+handle-lifetime probe does not start: PowerShell unwraps the single `-Xint`
+option to a string, so string concatenation corrupts the JVM argument list.
+The run remains failed; native handle cleanup is not inferred from prior cases.
+
+The runner now explicitly keeps the option collection as an array and checks
+UTF-8 request roundtrips in both JVM modes before filesystem tests. A local
+PowerShell test extracts the actual `Run-Probe` function and successfully runs
+actual Java 21 in normal and interpreted modes. Corrected Windows handle-lifetime
+acceptance remains pending. Artifact `13213954801` retains the preceding native
+case outputs and the exact malformed final arguments.

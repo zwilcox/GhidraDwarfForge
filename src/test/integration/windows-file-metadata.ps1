@@ -87,7 +87,8 @@ $prefix = @('-cp', ($classes + ';' + $dependencies), 'ghidradwarfforge.output.Wi
 function Run-Probe([string]$Label, [string[]]$Arguments, [bool]$Success=$true, [bool]$Interpreted=$false) {
     $request = Join-Path $root "$Label.request.json"
     Save-Json $request $Arguments
-    $options = if ($Interpreted) { @('-Xint') } else { @() }
+    $options = @()
+    if ($Interpreted) { $options = @('-Xint') }
     return Run-Captured $Label $JavaExe ($options + $prefix + @('--request-file',$request)) $Success
 }
 Add-Type -Path (Join-Path $provenance 'NativeWindowsHostFacts.cs')
@@ -96,9 +97,11 @@ $owned = (New-Item -ItemType Directory -Path (Join-Path $root 'owned')).FullName
 $original = Join-Path $owned 'ordinary λ source'
 $stageParent = (New-Item -ItemType Directory -Path (Join-Path $owned 'private stage')).FullName
 $stage = Join-Path $stageParent 'candidate'
-$transport = Run-Probe 'request-roundtrip' @('request-roundtrip',$original,$stage)
-$roundtrip = ConvertFrom-Json -InputObject $transport.stdout
-Require ($roundtrip.Count -eq 3 -and $roundtrip[1] -ceq $original -and $roundtrip[2] -ceq $stage) 'Unicode probe request changed'
+foreach ($interpreted in @($false,$true)) {
+    $transport = Run-Probe "request-roundtrip-$interpreted" @('request-roundtrip',$original,$stage) $true $interpreted
+    $roundtrip = ConvertFrom-Json -InputObject $transport.stdout
+    Require ($roundtrip.Count -eq 3 -and $roundtrip[1] -ceq $original -and $roundtrip[2] -ceq $stage) 'Unicode probe request changed'
+}
 [IO.File]::WriteAllBytes($original, [byte[]]@(1,2,0,255,10))
 [IO.File]::WriteAllText($stage, 'different private-stage contents and size', $utf8)
 [IO.File]::SetCreationTimeUtc($original, [DateTime]::FromFileTimeUtc(133713240001234567L))
