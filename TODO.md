@@ -1,10 +1,11 @@
 # TODO.md — GhidraDwarfForge
 
-**CONFIRMED failed #72 protected-security probe:** run41621873395 at `bae80be`
-returns access denied from GetSecurityInfo; the exact query phase is unproven.
-Raw failure/source evidence is retained. Derived-access and per-field/phase
-diagnostics now preserve the failure while locating its cause. Complete security
-visibility remains unverified; no product privilege policy is selected. See
+**CONFIRMED #72 security-query diagnosis:** run41623565789 at `d6f520b`
+locates the failure before fixture seeding: GetSecurityInfo rejects the BACKUP
+flag alone despite sufficient access, while BACKUP plus explicit component
+flags succeeds on that handle. The corrected experiment retains BACKUP and
+cross-checks the independent path API; populated audit/label visibility still
+requires native validation. No production privilege policy is selected. See
 `docs/research/WINDOWS-SECURITY-VISIBILITY.md`.
 
 **CONFIRMED native #72 directory mechanism:** JNA implementation at `373f33b`

@@ -569,6 +569,7 @@ $securityPath = Join-Path $owned 'full security λ'
 $securityRun = Run-Captured 'security-visibility-create' $securityProbe @('create',$securityPath)
 $securityFacts = ConvertFrom-Json $securityRun.stdout
 Require ($securityFacts.status -eq 'OBSERVED' -and $securityFacts.created -and
+    $securityFacts.queryFields -eq 0x101ff -and $securityFacts.queryAccess -eq 0x01020000 -and
     $securityFacts.disabledPrivilegeOpenError -eq 1314 -and $securityFacts.insufficientHandleQueryError -eq 5 -and
     $securityFacts.complete.saclPresent -and $securityFacts.complete.auditAces -eq 1 -and
     $securityFacts.complete.labelAces -eq 1 -and -not $securityFacts.ordinary.saclPresent -and

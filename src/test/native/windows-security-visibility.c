@@ -20,6 +20,16 @@ _Static_assert(BACKUP_SECURITY_INFORMATION == 0x10000 && ACCESS_SYSTEM_SECURITY 
 _Static_assert(sizeof(ACL) == 8 && sizeof(ACE_HEADER) == 4 &&
     SYSTEM_AUDIT_ACE_TYPE == 2 && SYSTEM_MANDATORY_LABEL_ACE_TYPE == 17, "audit/label layout");
 
+/* Retain BACKUP (all parts), explicitly selecting each SDK component as well.
+ * Native run41623565789 proves BACKUP alone fails in GetSecurityInfo despite
+ * sufficient rights, while this union succeeds. The independent path observer
+ * deliberately continues using BACKUP alone. */
+#define COMPLETE_SECURITY_FIELDS (BACKUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION | \
+    GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION | SACL_SECURITY_INFORMATION | \
+    LABEL_SECURITY_INFORMATION | ATTRIBUTE_SECURITY_INFORMATION | SCOPE_SECURITY_INFORMATION | \
+    PROCESS_TRUST_LABEL_SECURITY_INFORMATION | ACCESS_FILTER_SECURITY_INFORMATION)
+_Static_assert(COMPLETE_SECURITY_FIELDS == 0x101ff, "complete descriptor query flags");
+
 static void require(BOOL value, const char *operation) {
     if (!value) { fprintf(stderr, "%s failed: win32=%lu\n", operation, GetLastError()); exit(1); }
 }
@@ -180,7 +190,7 @@ int wmain(int argc, WCHAR **argv) {
     HANDLE ordinary = CreateFileW(argv[2], READ_CONTROL, 7, NULL, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT, NULL);
     require(ordinary != INVALID_HANDLE_VALUE, "ordinary control open");
     PSECURITY_DESCRIPTOR denied = NULL;
-    DWORD query_error = GetSecurityInfo(ordinary, SE_FILE_OBJECT, BACKUP_SECURITY_INFORMATION,
+    DWORD query_error = GetSecurityInfo(ordinary, SE_FILE_OBJECT, COMPLETE_SECURITY_FIELDS,
         NULL, NULL, NULL, NULL, &denied);
     if (denied) require(LocalFree(denied) == NULL, "denied descriptor cleanup");
     SetLastError(query_error);
@@ -189,13 +199,13 @@ int wmain(int argc, WCHAR **argv) {
 
     enable(token, luid, TRUE);
     DWORD query_access = 0;
-    QuerySecurityAccessMask(BACKUP_SECURITY_INFORMATION, &query_access);
+    QuerySecurityAccessMask(COMPLETE_SECURITY_FIELDS, &query_access);
     requested_open_access = READ_CONTROL | ACCESS_SYSTEM_SECURITY | query_access | (creating ? WRITE_OWNER : 0);
     HANDLE complete = CreateFileW(argv[2], requested_open_access, 7, NULL, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT, NULL);
     require(complete != INVALID_HANDLE_VALUE, "complete-security open");
     security_snapshot before, full, independent, visible;
     query_phase = "before-fixture";
-    opened_snapshot(complete, BACKUP_SECURITY_INFORMATION, &before);
+    opened_snapshot(complete, COMPLETE_SECURITY_FIELDS, &before);
     if (creating) {
         PSECURITY_DESCRIPTOR seed = NULL;
         require(ConvertStringSecurityDescriptorToSecurityDescriptorW(
@@ -210,7 +220,7 @@ int wmain(int argc, WCHAR **argv) {
         if (error) { SetLastError(error); require(FALSE, "owned audit/label fixture"); }
     }
     query_phase = "after-audit-label";
-    opened_snapshot(complete, BACKUP_SECURITY_INFORMATION, &full);
+    opened_snapshot(complete, COMPLETE_SECURITY_FIELDS, &full);
     path_snapshot(argv[2], &independent);
     same(&full, &independent);
     if (!full.present || full.audits != 1 || full.labels != 1) {
@@ -225,7 +235,7 @@ int wmain(int argc, WCHAR **argv) {
     require(GetProcessHandleCount(GetCurrentProcess(), &baseline), "initial security handles");
     query_phase = "repeated-whole-security";
     for (int i = 0; i < 128; i++) {
-        opened_snapshot(complete, BACKUP_SECURITY_INFORMATION, &independent); same(&full, &independent);
+        opened_snapshot(complete, COMPLETE_SECURITY_FIELDS, &independent); same(&full, &independent);
         path_snapshot(argv[2], &independent); same(&full, &independent);
         require(GetProcessHandleCount(GetCurrentProcess(), &after) && after == baseline, "security handle cleanup");
     }
@@ -239,6 +249,6 @@ int wmain(int argc, WCHAR **argv) {
         query_error, original_attributes, restored_attributes);
     print_snapshot(&before); printf(",\"complete\":"); print_snapshot(&full);
     printf(",\"ordinary\":"); print_snapshot(&visible);
-    printf(",\"queryAccess\":%lu,\"openedAccess\":%lu,\"handleCycles\":128,\"handlesBefore\":%lu,\"handlesAfter\":%lu}\n", query_access, requested_open_access, baseline, after);
+    printf(",\"queryFields\":%lu,\"queryAccess\":%lu,\"openedAccess\":%lu,\"handleCycles\":128,\"handlesBefore\":%lu,\"handlesAfter\":%lu}\n", (DWORD)COMPLETE_SECURITY_FIELDS, query_access, requested_open_access, baseline, after);
     return 0;
 }

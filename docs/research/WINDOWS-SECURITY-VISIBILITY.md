@@ -72,3 +72,25 @@ individual and combined security fields. These are diagnostic observations,
 not a fallback: the original full-query error still fails the test. The next
 native result must establish the actual behavior before a production binding
 is added. No preservation contract or privilege policy is weakened.
+
+## Located query-flag failure
+
+**CONFIRMED:** diagnostic run `41623565789` at `d6f520b` fails before
+fixture seeding. Its handle was opened with `0x010a0000`, containing the
+`0x01020000` rights returned by QuerySecurityAccessMask. On that same handle,
+BACKUP alone (`0x10000`) returns error 5; BACKUP plus explicit fields
+(`0x1001f` or `0x101ff`) returns success. Independent GetFileSecurityW with
+BACKUP alone returns the expected buffer-sizing error 122 and 140-byte size.
+The exact diagnostic artifact, all 24 source files and compiler/child outcomes
+are verified in
+[`windows-security-visibility-41623565789.json`](../evidence/windows-security-visibility-41623565789.json).
+This locates the observable API difference; it does not establish Windows'
+internal cause or prove populated security metadata was read.
+
+The corrected experiment selects BACKUP plus every explicit component flag in
+the pinned SDK (`0x101ff`), retaining the whole-descriptor requirement. The
+independent path observer still uses BACKUP alone. Both APIs must agree after
+seeding real audit and mandatory-label ACEs; insufficient access still fails.
+[GetSecurityInfo permits combined security flags](https://learn.microsoft.com/en-us/windows/win32/api/aclapi/nf-aclapi-getsecurityinfo).
+There is no fallback to an ordinary owner/group/DACL read. Native acceptance
+of this correction remains **PRESENT, UNVERIFIED** until the updated run passes.
