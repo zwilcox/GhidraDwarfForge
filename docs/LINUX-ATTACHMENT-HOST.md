@@ -1,6 +1,6 @@
 # Linux attachment host
 
-**CONFIRMED isolated Host mechanisms; real-ELF acceptance pending:** the internal
+**CONFIRMED scoped production Host and real-ELF acceptance:** the internal
 `LinuxAttachmentHost` implements `AttachmentOperation.Host` with an already
 authorized platform thread. It creates no public attachment/elevation action.
 The strict metadata policy remains in force. Ordinary export is unchanged.
@@ -105,3 +105,18 @@ with `-I build/java21-smokes.init.gradle` pass under actual Java21; counts are
 probes, Python AST parsing accepts the three changed harnesses, and actionlint
 with ShellCheck plus `git diff --check` pass. Privileged production-host
 ELF/GDB, saved-curation refresh and crash execution remain assigned to CI.
+
+## Reviewed real operation and recovery
+
+**CONFIRMED at `e3601f9`:** early artifacts from41660525292 independently
+establish fifteen real initial commit/rollback cases across x86-64, AArch64,
+ARM32 and both MIPS32 byte orders, with exec/PIE/no-build-ID roles; two saved-curation
+exec/PIE refreshes; and eight sentinel abrupt-process recoveries through fresh
+production Host sessions. The [acceptance receipt](evidence/linux-attachment-operation-41660525292.json)
+records artifact digests, exact release/test provenance, metadata/identity
+checks, ELF preservation, live validator replay and actual native/QEMU GDB
+source/type/argument/CRC outcomes. Fresh local LLVM verifies all retained
+sidecars. The ARM32/AArch64 vDSO warning is corroborated by the compiler reference.
+This supersedes earlier pending statements for these exact scopes. It does
+not establish Windows execution, public helper/GUI or
+full final-head acceptance; A1–A7/C1 remain incomplete.

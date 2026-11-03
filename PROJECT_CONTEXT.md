@@ -1,5 +1,16 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED scoped production Linux attachment:** independent artifact review
+at `e3601f9` /41660525292 accepts fifteen real initial/rollback cases across
+x86-64, AArch64, ARM32 and both MIPS32 byte orders (exec/PIE/no-build-ID), two saved
+Ghidra changed-CRC refresh cases and eight abrupt native recovery cases.
+Release/test provenance, live validator logs, fresh local LLVM, preserved ELF
+program bytes, receipt chains and actual native/QEMU GDB arguments/source/type
+behavior are checked. The ARM32/AArch64 QEMU vDSO warning is reproduced by the
+untouched compiler reference. See `docs/evidence/linux-attachment-operation-41660525292.json`.
+Windows real-operation/refresh/consumer evidence, public
+helper/CLI/GUI execution and the final exact-head gate remain incomplete.
+
 **PLANNED separate-helper public flow; CONFIRMED local request admission:**
 attachment will run outside Ghidra, with OS authorization requested only by
 an explicit user action when needed. This is the stated implementation
