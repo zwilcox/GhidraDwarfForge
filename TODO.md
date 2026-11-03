@@ -1,35 +1,21 @@
 # TODO.md — GhidraDwarfForge
 
-**CONFIRMED hosted #107 target results:** all five target lanes passed at
-`a198328` in run 41569991085. The required gate failed in the Windows companion
-publisher smoke test's lexical parent-path assertion before Windows GUI
-acceptance. The corrected test checks physical directory identity for all three
-staging files, retaining the same-directory requirement. A Linux symlink-parent
-regression passes on Java 21. The standalone test now also runs early in the
-native Windows job; corrected Windows/full-gate acceptance remains **PRESENT,
-UNVERIFIED**. Production exporter and loader bytes are unchanged.
+**CONFIRMED #107 implementation and acceptance:** production head
+`5654f537a1bd02683eccd751cd9b7b9610fa4dc3` passed the complete required gate
+in run 41586083925. Independent review covers all five target artifacts,
+Linux/Windows default and optional GUI journeys, package provenance and fresh
+GNU/LLVM/pinned strict validation. See [the acceptance record](docs/GDB-LOADER-ACCEPTANCE.md)
+for each original requirement and explicit host/runtime limits. Final
+protected integration of this documentation update remains required; no
+release has been published by this work.
 
-**CONFIRMED additional local #107 coverage:** sectionless and rebased
-PIE/shared companions pass real export/validator/GDB tests on x86-64,
-AArch64 and MIPS32 big-endian. Cancellation during production copying retains
-the prior complete generation. Hosted acceptance and artifact review remain
-required; #72's complete transaction is still **PLANNED**.
-
-**CONFIRMED local #107 progress:** real companion loading now has native
-attach/exec and cross-target shared-library unload/reload evidence, including
-ambiguous instances and missing remote mappings. Linux Script Manager export
-and chooser cancellation pass with the optional companion. The candidate CI
-adds these tests and native Windows GUI generation/cancellation. Hosted
-acceptance, remaining loader cases and the complete #72 attachment transaction
-are still required; see `docs/DEBUG-LOADING-COMPLETION-PLAN.md`.
-
-**CONFIRMED active priority:** #107 (optional GDB loader), then #72 (opt-in
-debuglink transaction), with all original acceptance criteria retained in
-`docs/DEBUG-LOADING-COMPLETION-PLAN.md`. Initial mapping arithmetic has local
-unit/native compiler-reference evidence, including packaged generation and GDB
-identity/lifecycle checks; both product features remain open.
-Actual Forge companion integration has local curated PIE evidence. Hosted,
-GUI, remaining host/runtime/target acceptance and attachment remain **PLANNED**.
+**CONFIRMED active scope:** finish #107 integration and the full #72 opt-in
+debuglink transaction. #72 remains incomplete: the loader's three-artifact
+publisher does not modify the executable or implement its backup/receipt/
+recovery contract. The separate attachment branch contains transaction and
+validator work but still needs complete production hosts, public controls,
+and full acceptance. All original criteria remain in
+`docs/DEBUG-LOADING-COMPLETION-PLAN.md`.
 
 **CONFIRMED combined ABI acceptance:** P2.3, P2.3a, P2.3b and P2.3c
 retain all twenty original requirements. Production head `2a74d001e04eeab456b80a5c24063a399b540aa5`

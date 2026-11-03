@@ -1,48 +1,21 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
-**CONFIRMED hosted #107 target results:** all five target lanes passed at
-`a198328` in run 41569991085. The required gate failed in the Windows companion
-publisher smoke test's lexical parent-path assertion before Windows GUI
-acceptance. The corrected test checks physical directory identity for all three
-staging files, retaining the same-directory requirement. A Linux symlink-parent
-regression passes on Java 21. The standalone test now also runs early in the
-native Windows job; corrected Windows/full-gate acceptance remains **PRESENT,
-UNVERIFIED**. Production exporter and loader bytes are unchanged.
+**CONFIRMED #107 implementation and acceptance:** production head
+`5654f537a1bd02683eccd751cd9b7b9610fa4dc3` passed the complete required gate
+in run 41586083925. Independent review covers all five target artifacts,
+Linux/Windows default and optional GUI journeys, package provenance and fresh
+GNU/LLVM/pinned strict validation. See [the acceptance record](docs/GDB-LOADER-ACCEPTANCE.md)
+for each original requirement and explicit host/runtime limits. Final
+protected integration of this documentation update remains required; no
+release has been published by this work.
 
-**CONFIRMED local loader rebase/sectionless/cancellation evidence:** companions
-from actual x86-64, AArch64 and MIPS32 big-endian exports pass sectionless
-source stepping and explicitly rebased PIE/shared runtime checks. Native PIE
-reuses one sidecar across three ASLR launches. Real cancellation during ELF
-copying preserves an existing three-file generation. Exact runtime artifacts
-are now retained before later tests can overwrite shared fixture paths. The
-headless test harness's rebase assertion now includes the fixture import base;
-production address normalization is unchanged. Hosted matrix/Windows evidence
-and #72's attachment transaction remain outstanding; see the completion ledger.
-
-**CONFIRMED local loader lifecycle evidence:** real curated Forge companions
-pass QEMU AArch64 and MIPS32 big-endian exec/PIE loading, plus native x86-64
-and both remote targets' shared-library unload/reload and duplicate-instance
-selection. The explicit-bias fallback passes with remote file access disabled.
-A native attach/exec test verifies removal of stale symbols. The optional
-launcher passes Linux's real Script Manager selection/cancellation journey
-and structural/GDB checks using the packaged PR157 artifact. These tests are
-now included in the candidate CI workflow; native Windows GUI and the expanded
-hosted matrix remain **PRESENT, UNVERIFIED**. See the completion ledger for
-commands, retained results and remaining scope. No attachment transaction or
-issue closure follows from this checkpoint.
-
-**CONFIRMED active scope:** complete optional GDB companion loading (#107) and
-opt-in debuglink attachment (#72). `docs/DEBUG-LOADING-COMPLETION-PLAN.md` retains
-all acceptance rows, including both-host attachment recovery and cross-target
-runtime loading. The baseline is unchanged. The initial companion mapping
-arithmetic and generated companion now pass local unit and native GDB
-compiler-reference checks through the packaged Java generator and runtime.
-File/runtime identity, duplicate-load rejection, exit and library-unload cleanup
-have local evidence. The optional headless export path and three-artifact
-publisher now pass a local curated PIE export/runtime check; wrapper and GUI
-controls are present. GUI/native-Windows acceptance, remaining runtime/target
-lanes and attachment remain **PLANNED**. This
-checkpoint does not establish either feature's completion.
+**CONFIRMED active scope:** finish #107 integration and the full #72 opt-in
+debuglink transaction. #72 remains incomplete: the loader's three-artifact
+publisher does not modify the executable or implement its backup/receipt/
+recovery contract. The separate attachment branch contains transaction and
+validator work but still needs complete production hosts, public controls,
+and full acceptance. All original criteria remain in
+`docs/DEBUG-LOADING-COMPLETION-PLAN.md`.
 
 **CONFIRMED combined ABI acceptance:** P2.3, P2.3a, P2.3b and P2.3c
 retain all twenty original requirements. Production head `2a74d001e04eeab456b80a5c24063a399b540aa5`
