@@ -2656,9 +2656,9 @@ jobs:
             -ProducerDll $producer.FullName `
             -LinuxReferenceDirectory (Resolve-Path linux-reference)
 
-      - name: Native Windows real-export attachment and rollback with live validators
+      - name: Native Windows attachment rollback and saved-curation refresh
         shell: pwsh
-        timeout-minutes: 15
+        timeout-minutes: 25
         env:
           MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
         run: |
@@ -2667,6 +2667,7 @@ jobs:
           python src/test/integration/windows-attachment-operation.py `
             --ghidra $env:GHIDRA_INSTALL_DIR `
             --original build/test-results/windows-host/work/semantic.exec.stripped `
+            --reference linux-reference/semantic.exec.reference `
             --sidecar build/test-results/windows-host/work/semantic.exec.ghidra-forge.dbg `
             --report-log build/test-results/windows-host/headless.log `
             --helper native-windows/forge-validator-supervisor.exe `

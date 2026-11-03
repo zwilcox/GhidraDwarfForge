@@ -138,3 +138,29 @@ Standalone `javac --release 21`, Python syntax, workflow lint and diff checks
 pass locally. Native runtime acceptance is pending. This adds initial real-ELF
 attachment/rollback evidence requirements; it does not substitute for refresh,
 public CLI/GUI, GDB runtime behavior or final exact-head integration acceptance.
+
+### Saved-curation real refresh fixture
+
+**PRESENT, UNVERIFIED:** the real-export harness now extends its committed
+initial case with an independently saved Ghidra project. It applies the same
+fixture names/types, saves analyst edits to a function, structure and member,
+then reopens the project twice. An explicit export against the attached target
+must fail the original import SHA check without publishing a pair; a fresh
+basename exported against the verified original backup must succeed while
+retaining the analyst edits. No import hash or export report is rewritten.
+
+`WindowsAttachmentRefreshProbe` runs the real Host, live validator and refresh
+coordinator in an isolated Java21 process with the existing test-only own-token
+privilege scope. It requires changed CRC, preserved metadata, independent
+prior-target backup and unchanged prior generation. Python checks actual ELF
+name/padding/CRC, unchanged program headers, receipt ancestry, log/input hashes
+and retained source/dependency bytes. The headless helper receives JSON-decoded
+argument arrays; its owning harness kills the owned process tree on timeout.
+The saved project, arguments, raw logs, selected paths and both generations
+remain in the job artifacts. This does not establish native Windows execution
+until the hosted job passes, or Linux ELF runtime behavior on a Windows host.
+
+Local validation: `javac --release 21` compiles the Windows security, initial
+operation and refresh probes; Python AST parsing, PowerShell parser validation,
+`actionlint` with ShellCheck and `git diff --check` pass. The full hosted gate,
+artifact review, debugger acceptance and public controls remain required.

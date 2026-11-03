@@ -1,5 +1,17 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**PRESENT, UNVERIFIED Windows saved-curation refresh:** the native real-ELF
+harness now saves analyst function/type/member edits in a Ghidra project,
+reopens it, rejects the attached image's changed import hash, and exports a
+fresh pair against the retained original backup. A separate Java21 fixture
+uses the production Windows Host, live validators and refresh coordinator;
+it checks changed CRC, metadata preservation, an independent prior-image
+backup and retained previous pair/receipt. Python independently checks the
+receipt chain, validator log hashes, ELF debuglink bytes and program headers.
+Java21 probe compilation, Python/PowerShell parsing and workflow lint pass;
+Windows execution and debugger acceptance remain pending. Public controls
+and full A1–A7/C1 remain incomplete.
+
 **CONFIRMED mount-bound visibility acceptance:** completed extension-build
 41650311183 at2b89ec3 passes154 mount checks, independent native stat/findmnt
 comparison,8 unprivileged and168 privileged lifecycle checks. Retained sources,
