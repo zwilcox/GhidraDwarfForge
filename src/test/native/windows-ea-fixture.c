@@ -13,7 +13,49 @@ _Static_assert(sizeof(IO_STATUS_BLOCK) == 16 && offsetof(IO_STATUS_BLOCK, Inform
 _Static_assert(offsetof(FILE_FULL_EA_INFORMATION, EaName) == 8 &&
     sizeof(BOOLEAN) == 1 && sizeof(NTSTATUS) == 4, "EA record ABI");
 
+static int backup_once(const wchar_t *path, int cancel) {
+    HANDLE handle = CreateFileW(path, GENERIC_READ | READ_CONTROL, 7, NULL, OPEN_EXISTING,
+        FILE_FLAG_OPEN_REPARSE_POINT, NULL);
+    if (handle == INVALID_HANDLE_VALUE) return 1;
+    LPVOID context = NULL;
+    union { WIN32_STREAM_ID aligned; BYTE bytes[65536]; } data;
+    DWORD count = 0;
+    int failed = 0;
+    for (;;) {
+        if (!BackupRead(handle, data.bytes, 20, &count, FALSE, FALSE, &context)) { failed = 2; break; }
+        if (count == 0) break;
+        if (count != 20 || data.aligned.dwStreamNameSize > sizeof(data.bytes)) { failed = 3; break; }
+        if (cancel) break;
+        LARGE_INTEGER size = data.aligned.Size;
+        DWORD names = data.aligned.dwStreamNameSize;
+        if (names && (!BackupRead(handle, data.bytes, names, &count, FALSE, FALSE, &context) || count != names)) {
+            failed = 4; break;
+        }
+        DWORD low = 0, high = 0;
+        if (size.QuadPart && (!BackupSeek(handle, size.LowPart, (DWORD)size.HighPart, &low, &high, &context) ||
+                low != size.LowPart || high != (DWORD)size.HighPart)) { failed = 5; break; }
+    }
+    if (!BackupRead(handle, NULL, 0, &count, TRUE, FALSE, &context)) failed = 6;
+    if (!CloseHandle(handle)) failed = 7;
+    return failed;
+}
+
+static int backup_lifetime(const wchar_t *path) {
+    if (backup_once(path, 0) || backup_once(path, 1)) return 10;
+    DWORD before = 0, after = 0;
+    if (!GetProcessHandleCount(GetCurrentProcess(), &before)) return 11;
+    printf("{\"baseline\":%lu,\"samples\":[", before);
+    for (int i = 0; i < 128; i++) {
+        if (backup_once(path, 0) || backup_once(path, 1)) return 12;
+        if (!GetProcessHandleCount(GetCurrentProcess(), &after)) return 13;
+        printf("%s%lu", i ? "," : "", after);
+    }
+    printf("],\"after\":%lu}\n", after);
+    return after == before ? 0 : 14;
+}
+
 int wmain(int argc, wchar_t **argv) {
+    if (argc == 3 && !wcscmp(argv[1], L"backup-lifetime")) return backup_lifetime(argv[2]);
     if (argc != 3 || (wcscmp(argv[1], L"set") && wcscmp(argv[1], L"query"))) return 2;
     int setting = !wcscmp(argv[1], L"set");
     HANDLE handle = CreateFileW(argv[2], FILE_READ_EA | (setting ? FILE_WRITE_EA : 0),

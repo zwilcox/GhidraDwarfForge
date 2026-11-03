@@ -36,11 +36,17 @@ public final class WindowsBackupStreamsProbe {
                 backup.inspect(path, () -> false);
                 cancelled(backup, path);
                 long count = metadata.processHandleCount();
+                var samples = new java.util.ArrayList<java.util.Map<String, Long>>();
                 for (int iteration = 0; iteration < 128; iteration++) {
                     backup.inspect(path, () -> false);
+                    long afterRead = metadata.processHandleCount();
                     cancelled(backup, path);
+                    samples.add(java.util.Map.of("iteration", (long) iteration,
+                        "afterRead", afterRead, "afterCancel", metadata.processHandleCount()));
                 }
-                if (metadata.processHandleCount() != count) throw new AssertionError("Backup handles leaked");
+                long after = metadata.processHandleCount();
+                System.out.println(gson.toJson(java.util.Map.of("baseline", count, "after", after, "samples", samples)));
+                if (after != count) throw new AssertionError("Backup handle count changed: before=" + count + " after=" + after);
                 System.out.println("windows-backup-handles=PASS iterations=128");
             }
             default -> throw new IllegalArgumentException("Unknown backup probe command");

@@ -422,6 +422,7 @@ Same-State $beforeEaStage $eaStage
 $queryEa = Run-Captured 'ea-stage-after' $eaFixture @('query',$eaSource)
 Require ((ConvertFrom-Json $queryEa.stdout).eaBytes -eq $eaBytes) 'Stage EA changed during refusal'
 $null = Run-Backup 'backup-cancel' @('cancel',$eaSource)
+$null = Run-Captured 'backup-native-lifetime' $eaFixture @('backup-lifetime',$eaSource)
 $null = Run-Backup 'backup-lifetime' @('lifetime',$eaSource) $true $true
 Same-State $eaBefore $eaSource
 $adsSource = Join-Path $owned 'backup named stream'
