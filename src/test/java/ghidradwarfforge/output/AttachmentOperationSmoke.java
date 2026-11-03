@@ -22,8 +22,8 @@ public final class AttachmentOperationSmoke {
         Files.writeString(evidence, "test seam only; no DWARF validation claim\n", StandardOpenOption.CREATE_NEW);
 
     static class Host extends AttachmentReceiptStoreSmoke.Host implements AttachmentOperation.Host {
-        public byte[] debuglinkBasename(Path sidecar) {
-            return sidecar.getFileName().toString().getBytes(StandardCharsets.UTF_8);
+        public byte[] debuglinkBasename(Path sidecar) throws IOException {
+            return DebuglinkBasename.linuxUtf8(sidecar);
         }
         public void replaceAtomic(Path stage, Path target) throws IOException {
             new LinuxAtomicRename().replaceAtomic(stage, target);
@@ -46,6 +46,7 @@ public final class AttachmentOperationSmoke {
             initialAndRefresh(root, seed, true);
             validationFailures(root, seed);
             preflight(root, seed);
+            basenameRefusal(root, seed);
             metadataFailure(root, seed);
             handoffFailure(root, seed);
             System.out.println("attachment-operation-smoke=PASS checks=" + checks +
@@ -170,6 +171,38 @@ public final class AttachmentOperationSmoke {
         AttachmentFileStore.unchanged(before, HOST, () -> false);
         equal(false, Files.exists(request.validationEvidence()));
         equal(false, Files.exists(request.receipt()));
+    }
+
+    private static void basenameRefusal(Path root, Path seed) throws Exception {
+        for (boolean portable : new boolean[]{false, true}) {
+            Path directory = Files.createDirectory(root.resolve("basename-" + portable));
+            Path target = directory.resolve("target.elf");
+            Files.copy(seed, target, StandardCopyOption.COPY_ATTRIBUTES);
+            var request = exported(directory, target, target, portable ? "literal λ" : "bad\nname", null);
+            var calls = new AtomicInteger();
+            var host = new Host() {
+                @Override public byte[] debuglinkBasename(Path sidecar) throws IOException {
+                    calls.incrementAndGet();
+                    return portable ? DebuglinkBasename.portableAscii(sidecar) : DebuglinkBasename.linuxUtf8(sidecar);
+                }
+            };
+            java.util.List<AttachmentFileStore.Snapshot> before;
+            try (var paths = Files.list(directory)) {
+                before = paths.sorted().map(path -> {
+                    try { return AttachmentFileStore.observe(path, HOST, () -> false); }
+                    catch (IOException failure) { throw new java.io.UncheckedIOException(failure); }
+                }).toList();
+            }
+            var failure = reject(() -> AttachmentOperation.execute(request, host,
+                (binding, evidence, selectedHost, cancelled) -> { throw new AssertionError("unsupported basename reached validator"); },
+                () -> false));
+            equal(true, failure.getMessage().contains(portable ? "portable ASCII" : "control character"));
+            equal(1, calls.get());
+            for (var snapshot : before) AttachmentFileStore.unchanged(snapshot, HOST, () -> false);
+            try (var paths = Files.list(directory)) {
+                equal(before.stream().map(AttachmentFileStore.Snapshot::path).toList(), paths.sorted().toList());
+            }
+        }
     }
 
     private static void metadataFailure(Path root, Path seed) throws Exception {

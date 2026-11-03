@@ -3,7 +3,6 @@ package ghidradwarfforge.output;
 import com.google.gson.JsonParser;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -20,8 +19,8 @@ import java.util.Map;
  */
 public final class AttachmentElfTransactionProbe {
     static final class Host extends AttachmentReceiptStoreSmoke.Host implements AttachmentOperation.Host {
-        public byte[] debuglinkBasename(Path sidecar) {
-            return sidecar.getFileName().toString().getBytes(StandardCharsets.UTF_8);
+        public byte[] debuglinkBasename(Path sidecar) throws IOException {
+            return DebuglinkBasename.linuxUtf8(sidecar);
         }
         public void replaceAtomic(Path stage, Path target) throws IOException {
             new LinuxAtomicRename().replaceAtomic(stage, target);
@@ -34,6 +33,14 @@ public final class AttachmentElfTransactionProbe {
                 "commit|rollback [helper readelf llvm raw-strict-checker configuration]");
         }
         var host = new Host();
+        String selectedBasename = System.getProperty("forge.test.attachment.sidecarBasename");
+        if (selectedBasename != null) {
+            Path name = Path.of(selectedBasename);
+            if (name.getNameCount() != 1 || !name.getFileName().toString().equals(selectedBasename)) {
+                throw new IOException("test sidecar selection must be one literal basename");
+            }
+            DebuglinkBasename.linuxUtf8(name);
+        }
         Path parent = Path.of(args[5]).toRealPath();
         if (!Files.isDirectory(parent)) throw new IOException("test parent must exist");
         try (var children = Files.list(parent)) {
@@ -58,6 +65,9 @@ public final class AttachmentElfTransactionProbe {
             }
             else {
                 Path destination = parent.resolve(entry.getValue().path().getFileName());
+                if (entry.getKey().equals("sidecar") && selectedBasename != null) {
+                    destination = parent.resolve(selectedBasename);
+                }
                 Files.copy(entry.getValue().path(), destination, StandardCopyOption.COPY_ATTRIBUTES);
                 paths.put(entry.getKey(), destination);
             }

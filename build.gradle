@@ -190,6 +190,14 @@ tasks.register("attachmentExportBindingSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.output.AttachmentExportBindingSmoke"
 }
 
+tasks.register("debuglinkBasenameSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit native and portable debuglink filename policies"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.DebuglinkBasenameSmoke"
+}
+
 tasks.register("attachmentOperationSmoke", JavaExec) {
     group = "verification"
     description = "Exercises complete attachment preparation ordering, refresh, failure and commit"

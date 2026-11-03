@@ -1,5 +1,12 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local #72 filename policy:** production Linux UTF-8 and portable
+ASCII basename policies reject lossy native-byte aliases and unsupported names
+before attachment writes. Actual Java 21 refusal/transaction controls and real
+x86 no-build-ID plus MIPS big-endian validator/GDB cases pass; the hosted/native
+Windows policy gate remains pending. Full metadata admission, durability and
+public controls are still required. See `docs/DEBUGLINK-BASENAME.md`.
+
 **CONFIRMED native #72 backup-stream admission:** completed Windows job
 in run 41611451207 at `440df66` passes real source/stage EA refusal, Unicode
 streams, cancellation and 128 native/Java cleanup cycles. Independent raw

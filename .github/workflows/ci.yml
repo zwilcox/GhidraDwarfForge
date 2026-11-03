@@ -562,7 +562,7 @@ jobs:
                 -PsupervisorPython="$(command -v python3)" \
                 -PsupervisorResults="$PWD/build/test-results/extension-build/supervisor"
             ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke \
-              ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke companionArtifactPublisherSmoke strictDwarfReportSmoke attachmentProtocolSmoke attachmentReceiptStoreSmoke attachmentFileStoreSmoke attachmentTargetStoreSmoke attachmentTransactionSmoke attachmentExportBindingSmoke attachmentOperationSmoke \
+              ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke companionArtifactPublisherSmoke strictDwarfReportSmoke attachmentProtocolSmoke attachmentReceiptStoreSmoke attachmentFileStoreSmoke attachmentTargetStoreSmoke attachmentTransactionSmoke attachmentExportBindingSmoke attachmentOperationSmoke debuglinkBasenameSmoke \
               exportReportSmoke exportReportClaimsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke \
               fileDigestsSmoke elfBuildIdSmoke \
               matchedElfPrefixSmoke matchedElfAllocationsSmoke executableProgramBytesSmoke \
@@ -578,6 +578,9 @@ jobs:
               packagedNativeLibrariesSmoke existingDebugSidecarSmoke \
               extendedSectionNumberingSmoke elfImageReaderSmoke \
               elfCopyCancellationSmoke ghidraImageBaseSmoke buildExtension
+            python3 -B src/test/integration/debuglink-basename.py \
+                --jar "$PWD/build/libs/GhidraDwarfForge.jar" \
+                --results "$PWD/build/test-results/extension-build/debuglink-basename"
             python3 -B src/test/integration/linux-file-metadata.py \
                 --jar "$PWD/build/libs/GhidraDwarfForge.jar" --ghidra "$GHIDRA_INSTALL_DIR" \
                 --results "$PWD/build/test-results/extension-build/linux-file-metadata"
@@ -1029,10 +1032,14 @@ jobs:
               env "${capture[@]}" FIXTURE_ROLE="$role" src/test/integration/headless-symbol-export.sh \
                   "$GHIDRA_INSTALL_DIR" "$consumer" "$producer" "$TARGET"
               if [[ "$role" == exec || "$role" == pie || "$role" == exec.no-build-id ]]; then
+                  basename_args=()
+                  if [[ "$TARGET" == x86_64 && "$role" == exec.no-build-id ]]; then
+                      basename_args=(--sidecar-basename 'literal λ ;$[quoted].dbg')
+                  fi
                   python3 src/test/integration/attachment-elf-controller.py \
                       --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
                       --ghidra "$GHIDRA_INSTALL_DIR" --fixture-dir "$PWD/build/fixtures" \
-                      --target "$TARGET" --role "$role" \
+                      --target "$TARGET" --role "$role" "${basename_args[@]}" \
                       --report-log "$PWD/build/test-results/headless-symbol-export/$TARGET.$role.log" \
                       --strict-validator "$DWARFDUMP" \
                       --supervised-validator-helper "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/forge-validator-supervisor" \

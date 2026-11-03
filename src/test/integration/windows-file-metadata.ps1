@@ -22,6 +22,8 @@ function Save-Json([string]$Path, $Value) {
 }
 function Hash([string]$Path) { return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant() }
 $sources = @(
+    (Join-Path $repo 'src/main/java/ghidradwarfforge/output/DebuglinkBasename.java'),
+    (Join-Path $repo 'src/test/java/ghidradwarfforge/output/DebuglinkBasenameSmoke.java'),
     (Join-Path $repo 'src/main/java/ghidradwarfforge/output/WindowsFileMetadata.java'),
     (Join-Path $repo 'src/main/java/ghidradwarfforge/output/WindowsBackupStreams.java'),
     (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsBackupStreamsProbe.java'),
@@ -100,11 +102,13 @@ $null = Run-Captured 'compile-ea-fixture' $Compiler @('-std=c11','-Wall','-Wextr
 $dependencies = (Join-Path $provenance ([IO.Path]::GetFileName($Jna))) + ';' +
     (Join-Path $provenance ([IO.Path]::GetFileName($Gson)))
 $null = Run-Captured 'compile-java' $JavacExe @('--release','21','-cp',$dependencies,'-d',$classes,
+    (Join-Path $provenance 'DebuglinkBasename.java'), (Join-Path $provenance 'DebuglinkBasenameSmoke.java'),
     (Join-Path $provenance 'WindowsFileMetadata.java'), (Join-Path $provenance 'WindowsFileMetadataProbe.java'),
     (Join-Path $provenance 'WindowsBackupStreams.java'), (Join-Path $provenance 'WindowsBackupStreamsProbe.java'),
     (Join-Path $provenance 'WindowsFileRename.java'), (Join-Path $provenance 'WindowsFileRenameProbe.java'))
 $version = Run-Captured 'java-version' $JavaExe @('-version')
 Require ($version.stderr -match 'version "21[.]') 'Actual Java 21 required'
+$null = Run-Captured 'debuglink-basename-policy' $JavaExe @('-cp',$classes,'ghidradwarfforge.output.DebuglinkBasenameSmoke')
 $prefix = @('-cp', ($classes + ';' + $dependencies), 'ghidradwarfforge.output.WindowsFileMetadataProbe')
 function Run-Probe([string]$Label, [string[]]$Arguments, [bool]$Success=$true, [bool]$Interpreted=$false) {
     $request = Join-Path $root "$Label.request.json"

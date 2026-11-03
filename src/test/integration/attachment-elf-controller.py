@@ -16,6 +16,7 @@ import struct
 import subprocess
 import tempfile
 import time
+import zlib
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -40,6 +41,31 @@ def file_state(path):
             'links': state.st_nlink, 'size': state.st_size, 'mtimeNs': state.st_mtime_ns}
 
 
+def debuglink_payload(path):
+    """Independent bounded ELF section reader for these small runtime fixtures."""
+    data = path.read_bytes()
+    require(data[:4] == b'\x7fELF' and data[4] in (1, 2) and data[5] in (1, 2), 'invalid fixture ELF')
+    wide = data[4] == 2
+    order = '<' if data[5] == 1 else '>'
+    offset = struct.unpack_from(order + ('Q' if wide else 'I'), data, 40 if wide else 32)[0]
+    size, count, names_index = struct.unpack_from(order + 'HHH', data, 58 if wide else 46)
+    fmt = order + ('IIQQQQIIQQ' if wide else 'IIIIIIIIII')
+    require(offset > 0 and size >= struct.calcsize(fmt), 'fixture section table is absent or truncated')
+    zero = struct.unpack_from(fmt, data, offset)
+    count = count or zero[5]
+    names_index = zero[6] if names_index == 0xffff else names_index
+    require(0 < count <= 10000 and names_index < count and offset + count * size <= len(data), 'fixture table bounds')
+    sections = [struct.unpack_from(fmt, data, offset + i * size) for i in range(count)]
+    names = sections[names_index]
+    require(names[4] + names[5] <= len(data), 'fixture names exceed file')
+    strings = data[names[4]:names[4] + names[5]]
+    matches = [s for s in sections if s[0] < len(strings) and strings[s[0]:].split(b'\0', 1)[0] == b'.gnu_debuglink']
+    require(len(matches) == 1, 'fixture must have one debuglink section')
+    link = matches[0]
+    require(link[1] == 1 and link[4] + link[5] <= len(data), 'fixture debuglink payload bounds/type')
+    return data[link[4]:link[4] + link[5]], order
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--jar', type=Path, required=True)
@@ -50,6 +76,7 @@ def main():
     parser.add_argument('--report-log', type=Path, required=True)
     parser.add_argument('--strict-validator', type=Path, required=True)
     parser.add_argument('--supervised-validator-helper', type=Path)
+    parser.add_argument('--sidecar-basename', help='Literal basename for the owned transaction copy; original inputs remain unchanged')
     parser.add_argument('--result-dir', type=Path, required=True)
     args = parser.parse_args()
     work = args.result_dir.absolute()
@@ -242,7 +269,9 @@ def main():
     for action in ['commit', 'rollback']:
         directory = work / action
         directory.mkdir()
-        outcome = run(action, [java, '--enable-native-access=ALL-UNNAMED', '-cp', runtime,
+        basename_option = [] if args.sidecar_basename is None else [
+            '-Dforge.test.attachment.sidecarBasename=' + args.sidecar_basename]
+        outcome = run(action, [java, *basename_option, '--enable-native-access=ALL-UNNAMED', '-cp', runtime,
             'ghidradwarfforge.output.AttachmentElfTransactionProbe', report_path, original,
             sidecar, source, evidence, directory, action, *live_validator_arguments], timeout=300)
         require(b'attachment-elf-controller=PASS' in outcome.stdout, 'controller did not complete')
@@ -297,7 +326,13 @@ def main():
     require(len(addresses) == 1, 'reference recovered_add must have one address')
     empty = work / 'empty-debug-root'
     empty.mkdir()
-    installed_sidecar = work / 'commit' / sidecar.name
+    installed_sidecar = work / 'commit' / (args.sidecar_basename or sidecar.name)
+    payload, byte_order = debuglink_payload(work / 'commit' / original.name)
+    filename = os.fsencode(installed_sidecar.name)
+    expected_payload = filename + b'\0'
+    expected_payload += b'\0' * ((-len(expected_payload)) % 4)
+    expected_payload += struct.pack(byte_order + 'I', zlib.crc32(installed_sidecar.read_bytes()))
+    require(payload == expected_payload, 'debuglink basename bytes, padding or target-endian CRC differ')
     env = os.environ.copy()
     env.update({'DEBUGINFOD_URLS': '', 'FORGE_ASSOCIATION_ADDRESS': hex(addresses.pop()),
                 'FORGE_ASSOCIATION_DEBUG_FILE': str(installed_sidecar), 'FORGE_ASSOCIATION_SOURCE': str(source),
@@ -370,14 +405,15 @@ def main():
     negative = work / 'crc-negative'
     negative.mkdir()
     shutil.copyfile(work / 'commit' / original.name, negative / original.name)
-    shutil.copyfile(installed_sidecar, negative / sidecar.name)
-    with (negative / sidecar.name).open('ab') as stream:
+    shutil.copyfile(installed_sidecar, negative / installed_sidecar.name)
+    with (negative / installed_sidecar.name).open('ab') as stream:
         stream.write(b'CRC mismatch control\n')
     env['FORGE_ASSOCIATION_MODE'] = 'absent'
     negative_gdb = [argument.replace(str(work / 'commit' / original.name), str(negative / original.name))
                     for argument in gdb]
     observed = run('gdb-crc-rejection', negative_gdb, env)
     require(b'automatic-association=absent PASS' in observed.stdout, 'GDB accepted mismatched CRC')
+    require(b'CRC mismatch' in observed.stderr, 'negative control did not reach actual CRC checking')
     require(digest(installed_sidecar) == protected[str(sidecar)], 'committed sidecar changed')
     for path, expected in protected.items():
         require(digest(Path(path)) == expected, 'selected input changed: ' + path)
@@ -387,7 +423,8 @@ def main():
         require(file_state(Path(path)) == expected, 'completed generation metadata or bytes changed: ' + path)
     (work / 'result.json').write_text(json.dumps({'status': 'PASS', 'target': args.target, 'role': args.role,
         'preserved': protected, 'strict': strict_result, 'host': 'limited Linux test host',
-        'runtime': True, 'validator': 'production-live' if live_validator_arguments else 'captured-test-adapter',
+        'runtime': True, 'debuglinkBasename': installed_sidecar.name, 'debuglinkPayloadHex': payload.hex(),
+        'validator': 'production-live' if live_validator_arguments else 'captured-test-adapter',
         'scope': 'real ELF initial commit/rollback and GDB discovery/runtime/CRC rejection; production host, full sectionless policy, public UI and refresh acceptance remain required'}, indent=4) + '\n')
     print('attachment-elf-controller=PASS target=' + args.target + ' role=' + args.role)
 
