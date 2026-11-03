@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**PRESENT, UNVERIFIED earlier Windows validation:** a dedicated Linux x86
+reference job now builds the same fixture and runs the same real headless export
+and structural validators used by the architecture lane. Windows consumes its
+four reference files immediately after that job succeeds, instead of waiting for
+the entire five-target matrix. The final required gate still explicitly requires
+all five target lanes, both host paths, Windows-artifact GDB checks and the new
+reference job. Local actionlint/ShellCheck and diff checks pass; hosted execution
+of this dependency change is pending.
+
 **PRESENT, UNVERIFIED public recovery helper:** `AttachmentHelper --recover`
 now accepts an explicit bounded recovery request plus request/receipt SHA-256
 pins and mandatory target-change consent. It reconstructs claims from the

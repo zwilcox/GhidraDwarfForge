@@ -169,3 +169,15 @@ a fresh helper JVM for recovery and independently compare target bytes/metadata,
 backup retention, immutable interrupted receipt and actual recovery record.
 Hosted helper recovery and Windows recovery-helper evidence remain pending.
 Commands/results are in `build/attachment-helper-recovery-validation.log`.
+
+## Windows CI scheduling
+
+The Windows host previously waited for the whole target-preflight matrix solely
+to receive four x86 reference files uploaded at the end of that lane. A separate
+`linux-x86-export-reference` job now builds the same fixture, installs the same
+release extension and invokes the existing real headless export plus GNU/LLVM/
+pinned-libdwarf checks. Windows consumes that artifact as soon as this job
+succeeds. Source comparison and Windows export/refresh/GDB acceptance are unchanged.
+`required-validation` explicitly still requires the full five-target matrix and
+all host/consumer jobs, plus the new reference job. Lint passes locally; runtime
+acceptance of the new scheduling remains pending.

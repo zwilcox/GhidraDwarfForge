@@ -2402,8 +2402,68 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  # Produce the Windows comparison input independently of the long target
+  # matrix. The final gate still requires that entire matrix and both hosts.
+  linux-x86-export-reference:
+    needs: [ release-package, native-linux ]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install reference fixture and validation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc binutils llvm
+
+      - name: Cache Ghidra 12.0.3 archive
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/ghidra-download/${{ env.GHIDRA_ARCHIVE }}
+          key: ghidra-${{ env.GHIDRA_ARCHIVE_SHA256 }}
+
+      - name: Install pinned Ghidra
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ghidra-download" "$RUNNER_TEMP/ghidra"
+          archive="$RUNNER_TEMP/ghidra-download/$GHIDRA_ARCHIVE"
+          if [[ ! -f "$archive" ]]; then
+              curl -fL --retry 3 "$GHIDRA_DOWNLOAD_URL" -o "$archive"
+          fi
+          echo "$GHIDRA_ARCHIVE_SHA256  $archive" | sha256sum -c -
+          unzip -q "$archive" -d "$RUNNER_TEMP/ghidra"
+          echo "GHIDRA_INSTALL_DIR=$RUNNER_TEMP/ghidra/ghidra_12.0.3_PUBLIC" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: ghidra-dwarf-forge-extension
+          path: dist
+      - uses: actions/download-artifact@v8
+        with:
+          name: libdwarf-linux-integration
+          path: native-integration
+      - uses: actions/download-artifact@v8
+        with:
+          name: dwarfdump-linux-validation
+          path: validation-tool
+
+      - name: Export and validate the Windows comparison fixture
+        run: |
+          set -euo pipefail
+          (cd validation-tool && sha256sum -c SHA256SUMS)
+          chmod 755 validation-tool/bin/dwarfdump validation-tool/libexec/dwarfdump
+          export DWARFDUMP="$PWD/validation-tool/bin/dwarfdump"
+          unzip -q dist/*.zip -d "$GHIDRA_INSTALL_DIR/Ghidra/Extensions"
+          make -C src/test/fixtures x86_64
+          FIXTURE_ROLE=exec GHIDRA_GDB_LOADER=1 src/test/integration/headless-symbol-export.sh \
+              "$GHIDRA_INSTALL_DIR" "$PWD/native-integration/libdwarf.so.2.3.2" \
+              "$PWD/native-integration/libdwarfp.so.2.3.2" x86_64
+
       - uses: actions/upload-artifact@v7
-        if: matrix.target == 'x86_64'
         with:
           name: linux-x86-export-reference
           path: |
@@ -2413,8 +2473,16 @@ jobs:
             build/fixtures/x86_64/semantic.exec.ghidra-forge.dbg.c
           if-no-files-found: error
 
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: linux-x86-export-reference-diagnostics
+          path: build/test-results/headless-symbol-export/
+          if-no-files-found: warn
+          retention-days: 14
+
   windows-host:
-    needs: [ release-package, native-windows, target-preflight ]
+    needs: [ release-package, native-windows, linux-x86-export-reference ]
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -2804,6 +2872,7 @@ jobs:
       - extension-build
       - release-package
       - target-preflight
+      - linux-x86-export-reference
       - windows-host
       - attachment-windows
       - windows-attachment-gdb
@@ -2817,6 +2886,7 @@ jobs:
           EXTENSION_BUILD_RESULT: ${{ needs.extension-build.result }}
           RELEASE_PACKAGE_RESULT: ${{ needs.release-package.result }}
           TARGET_PREFLIGHT_RESULT: ${{ needs.target-preflight.result }}
+          LINUX_REFERENCE_RESULT: ${{ needs.linux-x86-export-reference.result }}
           WINDOWS_HOST_RESULT: ${{ needs.windows-host.result }}
           ATTACHMENT_WINDOWS_RESULT: ${{ needs.attachment-windows.result }}
           WINDOWS_ATTACHMENT_GDB_RESULT: ${{ needs.windows-attachment-gdb.result }}
@@ -2826,7 +2896,7 @@ jobs:
           for result in "$WORKFLOW_LINT_RESULT" "$NATIVE_LINUX_RESULT" \
               "$NATIVE_WINDOWS_RESULT" "$EXTENSION_BUILD_RESULT" \
               "$RELEASE_PACKAGE_RESULT" "$TARGET_PREFLIGHT_RESULT" \
-              "$WINDOWS_HOST_RESULT" "$ATTACHMENT_WINDOWS_RESULT" \
+              "$LINUX_REFERENCE_RESULT" "$WINDOWS_HOST_RESULT" "$ATTACHMENT_WINDOWS_RESULT" \
               "$WINDOWS_ATTACHMENT_GDB_RESULT"; do
             if [[ "$result" != success ]]; then
               failed=1
