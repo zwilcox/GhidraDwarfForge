@@ -27,6 +27,7 @@ $sources = @(
     (Join-Path $repo 'src/test/native/windows-metadata-contract.c'),
     (Join-Path $repo 'src/test/native/windows-metadata-api.json'),
     (Join-Path $PSScriptRoot 'attachment-host-observations/NativeWindowsHostFacts.cs'),
+    (Join-Path $PSScriptRoot 'attachment-host-observations/NativeWindowsSecurityBytes.cs'),
     $PSCommandPath, $Jna, $Gson
 )
 $hashes = [ordered]@{}
@@ -90,6 +91,7 @@ function Run-Probe([string]$Label, [string[]]$Arguments, [bool]$Success=$true, [
     return Run-Captured $Label $JavaExe ($options + $prefix + @('--request-file',$request)) $Success
 }
 Add-Type -Path (Join-Path $provenance 'NativeWindowsHostFacts.cs')
+Add-Type -Path (Join-Path $provenance 'NativeWindowsSecurityBytes.cs')
 $owned = (New-Item -ItemType Directory -Path (Join-Path $root 'owned')).FullName
 $original = Join-Path $owned 'ordinary λ source'
 $stageParent = (New-Item -ItemType Directory -Path (Join-Path $owned 'private stage')).FullName
@@ -110,14 +112,20 @@ function Binary-Hex($Value) {
 function Independent-State([string]$Path) {
     $item = Get-Item -LiteralPath $Path -Force
     $acl = Get-Acl -LiteralPath $Path
-    $raw = [Security.AccessControl.RawSecurityDescriptor]::new($acl.GetSecurityDescriptorBinaryForm(), 0)
+    $managed = [Security.AccessControl.RawSecurityDescriptor]::new($acl.GetSecurityDescriptorBinaryForm(), 0)
+    # Get-Acl's CommonAcl representation can sort ACEs while serializing.
+    # Read independent raw native bytes for the exact preservation oracle.
+    $nativeBytes = [ForgeHostResearch.NativeWindowsSecurityBytes]::Read($Path)
+    $raw = [Security.AccessControl.RawSecurityDescriptor]::new($nativeBytes, 0)
     $native = [ForgeHostResearch.NativeWindowsHostFacts]::Observe($Path, $false, $true)
     Require ($native.status -eq 'OBSERVED' -and $native.fileIdStatus -eq 'OBSERVED') 'Independent identity unavailable'
     return [ordered]@{sha256=(Hash $Path); bytes=$item.Length; attributes=[int]$item.Attributes;
         created=$item.CreationTimeUtc.ToFileTimeUtc(); modified=$item.LastWriteTimeUtc.ToFileTimeUtc();
         volume=$native.volume128; fileId=$native.fileId128; links=$native.links;
         control=[int]$raw.ControlFlags; owner=(Binary-Hex $raw.Owner); group=(Binary-Hex $raw.Group);
-        dacl=$(if ($null -eq $raw.DiscretionaryAcl) { $null } else { Binary-Hex $raw.DiscretionaryAcl })}
+        dacl=$(if ($null -eq $raw.DiscretionaryAcl) { $null } else { Binary-Hex $raw.DiscretionaryAcl });
+        nativeDescriptor=[Convert]::ToHexString($nativeBytes).ToLowerInvariant();
+        managedDacl=$(if ($null -eq $managed.DiscretionaryAcl) { $null } else { Binary-Hex $managed.DiscretionaryAcl })}
 }
 function Inspect-Case([string]$Label, [string]$Path) {
     $before = Independent-State $Path

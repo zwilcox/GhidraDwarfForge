@@ -115,3 +115,21 @@ bytes differ from the .NET oracle. This remains unresolved; the harness now
 retains the independent snapshot before assertions and includes expected/actual
 security bytes in the error so the next native run can locate the difference.
 No comparison or protected-ACL acceptance criterion is weakened.
+
+Run `41598937153` at `7958c6a` retains both representations. Parsing their ACL
+records proves that the managed serializer exchanged the first two identical
+allow ACEs (SYSTEM and Administrators); no ACE bytes were added or removed.
+The raw byte-preservation oracle must not use a representation that sorts ACEs.
+The test now reads the native descriptor independently through C#
+`GetFileSecurityW`, whose signature is checked against the pinned header and C
+contract, then parses it with `RawSecurityDescriptor` directly. The original
+`Get-Acl` representation remains in diagnostics. Exact ordered DACL comparison
+is retained. C# compilation, C cross-compilation and portable PowerShell checks
+pass locally; native raw-observer and complete application results remain
+pending.
+
+The Linux sibling primitive now passes hosted run `41597206175`, including all
+11 independent observations, supplementary-group application and 128 descriptor
+cycles. Its downloaded artifact was reviewed against exact source/dependency
+hashes and Java 21 evidence. That pass does not complete protected-metadata
+admission or the whole attachment host contract.
