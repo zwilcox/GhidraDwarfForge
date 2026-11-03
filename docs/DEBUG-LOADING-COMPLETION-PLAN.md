@@ -11,7 +11,13 @@ declarations are needed for the loader.
 
 ## Delivery and evidence ledger
 
-All rows are **PLANNED** until linked evidence proves the complete row.
+**CONFIRMED:** L1–L7 are proven for the documented profiles by
+[the acceptance record](GDB-LOADER-ACCEPTANCE.md), including the complete hosted
+gate at `5654f53` and independent artifact review. C1 remains pending protected
+integration of the final documentation update. A1–A7 remain incomplete; the
+separate attachment branch's component evidence does not establish those rows.
+The checkpoint sections below are **HISTORICAL**, recording evidence as it
+became available; their pending statements do not supersede this status.
 
 | ID | Required outcome | Evidence required |
 | --- | --- | --- |

@@ -1,5 +1,22 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED #107 implementation and acceptance:** production head
+`5654f537a1bd02683eccd751cd9b7b9610fa4dc3` passed the complete required gate
+in run 41586083925. Independent review covers all five target artifacts,
+Linux/Windows default and optional GUI journeys, package provenance and fresh
+GNU/LLVM/pinned strict validation. See [the acceptance record](docs/GDB-LOADER-ACCEPTANCE.md)
+for each original requirement and explicit host/runtime limits. Final
+protected integration of this documentation update remains required; no
+release has been published by this work.
+
+**CONFIRMED active scope:** finish #107 integration and the full #72 opt-in
+debuglink transaction. #72 remains incomplete: the loader's three-artifact
+publisher does not modify the executable or implement its backup/receipt/
+recovery contract. The separate attachment branch contains transaction and
+validator work but still needs complete production hosts, public controls,
+and full acceptance. All original criteria remain in
+`docs/DEBUG-LOADING-COMPLETION-PLAN.md`.
+
 **CONFIRMED local #72 directory operations:** the production Linux primitive
 now supplies opened-directory/mount identity and explicit fsync with changed-path
 refusal. The independent C/Java 21 harness passes 494 assertions and 128 cleanup
@@ -44,153 +61,6 @@ exposed a missing executable bit on the packaged Linux validator helper. Release
 assembly now restores that bit after provenance checks; an extraction regression
 passes locally. The failed hosted run remains failed. See
 `docs/VALIDATOR-SUPERVISION.md` and `docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`.
-
-**CONFIRMED local #72 production validator integration:** `AttachmentValidator`
-now runs fresh GNU readelf, LLVM verification and the strict libdwarf component
-inside `AttachmentOperation`. It pins the strict configuration, captures tool
-versions/identities and bounded raw logs, rechecks the export binding, then
-exclusively publishes flushed combined evidence before backup/replacement.
-x86-64, AArch64 and MIPS BE commit/rollback/GDB harnesses pass with this live
-policy and an explicitly limited test host. Nine negative controls and the
-32-check Java 21 supervision regression pass. Sectionless-frame corroboration,
-production host metadata, public CLI/GUI and full hosted acceptance remain open.
-Native Windows helper controls now pass; cross-host release provenance needs
-the checked-in LF/binary-marker correction. See `docs/VALIDATOR-SUPERVISION.md`.
-
-**CONFIRMED local #72 fresh strict checking:** production supervision now runs
-the selected raw pinned checker with a checksum-pinned configuration and binds
-complete report interpretation to unchanged export files. x86-64, AArch64 and
-MIPS big-endian checks pass; inherited frame diagnostics require matching named
-frame bytes/ELF metadata and fresh original diagnostics. Real corrupted DWARF,
-empty/truncated exit-zero output, changed configuration and mismatched frame
-diagnostics are rejected. These checks run alongside real attachment/rollback
-and native/QEMU GDB tests using the explicitly limited test host. GNU/LLVM
-policy, sectionless-frame corroboration, combined evidence publication, production
-hosts and public CLI/GUI remain required; neither issue is complete. See
-`docs/VALIDATOR-SUPERVISION.md`.
-
-**CONFIRMED hosted #107 target results:** all five target lanes passed at
-`a198328` in run 41569991085. The required gate failed in the Windows companion
-publisher smoke test's lexical parent-path assertion before Windows GUI
-acceptance. The corrected test checks physical directory identity for all three
-staging files, retaining the same-directory requirement. A Linux symlink-parent
-regression passes on Java 21. The standalone test now also runs early in the
-native Windows job; corrected Windows/full-gate acceptance remains **PRESENT,
-UNVERIFIED**. Production exporter and loader bytes are unchanged.
-
-**CONFIRMED local #72 validator process ownership:** the production Java runner
-and isolated Linux helper pass 13 native lifecycle controls and 32 actual Java
-21 checks, including orphaned/session-changing descendants, bounded raw logs,
-timeout, cancellation, callback failure and interruption. The Windows Job Object
-helper cross-compiles; native Windows execution is **PRESENT, UNVERIFIED** in CI.
-Release packaging binds both helpers to source/binary provenance and manifests.
-DWARF result interpretation/live attachment binding, both production metadata
-hosts and public CLI/GUI remain required. See `docs/VALIDATOR-SUPERVISION.md`.
-
-**CONFIRMED local #72 curated refresh:** saved x86-64 non-PIE and PIE programs
-retain analyst function, structure and member edits across fresh Ghidra processes.
-Re-export against the first original backup passes validators, and the production
-operation switches to the fresh pair with a changed CRC. Native GDB discovers
-both generations and proves source, types, member names and argument values.
-Original import identity, old pair/receipt and original/prior-target backups
-are retained. The modified target still fails ordinary export's strict SHA guard.
-The harness uses explicit test host/validator adapters; production Linux/Windows
-metadata, live validation, public CLI/GUI and hosted acceptance remain required.
-See `docs/ATTACHMENT-TRANSACTION-PROTOCOL.md` for evidence and the retained failed
-favorite-only fixture calibration.
-
-**CONFIRMED local #72 production coordination:** `AttachmentOperation` now
-owns all-role preflight, export binding, the mandatory validator call, verified
-backup/candidate preparation and transaction handoff. It also verifies retained
-refresh ancestry, the actual prior debuglink, fresh basenames and source path.
-Seventy-two Java 21 ordering/failure/refresh controls pass. Seven real ELF cases
-pass fresh validators and native/QEMU GDB through this coordinator; exact runtime
-JAR/dependencies/test sources are retained. Production host metadata and live
-validator adapters, curated saved-program refresh, CLI/GUI and hosted acceptance
-remain required. The integration test still supplies limited test adapters; no
-public attachment option is enabled. See `docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`.
-
-**CONFIRMED local #72 filesystem controller:** 525 Java 21 checks pass for
-initial/refresh commit, failure rollback and explicit interrupted-operation
-recovery, including eight abruptly terminated child JVMs. Schema 2 adds separate
-recovery evidence while retaining schema-1 reading and immutable committed
-records; 138 protocol/path controls pass. Existing replacement/backup/receipt
-suites and extension build pass. These are non-ELF filesystem fixtures with a
-limited test host. Production Linux/Windows metadata, actual ELF/report/validator
-preparation, curated refresh, UI and end-to-end GDB acceptance remain required.
-See `docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`.
-
-**CONFIRMED local #72 conditional replacement component:** target replacement
-and independent-backup restoration pass 63 actual Java 21 filesystem controls,
-including abrupt process exits, uncertain native outcomes, absent-target
-recovery and concurrent changes during restore. The test host is explicitly
-Linux-only and does not establish production metadata or native Windows support.
-Full receipt/validation/association coordination, failure journaling, host
-contracts, refresh and UI remain required; no public attachment action is enabled.
-See `docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`.
-
-**CONFIRMED local #72 independent backup component:** `AttachmentFileStore`
-passes 75 Linux filesystem controls, including four abrupt process exits,
-concurrent source/stage changes, read-only metadata, failed publication/flush
-and bounded-copy cancellation. Backups use independent copied bytes and atomic
-no-overwrite publication; published backups are retained on failure. Both the
-backup and 101 receipt controls pass on actual Java 21. The host in these tests
-is explicitly limited; production Linux/Windows metadata contracts, complete
-attachment/recovery/refresh, validation/UI integration and hosted acceptance
-remain required. See `docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`.
-
-**CONFIRMED local #72 receipt publication:** complete prepared records and
-conditional phase updates pass 101 Linux filesystem controls, including six
-abrupt child-process terminations, actual directory fsync, concurrent creators,
-metadata readback and cancellation. An audited isolated libc `renameat2`
-binding avoids the temporary-hardlink crash window found during review.
-The full host metadata/identity adapters and executable backup/replacement,
-recovery, refresh and UI integration remain required. No target is modified
-and no attachment option is enabled. See `docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`.
-
-**CONFIRMED local #72 protocol checkpoint:** `AttachmentPaths` and
-`AttachmentReceipt` pass 116 path/receipt controls, including refresh roles,
-immutable committed receipts, independent-backup claims, malformed inputs,
-aliases, concurrent changes and cancellation. Existing report/publisher
-regressions and the extension build pass. The classes do not yet perform an
-attachment, create a backup or publish receipts; the full host-backed transaction
-remains required. See `docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`. Work is isolated
-on `work/debuglink-transaction` while loader PR157's corrected head completes CI.
-
-**CONFIRMED local loader rebase/sectionless/cancellation evidence:** companions
-from actual x86-64, AArch64 and MIPS32 big-endian exports pass sectionless
-source stepping and explicitly rebased PIE/shared runtime checks. Native PIE
-reuses one sidecar across three ASLR launches. Real cancellation during ELF
-copying preserves an existing three-file generation. Exact runtime artifacts
-are now retained before later tests can overwrite shared fixture paths. The
-headless test harness's rebase assertion now includes the fixture import base;
-production address normalization is unchanged. Hosted matrix/Windows evidence
-and #72's attachment transaction remain outstanding; see the completion ledger.
-
-**CONFIRMED local loader lifecycle evidence:** real curated Forge companions
-pass QEMU AArch64 and MIPS32 big-endian exec/PIE loading, plus native x86-64
-and both remote targets' shared-library unload/reload and duplicate-instance
-selection. The explicit-bias fallback passes with remote file access disabled.
-A native attach/exec test verifies removal of stale symbols. The optional
-launcher passes Linux's real Script Manager selection/cancellation journey
-and structural/GDB checks using the packaged PR157 artifact. These tests are
-now included in the candidate CI workflow; native Windows GUI and the expanded
-hosted matrix remain **PRESENT, UNVERIFIED**. See the completion ledger for
-commands, retained results and remaining scope. No attachment transaction or
-issue closure follows from this checkpoint.
-
-**CONFIRMED active scope:** complete optional GDB companion loading (#107) and
-opt-in debuglink attachment (#72). `docs/DEBUG-LOADING-COMPLETION-PLAN.md` retains
-all acceptance rows, including both-host attachment recovery and cross-target
-runtime loading. The baseline is unchanged. The initial companion mapping
-arithmetic and generated companion now pass local unit and native GDB
-compiler-reference checks through the packaged Java generator and runtime.
-File/runtime identity, duplicate-load rejection, exit and library-unload cleanup
-have local evidence. The optional headless export path and three-artifact
-publisher now pass a local curated PIE export/runtime check; wrapper and GUI
-controls are present. GUI/native-Windows acceptance, remaining runtime/target
-lanes and attachment remain **PLANNED**. This
-checkpoint does not establish either feature's completion.
 
 **CONFIRMED combined ABI acceptance:** P2.3, P2.3a, P2.3b and P2.3c
 retain all twenty original requirements. Production head `2a74d001e04eeab456b80a5c24063a399b540aa5`

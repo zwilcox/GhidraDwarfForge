@@ -1,10 +1,10 @@
 # Optional GDB companion
 
-**PRESENT, UNVERIFIED across the complete support matrix:** the exporter can
-generate a deterministic `<sidecar>.gdb.py` with the matched sidecar and synthetic
-source. Current local evidence and remaining acceptance are recorded in
-[the completion ledger](DEBUG-LOADING-COMPLETION-PLAN.md). This is development
-work for #107; it is not a claim that a published release contains this feature.
+**CONFIRMED in development builds:** the exporter generates a deterministic
+`<sidecar>.gdb.py` with the matched sidecar and synthetic source. The complete
+hosted gate and artifact review passed at `5654f53`; see the
+[acceptance record](GDB-LOADER-ACCEPTANCE.md). This does not claim that an older
+published release contains the feature.
 
 Enable generation with Bash `--gdb-loader`, PowerShell `-GdbLoader`, or the
 Script Manager launcher `ExportGhidraDwarfForgeWithGdbLoader.java`. Direct
