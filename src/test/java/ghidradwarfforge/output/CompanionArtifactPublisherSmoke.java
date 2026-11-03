@@ -17,6 +17,11 @@ public final class CompanionArtifactPublisherSmoke {
                 }
             }
             rejectAliases(root);
+            if (System.getProperty("os.name").equals("Linux")) {
+                Path actual = Files.createDirectory(root.resolve("physical-parent"));
+                Path alias = Files.createSymbolicLink(root.resolve("selected-parent"), actual);
+                exercise(alias, false, -1);
+            }
             preserveConcurrentChange(root);
             checkedCancellation(root);
             System.out.println("companion-artifact-publisher-smoke=PASS");
@@ -46,8 +51,13 @@ public final class CompanionArtifactPublisherSmoke {
         try {
             CompanionArtifactPublisher.stageAndPublish(input, sidecar, source, companion,
                 (a, b, c) -> {
-                    if (!a.getParent().equals(directory) || !b.getParent().equals(directory)) {
-                        throw new AssertionError("source directory would refer to private staging");
+                    if (!Files.isSameFile(a.getParent(), directory) || !Files.isSameFile(b.getParent(), directory) ||
+                            !Files.isSameFile(c.getParent(), directory)) {
+                        throw new AssertionError("source directory would refer to private staging: selected=" + directory +
+                            " stages=" + List.of(a.getParent(), b.getParent(), c.getParent()));
+                    }
+                    if (!a.getParent().equals(directory)) {
+                        System.out.println("companion-stage-parent-alias=" + directory + " -> " + a.getParent());
                     }
                     Files.writeString(a, "new-sidecar");
                     Files.writeString(b, "new-source");
