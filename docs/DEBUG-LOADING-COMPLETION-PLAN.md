@@ -149,3 +149,50 @@ all three produced sidecars pass GNU/LLVM and local dwarfdump inspection. The
 workflow now selects the installed extension JAR for this check, after package
 installation. Hosted acceptance is **PLANNED**. No L1–L7/A1–A7 row is closed by
 this component checkpoint.
+
+## Exporter publication and native PIE checkpoint
+
+**CONFIRMED locally:** `--gdb-loader` reaches the real headless exporter and
+produces a matched sidecar, deterministic source and generated companion.
+`CompanionArtifactPublisher` preflights the three output paths against each
+other and the original, observes existing generations, stages complete files,
+then installs each by atomic rename. It checks cancellation while hashing and
+between installs. Observed failures restore previous outputs in reverse order;
+conflicting concurrent edits are retained along with recovery backups. This is
+not a crash-atomic multi-file operation and is not the #72 target transaction.
+Stages must share the final output directory because the existing line writer
+uses that directory for source lookup; only backups live in the private folder.
+
+The publisher smoke covers new/existing output sets, writer failure, failure
+after either of the first two installs, cancellation after the third install,
+hard-link/input/cross-output aliases, preserved original bytes and rollback
+blocked by concurrent user bytes. The Bash wrapper checks flag forwarding and
+companion log aliases, including hard/symbolic links and nonexistent outputs.
+PowerShell forwarding and companion protections and the separate GUI launcher
+are **PRESENT, UNVERIFIED** on their native journeys. Both host CI smoke lists
+include the publisher; hosted gates have not yet run.
+
+A private Ghidra installation under `build/ghidra-loader-test` uses the newly
+built extension and the previously accepted pinned 2.3.2 native pair through
+explicit development paths. `GHIDRA_GDB_LOADER=1 FIXTURE_ROLE=pie` with
+`headless-symbol-export.sh` passes the existing full x86-64 fixture validator
+harness. Strict libdwarf reports one inherited frame error, independently
+corroborated against identical original frame bytes; it is not suppressed.
+
+`gdb-companion-native.py` then passes in
+`build/test-results/gdb-companion-native/run.5v9j8q4y/`: three distinct ASLR
+biases, independently expected function address, source lookup from another
+working directory, structure type, arguments 19/23, initial globals 0/7,
+post-step global 42, exited-objfile cleanup and unchanged artifact hashes. The
+workflow includes this actual-export test for its x86-64 PIE case. Other
+architectures, runtime modes and GUI acceptance remain outstanding.
+
+Retained failed calibration: the earlier uncurated `mapping target` export
+correctly omits unavailable parameter locations and has no typed analyst
+global named `DAT_00104010`; expecting that debugger symbol was invalid. The
+curated semantic fixture supplies explicit typed knowledge through the existing
+preparation script. Its first listing assertion also expected an assignment
+outside GDB's default ten-line window; a retained lookup investigation proves
+the correct source path and declaration, and the corrected oracle tests the
+declaration plus actual value changes rather than relying on that window size.
+No exporter knowledge was fabricated to satisfy either assertion.

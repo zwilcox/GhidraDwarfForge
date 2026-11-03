@@ -4,6 +4,7 @@ param(
     [string] $Libdwarfp,
     [Alias('Input')] [string] $OriginalElf,
     [string] $Output,
+    [switch] $GdbLoader,
     [string] $Import,
     [string] $ProjectDirectory,
     [string] $ProjectName,
@@ -167,6 +168,7 @@ namespace GhidraDwarfForge {
     }
     if (-not [string]::IsNullOrWhiteSpace($selectedOutput)) {
         Assert-LogNotAlias "$selectedOutput.c"
+        Assert-LogNotAlias "$selectedOutput.gdb.py"
     }
     if ($projectMode) {
         Assert-LogNotAlias (Join-Path $ProjectDirectory "$ProjectName.gpr")
@@ -247,6 +249,9 @@ try {
     }
     if (-not [string]::IsNullOrWhiteSpace($Output)) {
         $exportOptions += @('--output', $Output)
+    }
+    if ($GdbLoader) {
+        $exportOptions += @('--gdb-loader')
     }
 
     if ($importMode) {

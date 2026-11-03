@@ -491,7 +491,7 @@ jobs:
             python3 src/test/integration/architecture-neutrality-smoke.py
             python3 -B -m unittest discover -s src/test/python -p test_gdb_loader.py -v
             ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke \
-              ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke \
+              ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke companionArtifactPublisherSmoke \
               exportReportSmoke exportReportClaimsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke \
               fileDigestsSmoke elfBuildIdSmoke \
               matchedElfPrefixSmoke matchedElfAllocationsSmoke executableProgramBytesSmoke \
@@ -944,6 +944,9 @@ jobs:
                       capture=("FORGE_VALIDATION_EVIDENCE_DIR=$evidence_root/cases/$role"
                           "FORGE_VALIDATION_TOOLSET=$evidence_root/tools/toolset.json") ;;
               esac
+              if [[ "$TARGET:$role" == "x86_64:pie" ]]; then
+                  capture+=("GHIDRA_GDB_LOADER=1")
+              fi
               env "${capture[@]}" FIXTURE_ROLE="$role" src/test/integration/headless-symbol-export.sh \
                   "$GHIDRA_INSTALL_DIR" "$consumer" "$producer" "$TARGET"
               if [[ "$role" == "exec.no-sections" ]]; then
@@ -961,6 +964,13 @@ jobs:
                   fi
               else
                   FIXTURE_ROLE="$role" src/test/integration/qemu-gdb-symbols.sh "$TARGET"
+              fi
+              if [[ "$TARGET:$role" == "x86_64:pie" ]]; then
+                  python3 -B src/test/integration/gdb-companion-native.py \
+                      --input "build/fixtures/$TARGET/semantic.pie.stripped" \
+                      --sidecar "build/fixtures/$TARGET/semantic.pie.ghidra-forge.dbg" \
+                      --reference "build/fixtures/$TARGET/semantic.pie.reference" \
+                      --results build/test-results/gdb-companion-native
               fi
               if [[ "$TARGET:$role" == "x86_64:exec" ]]; then
                   sidecar="build/fixtures/x86_64/semantic.exec.ghidra-forge.dbg"
@@ -2228,7 +2238,7 @@ jobs:
           if ($null -eq $extension) { throw 'extension ZIP is missing' }
           Expand-Archive -Path $extension.FullName `
             -DestinationPath (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions') -Force
-          & .\gradlew.bat dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
+          & .\gradlew.bat dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke companionArtifactPublisherSmoke exportReportSmoke `
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke arm32CallPolicySmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
             functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke arm32SectionModesSmoke ghidraArm32SectionModesSmoke ghidraArmBe8ProfileSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke i386AbiSelectionSmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke i386ParameterAllocationSmoke allocationDecompilerSmoke floatingTypeLayoutSmoke mipsN32ParameterAllocationSmoke delayedReturnPrefixSmoke truncatedStackDepthSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke mipsWideCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `

@@ -164,13 +164,18 @@ The PowerShell equivalent is `support/ghidra-dwarf-forge-headless.ps1` with
 `-Input`, `-Output`, and `-Log` parameters. `-Libdwarf` and `-Libdwarfp` are
 optional paired overrides for development builds.
 
+Development builds can additionally generate an explicitly invoked GDB loader
+with `--gdb-loader` (PowerShell `-GdbLoader`). It produces `<sidecar>.gdb.py`
+alongside the sidecar/source pair. See [GDB companion usage and current
+validation limits](docs/GDB-LOADER.md).
+
 Exit `0` means the export completed as either `SUCCESS` or `PARTIAL`; inspect
 the schema-versioned JSON report for semantic omissions. Exit `10` means
 `FATAL`, `11` means `CANCELLED`, `12` means Ghidra failed or omitted a valid
 report, and `64` means invalid wrapper arguments. Existing-project mode always
 uses `-readOnly -noanalysis` and never deletes or saves the project.
 
-Explicit log paths must not alias the input, either output artifact, native
+Explicit log paths must not alias the input, any output artifact or companion, native
 libraries, or project data (including symlinks and hard links). In existing-
 project mode, `--log` additionally requires `--input` (`-Log` requires
 `-OriginalElf`/`-Input` in PowerShell), because the wrapper cannot discover the
@@ -187,6 +192,10 @@ original directory is unwritable, choose a writable directory when prompted;
 Cancel leaves no output pair. Linux Script Manager selection/cancellation is
 tested. Native Windows GUI interaction remains under validation; the Windows
 headless wrapper is already covered by CI.
+
+The separate **ExportGhidraDwarfForgeWithGdbLoader.java** launcher opts into the
+companion as well. Its complete GUI acceptance remains in progress; the ordinary
+export launcher retains its existing behavior.
 
 The underlying `GhidraDwarfForge.java` script remains available from Script
 Manager for native-free metadata preflight, or directly through

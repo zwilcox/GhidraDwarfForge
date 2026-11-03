@@ -7,8 +7,10 @@ runtime loading. The baseline is unchanged. The initial companion mapping
 arithmetic and generated companion now pass local unit and native GDB
 compiler-reference checks through the packaged Java generator and runtime.
 File/runtime identity, duplicate-load rejection, exit and library-unload cleanup
-have local evidence. Exporter/CLI/GUI integration, three-artifact publication,
-remaining runtime/host/target lanes and attachment remain **PLANNED**. This
+have local evidence. The optional headless export path and three-artifact
+publisher now pass a local curated PIE export/runtime check; wrapper and GUI
+controls are present. GUI/native-Windows acceptance, remaining runtime/target
+lanes and attachment remain **PLANNED**. This
 checkpoint does not establish either feature's completion.
 
 **CONFIRMED combined ABI acceptance:** P2.3, P2.3a, P2.3b and P2.3c

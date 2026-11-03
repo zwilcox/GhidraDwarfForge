@@ -107,6 +107,14 @@ tasks.register("existingDebugSidecarSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.elf.ExistingDebugSidecarSmoke"
 }
 
+tasks.register("companionArtifactPublisherSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks complete companion generations, rollback and alias/concurrent-change rejection"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CompanionArtifactPublisherSmoke"
+}
+
 tasks.register("extendedSectionNumberingSmoke", JavaExec) {
     group = "verification"
     description = "Checks extended ELF section numbering and optionally builds target fixtures"

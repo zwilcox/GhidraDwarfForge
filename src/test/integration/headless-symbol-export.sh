@@ -112,6 +112,9 @@ for target in "${targets[@]}"; do
     fi
 
     export_options=("--libdwarf=$consumer" "--libdwarfp=$producer")
+    if [[ "${GHIDRA_GDB_LOADER:-0}" == 1 ]]; then
+        export_options+=("--gdb-loader")
+    fi
     if [[ -n "$stale_executable_path" ]]; then
         export_options+=("--input=$input")
     fi
