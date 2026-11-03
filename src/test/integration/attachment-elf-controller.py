@@ -64,20 +64,21 @@ def main():
     jna = args.ghidra.resolve() / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar'
     sources = [ROOT / 'src/test/java/ghidradwarfforge/output' / (name + '.java') for name in
                ['AttachmentProtocolSmoke', 'AttachmentReceiptStoreSmoke', 'AttachmentElfTransactionProbe',
-                'StrictDwarfCheckProbe']]
+                'StrictDwarfCheckProbe', 'AttachmentValidatorProbe']]
     oracle = ROOT / 'src/test/integration/automatic-association-gdb.py'
+    policy_controls = ROOT / 'src/test/integration/attachment-validator-controls.py'
     protected = {str(p): digest(p) for p in [original, sidecar, source, reference, jar, gson, jna,
-                                           args.report_log, args.strict_validator, Path(__file__), oracle, *sources]}
+                                           args.report_log, args.strict_validator, Path(__file__), oracle, policy_controls, *sources]}
     provenance = work / 'provenance'
     provenance.mkdir()
-    for path in [jar, gson, jna, Path(__file__), oracle, *sources]:
+    for path in [jar, gson, jna, Path(__file__), oracle, policy_controls, *sources]:
         shutil.copyfile(path, provenance / path.name)
         require(digest(provenance / path.name) == protected[str(path)], 'retained runtime/source differs')
     # Run the exact retained production JAR and dependencies. Preserve their
     # input origin/hash above; subsequent local builds cannot erase this proof.
     runtime_files = [provenance / path.name for path in [jar, gson, jna]]
     (provenance / 'origin.json').write_text(json.dumps({str(path): protected[str(path)]
-        for path in [jar, gson, jna, Path(__file__), oracle, *sources]}, indent=4) + '\n')
+        for path in [jar, gson, jna, Path(__file__), oracle, policy_controls, *sources]}, indent=4) + '\n')
     commands = []
 
     def run(label, argv, env=None, timeout=60, success=True):
@@ -142,11 +143,14 @@ def main():
     version = run('java-version', [java, '-version'])
     require(b'version "21.' in version.stderr, 'this harness requires actual Java 21')
     runtime = os.pathsep.join([str(classes), dependencies])
+    live_validator_arguments = []
     if args.supervised_validator_helper is not None:
         helper = args.supervised_validator_helper.resolve(strict=True)
         checker_bundle = args.strict_validator.resolve(strict=True).parents[1]
         raw_checker = checker_bundle / 'libexec/dwarfdump'
         configuration = checker_bundle / 'share/dwarfdump/dwarfdump.conf'
+        live_validator_arguments = [helper, Path(shutil.which('readelf')).resolve(),
+                                    Path(shutil.which('llvm-dwarfdump')).resolve(), raw_checker, configuration]
         for path in [helper, raw_checker, configuration]:
             protected[str(path)] = digest(path)
             shutil.copyfile(path, provenance / path.name)
@@ -229,14 +233,54 @@ def main():
         bad_report.write_text(json.dumps(corrupt_report) + '\n')
         directory, _ = strict_case('invalid-dwarf', selected_report=bad_report, selected_sidecar=corrupted, success=False)
         require(list(directory.glob('.forge-validation-*/status.json')), 'invalid DWARF did not reach the actual checker')
+        if args.target == 'x86_64' and args.role == 'exec':
+            spec = importlib.util.spec_from_file_location('policy_controls', policy_controls)
+            controls = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(controls)
+            controls.exercise(java, runtime, report_path, original, sidecar, source,
+                              live_validator_arguments, work / 'policy-controls', run)
     for action in ['commit', 'rollback']:
         directory = work / action
         directory.mkdir()
         outcome = run(action, [java, '--enable-native-access=ALL-UNNAMED', '-cp', runtime,
             'ghidradwarfforge.output.AttachmentElfTransactionProbe', report_path, original,
-            sidecar, source, evidence, directory, action])
+            sidecar, source, evidence, directory, action, *live_validator_arguments], timeout=300)
         require(b'attachment-elf-controller=PASS' in outcome.stdout, 'controller did not complete')
         require(digest(directory / 'original.backup') == protected[str(original)], 'backup bytes differ')
+        if live_validator_arguments:
+            combined = json.loads((directory / 'validation.json').read_text())
+            require(combined['schemaVersion'] == 1 and combined['status'] == 'PASS' and
+                    combined['policy'] == 'gnu-llvm-libdwarf-2.3.2-v1', 'wrong combined validator policy')
+            require(combined['exportStatus'] == report['status'] and
+                    combined['exportValidationStatus'] == report['validation']['status'],
+                    'live validation rewrote the export status')
+            for role, expected in [('exportOriginal', original), ('sidecar', sidecar),
+                                   ('source', source), ('exportReport', report_path)]:
+                require(combined['inputs'][role]['sha256'] == digest(expected), 'combined input binding differs')
+            required_checks = {'gnuReadelfVersion', 'llvmDwarfdumpVersion', 'strictDwarfdumpVersion',
+                               'gnuReadelf', 'llvmDwarfdump', 'strictSidecar'}
+            if combined['corroboratedFrameDiagnostics']:
+                required_checks.add('strictOriginal')
+                frame, _ = checker.elf_frame_identity(directory / 'original.backup')
+                require(frame['section_sha256'] == combined['inheritedFrame']['sha256'] and
+                        frame['section_size'] == combined['inheritedFrame']['bytes'] and
+                        frame['section_address'] == combined['inheritedFrame']['address'], 'frame proof differs')
+            require(set(combined['checks']) == required_checks, 'missing or unexpected combined checks')
+            for name, check in combined['checks'].items():
+                require(check['reason'] == 'completed' and check['exitCode'] == 0 and check['cleanupComplete'],
+                        'combined check did not complete')
+                for log in check['logs'].values():
+                    path = Path(log['path'])
+                    require(path.is_relative_to(directory) and path.stat().st_size == log['bytes'] and
+                            digest(path) == log['sha256'], 'combined raw log is missing, moved or changed')
+                stdout = Path(check['logs']['tool.stdout']['path']).read_text()
+                require(not Path(check['logs']['tool.stderr']['path']).read_bytes(), 'combined checker stderr')
+                if name in ('strictSidecar', 'strictOriginal'):
+                    checker.validate_output(stdout, combined['corroboratedFrameDiagnostics'], original=name == 'strictOriginal')
+                if name == 'llvmDwarfdump':
+                    require(stdout.count('No errors.') == 1, 'combined LLVM verification incomplete')
+            for tool in combined['tools'].values():
+                require(digest(Path(tool['path'])) == tool['sha256'], 'combined tool/configuration provenance differs')
         if action == 'rollback':
             require(digest(directory / original.name) == protected[str(original)], 'rollback did not restore original')
         before = run(action + '-original-programs', ['readelf', '-lW', original])
@@ -343,7 +387,8 @@ def main():
         require(file_state(Path(path)) == expected, 'completed generation metadata or bytes changed: ' + path)
     (work / 'result.json').write_text(json.dumps({'status': 'PASS', 'target': args.target, 'role': args.role,
         'preserved': protected, 'strict': strict_result, 'host': 'limited Linux test host',
-        'runtime': True, 'scope': 'real ELF initial commit/rollback and GDB discovery/runtime/CRC rejection; production host/validator integration and refresh remain required'}, indent=4) + '\n')
+        'runtime': True, 'validator': 'production-live' if live_validator_arguments else 'captured-test-adapter',
+        'scope': 'real ELF initial commit/rollback and GDB discovery/runtime/CRC rejection; production host, full sectionless policy, public UI and refresh acceptance remain required'}, indent=4) + '\n')
     print('attachment-elf-controller=PASS target=' + args.target + ' role=' + args.role)
 
 

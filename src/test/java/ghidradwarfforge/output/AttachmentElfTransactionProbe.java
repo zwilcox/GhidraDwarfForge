@@ -14,8 +14,9 @@ import java.util.Map;
 /**
  * Test-only bridge from a retained real export to the filesystem controller.
  * The driver MUST freshly validate its selected pair and retain evidence before
- * invoking this probe. This does not provide production validator supervision,
- * a production host metadata contract, or an attachment CLI.
+ * invoking this probe. Optional explicit tool arguments select the production
+ * live validator in the operation; the shorter form retains the captured test
+ * adapter. Neither form supplies a production host or an attachment CLI.
  */
 public final class AttachmentElfTransactionProbe {
     static final class Host extends AttachmentReceiptStoreSmoke.Host implements AttachmentOperation.Host {
@@ -28,8 +29,9 @@ public final class AttachmentElfTransactionProbe {
     }
 
     public static void main(String[] args) throws Exception {
-        if (args.length != 7 || !(args[6].equals("commit") || args[6].equals("rollback"))) {
-            throw new IllegalArgumentException("supply report original sidecar source validation-evidence fresh-directory commit|rollback");
+        if ((args.length != 7 && args.length != 12) || !(args[6].equals("commit") || args[6].equals("rollback"))) {
+            throw new IllegalArgumentException("supply report original sidecar source validation-evidence fresh-directory " +
+                "commit|rollback [helper readelf llvm raw-strict-checker configuration]");
         }
         var host = new Host();
         Path parent = Path.of(args[5]).toRealPath();
@@ -66,10 +68,11 @@ public final class AttachmentElfTransactionProbe {
         var request = new AttachmentOperation.Request(original.path(), paths.get("sidecar"), paths.get("source"),
             paths.get("exportReport"), parent.resolve("original.backup"), parent.resolve("validation.json"),
             parent.resolve("transaction.json"), parent.resolve("recovery.json"), parent.resolve("restore.elf"), null);
-        // Fixture adapter only: the controlling harness just ran real validators.
-        // Rebind its retained evidence before handing it to the operation. This
-        // is not a production substitute for live validator execution.
-        AttachmentOperation.Validator validator = capturedValidator(paths.get("validationEvidence"), host);
+        // Select the live production policy when supplied explicit tools. The
+        // shorter historical fixture form rebinds the harness's captured checks.
+        AttachmentOperation.Validator validator = args.length == 12
+            ? new AttachmentValidator(Path.of(args[7]), Path.of(args[8]), Path.of(args[9]), Path.of(args[10]), Path.of(args[11]))
+            : capturedValidator(paths.get("validationEvidence"), host);
         var operation = AttachmentOperation.execute(request, host, validator, () -> false,
             boundary -> {
                 if (args[6].equals("rollback") && boundary == AttachmentTransaction.Boundary.TARGET_REPLACED) {

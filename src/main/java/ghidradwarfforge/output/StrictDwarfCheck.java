@@ -46,9 +46,7 @@ public final class StrictDwarfCheck {
         selections.add(new AttachmentPaths.Selection("strictConfiguration", configuration, AttachmentPaths.Kind.INPUT));
         var plan = AttachmentPaths.preflight(selections);
         var config = AttachmentFileStore.observe(plan.paths().get("strictConfiguration"), host, cancelled);
-        if (!config.digest().sha256().equals(CONFIGURATION_SHA256)) {
-            throw new IOException("strict checker configuration differs from pinned libdwarf 2.3.2");
-        }
+        requireConfiguration(config);
         Path original = binding.files().get("exportOriginal").path();
         Path sidecar = binding.files().get("sidecar").path();
         Path selectedTool = plan.paths().get("strictTool");
@@ -85,6 +83,12 @@ public final class StrictDwarfCheck {
             throw new IOException("strict checker wrote unexplained stderr; retained evidence: " + result.directory());
         }
         return result;
+    }
+
+    static void requireConfiguration(AttachmentFileStore.Snapshot config) throws IOException {
+        if (!config.digest().sha256().equals(CONFIGURATION_SHA256)) {
+            throw new IOException("strict checker configuration differs from pinned libdwarf 2.3.2");
+        }
     }
 
     private static String read(ValidatorSupervisor.Evidence evidence) throws IOException {

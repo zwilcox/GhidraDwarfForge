@@ -263,3 +263,71 @@ while retaining exact source/binary digests and unique records. The release
 fixture now exercises escaped Windows paths, CRLF metadata and binary markers.
 Release-package tests and `git check-attr eol` pass. The corrected hosted
 assembly remains required; the failed run is not relabeled as successful.
+
+## Combined validator wired into attachment
+
+`AttachmentValidator` implements `AttachmentOperation.Validator`: it preflights
+explicit helper/GNU/LLVM/raw-strict/configuration paths against the bound export
+and new evidence destination, observes their identities/hashes, checks the pinned
+configuration before creating a workspace, then runs all three validators. There
+is no missing-tool skip or success fallback. Version checks establish the selected
+tool family's compatibility, not authenticity; full tool/configuration hashes and
+raw version outputs remain in the evidence. The test pipeline selects its
+manifest-built pinned strict consumer. The caller never selects executable paths
+from an export report.
+
+GNU readelf examines ELF headers/sections/notes and info/abbrev/aranges/decoded
+lines/locations/ranges with separate-debug following disabled. LLVM must finish
+unit verification with its unique successful final marker and no error/warning
+lines. All tools require empty stderr, zero exit and supervisor-proven cleanup;
+each has a two-minute deadline and 32 MiB per-stream cap. Java launches validators
+with C diagnostic locale without changing its native argument encoding. The
+strict component retains its complete-report and independent original-frame
+corroboration requirements. Sectionless-frame corroboration is still an explicit
+implementation gap; ordinary export and loader behavior are unchanged.
+
+Before publishing success, the policy rechecks all selected tool/configuration
+and export snapshots, raw log hashes, supervisor status, directory identities and
+new-file preflight. Raw output/status/internal logs are forced and their owned
+directories synchronized. The complete schema-1 evidence records input identities,
+hashes, CRCs, sizes, original export/validation statuses, tool/version/configuration
+provenance, argv and every raw log digest, plus exact corroborated diagnostics and
+frame identity when needed. It does not relabel a PARTIAL/NOT_RUN export. The
+existing file-store primitive exclusively publishes an independent verified copy
+of this complete record and flushes the directory. Failure/cancellation retains
+owned diagnostic workspaces and does not authorize target replacement. No target
+is changed by the validator itself. Public CLI/GUI and production metadata hosts
+remain mandatory before enabling attachment.
+
+The real-ELF harness now supplies this live validator to both commit and rollback
+when the explicit helper option is selected. Its shorter fixture entry point still
+supports the historical captured-evidence adapter for other tests; that is not a
+production fallback. Independent harness checks inspect the complete published
+record, every raw log/hash/size, all required tools/checks, original statuses,
+frame bytes from the independent backup, and the Python strict-report oracle.
+The target CI already supplies the installed helper for every initial-attachment
+fixture and therefore exercises this production path on its next run.
+
+Local evidence under `build/test-results/attachment-validator/`:
+
+- `controller-x86-exec-final`, `controller-aarch64-exec-final` and
+  `controller-mips32be-exec-final`: all three fresh checkers, published evidence,
+  actual commit and injected rollback, native/QEMU automatic GDB source/type/value
+  checks and CRC rejection pass. These tests still use the limited Linux test host.
+- `controller-x86-exec-final/policy-controls/results.json`: nine negative cases
+  reject empty GNU output, GNU stderr, empty LLVM output, contradictory LLVM
+  error-plus-success output, changed configuration before workspace creation,
+  input/evidence alias, a concurrent private source edit, a concurrent evidence
+  file and cancellation during a running tool. They leave protected inputs intact,
+  preserve the conflicting evidence and independently observe cancelled PID exit.
+  The earlier `*-controls` run stopped because its assertion expected the later
+  hash guard rather than the earlier path/size guard; both correctly rejected the
+  source edit. The final assertion requires that observed source-change diagnosis.
+- `java-supervisor.log`: all 32 actual Java 21 process-ownership controls pass
+  with the newly fixed diagnostic locale, including UTF-8 arguments, interruption
+  and orphan cleanup. Extension build, workflow lint, architecture isolation and
+  diff checks pass. The production checks alter no emitted ELF/DWARF bytes.
+
+Saved-program refresh must still be replayed through this live policy, and
+sectionless validation, complete production Linux/Windows metadata adapters,
+Windows Java/GUI journeys and exact-head protected integration remain open.

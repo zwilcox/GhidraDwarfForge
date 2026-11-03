@@ -116,8 +116,14 @@ public final class ValidatorSupervisor {
         Process process;
         try {
             check(cancelled);
-            process = new ProcessBuilder(command).directory(directory.toFile())
-                .redirectOutput(helperOut.toFile()).redirectError(helperErr.toFile()).start();
+            var builder = new ProcessBuilder(command).directory(directory.toFile())
+                .redirectOutput(helperOut.toFile()).redirectError(helperErr.toFile());
+            // Keep diagnostic grammar stable independently of the user's UI
+            // locale. This does not change the JVM's native argument encoding.
+            builder.environment().put("LC_ALL", "C");
+            builder.environment().put("LANG", "C");
+            builder.environment().put("LANGUAGE", "C");
+            process = builder.start();
         }
         catch (IOException failure) {
             throw new Failure("validator supervisor could not start: " + failure.getMessage(), directory, null);

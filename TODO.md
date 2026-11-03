@@ -1,5 +1,17 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local #72 production validator integration:** `AttachmentValidator`
+now runs fresh GNU readelf, LLVM verification and the strict libdwarf component
+inside `AttachmentOperation`. It pins the strict configuration, captures tool
+versions/identities and bounded raw logs, rechecks the export binding, then
+exclusively publishes flushed combined evidence before backup/replacement.
+x86-64, AArch64 and MIPS BE commit/rollback/GDB harnesses pass with this live
+policy and an explicitly limited test host. Nine negative controls and the
+32-check Java 21 supervision regression pass. Sectionless-frame corroboration,
+production host metadata, public CLI/GUI and full hosted acceptance remain open.
+Native Windows helper controls now pass; cross-host release provenance needs
+the checked-in LF/binary-marker correction. See `docs/VALIDATOR-SUPERVISION.md`.
+
 **CONFIRMED local #72 fresh strict checking:** production supervision now runs
 the selected raw pinned checker with a checksum-pinned configuration and binds
 complete report interpretation to unchanged export files. x86-64, AArch64 and
