@@ -56,6 +56,12 @@ for platform in linux windows; do
         printf 'binary SHA-256:\n'
         sha256sum "$work/$platform/$supervisor_name"
     } > "$work/$platform/SUPERVISOR-BUILD-METADATA.txt"
+    if [[ "$platform" == windows ]]; then
+        source_hash=$(sha256sum < "$repository_dir/native/supervisor/forge-supervisor-windows.c")
+        binary_hash=$(sha256sum < "$work/windows/forge-validator-supervisor.exe")
+        printf 'source SHA-256:\r\n\\%s *D:\\fixture\\source.c\r\nbinary SHA-256:\r\n\\%s *D:\\fixture\\supervisor.exe\r\n' \
+            "${source_hash%% *}" "${binary_hash%% *}" > "$work/windows/SUPERVISOR-BUILD-METADATA.txt"
+    fi
 done
 printf compression > "$work/windows/zlib1.dll"
 printf compression > "$work/windows/libzstd.dll"

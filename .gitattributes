@@ -1,3 +1,5 @@
 # Native patch bytes must match the pinned digest on every checkout host.
 /native/libdwarf/patches/*.patch text eol=lf
 /support/validation/*.patch text eol=lf whitespace=-blank-at-eol,-blank-at-eof
+# Supervisor source digests are compared across Windows/Linux release jobs.
+/native/supervisor/*.c text eol=lf

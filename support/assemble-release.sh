@@ -129,7 +129,8 @@ for platform in linux windows; do
                 if (getline <= 0) invalid = 1
                 sub(/\r$/, ""); sub(/^\\/, "")
                 hash = substr($0, 1, 64)
-                if (length(hash) != 64 || hash ~ /[^0-9a-f]/ || substr($0, 65, 2) != "  ") invalid = 1
+                mode = substr($0, 65, 2)
+                if (length(hash) != 64 || hash ~ /[^0-9a-f]/ || (mode != "  " && mode != " *")) invalid = 1
             }
             END { if (records != 1 || invalid) exit 1; print hash }
         ' "$metadata") || [[ "$observed" != "$expected" ]]; then

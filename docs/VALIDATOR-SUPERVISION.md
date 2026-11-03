@@ -241,3 +241,25 @@ remain required. Neither this component nor its test adapters constitute the
 complete `AttachmentOperation.Validator`: GNU/LLVM result policy, sectionless
 frame corroboration, combined evidence publication, production host metadata and
 public CLI/GUI remain open. Default export never invokes attachment.
+
+### Native Windows completion and release provenance follow-up
+
+Run 41588134155 at `b935ce4` passed all 31 native Windows helper controls:
+29 completed lifecycle records (including 20 repeated successful exits) and
+2 exclusive-file rejections. Independent artifact review verifies exact argument
+and stderr bytes, stream counts/caps, expected exit/cleanup reasons, preserved
+collision sentinels and both identical compiled binaries. Evidence is
+`build/supervisor/windows-job-deadline-review.json`; downloaded diagnostic ZIP
+SHA-256 is `c3f070af8537d64ca0028d1bfde1b5ed193daee311b57a91af2168fe6a4ef2f8`.
+This proves the native helper test contract, not Windows Java/GUI integration.
+
+That run's release assembly failed its source-provenance check. The Windows
+checkout had CRLF C sources while Linux compared LF bytes; additionally MSYS2's
+valid binary-mode SHA record uses ` *` rather than two spaces. Source inspection
+proves identical text after newline normalization, but that is not accepted as
+an exact-byte release pass. `.gitattributes` now fixes the supervisor C sources
+to LF on both hosts. The metadata parser accepts both standard SHA record modes
+while retaining exact source/binary digests and unique records. The release
+fixture now exercises escaped Windows paths, CRLF metadata and binary markers.
+Release-package tests and `git check-attr eol` pass. The corrected hosted
+assembly remains required; the failed run is not relabeled as successful.
