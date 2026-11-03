@@ -55,6 +55,10 @@ public final class AttachmentPaths {
             return paths;
         }
 
+        public List<Selection> selections() {
+            return observations.stream().map(Observed::selection).toList();
+        }
+
         /** Call before creating any output, after slow validation or user interaction. */
         public void recheck() throws IOException {
             for (Observed expected : observations) {

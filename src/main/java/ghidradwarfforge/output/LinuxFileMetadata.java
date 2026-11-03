@@ -211,7 +211,7 @@ public final class LinuxFileMetadata {
         }
     }
 
-    private static void supported(Snapshot snapshot) throws IOException {
+    static void supported(Snapshot snapshot) throws IOException {
         require((snapshot.facts().mode() & 07000) == 0, "privileged file mode is unsupported");
         require(snapshot.facts().attributes() == 0, "special inode attributes require separate preservation policy");
         var inode = snapshot.inodePolicy();

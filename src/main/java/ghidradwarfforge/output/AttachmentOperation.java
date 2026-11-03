@@ -90,17 +90,8 @@ public final class AttachmentOperation {
 
     private AttachmentOperation() { }
 
-    public static Result execute(Request request, Host host, Validator validator,
-            BooleanSupplier cancelled) throws IOException {
-        return execute(request, host, validator, cancelled, boundary -> { });
-    }
-
-    static Result execute(Request request, Host host, Validator validator,
-            BooleanSupplier cancelled, AttachmentTransaction.Hook hook) throws IOException {
-        Objects.requireNonNull(host);
-        Objects.requireNonNull(validator);
-        Objects.requireNonNull(cancelled);
-        check(cancelled);
+    /** Read-only all-role preflight, also required before a host creates a visibility workspace. */
+    public static AttachmentPaths.Plan preflightPaths(Request request) throws IOException {
         boolean refresh = request.refresh() != null;
         var selections = new ArrayList<AttachmentPaths.Selection>();
         select(selections, "targetBefore", request.target(), AttachmentPaths.Kind.TARGET);
@@ -128,8 +119,29 @@ public final class AttachmentOperation {
         }
         if (sidecar.getParent().equals(parent.resolve(".debug"))) {
             select(selections, "discoveryShadow", parent.resolve(sidecar.getFileName()), AttachmentPaths.Kind.NEW_FILE);
-            paths.putAll(AttachmentPaths.preflight(selections).paths());
+            plan = AttachmentPaths.preflight(selections);
         }
+        return plan;
+    }
+
+    public static Result execute(Request request, Host host, Validator validator,
+            BooleanSupplier cancelled) throws IOException {
+        return execute(request, host, validator, cancelled, boundary -> { });
+    }
+
+    static Result execute(Request request, Host host, Validator validator,
+            BooleanSupplier cancelled, AttachmentTransaction.Hook hook) throws IOException {
+        Objects.requireNonNull(host);
+        Objects.requireNonNull(validator);
+        Objects.requireNonNull(cancelled);
+        check(cancelled);
+        boolean refresh = request.refresh() != null;
+        var plan = preflightPaths(request);
+        var selections = plan.selections();
+        Map<String, Path> paths = new HashMap<>(plan.paths());
+        Path target = paths.get("targetBefore");
+        Path parent = target.getParent();
+        Path sidecar = paths.get("sidecar");
         Map<Path, String> parents = new HashMap<>();
         Map<String, AttachmentFileStore.Snapshot> snapshots = new HashMap<>();
         for (var selected : selections) {

@@ -26,11 +26,14 @@ def main():
     provenance.mkdir()
     source = ROOT / 'src/test/java/ghidradwarfforge/output/LinuxMetadataVisibilitySmoke.java'
     mount_source = ROOT / 'src/test/java/ghidradwarfforge/output/LinuxAttachmentMountSmoke.java'
+    host_source = ROOT / 'src/test/java/ghidradwarfforge/output/LinuxAttachmentHostSmoke.java'
     contract = ROOT / 'src/test/native/linux-metadata-contract.c'
     inputs = [args.jar.resolve(), args.ghidra / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar',
-              source, contract, Path(__file__), mount_source,
+              args.ghidra / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar',
+              source, contract, Path(__file__), mount_source, host_source,
               *[ROOT / f'src/main/java/ghidradwarfforge/output/{name}.java' for name in
-                ['LinuxMetadataVisibility', 'LinuxFileMetadata', 'LinuxDirectorySync', 'LinuxAttachmentMount']]]
+                ['LinuxMetadataVisibility', 'LinuxFileMetadata', 'LinuxDirectorySync', 'LinuxAttachmentMount',
+                 'LinuxAttachmentHost', 'LinuxAtomicRename', 'AttachmentOperation', 'AttachmentPaths']]]
     hashes = {}
     for path in inputs:
         hashes[str(path)] = hashlib.sha256(path.read_bytes()).hexdigest()
@@ -54,9 +57,9 @@ def main():
     run('native-contract', [results / 'contract'])
     classes = results / 'classes'
     classes.mkdir()
-    dependencies = os.pathsep.join(str(provenance / path.name) for path in inputs[:2])
+    dependencies = os.pathsep.join(str(provenance / path.name) for path in inputs[:3])
     run('compile-java', [os.environ.get('JAVAC', 'javac'), '--release', '21', '-cp', dependencies,
-                        '-d', classes, provenance / source.name, provenance / mount_source.name])
+                        '-d', classes, provenance / source.name, provenance / mount_source.name, provenance / host_source.name])
     java = Path(shutil.which(os.environ.get('JAVA', 'java'))).resolve()
     assert b'version "21.' in run('java-version', [java, '-version']).stderr
     prefix = [java, '-cp', str(classes) + os.pathsep + dependencies,
@@ -71,8 +74,11 @@ def main():
     assert fields['identity'].split('@')[1] == mount_id
     assert fields['mountRecord'].split()[2] == device and fs_type == 'ext4'
     run('unprivileged', [*prefix, 'unprivileged', results / 'unprivileged'])
+    host_prefix = [*prefix[:-1], 'ghidradwarfforge.output.LinuxAttachmentHostSmoke']
+    run('host-unprivileged', [*host_prefix, 'unprivileged', results / 'host-unprivileged'])
     if args.privileged:
         run('privileged', ['sudo', '-n', *prefix, 'privileged', results / 'privileged'])
+        run('host-privileged', ['sudo', '-n', *host_prefix, 'privileged', results / 'host-privileged'])
     for path in inputs:
         assert hashlib.sha256(path.read_bytes()).hexdigest() == hashes[str(path)]
     result = {'unprivileged': 'PASS', 'privileged': 'PASS' if args.privileged else 'NOT_RUN',

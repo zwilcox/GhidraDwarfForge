@@ -1,5 +1,22 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED mount-bound visibility acceptance:** completed extension-build
+41650311183 at2b89ec3 passes154 mount checks, independent native stat/findmnt
+comparison,8 unprivileged and168 privileged lifecycle checks. Retained sources,
+dependencies and outputs were independently reviewed; see
+`docs/evidence/linux-visibility-mount-41650311183.json`. The newly connected
+Linux Host still requires its own privileged and real-ELF acceptance below.
+
+**PRESENT, UNVERIFIED Linux attachment Host:** `LinuxAttachmentHost` now
+connects protected visibility, ext4 mount binding, admitted metadata, native
+no-overwrite/replacement rename and directory fsync. It opens its canary only
+after the operation's shared read-only all-role preflight and never elevates.
+Actual Java21 transaction suites and local Host unprivileged refusal/cleanup
+pass. Isolated privileged Host backup/replace/restore and metadata-refusal tests
+are assigned to CI; real ELF/GDB/recovery integration remains required. The
+initial privileged visibility session is independently accepted at41648910608
+(98 checks); see its evidence receipt and `docs/LINUX-ATTACHMENT-HOST.md`.
+
 **CONFIRMED local Linux mount binding; hosted acceptance pending:** the
 visibility session now matches native mount ID/device to the current platform
 thread's mountinfo record and requires writable ext4. It rejects ext2/ext3,

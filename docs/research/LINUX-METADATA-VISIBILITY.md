@@ -145,3 +145,10 @@ No new JNA mapping is introduced. Extension build, Python parsing, workflow lint
 and diff checks pass. Privileged execution remains assigned to CI; target
 metadata preservation, native replacement, recovery and the full Linux Host
 remain separate incomplete acceptance work.
+
+**CONFIRMED hosted mount/session acceptance:** run41650311183 at2b89ec3 passes
+the native mount154 and unprivileged8 checks plus168 privileged lifecycle checks.
+All retained sources match the exact commit, dependency digests match, and
+native identity agrees with independent stat/findmnt observations on ext4.
+See [the receipt](../evidence/linux-visibility-mount-41650311183.json).
+The subsequent LinuxAttachmentHost implementation has separate pending tests.
