@@ -59,7 +59,7 @@ def main():
     sources = [repo / "src/test/java/ghidradwarfforge/output" / name for name in
         ("WindowsFileSecurityProbe.java", "WindowsAttachmentOperationProbe.java", "WindowsAttachmentRefreshProbe.java")]
     scripts = repo / "src/test/integration/ghidra_scripts"
-    retained = [*dependencies, *sources, Path(__file__), args.report_log, module / "lib/GhidraDwarfForge-src.zip",
+    retained = [*dependencies, *sources, Path(__file__), args.report_log, args.reference, module / "lib/GhidraDwarfForge-src.zip",
         Path(__file__).with_name("windows-attachment-headless.ps1"), scripts / "CurateAttachmentRefresh.java",
         scripts / "RenameFixtureFunction.java", Path(__file__).with_name("check-dwarfdump.py")]
     origin = {}

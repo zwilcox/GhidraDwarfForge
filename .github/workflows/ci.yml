@@ -2751,6 +2751,32 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  windows-attachment-gdb:
+    needs: [ windows-host ]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: windows-host-validation
+          path: windows-artifacts
+      - name: Install Linux target debugger and validators
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gdb llvm binutils
+      - name: Execute both Windows attachment generations and reject wrong CRC
+        run: |
+          python3 src/test/integration/windows-attachment-gdb.py \
+              --windows-results "$PWD/windows-artifacts/windows-host" \
+              --results "$PWD/build/test-results/windows-attachment-gdb"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: windows-attachment-gdb-diagnostics
+          path: build/test-results/windows-attachment-gdb/
+          if-no-files-found: warn
+          retention-days: 14
+
   required-validation:
     if: always()
     needs:
@@ -2762,6 +2788,7 @@ jobs:
       - target-preflight
       - windows-host
       - attachment-windows
+      - windows-attachment-gdb
     runs-on: ubuntu-24.04
     steps:
       - name: Require every supported validation path
@@ -2774,13 +2801,15 @@ jobs:
           TARGET_PREFLIGHT_RESULT: ${{ needs.target-preflight.result }}
           WINDOWS_HOST_RESULT: ${{ needs.windows-host.result }}
           ATTACHMENT_WINDOWS_RESULT: ${{ needs.attachment-windows.result }}
+          WINDOWS_ATTACHMENT_GDB_RESULT: ${{ needs.windows-attachment-gdb.result }}
         run: |
           set -euo pipefail
           failed=0
           for result in "$WORKFLOW_LINT_RESULT" "$NATIVE_LINUX_RESULT" \
               "$NATIVE_WINDOWS_RESULT" "$EXTENSION_BUILD_RESULT" \
               "$RELEASE_PACKAGE_RESULT" "$TARGET_PREFLIGHT_RESULT" \
-              "$WINDOWS_HOST_RESULT" "$ATTACHMENT_WINDOWS_RESULT"; do
+              "$WINDOWS_HOST_RESULT" "$ATTACHMENT_WINDOWS_RESULT" \
+              "$WINDOWS_ATTACHMENT_GDB_RESULT"; do
             if [[ "$result" != success ]]; then
               failed=1
             fi

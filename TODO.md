@@ -9,8 +9,12 @@ it checks changed CRC, metadata preservation, an independent prior-image
 backup and retained previous pair/receipt. Python independently checks the
 receipt chain, validator log hashes, ELF debuglink bytes and program headers.
 Java21 probe compilation, Python/PowerShell parsing and workflow lint pass;
-Windows execution and debugger acceptance remain pending. Public controls
-and full A1–A7/C1 remain incomplete.
+Windows execution remains pending. A required Linux consumer job now checks
+both Windows-produced generations in fresh GDB sessions, with explicit source
+relocation and CRC refusal controls. A local compiler control proves the
+Windows-style source-path lookup/runtime and CRC-negative mechanisms only;
+actual Windows-artifact acceptance remains pending. Public controls and full
+A1–A7/C1 remain incomplete.
 
 **CONFIRMED mount-bound visibility acceptance:** completed extension-build
 41650311183 at2b89ec3 passes154 mount checks, independent native stat/findmnt

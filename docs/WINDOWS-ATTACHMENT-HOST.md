@@ -164,3 +164,34 @@ Local validation: `javac --release 21` compiles the Windows security, initial
 operation and refresh probes; Python AST parsing, PowerShell parser validation,
 `actionlint` with ShellCheck and `git diff --check` pass. The full hosted gate,
 artifact review, debugger acceptance and public controls remain required.
+
+### Linux runtime consumer of Windows-produced generations
+
+**PRESENT, UNVERIFIED:** `windows-attachment-gdb.py` consumes only the explicit
+known locations in the completed Windows fixture artifact. It verifies initial
+and refreshed executable/sidecar/source bytes against committed Windows Host
+receipts, then runs separate owned Linux copies. The initial attached image
+comes from the retained prior-target backup. Source relocation uses GDB's
+[`directory` command](https://sourceware.org/gdb/current/onlinedocs/gdb.html/Source-Path.html);
+no sidecar, receipt or source bytes are rewritten. Each generation must provide
+automatic discovery, the compiler-reference function address, synthetic source,
+recovered types, a named breakpoint and arguments19/23, then exit normally.
+Fresh corrupt-sidecar sessions must issue a CRC mismatch and expose no full
+DWARF function. Debuginfod and external build-ID directories are disabled.
+
+This is native Windows production/attachment followed by Linux execution of
+the Linux ELF target. It does not claim Windows-native ELF execution, preserve
+Windows filesystem metadata on Linux copies, or replace the Windows metadata
+tests. Downloaded evidence is hashed before and after; only new runtime copies
+receive executable mode. The new `windows-attachment-gdb` job is required by
+`required-validation`, including refusal of skipped or failed consumption.
+
+**CONFIRMED local consumer mechanism:** the owned compiler control at
+`build/test-results/windows-source-transfer-control` uses DWARF5 with its
+compilation source directory mapped to a nonexistent Windows drive/backslash
+path containing a space. Actual Linux GDB directory lookup, function/type/source,
+arguments19/23 and normal exit pass; appending a CRC-only mutation produces the
+expected CRC mismatch and absent DWARF symbol. Commands, source and raw logs are
+retained there. This is a compiler control, not Windows exporter/Host acceptance.
+Both Python harnesses parse, workflow lint with ShellCheck and diff checks pass.
+The real two-generation consumer remains pending hosted evidence.
