@@ -6,15 +6,15 @@ primitive. Actual Java 21 suites and a real x86-64 live-validator/GDB/CRC replay
 pass. This supplies namespace replacement, not complete metadata admission or
 host durability. See `docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`.
 
-**PRESENT, UNVERIFIED full Windows #72 metadata application:** the native C
-ABI contract and independent Java/.NET identity, security, timestamp and stream
-inspection pass in run 41597816863 after correcting Unicode test transport.
-Application correctly rejects a readback mismatch: `SetSecurityInfo` adds the
-inheritance-control bit to a legacy descriptor. The correction uses the audited
-file security-descriptor API with unchanged exact comparison and additional
-post-application cancellation controls; native acceptance is pending. SACLs/EAs,
-visibility policy, durability, public CLI/GUI and full host acceptance remain
-open. See `docs/WINDOWS-FILE-METADATA.md`.
+**PRESENT, UNVERIFIED full Windows #72 metadata application:** native
+identity/security/stream inspection agrees with an independent raw named
+security observer. Ordinary application passes. Native tests prove the modern
+setter adds the inheritance bit to legacy controls, while the legacy setter
+clears it from modern controls. The correction selects by source inheritance
+model before writing and retains exact readback, with no retry fallback.
+Protected/modern application and complete negative controls are pending.
+SACLs/EAs, visibility policy, durability, public CLI/GUI and full host acceptance
+remain open. See `docs/WINDOWS-FILE-METADATA.md`.
 
 **CONFIRMED local #72 Linux metadata primitive:** `LinuxFileMetadata` now reads
 native opened-file identity and bounded visible attributes, and applies ordinary

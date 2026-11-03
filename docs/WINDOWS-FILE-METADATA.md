@@ -144,3 +144,18 @@ and the managed serializer's bytes remain in diagnostic snapshots. Neither
 representation difference is ignored in the production preservation comparison.
 The corrected native oracle remains pending; local C# and C ABI compilation and
 PowerShell parser/capture checks pass.
+
+Run `41599930532` at `b0e9958` proves the named raw observer agrees with Java for
+both ordinary and protected sources. Ordinary application passes. Protected
+application exposes the converse setter conversion: `SetFileSecurityW` changes
+source control `0x9404` to `0x9004`, clearing `SE_DACL_AUTO_INHERITED`. Both
+failures retain exact bytes; changing the comparison would hide a real change.
+
+The implementation now selects the setter from the source model before any
+write: legacy descriptors use `SetFileSecurityW`; descriptors with the modern
+inheritance bit use `SetSecurityInfo`. Both declarations are audited in the C
+contract. There is no error-driven fallback, and every supported preservation
+field still must match on readback. The native fixture now also transitions
+from protected to modern unprotected inheritance. Corrected application and
+all later negative/cancellation controls remain **PRESENT, UNVERIFIED** until
+the new native run completes.

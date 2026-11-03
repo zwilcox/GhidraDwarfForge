@@ -37,6 +37,7 @@ int main(void) {
     DWORD (WINAPI *security)(HANDLE, SE_OBJECT_TYPE, SECURITY_INFORMATION, PSID *, PSID *, PACL *, PACL *,
         PSECURITY_DESCRIPTOR *) = GetSecurityInfo;
     BOOL (WINAPI *apply)(LPCWSTR, SECURITY_INFORMATION, PSECURITY_DESCRIPTOR) = SetFileSecurityW;
+    DWORD (WINAPI *apply_current)(HANDLE, SE_OBJECT_TYPE, SECURITY_INFORMATION, PSID, PSID, PACL, PACL) = SetSecurityInfo;
     BOOL (WINAPI *read_security)(LPCWSTR, SECURITY_INFORMATION, PSECURITY_DESCRIPTOR, DWORD, LPDWORD) = GetFileSecurityW;
     DWORD (WINAPI *named_security)(LPCWSTR, SE_OBJECT_TYPE, SECURITY_INFORMATION, PSID *, PSID *, PACL *, PACL *,
         PSECURITY_DESCRIPTOR *) = GetNamedSecurityInfoW;
@@ -49,7 +50,7 @@ int main(void) {
     HANDLE (WINAPI *process)(void) = GetCurrentProcess;
     BOOL (WINAPI *handles)(HANDLE, PDWORD) = GetProcessHandleCount;
     if (!create || !close || !type || !get || !set || !security || !apply || !valid || !length ||
-        !control || !sid || !sid_length || !release || !process || !handles || !read_security || !named_security) return 1;
+        !control || !sid || !sid_length || !release || !process || !handles || !read_security || !named_security || !apply_current) return 1;
     puts("windows-metadata-contract=PASS pointer=64 DWORD=32 BOOL=32 basic=40 standard=24 id=24 stream-name-offset=24");
     return 0;
 }

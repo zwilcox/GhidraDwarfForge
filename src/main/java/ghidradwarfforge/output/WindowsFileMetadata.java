@@ -46,6 +46,7 @@ public final class WindowsFileMetadata {
         int GetSecurityInfo(Pointer handle, int type, int fields, PointerByReference owner, PointerByReference group,
             PointerByReference dacl, Pointer sacl, PointerByReference descriptor);
         int SetFileSecurityW(WString path, int fields, Pointer descriptor);
+        int SetSecurityInfo(Pointer handle, int type, int fields, Pointer owner, Pointer group, Pointer dacl, Pointer sacl);
         int IsValidSecurityDescriptor(Pointer descriptor);
         int GetSecurityDescriptorLength(Pointer descriptor);
         int GetSecurityDescriptorControl(Pointer descriptor, Pointer control, Pointer revision);
@@ -103,17 +104,25 @@ public final class WindowsFileMetadata {
             require(!before.facts().identity().equals(prior.facts().identity()), "Windows metadata stage aliases source");
             require(before.facts().links() == 1 && prior.facts().links() == 1, "Windows metadata rejects hardlinks");
             var wanted = before.security();
-            try (var descriptor = bytes(wanted.rawDescriptor())) {
-                // SetSecurityInfo converts legacy inheritance controls even if
-                // ACL bytes are identical. Preserve the full observed controls
-                // with the file security-descriptor API, then require exact readback.
-                // This API addresses a path: recheck the owned stage's handle
-                // identity before and after, just as for namespace operations.
-                checkPath(stage, prior.facts(), cancelled);
-                check(cancelled);
-                int fields = 7 | ((wanted.control() & 0x1000) != 0 ? 0x80000000 : 0x20000000);
-                success(security.SetFileSecurityW(new WString("\\\\?\\" + stage.toAbsolutePath()), fields, descriptor),
-                    "SetFileSecurityW");
+            // Match the source's inheritance model. SetSecurityInfo upgrades
+            // legacy controls; SetFileSecurityW clears the modern inherited bit.
+            // Neither conversion is acceptable. Select before writing, require
+            // exact readback, and never retry a failed API through the other one.
+            int fields = 7 | ((wanted.control() & 0x1000) != 0 ? 0x80000000 : 0x20000000);
+            if ((wanted.control() & 0x400) == 0) {
+                try (var descriptor = bytes(wanted.rawDescriptor())) {
+                    checkPath(stage, prior.facts(), cancelled);
+                    check(cancelled);
+                    success(security.SetFileSecurityW(new WString("\\\\?\\" + stage.toAbsolutePath()), fields, descriptor),
+                        "SetFileSecurityW");
+                }
+            }
+            else {
+                try (var owner = bytes(wanted.owner()); var group = bytes(wanted.group()); var dacl = bytes(wanted.dacl())) {
+                    check(cancelled);
+                    error(security.SetSecurityInfo(output.handle, 1, fields, owner, group,
+                        wanted.dacl() == null ? null : dacl, null), "SetSecurityInfo");
+                }
             }
             try (var basic = new Memory(40)) {
                 basic.clear(); // zero access/change time means leave those fields unchanged.

@@ -173,6 +173,10 @@ $acl = Get-Acl -LiteralPath $original
 $acl.SetAccessRuleProtection($true, $true)
 Set-Acl -LiteralPath $original -AclObject $acl
 Apply-Case 'explicit-protected'
+$acl = Get-Acl -LiteralPath $original
+$acl.SetAccessRuleProtection($false, $true)
+Set-Acl -LiteralPath $original -AclObject $acl
+Apply-Case 'modern-inherited'
 [IO.File]::SetAttributes($original, ([IO.File]::GetAttributes($original) -bor [IO.FileAttributes]::ReadOnly -bor [IO.FileAttributes]::Hidden))
 Apply-Case 'readonly-hidden'
 [IO.File]::SetAttributes($original, [IO.FileAttributes]::Archive)
