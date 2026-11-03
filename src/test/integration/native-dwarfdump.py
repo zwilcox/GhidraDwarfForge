@@ -70,7 +70,7 @@ def main():
     (root / "dwarfdump.conf").write_bytes(b"\xff\n")
     environment = os.environ.copy()
     if os.name == "nt":
-        environment["PATH"] = str(Path(environment["SystemRoot"]) / "System32")
+        environment["PATH"] = str(Path(os.environ["SystemRoot"]) / "System32")
         require(executable.read_bytes()[:2] == b"MZ", "checker is not native PE")
     version = run("version", [executable, "--version"], environment)
     require(version.returncode == 0 and not version.stderr and

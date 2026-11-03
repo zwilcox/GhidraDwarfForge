@@ -66,6 +66,18 @@ jobs:
             build-essential zlib1g-dev libzstd-dev curl xz-utils patch \
             autoconf automake libtool pkg-config patchelf llvm
 
+      - name: Prove protected Linux xattr visibility on an owned canary
+        run: |
+          set -euo pipefail
+          results="$PWD/build/test-results/native-linux/metadata-visibility"
+          mkdir -p "$results"
+          cp src/test/native/linux-metadata-visibility.c "$results/"
+          cc -std=c11 -O2 -Wall -Wextra -Werror \
+            "$results/linux-metadata-visibility.c" -o "$results/probe"
+          "$results/probe" --unprivileged "$results" > "$results/unprivileged.json"
+          sudo -n "$results/probe" --privileged "$results" > "$results/privileged.json"
+          sha256sum "$results/linux-metadata-visibility.c" "$results/probe" > "$results/SHA256SUMS"
+
       - name: Build pinned libdwarf producer
         run: |
           set -euo pipefail
@@ -326,6 +338,7 @@ jobs:
           echo "$LIBDWARF_ARCHIVE_SHA256  $LIBDWARF_ARCHIVE" | sha256sum -c -
 
       - name: Build isolated pinned Windows DWARF checker
+        id: windows-checker-build
         run: |
           support/build-validation-dwarfdump.sh "$LIBDWARF_ARCHIVE" \
             validation-tool-windows build/test-results/native-windows/strict-checker-build
@@ -340,6 +353,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Native Windows DWARF checker controls failed' }
 
       - uses: actions/upload-artifact@v7
+        if: always() && steps.windows-checker-build.outcome == 'success'
         with:
           name: dwarfdump-windows-validation
           path: validation-tool-windows/

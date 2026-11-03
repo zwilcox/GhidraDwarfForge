@@ -1,5 +1,22 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED Windows checker build; runtime harness correction pending:**
+41643748238 builds the private patched consumer/checker with audited imports.
+Its raw-tool harness then fails before invoking the checker because a copied
+Python environment dictionary loses Windows case-insensitive lookup. The fix
+reads SystemRoot through `os.environ`; dependency isolation is retained.
+See `docs/evidence/windows-checker-environment-41643748238.json`. No native
+valid/corrupt/Unicode or real-attachment runtime acceptance is claimed yet.
+
+**PRESENT, UNVERIFIED Linux visibility experiment:** a standalone owned-canary
+probe tests exact protected-attribute reads/listing before and after dropping
+capabilities only in its child process. Local unprivileged refusal passes;
+privileged execution is unavailable locally (noninteractive sudo requires a
+password) and is assigned to CI. It creates/removes only its own new temporary
+file/directory and does not change production privilege policy. See
+`docs/research/LINUX-METADATA-VISIBILITY.md`; full host admission remains open.
+
+
 **CONFIRMED Windows checker build failure; correction pending:** native job
 41641903394 reached the pinned configure guard rejecting static libdwarf on
 Windows. The corrected builder uses a private patched consumer DLL beside the
