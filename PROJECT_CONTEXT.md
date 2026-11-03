@@ -1,5 +1,17 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**PLANNED separate-helper public flow; CONFIRMED local request admission:**
+attachment will run outside Ghidra, with OS authorization requested only by
+an explicit user action when needed. This is the stated implementation
+assumption after the optional preference question; it does not authorize any
+current elevation. `AttachmentInvocation` now transports explicit absolute
+artifact/tool selections, rejects malformed or ambiguous requests and includes
+the request file/tools in read-only preflight. Actual Java21 passes72 checks
+and the existing80 operation checks; the extension builds. CLI/GUI launch,
+authorization and cancellation/recovery UX remain planned, and Windows request
+tests are assigned to CI. See `docs/ATTACHMENT-HELPER.md`. Full A1–A7/C1 remain
+incomplete; public attachment is not enabled by this transport class.
+
 **PRESENT, UNVERIFIED Windows saved-curation refresh:** the native real-ELF
 harness now saves analyst function/type/member edits in a Ghidra project,
 reopens it, rejects the attached image's changed import hash, and exports a

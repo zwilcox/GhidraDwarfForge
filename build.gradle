@@ -220,6 +220,14 @@ tasks.register("attachmentOperationSmoke", JavaExec) {
     jvmArgs "--enable-native-access=ALL-UNNAMED"
 }
 
+tasks.register("attachmentInvocationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded helper selections and all-role transport/tool path preflight"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentInvocationSmoke"
+}
+
 tasks.register("extendedSectionNumberingSmoke", JavaExec) {
     group = "verification"
     description = "Checks extended ELF section numbering and optionally builds target fixtures"

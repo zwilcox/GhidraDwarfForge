@@ -256,3 +256,12 @@ These are implementation acceptance criteria, not completed work. A product
 transaction with the above guarantees is not a small append-only prototype,
 and remains planned. ADR-0005 defines the accepted private candidate component;
 that component does not complete the transaction guarantees.
+
+## Public invocation implementation direction
+
+**PLANNED:** use a separate helper and explicit user-requested OS authorization
+when required, leaving Ghidra unprivileged. No automatic elevation or metadata
+policy relaxation follows. The helper's absolute selection transport now has
+local strict parsing/preflight tests; CLI/GUI launch and recovery remain to be
+implemented and validated. See [the helper work record](ATTACHMENT-HELPER.md).
+This records the stated implementation assumption, not a user privilege grant.
