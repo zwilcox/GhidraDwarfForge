@@ -99,6 +99,45 @@ copy_platform() {
 
 copy_platform linux_x86_64 "$linux_input" 'libdwarf.so.2.3.2' 'libdwarfp.so.2.3.2'
 copy_platform win_x86_64 "$windows_input" 'libdwarf-*.dll' 'libdwarfp-*.dll'
+for supervisor in \
+        "$module/os/linux_x86_64/forge-validator-supervisor" \
+        "$module/os/win_x86_64/forge-validator-supervisor.exe" \
+        "$module/os/linux_x86_64/SUPERVISOR-BUILD-METADATA.txt" \
+        "$module/os/win_x86_64/SUPERVISOR-BUILD-METADATA.txt"; do
+    [[ -f "$supervisor" && ! -L "$supervisor" && -s "$supervisor" ]] || {
+        echo "required validator supervisor/provenance is missing: $supervisor" >&2
+        exit 1
+    }
+done
+for platform in linux windows; do
+    platform_directory=linux_x86_64
+    supervisor_name=forge-validator-supervisor
+    if [[ "$platform" == windows ]]; then
+        platform_directory=win_x86_64
+        supervisor_name=forge-validator-supervisor.exe
+    fi
+    metadata="$module/os/$platform_directory/SUPERVISOR-BUILD-METADATA.txt"
+    for kind in source binary; do
+        selected="$repository_dir/native/supervisor/forge-supervisor-$platform.c"
+        if [[ "$kind" == binary ]]; then selected="$module/os/$platform_directory/$supervisor_name"; fi
+        expected=$(sha256sum < "$selected")
+        expected=${expected%% *}
+        if ! observed=$(awk -v heading="$kind SHA-256:" '
+            { sub(/\r$/, "") }
+            $0 == heading {
+                records++
+                if (getline <= 0) invalid = 1
+                sub(/\r$/, ""); sub(/^\\/, "")
+                hash = substr($0, 1, 64)
+                if (length(hash) != 64 || hash ~ /[^0-9a-f]/ || substr($0, 65, 2) != "  ") invalid = 1
+            }
+            END { if (records != 1 || invalid) exit 1; print hash }
+        ' "$metadata") || [[ "$observed" != "$expected" ]]; then
+            echo "validator supervisor $kind provenance mismatch: $platform" >&2
+            exit 1
+        fi
+    done
+done
 for bundled_dll in "$module/os/win_x86_64"/*.dll; do
     bundled_name=$(basename "$bundled_dll" | tr '[:upper:]' '[:lower:]')
     case "$bundled_name" in

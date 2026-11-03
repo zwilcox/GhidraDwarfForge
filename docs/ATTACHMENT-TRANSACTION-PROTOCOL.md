@@ -545,3 +545,15 @@ attachment workflow. The explicit limited Linux host and externally captured
 validator adapter still do not meet the production host/live-validator contract.
 Native Windows, CLI/GUI, exact-head hosted acceptance and remaining A1–A7/C1
 requirements remain open. Neither issue is complete.
+
+The first hosted saved-refresh run (`41582470882`) failed before Ghidra import:
+CI selected the same installed JAR for the operation and exporter roles. A
+path-keyed provenance map retained only `installed-exporter.jar`, leaving the
+compiler's `operation.jar` classpath entry absent. The downloaded x86-64 artifact
+(`13207910777`, SHA-256
+`efaa94c469b3451fc2730c5b3b8ae930533aeeaf76fdefe192b3c4f36530b5d8`)
+confirms the missing file and compiler diagnostics. The harness now retains both
+role names even when they originate from one path. Fresh exec/PIE runs using that
+same installed-JAR arrangement pass in `*-same-jar/`; all twelve retained local
+strict reports pass the raw-output retention guard. The full hosted gate still
+requires a new passing run; no failing check is waived.

@@ -65,14 +65,17 @@ def main():
                      'AttachmentElfTransactionProbe', 'AttachmentCuratedRefreshProbe']]
     scripts = ROOT / 'src/test/integration/ghidra_scripts'
     oracle = ROOT / 'src/test/integration/automatic-association-gdb.py'
-    inputs = {args.jar.resolve(): 'operation.jar', exporter_jar: 'installed-exporter.jar',
-              ghidra / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar': 'gson.jar',
-              ghidra / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar': 'jna.jar'}
+    # CI selects the installed JAR for both roles. Keep both retained names even
+    # when their source path is identical; a path-keyed dict drops operation.jar.
+    inputs = [(args.jar.resolve(), 'operation.jar'), (exporter_jar, 'installed-exporter.jar'),
+              (ghidra / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar', 'gson.jar'),
+              (ghidra / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar', 'jna.jar')]
     for path in [*java_sources, Path(__file__), oracle, scripts / 'CurateAttachmentRefresh.java',
                  scripts / 'RenameFixtureFunction.java', ROOT / 'src/test/integration/check-dwarfdump.py']:
-        inputs[path] = path.name
-    protected = {str(path): digest(path) for path in [*inputs, fixture, reference, args.strict_validator.resolve()]}
-    for path, name in inputs.items():
+        inputs.append((path, path.name))
+    protected = {str(path): digest(path) for path in
+                 [*[path for path, _ in inputs], fixture, reference, args.strict_validator.resolve()]}
+    for path, name in inputs:
         shutil.copyfile(path, provenance / name)
         require(digest(provenance / name) == protected[str(path)], 'retained source/runtime differs')
     (provenance / 'origin.json').write_text(json.dumps(protected, indent=4) + '\n')

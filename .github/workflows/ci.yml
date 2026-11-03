@@ -214,6 +214,13 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+      - name: Build and exercise Linux validator process owner
+        run: |
+            support/build-validator-supervisor.sh linux native-out build/test-results/native-linux/supervisor
+            python3 src/test/integration/validator-supervisor.py \
+                --helper native-out/forge-validator-supervisor \
+                --results build/test-results/native-linux/supervisor/runtime
+
       - uses: actions/upload-artifact@v7
         with:
           name: libdwarf-linux-integration
@@ -438,6 +445,17 @@ jobs:
           support/compare-native-builds.sh windows native-windows-out \
             native-windows-rebuild "$result_directory/reproducibility.log"
 
+      - name: Build Windows validator process owner
+        run: support/build-validator-supervisor.sh windows native-windows-out build/test-results/native-windows/supervisor
+
+      - name: Exercise native Windows validator process ownership
+        shell: pwsh
+        run: |
+            python src/test/integration/validator-supervisor.py `
+                --helper native-windows-out/forge-validator-supervisor.exe `
+                --results build/test-results/native-windows/supervisor/runtime
+            if ($LASTEXITCODE -ne 0) { throw 'Windows validator supervisor controls failed' }
+
       - uses: actions/upload-artifact@v7
         with:
           name: libdwarf-windows-integration
@@ -492,6 +510,11 @@ jobs:
             python3 -B -m unittest discover -s src/test/python -p test_gdb_loader.py -v
             cc -std=c11 -Wall -Wextra -Werror src/test/native/linux-rename-contract.c -o build/linux-rename-contract
             build/linux-rename-contract
+            cc -std=c11 -O2 -Wall -Wextra -Werror native/supervisor/forge-supervisor-linux.c -o build/forge-validator-supervisor
+            ./gradlew validatorSupervisorSmoke \
+                -PsupervisorPath="$PWD/build/forge-validator-supervisor" \
+                -PsupervisorPython="$(command -v python3)" \
+                -PsupervisorResults="$PWD/build/test-results/extension-build/supervisor"
             ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke \
               ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke companionArtifactPublisherSmoke attachmentProtocolSmoke attachmentReceiptStoreSmoke attachmentFileStoreSmoke attachmentTargetStoreSmoke attachmentTransactionSmoke attachmentExportBindingSmoke attachmentOperationSmoke \
               exportReportSmoke exportReportClaimsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke \
@@ -2365,6 +2388,16 @@ jobs:
           }
           'windows-file-lock-publication=PASS' |
             Set-Content -Path (Join-Path $lockDirectory 'result.txt') -Encoding utf8
+
+      - name: Actual JVM cancellation through Windows validator process owner
+        shell: pwsh
+        run: |
+            $helper = (Resolve-Path native-windows/forge-validator-supervisor.exe).Path
+            $python = (Get-Command python).Source
+            $results = Join-Path $PWD 'build\test-results\windows-host\supervisor'
+            & .\gradlew.bat validatorSupervisorSmoke "-PsupervisorPath=$helper" `
+                "-PsupervisorPython=$python" "-PsupervisorResults=$results"
+            if ($LASTEXITCODE -ne 0) { throw 'Windows JVM validator cancellation failed' }
 
       - name: Isolated Windows producer ABI smoke test
         shell: pwsh

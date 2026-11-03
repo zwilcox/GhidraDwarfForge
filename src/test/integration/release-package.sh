@@ -39,12 +39,24 @@ done
 printf consumer > "$work/linux/libdwarf.so.2.3.2"
 printf dependency > "$work/linux/libdwarf.so.2"
 printf producer > "$work/linux/libdwarfp.so.2.3.2"
+printf supervisor > "$work/linux/forge-validator-supervisor"
 patch_hash=$(sha256sum < "$repository_dir/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch")
 patch_hash=${patch_hash%% *}
 printf 'source patch SHA-256:\n%s  /fixture/patch.patch\n' "$patch_hash" \
     > "$work/linux/BUILD-METADATA.txt"
 printf consumer > "$work/windows/libdwarf-2.dll"
 printf producer > "$work/windows/libdwarfp-2.dll"
+printf supervisor > "$work/windows/forge-validator-supervisor.exe"
+for platform in linux windows; do
+    supervisor_name=forge-validator-supervisor
+    if [[ "$platform" == windows ]]; then supervisor_name=forge-validator-supervisor.exe; fi
+    {
+        printf 'source SHA-256:\n'
+        sha256sum "$repository_dir/native/supervisor/forge-supervisor-$platform.c"
+        printf 'binary SHA-256:\n'
+        sha256sum "$work/$platform/$supervisor_name"
+    } > "$work/$platform/SUPERVISOR-BUILD-METADATA.txt"
+done
 printf compression > "$work/windows/zlib1.dll"
 printf compression > "$work/windows/libzstd.dll"
 # GNU sha256sum escapes Windows backslashes and prefixes such records with '\'.
@@ -92,6 +104,7 @@ printf 'zstd license\n' \
 
 mkdir -p "$work/windows-without-notices"
 cp "$work/windows"/*.dll "$work/windows/BUILD-METADATA.txt" \
+    "$work/windows/forge-validator-supervisor.exe" "$work/windows/SUPERVISOR-BUILD-METADATA.txt" \
     "$work/windows-without-notices/"
 if "$assembler" "$work/base.zip" "$work/linux" \
         "$work/windows-without-notices" "$work/incomplete.zip" \
@@ -124,6 +137,24 @@ reject_patch_metadata() {
     grep -Fq "$diagnostic" "$work/$name.log"
     cmp "$work/previous-release.zip" "$work/$name.zip"
 }
+
+for invalid in absent empty symlink; do
+    candidate="$work/linux-$invalid-supervisor"
+    cp -R "$work/linux" "$candidate"
+    rm "$candidate/forge-validator-supervisor"
+    case "$invalid" in
+        empty) : > "$candidate/forge-validator-supervisor" ;;
+        symlink) ln -s "$work/linux/forge-validator-supervisor" "$candidate/forge-validator-supervisor" ;;
+    esac
+    reject_patch_metadata "supervisor-$invalid" "$candidate" "$work/windows" \
+        'required validator supervisor/provenance is missing'
+done
+
+cp -R "$work/linux" "$work/linux-wrong-supervisor-source"
+sed -i 's/^[0-9a-f]\{64\}/0000000000000000000000000000000000000000000000000000000000000000/' \
+    "$work/linux-wrong-supervisor-source/SUPERVISOR-BUILD-METADATA.txt"
+reject_patch_metadata supervisor-wrong-source "$work/linux-wrong-supervisor-source" "$work/windows" \
+    'validator supervisor source provenance mismatch'
 
 cp -R "$work/windows" "$work/windows-crlf-patch"
 printf 'source patch SHA-256:\n%s  /fixture/patch.patch\n' \

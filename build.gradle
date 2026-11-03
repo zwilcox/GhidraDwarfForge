@@ -123,6 +123,20 @@ tasks.register("attachmentProtocolSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.output.AttachmentProtocolSmoke"
 }
 
+tasks.register("validatorSupervisorSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks native validator ownership, bounded output and actual JVM cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.ValidatorSupervisorSmoke"
+    doFirst {
+        ["supervisorPath", "supervisorPython", "supervisorResults"].each { name ->
+            if (!project.hasProperty(name)) throw new GradleException("Missing -P" + name)
+        }
+        args project.property("supervisorPath"), project.property("supervisorPython"), project.property("supervisorResults")
+    }
+}
+
 tasks.register("attachmentReceiptStoreSmoke", JavaExec) {
     group = "verification"
     description = "Exercises receipt publication and failure recovery on an owned Linux filesystem"

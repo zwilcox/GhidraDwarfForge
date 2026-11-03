@@ -38,6 +38,17 @@ public final class PackagedNativeLibraries {
             Platform.CURRENT_PLATFORM.getDirectoryName());
     }
 
+    /** The helper is covered by the same complete native-directory manifest. */
+    public static Path resolveSupervisor(Path moduleRoot, String platformDirectory) throws IOException {
+        Pair pair = resolve(moduleRoot, platformDirectory);
+        String name = platformDirectory.equals("win_x86_64") ? "forge-validator-supervisor.exe" : "forge-validator-supervisor";
+        Path helper = pair.directory().resolve(name);
+        if (!Files.isRegularFile(helper, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+            throw new IOException("packaged validator supervisor is missing: " + helper);
+        }
+        return helper;
+    }
+
     public static Pair resolve(Path moduleRoot, String platformDirectory) throws IOException {
         if (!SUPPORTED_PLATFORMS.contains(platformDirectory)) {
             throw new IOException("packaged libdwarf is unavailable for host platform " +

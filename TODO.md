@@ -1,5 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local #72 validator process ownership:** the production Java runner
+and isolated Linux helper pass 13 native lifecycle controls and 32 actual Java
+21 checks, including orphaned/session-changing descendants, bounded raw logs,
+timeout, cancellation, callback failure and interruption. The Windows Job Object
+helper cross-compiles; native Windows execution is **PRESENT, UNVERIFIED** in CI.
+Release packaging binds both helpers to source/binary provenance and manifests.
+DWARF result interpretation/live attachment binding, both production metadata
+hosts and public CLI/GUI remain required. See `docs/VALIDATOR-SUPERVISION.md`.
+
 **CONFIRMED local #72 saved-program refresh progress:** actual x86-64 exec/PIE
 analyst edits survive save/reopen, export from the retained original backup,
 changed-CRC attachment and automatic GDB source/type/member/argument checks.
