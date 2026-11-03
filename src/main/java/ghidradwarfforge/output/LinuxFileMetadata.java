@@ -29,7 +29,7 @@ import java.util.function.BooleanSupplier;
  *
  * Applies only ordinary mode/owner/group/mtime, user attributes and access ACLs
  * to an already owned private stage. Never creates, replaces or deletes a file.
- * Access/change/birth times, inode flags and hidden metadata are not preservation
+ * Access/change/birth times and hidden metadata are not preservation
  * claims. Cancellation is checked around native calls; it cannot interrupt a
  * blocked filesystem operation. No adversarial filesystem-race claim is made.
  */
@@ -45,6 +45,7 @@ public final class LinuxFileMetadata {
         int fchown(int fd, int uid, int gid);
         int fchmod(int fd, int mode);
         int futimens(int fd, Pointer times);
+        int ioctl(int fd, long request, Pointer result);
     }
 
     private static final int REQUIRED_FIELDS = 0x3df;
@@ -57,16 +58,28 @@ public final class LinuxFileMetadata {
             long modifiedSeconds, int modifiedNanos, long changedSeconds, int changedNanos,
             long attributes, long attributesMask) { }
 
+    /** Inode policy omitted by statx; allocation extent counts are not preservation fields. */
+    public record InodePolicy(long flags, long extendedFlags, long extentSize, long projectId,
+            long cowExtentSize) { }
+
     /** Names and values are lossless hexadecimal bytes; no UTF-8 assumption for xattrs. */
-    public record Snapshot(Facts facts, Map<String, String> visibleAttributes) {
-        public Snapshot { visibleAttributes = Map.copyOf(visibleAttributes); }
+    public record Snapshot(Facts facts, Map<String, String> visibleAttributes, InodePolicy inodePolicy) {
+        public Snapshot {
+            visibleAttributes = Map.copyOf(visibleAttributes);
+            java.util.Objects.requireNonNull(inodePolicy, "inode policy");
+        }
 
         /** Digest of this primitive's supported preservation fields, not full host metadata. */
         public String preservationSha256() {
             try {
                 var bytes = new ByteArrayOutputStream();
                 try (var out = new DataOutputStream(bytes)) {
-                    out.writeInt(1);
+                    out.writeInt(2);
+                    out.writeLong(inodePolicy.flags());
+                    out.writeLong(inodePolicy.extendedFlags());
+                    out.writeLong(inodePolicy.extentSize());
+                    out.writeLong(inodePolicy.projectId());
+                    out.writeLong(inodePolicy.cowExtentSize());
                     out.writeInt(facts.mode());
                     out.writeLong(facts.uid());
                     out.writeLong(facts.gid());
@@ -164,6 +177,11 @@ public final class LinuxFileMetadata {
     private static void supported(Snapshot snapshot) throws IOException {
         require((snapshot.facts().mode() & 07000) == 0, "privileged file mode is unsupported");
         require(snapshot.facts().attributes() == 0, "special inode attributes require separate preservation policy");
+        var inode = snapshot.inodePolicy();
+        // EXTENTS and HASATTR describe storage/attribute presence, not a requested policy.
+        require((inode.flags() & ~0x80000L) == 0 && (inode.extendedFlags() & ~0x80000000L) == 0 &&
+            inode.extentSize() == 0 && inode.projectId() == 0 && inode.cowExtentSize() == 0,
+            "unsupported inode flags, project ID or allocation policy");
         for (String name : snapshot.visibleAttributes().keySet()) {
             require(name.startsWith("757365722e") || name.equals(HEX.formatHex(
                 "system.posix_acl_access".getBytes(StandardCharsets.US_ASCII))), "unsupported visible metadata namespace");
@@ -173,6 +191,7 @@ public final class LinuxFileMetadata {
     private Snapshot observe(int fd, BooleanSupplier cancelled) throws IOException {
         check(cancelled);
         Facts before = stat(fd, new byte[] {0}, 0x1000);
+        InodePolicy policy = inodePolicy(fd);
         var attributes = new TreeMap<String, String>();
         int total = 0;
         try (var names = new Memory(XATTR_LIMIT); var value = new Memory(XATTR_LIMIT)) {
@@ -199,7 +218,24 @@ public final class LinuxFileMetadata {
         }
         check(cancelled);
         require(before.equals(stat(fd, new byte[] {0}, 0x1000)), "opened metadata changed while reading attributes");
-        return new Snapshot(before, attributes);
+        require(policy.equals(inodePolicy(fd)), "opened inode policy changed while reading metadata");
+        return new Snapshot(before, attributes, policy);
+    }
+
+    private InodePolicy inodePolicy(int fd) throws IOException {
+        try (var flags = new Memory(4); var extended = new Memory(28)) {
+            flags.clear();
+            extended.clear();
+            // LP64 request encoding uses sizeof(long), but GETFLAGS returns int *.
+            checked(libc.ioctl(fd, 0x80086601L, flags), "FS_IOC_GETFLAGS");
+            checked(libc.ioctl(fd, 0x801c581fL, extended), "FS_IOC_FSGETXATTR");
+            for (byte reserved : extended.getByteArray(20, 8)) {
+                require(reserved == 0, "unrecognized inode allocation policy fields");
+            }
+            return new InodePolicy(Integer.toUnsignedLong(flags.getInt(0)),
+                Integer.toUnsignedLong(extended.getInt(0)), Integer.toUnsignedLong(extended.getInt(4)),
+                Integer.toUnsignedLong(extended.getInt(12)), Integer.toUnsignedLong(extended.getInt(16)));
+        }
     }
 
     private Facts stat(int fd, byte[] path, int flags) throws IOException {

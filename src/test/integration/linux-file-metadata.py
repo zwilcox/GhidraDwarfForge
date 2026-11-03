@@ -2,6 +2,8 @@
 """Independent native metadata oracle for owned files and isolated Java 21 calls."""
 
 import argparse
+import array
+import fcntl
 import hashlib
 import json
 import os
@@ -19,6 +21,23 @@ def sha(path):
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
+def inode_policy(path):
+    with Path(path).open('rb') as stream:
+        flags = array.array('I', [0])
+        fcntl.ioctl(stream.fileno(), 0x80086601, flags, True)
+        extended = bytearray(28)
+        fcntl.ioctl(stream.fileno(), 0x801c581f, extended, True)
+        xflags, extent, count, project, cow = struct.unpack('<5I', extended[:20])
+        assert not any(extended[20:])
+        return {'flags': flags[0], 'extendedFlags': xflags, 'extentSize': extent,
+                'projectId': project, 'cowExtentSize': cow}
+
+
+def set_inode_flags(path, value):
+    with Path(path).open('rb') as stream:
+        fcntl.ioctl(stream.fileno(), 0x40086602, array.array('I', [value]))
+
+
 def facts(path):
     info = path.lstat()
     attributes = {os.fsencode(name).hex(): os.getxattr(path, name, follow_symlinks=False).hex()
@@ -26,7 +45,7 @@ def facts(path):
     return {'mode': info.st_mode, 'uid': info.st_uid, 'gid': info.st_gid,
             'mtime': info.st_mtime_ns, 'ctime': info.st_ctime_ns, 'links': info.st_nlink,
             'identity': f'{os.major(info.st_dev)}:{os.minor(info.st_dev)}:{info.st_ino}',
-            'bytes': info.st_size, 'attributes': attributes, 'sha256': sha(path)}
+            'bytes': info.st_size, 'attributes': attributes, 'inodePolicy': inode_policy(path), 'sha256': sha(path)}
 
 
 def acl(named_uid):
@@ -101,6 +120,7 @@ def main():
         assert native['modifiedSeconds'] * 1000000000 + native['modifiedNanos'] == before['mtime']
         assert native['changedSeconds'] * 1000000000 + native['changedNanos'] == before['ctime']
         assert result['visibleAttributes'] == before['attributes']
+        assert result['inodePolicy'] == before['inodePolicy']
         assert facts(path) == before
         observations.append({'case': label, 'independent': before, 'java': result})
         return root / (label + '.stdout')
@@ -111,7 +131,7 @@ def main():
         stage_before = facts(stage)
         run(label, [*prefix, 'apply', path, stage, snapshot, '-1'])
         after = facts(stage)
-        for field in ('mode', 'uid', 'gid', 'mtime', 'attributes'):
+        for field in ('mode', 'uid', 'gid', 'mtime', 'attributes', 'inodePolicy'):
             assert after[field] == before[field], (field, before, after)
         assert after['sha256'] == stage_before['sha256'] and after['identity'] == stage_before['identity']
         assert facts(path) == before
@@ -150,6 +170,31 @@ def main():
     # adjusted; source content/metadata must remain unchanged.
     refused = run('cancel-mid-application', [*prefix, 'apply', original, stage, snapshot, '20'], False)
     assert b'CancellationException' in refused.stderr and facts(original) == before_source
+    # FS_NOATIME_FL is not represented by statx attributes. The old primitive
+    # accepted this source and produced a stage without its inode policy.
+    for label, selected in [('source-noatime', original), ('stage-noatime', stage)]:
+        ordinary_flags = inode_policy(selected)['flags']
+        set_inode_flags(selected, ordinary_flags | 0x80)
+        try:
+            snapshot = inspect(label + '-source', original)
+            if selected == original:
+                observed = json.loads(snapshot.read_text())
+                assert observed['facts']['attributes'] == 0 and observed['inodePolicy']['flags'] & 0x80
+            before_source, before_stage = facts(original), facts(stage)
+            refused = run(label, [*prefix, 'apply', original, stage, snapshot, '-1'], False)
+            assert b'unsupported inode flags' in refused.stderr
+            assert facts(original) == before_source and facts(stage) == before_stage
+        finally:
+            set_inode_flags(selected, ordinary_flags)
+    snapshot = inspect('stale-inode-policy', original)
+    ordinary_flags = inode_policy(original)['flags']
+    set_inode_flags(original, ordinary_flags | 0x80)
+    try:
+        before_stage = facts(stage)
+        refused = run('stale-policy-rejection', [*prefix, 'apply', original, stage, snapshot, '-1'], False)
+        assert b'metadata source changed' in refused.stderr and facts(stage) == before_stage
+    finally:
+        set_inode_flags(original, ordinary_flags)
     alias = fixture / 'hardlink'
     os.link(original, alias)
     snapshot = inspect('hardlink-source', original)

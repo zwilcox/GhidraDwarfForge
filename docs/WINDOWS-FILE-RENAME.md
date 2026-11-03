@@ -1,10 +1,11 @@
 # Windows opened-stage rename
 
-**PRESENT, UNVERIFIED on native Windows:** `WindowsFileRename` implements
-new-name publication and existing-target replacement through one opened-stage
-`FileRenameInfo` request. The extension and isolated Java 21 sources compile;
-the Windows64 C contract cross-compiles. Native Windows execution of the new
-cases is required before the transaction may rely on this primitive.
+**CONFIRMED on native Windows:** run 41604998416 at `a473949` passes the
+isolated C ABI/Java 21 rename harness. Artifact 13216407497 was independently
+reviewed against raw provenance hashes, Git source (accounting for Windows
+checkout newlines), Java class/runtime versions and native observations.
+Ten namespace scenarios, six additional rejection cases and 128 handle-lifetime
+cycles pass. See [the review receipt](evidence/windows-rename-41604998416.json).
 
 This is a namespace mechanism for #72, not a complete attachment host or a
 durability claim. Full metadata admission, filesystem/storage selection,
@@ -67,5 +68,7 @@ across 128 cycles after warmup.
 
 Local results under `build/test-results/windows-rename/` prove C cross-compilation,
 Java 21 compilation and actual harness request transport in normal/interpreted
-JVM modes. They do not prove native rename, metadata preservation or power-loss
-behavior. Hosted execution and artifact review remain required.
+JVM modes. They do not alone prove native rename or metadata preservation. The hosted
+run and independent artifact review above supply that evidence for the tested
+Windows filesystem. Cross-volume refusal, full filesystem/metadata admission,
+transaction integration and power-loss behavior are not proved by these cases.

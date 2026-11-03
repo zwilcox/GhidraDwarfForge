@@ -41,12 +41,16 @@ public final class LinuxFileMetadataProbe {
             var attributes = new java.util.TreeMap<String, String>();
             json.getAsJsonObject("visibleAttributes").entrySet().forEach(entry ->
                 attributes.put(entry.getKey(), entry.getValue().getAsString()));
+            var policy = json.getAsJsonObject("inodePolicy");
+            var inodePolicy = new LinuxFileMetadata.InodePolicy(policy.get("flags").getAsLong(),
+                policy.get("extendedFlags").getAsLong(), policy.get("extentSize").getAsLong(),
+                policy.get("projectId").getAsLong(), policy.get("cowExtentSize").getAsLong());
             var expected = new LinuxFileMetadata.Snapshot(new LinuxFileMetadata.Facts(
                 facts.get("identity").getAsString(), facts.get("links").getAsLong(), facts.get("mode").getAsInt(),
                 facts.get("uid").getAsLong(), facts.get("gid").getAsLong(), facts.get("bytes").getAsLong(),
                 facts.get("modifiedSeconds").getAsLong(), facts.get("modifiedNanos").getAsInt(),
                 facts.get("changedSeconds").getAsLong(), facts.get("changedNanos").getAsInt(),
-                facts.get("attributes").getAsLong(), facts.get("attributesMask").getAsLong()), attributes);
+                facts.get("attributes").getAsLong(), facts.get("attributesMask").getAsLong()), attributes, inodePolicy);
             int stopAt = Integer.parseInt(args[4]);
             var polls = new AtomicInteger();
             var result = metadata.applyToOwnedStage(Path.of(args[1]), expected, Path.of(args[2]),

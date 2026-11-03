@@ -1,0 +1,28 @@
+{
+    "run": 41603738214,
+    "head": "83e9e644f82bc1b98f200508cd52478d8a6c17f0",
+    "artifactId": 13216751214,
+    "artifactSha256": "3c04b03aab1e709d401cf530c04a0ff4ff16f5bcc9d058ef8d35ba6216fb577f",
+    "result": {
+        "status": "PASS",
+        "observed": {
+            "identity": "8:1:9187734@28",
+            "fileSystemType": 61267,
+            "fileSystemId": "679875c260000840",
+            "mountFlags": 4128,
+            "maximumNameBytes": 255
+        },
+        "checks": "linux-directory-sync=PASS checks=494 cycles=128 filesystem=ef53",
+        "scope": "native directory/mount identity and fsync; not filesystem admission or power-loss testing"
+    },
+    "sourceAndDependencyHashes": {
+        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/libs/GhidraDwarfForge.jar": "9983254c06896675954da1af2a3d170593e5e6e21dfc50a69cd1fd7902cb1294",
+        "/home/runner/work/_temp/ghidra/ghidra_12.0.3_PUBLIC/Ghidra/Framework/Pty/lib/jna-5.14.0.jar": "34ed1e1f27fa896bca50dbc4e99cf3732967cec387a7a0d5e3486c09673fe8c6",
+        "/home/runner/work/_temp/ghidra/ghidra_12.0.3_PUBLIC/Ghidra/Framework/Generic/lib/gson-2.9.0.jar": "c96d60551331a196dac54b745aa642cd078ef89b6f267146b705f2c2cbef052d",
+        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/src/test/java/ghidradwarfforge/output/LinuxDirectorySyncSmoke.java": "30b40bb2e2b0ea269b4a3dc3b8b35ebe04b56deb83bf137b6beafc83e5eea4aa",
+        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/src/test/native/linux-directory-contract.c": "08e1414a557bcc7a55dd5abb229e725330e1bb229a971420fa5aa0725cac706d",
+        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/src/test/integration/linux-directory-sync.py": "ee840da162bac17da89e296b126fcb69088346cc10d6bab7147d31caa6c9790e",
+        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/src/main/java/ghidradwarfforge/output/LinuxDirectorySync.java": "a3b9b626306fba8fd3441791e8e0dc2f9e76d217f656caf1872572bce1205231"
+    },
+    "review": "All retained bytes match origin; source matches Git; Java21; native C observer equals Java fields; all captured commands pass"
+}

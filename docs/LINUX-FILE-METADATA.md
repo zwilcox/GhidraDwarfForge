@@ -1,6 +1,6 @@
 # Linux opened-file metadata
 
-**CONFIRMED locally and on hosted Linux:** `LinuxFileMetadata` is a production-code primitive for
+**CONFIRMED locally; prior baseline also confirmed on hosted Linux:** `LinuxFileMetadata` is a production-code primitive for
 native inspection and private-stage metadata application. It is deliberately
 not an `AttachmentOperation.Host`, admission decision or public action. A1 in
 the [completion ledger](DEBUG-LOADING-COMPLETION-PLAN.md) remains incomplete.
@@ -48,7 +48,8 @@ truncation, malformed names, duplicates and concurrent metadata changes fail;
 there is no unavailable-attribute fallback. Snapshots are immutable. The
 preservation digest uses versioned, length-delimited binary fields in stable
 name order; it covers the ordinary preservation fields only and makes no claim
-about hidden namespaces, inode flags, birth time or change time.
+about hidden namespaces, birth time or change time. Version 2 additionally
+binds the observed inode-policy fields described below.
 
 Application accepts an expected snapshot and an existing, independently owned
 private stage. It checks both descriptors before changes, rejects aliases and
@@ -110,3 +111,39 @@ native observations. The archive SHA-256 is
 The extension build, workflow lint, architecture isolation and diff checks pass
 locally. There is no new Ghidra native call, target ELF/DWARF change, public host
 support or complete metadata-preservation claim from this checkpoint.
+
+## Inode policy omitted by statx
+
+**CONFIRMED local correction:** the earlier primitive could successfully copy
+ordinary fields while losing `FS_NOATIME_FL`. In an owned fixture, the source
+had flags `0x80080`, the stage had `0x80000`, and statx attributes were zero.
+The old operation returned success. Evidence and the prior JAR are retained
+under `build/test-results/linux-inode-policy/`; this primitive was not yet a
+public attachment host. An initial NODUMP control was already rejected by the
+statx guard and is not reported as reproducing the gap.
+
+The primitive now queries both `FS_IOC_GETFLAGS` and `FS_IOC_FSGETXATTR` on the
+same opened descriptor, checks policy stability across enumeration, and binds
+flags, extended flags, allocation hints and project ID in its version-2
+preservation digest. The audited LP64 request numbers and 28-byte fsxattr
+layout are asserted in the native C contract. GETFLAGS's result is an `int *`
+even though the request encoding includes `sizeof(long)`; see the
+[Linux inode-flag interface](https://man7.org/linux/man-pages/man2/ioctl_iflags.2.html).
+
+Application admits ordinary policy only: the EXTENTS storage marker and
+HASATTR presence marker are allowed, while other inode-policy bits, nonzero
+project IDs and allocation hints are refused before changing metadata.
+Missing/unsupported queries and unknown reserved fields are errors, never
+proof of ordinary policy. Allocation extent counts are physical layout, not a
+preservation field. No setter or privilege escalation is used by production.
+Hidden xattr visibility and complete filesystem admission remain separate.
+
+The actual Java 21 harness passes fourteen independent observations plus the
+existing ACL/group/cancellation/descriptor controls. Python independently
+queries the ioctl fields. New actual source/stage NOATIME cases prove refusal
+without mutation, and a stale policy change is detected. These replace the
+old successful-but-incomplete behavior. The local filesystem refuses setting
+a nonzero project ID with EOPNOTSUPP; no successful native project-ID mutation
+test is claimed. Native query layout is independently checked; nonzero project
+policy remains an explicit refusal, not supported preservation. Hosted
+acceptance of these new inode-policy queries is **PRESENT, UNVERIFIED**.

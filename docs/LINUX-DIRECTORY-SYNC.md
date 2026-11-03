@@ -1,6 +1,6 @@
 # Linux directory identity and flush
 
-**CONFIRMED locally:** `LinuxDirectorySync` supplies native opened-directory
+**CONFIRMED locally and on hosted Linux:** `LinuxDirectorySync` supplies native opened-directory
 identity, mount/filesystem observations and explicit directory `fsync` for the
 Linux Intel LP64 release host. It is not a complete attachment host or a claim
 of power-loss testing. Full filesystem admission and storage assumptions must
@@ -56,8 +56,11 @@ wrong-directory and symlink/non-directory rejection, a path replacement while
 the descriptor is open, and actual procfs `fsync` failure. The latter changes
 no procfs entries. After warmup, 128 success/cancellation/failure cycles show
 no native descriptor growth. Raw commands, exact JAR/dependencies/sources and
-hashes are retained by the harness. The extension CI runs that harness; hosted
-acceptance of the new primitive is **PRESENT, UNVERIFIED** until its new run.
+hashes are retained by the harness. Hosted run 41603738214 at `83e9e64` passes the same 494 assertions and
+128 cycles on its `0xef53` filesystem. Independent review verifies all retained
+sources/dependencies, Java 21 and exact C/Java observations; see
+[the review receipt](evidence/linux-directory-41603738214.json). This remains
+an operation-level test, not power-loss or complete host admission acceptance.
 
 Receipt, backup, target replacement, transaction and operation tests now use
 these production identity/flush calls alongside the production native rename.

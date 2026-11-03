@@ -1,6 +1,8 @@
 #define _GNU_SOURCE
 #include <fcntl.h>
 #include <stddef.h>
+#include <linux/fs.h>
+#include <sys/ioctl.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/stat.h>
@@ -41,6 +43,14 @@ _Static_assert(O_RDONLY == 0 && O_RDWR == 2 && O_NONBLOCK == 0x800 &&
     O_CLOEXEC == 0x80000 && O_NOFOLLOW == 0x20000, "open flags");
 _Static_assert(STATX_BASIC_STATS == 0x7ff && UTIME_OMIT == 0x3ffffffe, "metadata constants");
 
+_Static_assert(sizeof(struct fsxattr) == 28, "fsxattr extent");
+_Static_assert(offsetof(struct fsxattr, fsx_xflags) == 0 && offsetof(struct fsxattr, fsx_extsize) == 4 &&
+    offsetof(struct fsxattr, fsx_projid) == 12 && offsetof(struct fsxattr, fsx_cowextsize) == 16 &&
+    offsetof(struct fsxattr, fsx_pad) == 20, "fsxattr policy fields");
+_Static_assert(FS_IOC_GETFLAGS == 0x80086601UL && FS_IOC_FSGETXATTR == 0x801c581fUL, "LP64 ioctl requests");
+_Static_assert(FS_EXTENT_FL == 0x80000 && FS_XFLAG_HASATTR == 0x80000000U && FS_NOATIME_FL == 0x80,
+    "inode policy bits");
+
 int main(void) {
     int (*stat_call)(int, const char *, int, unsigned int, struct statx *) = statx;
     ssize_t (*list_call)(int, char *, size_t) = flistxattr;
@@ -52,8 +62,9 @@ int main(void) {
     int (*time_call)(int, const struct timespec *) = futimens;
     int (*open_call)(const char *, int, ...) = open;
     int (*close_call)(int) = close;
+    int (*ioctl_call)(int, unsigned long, ...) = ioctl;
     if (!stat_call || !list_call || !get_call || !set_call || !remove_call ||
-            !owner_call || !mode_call || !time_call || !open_call || !close_call) return 1;
+            !owner_call || !mode_call || !time_call || !open_call || !close_call || !ioctl_call) return 1;
     puts("linux-metadata-contract=PASS LP64 statx=256 timespec=16");
     return 0;
 }

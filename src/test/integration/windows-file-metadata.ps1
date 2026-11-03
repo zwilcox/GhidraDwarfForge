@@ -336,12 +336,31 @@ Same-State $readonlyBefore $renameTarget
 Same-State $beforeStage $renameStage
 [IO.File]::SetAttributes($renameTarget, [IO.FileAttributes]::Archive)
 Remove-Item -LiteralPath $renameTarget
+$crossRoot = Join-Path ([IO.Path]::GetTempPath()) ('forge-rename-cross-' + [Guid]::NewGuid().ToString('N'))
+$null = New-Item -ItemType Directory -Path $crossRoot
+$crossMarker = Join-Path $crossRoot 'owned marker'
+$crossTarget = Join-Path $crossRoot 'absent target'
+[IO.File]::WriteAllText($crossMarker, 'owned cross-volume observer', $utf8)
+$crossFacts = Independent-State $crossMarker
+$crossResult = [ordered]@{tested=$false; stageVolume=$beforeStage.volume; destinationVolume=$crossFacts.volume}
+if ($beforeStage.volume -ne $crossFacts.volume) {
+    $refused = Run-Rename 'rename-cross-volume' @('publish',$renameStage,$crossTarget) $false
+    Require ($refused.stderr.Contains('FileRenameInfo failed (error=17)')) 'Cross-volume request did not fail as a rename'
+    Same-State $beforeStage $renameStage
+    Require (-not (Test-Path -LiteralPath $crossTarget)) 'Cross-volume refusal copied a destination'
+    $crossResult.tested = $true
+}
+else { $crossResult['reason'] = 'Runner temporary directory is on the same volume; cross-volume control unavailable' }
+Same-State $crossFacts $crossMarker
+Save-Json (Join-Path $root 'rename-cross-volume.json') $crossResult
+Remove-Item -LiteralPath $crossMarker
+Remove-Item -LiteralPath $crossRoot
 $null = Run-Rename 'rename-handle-lifetime' @('lifetime',$renameStage,$renameTarget) $true $true
 Same-State $beforeStage $renameStage
 Require (-not (Test-Path -LiteralPath $renameTarget)) 'Lifetime test left a target'
 
 foreach ($sourcePath in $hashes.Keys) { Require ((Hash $sourcePath) -eq $hashes[$sourcePath]) 'Protected source/dependency changed' }
 Save-Json (Join-Path $root 'result.json') ([ordered]@{status='PASS'; observations=$observations.ToArray();
-    renameObservations=$renameResults.ToArray();
+    renameObservations=$renameResults.ToArray(); renameCrossVolume=$crossResult;
     scope='Opened Windows identity, accessible metadata and verified-stage rename; not complete host admission, SACL/EA preservation or durability'})
 Write-Output 'windows-file-metadata=PASS'

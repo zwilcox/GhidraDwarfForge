@@ -17,12 +17,20 @@ validator work but still needs complete production hosts, public controls,
 and full acceptance. All original criteria remain in
 `docs/DEBUG-LOADING-COMPLETION-PLAN.md`.
 
-**PRESENT, UNVERIFIED #72 Windows namespace implementation:** an opened-stage
-`FileRenameInfo` primitive and isolated native test cases now cover replacement,
-no-overwrite publication, identity/metadata readback, collisions, sharing and
-cancellation. Java 21/C cross-compilation and request transport pass locally;
-native execution remains required. This is not complete host admission or
-durability. See `docs/WINDOWS-FILE-RENAME.md`.
+**CONFIRMED native Windows #72 namespace acceptance:** run 41604998416 at
+`a473949` passes opened-stage publication/replacement, ten namespace scenarios,
+six additional rejections and 128 handle-lifetime cycles. Raw native artifacts
+were independently reviewed. Linux directory identity/fsync also passes hosted
+run 41603738214. These mechanisms do not complete host admission, durability
+or public controls; see `docs/WINDOWS-FILE-RENAME.md` and `docs/LINUX-DIRECTORY-SYNC.md`.
+
+**CONFIRMED local #72 inode-policy correction:** native Linux metadata now
+queries inode flags/project/allocation policy that statx omits. The old code
+lost NOATIME while reporting successful copying; actual source/stage and stale
+policy controls now refuse before changing metadata. Fourteen independent
+observations and descriptor/ACL/group controls pass on Java 21. Hosted acceptance
+of this correction remains unverified; hidden-attribute policy remains pending.
+See `docs/LINUX-FILE-METADATA.md`.
 
 **CONFIRMED local #72 directory operations:** the production Linux primitive
 now supplies opened-directory/mount identity and explicit fsync with changed-path
