@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**PRESENT, UNVERIFIED native GUI completion harness:** the Linux CI reference
+job now drives the real preparation/attachment, changed-curation refresh and
+saved-request recovery scripts. Ghidra remains unprivileged; a temporary
+runner-only polkit rule authorizes its explicitly selected separate helper.
+Both generations require receipt/CRC checks, structural validators and fresh
+GDB automatic discovery, source stepping and CRC rejection. Java21 compilation,
+ShellCheck/actionlint and independent objcopy/GDB consumer controls pass locally;
+this is not evidence of a successful native GUI transaction. Native execution
+and Windows acceptance remain pending.
+
 **CONFIRMED local GUI preparation; native modifying GUI acceptance remains unverified:**
 `ExportAndAttachGhidraDwarfForge.java` selects an initial/refresh operation, exports
 the current program to a fresh pair, captures the completed report directly from

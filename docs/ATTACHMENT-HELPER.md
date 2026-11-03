@@ -355,3 +355,18 @@ result destination. See [the native mapping and authorization contract](WINDOWS-
 for the owned security-privilege scope, PowerShell7 dependency, UAC output limits
 and exact pending validation. Native Windows launcher/authorization and GUI
 acceptance remain incomplete.
+
+### Native GUI acceptance harness
+
+**PRESENT, UNVERIFIED:** `gui-attachment-authorized-ci.sh` is restricted to the
+disposable GitHub runner. It installs a temporary polkit rule scoped to the
+runner account and selected Java executable, then removes it on exit. The test
+keeps Ghidra unprivileged and selects the production authorization prompt for
+initial attachment, a curated refresh and saved-request recovery. Private native
+logs are archived without changing their permissions. This does not configure
+a user's workstation or change product authorization defaults.
+
+The independent `gui-attachment-verify.py` checks retained receipts, both
+generations' target-endian CRCs, GNU/LLVM/pinned-libdwarf results, automatic GDB
+source/type/break/next/step/exit and CRC-negative controls. Local compilation and
+objcopy/GDB consumer controls pass; actual native GUI execution is still pending.

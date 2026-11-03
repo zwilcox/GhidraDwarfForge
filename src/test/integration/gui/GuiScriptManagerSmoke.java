@@ -227,6 +227,9 @@ public final class GuiScriptManagerSmoke {
                         runAttachmentDecline(tool, input, chosen.resolve("fixture.dbg"),
                             chosen.resolve("fixture.dbg.c"), caseDirectory, transcript);
                         runPreparationDecline(tool, input, caseDirectory);
+                        if ("1".equals(System.getenv("GHIDRA_GUI_NATIVE_ATTACHMENT"))) {
+                            runNativeAttachment(tool, program, input, caseDirectory, functionAddress);
+                        }
                     }
                     ComponentProvider provider = tool.getComponentProvider("Console");
                     GuiTestSupport.onSwing(() -> {
@@ -412,6 +415,126 @@ public final class GuiScriptManagerSmoke {
                 .equals(java.util.List.of("export.json", "request.json")), "declined preparation started transaction or left stages");
         }
         Files.writeString(work.resolve("result.txt"), "real-curated-export=PASS\ncaptured-report-bound-to-files=PASS\nseparate-default-decline=PASS\noriginal-unchanged=PASS\nno-transaction-outputs=PASS\n");
+    }
+
+    private static void runNativeAttachment(ProbeTool tool, Program program, Path input,
+            Path caseDirectory, String functionAddress) throws Exception {
+        GuiTestSupport.require(System.getProperty("os.name").equals("Linux"),
+            "this authorization fixture is Linux-only");
+        GuiTestSupport.require(!Files.readString(Path.of("/proc/self/status")).lines()
+            .filter(line -> line.startsWith("Uid:")).findFirst().orElseThrow().split("\\s+")[1].equals("0"),
+            "Ghidra must run unprivileged during the authorization journey");
+        Path work = Files.createDirectory(caseDirectory.resolve("attachment-native"));
+        Path target = Files.copy(input, work.resolve("fixture"));
+        String original = GuiTestSupport.sha256(input);
+        Path first = prepareAndAttach(tool, target, work, null, "initial.dbg");
+        var initial = ghidradwarfforge.output.AttachmentInvocation.read(first.resolve("request.json"), () -> false);
+        String firstTarget = GuiTestSupport.sha256(target);
+        GuiTestSupport.require(!firstTarget.equals(original) &&
+            GuiTestSupport.sha256(initial.operation().originalBackup()).equals(original), "initial attachment/backup bytes differ");
+        GuiTestSupport.require(!Files.isSameFile(target, initial.operation().originalBackup()), "backup is not independent");
+        Files.copy(target, work.resolve("initial-target"), java.nio.file.StandardCopyOption.COPY_ATTRIBUTES);
+        var retained = new java.util.LinkedHashMap<Path, String>();
+        for (Path path : java.util.List.of(initial.operation().sidecar(), initial.operation().source(),
+                initial.operation().originalBackup(), initial.operation().receipt())) {
+            retained.put(path, GuiTestSupport.sha256(path));
+        }
+        int transaction = program.startTransaction("Curate GUI attachment refresh");
+        try {
+            program.getFunctionManager().getFunctionAt(program.getAddressFactory().getAddress(functionAddress))
+                .setName("gui_refreshed_add", SourceType.USER_DEFINED);
+        }
+        finally { program.endTransaction(transaction, true); }
+        Path second = prepareAndAttach(tool, target, work, first, "refreshed.dbg");
+        var refresh = ghidradwarfforge.output.AttachmentInvocation.read(second.resolve("request.json"), () -> false);
+        GuiTestSupport.require(!GuiTestSupport.sha256(target).equals(firstTarget) &&
+            GuiTestSupport.sha256(refresh.operation().refresh().priorTargetBackup()).equals(firstTarget),
+            "refresh did not retain the previous target");
+        GuiTestSupport.require(!GuiTestSupport.sha256(refresh.operation().sidecar()).equals(
+            retained.get(initial.operation().sidecar())), "analyst change did not reach refreshed sidecar");
+        Files.copy(target, work.resolve("refreshed-target"), java.nio.file.StandardCopyOption.COPY_ATTRIBUTES);
+        ConsoleService console = tool.getService(ConsoleService.class);
+        clearConsole(console);
+        var interaction = CompletableFuture.runAsync(() -> {
+            try {
+                GuiTestSupport.selectFile("Select saved attachment recovery request", refresh.recoveryInvocation());
+                confirmNativeChange(work.resolve("recovery-review.png"), true);
+            }
+            catch (Exception failure) { throw new RuntimeException(failure); }
+        });
+        launchFromTable(tool, RECOVER, work.resolve("recovery-manager.png"));
+        interaction.get(180, TimeUnit.SECONDS);
+        awaitNativeCompletion(console, work.resolve("recovery-console.txt"), "ROLLED_BACK");
+        GuiTestSupport.require(GuiTestSupport.sha256(target).equals(firstTarget), "GUI recovery did not restore prior generation");
+        GuiTestSupport.require(Files.isRegularFile(refresh.operation().recoveryReceipt()), "durable recovery receipt missing");
+        for (var retainedFile : retained.entrySet()) {
+            GuiTestSupport.require(GuiTestSupport.sha256(retainedFile.getKey()).equals(retainedFile.getValue()),
+                "refresh/recovery changed retained original generation");
+        }
+        GuiTestSupport.require(GuiTestSupport.sha256(input).equals(original), "GUI attachment changed source fixture");
+        Files.writeString(work.resolve("generations.txt"), first + "\n" + second + "\n");
+        Files.writeString(work.resolve("result.txt"), "unprivileged-ghidra=PASS\nexplicit-os-authorization=PASS\n" +
+            "gui-initial-attachment=PASS\ngui-curated-refresh=PASS\ngui-saved-recovery=PASS\nretained-generations=PASS\n");
+    }
+
+    private static Path prepareAndAttach(ProbeTool tool, Path target, Path work,
+            Path previous, String basename) throws Exception {
+        Path records = Files.createDirectory(work.resolve(basename + "-records"));
+        ConsoleService console = tool.getService(ConsoleService.class);
+        clearConsole(console);
+        var interaction = CompletableFuture.runAsync(() -> {
+            try {
+                GuiTestSupport.choose("Prepare sidecar attachment", previous == null ?
+                    "Initial attachment" : "Refresh existing attachment");
+                GuiTestSupport.selectFile("Select executable to attach", target);
+                if (previous != null) {
+                    var prior = ghidradwarfforge.output.AttachmentInvocation.read(previous.resolve("request.json"), () -> false);
+                    GuiTestSupport.selectFile("Select retained original executable backup", prior.operation().originalBackup());
+                    GuiTestSupport.selectFile("Select previous committed receipt", prior.operation().receipt());
+                    GuiTestSupport.selectFile("Select previous sidecar to retain", prior.operation().sidecar());
+                    GuiTestSupport.selectFile("Select previous synthetic source to retain", prior.operation().source());
+                }
+                GuiTestSupport.enterText("Fresh sidecar filename", basename);
+                GuiTestSupport.operateChooser(records, work, false, "Select directory for attachment records and backups");
+                GuiTestSupport.selectFile("Select GNU readelf executable", Path.of(System.getenv("FORGE_GUI_READELF")));
+                GuiTestSupport.selectFile("Select llvm-dwarfdump executable", Path.of(System.getenv("FORGE_GUI_LLVM")));
+                GuiTestSupport.selectFile("Select pinned libdwarf 2.3.2 raw checker executable", Path.of(System.getenv("FORGE_GUI_STRICT")));
+                GuiTestSupport.selectFile("Select pinned dwarfdump configuration", Path.of(System.getenv("FORGE_GUI_CONFIGURATION")));
+                GuiTestSupport.clickButton(new Robot(), GuiTestSupport.dialog("Export and prepare attachment"), "Yes");
+                confirmNativeChange(work.resolve(basename + "-review.png"), false);
+            }
+            catch (Exception failure) { throw new RuntimeException(failure); }
+        });
+        launchFromTable(tool, PREPARE, work.resolve(basename + "-manager.png"));
+        interaction.get(180, TimeUnit.SECONDS);
+        awaitNativeCompletion(console, work.resolve(basename + "-console.txt"), "COMMITTED");
+        try (var children = Files.list(records)) {
+            var directories = children.toList();
+            GuiTestSupport.require(directories.size() == 1, "wrong native preparation directory count");
+            return directories.getFirst();
+        }
+    }
+
+    private static void confirmNativeChange(Path screenshot, boolean recovery) throws Exception {
+        var review = GuiTestSupport.dialog("Review GhidraDwarfForge target change");
+        GuiTestSupport.screenshot(new Robot(), review, screenshot);
+        GuiTestSupport.clickButton(new Robot(), review, recovery ? "Restore selected image" : "Attach selected sidecar");
+        GuiTestSupport.choose("Attachment helper authorization", "Request OS authorization");
+    }
+
+    private static void awaitNativeCompletion(ConsoleService console, Path log, String outcome) throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(180);
+        while (System.nanoTime() < deadline) {
+            String text = consoleText(console);
+            Files.writeString(log, text);
+            if (text.contains("Finished!") || text.contains("Error running script")) {
+                GuiTestSupport.require(text.contains("\"outcome\":\"" + outcome + "\"") &&
+                    text.contains("Attachment helper exit=0"), "native GUI operation failed; inspect " + log);
+                return;
+            }
+            Thread.sleep(100);
+        }
+        throw new AssertionError("timed out waiting for native GUI helper; inspect " + log);
     }
 
     private static void launchFromTable(ProbeTool tool, String filename, Path screenshot)

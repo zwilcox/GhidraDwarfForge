@@ -103,7 +103,21 @@ DISPLAY=":$display" timeout 60 "$java" -Djava.awt.headless=false \
     > "$work/native-geometry.log" 2>&1
 function_address=$(readelf -Ws "$reference" | awk '$8 == "recovered_add" && !found++ { print $2 }')
 test -n "$function_address"
-DISPLAY=":$display" timeout 300 "$java" --enable-native-access=ALL-UNNAMED \
+gui_timeout=300
+if [[ ${GHIDRA_GUI_NATIVE_ATTACHMENT:-0} == 1 ]]; then
+    test "$(id -u)" != 0
+    command -v pkexec >/dev/null
+    checker_bundle=$(dirname "$(dirname "$(realpath "${DWARFDUMP:?pinned checker selection required}")")")
+    export FORGE_GUI_READELF FORGE_GUI_LLVM FORGE_GUI_STRICT FORGE_GUI_CONFIGURATION
+    FORGE_GUI_READELF=$(realpath "$(command -v readelf)")
+    FORGE_GUI_LLVM=$(realpath "$(command -v llvm-dwarfdump)")
+    FORGE_GUI_STRICT="$checker_bundle/libexec/dwarfdump"
+    FORGE_GUI_CONFIGURATION="$checker_bundle/share/dwarfdump/dwarfdump.conf"
+    test -x "$FORGE_GUI_STRICT"
+    test -s "$FORGE_GUI_CONFIGURATION"
+    gui_timeout=900
+fi
+DISPLAY=":$display" timeout "$gui_timeout" "$java" --enable-native-access=ALL-UNNAMED \
     -Djava.awt.headless=false -Duser.home="$work/user" \
     -Dapplication.settingsdir="$work/settings" -Dapplication.cachedir="$work/cache" \
     -Dapplication.tempdir="$work/tmp" -Djava.io.tmpdir="$work/tmp" \
@@ -158,4 +172,8 @@ validate_pair "$work" "$work/select/readonly/fixture" "$work/select/chosen/fixtu
 prepared="$work/select/attachment-prepare"
 mkdir -p "$prepared/validation"
 validate_pair "$prepared/validation" "$prepared/fixture" "$prepared/prepared.dbg" prepared
+if [[ ${GHIDRA_GUI_NATIVE_ATTACHMENT:-0} == 1 ]]; then
+    python3 "$repository/src/test/integration/gui-attachment-verify.py" \
+        "$work/select/attachment-native" "$fixture" "$function_address"
+fi
 echo "gui-script-manager-integration=PASS"
