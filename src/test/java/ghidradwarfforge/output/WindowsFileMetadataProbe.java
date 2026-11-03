@@ -4,14 +4,30 @@ import com.google.gson.Gson;
 import com.google.gson.JsonParser;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
+import java.io.PrintStream;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /** Standalone Windows ABI/runtime probe; never installs an attachment Host. */
 public final class WindowsFileMetadataProbe {
     public static void main(String[] args) throws Exception {
-        var metadata = new WindowsFileMetadata();
+        // Windows Java launchers can narrow argv through the active code page.
+        // Keep selected Unicode paths in an explicit UTF-8 request file so this
+        // probe exercises WString/native paths, not the launcher's argv decoder.
+        System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));
+        System.setErr(new PrintStream(System.err, true, StandardCharsets.UTF_8));
+        if (args.length == 2 && args[0].equals("--request-file")) {
+            var request = JsonParser.parseString(Files.readString(Path.of(args[1]), StandardCharsets.UTF_8)).getAsJsonArray();
+            args = new String[request.size()];
+            for (int index = 0; index < args.length; index++) args[index] = request.get(index).getAsString();
+        }
         var gson = new Gson();
+        if (args.length > 0 && args[0].equals("request-roundtrip")) {
+            System.out.println(gson.toJson(args));
+            return;
+        }
+        var metadata = new WindowsFileMetadata();
         if (args.length == 2 && args[0].equals("inspect")) {
             System.out.println(gson.toJson(metadata.inspect(Path.of(args[1]), () -> false)));
         }

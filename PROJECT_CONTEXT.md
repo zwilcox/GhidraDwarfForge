@@ -3,9 +3,10 @@
 **PRESENT, UNVERIFIED native Windows #72 metadata:** `WindowsFileMetadata`
 now implements opened-file identity and accessible owner/group/DACL, attribute
 and timestamp application to an owned stage. Java compilation and Windows64 C
-ABI cross-compilation pass; the new early Windows CI test independently checks
-native metadata, rejection, cancellation and handle cleanup. Native execution
-is still required. This is not host admission: SACLs/EAs, visibility policy,
+ABI checks pass. The first native Windows run passed its C contract but
+failed before metadata inspection because Java argv narrowed a Unicode name.
+The probe now transports paths through UTF-8 JSON and checks their roundtrip;
+corrected native metadata, rejection, cancellation and cleanup tests are pending. This is not host admission: SACLs/EAs, visibility policy,
 durability, public CLI/GUI and full acceptance remain open. The strict metadata
 contract is unchanged. See `docs/WINDOWS-FILE-METADATA.md`.
 

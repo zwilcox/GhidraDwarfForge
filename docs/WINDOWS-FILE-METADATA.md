@@ -69,3 +69,20 @@ Local evidence under `build/test-results/windows-file-metadata/` consists of
 extension/test compilation, the cross-compiled C contract and a portable
 PowerShell parser/process-capture check on Linux. None substitutes for the
 native Windows run or the complete Linux/Windows attachment acceptance matrix.
+
+## First native attempt and Unicode correction
+
+Run `41597206175` at `961acfc` passed the native Windows C ABI contract and
+isolated Java compilation. It failed before the first metadata inspection:
+the selected Java launcher's argument conversion changed the fixture's lambda
+character to `?`, which `Path.of` rejected. Raw commands, stderr, source bytes,
+job log and artifact `13212468928` are retained. No successful Windows metadata
+application is claimed from that run.
+
+The probe now reads Unicode selections from an explicitly UTF-8 JSON request
+file and writes UTF-8 output. A roundtrip control compares the original paths
+before native calls; the non-ASCII fixture is retained. Independent stream
+name/size observations are also compared with the Java snapshot. Actual Java
+21 verifies the transport locally, and the PowerShell parser/process capture
+and extension build pass. Corrected native Windows behavior remains pending.
+This is a test transport correction, not a product CLI encoding claim.
