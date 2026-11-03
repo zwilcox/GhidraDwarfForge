@@ -1,5 +1,19 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED combined ABI acceptance:** P2.3, P2.3a, P2.3b and P2.3c
+retain all twenty original requirements. Production head `2a74d001e04eeab456b80a5c24063a399b540aa5`
+passed [run 41516782822](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/41516782822)
+and independent artifact review, then integrated through the normal protected
+merge `0447ba02e420118662eadf6d64495bdab40fb5bf`. Ghidra 12.0.3, Java 21-compatible bytecode and the
+pinned libdwarf 2.3.2 producer remain the baseline. This is development-branch
+acceptance; it does not publish a release or change alpha.2.
+
+All original requirements are mapped in
+[the acceptance audit](docs/TARGET-ABI-ACCEPTANCE.md); the exact supported
+profiles and limitations are in [TARGET-PROFILES.md](docs/TARGET-PROFILES.md).
+Earlier candidate/local/pending paragraphs below are historical checkpoints.
+They do not reopen an accepted row or broaden its tested contract.
+
 **CONFIRMED retention-guard fixture separation:** the combined x86 artifact
 contains deliberate invalid receipts from the checker and evidence-reader
 self-tests. The final retention step now explicitly excludes only their two

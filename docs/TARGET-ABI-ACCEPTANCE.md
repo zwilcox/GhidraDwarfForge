@@ -1,21 +1,25 @@
 # Combined P2.3–P2.3c acceptance audit
 
-**CONFIRMED candidate scope (2026-11-02):** this audit retains all original
-requirements in issues #68–#71 and `TARGET-ABI-COMPLETION-PLAN.md`. It combines
-PR125–PR154 with accepted `main`, using normal merge ancestry. Ghidra 12.0.3,
-Java 21-compatible bytecode and the pinned libdwarf 2.3.2 producer remain the
-baseline. Release publication is not part of this goal.
+**CONFIRMED combined ABI acceptance:** P2.3, P2.3a, P2.3b and P2.3c
+retain all twenty original requirements. Production head `2a74d001e04eeab456b80a5c24063a399b540aa5`
+passed [run 41516782822](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/41516782822)
+and independent artifact review, then integrated through the normal protected
+merge `0447ba02e420118662eadf6d64495bdab40fb5bf`. Ghidra 12.0.3, Java 21-compatible bytecode and the
+pinned libdwarf 2.3.2 producer remain the baseline. This is development-branch
+acceptance; it does not publish a release or change alpha.2.
 
-**PRESENT, UNVERIFIED:** combined hosted target/Windows acceptance, independent
-uploaded-artifact review and protected integration. The rows below identify
-concrete implementation and local behavioral evidence; they are not closure
-claims based on test names or existing section names.
+The requirement table below defines the accepted behavior, including explicit
+consumer limitations and unavailable locations. Component-only, local-only and
+pending statements in the historical checkpoints are superseded by this
+combined acceptance record. No architecture claim extends beyond the listed
+profiles and executable layouts.
 
-The tracker already marks #68 closed. Its accepted AArch64 component records
-remain valid, but the combined candidate must still pass the AArch64 regressions.
-The other three umbrella issues remain open. Earlier statements that all four
-tracker issues are open are historical; they do not override the full combined
-regression requirement.
+## Historical acceptance-review checkpoints
+
+The following notes preserve the evidence and pending gates at each checkpoint.
+Their pending status is historical; the final acceptance record governs the
+integrated result. Damaged original reports remain failed evidence even after
+an unchanged artifact receives a separate passing validation.
 
 **CONFIRMED evidence-retention correction:** the independent acceptance review
 found raw validator log collisions in the AArch64 ABI compiler check,
@@ -82,14 +86,14 @@ instruction observations, including measured shared-library relocation and
 explicit curated-name loading. These are component and predecessor-run evidence;
 they do not replace the current commit's combined acceptance gate.
 
-## Original requirements and evidence
+## Accepted original requirements and evidence
 
 All paths in the test column are beneath `src/test/integration/`. The workflow
 runs the listed tests through the same installed production exporter. Model
 suites also run against actual Ghidra language/compiler specifications on both
 supported hosts.
 
-| Original requirement | Implementation and behavior to verify | Maintained test and component evidence |
+| Original requirement | Implementation and validated behavior | Maintained test and component evidence |
 | --- | --- | --- |
 | 68.1 Selected ELF/language/compiler ABI | `DwarfTarget` and `GhidraCompilerCallPolicy` distinguish LP64/v8A/default from same-width AppleSilicon, Windows, Go/Swift, nonzero flags and unsupported OSABI/version choices. Negative calls preserve registers, stack and counters. | `abi-profile-export.py` AArch64 matrix; [selection](AARCH64-ABI-SELECTION.md) |
 | 68.2 Exhaustion, stack and aggregate arguments/returns | `Aarch64ParameterAllocation` corrects register-exhausted structures without changing analyst storage. Fifteen functions cover narrow/128-bit values, alignment, direct/indirect objects, shifted pointers and hidden returns. | `aarch64-abi.py --with-controls`, all five exec/PIE/shared/rebase roles; [allocation](AARCH64-PARAMETER-ALLOCATION.md) |
@@ -167,3 +171,42 @@ original issue wording, executable workflow commands and component evidence.
 All 106 production files match the rebuilt package. Old local-only paragraphs
 in component documents are historical evidence; the combined gate above controls
 final acceptance. No umbrella issue is closed by this document alone.
+
+## Final acceptance record
+
+- Required checks: native Linux/Windows, extension build, release assembly,
+  all five target lanes, Windows-hosted Ghidra and enforced `required-validation`.
+- Independent review: original twenty requirement rows, GNU/LLVM/pinned
+  libdwarf reports, debugger values and mode/bias behavior, deliberate
+  corruption controls, deterministic reruns and input/program preservation.
+- Host coverage: Linux and Windows producer/export paths, including BE8 and
+  both MIPS64 byte orders in isolated producer lifetimes. Windows GUI selection,
+  cancellation and publication/file-lock checks pass. ELF runtime execution
+  remains in the Linux native/QEMU lanes.
+- Evidence limits: Windows RSS sampling and Windows standalone dwarfdump were
+  unavailable; retained Windows ELF outputs received independent Linux checks.
+  Four supplementary baseline/large-file x86 checks retain logs without all
+  original/output ELF bytes; they are not independent output-byte proofs.
+  The accepted ABI failure/cancellation and packaging claims also have retained
+  artifacts and separate runtime/structural evidence.
+
+The final five target artifacts retain 2,110 positive checker reports without
+replacement reports. The 85 deliberate negative receipts and 168 validator
+self-test receipts are counted separately. Current-artifact review also adds
+nine fresh AArch64 SIMD GDB replays, 32 fresh i386 matrix replays and two fresh
+Linux GUI-sidecar replays. The i386 matrix includes sixteen deliberate
+wrong-location or late-gap rejections; these are not positive runtime passes.
+
+The predecessor combined artifact also received 97 fresh i386 GDB replays,
+two fresh Linux GUI-sidecar GDB replays, and independent inspection of all 81
+deliberate x86 validator failures. Those failures comprise 60 malformed ELF
+program-header cases, 20 invalid subroutine-DWARF cases, and one location
+outside the loaded image. They are negative controls, not successful exports.
+Linux GUI screenshots, cancellation, input preservation and 100 native-window
+geometry observations were inspected alongside the exported sidecar bytes.
+Archived source paths were explicitly substituted during fresh GDB replays
+because the downloaded artifacts moved from their hosted absolute paths.
+
+The acceptance audit keeps deliberate validator self-tests and failed negative
+receipts separate from positive export reports. The explicit limitations above
+and in the profile table remain part of the support contract.

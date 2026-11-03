@@ -1,5 +1,20 @@
 # P2.3 through P2.3c completion plan
 
+**CONFIRMED combined ABI acceptance:** P2.3, P2.3a, P2.3b and P2.3c
+retain all twenty original requirements. Production head `2a74d001e04eeab456b80a5c24063a399b540aa5`
+passed [run 41516782822](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/41516782822)
+and independent artifact review, then integrated through the normal protected
+merge `0447ba02e420118662eadf6d64495bdab40fb5bf`. Ghidra 12.0.3, Java 21-compatible bytecode and the
+pinned libdwarf 2.3.2 producer remain the baseline. This is development-branch
+acceptance; it does not publish a release or change alpha.2.
+
+The bounded sequence and all original requirements below are retained as the
+planning record. Their implementation, validation and normal integration are
+complete under [the acceptance audit](TARGET-ABI-ACCEPTANCE.md). Older pending
+statements describe historical checkpoints, not the final requirement status.
+
+## Historical execution record
+
 **CONFIRMED combined ABI candidate; final acceptance pending:** the normal
 merge of PR125–PR154 with current main preserves the complete P2.3–P2.3c scope
 and the user logo. The clean combined build passes all 128 Gradle tasks plus
@@ -300,7 +315,7 @@ alternative and preserve honest omissions rather than inventing values.
    original issue row with linked evidence. A component PR does not close an
    umbrella issue or redefine the full objective.
 
-## Current component
+## Historical component checkpoints
 
 The first AArch64 component is tracked in `AARCH64-PROFILE-PLAN.md`.
 **CONFIRMED locally:** the baseline omits a dynamically indirect 24-byte
