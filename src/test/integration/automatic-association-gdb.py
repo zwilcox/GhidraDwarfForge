@@ -37,7 +37,14 @@ else:
     require(breakpoint.locations and all(location.address is not None
             for location in breakpoint.locations), "named breakpoint did not resolve")
     if os.environ.get("FORGE_ASSOCIATION_RUNTIME") == "1":
-        gdb.execute("run")
+        remote = os.environ.get("FORGE_ASSOCIATION_REMOTE")
+        if remote:
+            gdb.execute("set sysroot " + os.environ["FORGE_ASSOCIATION_SYSROOT"])
+            gdb.execute("set auto-solib-add off")
+            gdb.execute("target remote " + remote)
+            gdb.execute("continue")
+        else:
+            gdb.execute("run")
         require(gdb.newest_frame().name() == "recovered_add", "automatic breakpoint was not hit")
         require(int(gdb.parse_and_eval("left")) == 19 and
                 int(gdb.parse_and_eval("right")) == 23, "recovered argument values are wrong")

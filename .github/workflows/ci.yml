@@ -493,7 +493,7 @@ jobs:
             cc -std=c11 -Wall -Wextra -Werror src/test/native/linux-rename-contract.c -o build/linux-rename-contract
             build/linux-rename-contract
             ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke \
-              ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke companionArtifactPublisherSmoke attachmentProtocolSmoke attachmentReceiptStoreSmoke attachmentFileStoreSmoke attachmentTargetStoreSmoke attachmentTransactionSmoke \
+              ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke companionArtifactPublisherSmoke attachmentProtocolSmoke attachmentReceiptStoreSmoke attachmentFileStoreSmoke attachmentTargetStoreSmoke attachmentTransactionSmoke attachmentExportBindingSmoke \
               exportReportSmoke exportReportClaimsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke \
               fileDigestsSmoke elfBuildIdSmoke \
               matchedElfPrefixSmoke matchedElfAllocationsSmoke executableProgramBytesSmoke \
@@ -952,6 +952,15 @@ jobs:
               fi
               env "${capture[@]}" FIXTURE_ROLE="$role" src/test/integration/headless-symbol-export.sh \
                   "$GHIDRA_INSTALL_DIR" "$consumer" "$producer" "$TARGET"
+              if [[ "$role" == exec || "$role" == pie || "$role" == exec.no-build-id ]]; then
+                  python3 src/test/integration/attachment-elf-controller.py \
+                      --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+                      --ghidra "$GHIDRA_INSTALL_DIR" --fixture-dir "$PWD/build/fixtures" \
+                      --target "$TARGET" --role "$role" \
+                      --report-log "$PWD/build/test-results/headless-symbol-export/$TARGET.$role.log" \
+                      --strict-validator "$DWARFDUMP" \
+                      --result-dir "$PWD/build/test-results/attachment-elf-controller/$TARGET.$role"
+              fi
               if [[ "$role" == "exec.no-sections" ]]; then
                   python3 src/test/integration/sectionless-load-ranges.py \
                       "$PWD/build/fixtures/$TARGET/semantic.exec.no-sections.stripped" \

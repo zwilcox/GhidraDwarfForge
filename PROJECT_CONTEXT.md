@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local #72 real-ELF controller integration:** initial commit and
+post-replacement rollback pass seven validator/GDB cases: x86-64 exec/PIE/no-ID,
+AArch64 exec/PIE and MIPS32 big-endian exec/PIE. All have actual runtime argument
+checks, automatic discovery and CRC rejection. A new read-only production
+binding checks report SHA claims, copied ELF bytes, allocations, build identity,
+target and host observations; 30 Java 21 controls pass. The integration bridge
+still uses a limited Linux test host and externally supervised validators.
+Production host/validator integration, curated refresh, CLI/GUI and hosted
+acceptance remain required. See `docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`.
+
 **CONFIRMED local #72 filesystem controller:** 525 Java 21 checks pass for
 initial/refresh commit, failure rollback and explicit interrupted-operation
 recovery, including eight abruptly terminated child JVMs. Schema 2 adds separate

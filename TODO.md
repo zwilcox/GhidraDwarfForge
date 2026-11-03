@@ -1,5 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local #72 ELF/report and consumer progress:** seven real-export
+initial commit/rollback cases pass fresh GNU/LLVM/pinned-strict checks and
+native/QEMU GDB discovery, source/types/arguments and CRC rejection. Committed
+and rolled-back generations retain bytes and test-host metadata throughout
+debugger checks. CI now schedules the test bridge for exec/PIE/no-ID on all five
+target lanes; new hosted results are **PRESENT, UNVERIFIED**. This does not enable
+the public attachment operation or complete production metadata, validator
+supervision, curated refresh or CLI/GUI acceptance.
+
 **CONFIRMED local #72 commit/recovery progress:** the filesystem controller
 passes 525 Java 21 checks, including initial/refresh failure handling, separate
 recovery records preserving committed receipts, eight abrupt process exits and

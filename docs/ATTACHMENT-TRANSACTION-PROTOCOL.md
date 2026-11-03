@@ -348,3 +348,87 @@ selected JDK supplies its own compiler/runtime. The initial immutable-attribute-
 test-adapter error is retained in `build/attachment-receipt-store.log`; the
 passing expanded run is `build/attachment-receipt-store-r4.log`. Neither failed
 attempt is counted as successful validation.
+
+## ELF/report binding and real-ELF controller checkpoint
+
+**CONFIRMED locally:** `AttachmentExportBinding` adds read-only production
+preparation checks for four explicitly selected files. It verifies complete
+report SHA claims against host-observed file identities/metadata and streamed
+SHA/size/CRC values, the matched sidecar's copied prefix and allocated metadata,
+build-ID relationship and reported target. All inputs are checked again before
+returning, and callers can recheck before later writes. For refresh the selected
+export original must be the retained unmodified backup, not the attached image.
+The binding does not follow paths from JSON, alter PARTIAL/NOT_RUN, validate
+DWARF, prove source lookup or replace the full transaction path preflight.
+
+Thirty Java 21 controls cover valid and PARTIAL reports, mismatched hashes,
+rehash-consistent damaged ELF bytes, wrong target claims, identity changes,
+same-length changes with restored mtime, links/aliases, cancellation and changes
+during observation. Deliberately invalid DWARF in the positive identity fixture
+proves that this layer never upgrades report validation to PASS. The existing
+525 controller and 574 report-binding checks and extension build pass.
+
+`attachment-elf-controller.py` freshly validates an explicitly selected real
+export before invoking the test-only `AttachmentElfTransactionProbe`. The probe
+copies inputs into private case directories, binds their report/ELF evidence,
+creates an independent backup and owned candidate, applies test-host metadata,
+flushes, and invokes the production transaction controller. Separate cases prove
+successful commitment and injected post-replacement rollback. Raw `readelf -lW`
+observations agree with the original; backups retain original bytes.
+
+Actual GDB sessions must automatically load DWARF from the exact attached
+sidecar, resolve the compiler-oracle function address, list the recorded source,
+display signatures/types, hit the named breakpoint with arguments 19/23, and
+exit normally. x86 runs natively; AArch64 and MIPS use isolated QEMU UNIX sockets.
+A separate deliberately corrupted copy must lose full-DWARF discovery through
+CRC rejection. The valid committed generation is never corrupted/restored by
+that negative test. Its receipt, artifacts and backup, and the rolled-back
+generation, retain full bytes, inode/device, mode, ownership, link count, size
+and mtime across consumer checks. This is the limited Linux test contract, not
+complete Linux ACL/xattr or Windows metadata acceptance.
+
+Seven final local cases pass under
+`build/test-results/attachment-elf-controller/*-preserved/`:
+
+| Target | Roles | Strict inherited frame diagnostics |
+| --- | --- | --- |
+| x86-64 | exec, PIE, exec without build ID | 3, 1, 3 |
+| AArch64 | exec, PIE | 5, 5 |
+| MIPS32 big-endian | exec, PIE | 0, 0 |
+
+All 17 frame diagnostics are independently corroborated against the retained
+original by the existing strict checker. GNU/LLVM have no unexplained diagnostics.
+AArch64 GDB's QEMU-supplied vDSO warning is retained and independently reproduced
+with the compiler reference; other discovery diagnostics are rejected. The
+validator inputs are retained separately so later exports cannot overwrite the
+evidence. The report-retention guard passes all 23 local receipts, including
+earlier calibration runs; only the seven named final cases establish this
+checkpoint's complete behavior.
+
+Reproduce after building the extension, with explicit existing fixture/report
+paths (repeat for each target/role):
+
+```sh
+JAVA=/path/to/java21/bin/java python3 src/test/integration/attachment-elf-controller.py \
+    --jar build/libs/GhidraDwarfForge.jar --ghidra "$GHIDRA_INSTALL_DIR" \
+    --fixture-dir /absolute/path/to/build/fixtures --target x86_64 --role exec \
+    --report-log /absolute/path/to/headless-symbol-export/x86_64.exec.log \
+    --strict-validator /absolute/path/to/pinned-validator/bin/dwarfdump \
+    --result-dir /absolute/path/to/new-results
+```
+
+The first integration calibration used the wrong compiler symbol name; the
+reference actually defines `recovered_add`. A remote-startup calibration then
+encountered a non-UTF-8 unrelated pathname in `/proc/net/unix`; socket readiness
+now compares raw bytes. Both failures are retained. The first no-build-ID export
+invoked the system dwarfdump and failed its checker; a fresh complete export
+with the pinned validator passed, followed by the final controller test. No
+failed attempt is counted as a passing full case.
+
+CI includes the binding smoke and schedules this real-ELF bridge immediately
+after exec/PIE/no-ID exports on all five target lanes. ARM32, MIPS little-endian
+and additional no-ID cases remain **PRESENT, UNVERIFIED** for this bridge until
+that exact workflow runs. Hosted acceptance, production Linux/Windows host
+metadata, production validator supervision/binding, fresh curated re-export and
+refresh, and public CLI/GUI controls remain required. This test bridge does not
+enable attachment or close #72.

@@ -159,6 +159,14 @@ tasks.register("attachmentTransactionSmoke", JavaExec) {
     jvmArgs "--enable-native-access=ALL-UNNAMED"
 }
 
+tasks.register("attachmentExportBindingSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks actual ELF/report binding and rejection before attachment preparation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentExportBindingSmoke"
+}
+
 tasks.register("extendedSectionNumberingSmoke", JavaExec) {
     group = "verification"
     description = "Checks extended ELF section numbering and optionally builds target fixtures"
