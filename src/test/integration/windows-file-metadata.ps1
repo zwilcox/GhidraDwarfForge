@@ -373,11 +373,14 @@ Same-State $beforeStage $renameStage
 Require (-not (Test-Path -LiteralPath $renameTarget)) 'Lifetime test left a target'
 
 $backupPrefix = @('-cp', ($classes + ';' + $dependencies), 'ghidradwarfforge.output.WindowsBackupStreamsProbe')
-function Run-Backup([string]$Label, [string[]]$Arguments, [bool]$Success=$true, [bool]$Interpreted=$false) {
+function Run-Backup([string]$Label, [string[]]$Arguments, [bool]$Success=$true,
+        [bool]$Interpreted=$false, [bool]$SerialGc=$false, [bool]$VmLog=$false) {
     $request = Join-Path $root "$Label.request.json"
     Save-Json $request $Arguments
     $options = @()
     if ($Interpreted) { $options = @('-Xint') }
+    if ($SerialGc) { $options += '-XX:+UseSerialGC' }
+    if ($VmLog) { $options += "-Xlog:os+thread=debug,gc+task=debug:file=$Label.vm.log:time,uptime,level,tags" }
     return Run-Captured $Label $JavaExe ($options + $backupPrefix + @('--request-file',$request)) $Success
 }
 $eaSource = Join-Path $owned 'EA source λ [literal]'
@@ -423,7 +426,11 @@ $queryEa = Run-Captured 'ea-stage-after' $eaFixture @('query',$eaSource)
 Require ((ConvertFrom-Json $queryEa.stdout).eaBytes -eq $eaBytes) 'Stage EA changed during refusal'
 $null = Run-Backup 'backup-cancel' @('cancel',$eaSource)
 $null = Run-Captured 'backup-native-lifetime' $eaFixture @('backup-lifetime',$eaSource)
-$null = Run-Backup 'backup-lifetime' @('lifetime',$eaSource) $true $true
+# Default G1 lazily starts worker threads (and their OS handles). Retain that
+# observation separately; resource acceptance still requires exact equality
+# using serial GC, plus an independent native process with the same API calls.
+$null = Run-Backup 'backup-default-gc-observation' @('lifetime-observation',$eaSource) $true $true $false $true
+$null = Run-Backup 'backup-lifetime' @('lifetime',$eaSource) $true $true $true $true
 Same-State $eaBefore $eaSource
 $adsSource = Join-Path $owned 'backup named stream'
 [IO.File]::WriteAllText($adsSource, 'ordinary bytes', $utf8)

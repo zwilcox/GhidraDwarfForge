@@ -32,7 +32,7 @@ public final class WindowsBackupStreamsProbe {
                 cancelled(backup, path);
                 System.out.println("windows-backup-cancel=PASS after-stream-header");
             }
-            case "lifetime" -> {
+            case "lifetime", "lifetime-observation" -> {
                 backup.inspect(path, () -> false);
                 cancelled(backup, path);
                 long count = metadata.processHandleCount();
@@ -42,10 +42,15 @@ public final class WindowsBackupStreamsProbe {
                     long afterRead = metadata.processHandleCount();
                     cancelled(backup, path);
                     samples.add(java.util.Map.of("iteration", (long) iteration,
-                        "afterRead", afterRead, "afterCancel", metadata.processHandleCount()));
+                        "afterRead", afterRead, "afterCancel", metadata.processHandleCount(),
+                        "epochMillis", System.currentTimeMillis()));
                 }
                 long after = metadata.processHandleCount();
                 System.out.println(gson.toJson(java.util.Map.of("baseline", count, "after", after, "samples", samples)));
+                if (args[0].equals("lifetime-observation")) {
+                    System.out.println("windows-backup-lifetime=OBSERVATION_ONLY not-a-cleanup-pass");
+                    break;
+                }
                 if (after != count) throw new AssertionError("Backup handle count changed: before=" + count + " after=" + after);
                 System.out.println("windows-backup-handles=PASS iterations=128");
             }
