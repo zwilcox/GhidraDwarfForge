@@ -1,5 +1,11 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**PRESENT, UNVERIFIED #72 Windows directory durability:** a test-only native
+probe now records ordinary directory open/flush behavior before and after an
+owned file rename, with independent identity and file-flush/handle controls.
+It cross-compiles and the harness parses; Windows execution is pending. No
+production durability claim follows. See `docs/research/WINDOWS-DIRECTORY-FLUSH.md`.
+
 **CONFIRMED local #72 filename policy:** production Linux UTF-8 and portable
 ASCII basename policies reject lossy native-byte aliases and unsupported names
 before attachment writes. Actual Java 21 refusal/transaction controls and real

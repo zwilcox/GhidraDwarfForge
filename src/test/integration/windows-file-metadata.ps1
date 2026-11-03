@@ -27,6 +27,8 @@ $sources = @(
     (Join-Path $repo 'src/main/java/ghidradwarfforge/output/WindowsFileMetadata.java'),
     (Join-Path $repo 'src/main/java/ghidradwarfforge/output/WindowsBackupStreams.java'),
     (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsBackupStreamsProbe.java'),
+    (Join-Path $repo 'src/test/native/windows-directory-flush.c'),
+    (Join-Path $repo 'src/test/native/windows-directory-api.json'),
     (Join-Path $repo 'src/test/native/windows-backup-contract.c'),
     (Join-Path $repo 'src/test/native/windows-ea-fixture.c'),
     (Join-Path $repo 'src/test/native/windows-backup-api.json'),
@@ -457,8 +459,37 @@ $backupResults = [ordered]@{ordinary=(ConvertFrom-Json $ordinaryBackup.stdout);
     alternateStreams=(ConvertFrom-Json $adsInventory.stdout); cancellationAfterHeader=$true; handleCycles=128}
 Save-Json (Join-Path $root 'backup-streams.json') $backupResults
 
+# Research only: retain actual directory-flush results; neither success nor refusal
+# establishes a complete filesystem durability contract. Ordinary-file positive
+# and negative controls and exact repeated handle cleanup are mandatory.
+$directoryProbe = Join-Path $root 'directory-flush.exe'
+$null = Run-Captured 'compile-directory-flush' $Compiler @('-std=c11','-Wall','-Wextra','-Werror','-municode',
+    (Join-Path $provenance 'windows-directory-flush.c'),'-o',$directoryProbe)
+$null = Run-Captured 'directory-token-privileges' (Join-Path $env:SystemRoot 'System32/whoami.exe') @('/priv')
+$directoryPath = Join-Path $owned 'directory flush λ'
+$directoryRun = Run-Captured 'directory-flush' $directoryProbe @($directoryPath)
+$directoryFacts = ConvertFrom-Json $directoryRun.stdout
+Require ($directoryFacts.status -eq 'OBSERVED' -and $directoryFacts.fileFlush -and
+    $directoryFacts.readOnlyFileError -eq 5 -and $directoryFacts.handleCycles -eq 128 -and
+    $directoryFacts.handlesBefore -eq $directoryFacts.handlesAfter -and
+    -not $directoryFacts.powerLossRecoveryProven) 'Directory experiment controls did not pass'
+$directoryNative = [ForgeHostResearch.NativeWindowsHostFacts]::Observe($directoryPath, $false, $false)
+Require ($directoryNative.status -eq 'OBSERVED' -and
+    $directoryNative.volume128 -ceq $directoryFacts.volume128 -and
+    $directoryNative.fileId128 -ceq $directoryFacts.fileId128) 'Independent directory identity differs'
+$directoryChild = Join-Path $directoryPath 'after'
+Require ([Convert]::ToHexString([IO.File]::ReadAllBytes($directoryChild)) -ceq '00FF420A19') 'Renamed child bytes differ'
+Require (@(Get-ChildItem -LiteralPath $directoryPath -Force).Count -eq 1) 'Unexpected owned directory contents'
+$directoryBefore = Independent-State $directoryChild
+$refused = Run-Captured 'directory-existing-reject' $directoryProbe @($directoryPath) $false
+Require ($refused.stderr.Contains('exclusive directory creation failed')) 'Existing directory was not refused'
+Same-State $directoryBefore $directoryChild
+Save-Json (Join-Path $root 'directory-flush.json') ([ordered]@{
+    status='OBSERVED'; native=$directoryFacts; independent=$directoryNative;
+    scope='Owned ordinary directory flush mechanism only; not power-loss recovery or production host admission'})
+
 foreach ($sourcePath in $hashes.Keys) { Require ((Hash $sourcePath) -eq $hashes[$sourcePath]) 'Protected source/dependency changed' }
 Save-Json (Join-Path $root 'result.json') ([ordered]@{status='PASS'; observations=$observations.ToArray();
-    renameObservations=$renameResults.ToArray(); renameCrossVolume=$crossResult; backupStreams=$backupResults;
+    renameObservations=$renameResults.ToArray(); renameCrossVolume=$crossResult; backupStreams=$backupResults; directoryFlush=$directoryFacts;
     scope='Opened Windows identity, accessible metadata and verified-stage rename; unsupported backup-stream rejection; not complete host admission, SACL preservation or durability'})
 Write-Output 'windows-file-metadata=PASS'
