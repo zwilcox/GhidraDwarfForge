@@ -339,13 +339,41 @@ public final class GuiScriptManagerSmoke {
         Files.writeString(work.resolve("console.txt"), transcript);
         GuiTestSupport.require(transcript.contains("\"outcome\":\"PREVIEW\"") && !transcript.contains("Starting explicit target change"),
             "GUI decline did not follow read-only helper preview");
+        clearConsole(console);
+        var authorizationDecline = CompletableFuture.runAsync(() -> {
+            try {
+                GuiTestSupport.selectFile("Select attachment or refresh request", request);
+                GuiTestSupport.clickButton(new Robot(), GuiTestSupport.dialog("Review GhidraDwarfForge target change"),
+                    "Attach selected sidecar");
+                var authorization = GuiTestSupport.dialog("Attachment helper authorization");
+                GuiTestSupport.onSwing(() -> {
+                    var choices = (javax.swing.JComboBox<?>) GuiTestSupport.find(authorization,
+                        component -> component instanceof javax.swing.JComboBox<?>);
+                    GuiTestSupport.require(choices != null && "Cancel".equals(choices.getSelectedItem()),
+                        "authorization defaults to starting the helper");
+                    return null;
+                });
+                GuiTestSupport.screenshot(new Robot(), authorization, work.resolve("authorization-decline.png"));
+                GuiTestSupport.clickButton(new Robot(), authorization, "OK");
+            }
+            catch (Exception failure) { throw new RuntimeException(failure); }
+        });
+        launchFromTable(tool, ATTACH, work.resolve("authorization-manager.png"));
+        authorizationDecline.get(100, TimeUnit.SECONDS);
+        awaitConsole(console, "attachment declined; modifying helper was not started.");
+        awaitConsole(console, "Finished!");
+        String authorizationTranscript = consoleText(console);
+        Files.writeString(work.resolve("authorization-console.txt"), authorizationTranscript);
+        GuiTestSupport.require(authorizationTranscript.contains("\"outcome\":\"PREVIEW\"") &&
+            !authorizationTranscript.contains("Starting explicit target change"), "declined authorization started modifying helper");
         for (var entry : before.entrySet()) {
             GuiTestSupport.require(entry.getValue().equals(GuiTestSupport.sha256(entry.getKey())), "GUI decline changed selected input");
         }
         for (String name : java.util.List.of("original.backup", "validation.json", "receipt.json", "recovery.json", "restore", "saved-recovery.json")) {
             GuiTestSupport.require(!Files.exists(work.resolve(name)), "declined GUI operation created " + name);
         }
-        Files.writeString(work.resolve("result.txt"), "packaged-helper-preview=PASS\ndefault-enter-declines=PASS\nselected-inputs-unchanged=PASS\nno-transaction-outputs=PASS\n");
+        Files.writeString(work.resolve("result.txt"), "packaged-helper-preview=PASS\ndefault-enter-declines=PASS\n" +
+            "separate-authorization-default-decline=PASS\nselected-inputs-unchanged=PASS\nno-transaction-outputs=PASS\n");
     }
 
     private static void runPreparationDecline(ProbeTool tool, Path input, Path caseDirectory) throws Exception {

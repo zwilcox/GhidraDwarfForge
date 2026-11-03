@@ -1,5 +1,16 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED scoped authorization checks:** independent Windows artifacts from
+run41680805435 prove own-token privilege restoration, nested/exceptional cleanup
+and128 cycles without handle growth. The local installed Linux GUI additionally
+proves that accepting the target-change review then cancelling the separate
+authorization choice starts no modifying helper and preserves every selected file.
+Both real export pairs still pass validators/GDB. See
+`docs/evidence/windows-attachment-privilege-41680805435.json` and
+`docs/evidence/attachment-authorization-decline-local-20261103.json`.
+These are component checks; native modifying GUI, Windows real-operation and the
+final required gate remain incomplete.
+
 **PRESENT, UNVERIFIED native GUI completion harness:** the Linux CI reference
 job now drives the real preparation/attachment, changed-curation refresh and
 saved-request recovery scripts. Ghidra remains unprivileged; a temporary

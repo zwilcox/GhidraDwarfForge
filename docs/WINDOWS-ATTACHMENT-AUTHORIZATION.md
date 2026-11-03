@@ -1,6 +1,6 @@
 # Windows attachment authorization
 
-**PRESENT, UNVERIFIED native execution:** the PowerShell7 launcher previews the
+**PRESENT, UNVERIFIED complete public execution:** the PowerShell7 launcher previews the
 selected request without native privilege adjustment. `-ConfirmTargetChange`
 allows execution; `-Authorize` additionally requests the Windows `runas` verb
 for the separate Java helper. With no authorization option it uses its existing
@@ -65,6 +65,17 @@ The layouts follow [TOKEN_PRIVILEGES](https://learn.microsoft.com/en-us/windows/
 and [LUID_AND_ATTRIBUTES](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-luid_and_attributes).
 
 ## Evidence and remaining work
+
+**CONFIRMED isolated native token scope:** job126079085292 in run41680805435
+passes independent review of archive13253386157, all143 packaged production
+sources and the retained test/dependency provenance. Actual Windows Java21
+confirms precise own-token enable/readback, nested already-enabled preservation,
+exceptional restoration, idempotent close and128 measured cycles without handle
+growth or diagnostics. See
+[evidence](evidence/windows-attachment-privilege-41680805435.json). This proves
+the unchanged token-scope implementation, not standard-user UAC interaction,
+Windows real-ELF/GUI attachment, the corrected cancellation identity, or the
+current-head required gate. Earlier pending-token notes below are historical.
 
 **CONFIRMED locally:** Windows x64 cross-compilation of all ABI assertions;
 actual Java21 compilation/helper115 checks and extension build; PowerShell parser
