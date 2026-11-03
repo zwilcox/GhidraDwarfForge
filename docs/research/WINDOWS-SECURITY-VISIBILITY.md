@@ -53,3 +53,22 @@ or release native library is changed. The strict attachment contract remains
 in force; neither accessible-only preservation nor an administrator-only
 default is selected. A1, full host admission and public attachment remain
 incomplete regardless of this experiment's eventual outcome.
+
+## First native failure and diagnostic follow-up
+
+Run `41621873395` at `bae80be` fails the new native child with
+`GetSecurityInfo failed: win32=5`. The archive digest and exact source/command
+review are retained in
+[`windows-security-visibility-41621873395.json`](../evidence/windows-security-visibility-41621873395.json).
+The log does not establish which whole-security query failed, so it does not
+prove that the audit/label fixture was seeded or that full visibility works.
+The failed run remains failed.
+
+The follow-up requests the access mask derived by the pinned
+`QuerySecurityAccessMask` declaration, retaining the explicit read-control and
+system-security requirements. On failure it records the query phase, requested
+fields, required/opened masks and independent handle/path outcomes for the
+individual and combined security fields. These are diagnostic observations,
+not a fallback: the original full-query error still fails the test. The next
+native result must establish the actual behavior before a production binding
+is added. No preservation contract or privilege policy is weakened.

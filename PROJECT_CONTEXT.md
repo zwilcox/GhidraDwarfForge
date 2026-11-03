@@ -1,10 +1,11 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
-**PRESENT, UNVERIFIED #72 protected-security experiment:** a native owned-file
-fixture now compares complete Windows descriptors with ordinary ACL reads,
-including audit/label metadata and disabled-privilege controls. Only the test
-child token is adjusted and restored; no product elevation policy is selected.
-Native execution remains pending. See `docs/research/WINDOWS-SECURITY-VISIBILITY.md`.
+**CONFIRMED failed #72 protected-security probe:** run41621873395 at `bae80be`
+returns access denied from GetSecurityInfo; the exact query phase is unproven.
+Raw failure/source evidence is retained. Derived-access and per-field/phase
+diagnostics now preserve the failure while locating its cause. Complete security
+visibility remains unverified; no product privilege policy is selected. See
+`docs/research/WINDOWS-SECURITY-VISIBILITY.md`.
 
 **CONFIRMED native #72 directory mechanism:** JNA implementation at `373f33b`
 and completed Windows job41619066926 pass independent raw source/artifact review:
