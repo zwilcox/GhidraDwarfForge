@@ -117,8 +117,8 @@ def main():
     cases = []
     arguments = ['', 'a b', 'é', 'line\nsecond', '\\', 'trailing\\', 'a"b', '\\"', '\\\\"', '$(ignored)', '`literal`']
 
-    def run(mode, expected, timeout=5000, extra=None, collision=None):
-        directory = root / mode
+    def run(mode, expected, timeout=5000, extra=None, collision=None, label=None):
+        directory = root / (label or mode)
         directory.mkdir()
         status = directory / 'status.json'
         out, err = directory / 'stdout.bin', directory / 'stderr.bin'
@@ -169,6 +169,11 @@ def main():
     run('arguments', 'completed', extra=arguments)
     require(json.loads((root / 'arguments/stdout.bin').read_bytes()) == arguments, 'argument codec changed bytes')
     require((root / 'arguments/stderr.bin').read_bytes() == b'expected-stderr\x00bytes', 'stderr bytes changed')
+    if os.name == 'nt':
+        # A retained handle to the exited root formerly kept job accounting
+        # nonzero and misclassified this ordinary exit as a descendant leak.
+        for index in range(20):
+            run('arguments', 'completed', extra=arguments, label='arguments-repeat-' + str(index))
     run('error', 'tool_error')
     require(cases[-1]['record']['exitCode'] == 7, 'child exit status lost')
     if os.name != 'nt':

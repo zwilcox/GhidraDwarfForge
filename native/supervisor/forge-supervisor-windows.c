@@ -183,12 +183,21 @@ int wmain(int argc, wchar_t **argv) {
     ULONGLONG cleanup_started = 0;
     for (;;) {
         if (reason && !all_gone && !TerminateJobObject(job, 125)) cleanup_ok = false;
-        DWORD waited = WaitForSingleObject(process.hProcess, 0);
-        if (waited == WAIT_OBJECT_0) {
-            root_done = true;
-            if (!GetExitCodeProcess(process.hProcess, &exit_code)) { reason = "internal_error"; cleanup_ok = false; }
+        if (!root_done) {
+            DWORD waited = WaitForSingleObject(process.hProcess, 0);
+            if (waited == WAIT_OBJECT_0) {
+                root_done = true;
+                if (!GetExitCodeProcess(process.hProcess, &exit_code)) { reason = "internal_error"; cleanup_ok = false; }
+                /* ActiveProcesses includes terminated processes until their
+                 * references are released. Our own root handle must not make
+                 * a successful exit look like a surviving descendant. Retain
+                 * the exit observation/code, then release the handle before
+                 * querying job accounting. Never wait on a closed handle. */
+                if (!CloseHandle(process.hProcess)) { reason = "internal_error"; cleanup_ok = false; }
+                process.hProcess = NULL;
+            }
+            else if (waited != WAIT_TIMEOUT) { reason = "internal_error"; cleanup_ok = false; }
         }
-        else if (waited != WAIT_TIMEOUT) { reason = "internal_error"; cleanup_ok = false; }
         JOBOBJECT_BASIC_ACCOUNTING_INFORMATION accounting;
         if (!QueryInformationJobObject(job, JobObjectBasicAccountingInformation, &accounting, sizeof(accounting), NULL)) {
             reason = "internal_error"; cleanup_ok = false;

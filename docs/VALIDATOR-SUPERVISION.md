@@ -154,3 +154,18 @@ explicitly installs MSYS2 Git; source revision capture remains mandatory.
 Workflow lint passes. Corrected native Windows execution remains **PRESENT,
 UNVERIFIED**, and this dependency correction does not complete live validation
 or attachment host support.
+
+The corrected dependency run 41586119200 built both Windows helper copies,
+but its first ordinary successful Python invocation was reported as `descendants`
+(exit code 0, complete cleanup, exact expected stdout/stderr). Raw job evidence
+is retained at `build/supervisor/windows-runtime-ci.log`; the diagnostic archive
+SHA-256 is `b062d063e094830ab6ff643a2f6d70b42424f0cbbab0f9344ee73f19f1bd8423`.
+Microsoft's [job accounting contract](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-jobobject_basic_accounting_information)
+counts a terminated process until its references are released. The helper kept
+its own root process handle while requiring that accounting count to become
+zero. It now records the signaled exit/code and closes that handle before querying
+the job. Completion still requires zero active processes and both pipe EOFs;
+the correction does not reinterpret a nonzero count as success. Twenty repeated
+successful-exit controls supplement the existing orphan, timeout, cancellation,
+breakaway and output-limit cases. Cross-compilation passes; corrected native
+Windows runtime acceptance remains **PRESENT, UNVERIFIED**.
