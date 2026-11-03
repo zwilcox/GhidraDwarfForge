@@ -1,5 +1,17 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local loader lifecycle evidence:** real curated Forge companions
+pass QEMU AArch64 and MIPS32 big-endian exec/PIE loading, plus native x86-64
+and both remote targets' shared-library unload/reload and duplicate-instance
+selection. The explicit-bias fallback passes with remote file access disabled.
+A native attach/exec test verifies removal of stale symbols. The optional
+launcher passes Linux's real Script Manager selection/cancellation journey
+and structural/GDB checks using the packaged PR157 artifact. These tests are
+now included in the candidate CI workflow; native Windows GUI and the expanded
+hosted matrix remain **PRESENT, UNVERIFIED**. See the completion ledger for
+commands, retained results and remaining scope. No attachment transaction or
+issue closure follows from this checkpoint.
+
 **CONFIRMED active scope:** complete optional GDB companion loading (#107) and
 opt-in debuglink attachment (#72). `docs/DEBUG-LOADING-COMPLETION-PLAN.md` retains
 all acceptance rows, including both-host attachment recovery and cross-target

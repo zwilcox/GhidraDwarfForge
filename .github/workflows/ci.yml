@@ -944,7 +944,7 @@ jobs:
                       capture=("FORGE_VALIDATION_EVIDENCE_DIR=$evidence_root/cases/$role"
                           "FORGE_VALIDATION_TOOLSET=$evidence_root/tools/toolset.json") ;;
               esac
-              if [[ "$TARGET:$role" == "x86_64:pie" ]]; then
+              if [[ "$role" == exec || "$role" == pie || "$role" == shared ]]; then
                   capture+=("GHIDRA_GDB_LOADER=1")
               fi
               env "${capture[@]}" FIXTURE_ROLE="$role" src/test/integration/headless-symbol-export.sh \
@@ -971,18 +971,36 @@ jobs:
                       --sidecar "build/fixtures/$TARGET/semantic.pie.ghidra-forge.dbg" \
                       --reference "build/fixtures/$TARGET/semantic.pie.reference" \
                       --results build/test-results/gdb-companion-native
+                  python3 -B src/test/integration/gdb-companion-attach.py \
+                      --input "build/fixtures/$TARGET/semantic.pie.stripped" \
+                      --sidecar "build/fixtures/$TARGET/semantic.pie.ghidra-forge.dbg" \
+                      --results build/test-results/gdb-companion-attach
+              elif [[ "$TARGET" != x86_64 && ( "$role" == exec || "$role" == pie ) ]]; then
+                  src/test/integration/gdb-companion-remote.sh "$TARGET" "$role"
+                  if [[ "$role" == pie ]]; then
+                      src/test/integration/gdb-companion-remote.sh "$TARGET" "$role" no-hostio
+                  fi
+              fi
+              if [[ "$role" == shared ]]; then
+                  src/test/integration/gdb-companion-shared.sh "$TARGET" normal
+                  src/test/integration/gdb-companion-shared.sh "$TARGET" ambiguous
+                  if [[ "$TARGET" != x86_64 ]]; then
+                      src/test/integration/gdb-companion-shared.sh "$TARGET" normal no-hostio
+                  fi
               fi
               if [[ "$TARGET:$role" == "x86_64:exec" ]]; then
                   sidecar="build/fixtures/x86_64/semantic.exec.ghidra-forge.dbg"
                   source_file="$sidecar.c"
                   first=$(sha256sum "$sidecar" | cut -d' ' -f1)
                   first_source=$(sha256sum "$source_file" | cut -d' ' -f1)
-                  FIXTURE_ROLE="exec" src/test/integration/headless-symbol-export.sh \
+                  first_companion=$(sha256sum "$sidecar.gdb.py" | cut -d' ' -f1)
+                  GHIDRA_GDB_LOADER=1 FIXTURE_ROLE="exec" src/test/integration/headless-symbol-export.sh \
                       "$GHIDRA_INSTALL_DIR" "$consumer" "$producer" x86_64
                   second=$(sha256sum "$sidecar" | cut -d' ' -f1)
                   second_source=$(sha256sum "$source_file" | cut -d' ' -f1)
                   test "$first" = "$second"
                   test "$first_source" = "$second_source"
+                  test "$first_companion" = "$(sha256sum "$sidecar.gdb.py" | cut -d' ' -f1)"
                   src/test/integration/controlled-decompiler-failure.sh \
                       "$GHIDRA_INSTALL_DIR" "$consumer" "$producer"
               fi
@@ -2027,6 +2045,11 @@ jobs:
             "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
             "$PWD/build/fixtures/x86_64/semantic.exec.stripped" \
             "$PWD/build/fixtures/x86_64/semantic.exec.reference"
+          GHIDRA_GUI_GDB_LOADER=1 src/test/integration/gui-script-manager.sh \
+            "$GHIDRA_INSTALL_DIR" \
+            "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
+            "$PWD/build/fixtures/x86_64/semantic.exec.stripped" \
+            "$PWD/build/fixtures/x86_64/semantic.exec.reference"
 
       - name: Clean installed-release export without external natives
         if: matrix.target == 'x86_64'
@@ -2387,6 +2410,12 @@ jobs:
         run: |
           $mingwBin = Join-Path $env:MSYS2_LOCATION 'mingw64\bin'
           $env:PATH = "$mingwBin;$env:PATH"
+          .\src\test\integration\windows-gui-script-manager.ps1 `
+            -GhidraDirectory $env:GHIDRA_INSTALL_DIR `
+            -ModuleDirectory (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions\GhidraDwarfForge') `
+            -Fixture (Resolve-Path 'linux-reference\semantic.exec.stripped').Path `
+            -Reference (Resolve-Path 'linux-reference\semantic.exec.reference').Path
+          $env:GHIDRA_GUI_GDB_LOADER = '1'
           .\src\test\integration\windows-gui-script-manager.ps1 `
             -GhidraDirectory $env:GHIDRA_INSTALL_DIR `
             -ModuleDirectory (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions\GhidraDwarfForge') `

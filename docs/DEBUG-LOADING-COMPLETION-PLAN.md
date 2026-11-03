@@ -196,3 +196,83 @@ outside GDB's default ten-line window; a retained lookup investigation proves
 the correct source path and declaration, and the corrected oracle tests the
 declaration plus actual value changes rather than relying on that window size.
 No exporter knowledge was fabricated to satisfy either assertion.
+
+## Real remote, library lifecycle and GUI checkpoint
+
+**CONFIRMED locally, not full L1–L7 acceptance:** the production exporter from
+PR157 head `6861f39` supplies the companions used by the new test harnesses.
+Six fresh exec/shared exports across x86-64, AArch64 and MIPS32 big-endian pass
+GNU/LLVM/pinned-libdwarf validation. Strict diagnostics are independently
+corroborated inherited-frame cases: x86 exec/shared 3/1, AArch64 exec/shared
+5/5, MIPS exec/shared 0/0. Original fixture hashes remain unchanged.
+
+The tests use independent runtime evidence: `AT_ENTRY` minus the compiler ELF
+entry for executables, and `dlinfo(RTLD_DI_LINKMAP)` observed in the target for
+libraries. They do not derive expected bias through the production mapping
+algorithm. The shared driver uses two linker namespaces to create actual
+ambiguous instances, switches the explicit selection, checks distinct global
+values, unloads both and repeats. This Linux/glibc test fixture does not impose
+a libc dependency on the production loader.
+
+Commands (from this worktree, after the real headless exports):
+
+```sh
+src/test/integration/gdb-companion-shared.sh x86_64 normal
+src/test/integration/gdb-companion-shared.sh x86_64 ambiguous
+for target in aarch64 mips32be; do
+    src/test/integration/gdb-companion-remote.sh "$target" exec
+    src/test/integration/gdb-companion-remote.sh "$target" pie
+    src/test/integration/gdb-companion-remote.sh "$target" pie no-hostio
+    src/test/integration/gdb-companion-shared.sh "$target" normal
+    src/test/integration/gdb-companion-shared.sh "$target" ambiguous
+    src/test/integration/gdb-companion-shared.sh "$target" normal no-hostio
+done
+python3 -B src/test/integration/gdb-companion-attach.py \
+    --input build/fixtures/x86_64/semantic.pie.stripped \
+    --sidecar build/fixtures/x86_64/semantic.pie.ghidra-forge.dbg \
+    --results build/test-results/gdb-companion-attach
+```
+
+Normal local QEMU connections supply usable process mappings. The `no-hostio`
+case disables GDB's remote `vFile:open` support on a real connection; automatic
+loading must diagnose unavailable mappings, while a correct explicit bias
+still loads and a wrong bias is rejected. All runtime checks use actual named
+breakpoints, source lookup, arguments and global values, with exit/unload
+cleanup and input/artifact preservation. Remote results record ELF32 big-endian
+and ELF64 little-endian observations without treating these as all-ABI claims.
+
+The attach fixture permits tracing only an owned test child. A preload
+constructor stops that child for attachment and an exit hook executes a
+different image. The helper must remove the old symbols and refuse to load the
+old companion into the new image. Passing evidence is retained in
+`build/test-results/gdb-companion-attach/run.zgozzzvk`. The initial external
+libc source warning at attachment is unrelated to Forge source lookup; the
+latter is checked explicitly. Earlier handshake/SIGSTOP test-harness failures
+remain retained. The shared harness's first run failed while parsing readelf's
+column heading; it now requires a numeric symbol index.
+
+**CONFIRMED Linux GUI evidence:** the unchanged production artifact downloaded
+from run `41564572526` passes real Script Manager discovery and double-click
+execution of `ExportGhidraDwarfForgeWithGdbLoader.java`, fallback output
+selection, console reporting, unchanged-input checks and cancellation without
+outputs. Evidence is in `build/test-results/gui-script-manager/run.rqRwXQUi`.
+The resulting three-file generation passes GNU/LLVM/strict validators and a
+fresh GDB session using `source`/`forge-load`, function breakpoints, `list`,
+`next`, `step` and normal exit. Display dependencies are extracted private
+Xvfb/Openbox tools; the user's desktop and Ghidra installation are untouched.
+
+The candidate CI runs exec/PIE remote and normal/ambiguous shared tests on all
+five target lanes, native x86 attach/exec, missing-mapping controls and both
+ordinary/optional Script Manager journeys on Linux and Windows. New hosted
+steps are **PRESENT, UNVERIFIED** until the exact updated head runs. ARM32 and
+MIPS32 little-endian new companion harnesses have no local passing claim here.
+Rebased/sectionless companion cases, complete cancellation/failure acceptance,
+remaining cross-host evidence and #72's transaction remain required.
+
+The ordinary launcher regression also passes with the same installed package
+in `build/test-results/gui-script-manager/run.WSvQsJhX`: exactly two output
+files, successful structural/GDB checks and empty cancelled destination. The
+final remote/shared replay additionally requires the actual target's exit
+status to be zero. Seventeen pure mapping/identity cases, `actionlint`, shell
+syntax and `git diff --check` pass. These changes add tests and CI coverage;
+production exporter/runtime bytes are unchanged from `6861f39`.

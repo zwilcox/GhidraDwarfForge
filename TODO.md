@@ -1,5 +1,13 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local #107 progress:** real companion loading now has native
+attach/exec and cross-target shared-library unload/reload evidence, including
+ambiguous instances and missing remote mappings. Linux Script Manager export
+and chooser cancellation pass with the optional companion. The candidate CI
+adds these tests and native Windows GUI generation/cancellation. Hosted
+acceptance, remaining loader cases and the complete #72 attachment transaction
+are still required; see `docs/DEBUG-LOADING-COMPLETION-PLAN.md`.
+
 **CONFIRMED active priority:** #107 (optional GDB loader), then #72 (opt-in
 debuglink transaction), with all original acceptance criteria retained in
 `docs/DEBUG-LOADING-COMPLETION-PLAN.md`. Initial mapping arithmetic has local

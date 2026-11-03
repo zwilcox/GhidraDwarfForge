@@ -122,13 +122,19 @@ test ! -s "$work/readelf.stderr"
 llvm-dwarfdump --verify "$sidecar" > "$work/llvm-verify.txt" 2>&1
 python3 "$repository/src/test/integration/check-dwarfdump.py" \
     "$sidecar" "$work/dwarfdump.txt" --original "$input"
+load_commands=(-ex "symbol-file $sidecar")
+start_command=run
+if [[ "${GHIDRA_GUI_GDB_LOADER:-0}" == 1 ]]; then
+    load_commands=(-ex starti -ex "source $sidecar.gdb.py" -ex forge-load)
+    start_command=continue
+fi
 gdb --nx --batch \
     -ex 'set pagination off' -ex 'set confirm off' -ex 'set debuginfod enabled off' \
-    -ex "file $input" -ex 'set auto-solib-add off' -ex "symbol-file $sidecar" \
+    -ex "file $input" -ex 'set auto-solib-add off' "${load_commands[@]}" \
     -ex 'info functions gui_recovered_add' -ex 'ptype gui_recovered_add' \
     -ex 'list gui_recovered_add' -ex 'break gui_recovered_add' \
     -ex 'python exits=[]; gdb.events.exited.connect(lambda event: exits.append(event.exit_code))' \
-    -ex run -ex 'python assert gdb.selected_frame().name() == "gui_recovered_add"' \
+    -ex "$start_command" -ex 'python assert gdb.selected_frame().name() == "gui_recovered_add"' \
     -ex 'python import os; assert os.path.isfile(gdb.selected_frame().find_sal().symtab.fullname())' \
     -ex 'python before=int(gdb.parse_and_eval("$pc"))' -ex next \
     -ex 'python assert int(gdb.parse_and_eval("$pc")) != before' \

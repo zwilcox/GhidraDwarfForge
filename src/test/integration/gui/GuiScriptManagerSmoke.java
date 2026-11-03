@@ -37,6 +37,8 @@ import ghidra.util.task.SwingUpdateManager;
 public final class GuiScriptManagerSmoke {
     private static final String PREFLIGHT = "GhidraDwarfForge.java";
     private static final String EXPORT = "ExportGhidraDwarfForge.java";
+    private static final String LOADER_EXPORT = "ExportGhidraDwarfForgeWithGdbLoader.java";
+    private static final boolean WITH_LOADER = "1".equals(System.getenv("GHIDRA_GUI_GDB_LOADER"));
 
     private static final class ProbeFrontEnd extends FrontEndTool {
         ProbeFrontEnd(ProjectManager manager) {
@@ -113,7 +115,7 @@ public final class GuiScriptManagerSmoke {
                 return result;
             });
             try {
-                for (String script : new String[] { PREFLIGHT, EXPORT }) {
+                for (String script : new String[] { PREFLIGHT, EXPORT, LOADER_EXPORT }) {
                     var found = GhidraScriptUtil.findScriptByName(script);
                     GuiTestSupport.require(found != null, "installed script was not discovered: " + script);
                     GuiTestSupport.require(found.getFile(false).toPath().toRealPath().equals(
@@ -184,7 +186,8 @@ public final class GuiScriptManagerSmoke {
                             throw new RuntimeException(failure);
                         }
                     });
-                    launchFromTable(tool, EXPORT, caseDirectory.resolve("export-manager.png"));
+                    launchFromTable(tool, WITH_LOADER ? LOADER_EXPORT : EXPORT,
+                        caseDirectory.resolve("export-manager.png"));
                     interaction.get(100, TimeUnit.SECONDS);
                     awaitConsole(console, "GhidraDwarfForge report: ");
                     awaitConsole(console, cancel ? "User cancelled script." : "Finished!");
@@ -199,10 +202,11 @@ public final class GuiScriptManagerSmoke {
                     GuiTestSupport.require(originalHash.equals(GuiTestSupport.sha256(input)),
                         "original ELF changed");
                     GuiTestSupport.require(!Files.exists(restricted.resolve("fixture.dbg")) &&
-                        !Files.exists(restricted.resolve("fixture.dbg.c")),
+                        !Files.exists(restricted.resolve("fixture.dbg.c")) &&
+                        !Files.exists(restricted.resolve("fixture.dbg.gdb.py")),
                         "output was published in the restricted original directory");
                     try (var entries = Files.list(chosen)) {
-                        GuiTestSupport.require(entries.count() == (cancel ? 0 : 2),
+                        GuiTestSupport.require(entries.count() == (cancel ? 0 : WITH_LOADER ? 3 : 2),
                             "wrong artifact count or staging files left behind");
                     }
                     if (!cancel) {
@@ -211,6 +215,12 @@ public final class GuiScriptManagerSmoke {
                         GuiTestSupport.require(Files.size(chosen.resolve("fixture.dbg")) > 0 &&
                             Files.size(chosen.resolve("fixture.dbg.c")) > 0,
                             "completed GUI artifact pair is missing");
+                        if (WITH_LOADER) {
+                            GuiTestSupport.require(Files.size(chosen.resolve("fixture.dbg.gdb.py")) > 0,
+                                "completed GUI companion is missing");
+                            GuiTestSupport.require(transcript.contains("GDB companion"),
+                                "GUI console does not identify the companion");
+                        }
                     }
                     ComponentProvider provider = tool.getComponentProvider("Console");
                     GuiTestSupport.onSwing(() -> {
@@ -221,6 +231,7 @@ public final class GuiScriptManagerSmoke {
                         caseDirectory.resolve("console.png"));
                     Files.writeString(caseDirectory.resolve("result.txt"),
                         "script-manager-action=double-click\nchooser=" + (cancel ? "cancel" : "select") +
+                        "\ngdb-loader=" + WITH_LOADER +
                         "\ninput_sha256=" + originalHash + "\nresult=PASS\n");
                 }
                 catch (Exception | Error failure) {
