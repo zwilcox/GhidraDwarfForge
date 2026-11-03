@@ -2503,6 +2503,11 @@ jobs:
 
   windows-host:
     needs: [ release-package, native-windows, linux-x86-export-reference ]
+    # The reference files are uploaded before the Linux GUI journey. Still
+    # exercise Windows when that later journey fails; missing reference files
+    # fail artifact download, and required-validation independently requires
+    # the complete Linux reference/GUI job to succeed.
+    if: ${{ always() && !cancelled() && needs.release-package.result == 'success' && needs.native-windows.result == 'success' }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
