@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED Windows checker build failure; correction pending:** native job
+41641903394 reached the pinned configure guard rejecting static libdwarf on
+Windows. The corrected builder uses a private patched consumer DLL beside the
+real Windows checker, with complete dependency audit and separate validation
+artifact packaging; Linux stays static. See
+`docs/evidence/windows-checker-static-41641903394.json`. Native build/runtime is
+still **PRESENT, UNVERIFIED**. The raw-tool harness now also requires exact
+Unicode configuration/input paths; its Linux replay passes.
+
+
 **PRESENT, UNVERIFIED #72 Windows real-export integration:** a new standalone
 Java21 probe connects the production Windows Host, AttachmentOperation and fresh
 GNU/LLVM/pinned validation to the actual Windows headless export. It exercises

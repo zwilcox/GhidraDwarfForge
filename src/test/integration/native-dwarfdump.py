@@ -79,6 +79,22 @@ def main():
     valid = run("valid", [*command, artifact], environment)
     require(valid.returncode == 0 and not valid.stderr, "checker failed on compiler ELF")
     checker.validate_output(valid.stdout.decode("utf-8"))
+    # Exercise Unicode ancestors separately from the already checked ASCII
+    # baseline. No alternate basename or path fallback may select another file.
+    unicode_root = root / "validator λ 字 with spaces"
+    shutil.copytree(relocated, unicode_root)
+    unicode_tool = unicode_root / "libexec" / executable.name
+    unicode_configuration = unicode_root / "share/dwarfdump/dwarfdump.conf"
+    unicode_artifact = unicode_root / "input λ 字.o"
+    unicode_artifact.write_bytes(original)
+    unicode_result = run("unicode-paths", [unicode_tool, "--file-name=" + str(unicode_configuration),
+        "--no-follow-debuglink", "-ka", "-ki", "-kd", unicode_artifact], environment)
+    require(unicode_result.returncode == 0 and not unicode_result.stderr,
+        "native checker failed on explicit Unicode paths")
+    checker.validate_output(unicode_result.stdout.decode("utf-8"))
+    require(unicode_artifact.read_bytes() == original, "checker changed Unicode-path input")
+    for relative, expected in before.items():
+        require(digest(unicode_root / relative) == expected, "checker changed Unicode-path bundle")
     # Corrupt only the DWARF version, preserving the ELF and all section bounds.
     table = struct.unpack_from("<Q", original, 40)[0]
     count, names_index = struct.unpack_from("<HH", original, 60)
@@ -116,7 +132,7 @@ def main():
     (root / "result.json").write_text(json.dumps({"status": "PASS", "host": os.name,
         "compiler": str(compiler), "compilerSha256": digest(compiler), "sourceSha256": digest(source),
         "fixtureSha256": digest(artifact), "malformedSha256": digest(malformed), "bundle": before,
-        "scope": "Raw native checker: compiler ELF/DWARF5, relocated explicit config, corrupt-version refusal; no attachment acceptance"}, indent=4) + "\n", encoding="utf-8")
+        "scope": "Raw native checker: compiler ELF/DWARF5, relocated explicit config, Unicode paths, corrupt-version refusal; no attachment acceptance"}, indent=4) + "\n", encoding="utf-8")
     print("native-dwarfdump=PASS")
 
 

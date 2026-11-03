@@ -318,14 +318,38 @@ jobs:
               -Compiler $env:FORGE_METADATA_CC -Jna $jna -Gson $gson `
               -Results (Join-Path $PWD 'build/test-results/native-windows/file-metadata')
 
+      - name: Fetch pinned Windows native source
+        run: |
+          curl -fL --retry 3 \
+            "https://github.com/davea42/libdwarf-code/releases/download/$LIBDWARF_VERSION/$LIBDWARF_ARCHIVE" \
+            -o "$LIBDWARF_ARCHIVE"
+          echo "$LIBDWARF_ARCHIVE_SHA256  $LIBDWARF_ARCHIVE" | sha256sum -c -
+
+      - name: Build isolated pinned Windows DWARF checker
+        run: |
+          support/build-validation-dwarfdump.sh "$LIBDWARF_ARCHIVE" \
+            validation-tool-windows build/test-results/native-windows/strict-checker-build
+          printf 'FORGE_VALIDATION_CLANG=%s\n' "$(cygpath -w "$(command -v clang)")" >> "$GITHUB_ENV"
+
+      - name: Exercise raw Windows checker on compiler ELF and malformed DWARF
+        shell: pwsh
+        run: |
+          python src/test/integration/native-dwarfdump.py --bundle validation-tool-windows `
+            --compiler $env:FORGE_VALIDATION_CLANG --clang-target x86_64-linux-gnu `
+            --results build/test-results/native-windows/strict-checker-runtime
+          if ($LASTEXITCODE -ne 0) { throw 'Native Windows DWARF checker controls failed' }
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dwarfdump-windows-validation
+          path: validation-tool-windows/
+          if-no-files-found: error
+
       - name: Build and audit pinned Windows DLLs
         run: |
           set -euo pipefail
           result_directory="$PWD/build/test-results/native-windows"
           mkdir -p "$result_directory"
-          curl -fL --retry 3 \
-            "https://github.com/davea42/libdwarf-code/releases/download/$LIBDWARF_VERSION/$LIBDWARF_ARCHIVE" \
-            -o "$LIBDWARF_ARCHIVE"
           echo "$LIBDWARF_ARCHIVE_SHA256  $LIBDWARF_ARCHIVE" | sha256sum -c -
           tar -xf "$LIBDWARF_ARCHIVE"
           cd libdwarf-2.3.2
@@ -491,26 +515,6 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           support/compare-native-builds.sh windows native-windows-out \
             native-windows-rebuild "$result_directory/reproducibility.log"
-
-      - name: Build isolated pinned Windows DWARF checker
-        run: |
-          support/build-validation-dwarfdump.sh "$LIBDWARF_ARCHIVE" \
-            validation-tool-windows build/test-results/native-windows/strict-checker-build
-          printf 'FORGE_VALIDATION_CLANG=%s\n' "$(cygpath -w "$(command -v clang)")" >> "$GITHUB_ENV"
-
-      - name: Exercise raw Windows checker on compiler ELF and malformed DWARF
-        shell: pwsh
-        run: |
-          python src/test/integration/native-dwarfdump.py --bundle validation-tool-windows `
-            --compiler $env:FORGE_VALIDATION_CLANG --clang-target x86_64-linux-gnu `
-            --results build/test-results/native-windows/strict-checker-runtime
-          if ($LASTEXITCODE -ne 0) { throw 'Native Windows DWARF checker controls failed' }
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: dwarfdump-windows-validation
-          path: validation-tool-windows/
-          if-no-files-found: error
 
       - name: Build Windows validator process owner
         run: support/build-validator-supervisor.sh windows native-windows-out build/test-results/native-windows/supervisor

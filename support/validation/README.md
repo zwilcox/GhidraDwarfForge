@@ -30,7 +30,8 @@ extracted Ubuntu development packages. A fresh private directory is required.
 ## Standalone libdwarf patches
 
 These patches apply only to the independently built **validation executable**
-from libdwarf 2.3.2, including its statically linked ELF consumer. None may
+from libdwarf 2.3.2, including its private ELF consumer (static on Linux; a separate patched DLL
+on Windows). None may
 enter the shipped producer/consumer library builds, their source patch set,
 or release-native provenance manifests.
 
@@ -474,7 +475,10 @@ historical profile; new receipts require the complete eight-patch bundle.
 
 **PRESENT, UNVERIFIED:** `build-validation-dwarfdump.sh` also admits native
 MSYS2 MINGW64. It builds the same pinned consumer and eight validation patches
-with static libdwarf, retains zlib/zstd support and audits every PE dependency.
+with a private patched libdwarf DLL, retains zlib/zstd support and audits every
+PE dependency. Pinned configure.ac rejects static libdwarf on Windows; the
+first attempted static build failed in41641903394 before compilation. See
+`../../docs/evidence/windows-checker-static-41641903394.json`. Linux remains static.
 Only reviewed system imports and copied compression DLLs are accepted; runtime
 package versions and notices accompany the bundle. This validation artifact is
 separate from production/release native inputs.
@@ -484,9 +488,8 @@ The raw executable is `libexec/dwarfdump.exe`. Native callers pass the pinned
 validator already verifies that configuration's hash. The optional Bash launcher
 continues to work under MSYS2. `native-dwarfdump.py` compiles a tiny ELF/DWARF5
 object (native Windows Clang targets x86_64-linux-gnu), relocates the checker into
-a directory with spaces, removes MSYS2 from the checker PATH and parses complete
-strict results. A DWARF-version corruption must produce the intended diagnostic
+directories with spaces and Unicode characters, removes MSYS2 from the checker
+PATH and parses complete strict results. A DWARF-version corruption must produce the intended diagnostic
 and fail the strict parser. Inputs and tool/configuration hashes stay unchanged.
-This establishes checker execution only; full Windows exporter/attachment and
-Unicode-path coverage remain separate requirements. Linux `cc` runtime and the
+This establishes checker execution only; full Windows exporter/attachment remains a separate requirement. Linux `cc` runtime and the
 existing configuration regression pass locally; native Windows CI is pending.

@@ -12,8 +12,8 @@ results=$(realpath -m "$3")
 support_dir=$(realpath "$(dirname "$0")")
 # Only native hosts with an audited dependency layout are admitted.
 case "$(uname -s)" in
-    Linux) host=linux; executable=dwarfdump ;;
-    MINGW64_NT-*) host=windows; executable=dwarfdump.exe ;;
+    Linux) host=linux; executable=dwarfdump; configure_options=(--enable-static --disable-shared --disable-dwarfgen) ;;
+    MINGW64_NT-*) host=windows; executable=dwarfdump.exe; configure_options=(--enable-shared --disable-static --disable-dwarfgen) ;;
     *) echo 'unsupported validation-tool build host' >&2; exit 1 ;;
 esac
 checker_patch="$support_dir/validation/0001-check-line-sequences.patch"
@@ -63,7 +63,7 @@ source="$work/libdwarf-2.3.2"
     patch -p1 < "$locviews_patch" > "$work/locviews-patch.log" 2>&1
     patch -p1 < "$bounds_patch" > "$work/bounds-patch.log" 2>&1
     patch -p1 < "$vector_patch" > "$work/vector-patch.log" 2>&1
-    ./configure --enable-static --disable-shared --disable-dwarfgen \
+    ./configure "${configure_options[@]}" \
         > "$work/configure.log" 2>&1
     make -j"${FORGE_BUILD_JOBS:-$(nproc)}" > "$work/make.log" 2>&1
 )
@@ -71,7 +71,18 @@ stage="$work/output"
 mkdir -p "$stage/bin" "$stage/libexec" "$stage/share/dwarfdump" \
     "$stage/source/support/validation" "$stage/licenses"
 printf '%s  %s\n' "$configuration_hash" "$source/src/bin/dwarfdump/dwarfdump.conf" | sha256sum -c -
-cp "$source/src/bin/dwarfdump/$executable" "$stage/libexec/"
+if [[ "$host" == windows ]]; then
+    # The pinned configure explicitly disallows static libdwarf on Windows.
+    # Copy the real PE image, not libtool's launcher, and its private patched
+    # consumer. Neither comes from the unmodified production native build.
+    cp "$source/src/bin/dwarfdump/.libs/$executable" "$stage/libexec/"
+    mapfile -t consumers < <(find "$source/src/lib/libdwarf/.libs" -maxdepth 1 -name 'libdwarf-*.dll' -print)
+    [[ "${#consumers[@]}" -eq 1 ]] || { echo 'expected one private validation consumer DLL' >&2; exit 1; }
+    cp "${consumers[0]}" "$stage/libexec/"
+    private_consumer=$(basename "${consumers[0]}" | tr '[:upper:]' '[:lower:]')
+else
+    cp "$source/src/bin/dwarfdump/$executable" "$stage/libexec/"
+fi
 cp "$source/src/bin/dwarfdump/dwarfdump.conf" "$stage/share/dwarfdump/"
 cp "$launcher" "$stage/bin/dwarfdump"
 chmod 755 "$stage/bin/dwarfdump" "$stage/libexec/$executable"
@@ -121,6 +132,9 @@ else
                 lower=$(printf '%s' "$dependency" | tr '[:upper:]' '[:lower:]')
                 case "$lower" in
                     kernel32.dll|msvcrt.dll|ucrtbase.dll|ntdll.dll|api-ms-win-*.dll) ;;
+                    "$private_consumer")
+                        test -f "$stage/libexec/$dependency"
+                        ;;
                     zlib1.dll|libzstd.dll)
                         test -f "/mingw64/bin/$dependency"
                         if [[ ! -f "$stage/libexec/$dependency" ]]; then
@@ -166,7 +180,7 @@ grep -Fq '2.3.2' "$work/version.txt"
         "validation-configuration-sha256=$configuration_hash" \
         "host=$host" \
         "entry-point=bin/dwarfdump; executable=libexec/$executable" \
-        'configure=--enable-static --disable-shared --disable-dwarfgen' \
+        "configure=${configure_options[*]}" \
         'producer-patch=not-applied'
     cat "$work/version.txt"
     cc --version
@@ -176,8 +190,8 @@ grep -Fq '2.3.2' "$work/version.txt"
 cat > "$stage/CORRESPONDING_SOURCE.md" <<'EOF'
 This validation-only executable is built from the included libdwarf 2.3.2
 archive and eight explicitly identified validation-only patches: the dwarfdump
-line-sequence correction and bounded PN_XNUM recognition in its static ELF
-consumer, plus complete harmless-diagnostic evidence up to 65536 messages with
+line-sequence correction and bounded PN_XNUM recognition in its private ELF
+consumer (statically linked on Linux, a private patched DLL on Windows), plus complete harmless-diagnostic evidence up to 65536 messages with
 checked allocation and explicit rejection above that bound. The fourth recognizes
 the LLVM/GDB function-pointer calling-convention extension in the existing
 tag/attribute extension table; all other combinations and checks remain active.
@@ -194,7 +208,9 @@ shipped consumer/producer library sources are unchanged.
 The relocatable bin/dwarfdump launcher checks the pinned upstream configuration
 and selects it explicitly with --file-name, without consulting host defaults.
 The raw executable is libexec/dwarfdump on Linux or libexec/dwarfdump.exe on
-Windows; configuration is under share/dwarfdump. Windows callers can invoke
+Windows; configuration is under share/dwarfdump. Windows also includes its
+private patched libdwarf DLL beside the real executable, because this pinned
+release rejects static libdwarf on Windows. Windows callers can invoke
 the raw executable directly with the explicit pinned --file-name configuration.
 The Bash launcher requires MSYS2 on Windows. Compression DLLs are beside the
 Windows executable and their package versions/notices are under licenses/.
