@@ -236,6 +236,14 @@ tasks.register("attachmentHelperSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.output.AttachmentHelperSmoke"
 }
 
+tasks.register("attachmentGuiProcessSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks GUI helper cancellation waits for child cleanup and drains both output streams"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentGuiProcessSmoke"
+}
+
 tasks.register("attachmentInvocationSmoke", JavaExec) {
     group = "verification"
     description = "Checks bounded helper selections and all-role transport/tool path preflight"

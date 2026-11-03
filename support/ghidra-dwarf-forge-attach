@@ -5,7 +5,7 @@ usage() {
     cat <<'EOF'
 Usage: ghidra-dwarf-forge-attach --request=<absolute-json> --request-sha256=<sha256>
        --ghidra-dir=<installation> [--extension-dir=<installed-extension>]
-       [--java=<java-executable>] [--recover] [--preview]
+       [--java=<java-executable>] [--recover] [--preview] [--cancel-file=<absolute-empty-file>]
        [--confirm-target-change] [--authorize=sudo|pkexec]
 
 Attachment changes the selected executable and retains an independent backup.
@@ -25,6 +25,7 @@ extension_dir=
 java_path=
 request=
 request_sha=
+cancel_file=
 authorize=
 confirm=0
 preview=0
@@ -41,6 +42,7 @@ for argument in "$@"; do
         --java=*) java_path=${argument#*=} ;;
         --request=*) request=${argument#*=} ;;
         --request-sha256=*) request_sha=${argument#*=} ;;
+        --cancel-file=*) cancel_file=${argument#*=} ;;
         --authorize=sudo|--authorize=pkexec) authorize=${argument#*=} ;;
         --confirm-target-change) confirm=1 ;;
         --preview) preview=1 ;;
@@ -76,6 +78,10 @@ done
 command=("$java_path" --enable-native-access=ALL-UNNAMED -cp "$jar:$jna:$gson"
     ghidradwarfforge.output.AttachmentHelper --request "$request" --request-sha256 "$request_sha")
 if ((recover)); then command+=(--recover); fi
+if [[ -n $cancel_file ]]; then
+    [[ $cancel_file == /* ]] || fail '--cancel-file must be absolute'
+    command+=(--cancel-file "$cancel_file")
+fi
 
 # Preview runs unprivileged and checks the same pinned request used below.
 # It opens no log/output path and executes no selected validator.

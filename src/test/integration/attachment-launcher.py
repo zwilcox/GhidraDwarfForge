@@ -83,6 +83,13 @@ sys.exit(subprocess.run(args).returncode)
         run(['--confirm-target-change', '--confirm-target-change'], 64, [])
         run(['--authorize=automatic'], 64, [])
         run(['--unknown'], 64, [])
+        control = str(root / 'cancel λ $(literal)')
+        calls = run(['--confirm-target-change', '--authorize=pkexec', '--cancel-file=' + control],
+                    0, ['java', 'pkexec', 'java'])
+        for call in calls:
+            index = call['argv'].index('--cancel-file')
+            require(call['argv'][index + 1] == control, 'cancellation selection was split or lost')
+        run(['--cancel-file=relative'], 64, [])
         print(f'attachment-launcher=PASS cases={cases} actual-elevation=false native-execution=false')
 
 

@@ -38,6 +38,8 @@ public final class GuiScriptManagerSmoke {
     private static final String PREFLIGHT = "GhidraDwarfForge.java";
     private static final String EXPORT = "ExportGhidraDwarfForge.java";
     private static final String LOADER_EXPORT = "ExportGhidraDwarfForgeWithGdbLoader.java";
+    private static final String ATTACH = "AttachGhidraDwarfForge.java";
+    private static final String RECOVER = "RecoverGhidraDwarfForgeAttachment.java";
     private static final boolean WITH_LOADER = "1".equals(System.getenv("GHIDRA_GUI_GDB_LOADER"));
 
     private static final class ProbeFrontEnd extends FrontEndTool {
@@ -115,7 +117,7 @@ public final class GuiScriptManagerSmoke {
                 return result;
             });
             try {
-                for (String script : new String[] { PREFLIGHT, EXPORT, LOADER_EXPORT }) {
+                for (String script : new String[] { PREFLIGHT, EXPORT, LOADER_EXPORT, ATTACH, RECOVER }) {
                     var found = GhidraScriptUtil.findScriptByName(script);
                     GuiTestSupport.require(found != null, "installed script was not discovered: " + script);
                     GuiTestSupport.require(found.getFile(false).toPath().toRealPath().equals(
@@ -221,6 +223,8 @@ public final class GuiScriptManagerSmoke {
                             GuiTestSupport.require(transcript.contains("GDB companion"),
                                 "GUI console does not identify the companion");
                         }
+                        runAttachmentDecline(tool, input, chosen.resolve("fixture.dbg"),
+                            chosen.resolve("fixture.dbg.c"), caseDirectory, transcript);
                     }
                     ComponentProvider provider = tool.getComponentProvider("Console");
                     GuiTestSupport.onSwing(() -> {
@@ -253,6 +257,90 @@ public final class GuiScriptManagerSmoke {
                 program.release(owner);
             }
         }
+    }
+
+    private static void runAttachmentDecline(ProbeTool tool, Path input, Path sidecar, Path source,
+            Path caseDirectory, String exportTranscript) throws Exception {
+        Path work = Files.createDirectory(caseDirectory.resolve("attachment-decline"));
+        // The export fallback fixture deliberately separates the pair from its
+        // read-only target directory. Attachment discovery requires neighbors;
+        // use owned copies for this read-only preview/decline control.
+        Path target = Files.copy(input, work.resolve("fixture"));
+        Path pair = Files.copy(sidecar, work.resolve("fixture.dbg"));
+        Path synthetic = Files.copy(source, work.resolve("fixture.dbg.c"));
+        String marker = "GhidraDwarfForge report: ";
+        String report = exportTranscript.lines().filter(line -> line.contains(marker))
+            .map(line -> line.substring(line.indexOf(marker) + marker.length())).findFirst().orElseThrow();
+        Path exportReport = Files.writeString(work.resolve("export.json"), report + "\n");
+        var tools = new java.util.HashMap<String, Path>();
+        for (String role : java.util.List.of("helper", "readelf", "llvm", "strict", "configuration")) {
+            tools.put(role, Files.writeString(work.resolve(role), "not executed in declined GUI operation"));
+        }
+        var operation = new ghidradwarfforge.output.AttachmentOperation.Request(target, pair, synthetic,
+            exportReport, work.resolve("original.backup"), work.resolve("validation.json"), work.resolve("receipt.json"),
+            work.resolve("recovery.json"), work.resolve("restore"), null);
+        var invocation = new ghidradwarfforge.output.AttachmentInvocation(operation, tools, work.resolve("saved-recovery.json"));
+        Path request = Files.writeString(work.resolve("request λ.json"), invocation.toJson());
+        var before = new java.util.HashMap<Path, String>();
+        for (Path path : java.util.List.of(input, sidecar, source, target, pair, synthetic, exportReport, request)) {
+            before.put(path, GuiTestSupport.sha256(path));
+        }
+        ConsoleService console = tool.getService(ConsoleService.class);
+        clearConsole(console);
+        var interaction = CompletableFuture.runAsync(() -> {
+            try {
+                java.awt.Dialog chooser = GuiTestSupport.await("attachment request chooser", () ->
+                    java.util.Arrays.stream(java.awt.Window.getWindows())
+                        .filter(window -> window instanceof java.awt.Dialog && window.isShowing())
+                        .map(window -> (java.awt.Dialog) window)
+                        .filter(window -> window.getTitle().equals("Select attachment or refresh request"))
+                        .findFirst().orElse(null));
+                GuiTestSupport.onSwing(() -> {
+                    var filename = (javax.swing.JTextField) GuiTestSupport.find(chooser, component ->
+                        component instanceof javax.swing.JTextField && "filenameTextField".equals(component.getName()));
+                    GuiTestSupport.require(filename != null, "attachment chooser field missing");
+                    filename.setText(request.toString());
+                    return null;
+                });
+                Robot robot = new Robot();
+                robot.setAutoDelay(80);
+                GuiTestSupport.clickButton(robot, chooser, "Select");
+                javax.swing.JDialog review = GuiTestSupport.await("attachment review", () ->
+                    java.util.Arrays.stream(java.awt.Window.getWindows())
+                        .filter(window -> window instanceof javax.swing.JDialog && window.isShowing())
+                        .map(window -> (javax.swing.JDialog) window)
+                        .filter(window -> window.getTitle().equals("Review GhidraDwarfForge target change"))
+                        .findFirst().orElse(null));
+                GuiTestSupport.onSwing(() -> {
+                    GuiTestSupport.require(review.getRootPane().getDefaultButton().getText().equals("Cancel"),
+                        "target modification is the default action");
+                    var text = (javax.swing.JTextArea) GuiTestSupport.find(review, component -> component instanceof javax.swing.JTextArea);
+                    GuiTestSupport.require(text != null && text.getText().contains(target.toString()) &&
+                        text.getText().contains("Original backup:") && text.getText().contains("Receipt:"), "preview omitted selected artifacts");
+                    return null;
+                });
+                GuiTestSupport.foregroundWindow(review.getRootPane());
+                GuiTestSupport.screenshot(robot, review, work.resolve("review.png"));
+                robot.keyPress(java.awt.event.KeyEvent.VK_ENTER);
+                robot.keyRelease(java.awt.event.KeyEvent.VK_ENTER);
+            }
+            catch (Exception failure) { throw new RuntimeException(failure); }
+        });
+        launchFromTable(tool, ATTACH, work.resolve("script-manager.png"));
+        interaction.get(100, TimeUnit.SECONDS);
+        awaitConsole(console, "attachment declined; modifying helper was not started.");
+        awaitConsole(console, "Finished!");
+        String transcript = consoleText(console);
+        Files.writeString(work.resolve("console.txt"), transcript);
+        GuiTestSupport.require(transcript.contains("\"outcome\":\"PREVIEW\"") && !transcript.contains("Starting explicit target change"),
+            "GUI decline did not follow read-only helper preview");
+        for (var entry : before.entrySet()) {
+            GuiTestSupport.require(entry.getValue().equals(GuiTestSupport.sha256(entry.getKey())), "GUI decline changed selected input");
+        }
+        for (String name : java.util.List.of("original.backup", "validation.json", "receipt.json", "recovery.json", "restore", "saved-recovery.json")) {
+            GuiTestSupport.require(!Files.exists(work.resolve(name)), "declined GUI operation created " + name);
+        }
+        Files.writeString(work.resolve("result.txt"), "packaged-helper-preview=PASS\ndefault-enter-declines=PASS\nselected-inputs-unchanged=PASS\nno-transaction-outputs=PASS\n");
     }
 
     private static void launchFromTable(ProbeTool tool, String filename, Path screenshot)

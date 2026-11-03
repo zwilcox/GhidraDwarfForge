@@ -31,7 +31,7 @@ chmod 755 "$work/base/GhidraDwarfForge/support/wrapper"
 cp "$repository_dir/support/ghidra-dwarf-forge-attach" "$work/base/GhidraDwarfForge/support/ghidra-dwarf-forge-attach"
 chmod 644 "$work/base/GhidraDwarfForge/support/ghidra-dwarf-forge-attach"
 cp "$repository_dir/support/ghidra-dwarf-forge-attach.ps1" "$work/base/GhidraDwarfForge/support/ghidra-dwarf-forge-attach.ps1"
-for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java; do
+for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java AttachGhidraDwarfForge.java RecoverGhidraDwarfForgeAttachment.java; do
     printf '// fixture %s\n' "$entry_point" \
         > "$work/base/GhidraDwarfForge/ghidra_scripts/$entry_point"
 done
@@ -271,7 +271,7 @@ grep -Fxq 'producer=libdwarfp-2.dll' \
 test -s "$module/THIRD_PARTY_NOTICES.md"
 test -x "$module/support/ghidra-dwarf-forge-attach"
 cmp "$repository_dir/support/ghidra-dwarf-forge-attach" "$module/support/ghidra-dwarf-forge-attach"
-for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java; do
+for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java AttachGhidraDwarfForge.java RecoverGhidraDwarfForgeAttachment.java; do
     cmp "$work/base/GhidraDwarfForge/ghidra_scripts/$entry_point" \
         "$module/ghidra_scripts/$entry_point"
 done

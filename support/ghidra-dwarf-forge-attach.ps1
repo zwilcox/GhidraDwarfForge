@@ -6,6 +6,7 @@ param(
     [string]$GhidraDirectory = $env:GHIDRA_INSTALL_DIR,
     [string]$ExtensionDirectory = (Split-Path -Parent $PSScriptRoot),
     [string]$JavaExecutable,
+    [string]$CancellationFile,
     [switch]$Recover,
     [switch]$Preview,
     [switch]$ConfirmTargetChange,
@@ -43,6 +44,11 @@ foreach ($argument in @('--enable-native-access=ALL-UNNAMED','-cp',($dependencie
     $arguments.Add($argument)
 }
 if ($Recover) { $arguments.Add('--recover') }
+if (-not [string]::IsNullOrWhiteSpace($CancellationFile)) {
+    if (-not [IO.Path]::IsPathFullyQualified($CancellationFile)) { throw 'CancellationFile must be absolute' }
+    $arguments.Add('--cancel-file')
+    $arguments.Add($CancellationFile)
+}
 
 # ArgumentList performs Windows argument quoting. No cmd.exe, -Command,
 # Invoke-Expression, interpolated script or temporary command file is used.

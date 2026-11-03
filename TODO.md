@@ -3983,10 +3983,16 @@ that tree; distinct main push `40126173922` passes all twelve jobs and separate
 both-GUI/native Windows review. See
 `docs/VALIDATION-EVIDENCE-HANDOFF.md`.
 
-**Status:** `[ ]` — optional product operation **PLANNED**. The bounded backend
-and backup-based re-export investigation is complete; the explicit transaction
-design and remaining acceptance tests are in
-[`ADR-0004`](docs/ADR-0004-DEBUGLINK-ATTACHMENT.md). No attachment option exists.
+**Status:** `[~]` — optional product operation **PRESENT, UNVERIFIED as a complete
+feature** in draft PR158. The production transaction, separate helper, Linux and
+Windows launchers and initial Script Manager request review/launch controls exist.
+Earlier native Linux attachment/refresh/recovery evidence is recorded in
+`PROJECT_CONTEXT.md`; it does not prove current-head Windows or full GUI acceptance.
+GUI request preparation/export-report capture, native modifying GUI journeys,
+current-head artifact review and the final protected gate remain incomplete.
+The explicit transaction design and remaining acceptance tests are in
+[`ADR-0004`](docs/ADR-0004-DEBUGLINK-ATTACHMENT.md) and the
+[completion ledger](docs/DEBUG-LOADING-COMPLETION-PLAN.md).
 
 **CONFIRMED inspection scope:** manual run `40129632540` and independent
 Linux/native Windows artifact reviews pass on actual Java 21/64 MiB. Linux covers

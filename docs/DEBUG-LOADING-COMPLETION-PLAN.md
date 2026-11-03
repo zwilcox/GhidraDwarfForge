@@ -21,6 +21,14 @@ separate attachment branch's component evidence does not establish those rows.
 The checkpoint sections below are **HISTORICAL**, recording evidence as it
 became available; their pending statements do not supersede this status.
 
+**PRESENT, UNVERIFIED complete attachment UI:** separate Linux/Windows launchers
+and Script Manager request review/launch controls now exist. Local installed
+Linux preview/default-decline and cooperative child cleanup pass; full modifying
+GUI/authorization journeys, request preparation/report capture and current-head
+Windows/full-gate acceptance remain incomplete. See
+[the invocation guide](ATTACHMENT-HELPER.md) and
+[local evidence](evidence/attachment-gui-local-20261103.json).
+
 | ID | Required outcome | Evidence required |
 | --- | --- | --- |
 | L1 | Optional deterministic companion, explicit CLI/GUI controls and documented loading/override semantics | Packaged exporter and both host GUI/wrapper journeys; disabled-default comparison |

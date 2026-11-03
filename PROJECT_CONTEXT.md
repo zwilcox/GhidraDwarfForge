@@ -1,5 +1,19 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local GUI preview/decline; full native GUI flow remains unverified:**
+the installed Script Manager discovers attachment/recovery scripts. The attachment
+script previews the selected request in a separate JVM, displays readable paths
+and defaults to Cancel; actual Java21/Xvfb/Openbox input proves Enter declines
+without starting a modifying helper or changing any selected input/output.
+The same run's real export passes GNU/LLVM/pinned-libdwarf and native GDB checks.
+The GUI can explicitly request pkexec/RunAs and forwards a cooperative file-based
+cancellation channel. Helper149, recovery112, separate-child stop/drain tests,
+launcher12 routing cases, extension build, release assembly and lint pass locally.
+See `docs/evidence/attachment-gui-local-20261103.json` and `docs/ATTACHMENT-HELPER.md`.
+Request preparation/report capture, successful modifying GUI attachment/refresh/
+recovery, native authorization/cancellation, current Windows artifacts and the
+complete final gate remain incomplete. No A1–A7/C1 row is closed by this checkpoint.
+
 **CONFIRMED further Windows fixture failure; correction pending native rerun:**
 run41677412507/job126069625449 passes strict-report260 and helper115 checks,
 then fails recovery-request admission. The test fabricated receipt paths from

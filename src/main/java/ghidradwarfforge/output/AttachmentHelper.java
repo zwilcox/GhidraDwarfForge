@@ -31,12 +31,14 @@ public final class AttachmentHelper {
     private static final int REQUEST_LIMIT = 256 * 1024;
     private static final String HELP = "Attachment changes the selected executable and retains an independent backup.\n" +
         "Usage: AttachmentHelper --request ABSOLUTE_JSON --request-sha256 SHA256 --confirm-target-change " +
-        "[--cancel-on-stdin] [--recover] [--preview] [--enable-security-privilege]\n" +
+        "[--cancel-on-stdin] [--cancel-file ABSOLUTE_EMPTY_FILE] [--recover] [--preview] [--enable-security-privilege]\n" +
         "Run only in a separately authorized process. This command never requests elevation.\n" +
         "--cancel-on-stdin: any input byte or EOF requests cancellation; keep stdin open while running.\n" +
+        "--cancel-file: changes/removal of the caller's fresh empty file request cooperative cancellation.\n" +
         "Retain the request, backups, validation evidence and transaction/recovery receipts on failure.\n";
 
-    record Command(Path request, String sha256, boolean cancelOnStdin, boolean recovery, boolean preview, boolean securityPrivilege) { }
+    record Command(Path request, String sha256, boolean cancelOnStdin, boolean recovery, boolean preview, boolean securityPrivilege,
+            Path cancelFile) { }
     record Admitted(Command command, AttachmentInvocation invocation, AttachmentPaths.Plan plan) { }
 
     private AttachmentHelper() { }
@@ -67,6 +69,27 @@ public final class AttachmentHelper {
             output.print(HELP);
             return output.checkError() ? 1 : 0;
         }
+        try {
+            var command = command(args);
+            if (command.cancelFile() != null) {
+                var file = new AttachmentCancellationFile(command.cancelFile());
+                var external = cancelled;
+                cancelled = () -> external.getAsBoolean() || file.getAsBoolean();
+            }
+        }
+        catch (IOException | RuntimeException failure) {
+            var response = new JsonObject();
+            response.addProperty("schemaVersion", 1);
+            response.addProperty("outcome", "FAILED");
+            response.addProperty("error", failure.toString());
+            response.addProperty("exitCode", 1);
+            output.println(response);
+            return 1;
+        }
+        return execute(args, cancelled, output);
+    }
+
+    private static int execute(String[] args, BooleanSupplier cancelled, PrintStream output) {
         if (java.util.Arrays.asList(args).contains("--preview")) return preview(args, cancelled, output);
         if (java.util.Arrays.asList(args).contains("--recover")) return recover(args, cancelled, output);
         AttachmentOperation.Result completed = null;
@@ -156,7 +179,14 @@ public final class AttachmentHelper {
         Command command = command(args);
         byte[] bytes = readPinned(command.request(), command.sha256(), REQUEST_LIMIT, cancelled);
         var invocation = AttachmentInvocation.read(new ByteArrayInputStream(bytes), cancelled);
-        return new Admitted(command, invocation, invocation.preflight(command.request()));
+        return new Admitted(command, invocation, withCancellation(invocation.preflight(command.request()), command));
+    }
+
+    private static AttachmentPaths.Plan withCancellation(AttachmentPaths.Plan plan, Command command) throws IOException {
+        if (command.cancelFile() == null) return plan;
+        var selections = new java.util.ArrayList<>(plan.selections());
+        selections.add(new AttachmentPaths.Selection("cancellation", command.cancelFile(), AttachmentPaths.Kind.INPUT));
+        return AttachmentPaths.preflight(selections);
     }
 
     static Command command(String[] args) throws IOException {
@@ -167,8 +197,14 @@ public final class AttachmentHelper {
         boolean recovery = false;
         boolean preview = false;
         boolean securityPrivilege = false;
+        Path cancelFile = null;
         for (int index = 0; index < args.length; index++) {
             switch (args[index]) {
+                case "--cancel-file" -> {
+                    if (cancelFile != null || ++index == args.length) throw new IOException("select exactly one cancellation file");
+                    cancelFile = Path.of(args[index]);
+                    if (!cancelFile.isAbsolute()) throw new IOException("cancellation file must be absolute");
+                }
                 case "--request" -> {
                     if (request != null || ++index == args.length) throw new IOException("select exactly one request");
                     request = Path.of(args[index]);
@@ -203,7 +239,7 @@ public final class AttachmentHelper {
         if ((!confirmed && !preview) || request == null || !request.isAbsolute() || sha == null || !sha.matches("[0-9a-f]{64}")) {
             throw new IOException("explicit --confirm-target-change, absolute --request and lowercase --request-sha256 are required");
         }
-        return new Command(request, sha, control, recovery, preview, securityPrivilege);
+        return new Command(request, sha, control, recovery, preview, securityPrivilege, cancelFile);
     }
 
     /** Read-only user review, including path/receipt checks but no native host or validator execution. */
@@ -216,7 +252,7 @@ public final class AttachmentHelper {
             if (command.recovery()) {
                 var invocation = AttachmentRecoveryInvocation.read(new ByteArrayInputStream(
                     readPinned(command.request(), command.sha256(), REQUEST_LIMIT, cancelled)), cancelled);
-                invocation.preflight(invocation.transaction(cancelled), command.request()).recheck();
+                withCancellation(invocation.preflight(invocation.transaction(cancelled), command.request()), command).recheck();
                 response.add("selection", JsonParser.parseString(invocation.toJson()));
             }
             else {
@@ -249,7 +285,7 @@ public final class AttachmentHelper {
             byte[] bytes = readPinned(command.request(), command.sha256(), REQUEST_LIMIT, cancelled);
             var invocation = AttachmentRecoveryInvocation.read(new ByteArrayInputStream(bytes), cancelled);
             var transaction = invocation.transaction(cancelled);
-            var plan = invocation.preflight(transaction, command.request());
+            var plan = withCancellation(invocation.preflight(transaction, command.request()), command);
             response.addProperty("requestSha256", command.sha256());
             response.add("selection", JsonParser.parseString(invocation.toJson()));
             plan.recheck();

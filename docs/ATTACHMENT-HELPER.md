@@ -17,8 +17,48 @@ previous generation and export against the original backup as ADR-0004 requires.
 The Linux launcher, standalone helper, recovery interface and saved selections
 are implemented below; their complete native execution remains **PRESENT,
 UNVERIFIED** until hosted tests pass. The Windows launcher/owned-token scope are also implemented but await native
-acceptance; both GUI journeys remain **PLANNED**. The metadata policy and Ghidra/Java/native producer baselines
+acceptance; the initial GUI request review/launch flow is implemented below but
+complete GUI journeys remain **PRESENT, UNVERIFIED**. The metadata policy and Ghidra/Java/native producer baselines
 are unchanged.
+
+## Script Manager and cooperative cancellation
+
+**PRESENT, UNVERIFIED full modifying GUI flow:** run `AttachGhidraDwarfForge.java`
+and select an explicitly prepared ATTACH/REFRESH JSON request, or run
+`RecoverGhidraDwarfForgeAttachment.java` and select the saved recovery request.
+The initial UI consumes the request format below; it does not yet build those
+requests or capture the export report for the user. This convenience work and
+successful native GUI attachment/refresh/recovery acceptance remain incomplete.
+
+The installed helper first previews the SHA-256-pinned request in a separate,
+unprivileged JVM. The GUI displays the executable, pair, backups, receipts and
+selected validators. Cancel is the default. After explicit target-change consent,
+a separate choice selects current permissions or OS authorization; Linux uses
+pkexec, Windows uses the selected PowerShell7 executable and the launcher's RunAs
+option. Authorization is never retried automatically. Ordinary export never
+enters this flow. The helper still requires live validators and full native host
+admission; a successful preview alone cannot authorize a commit.
+
+The GUI owns a fresh empty cancellation file and an open write handle. The
+launchers forward `--cancel-file=<absolute-path>` / `-CancellationFile` literally.
+The helper includes that file in all-role alias preflight, reads no commands from
+it, and never writes it. A nonempty file, observed identity/mtime change, removal
+or inspection failure latches cancellation at the existing safe boundaries.
+The GUI signals cancellation without terminating a modifying helper, waits for
+its outcome and drains both output streams. Recovery already in progress finishes
+restoring the selected image. Closing an authorization console can lose output;
+the durable transaction/recovery receipts remain authoritative. Loss of the GUI
+process is not proof that a helper stopped; preserve the saved recovery request.
+
+**CONFIRMED local components:** actual Java21 passes149 helper checks and112
+recovery checks; a separate child-process test proves cooperative cancellation
+finishes cleanup and drains stdout/stderr larger than pipe capacity. Linux
+launcher routing passes12 cases without real elevation. Native Windows and
+full modifying GUI cancellation still need hosted artifact acceptance.
+Actual installed Linux Script Manager preview/default-Enter decline, unchanged
+selected inputs, absent transaction outputs and the existing export/GDB regression
+pass under Java21/Xvfb/Openbox. See
+[`attachment-gui-local-20261103.json`](evidence/attachment-gui-local-20261103.json).
 
 ## Explicit selection transport
 

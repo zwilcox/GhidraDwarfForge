@@ -70,6 +70,8 @@ public final class AttachmentHelperSmoke {
             failure(command, true, "CANCELLED", 130);
             equal(before, snapshot(root));
             equal(true, AttachmentHelper.command(append(command, "--cancel-on-stdin")).cancelOnStdin());
+            cancellationFile(root, command);
+            equal(before, snapshot(root));
 
             // A changed request of the same size and mtime must fail its content pin.
             var mtime = Files.getLastModifiedTime(selection);
@@ -113,6 +115,54 @@ public final class AttachmentHelperSmoke {
         equal(outcome, result.get("outcome").getAsString());
         equal(status, result.get("exitCode").getAsInt());
         equal(false, result.has("recoverySelection"));
+    }
+
+    private static void cancellationFile(Path root, String[] command) throws Exception {
+        Path file = root.resolve("cancel λ [literal]");
+        Files.createFile(file);
+        try {
+            var channel = new AttachmentCancellationFile(file);
+            equal(false, channel.getAsBoolean());
+            var arguments = append(command, "--cancel-file", file.toString());
+            var output = new ByteArrayOutputStream();
+            equal(0, AttachmentHelper.run(append(arguments, "--preview"), () -> false, new PrintStream(output)));
+            equal(0L, Files.size(file));
+            AttachmentHelper.admit(arguments, () -> false).plan().recheck();
+            Files.writeString(file, "cancel");
+            equal(true, channel.getAsBoolean());
+            failure(arguments, false, "CANCELLED", 130);
+            Files.writeString(file, "");
+            equal(true, channel.getAsBoolean()); // A request cannot be withdrawn.
+            var removed = new AttachmentCancellationFile(file);
+            Files.delete(file);
+            equal(true, removed.getAsBoolean());
+            Files.createFile(file);
+            equal(true, removed.getAsBoolean());
+            var replaced = new AttachmentCancellationFile(file);
+            Path retained = root.resolve("retained-cancel");
+            Files.move(file, retained);
+            try {
+                Files.createFile(file);
+                Files.setLastModifiedTime(file, Files.getLastModifiedTime(retained));
+                equal(true, replaced.getAsBoolean());
+            }
+            finally { Files.delete(retained); }
+            for (String[] invalid : new String[][] {
+                    append(arguments, "--cancel-file", file.toString()),
+                    append(command, "--cancel-file"), append(command, "--cancel-file", "relative"),
+                    append(command, "--cancel-file", root.toString()),
+                    append(command, "--cancel-file", root.resolve("absent").toString()) }) {
+                failure(invalid, false, "FAILED", 1);
+            }
+            // All-role admission rejects the control path aliasing any artifact,
+            // independently of whether its bytes would also request cancellation.
+            try {
+                AttachmentHelper.admit(append(command, "--cancel-file", root.resolve("target").toString()), () -> false);
+                throw new AssertionError("accepted target as cancellation channel");
+            }
+            catch (IOException expected) { checks++; }
+        }
+        finally { Files.deleteIfExists(file); }
     }
 
     private static String[] append(String[] args, String... additional) {
