@@ -19,8 +19,11 @@ public final class AttachmentCuratedRefreshProbe {
             path(selected, "source"), path(selected, "exportReport"), path(selected, "originalBackup"),
             path(selected, "validationEvidence"), path(selected, "receipt"), path(selected, "recoveryReceipt"),
             path(selected, "restoreImage"), refresh);
-        var result = AttachmentOperation.execute(request, host,
-            AttachmentElfTransactionProbe.capturedValidator(path(selected, "capturedEvidence"), host), () -> false);
+        JsonObject tools = selected.getAsJsonObject("validatorTools");
+        if (tools == null) throw new IllegalArgumentException("curated refresh requires live validator tools");
+        var validator = new AttachmentValidator(path(tools, "helper"), path(tools, "readelf"), path(tools, "llvm"),
+            path(tools, "strict"), path(tools, "configuration"));
+        var result = AttachmentOperation.execute(request, host, validator, () -> false);
         if (result.transaction().outcome() != AttachmentReceipt.Phase.COMMITTED) {
             throw new AssertionError(result.transaction());
         }

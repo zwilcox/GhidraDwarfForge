@@ -40,7 +40,15 @@ public final class StrictDwarfCheckProbe {
             frame.addProperty("address", result.inheritedFrame().address());
             frame.addProperty("bytes", result.inheritedFrame().bytes());
             frame.addProperty("sha256", result.inheritedFrame().sha256());
+            frame.addProperty("originalOffset", result.inheritedFrame().originalOffset());
+            frame.addProperty("fromProgramHeaders", result.inheritedFrame().fromProgramHeaders());
             json.add("frame", frame);
+        }
+        if (result.originalView() != null) {
+            var view = new JsonObject();
+            view.addProperty("path", result.originalView().path().toString());
+            view.addProperty("sha256", result.originalView().digest().sha256());
+            json.add("originalFrameView", view);
         }
         Files.writeString(Path.of(args[7]).resolve("result.json"), json + "\n", StandardOpenOption.CREATE_NEW);
         System.out.println("strict-dwarf-check=PASS corroborated-diagnostics=" + result.corroboratedDiagnostics().size());

@@ -86,15 +86,24 @@ public final class AttachmentValidator implements AttachmentOperation.Validator 
             var llvm = execute(supervisor, tools.get("llvmDwarfdump"), List.of("--verify", sidecar.toString()), workspace, cancelled);
             String llvmText = read(llvm);
             require(llvmText.contains("Verifying .debug_info Unit Header Chain...") &&
-                llvmText.contains("Verifying unit:") && llvmText.stripTrailing().endsWith("\nNo errors.") &&
-                Pattern.compile("(?m)^No errors\\.$").matcher(llvmText).results().count() == 1 &&
-                !Pattern.compile("(?im)^\\s*(?:warning|error|fatal(?: error)?):").matcher(llvmText).find(),
+                llvmText.contains("Verifying unit:") && llvmSuccess(llvmText),
                 "LLVM report lacks complete successful unit verification");
             runs.put("llvmDwarfdump", llvm);
             var strict = StrictDwarfCheck.run(binding, host, supervisor, tools.get("strictDwarfdump"),
                 tools.get("strictConfiguration"), workspace, cancelled);
             runs.put("strictSidecar", strict.sidecar());
             if (strict.original() != null) runs.put("strictOriginal", strict.original());
+            if (strict.originalView() != null) {
+                Path view = strict.originalView().path();
+                var frameGnu = execute(supervisor, tools.get("gnuReadelf"), List.of("--wide", "-h", "-S", "-l",
+                    "--debug-dump=no-follow-links", "--debug-dump=frames", "--", view.toString()), workspace, cancelled);
+                require(read(frameGnu).contains("Contents of the .eh_frame section:"), "original-frame GNU report is incomplete");
+                runs.put("originalFrameViewGnu", frameGnu);
+                var frameLlvm = execute(supervisor, tools.get("llvmDwarfdump"), List.of("--verify", view.toString()), workspace, cancelled);
+                require(llvmSuccess(read(frameLlvm)), "original-frame LLVM verification failed");
+                runs.put("originalFrameViewLlvm", frameLlvm);
+                AttachmentFileStore.unchanged(strict.originalView(), host, cancelled);
+            }
             binding.recheck(host, cancelled);
             for (var file : toolFiles.values()) AttachmentFileStore.unchanged(file, host, cancelled);
             plan.recheck();
@@ -114,6 +123,10 @@ public final class AttachmentValidator implements AttachmentOperation.Validator 
             record.add("tools", artifacts(toolFiles));
             var checkedRuns = new JsonObject();
             var rawFiles = new ArrayList<AttachmentFileStore.Snapshot>();
+            if (strict.originalView() != null) {
+                rawFiles.add(strict.originalView());
+                record.add("originalFrameView", artifacts(Map.of("image", strict.originalView())).get("image"));
+            }
             for (var entry : runs.entrySet()) {
                 checkedRuns.add(entry.getKey(), retain(entry.getValue(), toolFiles, host, cancelled, rawFiles));
             }
@@ -126,6 +139,8 @@ public final class AttachmentValidator implements AttachmentOperation.Validator 
                 frame.addProperty("address", strict.inheritedFrame().address());
                 frame.addProperty("bytes", strict.inheritedFrame().bytes());
                 frame.addProperty("sha256", strict.inheritedFrame().sha256());
+                frame.addProperty("originalOffset", strict.inheritedFrame().originalOffset());
+                frame.addProperty("fromProgramHeaders", strict.inheritedFrame().fromProgramHeaders());
                 record.add("inheritedFrame", frame);
             }
             byte[] bytes = (record + "\n").getBytes(StandardCharsets.UTF_8);
@@ -161,6 +176,12 @@ public final class AttachmentValidator implements AttachmentOperation.Validator 
             retained.initCause(cancelledRun);
             throw retained;
         }
+    }
+
+    private static boolean llvmSuccess(String report) {
+        return report.stripTrailing().endsWith("\nNo errors.") &&
+            Pattern.compile("(?m)^No errors\\.$").matcher(report).results().count() == 1 &&
+            !Pattern.compile("(?im)^\\s*(?:warning|error|fatal(?: error)?):").matcher(report).find();
     }
 
     private static ValidatorSupervisor.Evidence execute(ValidatorSupervisor supervisor, Path tool, List<String> arguments,

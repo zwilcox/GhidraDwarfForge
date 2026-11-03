@@ -557,3 +557,22 @@ role names even when they originate from one path. Fresh exec/PIE runs using tha
 same installed-JAR arrangement pass in `*-same-jar/`; all twelve retained local
 strict reports pass the raw-output retention guard. The full hosted gate still
 requires a new passing run; no failing check is waived.
+
+### Saved-program refresh through the live validator
+
+**CONFIRMED locally:** `AttachmentCuratedRefreshProbe` now requires explicit
+supervisor/GNU/LLVM/raw-strict/configuration selections and invokes the real
+`AttachmentValidator` for initial attachment and refresh. There is no captured
+validator fallback in this saved-program harness. Independent checks bind all
+pre-mutation inputs, tool hashes, complete published evidence and raw logs, and
+retain first-generation logs alongside pairs, backups and receipts.
+
+Fresh x86-64 non-PIE and PIE runs pass in
+`build/test-results/live-refresh/{exec,pie}/`: saved analyst function/type/member
+edits survive reopening and backup-based re-export, both generations pass live
+validation, and GDB discovers the changed symbols/types/member with correct
+source and available arguments. The original import hash, original backup,
+previous target backup and prior generations remain intact. The workflow now
+requires the installed helper for both cases. These results still use the
+explicit limited Linux metadata host, not a production host adapter. Windows,
+public controls and full protected integration remain required.

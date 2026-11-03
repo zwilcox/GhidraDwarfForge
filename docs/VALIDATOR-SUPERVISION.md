@@ -331,3 +331,63 @@ Local evidence under `build/test-results/attachment-validator/`:
 Saved-program refresh must still be replayed through this live policy, and
 sectionless validation, complete production Linux/Windows metadata adapters,
 Windows Java/GUI journeys and exact-head protected integration remain open.
+
+## Sectionless originals and installed-helper permissions
+
+**CONFIRMED locally:** sectionless inputs no longer require a separate original
+with section headers to corroborate inherited frame diagnostics. The original
+PT_GNU_EH_FRAME table and PT_LOAD bytes establish a bounded complete frame
+extent through the existing strict `SectionlessUnwind` parser. The original and
+sidecar must agree on ELF identity, frame address/flags/size and exact bytes.
+Only when the checker reports the narrowly accepted frame-diagnostic family,
+`OriginalFrameView` creates an exclusive private copy with the program-header
+table disabled and just null, `.eh_frame` and `.shstrtab` section entries. It
+contains original frame bytes, never generated DWARF. The original file stays
+unchanged. The copied prefix is checked independently, and only standard
+program/section-table header fields may differ.
+
+The pinned checker must report the same complete diagnostic multiset on this
+original-derived view. GNU frame inspection and LLVM verification must also
+pass with empty stderr. View identity/hash/size and all three raw checker runs
+are retained in the combined evidence and rechecked before success publication.
+The view is not an executable, product sidecar, backup or replacement target.
+Failure leaves only private diagnostics. No original-sidecar hash or validation
+requirement is relaxed.
+
+`attachment-sectionless-validator.py` runs actual Java 21 and the live policy
+on real exported pairs, audits input/tool/raw-log bindings, independently
+compares every copied original byte and frame section, parses strict reports
+with the Python oracle, verifies unchanged inputs and rejects repeat publication
+over the existing evidence. It takes no header-bearing frame reference. All five
+CI target lanes now invoke it before their existing independent frame-reference
+and GDB sectionless checks. Local x86-64, AArch64 and MIPS BE passes are retained
+under `build/test-results/sectionless-validator/`. The first view experiment
+retained active dynamic program headers while exposing only frame sections;
+GNU correctly diagnosed a missing `.dynamic` section. `live-v1` retains that
+failure; `live-v2` uses the corrected non-loadable view and all three cases pass.
+The first harness run used an incorrect expected supervisor reason (`exit`
+instead of `completed`); its failure is retained and the corrected harness
+requires the actual complete status. The ELF model regression passes 9,172
+assertions on Java 21, including both widths/orders, malformed table rejection,
+changed frame bytes, cancellation and independent copied-prefix comparisons.
+No new target architecture or complete production-host claim follows.
+
+Hosted run 41589665939 at 3bc718e passed native Linux/Windows, extension and
+release assembly, then AArch64 failed at the first installed supervisor launch:
+the helper was not executable. Raw job log and diagnostic artifact 13210012689
+are retained under `build/test-results/attachment-validator/ci41589665939-aarch64.*`.
+Artifact download normalizes mode bits; copying those files into the release
+preserved the wrong mode. Assembly now sets the verified Linux helper to 0755
+in its owned staging tree. The release test starts with a 0644 input, proves
+that input remains unchanged, checks archive/extracted permissions and identical
+bytes, and still requires deterministic archives and complete manifests. It
+passes locally; corrected exact-head hosted acceptance remains required.
+
+Final harness evidence is in `harness-{x86_64,aarch64,mips32be}-final/`.
+The named-section x86-64 full controller regression also passes against this
+production JAR in `controller-x86-exec/`, including the nine validator negative
+controls, fresh checks, commit/rollback and GDB discovery/source/types/values/CRC
+rejection. `java21.log`, `release-mode.log` and `final-build.log` retain the
+model, packaging and extension commands/results. Workflow lint, architecture
+isolation and `git diff --check` pass. These local results do not replace the
+required corrected hosted run.

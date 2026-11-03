@@ -1,6 +1,7 @@
 package ghidradwarfforge.output;
 
 import ghidradwarfforge.elf.InheritedFrameBytes;
+import ghidradwarfforge.elf.OriginalFrameView;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -21,7 +22,7 @@ public final class StrictDwarfCheck {
 
     public record Evidence(ValidatorSupervisor.Evidence sidecar, ValidatorSupervisor.Evidence original,
             AttachmentFileStore.Snapshot configuration, InheritedFrameBytes.Evidence inheritedFrame,
-            List<String> corroboratedDiagnostics) {
+            List<String> corroboratedDiagnostics, AttachmentFileStore.Snapshot originalView) {
         public Evidence { corroboratedDiagnostics = List.copyOf(corroboratedDiagnostics); }
     }
 
@@ -31,8 +32,9 @@ public final class StrictDwarfCheck {
      * Tool must be the selected raw 2.3.2 checker, not a shell launcher that
      * selects another configuration. Arguments and the explicit configuration
      * are fixed here. Tools are selected by the caller, never by report paths.
-     * GNU/LLVM checks, complete evidence publication and sectionless frame
-     * corroboration remain the surrounding validator's responsibility.
+     * GNU/LLVM checks and complete evidence publication remain the surrounding
+     * validator's responsibility, including independent checks of a private
+     * original-frame view when sectionless corroboration needs one.
      */
     public static Evidence run(AttachmentExportBinding binding, AttachmentReceiptStore.Host host,
             ValidatorSupervisor supervisor, Path tool, Path configuration, Path evidenceParent,
@@ -54,9 +56,17 @@ public final class StrictDwarfCheck {
         var sidecarReport = inspect(checked, false);
         ValidatorSupervisor.Evidence originalCheck = null;
         InheritedFrameBytes.Evidence frame = null;
+        AttachmentFileStore.Snapshot originalView = null;
         if (!sidecarReport.frameDiagnostics().isEmpty()) {
             frame = InheritedFrameBytes.compare(original, sidecar, cancelled);
-            originalCheck = execute(supervisor, selectedTool, config.path(), original, evidenceParent, cancelled);
+            Path checkOriginal = original;
+            if (frame.fromProgramHeaders()) {
+                checkOriginal = OriginalFrameView.create(original, evidenceParent, cancelled);
+                originalView = AttachmentFileStore.observe(checkOriginal, host, cancelled);
+                host.syncDirectory(checkOriginal.getParent());
+                host.syncDirectory(evidenceParent);
+            }
+            originalCheck = execute(supervisor, selectedTool, config.path(), checkOriginal, evidenceParent, cancelled);
             var originalReport = inspect(originalCheck, true);
             if (!multiplicities(sidecarReport.frameDiagnostics()).equals(multiplicities(originalReport.frameDiagnostics()))) {
                 throw new IOException("strict checker frame diagnostic identities/multiplicities differ from original; " +
@@ -72,7 +82,8 @@ public final class StrictDwarfCheck {
         plan.recheck();
         recheckLogs(checked, cancelled);
         if (originalCheck != null) recheckLogs(originalCheck, cancelled);
-        return new Evidence(checked, originalCheck, config, frame, sidecarReport.frameDiagnostics());
+        if (originalView != null) AttachmentFileStore.unchanged(originalView, host, cancelled);
+        return new Evidence(checked, originalCheck, config, frame, sidecarReport.frameDiagnostics(), originalView);
     }
 
     private static ValidatorSupervisor.Evidence execute(ValidatorSupervisor supervisor, Path tool, Path configuration,

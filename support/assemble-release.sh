@@ -139,6 +139,9 @@ for platform in linux windows; do
         fi
     done
 done
+# Artifact downloads preserve bytes but normalize file permissions. Restore the
+# executable contract in the assembled ZIP, after verifying exact provenance.
+chmod 755 "$module/os/linux_x86_64/forge-validator-supervisor"
 for bundled_dll in "$module/os/win_x86_64"/*.dll; do
     bundled_name=$(basename "$bundled_dll" | tr '[:upper:]' '[:lower:]')
     case "$bundled_name" in

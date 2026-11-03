@@ -1,5 +1,20 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local #72 live refresh and sectionless validation:** saved x86-64
+non-PIE/PIE refresh now uses the production live validator for both generations;
+GDB source/type/member/value checks and retained backups/generations pass. The
+live policy also accepts real sectionless x86-64, AArch64 and MIPS big-endian
+pairs without requiring a header-bearing reference input. Original frames are
+independently derived from the original search table and checked through a
+private non-loadable view when needed. ELF32/64, both byte orders, malformed
+frame metadata, payload corruption and cancellation controls pass on Java 21.
+These tests use the limited Linux test host; production metadata adapters,
+public CLI/GUI and full hosted acceptance remain open. CI run 41589665939
+exposed a missing executable bit on the packaged Linux validator helper. Release
+assembly now restores that bit after provenance checks; an extraction regression
+passes locally. The failed hosted run remains failed. See
+`docs/VALIDATOR-SUPERVISION.md` and `docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`.
+
 **CONFIRMED local #72 production validator integration:** `AttachmentValidator`
 now runs fresh GNU readelf, LLVM verification and the strict libdwarf component
 inside `AttachmentOperation`. It pins the strict configuration, captures tool

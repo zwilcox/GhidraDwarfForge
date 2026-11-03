@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Saved Ghidra analyst edits through the real attachment/refresh coordinator.
 
-This Linux x86-64 harness supplies the same explicitly limited metadata host
-and externally captured validator adapter as attachment-elf-controller.py.
+This Linux x86-64 harness supplies an explicitly limited metadata host and
+requires the production live validator for both initial and refreshed pairs.
 It does not enable a public attachment command or prove Windows metadata.
 """
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -41,6 +42,7 @@ def main():
     parser.add_argument('--fixture-dir', type=Path, required=True)
     parser.add_argument('--role', choices=['exec', 'pie'], required=True)
     parser.add_argument('--strict-validator', type=Path, required=True)
+    parser.add_argument('--supervised-validator-helper', type=Path, required=True)
     parser.add_argument('--result-dir', type=Path, required=True)
     parser.add_argument('--consumer', type=Path)
     parser.add_argument('--producer', type=Path)
@@ -70,6 +72,14 @@ def main():
     inputs = [(args.jar.resolve(), 'operation.jar'), (exporter_jar, 'installed-exporter.jar'),
               (ghidra / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar', 'gson.jar'),
               (ghidra / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar', 'jna.jar')]
+    checker_bundle = args.strict_validator.resolve(strict=True).parents[1]
+    validator_tools = {'helper': args.supervised_validator_helper.resolve(strict=True),
+        'readelf': Path(shutil.which('readelf')).resolve(strict=True),
+        'llvm': Path(shutil.which('llvm-dwarfdump')).resolve(strict=True),
+        'strict': checker_bundle / 'libexec/dwarfdump',
+        'configuration': checker_bundle / 'share/dwarfdump/dwarfdump.conf'}
+    for role, path in validator_tools.items():
+        inputs.append((path, 'validator-' + role))
     for path in [*java_sources, Path(__file__), oracle, scripts / 'CurateAttachmentRefresh.java',
                  scripts / 'RenameFixtureFunction.java', ROOT / 'src/test/integration/check-dwarfdump.py']:
         inputs.append((path, path.name))
@@ -112,6 +122,9 @@ def main():
     run('compile', [os.environ.get('JAVAC', 'javac'), '--release', '21', '-cp', classpath,
                     '-d', classes, *[provenance / path.name for path in java_sources]])
     runtime = os.pathsep.join([str(classes), classpath])
+    spec = importlib.util.spec_from_file_location('refresh_strict_oracle', provenance / 'check-dwarfdump.py')
+    checker = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(checker)
     symbols = run('reference-symbols', ['readelf', '-Ws', reference]).stdout.decode()
 
     def address(name):
@@ -172,7 +185,8 @@ def main():
         captured.write_text(json.dumps({'inputs': {str(path): digest(path) for path in
             [selected_original, sidecar, source, report]}, 'checks': outputs, 'strict': strict}, indent=4) + '\n')
         request = {'target': str(original), 'sidecar': str(sidecar), 'source': str(source),
-            'exportReport': str(report), 'originalBackup': str(backup), 'capturedEvidence': str(captured)}
+            'exportReport': str(report), 'originalBackup': str(backup),
+            'validatorTools': {role: str(path) for role, path in validator_tools.items()}}
         for field, suffix in [('validationEvidence', '.validation.json'), ('receipt', '.receipt.json'),
                               ('recoveryReceipt', '.recovery.json'), ('restoreImage', '.restore.elf')]:
             request[field] = str(work / (phase + suffix))
@@ -181,12 +195,44 @@ def main():
                 'previousSource': str(initial) + '.c', 'priorTargetBackup': str(work / 'prior-target.backup')})
         config = work / (phase + '.request.json')
         config.write_text(json.dumps(request, indent=4) + '\n')
+        bound_inputs = {role: {'path': str(path), 'sha256': digest(path)} for role, path in
+                        [('exportOriginal', selected_original), ('sidecar', sidecar), ('source', source), ('exportReport', report)]}
         committed = run(phase + '-attach', [java, '--enable-native-access=ALL-UNNAMED', '-cp', runtime,
-            'ghidradwarfforge.output.AttachmentCuratedRefreshProbe', config])
+            'ghidradwarfforge.output.AttachmentCuratedRefreshProbe', config], timeout=300)
         require(b'attachment-curated-refresh=COMMITTED' in committed.stdout, 'attachment did not commit')
         receipt = json.loads(Path(request['receipt']).read_text())
         require(receipt['phase'] == 'COMMITTED', 'receipt did not commit')
         require(receipt['debuglinkCrc32'] == zlib.crc32(sidecar.read_bytes()), 'receipt CRC differs from actual pair')
+        validation = json.loads(Path(request['validationEvidence']).read_text())
+        require(validation['policy'] == 'gnu-llvm-libdwarf-2.3.2-v1' and validation['status'] == 'PASS',
+                'refresh did not use the complete live policy')
+        require(validation['exportStatus'] == records[0]['status'] and
+                validation['exportValidationStatus'] == records[0]['validation']['status'], 'export status was rewritten')
+        for role, expected in bound_inputs.items():
+            require(all(validation['inputs'][role][key] == value for key, value in expected.items()), 'live input binding differs')
+        expected_checks = {'gnuReadelfVersion', 'llvmDwarfdumpVersion', 'strictDwarfdumpVersion',
+                           'gnuReadelf', 'llvmDwarfdump', 'strictSidecar'}
+        if validation['corroboratedFrameDiagnostics']:
+            expected_checks.add('strictOriginal')
+            frame, _ = checker.elf_frame_identity(backup)
+            require(frame['section_sha256'] == validation['inheritedFrame']['sha256'], 'refresh frame evidence differs')
+        require(set(validation['checks']) == expected_checks, 'incomplete live refresh checks')
+        for name, check in validation['checks'].items():
+            require(check['reason'] == 'completed' and check['cleanupComplete'] and check['exitCode'] == 0,
+                    'live refresh process did not complete')
+            for log in check['logs'].values():
+                path = Path(log['path'])
+                require(path.is_relative_to(work) and digest(path) == log['sha256'] and path.stat().st_size == log['bytes'],
+                        'live refresh raw evidence is missing or changed')
+                generations.setdefault(str(path), state(path))
+            require(not Path(check['logs']['tool.stderr']['path']).read_bytes(), 'live refresh checker wrote stderr')
+            text = Path(check['logs']['tool.stdout']['path']).read_text()
+            if name in ('strictSidecar', 'strictOriginal'):
+                checker.validate_output(text, validation['corroboratedFrameDiagnostics'], original=name == 'strictOriginal')
+            if name == 'llvmDwarfdump':
+                require(text.count('No errors.') == 1, 'live refresh LLVM check incomplete')
+        for tool in validation['tools'].values():
+            require(digest(Path(tool['path'])) == tool['sha256'], 'live refresh tool provenance changed')
         for path in [sidecar, source, report, captured, Path(request['receipt']), Path(request['validationEvidence']), backup]:
             generations.setdefault(str(path), state(path))
         return receipt
@@ -252,7 +298,7 @@ def main():
     (work / 'result.json').write_text(json.dumps({'status': 'PASS', 'role': args.role,
         'originalSha256': original_hash, 'initialReceipt': first_receipt, 'refreshReceipt': second_receipt,
         'preservedGenerations': generations, 'preservedInputs': protected,
-        'scope': 'saved Ghidra edit/reopen and backup-based re-export; real coordinator initial/changed-CRC refresh; native GDB source/type/member/arguments; limited Linux test host and captured-validator adapter'}, indent=4) + '\n')
+        'scope': 'saved Ghidra edit/reopen and backup-based re-export; real coordinator/live validator initial/changed-CRC refresh; native GDB source/type/member/arguments; limited Linux test host'}, indent=4) + '\n')
     print('attachment-curated-refresh=PASS role=' + args.role)
 
 

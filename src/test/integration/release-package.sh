@@ -241,11 +241,18 @@ for inherited in os third_party/libdwarf third_party/windows-runtime; do
         "base ZIP already contains $inherited" "$work/base-with-$name.zip"
 done
 
+# Match downloaded native artifacts, whose Unix executable bit is not retained.
+chmod 644 "$work/linux/forge-validator-supervisor"
 "$assembler" "$work/base.zip" "$work/linux" "$work/windows" "$work/first.zip"
 "$assembler" "$work/base.zip" "$work/linux" "$work/windows" "$work/second.zip"
 cmp "$work/first.zip" "$work/second.zip"
 unzip -q "$work/first.zip" -d "$work/unpacked"
 module="$work/unpacked/GhidraDwarfForge"
+test ! -x "$work/linux/forge-validator-supervisor"
+test -x "$module/os/linux_x86_64/forge-validator-supervisor"
+cmp "$work/linux/forge-validator-supervisor" "$module/os/linux_x86_64/forge-validator-supervisor"
+zipinfo -l "$work/first.zip" | grep -Eq \
+    '^-rwxr-xr-x.*GhidraDwarfForge/os/linux_x86_64/forge-validator-supervisor$'
 (
     cd "$module"
     sha256sum -c RELEASE-SHA256SUMS

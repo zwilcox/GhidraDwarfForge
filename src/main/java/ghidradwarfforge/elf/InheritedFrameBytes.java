@@ -11,15 +11,14 @@ import java.util.function.BooleanSupplier;
 
 /** Read-only corroboration for the strict checker's inherited frame diagnostic policy. */
 public final class InheritedFrameBytes {
-    public record Evidence(long address, long bytes, String sha256) { }
+    public record Evidence(long address, long bytes, String sha256, long originalOffset, boolean fromProgramHeaders) { }
 
     private InheritedFrameBytes() { }
 
     /**
-     * Named-section case. No match is inferred from diagnostic text alone.
-     * Sectionless corroboration needs a separately bound section oracle and
-     * is intentionally not claimed by this helper. Callers bracket this with
-     * full artifact identity/hash observations.
+     * No match is inferred from diagnostic text alone. A sectionless original
+     * must independently establish the complete frame extent from its program
+     * headers/search table. Callers bracket this with full input observations.
      */
     public static Evidence compare(Path original, Path sidecar, BooleanSupplier cancelled) throws IOException {
         check(cancelled);
@@ -29,7 +28,8 @@ public final class InheritedFrameBytes {
                 before.type() != after.type() || before.machine() != after.machine() || before.flags() != after.flags()) {
             throw new IOException("inherited frame ELF identities differ");
         }
-        var originalFrame = frame(before);
+        boolean sectionless = before.sections().isEmpty();
+        var originalFrame = sectionless ? discovered(before, cancelled) : frame(before);
         var sidecarFrame = frame(after);
         if (originalFrame.address != sidecarFrame.address || originalFrame.flags != sidecarFrame.flags ||
                 originalFrame.size != sidecarFrame.size) {
@@ -42,7 +42,8 @@ public final class InheritedFrameBytes {
         if (!Arrays.equals(originalBytes, sidecarBytes)) throw new IOException("inherited frame bytes differ");
         try {
             return new Evidence(originalFrame.address, originalBytes.length,
-                HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(originalBytes)));
+                HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(originalBytes)),
+                originalFrame.offset, sectionless);
         }
         catch (NoSuchAlgorithmException impossible) { throw new AssertionError(impossible); }
     }
@@ -51,10 +52,18 @@ public final class InheritedFrameBytes {
         var frames = image.sections().stream().filter(section -> section.name.equals(".eh_frame")).toList();
         if (frames.size() != 1 || frames.getFirst().type != 1 || frames.getFirst().size == 0 ||
                 frames.getFirst().size > ElfImage.MAX_TABLE_BYTES) {
-            throw new IOException("frame corroboration requires one bounded nonempty PROGBITS .eh_frame; " +
-                "a sectionless original requires an independent bound oracle");
+            throw new IOException("frame corroboration requires one bounded nonempty PROGBITS .eh_frame");
         }
         return frames.getFirst();
+    }
+
+    static ElfImage.Section discovered(ElfImage image, BooleanSupplier cancelled) throws IOException {
+        var diagnostics = new java.util.ArrayList<String>();
+        var frame = SectionlessUnwind.find(image, cancelled, diagnostics::add);
+        if (frame == null || !diagnostics.isEmpty()) {
+            throw new IOException("original program headers do not establish frame records: " + diagnostics);
+        }
+        return frame;
     }
 
     private static void check(BooleanSupplier cancelled) {
