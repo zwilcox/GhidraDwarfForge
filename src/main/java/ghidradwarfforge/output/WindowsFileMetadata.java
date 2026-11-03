@@ -268,6 +268,16 @@ public final class WindowsFileMetadata {
     }
 
     private Opened open(Path path, boolean write, BooleanSupplier cancelled) throws IOException {
+        return open(path, write, 0, cancelled);
+    }
+
+    // Full-security reader requires rights already authorized by the caller's
+    // token. This method never adjusts privileges or retries a narrower open.
+    Opened openForSecurity(Path path, BooleanSupplier cancelled) throws IOException {
+        return open(path, false, 0x01000000, cancelled); // ACCESS_SYSTEM_SECURITY
+    }
+
+    private Opened open(Path path, boolean write, int additionalAccess, BooleanSupplier cancelled) throws IOException {
         check(cancelled);
         Path absolute = path.toAbsolutePath();
         String value = absolute.toString();
@@ -280,7 +290,7 @@ public final class WindowsFileMetadata {
         }
         require(Files.readAttributes(absolute, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS).isRegularFile(),
             "Windows metadata requires a regular non-link file");
-        int access = 0x80020000 | (write ? 0xc0100 : 0); // GENERIC_READ/READ_CONTROL and stage metadata writes.
+        int access = 0x80020000 | additionalAccess | (write ? 0xc0100 : 0);
         Pointer handle = kernel.CreateFileW(new WString("\\\\?\\" + value), access, 7, null, 3, 0x02200000, null);
         if (handle == null || Pointer.nativeValue(handle) == -1L) {
             throw new IOException("Windows metadata CreateFileW failed (error=" + Native.getLastError() + ")");
@@ -297,14 +307,14 @@ public final class WindowsFileMetadata {
         }
     }
 
-    private void checkPath(Path path, Facts expected, BooleanSupplier cancelled) throws IOException {
+    void checkPath(Path path, Facts expected, BooleanSupplier cancelled) throws IOException {
         try (var selected = open(path, false, cancelled)) {
             require(facts(selected.handle).equals(expected), "Windows selected metadata path changed");
         }
     }
 
-    private final class Opened implements AutoCloseable {
-        private final Pointer handle;
+    final class Opened implements AutoCloseable {
+        final Pointer handle;
         private Opened(Pointer handle) { this.handle = handle; }
         public void close() throws IOException { success(kernel.CloseHandle(handle), "CloseHandle"); }
     }

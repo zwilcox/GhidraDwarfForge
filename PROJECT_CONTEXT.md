@@ -1,12 +1,11 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
-**CONFIRMED #72 security-query diagnosis:** run41623565789 at `d6f520b`
-locates the failure before fixture seeding: GetSecurityInfo rejects the BACKUP
-flag alone despite sufficient access, while BACKUP plus explicit component
-flags succeeds on that handle. The corrected experiment retains BACKUP and
-cross-checks the independent path API; populated audit/label visibility still
-requires native validation. No production privilege policy is selected. See
-`docs/research/WINDOWS-SECURITY-VISIBILITY.md`.
+**CONFIRMED native #72 whole-security observation:** run41624344819 at
+`49dd0b6` passes independent artifact/source review, exact audit/label bytes,
+insufficient-access and duplicate-creation refusals, read-only preservation and
+128 flat handle cycles. **PRESENT, UNVERIFIED:** the corresponding production
+JNA reader and isolated Java tests now compile; native Java validation is pending.
+No production privilege policy is selected. See `docs/WINDOWS-FILE-SECURITY.md`.
 
 **CONFIRMED native #72 directory mechanism:** JNA implementation at `373f33b`
 and completed Windows job41619066926 pass independent raw source/artifact review:

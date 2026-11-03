@@ -30,6 +30,10 @@ _Static_assert(sizeof(ACL) == 8 && sizeof(ACE_HEADER) == 4 &&
     PROCESS_TRUST_LABEL_SECURITY_INFORMATION | ACCESS_FILTER_SECURITY_INFORMATION)
 _Static_assert(COMPLETE_SECURITY_FIELDS == 0x101ff, "complete descriptor query flags");
 
+_Static_assert(sizeof(LUID) == 8 && sizeof(TOKEN_PRIVILEGES) == 16 &&
+    offsetof(TOKEN_PRIVILEGES, Privileges) == 4 && offsetof(LUID_AND_ATTRIBUTES, Attributes) == 8,
+    "isolated Java own-token fixture layout");
+
 static void require(BOOL value, const char *operation) {
     if (!value) { fprintf(stderr, "%s failed: win32=%lu\n", operation, GetLastError()); exit(1); }
 }
@@ -164,6 +168,11 @@ static void print_snapshot(const security_snapshot *value) {
 }
 
 int wmain(int argc, WCHAR **argv) {
+    BOOL (WINAPI *read_sacl)(PSECURITY_DESCRIPTOR, LPBOOL, PACL *, LPBOOL) = GetSecurityDescriptorSacl;
+    BOOL (WINAPI *valid_acl)(PACL) = IsValidAcl;
+    BOOL (WINAPI *adjust_token)(HANDLE, BOOL, PTOKEN_PRIVILEGES, DWORD, PTOKEN_PRIVILEGES, PDWORD) = AdjustTokenPrivileges;
+    (void)read_sacl; (void)valid_acl; (void)adjust_token;
+
     require(argc == 3 && (!wcscmp(argv[1], L"create") || !wcscmp(argv[1], L"read")), "mode and owned path required");
     BOOL creating = !wcscmp(argv[1], L"create");
     fixture_path = argv[2];

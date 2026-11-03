@@ -94,3 +94,15 @@ seeding real audit and mandatory-label ACEs; insufficient access still fails.
 [GetSecurityInfo permits combined security flags](https://learn.microsoft.com/en-us/windows/win32/api/aclapi/nf-aclapi-getsecurityinfo).
 There is no fallback to an ordinary owner/group/DACL read. Native acceptance
 of this correction remains **PRESENT, UNVERIFIED** until the updated run passes.
+
+## Native acceptance of the combined request
+
+**CONFIRMED:** run41624344819 at `49dd0b6` passes the native experiment.
+Independent review of artifact13225029493 verifies its SHA-256, all 24 retained
+source files, actual command outcomes, the two ACE masks/SIDs in raw SACL bytes,
+read-only/creation-refusal preservation and 128 cycles at 82 native handles.
+The initial and restored SeSecurityPrivilege attributes are both zero. See
+[the receipt](../evidence/windows-security-visibility-41624344819.json) and
+[the production reader's separate status](../WINDOWS-FILE-SECURITY.md).
+The earlier failures remain failures; full host admission and privilege policy
+are still unresolved.

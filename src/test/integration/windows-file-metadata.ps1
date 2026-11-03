@@ -25,6 +25,8 @@ $sources = @(
     (Join-Path $repo 'src/main/java/ghidradwarfforge/output/DebuglinkBasename.java'),
     (Join-Path $repo 'src/test/java/ghidradwarfforge/output/DebuglinkBasenameSmoke.java'),
     (Join-Path $repo 'src/main/java/ghidradwarfforge/output/WindowsFileMetadata.java'),
+    (Join-Path $repo 'src/main/java/ghidradwarfforge/output/WindowsFileSecurity.java'),
+    (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsFileSecurityProbe.java'),
     (Join-Path $repo 'src/main/java/ghidradwarfforge/output/WindowsBackupStreams.java'),
     (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsBackupStreamsProbe.java'),
     (Join-Path $repo 'src/main/java/ghidradwarfforge/output/WindowsDirectorySync.java'),
@@ -111,6 +113,7 @@ $null = Run-Captured 'compile-java' $JavacExe @('--release','21','-cp',$dependen
     (Join-Path $provenance 'DebuglinkBasename.java'), (Join-Path $provenance 'DebuglinkBasenameSmoke.java'),
     (Join-Path $provenance 'WindowsDirectorySync.java'), (Join-Path $provenance 'WindowsDirectorySyncProbe.java'),
     (Join-Path $provenance 'WindowsFileMetadata.java'), (Join-Path $provenance 'WindowsFileMetadataProbe.java'),
+    (Join-Path $provenance 'WindowsFileSecurity.java'), (Join-Path $provenance 'WindowsFileSecurityProbe.java'),
     (Join-Path $provenance 'WindowsBackupStreams.java'), (Join-Path $provenance 'WindowsBackupStreamsProbe.java'),
     (Join-Path $provenance 'WindowsFileRename.java'), (Join-Path $provenance 'WindowsFileRenameProbe.java'))
 $version = Run-Captured 'java-version' $JavaExe @('-version')
@@ -591,6 +594,43 @@ Same-State $securityBefore $securityPath
 Save-Json (Join-Path $root 'security-visibility.json') ([ordered]@{status='OBSERVED';
     create=$securityFacts; read=$securityAfter;
     scope='Test-only child token and owned audit/label fixture; complete descriptor agrees across two native APIs. No production elevation, host admission or metadata-preservation claim'})
+
+# Production reader in an isolated Java 21 process. Only the test probe adjusts
+# its own already-owned privilege, and restores it before exiting. No parent
+# token, product process or account policy is changed.
+$securityPrefix = @('-cp', ($classes + ';' + $dependencies), 'ghidradwarfforge.output.WindowsFileSecurityProbe')
+$securityJava = Run-Captured 'security-java-inspect' $JavaExe ($securityPrefix + @('inspect',$securityPath))
+$securityJavaFacts = ConvertFrom-Json $securityJava.stdout
+Require ($securityJavaFacts.descriptor.control -eq $securityFacts.complete.control -and
+    $securityJavaFacts.descriptor.saclPresent -eq $securityFacts.complete.saclPresent -and
+    $securityJavaFacts.descriptor.saclDefaulted -eq $securityFacts.complete.saclDefaulted -and
+    $securityJavaFacts.descriptor.saclHex -ceq $securityFacts.complete.saclHex) 'Java full-security bytes differ from independent native APIs'
+Same-State $securityBefore $securityPath
+foreach ($mode in @('denied','cancel-before','cancel-open')) {
+    $negative = Run-Captured "security-java-$mode" $JavaExe ($securityPrefix + @($mode,$securityPath)) $false
+    if ($mode -eq 'denied') { Require ($negative.stderr.Contains('error=1314')) 'Insufficient privilege did not fail at open' }
+    else { Require ($negative.stderr.Contains('CancellationException')) 'Security cancellation was not honored' }
+    Same-State $securityBefore $securityPath
+}
+$securityLate = Join-Path $owned 'security late path'
+[IO.File]::WriteAllText($securityLate, 'retained security sentinel', $utf8)
+$lateHash = Hash $securityLate
+$late = Run-Captured 'security-java-late' $JavaExe ($securityPrefix + @('late',$securityLate)) $false
+Require ($late.stderr.Contains('selected metadata path changed')) 'Changed security path was not rejected'
+Require ((Hash "$securityLate.retained") -eq $lateHash -and
+    [IO.File]::ReadAllText($securityLate) -ceq 'replacement sentinel') 'Late-path control changed retained data'
+$directoryRefused = Run-Captured 'security-java-directory' $JavaExe ($securityPrefix + @('inspect',$owned)) $false
+Require ($directoryRefused.stderr.Contains('regular non-link file')) 'Directory security input was not refused'
+$securityCycles = Run-Captured 'security-java-cycles' $JavaExe (@('-Xint','-XX:+UseSerialGC') + $securityPrefix + @('cycles',$securityPath))
+Require ($securityCycles.stdout.Contains('windows-security-handles=PASS cycles=128')) 'Security resource cycles incomplete'
+Same-State $securityBefore $securityPath
+$nativeAfterJava = Run-Captured 'security-native-after-java' $securityProbe @('read',$securityPath)
+$nativeAfterJavaFacts = ConvertFrom-Json $nativeAfterJava.stdout
+Require ($nativeAfterJavaFacts.complete.saclHex -ceq $securityFacts.complete.saclHex -and
+    $nativeAfterJavaFacts.complete.control -eq $securityFacts.complete.control) 'Java reads changed full native security'
+Save-Json (Join-Path $root 'security-java.json') ([ordered]@{status='OBSERVED'; snapshot=$securityJavaFacts;
+    nativeAfter=$nativeAfterJavaFacts; cycles=128;
+    scope='Complete descriptor JNA observation with native SACL agreement, insufficient privilege, cancellation, changed path and lifetime controls; not a production Host or elevation policy'})
 
 foreach ($sourcePath in $hashes.Keys) { Require ((Hash $sourcePath) -eq $hashes[$sourcePath]) 'Protected source/dependency changed' }
 Save-Json (Join-Path $root 'result.json') ([ordered]@{status='PASS'; observations=$observations.ToArray();
