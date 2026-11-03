@@ -59,3 +59,22 @@ No native pass is claimed until those artifacts are reviewed.
 Primary references: [BackupRead](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-backupread),
 [BackupSeek](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-backupseek),
 [WIN32_STREAM_ID](https://learn.microsoft.com/en-us/windows/win32/api/winbase/ns-winbase-win32_stream_id).
+
+## Native investigation
+
+**CONFIRMED partial native evidence, full acceptance pending:** runs
+41609040809/41609824856 pass real EA detection and source/stage refusal, then
+fail the original process-handle assertion. The diagnostic native C control
+remains at 57 handles through 128 cycles; Java grows once by nine, rather than
+once per operation. Run 41610641482 records GC worker threads 1–3 starting at
+09:26:50.127Z, between samples 59/60 where the nine-handle increase occurs.
+The separate interpreted serial-GC process remains at 296 throughout all
+128 cycles and passes the unchanged exact-equality assertion. Default-GC
+observations are explicitly not acceptance results.
+
+That run then fails the Unicode named-stream comparison: the test probe uses
+the Windows default output code page and narrows lambda to a question mark.
+The probe now explicitly writes UTF-8 stdout/stderr and the native harness
+requires a Unicode request/output round trip in both JVM modes. This changes
+test transport only. The failed runs remain failed; the corrected native
+harness still requires a passing run and artifact review.

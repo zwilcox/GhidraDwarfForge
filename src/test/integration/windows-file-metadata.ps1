@@ -385,6 +385,11 @@ function Run-Backup([string]$Label, [string[]]$Arguments, [bool]$Success=$true,
 }
 $eaSource = Join-Path $owned 'EA source λ [literal]'
 $eaStage = Join-Path $stageParent 'EA stage'
+foreach ($interpreted in @($false,$true)) {
+    $transport = Run-Backup "backup-roundtrip-$interpreted" @('request-roundtrip',$eaSource,$eaStage) $true $interpreted
+    $values = ConvertFrom-Json $transport.stdout
+    Require ($values.Count -eq 3 -and $values[1] -ceq $eaSource -and $values[2] -ceq $eaStage) 'Backup probe changed Unicode request/output'
+}
 [IO.File]::WriteAllText($eaSource, 'source must remain unchanged', $utf8)
 [IO.File]::WriteAllText($eaStage, 'private stage must remain unchanged', $utf8)
 $beforeEaSource = Independent-State $eaSource

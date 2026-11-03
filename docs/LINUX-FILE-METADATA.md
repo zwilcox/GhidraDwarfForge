@@ -147,3 +147,11 @@ a nonzero project ID with EOPNOTSUPP; no successful native project-ID mutation
 test is claimed. Native query layout is independently checked; nonzero project
 policy remains an explicit refusal, not supported preservation. Hosted
 acceptance of these new inode-policy queries is **PRESENT, UNVERIFIED**.
+
+**CONFIRMED hosted inode-policy acceptance:** run 41607172238 at `bdfae02`
+passes the corrected harness. Independent artifact review verifies all fourteen
+stat/xattr/inode-policy observations, actual source/stage NOATIME and stale-policy
+refusals, native C ABI checks, Java 21 and 128 descriptor cycles. See
+[the review receipt](evidence/linux-inode-policy-41607172238.json).
+The superseded whole workflow was cancelled; this is acceptance of its completed
+metadata job, not a full passing integration gate or complete host admission.

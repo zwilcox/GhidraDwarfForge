@@ -72,3 +72,11 @@ JVM modes. They do not alone prove native rename or metadata preservation. The h
 run and independent artifact review above supply that evidence for the tested
 Windows filesystem. Cross-volume refusal, full filesystem/metadata admission,
 transaction integration and power-loss behavior are not proved by these cases.
+
+**CONFIRMED cross-volume rejection:** completed native Windows job in
+run 41607172238 at `bdfae02` observes distinct source/destination volumes and
+an actual FileRenameInfo error 17. The independent source state is unchanged
+and no destination is copied. Prior namespace/metadata/128-cycle checks also
+pass; raw provenance, commands and observations were independently reviewed.
+See [the receipt](evidence/windows-cross-volume-41607172238.json). The superseded
+whole workflow was cancelled and is not a full passing integration gate.

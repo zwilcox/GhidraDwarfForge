@@ -3,7 +3,9 @@
 **PRESENT, UNVERIFIED native #72 backup-stream admission:** the Windows
 metadata stage applicator now checks source/stage backup streams and refuses
 EAs or other unsupported metadata before mutation. Local ABI compilation and
-Java 21/request-transport checks pass; native Windows execution remains pending.
+Java 21/request-transport checks pass. Native EA refusals and native/serial-GC
+lifetime checks pass, while a probe output-code-page correction awaits its full
+native rerun; failed prior runs remain failed.
 SACL visibility and full host admission/durability are still incomplete. See
 `docs/WINDOWS-BACKUP-STREAMS.md`.
 
@@ -35,8 +37,8 @@ or public controls; see `docs/WINDOWS-FILE-RENAME.md` and `docs/LINUX-DIRECTORY-
 queries inode flags/project/allocation policy that statx omits. The old code
 lost NOATIME while reporting successful copying; actual source/stage and stale
 policy controls now refuse before changing metadata. Fourteen independent
-observations and descriptor/ACL/group controls pass on Java 21. Hosted acceptance
-of this correction remains unverified; hidden-attribute policy remains pending.
+observations and descriptor/ACL/group controls pass locally and in the reviewed
+completed hosted job from run 41607172238; hidden-attribute policy remains pending.
 See `docs/LINUX-FILE-METADATA.md`.
 
 **CONFIRMED local #72 directory operations:** the production Linux primitive

@@ -10,6 +10,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /** Separate-process native probe; request files preserve literal Unicode paths. */
 public final class WindowsBackupStreamsProbe {
     public static void main(String[] args) throws Exception {
+        System.setOut(new java.io.PrintStream(System.out, true, StandardCharsets.UTF_8));
+        System.setErr(new java.io.PrintStream(System.err, true, StandardCharsets.UTF_8));
         var gson = new Gson();
         if (args.length == 2 && args[0].equals("--request-file")) {
             args = gson.fromJson(Files.readString(Path.of(args[1]), StandardCharsets.UTF_8), String[].class);
