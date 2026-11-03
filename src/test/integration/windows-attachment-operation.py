@@ -98,6 +98,8 @@ def main():
     results = json.loads((root / "owned/result.json").read_text(encoding="utf-8"))
     require(len(results["outcomes"]) == 2, "missing operation outcome")
     for case in results["outcomes"]:
+        require(Path(case["operation"]["selected"]["source"]) == originals["source"],
+            "operation relocated the source path recorded by the exporter")
         target = Path(case["after"]["path"])
         backup = Path(case["backup"]["path"])
         require(digest(backup) == protected[str(originals["original"])], "backup changed original bytes")

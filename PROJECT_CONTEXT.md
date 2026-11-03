@@ -1,5 +1,16 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED Windows strict-checker acceptance:** completed native-windows
+41648274797 passes raw ASCII/Unicode valid checks and malformed-version refusal.
+Independent bundle/source/hash/manifest/import review, strict-output replay and
+LLVM verification of retained fixtures are recorded in
+`docs/evidence/windows-checker-utf8-41648274797.json`. This closes the checker
+prerequisite, not real-ELF attachment acceptance. Review found the Windows
+operation fixture relocated the source while retaining the original export
+report/DWARF source path; the fixture now selects the original protected source.
+Java21 compilation and Python parsing pass; native operation remains
+**PRESENT, UNVERIFIED**. No production source-path check was weakened.
+
 **PRESENT, UNVERIFIED Linux visibility lifecycle:** the internal session now
 creates an exclusive private canary, verifies a random trusted attribute, and
 binds repeated complete snapshots to one platform thread. It never elevates or

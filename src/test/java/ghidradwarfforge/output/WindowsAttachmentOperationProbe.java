@@ -33,6 +33,12 @@ public final class WindowsAttachmentOperationProbe {
                 Path directory = Files.createDirectory(root.resolve(rollback ? "rollback" : "commit"));
                 var selected = new LinkedHashMap<String, Path>();
                 for (var entry : originals.entrySet()) {
+                    if (entry.getKey().equals("source")) {
+                        // DWARF and the immutable export report refer to this
+                        // exact source path. Attachment does not relocate source.
+                        selected.put(entry.getKey(), entry.getValue().path());
+                        continue;
+                    }
                     Path copy = directory.resolve(entry.getValue().path().getFileName());
                     Files.copy(entry.getValue().path(), copy);
                     selected.put(entry.getKey(), copy);
