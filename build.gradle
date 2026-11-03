@@ -150,6 +150,15 @@ tasks.register("attachmentTargetStoreSmoke", JavaExec) {
     jvmArgs "--enable-native-access=ALL-UNNAMED"
 }
 
+tasks.register("attachmentTransactionSmoke", JavaExec) {
+    group = "verification"
+    description = "Exercises initial/refresh receipt coordination and rollback on owned Linux files"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentTransactionSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+}
+
 tasks.register("extendedSectionNumberingSmoke", JavaExec) {
     group = "verification"
     description = "Checks extended ELF section numbering and optionally builds target fixtures"

@@ -65,6 +65,27 @@ public final class AttachmentProtocolSmoke {
             AttachmentReceipt prepared = fixture(mode);
             equal(prepared, read(prepared.toJson()));
             equal(prepared.toJson(), read(prepared.toJson()).toJson());
+            equal(prepared, read(prepared.toJson().replace("\"schemaVersion\":2", "\"schemaVersion\":1")
+                .replace(",\"recovery\":null", "")));
+            var recovery = prepared.forRecovery("/owned/recovery.json", artifact("receipt.json", BEFORE, "receipt-id"),
+                prepared.files().get("targetBefore"));
+            equal(recovery, read(recovery.toJson()));
+            equal(recovery.advance(AttachmentReceipt.Phase.ROLLED_BACK, "verified prior image"),
+                read(recovery.advance(AttachmentReceipt.Phase.ROLLED_BACK, "verified prior image").toJson()));
+            rejectState(() -> recovery.advance(AttachmentReceipt.Phase.COMMITTED, null));
+            var unknown = prepared.forRecovery("/owned/recovery.json", artifact("receipt.json", BEFORE, "receipt-id"), null);
+            rejectArgument(() -> unknown.advance(AttachmentReceipt.Phase.ROLLED_BACK, "no observation"));
+            equal(unknown.advance(AttachmentReceipt.Phase.RECOVERY_REQUIRED, "target unreadable"),
+                read(unknown.advance(AttachmentReceipt.Phase.RECOVERY_REQUIRED, "target unreadable").toJson()));
+            rejectArgument(() -> prepared.forRecovery("/owned/recovery.json", artifact("receipt.json", BEFORE, "receipt-id"),
+                prepared.files().get("targetAfter")).advance(AttachmentReceipt.Phase.ROLLED_BACK, "wrong image"));
+            for (String malformed : List.of(
+                    recovery.toJson().replace("\"schemaVersion\":2", "\"schemaVersion\":1"),
+                    recovery.toJson().replace("\"observedTarget\"", "\"unknownObservation\""),
+                    recovery.toJson().replace("\"observedTarget\":", "\"priorReceipt\":"),
+                    recovery.toJson().replace("/owned/receipt.json", "/owned/originalBackup"))) {
+                rejectIO(() -> read(malformed));
+            }
             for (var phase : List.of(AttachmentReceipt.Phase.COMMITTED,
                     AttachmentReceipt.Phase.ROLLED_BACK, AttachmentReceipt.Phase.RECOVERY_REQUIRED)) {
                 var next = prepared.advance(phase, phase == AttachmentReceipt.Phase.COMMITTED ? null : "owned failure");
@@ -81,8 +102,8 @@ public final class AttachmentProtocolSmoke {
             rejectState(() -> prepared.advance(AttachmentReceipt.Phase.PREPARED, null));
             String json = prepared.toJson();
             for (String malformed : List.of(
-                    json.replace("\"schemaVersion\":1", "\"schemaVersion\":2"),
-                    json.replace("\"schemaVersion\":1", "\"schemaVersion\":1,\"schemaVersion\":1"),
+                    json.replace("\"schemaVersion\":2", "\"schemaVersion\":3"),
+                    json.replace("\"schemaVersion\":2", "\"schemaVersion\":2,\"schemaVersion\":2"),
                     json.replace("\"bytes\":\"9223372036854775807\"", "\"bytes\":9223372036854775807"),
                     json.replace("9223372036854775807", "9223372036854775808"),
                     json.replace("9223372036854775807", "01"),

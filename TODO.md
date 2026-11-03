@@ -1,5 +1,13 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local #72 commit/recovery progress:** the filesystem controller
+passes 525 Java 21 checks, including initial/refresh failure handling, separate
+recovery records preserving committed receipts, eight abrupt process exits and
+refresh after rollback. Schema/path checks now total 138, including legacy
+schema-1 compatibility. Real ELF/validator preparation, both production host
+metadata contracts, CLI/GUI, curated re-export and GDB/CI acceptance remain open;
+the public attachment operation is still disabled and #72 is incomplete.
+
 **CONFIRMED local #72 replacement progress:** 63 Java 21 filesystem controls
 prove conditional atomic replacement, retained-backup restoration and protection
 of concurrent changes under the test host. The complete receipt-coordinated

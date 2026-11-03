@@ -25,7 +25,7 @@ import java.util.function.BooleanSupplier;
  */
 public record AttachmentReceipt(String operationId, Mode mode, Phase phase,
         String receiptPath, String backend, String hostContract, String durability,
-        long debuglinkCrc32, Map<String, Artifact> files, String diagnostic) {
+        long debuglinkCrc32, Map<String, Artifact> files, String diagnostic, Recovery recovery) {
     public enum Mode { INITIAL, REFRESH }
     public enum Phase { PREPARED, COMMITTED, ROLLED_BACK, RECOVERY_REQUIRED }
 
@@ -48,6 +48,20 @@ public record AttachmentReceipt(String operationId, Mode mode, Phase phase,
                 throw new IllegalArgumentException("negative attachment artifact size");
             }
         }
+    }
+
+    /** Separate recovery evidence preserves an existing committed receipt unchanged. */
+    public record Recovery(Artifact priorReceipt, Artifact observedTarget) {
+        public Recovery {
+            Objects.requireNonNull(priorReceipt, "prior receipt");
+        }
+    }
+
+    public AttachmentReceipt(String operationId, Mode mode, Phase phase, String receiptPath,
+            String backend, String hostContract, String durability, long debuglinkCrc32,
+            Map<String, Artifact> files, String diagnostic) {
+        this(operationId, mode, phase, receiptPath, backend, hostContract, durability,
+            debuglinkCrc32, files, diagnostic, null);
     }
 
     public AttachmentReceipt {
@@ -97,17 +111,37 @@ public record AttachmentReceipt(String operationId, Mode mode, Phase phase,
         if (diagnostic != null) {
             diagnostic = text(diagnostic, "diagnostic", 8192);
         }
+        if (recovery != null) {
+            if (phase == Phase.COMMITTED || !paths.add(recovery.priorReceipt().path())) {
+                throw new IllegalArgumentException("invalid recovery receipt phase or prior receipt path");
+            }
+            if (recovery.observedTarget() != null && !recovery.observedTarget().path().equals(before.path())) {
+                throw new IllegalArgumentException("recovery observation must describe the selected target path");
+            }
+            if (phase == Phase.ROLLED_BACK && (recovery.observedTarget() == null ||
+                    !recovery.observedTarget().sha256().equals(before.sha256()) ||
+                    recovery.observedTarget().bytes() != before.bytes() ||
+                    !recovery.observedTarget().metadataSha256().equals(before.metadataSha256()))) {
+                throw new IllegalArgumentException("rolled-back recovery must observe the complete prior image and metadata");
+            }
+        }
     }
 
     /** Does not write a receipt. Publication must verify ownership of its previous bytes. */
     public AttachmentReceipt advance(Phase next, String reason) {
         boolean permitted = phase == Phase.PREPARED && next != Phase.PREPARED ||
             phase == Phase.RECOVERY_REQUIRED && next == Phase.ROLLED_BACK;
+        permitted &= recovery == null || next != Phase.COMMITTED;
         if (!permitted) {
             throw new IllegalStateException("invalid attachment receipt transition: " + phase + " -> " + next);
         }
         return new AttachmentReceipt(operationId, mode, next, receiptPath, backend, hostContract,
-            durability, debuglinkCrc32, files, reason);
+            durability, debuglinkCrc32, files, reason, recovery);
+    }
+
+    public AttachmentReceipt forRecovery(String newPath, Artifact priorReceipt, Artifact observedTarget) {
+        return new AttachmentReceipt(operationId, mode, Phase.PREPARED, newPath, backend,
+            hostContract, durability, debuglinkCrc32, files, null, new Recovery(priorReceipt, observedTarget));
     }
 
     public String toJson() {
@@ -115,7 +149,7 @@ public record AttachmentReceipt(String operationId, Mode mode, Phase phase,
         try (JsonWriter json = new JsonWriter(result)) {
             json.setSerializeNulls(true);
             json.beginObject();
-            json.name("schemaVersion").value(1);
+            json.name("schemaVersion").value(2);
             json.name("operationId").value(operationId);
             json.name("mode").value(mode.name());
             json.name("phase").value(phase.name());
@@ -126,19 +160,24 @@ public record AttachmentReceipt(String operationId, Mode mode, Phase phase,
             json.name("debuglinkCrc32").value(debuglinkCrc32);
             json.name("files").beginObject();
             for (var entry : new TreeMap<>(files).entrySet()) {
-                Artifact artifact = entry.getValue();
-                json.name(entry.getKey()).beginObject();
-                json.name("path").value(artifact.path());
-                json.name("sha256").value(artifact.sha256());
-                // Decimal string retains signed-long file lengths without
-                // floating-point JSON conversion or the report count limit.
-                json.name("bytes").value(Long.toString(artifact.bytes()));
-                json.name("identity").value(artifact.identity());
-                json.name("metadataSha256").value(artifact.metadataSha256());
-                json.endObject();
+                json.name(entry.getKey());
+                writeArtifact(json, entry.getValue());
             }
             json.endObject();
             json.name("diagnostic").value(diagnostic);
+            json.name("recovery");
+            if (recovery == null) {
+                json.nullValue();
+            }
+            else {
+                json.beginObject();
+                json.name("priorReceipt");
+                writeArtifact(json, recovery.priorReceipt());
+                json.name("observedTarget");
+                if (recovery.observedTarget() == null) json.nullValue();
+                else writeArtifact(json, recovery.observedTarget());
+                json.endObject();
+            }
             json.endObject();
         }
         catch (IOException impossible) {
@@ -164,6 +203,7 @@ public record AttachmentReceipt(String operationId, Mode mode, Phase phase,
             Map<String, String> values = new TreeMap<>();
             Map<String, Artifact> artifacts = new TreeMap<>();
             Set<String> names = new HashSet<>();
+            Recovery recovery = null;
             json.beginObject();
             while (json.hasNext()) {
                 String name = uniqueName(json, names);
@@ -195,14 +235,40 @@ public record AttachmentReceipt(String operationId, Mode mode, Phase phase,
                         }
                         json.endObject();
                     }
+                    case "recovery" -> {
+                        if (json.peek() == JsonToken.NULL) json.nextNull();
+                        else {
+                            Set<String> fields = new HashSet<>();
+                            Artifact prior = null;
+                            Artifact observed = null;
+                            json.beginObject();
+                            while (json.hasNext()) {
+                                String field = uniqueName(json, fields);
+                                if (field.equals("priorReceipt")) prior = artifact(json);
+                                else if (field.equals("observedTarget")) {
+                                    if (json.peek() == JsonToken.NULL) json.nextNull();
+                                    else observed = artifact(json);
+                                }
+                                else throw new IOException("unknown recovery receipt field");
+                            }
+                            json.endObject();
+                            if (!fields.equals(Set.of("priorReceipt", "observedTarget")) || prior == null) {
+                                throw new IOException("incomplete recovery receipt evidence");
+                            }
+                            recovery = new Recovery(prior, observed);
+                        }
+                    }
                     default -> throw new IOException("unknown attachment receipt field: " + name);
                 }
             }
             json.endObject();
             require(json, JsonToken.END_DOCUMENT);
-            if (!names.equals(Set.of("schemaVersion", "operationId", "mode", "phase",
+            Set<String> required = new HashSet<>(Set.of("schemaVersion", "operationId", "mode", "phase",
                     "receiptPath", "backend", "hostContract", "durability", "debuglinkCrc32",
-                    "files", "diagnostic")) || !"1".equals(values.get("schemaVersion"))) {
+                    "files", "diagnostic"));
+            if ("2".equals(values.get("schemaVersion"))) required.add("recovery");
+            else if (!"1".equals(values.get("schemaVersion"))) throw new IOException("unsupported attachment receipt schema");
+            if (!names.equals(required)) {
                 throw new IOException("incomplete or unsupported attachment receipt schema");
             }
             if (cancelled.getAsBoolean()) {
@@ -211,7 +277,7 @@ public record AttachmentReceipt(String operationId, Mode mode, Phase phase,
             return new AttachmentReceipt(values.get("operationId"), Mode.valueOf(values.get("mode")),
                 Phase.valueOf(values.get("phase")), values.get("receiptPath"), values.get("backend"),
                 values.get("hostContract"), values.get("durability"),
-                Long.parseLong(values.get("debuglinkCrc32")), artifacts, values.get("diagnostic"));
+                Long.parseLong(values.get("debuglinkCrc32")), artifacts, values.get("diagnostic"), recovery);
         }
         catch (java.util.concurrent.CancellationException cancelledRead) {
             throw cancelledRead;
@@ -219,6 +285,17 @@ public record AttachmentReceipt(String operationId, Mode mode, Phase phase,
         catch (IllegalArgumentException | IllegalStateException invalid) {
             throw new IOException("invalid attachment receipt", invalid);
         }
+    }
+
+    private static void writeArtifact(JsonWriter json, Artifact artifact) throws IOException {
+        json.beginObject();
+        json.name("path").value(artifact.path());
+        json.name("sha256").value(artifact.sha256());
+        // Decimal strings retain full signed-long sizes without floating-point loss.
+        json.name("bytes").value(Long.toString(artifact.bytes()));
+        json.name("identity").value(artifact.identity());
+        json.name("metadataSha256").value(artifact.metadataSha256());
+        json.endObject();
     }
 
     private static Artifact artifact(JsonReader json) throws IOException {

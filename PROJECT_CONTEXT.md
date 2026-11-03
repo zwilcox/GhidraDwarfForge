@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local #72 filesystem controller:** 525 Java 21 checks pass for
+initial/refresh commit, failure rollback and explicit interrupted-operation
+recovery, including eight abruptly terminated child JVMs. Schema 2 adds separate
+recovery evidence while retaining schema-1 reading and immutable committed
+records; 138 protocol/path controls pass. Existing replacement/backup/receipt
+suites and extension build pass. These are non-ELF filesystem fixtures with a
+limited test host. Production Linux/Windows metadata, actual ELF/report/validator
+preparation, curated refresh, UI and end-to-end GDB acceptance remain required.
+See `docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`.
+
 **CONFIRMED local #72 conditional replacement component:** target replacement
 and independent-backup restoration pass 63 actual Java 21 filesystem controls,
 including abrupt process exits, uncertain native outcomes, absent-target

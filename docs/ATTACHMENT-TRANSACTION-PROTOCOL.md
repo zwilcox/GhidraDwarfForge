@@ -29,7 +29,7 @@ link-count, content-hash and metadata checks. These observations do not defeat
 an adversarial filesystem race. New internal stages must be created exclusively
 inside an owned directory; the transaction must bind and recheck that ownership.
 
-## Receipt schema 1
+## Receipt schema 2 and legacy schema 1
 
 The receipt records:
 
@@ -44,6 +44,17 @@ The receipt records:
 - Additional refresh roles: `previousReceipt`, `previousSidecar`,
   `previousSource`, `priorTargetBackup`. The previous receipt artifact binds
   both its selected path and complete hash; it is never rewritten.
+- Schema 2 adds a required `recovery` field: null for ordinary operations, or
+  an object containing `priorReceipt` and nullable `observedTarget` artifacts.
+  A separate recovery record binds the original receipt's actual bytes and
+  identity plus a fresh target observation, without modifying that receipt.
+  Recovery records cannot become COMMITTED. A ROLLED_BACK recovery record must
+  observe the prior image's complete hash/size/metadata at the selected target
+  path; its inode may differ because restoration creates an independent copy.
+
+The reader accepts schema 1 only with its original exact field set and no
+recovery field; new serialization uses schema 2. Neither a missing schema-2
+recovery field nor a schema-1 record with extra recovery claims is accepted.
 
 The target's before/after records use the same final path, distinct image hashes
 and identities, and equal supported-metadata hashes. The independently created
@@ -227,8 +238,71 @@ prepared receipts and retained generations, then journal replacement, failure
 and refresh outcomes. In particular, a receipt publication failure after a
 COMMITTED record became visible must be reconciled without mutating an existing
 committed record or treating visibility alone as durable success. That controller
-and its full fault matrix, production host contracts and end-to-end GDB evidence
-remain required.
+is implemented below for filesystem coordination. Production host contracts,
+real ELF/validation preparation and end-to-end GDB evidence remain required.
+
+## Commit and explicit interrupted-operation recovery
+
+`AttachmentTransaction` now coordinates the prepared filesystem operation.
+Its caller supplies every file role plus explicit main receipt, recovery receipt
+and restore-image paths. The controller checks cross-role aliases before any
+of its writes, verifies every selected file's complete SHA/size/native identity/
+supported metadata against the prepared claims, verifies the actual sidecar CRC,
+and binds the host contract. Preparation still must perform the earlier all-role
+preflight before creating the backup/candidate and validate the real ELF, export
+report and structural evidence. This controller does not accept a matching hash
+as proof of DWARF validity and is not exposed as a public attachment command.
+
+After publishing PREPARED, the controller rechecks all files, the record and
+parent identities, performs conditional replacement, verifies retained inputs
+again, and publishes COMMITTED. A failed or cancelled operation attempts to
+restore only the observed owned candidate; an unrelated concurrent target is
+preserved. A proven absent target can be restored with atomic no-overwrite copy
+publication. Refresh recovery first verifies the intact prior sidecar/source,
+prior committed receipt and original backup, and restores from the separate
+prior-target backup. It never invents a missing old debug association.
+
+Failure handling publishes a **separate** recovery record. This applies even if
+the final COMMITTED record was already made visible before a flush or later
+operation reported failure. Existing committed records remain unchanged. The
+recovery record binds their actual hash/identity and a fresh observation of the
+target after recovery. A journal failure reports RECOVERY_REQUIRED, even if a
+complete restored image or terminal recovery record is visible; visibility alone
+is not claimed as durable completion. Conflicting recovery records are preserved.
+Cancellation does not interrupt restoration or journal reconciliation halfway.
+
+`recoverInterrupted` supports explicit restart recovery using the selected
+original PREPARED claims and an agreeing current PREPARED or COMMITTED record.
+It revalidates the independent backup and, for refresh, the entire retained
+prior association. The new candidate/pair can be missing or damaged because
+recovery does not need to install them. All paths are selected explicitly;
+none is followed from JSON. A fresh recovery receipt and restore-image destination
+are required, and each output directory's observed identity is checked before
+writing. A complete prior image already restored by an interrupted recovery is
+recognized without overwriting it. A later refresh may match a prior attachment
+by exact selected path, image bytes and metadata after rollback changed its inode;
+the new operation still observes and guards the current native identity throughout.
+
+**CONFIRMED locally:** 525 actual Java 21 filesystem-controller checks pass for
+initial attachment and changed-CRC refresh fixtures, normal and failed receipt
+publication, metadata/alias binding, cancellation, immutable committed records,
+concurrent target/journal changes, missing-target recovery, damaged prior pairs,
+recovery-journal failure and refresh after rollback. Eight child JVMs terminate
+without cleanup after preparation, replacement, before final commit and after
+COMMITTED publication; the parent resumes recovery from the retained files and
+verifies the prior complete image and untouched backups/pairs/committed receipts.
+All filesystem primitives still pass (63 replacement, 75 backup, 101 receipt
+controls), and schema/path coverage is now 138 controls including legacy parsing
+and malformed recovery records. Evidence is `build/attachment-transaction-java21-r2.log`.
+Earlier 375/516-control sets remain in their separate logs.
+
+These tests intentionally use non-ELF owned file contents and the limited Linux
+test metadata adapter. They prove filesystem state coordination, not actual
+debuglink/ELF correctness, Ghidra curation/re-export, structural-validator
+approval, native Windows recovery, or GDB automatic discovery. Those requirements
+remain in the full completion ledger and must pass through the eventual public
+preparation/UI path. No supported-host or attachment-completion claim follows
+from this component alone.
 
 The Windows replacement adapter must handle documented non-success states,
 including errors where file names have already changed, and must not use flags
@@ -241,7 +315,7 @@ parameter alone does not satisfy this project's pre-replacement backup contract.
 
 ```sh
 GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC ./gradlew \
-    attachmentTargetStoreSmoke attachmentFileStoreSmoke attachmentReceiptStoreSmoke attachmentProtocolSmoke exportReportClaimsSmoke companionArtifactPublisherSmoke \
+    attachmentTransactionSmoke attachmentTargetStoreSmoke attachmentFileStoreSmoke attachmentReceiptStoreSmoke attachmentProtocolSmoke exportReportClaimsSmoke companionArtifactPublisherSmoke \
     buildExtension
 cc -std=c11 -Wall -Wextra -Werror src/test/native/linux-rename-contract.c -o build/linux-rename-contract
 build/linux-rename-contract
