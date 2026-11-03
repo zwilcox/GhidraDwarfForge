@@ -1,0 +1,30 @@
+{
+    "status": "FAILED harness assertion; partial reader evidence",
+    "head": "f09791b37e962f15226a674c11c5cbb53a7fe578",
+    "run": 41627414752,
+    "artifactId": 13226398107,
+    "artifactSha256": "2577cc8b3417d7437a738ea5c90f0d008f9126e9daa22088aaa9929c46c17d8b",
+    "sourceFilesVerified": 27,
+    "verified": [
+        "Native Unicode request roundtrip in default/interpreted JVMs",
+        "Java descriptor control and audit/label bytes match independent native fixture",
+        "Insufficient privilege refused1314",
+        "Cancellation before and after open refused",
+        "Changed-path test rejected earlier at opened-file facts check"
+    ],
+    "lateFailure": {
+        "label": "security-java-late",
+        "executable": "C:\\hostedtoolcache\\windows\\Java_Temurin-Hotspot_jdk\\21.0.13-9.0\\x64\\bin\\java.exe",
+        "arguments": [
+            "-cp",
+            "D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\native-windows\\file-metadata\\classes;D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\native-windows\\file-metadata\\provenance\\jna-5.14.0.jar;D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\native-windows\\file-metadata\\provenance\\gson-2.9.0.jar",
+            "ghidradwarfforge.output.WindowsFileSecurityProbe",
+            "--request-file",
+            "D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\native-windows\\file-metadata\\security-java-late.request.json"
+        ],
+        "exit": 1,
+        "timedOut": false
+    },
+    "stderr": "Exception in thread \"main\" java.io.IOException: Windows full-security file changed\n\tat ghidradwarfforge.output.WindowsFileSecurity.require(WindowsFileSecurity.java:135)\n\tat ghidradwarfforge.output.WindowsFileSecurity.inspect(WindowsFileSecurity.java:69)\n\tat ghidradwarfforge.output.WindowsFileSecurityProbe.main(WindowsFileSecurityProbe.java:136)\n",
+    "interpretation": "Renaming changes opened-file facts; production correctly rejects before the later selected-path guard. Harness wrongly required only the later error. Accept either exact guard and independently assert retained file identity and replacement identity. Native cleanup and composed staging were not reached; no full reader acceptance."
+}

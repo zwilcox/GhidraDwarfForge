@@ -1,13 +1,13 @@
 # TODO.md — GhidraDwarfForge
 
-**CONFIRMED #72 native-security prerequisite:** run41624344819 at `49dd0b6`
-passes exact audit/label and cleanup artifact review. The Java run41626330294
-fails before production inspection because the test's direct Unicode argv is
-lossy; its raw evidence is retained. **PRESENT, UNVERIFIED:** UTF-8 request-file
-transport corrects that probe, and complete security/ordinary metadata/stream
-checks are composed for private-stage application. Local Java21/build/contract
-checks pass; corrected native reader/staging acceptance remains required.
-No production privilege policy is selected. See `docs/WINDOWS-FILE-SECURITY.md`.
+**CONFIRMED partial #72 native Java security evidence:** run41627414752 at
+`f09791b` passes Unicode transport, native/Java audit-label bytes, insufficient
+privilege and cancellation controls. Its path-replacement case correctly rejects
+at the earlier opened-file facts check; the harness incorrectly required only
+the later path-check error. The assertion is corrected with independent retained/
+replacement identity checks. Reader lifetime and composed metadata staging remain
+unverified because the suite stopped there. See `docs/WINDOWS-FILE-SECURITY.md`.
+No production privilege policy is selected.
 
 **CONFIRMED native #72 directory mechanism:** JNA implementation at `373f33b`
 and completed Windows job41619066926 pass independent raw source/artifact review:

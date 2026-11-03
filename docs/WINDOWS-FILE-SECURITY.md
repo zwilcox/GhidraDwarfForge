@@ -95,3 +95,20 @@ unmodified inputs/stage; native re-reads verify retained SACL and EA payloads.
 These controls are implemented and compile locally but are not yet native
 acceptance. Full filesystem admission/durability, production privilege policy
 and public attachment remain separate unfinished requirements.
+
+## Earlier changed-file rejection in the path-replacement control
+
+**CONFIRMED partial native Java evidence:** run41627414752 at `f09791b`
+passes Unicode round trips, production reader comparison with the native
+control/ACE bytes, insufficient privilege and cancellation before/after opening.
+The selected-path replacement fixture is rejected at the earlier opened-file
+facts comparison because renaming changes file facts. The harness incorrectly
+required only the later selected-path error; the entire job remains failed.
+See [the reviewed evidence](evidence/windows-security-java-41627414752.json).
+
+The corrected test accepts either of those exact rejection messages and still
+requires a nonzero process exit. It independently records the original,
+retained and replacement file states: original bytes and file identity must
+remain under the retained name and a different identity with the exact sentinel
+must occupy the selected path. No production check changes. Remaining cleanup
+and composed-stage cases were not reached and retain their unverified status.

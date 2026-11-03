@@ -630,10 +630,17 @@ foreach ($mode in @('denied','cancel-before','cancel-open')) {
 $securityLate = Join-Path $owned 'security late path'
 [IO.File]::WriteAllText($securityLate, 'retained security sentinel', $utf8)
 $lateHash = Hash $securityLate
+$lateBefore = Independent-State $securityLate
 $late = Run-Security 'security-java-late' @('late',$securityLate) $false
-Require ($late.stderr.Contains('selected metadata path changed')) 'Changed security path was not rejected'
+Require ($late.stderr.Contains('Windows full-security file changed') -or
+    $late.stderr.Contains('Windows selected metadata path changed')) 'Changed security path was not rejected'
 Require ((Hash "$securityLate.retained") -eq $lateHash -and
     [IO.File]::ReadAllText($securityLate) -ceq 'replacement sentinel') 'Late-path control changed retained data'
+$lateRetained = Independent-State "$securityLate.retained"
+$lateReplacement = Independent-State $securityLate
+Require ($lateRetained.fileId -ceq $lateBefore.fileId -and $lateRetained.volume -ceq $lateBefore.volume -and
+    $lateReplacement.fileId -cne $lateBefore.fileId) 'Late-path fixture did not retain the original identity and replace the selected file'
+Save-Json (Join-Path $root 'security-late-path.json') ([ordered]@{before=$lateBefore; retained=$lateRetained; replacement=$lateReplacement; rejection=$late.stderr})
 $directoryRefused = Run-Security 'security-java-directory' @('inspect',$owned) $false
 Require ($directoryRefused.stderr.Contains('regular non-link file')) 'Directory security input was not refused'
 $securityCycles = Run-Security 'security-java-cycles' @('cycles',$securityPath) $true $true
