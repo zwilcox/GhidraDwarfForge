@@ -116,6 +116,7 @@ function Independent-State([string]$Path) {
     # Get-Acl's CommonAcl representation can sort ACEs while serializing.
     # Read independent raw native bytes for the exact preservation oracle.
     $nativeBytes = [ForgeHostResearch.NativeWindowsSecurityBytes]::Read($Path)
+    $legacyBytes = [ForgeHostResearch.NativeWindowsSecurityBytes]::ReadLegacy($Path)
     $raw = [Security.AccessControl.RawSecurityDescriptor]::new($nativeBytes, 0)
     $native = [ForgeHostResearch.NativeWindowsHostFacts]::Observe($Path, $false, $true)
     Require ($native.status -eq 'OBSERVED' -and $native.fileIdStatus -eq 'OBSERVED') 'Independent identity unavailable'
@@ -125,6 +126,7 @@ function Independent-State([string]$Path) {
         control=[int]$raw.ControlFlags; owner=(Binary-Hex $raw.Owner); group=(Binary-Hex $raw.Group);
         dacl=$(if ($null -eq $raw.DiscretionaryAcl) { $null } else { Binary-Hex $raw.DiscretionaryAcl });
         nativeDescriptor=[Convert]::ToHexString($nativeBytes).ToLowerInvariant();
+        legacyDescriptor=[Convert]::ToHexString($legacyBytes).ToLowerInvariant();
         managedDacl=$(if ($null -eq $managed.DiscretionaryAcl) { $null } else { Binary-Hex $managed.DiscretionaryAcl })}
 }
 function Inspect-Case([string]$Label, [string]$Path) {

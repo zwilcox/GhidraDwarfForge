@@ -133,3 +133,14 @@ The Linux sibling primitive now passes hosted run `41597206175`, including all
 cycles. Its downloaded artifact was reviewed against exact source/dependency
 hashes and Java 21 evidence. That pass does not complete protected-metadata
 admission or the whole attachment host contract.
+
+Run `41599465492` at `4713a5f` exposes another observer distinction before
+application: `GetFileSecurityW` returns the ordinary source's ACEs without their
+inherited flags, while the handle API preserves them. Artifact `13214245754`
+and raw expected/actual values are retained. The independent raw oracle now
+uses C# `GetNamedSecurityInfoW`, with bounded descriptor copying and guaranteed
+`LocalFree`, audited against the pinned `AclAPI.h`. Both the legacy API's bytes
+and the managed serializer's bytes remain in diagnostic snapshots. Neither
+representation difference is ignored in the production preservation comparison.
+The corrected native oracle remains pending; local C# and C ABI compilation and
+PowerShell parser/capture checks pass.

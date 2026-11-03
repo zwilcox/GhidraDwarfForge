@@ -41,6 +41,7 @@
         "https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-setfilesecurityw",
         "https://learn.microsoft.com/en-us/windows/win32/secauthz/automatic-propagation-of-inheritable-aces",
         "https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-getfilesecurityw",
-        "https://source.dot.net/System.Security.AccessControl/System/Security/AccessControl/ACL.cs.html"
+        "https://source.dot.net/System.Security.AccessControl/System/Security/AccessControl/ACL.cs.html",
+        "https://learn.microsoft.com/en-us/windows/win32/api/aclapi/nf-aclapi-getnamedsecurityinfow"
     ]
 }
