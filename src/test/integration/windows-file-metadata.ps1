@@ -574,7 +574,8 @@ $securityPath = Join-Path $owned 'full security λ'
 $securityRun = Run-Captured 'security-visibility-create' $securityProbe @('create',$securityPath)
 $securityFacts = ConvertFrom-Json $securityRun.stdout
 Require ($securityFacts.status -eq 'OBSERVED' -and $securityFacts.created -and
-    $securityFacts.queryFields -eq 0x101ff -and $securityFacts.queryAccess -eq 0x01020000 -and
+    $securityFacts.canonicalApi -ceq 'GetKernelObjectSecurity' -and
+    $securityFacts.insufficientKernelQueryError -eq 5 -and $securityFacts.queryFields -eq 0x10000 -and $securityFacts.queryAccess -eq 0x01020000 -and
     $securityFacts.disabledPrivilegeOpenError -eq 1314 -and $securityFacts.insufficientHandleQueryError -eq 5 -and
     $securityFacts.complete.saclPresent -and $securityFacts.complete.auditAces -eq 1 -and
     $securityFacts.complete.labelAces -eq 1 -and -not $securityFacts.ordinary.saclPresent -and
@@ -674,6 +675,11 @@ foreach ($profile in @('inherited','protected')) {
     $nativeSource = Run-Captured "admission-native-source-$profile" $securityProbe @('observe',$admissionSource)
     $nativeSourceFacts = ConvertFrom-Json $nativeSource.stdout
     Require (-not $nativeSourceFacts.complete.saclPresent) 'Ordinary admission fixture has unsupported SACL'
+    $sourceJava = Run-Security "admission-observe-$profile" @('admission-observe',$admissionSource)
+    $sourceJavaFacts = ConvertFrom-Json $sourceJava.stdout
+    Require ($sourceJavaFacts.security.control -eq $nativeSourceFacts.complete.control -and
+        -not $sourceJavaFacts.security.saclPresent) 'Java ordinary descriptor differs from raw kernel/path APIs'
+
     $applied = Run-Security "admission-apply-$profile" @('admission-apply',$admissionSource,$admissionStage)
     $appliedFacts = ConvertFrom-Json $applied.stdout
     $afterAdmission = Independent-State $admissionStage
@@ -690,7 +696,7 @@ foreach ($profile in @('inherited','protected')) {
         -not $nativeStageFacts.complete.saclPresent -and
         $appliedFacts.security.control -eq $nativeSourceFacts.complete.control) 'Complete security control was not preserved'
     $admissionResults.Add([ordered]@{profile=$profile; source=$beforeAdmission; prior=$priorAdmission; after=$afterAdmission;
-        nativeSource=$nativeSourceFacts; nativeStage=$nativeStageFacts; java=$appliedFacts})
+        nativeSource=$nativeSourceFacts; nativeStage=$nativeStageFacts; sourceJava=$sourceJavaFacts; java=$appliedFacts})
 }
 $negativeCases = @(
     @{name='sacl-source'; source=$securityPath; stage=$admissionStage; mode='admission-apply'; message='SACL'},

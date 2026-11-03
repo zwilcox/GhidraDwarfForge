@@ -16,8 +16,10 @@ PowerShell syntax and workflow/architecture checks pass locally. The new
 isolated native Windows Java tests still require a passing hosted result and
 artifact review before this binding is accepted.
 
-The reader uses `BACKUP_SECURITY_INFORMATION` plus explicit component fields
-(`0x101ff`), preserving the whole-descriptor request. The earlier BACKUP-only
+The current reader uses `GetKernelObjectSecurity` with
+`BACKUP_SECURITY_INFORMATION` (`0x10000`), preserving the raw whole-descriptor
+request. This supersedes the earlier GetSecurityInfo union described in the
+historical checkpoints below. The earlier BACKUP-only
 GetSecurityInfo failure and corrected native behavior are documented in
 [the investigation](research/WINDOWS-SECURITY-VISIBILITY.md). It opens a regular
 file with READ_CONTROL and ACCESS_SYSTEM_SECURITY using the existing checked
@@ -28,7 +30,7 @@ The retained snapshot includes opened-file identity/facts, complete raw
 self-relative descriptor bytes, descriptor control, SACL presence/defaulted
 flags and bounded SACL bytes. Absent and present-null SACLs remain distinct.
 Both the handle and selected path are checked around the read, and a second
-complete descriptor observation must agree. Allocated descriptors are freed
+complete descriptor observation must agree. Caller-owned descriptor buffers are bounded and released
 on success, error and cancellation; opened handles and bounded buffers use
 scoped cleanup. Cancellation is checked around native calls, which themselves
 may block. This primitive does not resolve all ancestor traversal, choose a
@@ -140,3 +142,32 @@ comparisons must both still pass; no mismatch is ignored. Production code is
 unchanged pending the native evidence. The kernel API uses caller-owned bounded
 buffers and returns a self-relative descriptor with the same access-rights
 requirements; it does not grant privileges or alter the file.
+
+## Select the raw opened-handle representation
+
+**CONFIRMED native evidence:** run41629294907 at `4310f20` logs
+GetSecurityInfo control `0xa004` versus raw path/kernel control `0x8004` for
+an ordinary file. Presence/defaulted state and ACL bytes otherwise agree; all
+three report no SACL. The exact extra high-level bit is `SE_SACL_PROTECTED`
+(`0x2000`). The kernel/path comparison also passes on the populated audit/label
+fixture. All27 sources, commands and raw artifact bytes are verified in
+[the representation receipt](evidence/windows-security-representation-41629294907.json).
+This identifies the observable API difference, not an undocumented Windows
+implementation cause.
+
+The selected production reader now uses GetKernelObjectSecurity BACKUP through
+the existing authorized handle. Its caller-owned buffer is sized, bounded to one
+MiB, checked against the returned size and parsed only after native validity
+checks. A changed size or failed call is rejected; it never falls back to a
+partial descriptor. No raw control bit is masked or synthesized. The existing
+identity/path/readback/cancellation checks remain in place.
+
+The native oracle now requires raw kernel/path equality for ordinary and
+populated files and repeats both for128cycles. High-level output is retained as
+a diagnostic, with the observed absent-SACL protection discrepancy explicitly
+classified; it is never used as preservation input. A real insufficient-rights
+raw query must fail. Native Java tests additionally compare ordinary source
+control with the raw oracle before staged application, so the old representation
+fails even before that application begins. Full Java/runtime/staging acceptance
+of this API correction remains **PRESENT, UNVERIFIED** until its hosted run and
+artifact review pass. The complete metadata requirement has not changed.

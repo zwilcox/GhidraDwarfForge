@@ -20,23 +20,20 @@ import java.util.function.BooleanSupplier;
  */
 public final class WindowsFileSecurity {
     private interface SecurityApi extends StdCallLibrary {
-        int GetSecurityInfo(Pointer handle, int type, int fields, Pointer owner, Pointer group,
-            Pointer dacl, Pointer sacl, PointerByReference descriptor);
+        int GetKernelObjectSecurity(Pointer handle, int fields, Pointer descriptor, int bytes, Pointer needed);
         int IsValidSecurityDescriptor(Pointer descriptor);
         int GetSecurityDescriptorLength(Pointer descriptor);
         int GetSecurityDescriptorControl(Pointer descriptor, Pointer control, Pointer revision);
         int GetSecurityDescriptorSacl(Pointer descriptor, Pointer present, PointerByReference acl, Pointer defaulted);
         int IsValidAcl(Pointer acl);
     }
-    private interface Kernel extends StdCallLibrary { Pointer LocalFree(Pointer allocation); }
 
-    // BACKUP plus every explicit component: the native fixture proves this
-    // combination, including audit and integrity label, against GetFileSecurityW.
-    private static final int FIELDS = 0x101ff;
+    // Native kernel/path observations agree for both absent SACLs and actual
+    // audit/label data. GetSecurityInfo adds a protection flag for absent SACLs.
+    private static final int FIELDS = 0x10000; // BACKUP_SECURITY_INFORMATION
     private static final int LIMIT = 1024 * 1024;
     private final WindowsFileMetadata metadata;
     private final SecurityApi security;
-    private final Kernel kernel;
 
     public record Descriptor(int control, boolean saclPresent, boolean saclDefaulted,
             String saclHex, String rawDescriptor) { }
@@ -47,7 +44,6 @@ public final class WindowsFileSecurity {
         metadata = new WindowsFileMetadata(); // Enforces the audited host ABI before native loading.
         try {
             security = Native.load("advapi32", SecurityApi.class);
-            kernel = Native.load("kernel32", Kernel.class);
         }
         catch (LinkageError | RuntimeException unavailable) {
             throw new IOException("Windows full-security APIs are unavailable", unavailable);
@@ -77,52 +73,57 @@ public final class WindowsFileSecurity {
     }
 
     private Descriptor read(Pointer handle) throws IOException {
-        var result = new PointerByReference();
-        int error = security.GetSecurityInfo(handle, 1, FIELDS, null, null, null, null, result);
-        Pointer allocation = result.getValue();
-        try (var owned = new LocalAllocation(allocation)) {
-            require(error == 0, "Windows complete GetSecurityInfo failed (error=" + Integer.toUnsignedString(error) + ")");
-            require(allocation != null, "Windows complete descriptor is missing");
-            success(security.IsValidSecurityDescriptor(allocation), "IsValidSecurityDescriptor");
-            long length = Integer.toUnsignedLong(security.GetSecurityDescriptorLength(allocation));
-            require(length >= 20 && length <= LIMIT, "Windows complete descriptor exceeds bound");
-            try (var control = new Memory(2); var revision = new Memory(4);
-                    var present = new Memory(4); var defaulted = new Memory(4)) {
-                control.clear(); revision.clear(); present.clear(); defaulted.clear();
-                success(security.GetSecurityDescriptorControl(allocation, control, revision), "GetSecurityDescriptorControl");
-                int flags = Short.toUnsignedInt(control.getShort(0));
-                require(revision.getInt(0) == 1 && (flags & 0x8000) != 0, "Unsupported complete descriptor format");
-                var acl = new PointerByReference();
-                success(security.GetSecurityDescriptorSacl(allocation, present, acl, defaulted), "GetSecurityDescriptorSacl");
-                boolean exists = present.getInt(0) != 0;
-                require(exists == ((flags & 0x10) != 0), "Inconsistent complete SACL presence");
-                String bytes = null;
-                if (acl.getValue() != null) {
-                    require(exists, "Absent complete SACL has a pointer");
-                    bounds(allocation, length, acl.getValue(), 8);
-                    int aclSize = Short.toUnsignedInt(acl.getValue().getShort(2));
-                    require(aclSize >= 8, "Invalid complete SACL size");
-                    bounds(allocation, length, acl.getValue(), aclSize);
-                    success(security.IsValidAcl(acl.getValue()), "IsValidAcl");
-                    bytes = HexFormat.of().formatHex(acl.getValue().getByteArray(0, aclSize));
-                }
-                return new Descriptor(flags, exists, exists && defaulted.getInt(0) != 0, bytes,
-                    HexFormat.of().formatHex(allocation.getByteArray(0, (int) length)));
+        try (var needed = new Memory(4)) {
+            needed.clear();
+            int sized = security.GetKernelObjectSecurity(handle, FIELDS, null, 0, needed);
+            int error = Native.getLastError();
+            require(sized == 0 && error == 122,
+                "Windows complete security sizing failed (error=" + Integer.toUnsignedString(error) + ")");
+            long capacity = Integer.toUnsignedLong(needed.getInt(0));
+            require(capacity >= 20 && capacity <= LIMIT, "Windows complete descriptor capacity exceeds bound");
+            try (var allocation = new Memory(capacity)) {
+                allocation.clear();
+                success(security.GetKernelObjectSecurity(handle, FIELDS, allocation, (int) capacity, needed),
+                    "GetKernelObjectSecurity");
+                long returned = Integer.toUnsignedLong(needed.getInt(0));
+                require(returned >= 20 && returned <= capacity, "Windows complete descriptor changed size");
+                return decode(allocation, returned);
             }
+        }
+    }
+
+    private Descriptor decode(Pointer allocation, long available) throws IOException {
+        success(security.IsValidSecurityDescriptor(allocation), "IsValidSecurityDescriptor");
+        long length = Integer.toUnsignedLong(security.GetSecurityDescriptorLength(allocation));
+        require(length >= 20 && length <= available, "Windows complete descriptor exceeds bound");
+        try (var control = new Memory(2); var revision = new Memory(4);
+                var present = new Memory(4); var defaulted = new Memory(4)) {
+            control.clear(); revision.clear(); present.clear(); defaulted.clear();
+            success(security.GetSecurityDescriptorControl(allocation, control, revision), "GetSecurityDescriptorControl");
+            int flags = Short.toUnsignedInt(control.getShort(0));
+            require(revision.getInt(0) == 1 && (flags & 0x8000) != 0, "Unsupported complete descriptor format");
+            var acl = new PointerByReference();
+            success(security.GetSecurityDescriptorSacl(allocation, present, acl, defaulted), "GetSecurityDescriptorSacl");
+            boolean exists = present.getInt(0) != 0;
+            require(exists == ((flags & 0x10) != 0), "Inconsistent complete SACL presence");
+            String bytes = null;
+            if (acl.getValue() != null) {
+                require(exists, "Absent complete SACL has a pointer");
+                bounds(allocation, length, acl.getValue(), 8);
+                int aclSize = Short.toUnsignedInt(acl.getValue().getShort(2));
+                require(aclSize >= 8, "Invalid complete SACL size");
+                bounds(allocation, length, acl.getValue(), aclSize);
+                success(security.IsValidAcl(acl.getValue()), "IsValidAcl");
+                bytes = HexFormat.of().formatHex(acl.getValue().getByteArray(0, aclSize));
+            }
+            return new Descriptor(flags, exists, exists && defaulted.getInt(0) != 0, bytes,
+                HexFormat.of().formatHex(allocation.getByteArray(0, (int) length)));
         }
     }
 
     private static void bounds(Pointer base, long size, Pointer field, long length) throws IOException {
         long offset = Pointer.nativeValue(field) - Pointer.nativeValue(base);
         require(offset >= 0 && length >= 0 && offset <= size - length, "Complete descriptor field exceeds allocation");
-    }
-
-    private final class LocalAllocation implements AutoCloseable {
-        private final Pointer pointer;
-        private LocalAllocation(Pointer pointer) { this.pointer = pointer; }
-        public void close() throws IOException {
-            if (pointer != null) require(kernel.LocalFree(pointer) == null, "Complete descriptor LocalFree failed");
-        }
     }
 
     private static void check(BooleanSupplier cancelled) {

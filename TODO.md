@@ -1,11 +1,11 @@
 # TODO.md — GhidraDwarfForge
 
-**CONFIRMED bounded #72 Java reader evidence:** run41628187930 at `934f251`
-passes audit/label byte agreement, privilege/cancellation/path refusals and128
-cycles at302 handles. The ordinary-file native descriptor comparison then fails
-before staged application; exact differing fields were not logged. Complete
-ordinary-file admission remains unverified. A diagnostic adds raw snapshots and
-GetKernelObjectSecurity as a third observer without accepting the mismatch.
+**CONFIRMED #72 descriptor representation:** run41629294907 at `4310f20`
+shows GetSecurityInfo adding SACL_PROTECTED for an absent SACL (`0xa004`),
+while independent GetFileSecurityW and GetKernelObjectSecurity agree on raw
+control `0x8004`. The production reader now uses the raw kernel API without
+masking descriptor flags; native tests retain path/kernel agreement and the
+high-level diagnostic. Java binding/staged preservation validation is pending.
 See `docs/WINDOWS-FILE-SECURITY.md`. Product privilege policy remains pending.
 
 **CONFIRMED native #72 directory mechanism:** JNA implementation at `373f33b`

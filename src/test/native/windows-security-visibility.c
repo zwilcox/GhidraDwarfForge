@@ -223,17 +223,26 @@ int wmain(int argc, WCHAR **argv) {
     if (denied) require(LocalFree(denied) == NULL, "denied descriptor cleanup");
     SetLastError(query_error);
     require(query_error == ERROR_ACCESS_DENIED, "ordinary handle must refuse complete security");
+    DWORD denied_bytes = 0;
+    PSECURITY_DESCRIPTOR denied_kernel = malloc(1024 * 1024);
+    require(denied_kernel != NULL, "denied kernel buffer allocation");
+    BOOL kernel_denied = GetKernelObjectSecurity(ordinary, BACKUP_SECURITY_INFORMATION,
+        denied_kernel, 1024 * 1024, &denied_bytes);
+    DWORD kernel_query_error = kernel_denied ? 0 : GetLastError();
+    free(denied_kernel);
+    require(!kernel_denied && kernel_query_error == ERROR_ACCESS_DENIED,
+        "ordinary handle must refuse complete kernel security");
     require(CloseHandle(ordinary), "ordinary control close");
 
     enable(token, luid, TRUE);
     DWORD query_access = 0;
-    QuerySecurityAccessMask(COMPLETE_SECURITY_FIELDS, &query_access);
+    QuerySecurityAccessMask(BACKUP_SECURITY_INFORMATION, &query_access);
     requested_open_access = READ_CONTROL | ACCESS_SYSTEM_SECURITY | query_access | (creating ? WRITE_OWNER : 0);
     HANDLE complete = CreateFileW(argv[2], requested_open_access, 7, NULL, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT, NULL);
     require(complete != INVALID_HANDLE_VALUE, "complete-security open");
     security_snapshot before, full, independent, visible;
     query_phase = "before-fixture";
-    opened_snapshot(complete, COMPLETE_SECURITY_FIELDS, &before);
+    kernel_snapshot(complete, &before);
     if (creating) {
         PSECURITY_DESCRIPTOR seed = NULL;
         require(ConvertStringSecurityDescriptorToSecurityDescriptorW(
@@ -248,21 +257,18 @@ int wmain(int argc, WCHAR **argv) {
         if (error) { SetLastError(error); require(FALSE, "owned audit/label fixture"); }
     }
     query_phase = "after-audit-label";
-    opened_snapshot(complete, COMPLETE_SECURITY_FIELDS, &full);
+    kernel_snapshot(complete, &full);
     path_snapshot(argv[2], &independent);
-    security_snapshot kernel;
-    kernel_snapshot(complete, &kernel);
-    if (full.control != independent.control || full.present != independent.present ||
-            full.defaulted != independent.defaulted || full.bytes != independent.bytes ||
-            memcmp(full.acl, independent.acl, full.bytes)) {
-        fprintf(stderr, "security-api-difference mode=%ls GetSecurityInfo=", argv[1]);
-        print_snapshot(stderr, &full);
-        fprintf(stderr, " GetFileSecurityW="); print_snapshot(stderr, &independent);
-        fprintf(stderr, " GetKernelObjectSecurity="); print_snapshot(stderr, &kernel);
-        fputc('\n', stderr);
-    }
-    same(&kernel, &independent);
     same(&full, &independent);
+    // Retain the high-level API as a diagnostic, never as canonical input.
+    // Its extra SACL_PROTECTED bit on absent SACLs was independently observed.
+    security_snapshot high_level;
+    opened_snapshot(complete, COMPLETE_SECURITY_FIELDS, &high_level);
+    require(high_level.present == full.present && high_level.defaulted == full.defaulted &&
+        high_level.bytes == full.bytes && !memcmp(high_level.acl, full.acl, full.bytes) &&
+        (high_level.control == full.control || (!full.present &&
+            (high_level.control ^ full.control) == SE_SACL_PROTECTED)),
+        "high-level diagnostic differs beyond observed absent-SACL protection behavior");
     if (wcscmp(argv[1], L"observe") && (!full.present || full.audits != 1 || full.labels != 1)) {
         fprintf(stderr, "whole descriptor control=%04x present=%d audit=%lu label=%lu bytes=%lu\n",
             (unsigned int)full.control, full.present, full.audits, full.labels, full.bytes);
@@ -275,7 +281,7 @@ int wmain(int argc, WCHAR **argv) {
     require(GetProcessHandleCount(GetCurrentProcess(), &baseline), "initial security handles");
     query_phase = "repeated-whole-security";
     for (int i = 0; i < 128; i++) {
-        opened_snapshot(complete, COMPLETE_SECURITY_FIELDS, &independent); same(&full, &independent);
+        kernel_snapshot(complete, &independent); same(&full, &independent);
         path_snapshot(argv[2], &independent); same(&full, &independent);
         require(GetProcessHandleCount(GetCurrentProcess(), &after) && after == baseline, "security handle cleanup");
     }
@@ -288,7 +294,9 @@ int wmain(int argc, WCHAR **argv) {
         "\"restoredPrivilegeAttributes\":%lu,\"before\":", creating ? "true" : "false", open_error,
         query_error, original_attributes, restored_attributes);
     print_snapshot(stdout, &before); printf(",\"complete\":"); print_snapshot(stdout, &full);
+    printf(",\"highLevel\":"); print_snapshot(stdout, &high_level);
+    printf(",\"canonicalApi\":\"GetKernelObjectSecurity\",\"insufficientKernelQueryError\":%lu", kernel_query_error);
     printf(",\"ordinary\":"); print_snapshot(stdout, &visible);
-    printf(",\"queryFields\":%lu,\"queryAccess\":%lu,\"openedAccess\":%lu,\"handleCycles\":128,\"handlesBefore\":%lu,\"handlesAfter\":%lu}\n", (DWORD)COMPLETE_SECURITY_FIELDS, query_access, requested_open_access, baseline, after);
+    printf(",\"queryFields\":%lu,\"queryAccess\":%lu,\"openedAccess\":%lu,\"handleCycles\":128,\"handlesBefore\":%lu,\"handlesAfter\":%lu}\n", (DWORD)BACKUP_SECURITY_INFORMATION, query_access, requested_open_access, baseline, after);
     return 0;
 }
