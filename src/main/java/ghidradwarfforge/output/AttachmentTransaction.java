@@ -73,14 +73,8 @@ public final class AttachmentTransaction {
         return commit(request, host, cancelled, boundary -> { }, RECEIPTS);
     }
 
-    /**
-     * Explicit rollback after interruption. The caller selects every path again
-     * and supplies the original PREPARED claims; a current PREPARED or COMMITTED
-     * record must agree with those claims. Missing/damaged new-generation inputs
-     * do not prevent recovery of an independently verified prior image. No path
-     * is inferred from the receipt. Existing committed records remain immutable.
-     */
-    public static Result recoverInterrupted(Request request, AttachmentTargetStore.Host host) throws IOException {
+    /** Read-only explicit-role preflight before creating a host recovery session. */
+    public static AttachmentPaths.Plan preflightRecoveryPaths(Request request) throws IOException {
         var selected = new ArrayList<AttachmentPaths.Selection>();
         for (var entry : request.files().entrySet()) {
             boolean exists = Files.exists(entry.getValue(), LinkOption.NOFOLLOW_LINKS);
@@ -91,7 +85,18 @@ public final class AttachmentTransaction {
         selected.add(new AttachmentPaths.Selection("receipt", request.receipt(), AttachmentPaths.Kind.INPUT));
         selected.add(new AttachmentPaths.Selection("recoveryReceipt", request.recoveryReceipt(), AttachmentPaths.Kind.NEW_FILE));
         selected.add(new AttachmentPaths.Selection("restoreImage", request.restoreImage(), AttachmentPaths.Kind.NEW_FILE));
-        var paths = AttachmentPaths.preflight(selected);
+        return AttachmentPaths.preflight(selected);
+    }
+
+    /**
+     * Explicit rollback after interruption. The caller selects every path again
+     * and supplies the original PREPARED claims; a current PREPARED or COMMITTED
+     * record must agree with those claims. Missing/damaged new-generation inputs
+     * do not prevent recovery of an independently verified prior image. No path
+     * is inferred from the receipt. Existing committed records remain immutable.
+     */
+    public static Result recoverInterrupted(Request request, AttachmentTargetStore.Host host) throws IOException {
+        var paths = preflightRecoveryPaths(request);
         var record = AttachmentReceiptStore.read(paths.paths().get("receipt"), host, () -> false);
         if (!record.receipt().equals(request.prepared()) &&
                 !record.receipt().equals(request.prepared().advance(AttachmentReceipt.Phase.COMMITTED, null))) {
@@ -180,9 +185,8 @@ public final class AttachmentTransaction {
         }
     }
 
-    private static Plan verify(Request request, AttachmentTargetStore.Host host,
-            BooleanSupplier cancelled) throws IOException {
-        check(cancelled);
+    /** Read-only preflight for an already prepared candidate and independent backups. */
+    public static AttachmentPaths.Plan preflightPreparedPaths(Request request) throws IOException {
         var selected = new ArrayList<AttachmentPaths.Selection>();
         for (var entry : request.files().entrySet()) {
             selected.add(new AttachmentPaths.Selection(entry.getKey(), entry.getValue(),
@@ -191,7 +195,13 @@ public final class AttachmentTransaction {
         selected.add(new AttachmentPaths.Selection("receipt", request.receipt(), AttachmentPaths.Kind.NEW_FILE));
         selected.add(new AttachmentPaths.Selection("recoveryReceipt", request.recoveryReceipt(), AttachmentPaths.Kind.NEW_FILE));
         selected.add(new AttachmentPaths.Selection("restoreImage", request.restoreImage(), AttachmentPaths.Kind.NEW_FILE));
-        var paths = AttachmentPaths.preflight(selected);
+        return AttachmentPaths.preflight(selected);
+    }
+
+    private static Plan verify(Request request, AttachmentTargetStore.Host host,
+            BooleanSupplier cancelled) throws IOException {
+        check(cancelled);
+        var paths = preflightPreparedPaths(request);
         if (!paths.paths().get("receipt").toString().equals(request.prepared().receiptPath()) ||
                 !host.contract().equals(request.prepared().hostContract()) ||
                 !host.durability().equals(request.prepared().durability())) {

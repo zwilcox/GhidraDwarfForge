@@ -4,18 +4,27 @@
 41650311183 at2b89ec3 passes154 mount checks, independent native stat/findmnt
 comparison,8 unprivileged and168 privileged lifecycle checks. Retained sources,
 dependencies and outputs were independently reviewed; see
-`docs/evidence/linux-visibility-mount-41650311183.json`. The newly connected
-Linux Host still requires its own privileged and real-ELF acceptance below.
+`docs/evidence/linux-visibility-mount-41650311183.json`. The Linux Host has separate isolated privileged evidence below; real-ELF
+acceptance remains pending.
 
-**PRESENT, UNVERIFIED Linux attachment Host:** `LinuxAttachmentHost` now
-connects protected visibility, ext4 mount binding, admitted metadata, native
-no-overwrite/replacement rename and directory fsync. It opens its canary only
-after the operation's shared read-only all-role preflight and never elevates.
-Actual Java21 transaction suites and local Host unprivileged refusal/cleanup
-pass. Isolated privileged Host backup/replace/restore and metadata-refusal tests
-are assigned to CI; real ELF/GDB/recovery integration remains required. The
-initial privileged visibility session is independently accepted at41648910608
-(98 checks); see its evidence receipt and `docs/LINUX-ATTACHMENT-HOST.md`.
+**CONFIRMED isolated Linux attachment Host:** extension-build41652044404
+at `bdef6f6` passes 26 privileged Host checks and seven unprivileged checks.
+Independent backup, ownership/metadata application, replacement, restoration,
+refusals and cleanup are recorded in
+`docs/evidence/linux-attachment-host-41652044404.json`. These sentinel checks
+do not establish real ELF/GDB or public attachment acceptance.
+
+**PRESENT, UNVERIFIED production-host integration:** the real ELF/GDB and
+saved-curation refresh harnesses now select `LinuxAttachmentHost` in CI.
+Prepared and interrupted-transaction sessions share the coordinator's read-only
+path preflight; recovery no longer requires a nonexistent original backup.
+Eight abrupt-child cases cover initial/refresh at prepared, replaced,
+before-commit and committed boundaries. Hosted execution remains pending.
+Explicit CI-owned fixture processes use sudo; production code never elevates,
+and this test configuration does not decide the public invocation policy.
+Actual Java21 generic suites pass 80/138/105/75/63/532 checks; the extension
+build, Java21 probe compilation, Python parsing and workflow lint pass locally.
+Public controls and full A1–A7/C1 acceptance remain incomplete.
 
 **CONFIRMED local Linux mount binding; hosted acceptance pending:** the
 visibility session now matches native mount ID/device to the current platform

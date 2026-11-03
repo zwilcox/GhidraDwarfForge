@@ -15,7 +15,8 @@ import java.util.Map;
  * The driver MUST freshly validate its selected pair and retain evidence before
  * invoking this probe. Optional explicit tool arguments select the production
  * live validator in the operation; the shorter form retains the captured test
- * adapter. Neither form supplies a production host or an attachment CLI.
+ * adapter. An explicit test property selects the production Linux host in an
+ * already authorized standalone process. This is not an attachment CLI.
  */
 public final class AttachmentElfTransactionProbe {
     static final class Host extends AttachmentReceiptStoreSmoke.Host implements AttachmentOperation.Host {
@@ -32,6 +33,8 @@ public final class AttachmentElfTransactionProbe {
             throw new IllegalArgumentException("supply report original sidecar source validation-evidence fresh-directory " +
                 "commit|rollback [helper readelf llvm raw-strict-checker configuration]");
         }
+        boolean productionHost = Boolean.getBoolean("forge.test.attachment.productionLinuxHost");
+        if (productionHost && args.length != 12) throw new IOException("production host requires live validators");
         var host = new Host();
         String selectedBasename = System.getProperty("forge.test.attachment.sidecarBasename");
         if (selectedBasename != null) {
@@ -72,38 +75,47 @@ public final class AttachmentElfTransactionProbe {
                 paths.put(entry.getKey(), destination);
             }
         }
-        var binding = AttachmentExportBinding.observe(paths.get("exportReport"), paths.get("exportOriginal"),
-            paths.get("sidecar"), paths.get("source"), host, () -> false);
-        var original = binding.files().get("exportOriginal");
-        var request = new AttachmentOperation.Request(original.path(), paths.get("sidecar"), paths.get("source"),
+        var request = new AttachmentOperation.Request(paths.get("exportOriginal"), paths.get("sidecar"), paths.get("source"),
             paths.get("exportReport"), parent.resolve("original.backup"), parent.resolve("validation.json"),
             parent.resolve("transaction.json"), parent.resolve("recovery.json"), parent.resolve("restore.elf"), null);
-        // Select the live production policy when supplied explicit tools. The
-        // shorter historical fixture form rebinds the harness's captured checks.
-        AttachmentOperation.Validator validator = args.length == 12
-            ? new AttachmentValidator(Path.of(args[7]), Path.of(args[8]), Path.of(args[9]), Path.of(args[10]), Path.of(args[11]))
-            : capturedValidator(paths.get("validationEvidence"), host);
-        var operation = AttachmentOperation.execute(request, host, validator, () -> false,
-            boundary -> {
-                if (args[6].equals("rollback") && boundary == AttachmentTransaction.Boundary.TARGET_REPLACED) {
-                    throw new IOException("test fault after real ELF replacement");
-                }
-            });
-        var result = operation.transaction();
-        var after = operation.recoveryRequest().prepared().files().get("targetAfter");
-        var expected = args[6].equals("commit") ? AttachmentReceipt.Phase.COMMITTED : AttachmentReceipt.Phase.ROLLED_BACK;
-        if (result.outcome() != expected) throw new AssertionError(result);
-        var installed = AttachmentFileStore.observe(original.path(), host, () -> false);
-        if (!installed.digest().sha256().equals(args[6].equals("commit") ? after.sha256() : original.digest().sha256())) {
-            throw new AssertionError("unexpected installed ELF bytes");
+        try (var nativeHost = productionHost ? LinuxAttachmentHost.open(request, () -> false) : null) {
+            AttachmentOperation.Host operationHost = nativeHost == null ? host : nativeHost;
+            var binding = AttachmentExportBinding.observe(paths.get("exportReport"), paths.get("exportOriginal"),
+                paths.get("sidecar"), paths.get("source"), operationHost, () -> false);
+            var original = binding.files().get("exportOriginal");
+            // Select the live production policy when supplied explicit tools. The
+            // shorter historical fixture form rebinds the harness's captured checks.
+            AttachmentOperation.Validator validator = args.length == 12
+                ? new AttachmentValidator(Path.of(args[7]), Path.of(args[8]), Path.of(args[9]), Path.of(args[10]), Path.of(args[11]))
+                : capturedValidator(paths.get("validationEvidence"), host);
+            var operation = AttachmentOperation.execute(request, operationHost, validator, () -> false,
+                boundary -> {
+                    if (args[6].equals("rollback") && boundary == AttachmentTransaction.Boundary.TARGET_REPLACED) {
+                        throw new IOException("test fault after real ELF replacement");
+                    }
+                });
+            var result = operation.transaction();
+            var after = operation.recoveryRequest().prepared().files().get("targetAfter");
+            var expected = args[6].equals("commit") ? AttachmentReceipt.Phase.COMMITTED : AttachmentReceipt.Phase.ROLLED_BACK;
+            if (result.outcome() != expected) throw new AssertionError(result);
+            var installed = AttachmentFileStore.observe(original.path(), operationHost, () -> false);
+            if (!installed.digest().sha256().equals(args[6].equals("commit") ? after.sha256() : original.digest().sha256())) {
+                throw new AssertionError("unexpected installed ELF bytes");
+            }
+            if (!AttachmentFileStore.observe(request.originalBackup(), operationHost, () -> false).digest().equals(original.digest())) {
+                throw new AssertionError("independent original backup changed");
+            }
+            var backup = AttachmentFileStore.observe(request.originalBackup(), operationHost, () -> false);
+            if (!backup.fingerprint().metadataSha256().equals(original.fingerprint().metadataSha256()) ||
+                    !installed.fingerprint().metadataSha256().equals(original.fingerprint().metadataSha256()) ||
+                    backup.fingerprint().identity().equals(installed.fingerprint().identity())) {
+                throw new AssertionError("backup/replacement metadata or independent identity differs");
+            }
+            for (var input : protectedInputs.values()) AttachmentFileStore.unchanged(input, host, () -> false);
+            System.out.println("attachment-elf-controller=PASS outcome=" + result.outcome() +
+                " target=" + original.path() + " report-status=" + binding.claims().status() +
+                " report-validation=" + binding.claims().validationStatus() + " host=" + (productionHost ? "production-linux" : "test-only"));
         }
-        if (!AttachmentFileStore.observe(request.originalBackup(), host, () -> false).digest().equals(original.digest())) {
-            throw new AssertionError("independent original backup changed");
-        }
-        for (var input : protectedInputs.values()) AttachmentFileStore.unchanged(input, host, () -> false);
-        System.out.println("attachment-elf-controller=PASS outcome=" + result.outcome() +
-            " target=" + original.path() + " report-status=" + binding.claims().status() +
-            " report-validation=" + binding.claims().validationStatus() + " host=test-only");
     }
 
     static AttachmentOperation.Validator capturedValidator(Path evidencePath, Host host) throws IOException {

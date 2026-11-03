@@ -76,9 +76,13 @@ def main():
     parser.add_argument('--report-log', type=Path, required=True)
     parser.add_argument('--strict-validator', type=Path, required=True)
     parser.add_argument('--supervised-validator-helper', type=Path)
+    parser.add_argument('--production-linux-host', action='store_true',
+                        help='explicit already-authorized fixture process using the production Linux Host')
     parser.add_argument('--sidecar-basename', help='Literal basename for the owned transaction copy; original inputs remain unchanged')
     parser.add_argument('--result-dir', type=Path, required=True)
     args = parser.parse_args()
+    require(not args.production_linux_host or (os.geteuid() == 0 and args.supervised_validator_helper is not None),
+            'production Linux host fixtures require explicit privileged invocation and live validators')
     work = args.result_dir.absolute()
     work.mkdir(parents=True, exist_ok=False)
     stem = args.fixture_dir.resolve() / args.target / ('semantic.' + args.role)
@@ -91,7 +95,7 @@ def main():
     jna = args.ghidra.resolve() / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar'
     sources = [ROOT / 'src/test/java/ghidradwarfforge/output' / (name + '.java') for name in
                ['AttachmentProtocolSmoke', 'AttachmentReceiptStoreSmoke', 'AttachmentElfTransactionProbe',
-                'StrictDwarfCheckProbe', 'AttachmentValidatorProbe']]
+                'StrictDwarfCheckProbe', 'AttachmentValidatorProbe', 'LinuxAttachmentRecoveryProbe']]
     oracle = ROOT / 'src/test/integration/automatic-association-gdb.py'
     policy_controls = ROOT / 'src/test/integration/attachment-validator-controls.py'
     protected = {str(p): digest(p) for p in [original, sidecar, source, reference, jar, gson, jna,
@@ -271,10 +275,17 @@ def main():
         directory.mkdir()
         basename_option = [] if args.sidecar_basename is None else [
             '-Dforge.test.attachment.sidecarBasename=' + args.sidecar_basename]
+        if args.production_linux_host:
+            basename_option.append('-Dforge.test.attachment.productionLinuxHost=true')
         outcome = run(action, [java, *basename_option, '--enable-native-access=ALL-UNNAMED', '-cp', runtime,
             'ghidradwarfforge.output.AttachmentElfTransactionProbe', report_path, original,
             sidecar, source, evidence, directory, action, *live_validator_arguments], timeout=300)
         require(b'attachment-elf-controller=PASS' in outcome.stdout, 'controller did not complete')
+        if args.production_linux_host:
+            require(b'host=production-linux' in outcome.stdout, 'controller did not use the production host')
+            receipt = json.loads((directory / 'transaction.json').read_text())
+            require(receipt['hostContract'] == 'linux-x64-ext4-protected-metadata-v1', 'wrong receipt host contract')
+            require(not list(directory.glob('.forge-visibility-*')), 'production host visibility workspace leaked')
         require(digest(directory / 'original.backup') == protected[str(original)], 'backup bytes differ')
         if live_validator_arguments:
             combined = json.loads((directory / 'validation.json').read_text())
@@ -316,6 +327,14 @@ def main():
         after = run(action + '-installed-programs', ['readelf', '-lW', directory / original.name])
         require(before.stdout == after.stdout, 'installed program headers or section mapping differs')
 
+    if args.production_linux_host and args.target == 'x86_64' and args.role == 'exec':
+        recovered = run('native-recovery', [java, '--enable-native-access=ALL-UNNAMED', '-cp', runtime,
+            'ghidradwarfforge.output.LinuxAttachmentRecoveryProbe', work / 'native-recovery'], timeout=300)
+        require(b'linux-attachment-recovery=PASS cases=8 abrupt-exits=8' in recovered.stdout,
+                'native initial/refresh recovery did not complete')
+        recovery = json.loads((work / 'native-recovery/result.json').read_text())
+        require(len(recovery['outcomes']) == 8 and recovery['retainedCrashCanaries'] == 8,
+                'missing crash outcomes or incorrect canary lifecycle')
     generations = {str(path): file_state(path) for action in ['commit', 'rollback']
                    for path in (work / action).rglob('*') if path.is_file()}
     (work / 'generation-state.json').write_text(json.dumps(generations, indent=4) + '\n')
@@ -422,10 +441,11 @@ def main():
     for path, expected in generations.items():
         require(file_state(Path(path)) == expected, 'completed generation metadata or bytes changed: ' + path)
     (work / 'result.json').write_text(json.dumps({'status': 'PASS', 'target': args.target, 'role': args.role,
-        'preserved': protected, 'strict': strict_result, 'host': 'limited Linux test host',
+        'preserved': protected, 'strict': strict_result,
+        'host': 'production Linux ext4 host' if args.production_linux_host else 'limited Linux test host',
         'runtime': True, 'debuglinkBasename': installed_sidecar.name, 'debuglinkPayloadHex': payload.hex(),
         'validator': 'production-live' if live_validator_arguments else 'captured-test-adapter',
-        'scope': 'real ELF initial commit/rollback and GDB discovery/runtime/CRC rejection; production host, full sectionless policy, public UI and refresh acceptance remain required'}, indent=4) + '\n')
+        'scope': 'real ELF initial commit/rollback and GDB discovery/runtime/CRC rejection; public UI and refresh acceptance remain separate'}, indent=4) + '\n')
     print('attachment-elf-controller=PASS target=' + args.target + ' role=' + args.role)
 
 

@@ -60,3 +60,37 @@ No A1–A7/C1 row is closed by these local component checks alone.
 Source/dependency/command and independent native mount comparisons are reviewed
 in [the mount-session receipt](evidence/linux-visibility-mount-41650311183.json).
 That component acceptance does not cover the later Host or public operation.
+
+## Production integration and interrupted sessions
+
+**CONFIRMED isolated Host acceptance:** extension-build41652044404 at
+`bdef6f6` passes the privileged 26-check Host fixture and seven unprivileged
+checks. See [the independently reviewed receipt](evidence/linux-attachment-host-41652044404.json).
+This supersedes the pending isolated-Host statement above, not the outstanding
+real-ELF and public-action requirements.
+
+**PRESENT, UNVERIFIED:** real ELF and saved-curation refresh harnesses now use
+the production Host through an explicit test switch. CI invokes only these
+owned fixture processes with `sudo -n`, retains private results in RUNNER_TEMP,
+and archives them using privileged read access without changing metadata.
+This is test setup, not automatic elevation or a public privilege policy.
+Independent Python readback also checks actual target/backup uid/gid, mode,
+mtime, xattrs, bytes and distinct identities in the isolated Host fixture.
+
+`openPrepared` and `openRecovery` share the coordinator's read-only role
+preflights before creating a visibility workspace. A prepared candidate has
+existing independent backups; recovery also permits the candidate to have
+been consumed by replacement. Neither entry point infers selected paths from
+a receipt. Eight owned sentinel child processes halt at PREPARED,
+TARGET_REPLACED, BEFORE_COMMIT and COMMITTED in initial and refresh cases;
+fresh recovery sessions must restore the previous bytes/metadata and retain
+the original receipt and prior generation. Abrupt-child visibility workspaces
+remain as evidence; successful sessions close their own workspaces. These
+sentinels exercise recovery, not ELF validation or power-loss survival.
+
+Local commands: the six attachment Gradle smoke tasks and `buildExtension`
+with `-I build/java21-smokes.init.gradle` pass under actual Java21; counts are
+80, 138, 105, 75, 63 and 532. `javac --release 21` compiles the integration
+probes, Python AST parsing accepts the three changed harnesses, and actionlint
+with ShellCheck plus `git diff --check` pass. Privileged production-host
+ELF/GDB, saved-curation refresh and crash execution remain assigned to CI.

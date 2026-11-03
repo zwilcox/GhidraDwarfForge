@@ -31,7 +31,19 @@ public final class LinuxAttachmentHost implements AttachmentOperation.Host, Auto
 
     public static LinuxAttachmentHost open(AttachmentOperation.Request request, BooleanSupplier cancelled)
             throws IOException {
-        var plan = AttachmentOperation.preflightPaths(request);
+        return open(AttachmentOperation.preflightPaths(request), cancelled);
+    }
+
+    public static LinuxAttachmentHost openPrepared(AttachmentTransaction.Request request, BooleanSupplier cancelled)
+            throws IOException {
+        return open(AttachmentTransaction.preflightPreparedPaths(request), cancelled);
+    }
+
+    public static LinuxAttachmentHost openRecovery(AttachmentTransaction.Request request) throws IOException {
+        return open(AttachmentTransaction.preflightRecoveryPaths(request), () -> false);
+    }
+
+    private static LinuxAttachmentHost open(AttachmentPaths.Plan plan, BooleanSupplier cancelled) throws IOException {
         plan.recheck();
         var host = new LinuxAttachmentHost(plan.paths().get("targetBefore").getParent(), cancelled);
         try { plan.recheck(); return host; }

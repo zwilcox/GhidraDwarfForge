@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import stat
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -79,6 +80,22 @@ def main():
     if args.privileged:
         run('privileged', ['sudo', '-n', *prefix, 'privileged', results / 'privileged'])
         run('host-privileged', ['sudo', '-n', *host_prefix, 'privileged', results / 'host-privileged'])
+        observed = {}
+        for name in ['target', 'backup']:
+            path = results / 'host-privileged' / name
+            info = path.stat()
+            assert info.st_uid == os.getuid() and info.st_gid == os.getgid()
+            assert info.st_mode == stat.S_IFREG | 0o710 and info.st_nlink == 1
+            assert info.st_mtime_ns == 1700000000123000000
+            assert path.read_bytes() == b'original fixture bytes'
+            assert os.getxattr(path, 'user.fixture') == b'\0\xff\n'
+            observed[name] = {'uid': info.st_uid, 'gid': info.st_gid, 'mode': info.st_mode,
+                              'device': info.st_dev, 'inode': info.st_ino, 'mtimeNs': info.st_mtime_ns,
+                              'attributes': {key: os.getxattr(path, key).hex() for key in os.listxattr(path)}}
+        assert (observed['target']['device'], observed['target']['inode']) != (
+            observed['backup']['device'], observed['backup']['inode'])
+        assert observed['target']['attributes'] == observed['backup']['attributes']
+        (results / 'host-independent.json').write_text(json.dumps(observed, indent=4) + '\n')
     for path in inputs:
         assert hashlib.sha256(path.read_bytes()).hexdigest() == hashes[str(path)]
     result = {'unprivileged': 'PASS', 'privileged': 'PASS' if args.privileged else 'NOT_RUN',

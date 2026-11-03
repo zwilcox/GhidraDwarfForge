@@ -1,0 +1,16 @@
+{
+    "status": "CONFIRMED isolated privileged Linux Host mechanisms",
+    "head": "bdef6f6cfc96ae777b8198e7695d6bf7c8bf7dc8",
+    "run": 41652044404,
+    "job": 125972465826,
+    "artifactId": 13237129037,
+    "artifactSha256": "6e519b8053ab7782dc2e2802c04d36629adcf1783b861a75d613ca7cfd5e9342",
+    "checks": [
+        "Retained source bytes match exact git head; every retained dependency/source hash agrees with origin manifest; all commands exit0 under actualJava21.",
+        "Privileged Host source requires a non-root SUDO_UID/GID, applies that ownership to the owned target, then verifies backup/replacement/restoration fingerprints and independent identity.",
+        "Existing backup, mismatched metadata, hardlink, symlink, set-ID and visible trusted namespace controls refuse; directory fsync and UTF-8 basename checks pass.",
+        "Retained target and backup bytes match original fixture; no visibility workspace remains in successful case."
+    ],
+    "hostOutput": "linux-attachment-host=privileged PASS checks=26",
+    "limits": "Sentinel-file mechanisms only; real ELF/GDB, full controller recovery and public actions remain required. Whole run first attempt failed separately on Windows Gson download; a specific-job retry was accepted after completion."
+}

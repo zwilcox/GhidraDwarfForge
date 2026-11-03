@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Saved Ghidra analyst edits through the real attachment/refresh coordinator.
 
-This Linux x86-64 harness supplies an explicitly limited metadata host and
-requires the production live validator for both initial and refreshed pairs.
+This Linux x86-64 harness selects the production host only through an explicit
+already-authorized test invocation; the historical limited host remains a control.
+Both modes require the production live validator for initial and refreshed pairs.
 It does not enable a public attachment command or prove Windows metadata.
 """
 import argparse
@@ -46,7 +47,10 @@ def main():
     parser.add_argument('--result-dir', type=Path, required=True)
     parser.add_argument('--consumer', type=Path)
     parser.add_argument('--producer', type=Path)
+    parser.add_argument('--production-linux-host', action='store_true')
     args = parser.parse_args()
+    require(not args.production_linux_host or os.geteuid() == 0,
+            'production Linux host fixture requires explicit privileged invocation')
     require(bool(args.consumer) == bool(args.producer), 'select both native development paths or neither')
     work = args.result_dir.absolute()
     work.mkdir(parents=True, exist_ok=False)
@@ -197,10 +201,15 @@ def main():
         config.write_text(json.dumps(request, indent=4) + '\n')
         bound_inputs = {role: {'path': str(path), 'sha256': digest(path)} for role, path in
                         [('exportOriginal', selected_original), ('sidecar', sidecar), ('source', source), ('exportReport', report)]}
-        committed = run(phase + '-attach', [java, '--enable-native-access=ALL-UNNAMED', '-cp', runtime,
+        host_option = ['-Dforge.test.attachment.productionLinuxHost=true'] if args.production_linux_host else []
+        committed = run(phase + '-attach', [java, *host_option, '--enable-native-access=ALL-UNNAMED', '-cp', runtime,
             'ghidradwarfforge.output.AttachmentCuratedRefreshProbe', config], timeout=300)
         require(b'attachment-curated-refresh=COMMITTED' in committed.stdout, 'attachment did not commit')
         receipt = json.loads(Path(request['receipt']).read_text())
+        if args.production_linux_host:
+            require(b'host=production-linux' in committed.stdout and
+                    receipt['hostContract'] == 'linux-x64-ext4-protected-metadata-v1', 'wrong production host')
+            require(not list(work.glob('.forge-visibility-*')), 'production visibility workspace leaked')
         require(receipt['phase'] == 'COMMITTED', 'receipt did not commit')
         require(receipt['debuglinkCrc32'] == zlib.crc32(sidecar.read_bytes()), 'receipt CRC differs from actual pair')
         validation = json.loads(Path(request['validationEvidence']).read_text())
@@ -298,7 +307,8 @@ def main():
     (work / 'result.json').write_text(json.dumps({'status': 'PASS', 'role': args.role,
         'originalSha256': original_hash, 'initialReceipt': first_receipt, 'refreshReceipt': second_receipt,
         'preservedGenerations': generations, 'preservedInputs': protected,
-        'scope': 'saved Ghidra edit/reopen and backup-based re-export; real coordinator/live validator initial/changed-CRC refresh; native GDB source/type/member/arguments; limited Linux test host'}, indent=4) + '\n')
+        'host': 'production Linux ext4 host' if args.production_linux_host else 'limited Linux test host',
+        'scope': 'saved Ghidra edit/reopen and backup-based re-export; real coordinator/live validator initial/changed-CRC refresh; native GDB source/type/member/arguments'}, indent=4) + '\n')
     print('attachment-curated-refresh=PASS role=' + args.role)
 
 

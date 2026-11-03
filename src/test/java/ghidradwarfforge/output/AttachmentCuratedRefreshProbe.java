@@ -11,7 +11,7 @@ public final class AttachmentCuratedRefreshProbe {
     public static void main(String[] args) throws Exception {
         if (args.length != 1) throw new IllegalArgumentException("supply the owned fixture request JSON");
         JsonObject selected = JsonParser.parseString(Files.readString(Path.of(args[0]))).getAsJsonObject();
-        var host = new AttachmentElfTransactionProbe.Host();
+        boolean productionHost = Boolean.getBoolean("forge.test.attachment.productionLinuxHost");
         var refresh = selected.has("previousReceipt") ? new AttachmentOperation.Refresh(
             path(selected, "previousReceipt"), path(selected, "previousSidecar"),
             path(selected, "previousSource"), path(selected, "priorTargetBackup")) : null;
@@ -23,12 +23,15 @@ public final class AttachmentCuratedRefreshProbe {
         if (tools == null) throw new IllegalArgumentException("curated refresh requires live validator tools");
         var validator = new AttachmentValidator(path(tools, "helper"), path(tools, "readelf"), path(tools, "llvm"),
             path(tools, "strict"), path(tools, "configuration"));
-        var result = AttachmentOperation.execute(request, host, validator, () -> false);
-        if (result.transaction().outcome() != AttachmentReceipt.Phase.COMMITTED) {
-            throw new AssertionError(result.transaction());
+        try (var nativeHost = productionHost ? LinuxAttachmentHost.open(request, () -> false) : null) {
+            AttachmentOperation.Host host = nativeHost == null ? new AttachmentElfTransactionProbe.Host() : nativeHost;
+            var result = AttachmentOperation.execute(request, host, validator, () -> false);
+            if (result.transaction().outcome() != AttachmentReceipt.Phase.COMMITTED) {
+                throw new AssertionError(result.transaction());
+            }
+            System.out.println("attachment-curated-refresh=COMMITTED mode=" + (refresh == null ? "initial" : "refresh") +
+                " host=" + (productionHost ? "production-linux" : "test-only"));
         }
-        System.out.println("attachment-curated-refresh=COMMITTED mode=" + (refresh == null ? "initial" : "refresh") +
-            " host=test-only");
     }
 
     private static Path path(JsonObject selected, String name) {
