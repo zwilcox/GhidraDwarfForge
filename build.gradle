@@ -115,6 +115,14 @@ tasks.register("companionArtifactPublisherSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.output.CompanionArtifactPublisherSmoke"
 }
 
+tasks.register("attachmentProtocolSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks attachment receipt parsing/transitions and all-role path preflight"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentProtocolSmoke"
+}
+
 tasks.register("extendedSectionNumberingSmoke", JavaExec) {
     group = "verification"
     description = "Checks extended ELF section numbering and optionally builds target fixtures"

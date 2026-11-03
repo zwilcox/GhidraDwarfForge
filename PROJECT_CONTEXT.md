@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local #72 protocol checkpoint:** `AttachmentPaths` and
+`AttachmentReceipt` pass 116 path/receipt controls, including refresh roles,
+immutable committed receipts, independent-backup claims, malformed inputs,
+aliases, concurrent changes and cancellation. Existing report/publisher
+regressions and the extension build pass. The classes do not yet perform an
+attachment, create a backup or publish receipts; the full host-backed transaction
+remains required. See `docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`. Work is isolated
+on `work/debuglink-transaction` while loader PR157's corrected head completes CI.
+
 **CONFIRMED local loader rebase/sectionless/cancellation evidence:** companions
 from actual x86-64, AArch64 and MIPS32 big-endian exports pass sectionless
 source stepping and explicitly rebased PIE/shared runtime checks. Native PIE

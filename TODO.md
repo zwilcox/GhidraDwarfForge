@@ -1,5 +1,11 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local #72 protocol progress:** all-role path preflight and strict
+initial/refresh receipt parsing and transitions pass 116 controls. Receipt
+publication, host identity/metadata preservation, verified backup, atomic
+attachment, rollback/refresh, CLI/GUI and end-to-end acceptance remain required.
+The transaction is not enabled or complete; see `docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`.
+
 **CONFIRMED additional local #107 coverage:** sectionless and rebased
 PIE/shared companions pass real export/validator/GDB tests on x86-64,
 AArch64 and MIPS32 big-endian. Cancellation during production copying retains
