@@ -1,5 +1,13 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local #72 saved-program refresh progress:** actual x86-64 exec/PIE
+analyst edits survive save/reopen, export from the retained original backup,
+changed-CRC attachment and automatic GDB source/type/member/argument checks.
+Both generations and their receipt chain remain intact; unchanged-import-hash
+rejection is exercised explicitly. The new pipeline cases are **PRESENT,
+UNVERIFIED**. Production host metadata/live validator adapters and public CLI/GUI
+still remain; this test-host result does not close A6 or the complete #72 issue.
+
 **CONFIRMED local #72 production coordinator progress:** initial and refresh
 preparation now share `AttachmentOperation`, including validator ordering,
 independent backup, candidate metadata/flush, previous-association checks and

@@ -18,7 +18,7 @@ import java.util.Map;
  * a production host metadata contract, or an attachment CLI.
  */
 public final class AttachmentElfTransactionProbe {
-    private static final class Host extends AttachmentReceiptStoreSmoke.Host implements AttachmentOperation.Host {
+    static final class Host extends AttachmentReceiptStoreSmoke.Host implements AttachmentOperation.Host {
         public byte[] debuglinkBasename(Path sidecar) {
             return sidecar.getFileName().toString().getBytes(StandardCharsets.UTF_8);
         }
@@ -69,25 +69,7 @@ public final class AttachmentElfTransactionProbe {
         // Fixture adapter only: the controlling harness just ran real validators.
         // Rebind its retained evidence before handing it to the operation. This
         // is not a production substitute for live validator execution.
-        AttachmentOperation.Validator validator = (selectedExport, evidence, selectedHost, cancelled) -> {
-            var captured = JsonParser.parseString(Files.readString(paths.get("validationEvidence"))).getAsJsonObject();
-            if (!captured.getAsJsonObject("strict").get("status").getAsString().equals("PASS")) {
-                throw new IOException("fixture validator evidence did not pass");
-            }
-            Map<String, String> expectedHashes = new HashMap<>();
-            for (var entry : captured.getAsJsonObject("inputs").entrySet()) {
-                if (expectedHashes.put(Path.of(entry.getKey()).getFileName().toString(), entry.getValue().getAsString()) != null) {
-                    throw new IOException("fixture evidence repeats a basename");
-                }
-            }
-            for (var file : selectedExport.files().values()) {
-                if (!file.digest().sha256().equals(expectedHashes.get(file.path().getFileName().toString()))) {
-                    throw new IOException("fixture validation does not bind selected bytes");
-                }
-            }
-            AttachmentFileStore.unchanged(protectedInputs.get("validationEvidence"), host, cancelled);
-            AttachmentFileStore.backup(protectedInputs.get("validationEvidence"), evidence, selectedHost, cancelled);
-        };
+        AttachmentOperation.Validator validator = capturedValidator(paths.get("validationEvidence"), host);
         var operation = AttachmentOperation.execute(request, host, validator, () -> false,
             boundary -> {
                 if (args[6].equals("rollback") && boundary == AttachmentTransaction.Boundary.TARGET_REPLACED) {
@@ -109,5 +91,29 @@ public final class AttachmentElfTransactionProbe {
         System.out.println("attachment-elf-controller=PASS outcome=" + result.outcome() +
             " target=" + original.path() + " report-status=" + binding.claims().status() +
             " report-validation=" + binding.claims().validationStatus() + " host=test-only");
+    }
+
+    static AttachmentOperation.Validator capturedValidator(Path evidencePath, Host host) throws IOException {
+        var snapshot = AttachmentFileStore.observe(evidencePath, host, () -> false);
+        return (selectedExport, evidence, selectedHost, cancelled) -> {
+            AttachmentFileStore.unchanged(snapshot, host, cancelled);
+            var captured = JsonParser.parseString(Files.readString(evidencePath)).getAsJsonObject();
+            if (!captured.getAsJsonObject("strict").get("status").getAsString().equals("PASS")) {
+                throw new IOException("fixture validator evidence did not pass");
+            }
+            Map<String, String> expectedHashes = new HashMap<>();
+            for (var entry : captured.getAsJsonObject("inputs").entrySet()) {
+                if (expectedHashes.put(Path.of(entry.getKey()).getFileName().toString(), entry.getValue().getAsString()) != null) {
+                    throw new IOException("fixture evidence repeats a basename");
+                }
+            }
+            for (var file : selectedExport.files().values()) {
+                if (!file.digest().sha256().equals(expectedHashes.get(file.path().getFileName().toString()))) {
+                    throw new IOException("fixture validation does not bind selected bytes");
+                }
+            }
+            AttachmentFileStore.unchanged(snapshot, host, cancelled);
+            AttachmentFileStore.backup(snapshot, evidence, selectedHost, cancelled);
+        };
     }
 }

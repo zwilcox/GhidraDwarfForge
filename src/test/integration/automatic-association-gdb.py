@@ -9,7 +9,9 @@ def require(condition, message):
         raise gdb.GdbError(message)
 
 
-symbol = gdb.lookup_global_symbol("recovered_add") or gdb.lookup_static_symbol("recovered_add")
+function_name = os.environ.get("FORGE_ASSOCIATION_FUNCTION", "recovered_add")
+type_name = os.environ.get("FORGE_ASSOCIATION_TYPE", "fixture_state")
+symbol = gdb.lookup_global_symbol(function_name) or gdb.lookup_static_symbol(function_name)
 if os.environ["FORGE_ASSOCIATION_MODE"] == "absent":
     require(symbol is None or symbol.symtab is None,
             "GDB accepted full DWARF from an intentionally mismatched sidecar")
@@ -17,7 +19,7 @@ if os.environ["FORGE_ASSOCIATION_MODE"] == "absent":
 else:
     expected_address = int(os.environ["FORGE_ASSOCIATION_ADDRESS"], 0)
     require(symbol is not None and symbol.is_function and symbol.symtab is not None,
-            "recovered_add has no full DWARF function symbol")
+            function_name + " has no full DWARF function symbol")
     require(int(symbol.value().address) == expected_address,
             "associated function address differs from the compiler oracle")
     require(os.path.realpath(symbol.symtab.objfile.filename) ==
@@ -26,14 +28,17 @@ else:
     require(os.path.realpath(symbol.symtab.fullname()) ==
             os.path.realpath(os.environ["FORGE_ASSOCIATION_SOURCE"]),
             "GDB associated an incorrect source file")
-    prototype = gdb.execute("ptype recovered_add", to_string=True)
+    prototype = gdb.execute("ptype " + function_name, to_string=True)
     require("type = int (int, int)" in prototype, "recovered function prototype is incorrect")
     print(prototype)
-    print(gdb.execute("ptype struct fixture_state", to_string=True))
-    listing = gdb.execute("list recovered_add", to_string=True)
-    require("recovered_add" in listing, "synthetic function source was not listed")
+    structure = gdb.execute("ptype struct " + type_name, to_string=True)
+    if "FORGE_ASSOCIATION_MEMBER" in os.environ:
+        require(os.environ["FORGE_ASSOCIATION_MEMBER"] in structure, "curated member was not exported")
+    print(structure)
+    listing = gdb.execute("list " + function_name, to_string=True)
+    require(function_name in listing, "synthetic function source was not listed")
     print(listing)
-    breakpoint = gdb.Breakpoint("recovered_add")
+    breakpoint = gdb.Breakpoint(function_name)
     require(breakpoint.locations and all(location.address is not None
             for location in breakpoint.locations), "named breakpoint did not resolve")
     if os.environ.get("FORGE_ASSOCIATION_RUNTIME") == "1":
@@ -45,7 +50,7 @@ else:
             gdb.execute("continue")
         else:
             gdb.execute("run")
-        require(gdb.newest_frame().name() == "recovered_add", "automatic breakpoint was not hit")
+        require(gdb.newest_frame().name() == function_name, "automatic breakpoint was not hit")
         require(int(gdb.parse_and_eval("left")) == 19 and
                 int(gdb.parse_and_eval("right")) == 23, "recovered argument values are wrong")
         print(gdb.execute("info args", to_string=True))

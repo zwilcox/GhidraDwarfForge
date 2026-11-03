@@ -1128,6 +1128,18 @@ jobs:
         if: matrix.target == 'x86_64'
         run: src/test/integration/saved-program-determinism.sh "$GHIDRA_INSTALL_DIR"
 
+      - name: Saved analyst edits through backup-based attachment refresh
+        if: matrix.target == 'x86_64'
+        run: |
+            for role in exec pie; do
+                python3 src/test/integration/attachment-curated-refresh.py \
+                    --ghidra "$GHIDRA_INSTALL_DIR" \
+                    --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+                    --fixture-dir "$PWD/build/fixtures" --role "$role" \
+                    --strict-validator "$DWARFDUMP" \
+                    --result-dir "$PWD/build/test-results/attachment-curated-refresh/$role"
+            done
+
       - name: Validate function-pointer convention extension and malformed metadata
         if: matrix.target == 'x86_64'
         run: python3 src/test/integration/dwarfdump-subroutine-conventions.py "$DWARFDUMP"

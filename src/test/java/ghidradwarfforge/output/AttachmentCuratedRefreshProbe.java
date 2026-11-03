@@ -1,0 +1,34 @@
+package ghidradwarfforge.output;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+/** Test-only explicit paths for the saved-program integration harness. */
+public final class AttachmentCuratedRefreshProbe {
+    public static void main(String[] args) throws Exception {
+        if (args.length != 1) throw new IllegalArgumentException("supply the owned fixture request JSON");
+        JsonObject selected = JsonParser.parseString(Files.readString(Path.of(args[0]))).getAsJsonObject();
+        var host = new AttachmentElfTransactionProbe.Host();
+        var refresh = selected.has("previousReceipt") ? new AttachmentOperation.Refresh(
+            path(selected, "previousReceipt"), path(selected, "previousSidecar"),
+            path(selected, "previousSource"), path(selected, "priorTargetBackup")) : null;
+        var request = new AttachmentOperation.Request(path(selected, "target"), path(selected, "sidecar"),
+            path(selected, "source"), path(selected, "exportReport"), path(selected, "originalBackup"),
+            path(selected, "validationEvidence"), path(selected, "receipt"), path(selected, "recoveryReceipt"),
+            path(selected, "restoreImage"), refresh);
+        var result = AttachmentOperation.execute(request, host,
+            AttachmentElfTransactionProbe.capturedValidator(path(selected, "capturedEvidence"), host), () -> false);
+        if (result.transaction().outcome() != AttachmentReceipt.Phase.COMMITTED) {
+            throw new AssertionError(result.transaction());
+        }
+        System.out.println("attachment-curated-refresh=COMMITTED mode=" + (refresh == null ? "initial" : "refresh") +
+            " host=test-only");
+    }
+
+    private static Path path(JsonObject selected, String name) {
+        return Path.of(selected.get(name).getAsString());
+    }
+}

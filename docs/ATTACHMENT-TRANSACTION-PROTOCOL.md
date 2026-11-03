@@ -494,3 +494,54 @@ in the existing five-target real-ELF bridge. Exact-head hosted acceptance is
 **PRESENT, UNVERIFIED**. Production metadata/live validation adapters, actual
 curated saved-program re-export/refresh and the CLI/GUI remain required; neither
 #72 nor any complete A1–A7 row is closed by this checkpoint.
+
+## Saved analyst edits and changed-CRC refresh checkpoint
+
+**CONFIRMED locally:** `attachment-curated-refresh.py` imports an owned target,
+applies a real saved variable type and exports the initial pair. It invokes
+`AttachmentOperation` through a test-only Java bridge, verifies automatic GDB
+discovery/runtime, then reopens the same project to rename the function,
+structure and a structure member. Another fresh process verifies those saved
+edits and unchanged imported path/hash before and after re-export against the
+retained original backup. Direct export against the attached executable is
+separately rejected and leaves no output pair.
+
+The fresh basename's actual CRC differs. The operation verifies the previous
+receipt and association, preserves the first original backup, independently
+backs up the prior attached image, and commits the refreshed association.
+The harness checks the receipt's exact previous receipt/pair hashes and original
+backup identity, complete program headers, and old generation bytes/metadata.
+A fresh GDB session discovers only the selected new sidecar and checks the
+curated function, source, type/member, arguments 19/23 and normal execution.
+
+Both x86-64 exec and PIE cases pass in
+`build/test-results/attachment-curated-refresh/{exec,pie}-final/`.
+Each generation passes GNU readelf, LLVM verification and the pinned strict
+validator. The exec generations each report three inherited frame diagnostics;
+the PIE generations each report one. Every diagnostic is independently
+corroborated against the exact original backup/input, with zero unexplained
+errors. The exact operation/exporter JARs, dependencies, scripts and validator
+outputs are retained. Actual Java 21 runs the attachment coordinator; local
+Ghidra uses its configured Java 25 runtime. The baseline remains Java
+21-compatible bytecode. CI runs both cases with its packaged extension/natives.
+
+The first `exec-v1` calibration committed both images but failed GDB's refreshed
+type assertion: the fixture marked an otherwise unused type as a session favorite,
+which was absent from type roots after reopening. The corrected fixture applies
+the type to a saved analyst local with explicitly unavailable storage; subsequent
+processes verify that real variable/type link. It does not invent a location or
+change exporter type-selection policy. The failed transcript remains retained.
+`exec-v2` passes; the two final cases additionally verify the full receipt chain
+and use owned Linux process-group cleanup on harness timeouts.
+
+The existing real-ELF x86-64 PIE commit/rollback/discovery/CRC test also passes
+after sharing the fixture validator adapter and parameterizing the GDB oracle;
+default function/type expectations remain unchanged. All test Java compiles,
+workflow lint, architecture isolation and diff checks pass. No new production
+native declaration or exporter behavior is introduced by these fixtures.
+
+This establishes actual curated refresh through the coordinator, not a public
+attachment workflow. The explicit limited Linux host and externally captured
+validator adapter still do not meet the production host/live-validator contract.
+Native Windows, CLI/GUI, exact-head hosted acceptance and remaining A1–A7/C1
+requirements remain open. Neither issue is complete.

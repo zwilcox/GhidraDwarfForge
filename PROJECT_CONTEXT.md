@@ -1,5 +1,17 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local #72 curated refresh:** saved x86-64 non-PIE and PIE programs
+retain analyst function, structure and member edits across fresh Ghidra processes.
+Re-export against the first original backup passes validators, and the production
+operation switches to the fresh pair with a changed CRC. Native GDB discovers
+both generations and proves source, types, member names and argument values.
+Original import identity, old pair/receipt and original/prior-target backups
+are retained. The modified target still fails ordinary export's strict SHA guard.
+The harness uses explicit test host/validator adapters; production Linux/Windows
+metadata, live validation, public CLI/GUI and hosted acceptance remain required.
+See `docs/ATTACHMENT-TRANSACTION-PROTOCOL.md` for evidence and the retained failed
+favorite-only fixture calibration.
+
 **CONFIRMED local #72 production coordination:** `AttachmentOperation` now
 owns all-role preflight, export binding, the mandatory validator call, verified
 backup/candidate preparation and transaction handoff. It also verifies retained
