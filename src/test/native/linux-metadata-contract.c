@@ -42,6 +42,7 @@ _Static_assert(AT_FDCWD == -100 && AT_EMPTY_PATH == 0x1000 && AT_SYMLINK_NOFOLLO
 _Static_assert(O_RDONLY == 0 && O_RDWR == 2 && O_NONBLOCK == 0x800 &&
     O_CLOEXEC == 0x80000 && O_NOFOLLOW == 0x20000, "open flags");
 _Static_assert(STATX_BASIC_STATS == 0x7ff && UTIME_OMIT == 0x3ffffffe, "metadata constants");
+_Static_assert(XATTR_CREATE == 1, "exclusive visibility canary attribute creation");
 
 _Static_assert(sizeof(struct fsxattr) == 28, "fsxattr extent");
 _Static_assert(offsetof(struct fsxattr, fsx_xflags) == 0 && offsetof(struct fsxattr, fsx_extsize) == 4 &&

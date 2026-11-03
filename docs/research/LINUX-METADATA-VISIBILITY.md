@@ -52,9 +52,9 @@ The separate workflow lint failed SC2024 for redirecting sudo output; that
 redirect was intentionally unprivileged. An unprivileged tee pipeline now makes
 the intended ownership explicit. The experiment passed, not the full workflow.
 
-## Planned session boundary
+## Session boundary
 
-**PLANNED, not implemented:** initialize an exclusively owned temporary
+**HISTORICAL design checkpoint:** initialize an exclusively owned temporary
 workspace only after caller path preflight, on the selected supported ext4
 filesystem. Keep a regular, single-link canary containing a random trusted
 attribute alive for the entire host transaction. A platform-thread-bound
@@ -72,3 +72,44 @@ That adapter must then use the existing native rename and directory-fsync
 mechanisms and pass real ELF/validator/GDB plus recovery tests. Testing a
 privileged internal session does not settle how a user explicitly invokes the
 public operation; that separate product decision remains pending.
+
+## Isolated Java session implementation
+
+**PRESENT, UNVERIFIED for privileged execution:** `LinuxMetadataVisibility`
+implements the internal lifetime boundary using the already audited metadata
+calls. It creates a fresh private directory and empty 0600 single-link canary,
+uses XATTR_CREATE with a random32-byte trusted value, and verifies exact native
+readback plus enumeration. Every check compares the entire retained snapshot
+and directory/mount identity before and after observation. Virtual threads,
+other platform threads, closed sessions, cancellation and changed/hidden
+metadata are refused. It does not adjust capabilities or open a target.
+
+The filesystem magic check admits the ext family; it does not distinguish
+ext2/ext3/ext4 or establish full mount admission. The existing native experiment
+runs on ext4. The eventual Host must separately bind actual target/filesystem
+admission and bracket its operations with these checks. This component does
+not settle the public privilege-invocation decision.
+
+Creation failure cleans only its exclusively created, still-empty file with
+matching identity and its matching private directory. A changed/unknown path
+is retained with a cleanup diagnostic. Once initialized, close ignores user
+cancellation but requires the complete unchanged snapshot; loss of visibility
+or changed metadata retains the workspace. Native descriptors and buffers are
+scoped to individual calls. No adversarial race or power-loss guarantee follows.
+
+`linux-metadata-visibility-session.py` retains sources, production JAR, JNA,
+commands and logs, compiles the host ABI contract including XATTR_CREATE=1,
+and runs actual Java21. Its optional explicit `--privileged` test invokes
+sudo only for the standalone owned-fixture process. It never elevates Ghidra.
+The privileged suite covers successful checks/cleanup, cross-thread refusal,
+each creation cancellation checkpoint, idempotent close, changed-content
+retention and128 complete create/check/close cycles without descriptor growth.
+
+**CONFIRMED locally:** extension build and Java21 unprivileged test pass in
+`build/test-results/linux-visibility-session/run-v1`; privileged tests are
+explicitly NOT_RUN locally because noninteractive sudo is unavailable. Hosted
+execution is required and no full A1 or attachment completion is claimed.
+
+The existing independent Linux metadata regression also passes against the new
+production JAR (fourteen observations, ACL/group/inode-policy and128 descriptor
+cycles), as do actionlint with ShellCheck, architecture isolation and diff checks.

@@ -28,7 +28,8 @@ import java.util.function.BooleanSupplier;
  * not exist. Host admission/privileged verification remains a separate gate.
  *
  * Applies only ordinary mode/owner/group/mtime, user attributes and access ACLs
- * to an already owned private stage. Never creates, replaces or deletes a file.
+ * to an already owned private stage. A package-private session helper also
+ * marks an exclusively owned visibility canary. Never creates, replaces or deletes a file.
  * Access/change/birth times and hidden metadata are not preservation
  * claims. Cancellation is checked around native calls; it cannot interrupt a
  * blocked filesystem operation. No adversarial filesystem-race claim is made.
@@ -117,6 +118,42 @@ public final class LinuxFileMetadata {
             var result = observe(file.fd, cancelled);
             require(result.facts().equals(stat(-100, pathBytes(path), 0x100)), "metadata path changed during inspection");
             return result;
+        }
+    }
+
+    static final String VISIBILITY_ATTRIBUTE = "trusted.ghidra_dwarf_forge_visibility";
+
+    /** Only for the session's newly created, empty private canary; never a target. */
+    Snapshot markOwnedCanary(Path path, Snapshot expected, byte[] nonce, BooleanSupplier cancelled)
+            throws IOException {
+        require(nonce.length == 32, "visibility nonce must contain 32 bytes");
+        supported(expected);
+        require(expected.facts().bytes() == 0 && expected.facts().links() == 1 &&
+            (expected.facts().mode() & 07777) == 0600, "visibility canary must be empty, private and single-link");
+        String name = HEX.formatHex(VISIBILITY_ATTRIBUTE.getBytes(StandardCharsets.US_ASCII));
+        try (var file = open(path, cancelled); var value = new Memory(nonce.length)) {
+            require(observe(file.fd, cancelled).equals(expected), "visibility canary changed before marking");
+            value.write(0, nonce, 0, nonce.length);
+            check(cancelled);
+            checked(libc.fsetxattr(file.fd, nameBytes(name), value, nonce.length, 1),
+                "create protected visibility canary"); // XATTR_CREATE; no privilege adjustment.
+            // Finish readback even when cancellation arrives after the write, so the
+            // owner has an exact snapshot for cleanup of this private file.
+            Snapshot after = observe(file.fd, () -> false);
+            var attributes = new TreeMap<>(after.visibleAttributes());
+            require(HEX.formatHex(nonce).equals(attributes.remove(name)),
+                "protected visibility canary is unreadable or absent from enumeration");
+            Snapshot ordinary = new Snapshot(after.facts(), attributes, after.inodePolicy());
+            supported(ordinary);
+            var before = expected.facts();
+            var now = after.facts();
+            require(before.identity().equals(now.identity()) && now.links() == 1 && now.bytes() == 0 &&
+                before.mode() == now.mode() && before.uid() == now.uid() && before.gid() == now.gid() &&
+                before.modifiedSeconds() == now.modifiedSeconds() && before.modifiedNanos() == now.modifiedNanos() &&
+                before.attributes() == now.attributes() && before.attributesMask() == now.attributesMask() &&
+                attributes.equals(expected.visibleAttributes()), "visibility canary changed during marking");
+            require(stat(-100, pathBytes(path), 0x100).equals(after.facts()), "visibility canary path changed");
+            return after;
         }
     }
 

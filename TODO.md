@@ -1,5 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
+**PRESENT, UNVERIFIED Linux visibility lifecycle:** the internal session now
+creates an exclusive private canary, verifies a random trusted attribute, and
+binds repeated complete snapshots to one platform thread. It never elevates or
+opens a target. Changed snapshots refuse cleanup; cancellation cleanup handles
+owned empty files. Local actual-Java21 unprivileged/virtual-thread/cancellation
+refusal and cleanup pass; privileged lifecycle tests are assigned to CI and
+remain unverified. Full Linux Host admission, public invocation policy and
+A1–A7/C1 remain incomplete. See `docs/research/LINUX-METADATA-VISIBILITY.md`.
+
 **CONFIRMED Windows checker checkout failure:** run41647056047 stops before
 compilation because the newly pinned manifest digest differs on Windows. A
 fresh Git checkout with core.autocrlf=true reproduces CRLF conversion for all
