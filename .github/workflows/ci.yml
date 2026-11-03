@@ -557,6 +557,9 @@ jobs:
               packagedNativeLibrariesSmoke existingDebugSidecarSmoke \
               extendedSectionNumberingSmoke elfImageReaderSmoke \
               elfCopyCancellationSmoke ghidraImageBaseSmoke buildExtension
+            python3 -B src/test/integration/linux-file-metadata.py \
+                --jar "$PWD/build/libs/GhidraDwarfForge.jar" --ghidra "$GHIDRA_INSTALL_DIR" \
+                --results "$PWD/build/test-results/extension-build/linux-file-metadata"
             src/test/integration/release-package.sh
             zipinfo -l dist/*.zip | grep -Eq \
               '^-rwxr-xr-x.*GhidraDwarfForge/support/ghidra-dwarf-forge-headless$'

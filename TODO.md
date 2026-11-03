@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local #72 Linux metadata primitive:** `LinuxFileMetadata` now reads
+native opened-file identity and bounded visible attributes, and applies ordinary
+permissions/ownership/mtime, user xattrs and access ACLs to an already owned
+private stage with readback verification. Isolated Java 21 tests independently
+check native stat/xattr bytes, explicit/default ACLs, group changes, rejection,
+cancellation and descriptor cleanup. This is not a complete host adapter:
+inaccessible metadata can be hidden by Linux, and complete admission remains
+unimplemented pending the explicit privilege/visibility policy choice. No
+attachment option is enabled. See `docs/LINUX-FILE-METADATA.md`.
+
 **CONFIRMED local #72 live refresh and sectionless validation:** saved x86-64
 non-PIE/PIE refresh now uses the production live validator for both generations;
 GDB source/type/member/value checks and retained backups/generations pass. The
