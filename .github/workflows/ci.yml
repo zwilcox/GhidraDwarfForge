@@ -2415,6 +2415,11 @@ jobs:
           name: linux-x86-export-reference
           path: linux-reference
 
+      - uses: actions/download-artifact@v8
+        with:
+          name: dwarfdump-windows-validation
+          path: validation-tool-windows
+
       - name: Record exact Windows toolchain versions
         shell: pwsh
         env:
@@ -2610,6 +2615,26 @@ jobs:
             -ConsumerDll $consumer.FullName `
             -ProducerDll $producer.FullName `
             -LinuxReferenceDirectory (Resolve-Path linux-reference)
+
+      - name: Native Windows real-export attachment and rollback with live validators
+        shell: pwsh
+        timeout-minutes: 15
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+        run: |
+          $mingwBin = Join-Path $env:MSYS2_LOCATION 'mingw64\bin'
+          $env:PATH = "$mingwBin;$env:PATH"
+          python src/test/integration/windows-attachment-operation.py `
+            --ghidra $env:GHIDRA_INSTALL_DIR `
+            --original build/test-results/windows-host/work/semantic.exec.stripped `
+            --sidecar build/test-results/windows-host/work/semantic.exec.ghidra-forge.dbg `
+            --report-log build/test-results/windows-host/headless.log `
+            --helper native-windows/forge-validator-supervisor.exe `
+            --readelf (Join-Path $mingwBin 'readelf.exe') `
+            --llvm (Join-Path $mingwBin 'llvm-dwarfdump.exe') `
+            --checker-bundle validation-tool-windows `
+            --results build/test-results/windows-host/attachment-operation
+          if ($LASTEXITCODE -ne 0) { throw 'Native Windows real-ELF attachment failed' }
 
       - name: Native Windows Script Manager export, console, and chooser cancellation
         shell: pwsh

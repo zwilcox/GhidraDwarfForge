@@ -194,7 +194,7 @@ $metadata = @(
     "windows_sidecar_sha256=$((Get-FileHash -Algorithm SHA256 $sidecar).Hash)",
     "linux_sidecar_sha256=$((Get-FileHash -Algorithm SHA256 $linuxSidecar).Hash)",
     "source_sha256=$windowsSourceHash",
-    'independent_dwarfdump=UNAVAILABLE_ON_WINDOWS_RUNNER',
+    'independent_dwarfdump=NOT_RUN_BY_THIS_HARNESS',
     'windows_headless_export=PASS'
 )
 $metadata | Set-Content -Path (Join-Path $resultDirectory 'result.txt') -Encoding utf8

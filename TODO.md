@@ -1,5 +1,16 @@
 # TODO.md — GhidraDwarfForge
 
+**PRESENT, UNVERIFIED #72 Windows real-export integration:** a new standalone
+Java21 probe connects the production Windows Host, AttachmentOperation and fresh
+GNU/LLVM/pinned validation to the actual Windows headless export. It exercises
+initial attachment and post-replacement rollback only on owned copies, retaining
+metadata/backup/receipt/log evidence. An independent Python check verifies
+unchanged fixture inputs, separate backup identity and exact debuglink name/CRC.
+The required windows-host job runs it after real export. Local compilation,
+Python syntax and workflow lint pass; native execution, runtime GDB and real
+refresh remain required. Public attachment is still disabled.
+
+
 **CONFIRMED #72 Windows refresh coordinator:** completed attachment job
 41639509678 at `81d0a8a` passes independent source/JAR, retained-file and receipt
 review: 18 outcomes,275 coordinator checks and eight abrupt child exits. Both

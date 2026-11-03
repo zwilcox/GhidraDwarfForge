@@ -114,3 +114,27 @@ sources, four test/harness sources, production JAR identity, all retained file
 hashes, previous-generation chains, changed CRCs and immutable interrupted
 receipts. See `evidence/windows-attachment-refresh-41639509678.json`. These are coordinator fixtures;
 actual Ghidra export/refresh and GDB acceptance remain required separately.
+
+## Real-export operation integration
+
+**PRESENT, UNVERIFIED:** `windows-attachment-operation.py` consumes the actual
+Windows headless fixture/report and installed production JAR. Its isolated
+Java21 probe selects `WindowsAttachmentHost`, `AttachmentOperation` and
+`AttachmentValidator`, with explicit native GNU/LLVM/pinned-checker paths and
+the audited process supervisor. The test enables only its already owned token
+privilege, then restores it; the product never adjusts privilege state.
+
+Each commit/rollback scenario has independently copied inputs and an empty
+owned directory. A fault after target replacement exercises restoration from
+the independent original backup. Java checks full preservation fingerprints;
+Python independently checks original/backup bytes, distinct file identity,
+validator log digests and the installed target's exact `.gnu_debuglink` name,
+padding and target-endian CRC. The packaged-export job retains all selected
+fixtures, transaction records and fresh validation logs. The earlier headless
+script's status now accurately says that it does not invoke the strict checker;
+strict validation is performed in this separate operation stage.
+
+Standalone `javac --release 21`, Python syntax, workflow lint and diff checks
+pass locally. Native runtime acceptance is pending. This adds initial real-ELF
+attachment/rollback evidence requirements; it does not substitute for refresh,
+public CLI/GUI, GDB runtime behavior or final exact-head integration acceptance.
