@@ -185,6 +185,51 @@ Linux smoke metadata adapter above; they do not establish production ACL/xattr
 preservation or native Windows backup support. This class does not replace the
 target or implement the complete attachment/rollback state machine.
 
+## Conditional replacement and restoration
+
+`AttachmentTargetStore` supplies the next internal filesystem operation. It
+requires explicit current-target and owned-stage snapshots, distinct identities,
+matching supported metadata and the same filesystem. It rechecks both complete
+files and their parent identities immediately before invoking the mandatory host
+atomic replacement operation. There is no copy-over-target fallback. After the
+attempt, it synchronizes the affected directories and verifies the installed
+image's full bytes, identity and supported metadata against the owned stage.
+Late cancellation does not skip these observations. A native failure is never
+assumed to mean that the namespace is unchanged: `ReplacementFailure` requires
+reconciliation of the explicit target/stage paths with retained recovery material.
+
+Restoration creates another independently verified copy of the selected backup,
+then conditionally replaces the expected current target. It never consumes or
+rewrites the backup. A concurrent target change before or during creation of the
+restore copy is preserved, and a failed replacement retains the copy if it still
+exists. If reconciliation proves that the target name is absent, the existing
+no-overwrite backup operation can restore a copy at that name; a new concurrent
+creator is still protected by the host's no-overwrite operation. Selecting these
+recovery actions from the complete receipt/association state remains the
+transaction controller's responsibility, not an inference made by this primitive.
+
+**CONFIRMED locally:** 63 replacement/restore controls pass in actual Java 21,
+including successful replacement and restoration, pre/post-operation failures,
+failed directory flush, uncertain native failures before/after a real rename,
+an injected missing-target namespace, independent-backup retention, metadata
+conflicts, concurrent changes during both replacement and restoration,
+cancellation and two abrupt child-process exits. The missing-target test is a
+Linux filesystem injection, not a native Windows API acceptance claim. The
+test host uses actual Linux atomic moves and the explicitly limited test-only
+metadata adapter. Evidence is `build/attachment-target-store-java21-r2.log`;
+the earlier 52-control set is `build/attachment-target-store.log`.
+
+These methods are not invoked by ordinary export and expose no attachment UI.
+They do not establish ELF validity, successful structural validation or an
+authorized transaction merely from hashes. Before enabling attachment, the
+controller must bind all explicit selected paths, reports, validator evidence,
+prepared receipts and retained generations, then journal replacement, failure
+and refresh outcomes. In particular, a receipt publication failure after a
+COMMITTED record became visible must be reconciled without mutating an existing
+committed record or treating visibility alone as durable success. That controller
+and its full fault matrix, production host contracts and end-to-end GDB evidence
+remain required.
+
 The Windows replacement adapter must handle documented non-success states,
 including errors where file names have already changed, and must not use flags
 that ignore metadata/ACL errors. `REPLACEFILE_WRITE_THROUGH` is documented as
@@ -196,7 +241,7 @@ parameter alone does not satisfy this project's pre-replacement backup contract.
 
 ```sh
 GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC ./gradlew \
-    attachmentFileStoreSmoke attachmentReceiptStoreSmoke attachmentProtocolSmoke exportReportClaimsSmoke companionArtifactPublisherSmoke \
+    attachmentTargetStoreSmoke attachmentFileStoreSmoke attachmentReceiptStoreSmoke attachmentProtocolSmoke exportReportClaimsSmoke companionArtifactPublisherSmoke \
     buildExtension
 cc -std=c11 -Wall -Wextra -Werror src/test/native/linux-rename-contract.c -o build/linux-rename-contract
 build/linux-rename-contract

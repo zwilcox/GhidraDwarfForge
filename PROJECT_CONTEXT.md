@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local #72 conditional replacement component:** target replacement
+and independent-backup restoration pass 63 actual Java 21 filesystem controls,
+including abrupt process exits, uncertain native outcomes, absent-target
+recovery and concurrent changes during restore. The test host is explicitly
+Linux-only and does not establish production metadata or native Windows support.
+Full receipt/validation/association coordination, failure journaling, host
+contracts, refresh and UI remain required; no public attachment action is enabled.
+See `docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`.
+
 **CONFIRMED local #72 independent backup component:** `AttachmentFileStore`
 passes 75 Linux filesystem controls, including four abrupt process exits,
 concurrent source/stage changes, read-only metadata, failed publication/flush

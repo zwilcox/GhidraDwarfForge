@@ -1,5 +1,11 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local #72 replacement progress:** 63 Java 21 filesystem controls
+prove conditional atomic replacement, retained-backup restoration and protection
+of concurrent changes under the test host. The complete receipt-coordinated
+transaction, production metadata contracts and A1–A7 end-to-end acceptance
+remain incomplete; this component does not enable or complete attachment.
+
 **CONFIRMED local #72 backup progress:** independently copied backups with
 byte/metadata verification and atomic no-overwrite publication pass 75 controls
 on Java 25 and Java 21. Read-only metadata is applied before flushing through an
