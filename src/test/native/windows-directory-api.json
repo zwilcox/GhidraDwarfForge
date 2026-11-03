@@ -17,7 +17,7 @@
             "bytes": 13500
         }
     },
-    "scope": "Test-only Windows64 opened-directory flush experiment; no JNA production mapping, volume flush, privilege adjustment or durability claim.",
+    "scope": "Windows64 WindowsDirectorySync mapping: DWORD/BOOL32, HANDLE64, WCHAR16; FileAttributeTagInfo8 and FileIdInfo24. Native C signature/layout and directory experiment precede isolated Java binding tests. Mechanism only; no volume flush, privilege adjustment or power-loss recovery claim.",
     "documentation": [
         "https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-flushfilebuffers",
         "https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getvolumeinformationbyhandlew",

@@ -1,14 +1,16 @@
 # Windows directory-flush experiment for #72
 
-**PRESENT, UNVERIFIED on Windows:** `src/test/native/windows-directory-flush.c`
-and the existing native metadata harness now retain actual directory-open and
-flush results. The probe cross-compiles with warnings treated as errors and
-the PowerShell harness parses locally. Native execution remains required.
+**CONFIRMED native experiment:** completed Windows job in run `41617008207`
+at `be95f94` and independent artifact/source review pass. NTFS accepts directory
+flushing with write access before/after the owned rename; attributes-only
+access fails with error 5. All 128 cleanup cycles retain exactly 57 handles.
+See [`windows-directory-41617008207.json`](../evidence/windows-directory-41617008207.json).
 
-The unanswered question is whether an opened ordinary directory can be flushed
-through the Win32 API under the caller's existing token, before and after the
-opened-stage rename used by attachment. This experiment does not implement a
-production host or select a filesystem durability contract.
+The experiment answers whether the ordinary directory can be flushed through
+Win32 under this runner's existing token. Backup/restore/security/manage-volume
+privileges were disabled and were not adjusted. It does not implement a
+production host or select a filesystem durability contract. The subsequent
+[JNA mechanism](../WINDOWS-DIRECTORY-SYNC.md) still requires native execution.
 
 Microsoft documents that [FlushFileBuffers requires a handle with GENERIC_WRITE](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-flushfilebuffers).
 Its separately documented whole-volume flush requires administrative access.

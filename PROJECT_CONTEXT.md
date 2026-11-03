@@ -1,10 +1,11 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
-**PRESENT, UNVERIFIED #72 Windows directory durability:** a test-only native
-probe now records ordinary directory open/flush behavior before and after an
-owned file rename, with independent identity and file-flush/handle controls.
-It cross-compiles and the harness parses; Windows execution is pending. No
-production durability claim follows. See `docs/research/WINDOWS-DIRECTORY-FLUSH.md`.
+**CONFIRMED native #72 directory mechanism:** independently reviewed run41617008207
+proves NTFS directory flushing with write access; attributes-only access fails
+with error 5 and 128 cleanup cycles remain flat. The new JNA directory identity/
+flush implementation builds but is **PRESENT, UNVERIFIED** on Windows until its
+isolated harness passes. Full admission/durability remain required. See
+`docs/WINDOWS-DIRECTORY-SYNC.md`.
 
 **CONFIRMED local/hosted #72 filename policy:** production Linux UTF-8 and portable
 ASCII basename policies reject lossy native-byte aliases and unsupported names

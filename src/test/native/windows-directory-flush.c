@@ -14,6 +14,12 @@ _Static_assert(sizeof(HANDLE) == 8 && sizeof(DWORD) == 4 && sizeof(BOOL) == 4 &&
     sizeof(WCHAR) == 2 && sizeof(FILE_ID_INFO) == 24, "Windows64 API layout");
 _Static_assert(FileIdInfo == 18 && offsetof(FILE_ID_INFO, FileId) == 8,
     "opened directory identity");
+_Static_assert(sizeof(FILE_ATTRIBUTE_TAG_INFO) == 8 && FileAttributeTagInfo == 9 &&
+    offsetof(FILE_ATTRIBUTE_TAG_INFO, ReparseTag) == 4, "directory tag mapping");
+_Static_assert(GENERIC_WRITE == 0x40000000 && FILE_READ_ATTRIBUTES == 0x80 &&
+    FILE_ATTRIBUTE_DIRECTORY == 0x10 && FILE_ATTRIBUTE_REPARSE_POINT == 0x400 &&
+    FILE_FLAG_OPEN_REPARSE_POINT == 0x200000 && FILE_FLAG_BACKUP_SEMANTICS == 0x2000000,
+    "directory access and flags");
 
 static void require(BOOL value, const char *operation) {
     if (!value) {
@@ -79,7 +85,12 @@ int wmain(int argc, WCHAR **argv) {
     BOOL (WINAPI *flush_contract)(HANDLE) = FlushFileBuffers;
     BOOL (WINAPI *volume_contract)(HANDLE,LPWSTR,DWORD,LPDWORD,LPDWORD,LPDWORD,LPWSTR,DWORD) =
         GetVolumeInformationByHandleW;
-    require(flush_contract != NULL && volume_contract != NULL, "API signatures");
+    HANDLE (WINAPI *open_contract)(LPCWSTR,DWORD,DWORD,LPSECURITY_ATTRIBUTES,DWORD,DWORD,HANDLE) = CreateFileW;
+    BOOL (WINAPI *information_contract)(HANDLE,FILE_INFO_BY_HANDLE_CLASS,LPVOID,DWORD) = GetFileInformationByHandleEx;
+    DWORD (WINAPI *type_contract)(HANDLE) = GetFileType;
+    BOOL (WINAPI *close_contract)(HANDLE) = CloseHandle;
+    require(flush_contract != NULL && volume_contract != NULL && open_contract != NULL &&
+        information_contract != NULL && type_contract != NULL && close_contract != NULL, "API signatures");
     require(argc == 2 && wcslen(argv[1]) < 20000, "one new owned directory required");
     require(CreateDirectoryW(argv[1], NULL), "exclusive directory creation");
     WCHAR child[22000], renamed[22000];

@@ -27,6 +27,8 @@ $sources = @(
     (Join-Path $repo 'src/main/java/ghidradwarfforge/output/WindowsFileMetadata.java'),
     (Join-Path $repo 'src/main/java/ghidradwarfforge/output/WindowsBackupStreams.java'),
     (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsBackupStreamsProbe.java'),
+    (Join-Path $repo 'src/main/java/ghidradwarfforge/output/WindowsDirectorySync.java'),
+    (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsDirectorySyncProbe.java'),
     (Join-Path $repo 'src/test/native/windows-directory-flush.c'),
     (Join-Path $repo 'src/test/native/windows-directory-api.json'),
     (Join-Path $repo 'src/test/native/windows-backup-contract.c'),
@@ -105,6 +107,7 @@ $dependencies = (Join-Path $provenance ([IO.Path]::GetFileName($Jna))) + ';' +
     (Join-Path $provenance ([IO.Path]::GetFileName($Gson)))
 $null = Run-Captured 'compile-java' $JavacExe @('--release','21','-cp',$dependencies,'-d',$classes,
     (Join-Path $provenance 'DebuglinkBasename.java'), (Join-Path $provenance 'DebuglinkBasenameSmoke.java'),
+    (Join-Path $provenance 'WindowsDirectorySync.java'), (Join-Path $provenance 'WindowsDirectorySyncProbe.java'),
     (Join-Path $provenance 'WindowsFileMetadata.java'), (Join-Path $provenance 'WindowsFileMetadataProbe.java'),
     (Join-Path $provenance 'WindowsBackupStreams.java'), (Join-Path $provenance 'WindowsBackupStreamsProbe.java'),
     (Join-Path $provenance 'WindowsFileRename.java'), (Join-Path $provenance 'WindowsFileRenameProbe.java'))
@@ -487,6 +490,73 @@ Same-State $directoryBefore $directoryChild
 Save-Json (Join-Path $root 'directory-flush.json') ([ordered]@{
     status='OBSERVED'; native=$directoryFacts; independent=$directoryNative;
     scope='Owned ordinary directory flush mechanism only; not power-loss recovery or production host admission'})
+
+# Execute the production JNA directory binding only after the independent C
+# experiment and ABI/signature assertions have completed successfully.
+function Run-Directory([string]$Label, [string[]]$Arguments, [bool]$Success=$true, [bool]$Lifetime=$false) {
+    $request = Join-Path $root "$Label.request.json"
+    Save-Json $request $Arguments
+    $options = @()
+    if ($Lifetime) { $options = @('-Xint','-XX:+UseSerialGC') }
+    return Run-Captured $Label $JavaExe ($options + @('-cp',($classes + ';' + $dependencies),
+        'ghidradwarfforge.output.WindowsDirectorySyncProbe','--request-file',$request)) $Success
+}
+$directorySyncResults = [Collections.Generic.List[object]]::new()
+foreach ($mode in @('inspect','sync')) {
+    $result = Run-Directory "directory-java-$mode" @($mode,$directoryPath)
+    $actual = ConvertFrom-Json $result.stdout
+    Require ($actual.identity -ceq (([Convert]::ToUInt64($directoryFacts.volume128,16).ToString('x')) + ':' + $directoryFacts.fileId128) -and
+        $actual.volumeSerial -eq $directoryFacts.volumeSerial -and $actual.maximumNameUnits -eq $directoryFacts.maximumNameUnits -and
+        $actual.fileSystemFlags -eq $directoryFacts.fileSystemFlags -and $actual.fileSystem -ceq 'NTFS') 'Java directory facts differ from C/C#'
+    Same-State $directoryBefore $directoryChild
+    $directorySyncResults.Add([ordered]@{mode=$mode; actual=$actual; independent=$directoryFacts})
+}
+foreach ($mode in @('cancel-before','cancel-open')) {
+    $refused = Run-Directory "directory-java-$mode" @($mode,$directoryPath) $false
+    Require ($refused.stderr.Contains('CancellationException')) 'Directory cancellation was not propagated'
+    Same-State $directoryBefore $directoryChild
+}
+foreach ($mode in @('stale','late')) {
+    $concurrent = (New-Item -ItemType Directory -Path (Join-Path $owned "directory $mode λ")).FullName
+    $sentinel = Join-Path $concurrent 'sentinel'
+    [IO.File]::WriteAllBytes($sentinel, [byte[]]@(1,0,255,2))
+    $expected = [ForgeHostResearch.NativeWindowsHostFacts]::Observe($concurrent, $false, $false)
+    $sentinelHash = Hash $sentinel
+    $refused = Run-Directory "directory-java-$mode" @($mode,$concurrent) $false
+    Require ($refused.stderr.Contains('Windows directory') -and $refused.stderr.Contains('changed')) 'Changed directory was not refused'
+    $retained = [ForgeHostResearch.NativeWindowsHostFacts]::Observe(($concurrent + '.retained'), $false, $false)
+    $replacement = [ForgeHostResearch.NativeWindowsHostFacts]::Observe($concurrent, $false, $false)
+    Require ($retained.fileId128 -ceq $expected.fileId128 -and $replacement.fileId128 -cne $expected.fileId128 -and
+        (Hash (Join-Path ($concurrent + '.retained') 'sentinel')) -eq $sentinelHash -and
+        @(Get-ChildItem -LiteralPath $concurrent -Force).Count -eq 0) 'Concurrent directory fixture changed unexpectedly'
+    $directorySyncResults.Add([ordered]@{mode=$mode; original=$expected; retained=$retained; replacement=$replacement})
+}
+$directoryLink = Join-Path $owned 'directory junction'
+$null = New-Item -ItemType Junction -Path $directoryLink -Target $directoryPath
+$null = Run-Directory 'directory-java-reparse-reject' @('inspect',$directoryLink) $false
+Require ((Get-Item -LiteralPath $directoryLink -Force).LinkType -eq 'Junction') 'Directory junction was changed'
+$null = Run-Directory 'directory-java-file-reject' @('inspect',$directoryChild) $false
+$null = Run-Directory 'directory-java-stream-path-reject' @('inspect',($directoryPath + ':extra')) $false
+$null = Run-Directory 'directory-java-traversal-reject' @('inspect',($directoryPath + '\..')) $false
+$denied = (New-Item -ItemType Directory -Path (Join-Path $owned 'directory deny write')).FullName
+$acl = Get-Acl -LiteralPath $denied
+$identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+try { $sid = $identity.User } finally { $identity.Dispose() }
+$deny = [Security.AccessControl.FileSystemAccessRule]::new($sid,
+    [Security.AccessControl.FileSystemRights]::WriteData,[Security.AccessControl.AccessControlType]::Deny)
+$acl.AddAccessRule($deny)
+Set-Acl -LiteralPath $denied -AclObject $acl
+$denyBefore = (Get-Acl -LiteralPath $denied).Sddl
+$null = Run-Directory 'directory-java-denied-inspect' @('inspect',$denied)
+$refused = Run-Directory 'directory-java-denied-sync' @('sync',$denied) $false
+Require ($refused.stderr.Contains('CreateFileW directory failed (error=5)')) 'Directory write denial did not propagate'
+Require ((Get-Acl -LiteralPath $denied).Sddl -ceq $denyBefore -and
+    @(Get-ChildItem -LiteralPath $denied -Force).Count -eq 0) 'Denied directory changed'
+$null = Run-Directory 'directory-java-lifetime' @('lifetime',$directoryPath) $true $true
+Same-State $directoryBefore $directoryChild
+Save-Json (Join-Path $root 'directory-java.json') ([ordered]@{status='PASS';
+    observations=$directorySyncResults.ToArray(); cycles=128; deniedWritePreserved=$true;
+    scope='Opened-directory JNA identity/flush/cancellation and refusal; not a complete production Host or power-loss recovery'})
 
 foreach ($sourcePath in $hashes.Keys) { Require ((Hash $sourcePath) -eq $hashes[$sourcePath]) 'Protected source/dependency changed' }
 Save-Json (Join-Path $root 'result.json') ([ordered]@{status='PASS'; observations=$observations.ToArray();
