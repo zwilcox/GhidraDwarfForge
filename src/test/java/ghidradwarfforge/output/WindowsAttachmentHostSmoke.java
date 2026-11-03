@@ -1,6 +1,10 @@
 package ghidradwarfforge.output;
 
 import com.google.gson.GsonBuilder;
+import com.sun.jna.Native;
+import com.sun.jna.Pointer;
+import com.sun.jna.WString;
+import com.sun.jna.win32.StdCallLibrary;
 
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -15,6 +19,27 @@ import java.util.concurrent.CancellationException;
 /** Actual store/host integration in an isolated JVM, using exclusively owned files. */
 public final class WindowsAttachmentHostSmoke {
     private static int checks;
+
+    // Same pinned CreateFileW/CloseHandle signatures as WindowsFileRename's
+    // native-first contract. This owned test handle omits FILE_SHARE_DELETE.
+    private interface Kernel extends StdCallLibrary {
+        Pointer CreateFileW(WString path, int access, int share, Pointer security,
+            int disposition, int flags, Pointer template);
+        int CloseHandle(Pointer handle);
+    }
+    private static final class SharingLock implements AutoCloseable {
+        private final Kernel kernel = Native.load("kernel32", Kernel.class);
+        private final Pointer handle;
+        SharingLock(Path path) throws IOException {
+            handle = kernel.CreateFileW(new WString("\\\\?\\" + path.toAbsolutePath()), 0x80, 3, null, 3, 0x00200000, null);
+            if (handle == null || Pointer.nativeValue(handle) == -1L) {
+                throw new IOException("owned sharing-lock open failed: " + Native.getLastError());
+            }
+        }
+        @Override public void close() throws IOException {
+            if (kernel.CloseHandle(handle) == 0) throw new IOException("owned sharing-lock close failed: " + Native.getLastError());
+        }
+    }
 
     public static void main(String[] args) throws Exception {
         if (!System.getProperty("os.name").startsWith("Windows")) throw new IllegalStateException("requires Windows");
@@ -58,6 +83,29 @@ public final class WindowsAttachmentHostSmoke {
             catch (CancellationException expected) { checks++; }
             AttachmentFileStore.unchanged(original, host, () -> false);
             AttachmentFileStore.unchanged(candidate, host, () -> false);
+            // Windows opens a real handle without FILE_SHARE_DELETE. Metadata
+            // reads remain possible, but replacing its directory entry must fail.
+            try (var lock = new SharingLock(target)) {
+                try {
+                    AttachmentTargetStore.replace(original, candidate, host, () -> false);
+                    throw new AssertionError("sharing-locked target was replaced");
+                }
+                catch (AttachmentTargetStore.ReplacementFailure expected) {
+                    Throwable reason = expected;
+                    boolean sharingViolation = false;
+                    while (reason != null) {
+                        sharingViolation |= reason.getMessage() != null &&
+                            (reason.getMessage().contains("FileRenameInfo failed (error=32)") ||
+                             reason.getMessage().contains("FileRenameInfo failed (error=5)"));
+                        reason = reason.getCause();
+                    }
+                    require(sharingViolation, "replacement failed for an unrelated reason: " + expected);
+                    facts.put("sharingLockRefusal", expected.toString());
+                }
+                AttachmentFileStore.unchanged(original, host, () -> false);
+                AttachmentFileStore.unchanged(candidate, host, () -> false);
+                AttachmentFileStore.unchanged(backup, host, () -> false);
+            }
             var installed = AttachmentTargetStore.replace(original, candidate, host, () -> false);
             require(installed.digest().sha256().equals(candidate.digest().sha256()), "installed bytes differ");
             require(installed.fingerprint().equals(candidate.fingerprint()), "installed metadata or identity differs");

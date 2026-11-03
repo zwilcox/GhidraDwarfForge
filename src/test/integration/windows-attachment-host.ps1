@@ -21,6 +21,7 @@ $paths = @(
     (Join-Path $NativeDiagnostics 'file-metadata/provenance/jna-5.14.0.jar'),
     (Join-Path $NativeDiagnostics 'file-metadata/provenance/gson-2.9.0.jar'),
     (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsAttachmentHostSmoke.java'),
+    (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsAttachmentTransactionSmoke.java'),
     (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsFileSecurityProbe.java'),
     $PSCommandPath
 )
@@ -65,8 +66,12 @@ $dependencies = ((@('GhidraDwarfForge.jar','jna-5.14.0.jar','gson-2.9.0.jar') | 
 Run 'java-version' (Join-Path $env:JAVA_HOME 'bin/java.exe') @('-version')
 if (-not ([IO.File]::ReadAllText((Join-Path $root 'java-version.stderr')) -match 'version "21[.]')) { throw 'Java 21 required' }
 Run 'compile' (Join-Path $env:JAVA_HOME 'bin/javac.exe') @('--release','21','-cp',$dependencies,'-d',$classes,
-    (Join-Path $provenance 'WindowsFileSecurityProbe.java'), (Join-Path $provenance 'WindowsAttachmentHostSmoke.java'))
+    (Join-Path $provenance 'WindowsFileSecurityProbe.java'), (Join-Path $provenance 'WindowsAttachmentHostSmoke.java'),
+    (Join-Path $provenance 'WindowsAttachmentTransactionSmoke.java'))
 Run 'host-stores' (Join-Path $env:JAVA_HOME 'bin/java.exe') @('-Xint','-XX:+UseSerialGC','--enable-native-access=ALL-UNNAMED',
     '-cp',($classes + ';' + $dependencies),'ghidradwarfforge.output.WindowsAttachmentHostSmoke',(Join-Path $root 'owned'))
 if ([IO.File]::ReadAllText((Join-Path $root 'host-stores.stderr')).Length -ne 0) { throw 'Unexpected host diagnostics' }
+Run 'host-transaction' (Join-Path $env:JAVA_HOME 'bin/java.exe') @('--enable-native-access=ALL-UNNAMED',
+    '-cp',($classes + ';' + $dependencies),'ghidradwarfforge.output.WindowsAttachmentTransactionSmoke',(Join-Path $root 'transactions'))
+if ([IO.File]::ReadAllText((Join-Path $root 'host-transaction.stderr')).Length -ne 0) { throw 'Unexpected transaction diagnostics' }
 Write-Output 'windows-attachment-host-harness=PASS'

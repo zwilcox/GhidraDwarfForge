@@ -1,5 +1,19 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED initial #72 Windows Host integration:** completed
+attachment-windows job41635698690 at `5412e20` passes independent review of the
+artifact, 133 production sources, three test sources, raw descriptors, retained
+bytes and independently reconstructed metadata digests. All 268 checks and128
+cleanup cycles pass. Later receipt/lock/coordinator cases remain pending.
+See `docs/evidence/windows-attachment-host-41635698690.json`.
+
+**PRESENT, UNVERIFIED #72 Windows recovery coverage:** native host tests now
+include a real no-delete-sharing handle, replacement refusal with unchanged
+files, successful replacement after unlock, coordinator commit/rollback/cancel,
+concurrent-target protection and four abrupt process-exit/recovery boundaries.
+Local compilation/parser/lint checks pass; hosted execution remains required.
+See `docs/WINDOWS-ATTACHMENT-HOST.md`.
+
 **CONFIRMED local #72 receipt integration:** receipt updates now use the
 mandatory host atomic-replacement operation and verify the full installed
 fingerprint. Actual Java21 receipt/file/target/transaction/operation suites pass

@@ -47,3 +47,37 @@ through the host, comparing complete fingerprints and raw descriptors. These
 receipt-store sentinel records are explicitly test fixtures, not valid ELF
 exports or validator approvals. Actual Linux regression and GDB evidence for
 the shared receipt change is recorded in `ATTACHMENT-TRANSACTION-PROTOCOL.md`.
+
+## Native lock and process-interruption coverage
+
+**PRESENT, UNVERIFIED on Windows:** the host/store fixture now holds an actual
+CreateFileW handle that omits FILE_SHARE_DELETE while allowing ordinary reads
+and writes. Replacement must fail specifically at FileRenameInfo, leave original,
+candidate and backup unchanged, then succeed after the handle closes. The test
+uses the same fixed-width CreateFileW/CloseHandle signatures already checked by
+the native rename contract; no new production binding is added.
+
+A separate coordinator fixture exercises commit, failure and cancellation after
+replacement, refusal to overwrite an unrelated concurrent target, and four
+abrupt child-JVM exits: PREPARED, TARGET_REPLACED, BEFORE_COMMIT and COMMITTED.
+Recovery must restore the old bytes/metadata from the independent backup, keep
+the interrupted receipt immutable and retain all selected input/backup files.
+Child control paths are explicitly supplied by the test, never inferred from a
+receipt. Runtime.halt terminates only that owned child and its test token state.
+This is a process-interruption test, not simulated power loss. Sentinel files
+exercise coordinator semantics without claiming ELF export validation or refresh.
+
+The early attachment-windows job runs these checks with the production JAR;
+logs, owned fixtures and exact test/dependency bytes are retained. Standalone
+Java21-compatible compilation, extension/test build, PowerShell parsing and
+workflow lint pass locally. Native execution and raw artifact review remain
+required for these new cases.
+
+**CONFIRMED initial native Host/store acceptance:** completed job41635698690
+at `5412e20` passes 268 assertions and128 cleanup cycles with305 handles.
+Independent archive/source/JAR review verifies the original, candidate,
+installed and restored raw descriptors, reconstructs preservation SHA-256
+independently, and verifies retained backup/target bytes. See
+`evidence/windows-attachment-host-41635698690.json`. This is the initial store
+fixture; subsequent receipt, lock and coordinator additions need their own
+passing native artifacts. Full A1–A7/C1 remain incomplete.
