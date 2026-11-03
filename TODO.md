@@ -1,5 +1,19 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED Windows path correction; real RunAs attachment still fails:**
+job126124091548/run41693381663 passes native helper219, recovery156, the Unicode
+child cleanup test and eight PowerShell encoder controls. Real headless export
+and a public preview using a Unicode request filename also pass. The explicitly
+authorized helper then exits1 before any backup, validation or transaction output;
+the owned executable remains byte-identical. Its elevated console was not
+redirected, so the cause is **UNCERTAIN**. See
+`docs/evidence/windows-helper-paths-41693381663.json`.
+The native fixture now separately requires a fresh current-permission commit and
+a fresh RunAs commit, preserving redirected helper diagnostics from the former.
+This is additional test coverage, not an elevation retry or a replacement for
+RunAs acceptance. Java21 compilation and Python parsing pass; native execution
+of the diagnostic fixture remains pending. Complete A1–A7/C1 is still open.
+
 **CONFIRMED scoped native Linux GUI attachment/refresh/recovery:** run41693381663
 at `0f70308` proves the unprivileged Script Manager/pkexec initial and curated
 refresh commits, then saved-request restoration. Independent checks of retained

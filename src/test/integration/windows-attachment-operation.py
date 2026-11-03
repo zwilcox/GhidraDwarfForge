@@ -113,7 +113,8 @@ def main():
         Path(shutil.which("pwsh.exe")).resolve()])
     require(not result.stderr, "unexpected native operation diagnostics")
     results = json.loads((root / "owned/result.json").read_text(encoding="utf-8"))
-    require(len(results["outcomes"]) == 2, "missing operation outcome")
+    require({case["case"] for case in results["outcomes"]} == {"current-permissions", "commit", "rollback"}
+        and len(results["outcomes"]) == 3, "missing independent permission-choice or rollback outcome")
 
     def verify_live_evidence(path):
         evidence = json.loads(path.read_text(encoding="utf-8"))
@@ -139,7 +140,7 @@ def main():
             (target.stat().st_dev, target.stat().st_ino), "backup aliases target")
         directory = target.parent
         verify_live_evidence(directory / "validation.json")
-        if case["case"] == "commit":
+        if case["case"] in ("current-permissions", "commit"):
             payload, order = elf.debuglink_payload(target)
             name = originals["sidecar"].name.encode("ascii") + b"\0"
             name += b"\0" * (-len(name) % 4)

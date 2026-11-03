@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** Owned native Windows real-ELF fixture; the public attachment entry point is separate. */
+/** Owned native Windows real-ELF fixtures exercise both explicit public permission choices. */
 public final class WindowsAttachmentOperationProbe {
     public static void main(String[] args) throws Exception {
         if (args.length != 13) throw new IllegalArgumentException(
@@ -29,8 +29,12 @@ public final class WindowsAttachmentOperationProbe {
             var validator = new AttachmentValidator(Path.of(args[4]), Path.of(args[5]), Path.of(args[6]),
                 Path.of(args[7]), Path.of(args[8]));
             var outcomes = new ArrayList<Object>();
-            for (boolean rollback : new boolean[] { false, true }) {
-                Path directory = Files.createDirectory(root.resolve(rollback ? "rollback" : "commit"));
+            // Separate targets, never an automatic retry with different permissions.
+            // Current-permission output stays redirected and diagnoses failures
+            // before a receipt exists; the RunAs fixture remains mandatory.
+            for (String action : java.util.List.of("current-permissions", "commit", "rollback")) {
+                boolean rollback = action.equals("rollback");
+                Path directory = Files.createDirectory(root.resolve(action));
                 var selected = new LinkedHashMap<String, Path>();
                 for (var entry : originals.entrySet()) {
                     if (entry.getKey().equals("source")) {
@@ -52,7 +56,7 @@ public final class WindowsAttachmentOperationProbe {
                     if (boundary == AttachmentTransaction.Boundary.TARGET_REPLACED) {
                         throw new IOException("owned Windows real-ELF rollback control");
                     }
-                }) : launchPublic(request, args, host, before);
+                }) : launchPublic(request, args, host, before, action.equals("commit"));
                 var expected = rollback ? AttachmentReceipt.Phase.ROLLED_BACK : AttachmentReceipt.Phase.COMMITTED;
                 require(result.transaction().outcome() == expected, "unexpected native ELF outcome: " + result.transaction());
                 var after = AttachmentFileStore.observe(target, host, () -> false);
@@ -65,14 +69,14 @@ public final class WindowsAttachmentOperationProbe {
                 else require(after.digest().sha256().equals(result.recoveryRequest().prepared().files().get("targetAfter").sha256()),
                     "installed ELF differs from validated candidate");
                 for (var input : originals.values()) AttachmentFileStore.unchanged(input, host, () -> false);
-                outcomes.add(Map.of("case", rollback ? "rollback" : "commit", "before", before, "after", after,
+                outcomes.add(Map.of("case", action, "before", before, "after", after,
                     "backup", backup, "operation", result));
                 Files.writeString(root.resolve("progress.json"), json(outcomes));
             }
             Files.writeString(root.resolve("result.json"), json(Map.of("outcomes", outcomes,
-                "scope", "Real Windows exporter artifact, production Host/Operation/live validators; initial commit and rollback only")),
+                "scope", "Real Windows exporter artifact, production Host/Operation/live validators; explicit current permissions and RunAs initial commits, plus rollback")),
                 StandardOpenOption.CREATE_NEW);
-            System.out.println("windows-attachment-operation=PASS cases=2");
+            System.out.println("windows-attachment-operation=PASS cases=3");
         }
     }
 
@@ -83,7 +87,7 @@ public final class WindowsAttachmentOperationProbe {
     }
 
     private static AttachmentOperation.Result launchPublic(AttachmentOperation.Request request, String[] args,
-            WindowsAttachmentHost host, AttachmentFileStore.Snapshot before) throws Exception {
+            WindowsAttachmentHost host, AttachmentFileStore.Snapshot before, boolean authorize) throws Exception {
         Path directory = request.target().getParent();
         var tools = Map.of("helper", Path.of(args[4]), "readelf", Path.of(args[5]), "llvm", Path.of(args[6]),
             "strict", Path.of(args[7]), "configuration", Path.of(args[8]));
@@ -97,7 +101,10 @@ public final class WindowsAttachmentOperationProbe {
         for (String mode : java.util.List.of("preview", "no-consent", "execute")) {
             var actual = new ArrayList<>(command);
             if (mode.equals("preview")) actual.add("-Preview");
-            if (mode.equals("execute")) { actual.add("-ConfirmTargetChange"); actual.add("-Authorize"); }
+            if (mode.equals("execute")) {
+                actual.add("-ConfirmTargetChange");
+                if (authorize) actual.add("-Authorize");
+            }
             Path stdout = directory.resolve("launcher-" + mode + ".stdout");
             Files.writeString(directory.resolve("launcher-" + mode + ".argv.json"),
                 new com.google.gson.Gson().toJson(actual), StandardOpenOption.CREATE_NEW);
@@ -123,8 +130,10 @@ public final class WindowsAttachmentOperationProbe {
                 require(!Files.exists(request.originalBackup()) && !Files.exists(request.receipt()) && !Files.exists(saved),
                     "read-only launcher created transaction outputs");
             }
-            else require(records.stream().anyMatch(record -> record.has("launcherExitCode") &&
+            else if (authorize) require(records.stream().anyMatch(record -> record.has("launcherExitCode") &&
                 record.get("launcherExitCode").getAsInt() == 0), "missing successful explicit RunAs result");
+            else require(records.stream().anyMatch(record -> record.has("outcome") &&
+                record.get("outcome").getAsString().equals("COMMITTED")), "missing current-permission helper result");
         }
         var recovery = AttachmentRecoveryInvocation.read(Files.newInputStream(saved), () -> false).transaction(() -> false);
         var receipt = AttachmentReceiptStore.read(request.receipt(), host, () -> false);

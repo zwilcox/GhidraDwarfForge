@@ -1,0 +1,49 @@
+{
+    "status": "CONFIRMED Windows Unicode/helper regressions and real preview; RunAs attachment failed before durable outputs",
+    "head": "0f703084453ce472ec45a84c6980bbac6b4b9d7e",
+    "run": 41693381663,
+    "job": 126124091548,
+    "artifactId": 13261107224,
+    "artifactSha256": "28924d7f9108d48edcabd8a8087facb16ef94743f6888fc02b3e8c55e6454a88",
+    "checks": [
+        "Native Windows production PowerShell encoder8, helper219 including native cancellation identity, real Unicode child cooperative cleanup, recovery156 pass",
+        "Windows real headless ELF export passes; public launcher previews a literal Unicode request filename with the correct SHA-256",
+        "RunAs child exits1; no backup/receipt/validation/recovery selection is present and the owned executable matches the untouched original"
+    ],
+    "uncertain": [
+        "Elevated helper error is not available because ShellExecute does not redirect its console; cause is not inferred from exit1"
+    ],
+    "nextTest": "Require separate fresh current-permission and RunAs attachment fixtures; retain redirected direct-helper diagnostics, never retry a production invocation with changed permissions",
+    "files": [
+        {
+            "path": "build/windows-host-126124091548.log",
+            "sha256": "ddc77ec3dbb981c018672453d41d0045075c19c068926fa5de93cd4da6c21a66",
+            "bytes": 402217
+        },
+        {
+            "path": "build/test-results/attachment-review-41693381663/windows-host/windows-host/attachment-operation/operation.stderr",
+            "sha256": "42fd47c1cd1b8f8f8742eadd7353b23b369c7e94cd12a34ecf53263d3d2311ca",
+            "bytes": 435
+        },
+        {
+            "path": "build/test-results/attachment-review-41693381663/windows-host/windows-host/attachment-operation/owned/commit/launcher-execute.stdout",
+            "sha256": "e3662488276160dd6f8ed1d2a59e64ad437837fc86b64b7a45fce994c78ced6b",
+            "bytes": 2340
+        },
+        {
+            "path": "build/test-results/attachment-review-41693381663/windows-host/windows-host/attachment-operation/owned/commit/launcher-execute.stderr",
+            "sha256": "e4be77f9a2820a2fa4c365d28ee6cb8854e62e1082fd7cc57ebbad8934869eab",
+            "bytes": 195
+        },
+        {
+            "path": "build/test-results/attachment-review-41693381663/windows-host/windows-host/attachment-operation/owned/commit/launcher-preview.stdout",
+            "sha256": "706db66dc6d4bf9eb5dd6e71915c44012a9dac9521b5d75c574b4deac88dae86",
+            "bytes": 2286
+        },
+        {
+            "path": "build/test-results/attachment-review-41693381663/windows-host/windows-host/attachment-operation/owned/commit/attachment-request-\u03bb space.json",
+            "sha256": "667a6d8414840ddc33092ee31a60a1f688a3fef56ebefb7fa7aadbd91b982a6a",
+            "bytes": 2001
+        }
+    ]
+}
