@@ -290,7 +290,7 @@ def main():
                     'target': target, 'sidecar': selected_sidecar, 'source': source, 'exportReport': selected_report,
                     'originalBackup': directory / 'original.backup', 'validationEvidence': directory / 'validation.json',
                     'receipt': directory / 'transaction.json', 'recoveryReceipt': directory / 'recovery.json',
-                    'restoreImage': directory / 'restore.elf'}.items()},
+                    'restoreImage': directory / 'restore.elf', 'recoveryInvocation': directory / 'saved-recovery.json'}.items()},
                 'validatorTools': dict(zip(['helper', 'readelf', 'llvm', 'strict', 'configuration'],
                                           map(str, live_validator_arguments)))}
             request_file = directory / 'attachment-request.json'
@@ -311,6 +311,10 @@ def main():
             require(response['outcome'] == 'COMMITTED' and response['exitCode'] == 0 and
                     response['requestSha256'] == digest(request_file), 'helper did not commit the selected request')
             require(response['selection'] == invocation, 'helper used different explicit selections')
+            saved = json.loads((directory / 'saved-recovery.json').read_text())
+            require(saved['operation'] == 'RECOVER' and saved['paths']['receipt'] == str(directory / 'transaction.json') and
+                    saved['committedReceiptSha256'] == digest(directory / 'transaction.json'),
+                    'saved recovery selections do not bind the committed receipt')
             require(response['recoverySelection']['prepared']['hostContract'] ==
                     'linux-x64-ext4-protected-metadata-v1', 'helper used an incorrect host')
         else:

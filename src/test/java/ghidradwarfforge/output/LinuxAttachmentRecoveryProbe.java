@@ -47,6 +47,8 @@ public final class LinuxAttachmentRecoveryProbe {
                     Path directory = Files.createDirectory(root.resolve((refresh ? "refresh-" : "initial-") + boundary));
                     Fixture fixture = fixture(directory, host, refresh);
                     writeSelection(fixture);
+                    Path requestFile = directory.resolve("helper-recovery-request.json");
+                    var savedRequest = AttachmentRecoveryFile.publish(requestFile, fixture.request(), host, () -> false);
                     var child = new ProcessBuilder(Path.of(System.getProperty("java.home"), "bin/java").toString(),
                         "--enable-native-access=ALL-UNNAMED", "-cp", System.getProperty("java.class.path"),
                         LinuxAttachmentRecoveryProbe.class.getName(), "--crash", fixture.root().toString(), boundary.name())
@@ -63,13 +65,7 @@ public final class LinuxAttachmentRecoveryProbe {
                     }
                     try (var recoveryHost = LinuxAttachmentHost.openRecovery(fixture.request())) {
                         var before = AttachmentReceiptStore.read(fixture.request().receipt(), recoveryHost, () -> false);
-                        var selectedPaths = new java.util.TreeMap<>(fixture.request().files());
-                        selectedPaths.put("receipt", fixture.request().receipt());
-                        selectedPaths.put("recoveryReceipt", fixture.request().recoveryReceipt());
-                        selectedPaths.put("restoreImage", fixture.request().restoreImage());
-                        var invocation = new AttachmentRecoveryInvocation(selectedPaths, before.sha256());
-                        Path requestFile = Files.writeString(directory.resolve("helper-recovery-request.json"), invocation.toJson(),
-                            StandardOpenOption.CREATE_NEW);
+                        AttachmentFileStore.unchanged(savedRequest, recoveryHost, () -> false);
                         Path helperOutput = directory.resolve("helper-recovery.stdout");
                         var recoveryChild = new ProcessBuilder(Path.of(System.getProperty("java.home"), "bin/java").toString(),
                             "--enable-native-access=ALL-UNNAMED", "-cp", System.getProperty("java.class.path"),

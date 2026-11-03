@@ -44,6 +44,7 @@ public final class AttachmentOperationSmoke {
             equal(0, compiler.exitValue());
             initialAndRefresh(root, seed, false);
             initialAndRefresh(root, seed, true);
+            savedSelectionFailure(root, seed);
             validationFailures(root, seed);
             preflight(root, seed);
             basenameRefusal(root, seed);
@@ -84,7 +85,7 @@ public final class AttachmentOperationSmoke {
     private static void initialAndRefresh(Path root, Path seed, boolean rollback) throws Exception {
         var first = fixture(root, seed, "initial-refresh-" + rollback);
         var original = AttachmentFileStore.observe(first.target(), HOST, () -> false);
-        var initial = AttachmentOperation.execute(first, HOST, VALIDATOR, () -> false);
+        var initial = executeWithRecoverySelection(first, boundary -> { });
         equal(AttachmentReceipt.Phase.COMMITTED, initial.transaction().outcome());
         var current = AttachmentFileStore.observe(first.target(), HOST, () -> false);
         var previousReceipt = AttachmentFileStore.observe(first.receipt(), HOST, () -> false);
@@ -95,7 +96,7 @@ public final class AttachmentOperationSmoke {
         var refresh = new AttachmentOperation.Refresh(first.receipt(), first.sidecar(), first.source(),
             first.target().resolveSibling("prior-target.backup"));
         var second = exported(first.target().getParent(), first.target(), first.originalBackup(), "second", refresh);
-        var result = AttachmentOperation.execute(second, HOST, VALIDATOR, () -> false, boundary -> {
+        var result = executeWithRecoverySelection(second, boundary -> {
             if (rollback && boundary == AttachmentTransaction.Boundary.TARGET_REPLACED) {
                 throw new IOException("injected refresh post-replacement failure");
             }
@@ -117,6 +118,47 @@ public final class AttachmentOperationSmoke {
             equal(AttachmentReceipt.Phase.COMMITTED,
                 AttachmentOperation.execute(third, HOST, VALIDATOR, () -> false).transaction().outcome());
         }
+    }
+
+    private static AttachmentOperation.Result executeWithRecoverySelection(AttachmentOperation.Request request,
+            AttachmentTransaction.Hook hook) throws IOException {
+        Path saved = request.receipt().resolveSibling(request.receipt().getFileName() + ".recovery-request.json");
+        var original = AttachmentFileStore.observe(request.target(), HOST, () -> false);
+        var result = AttachmentOperation.execute(request, HOST, VALIDATOR, () -> false, hook, prepared -> {
+            AttachmentFileStore.unchanged(original, HOST, () -> false);
+            equal(false, Files.exists(request.receipt()));
+            AttachmentRecoveryFile.publish(saved, prepared, HOST, () -> false);
+            equal(false, Files.exists(request.receipt()));
+            AttachmentFileStore.unchanged(original, HOST, () -> false);
+        });
+        var selected = AttachmentRecoveryInvocation.read(Files.newInputStream(saved), () -> false);
+        equal(result.recoveryRequest(), selected.transaction(() -> false));
+        equal(true, selected.acceptsReceiptSha256(AttachmentReceiptStore.read(request.receipt(), HOST, () -> false).sha256()));
+        var retained = AttachmentFileStore.observe(saved, HOST, () -> false);
+        try {
+            AttachmentRecoveryFile.publish(saved, result.recoveryRequest(), HOST, () -> false);
+            throw new AssertionError("recovery selection overwritten");
+        }
+        catch (IOException expected) { checks++; }
+        AttachmentFileStore.unchanged(retained, HOST, () -> false);
+        return result;
+    }
+
+    private static void savedSelectionFailure(Path root, Path seed) throws Exception {
+        var request = fixture(root, seed, "recovery-selection-refusal");
+        var original = AttachmentFileStore.observe(request.target(), HOST, () -> false);
+        Path saved = Files.writeString(request.target().resolveSibling("existing-recovery.json"), "owned prior document");
+        var previous = AttachmentFileStore.observe(saved, HOST, () -> false);
+        try {
+            AttachmentOperation.execute(request, HOST, VALIDATOR, () -> false, boundary -> { },
+                prepared -> AttachmentRecoveryFile.publish(saved, prepared, HOST, () -> false));
+            throw new AssertionError("transaction proceeded without a durable recovery selection");
+        }
+        catch (AttachmentOperation.PreparationFailure expected) { checks++; }
+        AttachmentFileStore.unchanged(original, HOST, () -> false);
+        AttachmentFileStore.unchanged(previous, HOST, () -> false);
+        equal(false, Files.exists(request.receipt()));
+        equal(original.digest(), AttachmentFileStore.observe(request.originalBackup(), HOST, () -> false).digest());
     }
 
     private static void validationFailures(Path root, Path seed) throws Exception {

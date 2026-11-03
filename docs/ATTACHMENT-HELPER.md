@@ -14,8 +14,9 @@ show its selected pair, original backup and receipt, and require an explicit
 action. A successful export alone is insufficient: the helper must run the
 complete production validator and host transaction. Refresh must retain the
 previous generation and export against the original backup as ADR-0004 requires.
-The convenience launchers, OS authorization, durable public recovery interface
-and GUI journey remain **PLANNED**. The standalone helper below is implemented;
+The convenience launchers, OS authorization and GUI journey remain **PLANNED**.
+The standalone recovery interface and saved selections are implemented below;
+their native execution remains **PRESENT, UNVERIFIED**. The standalone helper below is implemented;
 its actual native execution is **PRESENT, UNVERIFIED** until hosted tests pass. The metadata policy and Ghidra/Java/native producer baselines
 are unchanged.
 
@@ -25,7 +26,7 @@ are unchanged.
 read-only request format. Schema1 has exactly `schemaVersion`, `operation`,
 `paths` and `validatorTools`. `operation` is ATTACH or REFRESH. The path object
 contains target, sidecar, source, exportReport, originalBackup,
-validationEvidence, receipt, recoveryReceipt and restoreImage; REFRESH also
+validationEvidence, receipt, recoveryReceipt, restoreImage and recoveryInvocation; REFRESH also
 requires previousReceipt, previousSidecar, previousSource and priorTargetBackup.
 The tools object explicitly selects helper, readelf, llvm, strict and
 configuration. No path is imported from an export report or transaction receipt.
@@ -127,7 +128,7 @@ remain pending. Local commands are retained in
 `--recover --request <absolute-recovery.json> --request-sha256 <sha256>` and
 `--confirm-target-change`. Recovery can replace the target with the verified
 pre-operation image. A request has exactly schemaVersion1, operation RECOVER,
-receiptSha256 and paths. Paths explicitly selects targetBefore, targetAfter,
+receiptSha256, committedReceiptSha256 and paths. Paths explicitly selects targetBefore, targetAfter,
 originalBackup, sidecar, source, exportReport, validationEvidence, receipt,
 recoveryReceipt and restoreImage; refresh also selects previousReceipt,
 previousSidecar, previousSource and priorTargetBackup. `targetAfter` selects the
@@ -135,7 +136,9 @@ private candidate's former path, which may now be absent after replacement.
 Every other selection must match the canonical path recorded for that role.
 No artifact path is taken from the receipt as an instruction to open a file.
 
-The bounded request and selected receipt each require an exact SHA-256 pin.
+The bounded request requires an exact SHA-256 pin. The selected receipt must
+match either the explicitly pinned PREPARED bytes or the explicitly pinned
+COMMITTED bytes; no other receipt content is accepted.
 Only normal PREPARED/COMMITTED interruption records are admitted. Reconstruction
 of PREPARED claims preserves every original field, hash, identity and metadata
 claim; native recovery compares the actual receipt again before acting.
@@ -152,12 +155,8 @@ UTF-8 on both hosts. Successful attachment responses include a `recoveryInvocati
 selection document in addition to their diagnostic `recoverySelection` data.
 Save and inspect that document before invoking recovery; it is not itself consent.
 
-The convenience launcher still needs to retain an explicit recovery selection
-before replacement, so an abrupt death before stdout does not force manual
-selection of the retained candidate path. The durable transaction receipt and
-backups already exist before replacement; this remaining UX task does not change
-or weaken the recovery verification. GUI/authorization integration also remains
-incomplete. A failure before any PREPARED receipt is published cannot have replaced
+The helper now retains an explicit recovery selection before replacement, as
+described below. GUI/authorization integration remains incomplete. A failure before any PREPARED receipt is published cannot have replaced
 the target and is not admitted as an interrupted transaction.
 
 **CONFIRMED local admission:** actual Java21 passes108 recovery selection checks,
@@ -181,3 +180,36 @@ succeeds. Source comparison and Windows export/refresh/GDB acceptance are unchan
 `required-validation` explicitly still requires the full five-target matrix and
 all host/consumer jobs, plus the new reference job. Lint passes locally; runtime
 acceptance of the new scheduling remains pending.
+
+## Recovery selections survive loss of helper output
+
+**PRESENT, UNVERIFIED native execution:** ATTACH/REFRESH requests must now select
+an additional fresh `paths.recoveryInvocation` file. All-role preflight protects
+it against inputs, outputs, tools and the invocation file. After live validation,
+backup and candidate preparation, the helper publishes this selection file
+before the transaction can publish PREPARED or replace the target. Publication
+uses an owned, flushed stage and the existing native independent-copy/exclusive
+publication path, including namespace flush and digest/identity readback. There
+is no overwrite or copy-over-existing fallback. Failure leaves the original
+target unchanged and retains any completed backup. Unverified partial private
+stages are retained, never deleted by guesswork.
+
+The saved file includes every explicit recovery role, including the private
+candidate's path, and SHA-256 pins for the exact canonical PREPARED and COMMITTED
+receipts of this operation. Both are computed from the same immutable claims
+before replacement. Consequently the file remains usable at either interruption
+phase without needing stdout or rewriting an approval document after commit.
+The helper binds the saved file through the remaining transaction boundaries.
+It is inert selection data, not authority to restore a target. A user must still
+explicitly invoke `--recover`, pin the saved file itself and confirm target change.
+
+**CONFIRMED local ordering:** initial and refresh tests verify the saved request
+is published while the target still has its prior bytes/metadata and the operation
+receipt is absent. They decode it against the later durable receipt, exercise
+both pin phases, and prove an existing selection file is preserved. A publication
+refusal prevents target replacement and retains the independent original backup.
+Native CI's eight crash cases now publish this same file *before* the abrupt
+child and recover via a fresh helper using those retained bytes. Production
+initial cases additionally verify their saved document binds the actual committed
+receipt. Hosted execution remains pending; generic tests do not establish native
+metadata or real ELF acceptance. See `build/attachment-saved-recovery-validation.log`.

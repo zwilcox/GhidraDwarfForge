@@ -17,17 +17,26 @@ import java.util.concurrent.CancellationException;
 import java.util.function.BooleanSupplier;
 
 /** Explicit recovery selections; recorded artifact paths are compared, never followed. */
-public record AttachmentRecoveryInvocation(Map<String, Path> paths, String receiptSha256) {
+public record AttachmentRecoveryInvocation(Map<String, Path> paths, String receiptSha256, String committedReceiptSha256) {
     private static final Set<String> COMMON = Set.of("targetBefore", "targetAfter", "originalBackup", "sidecar",
         "source", "exportReport", "validationEvidence", "receipt", "recoveryReceipt", "restoreImage");
     private static final Set<String> REFRESH = Set.of("previousReceipt", "previousSidecar", "previousSource", "priorTargetBackup");
     private static final ReportJsonReader.Limits LIMITS = new ReportJsonReader.Limits(256 * 1024, 16384, 2, 128, 1);
 
+    public AttachmentRecoveryInvocation(Map<String, Path> paths, String receiptSha256) {
+        this(paths, receiptSha256, receiptSha256);
+    }
+
+    public boolean acceptsReceiptSha256(String actual) {
+        return receiptSha256.equals(actual) || committedReceiptSha256.equals(actual);
+    }
+
     public AttachmentRecoveryInvocation {
         paths = Map.copyOf(paths);
         var expected = new HashSet<>(COMMON);
         if (paths.containsKey("priorTargetBackup")) expected.addAll(REFRESH);
-        if (!paths.keySet().equals(expected) || receiptSha256 == null || !receiptSha256.matches("[0-9a-f]{64}")) {
+        if (!paths.keySet().equals(expected) || receiptSha256 == null || !receiptSha256.matches("[0-9a-f]{64}") ||
+                committedReceiptSha256 == null || !committedReceiptSha256.matches("[0-9a-f]{64}")) {
             throw new IllegalArgumentException("recovery requires every explicit role and the selected receipt SHA-256");
         }
         for (var path : paths.values()) {
@@ -42,6 +51,7 @@ public record AttachmentRecoveryInvocation(Map<String, Path> paths, String recei
         result.addProperty("schemaVersion", 1);
         result.addProperty("operation", "RECOVER");
         result.addProperty("receiptSha256", receiptSha256);
+        result.addProperty("committedReceiptSha256", committedReceiptSha256);
         var selected = new JsonObject();
         for (var entry : new TreeMap<>(paths).entrySet()) selected.addProperty(entry.getKey(), entry.getValue().toString());
         result.add("paths", selected);
@@ -59,6 +69,7 @@ public record AttachmentRecoveryInvocation(Map<String, Path> paths, String recei
             String version = null;
             String action = null;
             String sha = null;
+            String committedSha = null;
             Map<String, Path> paths = null;
             json.beginObject();
             while (json.hasNext()) {
@@ -69,14 +80,15 @@ public record AttachmentRecoveryInvocation(Map<String, Path> paths, String recei
                     }
                     case "operation" -> action = AttachmentInvocation.string(json);
                     case "receiptSha256" -> sha = AttachmentInvocation.string(json);
+                    case "committedReceiptSha256" -> committedSha = AttachmentInvocation.string(json);
                     case "paths" -> paths = AttachmentInvocation.readPaths(json);
                     default -> throw new IOException("unknown recovery request field");
                 }
             }
             json.endObject();
-            if (json.peek() != JsonToken.END_DOCUMENT || names.size() != 4 || !"1".equals(version) ||
+            if (json.peek() != JsonToken.END_DOCUMENT || names.size() != 5 || !"1".equals(version) ||
                     !"RECOVER".equals(action) || paths == null) throw new IOException("invalid recovery request");
-            return new AttachmentRecoveryInvocation(paths, sha);
+            return new AttachmentRecoveryInvocation(paths, sha, committedSha);
         }
         catch (CancellationException cancellation) { throw cancellation; }
         catch (IllegalArgumentException | IllegalStateException invalid) { throw new IOException("invalid recovery selection", invalid); }
@@ -84,7 +96,7 @@ public record AttachmentRecoveryInvocation(Map<String, Path> paths, String recei
 
     /** Decode only the explicitly selected, pinned receipt; no artifact is opened here. */
     public AttachmentTransaction.Request transaction(BooleanSupplier cancelled) throws IOException {
-        byte[] bytes = AttachmentHelper.readPinned(paths.get("receipt"), receiptSha256, 1024 * 1024, cancelled);
+        byte[] bytes = AttachmentHelper.readPinned(paths.get("receipt"), this::acceptsReceiptSha256, 1024 * 1024, cancelled);
         var record = AttachmentReceipt.read(new ByteArrayInputStream(bytes), cancelled);
         if (record.recovery() != null || (record.phase() != AttachmentReceipt.Phase.PREPARED &&
                 record.phase() != AttachmentReceipt.Phase.COMMITTED)) {

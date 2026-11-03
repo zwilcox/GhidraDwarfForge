@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**PRESENT, UNVERIFIED native saved-recovery execution:** ATTACH/REFRESH requests
+now explicitly select a fresh recoveryInvocation destination. The helper
+exclusively publishes and verifies its recovery selections before PREPARED or
+target replacement, with pins for both exact possible receipt phases. The saved
+file is then bound through transaction completion. Local initial/refresh tests
+prove ordering, no overwrite and target preservation on publication refusal.
+Native crash tests now save this file before the abrupt child and use it in a
+fresh recovery helper. Authorization launchers, GUI, native artifact acceptance
+and final C1 remain pending. See `docs/ATTACHMENT-HELPER.md`.
+
 **PRESENT, UNVERIFIED earlier Windows validation:** a dedicated Linux x86
 reference job now builds the same fixture and runs the same real headless export
 and structural validators used by the architecture lane. Windows consumes its
@@ -17,7 +27,7 @@ runs the native recovery coordinator. JSON output is explicitly UTF-8. Actual
 Java21 passes108 recovery admission checks; the existing532 coordinator checks
 pass. CI's8 native Linux interruption cases now recover via fresh helper JVMs
 and independently verify durable receipts and restored bytes/metadata. Native
-helper evidence, pre-replacement recovery-selection persistence, authorization
+helper evidence, authorization
 launchers and GUI integration remain incomplete. See `docs/ATTACHMENT-HELPER.md`.
 
 **PRESENT, UNVERIFIED native helper execution:** `AttachmentHelper` now runs

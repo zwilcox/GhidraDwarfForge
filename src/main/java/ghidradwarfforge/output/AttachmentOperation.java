@@ -129,8 +129,17 @@ public final class AttachmentOperation {
         return execute(request, host, validator, cancelled, boundary -> { });
     }
 
+    @FunctionalInterface interface PreparedObserver {
+        void prepared(AttachmentTransaction.Request request) throws IOException;
+    }
+
     static Result execute(Request request, Host host, Validator validator,
             BooleanSupplier cancelled, AttachmentTransaction.Hook hook) throws IOException {
+        return execute(request, host, validator, cancelled, hook, prepared -> { });
+    }
+
+    static Result execute(Request request, Host host, Validator validator,
+            BooleanSupplier cancelled, AttachmentTransaction.Hook hook, PreparedObserver observer) throws IOException {
         Objects.requireNonNull(host);
         Objects.requireNonNull(validator);
         Objects.requireNonNull(cancelled);
@@ -211,6 +220,7 @@ public final class AttachmentOperation {
             throw new PreparationFailure(paths, failure);
         }
         try {
+            observer.prepared(prepared);
             var result = AttachmentTransaction.commit(prepared, host, cancelled, hook, AttachmentTransaction.RECEIPTS);
             return new Result(result, prepared, paths);
         }

@@ -29,7 +29,7 @@ public final class AttachmentInvocationSmoke {
                 var request = new AttachmentOperation.Request(root.resolve("target"), root.resolve("sidecar"), root.resolve("source"),
                     root.resolve("exportReport"), root.resolve(refresh ? "retainedBackup" : "original.backup"),
                     root.resolve("validation.json"), root.resolve("receipt.json"), root.resolve("recovery.json"), root.resolve("restore"), prior);
-                var invocation = new AttachmentInvocation(request, tools);
+                var invocation = new AttachmentInvocation(request, tools, root.resolve("saved-recovery.json"));
                 String json = invocation.toJson();
                 equal(invocation, read(json));
                 equal(json, read(json).toJson());
@@ -38,22 +38,24 @@ public final class AttachmentInvocationSmoke {
                 equal(invocation, AttachmentInvocation.read(transport, () -> false));
                 var before = snapshot(root);
                 invocation.preflight(transport).recheck();
+                rejects(() -> new AttachmentInvocation(request, tools, transport).preflight(transport));
+                rejects(() -> new AttachmentInvocation(request, tools, request.source()).preflight(transport));
                 equal(before, snapshot(root));
                 rejects(() -> invocation.preflight(root.resolve("source")));
                 equal(before, snapshot(root));
                 var aliases = new HashMap<>(tools);
                 aliases.put("helper", root.resolve("target"));
-                rejects(() -> new AttachmentInvocation(request, aliases).preflight(transport));
+                rejects(() -> new AttachmentInvocation(request, aliases, root.resolve("saved-recovery.json")).preflight(transport));
                 Path link = root.resolve("tool-link-" + refresh);
                 Files.createLink(link, root.resolve("target"));
                 aliases.put("helper", link);
-                rejects(() -> new AttachmentInvocation(request, aliases).preflight(transport));
+                rejects(() -> new AttachmentInvocation(request, aliases, root.resolve("saved-recovery.json")).preflight(transport));
                 Files.delete(link);
                 equal(before, snapshot(root));
                 aliases.put("helper", Path.of("relative-tool"));
-                rejects(() -> new AttachmentInvocation(request, aliases));
+                rejects(() -> new AttachmentInvocation(request, aliases, root.resolve("saved-recovery.json")));
                 aliases.put("helper", root.resolve("x".repeat(16384)));
-                rejects(() -> new AttachmentInvocation(request, aliases));
+                rejects(() -> new AttachmentInvocation(request, aliases, root.resolve("saved-recovery.json")));
                 rejects(() -> AttachmentInvocation.read(root, () -> false));
                 malformed(json);
             }

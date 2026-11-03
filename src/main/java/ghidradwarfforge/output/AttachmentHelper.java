@@ -100,8 +100,15 @@ public final class AttachmentHelper {
                     validator.validate(binding, evidence, selectedHost, stop);
                     recheck(inputPlan, inputs, selectedHost, stop);
                 };
+                Path savedRecovery = admitted.plan().paths().get("recoveryInvocation");
+                var recoveryDestination = AttachmentPaths.preflight(java.util.List.of(new AttachmentPaths.Selection(
+                    "recoveryInvocation", savedRecovery, AttachmentPaths.Kind.NEW_FILE)));
                 completed = AttachmentOperation.execute(invocation.operation(), host, guarded, cancelled,
-                    boundary -> recheck(inputPlan, inputs, host, cancelled));
+                    boundary -> recheck(inputPlan, inputs, host, cancelled), prepared -> {
+                        recoveryDestination.recheck();
+                        recheck(inputPlan, inputs, host, cancelled);
+                        inputs.put("savedRecovery", AttachmentRecoveryFile.publish(savedRecovery, prepared, host, cancelled));
+                    });
             }
             status = completed.transaction().outcome() == AttachmentReceipt.Phase.COMMITTED ? 0 :
                 completed.transaction().cancelled() ? 130 : 1;
@@ -208,7 +215,7 @@ public final class AttachmentHelper {
                 var host = session.host();
                 var request = AttachmentFileStore.observe(plan.paths().get("invocation"), host, cancelled);
                 if (!request.digest().sha256().equals(command.sha256()) ||
-                        !AttachmentReceiptStore.read(transaction.receipt(), host, cancelled).sha256().equals(invocation.receiptSha256())) {
+                        !invocation.acceptsReceiptSha256(AttachmentReceiptStore.read(transaction.receipt(), host, cancelled).sha256())) {
                     throw new IOException("recovery request or interrupted receipt changed");
                 }
                 AttachmentFileStore.unchanged(request, host, cancelled);
@@ -237,6 +244,11 @@ public final class AttachmentHelper {
     }
 
     static byte[] readPinned(Path selected, String sha, int limit, BooleanSupplier cancelled) throws IOException {
+        return readPinned(selected, sha::equals, limit, cancelled);
+    }
+
+    static byte[] readPinned(Path selected, java.util.function.Predicate<String> accepted, int limit,
+            BooleanSupplier cancelled) throws IOException {
         check(cancelled);
         if (!Files.isRegularFile(selected, LinkOption.NOFOLLOW_LINKS)) {
             throw new IOException("attachment selection must be a regular non-link file");
@@ -246,7 +258,7 @@ public final class AttachmentHelper {
             bytes = input.readNBytes(limit + 1);
         }
         check(cancelled);
-        if (bytes.length > limit || !sha256(bytes).equals(sha)) {
+        if (bytes.length > limit || !accepted.test(sha256(bytes))) {
             throw new IOException("attachment selection exceeds limit or differs from the explicitly selected SHA-256");
         }
         return bytes;
@@ -292,7 +304,7 @@ public final class AttachmentHelper {
         return json;
     }
 
-    private static String sha256(byte[] bytes) {
+    static String sha256(byte[] bytes) {
         try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes)); }
         catch (NoSuchAlgorithmException impossible) { throw new AssertionError(impossible); }
     }

@@ -31,7 +31,7 @@ public final class AttachmentHelperSmoke {
                 root.resolve("receipt.json"), root.resolve("recovery.json"), root.resolve("restore"), null);
             var tools = new HashMap<String, Path>();
             for (String role : new String[] {"helper", "readelf", "llvm", "strict", "configuration"}) tools.put(role, root.resolve(role));
-            var invocation = new AttachmentInvocation(request, tools);
+            var invocation = new AttachmentInvocation(request, tools, root.resolve("saved-recovery.json"));
             Path selection = root.resolve("request.json");
             Files.writeString(selection, invocation.toJson());
             String[] command = {"--request", selection.toString(), "--request-sha256", digest(selection), "--confirm-target-change"};

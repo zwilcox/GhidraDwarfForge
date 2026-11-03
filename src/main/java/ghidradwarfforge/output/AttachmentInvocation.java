@@ -28,15 +28,16 @@ import java.util.function.BooleanSupplier;
  * Absolute paths preserve selections across an authorization-driven cwd change;
  * traversal is resolved by AttachmentPaths, never by lexical normalization here.
  */
-public record AttachmentInvocation(AttachmentOperation.Request operation, Map<String, Path> validatorTools) {
+public record AttachmentInvocation(AttachmentOperation.Request operation, Map<String, Path> validatorTools, Path recoveryInvocation) {
     private static final Set<String> COMMON = Set.of("target", "sidecar", "source", "exportReport",
-        "originalBackup", "validationEvidence", "receipt", "recoveryReceipt", "restoreImage");
+        "originalBackup", "validationEvidence", "receipt", "recoveryReceipt", "restoreImage", "recoveryInvocation");
     private static final Set<String> REFRESH = Set.of("previousReceipt", "previousSidecar", "previousSource", "priorTargetBackup");
     private static final Set<String> TOOLS = Set.of("helper", "readelf", "llvm", "strict", "configuration");
     private static final ReportJsonReader.Limits LIMITS = new ReportJsonReader.Limits(256 * 1024, 16384, 3, 128, 1);
 
     public AttachmentInvocation {
         Objects.requireNonNull(operation, "operation");
+        absolute(recoveryInvocation);
         validatorTools = Map.copyOf(validatorTools);
         if (!validatorTools.keySet().equals(TOOLS)) throw new IllegalArgumentException("select every validator tool explicitly");
         for (var path : paths(operation).values()) absolute(path);
@@ -46,6 +47,7 @@ public record AttachmentInvocation(AttachmentOperation.Request operation, Map<St
     /** Include the transport and tools in preflight before any helper workspace. */
     public AttachmentPaths.Plan preflight(Path selectedInvocationFile) throws IOException {
         var selections = new ArrayList<>(AttachmentOperation.preflightPaths(operation).selections());
+        selections.add(new AttachmentPaths.Selection("recoveryInvocation", recoveryInvocation, AttachmentPaths.Kind.NEW_FILE));
         selections.add(new AttachmentPaths.Selection("invocation", selectedInvocationFile, AttachmentPaths.Kind.INPUT));
         for (var entry : validatorTools.entrySet()) {
             selections.add(new AttachmentPaths.Selection("tool" + entry.getKey(), entry.getValue(), AttachmentPaths.Kind.INPUT));
@@ -64,7 +66,9 @@ public record AttachmentInvocation(AttachmentOperation.Request operation, Map<St
             json.beginObject();
             json.name("schemaVersion").value(1);
             json.name("operation").value(operation.refresh() == null ? "ATTACH" : "REFRESH");
-            writePaths(json.name("paths"), paths(operation));
+            var selected = new TreeMap<>(paths(operation));
+            selected.put("recoveryInvocation", recoveryInvocation);
+            writePaths(json.name("paths"), selected);
             writePaths(json.name("validatorTools"), validatorTools);
             json.endObject();
         }
@@ -119,7 +123,7 @@ public record AttachmentInvocation(AttachmentOperation.Request operation, Map<St
                 paths.get("previousSidecar"), paths.get("previousSource"), paths.get("priorTargetBackup")) : null;
             return new AttachmentInvocation(new AttachmentOperation.Request(paths.get("target"), paths.get("sidecar"),
                 paths.get("source"), paths.get("exportReport"), paths.get("originalBackup"), paths.get("validationEvidence"),
-                paths.get("receipt"), paths.get("recoveryReceipt"), paths.get("restoreImage"), refresh), tools);
+                paths.get("receipt"), paths.get("recoveryReceipt"), paths.get("restoreImage"), refresh), tools, paths.get("recoveryInvocation"));
         }
         catch (CancellationException cancelledRead) { throw cancelledRead; }
         catch (IllegalArgumentException | IllegalStateException invalid) {
