@@ -78,3 +78,10 @@ on the same owned directory; existing stale-path, denied-write, cancellation
 and 128 lifetime cycles also exercise the added root handles. Native execution
 of this binding remains required. This records filesystem identity; complete
 Host admission and the durability/recovery contract remain open.
+
+**CONFIRMED JNA component acceptance:** completed native Windows job41634160584
+at `380d272` passes independent archive/source review, native/C#/Java root and
+volume identity agreement, successful flush, stale/late paths, cancellation,
+real write denial and 128 Java cycles with 286 handles. See
+`docs/evidence/windows-volume-binding-41634160584.json` from the repository root.
+Full Host/store integration and recovery acceptance remain required.

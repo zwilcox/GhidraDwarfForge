@@ -26,14 +26,14 @@ public final class WindowsFileSecurityProbe {
         int AdjustTokenPrivileges(Pointer token, int disableAll, Pointer state, int bytes, Pointer previous, Pointer needed);
     }
 
-    private static final class OwnPrivilege implements AutoCloseable {
+    static final class OwnPrivilege implements AutoCloseable {
         private final Kernel kernel = Native.load("kernel32", Kernel.class);
         private final Tokens tokens = Native.load("advapi32", Tokens.class);
         private final Memory previous = new Memory(16);
         private Pointer token;
         private byte[] luidBytes;
         private int originalAttributes;
-        private OwnPrivilege(boolean enabled) throws IOException {
+        OwnPrivilege(boolean enabled) throws IOException {
             boolean retained = false;
             try (var luid = new Memory(8); var state = new Memory(16); var needed = new Memory(4)) {
                 previous.clear(); luid.clear(); state.clear(); needed.clear();

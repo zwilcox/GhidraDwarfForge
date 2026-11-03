@@ -47,3 +47,10 @@ The reviewed native experiment now precedes a Java implementation in
 checks the root directory's volume identity. A same-directory C/C#/Java oracle
 has been added. The binding compiles locally but its Windows execution is
 **PRESENT, UNVERIFIED**. See `../WINDOWS-DIRECTORY-SYNC.md`.
+
+**CONFIRMED JNA component acceptance:** completed native Windows job41634160584
+at `380d272` passes independent archive/source review, native/C#/Java root and
+volume identity agreement, successful flush, stale/late paths, cancellation,
+real write denial and 128 Java cycles with 286 handles. See
+`docs/evidence/windows-volume-binding-41634160584.json` from the repository root.
+Full Host/store integration and recovery acceptance remain required.

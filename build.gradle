@@ -123,6 +123,19 @@ tasks.register("attachmentProtocolSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.output.AttachmentProtocolSmoke"
 }
 
+tasks.register("windowsAttachmentHostSmoke", JavaExec) {
+    group = "verification"
+    description = "Exercises native Windows attachment host with backup, replacement and restore stores"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.WindowsAttachmentHostSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED", "-Xint", "-XX:+UseSerialGC"
+    doFirst {
+        if (!project.hasProperty("attachmentHostResults")) throw new GradleException("Missing -PattachmentHostResults")
+        args project.property("attachmentHostResults")
+    }
+}
+
 tasks.register("validatorSupervisorSmoke", JavaExec) {
     group = "verification"
     description = "Checks native validator ownership, bounded output and actual JVM cancellation"

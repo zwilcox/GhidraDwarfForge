@@ -672,6 +672,40 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  attachment-windows:
+    needs: [ extension-build, native-windows ]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/download-artifact@v8
+        with:
+          name: ghidra-dwarf-forge-extension-base
+          path: attachment-extension
+      - uses: actions/download-artifact@v8
+        with:
+          name: native-windows-build-diagnostics
+          path: attachment-native
+      - name: Native Windows host backup replacement and restore
+        shell: pwsh
+        run: |
+          $extension = @(Get-ChildItem attachment-extension -Filter '*.zip')
+          if ($extension.Count -ne 1) { throw 'Expected one extension archive' }
+          ./src/test/integration/windows-attachment-host.ps1 `
+            -ExtensionZip $extension[0].FullName `
+            -NativeDiagnostics (Resolve-Path attachment-native).Path `
+            -Results "$PWD/build/test-results/attachment-windows"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: attachment-windows-diagnostics
+          path: build/test-results/attachment-windows/
+          if-no-files-found: warn
+          retention-days: 14
+
   target-preflight:
     needs: [ release-package, native-linux ]
     runs-on: ubuntu-24.04
@@ -2640,6 +2674,7 @@ jobs:
       - release-package
       - target-preflight
       - windows-host
+      - attachment-windows
     runs-on: ubuntu-24.04
     steps:
       - name: Require every supported validation path
@@ -2651,13 +2686,14 @@ jobs:
           RELEASE_PACKAGE_RESULT: ${{ needs.release-package.result }}
           TARGET_PREFLIGHT_RESULT: ${{ needs.target-preflight.result }}
           WINDOWS_HOST_RESULT: ${{ needs.windows-host.result }}
+          ATTACHMENT_WINDOWS_RESULT: ${{ needs.attachment-windows.result }}
         run: |
           set -euo pipefail
           failed=0
           for result in "$WORKFLOW_LINT_RESULT" "$NATIVE_LINUX_RESULT" \
               "$NATIVE_WINDOWS_RESULT" "$EXTENSION_BUILD_RESULT" \
               "$RELEASE_PACKAGE_RESULT" "$TARGET_PREFLIGHT_RESULT" \
-              "$WINDOWS_HOST_RESULT"; do
+              "$WINDOWS_HOST_RESULT" "$ATTACHMENT_WINDOWS_RESULT"; do
             if [[ "$result" != success ]]; then
               failed=1
             fi

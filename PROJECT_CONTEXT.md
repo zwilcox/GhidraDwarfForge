@@ -1,5 +1,20 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED #72 volume component:** native Windows job41634160584 at
+`380d272` passes exact-source artifact review, native/C#/Java volume identity,
+flush/refusal checks and 128 stable handle cycles. The new complete Host/store
+integration is still **PRESENT, UNVERIFIED**. See
+`docs/evidence/windows-volume-binding-41634160584.json`.
+
+**CONFIRMED #72 raw-security correction:** completed native Windows job
+41633832399 at `2f7ea4d` passes independent artifact/source review. Inherited and
+protected DACLs now preserve the complete raw descriptor, with ten expected
+refusals and cleanup checks. See `docs/evidence/windows-security-staging-41633832399.json`.
+**PRESENT, UNVERIFIED:** `WindowsAttachmentHost` now connects native mechanisms
+to the transaction interfaces; a dedicated required Windows job tests actual
+backup/replacement/restoration using the built JAR. Native host acceptance and
+full A1–A7/C1 remain open. See `docs/WINDOWS-ATTACHMENT-HOST.md`.
+
 **PRESENT, UNVERIFIED #72 volume binding:** the reviewed native fixed-volume
 experiment now has a bounded JNA implementation in directory snapshots, with
 same-directory native/C#/Java comparison and existing cleanup/failure coverage.

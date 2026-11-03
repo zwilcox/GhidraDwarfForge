@@ -228,3 +228,9 @@ Local `javac --release 21`, `./gradlew buildExtension` with Ghidra12.0.3,
 PowerShell AST parsing, architecture neutrality and whitespace checks pass.
 The correction's actual Windows execution is **PRESENT, UNVERIFIED** until a
 new hosted run succeeds. No public attachment or privilege policy is selected.
+
+**CONFIRMED corrected native acceptance:** completed Windows job41633832399
+at `2f7ea4d` passes independent artifact SHA/source review and raw inherited/
+protected descriptor equality. All ten intended refusals and resource controls
+pass. See `evidence/windows-security-staging-41633832399.json`. This supersedes
+the correction's pending component status, not the full attachment requirements.
