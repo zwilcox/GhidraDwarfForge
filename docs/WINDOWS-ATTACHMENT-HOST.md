@@ -98,7 +98,7 @@ hashes, recovery-record binding and immutable interrupted receipts. See
 `evidence/windows-attachment-recovery-41637595188.json`. This establishes the
 initial process-interruption cases, not power loss or the full attachment UI.
 
-**PRESENT, UNVERIFIED native refresh extension:** the same commit/rollback/
+**CONFIRMED native refresh extension at `81d0a8a`:** the same commit/rollback/
 cancellation/concurrent-target/four-crash scenarios now run for refresh after
 an actual initial coordinator commit. Fixtures retain the original backup,
 independent prior-image backup, previous committed receipt and previous pair.
@@ -107,6 +107,10 @@ before publishing the new receipt without changing other selected files; a
 previous pair changed after replacement must leave the complete new image and
 report RECOVERY_REQUIRED instead of restoring an invalid association. Each
 successful case immediately saves progress, and crash records retain child exit
-codes. Standalone Java21 compilation and extension/test builds pass locally;
-hosted execution/review remains required. These are coordinator fixtures;
+codes. Standalone Java21 compilation and extension/test builds pass locally.
+Completed attachment job41639509678 passes275 coordinator checks across18
+outcomes and eight abrupt exits. Independent review compares133 production
+sources, four test/harness sources, production JAR identity, all retained file
+hashes, previous-generation chains, changed CRCs and immutable interrupted
+receipts. See `evidence/windows-attachment-refresh-41639509678.json`. These are coordinator fixtures;
 actual Ghidra export/refresh and GDB acceptance remain required separately.

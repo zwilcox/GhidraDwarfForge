@@ -10,6 +10,12 @@ archive=$(realpath "$1")
 output=$(realpath -m "$2")
 results=$(realpath -m "$3")
 support_dir=$(realpath "$(dirname "$0")")
+# Only native hosts with an audited dependency layout are admitted.
+case "$(uname -s)" in
+    Linux) host=linux; executable=dwarfdump ;;
+    MINGW64_NT-*) host=windows; executable=dwarfdump.exe ;;
+    *) echo 'unsupported validation-tool build host' >&2; exit 1 ;;
+esac
 checker_patch="$support_dir/validation/0001-check-line-sequences.patch"
 reader_patch="$support_dir/validation/0002-accept-bounded-extended-program-count.patch"
 diagnostic_patch="$support_dir/validation/0003-preserve-bounded-harmless-diagnostics.patch"
@@ -65,10 +71,10 @@ stage="$work/output"
 mkdir -p "$stage/bin" "$stage/libexec" "$stage/share/dwarfdump" \
     "$stage/source/support/validation" "$stage/licenses"
 printf '%s  %s\n' "$configuration_hash" "$source/src/bin/dwarfdump/dwarfdump.conf" | sha256sum -c -
-cp "$source/src/bin/dwarfdump/dwarfdump" "$stage/libexec/"
+cp "$source/src/bin/dwarfdump/$executable" "$stage/libexec/"
 cp "$source/src/bin/dwarfdump/dwarfdump.conf" "$stage/share/dwarfdump/"
 cp "$launcher" "$stage/bin/dwarfdump"
-chmod 755 "$stage/bin/dwarfdump" "$stage/libexec/dwarfdump"
+chmod 755 "$stage/bin/dwarfdump" "$stage/libexec/$executable"
 cp "$archive" "$stage/source/libdwarf-2.3.2.tar.xz"
 cp "$0" "$stage/source/support/build-validation-dwarfdump.sh"
 cp "$checker_patch" "$stage/source/support/validation/"
@@ -88,10 +94,59 @@ cp "$source/src/lib/libdwarf/LIBDWARFCOPYRIGHT" "$stage/licenses/"
 cp "$source/src/bin/dwarfdump/COPYING" "$stage/licenses/DWARFDUMP-COPYING"
 cp "$source/src/bin/dwarfdump/GPL.txt" "$stage/licenses/DWARFDUMP-GPL.txt"
 cp "$source/src/bin/dwarfdump/DWARFDUMPCOPYRIGHT" "$stage/licenses/"
-readelf -d "$stage/libexec/dwarfdump" > "$work/dependencies.txt"
-if grep -Eq 'NEEDED.*libdwarf' "$work/dependencies.txt"; then
-    echo 'validation executable unexpectedly requires a shared libdwarf' >&2
-    exit 1
+if [[ "$host" == linux ]]; then
+    readelf -d "$stage/libexec/$executable" > "$work/dependencies.txt"
+    if grep -Eq 'NEEDED.*libdwarf' "$work/dependencies.txt"; then
+        echo 'validation executable unexpectedly requires a shared libdwarf' >&2
+        exit 1
+    fi
+else
+    grep -q '^#define HAVE_ZLIB 1$' "$source/config.h"
+    grep -q '^#define HAVE_ZSTD 1$' "$source/config.h"
+    # Keep compression support; audit the entire private DLL closure. Never
+    # depend on MSYS runtimes or another installed libdwarf on PATH.
+    declare -A audited=()
+    : > "$work/dependencies.txt"
+    while :; do
+        pending=0
+        for binary in "$stage/libexec/"*; do
+            name=$(basename "$binary")
+            [[ -z "${audited[$name]+present}" ]] || continue
+            audited[$name]=1
+            pending=1
+            printf '%s\n' "$name" >> "$work/dependencies.txt"
+            objdump -p "$binary" > "$work/pe-$name.txt"
+            while read -r dependency; do
+                printf '  %s\n' "$dependency" >> "$work/dependencies.txt"
+                lower=$(printf '%s' "$dependency" | tr '[:upper:]' '[:lower:]')
+                case "$lower" in
+                    kernel32.dll|msvcrt.dll|ucrtbase.dll|ntdll.dll|api-ms-win-*.dll) ;;
+                    zlib1.dll|libzstd.dll)
+                        test -f "/mingw64/bin/$dependency"
+                        if [[ ! -f "$stage/libexec/$dependency" ]]; then
+                            cp "/mingw64/bin/$dependency" "$stage/libexec/"
+                        fi
+                        ;;
+                    *) echo "unreviewed validation dependency: $dependency" >&2; exit 1 ;;
+                esac
+            done < <(sed -n 's/^[[:space:]]*DLL Name: //p' "$work/pe-$name.txt")
+        done
+        [[ "$pending" -eq 1 ]] || break
+    done
+    for component in zlib zstd; do
+        package="mingw-w64-x86_64-$component"
+        destination="$stage/licenses/$component"
+        mkdir -p "$destination"
+        pacman -Q "$package" >> "$stage/licenses/PACKAGE-VERSIONS.txt"
+        count=0
+        while read -r notice; do
+            if [[ -f "$notice" ]]; then
+                cp "$notice" "$destination/$(basename "$notice")"
+                count=$((count + 1))
+            fi
+        done < <(pacman -Ql "$package" | awk '$2 ~ /\/share\/licenses\// { print $2 }')
+        [[ "$count" -gt 0 ]] || { echo "missing notices for $package" >&2; exit 1; }
+    done
 fi
 "$stage/bin/dwarfdump" --version > "$work/version.txt"
 grep -Fq '2.3.2' "$work/version.txt"
@@ -109,11 +164,13 @@ grep -Fq '2.3.2' "$work/version.txt"
         "validation-vector-patch-sha256=$vector_patch_hash" \
         "validation-bounds-patch-sha256=$bounds_patch_hash" \
         "validation-configuration-sha256=$configuration_hash" \
-        'entry-point=bin/dwarfdump; executable=libexec/dwarfdump' \
+        "host=$host" \
+        "entry-point=bin/dwarfdump; executable=libexec/$executable" \
         'configure=--enable-static --disable-shared --disable-dwarfgen' \
         'producer-patch=not-applied'
     cat "$work/version.txt"
     cc --version
+    grep -E "HAVE_ZLIB|HAVE_ZSTD" "$source/config.h"
     cat "$work/dependencies.txt"
 } > "$stage/BUILD-METADATA.txt"
 cat > "$stage/CORRESPONDING_SOURCE.md" <<'EOF'
@@ -136,7 +193,11 @@ This executable and all eight patches are excluded from GhidraDwarfForge release
 shipped consumer/producer library sources are unchanged.
 The relocatable bin/dwarfdump launcher checks the pinned upstream configuration
 and selects it explicitly with --file-name, without consulting host defaults.
-The ELF executable is libexec/dwarfdump; configuration is under share/dwarfdump.
+The raw executable is libexec/dwarfdump on Linux or libexec/dwarfdump.exe on
+Windows; configuration is under share/dwarfdump. Windows callers can invoke
+the raw executable directly with the explicit pinned --file-name configuration.
+The Bash launcher requires MSYS2 on Windows. Compression DLLs are beside the
+Windows executable and their package versions/notices are under licenses/.
 Both executable and launcher/configuration are covered by SHA256SUMS.
 Licenses are in licenses/ and the complete upstream source archive; the
 repository build helper is MIT licensed.
@@ -145,6 +206,10 @@ On Ubuntu 24.04, install build-essential, zlib1g-dev, libzstd-dev, binutils,
 patch and xz-utils. From source/, reproduce with:
 
     bash support/build-validation-dwarfdump.sh libdwarf-2.3.2.tar.xz NEW_OUTPUT RESULTS
+
+On native Windows, use MSYS2 MINGW64 with base-devel, the MinGW64 toolchain,
+mingw-w64-x86_64-zlib, mingw-w64-x86_64-zstd, patch and xz. Run the same command
+in its Bash shell. The builder rejects any unreviewed PE runtime dependency.
 
 NEW_OUTPUT must not exist. The source/patch checksums, configure options,
 compiler, tool version and dynamic dependencies are recorded in BUILD-METADATA.txt.

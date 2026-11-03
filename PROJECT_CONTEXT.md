@@ -1,5 +1,21 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED #72 Windows refresh coordinator:** completed attachment job
+41639509678 at `81d0a8a` passes independent source/JAR, retained-file and receipt
+review: 18 outcomes,275 coordinator checks and eight abrupt child exits. Both
+generations and changed CRCs are verified; lost/changed prior-pair controls
+refuse unsafe transitions. See `docs/evidence/windows-attachment-refresh-41639509678.json`.
+These sentinel fixtures do not establish real-ELF/public attachment acceptance.
+
+**PRESENT, UNVERIFIED Windows strict-checker build:** the pinned validation-only
+consumer builder now supports native MSYS2 MINGW64, retaining all eight patches,
+explicit configuration and audited compression DLLs/notices. CI builds and
+exercises the raw executable with a compiler-built ELF/DWARF5 positive and
+corrupted-version negative from a path with spaces, without MSYS DLL lookup.
+The equivalent Linux build/runtime and existing configuration regression pass;
+native Windows execution remains required. No shipped producer changes.
+
+
 **CONFIRMED #72 Windows initial recovery:** completed job41637595188 at
 `1ca676f` passes independent source/JAR and retained-byte/receipt review: real
 sharing-lock refusal, commit/rollback/cancel/concurrent target and four abrupt

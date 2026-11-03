@@ -469,3 +469,24 @@ Every artifact is hashed before and after validation. CI runs the complete
 The evidence profile pins this patch as `gnuVectorPatchSha256` and identifies
 `libdwarf-2.3.2-eight-corrections-and-llvm-verify`. Older receipts retain their
 historical profile; new receipts require the complete eight-patch bundle.
+
+## Native Windows strict consumer
+
+**PRESENT, UNVERIFIED:** `build-validation-dwarfdump.sh` also admits native
+MSYS2 MINGW64. It builds the same pinned consumer and eight validation patches
+with static libdwarf, retains zlib/zstd support and audits every PE dependency.
+Only reviewed system imports and copied compression DLLs are accepted; runtime
+package versions and notices accompany the bundle. This validation artifact is
+separate from production/release native inputs.
+
+The raw executable is `libexec/dwarfdump.exe`. Native callers pass the pinned
+`share/dwarfdump/dwarfdump.conf` explicitly via `--file-name`; the attachment
+validator already verifies that configuration's hash. The optional Bash launcher
+continues to work under MSYS2. `native-dwarfdump.py` compiles a tiny ELF/DWARF5
+object (native Windows Clang targets x86_64-linux-gnu), relocates the checker into
+a directory with spaces, removes MSYS2 from the checker PATH and parses complete
+strict results. A DWARF-version corruption must produce the intended diagnostic
+and fail the strict parser. Inputs and tool/configuration hashes stay unchanged.
+This establishes checker execution only; full Windows exporter/attachment and
+Unicode-path coverage remain separate requirements. Linux `cc` runtime and the
+existing configuration regression pass locally; native Windows CI is pending.
