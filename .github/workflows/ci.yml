@@ -255,6 +255,30 @@ jobs:
             throw "PowerShell wrapper safety checks failed with exit code $LASTEXITCODE"
           }
 
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Check companion publication before building native libraries
+        shell: pwsh
+        run: |
+          $results = 'build/test-results/native-windows/companion-publisher'
+          $classes = "$results/classes"
+          New-Item -ItemType Directory -Force $classes | Out-Null
+          $sources = @(
+            'src/main/java/ghidradwarfforge/output/FileSystemPaths.java'
+            'src/main/java/ghidradwarfforge/output/FileDigests.java'
+            'src/main/java/ghidradwarfforge/output/ArtifactPairPublisher.java'
+            'src/main/java/ghidradwarfforge/output/CompanionArtifactPublisher.java'
+            'src/test/java/ghidradwarfforge/output/CompanionArtifactPublisherSmoke.java'
+          )
+          & javac --release 21 -d $classes @sources 2>&1 | Tee-Object -FilePath "$results/compile.log"
+          if ($LASTEXITCODE -ne 0) { throw 'Companion publication test compilation failed' }
+          & java -cp $classes ghidradwarfforge.output.CompanionArtifactPublisherSmoke 2>&1 |
+            Tee-Object -FilePath "$results/runtime.log"
+          if ($LASTEXITCODE -ne 0) { throw 'Companion publication test failed' }
+
       - name: Install MSYS2 MinGW64 build dependencies
         uses: msys2/setup-msys2@v2
         with:

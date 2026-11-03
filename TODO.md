@@ -1,5 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED hosted #107 target results:** all five target lanes passed at
+`a198328` in run 41569991085. The required gate failed in the Windows companion
+publisher smoke test's lexical parent-path assertion before Windows GUI
+acceptance. The corrected test checks physical directory identity for all three
+staging files, retaining the same-directory requirement. A Linux symlink-parent
+regression passes on Java 21. The standalone test now also runs early in the
+native Windows job; corrected Windows/full-gate acceptance remains **PRESENT,
+UNVERIFIED**. Production exporter and loader bytes are unchanged.
+
 **CONFIRMED local #72 validator process ownership:** the production Java runner
 and isolated Linux helper pass 13 native lifecycle controls and 32 actual Java
 21 checks, including orphaned/session-changing descendants, bounded raw logs,

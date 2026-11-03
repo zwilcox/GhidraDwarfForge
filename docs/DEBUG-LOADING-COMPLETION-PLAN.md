@@ -351,3 +351,28 @@ GDB confirmation on, verifies it remains on after each companion load and
 checks an owned pre-existing `.gdbinit` sentinel remains byte-identical. The
 sentinel is not executed (`-nx`); before/after text is retained separately.
 This test does not edit or replace the user's actual configuration.
+
+## Hosted target pass and Windows publisher assertion
+
+**CONFIRMED:** run 41569991085 at `a198328` passed x86-64, AArch64,
+ARM32 and both MIPS32 byte-order target jobs. Its required-validation gate
+failed because the Windows publisher smoke test required lexically equal
+parent paths. The failure precedes the Windows GUI acceptance checks; it is
+not a passing host gate. Raw failure evidence is retained locally at
+`build/review-41569991085/windows-failure.log`.
+
+The test now uses `Files.isSameFile` for each of the three staging parents,
+rejecting staging in another directory while accepting alternate spellings of
+the selected directory. Failure diagnostics retain all parent spellings. A new
+Linux symlink-parent fixture exercises the distinction. Five standalone source
+files compile with `javac --release 21`, and the actual Java 21 runtime passes
+all publisher cases, including rollback/cancellation, with the alias printed in
+`build/test-results/companion-publisher-parent/runtime.log`. Workflow lint and
+`git diff --check` pass. PowerShell/native Windows execution is unavailable
+locally and remains required in CI. An early native-windows job step now runs
+this same standalone test; the full Windows-host checks remain unchanged.
+
+This is a test correction, not a production directory-policy change. All host
+and protected-integration requirements remain open until the corrected head
+passes. Previously reviewed target artifacts retain their original commit/run
+identity and do not substitute for the corrected head's gate.
