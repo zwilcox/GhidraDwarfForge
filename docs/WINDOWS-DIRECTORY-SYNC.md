@@ -1,11 +1,13 @@
 # Windows opened-directory synchronization
 
-**PRESENT, UNVERIFIED on Windows:** `WindowsDirectorySync` supplies opened
-directory identity, filesystem facts and an explicit `FlushFileBuffers` call.
-The extension/test sources compile, its isolated probe compiles for Java 21,
-and actual Java 21 rejects the Linux host before any Windows API access. Native
-Windows binding execution remains required. This is not an attachment Host or
-a completed A5 durability contract.
+**CONFIRMED on native Windows:** completed job from run `41619066926` at
+`373f33b` and independent raw artifact/source review pass. `WindowsDirectorySync`
+supplies opened identity, filesystem facts and explicit directory flushing.
+The isolated Java 21 harness agrees with C/C# observations, rejects stale/late
+paths and real denied writes, and propagates cancellation. All 128 cleanup cycles
+retain exactly 286 Java process handles; the independent C control retains 57.
+See [`windows-directory-jna-41619066926.json`](evidence/windows-directory-jna-41619066926.json).
+This is not an attachment Host or a completed A5 durability contract.
 
 The prerequisite independent native experiment **CONFIRMED** that the Windows
 runner's NTFS directory accepts `FlushFileBuffers` with `GENERIC_WRITE`, before
@@ -44,6 +46,9 @@ changing the child file, stale and changed-after-open directories, cancellation
 before/after open, ordinary-file/junction/stream/traversal refusal, actual DACL
 write denial and 128 successful/cancelled cycles with exact handle equality.
 The denied directory must remain inspectable and unchanged while sync fails.
-Those checks are pending native execution. Full host metadata admission,
+The Windows Path parser rejects alternate-stream colon input before the
+production method is called; that case does not exercise the defensive colon
+guard. All other listed native checks pass with individually reviewed errors.
+Full host metadata admission,
 filesystem durability selection, public controls and end-to-end recovery remain
 required before #72 is complete.

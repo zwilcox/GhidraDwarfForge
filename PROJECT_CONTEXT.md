@@ -1,11 +1,11 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
-**CONFIRMED native #72 directory mechanism:** independently reviewed run41617008207
-proves NTFS directory flushing with write access; attributes-only access fails
-with error 5 and 128 cleanup cycles remain flat. The new JNA directory identity/
-flush implementation builds but is **PRESENT, UNVERIFIED** on Windows until its
-isolated harness passes. Full admission/durability remain required. See
-`docs/WINDOWS-DIRECTORY-SYNC.md`.
+**CONFIRMED native #72 directory mechanism:** JNA implementation at `373f33b`
+and completed Windows job41619066926 pass independent raw source/artifact review:
+C/C# identity/filesystem agreement, real write denial, stale/late paths,
+cancellation and 128 flat handle cycles. This follows the native NTFS flush
+experiment from41617008207. Complete host admission, durability and public
+controls remain required. See `docs/WINDOWS-DIRECTORY-SYNC.md`.
 
 **CONFIRMED local/hosted #72 filename policy:** production Linux UTF-8 and portable
 ASCII basename policies reject lossy native-byte aliases and unsupported names
