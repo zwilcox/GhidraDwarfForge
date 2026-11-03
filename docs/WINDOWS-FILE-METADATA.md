@@ -86,3 +86,23 @@ name/size observations are also compared with the Java snapshot. Actual Java
 21 verifies the transport locally, and the PowerShell parser/process capture
 and extension build pass. Corrected native Windows behavior remains pending.
 This is a test transport correction, not a product CLI encoding claim.
+
+## Inheritance-control mismatch
+
+Run `41597816863` at `13f45d4` proves the UTF-8 transport and first native
+inspection against independent .NET/C# observations, including data streams.
+Application fails its exact readback: the source control is `0x8004`, while
+`SetSecurityInfo` produces `0x8404`. Owner/group, ACL bytes, attributes and copied
+times match, but the added `SE_DACL_AUTO_INHERITED` bit is not silently ignored.
+The failed raw evidence is retained in artifact `13213246573`.
+
+Microsoft documents this [inheritance conversion](https://learn.microsoft.com/en-us/windows/win32/secauthz/automatic-propagation-of-inheritable-aces).
+The correction uses [SetFileSecurityW](https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-setfilesecurityw)
+with the observed descriptor and exact readback. Microsoft marks that API
+obsolete in favor of the converting APIs; it is selected here specifically to
+preserve the existing file descriptor rather than change inheritance semantics.
+Its signature was checked against the already pinned `securitybaseapi.h`, and
+the C contract now checks that declaration. This is a path-based operation on
+the owned regular stage, bracketed by opened identity checks; it is not an
+adversarial path-race guarantee. No directory propagation or SACL operation is
+requested. Corrected native application remains **PRESENT, UNVERIFIED**.

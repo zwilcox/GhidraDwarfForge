@@ -174,7 +174,7 @@ Require ($refused.stderr.Contains('source changed')) 'Unexpected stale-snapshot 
 Require ((ConvertTo-Json -Compress (Independent-State $stage)) -ceq (ConvertTo-Json -Compress $before)) 'Stale rejection changed stage'
 $snapshot = Inspect-Case 'cancellation-snapshot' $original
 $before = Independent-State $original
-foreach ($poll in @('0','2','9','14')) {
+foreach ($poll in @('0','2','9','14','16','20')) {
     $refused = Run-Probe "cancel-$poll" @('apply',$original,$stage,$snapshot,$poll) $false
     Require ($refused.stderr.Contains('CancellationException')) 'Unexpected cancellation result'
     Require ((ConvertTo-Json -Compress (Independent-State $original)) -ceq (ConvertTo-Json -Compress $before)) 'Cancellation changed source'

@@ -1,14 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
-**PRESENT, UNVERIFIED native Windows #72 metadata:** `WindowsFileMetadata`
-now implements opened-file identity and accessible owner/group/DACL, attribute
-and timestamp application to an owned stage. Java compilation and Windows64 C
-ABI checks pass. The first native Windows run passed its C contract but
-failed before metadata inspection because Java argv narrowed a Unicode name.
-The probe now transports paths through UTF-8 JSON and checks their roundtrip;
-corrected native metadata, rejection, cancellation and cleanup tests are pending. This is not host admission: SACLs/EAs, visibility policy,
-durability, public CLI/GUI and full acceptance remain open. The strict metadata
-contract is unchanged. See `docs/WINDOWS-FILE-METADATA.md`.
+**PRESENT, UNVERIFIED full Windows #72 metadata application:** the native C
+ABI contract and independent Java/.NET identity, security, timestamp and stream
+inspection pass in run 41597816863 after correcting Unicode test transport.
+Application correctly rejects a readback mismatch: `SetSecurityInfo` adds the
+inheritance-control bit to a legacy descriptor. The correction uses the audited
+file security-descriptor API with unchanged exact comparison and additional
+post-application cancellation controls; native acceptance is pending. SACLs/EAs,
+visibility policy, durability, public CLI/GUI and full host acceptance remain
+open. See `docs/WINDOWS-FILE-METADATA.md`.
 
 **CONFIRMED local #72 Linux metadata primitive:** `LinuxFileMetadata` now reads
 native opened-file identity and bounded visible attributes, and applies ordinary

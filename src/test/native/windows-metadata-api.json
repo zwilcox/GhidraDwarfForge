@@ -32,11 +32,13 @@
             "bytes": 35071
         }
     },
-    "scope": "Pinned SDK declaration/type inspection and cross-compiled Windows64 layout assertions; native Windows execution pending.",
+    "scope": "Pinned SDK declarations and Windows64 layout assertions; native C contract and first identity/security/stream observation pass in run41597816863. SetFileSecurityW application correction remains unverified.",
     "documentation": [
         "https://learn.microsoft.com/en-us/windows/win32/api/aclapi/nf-aclapi-getsecurityinfo",
         "https://learn.microsoft.com/en-us/windows/win32/api/aclapi/nf-aclapi-setsecurityinfo",
         "https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getfileinformationbyhandleex",
-        "https://learn.microsoft.com/en-us/windows/win32/api/winbase/ns-winbase-file_stream_info"
+        "https://learn.microsoft.com/en-us/windows/win32/api/winbase/ns-winbase-file_stream_info",
+        "https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-setfilesecurityw",
+        "https://learn.microsoft.com/en-us/windows/win32/secauthz/automatic-propagation-of-inheritable-aces"
     ]
 }
