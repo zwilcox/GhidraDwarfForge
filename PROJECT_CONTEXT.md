@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED further Windows fixture failure; correction pending native rerun:**
+run41677412507/job126069625449 passes strict-report260 and helper115 checks,
+then fails recovery-request admission. The test fabricated receipt paths from
+the temporary-directory selection spelling instead of resolved paths, unlike
+production `AttachmentOperation`. The fixture now records `toRealPath()` paths
+and separately checks the original selection spelling resolves to those claims.
+Actual Java21 passes112 recovery admission checks locally. Receipt matching and
+the production recovery policy are unchanged; Windows short-name acceptance
+still requires its corrected native run.
+
 **CONFIRMED Windows smoke-test failure reproduced and corrected locally:**
 job126047872007 failed in the CRLF variant of `StrictDwarfReportSmoke` before
 attachment execution. Windows checkout had already converted the retained

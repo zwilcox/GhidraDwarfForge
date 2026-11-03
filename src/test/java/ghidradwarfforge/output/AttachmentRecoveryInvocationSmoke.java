@@ -14,7 +14,11 @@ public final class AttachmentRecoveryInvocationSmoke {
     private static int checks;
 
     public static void main(String[] args) throws Exception {
-        Path root = Files.createTempDirectory("forge-recovery-invocation-λ ");
+        Path selectedRoot = Files.createTempDirectory("forge-recovery-invocation-λ ");
+        // Production receipts record resolved host paths. Windows temp paths
+        // may arrive via RUNNER~1; preserve that selection spelling below, but
+        // never fabricate a noncanonical production receipt from it.
+        Path root = selectedRoot.toRealPath();
         try {
             for (var mode : AttachmentReceipt.Mode.values()) {
                 Path directory = Files.createDirectory(root.resolve(mode.name()));
@@ -42,6 +46,12 @@ public final class AttachmentRecoveryInvocationSmoke {
                     equal(invocation, read(json));
                     var transaction = invocation.transaction(() -> false);
                     equal(prepared, transaction.prepared());
+                    var originalSelections = new HashMap<String, Path>();
+                    for (var entry : paths.entrySet()) {
+                        originalSelections.put(entry.getKey(), selectedRoot.resolve(root.relativize(entry.getValue())));
+                    }
+                    equal(prepared, new AttachmentRecoveryInvocation(originalSelections,
+                        invocation.receiptSha256()).transaction(() -> false).prepared());
                     Path requestFile = directory.resolve("request.json");
                     Files.writeString(requestFile, json);
                     invocation.preflight(transaction, requestFile).recheck();
