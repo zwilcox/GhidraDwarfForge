@@ -27,8 +27,13 @@ acceptance remains pending.
 at `bdef6f6` passes 26 privileged Host checks and seven unprivileged checks.
 Independent backup, ownership/metadata application, replacement, restoration,
 refusals and cleanup are recorded in
-`docs/evidence/linux-attachment-host-41652044404.json`. These sentinel checks
-do not establish real ELF/GDB or public attachment acceptance.
+`docs/evidence/linux-attachment-host-41652044404.json`. Run41657292709 adds
+independent Python owner/mode/nanosecond-mtime/xattr/inode readback; all ten
+commands, provenance hashes and exact sources are reviewed in
+`docs/evidence/linux-attachment-host-readback-41657292709.json`. These sentinel
+checks do not establish real ELF/GDB or public attachment acceptance. CI now
+publishes production attachment/refresh archives immediately after those steps
+while the broader target suites continue; full evidence review remains required.
 
 **PRESENT, UNVERIFIED production-host integration:** the real ELF/GDB and
 saved-curation refresh harnesses now select `LinuxAttachmentHost` in CI.

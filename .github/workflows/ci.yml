@@ -1200,6 +1200,15 @@ jobs:
             --output "$evidence_root/index.json"
           echo "FORGE_VALIDATION_EVIDENCE_INDEX=$evidence_root/index.json" >> "$GITHUB_ENV"
 
+      - name: Retain production attachment evidence before broader target tests
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: production-linux-attachment-${{ matrix.target }}
+          path: build/test-results/attachment-elf-controller/*.tar.gz
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: GDB companions from rebased PIE and shared-library analysis
         env:
           TARGET: ${{ matrix.target }}
@@ -1326,6 +1335,15 @@ jobs:
                 fi
                 if [[ "$attachment_status" -ne 0 ]]; then exit "$attachment_status"; fi
             done
+
+      - name: Retain saved-curation attachment refresh evidence
+        if: always() && matrix.target == 'x86_64'
+        uses: actions/upload-artifact@v7
+        with:
+          name: production-linux-attachment-refresh
+          path: build/test-results/attachment-curated-refresh/*.tar.gz
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Validate function-pointer convention extension and malformed metadata
         if: matrix.target == 'x86_64'

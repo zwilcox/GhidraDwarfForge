@@ -1,9 +1,20 @@
 # Linux attachment host
 
-**PRESENT, UNVERIFIED for privileged transaction use:** the internal
+**CONFIRMED isolated Host mechanisms; real-ELF acceptance pending:** the internal
 `LinuxAttachmentHost` implements `AttachmentOperation.Host` with an already
 authorized platform thread. It creates no public attachment/elevation action.
 The strict metadata policy remains in force. Ordinary export is unchanged.
+
+The latest independent readback at `e2ccccf`, run41657292709, corroborates
+actual uid/gid1001, regular mode0710, nanosecond mtime1700000000123000000,
+`user.fixture=00ff0a`, original bytes and distinct inodes for target/backup.
+All ten retained commands pass under Java21; source/dependency bytes match
+their manifests and exact published source. See
+[the readback receipt](evidence/linux-attachment-host-readback-41657292709.json).
+This is isolated mechanism evidence, not full transaction/ELF/GDB acceptance.
+CI now publishes the production attachment and saved-curation refresh archives
+immediately after their steps, so they can be reviewed while broader ABI tests
+continue. Missing or partial evidence does not establish a passing test.
 
 The factory calls the same read-only all-role path preflight used by the
 operation, including refresh roles and `.debug` discovery-shadow rejection,
