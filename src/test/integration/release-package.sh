@@ -28,7 +28,10 @@ printf 'corresponding source instructions\n' \
     > "$work/base/GhidraDwarfForge/third_party/CORRESPONDING_SOURCE.md"
 printf '#!/usr/bin/env bash\n' > "$work/base/GhidraDwarfForge/support/wrapper"
 chmod 755 "$work/base/GhidraDwarfForge/support/wrapper"
-for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java; do
+cp "$repository_dir/support/ghidra-dwarf-forge-attach" "$work/base/GhidraDwarfForge/support/ghidra-dwarf-forge-attach"
+chmod 644 "$work/base/GhidraDwarfForge/support/ghidra-dwarf-forge-attach"
+cp "$repository_dir/support/ghidra-dwarf-forge-attach.ps1" "$work/base/GhidraDwarfForge/support/ghidra-dwarf-forge-attach.ps1"
+for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java AttachGhidraDwarfForge.java RecoverGhidraDwarfForgeAttachment.java ExportAndAttachGhidraDwarfForge.java; do
     printf '// fixture %s\n' "$entry_point" \
         > "$work/base/GhidraDwarfForge/ghidra_scripts/$entry_point"
 done
@@ -39,12 +42,30 @@ done
 printf consumer > "$work/linux/libdwarf.so.2.3.2"
 printf dependency > "$work/linux/libdwarf.so.2"
 printf producer > "$work/linux/libdwarfp.so.2.3.2"
+printf supervisor > "$work/linux/forge-validator-supervisor"
 patch_hash=$(sha256sum < "$repository_dir/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch")
 patch_hash=${patch_hash%% *}
 printf 'source patch SHA-256:\n%s  /fixture/patch.patch\n' "$patch_hash" \
     > "$work/linux/BUILD-METADATA.txt"
 printf consumer > "$work/windows/libdwarf-2.dll"
 printf producer > "$work/windows/libdwarfp-2.dll"
+printf supervisor > "$work/windows/forge-validator-supervisor.exe"
+for platform in linux windows; do
+    supervisor_name=forge-validator-supervisor
+    if [[ "$platform" == windows ]]; then supervisor_name=forge-validator-supervisor.exe; fi
+    {
+        printf 'source SHA-256:\n'
+        sha256sum "$repository_dir/native/supervisor/forge-supervisor-$platform.c"
+        printf 'binary SHA-256:\n'
+        sha256sum "$work/$platform/$supervisor_name"
+    } > "$work/$platform/SUPERVISOR-BUILD-METADATA.txt"
+    if [[ "$platform" == windows ]]; then
+        source_hash=$(sha256sum < "$repository_dir/native/supervisor/forge-supervisor-windows.c")
+        binary_hash=$(sha256sum < "$work/windows/forge-validator-supervisor.exe")
+        printf 'source SHA-256:\r\n\\%s *D:\\fixture\\source.c\r\nbinary SHA-256:\r\n\\%s *D:\\fixture\\supervisor.exe\r\n' \
+            "${source_hash%% *}" "${binary_hash%% *}" > "$work/windows/SUPERVISOR-BUILD-METADATA.txt"
+    fi
+done
 printf compression > "$work/windows/zlib1.dll"
 printf compression > "$work/windows/libzstd.dll"
 # GNU sha256sum escapes Windows backslashes and prefixes such records with '\'.
@@ -92,6 +113,7 @@ printf 'zstd license\n' \
 
 mkdir -p "$work/windows-without-notices"
 cp "$work/windows"/*.dll "$work/windows/BUILD-METADATA.txt" \
+    "$work/windows/forge-validator-supervisor.exe" "$work/windows/SUPERVISOR-BUILD-METADATA.txt" \
     "$work/windows-without-notices/"
 if "$assembler" "$work/base.zip" "$work/linux" \
         "$work/windows-without-notices" "$work/incomplete.zip" \
@@ -124,6 +146,24 @@ reject_patch_metadata() {
     grep -Fq "$diagnostic" "$work/$name.log"
     cmp "$work/previous-release.zip" "$work/$name.zip"
 }
+
+for invalid in absent empty symlink; do
+    candidate="$work/linux-$invalid-supervisor"
+    cp -R "$work/linux" "$candidate"
+    rm "$candidate/forge-validator-supervisor"
+    case "$invalid" in
+        empty) : > "$candidate/forge-validator-supervisor" ;;
+        symlink) ln -s "$work/linux/forge-validator-supervisor" "$candidate/forge-validator-supervisor" ;;
+    esac
+    reject_patch_metadata "supervisor-$invalid" "$candidate" "$work/windows" \
+        'required validator supervisor/provenance is missing'
+done
+
+cp -R "$work/linux" "$work/linux-wrong-supervisor-source"
+sed -i 's/^[0-9a-f]\{64\}/0000000000000000000000000000000000000000000000000000000000000000/' \
+    "$work/linux-wrong-supervisor-source/SUPERVISOR-BUILD-METADATA.txt"
+reject_patch_metadata supervisor-wrong-source "$work/linux-wrong-supervisor-source" "$work/windows" \
+    'validator supervisor source provenance mismatch'
 
 cp -R "$work/windows" "$work/windows-crlf-patch"
 printf 'source patch SHA-256:\n%s  /fixture/patch.patch\n' \
@@ -204,11 +244,18 @@ for inherited in os third_party/libdwarf third_party/windows-runtime; do
         "base ZIP already contains $inherited" "$work/base-with-$name.zip"
 done
 
+# Match downloaded native artifacts, whose Unix executable bit is not retained.
+chmod 644 "$work/linux/forge-validator-supervisor"
 "$assembler" "$work/base.zip" "$work/linux" "$work/windows" "$work/first.zip"
 "$assembler" "$work/base.zip" "$work/linux" "$work/windows" "$work/second.zip"
 cmp "$work/first.zip" "$work/second.zip"
 unzip -q "$work/first.zip" -d "$work/unpacked"
 module="$work/unpacked/GhidraDwarfForge"
+test ! -x "$work/linux/forge-validator-supervisor"
+test -x "$module/os/linux_x86_64/forge-validator-supervisor"
+cmp "$work/linux/forge-validator-supervisor" "$module/os/linux_x86_64/forge-validator-supervisor"
+zipinfo -l "$work/first.zip" | grep -Eq \
+    '^-rwxr-xr-x.*GhidraDwarfForge/os/linux_x86_64/forge-validator-supervisor$'
 (
     cd "$module"
     sha256sum -c RELEASE-SHA256SUMS
@@ -222,7 +269,9 @@ grep -Fxq 'consumer=libdwarf.so.2.3.2' \
 grep -Fxq 'producer=libdwarfp-2.dll' \
     "$module/os/win_x86_64/NATIVE-PAIR.properties"
 test -s "$module/THIRD_PARTY_NOTICES.md"
-for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java; do
+test -x "$module/support/ghidra-dwarf-forge-attach"
+cmp "$repository_dir/support/ghidra-dwarf-forge-attach" "$module/support/ghidra-dwarf-forge-attach"
+for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java AttachGhidraDwarfForge.java RecoverGhidraDwarfForgeAttachment.java ExportAndAttachGhidraDwarfForge.java; do
     cmp "$work/base/GhidraDwarfForge/ghidra_scripts/$entry_point" \
         "$module/ghidra_scripts/$entry_point"
 done

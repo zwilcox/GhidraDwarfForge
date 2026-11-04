@@ -115,6 +115,151 @@ tasks.register("companionArtifactPublisherSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.output.CompanionArtifactPublisherSmoke"
 }
 
+tasks.register("attachmentProtocolSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks attachment receipt parsing/transitions and all-role path preflight"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentProtocolSmoke"
+}
+
+tasks.register("windowsAttachmentHostSmoke", JavaExec) {
+    group = "verification"
+    description = "Exercises native Windows attachment host with backup, replacement and restore stores"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.WindowsAttachmentHostSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED", "-Xint", "-XX:+UseSerialGC"
+    doFirst {
+        if (!project.hasProperty("attachmentHostResults")) throw new GradleException("Missing -PattachmentHostResults")
+        args project.property("attachmentHostResults")
+    }
+}
+
+tasks.register("validatorSupervisorSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks native validator ownership, bounded output and actual JVM cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.ValidatorSupervisorSmoke"
+    doFirst {
+        ["supervisorPath", "supervisorPython", "supervisorResults"].each { name ->
+            if (!project.hasProperty(name)) throw new GradleException("Missing -P" + name)
+        }
+        args project.property("supervisorPath"), project.property("supervisorPython"), project.property("supervisorResults")
+    }
+}
+
+tasks.register("strictDwarfReportSmoke", JavaExec) {
+    group = "verification"
+    description = "Rejects incomplete/error-bearing pinned checker reports using real retained output"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.StrictDwarfReportSmoke"
+    args file("src/test/fixtures/dwarfdump").absolutePath
+}
+
+tasks.register("attachmentReceiptStoreSmoke", JavaExec) {
+    group = "verification"
+    description = "Exercises receipt publication and failure recovery on an owned Linux filesystem"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentReceiptStoreSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+}
+
+tasks.register("attachmentFileStoreSmoke", JavaExec) {
+    group = "verification"
+    description = "Exercises independently verified backups and interruption handling on Linux"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentFileStoreSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+}
+
+tasks.register("attachmentTargetStoreSmoke", JavaExec) {
+    group = "verification"
+    description = "Exercises conditional target replacement and independent-backup recovery on Linux"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentTargetStoreSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+}
+
+tasks.register("attachmentTransactionSmoke", JavaExec) {
+    group = "verification"
+    description = "Exercises initial/refresh receipt coordination and rollback on owned Linux files"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentTransactionSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+}
+
+tasks.register("attachmentExportBindingSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks actual ELF/report binding and rejection before attachment preparation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentExportBindingSmoke"
+}
+
+tasks.register("debuglinkBasenameSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit native and portable debuglink filename policies"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.DebuglinkBasenameSmoke"
+}
+
+tasks.register("attachmentOperationSmoke", JavaExec) {
+    group = "verification"
+    description = "Exercises complete attachment preparation ordering, refresh, failure and commit"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentOperationSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+}
+
+tasks.register("attachmentRecoveryInvocationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit recovery selections, receipt pins and interruption-state admission"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentRecoveryInvocationSmoke"
+}
+
+tasks.register("attachmentHelperSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit helper consent, pinned request admission and no-write refusals"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentHelperSmoke"
+}
+
+tasks.register("attachmentGuiProcessSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks GUI helper cancellation waits for child cleanup and drains both output streams"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentGuiProcessSmoke"
+}
+
+tasks.register("attachmentPreparationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks fresh GUI request/report preparation and unchanged inputs on failure"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentPreparationSmoke"
+}
+
+tasks.register("attachmentInvocationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded helper selections and all-role transport/tool path preflight"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentInvocationSmoke"
+}
+
 tasks.register("extendedSectionNumberingSmoke", JavaExec) {
     group = "verification"
     description = "Checks extended ELF section numbering and optionally builds target fixtures"
@@ -1173,7 +1318,8 @@ tasks.register("packagedNativeLibrariesSmoke", JavaExec) {
 // Keep repository-only development inputs out of releases.
 buildExtension {
     eachFile { details ->
-        if (details.path == "GhidraDwarfForge/support/ghidra-dwarf-forge-headless") {
+        if (details.path in ["GhidraDwarfForge/support/ghidra-dwarf-forge-headless",
+                "GhidraDwarfForge/support/ghidra-dwarf-forge-attach"]) {
             details.permissions { permissions ->
                 permissions.unix("rwxr-xr-x")
             }

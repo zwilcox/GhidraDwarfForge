@@ -1,8 +1,9 @@
 # GDB loading and explicit debuglink completion
 
 **CONFIRMED scope:** complete issues [#107](https://github.com/zwilcox/GhidraDwarfForge/issues/107)
-and [#72](https://github.com/zwilcox/GhidraDwarfForge/issues/72). Neither issue is
-complete. This ledger supplements, and does not narrow, their acceptance
+and [#72](https://github.com/zwilcox/GhidraDwarfForge/issues/72). #107 is integrated
+through PR157 at `c8e3afae3108ffe7d6a4b4d335463040426bc49c`; #72 remains
+incomplete. This ledger supplements, and does not narrow, their acceptance
 criteria or ADR-0004/ADR-0005. Performance issue #74 is outside this goal.
 
 The selected baseline remains Ghidra 12.0.3, Java 21-compatible bytecode,
@@ -13,11 +14,76 @@ declarations are needed for the loader.
 
 **CONFIRMED:** L1–L7 are proven for the documented profiles by
 [the acceptance record](GDB-LOADER-ACCEPTANCE.md), including the complete hosted
-gate at `5654f53` and independent artifact review. C1 remains pending protected
-integration of the final documentation update. A1–A7 remain incomplete; the
-separate attachment branch's component evidence does not establish those rows.
+gate at `5654f53`, final-head gate41602638145 at `caa4916`, independent artifact
+review and normal protected merge157. Loader C1 is complete. Attachment A1–A7
+now have combined native, production export, GUI and debugger evidence in the
+[attachment acceptance audit](DEBUGLINK-ATTACHMENT-ACCEPTANCE.md); attachment C1
+remains incomplete. Isolated component evidence alone does not establish a row.
 The checkpoint sections below are **HISTORICAL**, recording evidence as it
 became available; their pending statements do not supersede this status.
+
+**CONFIRMED current host acceptance at `be2e806`:** run41882141913 passes both
+native host journeys and the Windows-artifact Linux GDB consumer. Independent
+[Windows review](evidence/windows-attachment-41882141913.json) confirms CLI/GUI
+initial and curated refresh generations, recovery, active cancellation, long-path
+validation, preserved artifacts and actual GDB/CRC behavior. The current
+[Linux GUI](evidence/linux-gui-attachment-41882141913.json),
+[package/native components](evidence/attachment-components-41882141913.json) and
+[scoped target reviews](evidence/linux-attachment-41882141913.json) also pass.
+All five target attachment artifacts, including MIPS32 big-endian, pass review.
+The full target regression gate, final documentation commit's exact-head check
+and C1 protected integration remain required. #72 remains open.
+
+**HISTORICAL attachment checkpoints below:** their pending/failure statements
+refer to the cited earlier commits and are superseded by the current evidence
+above. The complete acceptance rows following them remain unchanged.
+
+**CONFIRMED scoped attachment implementation and Linux execution; final
+acceptance incomplete:** the helper, both launchers and Script Manager controls
+implement preparation, explicit review, attachment, refresh and saved recovery.
+The independently reviewed Linux GUI job at188d413 passes initial/curated-refresh/
+recovery and ordinary cancellation. Earlier production Linux artifacts cover
+fifteen initial/rollback/GDB cases across five targets, two saved-program refreshes
+and eight abrupt recoveries. Native Windows component evidence covers metadata,
+sharing locks, initial/refresh coordinator recovery and scoped privilege cleanup.
+
+Run41697807284's Windows rerun reaches real attachment but rejects a hard-linked
+validator under the inappropriate recovery-file policy. The corrected read-only
+tool observation atbe4c799 has an old/new-JAR causal regression and actual
+validator/GDB acceptance locally. Full Windows runtime remains required.
+Atf89a9e6, both GUI lanes additionally require cancellation after a native
+validator has started; the real button/confirmation and process-cleanup components
+pass locally, but the complete authorized journey is **PRESENT, UNVERIFIED**.
+See the [hard-link evidence](evidence/validator-input-hardlinks-local-20261104.json),
+[cancellation evidence](evidence/gui-active-cancellation-local-20261104.json),
+[Linux transaction evidence](evidence/linux-attachment-41693381663.json) and
+[Linux GUI evidence](evidence/linux-gui-attachment-41697807284.json).
+
+The Windows job atbe4c799 subsequently passes current-permission/RunAs commits
+and rollback with the hard-linked helper; [independent byte/log/CRC review](evidence/windows-attachment-operation-41866768900.json)
+confirms those three cases. Saved-curation fails a test-only native-vs-FSRL path
+comparison. The new active Linux GUI test fails a TaskMonitorComponent lookup;
+Script Manager exposes cancellation through TaskDialog instead. Both observers
+are corrected with [local controls and regression evidence](evidence/attachment-test-observers-local-20261104.json).
+Linux active GUI cancellation subsequently passes at7d7b2ef in run41873454505,
+including independent archived cleanup/target-preservation review and the complete
+attachment/refresh/recovery/GDB journey. See [the evidence](evidence/linux-gui-attachment-41873454505.json).
+Windows saved refresh subsequently passes both the hosted step and independent
+[receipt/byte/log review](evidence/windows-attachment-operation-41873454505.json).
+A local Linux GDB consumer confirms both Windows-produced CLI generations and
+CRC rejection; this does not replace the full Windows GUI consumer.
+[Current Linux attachment reviews](evidence/linux-attachment-41873454505.json) cover
+all five target profiles at `7d7b2ef`, including AArch64. The corrected Windows
+supervisor, modifying GUI/cancellation and final-head gate remain unverified.
+
+The same run's Windows attachment/rollback/saved-curation refresh step now
+passes, but the first modifying GUI attachment exits1 before native validator
+status or transaction publication. Its nested evidence path exceeds300 characters;
+process-start/path behavior is under investigation with an isolated native Windows
+observation. Windows GUI and the complete required gate remain failed/unverified.
+
+The following rows retain their full required scope. Prior-head component or
+Linux passes do not close a cross-host row or replace the final required gate.
 
 | ID | Required outcome | Evidence required |
 | --- | --- | --- |

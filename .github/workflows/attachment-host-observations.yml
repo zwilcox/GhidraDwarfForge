@@ -58,6 +58,20 @@ jobs:
               with:
                   distribution: temurin
                   java-version: 21
+            - name: Observe Java21 validator working directories on owned Windows paths
+              shell: pwsh
+              run: |
+                  $ErrorActionPreference = 'Stop'
+                  $parent = Join-Path $env:GITHUB_WORKSPACE 'build/test-results/attachment-host-observations/validator-paths'
+                  $classes = Join-Path $parent 'classes'
+                  $evidence = Join-Path $parent 'evidence'
+                  $null = New-Item -ItemType Directory -Path $classes -Force
+                  $source = 'src/test/integration/attachment-host-observations/WindowsValidatorPathProbe.java'
+                  & (Join-Path $env:JAVA_HOME 'bin/javac.exe') --release 21 -d $classes $source
+                  if ($LASTEXITCODE -ne 0) { throw 'path probe compilation failed' }
+                  & (Join-Path $env:JAVA_HOME 'bin/java.exe') -cp $classes WindowsValidatorPathProbe $evidence
+                  if ($LASTEXITCODE -ne 0) { throw 'path probe failed; inspect retained diagnostics' }
+                  Copy-Item -LiteralPath $source -Destination $evidence
             - name: Inspect owned native Windows fixtures with Java and handle facts
               shell: pwsh
               run: |

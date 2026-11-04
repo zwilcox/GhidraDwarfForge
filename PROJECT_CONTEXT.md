@@ -1,21 +1,779 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
-**CONFIRMED #107 implementation and acceptance:** production head
-`5654f537a1bd02683eccd751cd9b7b9610fa4dc3` passed the complete required gate
-in run 41586083925. Independent review covers all five target artifacts,
-Linux/Windows default and optional GUI journeys, package provenance and fresh
-GNU/LLVM/pinned strict validation. See [the acceptance record](docs/GDB-LOADER-ACCEPTANCE.md)
-for each original requirement and explicit host/runtime limits. Final
-protected integration of this documentation update remains required; no
-release has been published by this work.
+**CONFIRMED Windows chooser correction; separate clean-launch click oracle fixed locally:**
+At `ba65267`, run41897626643/job126818305192 passes the delayed-chooser control
+and the first modifying Windows GUI journey: attachment, changed-curation refresh,
+recovery and real active-validator cancellation. Independent retained-artifact
+review and local Linux GDB replay verify four CLI/GUI generations, CRC rejection,
+210 validator-log hashes and 631 protected Windows files. The job then fails its
+second, clean GUI launch because an older control requires click counts `[1,2,3,4]`;
+Windows correctly delivers `[3,4,5,6]` and two actions. The corrected oracle accepts
+consecutive positive counts while retaining exactly one action per gesture. An
+added primed real-click case reproduces the higher starting count locally; the
+full actual-Java21 Linux GUI and both validator/GDB journeys pass. See
+`docs/evidence/gui-click-count-offset-local-20261104.json`. **PRESENT, UNVERIFIED
+on Windows:** the corrected clean-launch control. Full required CI and C1 remain
+incomplete. The hosted GDB consumer was skipped; local replay is scoped evidence.
 
-**CONFIRMED active scope:** finish #107 integration and the full #72 opt-in
-debuglink transaction. #72 remains incomplete: the loader's three-artifact
-publisher does not modify the executable or implement its backup/receipt/
-recovery contract. The separate attachment branch contains transaction and
-validator work but still needs complete production hosts, public controls,
-and full acceptance. All original criteria remain in
-`docs/DEBUG-LOADING-COMPLETION-PLAN.md`.
+**CONFIRMED final-head Windows GUI test race; local correction validated:**
+Run41890465382 at `edd3dce` fails Windows host job126794435767: the active
+cancellation test selects the earlier decline request, then times out waiting for
+a validator that was never launched. Its preview and screenshot confirm the wrong
+selection. Native Windows long-path and CLI attachment checks pass in that run.
+The chooser test now waits for Ghidra's asynchronous initialization, checks the
+accepted file, and verifies intended review paths before confirming a target
+change. A controlled delayed-listing regression reproduces the old selection and
+passes with the correction. Actual Java21 Linux Script Manager export/preparation/
+decline/cancellation, validators and both GDB journeys pass locally. See
+`docs/evidence/gui-chooser-refresh-local-20261104.json`. **PRESENT, UNVERIFIED on
+Windows:** the corrected chooser interaction. Final required CI and C1 integration
+remain incomplete; #72 stays open.
+
+**CONFIRMED current Windows and Linux host acceptance; integration remains open:**
+At `be2e806`, run41882141913 passes the complete Windows host job126765207504 and
+Windows-artifact GDB consumer126775392304. Independent review confirms native
+CLI and GUI attachment/changed-curation refresh/recovery, actual GUI cancellation
+after validator startup, preserved target and prior generations, 210 validator-log
+hashes, 726 protected Windows artifact hashes, and four positive GDB generations
+plus four CRC rejections. Actual Java21 long-path startup/cancellation passes;
+GUI validator status paths are 318–321 characters. The former Windows GUI launch
+failure is resolved for this tested workflow. See
+`docs/evidence/windows-attachment-41882141913.json`.
+
+The same head's Linux GUI journey, package/native manifests and Windows
+coordinator evidence pass independent review. Current attachment reviews cover
+all five target profiles, including MIPS32 big-endian: fifteen initial/rollback/
+GDB cases, two saved-curation refreshes and eight abrupt recoveries. The complete
+A1–A7 audit is recorded in `docs/DEBUGLINK-ATTACHMENT-ACCEPTANCE.md`. The full
+target regression gate and final C1 protected integration remain pending; #72
+is not closed. #107 remains merged.
+The earlier checkpoint paragraphs below are **HISTORICAL** where superseded by
+this acceptance record; they do not turn a previously unresolved failure into
+a current blocker.
+
+**CONFIRMED Windows long-cwd failure; correction awaits native acceptance:**
+Manual run41878689772 completes on actual Windows Java21.0.13: short cwd and
+short cwd with 355-character log paths succeed, while ordinary and extended-prefix
+long cwd both fail with CreateProcess error267. This explains the process-start
+failure mechanism seen in the modifying GUI; the full corrected journey remains
+required. See `docs/evidence/windows-validator-paths-41878689772.json`.
+
+The supervisor now selects a short canonical ancestor only for Windows process
+cwd, retaining the original evidence destination and absolute file arguments.
+Its native output creation resolves extended-length paths while retaining
+exclusive creation/no-follow behavior. Deep-path execution, cancellation and
+collision fixtures are added without shortening GUI paths. **PRESENT, UNVERIFIED
+on native Windows:** the corrected helper and complete GUI regression. No ELF,
+DWARF or native producer binding changes are involved.
+
+The new cwd test uses escaped JSON to avoid depending on Python stdout encoding.
+An explicit CP1252 local run reproduced the previous test's UTF-8 decoding failure;
+the corrected observer passes all 38 actual-Java21 supervisor checks under the same
+encoding. This is a test-only correction; production path handling is unchanged.
+
+**CONFIRMED hosted Windows refresh step; new GUI failure under investigation:**
+Run41873454505/job126733683157 passes real Windows headless export and the
+attachment/rollback/saved-curation refresh step with the corrected FSRL check.
+Independent review now confirms initial/refresh receipt chains, unchanged prior
+generations, strict backup-based import identity, changed CRC and 140 retained
+validator log hashes. A separate Linux GDB replay of both Windows-produced CLI
+generations passes source/type/argument/runtime and CRC-rejection checks. See
+`docs/evidence/windows-attachment-operation-41873454505.json`. Its GUI job fails
+at the first authorized attachment. The selected records directory is218
+characters; nested validator evidence exceeds300. Only empty supervisor stdout/
+stderr exist, with no native status, tool output, backup or receipt. The subsequent isolated Windows probe confirms long working-directory process
+creation is rejected; corrected GUI acceptance remains required.
+
+The manual host-observation workflow now runs a small actual-Java21 Windows
+probe with short/long/prefixed working directories and long redirection paths.
+It retains actual launch outcomes without calling an observed rejection a
+feature pass. Local Java21-compatible compilation, child execution and workflow
+lint pass; native observations subsequently confirm long-cwd rejection as recorded above. The passing Linux GUI/cancellation,
+exact package and Windows component evidence below retain their scope. #72 and
+the complete A1–A7/C1 gate remain incomplete.
+
+**CONFIRMED scoped Linux attachment artifacts:** run41873454505 now has
+independent passing reviews for fifteen initial/rollback/runtime cases: x86-64,
+AArch64, ARM32 and both MIPS32 byte orders, each with ET_EXEC, PIE and no-build-ID inputs.
+The ARM/MIPS cases use QEMU/GDB. Two x86 saved-curation refreshes and eight abrupt
+recoveries also pass review. Original-prefix checks retain `e_shentsize` and allow
+only the intended section-table pointer/count/index fields to change. See
+`docs/evidence/linux-attachment-41873454505.json`. These artifacts are from
+`7d7b2ef`; the corrected Windows supervisor and complete final-head gate remain
+pending. These scoped reviews do not close #72.
+
+**CONFIRMED current-head Linux GUI cancellation and attachment acceptance:**
+At `7d7b2ef`, run41873454505/job126732491182 passes the full Linux GUI job. Independent
+artifact review confirms real TaskDialog Cancel/Yes after a native validator PID,
+helper130, archived supervisor `cancelled`/cleanupComplete, unchanged target and
+absent transaction outputs. It also checks initial/changed-curation receipt/hash/
+CRC chains, 70 live-validator log hashes, both GDB source/type/break/next/step/exit
+and CRC-negative transcripts, and restoration of the initial association through
+saved recovery. See `docs/evidence/linux-gui-attachment-41873454505.json`.
+
+The same head's package review matches all 146 production Java sources, 264 raw
+repository files, 503 Java21 classes and release/native manifests. Native Windows
+component review verifies 18 coordinator outcomes, eight abrupt exits, own-token
+restoration and the actual packaged JAR; see
+`docs/evidence/windows-attachment-components-41873454505.json`. These component
+checks do not establish complete Windows refresh/GUI acceptance. The Windows
+host and five target lanes remain live; full A1–A7/C1 and #72 remain incomplete.
+
+**CONFIRMED scoped Windows real attachment; two test observers corrected locally:**
+Run41866768900/job126708313285 passes current-permission and explicit RunAs
+commits plus rollback with a deliberately two-link validator helper. Independent
+review rehashes 105 validator logs and checks retained target/backup/pair bytes,
+native identity/metadata claims, receipt bindings and debuglink CRCs. See
+`docs/evidence/windows-attachment-operation-41866768900.json`. The job then
+fails the saved-curation fixture's native-path comparison. Ghidra stores the
+local FSRL path; the fixture now derives that spelling through Ghidra's API while
+retaining strict import SHA checks and wrong-path/wrong-hash rejection controls.
+
+Run41868915417/job126717722771 reaches the active native validator but its GUI
+observer cannot find a TaskMonitorComponent message. Script Manager uses
+TaskDialog's separate status area and Cancel button. The corrected observer
+requires the exact task title/message and real Cancel/Yes interaction. A local
+actual-Java21 TaskLauncher control reproduces the old lookup's absence and proves
+worker cancellation; the full installed GUI/validator/GDB regression also passes.
+The saved-curation/refresh/validator/GDB regression passes locally with the limited
+Linux test host (operation JVM21, headless JVM25), including wrong-path/hash
+rejections. Two earlier private-layout setup failures are retained. See
+`docs/evidence/attachment-test-observers-local-20261104.json`.
+
+**PRESENT, UNVERIFIED:** corrected Windows refresh and both native authorized GUI
+cancellation journeys still need hosted acceptance. The full required gate,
+Windows consumer and A1–A7/C1 audit remain open. #72 is not complete; #107 remains
+merged. Earlier checkpoints retain their original scope.
+
+**PRESENT, UNVERIFIED native GUI cancellation journey; local controls pass:**
+The Script Manager fixture now launches an authorized attachment with an owned
+validator that records its PID and waits during its version query. Only after
+that process is observed running does the test click Ghidra's actual task Cancel
+button and confirm Yes. It requires helper exit130, a terminated validator, an
+unchanged target/pair/request and no backup/transaction publication. Both native
+GUI lanes and the retained-artifact consumer require this case. Private native
+supervisor status remains in the authorization wrapper's diagnostic archive for
+independent review; the unprivileged GUI checks process termination directly.
+
+The GUI now maps the helper's cancellation exit130 to Ghidra's CancelledException
+after waiting for cleanup, so Script Manager reports cancellation explicitly.
+Actual Java21 child cleanup/drain, extension build and installed Linux GUI
+regression pass, including a real Cancel-button/confirmation control and
+GNU/LLVM/pinned-strict/GDB checks. Both platform fixture builds pass warnings as
+errors; the Linux fixture is actually stopped through the production supervisor.
+The new native authorized GUI journey still needs hosted acceptance. See
+`docs/evidence/gui-active-cancellation-local-20261104.json`. #72 remains incomplete.
+
+**CONFIRMED Windows hard-link admission failure; correction locally verified:**
+Run41697807284 attempt2/job126646526652 passes the earlier supervisor timeout
+control and reaches actual attachment. The current-permission helper returns
+`Windows attachment metadata rejects hardlinks` before backup or transaction
+publication. Validator tools were being inspected as single-link recovery files.
+The helper, combined validator and strict configuration check now use a distinct
+read-only identity/content observation for tools. Targets and recovery material
+retain the complete single-link metadata policy; selected cross-role aliases
+still fail before writes. Validation evidence is schema2 with explicit tool
+observation semantics, rather than a metadata-preservation claim.
+
+Actual Java21 passes helper229, strict-report260, recovery204 and transaction532
+checks (eight abrupt exits), plus the extension build. An owned two-link supervisor
+reproduces rejection with the previous production JAR and passes real GNU/LLVM/
+pinned-strict validation with the corrected JAR. The x86-64 real-export controller
+then passes commit, rollback, GDB and CRC-negative checks using that same linked
+tool. See `docs/evidence/validator-input-hardlinks-local-20261104.json`.
+The Windows real-operation fixture now deliberately adds a supervisor hard link,
+records tool identities/link counts and requires current-permission and RunAs
+commits plus rollback/refresh. Native Windows execution and the full required
+gate remain pending; #72 is not complete. No supervisor timeout was changed.
+
+**CONFIRMED current-head Linux GUI acceptance; Windows full job failed before attachment:**
+At `188d413`, run41697807284/job126139026490 passes the complete Linux GUI job:
+real consecutive double-click control, explicit pkexec attachment, curated refresh,
+saved recovery, ordinary chooser cancellation, validators and automatic GDB/CRC
+checks. The retained package and GUI artifact were independently reviewed; see
+`docs/evidence/linux-gui-attachment-41697807284.json`. Production Linux CLI evidence
+at the identical production JAR covers fifteen real cases across five targets,
+two saved-program refreshes and eight abrupt recoveries; see
+`docs/evidence/linux-attachment-41693381663.json`.
+
+Windows job126140208967 failed in the supervisor smoke's first successful-command
+control after its five-second deadline. Native status records zero stdout/stderr
+and complete process cleanup. This run never reached the new current-permission
+attachment diagnostic or RunAs; the prior real-operation failure remains unresolved.
+A rerun of this terminal job was refused by GitHub while its other workflow jobs
+were still running. No timeout or production policy has been changed on this
+evidence. Complete Windows operation/GUI validation and the full A1–A7/C1 gate
+remain incomplete. Earlier checkpoints below retain their historical scope.
+
+**CONFIRMED Windows path correction; real RunAs attachment still fails:**
+job126124091548/run41693381663 passes native helper219, recovery156, the Unicode
+child cleanup test and eight PowerShell encoder controls. Real headless export
+and a public preview using a Unicode request filename also pass. The explicitly
+authorized helper then exits1 before any backup, validation or transaction output;
+the owned executable remains byte-identical. Its elevated console was not
+redirected, so the cause is **UNCERTAIN**. See
+`docs/evidence/windows-helper-paths-41693381663.json`.
+The native fixture now separately requires a fresh current-permission commit and
+a fresh RunAs commit, preserving redirected helper diagnostics from the former.
+This is additional test coverage, not an elevation retry or a replacement for
+RunAs acceptance. Java21 compilation and Python parsing pass; native execution
+of the diagnostic fixture remains pending. Complete A1–A7/C1 is still open.
+
+**CONFIRMED scoped native Linux GUI attachment/refresh/recovery:** run41693381663
+at `0f70308` proves the unprivileged Script Manager/pkexec initial and curated
+refresh commits, then saved-request restoration. Independent checks of retained
+artifacts prove unchanged program headers/original prefixes, receipt chains,
+GNU/LLVM/pinned-strict acceptance, both automatic GDB source/step journeys and
+CRC refusal. See `docs/evidence/linux-gui-attachment-41693381663.json`.
+The complete hosted job still failed afterward: the test observer accepted only
+click count2, while Ghidra also launches on positive even counts such as4. A new
+real-mouse control reproduces the old failure with counts1/2/3/4 and two actual
+launches. Matching Ghidra's event policy fixes it; the local installed GUI,
+validators and GDB regression pass. No product dispatch is changed or retried.
+Windows real-operation/GUI acceptance and the final required gate remain pending.
+
+**CONFIRMED defects in run41689061371; corrections locally verified, hosted acceptance pending:**
+Linux GUI job126107904107 committed both initial attachment and curated refresh,
+then recovery preview failed while traversing the root-private candidate directory.
+The read-only review now labels and defers only that staging-path check. Modifying
+recovery still preflights every role before opening a native host or writing.
+Regression cases cover both receipt phases, initial/refresh, an inaccessible
+private directory and a non-directory parent; refused execution preserves the
+target/receipt and creates no recovery outputs. CI diagnostics upload the existing
+owned archive instead of trying to traverse root-private staging directories.
+
+Windows job126110049339 passed the native cancellation identity checks but its
+child process received `?` instead of `λ` in a filename. GUI preview and the
+PowerShell launcher now transport literal request/control paths as bounded,
+canonical UTF-8 Base64 arguments, decoded before the existing absolute-path,
+alias, content-pin and consent checks. Unicode remains in the child fixture;
+the native Windows public-launcher fixture now also selects a Unicode request
+filename. This changes application arguments, not JVM installation/classpath
+support. Actual Java21 local helper219, recovery204, transaction532 (eight abrupt
+exits) and child cleanup/drain checks pass, as do extension build, eight PowerShell
+encoding controls and workflow lint. Native Windows execution, complete GUI
+recovery/consumer validation and the final required gate remain **PRESENT,
+UNVERIFIED**. The installed Linux GUI regression also passes export, default
+declines, validators and GDB stepping; see
+`docs/evidence/attachment-path-recovery-local-20261103.json`. Earlier
+pending-cause/readiness notes below are historical.
+
+**PRESENT, UNVERIFIED native Windows GUI journeys:** the shared Script Manager
+harness now selects PowerShell7/RunAs, checks durable receipt phases and exercises
+initial attachment, curated refresh and saved recovery on the existing runner
+token. The required Linux consumer checks both GUI-produced generations with
+pinned validators, automatic GDB source/stepping and CRC refusal, without changing
+downloaded artifacts. This does not claim an interactive standard-user UAC prompt.
+Java21 compilation, PowerShell parsing and lint pass; local compiler controls
+verify Windows-style source relocation and quoted directories containing spaces.
+Native Windows execution remains pending.
+
+**CONFIRMED Linux GUI harness admission failure; corrected query pending:**
+job126100727964/run41686788301 passes the real reference export but stops before
+Ghidra GUI launch. Polkit refuses an unprivileged `pkcheck` query carrying action
+details. The runner now performs only that readiness query through its existing
+sudo authority, retaining the unprivileged script PID as the checked subject.
+Ghidra and its actual confirmation flow remain unprivileged. Local ShellCheck/
+actionlint pass; native GUI execution is still unverified.
+
+**CONFIRMED Windows cancellation identity correction; new child-test failure:**
+job126097709777/run41685703952 passes149 helper checks with
+`cancellation-native-identity=true`, then fails `attachmentGuiProcessSmoke`
+before preparation/recovery and real-export tests. Its old assertion discarded
+the child exit/output details. The fixture now retains stdout, stderr and exit/
+cancellation status and includes a bounded stderr tail in failures; the actual
+Java21 Linux control still passes. The Windows child-failure cause is UNCERTAIN
+until the diagnostic rerun. This is not a complete Windows or GUI acceptance.
+
+**CONFIRMED scoped authorization checks:** independent Windows artifacts from
+run41680805435 prove own-token privilege restoration, nested/exceptional cleanup
+and128 cycles without handle growth. The local installed Linux GUI additionally
+proves that accepting the target-change review then cancelling the separate
+authorization choice starts no modifying helper and preserves every selected file.
+Both real export pairs still pass validators/GDB. See
+`docs/evidence/windows-attachment-privilege-41680805435.json` and
+`docs/evidence/attachment-authorization-decline-local-20261103.json`.
+These are component checks; native modifying GUI, Windows real-operation and the
+final required gate remain incomplete.
+
+**PRESENT, UNVERIFIED native GUI completion harness:** the Linux CI reference
+job now drives the real preparation/attachment, changed-curation refresh and
+saved-request recovery scripts. Ghidra remains unprivileged; a temporary
+runner-only polkit rule authorizes its explicitly selected separate helper.
+Both generations require receipt/CRC checks, structural validators and fresh
+GDB automatic discovery, source stepping and CRC rejection. Java21 compilation,
+ShellCheck/actionlint and independent objcopy/GDB consumer controls pass locally;
+this is not evidence of a successful native GUI transaction. Native execution
+and Windows acceptance remain pending.
+
+**CONFIRMED local GUI preparation; native modifying GUI acceptance remains unverified:**
+`ExportAndAttachGhidraDwarfForge.java` selects an initial/refresh operation, exports
+the current program to a fresh pair, captures the completed report directly from
+script state, binds its hashes and publishes an explicit request. Refresh selects
+the original backup for export; the prior pair is retained. Publication rejects
+existing/late destinations and rolls back a failed second installation. Local
+Java21 passes27 preparation controls and fresh-pair collision/cancellation tests.
+Installed Linux Script Manager passes real preparation and separate default
+decline in ordinary and GDB-loader regressions; every generated pair passes
+GNU/LLVM/pinned-libdwarf and native GDB. See
+`docs/evidence/attachment-preparation-local-20261103.json`.
+
+**CONFIRMED native Windows cancellation defect; correction awaiting rerun:**
+job126079953727 fails because Windows Java `BasicFileAttributes.fileKey()` is null.
+The cancellation channel now reuses the existing audited Windows opened-handle
+volume/file-ID/size/time reader, without new native signatures, security privilege
+changes or a weaker identity fallback. Local Linux helper149 and recovery112
+checks/build pass; they do not prove Windows execution. Native modifying GUI,
+Windows real-operation/refresh/GDB artifact acceptance and the final gate remain
+incomplete; A1–A7/C1 are not closed.
+
+**CONFIRMED local GUI preview/decline; full native GUI flow remains unverified:**
+the installed Script Manager discovers attachment/recovery scripts. The attachment
+script previews the selected request in a separate JVM, displays readable paths
+and defaults to Cancel; actual Java21/Xvfb/Openbox input proves Enter declines
+without starting a modifying helper or changing any selected input/output.
+The same run's real export passes GNU/LLVM/pinned-libdwarf and native GDB checks.
+The GUI can explicitly request pkexec/RunAs and forwards a cooperative file-based
+cancellation channel. Helper149, recovery112, separate-child stop/drain tests,
+launcher12 routing cases, extension build, release assembly and lint pass locally.
+See `docs/evidence/attachment-gui-local-20261103.json` and `docs/ATTACHMENT-HELPER.md`.
+Successful modifying GUI attachment/refresh/recovery, native authorization/
+cancellation, current Windows artifacts and the
+complete final gate remain incomplete. No A1–A7/C1 row is closed by this checkpoint.
+
+**CONFIRMED further Windows fixture failure; correction pending native rerun:**
+run41677412507/job126069625449 passes strict-report260 and helper115 checks,
+then fails recovery-request admission. The test fabricated receipt paths from
+the temporary-directory selection spelling instead of resolved paths, unlike
+production `AttachmentOperation`. The fixture now records `toRealPath()` paths
+and separately checks the original selection spelling resolves to those claims.
+Actual Java21 passes112 recovery admission checks locally. Receipt matching and
+the production recovery policy are unchanged; Windows short-name acceptance
+still requires its corrected native run.
+
+**CONFIRMED Windows smoke-test failure reproduced and corrected locally:**
+job126047872007 failed in the CRLF variant of `StrictDwarfReportSmoke` before
+attachment execution. Windows checkout had already converted the retained
+fixture to CRLF; the test converted it again to CRCRLF. The test now checks
+the checkout bytes first, normalizes only its mutation baseline to LF, checks
+both LF/CRLF and explicitly rejects CRCRLF. Actual Java21 passes260 checks
+against both the repository fixture and a separate CRLF checkout simulation.
+Production parser acceptance is unchanged. Native Windows rerun is pending.
+
+**PRESENT, UNVERIFIED Windows public launcher:** a PowerShell7 script now
+previews explicit selections, requires confirmation and requests RunAs only with
+an explicit authorization option. The isolated helper can enable only its own
+already-held SeSecurityPrivilege and restores/verifies the original state.
+Microsoft API/header audit and Windows x64 ABI assertions pass; Java21 helper115
+checks, build, PowerShell parsing, release assembly and workflow lint pass locally.
+CI now exercises native token scope cleanup and invokes the packaged launcher on
+the real Windows export. Native artifact acceptance, interactive UAC/cancellation
+and Ghidra GUI journeys remain incomplete. See
+`docs/WINDOWS-ATTACHMENT-AUTHORIZATION.md`.
+
+**PRESENT, UNVERIFIED Linux public launcher:** the installed
+`support/ghidra-dwarf-forge-attach` previews the pinned request, requires explicit
+target-change confirmation and offers explicitly selected sudo/pkexec authorization
+for the separate helper. No automatic elevation retry is added. Local routing
+controls, actual Java21 read-only preview/refusal, helper108 checks, executable
+base-ZIP inspection and release assembly pass. Linux production CI now invokes
+the packaged launcher. Hosted execution, actual authorization journeys, Windows
+launcher and GUI acceptance remain incomplete. See `docs/ATTACHMENT-HELPER.md`.
+
+**PRESENT, UNVERIFIED native saved-recovery execution:** ATTACH/REFRESH requests
+now explicitly select a fresh recoveryInvocation destination. The helper
+exclusively publishes and verifies its recovery selections before PREPARED or
+target replacement, with pins for both exact possible receipt phases. The saved
+file is then bound through transaction completion. Local initial/refresh tests
+prove ordering, no overwrite and target preservation on publication refusal.
+Native crash tests now save this file before the abrupt child and use it in a
+fresh recovery helper. Authorization launchers, GUI, native artifact acceptance
+and final C1 remain pending. See `docs/ATTACHMENT-HELPER.md`.
+
+**PRESENT, UNVERIFIED earlier Windows validation:** a dedicated Linux x86
+reference job now builds the same fixture and runs the same real headless export
+and structural validators used by the architecture lane. Windows consumes its
+four reference files immediately after that job succeeds, instead of waiting for
+the entire five-target matrix. The final required gate still explicitly requires
+all five target lanes, both host paths, Windows-artifact GDB checks and the new
+reference job. Local actionlint/ShellCheck and diff checks pass; hosted execution
+of this dependency change is pending.
+
+**PRESENT, UNVERIFIED public recovery helper:** `AttachmentHelper --recover`
+now accepts an explicit bounded recovery request plus request/receipt SHA-256
+pins and mandatory target-change consent. It reconstructs claims from the
+selected interruption record without following embedded artifact paths, then
+runs the native recovery coordinator. JSON output is explicitly UTF-8. Actual
+Java21 passes108 recovery admission checks; the existing532 coordinator checks
+pass. CI's8 native Linux interruption cases now recover via fresh helper JVMs
+and independently verify durable receipts and restored bytes/metadata. Native
+helper evidence, authorization
+launchers and GUI integration remain incomplete. See `docs/ATTACHMENT-HELPER.md`.
+
+**PRESENT, UNVERIFIED native helper execution:** `AttachmentHelper` now runs
+explicit SHA-256-pinned ATTACH/REFRESH selections in a separate process through
+the real host/validator/transaction. Explicit target-change consent is mandatory;
+no automatic elevation or fallback is introduced. It retains request/tool
+bindings, supports an opt-in stdin cancellation channel and reports committed
+outcomes even if subsequent host cleanup fails. Actual Java21 passes88 admission,
+72 request and80 operation checks; extension build and workflow lint pass.
+CI now routes all15 Linux production initial cases through the helper and keeps
+the existing GDB/CRC/metadata oracles. Native helper evidence, authorization
+launchers, durable public recovery, GUI journeys and final C1 remain pending.
+See `docs/ATTACHMENT-HELPER.md`.
+
+**CONFIRMED scoped production Linux attachment:** independent artifact review
+at `e3601f9` /41660525292 accepts fifteen real initial/rollback cases across
+x86-64, AArch64, ARM32 and both MIPS32 byte orders (exec/PIE/no-build-ID), two saved
+Ghidra changed-CRC refresh cases and eight abrupt native recovery cases.
+Release/test provenance, live validator logs, fresh local LLVM, preserved ELF
+program bytes, receipt chains and actual native/QEMU GDB arguments/source/type
+behavior are checked. The ARM32/AArch64 QEMU vDSO warning is reproduced by the
+untouched compiler reference. See `docs/evidence/linux-attachment-operation-41660525292.json`.
+Windows real-operation/refresh/consumer evidence, public
+helper/CLI/GUI execution and the final exact-head gate remain incomplete.
+
+**PLANNED separate-helper public flow; CONFIRMED local request admission:**
+attachment will run outside Ghidra, with OS authorization requested only by
+an explicit user action when needed. This is the stated implementation
+assumption after the optional preference question; it does not authorize any
+current elevation. `AttachmentInvocation` now transports explicit absolute
+artifact/tool selections, rejects malformed or ambiguous requests and includes
+the request file/tools in read-only preflight. Actual Java21 passes72 checks
+and the existing80 operation checks; the extension builds. CLI/GUI launch,
+authorization and cancellation/recovery UX remain planned, and Windows request
+tests are assigned to CI. See `docs/ATTACHMENT-HELPER.md`. Full A1–A7/C1 remain
+incomplete; public attachment is not enabled by this transport class.
+
+**PRESENT, UNVERIFIED Windows saved-curation refresh:** the native real-ELF
+harness now saves analyst function/type/member edits in a Ghidra project,
+reopens it, rejects the attached image's changed import hash, and exports a
+fresh pair against the retained original backup. A separate Java21 fixture
+uses the production Windows Host, live validators and refresh coordinator;
+it checks changed CRC, metadata preservation, an independent prior-image
+backup and retained previous pair/receipt. Python independently checks the
+receipt chain, validator log hashes, ELF debuglink bytes and program headers.
+Java21 probe compilation, Python/PowerShell parsing and workflow lint pass;
+Windows execution remains pending. A required Linux consumer job now checks
+both Windows-produced generations in fresh GDB sessions, with explicit source
+relocation and CRC refusal controls. A local compiler control proves the
+Windows-style source-path lookup/runtime and CRC-negative mechanisms only;
+actual Windows-artifact acceptance remains pending. Public controls and full
+A1–A7/C1 remain incomplete.
+
+**CONFIRMED mount-bound visibility acceptance:** completed extension-build
+41650311183 at2b89ec3 passes154 mount checks, independent native stat/findmnt
+comparison,8 unprivileged and168 privileged lifecycle checks. Retained sources,
+dependencies and outputs were independently reviewed; see
+`docs/evidence/linux-visibility-mount-41650311183.json`. The Linux Host has separate isolated privileged evidence below; real-ELF
+acceptance remains pending.
+
+**CONFIRMED isolated Linux attachment Host:** extension-build41652044404
+at `bdef6f6` passes 26 privileged Host checks and seven unprivileged checks.
+Independent backup, ownership/metadata application, replacement, restoration,
+refusals and cleanup are recorded in
+`docs/evidence/linux-attachment-host-41652044404.json`. Run41657292709 adds
+independent Python owner/mode/nanosecond-mtime/xattr/inode readback; all ten
+commands, provenance hashes and exact sources are reviewed in
+`docs/evidence/linux-attachment-host-readback-41657292709.json`. These sentinel
+checks do not establish real ELF/GDB or public attachment acceptance. CI now
+publishes production attachment/refresh archives immediately after those steps
+while the broader target suites continue; full evidence review remains required.
+
+**PRESENT, UNVERIFIED production-host integration:** the real ELF/GDB and
+saved-curation refresh harnesses now select `LinuxAttachmentHost` in CI.
+Prepared and interrupted-transaction sessions share the coordinator's read-only
+path preflight; recovery no longer requires a nonexistent original backup.
+Eight abrupt-child cases cover initial/refresh at prepared, replaced,
+before-commit and committed boundaries. Hosted execution remains pending.
+Explicit CI-owned fixture processes use sudo; production code never elevates,
+and this test configuration does not decide the public invocation policy.
+Actual Java21 generic suites pass 80/138/105/75/63/532 checks; the extension
+build, Java21 probe compilation, Python parsing and workflow lint pass locally.
+Public controls and full A1–A7/C1 acceptance remain incomplete.
+
+**CONFIRMED local Linux mount binding; hosted acceptance pending:** the
+visibility session now matches native mount ID/device to the current platform
+thread's mountinfo record and requires writable ext4. It rejects ext2/ext3,
+missing/duplicate IDs, mismatched devices and unreviewed optional mount fields;
+full selected records and opened-directory observations must remain stable.
+Actual Java21 passes154 mount controls with native stat/findmnt comparison and
+128 descriptor cycles, plus unprivileged session refusal/cleanup. Privileged
+session/Host acceptance remains **PRESENT, UNVERIFIED**. See
+`docs/research/LINUX-METADATA-VISIBILITY.md`.
+
+**CONFIRMED Windows strict-checker acceptance:** completed native-windows
+41648274797 passes raw ASCII/Unicode valid checks and malformed-version refusal.
+Independent bundle/source/hash/manifest/import review, strict-output replay and
+LLVM verification of retained fixtures are recorded in
+`docs/evidence/windows-checker-utf8-41648274797.json`. This closes the checker
+prerequisite, not real-ELF attachment acceptance. Review found the Windows
+operation fixture relocated the source while retaining the original export
+report/DWARF source path; the fixture now selects the original protected source.
+Java21 compilation and Python parsing pass; native operation remains
+**PRESENT, UNVERIFIED**. No production source-path check was weakened.
+
+**PRESENT, UNVERIFIED Linux visibility lifecycle:** the internal session now
+creates an exclusive private canary, verifies a random trusted attribute, and
+binds repeated complete snapshots to one platform thread. It never elevates or
+opens a target. Changed snapshots refuse cleanup; cancellation cleanup handles
+owned empty files. Local actual-Java21 unprivileged/virtual-thread/cancellation
+refusal and cleanup pass; privileged lifecycle tests are assigned to CI and
+remain unverified. Full Linux Host admission, public invocation policy and
+A1–A7/C1 remain incomplete. See `docs/research/LINUX-METADATA-VISIBILITY.md`.
+
+**CONFIRMED Windows checker checkout failure:** run41647056047 stops before
+compilation because the newly pinned manifest digest differs on Windows. A
+fresh Git checkout with core.autocrlf=true reproduces CRLF conversion for all
+three UTF-8 input files; explicit LF attributes retain their pinned digests.
+The corrected checkout experiment and workflow lint pass locally. Native
+compilation/Unicode execution remain **PRESENT, UNVERIFIED**. See
+`docs/evidence/windows-checker-checkout-41647056047.json`.
+
+**CONFIRMED Windows checker ASCII success and Unicode failure:** run41645197563
+passes raw version and complete strict validation of the compiler ELF, then
+loses λ/字 path characters as question marks and fails to open the selected
+configuration/input. See `docs/evidence/windows-checker-unicode-41645197563.json`.
+The private checker now embeds a per-process UTF-8 manifest plus an early
+GetACP check refusing lossy fallback. Windows10 version1903+ supports that
+manifest; older hosts are admitted only if the actual process code page is
+UTF-8. This is a validation-tool policy, not a changed Ghidra release baseline.
+Cross-compilation/resource linkage and local checks pass; corrected native
+runtime remains **PRESENT, UNVERIFIED**.
+
+
+**CONFIRMED Linux visibility experiment:** completed native-linux job41645197563
+passes owned-canary read/list, child-only capability-drop and unchanged-parent
+controls on ext4. Independent source/manifest/output review is recorded in
+`docs/evidence/linux-metadata-visibility-41645197563.json`. This establishes the
+bounded mechanism only; production lifecycle/admission and privilege policy
+remain open. The same workflow fails a separate ShellCheck redirect warning;
+the corrected pipeline uses unprivileged tee with pipefail. Local actionlint
+now runs with a private ShellCheck0.9.0 and passes. No full gate is claimed.
+
+
+**CONFIRMED Windows checker build; runtime harness correction pending:**
+41643748238 builds the private patched consumer/checker with audited imports.
+Its raw-tool harness then fails before invoking the checker because a copied
+Python environment dictionary loses Windows case-insensitive lookup. The fix
+reads SystemRoot through `os.environ`; dependency isolation is retained.
+See `docs/evidence/windows-checker-environment-41643748238.json`. No native
+valid/corrupt/Unicode or real-attachment runtime acceptance is claimed yet.
+
+**PRESENT, UNVERIFIED Linux visibility experiment:** a standalone owned-canary
+probe tests exact protected-attribute reads/listing before and after dropping
+capabilities only in its child process. Local unprivileged refusal passes;
+privileged execution is unavailable locally (noninteractive sudo requires a
+password) and is assigned to CI. It creates/removes only its own new temporary
+file/directory and does not change production privilege policy. See
+`docs/research/LINUX-METADATA-VISIBILITY.md`; full host admission remains open.
+
+
+**CONFIRMED Windows checker build failure; correction pending:** native job
+41641903394 reached the pinned configure guard rejecting static libdwarf on
+Windows. The corrected builder uses a private patched consumer DLL beside the
+real Windows checker, with complete dependency audit and separate validation
+artifact packaging; Linux stays static. See
+`docs/evidence/windows-checker-static-41641903394.json`. Native build/runtime is
+still **PRESENT, UNVERIFIED**. The raw-tool harness now also requires exact
+Unicode configuration/input paths; its Linux replay passes.
+
+
+**PRESENT, UNVERIFIED #72 Windows real-export integration:** a new standalone
+Java21 probe connects the production Windows Host, AttachmentOperation and fresh
+GNU/LLVM/pinned validation to the actual Windows headless export. It exercises
+initial attachment and post-replacement rollback only on owned copies, retaining
+metadata/backup/receipt/log evidence. An independent Python check verifies
+unchanged fixture inputs, separate backup identity and exact debuglink name/CRC.
+The required windows-host job runs it after real export. Local compilation,
+Python syntax and workflow lint pass; native execution, runtime GDB and real
+refresh remain required. Public attachment is still disabled.
+
+
+**CONFIRMED #72 Windows refresh coordinator:** completed attachment job
+41639509678 at `81d0a8a` passes independent source/JAR, retained-file and receipt
+review: 18 outcomes,275 coordinator checks and eight abrupt child exits. Both
+generations and changed CRCs are verified; lost/changed prior-pair controls
+refuse unsafe transitions. See `docs/evidence/windows-attachment-refresh-41639509678.json`.
+These sentinel fixtures do not establish real-ELF/public attachment acceptance.
+
+**PRESENT, UNVERIFIED Windows strict-checker build:** the pinned validation-only
+consumer builder now supports native MSYS2 MINGW64, retaining all eight patches,
+explicit configuration and audited compression DLLs/notices. CI builds and
+exercises the raw executable with a compiler-built ELF/DWARF5 positive and
+corrupted-version negative from a path with spaces, without MSYS DLL lookup.
+The equivalent Linux build/runtime and existing configuration regression pass;
+native Windows execution remains required. No shipped producer changes.
+
+
+**CONFIRMED #72 Windows initial recovery:** completed job41637595188 at
+`1ca676f` passes independent source/JAR and retained-byte/receipt review: real
+sharing-lock refusal, commit/rollback/cancel/concurrent target and four abrupt
+process exits with explicit recovery. Native receipt update acceptance from
+41636333521 is also recorded. The new refresh scenarios and lost/changed prior
+pair controls are **PRESENT, UNVERIFIED** on Windows. See
+`docs/WINDOWS-ATTACHMENT-HOST.md` and its evidence receipts. Full A1–A7/C1 remain
+incomplete.
+
+**CONFIRMED initial #72 Windows Host integration:** completed
+attachment-windows job41635698690 at `5412e20` passes independent review of the
+artifact, 133 production sources, three test sources, raw descriptors, retained
+bytes and independently reconstructed metadata digests. All 268 checks and128
+cleanup cycles pass. Later receipt/lock/coordinator cases remain pending.
+See `docs/evidence/windows-attachment-host-41635698690.json`.
+
+**PRESENT, UNVERIFIED #72 Windows recovery coverage:** native host tests now
+include a real no-delete-sharing handle, replacement refusal with unchanged
+files, successful replacement after unlock, coordinator commit/rollback/cancel,
+concurrent-target protection and four abrupt process-exit/recovery boundaries.
+Local compilation/parser/lint checks pass; hosted execution remains required.
+See `docs/WINDOWS-ATTACHMENT-HOST.md`.
+
+**CONFIRMED local #72 receipt integration:** receipt updates now use the
+mandatory host atomic-replacement operation and verify the full installed
+fingerprint. Actual Java21 receipt/file/target/transaction/operation suites pass
+105/75/63/532/80 checks, including persistent recovery-record failure. A fresh
+real x86-64 exporter-artifact replay passes GNU/LLVM/pinned validation and GDB
+attachment/CRC behavior with the limited Linux test host. Windows Host receipt
+coverage is added but remains **PRESENT, UNVERIFIED**. See
+`docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`.
+
+**CONFIRMED #72 volume component:** native Windows job41634160584 at
+`380d272` passes exact-source artifact review, native/C#/Java volume identity,
+flush/refusal checks and 128 stable handle cycles. The new complete Host/store
+integration is still **PRESENT, UNVERIFIED**. See
+`docs/evidence/windows-volume-binding-41634160584.json`.
+
+**CONFIRMED #72 raw-security correction:** completed native Windows job
+41633832399 at `2f7ea4d` passes independent artifact/source review. Inherited and
+protected DACLs now preserve the complete raw descriptor, with ten expected
+refusals and cleanup checks. See `docs/evidence/windows-security-staging-41633832399.json`.
+**PRESENT, UNVERIFIED:** `WindowsAttachmentHost` now connects native mechanisms
+to the transaction interfaces; a dedicated required Windows job tests actual
+backup/replacement/restoration using the built JAR. Native host acceptance and
+full A1–A7/C1 remain open. See `docs/WINDOWS-ATTACHMENT-HOST.md`.
+
+**PRESENT, UNVERIFIED #72 volume binding:** the reviewed native fixed-volume
+experiment now has a bounded JNA implementation in directory snapshots, with
+same-directory native/C#/Java comparison and existing cleanup/failure coverage.
+Local standalone compilation, extension build and PowerShell parsing pass;
+Windows execution remains required. See `docs/WINDOWS-DIRECTORY-SYNC.md`.
+
+**CONFIRMED #72 review finding:** Windows job41632042195 at `77a3c0f`
+passed its assertions, but independent artifact review found three inherited
+ACE flags changed in the raw security descriptor. High-level DACL comparison
+hid the change. The attachment path now supplies the kernel-read legacy
+descriptor and requires complete raw descriptor equality; native acceptance of
+this correction is **PRESENT, UNVERIFIED**. Protected-DACL raw equality, ten
+intended refusals and the native fixed-volume identity experiment passed in the
+reviewed artifact. See `docs/evidence/windows-security-raw-ace-41632042195.json`.
+Full production hosts, public controls and complete #72 acceptance remain open.
+
+**CONFIRMED #72 raw-reader progress:** run41630413755 at `1fe9635`
+passes raw Java/native agreement, cleanup and inherited-DACL stage application.
+The protected fixture's PowerShell Set-Acl also introduced a present-null SACL,
+so its absent-SACL precondition failed before protected application. Native
+DACL-only fixture setup now verifies unchanged SACL state; explicit null-SACL
+source/stage refusals are retained. Per-profile before/after evidence is saved
+immediately. Full corrected native acceptance remains pending; see
+`docs/WINDOWS-FILE-SECURITY.md`. Product privilege policy is still pending.
+
+**CONFIRMED native #72 directory mechanism:** JNA implementation at `373f33b`
+and completed Windows job41619066926 pass independent raw source/artifact review:
+C/C# identity/filesystem agreement, real write denial, stale/late paths,
+cancellation and 128 flat handle cycles. This follows the native NTFS flush
+experiment from41617008207. Complete host admission, durability and public
+controls remain required. See `docs/WINDOWS-DIRECTORY-SYNC.md`.
+
+**CONFIRMED local/hosted #72 filename policy:** production Linux UTF-8 and portable
+ASCII basename policies reject lossy native-byte aliases and unsupported names
+before attachment writes. Actual Java 21 refusal/transaction controls and real
+x86 no-build-ID plus MIPS big-endian validator/GDB cases pass. Completed Linux
+and native Windows jobs in run41615861678 also pass independent artifact/source
+review; this is component acceptance, not a full gate. Full metadata admission, durability and
+public controls are still required. See `docs/DEBUGLINK-BASENAME.md`.
+
+**CONFIRMED native #72 backup-stream admission:** completed Windows job
+in run 41611451207 at `440df66` passes real source/stage EA refusal, Unicode
+streams, cancellation and 128 native/Java cleanup cycles. Independent raw
+artifact/source/command review passes. The earlier GC-count and test-output
+failures remain recorded; SACL visibility and full host admission/durability
+are still incomplete. See `docs/WINDOWS-BACKUP-STREAMS.md`.
+
+**CONFIRMED #107 integrated:** final loader head `caa4916` passed complete
+required-validation run41602638145. All five target artifacts, package, both
+host GUI journeys and fresh GNU/LLVM/pinned strict checks were independently
+reviewed. PR157 merged normally as `c8e3afae3108ffe7d6a4b4d335463040426bc49c`
+on 2026-11-03; issue107 is closed. See `docs/GDB-LOADER-ACCEPTANCE.md` and
+`docs/evidence/gdb-loader-41602638145.json`. No release was published.
+
+**CONFIRMED remaining goal work:** complete the full #72 opt-in attachment
+contract. Its branch includes the integrated loader plus transaction, validator
+and native mechanisms, but still needs complete production hosts, protected
+metadata admission, durability/recovery integration, public controls and full
+acceptance. The original #107/#72 scope is retained in
+`docs/DEBUG-LOADING-COMPLETION-PLAN.md`; the loader's companion publisher does
+not satisfy the executable attachment/backup/receipt contract.
+
+**CONFIRMED native Windows #72 namespace acceptance:** run 41604998416 at
+`a473949` passes opened-stage publication/replacement, ten namespace scenarios,
+six additional rejections and 128 handle-lifetime cycles. Raw native artifacts
+were independently reviewed. Linux directory identity/fsync also passes hosted
+run 41603738214. These mechanisms do not complete host admission, durability
+or public controls; see `docs/WINDOWS-FILE-RENAME.md` and `docs/LINUX-DIRECTORY-SYNC.md`.
+
+**CONFIRMED local #72 inode-policy correction:** native Linux metadata now
+queries inode flags/project/allocation policy that statx omits. The old code
+lost NOATIME while reporting successful copying; actual source/stage and stale
+policy controls now refuse before changing metadata. Fourteen independent
+observations and descriptor/ACL/group controls pass locally and in the reviewed
+completed hosted job from run 41607172238; hidden-attribute policy remains pending.
+See `docs/LINUX-FILE-METADATA.md`.
+
+**CONFIRMED local #72 directory operations:** the production Linux primitive
+now supplies opened-directory/mount identity and explicit fsync with changed-path
+refusal. The independent C/Java 21 harness passes 494 assertions and 128 cleanup
+cycles. Receipt/backup/target/transaction/operation suites and a real live-validator/
+GDB replay pass using these calls. Full host admission and durability acceptance
+remain incomplete; see `docs/LINUX-DIRECTORY-SYNC.md`.
+
+**CONFIRMED local #72 Linux replacement integration:** commit/rollback,
+refresh and crash-recovery tests now use the production `renameat2` replacement
+primitive. Actual Java 21 suites and a real x86-64 live-validator/GDB/CRC replay
+pass. This supplies namespace replacement, not complete metadata admission or
+host durability. See `docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`.
+
+**CONFIRMED native Windows #72 metadata acceptance:** run 41601490096 at
+`0e2d404` passes all four ACL/attribute application profiles, 13 independent
+snapshots, negative/cancellation cases and 128 handle-lifetime cycles. Raw
+artifact/source/dependency/Java 21 evidence was reviewed; see
+`docs/WINDOWS-FILE-METADATA.md`. The failed prior runs remain failed. SACLs/EAs,
+visibility policy, full host durability and public controls are still required.
+
+**CONFIRMED local #72 Linux metadata primitive:** `LinuxFileMetadata` now reads
+native opened-file identity and bounded visible attributes, and applies ordinary
+permissions/ownership/mtime, user xattrs and access ACLs to an already owned
+private stage with readback verification. Isolated Java 21 tests independently
+check native stat/xattr bytes, explicit/default ACLs, group changes, rejection,
+cancellation and descriptor cleanup. This is not a complete host adapter:
+inaccessible metadata can be hidden by Linux, and complete admission remains
+unimplemented pending the explicit privilege/visibility policy choice. No
+attachment option is enabled. See `docs/LINUX-FILE-METADATA.md`.
+
+**CONFIRMED local #72 live refresh and sectionless validation:** saved x86-64
+non-PIE/PIE refresh now uses the production live validator for both generations;
+GDB source/type/member/value checks and retained backups/generations pass. The
+live policy also accepts real sectionless x86-64, AArch64 and MIPS big-endian
+pairs without requiring a header-bearing reference input. Original frames are
+independently derived from the original search table and checked through a
+private non-loadable view when needed. ELF32/64, both byte orders, malformed
+frame metadata, payload corruption and cancellation controls pass on Java 21.
+These tests use the limited Linux test host; production metadata adapters,
+public CLI/GUI and full hosted acceptance remain open. CI run 41589665939
+exposed a missing executable bit on the packaged Linux validator helper. Release
+assembly now restores that bit after provenance checks; an extraction regression
+passes locally. The failed hosted run remains failed. See
+`docs/VALIDATOR-SUPERVISION.md` and `docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`.
 
 **CONFIRMED combined ABI acceptance:** P2.3, P2.3a, P2.3b and P2.3c
 retain all twenty original requirements. Production head `2a74d001e04eeab456b80a5c24063a399b540aa5`

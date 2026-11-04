@@ -1,12 +1,21 @@
 # Optional GDB loader acceptance
 
-**CONFIRMED:** production head `5654f537a1bd02683eccd751cd9b7b9610fa4dc3`
-passed [run 41586083925](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/41586083925),
-including `required-validation`, all five target lanes, native Linux/Windows,
-release packaging and Windows-host validation. The retained artifacts were
-reviewed independently of their success markers. Final protected integration
-of this documentation update remains pending. This is development acceptance,
-not release publication or completion of attachment issue #72.
+**CONFIRMED integrated:** PR157 merged normally on 2026-11-03 as
+`c8e3afae3108ffe7d6a4b4d335463040426bc49c`, and issue107 is closed. Final
+head `caa4916f22a2f51a86ef2c107ce8c43478308182` passed the complete strict
+required-validation gate in [run41602638145](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/41602638145).
+All final-head package/target/host artifacts were independently reviewed,
+including actual default/optional GUI screenshots and fresh validators.
+The [final integration receipt](evidence/gdb-loader-41602638145.json) records
+archive digests and review indexes. No administrator bypass or branch deletion
+was used. This is not release publication or completion of attachment issue #72.
+
+The detailed production acceptance below was established at `5654f53` in
+[run41586083925](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/41586083925).
+Final `caa4916` changes documentation only; its production JAR, native libraries
+and wrappers are byte-identical to that accepted build. The earlier artifact
+table is a historical acceptance record; the final receipt identifies the
+subsequent complete rerun and protected integration.
 
 The baseline is Ghidra 12.0.3, Java 21 bytecode, Gradle 9.3.1 and libdwarf 2.3.2
 at `af7b278c6aa2ae9daad94fb7f8bffdc0e9980993`. The exporter, loader runtime,
@@ -81,8 +90,8 @@ The corrected test requires physical directory identity for all three staged
 files, with a Linux symlink-parent regression. The corrected native Windows
 smoke and both GUI journeys pass in run 41586083925.
 
-The final documentation head must pass the up-to-date `required-validation`
-check and merge normally without an administrative bypass. #107 stays open
-until that integration. #72 remains open independently: companion publication
+The final documentation head passed the up-to-date `required-validation`
+check and merged normally without an administrative bypass. #107 is closed.
+#72 remains open independently: companion publication
 does not implement executable attachment, metadata preservation, durable
 backup receipts or crash recovery.

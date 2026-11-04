@@ -1,0 +1,87 @@
+# Windows opened-directory synchronization
+
+**CONFIRMED on native Windows:** completed job from run `41619066926` at
+`373f33b` and independent raw artifact/source review pass. `WindowsDirectorySync`
+supplies opened identity, filesystem facts and explicit directory flushing.
+The isolated Java 21 harness agrees with C/C# observations, rejects stale/late
+paths and real denied writes, and propagates cancellation. All 128 cleanup cycles
+retain exactly 286 Java process handles; the independent C control retains 57.
+See [`windows-directory-jna-41619066926.json`](evidence/windows-directory-jna-41619066926.json).
+This is not an attachment Host or a completed A5 durability contract.
+
+The prerequisite independent native experiment **CONFIRMED** that the Windows
+runner's NTFS directory accepts `FlushFileBuffers` with `GENERIC_WRITE`, before
+and after an owned child rename. Attributes-only access returns error 5.
+Ordinary-file controls, independent C# identity and 128 cycles with a constant
+57-handle count pass. Backup, restore, security and manage-volume privileges
+were listed disabled; the probe never adjusted them. This is not a restricted
+token or power-loss test. Exact source/archive/raw-command review is retained in
+[`windows-directory-41617008207.json`](evidence/windows-directory-41617008207.json).
+
+The new JNA mapping is audited against the same pinned SDK headers and native
+C scalar/layout/signature assertions. It uses Windows Intel 64-bit HANDLEs,
+32-bit BOOL/DWORD values and UTF-16 paths. `FileAttributeTagInfo` is eight bytes;
+`FileIdInfo` is 24 bytes. Native resources are owned by try-with-resources.
+
+Inspection opens the selected directory with read-attributes access; sync adds
+generic write access. Both allow sharing and use `OPEN_EXISTING`,
+`OPEN_REPARSE_POINT` and `BACKUP_SEMANTICS`. Non-directory/reparse handles,
+alternate stream paths, ambiguous suffixes and unresolved dot traversal are
+rejected. Caller-selected paths retain their exact Unicode spelling. The
+primitive does not establish that every ancestor is safe; the transaction's
+complete traversal/admission checks remain mandatory.
+
+The snapshot binds the opened volume/128-bit file identity, volume serial,
+filesystem name, capability flags and filename bound. Expected identity and
+filesystem facts must still match before sync. Fresh path observations before
+and after the flush must match the still-open handle. Changed paths and all API
+errors propagate; there is no no-op, volume flush, native-service fallback or
+privilege enabling. Cancellation closes opened resources. Blocking kernel calls
+cannot be interrupted and no adversarial race guarantee follows from these
+checks.
+
+The isolated Windows harness runs only after the C experiment. It compares
+the JNA snapshot with C/C# observations and checks successful sync without
+changing the child file, stale and changed-after-open directories, cancellation
+before/after open, ordinary-file/junction/stream/traversal refusal, actual DACL
+write denial and 128 successful/cancelled cycles with exact handle equality.
+The denied directory must remain inspectable and unchanged while sync fails.
+The Windows Path parser rejects alternate-stream colon input before the
+production method is called; that case does not exercise the defensive colon
+guard. All other listed native checks pass with individually reviewed errors.
+Full host metadata admission,
+filesystem durability selection, public controls and end-to-end recovery remain
+required before #72 is complete.
+
+
+A native-only opened-volume experiment is now prepared for filesystem admission;
+see [the research scope](research/WINDOWS-VOLUME-PROFILE.md). It uses a separate
+explicit fixture mode after the metadata suite. The production directory
+binding and its accepted flush/identity behavior are unchanged, and no new
+filesystem support is claimed before native review.
+
+## Opened-volume binding
+
+**PRESENT, UNVERIFIED on Windows:** following the reviewed native experiment
+at `77a3c0f`/run41632042195, directory snapshots now include the opened volume's
+GUID root and drive type. GetFinalPathNameByHandleW uses bounded WCHAR counts;
+GetDriveTypeW uses the resolved GUID root. An attributes-only root-directory
+handle must identify the same volume as the original opened directory. All
+resources are scoped, and repeated snapshots before/after flushing include the
+volume profile. The root is a directory, never a raw volume-device handle.
+
+The two signatures and DWORD/UINT/WCHAR widths were checked against the pinned
+fileapi.h SHA-256 in `windows-directory-api.json` after the native experiment.
+Standalone Java 21-compatible compilation, extension build and PowerShell AST
+parsing pass locally. The Windows harness compares Java/native/C# observations
+on the same owned directory; existing stale-path, denied-write, cancellation
+and 128 lifetime cycles also exercise the added root handles. Native execution
+of this binding remains required. This records filesystem identity; complete
+Host admission and the durability/recovery contract remain open.
+
+**CONFIRMED JNA component acceptance:** completed native Windows job41634160584
+at `380d272` passes independent archive/source review, native/C#/Java root and
+volume identity agreement, successful flush, stale/late paths, cancellation,
+real write denial and 128 Java cycles with 286 handles. See
+`docs/evidence/windows-volume-binding-41634160584.json` from the repository root.
+Full Host/store integration and recovery acceptance remain required.

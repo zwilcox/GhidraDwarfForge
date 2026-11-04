@@ -1,0 +1,115 @@
+{
+    "status": "CONFIRMED local scoped evidence; full native GUI acceptance remains PRESENT, UNVERIFIED",
+    "host": "Linux x86-64, Ghidra 12.0.3, actual Java21, private Xvfb/Openbox",
+    "scope": [
+        "installed Script Manager discovery, real export and export cancellation",
+        "separate packaged helper preview of owned attachment selections",
+        "real Enter key activates default Cancel; no modifying helper launched",
+        "all selected original/copied target/pair/report/request hashes unchanged; no transaction outputs",
+        "GNU/LLVM/pinned libdwarf checks and native GDB names/source/next/step/normal exit on exported fixture",
+        "helper149 and recovery112 admission checks; child process cooperative stop with safe cleanup and both output pipes drained",
+        "release assembly and required attachment/recovery scripts"
+    ],
+    "notProven": [
+        "native modifying GUI attach/refresh/recovery",
+        "interactive OS authorization/decline",
+        "Windows GUI/runtime acceptance",
+        "full current-head required gate"
+    ],
+    "validatorNote": "Pinned libdwarf reports three inherited frame diagnostics corroborated against original by check-dwarfdump.py. No unexplained diagnostics accepted. Earlier local system checker failed; current run explicitly selects build/validation-host-checker-v3/bin/dwarfdump.",
+    "command": "DWARFDUMP=<pinned bundle>/bin/dwarfdump XVFB_BIN=<private>/Xvfb OPENBOX_BIN=<private>/openbox JAVA_BIN=/usr/lib/jvm/java-21-openjdk-amd64/bin/java src/test/integration/gui-script-manager.sh <isolated Ghidra> <assembled extension> <source-built stripped fixture> <reference>",
+    "artifacts": [
+        {
+            "path": "build/test-results/gui-script-manager/run.OpSSU8yV/result.txt",
+            "sha256": "c220bab44d6a14953d87ba552d9a07d992ee5179952b2f8cf491486bc414cc61",
+            "bytes": 272
+        },
+        {
+            "path": "build/test-results/gui-script-manager/run.OpSSU8yV/select/attachment-decline/result.txt",
+            "sha256": "de65d926c84bfbd82c6805d0f5ee07db7604f3a27506cd18cc7903698bd28521",
+            "bytes": 116
+        },
+        {
+            "path": "build/test-results/gui-script-manager/run.OpSSU8yV/select/attachment-decline/console.txt",
+            "sha256": "181acb679110105a3836223de4c06db6c1d633a61fca818c501d8a542d564034",
+            "bytes": 2976
+        },
+        {
+            "path": "build/test-results/gui-script-manager/run.OpSSU8yV/select/attachment-decline/review.png",
+            "sha256": "2fe8c1c8051a8e6f6c8bbe42556d80d4c1aab37669555e3df0734b2881b2a242",
+            "bytes": 50351
+        },
+        {
+            "path": "build/test-results/gui-script-manager/run.OpSSU8yV/readelf-dwarf.txt",
+            "sha256": "e486a648a54315ac8f69f35350aa605f8a3eb64e803825bf358a8aa26976eae8",
+            "bytes": 71236
+        },
+        {
+            "path": "build/test-results/gui-script-manager/run.OpSSU8yV/llvm-verify.txt",
+            "sha256": "adc3d5b6c3fc8fdb260c8528b104ba7e0770e3560fe2f03d6c6d8b3c8d11c088",
+            "bytes": 388
+        },
+        {
+            "path": "build/test-results/gui-script-manager/run.OpSSU8yV/dwarfdump.txt",
+            "sha256": "17180be2f7575c81e820f5948888c6f28f801676cb277c216db5157d7baf613a",
+            "bytes": 14282
+        },
+        {
+            "path": "build/test-results/gui-script-manager/run.OpSSU8yV/gdb.txt",
+            "sha256": "57306b02e086fed44cdd8d757c43928cfedb9337da628a5d07ac8bfcab2d5494",
+            "bytes": 1411
+        },
+        {
+            "path": "build/attachment-gui-validation.log",
+            "sha256": "50d1f908e133afc39679dbd89bc8cc6f4cc078aacdb42abdc6682e7ecdf18fab",
+            "bytes": 1003
+        },
+        {
+            "path": "build/recovery-canonical-path-validation.log",
+            "sha256": "17b7eb0b66dd33eac45e8723a714ea33a1b6a2676180dbb1d8e4ea554be95b27",
+            "bytes": 536
+        },
+        {
+            "path": "build/attachment-gui-package-validation.log",
+            "sha256": "fd6d80f35f824381bc23a521456b8fe90fd580d4c27794a7d58480020eb99c8d",
+            "bytes": 2884
+        },
+        {
+            "path": "build/attachment-gui-local/release.zip",
+            "sha256": "a070d4e4bf4b003616ac27d0798797ae006ab956f469ee6fccd44c9f4dcf6db8",
+            "bytes": 10752001
+        }
+    ],
+    "sources": [
+        {
+            "path": "src/main/java/ghidradwarfforge/output/AttachmentGui.java",
+            "sha256": "24a79e6d118aebc1f95011dfc28b42805ca1f518aef66cbf28756a5b972b9df5",
+            "bytes": 15660
+        },
+        {
+            "path": "src/main/java/ghidradwarfforge/output/AttachmentCancellationFile.java",
+            "sha256": "53947fe7afed2ac768d5d2f6630bd322807b08651d132b5123cd043fe692f716",
+            "bytes": 2026
+        },
+        {
+            "path": "src/main/java/ghidradwarfforge/output/AttachmentHelper.java",
+            "sha256": "0b602c48508e9876b992a2a034d5112e4e3101cdd924ca9e40cd69b996be7a85",
+            "bytes": 22834
+        },
+        {
+            "path": "src/test/integration/gui/GuiScriptManagerSmoke.java",
+            "sha256": "e3ef61c22bfbf41310c80668f7b07c6614ad71097892ed0b61402c172986f68d",
+            "bytes": 26232
+        },
+        {
+            "path": "ghidra_scripts/AttachGhidraDwarfForge.java",
+            "sha256": "205c043a82a3882e4820a7c0a5c8d5535d65d6f6177aaca805cf0859ba2ce736",
+            "bytes": 444
+        },
+        {
+            "path": "ghidra_scripts/RecoverGhidraDwarfForgeAttachment.java",
+            "sha256": "2fc6075b35db668039cc7bfb888ed38aeb6786d410c3bcca3d2a0b62ed0e4229",
+            "bytes": 464
+        }
+    ]
+}

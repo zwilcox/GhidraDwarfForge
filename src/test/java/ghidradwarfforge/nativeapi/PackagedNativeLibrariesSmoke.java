@@ -19,6 +19,7 @@ public final class PackagedNativeLibrariesSmoke {
             write(directory.resolve("libdwarfp.so.2.3.2"), "producer");
             write(directory.resolve("NATIVE-PAIR.properties"),
                 "consumer=libdwarf.so.2.3.2\nproducer=libdwarfp.so.2.3.2\n");
+            write(directory.resolve("forge-validator-supervisor"), "supervisor");
             writeManifest(directory);
 
             var pair = PackagedNativeLibraries.resolve(root, "linux_x86_64");
@@ -26,6 +27,12 @@ public final class PackagedNativeLibrariesSmoke {
                 "consumer resolution failed");
             require(pair.producer().getFileName().toString().equals("libdwarfp.so.2.3.2"),
                 "producer resolution failed");
+            require(PackagedNativeLibraries.resolveSupervisor(root, "linux_x86_64").equals(
+                directory.resolve("forge-validator-supervisor")), "supervisor resolution failed");
+
+            write(directory.resolve("forge-validator-supervisor"), "tampered helper");
+            expectFailure(() -> PackagedNativeLibraries.resolveSupervisor(root, "linux_x86_64"), "SHA-256 mismatch");
+            write(directory.resolve("forge-validator-supervisor"), "supervisor");
 
             write(pair.producer(), "tampered");
             expectFailure(() -> PackagedNativeLibraries.resolve(root, "linux_x86_64"),

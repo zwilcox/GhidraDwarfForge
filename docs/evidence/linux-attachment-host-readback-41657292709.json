@@ -1,0 +1,58 @@
+{
+    "status": "CONFIRMED isolated Host with independent owner/metadata readback",
+    "head": "e2ccccf19a4240c660333f5ef9d6cf8342996fcc",
+    "run": 41657292709,
+    "job": 125990888317,
+    "artifactId": 13241445684,
+    "artifactSha256": "ca40f9e34eea3661d2ec93266f5990021fea6c933ec97f6b08be4a66eb1f4980",
+    "checkedSources": [
+        "src/test/java/ghidradwarfforge/output/LinuxMetadataVisibilitySmoke.java",
+        "src/test/native/linux-metadata-contract.c",
+        "src/test/integration/linux-metadata-visibility-session.py",
+        "src/test/java/ghidradwarfforge/output/LinuxAttachmentMountSmoke.java",
+        "src/test/java/ghidradwarfforge/output/LinuxAttachmentHostSmoke.java",
+        "src/main/java/ghidradwarfforge/output/LinuxMetadataVisibility.java",
+        "src/main/java/ghidradwarfforge/output/LinuxFileMetadata.java",
+        "src/main/java/ghidradwarfforge/output/LinuxDirectorySync.java",
+        "src/main/java/ghidradwarfforge/output/LinuxAttachmentMount.java",
+        "src/main/java/ghidradwarfforge/output/LinuxAttachmentHost.java",
+        "src/main/java/ghidradwarfforge/output/LinuxAtomicRename.java",
+        "src/main/java/ghidradwarfforge/output/AttachmentOperation.java",
+        "src/main/java/ghidradwarfforge/output/AttachmentPaths.java"
+    ],
+    "commands": 10,
+    "independentFacts": {
+        "target": {
+            "uid": 1001,
+            "gid": 1001,
+            "mode": 33224,
+            "device": 2049,
+            "inode": 9188133,
+            "mtimeNs": 1700000000123000000,
+            "attributes": {
+                "user.fixture": "00ff0a"
+            }
+        },
+        "backup": {
+            "uid": 1001,
+            "gid": 1001,
+            "mode": 33224,
+            "device": 2049,
+            "inode": 9188141,
+            "mtimeNs": 1700000000123000000,
+            "attributes": {
+                "user.fixture": "00ff0a"
+            }
+        }
+    },
+    "hostOutputs": [
+        "linux-attachment-host=privileged PASS checks=26",
+        "linux-attachment-host=unprivileged PASS checks=7"
+    ],
+    "checks": [
+        "Every provenance hash agrees with retained bytes; retained source bytes match exact published head.",
+        "All recorded commands exit0 under Java21; native stat/xattr Python readback corroborates actual non-root ownership, ordinary mode, nanosecond mtime and user attribute.",
+        "Retained target/backup bytes match, independent inodes differ, and successful visibility workspace is removed."
+    ],
+    "limits": "Sentinel Host mechanisms only. Real ELF/GDB, native crash recovery and refresh remain in running target jobs; no full required-validation acceptance."
+}

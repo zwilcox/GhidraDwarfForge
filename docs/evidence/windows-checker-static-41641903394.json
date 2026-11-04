@@ -1,0 +1,13 @@
+{
+    "status": "HISTORICAL failed native Windows checker configuration",
+    "head": "1442e8b730c23b81cbdb7b8481e6b43a57683260",
+    "run": 41641903394,
+    "job": 125937262912,
+    "artifactId": 13233134877,
+    "artifactSha256": "b572e6be68dd70a6867e86d5c8867a22ae7228b2ec77dfda01f7575c782191ff",
+    "failure": "configure: error: Static library is not supported on Windows",
+    "evidence": "strict-checker-build/build.ipWISqX2/configure.log and libdwarf-2.3.2/config.log; all eight patch logs completed",
+    "upstreamGuard": "Pinned libdwarf 2.3.2 configure.ac lines140-142 explicitly reject have_win32=yes plus enable_static=yes",
+    "correction": "Linux remains static. Windows selects --enable-shared --disable-static --disable-dwarfgen and packages the real executable plus its private eight-patch consumer DLL and audited compression dependencies, separately from all release natives.",
+    "acceptance": "Corrected native build/runtime remains PRESENT, UNVERIFIED; no checker ran in this failed job."
+}

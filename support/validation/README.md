@@ -30,7 +30,8 @@ extracted Ubuntu development packages. A fresh private directory is required.
 ## Standalone libdwarf patches
 
 These patches apply only to the independently built **validation executable**
-from libdwarf 2.3.2, including its statically linked ELF consumer. None may
+from libdwarf 2.3.2, including its private ELF consumer (static on Linux; a separate patched DLL
+on Windows). None may
 enter the shipped producer/consumer library builds, their source patch set,
 or release-native provenance manifests.
 
@@ -469,3 +470,50 @@ Every artifact is hashed before and after validation. CI runs the complete
 The evidence profile pins this patch as `gnuVectorPatchSha256` and identifies
 `libdwarf-2.3.2-eight-corrections-and-llvm-verify`. Older receipts retain their
 historical profile; new receipts require the complete eight-patch bundle.
+
+## Native Windows strict consumer
+
+**PRESENT, UNVERIFIED:** `build-validation-dwarfdump.sh` also admits native
+MSYS2 MINGW64. It builds the same pinned consumer and eight validation patches
+with a private patched libdwarf DLL, retains zlib/zstd support and audits every
+PE dependency. Pinned configure.ac rejects static libdwarf on Windows; the
+first attempted static build failed in41641903394 before compilation. See
+`../../docs/evidence/windows-checker-static-41641903394.json`. Linux remains static.
+Only reviewed system imports and copied compression DLLs are accepted; runtime
+package versions and notices accompany the bundle. This validation artifact is
+separate from production/release native inputs.
+
+The raw executable is `libexec/dwarfdump.exe`. Native callers pass the pinned
+`share/dwarfdump/dwarfdump.conf` explicitly via `--file-name`; the attachment
+validator already verifies that configuration's hash. The optional Bash launcher
+continues to work under MSYS2. `native-dwarfdump.py` compiles a tiny ELF/DWARF5
+object (native Windows Clang targets x86_64-linux-gnu), relocates the checker into
+directories with spaces and Unicode characters, removes MSYS2 from the checker
+PATH and parses complete strict results. A DWARF-version corruption must produce the intended diagnostic
+and fail the strict parser. Inputs and tool/configuration hashes stay unchanged.
+This establishes checker execution only; full Windows exporter/attachment remains a separate requirement. Linux `cc` runtime and the
+existing configuration regression pass locally; native Windows CI is pending.
+
+### Windows process encoding
+
+Run41645197563 passes raw native strict validation with ASCII/space paths, but
+replaces λ/字 with question marks in the explicit configuration/input paths.
+The Unicode fixture bytes equal the successful ASCII fixture; the checker
+fails to open the intended files. See
+`../../docs/evidence/windows-checker-unicode-41645197563.json`.
+
+**PRESENT, UNVERIFIED correction:** the private Windows executable embeds
+`dwarfdump-windows.manifest` through its resource object. It requests the
+[documented per-process UTF-8 code page](https://learn.microsoft.com/en-us/windows/apps/design/globalizing/use-utf8-code-page).
+A separate startup object checks `GetACP() == CP_UTF8` before the checker main
+function and refuses execution otherwise. The manifest works from Windows10
+version1903; older systems need an already-active UTF-8 process code page or
+receive a clear failure. No legacy best-fit path conversion is accepted.
+This is the private validation-tool runtime contract; it does not silently
+change the Ghidra/Java release baseline or ship a patched producer library.
+
+Manifest/resource/guard sources are checksum-pinned, included in corresponding
+source and recorded in build metadata. Only the checker link receives those
+objects; its private consumer DLL and release natives do not. Local MinGW64
+compilation, linking and PE-resource/import inspection pass. Native Windows
+Unicode execution and the remaining malformed-input case are still required.

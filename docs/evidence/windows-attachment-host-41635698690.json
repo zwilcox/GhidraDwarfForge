@@ -1,0 +1,279 @@
+{
+    "status": "CONFIRMED initial Windows Host/store integration",
+    "head": "5412e20e95a4ac9ec79f7f8e2b2161510aee7c31",
+    "run": 41635698690,
+    "artifactId": 13231770549,
+    "artifactSha256": "0c8af52bac51176b316cf687dcd797fefd38145624828c5a86b67428d9f0f621",
+    "jarSha256": "374aeea7200e56c6d1e99914fd8bc15f07e1859b28a4c7de8de0a3656446927d",
+    "testSourcesVerified": 3,
+    "productionSourcesVerified": 133,
+    "independentMetadataDigestReconstruction": true,
+    "result": {
+        "original": {
+            "path": "D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\owned\\original target",
+            "digest": {
+                "sha256": "bc76c9cda075c20f4231f05efddd9baca4ec13f4f0858c4966cb0f09591ef3e7",
+                "gnuDebuglinkCrc32": 268258256,
+                "byteCount": 37
+            },
+            "fingerprint": {
+                "identity": "b4d202a1d20267c6:780c0000000001000000000000000000",
+                "metadataSha256": "f03433c7c2b4cb93da3c88cb451c1ee7e04aa5c4cadf9d7c6441d8f8051310dd",
+                "links": 1
+            }
+        },
+        "originalMetadata": {
+            "ordinary": {
+                "facts": {
+                    "identity": "b4d202a1d20267c6:780c0000000001000000000000000000",
+                    "links": 1,
+                    "bytes": 37,
+                    "attributes": 32,
+                    "created": 134381829632390553,
+                    "modified": 134381829632410635,
+                    "changed": 134381829632410635
+                },
+                "security": {
+                    "control": 32772,
+                    "owner": "01020000000000052000000020020000",
+                    "group": "01050000000000051500000039b56eb772b843da7008a7f701020000",
+                    "dacl": "02004c000300000000101800ff011f000102000000000005200000002002000000101400ff011f0001010000000000051200000000101800a900120001020000000000052000000021020000",
+                    "rawDescriptor": "01000480140000002400000000000000400000000102000000000005200000002002000001050000000000051500000039b56eb772b843da7008a7f70102000002004c000300000000101800ff011f000102000000000005200000002002000000101400ff011f0001010000000000051200000000101800a900120001020000000000052000000021020000"
+                },
+                "dataStreams": {
+                    "::$DATA": 37
+                }
+            },
+            "security": {
+                "control": 32772,
+                "saclPresent": false,
+                "saclDefaulted": false,
+                "rawDescriptor": "01000480140000002400000000000000400000000102000000000005200000002002000001050000000000051500000039b56eb772b843da7008a7f70102000002004c000300000000001800ff011f000102000000000005200000002002000000001400ff011f0001010000000000051200000000001800a900120001020000000000052000000021020000"
+            },
+            "streams": {
+                "facts": {
+                    "identity": "b4d202a1d20267c6:780c0000000001000000000000000000",
+                    "links": 1,
+                    "bytes": 37,
+                    "attributes": 32,
+                    "created": 134381829632390553,
+                    "modified": 134381829632410635,
+                    "changed": 134381829632410635
+                },
+                "streams": [
+                    {
+                        "kind": 1,
+                        "attributes": 0,
+                        "bytes": 37,
+                        "name": ""
+                    }
+                ]
+            }
+        },
+        "backup": {
+            "path": "D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\owned\\retained backup",
+            "digest": {
+                "sha256": "bc76c9cda075c20f4231f05efddd9baca4ec13f4f0858c4966cb0f09591ef3e7",
+                "gnuDebuglinkCrc32": 268258256,
+                "byteCount": 37
+            },
+            "fingerprint": {
+                "identity": "b4d202a1d20267c6:7b0c0000000001000000000000000000",
+                "metadataSha256": "f03433c7c2b4cb93da3c88cb451c1ee7e04aa5c4cadf9d7c6441d8f8051310dd",
+                "links": 1
+            }
+        },
+        "candidate": {
+            "path": "D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\owned\\owned stage\\candidate",
+            "digest": {
+                "sha256": "1c9f621df2a1ca16dac031efc1c968586a8ae4770e3a30355a5c9650ffd6cdb5",
+                "gnuDebuglinkCrc32": 3084918443,
+                "byteCount": 61
+            },
+            "fingerprint": {
+                "identity": "b4d202a1d20267c6:790c0000000001000000000000000000",
+                "metadataSha256": "f03433c7c2b4cb93da3c88cb451c1ee7e04aa5c4cadf9d7c6441d8f8051310dd",
+                "links": 1
+            }
+        },
+        "candidateMetadata": {
+            "ordinary": {
+                "facts": {
+                    "identity": "b4d202a1d20267c6:790c0000000001000000000000000000",
+                    "links": 1,
+                    "bytes": 61,
+                    "attributes": 32,
+                    "created": 134381829632390553,
+                    "modified": 134381829632410635,
+                    "changed": 134381829639416123
+                },
+                "security": {
+                    "control": 32772,
+                    "owner": "01020000000000052000000020020000",
+                    "group": "01050000000000051500000039b56eb772b843da7008a7f701020000",
+                    "dacl": "02004c000300000000101800ff011f000102000000000005200000002002000000101400ff011f0001010000000000051200000000101800a900120001020000000000052000000021020000",
+                    "rawDescriptor": "01000480140000002400000000000000400000000102000000000005200000002002000001050000000000051500000039b56eb772b843da7008a7f70102000002004c000300000000101800ff011f000102000000000005200000002002000000101400ff011f0001010000000000051200000000101800a900120001020000000000052000000021020000"
+                },
+                "dataStreams": {
+                    "::$DATA": 61
+                }
+            },
+            "security": {
+                "control": 32772,
+                "saclPresent": false,
+                "saclDefaulted": false,
+                "rawDescriptor": "01000480140000002400000000000000400000000102000000000005200000002002000001050000000000051500000039b56eb772b843da7008a7f70102000002004c000300000000001800ff011f000102000000000005200000002002000000001400ff011f0001010000000000051200000000001800a900120001020000000000052000000021020000"
+            },
+            "streams": {
+                "facts": {
+                    "identity": "b4d202a1d20267c6:790c0000000001000000000000000000",
+                    "links": 1,
+                    "bytes": 61,
+                    "attributes": 32,
+                    "created": 134381829632390553,
+                    "modified": 134381829632410635,
+                    "changed": 134381829639416123
+                },
+                "streams": [
+                    {
+                        "kind": 1,
+                        "attributes": 0,
+                        "bytes": 61,
+                        "name": ""
+                    }
+                ]
+            }
+        },
+        "installed": {
+            "path": "D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\owned\\original target",
+            "digest": {
+                "sha256": "1c9f621df2a1ca16dac031efc1c968586a8ae4770e3a30355a5c9650ffd6cdb5",
+                "gnuDebuglinkCrc32": 3084918443,
+                "byteCount": 61
+            },
+            "fingerprint": {
+                "identity": "b4d202a1d20267c6:790c0000000001000000000000000000",
+                "metadataSha256": "f03433c7c2b4cb93da3c88cb451c1ee7e04aa5c4cadf9d7c6441d8f8051310dd",
+                "links": 1
+            }
+        },
+        "installedMetadata": {
+            "ordinary": {
+                "facts": {
+                    "identity": "b4d202a1d20267c6:790c0000000001000000000000000000",
+                    "links": 1,
+                    "bytes": 61,
+                    "attributes": 32,
+                    "created": 134381829632390553,
+                    "modified": 134381829632410635,
+                    "changed": 134381829642475746
+                },
+                "security": {
+                    "control": 32772,
+                    "owner": "01020000000000052000000020020000",
+                    "group": "01050000000000051500000039b56eb772b843da7008a7f701020000",
+                    "dacl": "02004c000300000000101800ff011f000102000000000005200000002002000000101400ff011f0001010000000000051200000000101800a900120001020000000000052000000021020000",
+                    "rawDescriptor": "01000480140000002400000000000000400000000102000000000005200000002002000001050000000000051500000039b56eb772b843da7008a7f70102000002004c000300000000101800ff011f000102000000000005200000002002000000101400ff011f0001010000000000051200000000101800a900120001020000000000052000000021020000"
+                },
+                "dataStreams": {
+                    "::$DATA": 61
+                }
+            },
+            "security": {
+                "control": 32772,
+                "saclPresent": false,
+                "saclDefaulted": false,
+                "rawDescriptor": "01000480140000002400000000000000400000000102000000000005200000002002000001050000000000051500000039b56eb772b843da7008a7f70102000002004c000300000000001800ff011f000102000000000005200000002002000000001400ff011f0001010000000000051200000000001800a900120001020000000000052000000021020000"
+            },
+            "streams": {
+                "facts": {
+                    "identity": "b4d202a1d20267c6:790c0000000001000000000000000000",
+                    "links": 1,
+                    "bytes": 61,
+                    "attributes": 32,
+                    "created": 134381829632390553,
+                    "modified": 134381829632410635,
+                    "changed": 134381829642475746
+                },
+                "streams": [
+                    {
+                        "kind": 1,
+                        "attributes": 0,
+                        "bytes": 61,
+                        "name": ""
+                    }
+                ]
+            }
+        },
+        "restored": {
+            "path": "D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\owned\\original target",
+            "digest": {
+                "sha256": "bc76c9cda075c20f4231f05efddd9baca4ec13f4f0858c4966cb0f09591ef3e7",
+                "gnuDebuglinkCrc32": 268258256,
+                "byteCount": 37
+            },
+            "fingerprint": {
+                "identity": "b4d202a1d20267c6:7a0c0000000002000000000000000000",
+                "metadataSha256": "f03433c7c2b4cb93da3c88cb451c1ee7e04aa5c4cadf9d7c6441d8f8051310dd",
+                "links": 1
+            }
+        },
+        "restoredMetadata": {
+            "ordinary": {
+                "facts": {
+                    "identity": "b4d202a1d20267c6:7a0c0000000002000000000000000000",
+                    "links": 1,
+                    "bytes": 37,
+                    "attributes": 32,
+                    "created": 134381829632390553,
+                    "modified": 134381829632410635,
+                    "changed": 134381829648935142
+                },
+                "security": {
+                    "control": 32772,
+                    "owner": "01020000000000052000000020020000",
+                    "group": "01050000000000051500000039b56eb772b843da7008a7f701020000",
+                    "dacl": "02004c000300000000101800ff011f000102000000000005200000002002000000101400ff011f0001010000000000051200000000101800a900120001020000000000052000000021020000",
+                    "rawDescriptor": "01000480140000002400000000000000400000000102000000000005200000002002000001050000000000051500000039b56eb772b843da7008a7f70102000002004c000300000000101800ff011f000102000000000005200000002002000000101400ff011f0001010000000000051200000000101800a900120001020000000000052000000021020000"
+                },
+                "dataStreams": {
+                    "::$DATA": 37
+                }
+            },
+            "security": {
+                "control": 32772,
+                "saclPresent": false,
+                "saclDefaulted": false,
+                "rawDescriptor": "01000480140000002400000000000000400000000102000000000005200000002002000001050000000000051500000039b56eb772b843da7008a7f70102000002004c000300000000001800ff011f000102000000000005200000002002000000001400ff011f0001010000000000051200000000001800a900120001020000000000052000000021020000"
+            },
+            "streams": {
+                "facts": {
+                    "identity": "b4d202a1d20267c6:7a0c0000000002000000000000000000",
+                    "links": 1,
+                    "bytes": 37,
+                    "attributes": 32,
+                    "created": 134381829632390553,
+                    "modified": 134381829632410635,
+                    "changed": 134381829648935142
+                },
+                "streams": [
+                    {
+                        "kind": 1,
+                        "attributes": 0,
+                        "bytes": 37,
+                        "name": ""
+                    }
+                ]
+            }
+        },
+        "directory": "b4d202a1d20267c6:760c0000000001000000000000000000:db0e1f5d77a2c651d5eee3517878d33592921dbdd0aa5667ab9b42ebf4480adb",
+        "contract": "windows-x64-local-ntfs-raw-security-v1",
+        "durability": "windows-file-force-directory-flush-v1",
+        "handleCycles": 128,
+        "handleCount": 305,
+        "missingPrivilege": "Windows metadata CreateFileW failed (error=1314)",
+        "checks": 268,
+        "scope": "Native Host with backup/replace/restore stores; not public attachment or power-loss recovery acceptance"
+    },
+    "scope": "268 checks; native backup, replacement, restore, metadata/directory/namespace composition, expected refusals and128cleanup cycles. Does not cover later receipt update, sharing lock, coordinator crash/recovery or full public attachment."
+}

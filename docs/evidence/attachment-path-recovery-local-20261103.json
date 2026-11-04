@@ -1,0 +1,144 @@
+{
+    "status": "CONFIRMED scoped Linux Java21 and installed GUI regressions; hosted fixes pending",
+    "sourceBase": "9a75081c888ddc655968251313e24c670581bdd0",
+    "scope": [
+        "Read-only recovery preview defers private targetAfter path, full recovery still refuses before writes",
+        "Canonical bounded UTF-8/Base64 paths preserve Unicode, reject malformed input and duplicate options",
+        "Actual Java21 helper219, recovery204, transaction532 including eight abrupt exits, child cleanup/draining",
+        "Eight production PowerShell encoder controls with independent fixed UTF-8 vector",
+        "Installed Linux GUI preparation/default declines, GNU/LLVM/pinned strict validation and GDB stepping"
+    ],
+    "notProven": [
+        "Native Windows execution of new codec",
+        "Native privileged GUI recovery",
+        "Interactive Windows standard-user UAC",
+        "Complete current-head hosted matrix or #72 completion"
+    ],
+    "artifacts": [
+        {
+            "path": "build/attachment-path-recovery-tests.log",
+            "sha256": "ebd4cf2efe6f22b1fa0497864c486e09efdeefc9db5f8898ae871f77c4ec652f",
+            "bytes": 1211
+        },
+        {
+            "path": "build/attachment-path-powershell.log",
+            "sha256": "aa347a05d16239012492f578f9e9c27e252555fba6df2b0431f2f633c89590ff",
+            "bytes": 67
+        },
+        {
+            "path": "build/attachment-path-release.log",
+            "sha256": "509f9b1a930b3431229148c1b5d0df2edf46a69b43244fa641e0d16cfef532ed",
+            "bytes": 468
+        },
+        {
+            "path": "build/attachment-path-gui.log",
+            "sha256": "a45dfefec5afbbd72a1b6e42fd24d03e8fad2b442e869f7417c2873550015529",
+            "bytes": 45110
+        },
+        {
+            "path": "build/linux-gui-126107904107.log",
+            "sha256": "7a16d27fdfbfcf3f08833f15233b403084870c2a6b7dced0840b45e936424878",
+            "bytes": 239441
+        },
+        {
+            "path": "build/windows-host-126110049339.log",
+            "sha256": "98d945f650e2f483bb346a55bb85869771b8040cc366af27f9e4ca75c9fbd55f",
+            "bytes": 91565
+        },
+        {
+            "path": "build/test-results/gui-script-manager/run.k7FbZZJq/result.txt",
+            "sha256": "c220bab44d6a14953d87ba552d9a07d992ee5179952b2f8cf491486bc414cc61",
+            "bytes": 272
+        },
+        {
+            "path": "build/test-results/gui-script-manager/run.k7FbZZJq/gdb.txt",
+            "sha256": "d47b4f735d019f988ff839fb68d4b400d569fb1f52e2833c4947e23fc2f8d865",
+            "bytes": 1628
+        },
+        {
+            "path": "build/test-results/gui-script-manager/run.k7FbZZJq/dwarfdump.txt.check.json",
+            "sha256": "3588ec070e18c71d900294d1a93fb4a91c254bce5ded2d4b2fc450fc2c92d7cb",
+            "bytes": 2830
+        },
+        {
+            "path": "build/test-results/gui-script-manager/run.k7FbZZJq/select/attachment-decline/result.txt",
+            "sha256": "c8a0ee9e1a965e3e06aca75af45ed58cb87d77b3fcd732f0453fc134a83ce448",
+            "bytes": 160
+        },
+        {
+            "path": "build/test-results/gui-script-manager/run.k7FbZZJq/select/attachment-prepare/result.txt",
+            "sha256": "0cd5522aad5cd42a703cc4d9b247b26f362d91e480bc6cdfc4092775b60d31b6",
+            "bytes": 143
+        },
+        {
+            "path": "build/test-results/gui-script-manager/run.k7FbZZJq/select/attachment-prepare/validation/gdb.txt",
+            "sha256": "bb7f897f181c4aaa149f128bbe182d2c4441c1bd35e4f06414742ac4dc22a7b8",
+            "bytes": 1463
+        },
+        {
+            "path": "build/test-results/gui-script-manager/run.k7FbZZJq/select/attachment-prepare/validation/dwarfdump.txt.check.json",
+            "sha256": "c90a4ba3bda830c88af419154c60291a260c7b0686a4f74576c1c5b42b0b699e",
+            "bytes": 2974
+        },
+        {
+            "path": ".github/workflows/ci.yml",
+            "sha256": "b160db924aa1915bd705be350ede128bc0960ea09107427f50492928fcd2999a",
+            "bytes": 149075
+        },
+        {
+            "path": "src/main/java/ghidradwarfforge/output/AttachmentGui.java",
+            "sha256": "4003ec007b9e0176364ac818d1d3fe092dbd7975188efb78f38994a2bff6ea86",
+            "bytes": 21789
+        },
+        {
+            "path": "src/main/java/ghidradwarfforge/output/AttachmentHelper.java",
+            "sha256": "647fc9a5c035b8accea36f847745165e015939583093d8c160861a09ec340e47",
+            "bytes": 23690
+        },
+        {
+            "path": "src/main/java/ghidradwarfforge/output/AttachmentRecoveryInvocation.java",
+            "sha256": "3bc2771cac0e8bdb1989b2bed6ff26209fd56b88b358074cd5cc189311c1de05",
+            "bytes": 7957
+        },
+        {
+            "path": "src/main/java/ghidradwarfforge/output/AttachmentTransaction.java",
+            "sha256": "6e19f04729f6af9f1bcf11f3c571ea5bde6d370313eb52b83dd6347f2ae2bcbe",
+            "bytes": 26284
+        },
+        {
+            "path": "src/test/java/ghidradwarfforge/output/AttachmentGuiProcessSmoke.java",
+            "sha256": "4a1c36e1255ffb4ad84971a05fcf4efc500eca89d821b2f2aff0e4d295374868",
+            "bytes": 3845
+        },
+        {
+            "path": "src/test/java/ghidradwarfforge/output/AttachmentHelperSmoke.java",
+            "sha256": "9ed983e4623efe0fd92f1acfbca9cb0484cd10b604c4c0517761209b47151799",
+            "bytes": 14330
+        },
+        {
+            "path": "src/test/java/ghidradwarfforge/output/AttachmentRecoveryInvocationSmoke.java",
+            "sha256": "d40957da45d6c51ea5aaa0db9d4233b628ee72d10763ee83b91c5d9f8e1fc607",
+            "bytes": 11433
+        },
+        {
+            "path": "src/test/java/ghidradwarfforge/output/WindowsAttachmentOperationProbe.java",
+            "sha256": "15761ce26524255ab6d0d35dcd9b7ee81ea571e93d96502bd01fb4be4a58325b",
+            "bytes": 10381
+        },
+        {
+            "path": "support/ghidra-dwarf-forge-attach.ps1",
+            "sha256": "911f8d2e0d36078c4b10207b51917cedf0959aad59811b0e3d49177f89ddc720",
+            "bytes": 5804
+        },
+        {
+            "path": "src/main/java/ghidradwarfforge/output/AttachmentPathArgument.java",
+            "sha256": "2b09d117bb4aea77251b6375738441f12ae48dddf1545a75573cb420cb872d39",
+            "bytes": 2366
+        },
+        {
+            "path": "src/test/integration/attachment-path-argument.ps1",
+            "sha256": "b9b33e2ea1f1feda27c630041a0c420ec72bda5bf117bfd23d8051853318d142",
+            "bytes": 1844
+        }
+    ]
+}

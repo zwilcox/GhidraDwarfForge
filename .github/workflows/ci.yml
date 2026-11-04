@@ -66,6 +66,18 @@ jobs:
             build-essential zlib1g-dev libzstd-dev curl xz-utils patch \
             autoconf automake libtool pkg-config patchelf llvm
 
+      - name: Prove protected Linux xattr visibility on an owned canary
+        run: |
+          set -euo pipefail
+          results="$PWD/build/test-results/native-linux/metadata-visibility"
+          mkdir -p "$results"
+          cp src/test/native/linux-metadata-visibility.c "$results/"
+          cc -std=c11 -O2 -Wall -Wextra -Werror \
+            "$results/linux-metadata-visibility.c" -o "$results/probe"
+          "$results/probe" --unprivileged "$results" > "$results/unprivileged.json"
+          sudo -n "$results/probe" --privileged "$results" | tee "$results/privileged.json"
+          sha256sum "$results/linux-metadata-visibility.c" "$results/probe" > "$results/SHA256SUMS"
+
       - name: Build pinned libdwarf producer
         run: |
           set -euo pipefail
@@ -214,6 +226,13 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+      - name: Build and exercise Linux validator process owner
+        run: |
+            support/build-validator-supervisor.sh linux native-out build/test-results/native-linux/supervisor
+            python3 src/test/integration/validator-supervisor.py \
+                --helper native-out/forge-validator-supervisor \
+                --results build/test-results/native-linux/supervisor/runtime
+
       - uses: actions/upload-artifact@v7
         with:
           name: libdwarf-linux-integration
@@ -280,7 +299,9 @@ jobs:
           install: >-
             base-devel
             curl
+            git
             mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-clang
             mingw-w64-x86_64-zlib
             mingw-w64-x86_64-zstd
             autoconf
@@ -288,14 +309,68 @@ jobs:
             libtool
             pkgconf
 
+      - name: Check isolated helper token ABI against Windows headers
+        run: |
+          mkdir -p build/test-results/native-windows/token-abi
+          gcc -std=c11 -Wall -Wextra -Werror -c support/validation/windows-token-layout.c \
+              -o build/test-results/native-windows/token-abi/layout.o
+          cp support/validation/windows-token-layout.c build/test-results/native-windows/token-abi/
+
+      - name: Locate audited Windows metadata compiler
+        run: printf 'FORGE_METADATA_CC=%s\n' "$(cygpath -w "$(command -v gcc)")" >> "$GITHUB_ENV"
+
+      - name: Isolated Windows identity and metadata application
+        shell: pwsh
+        run: |
+          $dependencies = Join-Path $PWD 'build/test-dependencies'
+          New-Item -ItemType Directory -Force $dependencies | Out-Null
+          $jna = Join-Path $dependencies 'jna-5.14.0.jar'
+          $gson = Join-Path $dependencies 'gson-2.9.0.jar'
+          Invoke-WebRequest 'https://repo.maven.apache.org/maven2/net/java/dev/jna/jna/5.14.0/jna-5.14.0.jar' -OutFile $jna
+          Invoke-WebRequest 'https://repo.maven.apache.org/maven2/com/google/code/gson/gson/2.9.0/gson-2.9.0.jar' -OutFile $gson
+          if ((Get-FileHash $jna -Algorithm SHA256).Hash.ToLowerInvariant() -ne '34ed1e1f27fa896bca50dbc4e99cf3732967cec387a7a0d5e3486c09673fe8c6' -or
+              (Get-FileHash $gson -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'c96d60551331a196dac54b745aa642cd078ef89b6f267146b705f2c2cbef052d') {
+              throw 'Test dependency differs from the selected Ghidra JNA/Gson bytes'
+          }
+          & ./src/test/integration/windows-file-metadata.ps1 `
+              -JavaExe (Get-Command java).Source -JavacExe (Get-Command javac).Source `
+              -Compiler $env:FORGE_METADATA_CC -Jna $jna -Gson $gson `
+              -Results (Join-Path $PWD 'build/test-results/native-windows/file-metadata')
+
+      - name: Fetch pinned Windows native source
+        run: |
+          curl -fL --retry 3 \
+            "https://github.com/davea42/libdwarf-code/releases/download/$LIBDWARF_VERSION/$LIBDWARF_ARCHIVE" \
+            -o "$LIBDWARF_ARCHIVE"
+          echo "$LIBDWARF_ARCHIVE_SHA256  $LIBDWARF_ARCHIVE" | sha256sum -c -
+
+      - name: Build isolated pinned Windows DWARF checker
+        id: windows-checker-build
+        run: |
+          support/build-validation-dwarfdump.sh "$LIBDWARF_ARCHIVE" \
+            validation-tool-windows build/test-results/native-windows/strict-checker-build
+          printf 'FORGE_VALIDATION_CLANG=%s\n' "$(cygpath -w "$(command -v clang)")" >> "$GITHUB_ENV"
+
+      - name: Exercise raw Windows checker on compiler ELF and malformed DWARF
+        shell: pwsh
+        run: |
+          python src/test/integration/native-dwarfdump.py --bundle validation-tool-windows `
+            --compiler $env:FORGE_VALIDATION_CLANG --clang-target x86_64-linux-gnu `
+            --results build/test-results/native-windows/strict-checker-runtime
+          if ($LASTEXITCODE -ne 0) { throw 'Native Windows DWARF checker controls failed' }
+
+      - uses: actions/upload-artifact@v7
+        if: always() && steps.windows-checker-build.outcome == 'success'
+        with:
+          name: dwarfdump-windows-validation
+          path: validation-tool-windows/
+          if-no-files-found: error
+
       - name: Build and audit pinned Windows DLLs
         run: |
           set -euo pipefail
           result_directory="$PWD/build/test-results/native-windows"
           mkdir -p "$result_directory"
-          curl -fL --retry 3 \
-            "https://github.com/davea42/libdwarf-code/releases/download/$LIBDWARF_VERSION/$LIBDWARF_ARCHIVE" \
-            -o "$LIBDWARF_ARCHIVE"
           echo "$LIBDWARF_ARCHIVE_SHA256  $LIBDWARF_ARCHIVE" | sha256sum -c -
           tar -xf "$LIBDWARF_ARCHIVE"
           cd libdwarf-2.3.2
@@ -462,6 +537,17 @@ jobs:
           support/compare-native-builds.sh windows native-windows-out \
             native-windows-rebuild "$result_directory/reproducibility.log"
 
+      - name: Build Windows validator process owner
+        run: support/build-validator-supervisor.sh windows native-windows-out build/test-results/native-windows/supervisor
+
+      - name: Exercise native Windows validator process ownership
+        shell: pwsh
+        run: |
+            python src/test/integration/validator-supervisor.py `
+                --helper native-windows-out/forge-validator-supervisor.exe `
+                --results build/test-results/native-windows/supervisor/runtime
+            if ($LASTEXITCODE -ne 0) { throw 'Windows validator supervisor controls failed' }
+
       - uses: actions/upload-artifact@v7
         with:
           name: libdwarf-windows-integration
@@ -511,11 +597,19 @@ jobs:
           mkdir -p build/test-results/extension-build
           {
             src/test/integration/headless-wrapper.sh
+            python3 src/test/integration/attachment-launcher.py
             src/test/integration/architecture-neutrality.sh
             python3 src/test/integration/architecture-neutrality-smoke.py
             python3 -B -m unittest discover -s src/test/python -p test_gdb_loader.py -v
+            cc -std=c11 -Wall -Wextra -Werror src/test/native/linux-rename-contract.c -o build/linux-rename-contract
+            build/linux-rename-contract
+            cc -std=c11 -O2 -Wall -Wextra -Werror native/supervisor/forge-supervisor-linux.c -o build/forge-validator-supervisor
+            ./gradlew validatorSupervisorSmoke \
+                -PsupervisorPath="$PWD/build/forge-validator-supervisor" \
+                -PsupervisorPython="$(command -v python3)" \
+                -PsupervisorResults="$PWD/build/test-results/extension-build/supervisor"
             ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke \
-              ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke companionArtifactPublisherSmoke \
+              ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke companionArtifactPublisherSmoke strictDwarfReportSmoke attachmentProtocolSmoke attachmentReceiptStoreSmoke attachmentFileStoreSmoke attachmentTargetStoreSmoke attachmentTransactionSmoke attachmentExportBindingSmoke attachmentOperationSmoke attachmentInvocationSmoke attachmentHelperSmoke attachmentGuiProcessSmoke attachmentPreparationSmoke attachmentRecoveryInvocationSmoke debuglinkBasenameSmoke \
               exportReportSmoke exportReportClaimsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke \
               fileDigestsSmoke elfBuildIdSmoke \
               matchedElfPrefixSmoke matchedElfAllocationsSmoke executableProgramBytesSmoke \
@@ -531,6 +625,18 @@ jobs:
               packagedNativeLibrariesSmoke existingDebugSidecarSmoke \
               extendedSectionNumberingSmoke elfImageReaderSmoke \
               elfCopyCancellationSmoke ghidraImageBaseSmoke buildExtension
+            python3 -B src/test/integration/debuglink-basename.py \
+                --jar "$PWD/build/libs/GhidraDwarfForge.jar" \
+                --results "$PWD/build/test-results/extension-build/debuglink-basename"
+            python3 -B src/test/integration/linux-file-metadata.py \
+                --jar "$PWD/build/libs/GhidraDwarfForge.jar" --ghidra "$GHIDRA_INSTALL_DIR" \
+                --results "$PWD/build/test-results/extension-build/linux-file-metadata"
+            python3 -B src/test/integration/linux-metadata-visibility-session.py \
+                --jar "$PWD/build/libs/GhidraDwarfForge.jar" --ghidra "$GHIDRA_INSTALL_DIR" \
+                --results "$PWD/build/test-results/extension-build/linux-visibility-session" --privileged
+            python3 -B src/test/integration/linux-directory-sync.py \
+                --jar build/libs/GhidraDwarfForge.jar --ghidra "$GHIDRA_INSTALL_DIR" \
+                --results "$PWD/build/test-results/extension-build/linux-directory-sync"
             src/test/integration/release-package.sh
             zipinfo -l dist/*.zip | grep -Eq \
               '^-rwxr-xr-x.*GhidraDwarfForge/support/ghidra-dwarf-forge-headless$'
@@ -547,6 +653,7 @@ jobs:
         with:
           name: extension-build-diagnostics
           path: build/test-results/extension-build/
+          include-hidden-files: true
           if-no-files-found: warn
           retention-days: 14
 
@@ -612,6 +719,40 @@ jobs:
         with:
           name: release-package-diagnostics
           path: build/test-results/release-package/
+          if-no-files-found: warn
+          retention-days: 14
+
+  attachment-windows:
+    needs: [ extension-build, native-windows ]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/download-artifact@v8
+        with:
+          name: ghidra-dwarf-forge-extension-base
+          path: attachment-extension
+      - uses: actions/download-artifact@v8
+        with:
+          name: native-windows-build-diagnostics
+          path: attachment-native
+      - name: Native Windows host backup replacement and restore
+        shell: pwsh
+        run: |
+          $extension = @(Get-ChildItem attachment-extension -Filter '*.zip')
+          if ($extension.Count -ne 1) { throw 'Expected one extension archive' }
+          ./src/test/integration/windows-attachment-host.ps1 `
+            -ExtensionZip $extension[0].FullName `
+            -NativeDiagnostics (Resolve-Path attachment-native).Path `
+            -Results "$PWD/build/test-results/attachment-windows"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: attachment-windows-diagnostics
+          path: build/test-results/attachment-windows/
           if-no-files-found: warn
           retention-days: 14
 
@@ -974,7 +1115,37 @@ jobs:
               fi
               env "${capture[@]}" FIXTURE_ROLE="$role" src/test/integration/headless-symbol-export.sh \
                   "$GHIDRA_INSTALL_DIR" "$consumer" "$producer" "$TARGET"
+              if [[ "$role" == exec || "$role" == pie || "$role" == exec.no-build-id ]]; then
+                  basename_args=()
+                  if [[ "$TARGET" == x86_64 && "$role" == exec.no-build-id ]]; then
+                      basename_args=(--sidecar-basename 'literal λ ;$[quoted].dbg')
+                  fi
+                  attachment_results="$RUNNER_TEMP/forge-attachment-production/$TARGET.$role"
+                  attachment_status=0
+                  sudo -n env JAVA_HOME="$JAVA_HOME" JAVA="$JAVA_HOME/bin/java" JAVAC="$JAVA_HOME/bin/javac" \
+                      python3 src/test/integration/attachment-elf-controller.py --production-linux-host \
+                      --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+                      --ghidra "$GHIDRA_INSTALL_DIR" --fixture-dir "$PWD/build/fixtures" \
+                      --target "$TARGET" --role "$role" "${basename_args[@]}" \
+                      --report-log "$PWD/build/test-results/headless-symbol-export/$TARGET.$role.log" \
+                      --strict-validator "$DWARFDUMP" \
+                      --supervised-validator-helper "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/forge-validator-supervisor" \
+                      --result-dir "$attachment_results" || attachment_status=$?
+                  mkdir -p "$PWD/build/test-results/attachment-elf-controller"
+                  if sudo -n test -d "$attachment_results"; then
+                      sudo -n tar -czf - -C "$attachment_results" . |
+                          tee "$PWD/build/test-results/attachment-elf-controller/$TARGET.$role.tar.gz" > /dev/null
+                  fi
+                  if [[ "$attachment_status" -ne 0 ]]; then exit "$attachment_status"; fi
+              fi
               if [[ "$role" == "exec.no-sections" ]]; then
+                  python3 -B src/test/integration/attachment-sectionless-validator.py \
+                      --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+                      --ghidra "$GHIDRA_INSTALL_DIR" \
+                      --report-log "$PWD/build/test-results/headless-symbol-export/$TARGET.$role.log" \
+                      --strict-validator "$DWARFDUMP" \
+                      --supervised-validator-helper "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/forge-validator-supervisor" \
+                      --result-dir "$PWD/build/test-results/attachment-sectionless-validator/$TARGET"
                   python3 src/test/integration/sectionless-load-ranges.py \
                       "$PWD/build/fixtures/$TARGET/semantic.exec.no-sections.stripped" \
                       "$PWD/build/fixtures/$TARGET/semantic.exec.no-sections.ghidra-forge.dbg" \
@@ -1036,6 +1207,15 @@ jobs:
             --capture "exec.no-build-id=$evidence_root/cases/exec.no-build-id/receipt.json" \
             --output "$evidence_root/index.json"
           echo "FORGE_VALIDATION_EVIDENCE_INDEX=$evidence_root/index.json" >> "$GITHUB_ENV"
+
+      - name: Retain production attachment evidence before broader target tests
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: production-linux-attachment-${{ matrix.target }}
+          path: build/test-results/attachment-elf-controller/*.tar.gz
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: GDB companions from rebased PIE and shared-library analysis
         env:
@@ -1140,6 +1320,38 @@ jobs:
       - name: Saved-program type identity across fresh headless processes
         if: matrix.target == 'x86_64'
         run: src/test/integration/saved-program-determinism.sh "$GHIDRA_INSTALL_DIR"
+
+      - name: Saved analyst edits through backup-based attachment refresh
+        if: matrix.target == 'x86_64'
+        run: |
+            set -euo pipefail
+            for role in exec pie; do
+                attachment_results="$RUNNER_TEMP/forge-attachment-refresh/$role"
+                attachment_status=0
+                sudo -n env JAVA_HOME="$JAVA_HOME" JAVA="$JAVA_HOME/bin/java" JAVAC="$JAVA_HOME/bin/javac" \
+                    python3 src/test/integration/attachment-curated-refresh.py --production-linux-host \
+                    --ghidra "$GHIDRA_INSTALL_DIR" \
+                    --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+                    --fixture-dir "$PWD/build/fixtures" --role "$role" \
+                    --strict-validator "$DWARFDUMP" \
+                    --supervised-validator-helper "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/forge-validator-supervisor" \
+                    --result-dir "$attachment_results" || attachment_status=$?
+                mkdir -p "$PWD/build/test-results/attachment-curated-refresh"
+                if sudo -n test -d "$attachment_results"; then
+                    sudo -n tar -czf - -C "$attachment_results" . |
+                        tee "$PWD/build/test-results/attachment-curated-refresh/$role.tar.gz" > /dev/null
+                fi
+                if [[ "$attachment_status" -ne 0 ]]; then exit "$attachment_status"; fi
+            done
+
+      - name: Retain saved-curation attachment refresh evidence
+        if: always() && matrix.target == 'x86_64'
+        uses: actions/upload-artifact@v7
+        with:
+          name: production-linux-attachment-refresh
+          path: build/test-results/attachment-curated-refresh/*.tar.gz
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Validate function-pointer convention extension and malformed metadata
         if: matrix.target == 'x86_64'
@@ -2194,11 +2406,72 @@ jobs:
         with:
           name: target-preflight-${{ matrix.target }}
           path: build/test-results/
+          include-hidden-files: true
           if-no-files-found: warn
           retention-days: 14
 
+  # Produce the Windows comparison input independently of the long target
+  # matrix. The final gate still requires that entire matrix and both hosts.
+  linux-x86-export-reference:
+    needs: [ release-package, native-linux ]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install reference fixture and validation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc binutils llvm gdb dwarfdump xvfb openbox x11-utils libxtst6 libxi6 libxrender1 polkitd pkexec
+
+      - name: Cache Ghidra 12.0.3 archive
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/ghidra-download/${{ env.GHIDRA_ARCHIVE }}
+          key: ghidra-${{ env.GHIDRA_ARCHIVE_SHA256 }}
+
+      - name: Install pinned Ghidra
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ghidra-download" "$RUNNER_TEMP/ghidra"
+          archive="$RUNNER_TEMP/ghidra-download/$GHIDRA_ARCHIVE"
+          if [[ ! -f "$archive" ]]; then
+              curl -fL --retry 3 "$GHIDRA_DOWNLOAD_URL" -o "$archive"
+          fi
+          echo "$GHIDRA_ARCHIVE_SHA256  $archive" | sha256sum -c -
+          unzip -q "$archive" -d "$RUNNER_TEMP/ghidra"
+          echo "GHIDRA_INSTALL_DIR=$RUNNER_TEMP/ghidra/ghidra_12.0.3_PUBLIC" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: ghidra-dwarf-forge-extension
+          path: dist
+      - uses: actions/download-artifact@v8
+        with:
+          name: libdwarf-linux-integration
+          path: native-integration
+      - uses: actions/download-artifact@v8
+        with:
+          name: dwarfdump-linux-validation
+          path: validation-tool
+
+      - name: Export and validate the Windows comparison fixture
+        run: |
+          set -euo pipefail
+          (cd validation-tool && sha256sum -c SHA256SUMS)
+          chmod 755 validation-tool/bin/dwarfdump validation-tool/libexec/dwarfdump
+          export DWARFDUMP="$PWD/validation-tool/bin/dwarfdump"
+          unzip -q dist/*.zip -d "$GHIDRA_INSTALL_DIR/Ghidra/Extensions"
+          make -C src/test/fixtures x86_64
+          FIXTURE_ROLE=exec GHIDRA_GDB_LOADER=1 src/test/integration/headless-symbol-export.sh \
+              "$GHIDRA_INSTALL_DIR" "$PWD/native-integration/libdwarf.so.2.3.2" \
+              "$PWD/native-integration/libdwarfp.so.2.3.2" x86_64
+
       - uses: actions/upload-artifact@v7
-        if: matrix.target == 'x86_64'
         with:
           name: linux-x86-export-reference
           path: |
@@ -2208,8 +2481,32 @@ jobs:
             build/fixtures/x86_64/semantic.exec.ghidra-forge.dbg.c
           if-no-files-found: error
 
+      - name: Unprivileged GUI attachment, curated refresh, and recovery through explicit authorization
+        run: |
+          DWARFDUMP="$PWD/validation-tool/bin/dwarfdump" \
+              bash src/test/integration/gui-attachment-authorized-ci.sh \
+              "$GHIDRA_INSTALL_DIR" \
+              "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
+              "$PWD/build/fixtures/x86_64/semantic.exec.stripped" \
+              "$PWD/build/fixtures/x86_64/semantic.exec.reference"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: linux-x86-export-reference-diagnostics
+          path: |
+            build/test-results/headless-symbol-export/
+            build/test-results/gui-authorization/
+          if-no-files-found: warn
+          retention-days: 14
+
   windows-host:
-    needs: [ release-package, native-windows, target-preflight ]
+    needs: [ release-package, native-windows, linux-x86-export-reference ]
+    # The reference files are uploaded before the Linux GUI journey. Still
+    # exercise Windows when that later journey fails; missing reference files
+    # fail artifact download, and required-validation independently requires
+    # the complete Linux reference/GUI job to succeed.
+    if: ${{ always() && !cancelled() && needs.release-package.result == 'success' && needs.native-windows.result == 'success' }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -2228,6 +2525,7 @@ jobs:
           install: >-
             mingw-w64-x86_64-binutils
             mingw-w64-x86_64-llvm
+            mingw-w64-x86_64-gcc
 
       - name: Cache Ghidra 12.0.3 archive
         uses: actions/cache@v6
@@ -2268,6 +2566,11 @@ jobs:
           name: linux-x86-export-reference
           path: linux-reference
 
+      - uses: actions/download-artifact@v8
+        with:
+          name: dwarfdump-windows-validation
+          path: validation-tool-windows
+
       - name: Record exact Windows toolchain versions
         shell: pwsh
         env:
@@ -2303,17 +2606,19 @@ jobs:
         shell: pwsh
         run: ./src/test/integration/windows-desktop-acl.ps1
 
-      - name: Install extension and run native-independent Windows checks
+      - name: Install extension and run focused Windows checks
         shell: pwsh
         run: |
           $resultDirectory = 'build\test-results\windows-host'
           New-Item -ItemType Directory -Force $resultDirectory | Out-Null
           [scriptblock]::Create((Get-Content -Raw .\support\ghidra-dwarf-forge-headless.ps1)) | Out-Null
+          & .\src\test\integration\attachment-path-argument.ps1 |
+            Tee-Object -FilePath "$resultDirectory\path-argument.log"
           $extension = Get-ChildItem dist -Filter '*.zip' | Select-Object -First 1
           if ($null -eq $extension) { throw 'extension ZIP is missing' }
           Expand-Archive -Path $extension.FullName `
             -DestinationPath (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions') -Force
-          & .\gradlew.bat dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke companionArtifactPublisherSmoke exportReportSmoke `
+          & .\gradlew.bat dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke companionArtifactPublisherSmoke strictDwarfReportSmoke attachmentProtocolSmoke attachmentInvocationSmoke attachmentHelperSmoke attachmentGuiProcessSmoke attachmentPreparationSmoke attachmentRecoveryInvocationSmoke exportReportSmoke `
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke arm32CallPolicySmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
             functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke arm32SectionModesSmoke ghidraArm32SectionModesSmoke ghidraArmBe8ProfileSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke i386AbiSelectionSmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke i386ParameterAllocationSmoke allocationDecompilerSmoke floatingTypeLayoutSmoke mipsN32ParameterAllocationSmoke delayedReturnPrefixSmoke truncatedStackDepthSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke mipsWideCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
@@ -2323,7 +2628,7 @@ jobs:
             debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke 2>&1 |
             Tee-Object -FilePath "$resultDirectory\native-independent.log"
           if ($LASTEXITCODE -ne 0) {
-            throw "native-independent Windows checks failed with exit code $LASTEXITCODE"
+            throw "focused Windows checks failed with exit code $LASTEXITCODE"
           }
 
       - name: Windows file-lock publication rollback
@@ -2366,6 +2671,16 @@ jobs:
           }
           'windows-file-lock-publication=PASS' |
             Set-Content -Path (Join-Path $lockDirectory 'result.txt') -Encoding utf8
+
+      - name: Actual JVM cancellation through Windows validator process owner
+        shell: pwsh
+        run: |
+            $helper = (Resolve-Path native-windows/forge-validator-supervisor.exe).Path
+            $python = (Get-Command python).Source
+            $results = Join-Path $PWD 'build\test-results\windows-host\supervisor'
+            & .\gradlew.bat validatorSupervisorSmoke "-PsupervisorPath=$helper" `
+                "-PsupervisorPython=$python" "-PsupervisorResults=$results"
+            if ($LASTEXITCODE -ne 0) { throw 'Windows JVM validator cancellation failed' }
 
       - name: Isolated Windows producer ABI smoke test
         shell: pwsh
@@ -2454,19 +2769,43 @@ jobs:
             -ProducerDll $producer.FullName `
             -LinuxReferenceDirectory (Resolve-Path linux-reference)
 
-      - name: Native Windows Script Manager export, console, and chooser cancellation
+      - name: Native Windows attachment rollback and saved-curation refresh
         shell: pwsh
-        timeout-minutes: 15
+        timeout-minutes: 25
         env:
           MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
         run: |
           $mingwBin = Join-Path $env:MSYS2_LOCATION 'mingw64\bin'
           $env:PATH = "$mingwBin;$env:PATH"
+          python src/test/integration/windows-attachment-operation.py `
+            --ghidra $env:GHIDRA_INSTALL_DIR `
+            --original build/test-results/windows-host/work/semantic.exec.stripped `
+            --reference linux-reference/semantic.exec.reference `
+            --sidecar build/test-results/windows-host/work/semantic.exec.ghidra-forge.dbg `
+            --report-log build/test-results/windows-host/headless.log `
+            --helper native-windows/forge-validator-supervisor.exe `
+            --readelf (Join-Path $mingwBin 'readelf.exe') `
+            --llvm (Join-Path $mingwBin 'llvm-dwarfdump.exe') `
+            --checker-bundle validation-tool-windows `
+            --results build/test-results/windows-host/attachment-operation
+          if ($LASTEXITCODE -ne 0) { throw 'Native Windows real-ELF attachment failed' }
+
+      - name: Native Windows Script Manager export, console, and chooser cancellation
+        shell: pwsh
+        timeout-minutes: 25
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+        run: |
+          $mingwBin = Join-Path $env:MSYS2_LOCATION 'mingw64\bin'
+          $env:PATH = "$mingwBin;$env:PATH"
+          $env:GHIDRA_GUI_NATIVE_ATTACHMENT = '1'
+          $env:FORGE_GUI_CHECKER_BUNDLE = (Resolve-Path 'validation-tool-windows').Path
           .\src\test\integration\windows-gui-script-manager.ps1 `
             -GhidraDirectory $env:GHIDRA_INSTALL_DIR `
             -ModuleDirectory (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions\GhidraDwarfForge') `
             -Fixture (Resolve-Path 'linux-reference\semantic.exec.stripped').Path `
             -Reference (Resolve-Path 'linux-reference\semantic.exec.reference').Path
+          Remove-Item Env:\GHIDRA_GUI_NATIVE_ATTACHMENT
           $env:GHIDRA_GUI_GDB_LOADER = '1'
           .\src\test\integration\windows-gui-script-manager.ps1 `
             -GhidraDirectory $env:GHIDRA_INSTALL_DIR `
@@ -2521,9 +2860,43 @@ jobs:
         if: always()
         with:
           name: windows-host-validation
+          include-hidden-files: true
           path: |
             build/test-results/windows-host/
             build/test-results/windows-desktop-acl/
+          if-no-files-found: warn
+          retention-days: 14
+
+  windows-attachment-gdb:
+    needs: [ windows-host ]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: windows-host-validation
+          path: windows-artifacts
+      - uses: actions/download-artifact@v8
+        with:
+          name: dwarfdump-linux-validation
+          path: validation-tool
+      - name: Install Linux target debugger and validators
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gdb llvm binutils
+      - name: Execute both Windows attachment generations and reject wrong CRC
+        run: |
+          (cd validation-tool && sha256sum -c SHA256SUMS)
+          chmod 755 validation-tool/bin/dwarfdump validation-tool/libexec/dwarfdump
+          export DWARFDUMP="$PWD/validation-tool/bin/dwarfdump"
+          python3 src/test/integration/windows-attachment-gdb.py \
+              --windows-results "$PWD/windows-artifacts/windows-host" \
+              --results "$PWD/build/test-results/windows-attachment-gdb"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: windows-attachment-gdb-diagnostics
+          path: build/test-results/windows-attachment-gdb/
           if-no-files-found: warn
           retention-days: 14
 
@@ -2536,7 +2909,10 @@ jobs:
       - extension-build
       - release-package
       - target-preflight
+      - linux-x86-export-reference
       - windows-host
+      - attachment-windows
+      - windows-attachment-gdb
     runs-on: ubuntu-24.04
     steps:
       - name: Require every supported validation path
@@ -2547,14 +2923,18 @@ jobs:
           EXTENSION_BUILD_RESULT: ${{ needs.extension-build.result }}
           RELEASE_PACKAGE_RESULT: ${{ needs.release-package.result }}
           TARGET_PREFLIGHT_RESULT: ${{ needs.target-preflight.result }}
+          LINUX_REFERENCE_RESULT: ${{ needs.linux-x86-export-reference.result }}
           WINDOWS_HOST_RESULT: ${{ needs.windows-host.result }}
+          ATTACHMENT_WINDOWS_RESULT: ${{ needs.attachment-windows.result }}
+          WINDOWS_ATTACHMENT_GDB_RESULT: ${{ needs.windows-attachment-gdb.result }}
         run: |
           set -euo pipefail
           failed=0
           for result in "$WORKFLOW_LINT_RESULT" "$NATIVE_LINUX_RESULT" \
               "$NATIVE_WINDOWS_RESULT" "$EXTENSION_BUILD_RESULT" \
               "$RELEASE_PACKAGE_RESULT" "$TARGET_PREFLIGHT_RESULT" \
-              "$WINDOWS_HOST_RESULT"; do
+              "$LINUX_REFERENCE_RESULT" "$WINDOWS_HOST_RESULT" "$ATTACHMENT_WINDOWS_RESULT" \
+              "$WINDOWS_ATTACHMENT_GDB_RESULT"; do
             if [[ "$result" != success ]]; then
               failed=1
             fi

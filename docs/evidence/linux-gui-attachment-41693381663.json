@@ -1,0 +1,95 @@
+{
+    "status": "CONFIRMED scoped native Linux GUI attachment/refresh/recovery and independent consumer checks; overall hosted GUI job failed afterward",
+    "head": "0f703084453ce472ec45a84c6980bbac6b4b9d7e",
+    "run": 41693381663,
+    "job": 126122809578,
+    "artifacts": [
+        {
+            "id": 13261850049,
+            "name": "linux-x86-export-reference-diagnostics",
+            "sha256": "6d0aa180d78b26808a8b1671c45a7264664b3af62226490c3bd970d140f9a074"
+        },
+        {
+            "id": 13259076587,
+            "name": "linux-x86-export-reference",
+            "sha256": "a431e65fa0113f7f9f798bc6423570b22a78def07c698ffda37109c3c25b43a4"
+        }
+    ],
+    "checks": [
+        "Unprivileged Ghidra Script Manager chose explicit pkexec authorization; initial and curated refresh committed; saved recovery restored prior generation",
+        "Both receipt-bound retained images preserve original ELF program headers and complete original prefix except permitted section-table header fields",
+        "Independent replay on owned copies passes GNU without stderr, LLVM and pinned strict validation, both automatic GDB names/source/types/break/next/step/normal exits, both changed-CRC refusal controls",
+        "Receipt chain, original backup hash and prior generation restoration agree; downloaded GUI files remain byte-identical"
+    ],
+    "commands": [
+        "DWARFDUMP=<pinned-checker> python3 src/test/integration/gui-attachment-verify.py <owned-consumer-copy> <downloaded-original> 401136"
+    ],
+    "notProven": [
+        "Full hosted job: later chooser double-click observer failed",
+        "Windows native GUI or real-export attachment",
+        "Interactive standard-user UAC",
+        "Current final required-validation gate"
+    ],
+    "retainedFiles": [
+        {
+            "path": "build/test-results/attachment-review-41693381663/linux-gui-inputs.json",
+            "sha256": "2a7938466990d23bd1239a30a8fc64e48adcdddc5f9370690bcf7f7a894a0535",
+            "bytes": 26049
+        },
+        {
+            "path": "build/test-results/attachment-review-41693381663/linux-gui-consumer.log",
+            "sha256": "178f6fca64a3aa7a513dd3dfac040d93de095aa8dcca75acc540041b64795a3b",
+            "bytes": 40
+        },
+        {
+            "path": "build/test-results/attachment-review-41693381663/linux-gui-consumer/verification.json",
+            "sha256": "f84c7fe1bb256ce5f92346dba74e5fcb73cf742b2c80dffee49b99543792de8b",
+            "bytes": 415
+        },
+        {
+            "path": "build/test-results/attachment-review-41693381663/linux-gui-consumer/commands.json",
+            "sha256": "8c23cdcd1c97aeb18a1a2fffcc2c244cc21b4b25a3f9823e9f242be09be80fe6",
+            "bytes": 7077
+        },
+        {
+            "path": "build/linux-gui-126122809578.log",
+            "sha256": "10c4e5830496d5848e35d68a27cae4186c4163a550dc745d1cec1aa08c2d0688",
+            "bytes": 258216
+        },
+        {
+            "path": "src/test/integration/gui-attachment-verify.py",
+            "sha256": "2bcf67dfdcec4470de8f29e6202997c7ad52490b70b9303187359e6cc7d332fa",
+            "bytes": 7747
+        },
+        {
+            "path": "build/test-results/attachment-review-41693381663/linux-gui-consumer/initial-gdb.stdout",
+            "sha256": "4268b1f159e7eed09f04479af0fb68db0ba9667316ddea58318b7fecbdc26f27",
+            "bytes": 932
+        },
+        {
+            "path": "build/test-results/attachment-review-41693381663/linux-gui-consumer/refreshed-gdb.stdout",
+            "sha256": "d9a714ef2850b9cfd86ebce411405c534c412344a1f46b0ff79efb834f3c51e8",
+            "bytes": 938
+        },
+        {
+            "path": "build/test-results/attachment-review-41693381663/linux-gui-consumer/initial-bad-crc.stderr",
+            "sha256": "ab39e87d0382d7bc579ac9d59e6151aa20c3b2a46e8c742a7d844fde35c11b51",
+            "bytes": 385
+        },
+        {
+            "path": "build/test-results/attachment-review-41693381663/linux-gui-consumer/refreshed-bad-crc.stderr",
+            "sha256": "771378a4dc0c587be7357147053ddcee8a331efb9a58f1c5432d30b6e26d0666",
+            "bytes": 391
+        },
+        {
+            "path": "build/test-results/attachment-review-41693381663/linux-gui-consumer/refreshed-strict.txt.check.json",
+            "sha256": "fe0f82361b81c9f7d687b2c5f00e056fbbc7da3f9cceccf8951d63df19c6c31f",
+            "bytes": 3001
+        },
+        {
+            "path": "build/test-results/attachment-review-41693381663/linux-gui-consumer/initial-strict.txt.check.json",
+            "sha256": "f28023b49b9dff1f35d21fdc90ddd6a371593daafe38eea868c0f1dbcdaa7548",
+            "bytes": 2993
+        }
+    ]
+}

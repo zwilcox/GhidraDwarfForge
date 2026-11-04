@@ -1,0 +1,19 @@
+{
+    "status": "CONFIRMED Windows checker build; runtime harness failed before checker invocation",
+    "head": "4dddeabf4779f1cdcc8a1e432cbb4e1f93692040",
+    "run": 41643748238,
+    "job": 125943555890,
+    "artifactId": 13234577098,
+    "artifactSha256": "a6c30c090bd9dceb0e52f9e2c139fa2fdac380914dfeead327c86f9cd40068c4",
+    "binaries": {
+        "dwarfdump.exe": "9f8c59e9f5d4e5a4858576d06261e9e3a9c4c8f77912f9f3e9c5e5d8ac751f8d",
+        "libdwarf-2.dll": "7f5286b299ccee25f1c661bf39f5cb19d172593ac32bfde9621231a0ad276685",
+        "libzstd.dll": "b95c223a9548a9ecf51377c962e0bc8f0c51eb0c6f67a296dbc885996f0dd40d",
+        "zlib1.dll": "a2efc7d0985a82364e79e0fdde3570f7ad66cb8cf5d60d54355a80c2504325fe"
+    },
+    "observedBuild": "Private checker imports libdwarf-2.dll; private consumer imports zlib1.dll/libzstd.dll; every other import is KERNEL32.dll or msvcrt.dll. Build-time --version reports libdwarf2.3.2/dwarfdump2.3.2.",
+    "runtimeFailure": "KeyError: 'SystemRoot' before raw checker launch; only compiler command executed successfully",
+    "cause": "Python Windows os.environ normalizes keys, but its copied plain dict no longer performs case-insensitive key lookup.",
+    "correction": "Read the required SystemRoot value through os.environ before constructing the restricted child PATH; preserve the no-MSYS dependency control.",
+    "acceptance": "Native raw checker valid/corrupt/Unicode and production attachment acceptance remain unverified."
+}

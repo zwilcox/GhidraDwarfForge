@@ -1,0 +1,125 @@
+{
+    "status": "CONFIRMED opened-volume JNA component",
+    "head": "380d272aafaf303de6e422af5b9e62daf69dc3c1",
+    "run": 41634160584,
+    "artifactId": 13229104022,
+    "artifactSha256": "c29cfc28d91736b4422379a3ccb2495a9e794cbddd6c2911cbcb55b85a99c00a",
+    "sourceFilesVerified": 27,
+    "volume": {
+        "status": "OBSERVED",
+        "java": {
+            "identity": "deb89c4cb89c24d5:24d60000000001000000000000000000",
+            "volumeSerial": 3097240789,
+            "maximumNameUnits": 255,
+            "fileSystemFlags": 65482495,
+            "fileSystem": "NTFS",
+            "volume": {
+                "root": "\\\\?\\Volume{7db9d5e3-0000-0000-0000-100000000000}\\",
+                "driveType": 3
+            }
+        },
+        "native": {
+            "status": "OBSERVED",
+            "volume128": "deb89c4cb89c24d5",
+            "fileId128": "24d60000000001000000000000000000",
+            "fileSystemUtf16": "004e005400460053",
+            "volumeRootUtf16": "005c005c003f005c0056006f006c0075006d0065007b00370064006200390064003500650033002d0030003000300030002d0030003000300030002d0030003000300030002d003100300030003000300030003000300030003000300030007d005c",
+            "driveType": 3,
+            "volumeRootIdentityMatched": true,
+            "volumeProfileCycles": 128,
+            "volumeSerial": 3097240789,
+            "maximumNameUnits": 255,
+            "fileSystemFlags": 65482495,
+            "beforeRename": [
+                {
+                    "access": 128,
+                    "opened": true,
+                    "openError": 0,
+                    "flushed": false,
+                    "flushError": 5
+                },
+                {
+                    "access": 1073741952,
+                    "opened": true,
+                    "openError": 0,
+                    "flushed": true,
+                    "flushError": 0
+                },
+                {
+                    "access": 3221225472,
+                    "opened": true,
+                    "openError": 0,
+                    "flushed": true,
+                    "flushError": 0
+                }
+            ],
+            "afterRename": [
+                {
+                    "access": 128,
+                    "opened": true,
+                    "openError": 0,
+                    "flushed": false,
+                    "flushError": 5
+                },
+                {
+                    "access": 1073741952,
+                    "opened": true,
+                    "openError": 0,
+                    "flushed": true,
+                    "flushError": 0
+                },
+                {
+                    "access": 3221225472,
+                    "opened": true,
+                    "openError": 0,
+                    "flushed": true,
+                    "flushError": 0
+                }
+            ],
+            "fileFlush": true,
+            "readOnlyFileError": 5,
+            "handleCycles": 128,
+            "handlesBefore": 57,
+            "handlesAfter": 57,
+            "powerLossRecoveryProven": false
+        },
+        "independentRoot": {
+            "path": "\\\\?\\Volume{7db9d5e3-0000-0000-0000-100000000000}\\",
+            "followLeaf": false,
+            "desiredAccess": 0,
+            "shareMode": 7,
+            "creationDisposition": 3,
+            "flags": 35651584,
+            "identityLifetime": "Opened-handle observation only; no enduring identity or lock claim",
+            "openWin32Error": 0,
+            "status": "OBSERVED",
+            "attributes": 22,
+            "links": 1,
+            "size": 4096,
+            "legacyVolume": "b89c24d5",
+            "legacyFileId": "0005000000000005",
+            "legacyIdentityScope": "64-bit file ID is not guaranteed unique on ReFS; no fallback acceptance",
+            "creationTime": 134381815549566927,
+            "accessTime": 134381816518081187,
+            "writeTime": 134381816518081187,
+            "attributeTagStatus": "OBSERVED",
+            "reparseTag": 0,
+            "tagAttributes": 22,
+            "secondSimultaneousHandle": {
+                "openWin32Error": 0,
+                "status": "OBSERVED",
+                "legacyVolume": "b89c24d5",
+                "legacyFileId": "0005000000000005",
+                "links": 1,
+                "volume128": "deb89c4cb89c24d5",
+                "fileId128": "05000000000005000000000000000000"
+            },
+            "fileIdStatus": "OBSERVED",
+            "volume128": "deb89c4cb89c24d5",
+            "fileId128": "05000000000005000000000000000000"
+        },
+        "scope": "Opened volume identity binding and directory flush; complete host admission and power-loss recovery remain unproven"
+    },
+    "cycles": "windows-directory-handles=PASS cycles=128 baseline=286",
+    "scope": "Native/C#/Java volume profile and identity agreement; existing success, stale/late/cancellation/denied-write and lifetime cases pass. Raw-security stage correction also retained. Not full Host or power-loss recovery acceptance."
+}

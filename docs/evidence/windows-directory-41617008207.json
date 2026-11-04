@@ -1,0 +1,212 @@
+{
+    "backupStreams": {
+        "ordinary": {
+            "facts": {
+                "identity": "a65239625239387f:0ed50000000001000000000000000000",
+                "links": 1,
+                "bytes": 28,
+                "attributes": 32,
+                "created": 134381744198311352,
+                "modified": 134381744198311352,
+                "changed": 134381744198311352
+            },
+            "streams": [
+                {
+                    "kind": 1,
+                    "attributes": 0,
+                    "bytes": 28,
+                    "name": ""
+                }
+            ]
+        },
+        "extendedAttributes": {
+            "facts": {
+                "identity": "a65239625239387f:0ed50000000001000000000000000000",
+                "links": 1,
+                "bytes": 28,
+                "attributes": 32,
+                "created": 134381744198311352,
+                "modified": 134381744198311352,
+                "changed": 134381744205737194
+            },
+            "streams": [
+                {
+                    "kind": 1,
+                    "attributes": 0,
+                    "bytes": 28,
+                    "name": ""
+                },
+                {
+                    "kind": 2,
+                    "attributes": 0,
+                    "bytes": 24,
+                    "name": ""
+                }
+            ]
+        },
+        "independentEaBytes": "00000000000a0500464f5247455f544553540000ff420a19",
+        "alternateStreams": {
+            "facts": {
+                "identity": "a65239625239387f:40d50000000001000000000000000000",
+                "links": 1,
+                "bytes": 14,
+                "attributes": 32,
+                "created": 134381744254840900,
+                "modified": 134381744254858580,
+                "changed": 134381744254858580
+            },
+            "streams": [
+                {
+                    "kind": 1,
+                    "attributes": 0,
+                    "bytes": 14,
+                    "name": ""
+                },
+                {
+                    "kind": 4,
+                    "attributes": 0,
+                    "bytes": 15,
+                    "name": ":extra \u03bb:$DATA"
+                }
+            ]
+        },
+        "cancellationAfterHeader": true,
+        "handleCycles": 128
+    },
+    "nativeHandleBaseline": 57,
+    "serialJavaHandleBaseline": 296,
+    "backupHandleCycles": 128,
+    "crossVolume": {
+        "tested": true,
+        "stageVolume": "a65239625239387f",
+        "destinationVolume": "8854cbb354cba274"
+    },
+    "run": 41617008207,
+    "head": "be95f9452cf8795fb8c1b7ee790cef061c991ce1",
+    "artifactId": 13222222818,
+    "artifactSha256": "88cbe0b650eb92532872e72c1d1eca3f7e44953bfeacf1628cf23d47de7341eb",
+    "status": "PASS",
+    "sourceFilesVerified": 20,
+    "sourceComparison": "Raw origin hashes verified; Windows CRLF normalized only for Git source comparison",
+    "metadataObservations": 15,
+    "renameObservations": 10,
+    "handleCycles": 128,
+    "renameCases": [
+        "publish-new",
+        "replace-existing",
+        "existing-refusal",
+        "stale-stage",
+        "stale-target",
+        "late-stage",
+        "late-target",
+        "collision-at-native-call",
+        "cancel-before-rename",
+        "cancel-open-rename"
+    ],
+    "additionalRejections": [
+        "alias",
+        "hardlink",
+        "dangling",
+        "alternate stream path",
+        "sharing lock",
+        "readonly target"
+    ],
+    "scope": "Native Win32 NTFS directory mechanism observations and independent controls; not power-loss recovery or complete host admission",
+    "directoryFlush": {
+        "status": "OBSERVED",
+        "volume128": "a65239625239387f",
+        "fileId128": "4dd50000000001000000000000000000",
+        "fileSystemUtf16": "004e005400460053",
+        "volumeSerial": 1379481727,
+        "maximumNameUnits": 255,
+        "fileSystemFlags": 65482495,
+        "beforeRename": [
+            {
+                "access": 128,
+                "opened": true,
+                "openError": 0,
+                "flushed": false,
+                "flushError": 5
+            },
+            {
+                "access": 1073741952,
+                "opened": true,
+                "openError": 0,
+                "flushed": true,
+                "flushError": 0
+            },
+            {
+                "access": 3221225472,
+                "opened": true,
+                "openError": 0,
+                "flushed": true,
+                "flushError": 0
+            }
+        ],
+        "afterRename": [
+            {
+                "access": 128,
+                "opened": true,
+                "openError": 0,
+                "flushed": false,
+                "flushError": 5
+            },
+            {
+                "access": 1073741952,
+                "opened": true,
+                "openError": 0,
+                "flushed": true,
+                "flushError": 0
+            },
+            {
+                "access": 3221225472,
+                "opened": true,
+                "openError": 0,
+                "flushed": true,
+                "flushError": 0
+            }
+        ],
+        "fileFlush": true,
+        "readOnlyFileError": 5,
+        "handleCycles": 128,
+        "handlesBefore": 57,
+        "handlesAfter": 57,
+        "powerLossRecoveryProven": false
+    },
+    "directoryIndependent": {
+        "path": "D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\native-windows\\file-metadata\\owned\\directory flush \u03bb",
+        "followLeaf": false,
+        "desiredAccess": 0,
+        "shareMode": 7,
+        "creationDisposition": 3,
+        "flags": 35651584,
+        "identityLifetime": "Opened-handle observation only; no enduring identity or lock claim",
+        "openWin32Error": 0,
+        "status": "OBSERVED",
+        "attributes": 16,
+        "links": 1,
+        "size": 0,
+        "legacyVolume": "5239387f",
+        "legacyFileId": "000100000000d54d",
+        "legacyIdentityScope": "64-bit file ID is not guaranteed unique on ReFS; no fallback acceptance",
+        "creationTime": 134381744270261459,
+        "accessTime": 134381744270281642,
+        "writeTime": 134381744270281642,
+        "attributeTagStatus": "OBSERVED",
+        "reparseTag": 0,
+        "tagAttributes": 16,
+        "secondSimultaneousHandle": {
+            "openWin32Error": 0,
+            "status": "OBSERVED",
+            "legacyVolume": "5239387f",
+            "legacyFileId": "000100000000d54d",
+            "links": 1,
+            "volume128": "a65239625239387f",
+            "fileId128": "4dd50000000001000000000000000000"
+        },
+        "fileIdStatus": "OBSERVED",
+        "volume128": "a65239625239387f",
+        "fileId128": "4dd50000000001000000000000000000"
+    },
+    "privilegeObservation": "Backup, restore, security and manage-volume privileges listed Disabled; probe does not adjust privileges. Not a restricted-token test."
+}

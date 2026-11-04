@@ -115,14 +115,19 @@ final class GuiTestSupport {
     }
 
     static void operateChooser(Path selected, Path results, boolean cancel) throws Exception {
+        operateChooser(selected, results, cancel, "Select GhidraDwarfForge output directory");
+    }
+
+    static void operateChooser(Path selected, Path results, boolean cancel, String title) throws Exception {
         Dialog dialog = await("output chooser", () -> Arrays.stream(Window.getWindows())
             .filter(window -> window instanceof Dialog && window.isShowing())
             .map(window -> (Dialog) window)
-            .filter(window -> "Select GhidraDwarfForge output directory".equals(window.getTitle()))
+            .filter(window -> title.equals(window.getTitle()))
             .findFirst().orElse(null));
         Robot robot = new Robot();
         robot.setAutoDelay(80);
         if (!cancel) {
+            awaitFileChooser(dialog);
             onSwing(() -> {
                 JTextField filename = (JTextField) find(dialog, component ->
                     component instanceof JTextField &&
@@ -137,9 +142,88 @@ final class GuiTestSupport {
                     component instanceof JTextField && "Path".equals(component.getName()));
                 return path != null && selected.equals(Path.of(path.getText())) ? path : null;
             });
+            awaitFileChooser(dialog);
         }
         screenshot(robot, dialog, results.resolve("chooser.png"));
         clickButton(robot, dialog, cancel ? "Cancel" : "Select");
+    }
+
+    static Dialog dialog(String title) throws Exception {
+        return await(title, () -> Arrays.stream(Window.getWindows())
+            .filter(window -> window instanceof Dialog && window.isShowing())
+            .map(window -> (Dialog) window).filter(window -> title.equals(window.getTitle()))
+            .findFirst().orElse(null));
+    }
+
+    static void selectFile(String title, Path selected) throws Exception {
+        Dialog dialog = dialog(title);
+        Object chooser = awaitFileChooser(dialog);
+        JTextField filename = onSwing(() -> (JTextField) find(dialog, component ->
+            component instanceof JTextField && "filenameTextField".equals(component.getName())));
+        require(filename != null, "missing file chooser field: " + title);
+        focus(filename);
+        onSwing(() -> {
+            filename.setText(selected.toString());
+            return null;
+        });
+        clickButton(new Robot(), dialog, "Select");
+        await("file chooser accepted selection", () -> !dialog.isShowing() ? Boolean.TRUE : null);
+        java.io.File actual = (java.io.File) chooser.getClass()
+            .getMethod("getSelectedFile", boolean.class).invoke(chooser, false);
+        require(actual != null && Files.isSameFile(actual.toPath(), selected),
+            "file chooser accepted " + actual + " instead of " + selected);
+    }
+
+    static Object awaitFileChooser(Dialog dialog) throws Exception {
+        // Ghidra 12.0.3 refreshes the remembered selection asynchronously after
+        // showing the dialog. That refresh can overwrite freshly entered text.
+        // Keep reflection here so standalone desktop/ACL probes need no Ghidra
+        // classes. This reads the pinned chooser's test-facing busy indicator;
+        // selection still goes through its actual filename field and Select.
+        Object chooser = dialog.getClass().getMethod("getDialogComponent").invoke(dialog);
+        awaitFileChooserReady(chooser);
+        return chooser;
+    }
+
+    static void awaitFileChooserReady(Object chooser) throws Exception {
+        var pending = chooser.getClass().getDeclaredMethod("pendingUpdate");
+        pending.setAccessible(true);
+        var updaterField = chooser.getClass().getDeclaredField("modelUpdater");
+        updaterField.setAccessible(true);
+        Object updater = updaterField.get(chooser);
+        var updating = updater.getClass().getMethod("isBusy");
+        await("file chooser initialization", () -> {
+            try {
+                return Boolean.FALSE.equals(pending.invoke(chooser)) &&
+                    Boolean.FALSE.equals(updating.invoke(updater)) ? chooser : null;
+            }
+            catch (ReflectiveOperationException failure) {
+                throw new AssertionError("cannot observe pinned Ghidra chooser", failure);
+            }
+        });
+    }
+
+    static void choose(String title, String choice) throws Exception {
+        Dialog dialog = dialog(title);
+        onSwing(() -> {
+            var choices = (javax.swing.JComboBox<?>) find(dialog, component -> component instanceof javax.swing.JComboBox<?>);
+            require(choices != null, "missing choice list: " + title);
+            choices.setSelectedItem(choice);
+            require(choice.equals(choices.getSelectedItem()), "choice was not offered: " + choice);
+            return null;
+        });
+        clickButton(new Robot(), dialog, "OK");
+    }
+
+    static void enterText(String title, String text) throws Exception {
+        Dialog dialog = dialog(title);
+        onSwing(() -> {
+            var field = (JTextField) find(dialog, component -> component instanceof JTextField);
+            require(field != null, "missing input field: " + title);
+            field.setText(text);
+            return null;
+        });
+        clickButton(new Robot(), dialog, "OK");
     }
 
     static void clickButton(Robot robot, Container parent, String text) throws Exception {
@@ -176,10 +260,13 @@ final class GuiTestSupport {
         // appended MouseListener would then run only after that action returns,
         // while Robot.waitForIdle() can complete in the nested EDT loop.
         // Observe the real event before component dispatch without consuming it.
+        // Match GMouseListenerAdapter: rapid consecutive gestures can retain
+        // click counts 3/4, and every positive even count triggers the action.
         AWTEventListener listener = deliveredEvent -> {
             if (deliveredEvent instanceof MouseEvent event && event.getSource() == table &&
                     event.getID() == MouseEvent.MOUSE_CLICKED &&
-                    event.getButton() == MouseEvent.BUTTON1 && event.getClickCount() == 2) {
+                    event.getButton() == MouseEvent.BUTTON1 && event.getClickCount() > 0 &&
+                    event.getClickCount() % 2 == 0) {
                 delivered.incrementAndGet();
                 int clickedRow = table.rowAtPoint(event.getPoint());
                 int clickedColumn = table.columnAtPoint(event.getPoint());

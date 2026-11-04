@@ -1,0 +1,44 @@
+{
+    "status": "FAILED comparison; native canonical representation evidence",
+    "run": 41629294907,
+    "head": "4310f20878211022a388c2e02a37209814edb495",
+    "artifactId": 13228090511,
+    "artifactSha256": "ed81515d875ad43901f20121bf3e8e6653612ac77cce0694f35ef585a40386b9",
+    "sourceFilesVerified": 27,
+    "highLevel": {
+        "control": 40964,
+        "saclPresent": false,
+        "saclDefaulted": false,
+        "auditAces": 0,
+        "labelAces": 0,
+        "saclHex": null
+    },
+    "path": {
+        "control": 32772,
+        "saclPresent": false,
+        "saclDefaulted": false,
+        "auditAces": 0,
+        "labelAces": 0,
+        "saclHex": null
+    },
+    "kernel": {
+        "control": 32772,
+        "saclPresent": false,
+        "saclDefaulted": false,
+        "auditAces": 0,
+        "labelAces": 0,
+        "saclHex": null
+    },
+    "failure": {
+        "label": "admission-native-source-inherited",
+        "executable": "D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\native-windows\\file-metadata\\security-visibility.exe",
+        "arguments": [
+            "observe",
+            "D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\native-windows\\file-metadata\\owned\\complete metadata inherited source \u03bb"
+        ],
+        "exit": 1,
+        "timedOut": false
+    },
+    "stderr": "security-api-difference mode=observe GetSecurityInfo={\"control\":40964,\"saclPresent\":false,\"saclDefaulted\":false,\"auditAces\":0,\"labelAces\":0,\"saclHex\":null} GetFileSecurityW={\"control\":32772,\"saclPresent\":false,\"saclDefaulted\":false,\"auditAces\":0,\"labelAces\":0,\"saclHex\":null} GetKernelObjectSecurity={\"control\":32772,\"saclPresent\":false,\"saclDefaulted\":false,\"auditAces\":0,\"labelAces\":0,\"saclHex\":null}\nindependent complete SACL observations agree failed: win32=122\n",
+    "decision": "Select GetKernelObjectSecurity BACKUP for complete opened-handle state. Independent path/kernel snapshots agree on ordinary absence and populated audit/label fixtures. GetSecurityInfo reports extra SE_SACL_PROTECTED on absent SACL; do not preserve that high-level representation or mask any raw fields. Fixed-width JNA change and full staged application still require native validation."
+}

@@ -16,6 +16,7 @@ import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter;
 import ghidradwarfforge.nativeapi.DwarfTarget;
 import ghidradwarfforge.nativeapi.PackagedNativeLibraries;
 import ghidradwarfforge.output.ArtifactPairPublisher;
+import ghidradwarfforge.output.AttachmentPreparation;
 import ghidradwarfforge.output.ExportReport;
 import ghidradwarfforge.output.FileDigests;
 import ghidradwarfforge.output.OutputPathPolicy;
@@ -65,6 +66,14 @@ public class GhidraDwarfForge extends GhidraScript {
         }
 
         Map<String, String> options = parseOptions(arguments);
+        boolean attachmentPreparation = options.containsKey("attachment-preparation");
+        if (attachmentPreparation) {
+            state.removeEnvironmentVar(AttachmentPreparation.EXPORT_REPORT_KEY);
+            if (isRunningHeadless() || !options.containsKey("input") || !options.containsKey("output") ||
+                    options.containsKey("gdb-loader")) {
+                throw new IllegalArgumentException("attachment preparation requires GUI-selected input/output and a fresh pair");
+            }
+        }
         boolean packagedNatives = options.containsKey("packaged-natives");
         boolean explicitConsumer = options.containsKey("libdwarf");
         boolean explicitProducer = options.containsKey("libdwarfp");
@@ -204,6 +213,10 @@ public class GhidraDwarfForge extends GhidraScript {
                     Files.writeString(stagedCompanion, companion, java.nio.charset.StandardCharsets.UTF_8);
                 }, monitor::checkCancelled);
         }
+        else if (attachmentPreparation) {
+            ArtifactPairPublisher.stageAndPublishNew(output, sourceOutput,
+                sidecarWriter, source::writeAtomically, monitor::checkCancelled);
+        }
         else {
             ArtifactPairPublisher.stageAndPublish(output, sourceOutput,
                 sidecarWriter, source::writeAtomically, monitor::checkCancelled);
@@ -245,6 +258,7 @@ public class GhidraDwarfForge extends GhidraScript {
             ghidradwarfforge.source.FunctionStaticPolicy.select(typeModel, source)
                 .exported().size());
         println("GhidraDwarfForge report: " + report.toJson());
+        if (attachmentPreparation) state.addEnvironmentVar(AttachmentPreparation.EXPORT_REPORT_KEY, report.toJson());
     }
 
     private static Map<String, String> parseOptions(String[] arguments) {
@@ -264,7 +278,7 @@ public class GhidraDwarfForge extends GhidraScript {
             }
             else {
                 name = argument.substring(2);
-                if (name.equals("packaged-natives") || name.equals("gdb-loader")) {
+                if (name.equals("packaged-natives") || name.equals("gdb-loader") || name.equals("attachment-preparation")) {
                     value = "true";
                 }
                 else {
@@ -281,10 +295,10 @@ public class GhidraDwarfForge extends GhidraScript {
         for (String name : result.keySet()) {
             if (!name.equals("libdwarf") && !name.equals("libdwarfp") &&
                     !name.equals("input") && !name.equals("output") &&
-                    !name.equals("packaged-natives") && !name.equals("gdb-loader")) {
+                    !name.equals("packaged-natives") && !name.equals("gdb-loader") && !name.equals("attachment-preparation")) {
                 throw new IllegalArgumentException("unknown option --" + name);
             }
-            if ((name.equals("packaged-natives") || name.equals("gdb-loader")) &&
+            if ((name.equals("packaged-natives") || name.equals("gdb-loader") || name.equals("attachment-preparation")) &&
                     !result.get(name).equals("true")) {
                 throw new IllegalArgumentException("--" + name + " does not take a value");
             }

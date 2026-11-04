@@ -1,0 +1,60 @@
+{
+    "status": "CONFIRMED Windows Java21 long working-directory launch rejection; correction requires native validation",
+    "run": 41878689772,
+    "head": "e7f1b7f6fe40a1f7b6b059e0bcfd9d89a4e904f1",
+    "artifact": 13348755502,
+    "archiveSha256": "264c1773ae0799c330f8d22f5c1325a204da466def8c0bd2154d027639c34d7c",
+    "sourceSha256": "2320740e3a09c4dd72031f81701386a853c36f71f0d25a5e0f45faf04d95780b",
+    "sourceComparison": "Matches checked-in source after Windows checkout CRLF normalization",
+    "observations": {
+        "scope": "Windows process working-directory and Java redirection observations; not a feature pass",
+        "java": "21.0.13",
+        "deepPathCharacters": 355,
+        "cases": [
+            {
+                "case": "short-cwd",
+                "cwd": "D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-host-observations\\validator-paths\\evidence",
+                "cwdCharacters": 111,
+                "outcome": "started-and-exited"
+            },
+            {
+                "case": "long-cwd",
+                "cwd": "D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-host-observations\\validator-paths\\evidence\\owned long path \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\\owned long path \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\\owned long path \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\\owned long path \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                "cwdCharacters": 355,
+                "outcome": "java.io.IOException: Cannot run program \"C:\\hostedtoolcache\\windows\\Java_Temurin-Hotspot_jdk\\21.0.13-9.0\\x64\\bin\\java.exe\" (in directory \"D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-host-observations\\validator-paths\\evidence\\owned long path \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\\owned long path \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\\owned long path \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\\owned long path \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"): CreateProcess error=267, The directory name is invalid"
+            },
+            {
+                "case": "prefixed-long-cwd",
+                "cwd": "\\\\?\\D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-host-observations\\validator-paths\\evidence\\owned long path \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\\owned long path \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\\owned long path \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\\owned long path \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                "cwdCharacters": 359,
+                "outcome": "java.io.IOException: Cannot run program \"C:\\hostedtoolcache\\windows\\Java_Temurin-Hotspot_jdk\\21.0.13-9.0\\x64\\bin\\java.exe\" (in directory \"\\\\?\\D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-host-observations\\validator-paths\\evidence\\owned long path \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\\owned long path \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\\owned long path \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\\owned long path \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"): CreateProcess error=267, The directory name is invalid"
+            },
+            {
+                "case": "short-cwd-long-logs",
+                "cwd": "D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-host-observations\\validator-paths\\evidence",
+                "cwdCharacters": 111,
+                "outcome": "started-and-exited"
+            }
+        ]
+    },
+    "productionFailure": "GUI run41873454505 failed before native status with long cwd and empty Java redirection logs",
+    "localCorrectionChecks": [
+        "Actual Java21 supervisor smoke: 38 checks including long evidence and cancellation",
+        "Linux native supervisor: 16 cases including long-path output and collision preservation",
+        "Windows cross-compilation with -Wall -Wextra -Werror; not native execution",
+        "Ghidra 12.0.3 buildExtension"
+    ],
+    "limits": [
+        "Probe establishes process-launch behavior, not full corrected attachment acceptance",
+        "Native Windows correction and original GUI regression remain pending"
+    ],
+    "testLocaleCorrection": {
+        "scope": "Test observer only; production correction unchanged",
+        "before": "PYTHONIOENCODING=cp1252 on actual Java21 reproduces MalformedInputException reading Unicode cwd",
+        "after": "Escaped JSON cwd output passes actual Java21 supervisor38 with PYTHONIOENCODING=cp1252",
+        "logSha256": {
+            "java-cp1252-before.log": "c2d8cec5a302b503481ae1c7e80f089cf610f21e0a3b5d2c783b829f5db8e4fe",
+            "java-cp1252-after.log": "d41e9591a6dacf894bdc9b003b9231fb65e5c7439e849919d9a1ec899778c35a"
+        }
+    }
+}

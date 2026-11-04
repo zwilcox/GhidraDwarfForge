@@ -1,0 +1,66 @@
+{
+    "status": "CONFIRMED local GUI harness regression correction; hosted rerun pending",
+    "productionSourceHead": "0f703084453ce472ec45a84c6980bbac6b4b9d7e",
+    "checks": [
+        "Before correction, actual consecutive click counts1/2/3/4 launch Ghidra adapter twice but observer falsely rejects second gesture",
+        "After correction, exactly one observed action per gesture, actual local installed GUI export/preparation/default declines and validator/GDB regression pass",
+        "GNU diagnostics refusal added to native GUI consumer; downloaded real GUI artifacts still pass full consumer replay on new owned copies"
+    ],
+    "artifacts": [
+        {
+            "path": "build/gui-repeated-click-before.log",
+            "sha256": "50fbbf7fafbe568930e67087e5251b8a8e2b03a454a229a697c19236d78aca9c",
+            "bytes": 652
+        },
+        {
+            "path": "build/gui-repeated-click-after.log",
+            "sha256": "d1e5e5f31eaf5b9da82440ebefb82dfd3d634302b4e5c22c9841bcc3ee7d6f3c",
+            "bytes": 45137
+        },
+        {
+            "path": "build/test-results/gui-script-manager/run.3WYH2SK6/filter-focus-control/repeated-double-click/failure-counts.txt",
+            "sha256": "08a675f905f0fa883f1cc4f05792d66a4099c33c83e1f1bd16775fd6f52040d5",
+            "bytes": 31
+        },
+        {
+            "path": "build/test-results/gui-script-manager/run.xhYVCZ8A/filter-focus-control/repeated-double-click/result.txt",
+            "sha256": "93761f92a198b48e22da074c95f0443f24f447a56604b532434aace967a6a1bf",
+            "bytes": 109
+        },
+        {
+            "path": "build/test-results/gui-script-manager/run.xhYVCZ8A/result.txt",
+            "sha256": "c220bab44d6a14953d87ba552d9a07d992ee5179952b2f8cf491486bc414cc61",
+            "bytes": 272
+        },
+        {
+            "path": "build/test-results/gui-script-manager/run.xhYVCZ8A/gdb.txt",
+            "sha256": "b7f052bc43aca5cadfec72819de1610eb2a901119534d20f0d8adb674725ef2e",
+            "bytes": 1628
+        },
+        {
+            "path": "build/test-results/gui-script-manager/run.xhYVCZ8A/select/attachment-prepare/validation/gdb.txt",
+            "sha256": "c3e1e6b4f71ce2ca91202dbec26b440d202f49996ca1b60ea5b8e69c0ea50101",
+            "bytes": 1463
+        },
+        {
+            "path": "src/test/integration/gui/GuiTestSupport.java",
+            "sha256": "713f87953c51f49f3c216bb1f73558cfd93c00e4a9f4d6c8df6ece9e6f0c648a",
+            "bytes": 16162
+        },
+        {
+            "path": "src/test/integration/gui/GuiTableClickSmoke.java",
+            "sha256": "55802f86a0c975e0a58e4a961174fc2415057fd19cc7e9a0796fd0981db34700",
+            "bytes": 14557
+        },
+        {
+            "path": "src/test/integration/gui-attachment-verify.py",
+            "sha256": "d8ba29d64c2ec793fbd235ba5d7521e32859ce42b91ac9d5690d391d03cacf9b",
+            "bytes": 7836
+        },
+        {
+            "path": "build/test-results/attachment-review-41693381663/linux-gui-consumer-strict-gnu/verification.json",
+            "sha256": "f84c7fe1bb256ce5f92346dba74e5fcb73cf742b2c80dffee49b99543792de8b",
+            "bytes": 415
+        }
+    ]
+}

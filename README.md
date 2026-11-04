@@ -139,6 +139,23 @@ publication remains a separate step.
 
 ## Headless entry point
 
+Opt-in executable attachment has passed native Linux/Windows CLI and GUI
+acceptance; final protected integration is tracked in PR158 and
+[the acceptance record](docs/DEBUGLINK-ATTACHMENT-ACCEPTANCE.md). The Linux
+`support/ghidra-dwarf-forge-attach` and PowerShell7
+`support/ghidra-dwarf-forge-attach.ps1` launchers provide read-only preview and
+explicit attachment/recovery commands; see [the invocation guide](docs/ATTACHMENT-HELPER.md).
+Script Manager provides `ExportAndAttachGhidraDwarfForge.java` to export the
+current program to a fresh pair and prepare the request/report. Use
+`AttachGhidraDwarfForge.java` for an existing request and
+`RecoverGhidraDwarfForgeAttachment.java` for saved recovery selections. Each
+reviews the selected files and requires confirmation before launching the
+modifying helper. Cancel is the default.
+Attachment requires a supported local ext4 or NTFS metadata profile, live
+validators and a sidecar beside the target or in its `.debug` directory. It
+retains verified backups and previous generations for recovery. Ordinary export
+continues to leave the executable unchanged.
+
 The extension packages Bash and PowerShell headless wrappers under `support/`.
 For a fresh temporary import on Linux:
 
