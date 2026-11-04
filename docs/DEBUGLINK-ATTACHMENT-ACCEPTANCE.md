@@ -7,6 +7,22 @@ It does not close the issue before final required CI and protected integration.
 The separate GDB loader #107 is already integrated; see its
 [acceptance record](GDB-LOADER-ACCEPTANCE.md).
 
+## Final gate follow-up
+
+**CONFIRMED final-head Windows GUI test race; local correction validated:**
+Run41890465382 at `edd3dce` fails Windows host job126794435767: the active
+cancellation test selects the earlier decline request, then times out waiting for
+a validator that was never launched. Its preview and screenshot confirm the wrong
+selection. Native Windows long-path and CLI attachment checks pass in that run.
+The chooser test now waits for Ghidra's asynchronous initialization, checks the
+accepted file, and verifies intended review paths before confirming a target
+change. A controlled delayed-listing regression reproduces the old selection and
+passes with the correction. Actual Java21 Linux Script Manager export/preparation/
+decline/cancellation, validators and both GDB journeys pass locally. See
+`docs/evidence/gui-chooser-refresh-local-20261104.json`. **PRESENT, UNVERIFIED on
+Windows:** the corrected chooser interaction. Final required CI and C1 integration
+remain incomplete; #72 stays open.
+
 ## Evaluated revision and evidence
 
 Production/test revision: `be2e806c31e7f60fee101a926e5d8b39c792888d`.

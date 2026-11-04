@@ -1,5 +1,19 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED final-head Windows GUI test race; local correction validated:**
+Run41890465382 at `edd3dce` fails Windows host job126794435767: the active
+cancellation test selects the earlier decline request, then times out waiting for
+a validator that was never launched. Its preview and screenshot confirm the wrong
+selection. Native Windows long-path and CLI attachment checks pass in that run.
+The chooser test now waits for Ghidra's asynchronous initialization, checks the
+accepted file, and verifies intended review paths before confirming a target
+change. A controlled delayed-listing regression reproduces the old selection and
+passes with the correction. Actual Java21 Linux Script Manager export/preparation/
+decline/cancellation, validators and both GDB journeys pass locally. See
+`docs/evidence/gui-chooser-refresh-local-20261104.json`. **PRESENT, UNVERIFIED on
+Windows:** the corrected chooser interaction. Final required CI and C1 integration
+remain incomplete; #72 stays open.
+
 **CONFIRMED current Windows and Linux host acceptance; integration remains open:**
 At `be2e806`, run41882141913 passes the complete Windows host job126765207504 and
 Windows-artifact GDB consumer126775392304. Independent review confirms native

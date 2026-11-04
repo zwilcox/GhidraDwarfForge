@@ -76,6 +76,7 @@ $gui = Join-Path $PSScriptRoot 'gui'
 $compileArgs = Join-Path $work 'javac.args'
 Write-JavaArguments $compileArgs @('--release', '21', '-cp', $classpath, '-d', $classes,
     (Join-Path $gui 'GuiTestSupport.java'), (Join-Path $gui 'GuiTableClickSmoke.java'),
+    (Join-Path $gui 'GuiFileChooserSmoke.java'),
     (Join-Path $gui 'GuiTaskCancellation.java'),
     (Join-Path $gui 'GuiScriptManagerSmoke.java'))
 & javac "@$compileArgs" 2>&1 | Tee-Object -LiteralPath (Join-Path $work 'compile.log')

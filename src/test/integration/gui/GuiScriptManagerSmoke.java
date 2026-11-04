@@ -90,6 +90,7 @@ public final class GuiScriptManagerSmoke {
         configuration.setApplicationLogFile(results.resolve("application.log").toFile());
         configuration.setScriptLogFile(results.resolve("script.log").toFile());
         Application.initializeApplication(new GhidraApplicationLayout(ghidra.toFile()), configuration);
+        GuiFileChooserSmoke.run(Files.createDirectory(results.resolve("file-chooser-control")));
         GuiTaskCancellation.verifyLauncherCancellation(results.resolve("task-launcher-cancellation"));
         GuiTableClickSmoke.runPendingFilter(
             Files.createDirectory(results.resolve("pending-filter-control")));
@@ -296,22 +297,9 @@ public final class GuiScriptManagerSmoke {
         clearConsole(console);
         var interaction = CompletableFuture.runAsync(() -> {
             try {
-                java.awt.Dialog chooser = GuiTestSupport.await("attachment request chooser", () ->
-                    java.util.Arrays.stream(java.awt.Window.getWindows())
-                        .filter(window -> window instanceof java.awt.Dialog && window.isShowing())
-                        .map(window -> (java.awt.Dialog) window)
-                        .filter(window -> window.getTitle().equals("Select attachment or refresh request"))
-                        .findFirst().orElse(null));
-                GuiTestSupport.onSwing(() -> {
-                    var filename = (javax.swing.JTextField) GuiTestSupport.find(chooser, component ->
-                        component instanceof javax.swing.JTextField && "filenameTextField".equals(component.getName()));
-                    GuiTestSupport.require(filename != null, "attachment chooser field missing");
-                    filename.setText(request.toString());
-                    return null;
-                });
+                GuiTestSupport.selectFile("Select attachment or refresh request", request);
                 Robot robot = new Robot();
                 robot.setAutoDelay(80);
-                GuiTestSupport.clickButton(robot, chooser, "Select");
                 javax.swing.JDialog review = GuiTestSupport.await("attachment review", () ->
                     java.util.Arrays.stream(java.awt.Window.getWindows())
                         .filter(window -> window instanceof javax.swing.JDialog && window.isShowing())
@@ -490,7 +478,8 @@ public final class GuiScriptManagerSmoke {
         var interaction = CompletableFuture.runAsync(() -> {
             try {
                 GuiTestSupport.selectFile("Select saved attachment recovery request", refresh.recoveryInvocation());
-                confirmNativeChange(work.resolve("recovery-review.png"), true);
+                confirmNativeChange(work.resolve("recovery-review.png"), true, target,
+                    "Recovery receipt", refresh.operation().recoveryReceipt());
             }
             catch (Exception failure) { throw new RuntimeException(failure); }
         });
@@ -538,7 +527,7 @@ public final class GuiScriptManagerSmoke {
         var interaction = CompletableFuture.runAsync(() -> {
             try {
                 GuiTestSupport.selectFile("Select attachment or refresh request", selection);
-                confirmNativeChange(directory.resolve("review.png"), false);
+                confirmNativeChange(directory.resolve("review.png"), false, target, "Sidecar", request.sidecar());
                 GuiTestSupport.await("native validator started before cancellation", () ->
                     Files.isRegularFile(marker) ? marker : null);
                 GuiTaskCancellation.cancelLaunchedTask(new Robot(), ATTACH, "Attaching sidecar; Cancel requests safe rollback",
@@ -593,7 +582,8 @@ public final class GuiScriptManagerSmoke {
                 GuiTestSupport.selectFile("Select pinned libdwarf 2.3.2 raw checker executable", Path.of(System.getenv("FORGE_GUI_STRICT")));
                 GuiTestSupport.selectFile("Select pinned dwarfdump configuration", Path.of(System.getenv("FORGE_GUI_CONFIGURATION")));
                 GuiTestSupport.clickButton(new Robot(), GuiTestSupport.dialog("Export and prepare attachment"), "Yes");
-                confirmNativeChange(work.resolve(basename + "-review.png"), false);
+                confirmNativeChange(work.resolve(basename + "-review.png"), false, target,
+                    "Sidecar", target.toRealPath().resolveSibling(basename));
             }
             catch (Exception failure) { throw new RuntimeException(failure); }
         });
@@ -608,8 +598,18 @@ public final class GuiScriptManagerSmoke {
         }
     }
 
-    private static void confirmNativeChange(Path screenshot, boolean recovery) throws Exception {
+    private static void confirmNativeChange(Path screenshot, boolean recovery, Path target,
+            String selectedRole, Path selectedPath) throws Exception {
         var review = GuiTestSupport.dialog("Review GhidraDwarfForge target change");
+        GuiTestSupport.onSwing(() -> {
+            var text = (javax.swing.JTextArea) GuiTestSupport.find(review,
+                component -> component instanceof javax.swing.JTextArea);
+            GuiTestSupport.require(text != null &&
+                text.getText().contains("Executable:\n" + target + "\n\n") &&
+                text.getText().contains(selectedRole + ":\n" + selectedPath + "\n\n"),
+                "target-change review does not describe the intended " + target + " and " + selectedPath);
+            return null;
+        });
         GuiTestSupport.screenshot(new Robot(), review, screenshot);
         GuiTestSupport.clickButton(new Robot(), review, recovery ? "Restore selected image" : "Attach selected sidecar");
         GuiTestSupport.choose("Attachment helper authorization", "Request OS authorization");

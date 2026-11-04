@@ -51,6 +51,7 @@ javac --release 21 -cp "$classpath" -d "$work/classes" \
     "$repository/src/test/integration/gui/GuiTestSupport.java" \
     "$repository/src/test/integration/gui/GuiWindowGeometrySmoke.java" \
     "$repository/src/test/integration/gui/GuiTableClickSmoke.java" \
+    "$repository/src/test/integration/gui/GuiFileChooserSmoke.java" \
     "$repository/src/test/integration/gui/GuiTaskCancellation.java" \
     "$repository/src/test/integration/gui/GuiScriptManagerSmoke.java"
 "$xvfb" -displayfd 3 -screen 0 1280x1024x24 -nolisten tcp \
