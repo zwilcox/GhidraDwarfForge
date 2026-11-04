@@ -1,7 +1,16 @@
 # Windows attachment host integration
 
-**CONFIRMED native host/store/coordinator components; complete public Windows
-attachment remains unverified.** `WindowsAttachmentHost` supplies native metadata,
+**CONFIRMED current runtime acceptance at `be2e806`:** both native host public
+journeys, active cancellation, changed-curation refresh, recovery and GDB/CRC
+checks pass reviewed run41882141913. See the
+[complete acceptance audit](DEBUGLINK-ATTACHMENT-ACCEPTANCE.md) and
+[Windows evidence](evidence/windows-attachment-41882141913.json).
+The full required target gate and final C1 protected integration remain pending.
+Development checkpoint paragraphs below are **HISTORICAL** where superseded by
+this audit; they retain their original evidence scope.
+
+**CONFIRMED native host/store/coordinator components and public Windows
+journeys within the recorded host contract.** `WindowsAttachmentHost` supplies native metadata,
 directory and namespace operations to the isolated helper. The adapter does not
 enable privileges. After explicit confirmation, the helper may enable only its
 own already-held security privilege under the documented

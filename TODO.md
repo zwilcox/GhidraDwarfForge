@@ -1,5 +1,27 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED current Windows and Linux host acceptance; integration remains open:**
+At `be2e806`, run41882141913 passes the complete Windows host job126765207504 and
+Windows-artifact GDB consumer126775392304. Independent review confirms native
+CLI and GUI attachment/changed-curation refresh/recovery, actual GUI cancellation
+after validator startup, preserved target and prior generations, 210 validator-log
+hashes, 726 protected Windows artifact hashes, and four positive GDB generations
+plus four CRC rejections. Actual Java21 long-path startup/cancellation passes;
+GUI validator status paths are 318–321 characters. The former Windows GUI launch
+failure is resolved for this tested workflow. See
+`docs/evidence/windows-attachment-41882141913.json`.
+
+The same head's Linux GUI journey, package/native manifests and Windows
+coordinator evidence pass independent review. Current attachment reviews cover
+all five target profiles, including MIPS32 big-endian: fifteen initial/rollback/
+GDB cases, two saved-curation refreshes and eight abrupt recoveries. The complete
+A1–A7 audit is recorded in `docs/DEBUGLINK-ATTACHMENT-ACCEPTANCE.md`. The full
+target regression gate and final C1 protected integration remain pending; #72
+is not closed. #107 remains merged.
+The earlier checkpoint paragraphs below are **HISTORICAL** where superseded by
+this acceptance record; they do not turn a previously unresolved failure into
+a current blocker.
+
 **CONFIRMED Windows long-cwd failure; correction awaits native acceptance:**
 Manual run41878689772 completes on actual Windows Java21.0.13: short cwd and
 short cwd with 355-character log paths succeed, while ordinary and extended-prefix
@@ -2551,7 +2573,7 @@ combined run `40068401197`; its conditional-step scope is recorded in
 | Additional range/location cases (P1.8, P1.11a) | **CONFIRMED:** bounded entry/ranges, code-only address indexing and incoming-register prefixes pass. PR #29 adds one proven direct-register backup; PR #30 omits unsupported nonzero stack-local starts. Their exact hosted gates pass. The bounded direct-leaf-call backup and additional x86-64/AArch64 exec/PIE/rebased-PIE cases are accepted through PR54. PR59 accepts terminal-return and mixed incoming prefixes through its complete hosted gate; its failed component heads remain historical. PR60 accepts one complete incoming scalar stack save; PR61 accepts explicit curated read-start register locals. PR62 accepts explicit curated definition-start locals. P1.11a remains partial: general register/memory migration, broader call/flow shapes, stack-slot reuse and additional composite storage still require instruction-specific GDB values and honest unavailable gaps. |
 | Target-profile coverage (P2.3/3a/3b/3c) | **CONFIRMED complete for the selected expanded requirements:** all twenty original rows pass combined acceptance. AArch64 ABI/HFA/SIMD, distinct MIPS O32/N32/N64 profiles in both byte orders, ARM/Thumb/BE8 and per-function base/VFP, and selected libc-backed i386 floating/vector/aggregate/convention cases are recorded in [the acceptance audit](docs/TARGET-ABI-ACCEPTANCE.md). FPXX/FP64A has a verified FR=1 reference; unproven production whole-pair locations remain unavailable. The [profile contract](docs/TARGET-PROFILES.md) retains exact layouts, consumer limits and honest location gaps. This does not establish every ABI of those processors. |
 | GUI and output paths (P2.7) | **CONFIRMED:** both hosts' real Script Manager/chooser journeys pass. PR #31 adds actual parent traversal, complete publisher alias preflight and native Windows short-parent/trailing-dot controls; its exact PR/main gates and artifact reviews pass. Geometry/GDB run on Linux; Windows uses native GNU/LLVM, with independent libdwarf unavailable and Linux-ELF runtime GDB not run. |
-| Optional debuglink (P2.8) | **PLANNED transaction:** opt-in attachment, identity/receipt chain and backup/rollback remain unimplemented. PRs #32/#33's digests, typed build-ID observations and report reader pass the full matrix. PRs #34/#35's prefix and indexed allocation observers also pass the full matrix. PR #36 selected-file SHA binding also passes the full matrix. PR #37 program-byte preservation passes the full matrix. PR #38 candidate-content checks also pass the full matrix. PR #39 owned append-only preparation also passes the full matrix. PR #40 detailed report binding/private preparation also passes the full matrix. PR #41 captured validator evidence passes its exact PR and main gates. Default export leaves the original unchanged. |
+| Optional debuglink (P2.8) | **CONFIRMED implementation and host acceptance:** opt-in CLI/GUI attachment, validated receipt chains, independent backup, atomic replacement, saved-curation refresh and recovery are implemented in PR #158. Current Linux/Windows host and scoped target evidence is recorded above; the full final gate and protected integration remain incomplete. Default export leaves the original unchanged. |
 | Inline reconstruction (P3.4) | **CONFIRMED investigation complete:** ADR 0003 and a reproducible compiler/Ghidra probe distinguish real inline instances from Ghidra's decompiler flag and record surviving locals/source information. Inline emission remains deferred until explicit instance/origin/range evidence and GDB acceptance exist. |
 | Performance (P3.5) | **CONFIRMED:** the indexed planner and configured-checker gates pass component run `40065823442` and combined run `40068401197`. Historical local paired 10,000-function exports reduce median process time by 15.5% with byte-identical artifacts; a fresh strict/GDB replay validates the retained result without rerunning timing. Hosted CI is not a new timing measurement. The pinned SQLite complex-application harness and a bounded JFR profile pass locally; broader workloads and further profiling remain **PLANNED**. No blanket speed or memory claim. See `docs/PERFORMANCE.md`. |
 
@@ -4069,6 +4091,16 @@ Additional user-journey coverage:
 
 Tracking: [#72](https://github.com/zwilcox/GhidraDwarfForge/issues/72).
 
+**Current status:** the transaction and controls are implemented, and both native
+host journeys have passed reviewed runtime acceptance at `be2e806`. Remaining
+work is the complete target gate and final C1 protected integration. A1–A7
+are evaluated in `docs/DEBUGLINK-ATTACHMENT-ACCEPTANCE.md`; all fifteen attachment
+cases across five targets, both native GUI journeys and changed-curation
+refresh/recovery have reviewed passing evidence.
+See `docs/evidence/windows-attachment-41882141913.json` and the completion ledger.
+The foundation checkpoints below are **HISTORICAL**; statements that the
+transaction was unimplemented describe those earlier revisions.
+
 **CONFIRMED:** PR #32 head `c94158b` passes all twelve jobs in exact hosted run
 `40091937766` and merged normally as `7f9c0d2`. The read-only foundations
 combine streamed SHA-256/GNU CRC32/byte count (`FileDigests`) with bounded typed
@@ -4296,12 +4328,18 @@ the full original/backup/rollback contract below remains required.
 
 ### Completion criteria
 
-- [ ] Option is disabled by default.
-- [ ] User receives an explicit warning that the target will change.
-- [ ] Original backup/rollback policy is documented and tested.
-- [ ] GDB automatically discovers the sidecar.
-- [ ] CRC mismatch test fails as expected.
-- [ ] Default-mode original hash test remains unchanged.
+- [x] Option is disabled by default.
+- [x] User receives an explicit warning that the target will change.
+- [x] Original backup/rollback policy is documented and tested.
+- [x] GDB automatically discovers the sidecar.
+- [x] CRC mismatch test fails as expected.
+- [x] Default-mode original hash test remains unchanged.
+- [ ] Final documentation commit passes the complete required-validation gate
+  and PR158 merges normally; only then close #72.
+
+The six behavior criteria above are established by the full A1–A7
+[acceptance audit](docs/DEBUGLINK-ATTACHMENT-ACCEPTANCE.md) at `be2e806`. They do
+not imply that the remaining C1 integration checkbox has passed.
 
 The Linux research probes cover GNU 2.42 tools for x86-64, AArch64 and MIPS32
 both byte orders, including backend rejection of unsupported layouts. These

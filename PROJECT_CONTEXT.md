@@ -1,5 +1,27 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED current Windows and Linux host acceptance; integration remains open:**
+At `be2e806`, run41882141913 passes the complete Windows host job126765207504 and
+Windows-artifact GDB consumer126775392304. Independent review confirms native
+CLI and GUI attachment/changed-curation refresh/recovery, actual GUI cancellation
+after validator startup, preserved target and prior generations, 210 validator-log
+hashes, 726 protected Windows artifact hashes, and four positive GDB generations
+plus four CRC rejections. Actual Java21 long-path startup/cancellation passes;
+GUI validator status paths are 318–321 characters. The former Windows GUI launch
+failure is resolved for this tested workflow. See
+`docs/evidence/windows-attachment-41882141913.json`.
+
+The same head's Linux GUI journey, package/native manifests and Windows
+coordinator evidence pass independent review. Current attachment reviews cover
+all five target profiles, including MIPS32 big-endian: fifteen initial/rollback/
+GDB cases, two saved-curation refreshes and eight abrupt recoveries. The complete
+A1–A7 audit is recorded in `docs/DEBUGLINK-ATTACHMENT-ACCEPTANCE.md`. The full
+target regression gate and final C1 protected integration remain pending; #72
+is not closed. #107 remains merged.
+The earlier checkpoint paragraphs below are **HISTORICAL** where superseded by
+this acceptance record; they do not turn a previously unresolved failure into
+a current blocker.
+
 **CONFIRMED Windows long-cwd failure; correction awaits native acceptance:**
 Manual run41878689772 completes on actual Windows Java21.0.13: short cwd and
 short cwd with 355-character log paths succeed, while ordinary and extended-prefix

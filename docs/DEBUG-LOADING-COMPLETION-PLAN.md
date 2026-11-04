@@ -15,11 +15,28 @@ declarations are needed for the loader.
 **CONFIRMED:** L1–L7 are proven for the documented profiles by
 [the acceptance record](GDB-LOADER-ACCEPTANCE.md), including the complete hosted
 gate at `5654f53`, final-head gate41602638145 at `caa4916`, independent artifact
-review and normal protected merge157. Loader C1 is complete; attachment C1 and
-A1–A7 remain incomplete. The
-separate attachment branch's component evidence does not establish those rows.
+review and normal protected merge157. Loader C1 is complete. Attachment A1–A7
+now have combined native, production export, GUI and debugger evidence in the
+[attachment acceptance audit](DEBUGLINK-ATTACHMENT-ACCEPTANCE.md); attachment C1
+remains incomplete. Isolated component evidence alone does not establish a row.
 The checkpoint sections below are **HISTORICAL**, recording evidence as it
 became available; their pending statements do not supersede this status.
+
+**CONFIRMED current host acceptance at `be2e806`:** run41882141913 passes both
+native host journeys and the Windows-artifact Linux GDB consumer. Independent
+[Windows review](evidence/windows-attachment-41882141913.json) confirms CLI/GUI
+initial and curated refresh generations, recovery, active cancellation, long-path
+validation, preserved artifacts and actual GDB/CRC behavior. The current
+[Linux GUI](evidence/linux-gui-attachment-41882141913.json),
+[package/native components](evidence/attachment-components-41882141913.json) and
+[scoped target reviews](evidence/linux-attachment-41882141913.json) also pass.
+All five target attachment artifacts, including MIPS32 big-endian, pass review.
+The full target regression gate, final documentation commit's exact-head check
+and C1 protected integration remain required. #72 remains open.
+
+**HISTORICAL attachment checkpoints below:** their pending/failure statements
+refer to the cited earlier commits and are superseded by the current evidence
+above. The complete acceptance rows following them remain unchanged.
 
 **CONFIRMED scoped attachment implementation and Linux execution; final
 acceptance incomplete:** the helper, both launchers and Script Manager controls

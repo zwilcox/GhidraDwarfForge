@@ -1,0 +1,59 @@
+{
+    "run": 41881302052,
+    "head": "e4ce18eace53430d34482ff9e7b74aeb052d4b32",
+    "job": 126754175272,
+    "artifact": 13350231974,
+    "artifactSha256": "210e7cee2bf6a1d4506cf6e71b1f8056ff7e792c3b6cd92925fb2ea61cfb7c5e",
+    "status": "PASS within scope",
+    "scope": "Native Windows supervisor source/binary, 30 raw statuses and four collision refusals; Java and GUI remain pending",
+    "sourceSha256": "520b065504f7daf61c7efd7e50ec1afb3f421c8549bc870c134744a0d96c3735",
+    "helperSha256": "40e539cb8a4e9715071a330de5f217367e33bf77c9cc2f7e7d8ccacea9c498af",
+    "rawStatusRecords": 30,
+    "cases": 34,
+    "cleanupComplete": true,
+    "longPaths": [
+        {
+            "directory": "supervisor/runtime/long evidence \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/long evidence \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/long evidence \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/long evidence \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/arguments",
+            "statusPathCharacters": 341,
+            "rawStatus": {
+                "schemaVersion": 1,
+                "reason": "completed",
+                "exitCode": 0,
+                "exitSignal": 0,
+                "cleanupComplete": true,
+                "stdoutObserved": 110,
+                "stdoutRetained": 110,
+                "stderrObserved": 21,
+                "stderrRetained": 21
+            }
+        }
+    ],
+    "collisions": [
+        {
+            "directory": "supervisor/runtime/existing-output",
+            "selectedPathCharacters": 119,
+            "bytesPreserved": true
+        },
+        {
+            "directory": "supervisor/runtime/existing-status",
+            "selectedPathCharacters": 119,
+            "bytesPreserved": true
+        },
+        {
+            "directory": "supervisor/runtime/long evidence \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/long evidence \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/long evidence \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/long evidence \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/existing-output",
+            "selectedPathCharacters": 347,
+            "bytesPreserved": true
+        },
+        {
+            "directory": "supervisor/runtime/long evidence \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/long evidence \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/long evidence \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/long evidence \u00e9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/existing-status",
+            "selectedPathCharacters": 347,
+            "bytesPreserved": true
+        }
+    ],
+    "limits": [
+        "Not the full Windows GUI or Java ProcessBuilder acceptance",
+        "Release binary comparison pending release packaging",
+        "Current PR head be2e806 changes the Java test observer only; native production source byte-identical"
+    ],
+    "reviewerSha256": "9c3e8f171b272f791350d357b38f977c1ac6b67e4504fd4d703944cb3a99b65c"
+}

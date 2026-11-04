@@ -1,6 +1,6 @@
 # ADR-0004: Stage optional debuglink attachment behind a verified backup transaction
 
-- Status: Accepted design; implementation present, full product acceptance **UNVERIFIED**
+- Status: Accepted design; A1–A7 runtime acceptance **CONFIRMED**, C1 integration pending
 - Date: 2026-10-23
 - Refined: 2026-10-24 (owned append-only candidate direction in ADR-0005)
 - Scope: P2.8, separate from default export and the corrective alpha.2 release
@@ -10,10 +10,11 @@
 Keep ordinary export non-mutating. Attachment must be an explicit choice after
 a successful export pair, with a mandatory original backup, independently
 verified target/sidecar identity and atomic replacement of the target. The
-isolated helper, launchers and GUI controls now implement this contract. Full
-acceptance remains pending under A1–A7/C1 in
-[the completion ledger](DEBUG-LOADING-COMPLETION-PLAN.md); implementation alone
-does not close P2.8. Historical research fixtures below modify only owned copies.
+isolated helper, launchers and GUI controls implement this contract.
+[The acceptance audit](DEBUGLINK-ATTACHMENT-ACCEPTANCE.md) records passing A1–A7
+native host, real-export and GDB evidence. Final required CI and protected
+integration remain pending under C1; implementation alone does not close P2.8.
+Historical research fixtures below modify only owned copies.
 
 Use the separate native-free append-only candidate direction selected in
 [ADR-0005](ADR-0005-OWNED-DEBUGLINK-CANDIDATE.md). This explicitly supersedes
@@ -265,6 +266,7 @@ host, transaction and consumer evidence must establish the remaining guarantees.
 and explicit user-requested OS authorization when required, leaving Ghidra
 unprivileged. No automatic elevation or metadata-policy relaxation follows.
 Absolute selection transport, CLI/GUI launch, preparation and recovery are
-implemented; the ledger distinguishes validated cases from remaining native
-Windows and active-cancellation checks. See [the helper work record](ATTACHMENT-HELPER.md).
+implemented and pass both native host journeys, including active cancellation;
+the ledger distinguishes runtime acceptance from the remaining integration gate.
+See [the helper work record](ATTACHMENT-HELPER.md).
 This records the stated implementation assumption, not a user privilege grant.

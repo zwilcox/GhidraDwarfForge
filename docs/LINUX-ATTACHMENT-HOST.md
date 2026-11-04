@@ -1,5 +1,14 @@
 # Linux attachment host
 
+**CONFIRMED current runtime acceptance at `be2e806`:** both native host public
+journeys, active cancellation, changed-curation refresh, recovery and GDB/CRC
+checks pass reviewed run41882141913. See the
+[complete acceptance audit](DEBUGLINK-ATTACHMENT-ACCEPTANCE.md) and
+[Windows evidence](evidence/windows-attachment-41882141913.json).
+The full required target gate and final C1 protected integration remain pending.
+Development checkpoint paragraphs below are **HISTORICAL** where superseded by
+this audit; they retain their original evidence scope.
+
 **CONFIRMED scoped production Host and real-ELF acceptance:** the internal
 `LinuxAttachmentHost` implements `AttachmentOperation.Host` with an already
 authorized platform thread. Public attachment runs through the isolated helper;
@@ -10,8 +19,9 @@ remains in force. Ordinary export is unchanged.
 Reviewed real-ELF CLI/refresh/recovery and GUI evidence is recorded in
 [the Linux transaction receipt](evidence/linux-attachment-41693381663.json) and
 [the complete GUI job receipt](evidence/linux-gui-attachment-41697807284.json).
-These are scoped prior-head results. Current integration and native active-GUI
-cancellation remain tracked in [the completion ledger](DEBUG-LOADING-COMPLETION-PLAN.md).
+These are scoped prior-head results. Current passing native active-GUI
+cancellation and pending integration are tracked in
+[the completion ledger](DEBUG-LOADING-COMPLETION-PLAN.md).
 
 The latest independent readback at `e2ccccf`, run41657292709, corroborates
 actual uid/gid1001, regular mode0710, nanosecond mtime1700000000123000000,

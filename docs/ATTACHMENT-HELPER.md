@@ -1,6 +1,15 @@
 # Isolated attachment invocation
 
-**PRESENT, UNVERIFIED complete public flow:** keep Ghidra unprivileged and perform attachment in a
+**CONFIRMED current runtime acceptance at `be2e806`:** both native host public
+journeys, active cancellation, changed-curation refresh, recovery and GDB/CRC
+checks pass reviewed run41882141913. See the
+[complete acceptance audit](DEBUGLINK-ATTACHMENT-ACCEPTANCE.md) and
+[Windows evidence](evidence/windows-attachment-41882141913.json).
+The full required target gate and final C1 protected integration remain pending.
+Development checkpoint paragraphs below are **HISTORICAL** where superseded by
+this audit; they retain their original evidence scope.
+
+Keep Ghidra unprivileged and perform attachment in a
 separate helper process. A user explicitly requests OS authorization when
 needed; an existing authorized context can invoke the helper directly. There
 is no silent elevation retry, readable-metadata fallback, or automatic target
@@ -17,18 +26,17 @@ previous generation and export against the original backup as ADR-0004 requires.
 The Linux/Windows launchers, helper, recovery interface, saved selections and
 GUI preparation/review controls are implemented. Reviewed production Linux
 CLI/refresh/recovery and GUI journeys pass within their recorded scope. Reviewed
-Windows real-ELF current-permission/RunAs commits and rollback also pass; saved
-refresh and full Windows GUI/active cancellation remain pending. Linux active
-cancellation passes at7d7b2ef with archived native cleanup evidence.
+Windows real-ELF current-permission/RunAs commits, rollback, saved refresh and
+full GUI/active cancellation also pass at `be2e806`, with retained native cleanup
+and downstream GDB evidence. Linux active cancellation passes at the same head.
 See [the completion ledger](DEBUG-LOADING-COMPLETION-PLAN.md) for exact evidence
-and the remaining A1–A7/C1 gate. Historical validation checkpoints below retain
+and the remaining C1 integration gate. Historical validation checkpoints below retain
 their original scope; their pending statements do not supersede the ledger.
 The metadata policy and Ghidra/Java/native producer baselines are unchanged.
 
 ## Script Manager and cooperative cancellation
 
-**PRESENT, UNVERIFIED full modifying GUI flow:** run
-`ExportAndAttachGhidraDwarfForge.java` with the analyzed program open to prepare
+Run `ExportAndAttachGhidraDwarfForge.java` with the analyzed program open to prepare
 an initial attachment or refresh. Select the executable, a fresh sidecar filename,
 records directory and validator tools. For refresh, also select the original
 backup and previous committed receipt/pair; the export uses that original backup
@@ -55,7 +63,7 @@ atomic target replacement. Ordinary export retains its existing output behavior.
 
 To use an existing request, run `AttachGhidraDwarfForge.java`; to recover, run
 `RecoverGhidraDwarfForgeAttachment.java` and select the saved recovery request.
-Successful native GUI attachment/refresh/recovery acceptance remains incomplete.
+Both native GUI attachment/refresh/recovery journeys pass the acceptance audit.
 
 The installed helper first previews the SHA-256-pinned request in a separate,
 unprivileged JVM. The GUI displays the executable, pair, backups, receipts and
@@ -95,8 +103,8 @@ Windows Java file attributes can omit `fileKey`; Windows cancellation therefore
 uses the already audited read-only volume/file-ID/size/time handle reader. It
 does not enable privileges or query protected security metadata. Native Windows
 component checks subsequently passed after job126079953727 exposed the null Java
-identity; full modifying GUI cancellation remains pending. No pathname/mtime-only
-identity fallback is used.
+identity; full modifying GUI cancellation subsequently passes at `be2e806`.
+No pathname/mtime-only identity fallback is used.
 The GUI signals cancellation without terminating a modifying helper, waits for
 its outcome and drains both output streams. A completed cancellation (helper
 exit130) is then reported through Ghidra's cancelled-script outcome. Other
@@ -125,7 +133,7 @@ See [`attachment-preparation-local-20261103.json`](evidence/attachment-preparati
 
 ## Explicit selection transport
 
-**PRESENT, UNVERIFIED end to end:** `AttachmentInvocation` supplies the shared
+`AttachmentInvocation` supplies the shared
 read-only request format. Schema1 has exactly `schemaVersion`, `operation`,
 `paths` and `validatorTools`. `operation` is ATTACH or REFRESH. The path object
 contains target, sidecar, source, exportReport, originalBackup,
@@ -170,7 +178,7 @@ admission evidence, not helper execution or complete A2/A5 acceptance.
 
 ## Standalone helper entry point
 
-**PRESENT, UNVERIFIED native execution:** the extension JAR now includes
+The extension JAR includes
 `ghidradwarfforge.output.AttachmentHelper`. Run it only in a separate Java21+
 process with the extension JAR and Ghidra's JNA/Gson JARs on the classpath:
 
@@ -204,7 +212,7 @@ absence check after its own transaction has created a selected output.
 requests cooperative cancellation; a launcher must keep the pipe open while
 running. The existing supervisor cancels validators and the transaction handles
 rollback without interrupting recovery. Abrupt process death still requires
-explicit recovery; a durable user-facing recovery invocation remains incomplete.
+explicit recovery using the durable saved recovery invocation described below.
 Neither Ctrl-C handling nor a GUI cancellation journey is claimed by this flag.
 
 Stdout contains one JSON result including the request selection/digest, outcome,
@@ -230,7 +238,7 @@ remain pending. Local commands are retained in
 
 ## Explicit interrupted recovery
 
-**PRESENT, UNVERIFIED native helper execution:** invoke `AttachmentHelper` with
+Invoke `AttachmentHelper` with
 `--recover --request <absolute-recovery.json> --request-sha256 <sha256>` and
 `--confirm-target-change`. Recovery can replace the target with the verified
 pre-operation image. A request has exactly schemaVersion1, operation RECOVER,
@@ -262,7 +270,8 @@ selection document in addition to their diagnostic `recoverySelection` data.
 Save and inspect that document before invoking recovery; it is not itself consent.
 
 The helper now retains an explicit recovery selection before replacement, as
-described below. GUI/authorization integration remains incomplete. A failure before any PREPARED receipt is published cannot have replaced
+described below. Both native GUI/authorization journeys pass within the recorded
+profiles. A failure before any PREPARED receipt is published cannot have replaced
 the target and is not admitted as an interrupted transaction.
 
 **CONFIRMED local admission:** actual Java21 passes108 recovery selection checks,
@@ -289,7 +298,7 @@ acceptance of the new scheduling remains pending.
 
 ## Recovery selections survive loss of helper output
 
-**PRESENT, UNVERIFIED native execution:** ATTACH/REFRESH requests must now select
+ATTACH/REFRESH requests must select
 an additional fresh `paths.recoveryInvocation` file. All-role preflight protects
 it against inputs, outputs, tools and the invocation file. After live validation,
 backup and candidate preparation, the helper publishes this selection file
@@ -383,8 +392,8 @@ saved recovery request. Ghidra stays in its existing process. The launcher shows
 the selected paths before either execution or authorization and opens no log or
 result destination. See [the native mapping and authorization contract](WINDOWS-ATTACHMENT-AUTHORIZATION.md)
 for the owned security-privilege scope, PowerShell7 dependency, UAC output limits
-and exact pending validation. Native Windows launcher/authorization and GUI
-acceptance remain incomplete.
+and the supported token profile. Native Windows launcher/authorization and GUI
+acceptance pass within that profile; manual standard-user UAC remains unverified.
 
 ### Native GUI acceptance harness
 
@@ -406,7 +415,7 @@ independent native status and preserved-target review; see
 corrected observer and local controls are documented in
 [the test evidence](evidence/attachment-test-observers-local-20261104.json).
 
-**PRESENT, UNVERIFIED Windows GUI coverage:** the native Windows driver uses the
+**CONFIRMED Windows GUI coverage at `be2e806`:** the native Windows driver uses the
 same real preparation/attachment/refresh/recovery scripts and explicitly selects
 PowerShell7/RunAs. Because an elevated console cannot be redirected, the harness
 checks the launcher exit and selected durable receipt, plus retained bytes. The
@@ -415,4 +424,5 @@ required Linux consumer copies the Windows evidence into its own workspace and
 checks both generations with fresh GNU/LLVM/pinned-libdwarf and GDB, explicitly
 relocating the Windows source directory. The original downloaded evidence is
 hash-checked for preservation. Source relocation/space-path consumer controls
-pass locally; actual native Windows GUI acceptance remains pending.
+pass locally; the actual native Windows GUI and required Linux consumer now
+pass with independent artifact review in run41882141913.

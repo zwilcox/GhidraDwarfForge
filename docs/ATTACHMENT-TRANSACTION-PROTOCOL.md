@@ -1,12 +1,21 @@
 # Attachment transaction protocol
 
+**CONFIRMED current runtime acceptance at `be2e806`:** both native host public
+journeys, active cancellation, changed-curation refresh, recovery and GDB/CRC
+checks pass reviewed run41882141913. See the
+[complete acceptance audit](DEBUGLINK-ATTACHMENT-ACCEPTANCE.md) and
+[Windows evidence](evidence/windows-attachment-41882141913.json).
+The full required target gate and final C1 protected integration remain pending.
+Development checkpoint paragraphs below are **HISTORICAL** where superseded by
+this audit; they retain their original evidence scope.
+
 **CONFIRMED implementation; complete product acceptance remains pending.**
 `AttachmentPaths`, `AttachmentReceipt` and `AttachmentReceiptStore` supply
 all-role preflight, versioned claims and complete-record publication to
 `AttachmentOperation` and `AttachmentTransaction`. The isolated helper performs
 explicit initial attachment, refresh and saved-request recovery. Ordinary export
 does not enter this transaction. Native component and real-export evidence,
-including remaining Windows/GUI/integration checks, is tracked by
+including completed Windows/GUI checks and remaining integration, is tracked by
 [the completion ledger](DEBUG-LOADING-COMPLETION-PLAN.md).
 
 ADR-0004 and ADR-0005 remain the required operation contract. Ghidra, Java and

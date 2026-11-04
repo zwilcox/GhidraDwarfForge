@@ -1,6 +1,17 @@
 # Windows attachment authorization
 
-**PRESENT, UNVERIFIED complete public execution:** the PowerShell7 launcher previews the
+**CONFIRMED current runtime acceptance at `be2e806`:** both native host public
+journeys, active cancellation, changed-curation refresh, recovery and GDB/CRC
+checks pass reviewed run41882141913. See the
+[complete acceptance audit](DEBUGLINK-ATTACHMENT-ACCEPTANCE.md) and
+[Windows evidence](evidence/windows-attachment-41882141913.json).
+The full required target gate and final C1 protected integration remain pending.
+Development checkpoint paragraphs below are **HISTORICAL** where superseded by
+this audit; they retain their original evidence scope.
+Manual standard-user UAC prompt/decline behavior remains unverified; the passing
+RunAs fixture uses the runner's existing token and does not claim that behavior.
+
+**CONFIRMED within the hosted native token profile:** the PowerShell7 launcher previews the
 selected request without native privilege adjustment. `-ConfirmTargetChange`
 allows execution; `-Authorize` additionally requests the Windows `runas` verb
 for the separate Java helper. With no authorization option it uses its existing
@@ -103,7 +114,7 @@ privilege; this does not prove an interactive standard-user UAC prompt/decline.
 
 ShellExecute/UAC does not redirect the elevated console. The launcher reports its
 observed process exit; retained transaction receipts are authoritative if the
-console is closed or output is lost. Actual interactive authorization/cancellation
-and the full Windows Ghidra GUI journey remain incomplete. Local Linux checks
+console is closed or output is lost. The complete Windows Ghidra GUI journey and active cancellation now pass;
+interactive standard-user UAC prompt/decline remains unverified. Local Linux checks
 request no OS authorization. Native Windows claims are restricted to the scoped
 hosted artifact reviews above.
