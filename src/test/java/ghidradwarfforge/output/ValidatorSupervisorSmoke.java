@@ -23,6 +23,8 @@ public final class ValidatorSupervisorSmoke {
             marker = Path(sys.argv[2])
             if mode == 'ok':
                 print(json.dumps(sys.argv[3:]))
+            elif mode == 'cwd':
+                print(os.getcwd())
             elif mode == 'error':
                 sys.exit(9)
             elif mode == 'flood':
@@ -51,6 +53,29 @@ public final class ValidatorSupervisorSmoke {
         require(Files.readString(success.stdout()).contains("a b"), "argument with space lost");
         require(success.stderrDigest().byteCount() == 0, "unexpected stderr");
         require(success.stdoutDigest().equals(FileDigests.read(success.stdout())), "retained evidence digest differs");
+        Path deep = root;
+        while (deep.toString().length() < 310) {
+            deep = Files.createDirectory(deep.resolve("long evidence é " + "x".repeat(40)));
+        }
+        var longPaths = runner.run(python, List.of(script.toString(), "cwd", root.resolve("unused").toString()),
+            deep, Duration.ofSeconds(5), 65536, () -> false);
+        require(longPaths.directory().getParent().equals(deep), "long evidence was relocated");
+        require(Files.isSameFile(Path.of(Files.readString(longPaths.stdout()).strip()),
+            ValidatorSupervisor.workingDirectory(longPaths.directory())), "validator working directory differs");
+        require(longPaths.status().cleanupComplete() && longPaths.stderrDigest().byteCount() == 0,
+            "long-path execution or cleanup failed");
+        Path longCancel = root.resolve("long-cancel.pid");
+        try {
+            runner.run(python, List.of(script.toString(), "hang", longCancel.toString()), deep,
+                Duration.ofSeconds(5), 4096, () -> Files.exists(longCancel));
+            throw new AssertionError("long-path cancelled validator succeeded");
+        }
+        catch (ValidatorSupervisor.Cancelled expected) {
+            require(expected.directory().getParent().equals(deep), "cancel evidence was relocated");
+            require(ValidatorSupervisor.readStatus(expected.directory().resolve("status.json")).cleanupComplete(),
+                "long-path cancellation did not clean up");
+        }
+        absent(longCancel);
         for (String mode : List.of("error", "flood", "orphan", "hang")) {
             Path marker = root.resolve(mode + ".pid");
             try {

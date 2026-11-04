@@ -32,8 +32,41 @@ static bool number(const wchar_t *text, uint64_t maximum, uint64_t *value) {
 }
 
 static HANDLE exclusive(const wchar_t *path) {
-    return CreateFileW(path, GENERIC_WRITE, 0, NULL, CREATE_NEW,
+    /* Output files can be deeper than the process cwd limit. Normalize before
+     * adding the extended prefix; keep exclusive creation and no-follow flags. */
+    DWORD capacity = GetFullPathNameW(path, 0, NULL, NULL);
+    if (!capacity || capacity > 32759) {
+        if (capacity) SetLastError(ERROR_FILENAME_EXCED_RANGE);
+        return INVALID_HANDLE_VALUE;
+    }
+    wchar_t *full = calloc(capacity, sizeof(wchar_t));
+    wchar_t *extended = calloc((size_t)capacity + 8, sizeof(wchar_t));
+    if (!full || !extended) {
+        free(full); free(extended); SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+        return INVALID_HANDLE_VALUE;
+    }
+    DWORD length = GetFullPathNameW(path, capacity, full, NULL);
+    if (!length || length >= capacity) {
+        DWORD error = length ? ERROR_FILENAME_EXCED_RANGE : GetLastError();
+        free(full); free(extended); SetLastError(error);
+        return INVALID_HANDLE_VALUE;
+    }
+    if (wcsncmp(full, L"\\\\?\\", 4) == 0) {
+        wcscpy(extended, full);
+    }
+    else if (wcsncmp(full, L"\\\\", 2) == 0) {
+        wcscpy(extended, L"\\\\?\\UNC\\");
+        wcscat(extended, full + 2);
+    }
+    else {
+        wcscpy(extended, L"\\\\?\\");
+        wcscat(extended, full);
+    }
+    HANDLE result = CreateFileW(extended, GENERIC_WRITE, 0, NULL, CREATE_NEW,
         FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OPEN_REPARSE_POINT, NULL);
+    DWORD error = GetLastError();
+    free(full); free(extended); SetLastError(error);
+    return result;
 }
 
 static bool write_all(HANDLE output, const void *buffer, DWORD length) {

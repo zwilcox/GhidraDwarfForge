@@ -117,8 +117,8 @@ def main():
     cases = []
     arguments = ['', 'a b', 'é', 'line\nsecond', '\\', 'trailing\\', 'a"b', '\\"', '\\\\"', '$(ignored)', '`literal`']
 
-    def run(mode, expected, timeout=5000, extra=None, collision=None, label=None):
-        directory = root / (label or mode)
+    def run(mode, expected, timeout=5000, extra=None, collision=None, label=None, parent=None):
+        directory = (parent or root) / (label or mode)
         directory.mkdir()
         status = directory / 'status.json'
         out, err = directory / 'stdout.bin', directory / 'stderr.bin'
@@ -195,6 +195,18 @@ def main():
     require((root / 'existing-status/status.json').read_bytes() == sentinel, 'status collision truncated input')
     run('existing-output', 'rejected', collision=lambda directory: (directory / 'stdout.bin').write_bytes(sentinel))
     require((root / 'existing-output/stdout.bin').read_bytes() == sentinel, 'output collision truncated input')
+    deep = root
+    while len(str(deep)) < 310:
+        deep = deep / ('long evidence é ' + 'x' * 40)
+        deep.mkdir()
+    run('arguments', 'completed', extra=arguments, parent=deep)
+    require(json.loads((deep / 'arguments/stdout.bin').read_bytes()) == arguments, 'long-path output differs')
+    run('existing-status', 'rejected', parent=deep,
+        collision=lambda directory: (directory / 'status.json').write_bytes(sentinel))
+    require((deep / 'existing-status/status.json').read_bytes() == sentinel, 'long status collision truncated input')
+    run('existing-output', 'rejected', parent=deep,
+        collision=lambda directory: (directory / 'stdout.bin').write_bytes(sentinel))
+    require((deep / 'existing-output/stdout.bin').read_bytes() == sentinel, 'long output collision truncated input')
     if os.name != 'nt':
         selected = root / 'protected-original'
         selected.write_bytes(sentinel)

@@ -28,6 +28,22 @@ and stdout/stderr pipes are drained concurrently in bounded chunks to the logs.
 The byte cap applies to bytes actually retained on disk, separately per stream.
 Crossing it terminates the run and records the observed and retained counts.
 
+On Windows, the selected evidence directory can exceed the process working-directory
+limit. Java uses its nearest canonical ancestor whose path is at most 240 UTF-16
+code units as the working directory; it creates no workspace there. The evidence
+files stay in the exclusively created directory at the selected location. All
+production tool/file arguments are absolute. This internal runner does not promise
+that relative tool arguments resolve against the evidence directory on Windows.
+The helper normalizes output paths with `GetFullPathNameW` and uses extended-length
+local/UNC names for `CreateFileW`, retaining `CREATE_NEW` and the no-follow flag.
+It does not depend on 8.3 aliases, a registry change, or shortening user selections.
+
+Actual Java21 observations in run41878689772 reproduce error267 for both ordinary
+and prefixed long cwd, while the short-cwd/long-log control succeeds. The corrected
+native supervisor and full GUI journey still require hosted acceptance. API details:
+[full path resolution](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getfullpathnamew),
+[extended-length paths](https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation).
+
 Java keeps the helper's stdin cancellation pipe open while the run is active.
 Closing it requests cleanup; it is not the tool's stdin. Java thread interruption
 also requests cleanup and restores the interrupt flag after reconciliation.

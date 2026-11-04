@@ -1,5 +1,20 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED Windows long-cwd failure; correction awaits native acceptance:**
+Manual run41878689772 completes on actual Windows Java21.0.13: short cwd and
+short cwd with 355-character log paths succeed, while ordinary and extended-prefix
+long cwd both fail with CreateProcess error267. This explains the process-start
+failure mechanism seen in the modifying GUI; the full corrected journey remains
+required. See `docs/evidence/windows-validator-paths-41878689772.json`.
+
+The supervisor now selects a short canonical ancestor only for Windows process
+cwd, retaining the original evidence destination and absolute file arguments.
+Its native output creation resolves extended-length paths while retaining
+exclusive creation/no-follow behavior. Deep-path execution, cancellation and
+collision fixtures are added without shortening GUI paths. **PRESENT, UNVERIFIED
+on native Windows:** the corrected helper and complete GUI regression. No ELF,
+DWARF or native producer binding changes are involved.
+
 **CONFIRMED hosted Windows refresh step; new GUI failure under investigation:**
 Run41873454505/job126733683157 passes real Windows headless export and the
 attachment/rollback/saved-curation refresh step with the corrected FSRL check.
@@ -10,15 +25,14 @@ generations passes source/type/argument/runtime and CRC-rejection checks. See
 `docs/evidence/windows-attachment-operation-41873454505.json`. Its GUI job fails
 at the first authorized attachment. The selected records directory is218
 characters; nested validator evidence exceeds300. Only empty supervisor stdout/
-stderr exist, with no native status, tool output, backup or receipt. The cause
-is **UNCERTAIN**: long working-directory process creation is a candidate, not a
-verified diagnosis. No production path policy is changed on this evidence.
+stderr exist, with no native status, tool output, backup or receipt. The subsequent isolated Windows probe confirms long working-directory process
+creation is rejected; corrected GUI acceptance remains required.
 
 The manual host-observation workflow now runs a small actual-Java21 Windows
 probe with short/long/prefixed working directories and long redirection paths.
 It retains actual launch outcomes without calling an observed rejection a
 feature pass. Local Java21-compatible compilation, child execution and workflow
-lint pass; native observations are pending. The passing Linux GUI/cancellation,
+lint pass; native observations subsequently confirm long-cwd rejection as recorded above. The passing Linux GUI/cancellation,
 exact package and Windows component evidence below retain their scope. #72 and
 the complete A1–A7/C1 gate remain incomplete.
 

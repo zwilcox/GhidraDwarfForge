@@ -116,7 +116,7 @@ public final class ValidatorSupervisor {
         Process process;
         try {
             check(cancelled);
-            var builder = new ProcessBuilder(command).directory(directory.toFile())
+            var builder = new ProcessBuilder(command).directory(workingDirectory(directory).toFile())
                 .redirectOutput(helperOut.toFile()).redirectError(helperErr.toFile());
             // Keep diagnostic grammar stable independently of the user's UI
             // locale. This does not change the JVM's native argument encoding.
@@ -201,6 +201,21 @@ public final class ValidatorSupervisor {
     }
 
     private record ToolState(String sha256, long bytes, Object identity, Object modified) { }
+
+    /** All production file arguments are absolute; cwd is not the evidence destination. */
+    static Path workingDirectory(Path evidence) throws IOException {
+        Path directory = evidence;
+        if (System.getProperty("os.name").startsWith("Windows")) {
+            // Actual Java21/CreateProcessW rejects long cwd even with \\?\ prefixes.
+            // Use the nearest canonical ancestor below that limit without moving
+            // evidence or creating anything outside its selected directory tree.
+            while (directory != null && directory.toString().length() > 240) {
+                directory = directory.getParent();
+            }
+            if (directory == null) throw new IOException("no Windows process working directory within the path bound");
+        }
+        return directory;
+    }
 
     private static ToolState toolState(Path tool, BooleanSupplier cancelled) throws IOException {
         BasicFileAttributes before = Files.readAttributes(tool, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
