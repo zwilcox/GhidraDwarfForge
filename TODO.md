@@ -3,7 +3,11 @@
 **CONFIRMED hosted Windows refresh step; new GUI failure under investigation:**
 Run41873454505/job126733683157 passes real Windows headless export and the
 attachment/rollback/saved-curation refresh step with the corrected FSRL check.
-Full independent refresh-artifact review remains pending. Its GUI job then fails
+Independent review now confirms initial/refresh receipt chains, unchanged prior
+generations, strict backup-based import identity, changed CRC and 140 retained
+validator log hashes. A separate Linux GDB replay of both Windows-produced CLI
+generations passes source/type/argument/runtime and CRC-rejection checks. See
+`docs/evidence/windows-attachment-operation-41873454505.json`. Its GUI job fails
 at the first authorized attachment. The selected records directory is218
 characters; nested validator evidence exceeds300. Only empty supervisor stdout/
 stderr exist, with no native status, tool output, backup or receipt. The cause
@@ -17,6 +21,15 @@ feature pass. Local Java21-compatible compilation, child execution and workflow
 lint pass; native observations are pending. The passing Linux GUI/cancellation,
 exact package and Windows component evidence below retain their scope. #72 and
 the complete A1–A7/C1 gate remain incomplete.
+
+**CONFIRMED scoped Linux attachment artifacts:** run41873454505 now has
+independent passing reviews for twelve initial/rollback/runtime cases: x86-64,
+ARM32 and both MIPS32 byte orders, each with ET_EXEC, PIE and no-build-ID inputs.
+The ARM/MIPS cases use QEMU/GDB. Two x86 saved-curation refreshes and eight abrupt
+recoveries also pass review. Original-prefix checks retain `e_shentsize` and allow
+only the intended section-table pointer/count/index fields to change. See
+`docs/evidence/linux-attachment-41873454505.json`. AArch64 attachment evidence and
+the complete host/target gate remain pending; these scoped reviews do not close #72.
 
 **CONFIRMED current-head Linux GUI cancellation and attachment acceptance:**
 At `7d7b2ef`, run41873454505/job126732491182 passes the full Linux GUI job. Independent

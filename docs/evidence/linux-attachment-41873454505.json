@@ -1,0 +1,185 @@
+{
+    "head": "7d7b2efc7386d9ff95a5c436cdf11f77ea4b417c",
+    "run": 41873454505,
+    "status": "CONFIRMED scoped attachment artifact reviews; full architecture lanes still running",
+    "x86": {
+        "head": "7d7b2efc7386d9ff95a5c436cdf11f77ea4b417c",
+        "run": 41873454505,
+        "jarSha256": "2d24624e1a3ca39ed05e15f13fc7e46354c873820e2f5d62d3c7a172bf0a29dc",
+        "cases": [
+            {
+                "case": "x86_64.exec",
+                "provenance": {
+                    "retainedOrigins": 13,
+                    "externalProtectedInputs": []
+                },
+                "negativeControls": 16,
+                "runtime": "native"
+            },
+            {
+                "case": "x86_64.exec.no-build-id",
+                "provenance": {
+                    "retainedOrigins": 13,
+                    "externalProtectedInputs": []
+                },
+                "negativeControls": 7,
+                "runtime": "native"
+            },
+            {
+                "case": "x86_64.pie",
+                "provenance": {
+                    "retainedOrigins": 13,
+                    "externalProtectedInputs": []
+                },
+                "negativeControls": 7,
+                "runtime": "native"
+            }
+        ],
+        "refresh": [
+            {
+                "role": "exec",
+                "provenance": {
+                    "retainedOrigins": 17,
+                    "externalProtectedInputs": [
+                        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/fixtures/x86_64/semantic.exec.stripped",
+                        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/fixtures/x86_64/semantic.exec.reference",
+                        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/validation-tool/bin/dwarfdump"
+                    ]
+                },
+                "changedCrc": true,
+                "savedCuration": true
+            },
+            {
+                "role": "pie",
+                "provenance": {
+                    "retainedOrigins": 17,
+                    "externalProtectedInputs": [
+                        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/fixtures/x86_64/semantic.pie.stripped",
+                        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/fixtures/x86_64/semantic.pie.reference",
+                        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/validation-tool/bin/dwarfdump"
+                    ]
+                },
+                "changedCrc": true,
+                "savedCuration": true
+            }
+        ],
+        "releaseSourcesCompared": 146,
+        "nativeRecovery": {
+            "cases": 8,
+            "abruptExit": 89,
+            "initialAndRefresh": true,
+            "immutableInterruptedReceipts": true,
+            "retainedCrashCanaries": 8
+        },
+        "status": "PASS scoped production Linux x86-64 Host artifact review",
+        "limits": "Three x86-64 exec/PIE/no-build-ID initial/rollback/GDB cases, two saved-curation refreshes and eight abrupt recoveries; not all targets or Windows acceptance. Remote metadata is represented by native recorded claims."
+    },
+    "armMips": {
+        "head": "7d7b2efc7386d9ff95a5c436cdf11f77ea4b417c",
+        "run": 41873454505,
+        "jarSha256": "2d24624e1a3ca39ed05e15f13fc7e46354c873820e2f5d62d3c7a172bf0a29dc",
+        "cases": [
+            {
+                "case": "arm32.exec",
+                "provenance": {
+                    "retainedOrigins": 13,
+                    "externalProtectedInputs": []
+                },
+                "negativeControls": 6,
+                "runtime": "QEMU"
+            },
+            {
+                "case": "arm32.exec.no-build-id",
+                "provenance": {
+                    "retainedOrigins": 13,
+                    "externalProtectedInputs": []
+                },
+                "negativeControls": 6,
+                "runtime": "QEMU"
+            },
+            {
+                "case": "arm32.pie",
+                "provenance": {
+                    "retainedOrigins": 13,
+                    "externalProtectedInputs": []
+                },
+                "negativeControls": 6,
+                "runtime": "QEMU"
+            },
+            {
+                "case": "mips32be.exec",
+                "provenance": {
+                    "retainedOrigins": 13,
+                    "externalProtectedInputs": []
+                },
+                "negativeControls": 6,
+                "runtime": "QEMU"
+            },
+            {
+                "case": "mips32be.exec.no-build-id",
+                "provenance": {
+                    "retainedOrigins": 13,
+                    "externalProtectedInputs": []
+                },
+                "negativeControls": 6,
+                "runtime": "QEMU"
+            },
+            {
+                "case": "mips32be.pie",
+                "provenance": {
+                    "retainedOrigins": 13,
+                    "externalProtectedInputs": []
+                },
+                "negativeControls": 6,
+                "runtime": "QEMU"
+            },
+            {
+                "case": "mips32le.exec",
+                "provenance": {
+                    "retainedOrigins": 13,
+                    "externalProtectedInputs": []
+                },
+                "negativeControls": 6,
+                "runtime": "QEMU"
+            },
+            {
+                "case": "mips32le.exec.no-build-id",
+                "provenance": {
+                    "retainedOrigins": 13,
+                    "externalProtectedInputs": []
+                },
+                "negativeControls": 6,
+                "runtime": "QEMU"
+            },
+            {
+                "case": "mips32le.pie",
+                "provenance": {
+                    "retainedOrigins": 13,
+                    "externalProtectedInputs": []
+                },
+                "negativeControls": 6,
+                "runtime": "QEMU"
+            }
+        ],
+        "refresh": [],
+        "releaseSourcesCompared": 146,
+        "status": "PASS scoped production Linux ARM32/MIPS Host artifact review",
+        "limits": "Nine ARM32/MIPS32BE/MIPS32LE exec/PIE/no-build-ID initial/rollback/QEMU/GDB cases; AArch64 and full Windows acceptance remain pending."
+    },
+    "reviewerSha256": {
+        "review.py": "7d2ba4ae9bfb04ad3b02d12d117658ca7d7726432c481db0a09bb6c89b55981f",
+        "review-arm-mips.py": "30f259d5ab57bdcdd9c25ce036340fb3f623869b107e5e63239a17fc06c5a2c7"
+    },
+    "archiveSha256": {
+        "linux-attachment-arm32.zip": "961227a5d6d89a068451bef12d5b70fa5e3524885f3c549648428d675d540daa",
+        "linux-attachment-mips32be.zip": "26b395047dc1a6ab365b2c64d0beb0db29897a953470806b63159092a248633e",
+        "linux-attachment-mips32le.zip": "6b3c41de3b7b5705341675bd33541f8f29f10785a326d09d400968398dacfc2c",
+        "linux-attachment-x86_64.zip": "44e41fb07ecad804ef9e9b7cb6ece87303f5d5a0e46c410c4c06bbd536f1c3a9"
+    },
+    "refreshArchiveSha256": "5a3ab73a67886d5c605d96bb0baa712efd01770ccd30ee9cd0f659fd339bac96",
+    "limits": [
+        "AArch64 attachment evidence pending",
+        "Windows GUI failure remains unresolved",
+        "Full exact-head gate still required"
+    ]
+}

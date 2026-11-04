@@ -51,7 +51,13 @@ are corrected with [local controls and regression evidence](evidence/attachment-
 Linux active GUI cancellation subsequently passes at7d7b2ef in run41873454505,
 including independent archived cleanup/target-preservation review and the complete
 attachment/refresh/recovery/GDB journey. See [the evidence](evidence/linux-gui-attachment-41873454505.json).
-Windows saved refresh, modifying GUI/cancellation and the full gate remain unverified.
+Windows saved refresh subsequently passes both the hosted step and independent
+[receipt/byte/log review](evidence/windows-attachment-operation-41873454505.json).
+A local Linux GDB consumer confirms both Windows-produced CLI generations and
+CRC rejection; this does not replace the full Windows GUI consumer.
+[Current Linux attachment reviews](evidence/linux-attachment-41873454505.json) cover
+x86-64, ARM32 and both MIPS byte orders. AArch64, Windows modifying GUI/cancellation
+and the full gate remain unverified.
 
 The same run's Windows attachment/rollback/saved-curation refresh step now
 passes, but the first modifying GUI attachment exits1 before native validator
