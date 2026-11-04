@@ -168,18 +168,59 @@
     },
     "reviewerSha256": {
         "review.py": "7d2ba4ae9bfb04ad3b02d12d117658ca7d7726432c481db0a09bb6c89b55981f",
-        "review-arm-mips.py": "30f259d5ab57bdcdd9c25ce036340fb3f623869b107e5e63239a17fc06c5a2c7"
+        "review-arm-mips.py": "30f259d5ab57bdcdd9c25ce036340fb3f623869b107e5e63239a17fc06c5a2c7",
+        "review-aarch64.py": "e8bf3c2d40748724f62671729d344d98ac599fc56ed015576cf284ac181acbdf"
     },
     "archiveSha256": {
         "linux-attachment-arm32.zip": "961227a5d6d89a068451bef12d5b70fa5e3524885f3c549648428d675d540daa",
         "linux-attachment-mips32be.zip": "26b395047dc1a6ab365b2c64d0beb0db29897a953470806b63159092a248633e",
         "linux-attachment-mips32le.zip": "6b3c41de3b7b5705341675bd33541f8f29f10785a326d09d400968398dacfc2c",
-        "linux-attachment-x86_64.zip": "44e41fb07ecad804ef9e9b7cb6ece87303f5d5a0e46c410c4c06bbd536f1c3a9"
+        "linux-attachment-x86_64.zip": "44e41fb07ecad804ef9e9b7cb6ece87303f5d5a0e46c410c4c06bbd536f1c3a9",
+        "linux-attachment-aarch64.zip": "07d5761637ab9e95586b15606885caede5a532daab9d37b2a316b36c88f8870a"
     },
     "refreshArchiveSha256": "5a3ab73a67886d5c605d96bb0baa712efd01770ccd30ee9cd0f659fd339bac96",
     "limits": [
-        "AArch64 attachment evidence pending",
-        "Windows GUI failure remains unresolved",
+        "Five target attachment reviews are scoped to7d7b2ef; corrected Windows supervisor head still requires full validation",
+        "Windows GUI failure is not closed by these Linux results",
         "Full exact-head gate still required"
-    ]
+    ],
+    "aarch64": {
+        "head": "7d7b2efc7386d9ff95a5c436cdf11f77ea4b417c",
+        "run": 41873454505,
+        "jarSha256": "2d24624e1a3ca39ed05e15f13fc7e46354c873820e2f5d62d3c7a172bf0a29dc",
+        "cases": [
+            {
+                "case": "aarch64.exec",
+                "provenance": {
+                    "retainedOrigins": 13,
+                    "externalProtectedInputs": []
+                },
+                "negativeControls": 7,
+                "runtime": "QEMU"
+            },
+            {
+                "case": "aarch64.exec.no-build-id",
+                "provenance": {
+                    "retainedOrigins": 13,
+                    "externalProtectedInputs": []
+                },
+                "negativeControls": 7,
+                "runtime": "QEMU"
+            },
+            {
+                "case": "aarch64.pie",
+                "provenance": {
+                    "retainedOrigins": 13,
+                    "externalProtectedInputs": []
+                },
+                "negativeControls": 7,
+                "runtime": "QEMU"
+            }
+        ],
+        "refresh": [],
+        "releaseSourcesCompared": 146,
+        "status": "PASS scoped production Linux AArch64 Host artifact review",
+        "limits": "Three AArch64 exec/PIE/no-build-ID initial/rollback/QEMU/GDB cases at7d7b2ef; updated head and full Windows acceptance remain pending."
+    },
+    "aarch64Artifact": 13349571174
 }

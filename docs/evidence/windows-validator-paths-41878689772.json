@@ -47,5 +47,14 @@
     "limits": [
         "Probe establishes process-launch behavior, not full corrected attachment acceptance",
         "Native Windows correction and original GUI regression remain pending"
-    ]
+    ],
+    "testLocaleCorrection": {
+        "scope": "Test observer only; production correction unchanged",
+        "before": "PYTHONIOENCODING=cp1252 on actual Java21 reproduces MalformedInputException reading Unicode cwd",
+        "after": "Escaped JSON cwd output passes actual Java21 supervisor38 with PYTHONIOENCODING=cp1252",
+        "logSha256": {
+            "java-cp1252-before.log": "c2d8cec5a302b503481ae1c7e80f089cf610f21e0a3b5d2c783b829f5db8e4fe",
+            "java-cp1252-after.log": "d41e9591a6dacf894bdc9b003b9231fb65e5c7439e849919d9a1ec899778c35a"
+        }
+    }
 }

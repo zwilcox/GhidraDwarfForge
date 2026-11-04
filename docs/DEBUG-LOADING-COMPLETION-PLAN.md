@@ -56,8 +56,8 @@ Windows saved refresh subsequently passes both the hosted step and independent
 A local Linux GDB consumer confirms both Windows-produced CLI generations and
 CRC rejection; this does not replace the full Windows GUI consumer.
 [Current Linux attachment reviews](evidence/linux-attachment-41873454505.json) cover
-x86-64, ARM32 and both MIPS byte orders. AArch64, Windows modifying GUI/cancellation
-and the full gate remain unverified.
+all five target profiles at `7d7b2ef`, including AArch64. The corrected Windows
+supervisor, modifying GUI/cancellation and final-head gate remain unverified.
 
 The same run's Windows attachment/rollback/saved-curation refresh step now
 passes, but the first modifying GUI attachment exits1 before native validator

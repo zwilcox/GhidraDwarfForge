@@ -24,7 +24,7 @@ public final class ValidatorSupervisorSmoke {
             if mode == 'ok':
                 print(json.dumps(sys.argv[3:]))
             elif mode == 'cwd':
-                print(os.getcwd())
+                print(json.dumps(os.getcwd()))
             elif mode == 'error':
                 sys.exit(9)
             elif mode == 'flood':
@@ -60,7 +60,8 @@ public final class ValidatorSupervisorSmoke {
         var longPaths = runner.run(python, List.of(script.toString(), "cwd", root.resolve("unused").toString()),
             deep, Duration.ofSeconds(5), 65536, () -> false);
         require(longPaths.directory().getParent().equals(deep), "long evidence was relocated");
-        require(Files.isSameFile(Path.of(Files.readString(longPaths.stdout()).strip()),
+        String observedCwd = com.google.gson.JsonParser.parseString(Files.readString(longPaths.stdout())).getAsString();
+        require(Files.isSameFile(Path.of(observedCwd),
             ValidatorSupervisor.workingDirectory(longPaths.directory())), "validator working directory differs");
         require(longPaths.status().cleanupComplete() && longPaths.stderrDigest().byteCount() == 0,
             "long-path execution or cleanup failed");

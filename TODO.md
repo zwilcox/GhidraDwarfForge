@@ -15,6 +15,11 @@ collision fixtures are added without shortening GUI paths. **PRESENT, UNVERIFIED
 on native Windows:** the corrected helper and complete GUI regression. No ELF,
 DWARF or native producer binding changes are involved.
 
+The new cwd test uses escaped JSON to avoid depending on Python stdout encoding.
+An explicit CP1252 local run reproduced the previous test's UTF-8 decoding failure;
+the corrected observer passes all 38 actual-Java21 supervisor checks under the same
+encoding. This is a test-only correction; production path handling is unchanged.
+
 **CONFIRMED hosted Windows refresh step; new GUI failure under investigation:**
 Run41873454505/job126733683157 passes real Windows headless export and the
 attachment/rollback/saved-curation refresh step with the corrected FSRL check.
@@ -37,13 +42,14 @@ exact package and Windows component evidence below retain their scope. #72 and
 the complete A1–A7/C1 gate remain incomplete.
 
 **CONFIRMED scoped Linux attachment artifacts:** run41873454505 now has
-independent passing reviews for twelve initial/rollback/runtime cases: x86-64,
-ARM32 and both MIPS32 byte orders, each with ET_EXEC, PIE and no-build-ID inputs.
+independent passing reviews for fifteen initial/rollback/runtime cases: x86-64,
+AArch64, ARM32 and both MIPS32 byte orders, each with ET_EXEC, PIE and no-build-ID inputs.
 The ARM/MIPS cases use QEMU/GDB. Two x86 saved-curation refreshes and eight abrupt
 recoveries also pass review. Original-prefix checks retain `e_shentsize` and allow
 only the intended section-table pointer/count/index fields to change. See
-`docs/evidence/linux-attachment-41873454505.json`. AArch64 attachment evidence and
-the complete host/target gate remain pending; these scoped reviews do not close #72.
+`docs/evidence/linux-attachment-41873454505.json`. These artifacts are from
+`7d7b2ef`; the corrected Windows supervisor and complete final-head gate remain
+pending. These scoped reviews do not close #72.
 
 **CONFIRMED current-head Linux GUI cancellation and attachment acceptance:**
 At `7d7b2ef`, run41873454505/job126732491182 passes the full Linux GUI job. Independent
