@@ -113,25 +113,29 @@ public final class AttachmentHelper {
                     selection.role().equals("invocation") || selection.role().startsWith("tool")).toList();
                 var inputPlan = AttachmentPaths.preflight(inputSelections);
                 var inputs = new HashMap<String, AttachmentFileStore.Snapshot>();
+                var tools = new HashMap<String, ValidatorInput.Snapshot>();
                 for (var entry : inputPlan.paths().entrySet()) {
-                    inputs.put(entry.getKey(), AttachmentFileStore.observe(entry.getValue(), host, cancelled));
+                    if (entry.getKey().startsWith("tool")) {
+                        tools.put(entry.getKey(), ValidatorInput.observe(entry.getValue(), cancelled));
+                    }
+                    else inputs.put(entry.getKey(), AttachmentFileStore.observe(entry.getValue(), host, cancelled));
                 }
                 if (!inputs.get("invocation").digest().sha256().equals(admitted.command().sha256())) {
                     throw new IOException("attachment request changed after explicit selection");
                 }
                 var validator = invocation.validator();
                 AttachmentOperation.Validator guarded = (binding, evidence, selectedHost, stop) -> {
-                    recheck(inputPlan, inputs, selectedHost, stop);
+                    recheck(inputPlan, inputs, tools, selectedHost, stop);
                     validator.validate(binding, evidence, selectedHost, stop);
-                    recheck(inputPlan, inputs, selectedHost, stop);
+                    recheck(inputPlan, inputs, tools, selectedHost, stop);
                 };
                 Path savedRecovery = admitted.plan().paths().get("recoveryInvocation");
                 var recoveryDestination = AttachmentPaths.preflight(java.util.List.of(new AttachmentPaths.Selection(
                     "recoveryInvocation", savedRecovery, AttachmentPaths.Kind.NEW_FILE)));
                 completed = AttachmentOperation.execute(invocation.operation(), host, guarded, cancelled,
-                    boundary -> recheck(inputPlan, inputs, host, cancelled), prepared -> {
+                    boundary -> recheck(inputPlan, inputs, tools, host, cancelled), prepared -> {
                         recoveryDestination.recheck();
-                        recheck(inputPlan, inputs, host, cancelled);
+                        recheck(inputPlan, inputs, tools, host, cancelled);
                         inputs.put("savedRecovery", AttachmentRecoveryFile.publish(savedRecovery, prepared, host, cancelled));
                     });
             }
@@ -397,10 +401,11 @@ public final class AttachmentHelper {
     }
 
     private static void recheck(AttachmentPaths.Plan plan, Map<String, AttachmentFileStore.Snapshot> inputs,
-            AttachmentOperation.Host host, BooleanSupplier cancelled) throws IOException {
+            Map<String, ValidatorInput.Snapshot> tools, AttachmentOperation.Host host, BooleanSupplier cancelled) throws IOException {
         check(cancelled);
         plan.recheck();
         for (var input : inputs.values()) AttachmentFileStore.unchanged(input, host, cancelled);
+        for (var tool : tools.values()) ValidatorInput.unchanged(tool, cancelled);
     }
 
     private static JsonObject paths(Map<String, Path> paths) {

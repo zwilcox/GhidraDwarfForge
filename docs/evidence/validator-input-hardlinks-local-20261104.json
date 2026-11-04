@@ -1,0 +1,81 @@
+{
+    "status": "CONFIRMED local read-only validator hardlink regression; native Windows corrected execution pending",
+    "previousHead": "188d41397428ba2b8c2223cb08b04a5ba4ac1e3e",
+    "windowsFailure": {
+        "run": 41697807284,
+        "attempt": 2,
+        "job": 126646526652,
+        "artifactId": 13335297291,
+        "artifactSha256": "a15743f6c99be03db34ab24c8e283bb35c98985aab6d0a3e863d558d34ca678d",
+        "error": "java.io.IOException: Windows attachment metadata rejects hardlinks",
+        "targetUnchanged": true,
+        "backupReceiptValidationRecoveryAbsent": true,
+        "supervisorTimeoutRepeated": false,
+        "specificInstalledHardlinkedTool": "UNCERTAIN; old diagnostic did not identify its path"
+    },
+    "localChecks": {
+        "java": 21,
+        "helper": 229,
+        "strictReport": 260,
+        "recovery": 204,
+        "transaction": 532,
+        "abruptExits": 8,
+        "extensionBuild": "PASS",
+        "architectureNeutrality": "PASS",
+        "workflowLint": "PASS",
+        "pythonParsing": "PASS",
+        "previousJarRejectsTwoLinkSupervisor": true,
+        "correctedJarValidatesSameArtifactsAndTool": true,
+        "gnuLlvmPinnedStrict": "PASS",
+        "realExportX86ExecCommitRollbackGdbCrc": "PASS"
+    },
+    "scope": "Read-only tools and configuration use native/file-provider identity, link count, change indicators and full content digests. This is not recovery metadata. All-role aliases and target/backup/receipt/log/export metadata policies retain their existing checks.",
+    "notProven": [
+        "Corrected native Windows real operation/GUI",
+        "Complete required-validation gate",
+        "Complete A1-A7/C1"
+    ],
+    "retainedFiles": [
+        {
+            "path": "build/validator-input-checks-v2.log",
+            "sha256": "89cd2cd459f9e285fc2b51c29d687f788ab59890447e272df89366c5326b4236",
+            "bytes": 1247
+        },
+        {
+            "path": "build/validator-input-controller-v2.log",
+            "sha256": "b711ddd83323591c81c4c1bcf2e1e838c00027a6da8d3d1db1d278054164c9c8",
+            "bytes": 55
+        },
+        {
+            "path": "build/test-results/validator-input-hardlinks/commands.json",
+            "sha256": "2076a61cd838fdc6bc30897212edd1c78a594294dc5092b537f7ae2c5c931481",
+            "bytes": 3803
+        },
+        {
+            "path": "build/test-results/validator-input-hardlinks/before.stderr",
+            "sha256": "27b8782c0acc24f195d6d77adac1d3f60ebb3c98e6541237ad2c686267b42916",
+            "bytes": 452
+        },
+        {
+            "path": "build/test-results/validator-input-hardlinks/after.json",
+            "sha256": "a9ab7bcd192a716e9f83f67ce6753a3f5f6e9ae2906ea47b6d7d829380e83822",
+            "bytes": 29088
+        },
+        {
+            "path": "build/test-results/validator-input-hardlinks/controller-v2/result.json",
+            "sha256": "68ae25c94e701d69ce4cbb94e2f8f7c5cd233d345979c688287b0e8a92438fa2",
+            "bytes": 7622
+        },
+        {
+            "path": "build/test-results/validator-input-hardlinks/controller-v2/commands.json",
+            "sha256": "5ac4f18ba0951e4fe91c929e8c7de8de9c285d083e72c5b5d8a747d3203f4d7b",
+            "bytes": 43265
+        },
+        {
+            "path": "build/windows-host-126646526652.log",
+            "sha256": "377562574f57b2b4af6390457f71dd0e001cd5c0b34637e37ed95562934b3d1f",
+            "bytes": 404579
+        }
+    ],
+    "localHostScope": "The real-ELF controller uses its documented limited test metadata Host. Production Linux and Windows Host acceptance remains the responsibility of hosted lanes."
+}

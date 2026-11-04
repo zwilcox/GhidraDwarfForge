@@ -118,8 +118,15 @@ def main():
 
     def verify_live_evidence(path):
         evidence = json.loads(path.read_text(encoding="utf-8"))
-        require(evidence["status"] == "PASS" and evidence["policy"] == "gnu-llvm-libdwarf-2.3.2-v1",
+        require(evidence["schemaVersion"] == 2 and evidence["status"] == "PASS" and
+            evidence["policy"] == "gnu-llvm-libdwarf-2.3.2-v1",
             "production validator evidence missing")
+        for tool in evidence["tools"].values():
+            require(tool["observationContract"] == "readonly-file-identity-content-v1" and
+                int(tool["links"]) >= 1 and tool["identity"] and "metadataSha256" not in tool and
+                digest(Path(tool["path"])) == tool["sha256"], "validator input provenance differs")
+        require(int(evidence["tools"]["validatorHelper"]["links"]) >= 2,
+            "live validator did not use the deliberately hardlinked supervisor")
         for label in ("gnuReadelf", "llvmDwarfdump", "strictSidecar"):
             require(label in evidence["checks"], "missing live validator " + label)
         for checked in evidence["checks"].values():

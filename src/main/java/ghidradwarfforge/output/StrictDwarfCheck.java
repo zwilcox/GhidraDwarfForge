@@ -21,7 +21,7 @@ public final class StrictDwarfCheck {
     private static final int OUTPUT_LIMIT = 32 * 1024 * 1024;
 
     public record Evidence(ValidatorSupervisor.Evidence sidecar, ValidatorSupervisor.Evidence original,
-            AttachmentFileStore.Snapshot configuration, InheritedFrameBytes.Evidence inheritedFrame,
+            ValidatorInput.Snapshot configuration, InheritedFrameBytes.Evidence inheritedFrame,
             List<String> corroboratedDiagnostics, AttachmentFileStore.Snapshot originalView) {
         public Evidence { corroboratedDiagnostics = List.copyOf(corroboratedDiagnostics); }
     }
@@ -47,7 +47,7 @@ public final class StrictDwarfCheck {
         selections.add(new AttachmentPaths.Selection("strictTool", tool, AttachmentPaths.Kind.INPUT));
         selections.add(new AttachmentPaths.Selection("strictConfiguration", configuration, AttachmentPaths.Kind.INPUT));
         var plan = AttachmentPaths.preflight(selections);
-        var config = AttachmentFileStore.observe(plan.paths().get("strictConfiguration"), host, cancelled);
+        var config = ValidatorInput.observe(plan.paths().get("strictConfiguration"), cancelled);
         requireConfiguration(config);
         Path original = binding.files().get("exportOriginal").path();
         Path sidecar = binding.files().get("sidecar").path();
@@ -78,7 +78,7 @@ public final class StrictDwarfCheck {
             }
         }
         binding.recheck(host, cancelled);
-        AttachmentFileStore.unchanged(config, host, cancelled);
+        ValidatorInput.unchanged(config, cancelled);
         plan.recheck();
         recheckLogs(checked, cancelled);
         if (originalCheck != null) recheckLogs(originalCheck, cancelled);
@@ -96,7 +96,7 @@ public final class StrictDwarfCheck {
         return result;
     }
 
-    static void requireConfiguration(AttachmentFileStore.Snapshot config) throws IOException {
+    static void requireConfiguration(ValidatorInput.Snapshot config) throws IOException {
         if (!config.digest().sha256().equals(CONFIGURATION_SHA256)) {
             throw new IOException("strict checker configuration differs from pinned libdwarf 2.3.2");
         }

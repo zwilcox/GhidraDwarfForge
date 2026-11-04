@@ -276,6 +276,18 @@ raw version outputs remain in the evidence. The test pipeline selects its
 manifest-built pinned strict consumer. The caller never selects executable paths
 from an export report.
 
+Tool/configuration provenance uses `ValidatorInput`, separately from executable
+and recovery metadata preservation. Read-only tools may have multiple hard links;
+all-role path/identity alias rejection still applies. Native Windows volume/file
+IDs or Linux device/inode IDs, link counts, size, change indicators and complete
+content hashes are rechecked around validation and before publication. Symbolic
+or reparse leaves and unsupported identity providers are refused. The tool
+observation is not a security-descriptor/ACL preservation claim. Schema2 records
+`observationContract=readonly-file-identity-content-v1` and `changeIndicators`
+for tools instead of a recovery-file `metadataSha256`. Target, backup, receipt,
+source/sidecar and log metadata policies remain unchanged. See
+[the hard-link regression evidence](evidence/validator-input-hardlinks-local-20261104.json).
+
 GNU readelf examines ELF headers/sections/notes and info/abbrev/aranges/decoded
 lines/locations/ranges with separate-debug following disabled. LLVM must finish
 unit verification with its unique successful final marker and no error/warning
@@ -289,7 +301,7 @@ implementation gap; ordinary export and loader behavior are unchanged.
 Before publishing success, the policy rechecks all selected tool/configuration
 and export snapshots, raw log hashes, supervisor status, directory identities and
 new-file preflight. Raw output/status/internal logs are forced and their owned
-directories synchronized. The complete schema-1 evidence records input identities,
+directories synchronized. The complete schema-2 evidence records input identities,
 hashes, CRCs, sizes, original export/validation statuses, tool/version/configuration
 provenance, argv and every raw log digest, plus exact corroborated diagnostics and
 frame identity when needed. It does not relabel a PARTIAL/NOT_RUN export. The

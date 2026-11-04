@@ -1,5 +1,46 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED Windows hard-link admission failure; correction locally verified:**
+Run41697807284 attempt2/job126646526652 passes the earlier supervisor timeout
+control and reaches actual attachment. The current-permission helper returns
+`Windows attachment metadata rejects hardlinks` before backup or transaction
+publication. Validator tools were being inspected as single-link recovery files.
+The helper, combined validator and strict configuration check now use a distinct
+read-only identity/content observation for tools. Targets and recovery material
+retain the complete single-link metadata policy; selected cross-role aliases
+still fail before writes. Validation evidence is schema2 with explicit tool
+observation semantics, rather than a metadata-preservation claim.
+
+Actual Java21 passes helper229, strict-report260, recovery204 and transaction532
+checks (eight abrupt exits), plus the extension build. An owned two-link supervisor
+reproduces rejection with the previous production JAR and passes real GNU/LLVM/
+pinned-strict validation with the corrected JAR. The x86-64 real-export controller
+then passes commit, rollback, GDB and CRC-negative checks using that same linked
+tool. See `docs/evidence/validator-input-hardlinks-local-20261104.json`.
+The Windows real-operation fixture now deliberately adds a supervisor hard link,
+records tool identities/link counts and requires current-permission and RunAs
+commits plus rollback/refresh. Native Windows execution and the full required
+gate remain pending; #72 is not complete. No supervisor timeout was changed.
+
+**CONFIRMED current-head Linux GUI acceptance; Windows full job failed before attachment:**
+At `188d413`, run41697807284/job126139026490 passes the complete Linux GUI job:
+real consecutive double-click control, explicit pkexec attachment, curated refresh,
+saved recovery, ordinary chooser cancellation, validators and automatic GDB/CRC
+checks. The retained package and GUI artifact were independently reviewed; see
+`docs/evidence/linux-gui-attachment-41697807284.json`. Production Linux CLI evidence
+at the identical production JAR covers fifteen real cases across five targets,
+two saved-program refreshes and eight abrupt recoveries; see
+`docs/evidence/linux-attachment-41693381663.json`.
+
+Windows job126140208967 failed in the supervisor smoke's first successful-command
+control after its five-second deadline. Native status records zero stdout/stderr
+and complete process cleanup. This run never reached the new current-permission
+attachment diagnostic or RunAs; the prior real-operation failure remains unresolved.
+A rerun of this terminal job was refused by GitHub while its other workflow jobs
+were still running. No timeout or production policy has been changed on this
+evidence. Complete Windows operation/GUI validation and the full A1–A7/C1 gate
+remain incomplete. Earlier checkpoints below retain their historical scope.
+
 **CONFIRMED Windows path correction; real RunAs attachment still fails:**
 job126124091548/run41693381663 passes native helper219, recovery156, the Unicode
 child cleanup test and eight PowerShell encoder controls. Real headless export

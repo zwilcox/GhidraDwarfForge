@@ -28,6 +28,16 @@ public final class WindowsAttachmentOperationProbe {
             }
             var validator = new AttachmentValidator(Path.of(args[4]), Path.of(args[5]), Path.of(args[6]),
                 Path.of(args[7]), Path.of(args[8]));
+            // Deterministic reproduction of installed validator tools with
+            // multiple names. This owned additional link is never a target or
+            // backup; public commits must accept it without copying the tool.
+            Files.createLink(root.resolve("supervisor-hardlink.exe"), Path.of(args[4]));
+            var toolObservations = new LinkedHashMap<String, ValidatorInput.Snapshot>();
+            for (int index = 4; index <= 8; index++) {
+                toolObservations.put(Integer.toString(index), ValidatorInput.observe(Path.of(args[index]), () -> false));
+            }
+            require(toolObservations.get("4").observation().links() >= 2, "validator hardlink fixture missing");
+            Files.writeString(root.resolve("validator-inputs.json"), json(toolObservations), StandardOpenOption.CREATE_NEW);
             var outcomes = new ArrayList<Object>();
             // Separate targets, never an automatic retry with different permissions.
             // Current-permission output stays redirected and diagnoses failures

@@ -56,8 +56,8 @@ public final class AttachmentValidator implements AttachmentOperation.Validator 
         selections.add(new AttachmentPaths.Selection("validationEvidence", selectedEvidence, AttachmentPaths.Kind.NEW_FILE));
         var plan = AttachmentPaths.preflight(selections);
         Path evidence = plan.paths().get("validationEvidence");
-        var toolFiles = new LinkedHashMap<String, AttachmentFileStore.Snapshot>();
-        for (var entry : tools.entrySet()) toolFiles.put(entry.getKey(), AttachmentFileStore.observe(entry.getValue(), host, cancelled));
+        var toolFiles = new LinkedHashMap<String, ValidatorInput.Snapshot>();
+        for (var entry : tools.entrySet()) toolFiles.put(entry.getKey(), ValidatorInput.observe(entry.getValue(), cancelled));
         StrictDwarfCheck.requireConfiguration(toolFiles.get("strictConfiguration"));
         binding.recheck(host, cancelled);
         String parentIdentity = host.directoryIdentity(evidence.getParent());
@@ -105,13 +105,13 @@ public final class AttachmentValidator implements AttachmentOperation.Validator 
                 AttachmentFileStore.unchanged(strict.originalView(), host, cancelled);
             }
             binding.recheck(host, cancelled);
-            for (var file : toolFiles.values()) AttachmentFileStore.unchanged(file, host, cancelled);
+            for (var file : toolFiles.values()) ValidatorInput.unchanged(file, cancelled);
             plan.recheck();
             require(parentIdentity.equals(host.directoryIdentity(evidence.getParent())) &&
                 workspaceIdentity.equals(host.directoryIdentity(workspace)), "validation directory identity changed");
 
             var record = new JsonObject();
-            record.addProperty("schemaVersion", 1);
+            record.addProperty("schemaVersion", 2);
             record.addProperty("policy", "gnu-llvm-libdwarf-2.3.2-v1");
             record.addProperty("status", "PASS");
             record.addProperty("hostContract", host.contract());
@@ -120,7 +120,7 @@ public final class AttachmentValidator implements AttachmentOperation.Validator 
             record.addProperty("deadlineMillisPerProcess", DEADLINE.toMillis());
             record.addProperty("streamByteLimit", OUTPUT_LIMIT);
             record.add("inputs", artifacts(binding.files()));
-            record.add("tools", artifacts(toolFiles));
+            record.add("tools", toolArtifacts(toolFiles));
             var checkedRuns = new JsonObject();
             var rawFiles = new ArrayList<AttachmentFileStore.Snapshot>();
             if (strict.originalView() != null) {
@@ -157,7 +157,7 @@ public final class AttachmentValidator implements AttachmentOperation.Validator 
             var staged = AttachmentFileStore.observe(stage, host, cancelled);
             host.syncDirectory(workspace);
             for (var file : rawFiles) AttachmentFileStore.unchanged(file, host, cancelled);
-            for (var file : toolFiles.values()) AttachmentFileStore.unchanged(file, host, cancelled);
+            for (var file : toolFiles.values()) ValidatorInput.unchanged(file, cancelled);
             binding.recheck(host, cancelled);
             plan.recheck();
             require(parentIdentity.equals(host.directoryIdentity(evidence.getParent())) &&
@@ -200,7 +200,7 @@ public final class AttachmentValidator implements AttachmentOperation.Validator 
         return StandardCharsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(bytes)).toString();
     }
 
-    private static JsonObject retain(ValidatorSupervisor.Evidence run, Map<String, AttachmentFileStore.Snapshot> tools,
+    private static JsonObject retain(ValidatorSupervisor.Evidence run, Map<String, ValidatorInput.Snapshot> tools,
             AttachmentOperation.Host host, BooleanSupplier cancelled, List<AttachmentFileStore.Snapshot> rawFiles)
             throws IOException {
         require(run.helperSha256().equals(tools.get("validatorHelper").digest().sha256()), "supervisor changed between checks");
@@ -230,6 +230,24 @@ public final class AttachmentValidator implements AttachmentOperation.Validator 
         result.addProperty("exitCode", run.status().exitCode());
         result.addProperty("cleanupComplete", run.status().cleanupComplete());
         result.add("logs", artifacts(logs));
+        return result;
+    }
+
+    private static JsonObject toolArtifacts(Map<String, ValidatorInput.Snapshot> files) {
+        var result = new JsonObject();
+        for (var entry : files.entrySet()) {
+            var file = entry.getValue();
+            var value = new JsonObject();
+            value.addProperty("path", file.path().toString());
+            value.addProperty("sha256", file.digest().sha256());
+            value.addProperty("bytes", file.digest().byteCount());
+            value.addProperty("crc32", file.digest().gnuDebuglinkCrc32());
+            value.addProperty("identity", file.observation().identity());
+            value.addProperty("links", file.observation().links());
+            value.addProperty("observationContract", "readonly-file-identity-content-v1");
+            value.addProperty("changeIndicators", file.observation().changeIndicators());
+            result.add(entry.getKey(), value);
+        }
         return result;
     }
 

@@ -340,7 +340,7 @@ def main():
         require(digest(directory / 'original.backup') == protected[str(original)], 'backup bytes differ')
         if live_validator_arguments:
             combined = json.loads((directory / 'validation.json').read_text())
-            require(combined['schemaVersion'] == 1 and combined['status'] == 'PASS' and
+            require(combined['schemaVersion'] == 2 and combined['status'] == 'PASS' and
                     combined['policy'] == 'gnu-llvm-libdwarf-2.3.2-v1', 'wrong combined validator policy')
             require(combined['exportStatus'] == report['status'] and
                     combined['exportValidationStatus'] == report['validation']['status'],
@@ -371,7 +371,9 @@ def main():
                 if name == 'llvmDwarfdump':
                     require(stdout.count('No errors.') == 1, 'combined LLVM verification incomplete')
             for tool in combined['tools'].values():
-                require(digest(Path(tool['path'])) == tool['sha256'], 'combined tool/configuration provenance differs')
+                require(tool['observationContract'] == 'readonly-file-identity-content-v1' and
+                        int(tool['links']) >= 1 and tool['identity'] and 'metadataSha256' not in tool and
+                        digest(Path(tool['path'])) == tool['sha256'], 'combined tool/configuration provenance differs')
         if action == 'rollback':
             require(digest(directory / original.name) == protected[str(original)], 'rollback did not restore original')
         before = run(action + '-original-programs', ['readelf', '-lW', original])

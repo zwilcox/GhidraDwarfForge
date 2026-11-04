@@ -114,6 +114,7 @@ public final class AttachmentHelperSmoke {
             var help = new ByteArrayOutputStream();
             equal(0, AttachmentHelper.run(new String[] {"--help"}, () -> false, new PrintStream(help)));
             equal(true, help.toString(StandardCharsets.UTF_8).contains("changes the selected executable"));
+            validatorInputs(root);
             System.out.println("attachment-helper-smoke=PASS checks=" + checks +
                 " admission-only=true native-attachment=false cancellation-native-identity=" + com.sun.jna.Platform.isWindows());
         }
@@ -122,6 +123,52 @@ public final class AttachmentHelperSmoke {
                 for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) Files.delete(path);
             }
         }
+    }
+
+    private static void validatorInputs(Path root) throws Exception {
+        Path directory = Files.createDirectory(root.resolve("validator-input-controls"));
+        Path tool = Files.writeString(directory.resolve("tool λ"), "original");
+        Path alias = Files.createLink(directory.resolve("tool-hardlink"), tool);
+        var original = ValidatorInput.observe(tool, () -> false);
+        equal(2L, original.observation().links());
+        equal(original.observation(), ValidatorInput.observe(alias, () -> false).observation());
+        ValidatorInput.unchanged(original, () -> false);
+        var modified = Files.getLastModifiedTime(tool);
+        Files.writeString(alias, "modified");
+        Files.setLastModifiedTime(alias, modified);
+        try { ValidatorInput.unchanged(original, () -> false); throw new AssertionError("aliased tool edit accepted"); }
+        catch (IOException expected) { checks++; }
+        Files.writeString(tool, "original");
+        Files.setLastModifiedTime(tool, modified);
+        var restored = ValidatorInput.observe(tool, () -> false);
+        // Replace one link with equal bytes/mtime while keeping the old inode
+        // alive through the other link. Identity must detect the substitution.
+        Files.delete(tool);
+        Files.writeString(tool, "original");
+        Files.setLastModifiedTime(tool, modified);
+        equal(restored.digest(), ValidatorInput.observe(tool, () -> false).digest());
+        try { ValidatorInput.unchanged(restored, () -> false); throw new AssertionError("same-content replacement accepted"); }
+        catch (IOException expected) { checks++; }
+        var beforeLink = ValidatorInput.observe(tool, () -> false);
+        Path another = Files.createLink(directory.resolve("another-link"), tool);
+        try { ValidatorInput.unchanged(beforeLink, () -> false); throw new AssertionError("link-count change accepted"); }
+        catch (IOException expected) { checks++; }
+        // Tool hardlinks remain subject to all-role preflight: selecting the
+        // same underlying file as a protected target is never allowed.
+        try {
+            AttachmentPaths.preflight(java.util.List.of(
+                new AttachmentPaths.Selection("target", tool, AttachmentPaths.Kind.TARGET),
+                new AttachmentPaths.Selection("toolReadelf", another, AttachmentPaths.Kind.INPUT)));
+            throw new AssertionError("tool/target hardlink alias accepted");
+        }
+        catch (IOException expected) { checks++; }
+        for (Path bad : java.util.List.of(directory, directory.resolve("missing"))) {
+            try { ValidatorInput.observe(bad, () -> false); throw new AssertionError("invalid validator input accepted"); }
+            catch (IOException expected) { checks++; }
+        }
+        try { ValidatorInput.observe(tool, () -> true); throw new AssertionError("cancelled input observation succeeded"); }
+        catch (java.util.concurrent.CancellationException expected) { checks++; }
+        System.out.println("validator-input-controls=PASS hardlink=true native-windows-identity=" + com.sun.jna.Platform.isWindows());
     }
 
     private static void pathArguments() throws Exception {
