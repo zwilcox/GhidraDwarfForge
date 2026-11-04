@@ -31,7 +31,8 @@ public final class GuiTableClickSmoke {
     static void run(Path results) throws Exception {
         runFilterFocus(results);
         runModalDispatch(Files.createDirectory(results.resolve("modal-dispatch")));
-        runRepeatedDoubleClick(Files.createDirectory(results.resolve("repeated-double-click")));
+        runRepeatedDoubleClick(Files.createDirectory(results.resolve("repeated-double-click")), false);
+        runRepeatedDoubleClick(Files.createDirectory(results.resolve("primed-double-click")), true);
         runTaskCancellation(Files.createDirectory(results.resolve("task-cancellation")));
     }
 
@@ -55,7 +56,7 @@ public final class GuiTableClickSmoke {
         finally { GuiTestSupport.onSwing(() -> { frame.dispose(); return null; }); }
     }
 
-    private static void runRepeatedDoubleClick(Path results) throws Exception {
+    private static void runRepeatedDoubleClick(Path results, boolean prime) throws Exception {
         AtomicInteger launches = new AtomicInteger();
         var counts = new java.util.concurrent.CopyOnWriteArrayList<Integer>();
         JTable table = GuiTestSupport.onSwing(() -> new JTable(new Object[][] {
@@ -79,12 +80,21 @@ public final class GuiTableClickSmoke {
         try {
             Robot robot = new Robot();
             GuiTestSupport.foregroundWindow(table);
+            if (prime) {
+                GuiTestSupport.doubleClickCell(robot, table, 0, 0, "GhidraDwarfForge.java");
+                GuiTestSupport.require(launches.get() == 1, "priming gesture did not launch exactly once");
+                Files.writeString(results.resolve("priming-counts.txt"), "counts=" + counts + "\n");
+                GuiTestSupport.onSwing(() -> { counts.clear(); launches.set(0); return null; });
+            }
             // Same cell, within the desktop's multi-click interval: Ghidra
-            // launches on counts 2 and 4, rather than requiring exactly 2.
+            // launches on every positive even count. Windows can retain a
+            // prior window's click count, so the first count need not be 1.
             GuiTestSupport.doubleClickCell(robot, table, 0, 0, "GhidraDwarfForge.java");
             GuiTestSupport.doubleClickCell(robot, table, 0, 0, "GhidraDwarfForge.java");
-            GuiTestSupport.require(counts.equals(List.of(1, 2, 3, 4)) && launches.get() == 2,
-                "repeated native gestures did not exercise counts 2 and 4: " + counts);
+            int first = counts.isEmpty() ? 0 : counts.getFirst();
+            GuiTestSupport.require(first > 0 &&
+                counts.equals(List.of(first, first + 1, first + 2, first + 3)) && launches.get() == 2,
+                "repeated native gestures did not deliver two consecutive positive-even actions: " + counts);
             Files.writeString(results.resolve("result.txt"),
                 "consecutive-real-click-counts=" + counts + "\nghidra-invocations=2\nexactly-one-observed-launch-per-gesture=PASS\n");
             System.out.println("repeated-double-click-dispatch=PASS");

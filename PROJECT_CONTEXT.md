@@ -1,5 +1,20 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED Windows chooser correction; separate clean-launch click oracle fixed locally:**
+At `ba65267`, run41897626643/job126818305192 passes the delayed-chooser control
+and the first modifying Windows GUI journey: attachment, changed-curation refresh,
+recovery and real active-validator cancellation. Independent retained-artifact
+review and local Linux GDB replay verify four CLI/GUI generations, CRC rejection,
+210 validator-log hashes and 631 protected Windows files. The job then fails its
+second, clean GUI launch because an older control requires click counts `[1,2,3,4]`;
+Windows correctly delivers `[3,4,5,6]` and two actions. The corrected oracle accepts
+consecutive positive counts while retaining exactly one action per gesture. An
+added primed real-click case reproduces the higher starting count locally; the
+full actual-Java21 Linux GUI and both validator/GDB journeys pass. See
+`docs/evidence/gui-click-count-offset-local-20261104.json`. **PRESENT, UNVERIFIED
+on Windows:** the corrected clean-launch control. Full required CI and C1 remain
+incomplete. The hosted GDB consumer was skipped; local replay is scoped evidence.
+
 **CONFIRMED final-head Windows GUI test race; local correction validated:**
 Run41890465382 at `edd3dce` fails Windows host job126794435767: the active
 cancellation test selects the earlier decline request, then times out waiting for
