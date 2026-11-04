@@ -469,6 +469,7 @@ public final class GuiScriptManagerSmoke {
                 initial.operation().originalBackup(), initial.operation().receipt())) {
             retained.put(path, GuiTestSupport.sha256(path));
         }
+        runActiveAttachmentCancellation(tool, input, work, initial);
         int transaction = program.startTransaction("Curate GUI attachment refresh");
         try {
             program.getFunctionManager().getFunctionAt(program.getAddressFactory().getAddress(functionAddress))
@@ -508,6 +509,63 @@ public final class GuiScriptManagerSmoke {
             "windows-existing-runner-token=true\ninteractive-standard-user-uac=NOT_PROVEN\n" : "unprivileged-ghidra=PASS\n") +
             "explicit-os-authorization=PASS\n" +
             "gui-initial-attachment=PASS\ngui-curated-refresh=PASS\ngui-saved-recovery=PASS\nretained-generations=PASS\n");
+    }
+
+    private static void runActiveAttachmentCancellation(ProbeTool tool, Path input, Path work,
+            ghidradwarfforge.output.AttachmentInvocation initial) throws Exception {
+        Path directory = Files.createDirectory(work.resolve("cancel-active"));
+        Path target = Files.copy(input, work.resolve("cancel-target"));
+        Path validator = Files.copy(Path.of(System.getenv("FORGE_GUI_CANCEL_VALIDATOR")),
+            directory.resolve(WINDOWS ? "pending-validator.exe" : "pending-validator"),
+            java.nio.file.StandardCopyOption.COPY_ATTRIBUTES);
+        Path marker = Path.of(validator + ".started");
+        var tools = new java.util.LinkedHashMap<>(initial.validatorTools());
+        tools.put("readelf", validator);
+        var request = new ghidradwarfforge.output.AttachmentOperation.Request(target, initial.operation().sidecar(),
+            initial.operation().source(), initial.operation().exportReport(), directory.resolve("original.backup"),
+            directory.resolve("validation.json"), directory.resolve("receipt.json"), directory.resolve("recovery.json"),
+            directory.resolve("restore.elf"), null);
+        Path saved = directory.resolve("saved-recovery.json");
+        var invocation = new ghidradwarfforge.output.AttachmentInvocation(request, tools, saved);
+        Path selection = Files.writeString(directory.resolve("request.json"), invocation.toJson());
+        var protectedFiles = new java.util.LinkedHashMap<Path, String>();
+        for (Path path : java.util.List.of(target, request.sidecar(), request.source(), request.exportReport(), selection, validator)) {
+            protectedFiles.put(path, GuiTestSupport.sha256(path));
+        }
+        ConsoleService console = tool.getService(ConsoleService.class);
+        clearConsole(console);
+        var interaction = CompletableFuture.runAsync(() -> {
+            try {
+                GuiTestSupport.selectFile("Select attachment or refresh request", selection);
+                confirmNativeChange(directory.resolve("review.png"), false);
+                GuiTestSupport.await("native validator started before cancellation", () ->
+                    Files.isRegularFile(marker) ? marker : null);
+                GuiTaskCancellation.cancelTask(new Robot(), "Attaching sidecar; Cancel requests safe rollback",
+                    directory.resolve("active-task.png"));
+            }
+            catch (Exception failure) { throw new RuntimeException(failure); }
+        });
+        launchFromTable(tool, ATTACH, directory.resolve("manager.png"));
+        interaction.get(180, TimeUnit.SECONDS);
+        awaitConsole(console, "User cancelled script.");
+        String transcript = consoleText(console);
+        Files.writeString(directory.resolve("console.txt"), transcript);
+        GuiTestSupport.require(transcript.contains("Attachment helper exit=130; cancellation requested=true"),
+            "GUI did not wait for the modifying helper's cancellation outcome");
+        long pid = Long.parseLong(Files.readString(marker).strip());
+        GuiTestSupport.require(ProcessHandle.of(pid).map(process -> !process.isAlive()).orElse(true),
+            "cancelled validator process survived helper completion");
+        for (var entry : protectedFiles.entrySet()) {
+            GuiTestSupport.require(GuiTestSupport.sha256(entry.getKey()).equals(entry.getValue()),
+                "cancelled validation changed selected file: " + entry.getKey());
+        }
+        for (Path absent : java.util.List.of(request.originalBackup(), request.receipt(), request.validationEvidence(),
+                request.recoveryReceipt(), request.restoreImage(), saved)) {
+            GuiTestSupport.require(!Files.exists(absent), "cancelled validation published transaction output: " + absent);
+        }
+        Files.writeString(directory.resolve("result.txt"),
+            "native-validator-started=PASS\nreal-task-cancel-button=PASS\nhelper-exit=130\nvalidator-process-gone=PASS\n" +
+            "selected-files-unchanged=PASS\ntransaction-outputs-absent=PASS\n");
     }
 
     private static Path prepareAndAttach(ProbeTool tool, Path target, Path work,

@@ -51,6 +51,7 @@ javac --release 21 -cp "$classpath" -d "$work/classes" \
     "$repository/src/test/integration/gui/GuiTestSupport.java" \
     "$repository/src/test/integration/gui/GuiWindowGeometrySmoke.java" \
     "$repository/src/test/integration/gui/GuiTableClickSmoke.java" \
+    "$repository/src/test/integration/gui/GuiTaskCancellation.java" \
     "$repository/src/test/integration/gui/GuiScriptManagerSmoke.java"
 "$xvfb" -displayfd 3 -screen 0 1280x1024x24 -nolisten tcp \
     3>"$work/display.txt" >"$work/xvfb.log" 2>&1 &
@@ -115,6 +116,9 @@ if [[ ${GHIDRA_GUI_NATIVE_ATTACHMENT:-0} == 1 ]]; then
     FORGE_GUI_CONFIGURATION="$checker_bundle/share/dwarfdump/dwarfdump.conf"
     test -x "$FORGE_GUI_STRICT"
     test -s "$FORGE_GUI_CONFIGURATION"
+    export FORGE_GUI_CANCEL_VALIDATOR="$work/cancel-validator"
+    cc -std=c11 -O2 -Wall -Wextra -Werror \
+        "$repository/src/test/native/attachment-cancel-validator.c" -o "$FORGE_GUI_CANCEL_VALIDATOR"
     gui_timeout=900
 fi
 DISPLAY=":$display" timeout "$gui_timeout" "$java" --enable-native-access=ALL-UNNAMED \

@@ -32,6 +32,27 @@ public final class GuiTableClickSmoke {
         runFilterFocus(results);
         runModalDispatch(Files.createDirectory(results.resolve("modal-dispatch")));
         runRepeatedDoubleClick(Files.createDirectory(results.resolve("repeated-double-click")));
+        runTaskCancellation(Files.createDirectory(results.resolve("task-cancellation")));
+    }
+
+    private static void runTaskCancellation(Path results) throws Exception {
+        var monitor = GuiTestSupport.onSwing(() -> new ghidra.util.task.TaskMonitorComponent());
+        JFrame frame = GuiTestSupport.onSwing(() -> {
+            JFrame created = new JFrame("Owned task cancellation control");
+            monitor.setMessage("Owned cancellation task");
+            created.add(monitor);
+            created.setBounds(160, 160, 700, 180);
+            created.setVisible(true);
+            return created;
+        });
+        try {
+            GuiTestSupport.require(!monitor.isCancelled(), "new task is already cancelled");
+            GuiTaskCancellation.cancelTask(new Robot(), "Owned cancellation task", results.resolve("active-task.png"));
+            GuiTestSupport.await("task cancellation after real button/confirmation", () -> monitor.isCancelled() ? monitor : null);
+            Files.writeString(results.resolve("result.txt"), "real-task-cancel-button=PASS\nconfirmation-yes=PASS\nmonitor-cancelled=PASS\n");
+            System.out.println("real-task-cancellation=PASS");
+        }
+        finally { GuiTestSupport.onSwing(() -> { frame.dispose(); return null; }); }
     }
 
     private static void runRepeatedDoubleClick(Path results) throws Exception {

@@ -1,5 +1,24 @@
 # TODO.md — GhidraDwarfForge
 
+**PRESENT, UNVERIFIED native GUI cancellation journey; local controls pass:**
+The Script Manager fixture now launches an authorized attachment with an owned
+validator that records its PID and waits during its version query. Only after
+that process is observed running does the test click Ghidra's actual task Cancel
+button and confirm Yes. It requires helper exit130, a terminated validator, an
+unchanged target/pair/request and no backup/transaction publication. Both native
+GUI lanes and the retained-artifact consumer require this case. Private native
+supervisor status remains in the authorization wrapper's diagnostic archive for
+independent review; the unprivileged GUI checks process termination directly.
+
+The GUI now maps the helper's cancellation exit130 to Ghidra's CancelledException
+after waiting for cleanup, so Script Manager reports cancellation explicitly.
+Actual Java21 child cleanup/drain, extension build and installed Linux GUI
+regression pass, including a real Cancel-button/confirmation control and
+GNU/LLVM/pinned-strict/GDB checks. Both platform fixture builds pass warnings as
+errors; the Linux fixture is actually stopped through the production supervisor.
+The new native authorized GUI journey still needs hosted acceptance. See
+`docs/evidence/gui-active-cancellation-local-20261104.json`. #72 remains incomplete.
+
 **CONFIRMED Windows hard-link admission failure; correction locally verified:**
 Run41697807284 attempt2/job126646526652 passes the earlier supervisor timeout
 control and reaches actual attachment. The current-permission helper returns

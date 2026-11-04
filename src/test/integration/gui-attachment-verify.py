@@ -27,6 +27,18 @@ def main():
     windows_transfer = sys.argv[4:] == ['--windows-transfer']
     require(not sys.argv[4:] or windows_transfer, 'unknown GUI consumer option')
     require('gui-saved-recovery=PASS' in (work / 'result.txt').read_text(), 'GUI journey did not finish')
+    cancelled = work / 'cancel-active'
+    cancel_result = (cancelled / 'result.txt').read_text()
+    for expected in ('native-validator-started=PASS', 'real-task-cancel-button=PASS', 'helper-exit=130',
+                     'validator-process-gone=PASS', 'selected-files-unchanged=PASS', 'transaction-outputs-absent=PASS'):
+        require(expected in cancel_result, 'GUI active cancellation did not prove ' + expected)
+    require(digest(work / 'cancel-target') == digest(original), 'GUI cancellation changed target bytes')
+    # Linux native supervisor logs are root-private and retained by the CI
+    # authorization wrapper's archive. The live unprivileged GUI independently
+    # checks the marked validator PID is gone before recording success. Review
+    # the archived native status alongside this evidence after the job finishes.
+    for name in ('original.backup', 'receipt.json', 'validation.json', 'saved-recovery.json', 'recovery.json', 'restore.elf'):
+        require(not (cancelled / name).exists(), 'cancelled validation published ' + name)
     spec = importlib.util.spec_from_file_location('elf_oracle', Path(__file__).with_name('attachment-elf-controller.py'))
     oracle = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(oracle)

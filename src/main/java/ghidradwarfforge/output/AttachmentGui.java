@@ -190,6 +190,9 @@ public final class AttachmentGui {
             if (!result.errors().isBlank()) script.printerr(result.errors());
             script.println("Attachment helper exit=" + result.exitCode() + "; cancellation requested=" + result.cancellationRequested() +
                 ". Durable transaction/recovery receipts determine the target's final state.");
+            if (result.exitCode() == 130) {
+                throw new ghidra.util.exception.CancelledException("Attachment helper completed cancellation; inspect retained diagnostics and receipts");
+            }
             if (result.exitCode() != 0) {
                 throw new IOException("Attachment helper did not report success. Preserve the selected files and inspect the receipts; " +
                     "use RecoverGhidraDwarfForgeAttachment.java with the saved recovery request if recovery is required.");

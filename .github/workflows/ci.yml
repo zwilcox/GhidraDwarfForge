@@ -2525,6 +2525,7 @@ jobs:
           install: >-
             mingw-w64-x86_64-binutils
             mingw-w64-x86_64-llvm
+            mingw-w64-x86_64-gcc
 
       - name: Cache Ghidra 12.0.3 archive
         uses: actions/cache@v6

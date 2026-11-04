@@ -91,7 +91,10 @@ does not enable privileges or query protected security metadata. Native Windows
 acceptance of this correction remains pending after job126079953727 exposed the
 null Java identity; no pathname/mtime-only identity fallback is used.
 The GUI signals cancellation without terminating a modifying helper, waits for
-its outcome and drains both output streams. Recovery already in progress finishes
+its outcome and drains both output streams. A completed cancellation (helper
+exit130) is then reported through Ghidra's cancelled-script outcome. Other
+nonzero helper exits remain failures; an exit code alone does not override the
+durable transaction/recovery receipt. Recovery already in progress finishes
 restoring the selected image. Closing an authorization console can lose output;
 the durable transaction/recovery receipts remain authoritative. Loss of the GUI
 process is not proof that a helper stopped; preserve the saved recovery request.

@@ -76,6 +76,7 @@ $gui = Join-Path $PSScriptRoot 'gui'
 $compileArgs = Join-Path $work 'javac.args'
 Write-JavaArguments $compileArgs @('--release', '21', '-cp', $classpath, '-d', $classes,
     (Join-Path $gui 'GuiTestSupport.java'), (Join-Path $gui 'GuiTableClickSmoke.java'),
+    (Join-Path $gui 'GuiTaskCancellation.java'),
     (Join-Path $gui 'GuiScriptManagerSmoke.java'))
 & javac "@$compileArgs" 2>&1 | Tee-Object -LiteralPath (Join-Path $work 'compile.log')
 if ($LASTEXITCODE -ne 0) { throw "GUI driver compilation failed: $LASTEXITCODE" }
@@ -95,6 +96,10 @@ if ($env:GHIDRA_GUI_NATIVE_ATTACHMENT -eq '1') {
     $env:FORGE_GUI_STRICT = Join-Path $checker 'libexec/dwarfdump.exe'
     $env:FORGE_GUI_CONFIGURATION = Join-Path $checker 'share/dwarfdump/dwarfdump.conf'
     $env:FORGE_GUI_POWERSHELL = (Get-Command pwsh.exe).Source
+    $env:FORGE_GUI_CANCEL_VALIDATOR = Join-Path $work 'cancel-validator.exe'
+    & gcc -std=c11 -O2 -Wall -Wextra -Werror -municode -static-libgcc `
+        (Join-Path $repository 'src/test/native/attachment-cancel-validator.c') -o $env:FORGE_GUI_CANCEL_VALIDATOR
+    if ($LASTEXITCODE -ne 0) { throw 'Cancellation validator fixture compilation failed' }
     foreach ($selected in @($env:FORGE_GUI_STRICT, $env:FORGE_GUI_CONFIGURATION)) {
         if (-not (Test-Path -LiteralPath $selected -PathType Leaf)) { throw "Missing native GUI tool: $selected" }
     }
