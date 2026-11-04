@@ -1,5 +1,40 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED hosted Windows refresh step; new GUI failure under investigation:**
+Run41873454505/job126733683157 passes real Windows headless export and the
+attachment/rollback/saved-curation refresh step with the corrected FSRL check.
+Full independent refresh-artifact review remains pending. Its GUI job then fails
+at the first authorized attachment. The selected records directory is218
+characters; nested validator evidence exceeds300. Only empty supervisor stdout/
+stderr exist, with no native status, tool output, backup or receipt. The cause
+is **UNCERTAIN**: long working-directory process creation is a candidate, not a
+verified diagnosis. No production path policy is changed on this evidence.
+
+The manual host-observation workflow now runs a small actual-Java21 Windows
+probe with short/long/prefixed working directories and long redirection paths.
+It retains actual launch outcomes without calling an observed rejection a
+feature pass. Local Java21-compatible compilation, child execution and workflow
+lint pass; native observations are pending. The passing Linux GUI/cancellation,
+exact package and Windows component evidence below retain their scope. #72 and
+the complete A1–A7/C1 gate remain incomplete.
+
+**CONFIRMED current-head Linux GUI cancellation and attachment acceptance:**
+At `7d7b2ef`, run41873454505/job126732491182 passes the full Linux GUI job. Independent
+artifact review confirms real TaskDialog Cancel/Yes after a native validator PID,
+helper130, archived supervisor `cancelled`/cleanupComplete, unchanged target and
+absent transaction outputs. It also checks initial/changed-curation receipt/hash/
+CRC chains, 70 live-validator log hashes, both GDB source/type/break/next/step/exit
+and CRC-negative transcripts, and restoration of the initial association through
+saved recovery. See `docs/evidence/linux-gui-attachment-41873454505.json`.
+
+The same head's package review matches all 146 production Java sources, 264 raw
+repository files, 503 Java21 classes and release/native manifests. Native Windows
+component review verifies 18 coordinator outcomes, eight abrupt exits, own-token
+restoration and the actual packaged JAR; see
+`docs/evidence/windows-attachment-components-41873454505.json`. These component
+checks do not establish complete Windows refresh/GUI acceptance. The Windows
+host and five target lanes remain live; full A1–A7/C1 and #72 remain incomplete.
+
 **CONFIRMED scoped Windows real attachment; two test observers corrected locally:**
 Run41866768900/job126708313285 passes current-permission and explicit RunAs
 commits plus rollback with a deliberately two-link validator helper. Independent

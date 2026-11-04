@@ -48,7 +48,16 @@ confirms those three cases. Saved-curation fails a test-only native-vs-FSRL path
 comparison. The new active Linux GUI test fails a TaskMonitorComponent lookup;
 Script Manager exposes cancellation through TaskDialog instead. Both observers
 are corrected with [local controls and regression evidence](evidence/attachment-test-observers-local-20261104.json).
-Windows refresh and both native active-GUI cancellation journeys remain unverified.
+Linux active GUI cancellation subsequently passes at7d7b2ef in run41873454505,
+including independent archived cleanup/target-preservation review and the complete
+attachment/refresh/recovery/GDB journey. See [the evidence](evidence/linux-gui-attachment-41873454505.json).
+Windows saved refresh, modifying GUI/cancellation and the full gate remain unverified.
+
+The same run's Windows attachment/rollback/saved-curation refresh step now
+passes, but the first modifying GUI attachment exits1 before native validator
+status or transaction publication. Its nested evidence path exceeds300 characters;
+process-start/path behavior is under investigation with an isolated native Windows
+observation. Windows GUI and the complete required gate remain failed/unverified.
 
 The following rows retain their full required scope. Prior-head component or
 Linux passes do not close a cross-host row or replace the final required gate.

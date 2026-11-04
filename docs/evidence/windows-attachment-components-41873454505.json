@@ -1,0 +1,103 @@
+{
+    "head": "7d7b2efc7386d9ff95a5c436cdf11f77ea4b417c",
+    "run": 41873454505,
+    "artifactId": 13346722022,
+    "artifactSha256": "3f27e59b83e5de427c8d8d39e9ffc7a7964b03ca5ada58b6285d69a039d6b8f8",
+    "jarSha256": "2d24624e1a3ca39ed05e15f13fc7e46354c873820e2f5d62d3c7a172bf0a29dc",
+    "originsVerified": 9,
+    "commandsVerified": 5,
+    "privilege": "windows-attachment-privilege=PASS cycles=128 originalAttributes=0 handles=297 restored=true already-enabled=true exceptional-exit=true",
+    "cases": [
+        {
+            "case": "initial-commit",
+            "outcome": "COMMITTED",
+            "retainedTargetBytesVerified": true
+        },
+        {
+            "case": "initial-rollback",
+            "outcome": "ROLLED_BACK",
+            "retainedTargetBytesVerified": true
+        },
+        {
+            "case": "initial-cancel",
+            "outcome": "ROLLED_BACK",
+            "retainedTargetBytesVerified": true
+        },
+        {
+            "case": "initial-concurrent-target",
+            "outcome": "RECOVERY_REQUIRED",
+            "retainedTargetBytesVerified": true
+        },
+        {
+            "case": "initial-crash-PREPARED",
+            "outcome": "ROLLED_BACK",
+            "retainedTargetBytesVerified": true
+        },
+        {
+            "case": "initial-crash-TARGET_REPLACED",
+            "outcome": "ROLLED_BACK",
+            "retainedTargetBytesVerified": true
+        },
+        {
+            "case": "initial-crash-BEFORE_COMMIT",
+            "outcome": "ROLLED_BACK",
+            "retainedTargetBytesVerified": true
+        },
+        {
+            "case": "initial-crash-COMMITTED",
+            "outcome": "ROLLED_BACK",
+            "retainedTargetBytesVerified": true
+        },
+        {
+            "case": "refresh-commit",
+            "outcome": "COMMITTED",
+            "retainedTargetBytesVerified": true
+        },
+        {
+            "case": "refresh-rollback",
+            "outcome": "ROLLED_BACK",
+            "retainedTargetBytesVerified": true
+        },
+        {
+            "case": "refresh-cancel",
+            "outcome": "ROLLED_BACK",
+            "retainedTargetBytesVerified": true
+        },
+        {
+            "case": "refresh-concurrent-target",
+            "outcome": "RECOVERY_REQUIRED",
+            "retainedTargetBytesVerified": true
+        },
+        {
+            "case": "refresh-crash-PREPARED",
+            "outcome": "ROLLED_BACK",
+            "retainedTargetBytesVerified": true
+        },
+        {
+            "case": "refresh-crash-TARGET_REPLACED",
+            "outcome": "ROLLED_BACK",
+            "retainedTargetBytesVerified": true
+        },
+        {
+            "case": "refresh-crash-BEFORE_COMMIT",
+            "outcome": "ROLLED_BACK",
+            "retainedTargetBytesVerified": true
+        },
+        {
+            "case": "refresh-crash-COMMITTED",
+            "outcome": "ROLLED_BACK",
+            "retainedTargetBytesVerified": true
+        },
+        {
+            "case": "refresh-missing-prior-sidecar",
+            "unchangedTargetVerified": true
+        },
+        {
+            "case": "refresh-changed-prior-sidecar",
+            "outcome": "RECOVERY_REQUIRED",
+            "retainedTargetBytesVerified": true
+        }
+    ],
+    "scope": "Native Windows component fixtures and retained bytes; not real ELF, GUI, UAC prompt or current full-gate acceptance",
+    "reviewerSha256": "f5b0991a6529d90441eb8aef24ab76857369c43af0c45b85216440976ffd3185"
+}

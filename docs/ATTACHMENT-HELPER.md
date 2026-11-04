@@ -14,12 +14,16 @@ show its selected pair, original backup and receipt, and require an explicit
 action. A successful export alone is insufficient: the helper must run the
 complete production validator and host transaction. Refresh must retain the
 previous generation and export against the original backup as ADR-0004 requires.
-The Linux launcher, standalone helper, recovery interface and saved selections
-are implemented below; their complete native execution remains **PRESENT,
-UNVERIFIED** until hosted tests pass. The Windows launcher/owned-token scope are also implemented but await native
-acceptance; the initial GUI request review/launch flow is implemented below but
-complete GUI journeys remain **PRESENT, UNVERIFIED**. The metadata policy and Ghidra/Java/native producer baselines
-are unchanged.
+The Linux/Windows launchers, helper, recovery interface, saved selections and
+GUI preparation/review controls are implemented. Reviewed production Linux
+CLI/refresh/recovery and GUI journeys pass within their recorded scope. Reviewed
+Windows real-ELF current-permission/RunAs commits and rollback also pass; saved
+refresh and full Windows GUI/active cancellation remain pending. Linux active
+cancellation passes at7d7b2ef with archived native cleanup evidence.
+See [the completion ledger](DEBUG-LOADING-COMPLETION-PLAN.md) for exact evidence
+and the remaining A1–A7/C1 gate. Historical validation checkpoints below retain
+their original scope; their pending statements do not supersede the ledger.
+The metadata policy and Ghidra/Java/native producer baselines are unchanged.
 
 ## Script Manager and cooperative cancellation
 
@@ -78,7 +82,9 @@ consistent with the [OpenJDK21 Windows launcher conversion through CP_ACP](https
 It does not extend Java/Ghidra installation or classpath filename support.
 Actual Java21 Linux helper219/recovery204/transaction532 and the separate child
 cleanup test pass; `attachment-path-argument.ps1` passes eight production-encoder
-controls including a shared fixed UTF-8 vector. Native Windows rerun is pending.
+controls including a shared fixed UTF-8 vector. Native Windows path controls
+subsequently passed at0f70308; see
+[the retained evidence](evidence/windows-helper-paths-41693381663.json).
 
 The GUI owns a fresh empty cancellation file and an open write handle. The
 launchers forward `--cancel-file=<absolute-path>` / `-CancellationFile` literally.
@@ -88,8 +94,9 @@ or inspection failure latches cancellation at the existing safe boundaries.
 Windows Java file attributes can omit `fileKey`; Windows cancellation therefore
 uses the already audited read-only volume/file-ID/size/time handle reader. It
 does not enable privileges or query protected security metadata. Native Windows
-acceptance of this correction remains pending after job126079953727 exposed the
-null Java identity; no pathname/mtime-only identity fallback is used.
+component checks subsequently passed after job126079953727 exposed the null Java
+identity; full modifying GUI cancellation remains pending. No pathname/mtime-only
+identity fallback is used.
 The GUI signals cancellation without terminating a modifying helper, waits for
 its outcome and drains both output streams. A completed cancellation (helper
 exit130) is then reported through Ghidra's cancelled-script outcome. Other
@@ -149,7 +156,7 @@ Serialization orders path keys deterministically and enforces the byte limit.
 Streams close on success, failure and cancellation; cancellation is preserved
 as cancellation. The transport input must be a regular non-link file.
 
-## Current validation
+## Historical transport validation checkpoint
 
 **CONFIRMED locally:** actual Java21 passes72 invocation checks, including
 ATTACH/REFRESH round trips, exact shape, version/Unicode/limit rejection,
@@ -179,8 +186,10 @@ implicit confirmation, privilege request, shell evaluation, test-host switch or
 captured-success validator. The helper selects the native host and the required
 live GNU/LLVM/pinned-libdwarf validator. On Windows, `--enable-security-privilege` explicitly enables the helper's
 already-owned security privilege for its lifetime and restores the previous
-state. The PowerShell launcher can request UAC only when explicitly selected;
-its native acceptance remains pending. On Linux the existing
+state. The PowerShell launcher requests RunAs only when explicitly selected;
+[reviewed native initial/rollback cases](evidence/windows-attachment-operation-41866768900.json)
+pass on the runner's existing token. Standard-user UAC interaction is unverified.
+On Linux the existing
 strict ext4/protected-metadata contract applies. Running the helper inside
 Ghidra is unsupported; its `main` terminates its standalone JVM.
 
@@ -379,7 +388,7 @@ acceptance remain incomplete.
 
 ### Native GUI acceptance harness
 
-**PRESENT, UNVERIFIED:** `gui-attachment-authorized-ci.sh` is restricted to the
+`gui-attachment-authorized-ci.sh` is restricted to the
 disposable GitHub runner. It installs a temporary polkit rule scoped to the
 runner account and selected Java executable, then removes it on exit. The test
 keeps Ghidra unprivileged and selects the production authorization prompt for
@@ -389,8 +398,13 @@ a user's workstation or change product authorization defaults.
 
 The independent `gui-attachment-verify.py` checks retained receipts, both
 generations' target-endian CRCs, GNU/LLVM/pinned-libdwarf results, automatic GDB
-source/type/break/next/step/exit and CRC-negative controls. Local compilation and
-objcopy/GDB consumer controls pass; actual native GUI execution is still pending.
+source/type/break/next/step/exit and CRC-negative controls. The Linux native GUI
+journey passes at188d413; see [the reviewed evidence](evidence/linux-gui-attachment-41697807284.json).
+Active cancellation after native validation starts also passes at7d7b2ef with
+independent native status and preserved-target review; see
+[the current Linux evidence](evidence/linux-gui-attachment-41873454505.json). The
+corrected observer and local controls are documented in
+[the test evidence](evidence/attachment-test-observers-local-20261104.json).
 
 **PRESENT, UNVERIFIED Windows GUI coverage:** the native Windows driver uses the
 same real preparation/attachment/refresh/recovery scripts and explicitly selects

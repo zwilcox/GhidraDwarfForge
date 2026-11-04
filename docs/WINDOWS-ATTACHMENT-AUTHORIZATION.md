@@ -66,6 +66,15 @@ and [LUID_AND_ATTRIBUTES](https://learn.microsoft.com/en-us/windows/win32/api/wi
 
 ## Evidence and remaining work
 
+**CONFIRMED scoped real-ELF execution:** run41866768900/job126708313285 passes
+independent review of current-permission and explicit RunAs initial commits,
+plus rollback. Retained target/backup/pair bytes, native identity/metadata claims,
+receipt binding, debuglink CRCs and 105 validator log hashes were checked; see
+[the evidence](evidence/windows-attachment-operation-41866768900.json). The runner
+already owns the required privilege. This does not establish standard-user UAC
+prompt/decline, saved-curation refresh or full Windows GUI/cancellation acceptance.
+Those remain in [the completion ledger](DEBUG-LOADING-COMPLETION-PLAN.md).
+
 **CONFIRMED isolated native token scope:** job126079085292 in run41680805435
 passes independent review of archive13253386157, all143 packaged production
 sources and the retained test/dependency provenance. Actual Windows Java21
@@ -82,7 +91,7 @@ actual Java21 compilation/helper115 checks and extension build; PowerShell parse
 checks; Python AST and workflow lint; release assembly with both launchers.
 Cross-compilation and parsing are not native Windows execution.
 
-**PRESENT, UNVERIFIED hosted coverage:** a standalone probe uses an independent
+**Historical hosted coverage definition:** a standalone probe uses an independent
 test token reader to check disabled-to-enabled and already-enabled nesting,
 restoration after an injected operation failure, idempotent close and128 cycles
 without handle growth. The real Windows initial attachment now invokes the
@@ -95,6 +104,6 @@ privilege; this does not prove an interactive standard-user UAC prompt/decline.
 ShellExecute/UAC does not redirect the elevated console. The launcher reports its
 observed process exit; retained transaction receipts are authoritative if the
 console is closed or output is lost. Actual interactive authorization/cancellation
-and both Ghidra GUI journeys remain incomplete. No OS authorization is requested
-by local Linux checks, and no native Windows acceptance is claimed before the
-hosted artifact review.
+and the full Windows Ghidra GUI journey remain incomplete. Local Linux checks
+request no OS authorization. Native Windows claims are restricted to the scoped
+hosted artifact reviews above.

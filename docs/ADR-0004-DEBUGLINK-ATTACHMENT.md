@@ -208,12 +208,12 @@ claims still require the host-specific tests above and below.
 ## Host feasibility and acceptance before implementation is complete
 
 Candidate bytes use the native-free direction in ADR-0005. Linux transaction
-identity/link counts and Windows handle-based file identities remain separate
-requirements; the current wrapper's native file-information structure includes
-a link count, but there is no attachment transaction using it. Portable Java
-alone does not establish all required Windows metadata/sharing behavior. No
-native Windows attachment support is claimed by this design or the existing
-Windows export/GUI tests.
+identity/link counts and Windows handle-based file identities are supplied by
+the native host adapters. Their metadata, stream and sharing-lock contracts
+require native tests in addition to the architecture-neutral coordinator tests.
+Current scoped evidence and remaining product acceptance are tracked in
+[the completion ledger](DEBUG-LOADING-COMPLETION-PLAN.md). A Windows exporter or
+GUI-only pass does not establish the attachment host contract.
 
 The first implementation is complete only after all of the following pass:
 
