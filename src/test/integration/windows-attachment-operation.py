@@ -197,6 +197,13 @@ def main():
     require(b"curated-refresh-program=PASS mode=edit" in edited.stdout, "analyst changes did not save")
     process = ["-process", originals["original"].name, "-noanalysis", "-readOnly"]
     verify = ["-postScript", "CurateAttachmentRefresh.java", "verify", *anchor_args]
+    identity_controls = headless("saved-identity-controls", [*process,
+        "-postScript", "CurateAttachmentRefresh.java", "verify", anchor_args[0],
+        str(root / "wrong-original-path"), anchor_args[2],
+        "-postScript", "CurateAttachmentRefresh.java", "verify", *anchor_args[:2], "0" * 64, *verify])
+    require(identity_controls.stdout.count(b"IllegalStateException: saved import identity changed:") == 2 and
+        identity_controls.stdout.count(b"curated-refresh-program=PASS mode=verify") == 1,
+        "saved import path/hash rejection controls failed")
     rejected = directory / "must-not-exist.dbg"
     refused = headless("attached-input-rejection", [*process, *verify, "-postScript", "GhidraDwarfForge.java",
         "--packaged-natives", "--input=" + str(target), "--output=" + str(rejected)])

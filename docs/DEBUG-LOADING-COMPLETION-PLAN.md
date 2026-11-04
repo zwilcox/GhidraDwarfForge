@@ -21,15 +21,37 @@ separate attachment branch's component evidence does not establish those rows.
 The checkpoint sections below are **HISTORICAL**, recording evidence as it
 became available; their pending statements do not supersede this status.
 
-**PRESENT, UNVERIFIED complete attachment UI:** separate Linux/Windows launchers
-and Script Manager request review/launch controls now exist. Local installed
-Linux preview/default-decline and cooperative child cleanup pass; full modifying
-GUI/authorization journeys and current-head Windows/full-gate acceptance remain
-incomplete. GUI request preparation/report capture now has local real-export,
-preview/decline, validator and GDB evidence. See
-[the invocation guide](ATTACHMENT-HELPER.md) and
-[preview evidence](evidence/attachment-gui-local-20261103.json) and
-[preparation evidence](evidence/attachment-preparation-local-20261103.json).
+**CONFIRMED scoped attachment implementation and Linux execution; final
+acceptance incomplete:** the helper, both launchers and Script Manager controls
+implement preparation, explicit review, attachment, refresh and saved recovery.
+The independently reviewed Linux GUI job at188d413 passes initial/curated-refresh/
+recovery and ordinary cancellation. Earlier production Linux artifacts cover
+fifteen initial/rollback/GDB cases across five targets, two saved-program refreshes
+and eight abrupt recoveries. Native Windows component evidence covers metadata,
+sharing locks, initial/refresh coordinator recovery and scoped privilege cleanup.
+
+Run41697807284's Windows rerun reaches real attachment but rejects a hard-linked
+validator under the inappropriate recovery-file policy. The corrected read-only
+tool observation atbe4c799 has an old/new-JAR causal regression and actual
+validator/GDB acceptance locally. Full Windows runtime remains required.
+Atf89a9e6, both GUI lanes additionally require cancellation after a native
+validator has started; the real button/confirmation and process-cleanup components
+pass locally, but the complete authorized journey is **PRESENT, UNVERIFIED**.
+See the [hard-link evidence](evidence/validator-input-hardlinks-local-20261104.json),
+[cancellation evidence](evidence/gui-active-cancellation-local-20261104.json),
+[Linux transaction evidence](evidence/linux-attachment-41693381663.json) and
+[Linux GUI evidence](evidence/linux-gui-attachment-41697807284.json).
+
+The Windows job atbe4c799 subsequently passes current-permission/RunAs commits
+and rollback with the hard-linked helper; [independent byte/log/CRC review](evidence/windows-attachment-operation-41866768900.json)
+confirms those three cases. Saved-curation fails a test-only native-vs-FSRL path
+comparison. The new active Linux GUI test fails a TaskMonitorComponent lookup;
+Script Manager exposes cancellation through TaskDialog instead. Both observers
+are corrected with [local controls and regression evidence](evidence/attachment-test-observers-local-20261104.json).
+Windows refresh and both native active-GUI cancellation journeys remain unverified.
+
+The following rows retain their full required scope. Prior-head component or
+Linux passes do not close a cross-host row or replace the final required gate.
 
 | ID | Required outcome | Evidence required |
 | --- | --- | --- |

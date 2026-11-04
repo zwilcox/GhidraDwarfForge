@@ -1,4 +1,5 @@
 import ghidra.app.script.GhidraScript;
+import ghidra.formats.gfilesystem.FileSystemService;
 import ghidra.program.model.data.CategoryPath;
 import ghidra.program.model.data.Structure;
 import ghidra.program.model.listing.LocalVariableImpl;
@@ -13,9 +14,14 @@ public class CurateAttachmentRefresh extends GhidraScript {
         if (args.length != 4 || !(args[0].equals("anchor") || args[0].equals("edit") || args[0].equals("verify"))) {
             throw new IllegalArgumentException("supply anchor|edit|verify function-address original-path import-sha256");
         }
-        if (!currentProgram.getExecutablePath().equals(args[2]) ||
+        // The importer stores the local FSRL path, including /C:/... on Windows,
+        // rather than the native C:\... spelling supplied to analyzeHeadless.
+        String expectedPath = FileSystemService.getInstance().getLocalFSRL(new java.io.File(args[2])).getPath();
+        if (!currentProgram.getExecutablePath().equals(expectedPath) ||
                 !currentProgram.getExecutableSHA256().equalsIgnoreCase(args[3])) {
-            throw new IllegalStateException("saved import identity changed");
+            throw new IllegalStateException("saved import identity changed: path=" + currentProgram.getExecutablePath() +
+                "; expected=" + expectedPath + "; sha256=" + currentProgram.getExecutableSHA256() +
+                "; expected-sha256=" + args[3]);
         }
         var function = getFunctionAt(toAddr(args[1]));
         if (function == null) throw new IllegalStateException("missing fixture function");

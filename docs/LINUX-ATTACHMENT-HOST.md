@@ -2,8 +2,16 @@
 
 **CONFIRMED scoped production Host and real-ELF acceptance:** the internal
 `LinuxAttachmentHost` implements `AttachmentOperation.Host` with an already
-authorized platform thread. It creates no public attachment/elevation action.
-The strict metadata policy remains in force. Ordinary export is unchanged.
+authorized platform thread. Public attachment runs through the isolated helper;
+the launcher requests pkexec only when the user explicitly selects authorization.
+The host adapter itself does not acquire privileges. The strict metadata policy
+remains in force. Ordinary export is unchanged.
+
+Reviewed real-ELF CLI/refresh/recovery and GUI evidence is recorded in
+[the Linux transaction receipt](evidence/linux-attachment-41693381663.json) and
+[the complete GUI job receipt](evidence/linux-gui-attachment-41697807284.json).
+These are scoped prior-head results. Current integration and native active-GUI
+cancellation remain tracked in [the completion ledger](DEBUG-LOADING-COMPLETION-PLAN.md).
 
 The latest independent readback at `e2ccccf`, run41657292709, corroborates
 actual uid/gid1001, regular mode0710, nanosecond mtime1700000000123000000,

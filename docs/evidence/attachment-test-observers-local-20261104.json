@@ -1,0 +1,74 @@
+{
+    "date": "2026-11-04",
+    "scope": "A5 task-dialog cancellation observer and A6 saved import identity test corrections; full attachment acceptance remains incomplete",
+    "productionChanges": false,
+    "failures": {
+        "windows": {
+            "run": 41866768900,
+            "job": 126708313285,
+            "artifact": 13343254825,
+            "observed": "Three real attachment cases pass; saved-curation script rejects import identity",
+            "diagnosis": "Ghidra 12.0.3 FileByteProvider supplies local FSRL path, with Unix separators and drive-root slash on Windows; fixture compared native path spelling"
+        },
+        "linuxGui": {
+            "run": 41868915417,
+            "job": 126717722771,
+            "artifact": 13343393852,
+            "sha256": "fc7a3ed745590ed84494da529f8b6818b7b0a7a27c38fa7a220a503f31321555",
+            "observed": "Native validator starts; observer times out looking for a TaskMonitorComponent message",
+            "diagnosis": "Script Manager uses TaskLauncher/TaskDialog, whose status message and Cancel button are outside that component"
+        },
+        "localHeadlessSetup": {
+            "logs": [
+                "build/curated-import-fsrl-local.log",
+                "build/curated-import-fsrl-local-v2.log"
+            ],
+            "reason": "Symlinked private Ghidra layout resolves shared installation; script bundle cannot resolve current extension. Retained; successful test uses separate full private installation."
+        }
+    },
+    "changes": [
+        "Compare saved path with Ghidra FileSystemService local FSRL path; retain strict SHA check and add actual/expected diagnostics",
+        "Windows harness requires separate wrong-path and wrong-SHA rejection plus correct saved identity in the same read-only reopen",
+        "Find exact launched TaskDialog title/status, foreground it and click real Cancel/Yes",
+        "Actual TaskLauncher control reproduces old observer absence, then requires worker cancellation and completion"
+    ],
+    "local": {
+        "gui": {
+            "status": "PASS",
+            "java": "21",
+            "log": "build/gui-task-dialog-local.log",
+            "directory": "build/test-results/gui-script-manager/run.HW0BghfS",
+            "coverage": [
+                "real TaskLauncher Cancel/Yes and worker completion",
+                "installed Script Manager ordinary/prepared export and chooser cancellation",
+                "GNU/LLVM/pinned strict validation",
+                "GDB discovery/source/type/step checks"
+            ],
+            "resultSha256": "5770ad727d77107ed97a8734b5035dac4b447b87b34ce4ed6a6932b8a8bce450"
+        },
+        "refresh": {
+            "status": "PASS",
+            "operationJava": "21",
+            "headlessJava": "25.0.4.1",
+            "host": "linux-store-test-v1 (limited test host, not production native Host)",
+            "log": "build/curated-import-fsrl-local-v3.log",
+            "directory": "build/test-results/curated-import-fsrl-local-v3",
+            "coverage": [
+                "saved anchor/edit/reopen",
+                "reject modified original import SHA",
+                "fresh backup-based export with changed CRC",
+                "retained generation and receipt chain",
+                "validators and GDB both generations",
+                "wrong path and wrong SHA rejection controls"
+            ],
+            "resultSha256": "b0eae40bea52ce95d7312e0286e41f3db77a3553889f2cad1b7941d8fee02ea6",
+            "negativeControlsSha256": "defdaac2d308d70080ce16a369db7a8630fc99c962e17a9e38a04f3a18d5144c"
+        }
+    },
+    "pending": [
+        "Windows saved-curation/refresh with corrected FSRL check",
+        "Both native authorized GUI cancellation journeys",
+        "Windows GDB consumer",
+        "Final exact-head protected gate and full A1-A7/C1 audit"
+    ]
+}

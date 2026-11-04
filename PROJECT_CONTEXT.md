@@ -1,5 +1,31 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED scoped Windows real attachment; two test observers corrected locally:**
+Run41866768900/job126708313285 passes current-permission and explicit RunAs
+commits plus rollback with a deliberately two-link validator helper. Independent
+review rehashes 105 validator logs and checks retained target/backup/pair bytes,
+native identity/metadata claims, receipt bindings and debuglink CRCs. See
+`docs/evidence/windows-attachment-operation-41866768900.json`. The job then
+fails the saved-curation fixture's native-path comparison. Ghidra stores the
+local FSRL path; the fixture now derives that spelling through Ghidra's API while
+retaining strict import SHA checks and wrong-path/wrong-hash rejection controls.
+
+Run41868915417/job126717722771 reaches the active native validator but its GUI
+observer cannot find a TaskMonitorComponent message. Script Manager uses
+TaskDialog's separate status area and Cancel button. The corrected observer
+requires the exact task title/message and real Cancel/Yes interaction. A local
+actual-Java21 TaskLauncher control reproduces the old lookup's absence and proves
+worker cancellation; the full installed GUI/validator/GDB regression also passes.
+The saved-curation/refresh/validator/GDB regression passes locally with the limited
+Linux test host (operation JVM21, headless JVM25), including wrong-path/hash
+rejections. Two earlier private-layout setup failures are retained. See
+`docs/evidence/attachment-test-observers-local-20261104.json`.
+
+**PRESENT, UNVERIFIED:** corrected Windows refresh and both native authorized GUI
+cancellation journeys still need hosted acceptance. The full required gate,
+Windows consumer and A1–A7/C1 audit remain open. #72 is not complete; #107 remains
+merged. Earlier checkpoints retain their original scope.
+
 **PRESENT, UNVERIFIED native GUI cancellation journey; local controls pass:**
 The Script Manager fixture now launches an authorized attachment with an owned
 validator that records its PID and waits during its version query. Only after

@@ -90,6 +90,7 @@ public final class GuiScriptManagerSmoke {
         configuration.setApplicationLogFile(results.resolve("application.log").toFile());
         configuration.setScriptLogFile(results.resolve("script.log").toFile());
         Application.initializeApplication(new GhidraApplicationLayout(ghidra.toFile()), configuration);
+        GuiTaskCancellation.verifyLauncherCancellation(results.resolve("task-launcher-cancellation"));
         GuiTableClickSmoke.runPendingFilter(
             Files.createDirectory(results.resolve("pending-filter-control")));
 
@@ -540,7 +541,7 @@ public final class GuiScriptManagerSmoke {
                 confirmNativeChange(directory.resolve("review.png"), false);
                 GuiTestSupport.await("native validator started before cancellation", () ->
                     Files.isRegularFile(marker) ? marker : null);
-                GuiTaskCancellation.cancelTask(new Robot(), "Attaching sidecar; Cancel requests safe rollback",
+                GuiTaskCancellation.cancelLaunchedTask(new Robot(), ATTACH, "Attaching sidecar; Cancel requests safe rollback",
                     directory.resolve("active-task.png"));
             }
             catch (Exception failure) { throw new RuntimeException(failure); }

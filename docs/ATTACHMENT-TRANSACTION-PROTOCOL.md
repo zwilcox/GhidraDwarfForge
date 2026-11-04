@@ -1,14 +1,17 @@
 # Attachment transaction protocol
 
-**PRESENT, UNVERIFIED as an attachment feature.** `AttachmentPaths` and
-`AttachmentReceipt` implement all-role path preflight and versioned recovery
-claims. `AttachmentReceiptStore` adds complete-record publication and updates
-with mandatory host operations. They are not invoked by ordinary export and
-do not modify an executable, create a backup, authorize an attachment or establish
-a complete host metadata contract.
-The complete transaction remains required by ADR-0004 and ADR-0005. Ghidra,
-Java and libdwarf baselines are unchanged. The producer ABI is unchanged;
-the separate Linux namespace primitive below adds one audited libc declaration.
+**CONFIRMED implementation; complete product acceptance remains pending.**
+`AttachmentPaths`, `AttachmentReceipt` and `AttachmentReceiptStore` supply
+all-role preflight, versioned claims and complete-record publication to
+`AttachmentOperation` and `AttachmentTransaction`. The isolated helper performs
+explicit initial attachment, refresh and saved-request recovery. Ordinary export
+does not enter this transaction. Native component and real-export evidence,
+including remaining Windows/GUI/integration checks, is tracked by
+[the completion ledger](DEBUG-LOADING-COMPLETION-PLAN.md).
+
+ADR-0004 and ADR-0005 remain the required operation contract. Ghidra, Java and
+libdwarf baselines are unchanged. The producer ABI is unchanged; the separate
+Linux namespace primitive below uses its audited libc binding.
 
 ## Path plan
 
@@ -75,8 +78,12 @@ not proof of current files, validation or successful execution. Attachment and
 recovery must compare every explicitly selected file and supported native
 metadata snapshot before acting. `metadataSha256` must cover the host contract's
 serialized preservation attributes, excluding expected changes such as file
-identity and content length. The concrete host formats remain **PLANNED**;
-`test-host-v1` in the smoke test is explicitly not a production contract.
+identity and content length. The concrete production formats are documented in
+[the Linux host contract](LINUX-ATTACHMENT-HOST.md) and
+[the Windows host contract](WINDOWS-ATTACHMENT-HOST.md). `test-host-v1` in the smoke
+test is explicitly not a production contract. Read-only validator tools use a
+separate identity/content observation; their validation-evidence schema2 does not
+claim recovery metadata preservation. Receipt schema2 is a distinct format.
 
 ## Phases and receipt publication
 

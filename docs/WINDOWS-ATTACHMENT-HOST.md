@@ -1,10 +1,18 @@
 # Windows attachment host integration
 
-**PRESENT, UNVERIFIED on Windows:** `WindowsAttachmentHost` implements the
-transaction's required Host interface using the native metadata, directory and
-namespace components. It has no public CLI/GUI entry point and never enables
-privileges. Complete security observation requires an already authorized token;
-the unresolved user-facing invocation policy is unchanged.
+**CONFIRMED native host/store/coordinator components; complete public Windows
+attachment remains unverified.** `WindowsAttachmentHost` supplies native metadata,
+directory and namespace operations to the isolated helper. The adapter does not
+enable privileges. After explicit confirmation, the helper may enable only its
+own already-held security privilege under the documented
+[authorization contract](WINDOWS-ATTACHMENT-AUTHORIZATION.md).
+
+The native component evidence below includes receipt replacement, actual sharing
+locks, initial/refresh rollback, concurrent-target refusal and eight abrupt
+process exits. These tests do not substitute for real Windows ELF attachment,
+GUI cancellation and GDB consumer acceptance. Current integration status is in
+[the completion ledger](DEBUG-LOADING-COMPLETION-PLAN.md). Later historical
+checkpoints retain their original commit/run scope.
 
 The adapter admits fixed local NTFS with persistent ACL support. Directory
 identity includes the native file/volume identity and a digest of the observed
@@ -121,8 +129,10 @@ actual Ghidra export/refresh and GDB acceptance remain required separately.
 Windows headless fixture/report and installed production JAR. Its isolated
 Java21 probe selects `WindowsAttachmentHost`, `AttachmentOperation` and
 `AttachmentValidator`, with explicit native GNU/LLVM/pinned-checker paths and
-the audited process supervisor. The test enables only its already owned token
-privilege, then restores it; the product never adjusts privilege state.
+the audited process supervisor. The test probe scopes its own existing privilege;
+the public launcher separately selects current permissions or explicit RunAs.
+Both paths invoke the helper's scoped existing-privilege adjustment and require
+durable receipts. No automatic elevation retry is performed.
 
 Each commit/rollback scenario has independently copied inputs and an empty
 owned directory. A fault after target replacement exercises restoration from

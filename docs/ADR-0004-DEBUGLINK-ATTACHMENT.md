@@ -1,17 +1,19 @@
 # ADR-0004: Stage optional debuglink attachment behind a verified backup transaction
 
-- Status: Accepted design; product attachment remains **PLANNED**
+- Status: Accepted design; implementation present, full product acceptance **UNVERIFIED**
 - Date: 2026-10-23
 - Refined: 2026-10-24 (owned append-only candidate direction in ADR-0005)
 - Scope: P2.8, separate from default export and the corrective alpha.2 release
 
 ## Decision
 
-Keep ordinary export non-mutating. A future attachment operation must be an
-explicit choice after a successful export pair, with a mandatory original
-backup, independently verified target/sidecar identity, and atomic replacement
-of the target. This investigation does not add an attachment command or close
-P2.8. The research harness modifies only its own disposable fixture copies.
+Keep ordinary export non-mutating. Attachment must be an explicit choice after
+a successful export pair, with a mandatory original backup, independently
+verified target/sidecar identity and atomic replacement of the target. The
+isolated helper, launchers and GUI controls now implement this contract. Full
+acceptance remains pending under A1–A7/C1 in
+[the completion ledger](DEBUG-LOADING-COMPLETION-PLAN.md); implementation alone
+does not close P2.8. Historical research fixtures below modify only owned copies.
 
 Use the separate native-free append-only candidate direction selected in
 [ADR-0005](ADR-0005-OWNED-DEBUGLINK-CANDIDATE.md). This explicitly supersedes
@@ -55,7 +57,7 @@ declared ELF header and raw program table. Existing-link exit-zero diagnostics
 are another explicit rejection case. These results do not establish Windows
 backend support or a transaction; see `EXECUTABLE-PROGRAM-BYTES.md`.
 
-## Proposed operation contract
+## Required operation contract
 
 1. Require an explicit attach action with the final target and sidecar paths,
    an export receipt, and new backup and transaction-receipt paths. Explain
@@ -252,16 +254,17 @@ The first implementation is complete only after all of the following pass:
   dependencies, receipts, recovery and backup-based re-export in both wrappers
   and GUI/help before exposing the option.
 
-These are implementation acceptance criteria, not completed work. A product
-transaction with the above guarantees is not a small append-only prototype,
-and remains planned. ADR-0005 defines the accepted private candidate component;
-that component does not complete the transaction guarantees.
+These remain the implementation acceptance criteria. Closure requires the
+complete ledger and final integration gate, not merely a passing private
+candidate constructor. ADR-0005 defines that candidate component; the helper,
+host, transaction and consumer evidence must establish the remaining guarantees.
 
 ## Public invocation implementation direction
 
-**PLANNED:** use a separate helper and explicit user-requested OS authorization
-when required, leaving Ghidra unprivileged. No automatic elevation or metadata
-policy relaxation follows. The helper's absolute selection transport now has
-local strict parsing/preflight tests; CLI/GUI launch and recovery remain to be
-implemented and validated. See [the helper work record](ATTACHMENT-HELPER.md).
+**CONFIRMED implementation, complete acceptance pending:** use a separate helper
+and explicit user-requested OS authorization when required, leaving Ghidra
+unprivileged. No automatic elevation or metadata-policy relaxation follows.
+Absolute selection transport, CLI/GUI launch, preparation and recovery are
+implemented; the ledger distinguishes validated cases from remaining native
+Windows and active-cancellation checks. See [the helper work record](ATTACHMENT-HELPER.md).
 This records the stated implementation assumption, not a user privilege grant.
