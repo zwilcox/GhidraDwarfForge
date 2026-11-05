@@ -70,6 +70,8 @@ public class GhidraDwarfForge extends GhidraScript {
         }
 
         Map<String, String> options = parseOptions(arguments);
+        var compression = ghidradwarfforge.elf.DebugSectionCompression.parse(
+            options.getOrDefault("compress-debug-sections", "none"));
         boolean attachmentPreparation = options.containsKey("attachment-preparation");
         if (attachmentPreparation) {
             state.removeEnvironmentVar(AttachmentPreparation.EXPORT_REPORT_KEY);
@@ -202,7 +204,7 @@ public class GhidraDwarfForge extends GhidraScript {
         monitor.checkCancelled();
         var resultHolder = new MinimalDwarfSidecarExporter.ExportResult[1];
         ArtifactPairPublisher.StagedWriter sidecarWriter =
-            stagedOutput -> resultHolder[0] = new MinimalDwarfSidecarExporter().export(
+            stagedOutput -> resultHolder[0] = new MinimalDwarfSidecarExporter(compression).export(
                 input, stagedOutput,
                 consumer, producer, functions, source, typeModel,
                 sourceOutput.getFileName().toString(), monitor::isCancelled,
@@ -302,7 +304,8 @@ public class GhidraDwarfForge extends GhidraScript {
         for (String name : result.keySet()) {
             if (!name.equals("libdwarf") && !name.equals("libdwarfp") &&
                     !name.equals("input") && !name.equals("output") &&
-                    !name.equals("packaged-natives") && !name.equals("gdb-loader") && !name.equals("attachment-preparation")) {
+                    !name.equals("packaged-natives") && !name.equals("gdb-loader") && !name.equals("attachment-preparation") &&
+                    !name.equals("compress-debug-sections")) {
                 throw new IllegalArgumentException("unknown option --" + name);
             }
             if ((name.equals("packaged-natives") || name.equals("gdb-loader") || name.equals("attachment-preparation")) &&

@@ -15,6 +15,8 @@ Common options:
   --input=<elf>           Original ELF override (defaults to --import value)
   --output=<path>         Sidecar path (default: <input>.dbg)
   --gdb-loader            Also generate <sidecar>.gdb.py for explicit GDB loading
+  --compress-debug-sections=none|zlib
+                          Optional ELF debug-section compression (default: none)
   --log=<path>            Preserve the complete headless transcript
   --analysis-timeout=<s> Import-mode analysis timeout (default: 120)
 
@@ -115,6 +117,7 @@ producer=
 input=
 output=
 gdb_loader=0
+debug_compression=none
 import_path=
 project_dir=
 project_name=
@@ -130,6 +133,7 @@ for argument in "$@"; do
         --input=*) input=${argument#*=} ;;
         --output=*) output=${argument#*=} ;;
         --gdb-loader) gdb_loader=1 ;;
+        --compress-debug-sections=*) debug_compression=${argument#*=} ;;
         --import=*) import_path=${argument#*=} ;;
         --project-dir=*) project_dir=${argument#*=} ;;
         --project-name=*) project_name=${argument#*=} ;;
@@ -141,6 +145,8 @@ for argument in "$@"; do
     esac
 done
 
+[[ "$debug_compression" == none || "$debug_compression" == zlib ]] ||
+    die_usage "--compress-debug-sections must be none or zlib"
 [[ -n "$ghidra_dir" ]] || die_usage "--ghidra-dir or GHIDRA_INSTALL_DIR is required"
 if [[ -n "$consumer" && -z "$producer" || -z "$consumer" && -n "$producer" ]]; then
     die_usage "--libdwarf and --libdwarfp must be supplied together"
@@ -211,6 +217,7 @@ fi
 [[ -n "$input" ]] && export_options+=("--input=$input")
 [[ -n "$output" ]] && export_options+=("--output=$output")
 ((gdb_loader)) && export_options+=("--gdb-loader")
+[[ "$debug_compression" == zlib ]] && export_options+=("--compress-debug-sections=zlib")
 
 if ((import_mode)); then
     [[ -f "$import_path" ]] || die_usage "import ELF does not exist: $import_path"

@@ -165,6 +165,15 @@ exit /b %FAKE_HEADLESS_EXIT%
     Assert-RejectedLog $override ($importOptions + @('-OriginalElf', $override))
     $null = Invoke-Wrapper 0 ($importOptions + @('-GdbLoader'))
     Assert-Condition ((Get-Content -LiteralPath $argumentLog -Raw) -match '--gdb-loader') 'loader flag was not forwarded'
+    $null = Invoke-Wrapper 0 ($importOptions + @('-CompressDebugSections', 'zlib'))
+    if (-not ((Get-Content $argumentLog) -contains '--compress-debug-sections=zlib')) {
+        throw 'compression option was not passed to the exporter'
+    }
+    $null = Invoke-Wrapper 0 ($importOptions + @('-CompressDebugSections', 'none'))
+    if ((Get-Content $argumentLog) -match '^--compress-debug-sections=') {
+        throw 'explicit none unexpectedly changed default exporter arguments'
+    }
+    $null = Invoke-Wrapper 64 ($importOptions + @('-CompressDebugSections', 'zstd'))
     foreach ($log in @($output, "$output.c", "$output.gdb.py")) {
         Assert-RejectedLog $log ($importOptions + @('-Output', $output))
     }

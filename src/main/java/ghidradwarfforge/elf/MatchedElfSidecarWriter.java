@@ -49,7 +49,17 @@ public final class MatchedElfSidecarWriter {
     private static final int SHN_LORESERVE = 0xff00;
     private static final int SHN_XINDEX = 0xffff;
 
-    private record Layout(List<Section> sections, List<byte[]> symbolPayloads,
+    private final DebugSectionCompression compression;
+
+    public MatchedElfSidecarWriter() {
+        this(DebugSectionCompression.NONE);
+    }
+
+    public MatchedElfSidecarWriter(DebugSectionCompression compression) {
+        this.compression = Objects.requireNonNull(compression, "compression");
+    }
+
+    private record Layout(List<Section> sections, List<byte[]> debugPayloads, List<byte[]> symbolPayloads,
             byte[] names, byte[] header,
             long sectionTableOffset, long fileSize) {
     }
@@ -113,7 +123,7 @@ public final class MatchedElfSidecarWriter {
                 if (destination.position() != image.fileSize()) {
                     throw new IOException("original ELF copy has an unexpected size");
                 }
-                for (byte[] bytes : debugSections.values()) {
+                for (byte[] bytes : layout.debugPayloads()) {
                     writeBytes(destination, bytes, cancelled);
                 }
                 for (byte[] bytes : layout.symbolPayloads()) {
@@ -196,9 +206,16 @@ public final class MatchedElfSidecarWriter {
         }
         addIdentityNoteSections(image, sections);
 
+        List<byte[]> debugPayloads = new ArrayList<>();
         for (Map.Entry<String, byte[]> entry : debugSections.entrySet()) {
-            long dataOffset = offset;
-            offset = addOffset(offset, entry.getValue().length);
+            var stored = compression.encode(entry.getValue(), image.is64Bit(), image.byteOrder(), cancelled);
+            long dataOffset = addOffset(offset, stored.alignment() - 1) & -stored.alignment();
+            int padding = Math.toIntExact(dataOffset - offset);
+            if (padding != 0) {
+                debugPayloads.add(new byte[padding]);
+            }
+            debugPayloads.add(stored.bytes());
+            offset = addOffset(dataOffset, stored.bytes().length);
             Section target = findSection(sections, entry.getKey());
             if (target == null) {
                 target = new Section();
@@ -206,13 +223,13 @@ public final class MatchedElfSidecarWriter {
                 sections.add(target);
             }
             target.type = SHT_PROGBITS;
-            target.flags = 0;
+            target.flags = stored.compressed() ? 0x800 : 0; // SHF_COMPRESSED; never SHF_ALLOC.
             target.address = 0;
             target.offset = dataOffset;
-            target.size = entry.getValue().length;
+            target.size = stored.bytes().length;
             target.link = 0;
             target.info = 0;
-            target.alignment = 1;
+            target.alignment = stored.alignment();
             target.entrySize = 0;
         }
 
@@ -293,7 +310,7 @@ public final class MatchedElfSidecarWriter {
             header.putShort(48, (short) encodedSectionCount);
             header.putShort(50, (short) encodedNameTableIndex);
         }
-        return new Layout(sections, List.copyOf(symbolPayloads), names.toByteArray(),
+        return new Layout(sections, List.copyOf(debugPayloads), List.copyOf(symbolPayloads), names.toByteArray(),
             headerBytes, sectionTableOffset,
             fileSize);
     }

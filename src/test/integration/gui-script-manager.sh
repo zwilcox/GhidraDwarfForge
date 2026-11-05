@@ -174,6 +174,10 @@ validate_pair() {
         >> "$work/result.txt"
 }
 validate_pair "$work" "$work/select/readonly/fixture" "$work/select/chosen/fixture.dbg" export
+readelf -SW "$work/select/chosen/fixture.dbg" > "$work/export-sections.txt"
+if [[ ${GHIDRA_GUI_COMPRESSION:-0} == 1 ]]; then
+    grep -Eq '[.]debug_info[[:space:]]+PROGBITS.*[[:space:]]C[[:space:]]' "$work/export-sections.txt"
+fi
 prepared="$work/select/attachment-prepare"
 mkdir -p "$prepared/validation"
 validate_pair "$prepared/validation" "$prepared/fixture" "$prepared/prepared.dbg" prepared

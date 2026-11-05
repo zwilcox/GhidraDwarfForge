@@ -156,6 +156,13 @@ function Test-ExportedPair {
         "source-fixture-sha256=$before") | Add-Content -LiteralPath (Join-Path $work 'result.txt')
 }
 Test-ExportedPair $work (Join-Path $work "select/readonly/fixture") (Join-Path $work "select/chosen/fixture.dbg")
+if ($env:GHIDRA_GUI_COMPRESSION -eq '1') {
+    Invoke-Validator 'readelf.exe' @('-SW', (Join-Path $work 'select/chosen/fixture.dbg')) 'export-sections'
+    if ((Get-Content -Raw (Join-Path $work 'export-sections.txt')) -notmatch
+            '(?m)\.debug_info\s+PROGBITS.*\sC\s') {
+        throw 'Compressed GUI export did not store compressed debug info'
+    }
+}
 $prepared = Join-Path $work "select/attachment-prepare"
 $validation = Join-Path $prepared "validation"
 New-Item -ItemType Directory $validation | Out-Null

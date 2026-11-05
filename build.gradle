@@ -73,6 +73,14 @@ tasks.register("exportPhaseSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.performance.ExportPhaseSmoke"
 }
 
+tasks.register("debugCompressionSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks ELF32/64 endian compression headers, fallback, determinism and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.DebugCompressionSmoke"
+}
+
 tasks.register("packagedNativeProducerSmoke", JavaExec) {
     group = "verification"
     description = "Resolves and runs the packaged libdwarf pair in an isolated JVM"

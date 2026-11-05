@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local compression candidate; hosted acceptance pending:** opt-in
+gABI zlib compression preserves the default plain output. Eight ELF container
+layouts and 25 actual five-target exec/PIE/shared/sectionless/rebased cases pass
+equivalence, determinism, validators and GDB. Production compression cancellation
+preserves the prior pair and permits retry. The Linux Script Manager shortcut
+and independent compressed-artifact consumer replay pass. Native Windows and
+exact-head CI remain **PRESENT, UNVERIFIED**. Production large-workload
+measurements and final #74 acceptance remain open; see `docs/ELF-COMPRESSION.md`.
+
 **CONFIRMED broader local measurements; Windows workloads pending:** five
 same-compiler U-Boot pairs pass artifact/report identity, validators, GDB and
 preservation checks. Private-copy compression/index experiments pass for zlib,

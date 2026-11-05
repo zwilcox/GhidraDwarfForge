@@ -281,6 +281,16 @@ public final class MinimalDwarfSidecarExporter {
         }
     }
 
+    private final ghidradwarfforge.elf.DebugSectionCompression compression;
+
+    public MinimalDwarfSidecarExporter() {
+        this(ghidradwarfforge.elf.DebugSectionCompression.NONE);
+    }
+
+    public MinimalDwarfSidecarExporter(ghidradwarfforge.elf.DebugSectionCompression compression) {
+        this.compression = Objects.requireNonNull(compression, "compression");
+    }
+
     public ExportResult export(Path input, Path output, Path consumerLibrary,
             Path producerLibrary, List<FunctionSymbol> functions) throws IOException {
         return export(input, output, consumerLibrary, producerLibrary, functions, null, null);
@@ -456,7 +466,7 @@ public final class MinimalDwarfSidecarExporter {
             throw new IllegalStateException("producer supplied an unexpected address lookup");
         }
         try (var phase = ExportPhase.start("elf-packaging")) {
-            new MatchedElfSidecarWriter().write(elf, destination, sections, supplemental, cancelled, diagnostic);
+            new MatchedElfSidecarWriter(compression).write(elf, destination, sections, supplemental, cancelled, diagnostic);
             phase.completed = true;
         }
         return new ExportResult(target, ordered.size(), List.copyOf(sections.keySet()),

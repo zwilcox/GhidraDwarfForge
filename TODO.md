@@ -1,5 +1,13 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local #74 optimization candidate; incomplete:** optional zlib ELF
+section compression passes eight container layouts, 75 exports over 25 real
+five-target cases, validators/GDB, default/source/decompressed-DWARF identity,
+determinism, production cancellation/retry and a real Linux GUI journey.
+Windows execution/replay and the required hosted gate remain pending, along
+with production large-workload measurements, review/integration and the other
+#74 decisions. See `docs/ELF-COMPRESSION.md`; no later goal issue is complete.
+
 **CONFIRMED Windows chooser correction; separate clean-launch click oracle fixed locally:**
 At `ba65267`, run41897626643/job126818305192 passes the delayed-chooser control
 and the first modifying Windows GUI journey: attachment, changed-curation refresh,

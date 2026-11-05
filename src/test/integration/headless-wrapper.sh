@@ -54,6 +54,14 @@ grep -Fxq -- "--input=$input" "$argument_log"
 grep -Fxq -- "--output=$output" "$argument_log"
 run_status 0 SUCCESS 0 --import="$input" --output="$output" --gdb-loader
 grep -Fxq -- '--gdb-loader' "$argument_log"
+run_status 0 SUCCESS 0 --import="$input" --output="$output" --compress-debug-sections=zlib
+grep -Fxq -- '--compress-debug-sections=zlib' "$argument_log"
+run_status 0 SUCCESS 0 --import="$input" --output="$output" --compress-debug-sections=none
+if grep -Fq -- '--compress-debug-sections=' "$argument_log"; then
+    echo 'explicit none unexpectedly changed default exporter arguments' >&2
+    exit 1
+fi
+run_status 64 SUCCESS 0 --import="$input" --output="$output" --compress-debug-sections=zstd
 
 run_status 0 PARTIAL 0 --import="$input"
 run_status 10 FATAL 0 --import="$input"

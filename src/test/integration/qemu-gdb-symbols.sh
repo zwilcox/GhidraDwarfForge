@@ -3,9 +3,8 @@ set -euo pipefail
 
 repository_dir=$(realpath "$(dirname "$0")/../../..")
 fixture_dir="$repository_dir/build/fixtures"
-result_dir="$repository_dir/build/test-results/qemu-gdb-symbols"
-base_port=$((24000 + ($$ % 16000)))
-active_emulator_pid=""
+result_dir=${FORGE_GDB_SYMBOL_RESULTS:-"$repository_dir/build/test-results/qemu-gdb-symbols"}
+source "$repository_dir/src/test/integration/qemu-socket.sh"
 fixture_role=${FIXTURE_ROLE:-exec}
 fixture_input_suffix=${FIXTURE_INPUT_SUFFIX:-stripped}
 name_rebase_delta=${GHIDRA_NAME_REBASE_DELTA:-0}
@@ -16,13 +15,7 @@ else
     targets=("$@")
 fi
 
-cleanup() {
-    if [[ -n "$active_emulator_pid" ]] && kill -0 "$active_emulator_pid" 2>/dev/null; then
-        kill "$active_emulator_pid" 2>/dev/null || true
-        wait "$active_emulator_pid" 2>/dev/null || true
-    fi
-}
-trap cleanup EXIT
+trap qemu_socket_cleanup EXIT
 mkdir -p "$result_dir"
 
 function_name() {
@@ -201,7 +194,7 @@ run_native() {
 }
 
 run_emulated() {
-    local target=$1 emulator=$2 sysroot=$3 port=$4
+    local target=$1 emulator=$2 sysroot=$3
     local function
     function=$(function_name "$target")
     local source_file="$fixture_dir/$target/semantic.$fixture_role.ghidra-forge.dbg.c"
@@ -264,17 +257,15 @@ run_emulated() {
             -ex 'printf "analyst_stack_shifted=%d\n", analyst_stack' \
             -ex frame -ex nexti -ex continue)
     fi
-    "$emulator" -L "$sysroot" -g "$port" \
-        "$fixture_dir/$target/semantic.$fixture_role.$fixture_input_suffix" &
-    active_emulator_pid=$!
-    sleep 0.2
+    qemu_socket_start "$result_dir/$target.$fixture_role.qemu" "$emulator" "$sysroot" \
+        "$fixture_dir/$target/semantic.$fixture_role.$fixture_input_suffix"
     timeout 30s gdb-multiarch -q -nx -batch \
         -ex "set debuginfod enabled off" \
         -ex "set auto-solib-add off" \
         -ex "set sysroot $sysroot" \
         -ex "file $fixture_dir/$target/semantic.$fixture_role.$fixture_input_suffix" \
         -ex "symbol-file $fixture_dir/$target/semantic.$fixture_role.ghidra-forge.dbg" \
-        -ex "target remote :$port" \
+        -ex "target remote $qemu_socket_path" \
         "${type_commands[@]}" \
         -ex "info functions $function" \
         -ex "list $function" \
@@ -289,8 +280,7 @@ run_emulated() {
         "${print_before[@]}" \
         "${execution_flow[@]}" \
         "${composite_print[@]}" 2>&1 | tee "$transcript"
-    wait "$active_emulator_pid"
-    active_emulator_pid=""
+    qemu_socket_wait
     validate_transcript "$transcript" "$function" "$source_file"
 }
 
@@ -298,13 +288,13 @@ for target in "${targets[@]}"; do
     case "$target" in
         x86_64) run_native ;;
         aarch64) run_emulated "$target" /usr/bin/qemu-aarch64-static \
-            /usr/aarch64-linux-gnu "$base_port" ;;
+            /usr/aarch64-linux-gnu ;;
         arm32) run_emulated "$target" /usr/bin/qemu-arm-static \
-            "${FORGE_ARM32_SYSROOT:-/usr/arm-linux-gnueabihf}" "$((base_port + 3))" ;;
+            "${FORGE_ARM32_SYSROOT:-/usr/arm-linux-gnueabihf}" ;;
         mips32be) run_emulated "$target" /usr/bin/qemu-mips-static \
-            /usr/mips-linux-gnu "$((base_port + 1))" ;;
+            /usr/mips-linux-gnu ;;
         mips32le) run_emulated "$target" /usr/bin/qemu-mipsel-static \
-            /usr/mipsel-linux-gnu "$((base_port + 2))" ;;
+            /usr/mipsel-linux-gnu ;;
         *) echo "unknown target: $target" >&2; exit 2 ;;
     esac
 done

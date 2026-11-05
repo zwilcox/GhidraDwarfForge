@@ -5,6 +5,7 @@ param(
     [Alias('Input')] [string] $OriginalElf,
     [string] $Output,
     [switch] $GdbLoader,
+    [string] $CompressDebugSections = 'none',
     [string] $Import,
     [string] $ProjectDirectory,
     [string] $ProjectName,
@@ -18,6 +19,10 @@ $ErrorActionPreference = 'Stop'
 function Exit-Usage([string] $Message) {
     [Console]::Error.WriteLine("ghidra-dwarf-forge-headless: $Message")
     exit 64
+}
+
+if ($CompressDebugSections -notin @('none', 'zlib')) {
+    Exit-Usage '-CompressDebugSections must be none or zlib'
 }
 
 function Get-AbsoluteFilesystemPath([string] $Path) {
@@ -252,6 +257,9 @@ try {
     }
     if ($GdbLoader) {
         $exportOptions += @('--gdb-loader')
+    }
+    if ($CompressDebugSections -eq 'zlib') {
+        $exportOptions += @('--compress-debug-sections=zlib')
     }
 
     if ($importMode) {
