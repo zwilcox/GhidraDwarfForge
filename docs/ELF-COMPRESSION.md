@@ -1,11 +1,39 @@
 # Optional ELF debug-section compression
 
-**CONFIRMED locally; hosted acceptance pending:** the development exporter can
+## Current hosted acceptance
+
+[Run 41993381342](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/41993381342)
+passes all 15 jobs, including `required-validation`, at `7fbc726`. Retained raw
+review covers 25 cases and 75 plain/zlib/repeat exports across all five profiles,
+producer-report hashes, bounded section inflation, deterministic bytes,
+source equivalence, original preservation and applicable GDB behavior.
+
+Fresh strict-report retention checks pass 558 x86-64, 393 AArch64, 594 ARM32,
+328 MIPS32 little-endian and 328 MIPS32 big-endian reports. Deliberate negative
+and validator self-test receipts are excluded. Eighteen ARM alias preparation
+receipts are traced to their completed Forge runtime results; compiler references
+and bounded scalar checks are not counted as broader ABI acceptance.
+
+Windows native/GUI checks and independent Linux consumption pass. Linux GUI raw
+review covers three journeys and six report-bound output pairs. In the x86 lane,
+the later rebase test republishes two ordinary baseline files with identical
+hashes, explaining their final mtime changes. Compression-local snapshots still
+prove unchanged shared content, size, mode and mtime; all other final shared
+captures match those snapshots. Details and scoped limitations are retained in
+[evidence](evidence/compression-hosted-41993381342.json).
+
+PR159 is merged as `762dbbd`; its full CI and separate Windows performance
+workflow pass. PR160 incorporates that main revision through a normal merge.
+**PRESENT, UNVERIFIED as a combined revision:** fresh required validation and
+protected integration remain pending. The older pending/failure checkpoints
+below describe earlier revisions and do not supersede this acceptance record.
+
+**CONFIRMED local and hosted component validation; final integration pending:** the development exporter can
 store newly generated DWARF sections using gABI zlib compression. The default
 remains uncompressed. This is the bounded production candidate selected by
 [#74](https://github.com/zwilcox/GhidraDwarfForge/issues/74); it does not complete
 that issue or publish a release. See `PERFORMANCE-WORKPLAN.md` for the measured
-private-copy experiments, other candidates and remaining Windows measurements.
+private-copy experiments, other candidates and passing Windows workload measurements.
 
 ## Invocation
 
@@ -118,9 +146,11 @@ do not replace the corrected complete hosted gate.
 
 The complete required CI gate, final review and normal integration remain open.
 Production Linux compression measurements now pass for both pinned workloads,
-and the scoped Windows packaged GUI/consumer checks pass. Full #74 also requires
-the broader Windows workload measurements and final caching/parallelism
-decisions. Private-copy and production sizes/timings are separate populations.
+and the scoped Windows packaged GUI/consumer checks pass. Broader Windows
+workload/consumer workflow `41989520582` passes and caching/parallelism decisions
+are explicitly resolved in `PERFORMANCE-WORKPLAN.md`. Complete required gates,
+normal integration and final acceptance reconciliation remain necessary.
+Private-copy and production sizes/timings are separate populations.
 
 ## Production workload and Windows checkpoints
 

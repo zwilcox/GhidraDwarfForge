@@ -1,0 +1,1137 @@
+{
+    "status": "WINDOWS_MEASUREMENTS_REVIEWED_LOCAL_CONSUMER_PASS_HOSTED_CORRECTION_PENDING",
+    "run": 41977254778,
+    "measuredHead": "cfc212cc757809ac6d797cce3602f5ab376b0180",
+    "environment": {
+        "host": "Windows-2025Server-10.0.26100-SP0",
+        "cpuCount": 4,
+        "python": "3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]",
+        "pairs": 5,
+        "installations": {
+            "baseline": "D:\\a\\_temp\\performance-baseline\\ghidra_12.0.3_PUBLIC",
+            "candidate": "D:\\a\\_temp\\performance-candidate\\ghidra_12.0.3_PUBLIC"
+        },
+        "helperSha256": "6a49e7aaacd1fb1695f9956332e1b35ac608b21d8b67ae3370b5576be9e5dace",
+        "corpusSha256": "c887586082b3cce1ca93630e1b8fc56a19ba568d72cd79fc4201732eed24bd3a",
+        "classComparison": {
+            "changed": [
+                "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter$1.class",
+                "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter$AllocatedType.class",
+                "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter$ClassAllocation.class",
+                "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter$ExportResult.class",
+                "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter$FunctionKey.class",
+                "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter$FunctionRange.class",
+                "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter$FunctionSymbol.class",
+                "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter$RelocationData.class",
+                "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter$SectionRecord.class",
+                "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter$VariableKey.class",
+                "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter.class"
+            ],
+            "added": [
+                "ghidradwarfforge/performance/ExportPhase$Operation.class",
+                "ghidradwarfforge/performance/ExportPhase.class"
+            ],
+            "unchangedShared": 492,
+            "classMajor": 65
+        },
+        "measurementBoundary": "Fresh PowerShell/wrapper/JVM jobs; all descendant CPU and peak commitment. Launcher CPU excluded; 10ms membership polling included in wall time. Peak commitment is NOT Linux RSS. Import, validation, profiling and Linux GDB replay separate. Alternating AB/BA pairs on a hosted runner; caches and other host load uncontrolled."
+    },
+    "outcomes": [
+        {
+            "workload": "sqlite",
+            "import": {
+                "schemaVersion": 1,
+                "reason": "completed",
+                "exitCode": 0,
+                "windowsError": 0,
+                "cleanupComplete": true,
+                "elapsedSeconds": 84.3527819,
+                "userSeconds": 154.359375,
+                "systemSeconds": 17.9375,
+                "peakJobCommitBytes": 1039192064,
+                "peakProcessCommitBytes": 1009242112,
+                "totalProcesses": 25,
+                "activeProcesses": 0,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.13"
+                    ],
+                    "packagedScript": null
+                }
+            },
+            "samples": [
+                {
+                    "schemaVersion": 1,
+                    "reason": "completed",
+                    "exitCode": 0,
+                    "windowsError": 0,
+                    "cleanupComplete": true,
+                    "elapsedSeconds": 109.0683549,
+                    "userSeconds": 135.84375,
+                    "systemSeconds": 15.984375,
+                    "peakJobCommitBytes": 1466216448,
+                    "peakProcessCommitBytes": 1408106496,
+                    "totalProcesses": 13,
+                    "activeProcesses": 0,
+                    "runtime": {
+                        "javaVersions": [
+                            "21.0.13"
+                        ],
+                        "packagedScript": "D:\\a\\_temp\\performance-baseline\\ghidra_12.0.3_PUBLIC\\Ghidra\\Extensions\\GhidraDwarfForge\\ghidra_scripts\\GhidraDwarfForge.java"
+                    },
+                    "pair": 0,
+                    "variant": "baseline",
+                    "artifactSha256": [
+                        "93dcac10b44ea00bada75593eda03f8de47bd02882c7983d5c3cc54679ed0182",
+                        "5abb137d1e088deeaff7955a7d42c0ecec7b6508c11e814dd1a4108295e8efcc"
+                    ]
+                },
+                {
+                    "schemaVersion": 1,
+                    "reason": "completed",
+                    "exitCode": 0,
+                    "windowsError": 0,
+                    "cleanupComplete": true,
+                    "elapsedSeconds": 104.7062032,
+                    "userSeconds": 133.609375,
+                    "systemSeconds": 15.765625,
+                    "peakJobCommitBytes": 1377759232,
+                    "peakProcessCommitBytes": 1318137856,
+                    "totalProcesses": 13,
+                    "activeProcesses": 0,
+                    "runtime": {
+                        "javaVersions": [
+                            "21.0.13"
+                        ],
+                        "packagedScript": "D:\\a\\_temp\\performance-candidate\\ghidra_12.0.3_PUBLIC\\Ghidra\\Extensions\\GhidraDwarfForge\\ghidra_scripts\\GhidraDwarfForge.java"
+                    },
+                    "pair": 0,
+                    "variant": "candidate",
+                    "artifactSha256": [
+                        "93dcac10b44ea00bada75593eda03f8de47bd02882c7983d5c3cc54679ed0182",
+                        "5abb137d1e088deeaff7955a7d42c0ecec7b6508c11e814dd1a4108295e8efcc"
+                    ]
+                },
+                {
+                    "schemaVersion": 1,
+                    "reason": "completed",
+                    "exitCode": 0,
+                    "windowsError": 0,
+                    "cleanupComplete": true,
+                    "elapsedSeconds": 112.1571416,
+                    "userSeconds": 139.671875,
+                    "systemSeconds": 15.859375,
+                    "peakJobCommitBytes": 1242071040,
+                    "peakProcessCommitBytes": 1183318016,
+                    "totalProcesses": 13,
+                    "activeProcesses": 0,
+                    "runtime": {
+                        "javaVersions": [
+                            "21.0.13"
+                        ],
+                        "packagedScript": "D:\\a\\_temp\\performance-candidate\\ghidra_12.0.3_PUBLIC\\Ghidra\\Extensions\\GhidraDwarfForge\\ghidra_scripts\\GhidraDwarfForge.java"
+                    },
+                    "pair": 1,
+                    "variant": "candidate",
+                    "artifactSha256": [
+                        "93dcac10b44ea00bada75593eda03f8de47bd02882c7983d5c3cc54679ed0182",
+                        "5abb137d1e088deeaff7955a7d42c0ecec7b6508c11e814dd1a4108295e8efcc"
+                    ]
+                },
+                {
+                    "schemaVersion": 1,
+                    "reason": "completed",
+                    "exitCode": 0,
+                    "windowsError": 0,
+                    "cleanupComplete": true,
+                    "elapsedSeconds": 101.412689,
+                    "userSeconds": 122.859375,
+                    "systemSeconds": 13.8125,
+                    "peakJobCommitBytes": 1025060864,
+                    "peakProcessCommitBytes": 960839680,
+                    "totalProcesses": 13,
+                    "activeProcesses": 0,
+                    "runtime": {
+                        "javaVersions": [
+                            "21.0.13"
+                        ],
+                        "packagedScript": "D:\\a\\_temp\\performance-baseline\\ghidra_12.0.3_PUBLIC\\Ghidra\\Extensions\\GhidraDwarfForge\\ghidra_scripts\\GhidraDwarfForge.java"
+                    },
+                    "pair": 1,
+                    "variant": "baseline",
+                    "artifactSha256": [
+                        "93dcac10b44ea00bada75593eda03f8de47bd02882c7983d5c3cc54679ed0182",
+                        "5abb137d1e088deeaff7955a7d42c0ecec7b6508c11e814dd1a4108295e8efcc"
+                    ]
+                },
+                {
+                    "schemaVersion": 1,
+                    "reason": "completed",
+                    "exitCode": 0,
+                    "windowsError": 0,
+                    "cleanupComplete": true,
+                    "elapsedSeconds": 102.9817844,
+                    "userSeconds": 128.953125,
+                    "systemSeconds": 14.578125,
+                    "peakJobCommitBytes": 1107681280,
+                    "peakProcessCommitBytes": 1046667264,
+                    "totalProcesses": 13,
+                    "activeProcesses": 0,
+                    "runtime": {
+                        "javaVersions": [
+                            "21.0.13"
+                        ],
+                        "packagedScript": "D:\\a\\_temp\\performance-baseline\\ghidra_12.0.3_PUBLIC\\Ghidra\\Extensions\\GhidraDwarfForge\\ghidra_scripts\\GhidraDwarfForge.java"
+                    },
+                    "pair": 2,
+                    "variant": "baseline",
+                    "artifactSha256": [
+                        "93dcac10b44ea00bada75593eda03f8de47bd02882c7983d5c3cc54679ed0182",
+                        "5abb137d1e088deeaff7955a7d42c0ecec7b6508c11e814dd1a4108295e8efcc"
+                    ]
+                },
+                {
+                    "schemaVersion": 1,
+                    "reason": "completed",
+                    "exitCode": 0,
+                    "windowsError": 0,
+                    "cleanupComplete": true,
+                    "elapsedSeconds": 102.4390342,
+                    "userSeconds": 125.484375,
+                    "systemSeconds": 14.625,
+                    "peakJobCommitBytes": 1037406208,
+                    "peakProcessCommitBytes": 979566592,
+                    "totalProcesses": 13,
+                    "activeProcesses": 0,
+                    "runtime": {
+                        "javaVersions": [
+                            "21.0.13"
+                        ],
+                        "packagedScript": "D:\\a\\_temp\\performance-candidate\\ghidra_12.0.3_PUBLIC\\Ghidra\\Extensions\\GhidraDwarfForge\\ghidra_scripts\\GhidraDwarfForge.java"
+                    },
+                    "pair": 2,
+                    "variant": "candidate",
+                    "artifactSha256": [
+                        "93dcac10b44ea00bada75593eda03f8de47bd02882c7983d5c3cc54679ed0182",
+                        "5abb137d1e088deeaff7955a7d42c0ecec7b6508c11e814dd1a4108295e8efcc"
+                    ]
+                },
+                {
+                    "schemaVersion": 1,
+                    "reason": "completed",
+                    "exitCode": 0,
+                    "windowsError": 0,
+                    "cleanupComplete": true,
+                    "elapsedSeconds": 104.4491031,
+                    "userSeconds": 126.53125,
+                    "systemSeconds": 14.578125,
+                    "peakJobCommitBytes": 960061440,
+                    "peakProcessCommitBytes": 900554752,
+                    "totalProcesses": 13,
+                    "activeProcesses": 0,
+                    "runtime": {
+                        "javaVersions": [
+                            "21.0.13"
+                        ],
+                        "packagedScript": "D:\\a\\_temp\\performance-candidate\\ghidra_12.0.3_PUBLIC\\Ghidra\\Extensions\\GhidraDwarfForge\\ghidra_scripts\\GhidraDwarfForge.java"
+                    },
+                    "pair": 3,
+                    "variant": "candidate",
+                    "artifactSha256": [
+                        "93dcac10b44ea00bada75593eda03f8de47bd02882c7983d5c3cc54679ed0182",
+                        "5abb137d1e088deeaff7955a7d42c0ecec7b6508c11e814dd1a4108295e8efcc"
+                    ]
+                },
+                {
+                    "schemaVersion": 1,
+                    "reason": "completed",
+                    "exitCode": 0,
+                    "windowsError": 0,
+                    "cleanupComplete": true,
+                    "elapsedSeconds": 102.4672755,
+                    "userSeconds": 122.96875,
+                    "systemSeconds": 15.5,
+                    "peakJobCommitBytes": 1339125760,
+                    "peakProcessCommitBytes": 1281212416,
+                    "totalProcesses": 13,
+                    "activeProcesses": 0,
+                    "runtime": {
+                        "javaVersions": [
+                            "21.0.13"
+                        ],
+                        "packagedScript": "D:\\a\\_temp\\performance-baseline\\ghidra_12.0.3_PUBLIC\\Ghidra\\Extensions\\GhidraDwarfForge\\ghidra_scripts\\GhidraDwarfForge.java"
+                    },
+                    "pair": 3,
+                    "variant": "baseline",
+                    "artifactSha256": [
+                        "93dcac10b44ea00bada75593eda03f8de47bd02882c7983d5c3cc54679ed0182",
+                        "5abb137d1e088deeaff7955a7d42c0ecec7b6508c11e814dd1a4108295e8efcc"
+                    ]
+                },
+                {
+                    "schemaVersion": 1,
+                    "reason": "completed",
+                    "exitCode": 0,
+                    "windowsError": 0,
+                    "cleanupComplete": true,
+                    "elapsedSeconds": 104.5135532,
+                    "userSeconds": 126.171875,
+                    "systemSeconds": 15.125,
+                    "peakJobCommitBytes": 1096859648,
+                    "peakProcessCommitBytes": 1037811712,
+                    "totalProcesses": 13,
+                    "activeProcesses": 0,
+                    "runtime": {
+                        "javaVersions": [
+                            "21.0.13"
+                        ],
+                        "packagedScript": "D:\\a\\_temp\\performance-baseline\\ghidra_12.0.3_PUBLIC\\Ghidra\\Extensions\\GhidraDwarfForge\\ghidra_scripts\\GhidraDwarfForge.java"
+                    },
+                    "pair": 4,
+                    "variant": "baseline",
+                    "artifactSha256": [
+                        "93dcac10b44ea00bada75593eda03f8de47bd02882c7983d5c3cc54679ed0182",
+                        "5abb137d1e088deeaff7955a7d42c0ecec7b6508c11e814dd1a4108295e8efcc"
+                    ]
+                },
+                {
+                    "schemaVersion": 1,
+                    "reason": "completed",
+                    "exitCode": 0,
+                    "windowsError": 0,
+                    "cleanupComplete": true,
+                    "elapsedSeconds": 103.3763374,
+                    "userSeconds": 126.109375,
+                    "systemSeconds": 14.796875,
+                    "peakJobCommitBytes": 1096187904,
+                    "peakProcessCommitBytes": 1036767232,
+                    "totalProcesses": 13,
+                    "activeProcesses": 0,
+                    "runtime": {
+                        "javaVersions": [
+                            "21.0.13"
+                        ],
+                        "packagedScript": "D:\\a\\_temp\\performance-candidate\\ghidra_12.0.3_PUBLIC\\Ghidra\\Extensions\\GhidraDwarfForge\\ghidra_scripts\\GhidraDwarfForge.java"
+                    },
+                    "pair": 4,
+                    "variant": "candidate",
+                    "artifactSha256": [
+                        "93dcac10b44ea00bada75593eda03f8de47bd02882c7983d5c3cc54679ed0182",
+                        "5abb137d1e088deeaff7955a7d42c0ecec7b6508c11e814dd1a4108295e8efcc"
+                    ]
+                }
+            ],
+            "mediansSeconds": {
+                "baseline": 102.9817844,
+                "candidate": 104.4491031
+            },
+            "pairedCandidateMinusBaselineSeconds": [
+                -4.362151699999998,
+                10.744452600000002,
+                -0.5427502000000004,
+                1.9818276000000026,
+                -1.137215800000007
+            ],
+            "medianCpuSeconds": {
+                "baseline": 141.296875,
+                "candidate": 141.109375
+            },
+            "peakJobCommitBytes": {
+                "baseline": 1466216448,
+                "candidate": 1377759232
+            },
+            "artifactSha256": [
+                "93dcac10b44ea00bada75593eda03f8de47bd02882c7983d5c3cc54679ed0182",
+                "5abb137d1e088deeaff7955a7d42c0ecec7b6508c11e814dd1a4108295e8efcc"
+            ],
+            "artifactBytes": 5638024,
+            "phases": {
+                "schemaVersion": 1,
+                "status": "PASS",
+                "phases": {
+                    "decompilation-and-source": {
+                        "startNanoseconds": 1793860195719998800,
+                        "durationNanoseconds": 76733041900,
+                        "elapsedSeconds": 76.7330419
+                    },
+                    "elf-packaging": {
+                        "startNanoseconds": 1793860288402755900,
+                        "durationNanoseconds": 12475800,
+                        "elapsedSeconds": 0.0124758
+                    },
+                    "export": {
+                        "startNanoseconds": 1793860194621607100,
+                        "durationNanoseconds": 93994086800,
+                        "elapsedSeconds": 93.9940868
+                    },
+                    "native-production": {
+                        "startNanoseconds": 1793860286671483800,
+                        "durationNanoseconds": 1731215500,
+                        "elapsedSeconds": 1.7312155
+                    },
+                    "types-and-storage": {
+                        "startNanoseconds": 1793860272461721300,
+                        "durationNanoseconds": 13737173300,
+                        "elapsedSeconds": 13.7371733
+                    }
+                },
+                "unattributedExportSeconds": 1.7801803,
+                "scope": "One profiled export; elapsed wall time including waits, not CPU. Outer export includes child phases. Startup/project opening are outside export. Native production includes Java DIE construction, JNA/native work and section materialization."
+            },
+            "reportStatus": "PARTIAL",
+            "counts": {
+                "functionsExported": 1539,
+                "functionsDecompiled": 1539,
+                "functionsFailed": 0,
+                "functionsSkipped": 161,
+                "functionSignatures": 1539,
+                "parameters": 2194,
+                "localVariables": 4870,
+                "globalVariables": 1774,
+                "functionStaticVariables": 0,
+                "canonicalTypes": 140,
+                "defensibleVariableLocations": 4870,
+                "omittedLocationRanges": 12547,
+                "mappedSourceLines": 87579,
+                "unsupportedConstructs": 11,
+                "diagnostics": 1922
+            },
+            "failedFunctions": [],
+            "projectBackupChanges": [
+                "SQLite.rep/idata/~index.bak",
+                "SQLite.rep/idata/~journal.bak"
+            ],
+            "projectAfterHashesVerified": 9,
+            "strictCorroboratedDiagnostics": 828
+        },
+        {
+            "workload": "uboot",
+            "import": {
+                "schemaVersion": 1,
+                "reason": "completed",
+                "exitCode": 0,
+                "windowsError": 0,
+                "cleanupComplete": true,
+                "elapsedSeconds": 166.7945211,
+                "userSeconds": 246.9375,
+                "systemSeconds": 38.90625,
+                "peakJobCommitBytes": 1346727936,
+                "peakProcessCommitBytes": 1212153856,
+                "totalProcesses": 33,
+                "activeProcesses": 0,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.13"
+                    ],
+                    "packagedScript": null
+                }
+            },
+            "samples": [
+                {
+                    "schemaVersion": 1,
+                    "reason": "completed",
+                    "exitCode": 0,
+                    "windowsError": 0,
+                    "cleanupComplete": true,
+                    "elapsedSeconds": 231.1204252,
+                    "userSeconds": 243.609375,
+                    "systemSeconds": 37.46875,
+                    "peakJobCommitBytes": 1383165952,
+                    "peakProcessCommitBytes": 1326297088,
+                    "totalProcesses": 15,
+                    "activeProcesses": 0,
+                    "runtime": {
+                        "javaVersions": [
+                            "21.0.13"
+                        ],
+                        "packagedScript": "D:\\a\\_temp\\performance-baseline\\ghidra_12.0.3_PUBLIC\\Ghidra\\Extensions\\GhidraDwarfForge\\ghidra_scripts\\GhidraDwarfForge.java"
+                    },
+                    "pair": 0,
+                    "variant": "baseline",
+                    "artifactSha256": [
+                        "3a33b2903033a478f7d9619df50f17f8cf821e9730b82114e7e20f5d44a15203",
+                        "a69bc1e1755482514e2799112613f75202bff00e08e181155b8d6250ce8ffae5"
+                    ]
+                },
+                {
+                    "schemaVersion": 1,
+                    "reason": "completed",
+                    "exitCode": 0,
+                    "windowsError": 0,
+                    "cleanupComplete": true,
+                    "elapsedSeconds": 233.2073853,
+                    "userSeconds": 256.859375,
+                    "systemSeconds": 34.1875,
+                    "peakJobCommitBytes": 1384964096,
+                    "peakProcessCommitBytes": 1327726592,
+                    "totalProcesses": 15,
+                    "activeProcesses": 0,
+                    "runtime": {
+                        "javaVersions": [
+                            "21.0.13"
+                        ],
+                        "packagedScript": "D:\\a\\_temp\\performance-candidate\\ghidra_12.0.3_PUBLIC\\Ghidra\\Extensions\\GhidraDwarfForge\\ghidra_scripts\\GhidraDwarfForge.java"
+                    },
+                    "pair": 0,
+                    "variant": "candidate",
+                    "artifactSha256": [
+                        "3a33b2903033a478f7d9619df50f17f8cf821e9730b82114e7e20f5d44a15203",
+                        "a69bc1e1755482514e2799112613f75202bff00e08e181155b8d6250ce8ffae5"
+                    ]
+                },
+                {
+                    "schemaVersion": 1,
+                    "reason": "completed",
+                    "exitCode": 0,
+                    "windowsError": 0,
+                    "cleanupComplete": true,
+                    "elapsedSeconds": 228.8026566,
+                    "userSeconds": 242.75,
+                    "systemSeconds": 35.640625,
+                    "peakJobCommitBytes": 1247678464,
+                    "peakProcessCommitBytes": 1189093376,
+                    "totalProcesses": 15,
+                    "activeProcesses": 0,
+                    "runtime": {
+                        "javaVersions": [
+                            "21.0.13"
+                        ],
+                        "packagedScript": "D:\\a\\_temp\\performance-candidate\\ghidra_12.0.3_PUBLIC\\Ghidra\\Extensions\\GhidraDwarfForge\\ghidra_scripts\\GhidraDwarfForge.java"
+                    },
+                    "pair": 1,
+                    "variant": "candidate",
+                    "artifactSha256": [
+                        "3a33b2903033a478f7d9619df50f17f8cf821e9730b82114e7e20f5d44a15203",
+                        "a69bc1e1755482514e2799112613f75202bff00e08e181155b8d6250ce8ffae5"
+                    ]
+                },
+                {
+                    "schemaVersion": 1,
+                    "reason": "completed",
+                    "exitCode": 0,
+                    "windowsError": 0,
+                    "cleanupComplete": true,
+                    "elapsedSeconds": 233.5026743,
+                    "userSeconds": 249.71875,
+                    "systemSeconds": 36.21875,
+                    "peakJobCommitBytes": 1207701504,
+                    "peakProcessCommitBytes": 1150164992,
+                    "totalProcesses": 15,
+                    "activeProcesses": 0,
+                    "runtime": {
+                        "javaVersions": [
+                            "21.0.13"
+                        ],
+                        "packagedScript": "D:\\a\\_temp\\performance-baseline\\ghidra_12.0.3_PUBLIC\\Ghidra\\Extensions\\GhidraDwarfForge\\ghidra_scripts\\GhidraDwarfForge.java"
+                    },
+                    "pair": 1,
+                    "variant": "baseline",
+                    "artifactSha256": [
+                        "3a33b2903033a478f7d9619df50f17f8cf821e9730b82114e7e20f5d44a15203",
+                        "a69bc1e1755482514e2799112613f75202bff00e08e181155b8d6250ce8ffae5"
+                    ]
+                },
+                {
+                    "schemaVersion": 1,
+                    "reason": "completed",
+                    "exitCode": 0,
+                    "windowsError": 0,
+                    "cleanupComplete": true,
+                    "elapsedSeconds": 232.7454631,
+                    "userSeconds": 255.90625,
+                    "systemSeconds": 36.9375,
+                    "peakJobCommitBytes": 1343901696,
+                    "peakProcessCommitBytes": 1296707584,
+                    "totalProcesses": 15,
+                    "activeProcesses": 0,
+                    "runtime": {
+                        "javaVersions": [
+                            "21.0.13"
+                        ],
+                        "packagedScript": "D:\\a\\_temp\\performance-baseline\\ghidra_12.0.3_PUBLIC\\Ghidra\\Extensions\\GhidraDwarfForge\\ghidra_scripts\\GhidraDwarfForge.java"
+                    },
+                    "pair": 2,
+                    "variant": "baseline",
+                    "artifactSha256": [
+                        "3a33b2903033a478f7d9619df50f17f8cf821e9730b82114e7e20f5d44a15203",
+                        "a69bc1e1755482514e2799112613f75202bff00e08e181155b8d6250ce8ffae5"
+                    ]
+                },
+                {
+                    "schemaVersion": 1,
+                    "reason": "completed",
+                    "exitCode": 0,
+                    "windowsError": 0,
+                    "cleanupComplete": true,
+                    "elapsedSeconds": 233.8819746,
+                    "userSeconds": 253.671875,
+                    "systemSeconds": 36.9375,
+                    "peakJobCommitBytes": 1449435136,
+                    "peakProcessCommitBytes": 1389633536,
+                    "totalProcesses": 15,
+                    "activeProcesses": 0,
+                    "runtime": {
+                        "javaVersions": [
+                            "21.0.13"
+                        ],
+                        "packagedScript": "D:\\a\\_temp\\performance-candidate\\ghidra_12.0.3_PUBLIC\\Ghidra\\Extensions\\GhidraDwarfForge\\ghidra_scripts\\GhidraDwarfForge.java"
+                    },
+                    "pair": 2,
+                    "variant": "candidate",
+                    "artifactSha256": [
+                        "3a33b2903033a478f7d9619df50f17f8cf821e9730b82114e7e20f5d44a15203",
+                        "a69bc1e1755482514e2799112613f75202bff00e08e181155b8d6250ce8ffae5"
+                    ]
+                },
+                {
+                    "schemaVersion": 1,
+                    "reason": "completed",
+                    "exitCode": 0,
+                    "windowsError": 0,
+                    "cleanupComplete": true,
+                    "elapsedSeconds": 234.0435827,
+                    "userSeconds": 247.625,
+                    "systemSeconds": 35.234375,
+                    "peakJobCommitBytes": 1386209280,
+                    "peakProcessCommitBytes": 1327890432,
+                    "totalProcesses": 15,
+                    "activeProcesses": 0,
+                    "runtime": {
+                        "javaVersions": [
+                            "21.0.13"
+                        ],
+                        "packagedScript": "D:\\a\\_temp\\performance-candidate\\ghidra_12.0.3_PUBLIC\\Ghidra\\Extensions\\GhidraDwarfForge\\ghidra_scripts\\GhidraDwarfForge.java"
+                    },
+                    "pair": 3,
+                    "variant": "candidate",
+                    "artifactSha256": [
+                        "3a33b2903033a478f7d9619df50f17f8cf821e9730b82114e7e20f5d44a15203",
+                        "a69bc1e1755482514e2799112613f75202bff00e08e181155b8d6250ce8ffae5"
+                    ]
+                },
+                {
+                    "schemaVersion": 1,
+                    "reason": "completed",
+                    "exitCode": 0,
+                    "windowsError": 0,
+                    "cleanupComplete": true,
+                    "elapsedSeconds": 241.6884823,
+                    "userSeconds": 265.078125,
+                    "systemSeconds": 37.90625,
+                    "peakJobCommitBytes": 1236955136,
+                    "peakProcessCommitBytes": 1186394112,
+                    "totalProcesses": 15,
+                    "activeProcesses": 0,
+                    "runtime": {
+                        "javaVersions": [
+                            "21.0.13"
+                        ],
+                        "packagedScript": "D:\\a\\_temp\\performance-baseline\\ghidra_12.0.3_PUBLIC\\Ghidra\\Extensions\\GhidraDwarfForge\\ghidra_scripts\\GhidraDwarfForge.java"
+                    },
+                    "pair": 3,
+                    "variant": "baseline",
+                    "artifactSha256": [
+                        "3a33b2903033a478f7d9619df50f17f8cf821e9730b82114e7e20f5d44a15203",
+                        "a69bc1e1755482514e2799112613f75202bff00e08e181155b8d6250ce8ffae5"
+                    ]
+                },
+                {
+                    "schemaVersion": 1,
+                    "reason": "completed",
+                    "exitCode": 0,
+                    "windowsError": 0,
+                    "cleanupComplete": true,
+                    "elapsedSeconds": 244.0963166,
+                    "userSeconds": 255.71875,
+                    "systemSeconds": 38.65625,
+                    "peakJobCommitBytes": 1308135424,
+                    "peakProcessCommitBytes": 1250209792,
+                    "totalProcesses": 15,
+                    "activeProcesses": 0,
+                    "runtime": {
+                        "javaVersions": [
+                            "21.0.13"
+                        ],
+                        "packagedScript": "D:\\a\\_temp\\performance-baseline\\ghidra_12.0.3_PUBLIC\\Ghidra\\Extensions\\GhidraDwarfForge\\ghidra_scripts\\GhidraDwarfForge.java"
+                    },
+                    "pair": 4,
+                    "variant": "baseline",
+                    "artifactSha256": [
+                        "3a33b2903033a478f7d9619df50f17f8cf821e9730b82114e7e20f5d44a15203",
+                        "a69bc1e1755482514e2799112613f75202bff00e08e181155b8d6250ce8ffae5"
+                    ]
+                },
+                {
+                    "schemaVersion": 1,
+                    "reason": "completed",
+                    "exitCode": 0,
+                    "windowsError": 0,
+                    "cleanupComplete": true,
+                    "elapsedSeconds": 243.3464852,
+                    "userSeconds": 265.875,
+                    "systemSeconds": 37.953125,
+                    "peakJobCommitBytes": 1207304192,
+                    "peakProcessCommitBytes": 1149435904,
+                    "totalProcesses": 15,
+                    "activeProcesses": 0,
+                    "runtime": {
+                        "javaVersions": [
+                            "21.0.13"
+                        ],
+                        "packagedScript": "D:\\a\\_temp\\performance-candidate\\ghidra_12.0.3_PUBLIC\\Ghidra\\Extensions\\GhidraDwarfForge\\ghidra_scripts\\GhidraDwarfForge.java"
+                    },
+                    "pair": 4,
+                    "variant": "candidate",
+                    "artifactSha256": [
+                        "3a33b2903033a478f7d9619df50f17f8cf821e9730b82114e7e20f5d44a15203",
+                        "a69bc1e1755482514e2799112613f75202bff00e08e181155b8d6250ce8ffae5"
+                    ]
+                }
+            ],
+            "mediansSeconds": {
+                "baseline": 233.5026743,
+                "candidate": 233.8819746
+            },
+            "pairedCandidateMinusBaselineSeconds": [
+                2.086960099999999,
+                -4.700017699999989,
+                1.1365115000000117,
+                -7.644899600000002,
+                -0.749831400000005
+            ],
+            "medianCpuSeconds": {
+                "baseline": 292.84375,
+                "candidate": 290.609375
+            },
+            "peakJobCommitBytes": {
+                "baseline": 1383165952,
+                "candidate": 1449435136
+            },
+            "artifactSha256": [
+                "3a33b2903033a478f7d9619df50f17f8cf821e9730b82114e7e20f5d44a15203",
+                "a69bc1e1755482514e2799112613f75202bff00e08e181155b8d6250ce8ffae5"
+            ],
+            "artifactBytes": 17029464,
+            "phases": {
+                "schemaVersion": 1,
+                "status": "PASS",
+                "phases": {
+                    "decompilation-and-source": {
+                        "startNanoseconds": 1793862831891839100,
+                        "durationNanoseconds": 188630576400,
+                        "elapsedSeconds": 188.6305764
+                    },
+                    "elf-packaging": {
+                        "startNanoseconds": 1793863063275569400,
+                        "durationNanoseconds": 20075200,
+                        "elapsedSeconds": 0.0200752
+                    },
+                    "export": {
+                        "startNanoseconds": 1793862829590952800,
+                        "durationNanoseconds": 233939300300,
+                        "elapsedSeconds": 233.9393003
+                    },
+                    "native-production": {
+                        "startNanoseconds": 1793863049425779500,
+                        "durationNanoseconds": 13849691500,
+                        "elapsedSeconds": 13.8496915
+                    },
+                    "types-and-storage": {
+                        "startNanoseconds": 1793863020531115700,
+                        "durationNanoseconds": 28154801600,
+                        "elapsedSeconds": 28.1548016
+                    }
+                },
+                "unattributedExportSeconds": 3.2841556,
+                "scope": "One profiled export; elapsed wall time including waits, not CPU. Outer export includes child phases. Startup/project opening are outside export. Native production includes Java DIE construction, JNA/native work and section materialization."
+            },
+            "reportStatus": "PARTIAL",
+            "counts": {
+                "functionsExported": 6375,
+                "functionsDecompiled": 6374,
+                "functionsFailed": 1,
+                "functionsSkipped": 268,
+                "functionSignatures": 6375,
+                "parameters": 3935,
+                "localVariables": 15846,
+                "globalVariables": 11677,
+                "functionStaticVariables": 0,
+                "canonicalTypes": 298,
+                "defensibleVariableLocations": 15903,
+                "omittedLocationRanges": 4497,
+                "mappedSourceLines": 222853,
+                "unsupportedConstructs": 10,
+                "diagnostics": 7229
+            },
+            "failedFunctions": [
+                {
+                    "name": "lib_test_alist_has",
+                    "address": "0x1e6e3a",
+                    "diagnostic": "Exception while decompiling 002e6e3a: process: timeout\n"
+                }
+            ],
+            "projectBackupChanges": [
+                "UBoot.rep/idata/~index.bak",
+                "UBoot.rep/idata/~journal.bak"
+            ],
+            "projectAfterHashesVerified": 9,
+            "strictCorroboratedDiagnostics": 3735
+        }
+    ],
+    "protectedBeforeAfterEntries": 718,
+    "protectedEntriesIndependentlyRehashed": 715,
+    "unavailableProtectedFiles": [
+        "D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\measurement\\windows-measure.exe",
+        "D:\\a\\_temp\\performance-baseline\\ghidra_12.0.3_PUBLIC\\support\\launch.properties",
+        "D:\\a\\_temp\\performance-candidate\\ghidra_12.0.3_PUBLIC\\support\\launch.properties"
+    ],
+    "windowsCheckoutCrlfSourceHashesVerified": [
+        "windows-workloads.py",
+        "export-benchmark.py",
+        "headless-observations.py",
+        "jfr-phases.py"
+    ],
+    "localConsumerReplay": "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/test-results/windows-performance-consumer-source-replay",
+    "localSourceControls": "run.dberko2q",
+    "limits": [
+        "Hosted consumer failed missing compiler-source relocation; local corrected replay passes both unchanged artifacts, fresh hosted gate pending",
+        "No general speed or memory improvement; Windows commitment differs from Linux RSS",
+        "Unavailable protected installation settings/helper file hashes are recorded before/after by the Windows job but cannot be reread from this artifact subset"
+    ],
+    "archives": {
+        "windows-performance-workloads": {
+            "artifactId": 13395324184,
+            "archiveSha256": "2c4ea3c060f40e7eb09e57e3d46fe1a16c5ad5e9f03c8ed000ff0f5fe8e9e12e",
+            "run": 41977254778,
+            "head": "cfc212cc757809ac6d797cce3602f5ab376b0180"
+        },
+        "windows-performance-consumer": {
+            "artifactId": 13395164694,
+            "archiveSha256": "ab02f684568604c3b1db78380826c13a100e5bbb42eaabc02e9833e1fa030d71",
+            "run": 41977254778,
+            "head": "cfc212cc757809ac6d797cce3602f5ab376b0180"
+        },
+        "performance-corpus": {
+            "artifactId": 13392387868,
+            "archiveSha256": "d8a3e963c47275d888295c774c4eae84a62ef0eb1f8449737e45d5b3efe308c5",
+            "run": 41977254778,
+            "head": "cfc212cc757809ac6d797cce3602f5ab376b0180"
+        },
+        "performance-packages": {
+            "artifactId": 13392313685,
+            "archiveSha256": "7cb79df6071ca7588ac4d2415b7ce5c67af1988908ba84887b9d07bf4f9312d4",
+            "run": 41977254778,
+            "head": "cfc212cc757809ac6d797cce3602f5ab376b0180"
+        }
+    },
+    "localConsumerSummary": {
+        "status": "PASS",
+        "protectedUnchanged": true,
+        "scope": "Untouched Windows DWARF, independent Linux validators and compiler/Forge GDB function/source/global/step/return/exit checks. Explicit source directory relocation and PIE load bias. Consumer time is not Windows exporter time.",
+        "outcomes": [
+            {
+                "workload": "sqlite",
+                "artifactSha256": [
+                    "93dcac10b44ea00bada75593eda03f8de47bd02882c7983d5c3cc54679ed0182",
+                    "5abb137d1e088deeaff7955a7d42c0ecec7b6508c11e814dd1a4108295e8efcc"
+                ],
+                "validation": {
+                    "llvm": {
+                        "elapsedSeconds": 0.05,
+                        "userSeconds": 0.05,
+                        "systemSeconds": 0.0,
+                        "maximumResidentKiB": 56208
+                    },
+                    "strict": {
+                        "elapsedSeconds": 0.18,
+                        "userSeconds": 0.14,
+                        "systemSeconds": 0.03,
+                        "maximumResidentKiB": 59972
+                    },
+                    "info": {
+                        "elapsedSeconds": 0.01,
+                        "userSeconds": 0.01,
+                        "systemSeconds": 0.0,
+                        "maximumResidentKiB": 6396
+                    },
+                    "abbrev": {
+                        "elapsedSeconds": 0.0,
+                        "userSeconds": 0.0,
+                        "systemSeconds": 0.0,
+                        "maximumResidentKiB": 6084
+                    },
+                    "aranges": {
+                        "elapsedSeconds": 0.0,
+                        "userSeconds": 0.0,
+                        "systemSeconds": 0.0,
+                        "maximumResidentKiB": 6608
+                    },
+                    "decodedline": {
+                        "elapsedSeconds": 0.02,
+                        "userSeconds": 0.02,
+                        "systemSeconds": 0.0,
+                        "maximumResidentKiB": 6952
+                    },
+                    "Ranges": {
+                        "elapsedSeconds": 0.0,
+                        "userSeconds": 0.0,
+                        "systemSeconds": 0.0,
+                        "maximumResidentKiB": 6344
+                    },
+                    "loc": {
+                        "elapsedSeconds": 0.03,
+                        "userSeconds": 0.03,
+                        "systemSeconds": 0.0,
+                        "maximumResidentKiB": 6340
+                    },
+                    "identity": {
+                        "elapsedSeconds": 0.0,
+                        "userSeconds": 0.0,
+                        "systemSeconds": 0.0,
+                        "maximumResidentKiB": 2556
+                    },
+                    "compiler-gdb": {
+                        "elapsedSeconds": 0.1,
+                        "userSeconds": 0.11,
+                        "systemSeconds": 0.02,
+                        "maximumResidentKiB": 64760
+                    },
+                    "forge-gdb": {
+                        "elapsedSeconds": 0.12,
+                        "userSeconds": 0.13,
+                        "systemSeconds": 0.02,
+                        "maximumResidentKiB": 71884
+                    }
+                },
+                "strict": {
+                    "status": "PASS",
+                    "exit_status": 0,
+                    "reported_errors": 828,
+                    "uncorroborated_errors": 0
+                },
+                "inheritedFrameIdentity": {
+                    "class": 2,
+                    "byte_order": 1,
+                    "os_abi": 0,
+                    "abi_version": 0,
+                    "machine": 62,
+                    "flags": 0,
+                    "section_address": 5134536,
+                    "section_size": 61500,
+                    "section_sha256": "e268e2e2ca6344cd272e8f317162b96ec43a64449cadfa0e05a211efc1048796"
+                }
+            },
+            {
+                "workload": "uboot",
+                "artifactSha256": [
+                    "3a33b2903033a478f7d9619df50f17f8cf821e9730b82114e7e20f5d44a15203",
+                    "a69bc1e1755482514e2799112613f75202bff00e08e181155b8d6250ce8ffae5"
+                ],
+                "validation": {
+                    "llvm": {
+                        "elapsedSeconds": 0.2,
+                        "userSeconds": 0.19,
+                        "systemSeconds": 0.01,
+                        "maximumResidentKiB": 71236
+                    },
+                    "strict": {
+                        "elapsedSeconds": 0.44,
+                        "userSeconds": 0.38,
+                        "systemSeconds": 0.06,
+                        "maximumResidentKiB": 103420
+                    },
+                    "info": {
+                        "elapsedSeconds": 0.04,
+                        "userSeconds": 0.03,
+                        "systemSeconds": 0.01,
+                        "maximumResidentKiB": 13764
+                    },
+                    "abbrev": {
+                        "elapsedSeconds": 0.0,
+                        "userSeconds": 0.0,
+                        "systemSeconds": 0.0,
+                        "maximumResidentKiB": 13764
+                    },
+                    "aranges": {
+                        "elapsedSeconds": 0.01,
+                        "userSeconds": 0.0,
+                        "systemSeconds": 0.0,
+                        "maximumResidentKiB": 13764
+                    },
+                    "decodedline": {
+                        "elapsedSeconds": 0.05,
+                        "userSeconds": 0.03,
+                        "systemSeconds": 0.01,
+                        "maximumResidentKiB": 15068
+                    },
+                    "Ranges": {
+                        "elapsedSeconds": 0.0,
+                        "userSeconds": 0.0,
+                        "systemSeconds": 0.0,
+                        "maximumResidentKiB": 13764
+                    },
+                    "loc": {
+                        "elapsedSeconds": 0.1,
+                        "userSeconds": 0.08,
+                        "systemSeconds": 0.01,
+                        "maximumResidentKiB": 13824
+                    },
+                    "identity": {
+                        "elapsedSeconds": 0.0,
+                        "userSeconds": 0.0,
+                        "systemSeconds": 0.0,
+                        "maximumResidentKiB": 2232
+                    },
+                    "compiler-gdb": {
+                        "elapsedSeconds": 0.27,
+                        "userSeconds": 0.27,
+                        "systemSeconds": 0.12,
+                        "maximumResidentKiB": 266004
+                    },
+                    "forge-gdb": {
+                        "elapsedSeconds": 0.25,
+                        "userSeconds": 0.19,
+                        "systemSeconds": 0.1,
+                        "maximumResidentKiB": 266072
+                    }
+                },
+                "strict": {
+                    "status": "PASS",
+                    "exit_status": 0,
+                    "reported_errors": 3735,
+                    "uncorroborated_errors": 0
+                },
+                "inheritedFrameIdentity": {
+                    "class": 2,
+                    "byte_order": 1,
+                    "os_abi": 0,
+                    "abi_version": 0,
+                    "machine": 62,
+                    "flags": 0,
+                    "section_address": 3273472,
+                    "section_size": 467704,
+                    "section_sha256": "96a2ede3133943ae30133823d2762ac33d57cbe20ce915880afdacb52830b892"
+                }
+            }
+        ]
+    },
+    "localConsumerHashes": {
+        "sqlite/Ranges.command.json": "9ec4376ab54052dad45093dc008448c3e5ff1b4ba6a96dd8a41a0c97418b3837",
+        "sqlite/Ranges.log": "78b2f5e810e65d17867516f0a808b0fe8972d83e1e3c5c498704de5179b2f637",
+        "sqlite/Ranges.metrics.json": "030c9eb75e137e614aefa9c8cdd984bb8489fcad824ebc601e0edc481bfc77c7",
+        "sqlite/Ranges.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sqlite/abbrev.command.json": "9c84c578cc08d2d408ca74fb2d93e385fd829b6652c6b08475b81348169d4eb0",
+        "sqlite/abbrev.log": "c8f8a5b66f0f2540a6cacecbbd726e837b12de25031f3d2d9746b06ec0c5d6d9",
+        "sqlite/abbrev.metrics.json": "d0a6d703ea6448ef4a8d34832268069032dce048b71bf80bdafd8ff0bfac53fb",
+        "sqlite/abbrev.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sqlite/aranges.command.json": "2d4599b93ccfadf2e8a9e99d495f9a59e00c81e8effc6eac2be1477fa2dce965",
+        "sqlite/aranges.log": "e78f54a48070bf668d4eb0590d5bdaedb06d3348e9931ae7261509491f523fe7",
+        "sqlite/aranges.metrics.json": "2c37f6556c6bb69872f8fcfec1baf4b50af42148e6924c8c6642fa8eb7ca3ea4",
+        "sqlite/aranges.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sqlite/compiler-gdb.command.json": "a395335dedcaa2b57e58597403de6d487755bd997b2385966f06db522821afaf",
+        "sqlite/compiler-gdb.log": "77a600280608aff35c81acc279c00c62c139999f690d85c2e2e6e98406b0e0b8",
+        "sqlite/compiler-gdb.metrics.json": "7c19647b286a5a41bf34041c1ad5f1015d9a3c49c44ac3c1e1cdc792ce21cf62",
+        "sqlite/compiler-gdb.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sqlite/compiler-source.json": "af5d731762bce08324e1eedb4da049debe54a308bc68827db0434406b986a7f1",
+        "sqlite/compiler.gdb": "9cf078173ef43b3797d5dec20a49974c2a30e229fc7128d72bc97bb6cecc1538",
+        "sqlite/decodedline.command.json": "c4ce9f6ab84674b18cd16211fdca6a99498c582a326913b357b76e20500699c3",
+        "sqlite/decodedline.log": "410171a1c1455cd282d3e6999d40a2512c4d2b9fa7fde7e6c842219e27084306",
+        "sqlite/decodedline.metrics.json": "0bdfff36d5b5ce9d24a1e0bca21efd54b256caff0b15d31155a1f663d3e3eb09",
+        "sqlite/decodedline.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sqlite/forge-gdb.command.json": "39942157adca4159c1c5974afa008ca6144530490e7e1f4ec3d50d977f706ff3",
+        "sqlite/forge-gdb.log": "b54cd7281cfe67d94397df32f104ccfb67d466d69e2610b2344276ca1a9c69b3",
+        "sqlite/forge-gdb.metrics.json": "3a750c437e471ee99ece459aeced956387be8d35145ecd67eec2388a9918fa03",
+        "sqlite/forge-gdb.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sqlite/forge.gdb": "8620ec3bb008eb75898aca4c9eaa147be78f25e1c70fe999d328591721f842eb",
+        "sqlite/identity.command.json": "3208b4f60a6bcaba769d633b7b5c6d47225e1d80ea4d6a87bb5d4f5804d7bb58",
+        "sqlite/identity.log": "5457e83a5e0383c8db711bf69c1879918f279678d6b1e311ee212fb997ad167b",
+        "sqlite/identity.metrics.json": "56ce1a1f76efb07c038f747e4e25adc5de6302da4c82e7a3e174bc094fc951cc",
+        "sqlite/identity.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sqlite/info.command.json": "ce2fe2f28c398fb53346d9f6b0a013f8f9a4da18d7d3c8338e1013cdeca0a3e1",
+        "sqlite/info.log": "12d9978ee9f83454cda16fe0299192df18d4ecc4d1191c848ab2adceb888b798",
+        "sqlite/info.metrics.json": "5c4845b33048a96f61c59e61208907719ee1e5aeee200959483eee2939b8ef45",
+        "sqlite/info.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sqlite/llvm.command.json": "d79d85af0bdd643b6d281cfb45fe4ce51327867ebda325e45ebaa44b579c08c5",
+        "sqlite/llvm.log": "c7fa4890ee1d1e9cfd0821e2f3a12144a495d8ae5ead49a777605a4b08a6edde",
+        "sqlite/llvm.metrics.json": "223b4d368f5b53a0f952ceb95c79b3a5e0e9fdb9f396c6c48610e09e9f4da14a",
+        "sqlite/llvm.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sqlite/loc.command.json": "efd0bd4ef6bc90db2d54a57e3aad3900918e9c3eb960f492e6cd82042d8ef0e3",
+        "sqlite/loc.log": "ef6ad459a79c237e9dc92e0e04fbfa1f300fcddba57864e742d706e7f98d968e",
+        "sqlite/loc.metrics.json": "6311a79ede2d57246da1d26dc40d80af6ec34d35092c0d4a70546d1e413f91c9",
+        "sqlite/loc.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sqlite/strict-checks.log": "44e0dea0c658ea9feacc6420f806b8d415cc73045b55565e7581d4d940d40f6e",
+        "sqlite/strict-checks.log.check.json": "992d473a9c2504ac15ce15d963c54d002611c5993e15dcf80c9ce400fff36be4",
+        "sqlite/strict-checks.log.original.txt.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sqlite/strict-checks.log.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sqlite/strict.command.json": "10b74abc4c957c1f883448eef2d72835bfbf14178572ef90de777e49a3b3f82d",
+        "sqlite/strict.log": "e1eeb3493645dc974d8020c3a06696fc16d93334eeb8b88938275baa575ae76a",
+        "sqlite/strict.metrics.json": "a78706929e0c65bf3713b4cc5d483b5bfea99a755e88af87bc1bf9e86a284cd0",
+        "sqlite/strict.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "summary.json": "625185df8467ba96702067850446d5733fa1adf4e6d2355375d9e22e93cf024a",
+        "uboot/Ranges.command.json": "6a63f4c04332ae2a2f5fe412e5d2ff87cef385939403e13e8abdab685f889ac3",
+        "uboot/Ranges.log": "6f60848719d52378e7f5192e2591aa87abcebbcfb324973202202920101c0175",
+        "uboot/Ranges.metrics.json": "8dec0b5137719142fffff8f00ad1ed2a8fca938cc3d7641bfbfdc8a551b193fe",
+        "uboot/Ranges.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "uboot/abbrev.command.json": "64937acf61e319b0bfc451a70fbb539222a1b6236317132a4c8d3b40c2d46689",
+        "uboot/abbrev.log": "f707d92cd5d5f88c4328639d8448eed2733045a3dc060f85b266c9b10815c57b",
+        "uboot/abbrev.metrics.json": "8dec0b5137719142fffff8f00ad1ed2a8fca938cc3d7641bfbfdc8a551b193fe",
+        "uboot/abbrev.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "uboot/aranges.command.json": "13a9c3cfc89f67c3c1f4856cfb946f100fbf5f5219566c1599d21db517316815",
+        "uboot/aranges.log": "cfa30318a8d505b8eef41e37cb2e137a81cad8f53025ccb67a216e0499c20fa0",
+        "uboot/aranges.metrics.json": "91b5a68f60c88760b6e5d668792528264f6373dd9c1330660ffc5e1b1d4214ef",
+        "uboot/aranges.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "uboot/compiler-gdb.command.json": "0b88a7c9efd5ac58e8f67105fb3f6d4849390463d1c5285efde0541dff766eb3",
+        "uboot/compiler-gdb.log": "1775249f07b2130c12437281296bed923351f753be8a2d18e045b4e056d8b045",
+        "uboot/compiler-gdb.metrics.json": "38346e79efb4e8de758d54938d1591c5c6a3711604908c0aa097721d3f3e55dc",
+        "uboot/compiler-gdb.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "uboot/compiler-inferior.log": "c3ea2f0db375584d2b744a81ae003db74edce4ad0909c20e2aac22c027ce7d59",
+        "uboot/compiler-source.json": "978f24a0a9c6946f5c050ca25922502cd68fb3070b6e23f5be075cc71d0d2bd0",
+        "uboot/compiler.gdb": "7343aa8748a3ae25dea547910a087e4a4c1893fe663addd22dd2fc0354ab6e73",
+        "uboot/decodedline.command.json": "c9e2f41d4bcce056f061bfa12fc2d64f1bffabb32e60f6edaf8f984bca723f81",
+        "uboot/decodedline.log": "bbd100552ba4cb87e31890f566f51cfaeace8dbecd2626d7fd0c82d132535c81",
+        "uboot/decodedline.metrics.json": "720cfc394ec7cfefbc039cf5e9dd524eb7148722616602a660637627a3da39fd",
+        "uboot/decodedline.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "uboot/forge-gdb.command.json": "952f81b0939af419b4e9c158fc355d4d7f8138e1fed296165a27e8ec7673a4b9",
+        "uboot/forge-gdb.log": "255dbc25766274795cbac7aa48fb40ae64c036e834a292caf9d7dbbac469c9f6",
+        "uboot/forge-gdb.metrics.json": "d788ff76fc4338ccbdbe8eea87b8f894512cb59a94e85787648e6fd87ba53d9e",
+        "uboot/forge-gdb.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "uboot/forge-inferior.log": "b679c8c96a6d4c7c2c54086e5337be29df7594d33c416e351893aaf4f17ba11f",
+        "uboot/forge.gdb": "202d65a3c2be04ecfc7fe70839fdf5d6df445bff2e19ab6ec1deb97dcb5a558a",
+        "uboot/identity.command.json": "dceb6921bbe550b8c05dce151cc5d403135389a5ce9c1318b78501b851fb354d",
+        "uboot/identity.log": "7e3a2e55a1a63f8d174eb8d12ca49990a74a4c63785fbdbf97b73f68c8ab5942",
+        "uboot/identity.metrics.json": "4926079c43c1431835d76c9589c6cf1d281a0f362f676299b1ca4cf5930588ce",
+        "uboot/identity.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "uboot/info.command.json": "d71600863a7acdd712fbbc7b2d442e635f214075204913832e1ceb666a491b1f",
+        "uboot/info.log": "a175a7e745c7907d461322c435d6028524879aa2eff96a380bcc8588cad0994c",
+        "uboot/info.metrics.json": "4fee517b838f87c7c973ba9e816a74a6761c2095ab144e3e18c07b8aba3b3224",
+        "uboot/info.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "uboot/llvm.command.json": "7bb77de3264c7089a227df3de967384a486aa02234aff8d7e9e7bdec9398cc67",
+        "uboot/llvm.log": "4bf5600cabea53b2735f498bcd7c7501c30f7ed9df453bccdd46a00d1c1f4475",
+        "uboot/llvm.metrics.json": "dc672bfa2153d85be0092997dc64c0038f8e980a6954f0dba912823be49ecf69",
+        "uboot/llvm.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "uboot/loc.command.json": "53b62c0fd45404761ab00af9dd8a008ae89035c588106e352e19bd84bd05205b",
+        "uboot/loc.log": "fdbeb86c62a8654095dfb54cfbf0a1267946a53b8e2da0f73eb5b2de40b5fc6b",
+        "uboot/loc.metrics.json": "fb153443471e75226a2425db496116d1df6fcbdbe4ac6ec5aaa4442552e8109a",
+        "uboot/loc.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "uboot/strict-checks.log": "d5c4abd44f6d3e7f63768eab2ee257822b7408af6676cd24e6ed359471a08028",
+        "uboot/strict-checks.log.check.json": "a279bc0dbb82d80426f3ad0137297ce5dcc114d4f987bd0c6267de960c01d65c",
+        "uboot/strict-checks.log.original.txt.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "uboot/strict-checks.log.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "uboot/strict.command.json": "380b8b8d378ebf0890e2e746e786b6ed498895be5b80618041b338a73b4ebe77",
+        "uboot/strict.log": "eefc43aaad8dc40640212110e9c7705d6279d281661020dfab0b7346bfe79013",
+        "uboot/strict.metrics.json": "097dead247344e2a2ccae4d80e70ab700061ea84572a51c33d9a2b35ae47df2d",
+        "uboot/strict.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "sourceControls": {
+        "status": "PASS",
+        "unmappedCompilerSource": "reproduced missing-source diagnostic",
+        "relocatedSource": "GDB path/hash/list/globals/normal exit",
+        "rejected": [
+            "changed-source",
+            "missing-source",
+            "escaped-source",
+            "wrong-archive"
+        ]
+    },
+    "localConsumerSummarySha256": "625185df8467ba96702067850446d5733fa1adf4e6d2355375d9e22e93cf024a"
+}

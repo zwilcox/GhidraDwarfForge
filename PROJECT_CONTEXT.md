@@ -1,5 +1,43 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED measurement integration and compression component validation:**
+PR159 merged as `762dbbd` after complete CI `41989520429` and performance
+workflow `41989520582` passed at `3276396`. The merge tree matches the tested
+head exactly. Independent review covers all five target artifacts, Linux GUI,
+Windows native/GUI/consumer checks, attachment preservation and paired workloads.
+
+Compression CI `41993381342` passes all 15 jobs at `7fbc726`, with independent
+review of all five target artifacts and both host paths. All 75 compression
+exports preserve decompressed DWARF/source, originals and private fixture inputs.
+See `docs/evidence/compression-hosted-41993381342.json`. PR160 now includes a
+normal merge of main and the corrected performance consumer. **PRESENT,
+UNVERIFIED as a combined revision:** its fresh required gate and protected merge
+remain necessary before #74 can close. No release publication is included.
+
+**HISTORICAL pre-integration checkpoints follow.**
+
+**HISTORICAL #74 measurements and consumer validation before PR159 integration:**
+performance workflow `41989520582` at `3276396` passes all five jobs, including
+native Windows paired exports and independent Linux compiler/Forge GDB checks.
+Raw review binds all 22 exports, 717 independently checked protected-file hashes,
+both binary JFR recordings and source-relocation positive/negative controls.
+Two private `launch.properties` files are recorded unchanged by the Windows job
+but are unavailable in the retained artifact subset. See
+`docs/evidence/performance-windows-workloads-41989520582.json`.
+
+Opt-in zlib is implemented and measured in PR160: production Linux SQLite and
+U-Boot sidecars shrink 65.39% and 60.11%, with no general speed or memory claim.
+The fixture-isolation correction preserves report-bound shared outputs.
+Cache, parallelism and other candidate decisions are explicitly resolved in
+`docs/PERFORMANCE-WORKPLAN.md`; deferral is not implementation. Full required
+integration gates, normal merges and final acceptance remain required. #74 and
+the later goal issues are open; no release publication is included.
+
+**HISTORICAL checkpoint paragraphs follow.** Earlier pending Windows measurements
+and provisional optimization decisions retain the evidence available at their
+dates; the current paragraph and P3.5 acceptance section supersede them within
+their stated scope. They do not reopen already accepted unrelated work.
+
 **CONFIRMED compression test interference; corrected locally:** run `41983547971`
 passes all five MIPS big-endian compression cases, then correctly rejects automatic
 association because the compression harness overwrote shared fixture sidecars
@@ -26,6 +64,18 @@ timeout and omissions retained. Broader Windows measurements and corrected
 exact-head CI remain pending. `05953e9` fixes the
 large-ELF smoke's missing standalone compilation dependency. Final #74 acceptance
 remains open; see `docs/ELF-COMPRESSION.md`.
+
+**CONFIRMED Windows #74 measurements; consumer correction validated locally:**
+run `41977254778` at `cfc212c` completes five native Windows baseline/candidate
+pairs and a separate profile for both pinned workloads, with unchanged artifacts,
+curated report counts and protected inputs. Native GNU/LLVM/libdwarf checks pass.
+The hosted Linux consumer fails because compiler-reference source paths still
+refer to the build worker. Explicit relocation from verified corpus sources now
+passes local replay of both unchanged Windows artifacts and real-GDB positive/
+negative source controls. No diagnostic is suppressed. Fresh hosted acceptance
+and the required gate remain pending. Cache and parallel-decompilation deferrals
+are now explicit against both hosts' measurements; compression remains in PR160.
+See `docs/PERFORMANCE-WORKPLAN.md`; full #74 and all later goal issues stay open.
 
 **CONFIRMED Windows runtime-observer correction; workload acceptance pending:**
 Run `41975183135` passes native accounting, corpus and package preparation,

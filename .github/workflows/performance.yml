@@ -232,7 +232,9 @@ jobs:
             - name: Install independent Linux consumers
               run: |
                   sudo apt-get update -y
-                  sudo apt-get install --no-install-recommends -y gdb-multiarch binutils llvm
+                  sudo apt-get install --no-install-recommends -y gdb-multiarch binutils llvm gcc
+            - name: Prove compiler source relocation and reject changed corpus inputs
+              run: python3 src/test/performance/test-host-consumer-sources.py
             - name: Validate untouched Windows artifacts and exercise Linux GDB
               run: |
                   chmod +x packages/checker-linux/bin/dwarfdump packages/checker-linux/libexec/dwarfdump
@@ -243,6 +245,8 @@ jobs:
               if: always()
               with:
                   name: windows-performance-consumer
-                  path: build/test-results/windows-performance-consumer/
+                  path: |
+                      build/test-results/windows-performance-consumer/
+                      build/test-results/host-consumer-source-controls/
                   if-no-files-found: error
                   retention-days: 14

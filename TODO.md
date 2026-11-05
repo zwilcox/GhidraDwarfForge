@@ -1,5 +1,43 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED measurement integration and compression component validation:**
+PR159 merged as `762dbbd` after complete CI `41989520429` and performance
+workflow `41989520582` passed at `3276396`. The merge tree matches the tested
+head exactly. Independent review covers all five target artifacts, Linux GUI,
+Windows native/GUI/consumer checks, attachment preservation and paired workloads.
+
+Compression CI `41993381342` passes all 15 jobs at `7fbc726`, with independent
+review of all five target artifacts and both host paths. All 75 compression
+exports preserve decompressed DWARF/source, originals and private fixture inputs.
+See `docs/evidence/compression-hosted-41993381342.json`. PR160 now includes a
+normal merge of main and the corrected performance consumer. **PRESENT,
+UNVERIFIED as a combined revision:** its fresh required gate and protected merge
+remain necessary before #74 can close. No release publication is included.
+
+**HISTORICAL pre-integration checkpoints follow.**
+
+**HISTORICAL #74 measurements and consumer validation before PR159 integration:**
+performance workflow `41989520582` at `3276396` passes all five jobs, including
+native Windows paired exports and independent Linux compiler/Forge GDB checks.
+Raw review binds all 22 exports, 717 independently checked protected-file hashes,
+both binary JFR recordings and source-relocation positive/negative controls.
+Two private `launch.properties` files are recorded unchanged by the Windows job
+but are unavailable in the retained artifact subset. See
+`docs/evidence/performance-windows-workloads-41989520582.json`.
+
+Opt-in zlib is implemented and measured in PR160: production Linux SQLite and
+U-Boot sidecars shrink 65.39% and 60.11%, with no general speed or memory claim.
+The fixture-isolation correction preserves report-bound shared outputs.
+Cache, parallelism and other candidate decisions are explicitly resolved in
+`docs/PERFORMANCE-WORKPLAN.md`; deferral is not implementation. Full required
+integration gates, normal merges and final acceptance remain required. #74 and
+the later goal issues are open; no release publication is included.
+
+**HISTORICAL checkpoint paragraphs follow.** Earlier pending Windows measurements
+and provisional optimization decisions retain the evidence available at their
+dates; the current paragraph and P3.5 acceptance section supersede them within
+their stated scope. They do not reopen already accepted unrelated work.
+
 **CONFIRMED compression test interference; corrected locally:** run `41983547971`
 passes all five MIPS big-endian compression cases, then correctly rejects automatic
 association because the compression harness overwrote shared fixture sidecars
@@ -23,6 +61,17 @@ included. Windows broader workloads, the corrected full hosted gate, review/inte
 and final #74 decisions remain pending. The large-ELF standalone compilation
 dependency is fixed in `05953e9`. See `docs/ELF-COMPRESSION.md`; no later goal
 issue is complete.
+
+**CONFIRMED #74 Windows measurement checkpoint; incomplete integration:**
+run `41977254778` completes both five-pair/profile workload suites and native
+validators. Its hosted Linux consumer then fails missing compiler-source lookup.
+The source relocation correction passes local replay of both untouched Windows
+artifacts plus real-GDB controls for missing/changed/escaped sources and the wrong
+archive. New hosted consumer and exact-head required gates remain pending.
+Caching and parallelism are explicitly deferred against both hosts' measured
+profiles and the required correctness/resource contracts. PR160 contains the
+selected compression implementation and its production workload evidence.
+Neither component alone closes #74; later goal issues remain untouched.
 
 **CONFIRMED #74 harness correction; hosted acceptance pending:** Windows run
 `41975183135` completes import and its first SQLite export, then rejects an
@@ -2635,7 +2684,7 @@ combined run `40068401197`; its conditional-step scope is recorded in
 | GUI and output paths (P2.7) | **CONFIRMED:** both hosts' real Script Manager/chooser journeys pass. PR #31 adds actual parent traversal, complete publisher alias preflight and native Windows short-parent/trailing-dot controls; its exact PR/main gates and artifact reviews pass. Geometry/GDB run on Linux; Windows uses native GNU/LLVM, with independent libdwarf unavailable and Linux-ELF runtime GDB not run. |
 | Optional debuglink (P2.8) | **CONFIRMED integrated:** PR #158 merged as `6c776d7415fc5222f7e1314c0c5192454c8aced5`; separate main run `41921433443` reports success at that commit. Opt-in CLI/GUI attachment, receipt chains, backup, atomic replacement, saved-curation refresh and recovery retain their documented validation scope. Earlier pending-integration notes are historical. Default export leaves the original unchanged. |
 | Inline reconstruction (P3.4) | **CONFIRMED investigation complete:** ADR 0003 and a reproducible compiler/Ghidra probe distinguish real inline instances from Ghidra's decompiler flag and record surviving locals/source information. Inline emission remains deferred until explicit instance/origin/range evidence and GDB acceptance exist. |
-| Performance (P3.5) | **CONFIRMED:** the indexed planner and configured-checker gates pass component run `40065823442` and combined run `40068401197`. Historical local paired 10,000-function exports reduce median process time by 15.5% with byte-identical artifacts; a fresh strict/GDB replay validates the retained result without rerunning timing. Hosted CI is not a new timing measurement. The pinned SQLite complex-application harness and a bounded JFR profile pass locally; broader workloads and further profiling remain **PLANNED**. No blanket speed or memory claim. See `docs/PERFORMANCE.md`. |
+| Performance (P3.5) | **CONFIRMED measured; integration incomplete:** repeated Linux/native Windows SQLite and U-Boot workloads, phase observations and explicit candidate decisions are recorded in [the workplan](docs/PERFORMANCE-WORKPLAN.md). Corrected Windows workload/consumer workflow `41989520582` passes. Opt-in production zlib is implemented and measured in PR160; complete required gates and normal integration remain necessary. Older planner/lazy-stack improvements retain their separate measured scope. No blanket speed or memory claim. |
 
 The optional/research items need an explicit recorded outcome; they are not
 silently complete merely because they are outside the current alpha scope.
@@ -4786,17 +4835,25 @@ surviving knowledge, or describe inline export as complete.
 
 Tracking: [#74](https://github.com/zwilcox/GhidraDwarfForge/issues/74).
 
-**CONFIRMED local component; broader work remains:** [PERFORMANCE-WORKPLAN.md](docs/PERFORMANCE-WORKPLAN.md)
-retains the full broader-workload, host, measurement and optimization-decision
-scope. Internal JFR observations, same-compiler SQLite comparisons, and the
-complete pinned U-Boot sandbox benchmark pass locally. Native Windows accounting
-controls pass run `41971951834`; real Windows workload/consumer jobs remain
-unverified. Five U-Boot pairs and private-copy compression/index experiments
-also pass within their documented limits; the tested `.debug_names` route fails
-validation. Opt-in zlib compression is selected but **PLANNED**, with caching
-and parallel-decompilation decisions still pending. Workload measurements,
-selected implementation, hosted review and integration remain
-required; these component results do not close the issue.
+**CONFIRMED measurements and selected implementation; integration incomplete:**
+[PERFORMANCE-WORKPLAN.md](docs/PERFORMANCE-WORKPLAN.md) records source-built
+SQLite 3.46.1 and U-Boot 2025.01 sandbox workloads, repeated Linux/native Windows
+wall/CPU/memory measurements, separate import/profile/validation costs, retained
+negative observations and explicit decisions for every optimization candidate.
+Current Windows performance workflow `41989520582` and its corrected compiler/
+Forge GDB consumer pass; the previous failed population remains historical.
+Production opt-in zlib passes complete component CI `41993381342` and raw
+artifact review. PR159 is merged; reconciled PR160 still needs its fresh
+protected gate and normal integration. Caching, parallel decompilation, zstd,
+GDB indexes and string/address indexing are deferred with recorded criteria;
+the tested `.debug_names` route is rejected on its LLVM failure.
+
+**Status:** `[~]` — PR159 is merged with complete CI and workload acceptance.
+Reconciled PR160 still requires fresh validation, review and normal merge. Neither component alone
+closes #74. See [compression evidence](docs/ELF-COMPRESSION.md) for equivalence,
+determinism, cancellation, resource limits and target/host validation.
+
+The following historical component measurements retain their original scope.
 
 **CONFIRMED through PR53's complete hosted gate:** instruction-level stack profiles are created only
 when an exported stack location consumes them, then reused within the function.
@@ -4819,7 +4876,7 @@ and a separate JFR export of the locally corrected return-recovery candidate. GD
 a DEFAULT return-type discrepancy remains a separate confirmed correctness
 gap. See `docs/PERFORMANCE.md` for measured scope and retained failures.
 
-**Status:** `[~]` — synthetic scaling measurements are complete locally, and
+**HISTORICAL component status:** synthetic scaling measurements were complete locally, and
 the indexed line planner passes component run `40065823442` and combined run
 `40068401197`; the first complex-application observation is recorded above.
 Broader firmware/host workloads and further profiling remain **PLANNED**. The bounded 10,000-function
