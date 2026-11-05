@@ -1,5 +1,13 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED Windows runtime-observer correction; workload acceptance pending:**
+Run `41975183135` passes native accounting, corpus and package preparation,
+imports SQLite and completes the first baseline export. Its observer then
+rejects PowerShell's SGR-colored Java 21 banner. The retained log contains
+`openjdk version "21.0.13"`; the observer now removes only SGR presentation
+codes, with positive/negative controls preserving runtime and packaged-script
+identity checks. No full Windows measurement or consumer acceptance is claimed.
+
 **CONFIRMED broader local measurements; Windows workloads pending:** five
 same-compiler U-Boot pairs pass artifact/report identity, validators, GDB and
 preservation checks. Private-copy compression/index experiments pass for zlib,

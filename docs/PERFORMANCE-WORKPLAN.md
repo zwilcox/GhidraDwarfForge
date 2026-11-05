@@ -7,6 +7,15 @@ This plan does not reduce any of those issues' acceptance criteria.
 
 ## Measurements and corpus
 
+- **CONFIRMED retained Windows observer failure:** run `41975183135` completes
+  SQLite import and its first baseline export, then stops because PowerShell
+  renders the Java 21 banner with SGR color escapes. The retained
+  `run.8mva_pvl/sqlite/0-baseline.log` starts with the actual 21.0.13 banner;
+  import stderr has the same uncolored version. The observer now removes only
+  SGR sequences. Twelve controls cover plain/colored stdout/stderr, missing,
+  wrong or conflicting versions, unrelated mentions, missing/duplicate/wrong
+  scripts and non-SGR escapes. Local replay verifies the retained runtime
+  banner; Windows path identity and the full measurements require a fresh run.
 - **CONFIRMED existing corpus:** source-generated scaling fixtures and pinned
   SQLite 3.46.1. Re-run on the current packaged baseline; historical timings do
   not describe the current exporter.
