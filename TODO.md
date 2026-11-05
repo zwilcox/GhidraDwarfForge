@@ -8,6 +8,13 @@ Windows execution/replay and the required hosted gate remain pending, along
 with production large-workload measurements, review/integration and the other
 #74 decisions. See `docs/ELF-COMPRESSION.md`; no later goal issue is complete.
 
+**CONFIRMED #74 harness correction; hosted acceptance pending:** Windows run
+`41975183135` completes import and its first SQLite export, then rejects an
+SGR-colored Java 21 banner. The observer now strips only color presentation,
+with missing/wrong/conflicting-runtime and wrong-script controls. The raw
+failure is retained; complete Windows paired workloads and consumer validation
+remain required, along with selected optimization acceptance and integration.
+
 **CONFIRMED Windows chooser correction; separate clean-launch click oracle fixed locally:**
 At `ba65267`, run41897626643/job126818305192 passes the delayed-chooser control
 and the first modifying Windows GUI journey: attachment, changed-curation refresh,
