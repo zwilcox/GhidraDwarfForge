@@ -1,6 +1,8 @@
 // Seed and independently read a private annotation fixture; not an exporter.
 // @category DWARF.Tests
 import ghidra.app.script.GhidraScript;
+import ghidra.app.decompiler.DecompInterface;
+import ghidra.program.model.pcode.DynamicHash;
 import ghidra.program.database.symbol.EquateManager;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSet;
@@ -29,6 +31,50 @@ public class PrepareAnalystAnnotations extends GhidraScript {
         return toAddr(Math.addExact(labels.getAsJsonObject(name).get("address").getAsLong(), delta));
     }
 
+    private void seedDynamicEquate(ghidra.program.model.listing.Function function) throws Exception {
+        var decompiler = new DecompInterface();
+        try {
+            if (!decompiler.openProgram(currentProgram)) throw new AssertionError(decompiler.getLastMessage());
+            var result = decompiler.decompileFunction(function, 30, monitor);
+            if (!result.decompileCompleted() || result.getHighFunction() == null) {
+                throw new AssertionError("dynamic-equate seed decompilation unavailable");
+            }
+            var high = result.getHighFunction();
+            record Candidate(Address address, long hash, long value, int bytes) { }
+            var candidates = new ArrayList<Candidate>();
+            for (var nodes = high.getVarnodes(currentProgram.getAddressFactory().getConstantSpace()); nodes.hasNext();) {
+                monitor.checkCancelled();
+                var node = nodes.next();
+                // The fixture adds 19 + 23 + 11; the decompiler folds these to 53.
+                if (!node.isConstant() || node.getOffset() != 53) continue;
+                var dynamic = new DynamicHash(node, high);
+                if (dynamic.getHash() == 0 || dynamic.getAddress() == null) continue;
+                var resolved = DynamicHash.findVarnode(high, dynamic.getAddress(), dynamic.getHash());
+                var instruction = getInstructionAt(dynamic.getAddress());
+                if (resolved == null || !resolved.isConstant() || resolved.getOffset() != node.getOffset() ||
+                        resolved.getSize() != node.getSize() || instruction == null) continue;
+                boolean raw = false;
+                for (long hash : DynamicHash.calcConstantHash(instruction, node.getOffset())) {
+                    raw |= hash == dynamic.getHash();
+                }
+                if (!raw) candidates.add(new Candidate(dynamic.getAddress(), dynamic.getHash(),
+                    node.getOffset(), node.getSize()));
+            }
+            candidates.sort(Comparator.comparing(Candidate::address).thenComparingLong(Candidate::hash)
+                .thenComparingLong(Candidate::value).thenComparingInt(Candidate::bytes));
+            if (candidates.isEmpty()) throw new AssertionError("no resolved dynamic-only equate candidate");
+            var chosen = candidates.getFirst();
+            var equate = currentProgram.getEquateTable().createEquate("ANNOTATION_DYNAMIC_ONLY", chosen.value());
+            equate.addReference(chosen.hash(), chosen.address());
+            if (equate.getReferences().length != 1 || equate.getReferences()[0].getOpIndex() != -1) {
+                throw new AssertionError("dynamic reference was converted to an operand reference");
+            }
+        }
+        finally {
+            decompiler.dispose();
+        }
+    }
+
     @Override
     protected void run() throws Exception {
         var args = getScriptArgs();
@@ -54,6 +100,7 @@ public class PrepareAnalystAnnotations extends GhidraScript {
                     createLabel(address, name, true, SourceType.USER_DEFINED);
                 }
             }
+            seedDynamicEquate(function);
             Address live = address(labels, "annotation_live");
             Address interior = null;
             for (var instructions = listing.getInstructions(function.getBody(), true); instructions.hasNext();) {
@@ -217,7 +264,34 @@ public class PrepareAnalystAnnotations extends GhidraScript {
             equates.add(row);
         }
         equates.sort(Comparator.comparing(row -> (String) row.get("storedName")));
-        if (equates.size() != 13) throw new AssertionError("equate inventory differs: " + equates.size());
+        if (equates.size() != 14) throw new AssertionError("equate inventory differs: " + equates.size());
+        var decompiler = new DecompInterface();
+        var dynamicObservation = new LinkedHashMap<String, Object>();
+        try {
+            if (!decompiler.openProgram(currentProgram)) throw new AssertionError(decompiler.getLastMessage());
+            var result = decompiler.decompileFunction(function, 30, monitor);
+            if (!result.decompileCompleted() || result.getHighFunction() == null) {
+                throw new AssertionError("dynamic-equate readback decompilation unavailable");
+            }
+            var dynamic = table.getEquate("ANNOTATION_DYNAMIC_ONLY");
+            var references = dynamic.getReferences();
+            if (references.length != 1 || references[0].getOpIndex() != -1) {
+                throw new AssertionError("dynamic-only reference ownership changed");
+            }
+            var ref = references[0];
+            var node = DynamicHash.findVarnode(result.getHighFunction(), ref.getAddress(), ref.getDynamicHashValue());
+            if (node == null || !node.isConstant() || node.getOffset() != dynamic.getValue() || node.getOffset() != 53 || node.getSize() != 4) {
+                throw new AssertionError("saved dynamic reference no longer resolves to its constant");
+            }
+            dynamicObservation.put("value", Long.toString(node.getOffset()));
+            dynamicObservation.put("bytes", node.getSize());
+            dynamicObservation.put("operand", ref.getOpIndex());
+            dynamicObservation.put("hash", Long.toUnsignedString(ref.getDynamicHashValue()));
+            dynamicObservation.put("address", ref.getAddress().toString());
+        }
+        finally {
+            decompiler.dispose();
+        }
         var ranges = new ArrayList<String>();
         function.getBody().getAddressRanges().forEach(range -> ranges.add(range.toString()));
         if (ranges.size() < 2) throw new AssertionError("discontiguous fixture body missing");
@@ -226,9 +300,10 @@ public class PrepareAnalystAnnotations extends GhidraScript {
         result.put("compiler", currentProgram.getCompilerSpec().getCompilerSpecID().toString());
         result.put("comments", comments);
         result.put("equates", equates);
+        result.put("resolvedDynamicEquate", dynamicObservation);
         result.put("functionRanges", ranges);
         result.put("scannedCommentAddresses", scanned);
         Files.writeString(Path.of(args[2]), new GsonBuilder().serializeNulls().setPrettyPrinting().create().toJson(result) + "\n");
-        println("analyst-annotations-preparation=PASS comments=50 equates=13");
+        println("analyst-annotations-preparation=PASS comments=50 equates=14");
     }
 }

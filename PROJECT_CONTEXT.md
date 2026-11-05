@@ -2,7 +2,9 @@
 
 **CONFIRMED preparation only — #116/#114:** an isolated compiler and saved-program
 fixture now passes eight native/QEMU reference cases and four deterministic
-annotation readback cases. MIPS exposed a signed stack-range enumeration gap;
+annotation readback cases. A four-byte dynamic-only constant53 now resolves after
+curation and both saved reopens on all four profiles; see
+`docs/evidence/annotation-dynamic-reference.json`. MIPS exposed a signed stack-range enumeration gap;
 separate database-key scans preserve all comments. AArch64 PIE uses explicit
 link-time/Ghidra address translation. See `docs/ANALYST-ANNOTATIONS.md` and its
 receipt. Production annotation implementation remains planned; #108 protected

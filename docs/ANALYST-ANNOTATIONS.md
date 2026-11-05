@@ -16,8 +16,9 @@ DWARF does not mean the stripped Ghidra program has recovered all those names.
 `PrepareAnalystAnnotations.java` applies fifty comments across ten addresses
 and all five categories, including instruction interiors, an explicit function
 body gap, data, overlays, unmapped memory, external, register and stack spaces.
-It adds thirteen equates with raw signed/unsigned extrema, Unicode, conflicting
-names, malformed enum metadata and two one-byte enums sharing a display name.
+It adds fourteen equates with raw signed/unsigned extrema, Unicode, conflicting
+names, malformed enum metadata, two one-byte enums sharing a display name, and a
+dynamic-only reference to the folded four-byte constant `53` (`19 + 23 + 11`).
 Four saved-program cases pass two independent read-only reopens with identical
 observations. The original ELF files remain unchanged. Ghidra may rotate index
 and journal backups on the first reopen; the second changes no project files.
@@ -50,7 +51,11 @@ so unrelated integration scripts need not compile against the selected install.
 The [fixture receipt](evidence/annotation-fixture-preparation.json) records exact
 commands/results, hashes, retained exploratory failures and limitations. ARM32
 is present in the harness but unverified locally because its compiler is absent
-from the current PATH. Production extraction/composition, complete named-constant
-policy, dynamic-only references, saved local/type collision curation, genuine
+from the current PATH. The [dynamic-reference receipt](evidence/annotation-dynamic-reference.json) adds
+exact native-decompiler hash/value resolution on all four saved-program cases.
+The stored operand index stays `-1`, and no decoded-instruction constant hash
+claims this reference. Its scope is decompiler evidence, not original source
+syntax or a proved C type. Production extraction/composition, complete named-constant
+policy, saved local/type collision curation, genuine
 decompiler failure, cancellation and full exported-artifact/GUI/headless tests
 remain required. These fixtures do not close either issue.

@@ -50,7 +50,7 @@ def main():
             result = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, timeout=240)
         assert result.returncode == 0, label
         text = (root / (label + '.log')).read_text()
-        assert 'analyst-annotations-preparation=PASS comments=50 equates=13' in text, label
+        assert 'analyst-annotations-preparation=PASS comments=50 equates=14' in text, label
         assert 'error: cannot find symbol' not in text and 'ERROR REPORT SCRIPT ERROR' not in text, label
 
     run('import', ['-import', case / 'stripped', '-analysisTimeoutPerFile', '120'])
@@ -62,12 +62,15 @@ def main():
     initial = json.loads((root / 'import.json').read_text())
     current = json.loads((root / 'read1.json').read_text())
     assert initial == current, 'saved annotations changed after post-script analysis'
-    assert len(current['comments']) == 50 and len(current['equates']) == 13
+    assert len(current['comments']) == 50 and len(current['equates']) == 14
     gap = [row for row in current['comments'] if row['text'].startswith('FORGE_ANNOTATION:body-gap:')]
     assert len(gap) == 5 and all(row['function'] is None for row in gap)
     interior = [row for row in current['comments'] if row['text'].startswith('FORGE_ANNOTATION:interior:')]
     assert len(interior) == 5 and all(not row['codeUnitStart'] for row in interior)
     assert len(current['functionRanges']) >= 2
+    assert current['resolvedDynamicEquate']['operand'] == -1
+    assert current['resolvedDynamicEquate']['bytes'] == 4 and current['resolvedDynamicEquate']['value'] == '53'
+    assert int(current['resolvedDynamicEquate']['hash']) != 0
     shared = [row for row in current['equates'] if row.get('displayName') == 'ANNOTATION_SHARED_DISPLAY']
     assert len(shared) == 2 and {row['storedValue'] for row in shared} == {'19', '23'}
     assert all(row['enumBytes'] == 1 and row['references'] for row in shared)
@@ -83,7 +86,7 @@ def main():
     for index, state in enumerate(states):
         (root / ('project-' + str(index) + '.json')).write_text(json.dumps(state, indent=4) + '\n')
     receipt = {'status': 'PASS_SAVED_ANNOTATIONS', 'target': reference['target'], 'role': reference['role'],
-        'protectedSha256': protected, 'projectChanges': changes, 'comments': 50, 'equates': 13,
+        'protectedSha256': protected, 'projectChanges': changes, 'comments': 50, 'equates': 14,
         'readbackSha256': digest(root / 'read1.json'),
         'limits': 'Saved Ghidra annotation fixture only. No production annotation emission or genuine decompiler-failure claim. Dynamic-only equates and explicit local/type collision curation remain subsequent fixture work.'}
     (root / 'result.json').write_text(json.dumps(receipt, indent=4) + '\n')
