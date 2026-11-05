@@ -2786,9 +2786,10 @@ are historical; #74 is complete.
 
 Remaining #108 acceptance:
 
-- Complete remaining paired native type-state regression evidence. Variable/range
-  comparison and actual rebase/use-site/rename artifact pairs now pass locally;
-  reported binding correspondence does not prove declaration lineage.
+- Paired native type-state regressions now pass locally: offsetting resolved/opaque
+  transitions, source-failure attachment loss, deterministic reruns, raw DWARF and
+  GDB/CLI checks. See `docs/evidence/coverage-type-pairs.json`; hosted acceptance
+  remains required. Reported binding correspondence does not prove lineage.
 - Hosted GUI report-comparison acceptance; the Linux workflow now passes locally.
 - Repeated large-workload measurements and whole-report byte-bound stress after
   the definition-two evidence extension.

@@ -1,5 +1,16 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — #108 paired native type regressions:** actual production
+exports swap two canonical types between resolved and opaque while preserving all
+summary totals. Independent raw-DIE traversal predicts the exact CLI state changes
+in both directions. A source-failure export retains allocated type DIEs but correctly
+reports all three types as unattached to the function. GNU/LLVM/pinned strict
+validators and GDB pass for all three artifacts; sidecar, source and report bytes
+are deterministic on rerun. This is an isolated controlled-model emission test,
+not a Ghidra extraction/identity claim. See `docs/evidence/coverage-type-pairs.json`.
+Repeated final large-workload overhead, whole-report byte stress and hosted
+host/target acceptance remain pending.
+
 **ACTIVE hosted validation — #108 draft PR [#164](https://github.com/zwilcox/GhidraDwarfForge/pull/164):**
 the first extension-build gate flagged generic “PC” prose as register-specific
 logic. Those five comments/labels now spell out address ranges/bytes; the guard

@@ -255,6 +255,7 @@ public final class EmissionEvidenceSmoke {
         require(Arrays.equals(first, Files.readAllBytes(output)), "deterministic repeat after native cancellation");
         require(gson.toJson(repeated.emission()).equals(gson.toJson(facts)), "deterministic emission evidence");
         require(Arrays.equals(original, Files.readAllBytes(input)), "original input unchanged");
+        TypePairEmissionSmoke.run(input, output.toAbsolutePath().getParent(), Path.of(args[0]), Path.of(args[1]), symbols);
         System.out.println("emission-evidence-native=PASS");
     }
 

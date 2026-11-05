@@ -3,6 +3,7 @@
 import argparse
 from collections import Counter
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -432,12 +433,37 @@ def main():
         '-x', repository / 'src/test/integration/emission-evidence-gdb.py'])
     assert 'emission-evidence-gdb=PASS' in (case / 'gdb.log').read_text()
     assert not re.search(r'(?im)^\s*(warning:|error:)', (case / 'gdb.log').read_text())
+    assert 'type-pair-emission=PASS' in (case / 'native.log').read_text()
+    for phase in ('before', 'after', 'unattached'):
+        sidecar = case / f'type-{phase}.dbg'
+        for view in ['info', 'abbrev', 'aranges', 'decodedline', 'loc']:
+            label = f'type-{phase}-{view}'
+            run(label, ['readelf', '--debug-dump=' + view, sidecar])
+            assert not re.search(r'(?im)(warning:|error:)', (case / (label + '.log')).read_text())
+        run(f'type-{phase}-elf', ['readelf', '-hSWn', sidecar])
+        run(f'type-{phase}-llvm', ['llvm-dwarfdump', '--verify', sidecar])
+        assert 'No errors.' in (case / f'type-{phase}-llvm.log').read_text()
+        run(f'type-{phase}-strict', ['python3', repository / 'src/test/integration/check-dwarfdump.py',
+            sidecar, case / f'type-{phase}-dwarfdump.log', '--original', case / 'input'])
+        env['FORGE_TYPE_PAIR_PHASE'] = phase
+        run(f'type-{phase}-gdb', ['gdb-multiarch', '-q', '-nx', '-batch',
+            '-ex', 'set pagination off', '-ex', 'set confirm off', '-ex', 'set debuginfod enabled off',
+            '-ex', 'set auto-solib-add off', '-ex', 'set disable-randomization off',
+            '-ex', 'file ' + str(case / 'input'), '-ex', 'symbol-file ' + str(sidecar),
+            '-x', repository / 'src/test/integration/type-pair-gdb.py'])
+        text = (case / f'type-{phase}-gdb.log').read_text()
+        assert 'type-pair-gdb=PASS phase=' + phase in text
+        assert not re.search(r'(?im)^\s*(warning:|error:)', text)
+    spec = importlib.util.spec_from_file_location('type_pair_evidence', repository / 'src/test/integration/type-pair-evidence.py')
+    oracle = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(oracle)
+    type_pairs = oracle.inspect(case, dies)
     assert protected == {p: digest(Path(p)) for p in protected}
     result = {'status': 'PASS', 'scope': 'isolated producer facts and definition-two type report, raw DWARF and native x86-64 GDB',
-        'checks': checked, 'protected': protected, 'sidecarSha256': digest(case / 'forge.dbg'),
+        'checks': checked, 'typePairs': type_pairs, 'protected': protected, 'sidecarSha256': digest(case / 'forge.dbg'),
         'sourceSha256': digest(case / 'forge.dbg.c'), 'schemaTwoReportSha256': digest(case / 'forge.dbg.report.json')}
     (case / 'acceptance.json').write_text(json.dumps(result, indent=4) + '\n')
-    print(json.dumps({'status': 'PASS', 'checks': checked}))
+    print(json.dumps({'status': 'PASS', 'checks': checked, 'typePairs': type_pairs}))
 
 
 if __name__ == '__main__':
