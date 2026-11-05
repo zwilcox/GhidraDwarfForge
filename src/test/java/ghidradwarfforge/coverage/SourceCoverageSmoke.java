@@ -63,6 +63,10 @@ public final class SourceCoverageSmoke {
                 var index = new SourceCoverageIndex(result, () -> false);
                 var measured = index.measure(split, starts, tokens, () -> false);
                 require(measured.equals(new SourceCoverage(8, 2, 7)), "split/duplicate/collision counts");
+                var points = index.measurePoints(split, starts, tokens, () -> false);
+                require(new java.util.HashSet<>(points.anchored()).equals(rawAnchored) &&
+                    new java.util.HashSet<>(points.lineVisible()).equals(rawVisible),
+                    "exact coverage points match independently decoded line bytes");
                 require(index.measure(split, starts.reversed(), tokens.reversed(), () -> false)
                     .equals(measured), "inventory order independence");
                 require(index.measure(overlap, List.of(0x1004L, 0x1008L),

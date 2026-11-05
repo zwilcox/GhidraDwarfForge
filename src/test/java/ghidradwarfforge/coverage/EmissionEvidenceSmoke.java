@@ -182,8 +182,23 @@ public final class EmissionEvidenceSmoke {
                     variable.location().scopeComplete() == independent.scopeComplete(), "automatic inventory extent " + key);
             }
         }
+        List<DecodedInstructions> decoded = new ArrayList<>();
+        for (var function : facts.functions()) {
+            var symbol = function.function();
+            List<Long> starts = switch (symbol.name()) {
+                case "observed" -> List.of(entry, moved, symbols.get("observed_return"));
+                case "failed" -> List.of(symbols.get("failed"), symbols.get("failed") + 5);
+                case "empty" -> List.of(symbols.get("empty"));
+                default -> throw new AssertionError("unexpected fixture function");
+            };
+            decoded.add(new DecodedInstructions(symbol, starts, ""));
+        }
+        var sourceInventory = SourceCoverageInventory.build(facts.functions().stream().map(FunctionEmission::function).toList(),
+            decoded, source, facts.lines(), () -> false);
+        require(sourceInventory.observedUnion().equals(new SourceCoverageInventory.Union(3, 0, 0, 6, 2, 4)),
+            "fixture instruction/token/visibility union; Python independently checks disassembly and line bytes");
         Files.writeString(Path.of(output + ".evidence.json"), gson.toJson(
-            Map.of("emission", facts, "types", counts, "locations", locationCounts, "variableTotals", variableTotals, "variableInventory", inventory)) + "\n");
+            Map.of("emission", facts, "types", counts, "locations", locationCounts, "variableTotals", variableTotals, "variableInventory", inventory, "sourceInventory", sourceInventory)) + "\n");
         Path cancelled = Path.of(output + ".cancelled");
         byte[] previous = "previous artifact".getBytes(java.nio.charset.StandardCharsets.UTF_8);
         Files.write(cancelled, previous);

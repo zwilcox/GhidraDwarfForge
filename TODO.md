@@ -1,5 +1,12 @@
 # TODO.md — GhidraDwarfForge
 
+**PRESENT, UNVERIFIED end to end — #108:** recovered/emitted variable inventory
+and source evidence inventories pass local component/raw-DWARF/GDB checks. Source
+counts retain unknown versus zero and union overlapping instructions; variables
+retain unexported declarations and unknown scopes. Public scorecard/schema,
+comparison/CLI/GUI, large-workload cost and hosted acceptance remain pending.
+See `docs/COVERAGE-SCORECARDS.md`; #74 final acceptance retains integration priority.
+
 **CONFIRMED measurement integration and compression component validation:**
 PR159 merged as `762dbbd` after complete CI `41989520429` and performance
 workflow `41989520582` passed at `3276396`. The merge tree matches the tested

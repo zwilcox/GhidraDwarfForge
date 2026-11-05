@@ -36,6 +36,59 @@ def sections(path):
     return result
 
 
+def line_sequences(data):
+    # Independent decoder for this fixture's emitted DWARF5 standard opcodes.
+    length, version, width, segment, header_size = struct.unpack_from('<IHBBI', data)
+    assert length == len(data) - 4 and (version, width, segment) == (5, 8, 0)
+    cursor = 12 + header_size
+    address, line, rows, sequences = 0, 1, [], []
+
+    def leb(signed=False):
+        nonlocal cursor
+        result, shift = 0, 0
+        while True:
+            assert cursor < len(data) and shift < 70
+            byte = data[cursor]
+            cursor += 1
+            result |= (byte & 127) << shift
+            shift += 7
+            if byte & 128 == 0:
+                return result - (1 << shift) if signed and byte & 64 else result
+
+    while cursor < len(data):
+        opcode = data[cursor]
+        cursor += 1
+        if opcode == 0:
+            size = leb()
+            end = cursor + size
+            assert end <= len(data)
+            extended = data[cursor]
+            cursor += 1
+            if extended == 2:
+                address, = struct.unpack_from('<Q', data, cursor)
+                cursor += 8
+            elif extended == 1:
+                assert rows and address > rows[-1][0]
+                sequences.append((rows, address))
+                address, line, rows = 0, 1, []
+            else:
+                raise AssertionError(('unexpected extended line opcode', extended))
+            assert cursor == end
+        elif opcode == 1:
+            assert not rows or address > rows[-1][0]
+            rows.append((address, line))
+        elif opcode == 2:
+            address += leb()
+        elif opcode == 3:
+            line += leb(True)
+        elif opcode == 4:
+            assert leb() == 0, "single synthetic file index"
+        else:
+            raise AssertionError(('unexpected standard line opcode', opcode))
+    assert not rows
+    return sequences
+
+
 def dies(text):
     result, stack = {}, {}
     for entry in re.split(r'(?m)(?=^ <\d+><[0-9a-f]+>:)', text):
@@ -199,6 +252,34 @@ def inspect(case):
                 assert variable['identity']['staticAddress'] == int(named('counter', 'DW_TAG_variable')['attributes']['location'].split('DW_OP_addr: ')[1].split(')')[0], 16)
     assert {k: v['recoveredVariables'] for k, v in inventory['byKind'].items()} == {
         'PARAMETER': 2, 'LOCAL': 7, 'FUNCTION_STATIC': 1}
+    sequences = line_sequences(raw['.debug_line'])
+    instructions = {int(m[1], 16) for m in re.finditer(
+        r'(?m)^\s*([0-9a-f]+):\s+(?:[0-9a-f]{2}\s+)+', (case / 'disassembly.log').read_text())}
+    source_text = (case / 'forge.dbg.c').read_text().splitlines()
+    symbols = {parts[-1]: int(parts[0], 16) for row in (case / 'symbols.log').read_text().splitlines()
+        if len(parts := row.split()) >= 3 and re.fullmatch('[0-9a-fA-F]+', parts[0])}
+    expected_tokens = {
+        'observed': {symbols['observed']: source_text.index('{') + 1,
+                     symbols['observed_moved']: source_text.index('    x = x;') + 1,
+                     symbols['observed_return']: source_text.index('    return x;') + 1},
+        'failed': {}, 'empty': {symbols['empty']: source_text.index('    return;') + 1}}
+    all_decoded, all_anchored, all_visible = set(), set(), set()
+    for function in evidence['sourceInventory']['functions']:
+        name = function['function']['name']
+        ranges = function['function']['ranges']
+        decoded = {pc for pc in instructions if any(r['address'] <= pc < r['address'] + r['size'] for r in ranges)}
+        visible = {pc for pc in decoded if any(rows[0][0] <= pc < end for rows, end in sequences)}
+        anchored = {pc for pc in decoded if any((pc, expected_tokens[name].get(pc)) in rows for rows, _ in sequences)}
+        assert function['observedPoints'] == {'decoded': sorted(decoded), 'anchored': sorted(anchored), 'lineVisible': sorted(visible)}
+        assert (function['decodedInstructions'], function['anchoredInstructions'], function['lineVisibleInstructions']) == (
+            len(decoded), len(anchored), len(visible))
+        all_decoded |= decoded
+        all_anchored |= anchored
+        all_visible |= visible
+    assert evidence['sourceInventory']['observedUnion'] == {'functions': 3, 'unavailableInstructionFunctions': 0,
+        'unavailableTokenFunctions': 0, 'decodedInstructions': len(all_decoded), 'anchoredInstructions': len(all_anchored),
+        'lineVisibleInstructions': len(all_visible)}
+    assert (len(all_decoded), len(all_anchored), len(all_visible)) == (6, 2, 4)
     return {'rawTypeNodes': 5, 'opaqueNodes': 1, 'variables': 9, 'locations': 4, 'omittedLocations': 5,
             'knownScopeVariables': 3, 'lateCoveredScopeBytes': metrics['late']['coveredScopeBytes'],
             'lateKnownScopeBytes': metrics['late']['knownScopeBytes']}
@@ -229,6 +310,7 @@ def main():
     run('compile', ['gcc', '-O0', '-g', '-gdwarf-5', '-fno-pie', '-no-pie', *sources, '-o', case / 'reference'])
     run('strip', ['objcopy', '--strip-all', case / 'reference', case / 'input'])
     run('symbols', ['nm', '-n', case / 'reference'])
+    run('disassembly', ['objdump', '-d', case / 'reference'])
     protected = {str(p): digest(p) for p in [*sources, case / 'reference', case / 'input', args.consumer, args.producer]}
     run('native', [repository / 'src/test/integration/run-isolated-native-smoke.sh', case / 'native-process',
         repository / 'gradlew', 'emissionEvidenceSmoke', '-PlibdwarfPath=' + str(args.consumer.resolve()),

@@ -137,12 +137,44 @@ locations and GDB: ten recovered declarations, nine emitted, four located, and
 component checks are in `build/variable-inventory-validation.log`. Public schema,
 comparison, UI, large-workload cost and hosted acceptance remain pending.
 
+## Source populations and missing evidence
+
+**CONFIRMED locally:** `SourceCoverageInventory` combines the actual line plan,
+per-function token provenance and decoded listing inventories. It retains the
+exact unique decoded/anchored/line-visible starts and exposes independent
+availability for the listing denominator and direct token numerator. A missing
+listing yields null counters; missing token provenance leaves anchors null while
+preserving known line visibility. Known empty inventories have zero counts and
+no percentage. Failed/omitted source retains its disposition and decoded
+instruction denominator. Unknown evidence is never converted into zero coverage.
+
+Program observations use unions of starts, so overlapping functions do not
+inflate totals. The union discloses unknown instruction/token populations and
+withholds the corresponding whole-program percentage. Aliases cannot enter the
+primary population twice. Mismatched bodies, extra/duplicate evidence, token
+rows outside their function's source boundaries and unavailable functions with
+token mappings are rejected. Per-function overlap still retains its own token
+provenance; a row belonging to another function cannot become its direct anchor.
+
+Sixty-four component checks pass across both widths and byte orders, including
+all observed cancellation checkpoints. Exact points also match the existing
+independent raw-line decoder. The actual native fixture independently parses
+DWARF line opcodes, disassembles its original ELF, and checks every inventory
+point: six decoded instructions, two direct token anchors and four line-visible
+instructions, with source/type/value/step GDB checks still passing. Evidence:
+`build/test-results/emission-evidence/run.a6jba2sk/acceptance.json` and
+`build/source-inventory-final-validation.log`. The initial Python oracle omitted
+standard `DW_LNS_set_file`; the corrected oracle checks its zero-based file index
+and the full rerun passes. Public report assembly/schema/comparison and measured
+large-workload overhead remain pending; exact point retention is not yet a
+public serialization contract.
+
 ## Current component checks
 
 With the supported Java21/Ghidra12.0.3 environment, run:
 
 ```bash
-./gradlew ghidraInstructionEvidenceSmoke syntheticSourceSmoke sourceCoverageSmoke dwarfLineTableSmoke typeCoverageSmoke locationEmissionPlanSmoke locationCoverageSmoke variableCoverageInventorySmoke dwarfLocationListsSmoke buildExtension
+./gradlew ghidraInstructionEvidenceSmoke syntheticSourceSmoke sourceCoverageSmoke sourceCoverageInventorySmoke dwarfLineTableSmoke typeCoverageSmoke locationEmissionPlanSmoke locationCoverageSmoke variableCoverageInventorySmoke dwarfLocationListsSmoke buildExtension
 ```
 
 Observed local results: instruction evidence passes 44 checks across four

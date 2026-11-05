@@ -28,7 +28,10 @@ known-scope variables with 12/21 variable-PC-byte coverage plus six explicitly
 excluded unknown-scope variables. The recovered/emitted inventory now passes 27 component checks, all 273 cancellation
 checkpoints and the raw-DWARF/GDB fixture. It retains per-kind populations,
 export-local scoped identities, declaration/storage provenance, omitted
-declarations and explicit unknown scopes. Public reporting remains pending.
+declarations and explicit unknown scopes. Source inventory now also preserves null versus zero evidence, exact instruction
+points and union totals across overlapping functions. Its 64 checks and independent
+raw-line/disassembly/native-GDB fixture pass (six decoded/two anchored/four visible).
+Public reporting, comparison and measured overhead remain pending.
 Location-list results retain their actual immutable plans and honor cancellation.
 Their four byte streams match the parent; 237 raw-byte/negative checks pass.
 Real packaged x86-64 and rebased AArch64 PIE lexical-variable journeys pass

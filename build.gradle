@@ -503,6 +503,14 @@ tasks.register("sourceCoverageSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.coverage.SourceCoverageSmoke"
 }
 
+tasks.register("sourceCoverageInventorySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks unknown source evidence and unique instruction unions across functions"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.coverage.SourceCoverageInventorySmoke"
+}
+
 tasks.register("typeCoverageSmoke", JavaExec) {
     group = "verification"
     description = "Checks canonical type coverage, omitted edges, cycles and implicit void"

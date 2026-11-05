@@ -1,6 +1,7 @@
 package ghidradwarfforge.coverage;
 
 import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.Objects;
@@ -54,12 +55,30 @@ public final class SourceCoverageIndex {
         visible = Collections.unmodifiableNavigableMap(merged);
     }
 
+    /** Exact unique starts, retained for union aggregation and comparable-export diagnostics. */
+    public record Points(List<Long> decoded, List<Long> anchored, List<Long> lineVisible) {
+        public Points {
+            decoded = List.copyOf(decoded);
+            anchored = List.copyOf(anchored);
+            lineVisible = List.copyOf(lineVisible);
+        }
+
+        public SourceCoverage counts() {
+            return new SourceCoverage(decoded.size(), anchored.size(), lineVisible.size());
+        }
+    }
+
+    public SourceCoverage measure(FunctionSymbol function, List<Long> decodedStarts,
+            List<SourceLine> functionTokens, BooleanSupplier cancelled) {
+        return measurePoints(function, decodedStarts, functionTokens, cancelled).counts();
+    }
+
     /**
      * Token mappings belong only to this function and exclude synthetic declaration
      * rows. A token address counts only if its exact line survived emission selection.
      * Listing starts are deduplicated; all must belong to the actual function body.
      */
-    public SourceCoverage measure(FunctionSymbol function, List<Long> decodedStarts,
+    public Points measurePoints(FunctionSymbol function, List<Long> decodedStarts,
             List<SourceLine> functionTokens, BooleanSupplier cancelled) {
         Objects.requireNonNull(function);
         Objects.requireNonNull(decodedStarts);
@@ -91,15 +110,15 @@ public final class SourceCoverageIndex {
                 }
             }
         }
-        long lineVisible = 0;
+        List<Long> lineVisible = new ArrayList<>();
         for (long address : instructions) {
             checkCancelled(cancelled);
             var span = visible.floorEntry(address);
             if (span != null && address < span.getValue()) {
-                lineVisible++;
+                lineVisible.add(address);
             }
         }
-        return new SourceCoverage(instructions.size(), anchored.size(), lineVisible);
+        return new Points(new ArrayList<>(instructions), new ArrayList<>(anchored), lineVisible);
     }
 
     private static boolean contains(List<FunctionRange> ranges, long address) {
