@@ -17,7 +17,7 @@ else
 fi
 
 repository_dir=$(realpath "$(dirname "$0")/../../..")
-fixture_dir="$repository_dir/build/fixtures"
+fixture_dir=${FORGE_SYMBOL_FIXTURES:-"$repository_dir/build/fixtures"}
 result_dir=${FORGE_SYMBOL_RESULTS:-"$repository_dir/build/test-results/headless-symbol-export"}
 artifact_suffix=${FORGE_SYMBOL_SUFFIX:-ghidra-forge.dbg}
 [[ "$artifact_suffix" =~ ^[a-zA-Z0-9_-][a-zA-Z0-9_.-]*[.]dbg$ ]] || {

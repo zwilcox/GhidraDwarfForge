@@ -91,6 +91,29 @@ complete optionally quoted argument within that line, and the explicit-none
 check rejects the option anywhere in the capture. Native Windows acceptance
 requires the corrected run; the failed assertion is not a passing wrapper test.
 
+## Shared fixture isolation correction
+
+Run `41983547971` passes the five MIPS32 big-endian compression cases but fails
+its later automatic-association check. The compression harness had overwritten
+shared exec/PIE sidecars after their producer-report hashes were captured. The
+attachment gate correctly rejects those changed files before invoking its writer;
+it is not weakened. Retained hashes independently match the later compressed
+exec and rebased-PIE outputs.
+
+Compression tests now copy only executable/reference inputs into a private
+fixture directory. The export, native/QEMU debugger and shared-library debugger
+harnesses use that same directory through `FORGE_SYMBOL_FIXTURES`; their default
+fixture root remains unchanged. A `finally` check records all shared fixture
+hashes, sizes, modes and mtimes and verifies private input hashes, including when
+a test fails. Prior sidecars, source and report associations remain untouched.
+
+Local full five-case reruns on x86-64 and MIPS32 big-endian pass 30 actual exports,
+all structural/debugger checks, section equivalence and determinism. Independent
+retained-report inspection verifies 30 complete strict-checker reports. See
+`evidence/compression-fixture-isolation-20261105.json`. Production Java, native
+bindings and ELF/DWARF output implementation do not change. These scoped passes
+do not replace the corrected complete hosted gate.
+
 ## Remaining acceptance
 
 The complete required CI gate, final review and normal integration remain open.

@@ -1,5 +1,16 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED compression test interference; corrected locally:** run `41983547971`
+passes all five MIPS big-endian compression cases, then correctly rejects automatic
+association because the compression harness overwrote shared fixture sidecars
+bound to earlier producer reports. Compression now uses private input/reference
+copies and checks preservation of shared file content, sizes, modes and mtimes,
+including failure cleanup. Ten x86-64/MIPS big-endian cases (30 real exports)
+pass GNU/LLVM/pinned checks, GDB, decompression equivalence and determinism;
+shared fixtures and private inputs remain unchanged. The correction changes test
+harnesses only. Full corrected hosted acceptance and #74 integration remain open.
+See `docs/evidence/compression-fixture-isolation-20261105.json`.
+
 **CONFIRMED local compression candidate; hosted acceptance pending:** opt-in
 gABI zlib compression preserves the default plain output. Eight ELF container
 layouts and 25 actual five-target exec/PIE/shared/sectionless/rebased cases pass

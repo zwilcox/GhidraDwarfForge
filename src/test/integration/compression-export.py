@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Compare real plain/compressed exports, validators and GDB on built target fixtures."""
 import argparse
+from contextlib import contextmanager
 import hashlib
 import json
 import os
@@ -92,6 +93,53 @@ def run(arguments, env, log):
             stdout=stream, stderr=subprocess.STDOUT, check=True, timeout=900)
 
 
+
+def fixture_snapshot(directory):
+    result = {}
+    for path in sorted(directory.rglob('*')):
+        require(not path.is_symlink(), 'fixture snapshot contains a symlink: ' + str(path))
+        if path.is_file():
+            metadata = path.stat()
+            result[str(path.relative_to(directory))] = {'sha256': digest(path),
+                'bytes': metadata.st_size, 'mode': metadata.st_mode,
+                'mtimeNs': metadata.st_mtime_ns}
+    return result
+
+
+@contextmanager
+def private_fixtures(target, work):
+    """Keep previously captured producer reports bound to their original files."""
+    original = ROOT / 'build/fixtures' / target
+    before = fixture_snapshot(original)
+    private_root = work / 'fixtures'
+    private = private_root / target
+    private.mkdir(parents=True)
+    copied = {}
+    try:
+        for name, state in before.items():
+            if not name.endswith(('.stripped', '.reference')):
+                continue
+            destination = private / name
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(original / name, destination)
+            require(digest(destination) == state['sha256'], 'private fixture copy changed')
+            copied[name] = state['sha256']
+        require(copied, 'no private fixture inputs')
+        yield private_root
+    finally:
+        after = fixture_snapshot(original)
+        private_inputs_after = {name: digest(private / name) if (private / name).is_file() else None
+            for name in copied}
+        preserved = before == after and copied == private_inputs_after
+        record = {'status': 'PASS' if preserved else 'FAIL',
+            'originalDirectory': str(original), 'privateDirectory': str(private),
+            'before': before, 'after': after, 'copiedInputs': copied,
+            'privateInputsAfter': private_inputs_after}
+        (work / 'fixture-preservation.json').write_text(json.dumps(record, indent=4) + '\n')
+        require(before == after, 'compression test changed shared fixture files')
+        require(copied == private_inputs_after, 'compression test changed private fixture inputs')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
@@ -106,50 +154,52 @@ def main():
     work = Path(tempfile.mkdtemp(prefix=args.target + '.', dir=results))
     print(f'compression-export results={work}', flush=True)
     receipt = {'status': 'RUNNING', 'target': args.target, 'cases': {}}
-    for case in args.roles:
-        role = 'pie' if case == 'rebased-pie' else case
-        stem = 'libsemantic.so' if role == 'shared' else f'semantic.{role}'
-        fixture = ROOT / 'build/fixtures' / args.target
-        original = fixture / (stem + '.stripped')
-        artifact = fixture / (stem + '.ghidra-forge.dbg')
-        source = Path(str(artifact) + '.c')
-        original_hash = digest(original)
-        case_dir = work / case
-        case_dir.mkdir()
-        states = []
-        for label, mode in (('plain', 'none'), ('zlib', 'zlib'), ('repeat', 'zlib')):
-            directory = case_dir / label
-            directory.mkdir()
-            env = dict(os.environ, GHIDRA_DEBUG_COMPRESSION=mode, FIXTURE_ROLE=role,
-                FORGE_SYMBOL_RESULTS=str(directory / 'validators'),
-                FORGE_GDB_SYMBOL_RESULTS=str(directory / 'gdb'),
-                GHIDRA_REBASE_DELTA='0x200000' if case == 'rebased-pie' else '0')
-            run(['bash', ROOT / 'src/test/integration/headless-symbol-export.sh', ghidra,
-                native / 'libdwarf.so.2.3.2', native / 'libdwarfp.so.2.3.2', args.target],
-                env, directory / 'export.log')
-            gdb = 'shared-object-gdb.sh' if role == 'shared' else 'qemu-gdb-symbols.sh'
-            run(['bash', ROOT / 'src/test/integration' / gdb, args.target], env, directory / 'gdb.log')
-            require(digest(original) == original_hash, 'original changed')
-            state = {'artifactSha256': digest(artifact), 'sourceSha256': digest(source),
-                'fileBytes': artifact.stat().st_size, 'sections': sections(artifact)}
-            shutil.copy2(artifact, directory / 'artifact.dbg')
-            shutil.copy2(source, directory / 'artifact.dbg.c')
-            (directory / 'receipt.json').write_text(json.dumps(state, indent=4) + '\n')
-            states.append(state)
-        plain, compressed, repeat = states
-        require(plain['sections'].keys() == compressed['sections'].keys(), 'section set changed')
-        require(not any(s['compressed'] for s in plain['sections'].values()), 'default is compressed')
-        require(any(s['compressed'] for s in compressed['sections'].values()), 'opt-in did not compress')
-        require(compressed['fileBytes'] < plain['fileBytes'], 'fixture sidecar did not shrink')
-        for name, value in plain['sections'].items():
-            require(value['plainSha256'] == compressed['sections'][name]['plainSha256'],
-                'decompressed DWARF changed: ' + name)
-        require(plain['sourceSha256'] == compressed['sourceSha256'], 'source changed')
-        require(compressed == repeat, 'compressed export is not deterministic')
-        receipt['cases'][case] = {'status': 'PASS', 'originalSha256': original_hash,
-            'plain': plain, 'zlib': compressed}
-        (work / 'receipt.json').write_text(json.dumps(receipt, indent=4) + '\n')
-        print(f'compression-export {args.target}/{case}=PASS', flush=True)
+    with private_fixtures(args.target, work) as fixture_root:
+        for case in args.roles:
+            role = 'pie' if case == 'rebased-pie' else case
+            stem = 'libsemantic.so' if role == 'shared' else f'semantic.{role}'
+            fixture = fixture_root / args.target
+            original = fixture / (stem + '.stripped')
+            artifact = fixture / (stem + '.ghidra-forge.dbg')
+            source = Path(str(artifact) + '.c')
+            original_hash = digest(original)
+            case_dir = work / case
+            case_dir.mkdir()
+            states = []
+            for label, mode in (('plain', 'none'), ('zlib', 'zlib'), ('repeat', 'zlib')):
+                directory = case_dir / label
+                directory.mkdir()
+                env = dict(os.environ, GHIDRA_DEBUG_COMPRESSION=mode, FIXTURE_ROLE=role,
+                    FORGE_SYMBOL_FIXTURES=str(fixture_root),
+                    FORGE_SYMBOL_RESULTS=str(directory / 'validators'),
+                    FORGE_GDB_SYMBOL_RESULTS=str(directory / 'gdb'),
+                    GHIDRA_REBASE_DELTA='0x200000' if case == 'rebased-pie' else '0')
+                run(['bash', ROOT / 'src/test/integration/headless-symbol-export.sh', ghidra,
+                    native / 'libdwarf.so.2.3.2', native / 'libdwarfp.so.2.3.2', args.target],
+                    env, directory / 'export.log')
+                gdb = 'shared-object-gdb.sh' if role == 'shared' else 'qemu-gdb-symbols.sh'
+                run(['bash', ROOT / 'src/test/integration' / gdb, args.target], env, directory / 'gdb.log')
+                require(digest(original) == original_hash, 'original changed')
+                state = {'artifactSha256': digest(artifact), 'sourceSha256': digest(source),
+                    'fileBytes': artifact.stat().st_size, 'sections': sections(artifact)}
+                shutil.copy2(artifact, directory / 'artifact.dbg')
+                shutil.copy2(source, directory / 'artifact.dbg.c')
+                (directory / 'receipt.json').write_text(json.dumps(state, indent=4) + '\n')
+                states.append(state)
+            plain, compressed, repeat = states
+            require(plain['sections'].keys() == compressed['sections'].keys(), 'section set changed')
+            require(not any(s['compressed'] for s in plain['sections'].values()), 'default is compressed')
+            require(any(s['compressed'] for s in compressed['sections'].values()), 'opt-in did not compress')
+            require(compressed['fileBytes'] < plain['fileBytes'], 'fixture sidecar did not shrink')
+            for name, value in plain['sections'].items():
+                require(value['plainSha256'] == compressed['sections'][name]['plainSha256'],
+                    'decompressed DWARF changed: ' + name)
+            require(plain['sourceSha256'] == compressed['sourceSha256'], 'source changed')
+            require(compressed == repeat, 'compressed export is not deterministic')
+            receipt['cases'][case] = {'status': 'PASS', 'originalSha256': original_hash,
+                'plain': plain, 'zlib': compressed}
+            (work / 'receipt.json').write_text(json.dumps(receipt, indent=4) + '\n')
+            print(f'compression-export {args.target}/{case}=PASS', flush=True)
     receipt['status'] = 'PASS'
     (work / 'receipt.json').write_text(json.dumps(receipt, indent=4) + '\n')
 
