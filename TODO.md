@@ -1,18 +1,17 @@
 # TODO.md — GhidraDwarfForge
 
-**CONFIRMED measurement integration and compression component validation:**
-PR159 merged as `762dbbd` after complete CI `41989520429` and performance
-workflow `41989520582` passed at `3276396`. The merge tree matches the tested
-head exactly. Independent review covers all five target artifacts, Linux GUI,
-Windows native/GUI/consumer checks, attachment preservation and paired workloads.
-
-Compression CI `41993381342` passes all 15 jobs at `7fbc726`, with independent
-review of all five target artifacts and both host paths. All 75 compression
-exports preserve decompressed DWARF/source, originals and private fixture inputs.
-See `docs/evidence/compression-hosted-41993381342.json`. PR160 now includes a
-normal merge of main and the corrected performance consumer. **PRESENT,
-UNVERIFIED as a combined revision:** its fresh required gate and protected merge
-remain necessary before #74 can close. No release publication is included.
+**CONFIRMED #74 implementation and measured acceptance:** measurement PR159
+merged as `762dbbd` after CI `41989520429` and performance workflow `41989520582`
+passed. Compression PR160 merged as `5d81e4f` after all 15 jobs in combined CI
+`42010699187` passed at `6281660`. Both merge trees match their tested heads.
+Current raw-artifact review covers all five targets, 75 compression exports,
+Linux/Windows GUI and GDB consumers, original preservation and cancellation.
+Pinned SQLite/U-Boot workloads and all optimization decisions are documented;
+no general speed or memory improvement is claimed. See
+`docs/PERFORMANCE-ACCEPTANCE.md` and
+`docs/evidence/compression-integrated-42010699187.json`. This change reconciles
+final documentation; issue closure follows its protected integration. No release
+publication or completion of later goal issues is included.
 
 **HISTORICAL pre-integration checkpoints follow.**
 
@@ -2684,7 +2683,7 @@ combined run `40068401197`; its conditional-step scope is recorded in
 | GUI and output paths (P2.7) | **CONFIRMED:** both hosts' real Script Manager/chooser journeys pass. PR #31 adds actual parent traversal, complete publisher alias preflight and native Windows short-parent/trailing-dot controls; its exact PR/main gates and artifact reviews pass. Geometry/GDB run on Linux; Windows uses native GNU/LLVM, with independent libdwarf unavailable and Linux-ELF runtime GDB not run. |
 | Optional debuglink (P2.8) | **CONFIRMED integrated:** PR #158 merged as `6c776d7415fc5222f7e1314c0c5192454c8aced5`; separate main run `41921433443` reports success at that commit. Opt-in CLI/GUI attachment, receipt chains, backup, atomic replacement, saved-curation refresh and recovery retain their documented validation scope. Earlier pending-integration notes are historical. Default export leaves the original unchanged. |
 | Inline reconstruction (P3.4) | **CONFIRMED investigation complete:** ADR 0003 and a reproducible compiler/Ghidra probe distinguish real inline instances from Ghidra's decompiler flag and record surviving locals/source information. Inline emission remains deferred until explicit instance/origin/range evidence and GDB acceptance exist. |
-| Performance (P3.5) | **CONFIRMED measured; integration incomplete:** repeated Linux/native Windows SQLite and U-Boot workloads, phase observations and explicit candidate decisions are recorded in [the workplan](docs/PERFORMANCE-WORKPLAN.md). Corrected Windows workload/consumer workflow `41989520582` passes. Opt-in production zlib is implemented and measured in PR160; complete required gates and normal integration remain necessary. Older planner/lazy-stack improvements retain their separate measured scope. No blanket speed or memory claim. |
+| Performance (P3.5) | **CONFIRMED integrated:** pinned Linux/Windows workloads, explicit optimization decisions, production zlib and all target/host gates pass through PR159/PR160. See [final acceptance](docs/PERFORMANCE-ACCEPTANCE.md) for exact evidence, limitations and documentation closure. No blanket speed or memory claim. |
 
 The optional/research items need an explicit recorded outcome; they are not
 silently complete merely because they are outside the current alpha scope.
@@ -4835,23 +4834,15 @@ surviving knowledge, or describe inline export as complete.
 
 Tracking: [#74](https://github.com/zwilcox/GhidraDwarfForge/issues/74).
 
-**CONFIRMED measurements and selected implementation; integration incomplete:**
-[PERFORMANCE-WORKPLAN.md](docs/PERFORMANCE-WORKPLAN.md) records source-built
-SQLite 3.46.1 and U-Boot 2025.01 sandbox workloads, repeated Linux/native Windows
-wall/CPU/memory measurements, separate import/profile/validation costs, retained
-negative observations and explicit decisions for every optimization candidate.
-Current Windows performance workflow `41989520582` and its corrected compiler/
-Forge GDB consumer pass; the previous failed population remains historical.
-Production opt-in zlib passes complete component CI `41993381342` and raw
-artifact review. PR159 is merged; reconciled PR160 still needs its fresh
-protected gate and normal integration. Caching, parallel decompilation, zstd,
-GDB indexes and string/address indexing are deferred with recorded criteria;
-the tested `.debug_names` route is rejected on its LLVM failure.
-
-**Status:** `[~]` — PR159 is merged with complete CI and workload acceptance.
-Reconciled PR160 still requires fresh validation, review and normal merge. Neither component alone
-closes #74. See [compression evidence](docs/ELF-COMPRESSION.md) for equivalence,
-determinism, cancellation, resource limits and target/host validation.
+**Status:** `[x]` — measured implementation acceptance is complete. PR159 and
+PR160 are integrated as `762dbbd` and `5d81e4f`, with trees identical to the
+validated revisions. All 15 combined jobs in `42010699187` pass; raw-artifact
+review covers all five targets, 75 compression exports and both host paths.
+The exact requirement mapping, dataset/tool/measurement records, limitations
+and explicit candidate deferrals are in
+[PERFORMANCE-ACCEPTANCE.md](docs/PERFORMANCE-ACCEPTANCE.md).
+This documentation change reconciles final status; issue closure follows its
+protected integration. No broad speed/memory claim or later issue completion.
 
 The following historical component measurements retain their original scope.
 
@@ -4921,6 +4912,17 @@ Potential features only after correctness:
 - Large-firmware memory/performance profiling.
 
 ### Completion criteria
+
+Current #74 acceptance (see the linked requirement map above):
+
+- [x] Pinned, source-built application/firmware-codebase workloads on Linux and Windows exporter hosts.
+- [x] Repeated wall/CPU/peak-memory observations with separate import, export, profile and validation costs.
+- [x] Profile-driven selection and retained negative/inconclusive observations.
+- [x] Explicit implementation/defer/reject decisions for all listed candidates.
+- [x] Production compression equivalence, strict validators/GDB, original preservation, determinism, cancellation and resource controls.
+- [x] Exact datasets, versions, statistics, artifact references and limits documented; implementation PRs integrated through protected validation.
+
+Historical indexed-planner acceptance:
 
 - [x] The implemented line-table index preserves byte-identical semantic output.
 - [x] Local determinism and strict validators pass for the documented index fixtures; the complete combined hosted matrix also passes.

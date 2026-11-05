@@ -1,18 +1,17 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
-**CONFIRMED measurement integration and compression component validation:**
-PR159 merged as `762dbbd` after complete CI `41989520429` and performance
-workflow `41989520582` passed at `3276396`. The merge tree matches the tested
-head exactly. Independent review covers all five target artifacts, Linux GUI,
-Windows native/GUI/consumer checks, attachment preservation and paired workloads.
-
-Compression CI `41993381342` passes all 15 jobs at `7fbc726`, with independent
-review of all five target artifacts and both host paths. All 75 compression
-exports preserve decompressed DWARF/source, originals and private fixture inputs.
-See `docs/evidence/compression-hosted-41993381342.json`. PR160 now includes a
-normal merge of main and the corrected performance consumer. **PRESENT,
-UNVERIFIED as a combined revision:** its fresh required gate and protected merge
-remain necessary before #74 can close. No release publication is included.
+**CONFIRMED #74 implementation and measured acceptance:** measurement PR159
+merged as `762dbbd` after CI `41989520429` and performance workflow `41989520582`
+passed. Compression PR160 merged as `5d81e4f` after all 15 jobs in combined CI
+`42010699187` passed at `6281660`. Both merge trees match their tested heads.
+Current raw-artifact review covers all five targets, 75 compression exports,
+Linux/Windows GUI and GDB consumers, original preservation and cancellation.
+Pinned SQLite/U-Boot workloads and all optimization decisions are documented;
+no general speed or memory improvement is claimed. See
+`docs/PERFORMANCE-ACCEPTANCE.md` and
+`docs/evidence/compression-integrated-42010699187.json`. This change reconciles
+final documentation; issue closure follows its protected integration. No release
+publication or completion of later goal issues is included.
 
 **HISTORICAL pre-integration checkpoints follow.**
 

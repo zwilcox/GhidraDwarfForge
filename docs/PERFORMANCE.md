@@ -1,16 +1,20 @@
 # Export performance measurements
 
-PR159 is integrated as `762dbbd` with a tree identical to tested `3276396`;
-CI `41989520429` and performance workflow `41989520582` pass. Compression
-component CI `41993381342` also passes. Reconciled PR160 needs fresh validation
-and protected integration before #74 closes. Earlier pre-integration checkpoint
-wording below retains its historical scope.
+Measurement PR159 is integrated as `762dbbd`; compression PR160 is integrated
+as `5d81e4f`. Their merge trees match tested `3276396` and `6281660`, respectively.
+Measurement CI `41989520429`, performance workflow `41989520582`, and all 15
+combined CI jobs in `42010699187` pass. See the requirement-by-requirement
+[acceptance record](PERFORMANCE-ACCEPTANCE.md) and
+[combined artifact review](evidence/compression-integrated-42010699187.json).
+Earlier pending checkpoints retain their historical scope. Final documentation
+is reconciled here; issue closure follows protected integration of this record.
+
 
 Current broader-workload measurements and optimization decisions are in
 [PERFORMANCE-WORKPLAN.md](PERFORMANCE-WORKPLAN.md); production opt-in size
 measurements are in [ELF-COMPRESSION.md](ELF-COMPRESSION.md). The corrected native
-Windows workload/consumer workflow `41989520582` passes. Full integration gates
-and normal merges remain required for #74.
+Windows workload/consumer workflow `41989520582` passes. Implementation gates
+and normal merges are complete; the acceptance record reconciles final documentation.
 
 The dated observations below are **HISTORICAL** populations. Their old runtime,
 partial-recovery findings and then-planned work do not describe current coverage

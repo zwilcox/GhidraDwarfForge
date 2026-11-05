@@ -1,10 +1,14 @@
 # Broader workload and profiling acceptance (#74)
 
-PR159 is integrated as `762dbbd` with a tree identical to tested `3276396`;
-CI `41989520429` and performance workflow `41989520582` pass. Compression
-component CI `41993381342` also passes. Reconciled PR160 needs fresh validation
-and protected integration before #74 closes. Earlier pre-integration checkpoint
-wording below retains its historical scope.
+Measurement PR159 is integrated as `762dbbd`; compression PR160 is integrated
+as `5d81e4f`. Their merge trees match tested `3276396` and `6281660`, respectively.
+Measurement CI `41989520429`, performance workflow `41989520582`, and all 15
+combined CI jobs in `42010699187` pass. See the requirement-by-requirement
+[acceptance record](PERFORMANCE-ACCEPTANCE.md) and
+[combined artifact review](evidence/compression-integrated-42010699187.json).
+Earlier pending checkpoints retain their historical scope. Final documentation
+is reconciled here; issue closure follows protected integration of this record.
+
 
 Baseline: main `6c776d7415fc5222f7e1314c0c5192454c8aced5`, Ghidra 12.0.3,
 Java 21 runtime/bytecode, existing pinned libdwarf 2.3.2. No ABI change is planned.
@@ -19,8 +23,8 @@ controls and independent Linux compiler/Forge GDB journeys. Retained raw review
 verifies 717 of 719 protected file hashes, archived program databases, exact
 package/runtime/script identity, and both binary JFR recordings. The two private
 installation settings files are observed unchanged by the job but unavailable
-for independent artifact replay. Full integration gates and normal PR merges
-remain required; this measurement result alone does not complete #74.
+for independent artifact replay. This measurement result is combined with
+production compression acceptance and the protected merges recorded above.
 See [the current evidence](evidence/performance-windows-workloads-41989520582.json).
 
 | Windows observation | SQLite baseline / candidate | U-Boot baseline / candidate |
@@ -376,7 +380,7 @@ passes to the actual Ghidra JVM. It protects those configuration files during
 measurement and retains the same runtime/script checks. The corrected native
 workload/consumer run remains required.
 
-## Optimization decisions still required
+## Historical candidate evaluation before selection
 
 For each candidate below, document measured motivation, compatibility/resource
 cost, and an explicit implement/defer/reject decision. The local experiments
@@ -441,14 +445,14 @@ or speed of an indexed implementation.
 
 ### Selected implementation and explicit deferrals
 
-- **CONFIRMED opt-in zlib production implementation in PR160; integration pending.**
+- **CONFIRMED opt-in zlib production implementation integrated through PR160.**
   The earlier private-copy experiment reduced whole-sidecar size 65.62%/61.74%.
   Separate production comparisons reduce SQLite/U-Boot sidecars 65.39%/60.11%.
   Keep these populations distinct. The default remains uncompressed, using
   standard target-class/endian ELF compression headers and Java zlib without a
   new native ABI. Actual exporter tests cover deterministic/decompressed equality,
-  cancellation, validators/GDB and both host paths; full corrected integration
-  remains required. See [production evidence](ELF-COMPRESSION.md). Zstd is
+  cancellation, validators/GDB and both host paths. Combined CI `42010699187`
+  passes and PR160 is merged as `5d81e4f`. See [production evidence](ELF-COMPRESSION.md). Zstd is
   deferred because it requires another production codec or external-tool contract.
 - **DEFER built-in GDB indexes; reject the tested `.debug_names` route.** The
   valid GDB index adds 4.31%/1.99% to these artifacts and saves only about
@@ -490,17 +494,19 @@ overrides. A function-byte hash alone cannot validate a cached result.
 | Bounded parallel decompilation | **DEFER.** Both hosts show dominant decompilation, including U-Boot's known 60-second timeout, but no controlled worker-count experiment proves a net benefit within the memory budget. Require independent decompilers, a consistent program view, deterministic assembly/diagnostics, aggregate worker-memory measurement, per-function failure isolation, and cancellation that reaps every native worker. Windows commitment and Linux process-family RSS cannot stand in for aggregate parallel memory. |
 
 Opt-in zlib compression remains the selected bounded production optimization,
-implemented and measured separately in stacked PR160. GDB indexes, zstd and
+implemented and measured separately in PR160, now merged as `5d81e4f`. GDB indexes, zstd and
 string/address indexing retain the explicit deferrals above; the tested
 `.debug_names` route remains rejected on its actual validator failure. These
 decisions resolve the evaluation requirement without claiming unimplemented
-speedups. Full #74 completion still requires compression acceptance, the
-complete required gates and normal protected integration. The corrected hosted consumer passes.
+speedups. Compression acceptance, complete implementation gates and normal protected
+integration now pass. The corrected hosted consumer passes. Final documentation
+is reconciled in the acceptance record.
 
 ## Integration gate
 
-**PLANNED:** document datasets, versions, commands, all samples and retained
-artifacts; reconcile PROJECT_CONTEXT/TODO; review the final source and package;
-pass enforced exact-head CI; integrate through a normal protected merge.
-Component PRs must not auto-close #74. The issue remains open until all of its
-remaining requirements are implemented or explicitly resolved with evidence.
+**CONFIRMED:** measurement PR159 and compression PR160 pass their required gates,
+raw-artifact reviews and normal protected merges. The exact revision/tree and
+requirement mapping are in [PERFORMANCE-ACCEPTANCE.md](PERFORMANCE-ACCEPTANCE.md).
+This documentation change records final acceptance; issue closure follows its
+normal protected integration. Historical failures and inconclusive measurements
+remain retained, and no later goal issue or release is included.
