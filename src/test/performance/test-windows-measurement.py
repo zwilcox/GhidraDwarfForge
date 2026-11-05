@@ -48,7 +48,9 @@ def main():
         rows[name] = row
         return row
     complete = run('descendant', [payload, '--spawn'])
-    assert complete['totalProcesses'] == 2, complete
+    # The job accounts for OS support processes too (for example console hosts),
+    # not only our root and explicit child. Native Windows reported four here.
+    assert complete['totalProcesses'] >= 2, complete
     assert complete['userSeconds'] + complete['systemSeconds'] >= 0.18, complete
     assert complete['peakJobCommitBytes'] >= 64 * 1024 * 1024, complete
     assert complete['peakProcessCommitBytes'] >= 64 * 1024 * 1024, complete
@@ -58,7 +60,7 @@ def main():
     assert (case / 'descendant.stderr').read_text() == 'child-stderr\n'
     timed_out = run('timeout', [payload, '--timeout'], timeout=2000, expected_success=False)
     assert timed_out['reason'] == 'timeout' and timed_out['cleanupComplete'], timed_out
-    assert timed_out['totalProcesses'] == 2 and timed_out['activeProcesses'] == 0, timed_out
+    assert timed_out['totalProcesses'] >= 2 and timed_out['activeProcesses'] == 0, timed_out
     # Independently check that the child observed in the log is no longer alive.
     child = int(re.search(r'child:(\d+)', (case / 'timeout.stdout').read_text())[1])
     kernel = ctypes.WinDLL('kernel32', use_last_error=True)
