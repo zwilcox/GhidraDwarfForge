@@ -38,14 +38,16 @@ public final class CoveragePresentation {
     public static String cell(ExportCoverage.Function function, int column) {
         var source = function.source();
         var variables = function.variables().totals();
+        boolean inventoryKnown = function.variables().recoveredSignatureKnown();
         return switch (column) {
             case 0 -> function.function().qualifiedDisplayName();
             case 1 -> "0x" + Long.toHexString(function.function().address());
             case 2 -> source.disposition();
             case 3 -> ratio(source.anchoredInstructions(), source.decodedInstructions());
             case 4 -> ratio(source.lineVisibleInstructions(), source.decodedInstructions());
-            case 5 -> ratio(variables.variablesWithLocation(), variables.recoveredVariables());
-            case 6 -> scopes(variables);
+            case 5 -> inventoryKnown ? ratio(variables.variablesWithLocation(), variables.recoveredVariables())
+                : "Unknown (unavailable function inventory)";
+            case 6 -> inventoryKnown ? scopes(variables) : "Unknown (unavailable function inventory)";
             case 7 -> types(function.types());
             default -> throw new IndexOutOfBoundsException(column);
         };
@@ -58,14 +60,21 @@ public final class CoveragePresentation {
             ? ratio(source.anchoredInstructions(), source.decodedInstructions()) : "Unknown (incomplete evidence)";
         String visible = source.unavailableInstructionFunctions() == 0
             ? ratio(source.lineVisibleInstructions(), source.decodedInstructions()) : "Unknown (incomplete evidence)";
+        var variables = coverage.variables();
+        long unknown = coverage.unknownSignatureFunctions();
+        String missing = unknown + " unavailable function " + (unknown == 1 ? "inventory" : "inventories");
+        String located = unknown == 0 ? ratio(variables.variablesWithLocation(), variables.recoveredVariables())
+            : "Unknown (" + missing + "; observed declarations: " + variables.variablesWithLocation() + "/" +
+                variables.recoveredVariables() + " located)";
+        String scoped = unknown == 0 ? scopes(variables)
+            : "Unknown (" + missing + "; observed known-scope subset: " + scopes(variables) + ")";
         return "Status: " + status + "; independent validation: NOT_RUN\n" +
             "Static address coverage; not execution coverage or a probability of correctness.\n" +
             "Functions: " + coverage.functions().size() + "; profile: " + displayName(claims.profile().languageId()) +
             " / " + displayName(claims.profile().compilerSpecId()) + "\n" +
             "Decoded instruction token anchors: " + anchors + "; line visibility: " + visible + "\n" +
-            "Variables with a valid location: " + ratio(coverage.variables().variablesWithLocation(),
-                coverage.variables().recoveredVariables()) + "\n" +
-            "Known-scope variable address bytes: " + scopes(coverage.variables()) + "\n" +
+            "Variables with a valid location: " + located + "\n" +
+            "Known-scope variable address bytes: " + scoped + "\n" +
             "Canonical function types: " + (coverage.unknownSignatureFunctions() == 0 ? types(coverage.functionTypeUnion()) :
                 "Unknown (" + coverage.unknownSignatureFunctions() + " unavailable signatures)") + "\n" +
             "Select a function for provenance and omission reasons. Save report retains all evidence.";

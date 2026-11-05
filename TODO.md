@@ -1,12 +1,42 @@
 # TODO.md — GhidraDwarfForge
 
-**#108 Windows measurement harness updated, hosted run pending:** production main
+**ACTIVE #108 — final review fixes need fresh hosted acceptance:** the unknown
+variable-inventory display bug is corrected, with unknown/mixed/known-empty and
+strict CLI regressions passing. The MIPS32LE automatic-association job at
+`3829626` failed because its terminal test retained completed coverage; the
+production rejection was correct. Corrected valid-terminal fixtures plus explicit
+malformed-coverage negatives pass six packaged preparation controls locally.
+See `docs/evidence/coverage-final-review-fixes.json`. Complete the current-head
+target/host gates and raw review before protected integration. Keep the remaining
+#116/#114, #112, #110 and #109 goal scope unchanged.
+
+**CONFIRMED — #108 Windows workloads reviewed:** all five jobs in performance
+run `42088664392` at `3829626` pass. Ten alternating pairs retain identical
+artifacts and deterministic reports; both actual JFR recordings, native Windows
+large-report CLI and independent Linux compiler/Forge GDB checks pass. Review
+corroborates all inherited frame diagnostics and original hashes. Material
+memory cost and Ghidra backup-file maintenance remain explicit. See
+`docs/evidence/coverage-ci-3829626-workloads.json`. Finish the five full target
+lanes, their raw coverage/comparison review and protected integration for #108.
+
+**CONFIRMED — #108 Windows host review:** exact-head run `42088664715` at
+`3829626` passes Windows host and downstream GDB jobs. Three actual GUI modes
+pass save/comparison/error/retry; screenshots confirm visible controls. Artifact
+digests, report bindings and all 930 protected consumer-file hashes are verified.
+See `docs/evidence/coverage-ci-3829626-windows.json` for scope and the retained
+post-test Java2D-like teardown message whose exact cause remains uncertain.
+The earlier target run has the terminal-fixture failure described above; Windows
+workloads pass at `3829626`. Finish corrected current-head artifact reviews and
+the protected merge before starting #116/#114 implementation.
+
+**#108 Windows measurement harness updated, workload run pending:** production main
 plus the shared audited array correction is now a separately receipted control.
 All baseline class bytes match the independent local Gradle build; changed-source
 inventory and unchanged-class mutation controls pass. The workflow retains exact
 artifact/report repeatability, full validators/GDB and now large-report CLI checks.
 See `docs/evidence/coverage-windows-measurement-control.json`. Run and inspect the
-corrected exact-head host/target/performance gates before integration.
+corrected exact-head target/performance gates before integration. The native
+Windows baseline-control derivation step has passed; workload results are pending.
 
 **ACTIVE #108 — local paired measurements complete; hosted corrections pending:**
 SQLite and U-Boot each pass five alternating pairs with identical artifacts,
@@ -2809,16 +2839,23 @@ Remaining #108 acceptance:
   transitions, source-failure attachment loss, deterministic reruns, raw DWARF and
   GDB/CLI checks. See `docs/evidence/coverage-type-pairs.json`; hosted acceptance
   remains required. Reported binding correspondence does not prove lineage.
-- Hosted GUI report-comparison acceptance; the Linux workflow now passes locally.
-- Repeated large-workload measurements after the definition-two evidence extension.
-  The first repeated SQLite run exposed transient array-ID nondeterminism; the
-  structural-key correction passes cross-target extraction/reopen tests. New
-  measurements and artifact validation are running with the same correction in
-  the baseline control (`docs/evidence/coverage-array-identity.json`).
-  Actual whole-report byte-bound stress now passes locally on x86-64 and rebased
-  AArch64 PIE, including preservation/retry and validators/GDB; hosted acceptance
-  remains required (`docs/evidence/coverage-whole-report-limit.json`).
-- Final host/target pipeline acceptance, including Windows and updated GUI paths.
+- Windows GUI report-comparison acceptance is now confirmed at `3829626`, including
+  artifact and screenshot review. Linux's hosted GUI journey remains pending;
+  its local 1024x768 control passes.
+- Definition-two Linux measurements are complete: five alternating pairs each on
+  SQLite and U-Boot, with exact artifacts, deterministic reports and recorded
+  runtime/memory cost (`docs/evidence/coverage-large-workloads.json`). Windows's
+  audited baseline derivation, five pairs per workload, JFR, large-report CLI and
+  downstream GDB review also pass at `3829626`
+  (`docs/evidence/coverage-ci-3829626-workloads.json`).
+- Actual whole-report byte-bound stress passes locally on x86-64 and rebased
+  AArch64 PIE, including preservation/retry and validators/GDB. Inspect the hosted
+  results (`docs/evidence/coverage-whole-report-limit.json`).
+- Finish the complete five-target pipeline and raw coverage-emission review.
+  Fifteen early attachment cases already pass reviewed report bindings,
+  validators and native/QEMU GDB (`docs/evidence/coverage-ci-3829626-attachments.json`).
+  These cases do not substitute for the rest of each target lane or the current
+  required-validation gate.
 
 The baseline exporter, source/type/location machinery, five target lanes,
 Windows headless host, and release packaging already exist. The remaining

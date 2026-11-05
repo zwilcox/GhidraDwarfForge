@@ -1,5 +1,42 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — #108 final review corrections:** unavailable function
+variable inventories now display Unknown instead of N/A (0/0); mixed summaries
+disclose missing inventories while retaining observed counts. A failing-before
+regression, unknown/mixed/known-empty controls, strict CLI round trips, component
+checks, extension build and ten packaged CLI cases pass. The MIPS32LE lane at
+`3829626` also exposed a connected-preparation test fixture that retained
+completed coverage in a terminal report. Production correctly rejected it;
+the fixture now clears coverage and separately tests malformed retained claims.
+Six actual packaged terminal controls pass. See
+`docs/evidence/coverage-final-review-fixes.json`. The presentation is the only
+production behavior changed in this follow-up; fresh hosted acceptance remains
+required. Earlier Windows evidence below stays bound to `3829626`.
+
+**CONFIRMED — #108 Windows workload acceptance:** performance run `42088664392`
+at `3829626` passes all five jobs, including the independent Linux GDB consumer.
+Review verifies all 22 reports from ten alternating measurement pairs and two
+separate profiled exports, exact artifact/report repeatability, original hashes,
+both hosts' validators, nine JFR phases and actual large-report CLI readback.
+SQLite median wall time is 87.08/87.34 seconds; U-Boot is 184.17/192.16 seconds.
+U-Boot median peak job commitment grows from 1.35 to 2.40 GB; this Windows metric
+is not Linux RSS. Project program data is unchanged, with only Ghidra index/journal
+backup maintenance. See `docs/evidence/coverage-ci-3829626-workloads.json` for
+the exact scope, baseline correction, retained artifacts and limitations.
+The five full architecture lanes and protected integration remain pending.
+
+**CONFIRMED — #108 current Windows host acceptance:** run `42088664715` at
+`3829626` passes the Windows host and downstream GDB jobs. Review verifies the
+downloaded artifact digests, three GUI report/input/output/source bindings and
+all 930 hashes protected by the consumer. Plain, compressed and companion GUI
+exports retain working save/comparison/error/retry controls within the desktop.
+The Windows-produced attachment generations pass Linux GNU/LLVM/pinned strict
+validation and actual GDB with explicit source relocation. One message after
+the GUI PASS marker matches an OpenJDK Java2D disposal catch path; its exact
+exception is not recorded and remains uncertain. Evidence and limits are in
+`docs/evidence/coverage-ci-3829626-windows.json`. Five target lanes and protected
+integration are still pending; #108 remains active.
+
 **CONFIRMED locally — #108 Windows measurement preparation:** the workflow now
 compares against production main `1bb4c14` with a separately derived, explicitly
 non-release array correction. Its three recompiled classes must match the actual

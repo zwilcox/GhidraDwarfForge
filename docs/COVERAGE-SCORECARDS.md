@@ -4,8 +4,12 @@
 variable-location and type scorecards in schema-two reports. The installed CLI
 and GUI display, save and compare that evidence. Structural validators, GDB,
 actual curation regressions, failure/cancellation controls and report-limit tests
-pass locally. Final repeated large-workload measurements and hosted host/target
-acceptance remain pending for issue #108.
+pass locally, including five-pair SQLite/U-Boot measurements. Windows host and
+workload acceptance also pass at `3829626`. Final review corrected an unavailable
+variable-inventory display and a malformed terminal test fixture; the corrected
+host/target gate and protected integration remain pending for issue #108.
+The [acceptance map](COVERAGE-ACCEPTANCE.md) distinguishes the required evidence
+from completed local checks and pending hosted review.
 
 These are static export-coverage metrics, not execution coverage, probability of
 correctness, original compiler knowledge or complete semantic equivalence.
@@ -110,8 +114,11 @@ including resolved/opaque swaps hidden by equal totals and types allocated globa
 but unattached to a failed-source function.
 
 Unknown instruction/token populations are counted explicitly and suppress the
-corresponding summary percentages. Unknown signatures suppress aggregate type
-percentages. Ratios with empty denominators are not applicable.
+corresponding summary percentages. An unavailable signature means its variable
+inventory is unknown, not known empty: per-function variable/scope displays say
+Unknown. Aggregate variable displays disclose the missing function inventories
+and label remaining counts as the observed subset. Unknown signatures also
+suppress aggregate type percentages. Known empty denominators are not applicable.
 
 Transient Ghidra arrays use the existing class/path/size fallback and equivalence/
 collision checks. Their inherited process-generated IDs do not establish persisted
@@ -180,7 +187,8 @@ On Windows, use `support/ghidra-dwarf-forge-report.ps1` with `-ReportFile`, opti
 `-BeforeFile`, `-Function` or `-Summary`, and `-GhidraDirectory`. Paths travel as
 canonical Base64 UTF-8 across Java's Windows launcher boundary. Arguments are
 passed directly to a separate process, and output streams without retaining the
-complete comparison in the PowerShell parent. Current hosted Windows acceptance is pending.
+complete comparison in the PowerShell parent. Hosted Windows GUI and large-report
+CLI acceptance pass at `3829626`; see the receipts below.
 
 ## Comparison correspondence and limits
 
@@ -246,7 +254,7 @@ total; the CLI provides the complete changes.
 Retained receipts distinguish component/protocol controls from actual artifacts
 and debugger behavior:
 
-| Evidence | What it establishes locally |
+| Evidence | What it establishes within its recorded scope |
 | --- | --- |
 | [Type report](evidence/coverage-type-report.json) | Strict definition-two graph/roots, raw-DWARF/GDB checks and production staging controls. |
 | [Variable comparison](evidence/coverage-variable-comparison.json) | 65,536 interval controls plus actual x86-64/AArch64 PIE rebase/use-site-edit/rename pairs, raw location lists and GDB values. |
@@ -255,8 +263,11 @@ and debugger behavior:
 | [Whole-report limit](evidence/coverage-whole-report-limit.json) | Actual 64 MiB rejection from captured Ghidra data on x86-64/AArch64, pair/companion preservation, deterministic retry and validators/GDB. |
 | [Array identity](evidence/coverage-array-identity.json) | Reproduced fresh-process nondeterminism, cross-target live/reopen correction, large SQLite artifact validators/GDB and CLI. |
 | [Large workloads](evidence/coverage-large-workloads.json) | Five alternating pairs each for SQLite and U-Boot, deterministic reports, identical artifacts, validators/GDB and preserved inputs/projects. |
-| [CI follow-ups](evidence/coverage-ci-followups.json) | Corrected terminal fixtures, complete JFR phase sets, and screen-bounded GUI save/comparison at 1024x768. Corrected Windows execution remains pending. |
-| [Windows measurement control](evidence/coverage-windows-measurement-control.json) | Audited derivation from the exact published main package, clean-build class equality and rejecting package/class controls. Hosted Windows measurements remain pending. |
+| [CI follow-ups](evidence/coverage-ci-followups.json) | Corrected terminal fixtures, complete JFR phase sets, and screen-bounded GUI save/comparison at 1024x768. |
+| [Windows host](evidence/coverage-ci-3829626-windows.json) | Actual GUI save/comparison/error/retry in three modes, visible controls, artifact bindings and independent GDB. |
+| [Windows measurement control](evidence/coverage-windows-measurement-control.json) | Audited derivation from the exact published main package, clean-build class equality and rejecting package/class controls. |
+| [Windows workloads](evidence/coverage-ci-3829626-workloads.json) | Ten alternating pairs, two profiled exports, actual large-report CLI, strict validators on both hosts and compiler/Forge GDB. |
+| [Final review fixes](evidence/coverage-final-review-fixes.json) | Unknown-inventory presentation regression and packaged CLI checks; valid terminal versus malformed retained-coverage preparation controls. Fresh hosted acceptance remains required. |
 
 **CONFIRMED locally:** median export wall time increases from 34.62 to 39.28 seconds
 for SQLite and 114.82 to 126.58 seconds for U-Boot. Median process maximum RSS
@@ -268,9 +279,18 @@ separate report-tool observations. U-Boot retains its one known decompilation
 failure. Strict frame diagnostics are corroborated against the original, with
 zero unexplained errors.
 
-The current hosted host/target gate, including Windows GUI/CLI and broader
-Windows workloads, remains required. The measurement
-baseline has the same isolated array-key correction as the candidate to isolate
+**CONFIRMED on Windows:** median export wall time is 87.08/87.34 seconds for
+SQLite and 184.17/192.16 seconds for U-Boot. Median peak job commitment is
+1.31/1.33 GB and 1.35/2.40 GB respectively; this includes the process tree and
+is not Linux RSS. Five alternating pairs preserve identical sidecar/source bytes
+and deterministic reports. Separate summary/self-comparison takes 2.23/3.74
+seconds for SQLite and 3.64/6.55 seconds for U-Boot; those are single CLI
+observations. Only Ghidra index/journal backups change in the saved projects;
+program data and original inputs remain unchanged. Both actual JFR recordings
+and independent Linux GDB consumer checks pass.
+
+The current five-target gate and protected integration remain required. The
+measurement baseline has the same isolated array-key correction as the candidate to isolate
 scorecard cost while retaining exact artifact equality. Failed runs are retained
 and excluded from successful measurements. One host's measurements do not imply
 a general speed or memory guarantee.
