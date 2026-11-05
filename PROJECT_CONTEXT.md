@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED packaged raw inventory — #116/#114:** `GhidraAnnotationInventory`
+now reads all listing categories and exact stored equates/references while retaining
+Ghidra address objects. Four saved-program profiles pass independent readback,
+complete address counts, exact limits, incomplete-inventory rejection and every
+observed cancellation checkpoint. Two reopens preserve all project files. The
+complete new x86-64 build/curate/extract CI sequence also passes locally; hosted
+execution is pending. See `docs/evidence/annotation-inventory.json`. Production
+source placement, equate interpretation/debugger values and optional context remain
+planned. #108 protected integration remains the priority.
+
 **CONFIRMED isolated exporter integration — #116/#114:** controlled annotations
 now pass through the real producer and matched ELF writer. GNU/LLVM/pinned strict
 validation and native x86-64 GDB pass: six inserted comment rows remain

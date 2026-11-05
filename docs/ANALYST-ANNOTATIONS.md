@@ -161,3 +161,32 @@ The x86-64 workflow invokes this mode separately. Hosted execution, other target
 runtime checks, real annotation inventory/association and production integration
 remain required. The modeled unavailable source here complements the separate
 real native failure fixture; it does not replace that acceptance requirement.
+
+The [packaged inventory receipt](evidence/annotation-inventory.json) establishes
+read-only extraction from the four actual saved-program profiles. The inventory
+retains Ghidra `Address` objects, every listing category, exact stored equate
+names/64-bit values and each reference's address, operand and dynamic hash. It
+retains automatic listing comments too; the API does not prove human authorship.
+It intentionally does not call enum display helpers or infer a C type from raw
+stored values. All fifty fixture comments and fourteen equates match independent
+readback, including malformed names and dynamic-only references.
+
+Explicit limits count comments, equates and references as records and names/text
+as UTF-16 units. They fail with an actionable message instead of truncating. The
+final source serialization budget is a separate constraint. A complete address
+count check detects omitted spaces or a changing inventory; the Ghidra stack
+encoding split described above is used independently of target architecture.
+Limits, mismatch rejection and every observed cancellation checkpoint pass, with
+unchanged project data and byte-identical independent reopens.
+
+```bash
+python3 src/test/integration/annotation-inventory.py "$GHIDRA_INSTALL_DIR" /path/to/curation-case
+python3 src/test/integration/annotation-inventory-pipeline.py "$GHIDRA_INSTALL_DIR" x86_64
+```
+
+The second command builds/validates the compiler reference and curates a fresh
+private project first. This whole sequence passes locally on x86-64. The workflow
+adds x86-64, AArch64 PIE and both MIPS32 byte orders; hosted execution is pending.
+The inventory still has no production export call site. Typed/display-name
+validation, token association, context options and complete source/debugger
+integration remain required before either issue is complete.
