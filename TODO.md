@@ -1,5 +1,13 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED preparation only — #116/#114:** an isolated compiler and saved-program
+fixture now passes eight native/QEMU reference cases and four deterministic
+annotation readback cases. MIPS exposed a signed stack-range enumeration gap;
+separate database-key scans preserve all comments. AArch64 PIE uses explicit
+link-time/Ghidra address translation. See `docs/ANALYST-ANNOTATIONS.md` and its
+receipt. Production annotation implementation remains planned; #108 protected
+integration is still the current priority.
+
 **ACTIVE #108 — final review fixes need fresh hosted acceptance:** the unknown
 variable-inventory display bug is corrected, with unknown/mixed/known-empty and
 strict CLI regressions passing. The MIPS32LE automatic-association job at

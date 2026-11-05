@@ -40,6 +40,7 @@ expected_sources=(
     aarch64-abi.h
     aarch64-vector.c
     aggregate-return-calls.c
+    analyst-annotations.c
     arm-aggregate-pcs.c
     arm-dynamic-pcs.c
     arm-hfa-controls.S

@@ -713,3 +713,10 @@ compiler-DWARF references. Both byte orders also run the production exporter;
 unproven Ghidra double-pair locations remain unavailable. Wrong-carrier and
 wrong-mode controls are required. See
 [the reference contract](../../../docs/MIPS-FPR-SYSTEM-REFERENCE.md).
+
+`analyst-annotations.c` is the compiler reference for planned listing-comment,
+equate and optional instruction-context preservation. It provides real name
+conflicts, fixed-width values, code markers and a body suitable for an explicit
+curated gap. The separate preparation harness applies comments and equates to a
+private saved Ghidra program. See `docs/ANALYST-ANNOTATIONS.md`; passing these
+compiler/curation fixtures does not establish production annotation export.
