@@ -14,12 +14,32 @@ import ghidradwarfforge.source.SyntheticSourceFile.SourceLine;
 
 /** Minimal deterministic DWARF 5 line program using evidence-backed rows. */
 public final class Dwarf5LineTable {
-    static record LineRow(long address, int line) {
+    public static record LineRow(long address, int line) {
     }
 
-    static record LineSequence(long start, long endExclusive, List<LineRow> rows) {
-        LineSequence {
+    public static record LineSequence(long start, long endExclusive, List<LineRow> rows) {
+        public LineSequence {
             rows = List.copyOf(rows);
+        }
+    }
+
+    /** Encoded bytes and the exact immutable row plan used to write them. */
+    public static final class Result {
+        private final byte[] section;
+        private final List<LineSequence> sequences;
+
+        private Result(byte[] section, List<LineSequence> sequences) {
+            // Private construction transfers the newly encoded array into this result.
+            this.section = section;
+            this.sequences = List.copyOf(sequences);
+        }
+
+        public byte[] section() {
+            return section.clone();
+        }
+
+        public List<LineSequence> sequences() {
+            return sequences;
         }
     }
 
@@ -43,6 +63,12 @@ public final class Dwarf5LineTable {
     }
 
     public static byte[] build(String fileName, String sourceDirectory, int addressBytes,
+            ByteOrder byteOrder, List<FunctionSymbol> functions, List<SourceLine> sourceLines) {
+        return buildWithPlan(fileName, sourceDirectory, addressBytes, byteOrder,
+            functions, sourceLines).section;
+    }
+
+    public static Result buildWithPlan(String fileName, String sourceDirectory, int addressBytes,
             ByteOrder byteOrder, List<FunctionSymbol> functions, List<SourceLine> sourceLines) {
         if (fileName == null || fileName.isBlank() || fileName.indexOf('\0') >= 0) {
             throw new IllegalArgumentException("invalid line-table file name");
@@ -86,7 +112,7 @@ public final class Dwarf5LineTable {
             writeExtended(program, DW_LNE_END_SEQUENCE, new byte[0]);
         }
         if (sequences.isEmpty()) {
-            return new byte[0];
+            return new Result(new byte[0], sequences);
         }
 
         ByteArrayOutputStream header = new ByteArrayOutputStream();
@@ -125,7 +151,7 @@ public final class Dwarf5LineTable {
         ByteArrayOutputStream result = new ByteArrayOutputStream();
         writeUnsigned(result, body.size(), 4, byteOrder);
         result.writeBytes(body.toByteArray());
-        return result.toByteArray();
+        return new Result(result.toByteArray(), sequences);
     }
 
     /**

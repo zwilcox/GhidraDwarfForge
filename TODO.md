@@ -2666,6 +2666,14 @@ own pinned-header audit and isolated-process test.
 
 ## 1.1 Current remaining work
 
+**PRESENT, UNVERIFIED end to end — [#108](https://github.com/zwilcox/GhidraDwarfForge/issues/108):**
+source-coverage primitives retain the actual encoded line plan and pass independent
+raw-line-byte checks; the public report is unchanged. [The metric contract and
+acceptance matrix](docs/COVERAGE-SCORECARDS.md) retain the full instruction,
+variable/location/type, provenance, compatibility, comparison/presentation and
+bounded-overhead scope. Extraction/report integration and end-to-end acceptance
+remain required. #74 retains integration priority.
+
 The baseline exporter, source/type/location machinery, five target lanes,
 Windows headless host, and release packaging already exist. The remaining
 items are these bounded workstreams:

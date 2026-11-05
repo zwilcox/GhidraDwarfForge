@@ -484,6 +484,14 @@ tasks.register("dwarfLineTableSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.dwarf.Dwarf5LineTableSmoke"
 }
 
+tasks.register("sourceCoverageSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks static source coverage against independently decoded line bytes"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.coverage.SourceCoverageSmoke"
+}
+
 tasks.register("dwarfLocationListsSmoke", JavaExec) {
     group = "verification"
     description = "Checks deterministic DWARF 5 variable location-list encoding"

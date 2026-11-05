@@ -1,5 +1,16 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**PRESENT, UNVERIFIED end-to-end #108 source coverage:** an isolated follow-on
+branch now retains the exact line-emission plan and indexes decoded instruction
+coverage without conflating token anchors with debugger line carry-forward.
+Native-free byte-decoding tests cover overlap, gaps, declarations, collisions,
+duplicates, empty/failed functions and cancellation in both widths/byte orders.
+Four baseline/candidate line sections are byte-identical. Listing/token extraction,
+report schema integration, variable/type coverage, comparison/presentation,
+large-workload cost and full validator/GDB acceptance remain planned. This does
+not complete #108 or move its integration ahead of #74. See
+`docs/COVERAGE-SCORECARDS.md` for definitions and the full remaining acceptance.
+
 **CONFIRMED measurement integration and compression component validation:**
 PR159 merged as `762dbbd` after complete CI `41989520429` and performance
 workflow `41989520582` passed at `3276396`. The merge tree matches the tested
