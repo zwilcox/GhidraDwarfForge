@@ -10,6 +10,8 @@ serialization, strict payload decoding and shared reader budgets pass locally
 writing and all reader paths now pass migration and selected-byte binding checks;
 production staging, comparison/CLI/GUI, large-workload cost and hosted acceptance
 remain pending. Ordinary exports still emit schema one.
+A dense synthetic workload currently hits the one-million-value budget; resolve
+explicit schema-two admission/representation bounds before production wiring.
 See `docs/COVERAGE-SCORECARDS.md`; #74 final acceptance retains integration priority.
 
 **CONFIRMED measurement integration and compression component validation:**

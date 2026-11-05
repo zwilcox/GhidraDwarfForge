@@ -274,6 +274,38 @@ emits this proposed payload yet. The retained payload's
 large-workload cost is unmeasured; old diagnostic-inventory retention limits do
 not automatically constrain these additional structures.
 
+### Exploratory workload admission evidence
+
+**CONFIRMED local limitation; production wiring remains pending:** the default
+one-million-value document budget accepts a sparse 10,000-function payload but
+rejects a denser synthetic 6,375-function payload with 12 decoded instructions
+and four full-scope locals per function. The latter contains 1,447,193 payload
+values in 27,677,206 UTF-8 bytes. This is a deliberate bounded-reader rejection,
+not a JVM failure or permission to publish a partial scorecard.
+
+The reproducible probe runs without Ghidra extraction or native production:
+
+```bash
+./gradlew coverageReportWorkload -PcoverageWorkloads=1000:32:4,6375:12:4
+```
+
+Shapes are `functions:instructions:locals`. The probe reports acceptance or
+rejection explicitly; successful process exit does not mean every shape fits.
+It also writes `build/coverage-report-workload-classpath.txt` for isolated JVM
+measurements. A test-only `-Dforge.workload.values=2000000` override admits the
+dense shape with both 256 MiB and 768 MiB Java heaps. Single cold observations
+take approximately 0.62 seconds for complete report writing/preflight; standalone
+process peak RSS is 398,148/619,892 KiB respectively. These include probe/JVM costs,
+are not repeated benchmark medians and establish no exporter speed or memory
+improvement. The Gradle client's `/usr/bin/time` RSS is not the worker JVM's RSS.
+
+Raw command/output/timing hashes and observations are recorded in
+`docs/evidence/coverage-report-admission-probe.json`. Production reader limits
+remain unchanged. Before connecting ordinary exports, select an explicit bounded
+schema-two admission or representation policy using real workload populations;
+preserve legacy report compatibility and failure/cancellation behavior. Merely
+passing sparse fixtures is insufficient evidence for large-program acceptance.
+
 ## Current component checks
 
 With the supported Java21/Ghidra12.0.3 environment, run:

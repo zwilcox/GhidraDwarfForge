@@ -583,6 +583,19 @@ tasks.register("exportReportCoverageSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.output.ExportReportCoverageSmoke"
 }
 
+tasks.register("coverageReportWorkload", JavaExec) {
+    group = "verification"
+    description = "Measures synthetic coverage report size and bounded reader behavior (exploratory)"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CoverageReportWorkload"
+    maxHeapSize = "768m"
+    args providers.gradleProperty("coverageWorkloads").getOrElse("100,1000,10000").split(",")
+    doFirst {
+        layout.buildDirectory.file("coverage-report-workload-classpath.txt").get().asFile.text = classpath.asPath
+    }
+}
+
 tasks.register("emissionEvidenceSmoke", JavaExec) {
     group = "verification"
     description = "Retains actual producer emission evidence for independent DWARF/GDB inspection"
