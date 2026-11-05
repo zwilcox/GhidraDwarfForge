@@ -551,6 +551,22 @@ tasks.register("exportCoverageSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.coverage.ExportCoverageSmoke"
 }
 
+tasks.register("coverageReportJsonSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks exact coverage JSON counters, Unicode budgets and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CoverageReportJsonSmoke"
+}
+
+tasks.register("reportValueReaderSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks shared streaming report budgets across child decoders"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.ReportValueReaderSmoke"
+}
+
 tasks.register("emissionEvidenceSmoke", JavaExec) {
     group = "verification"
     description = "Retains actual producer emission evidence for independent DWARF/GDB inspection"

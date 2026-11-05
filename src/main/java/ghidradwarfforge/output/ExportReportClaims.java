@@ -8,7 +8,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -218,7 +217,7 @@ public record ExportReportClaims(int schemaVersion, ExportReport.Status status,
         }
     }
 
-    private static final class Parser {
+    private static final class Parser extends ReportValueReader {
         private static final Set<String> ROOT_FIELDS = Set.of("schemaVersion", "status", "target",
             "artifacts", "counts", "sections", "failedFunctions", "skippedFunctions",
             "omittedLocations", "unsupportedConstructs", "diagnostics", "validation", "native", "failure");
@@ -229,11 +228,7 @@ public record ExportReportClaims(int schemaVersion, ExportReport.Status status,
         private static final Set<String> ARTIFACT_FIELDS = Set.of("inputPath", "inputSha256",
             "outputPath", "outputSha256", "sourcePath", "sourceSha256");
 
-        private final JsonReader json;
-        private final BooleanSupplier cancelled;
-        private final ReportJsonReader.Limits limits;
         private final Retention retained;
-        private int values;
         private int schema;
         private ExportReport.Status status;
         private ExportReport.TargetInfo target;
@@ -250,9 +245,7 @@ public record ExportReportClaims(int schemaVersion, ExportReport.Status status,
 
         private Parser(JsonReader json, BooleanSupplier cancelled, ReportJsonReader.Limits limits,
                 Retention retained) {
-            this.json = json;
-            this.cancelled = cancelled;
-            this.limits = limits;
+            super(json, cancelled, limits);
             this.retained = retained;
         }
 
@@ -449,120 +442,13 @@ public record ExportReportClaims(int schemaVersion, ExportReport.Status status,
             }
         }
 
-        private long address() throws IOException {
-            String value = text(true);
-            if (!value.matches("0x(?:0|[1-9a-f][0-9a-f]{0,15})")) {
-                throw invalid("invalid report address spelling");
+        @Override
+        protected IOException missingFields(String description, Set<String> missing) {
+            if (description.equals("counts") && missing.equals(Set.of("functionStaticVariables"))) {
+                return new UnsupportedReportShapeException(
+                    "unsupported historical schema-one report shape: counts.functionStaticVariables is required");
             }
-            return Long.parseUnsignedLong(value.substring(2), 16);
-        }
-
-        private void textObject(String description, Set<String> fields) throws IOException {
-            object(description, fields, ignored -> text(true));
-        }
-
-        private void object(String description, Set<String> fields, FieldReader reader) throws IOException {
-            value(JsonToken.BEGIN_OBJECT);
-            json.beginObject();
-            Set<String> seen = new HashSet<>();
-            while (json.hasNext()) {
-                ReportJsonReader.checkCancelled(cancelled);
-                String name = json.nextName();
-                if (!fields.contains(name)) {
-                    throw invalid("unknown field in " + description);
-                }
-                if (!seen.add(name)) {
-                    throw invalid("duplicate decoded field in " + description);
-                }
-                reader.read(name);
-            }
-            json.endObject();
-            if (!seen.equals(fields)) {
-                Set<String> missing = new HashSet<>(fields);
-                missing.removeAll(seen);
-                if (description.equals("counts") && missing.equals(Set.of("functionStaticVariables"))) {
-                    throw new UnsupportedReportShapeException(
-                        "unsupported historical schema-one report shape: counts.functionStaticVariables is required");
-                }
-                throw invalid("missing field in " + description);
-            }
-        }
-
-        private int array(ValueReader reader) throws IOException {
-            value(JsonToken.BEGIN_ARRAY);
-            json.beginArray();
-            int count = 0;
-            while (json.hasNext()) {
-                if (count == limits.arrayItems()) {
-                    throw invalid("array exceeds safety limit " + limits.arrayItems());
-                }
-                count++;
-                reader.read();
-            }
-            json.endArray();
-            return count;
-        }
-
-        private <T> T nullable(NullableReader<T> reader) throws IOException {
-            if (json.peek() == JsonToken.NULL) {
-                value(JsonToken.NULL);
-                json.nextNull();
-                return null;
-            }
-            return reader.read();
-        }
-
-        private String text(boolean nonblank) throws IOException {
-            value(JsonToken.STRING);
-            String text = json.nextString();
-            if (nonblank && text.isBlank()) {
-                throw invalid("required report text is blank");
-            }
-            return text;
-        }
-
-        private int integer() throws IOException {
-            value(JsonToken.NUMBER);
-            String spelling = json.nextString();
-            if (!spelling.matches("0|[1-9][0-9]{0,9}")) {
-                throw invalid("expected canonical nonnegative report integer");
-            }
-            try {
-                return Integer.parseInt(spelling);
-            }
-            catch (NumberFormatException overflow) {
-                throw new IOException("report integer exceeds signed 32-bit range", overflow);
-            }
-        }
-
-        private void value(JsonToken expected) throws IOException {
-            ReportJsonReader.checkCancelled(cancelled);
-            if (values == limits.values()) {
-                throw invalid("value count exceeds safety limit " + limits.values());
-            }
-            values++;
-            if (json.peek() != expected) {
-                throw invalid("expected " + expected + " report value");
-            }
-        }
-
-        private static IOException invalid(String detail) {
-            return new IOException("invalid export report: " + detail);
-        }
-
-        @FunctionalInterface
-        private interface FieldReader {
-            void read(String name) throws IOException;
-        }
-
-        @FunctionalInterface
-        private interface ValueReader {
-            void read() throws IOException;
-        }
-
-        @FunctionalInterface
-        private interface NullableReader<T> {
-            T read() throws IOException;
+            return super.missingFields(description, missing);
         }
     }
 }

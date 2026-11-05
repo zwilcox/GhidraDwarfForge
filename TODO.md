@@ -4,7 +4,8 @@
 and source evidence inventories, plus combined scorecard assembly, pass local
 component/raw-DWARF/GDB checks. Source
 counts retain unknown versus zero and union overlapping instructions; variables
-retain unexported declarations and unknown scopes. Public scorecard/schema,
+retain unexported declarations and unknown scopes. Proposed bounded payload
+serialization and shared reader budgets pass; public schema-two reading/writing,
 comparison/CLI/GUI, large-workload cost and hosted acceptance remain pending.
 See `docs/COVERAGE-SCORECARDS.md`; #74 final acceptance retains integration priority.
 

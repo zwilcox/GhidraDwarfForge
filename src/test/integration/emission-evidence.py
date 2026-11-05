@@ -294,6 +294,43 @@ def inspect(case):
         assert score['variables'] == rows[name]
         assert score['signature']['recovered'] and score['signature']['emitted'] == (name != 'failed')
         assert score['typeProvenance'] == 'UNKNOWN_PER_TYPE'
+    wire = json.loads((case / 'forge.dbg.coverage.json').read_text())
+    assert set(wire) == {'definitionVersion', 'addressModel', 'profile', 'summary', 'functions', 'variables', 'recoveredGlobals'}
+    assert wire['definitionVersion'] == 1 and wire['addressModel'] == 'ELF_LINK_TIME'
+    assert wire['profile'] == {'languageId': 'x86:LE:64:default', 'compilerSpecId': 'gcc'}
+
+    def decimal_fields(metrics):
+        return {k: str(v) if isinstance(v, int) else v for k, v in metrics.items()}
+
+    assert wire['summary']['variables'] == decimal_fields(scorecards['variables'])
+    assert wire['summary']['functionTypes'] == decimal_fields(scorecards['functionTypeUnion'])
+    assert wire['summary']['source'] == decimal_fields(scorecards['sourceUnion'])
+    assert wire['summary']['functions'] == '3' and wire['summary']['unknownSignatureFunctions'] == '0'
+    assert wire['summary']['recoveredGlobals'] == '0' and wire['summary']['recoveredGlobalsKnown'] == 'YES'
+    assert wire['recoveredGlobals'] == []
+    for record, score in zip(wire['functions'], scorecards['functions'], strict=True):
+        assert record['entry'] == hex(score['function']['address']) and record['name'] == score['function']['name']
+        assert record['ranges'] == [[hex(r['address']), hex(r['address'] + r['size'])] for r in score['function']['ranges']]
+        assert record['types'] == decimal_fields(score['types'])
+        assert record['variables'] == decimal_fields(score['variables']['totals'])
+        for metric in ['decodedInstructions', 'anchoredInstructions', 'lineVisibleInstructions']:
+            assert record['source'][metric] == str(score['source'][metric])
+        for field, observed in [('decodedStarts', 'decoded'), ('anchoredStarts', 'anchored'), ('lineVisibleStarts', 'lineVisible')]:
+            assert record['source'][field] == list(map(hex, score['source']['observedPoints'][observed]))
+    expected_variables = [(score['function']['address'], variable) for score in scorecards['functions']
+                          for variable in score['variables']['variables']]
+    for record, (owner, variable) in zip(wire['variables'], expected_variables, strict=True):
+        assert record['function'] == hex(owner)
+        assert record['internalName'] == variable['identity']['internalName']
+        assert record['recoveredType'] == variable['recoveredType']['key']
+        assert record['emittedType'] == (None if variable['emittedType'] is None else variable['emittedType']['key'])
+        assert record['location']['declarationEmitted'] == ('YES' if variable['location']['declarationEmitted'] else 'NO')
+        assert record['location']['scopeStatus'] == ('KNOWN' if variable['location']['scopeComplete'] else 'UNKNOWN')
+        for metric in ['knownScopeBytes', 'coveredScopeBytes', 'locatedBytes']:
+            assert record['location'][metric] == str(variable['location'][metric])
+        for field in ['knownScopeRanges', 'locatedRanges']:
+            assert record['location'][field] == [[hex(r['address']), hex(r['address'] + r['size'])] for r in variable['location'][field]]
+        assert record['omissionReason'] == variable['omissionReason']
     return {'rawTypeNodes': 5, 'opaqueNodes': 1, 'variables': 9, 'locations': 4, 'omittedLocations': 5,
             'knownScopeVariables': 3, 'lateCoveredScopeBytes': metrics['late']['coveredScopeBytes'],
             'lateKnownScopeBytes': metrics['late']['knownScopeBytes']}

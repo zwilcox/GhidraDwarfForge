@@ -196,12 +196,53 @@ void. Evidence is `build/coverage-assembly-validation.log` and
 Versioned bounded serialization/reading, exact comparison identity, presentation,
 large-workload overhead and full hosted acceptance remain pending.
 
+## Proposed coverage payload and reader boundary
+
+**CONFIRMED locally; ordinary report integration pending:** `CoverageReportJson`
+serializes the assembled scorecards into a proposed definition-version-one
+payload for report schema two. It has explicit Ghidra language/compiler-spec
+identity and `ELF_LINK_TIME` addresses. Counters use canonical nonnegative decimal
+strings through `Long.MAX_VALUE`; unavailable counters use null with their
+reason. Addresses use canonical hexadecimal strings. YES/NO and KNOWN/UNKNOWN
+strings preserve the current lexical grammar without introducing JSON booleans.
+The definition version is the only numeric literal in this payload.
+
+Function records carry exact source starts, type metrics, signature restrictions
+and variable totals. A flat variable table references its owner entry and retains
+scoped identities, provenance, unavailable storage and evidenced/located ranges.
+Recovered globals stay separately labeled. This shape fits the existing depth
+eight limit when embedded in a report. Full reader/schema validation and exact
+comparison identities are still required before this becomes a public contract.
+
+Serialization checks cancellation throughout and bounds actual UTF-8 output to
+64 MiB before appending each character, including split surrogate pairs; it
+rejects unpaired surrogates and strings beyond 65,536 UTF-16 units. Exact budget
+boundaries, escaped/Unicode text, null versus zero, `Long.MAX_VALUE`, aggregate
+overflow and all 2,260 observed cancellation points pass. The final report still
+needs a shared full-document value/array/byte budget check before publication;
+the payload budget alone is not that check.
+
+The existing schema-one streaming reader now shares its strict primitive methods
+through `ReportValueReader`. Child decoders share the original value budget and
+owned stream, so introducing a coverage decoder cannot reset the document limit.
+The nested-budget/array/cancellation/close controls pass, as do all 429 original
+malformed-report controls, 432 detailed-reader checks and existing writer checks.
+The schema-one acceptance contract and existing report bytes are unchanged.
+
+The isolated native fixture also verifies payload counters, addresses, ranges,
+nulls and ownership against its already independently checked raw-DWARF/GDB
+metrics. Evidence: `build/coverage-json-final-validation.log` and
+`build/test-results/emission-evidence/run.m6oa17f2/acceptance.json`.
+The coverage decoder, schema-two root, production script staging integration,
+CLI/GUI/comparison and large-workload overhead remain planned. No ordinary export
+emits this proposed payload yet; schema one remains the current public writer.
+
 ## Current component checks
 
 With the supported Java21/Ghidra12.0.3 environment, run:
 
 ```bash
-./gradlew ghidraInstructionEvidenceSmoke syntheticSourceSmoke sourceCoverageSmoke sourceCoverageInventorySmoke dwarfLineTableSmoke typeCoverageSmoke locationEmissionPlanSmoke locationCoverageSmoke variableCoverageInventorySmoke exportCoverageSmoke dwarfLocationListsSmoke buildExtension
+./gradlew ghidraInstructionEvidenceSmoke syntheticSourceSmoke sourceCoverageSmoke sourceCoverageInventorySmoke dwarfLineTableSmoke typeCoverageSmoke locationEmissionPlanSmoke locationCoverageSmoke variableCoverageInventorySmoke exportCoverageSmoke coverageReportJsonSmoke reportValueReaderSmoke dwarfLocationListsSmoke buildExtension
 ```
 
 Observed local results: instruction evidence passes 44 checks across four

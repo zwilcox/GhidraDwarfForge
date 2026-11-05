@@ -34,7 +34,11 @@ raw-line/disassembly/native-GDB fixture pass (six decoded/two anchored/four visi
 The combined scorecard assembler passes its native raw-DWARF/GDB fixture and all
 148 cancellation checkpoints. It retains failed/unknown signatures, canonical
 function type unions, separate recovered globals and post-policy ABI restrictions.
-Public serialization/reporting, comparison and measured overhead remain pending.
+A proposed exact-counter coverage JSON payload passes UTF-8/string bounds,
+2,260 cancellation points and native raw-metric comparison. Shared streaming
+reader primitives preserve all 429 malformed-report and 432 detailed-reader
+checks. Schema-two decoding/root integration, production staging, comparison/UI
+and measured overhead remain pending; public reports still use schema one.
 Location-list results retain their actual immutable plans and honor cancellation.
 Their four byte streams match the parent; 237 raw-byte/negative checks pass.
 Real packaged x86-64 and rebased AArch64 PIE lexical-variable journeys pass

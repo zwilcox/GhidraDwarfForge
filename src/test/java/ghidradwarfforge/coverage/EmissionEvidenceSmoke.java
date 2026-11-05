@@ -205,6 +205,8 @@ public final class EmissionEvidenceSmoke {
         for (var function : coverage.functions()) {
             require(function.types().equals(counts.get(function.function().name())), "assembled per-function canonical types");
         }
+        Files.writeString(Path.of(output + ".coverage.json"), ghidradwarfforge.output.CoverageReportJson.write(coverage,
+            new ghidradwarfforge.output.CoverageReportJson.Profile("x86:LE:64:default", "gcc"), () -> false));
         Files.writeString(Path.of(output + ".evidence.json"), gson.toJson(
             Map.of("emission", facts, "types", counts, "locations", locationCounts, "variableTotals", variableTotals, "variableInventory", inventory, "sourceInventory", sourceInventory, "coverage", coverage)) + "\n");
         Path cancelled = Path.of(output + ".cancelled");
