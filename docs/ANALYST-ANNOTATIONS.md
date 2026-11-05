@@ -2,8 +2,9 @@
 
 **PLANNED:** issues #116/#114 will preserve listing comments and equates in
 synthetic source and debugger lookup, with optional assembly/p-code context.
-The production exporter does not yet implement these features. Issue #108
-remains the integration priority; this isolated branch prepares their fixtures.
+The default export entry points do not yet implement these features. Tested
+components and controlled production API exports are described below. #108
+implementation is merged; its final documentation is tracked by PR #165.
 
 **CONFIRMED fixture preparation:** `analyst-annotations.c` builds deterministic
 PIE/non-PIE compiler references for x86-64, AArch64 and both MIPS32 byte orders.
@@ -190,3 +191,39 @@ adds x86-64, AArch64 PIE and both MIPS32 byte orders; hosted execution is pendin
 The inventory still has no production export call site. Typed/display-name
 validation, token association, context options and complete source/debugger
 integration remain required before either issue is complete.
+
+The [saved-comment placement receipt](evidence/annotation-placement.json) adds
+`GhidraListingAnnotationSource`: a comment may precede an existing token row
+only when its default-space address belongs to a decoded instruction wholly
+inside the owning exported function and that instruction has exactly one source
+row. Interior addresses use the containing instruction. Ambiguous, unmapped,
+non-default-space and failed-function records remain in a labeled catalog.
+Original address spaces and comment categories survive; insertion never creates
+an executable source row. Stored text is escaped reversibly without attributing
+unknown authorship to the analyst.
+
+Four saved profiles and a separate fresh x86-64 pipeline pass structural
+validation and native/QEMU GDB from an unrelated working directory. Two additional
+comments per private fixture are saved at independently observed native token
+addresses to exercise positive placement. All fifty original fixture comments
+are preserved. The harness independently reverses source/line remapping and
+reads emitted line tables. A real native instruction-limit failure retains the
+function symbol and comments without fabricating a source location. Two fresh
+export JVMs produce identical annotated and unannotated sidecars and source.
+Exact/short budgets, three composition cancellation checkpoints, unchanged
+original ELF/project and deterministic ordering are checked.
+
+AArch64's system-DSO warning is also present in the compiler-only control.
+MIPS warns at the deliberately excluded function-body gap with both annotated
+and unannotated Forge sidecars. The harness compares exact diagnostics and gap
+bounds; these are not ignored as generic debugger warnings.
+
+```bash
+python3 src/test/integration/annotation-inventory-pipeline.py "$GHIDRA_INSTALL_DIR" x86_64 \
+    --consumer /path/to/libdwarf.so.2.3.2 --producer /path/to/libdwarfp.so.2.3.2
+```
+
+The CI pipeline supplies these native paths for all four profiles; hosted
+execution remains unverified. This controlled export has three functions and no
+type model. It does not establish the default GUI/headless integration, equate
+lookup or optional instruction context. Those remain required for #116/#114.

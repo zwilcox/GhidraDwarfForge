@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED controlled saved-comment export — #116/#114:** listing comments now
+compose with actual native token evidence on x86-64, AArch64 PIE and MIPS32 in
+both byte orders. GNU/LLVM/pinned strict validation and native/QEMU GDB pass;
+comments remain non-executable, failed decompilation retains a symbol-only
+function and readable catalog, and fresh JVM exports are identical. The complete
+x86-64 pipeline also passes. See `docs/evidence/annotation-placement.json`.
+Default GUI/headless wiring, equate debugger values and optional context remain
+planned. #108 implementation is merged as PR #164; its final documentation is
+in PR #165 with hosted checks running. Earlier progress notes below are historical.
+
 **CONFIRMED packaged raw inventory — #116/#114:** `GhidraAnnotationInventory`
 now reads all listing categories and exact stored equates/references while retaining
 Ghidra address objects. Four saved-program profiles pass independent readback,

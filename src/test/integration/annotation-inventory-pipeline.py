@@ -12,7 +12,11 @@ def main():
     parser.add_argument('ghidra', type=Path)
     parser.add_argument('target', choices=['x86_64', 'aarch64', 'mips32be', 'mips32le'])
     parser.add_argument('--results', type=Path)
+    parser.add_argument('--consumer', type=Path)
+    parser.add_argument('--producer', type=Path)
     args = parser.parse_args()
+    if bool(args.consumer) != bool(args.producer):
+        parser.error('--consumer and --producer must be supplied together')
     harness = Path(__file__).resolve().parent
     parent = (args.results or harness.parents[2] / 'build/test-results/annotation-inventory').resolve()
     parent.mkdir(parents=True, exist_ok=True)
@@ -37,8 +41,15 @@ def main():
     inventory, = curation.glob('inventory-*')
     result = json.loads((inventory / 'result.json').read_text())
     assert result['status'] == 'PASS_PACKAGED_ANNOTATION_INVENTORY'
+    placement = None
+    if args.consumer:
+        run('placement', ['python3', harness / 'annotation-placement.py', args.ghidra, curation,
+            args.consumer.resolve(strict=True), args.producer.resolve(strict=True)])
+        placement, = curation.glob('placement-*')
+        assert json.loads((placement / 'result.json').read_text())['status'] == 'PASS_SAVED_COMMENT_PLACEMENT'
     (root / 'result.json').write_text(json.dumps({'status': result['status'], 'target': args.target,
-        'role': role, 'case': str(case), 'curation': str(curation), 'inventory': str(inventory)}, indent=4) + '\n')
+        'role': role, 'case': str(case), 'curation': str(curation), 'inventory': str(inventory),
+        'placement': str(placement) if placement else None}, indent=4) + '\n')
     print('annotation-inventory-pipeline=PASS ' + args.target + ' ' + role)
 
 
