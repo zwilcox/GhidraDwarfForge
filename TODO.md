@@ -1,5 +1,19 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally — #108 variable comparison and real curation:** CLI comparison
+now exposes declaration/type/provenance/storage changes and exact location ranges
+at explicitly reported variable bindings. Coverage loss/gain uses only common
+evidenced scope; unknown populations remain unavailable. Parameter ordinals,
+local internal-name/block pairs and static name/block/address tuples are reported
+correspondence, not declaration lineage. Renamed locals appear as removed/added.
+65,536 interval controls and all 149 variable-comparison cancellation points pass.
+Real production exports before/after rebase, saved use-site curation and rename
+pass raw-DWARF, validators, GDB and CLI checks on x86-64 and rebased AArch64 PIE.
+The selected curated function is unchanged by rebase; exact lost inner-local
+ranges match raw DWARF and GDB's unavailable value. GUI comparison, paired type
+regression evidence, large-workload overhead and hosted acceptance remain pending.
+See `docs/evidence/coverage-variable-comparison.json`.
+
 **CONFIRMED locally — #108 individual type reporting and comparison:** production
 schema-two reports now use metric definition two, with a shared canonical type
 graph and per-function recovered/attached roots. The strict reader recomputes
@@ -2755,9 +2769,9 @@ are historical; #74 is complete.
 
 Remaining #108 acceptance:
 
-- Individual variable/location-range comparison with explicit correspondence and
-  ambiguity; database/symbol IDs alone fail the undo/reuse control.
-- Actual before/after curation/rebase regression artifacts, not just report mutations.
+- Complete remaining paired native type-state regression evidence. Variable/range
+  comparison and actual rebase/use-site/rename artifact pairs now pass locally;
+  reported binding correspondence does not prove declaration lineage.
 - GUI report comparison.
 - Repeated large-workload measurements and whole-report byte-bound stress after
   the definition-two evidence extension.

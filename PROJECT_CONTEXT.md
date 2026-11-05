@@ -1,5 +1,19 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — #108 variable comparison and real curation:** CLI comparison
+now exposes declaration/type/provenance/storage changes and exact location ranges
+at explicitly reported variable bindings. Coverage loss/gain uses only common
+evidenced scope; unknown populations remain unavailable. Parameter ordinals,
+local internal-name/block pairs and static name/block/address tuples are reported
+correspondence, not declaration lineage. Renamed locals appear as removed/added.
+65,536 interval controls and all 149 variable-comparison cancellation points pass.
+Real production exports before/after rebase, saved use-site curation and rename
+pass raw-DWARF, validators, GDB and CLI checks on x86-64 and rebased AArch64 PIE.
+The selected curated function is unchanged by rebase; exact lost inner-local
+ranges match raw DWARF and GDB's unavailable value. GUI comparison, paired type
+regression evidence, large-workload overhead and hosted acceptance remain pending.
+See `docs/evidence/coverage-variable-comparison.json`.
+
 **CONFIRMED locally — #108 individual type reporting and comparison:** production
 schema-two reports now use metric definition two, with a shared canonical type
 graph and per-function recovered/attached roots. The strict reader recomputes

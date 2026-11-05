@@ -13,7 +13,7 @@ public final class CoverageReportTool {
     private CoverageReportTool() { }
     private static final String USAGE = "Usage: CoverageReportTool --report FILE [--summary | --function 0xELF_ENTRY | --before FILE]\n" +
         "Default: summary and per-function tab-separated rows. --function: bounded evidence details.\n" +
-        "--before: compare reported function/source evidence with an earlier report; identity limitations are explicit.\n" +
+        "--before: compare reported function/source/variable/type evidence with an earlier report; identity limitations are explicit.\n" +
         "Exit codes: 0 displayed (not validation/semantic equivalence), 1 read/output error, 2 incomparable, 11 cancelled, 64 usage.\n";
 
     public static void main(String[] args) {
@@ -55,7 +55,7 @@ public final class CoverageReportTool {
             var report = ExportReportClaims.readWithCoverage(Path.of(options.get("--report")), cancelled);
             if (options.containsKey("--before")) {
                 var before = ExportReportClaims.readWithCoverage(Path.of(options.get("--before")), cancelled);
-                out.println("Function/source evidence comparison. Reported claims only; no artifact validation.");
+                out.println("Function/source/variable/type evidence comparison. Reported claims only; no artifact validation.");
                 out.println("Change\tELF function entry\tDetail");
                 var result = CoverageComparison.compare(before, report, change -> {
                     out.println(change.kind() + "\t0x" + Long.toHexString(change.function()) + "\t" + safe(change.detail()));

@@ -46,6 +46,8 @@ public final class CoverageComparison {
             else if (next == null) changes.add("FUNCTION_REMOVED", address, old.function().qualifiedDisplayName());
             else {
                 compareFunction(old, next, changes, cancelled);
+                CoverageVariableComparison.compare(old.variables(), next.variables(),
+                    change -> changes.add(change.kind(), change.function(), change.detail()), cancelled);
                 compareTypes(old, next, before.coverage().typeEvidence(), after.coverage().typeEvidence(), changes, cancelled);
             }
         }
@@ -53,11 +55,11 @@ public final class CoverageComparison {
         return new Result(true, changes.count, List.of(
             "Comparison uses reported original SHA-256 and ELF-link-time addresses; no referenced artifact was opened.",
             "Changed function bodies/decoded populations are disclosed. Point losses/gains compare only starts decoded in both reports.",
-            "Local identities are export-local: individual local renames and location-range transitions are not established.",
+            "Variable correspondence uses reported bindings: parameter ordinal; local internal name/block; static name/block/address. It does not prove declaration lineage or infer local renames.",
             before.coverage().typeEvidence() == null || after.coverage().typeEvidence() == null
                 ? "Individual type evidence unavailable in at least one metric-definition-one report: individual resolved-to-opaque transitions may be hidden."
                 : "Type correspondence uses reported canonical keys, not historical identity: renamed/rekeyed definitions appear as additions/removals.",
-            "Variable totals are compared, not individual variable correspondence. This is not an exhaustive semantic equivalence check."));
+            "Unknown variable populations are not treated as empty. Range coverage losses/gains use common evidenced scope; raw location/scope changes are separate. This is not an exhaustive semantic equivalence check."));
     }
 
     private static Map<Long, Function> index(List<Function> functions, BooleanSupplier cancelled) {

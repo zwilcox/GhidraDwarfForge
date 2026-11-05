@@ -522,6 +522,14 @@ tasks.register("sourceCoverageInventorySmoke", JavaExec) {
     mainClass = "ghidradwarfforge.coverage.SourceCoverageInventorySmoke"
 }
 
+tasks.register("coverageVariableComparisonSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks reported variable binding/range differences and identity ambiguity"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CoverageVariableComparisonSmoke"
+}
+
 tasks.register("coverageTypeEvidenceSmoke", JavaExec) {
     group = "verification"
     description = "Checks versioned individual type evidence and comparison"
