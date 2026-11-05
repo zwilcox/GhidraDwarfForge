@@ -107,3 +107,20 @@ string-table warning also appears identically with only the compiler symbols;
 the receipt retains that control. The candidate is not the complete production
 name collector or exporter. Full real-name reservation, keyword/reference
 conflict handling, source composition and production acceptance remain required.
+
+`AnnotationText` is now a tested component for one physical comment-text field.
+It preserves printable Unicode exactly, doubles literal backslashes, represents
+CR/LF/tab and other controls reversibly, and uses hexadecimal escapes for unsafe
+delimiters, trigraph adjacency, display controls and isolated UTF-16 surrogates.
+It does not normalize names or silently truncate text. A checked encoded UTF-8
+byte budget and cancellation callback apply throughout encoding. The caller must
+still provide comment framing, placement and the aggregate export budget.
+
+The [text receipt](evidence/annotation-text.json) records 65,659 independent
+round-trip/budget cases including every UTF-16 code unit and all fifty saved
+comments, 24 cancellation checkpoints and a GCC C-lexer corpus with trigraphs
+and warnings-as-errors. The Gradle smoke task and extension build pass locally;
+the task is wired into both host validation commands, with hosted execution
+pending. No emitted source or DWARF path uses the component yet. Source-line
+remapping, readable annotation composition and actual GDB stepping remain
+required before claiming production support.

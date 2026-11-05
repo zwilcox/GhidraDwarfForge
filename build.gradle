@@ -333,6 +333,14 @@ tasks.register("syntheticSourceSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.source.SyntheticSourceSmoke"
 }
 
+tasks.register("annotationTextSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks reversible bounded annotation text and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.source.AnnotationTextSmoke"
+}
+
 tasks.register("functionEntrySmoke", JavaExec) {
     group = "verification"
     description = "Checks function entries independent of their lowest body address"

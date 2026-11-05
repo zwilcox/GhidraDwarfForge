@@ -1,5 +1,13 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED component only — #116/#114 annotation text:** a reversible, bounded,
+cancellable encoder now preserves exact text while neutralizing comment endings,
+trigraphs and display controls. Independent decoding, all UTF-16 code units,
+fifty saved comments, exact UTF-8 limits, cancellation and C lexical checks pass;
+Gradle smoke and extension packaging pass. See `docs/evidence/annotation-text.json`.
+The encoder is not yet connected to source composition. Production annotation
+support remains planned, and #108 protected integration remains the priority.
+
 **CONFIRMED preparation only — #116/#114:** eight compiler-reference cases now
 pass sixteen native/QEMU GDB value/width checks each. Four saved-program cases
 preserve actual conflicting local/type/enum/global names alongside all fifty
@@ -12,7 +20,7 @@ Four profiles also pass real native instruction-limit failure, pre-cancelled
 invocation and recovery through the same interfaces with unchanged projects.
 See `docs/evidence/annotation-native-failures.json`; this does not establish
 production export failure/cancellation behavior.
-A saved-equate producer/consumer experiment additionally passes528 constant
+A saved-equate producer/consumer experiment additionally passes 528 constant
 checks in two frames on four profiles without shadowing real names; see
 `docs/evidence/annotation-name-policy.json`. This uses a separate synthetic
 unit alongside compiler DWARF, not the production recovered sidecar.
