@@ -503,6 +503,14 @@ tasks.register("sourceCoverageSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.coverage.SourceCoverageSmoke"
 }
 
+tasks.register("typeCoverageSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks canonical type coverage, omitted edges, cycles and implicit void"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.coverage.TypeCoverageSmoke"
+}
+
 tasks.register("dwarfLocationListsSmoke", JavaExec) {
     group = "verification"
     description = "Checks deterministic DWARF 5 variable location-list encoding"

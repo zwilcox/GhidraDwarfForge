@@ -9,7 +9,11 @@ The instruction capture helper passes 44 checks using actual Ghidra databases
 for x86-64, AArch64 and both MIPS32 byte orders. Per-function token provenance is
 preserved before declaration rows are merged. Source text, existing mappings and
 function boundaries remain byte-identical in a parent comparison. These helpers
-are not yet connected to a public report. Report integration, variable/type
+are not yet connected to a public report. Canonical type accounting now passes
+29 native-free checks for opaque targets, filtered roots, missing/repeated edges,
+implicit void, cycles, cancellation and a 20,000-node shared chain. Its emission
+input remains a fixture until producer integration supplies actual evidence.
+Report integration, variable/type
 coverage, CLI/GUI comparison and full validator/GDB/performance acceptance remain
 planned.
 Issue 74 retains integration priority; no public schema has changed.
@@ -19,7 +23,7 @@ Issue 74 retains integration priority; no public schema has changed.
 With the supported Java21/Ghidra12.0.3 environment, run:
 
 ```bash
-./gradlew ghidraInstructionEvidenceSmoke syntheticSourceSmoke sourceCoverageSmoke dwarfLineTableSmoke buildExtension
+./gradlew ghidraInstructionEvidenceSmoke syntheticSourceSmoke sourceCoverageSmoke dwarfLineTableSmoke typeCoverageSmoke buildExtension
 ```
 
 Observed local results: instruction evidence passes 44 checks across four
@@ -96,15 +100,34 @@ as static address coverage (not instruction counts, live execution, or time):
   does not imply evidenced lexical visibility.
 
 Type population starts from recovered function return/parameter/local/static type
-roots; collect canonical reachable nodes with a cycle-safe walk. Track emitted
-roots/nodes separately after signature filtering. Proposed metrics are
-`resolvedEmittedNodes / recoveredReachableNodes`, with explicit opaque and
-not-emitted counts, and an additional count of roots whose entire reachable graph
-is emitted and non-opaque. A pointer to an opaque aggregate has a resolved pointer
-node but not a fully resolved root graph. Recursive non-opaque graphs terminate
-and may be fully resolved. Void/no-type and missing roots require an explicit
-representation, not an invented one-byte base type. Formalize these distinctions
-against the actual TypeGraph node vocabulary before freezing the schema.
+roots; collect canonical reachable nodes with an iterative, cycle-safe walk.
+Roots count distinct canonical type identities, not uses or variable declarations.
+Track emitted roots/nodes separately after signature filtering. Types allocated
+elsewhere in the compilation unit do not count for a function unless reachable
+from that function's actually emitted roots. The current component measures:
+
+- `resolvedEmittedNodes / recoveredNodes`, excluding implicit void from both.
+  A resolved node means a represented non-`OpaqueType` model node; it does not
+  certify every size, array bound, ABI rule or analyst inference. Qualifier chains,
+  aggregate members and subroutine parameters do not inflate the canonical count.
+- `opaqueEmittedNodes` and `notEmittedNodes` partition the rest of `recoveredNodes`.
+  A pointer to an opaque aggregate contributes one resolved pointer and one opaque
+  target, not a completely described graph.
+- `opaqueFreeEmittedRoots / recoveredRoots` requires every reachable canonical
+  node and expected reference to be represented, without an opaque node.
+  Missing repeated member/parameter references invalidate this claim even if
+  their shared target node is still present. Recursive graphs terminate. This
+  is graph coverage, not independent validation of all type semantics.
+- `implicitVoidNodes` and `emittedImplicitVoidNodes` record `VoidType` separately:
+  the producer intentionally omits its DIE and the corresponding `DW_AT_type`.
+  A void-only population has no DIE-required denominator; it is not 100 percent.
+
+The type index accepts an explicit semantic emission map, not an allocation list.
+Reference multiplicity is preserved for completeness checks; node totals are
+deduplicated. Invalid/unknown roots and inconsistent edges are rejected instead
+of inventing types. The actual producer must provide the map, including explicit
+implicit-void decisions, after successful population. The component's hand-counted
+fixtures do not yet prove serialized type-DIE or report accuracy.
 
 ## Provenance and identity
 
@@ -179,6 +202,7 @@ a total elsewhere improves. Avoid a fabricated combined quality score.
   report determinism, recorded added wall/CPU/memory cost, cancellation at each
   new expensive phase and unchanged atomic failure behavior.
 
-Only the source-coverage component exists. No final schema approval or
-end-to-end scorecard acceptance is claimed by this draft. Review the open type/scope/identity details
+Source inventory/provenance and source/type accounting components exist; producer
+integration and public scorecards remain unimplemented. No final schema approval or
+end-to-end scorecard acceptance is claimed by this draft. Review the open scope/identity details
 against fixtures before making these definitions a public contract.

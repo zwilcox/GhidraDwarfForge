@@ -10,7 +10,10 @@ passes real Ghidra database tests for x86-64, AArch64 and both MIPS32 byte order
 including rebases, undecoded gaps, missing/changed functions and cancellation.
 Per-function token provenance excludes declaration-only rows, with unchanged
 source bytes and old mappings in baseline comparisons. The helper is not yet
-connected to exporter reports. Report schema integration, variable/type coverage,
+connected to exporter reports. Canonical type accounting passes 29 native-free
+checks, including opaque targets, implicit void, missing/repeated edges and a
+20,000-node shared chain; actual producer emission evidence remains pending.
+Report schema integration, variable coverage, serialized type validation,
 comparison/presentation,
 large-workload cost and full validator/GDB acceptance remain planned. This does
 not complete #108 or move its integration ahead of #74. See

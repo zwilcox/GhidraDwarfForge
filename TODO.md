@@ -2670,7 +2670,10 @@ own pinned-header audit and isolated-process test.
 source-coverage primitives retain the actual encoded line plan and pass independent
 raw-line-byte checks. Actual Ghidra listing-capture tests pass on four profiles,
 including rebases/gaps/body drift/cancellation, and token provenance is preserved
-separately from declaration rows. The public report is unchanged. [The metric contract and
+separately from declaration rows. Canonical type accounting passes 29 native-free
+checks for implicit void, opaque targets, filtering, missing/repeated references,
+deep cycles/shared graphs and cancellation; producer evidence is not wired yet.
+The public report is unchanged. [The metric contract and
 acceptance matrix](docs/COVERAGE-SCORECARDS.md) retain the full instruction,
 variable/location/type, provenance, compatibility, comparison/presentation and
 bounded-overhead scope. Capture-to-report integration and end-to-end acceptance
