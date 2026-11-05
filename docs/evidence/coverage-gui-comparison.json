@@ -1,0 +1,68 @@
+{
+    "issue": 108,
+    "baselineCommit": "e8814e5",
+    "status": "CONFIRMED locally: GUI comparison; full issue acceptance pending",
+    "installation": {
+        "installation": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-gui-comparison-final-java21",
+        "packageSha256": "e1d6883581484b0411b5a3026f94966d7a6b7b3290a0a2d29f1fe50ddbbe0d4c",
+        "jarSha256": "732d03c16ca7db37266b7791378382f97436812adc77c1c2ec2c154b8cd06171",
+        "protectedBase": {
+            "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-gui-comparison-java21/support/launch.properties": "dde008a0d7583f2e4c77afbd2bc78edd29a2f5f8a132be37d162f68f76f7df64",
+            "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-gui-comparison-java21/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "40619b8be8f7284d5e90030a6ff56030d1a286cf8221e374d703e6cd5e84c023"
+        }
+    },
+    "behavior": [
+        "Compare report selects an earlier report and compares it with the captured current export through the same strict reader/comparison engine as CLI.",
+        "Only explicitly selected earlier report bytes are read; referenced artifacts are not opened.",
+        "Read and comparison run off the event thread. Cancel comparison and window close request cooperative cancellation; closed windows do not show late results.",
+        "Change text is capped at 64 KiB UTF-16 plus bounded summary/limitations. All changes continue to be counted after clipping; truncation is explicit and CLI retains full comparison.",
+        "Identity, unknown populations, metric comparability and read errors remain explicit."
+    ],
+    "checks": {
+        "componentCancellationPoints": 61,
+        "boundedDisplayExactCounts": "PASS",
+        "readOnlyAndMalformedLegacyControls": "PASS",
+        "actualLinuxGui": [
+            "identical",
+            "changed function name in explicit report-only control",
+            "legacy incomparable",
+            "malformed report error",
+            "retry",
+            "selected reports unchanged"
+        ],
+        "fullGuiJourney": "PASS save/read/compare/preview decline/preparation/export cancellation plus GNU/LLVM/pinned strict/GDB and packaged CLI",
+        "visualInspection": "Changed-results screenshot inspected; text and close control visible; no HTML interpretation"
+    },
+    "commands": [
+        "Java21/Ghidra12.0.3 ./gradlew coverageComparisonPresentationSmoke coveragePresentationSmoke buildExtension",
+        "support/assemble-release.sh <base ZIP> <accepted natives> <new package ZIP>",
+        "src/test/integration/gui-script-manager.sh <private installation> <module> <x86_64 fixture> <reference>",
+        "actionlint .github/workflows/ci.yml; git diff --check"
+    ],
+    "limitations": [
+        "Windows/hosted execution is pending.",
+        "GUI mutation controls validate comparison presentation; real curation artifact regressions are separately covered by coverage-variable-comparison.json.",
+        "Cancellation is exercised at all component presentation checkpoints, including after clipping; the real GUI journey tests comparison chooser/results/error/retry and export cancellation, not a deliberately stalled comparison worker.",
+        "Paired native type-state regression evidence and repeated large-workload overhead/whole-report byte stress remain pending."
+    ],
+    "files": {
+        "build/coverage-gui-comparison-tests.log": "7821e90dda42e5a0876427d3be8a30a31246b051188c2635db26e3ffcb1bcc84",
+        "build/coverage-gui-comparison-final-build.log": "d5ee54dc2db7363311ab2f8887b694f131e432694afdf1e7c2393e96dfef700a",
+        "build/coverage-gui-comparison-final-package.log": "170ef5e6947b647ba0d3ecb7b41530f618073b2f0e01c16d0e8a92fd7b8de4e4",
+        "build/coverage-gui-comparison-final-integration.log": "9fb8ee1fff6dd3a15bc2c86b3f038f003f09be1752626160fab062d36f0f7d1f",
+        "build/coverage-workload-package/gui-comparison-final-installation.json": "c5892feb44ab556163566cc363d501e811b4be7f0abf0750b36c01cfe171d10f",
+        "build/test-results/coverage-report-tool/run.n58j175i/result.json": "5419fad55183ef5401565c4bc92a22117cf308c56c9d7e5236d64d079884df9f",
+        "build/test-results/gui-script-manager/run.TcCsk0Dn/result.txt": "c220bab44d6a14953d87ba552d9a07d992ee5179952b2f8cf491486bc414cc61",
+        "build/test-results/gui-script-manager/run.TcCsk0Dn/select/comparison-result.txt": "5cee285477ae34ab50b5b35732712de86e559c181051f56112bc127a30e97987",
+        "build/test-results/gui-script-manager/run.TcCsk0Dn/select/comparison-identical.txt": "faac1ca80020a4b2893e314fb11952ad979c60774ab66db1491a9fc68613aba3",
+        "build/test-results/gui-script-manager/run.TcCsk0Dn/select/comparison-changed.txt": "a6f325988d1578bfc4c9f4ce61b0cfbe961b7d2ef54109120ccfcceafc282dc2",
+        "build/test-results/gui-script-manager/run.TcCsk0Dn/select/comparison-incomparable.txt": "748f8c1362d5216b22e2ee0bcd3725835666f561c2bfe6ac290bc1333c003be3",
+        "build/test-results/gui-script-manager/run.TcCsk0Dn/select/comparison-retry.txt": "faac1ca80020a4b2893e314fb11952ad979c60774ab66db1491a9fc68613aba3",
+        "build/test-results/gui-script-manager/run.TcCsk0Dn/select/coverage-report.json": "7f511799473ea9efe6e010356c7aaeb90bfb943ebcedf2ca0ec9000a8bc1967d",
+        "build/test-results/gui-script-manager/run.TcCsk0Dn/gdb.txt": "1a746461989cf5d1b47de18f13d0f823535aee84eb485fab7c8fcf80559aa99e",
+        "build/test-results/gui-script-manager/run.TcCsk0Dn/llvm-verify.txt": "8bbcaa889439c6e502cadfc9fb6e9aadfc9051d3e94dbed68b789692b5b6f334",
+        "build/test-results/gui-script-manager/run.TcCsk0Dn/dwarfdump.txt.check.json": "7bed5350ed21f2bcba9d45006e70551c3748baa0fbb0643d682757936870e2d3",
+        "build/test-results/gui-script-manager/run.TcCsk0Dn/select/attachment-prepare/result.txt": "7e8ca3843ebe743bbcb807e9be54c84fa69917a8269e934a1d093547fb2b3dc5",
+        "build/test-results/gui-script-manager/run.TcCsk0Dn/select/attachment-prepare/validation/gdb.txt": "516f611e71544406a0227efbd4814c9e1c5cbb14547a8d876fe91c57d785b921"
+    }
+}

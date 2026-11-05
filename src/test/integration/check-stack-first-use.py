@@ -117,7 +117,7 @@ def check_report(text, labels, storage, fixed, artifact_hash):
             reports.append(json.JSONDecoder().raw_decode(line.split(marker, 1)[1])[0])
     require(len(reports) == 1, "expected exactly one structured export report")
     report = reports[0]
-    require(report["schemaVersion"] == 1 and report["status"] in ("SUCCESS", "PARTIAL") and
+    require(report["schemaVersion"] in (1, 2) and report["status"] in ("SUCCESS", "PARTIAL") and
         report["failure"] is None and report["failedFunctions"] == [] and
         report["counts"]["functionsFailed"] == 0,
         "fixture export did not complete with decompiled functions")

@@ -1,0 +1,395 @@
+{
+    "issue": 108,
+    "status": "CONFIRMED local package derivation/audit; native Windows workload execution pending",
+    "acceptance": {
+        "status": "PASS",
+        "scope": "Exact published main baseline artifact; locally derived control has every class byte identical to clean Gradle array-corrected baseline. Candidate source/class audit passes and actual unchanged-class mutations are rejected. Native Windows execution pending.",
+        "baselineRun": 42051534217,
+        "baselineArtifact": 13428260409,
+        "baselineArchiveSha256": "12cf09d77fed1e0b99d871428b936c4bb7639479afc6d16ab343b4b44277d7d5",
+        "allBaselineClassesIdentical": 507,
+        "changedClasses": 46,
+        "addedClasses": 83,
+        "removedClasses": 3,
+        "unchangedSharedClasses": 458,
+        "changedSourceRoots": 31,
+        "mutationRejectedClass": "ghidradwarfforge/AddressNormalizer.class"
+    },
+    "sourceCorrection": {
+        "baselineSourceSha256": "294d9566bc2be167e1a362c380de555f11fc17e23333c3c9c148c7431664f40b",
+        "correctedSourceSha256": "7f3f5238927bb16822cd0ac821ea99036778d9f1300002cdea9f77c8abafc112",
+        "correctedClasses": {
+            "ghidradwarfforge/GhidraTypeGraph$1.class": "713f9e98da60a635f7a0e642af9aa5dda6e60f1bbc29281bafba20b723fd7ff5",
+            "ghidradwarfforge/GhidraTypeGraph$Extractor.class": "660c448a738ad72038bc315c16dd29eb48b5b47a6473b5abb641ce606fdda2dc",
+            "ghidradwarfforge/GhidraTypeGraph.class": "3bf4196d126458ed85447bc188fd8c9172e5107ece8eec44086a5c9ceafb6f4e"
+        },
+        "compiledClassesMatchCandidate": true,
+        "productionInputsUnchanged": true,
+        "javac": "javac 21.0.12.1"
+    },
+    "classComparison": {
+        "changed": [
+            "ghidradwarfforge/dwarf/Dwarf5LineTable$LineRow.class",
+            "ghidradwarfforge/dwarf/Dwarf5LineTable$LineSequence.class",
+            "ghidradwarfforge/dwarf/Dwarf5LineTable.class",
+            "ghidradwarfforge/dwarf/Dwarf5LocationLists$PlannedList.class",
+            "ghidradwarfforge/dwarf/Dwarf5LocationLists$PlannedRange.class",
+            "ghidradwarfforge/dwarf/Dwarf5LocationLists$Result.class",
+            "ghidradwarfforge/dwarf/Dwarf5LocationLists.class",
+            "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter$1.class",
+            "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter$AllocatedType.class",
+            "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter$ClassAllocation.class",
+            "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter$ExportResult.class",
+            "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter$FunctionKey.class",
+            "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter$FunctionRange.class",
+            "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter$FunctionSymbol.class",
+            "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter$RelocationData.class",
+            "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter$SectionRecord.class",
+            "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter$VariableKey.class",
+            "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter.class",
+            "ghidradwarfforge/output/ExportReport$Artifacts.class",
+            "ghidradwarfforge/output/ExportReport$Counts.class",
+            "ghidradwarfforge/output/ExportReport$Failure.class",
+            "ghidradwarfforge/output/ExportReport$FunctionFailure.class",
+            "ghidradwarfforge/output/ExportReport$OmittedLocation.class",
+            "ghidradwarfforge/output/ExportReport$SkippedFunctionInfo.class",
+            "ghidradwarfforge/output/ExportReport$Status.class",
+            "ghidradwarfforge/output/ExportReport$TargetInfo.class",
+            "ghidradwarfforge/output/ExportReport$UnsupportedConstruct.class",
+            "ghidradwarfforge/output/ExportReport$ValidationStatus.class",
+            "ghidradwarfforge/output/ExportReport.class",
+            "ghidradwarfforge/output/ExportReportClaims$Detailed.class",
+            "ghidradwarfforge/output/ExportReportClaims$Inventories.class",
+            "ghidradwarfforge/output/ExportReportClaims$Parser.class",
+            "ghidradwarfforge/output/ExportReportClaims$Retention.class",
+            "ghidradwarfforge/output/ExportReportClaims$RetentionLimits.class",
+            "ghidradwarfforge/output/ExportReportClaims$TerminalReportException.class",
+            "ghidradwarfforge/output/ExportReportClaims$UnsupportedReportShapeException.class",
+            "ghidradwarfforge/output/ExportReportClaims.class",
+            "ghidradwarfforge/output/ReportJsonReader$BareToken.class",
+            "ghidradwarfforge/output/ReportJsonReader$BoundedInput.class",
+            "ghidradwarfforge/output/ReportJsonReader$Limits.class",
+            "ghidradwarfforge/output/ReportJsonReader.class",
+            "ghidradwarfforge/source/SyntheticSourceFile$FunctionLines.class",
+            "ghidradwarfforge/source/SyntheticSourceFile$FunctionText.class",
+            "ghidradwarfforge/source/SyntheticSourceFile$RelativeLine.class",
+            "ghidradwarfforge/source/SyntheticSourceFile$SourceLine.class",
+            "ghidradwarfforge/source/SyntheticSourceFile.class"
+        ],
+        "added": [
+            "ghidradwarfforge/GhidraInstructionEvidence$Key.class",
+            "ghidradwarfforge/GhidraInstructionEvidence.class",
+            "ghidradwarfforge/coverage/DecodedInstructions.class",
+            "ghidradwarfforge/coverage/ExportCoverage$Function.class",
+            "ghidradwarfforge/coverage/ExportCoverage$SignatureEvidence.class",
+            "ghidradwarfforge/coverage/ExportCoverage.class",
+            "ghidradwarfforge/coverage/ExportEmission$ExpressionLocation.class",
+            "ghidradwarfforge/coverage/ExportEmission$FunctionEmission.class",
+            "ghidradwarfforge/coverage/ExportEmission$Kind.class",
+            "ghidradwarfforge/coverage/ExportEmission$ListLocation.class",
+            "ghidradwarfforge/coverage/ExportEmission$Location.class",
+            "ghidradwarfforge/coverage/ExportEmission$NoLocation.class",
+            "ghidradwarfforge/coverage/ExportEmission$VariableEmission.class",
+            "ghidradwarfforge/coverage/ExportEmission.class",
+            "ghidradwarfforge/coverage/LocationCoverage$Visibility.class",
+            "ghidradwarfforge/coverage/LocationCoverage.class",
+            "ghidradwarfforge/coverage/SourceCoverage.class",
+            "ghidradwarfforge/coverage/SourceCoverageIndex$Points.class",
+            "ghidradwarfforge/coverage/SourceCoverageIndex.class",
+            "ghidradwarfforge/coverage/SourceCoverageInventory$FunctionInventory.class",
+            "ghidradwarfforge/coverage/SourceCoverageInventory$Key.class",
+            "ghidradwarfforge/coverage/SourceCoverageInventory$Union.class",
+            "ghidradwarfforge/coverage/SourceCoverageInventory.class",
+            "ghidradwarfforge/coverage/TypeCoverage.class",
+            "ghidradwarfforge/coverage/TypeCoverageIndex.class",
+            "ghidradwarfforge/coverage/TypeGraphEvidence$Kind.class",
+            "ghidradwarfforge/coverage/TypeGraphEvidence$Node.class",
+            "ghidradwarfforge/coverage/TypeGraphEvidence$State.class",
+            "ghidradwarfforge/coverage/TypeGraphEvidence$View.class",
+            "ghidradwarfforge/coverage/TypeGraphEvidence.class",
+            "ghidradwarfforge/coverage/VariableCoverageInventory$EmissionKey.class",
+            "ghidradwarfforge/coverage/VariableCoverageInventory$FunctionInventory.class",
+            "ghidradwarfforge/coverage/VariableCoverageInventory$Identity.class",
+            "ghidradwarfforge/coverage/VariableCoverageInventory$Provenance.class",
+            "ghidradwarfforge/coverage/VariableCoverageInventory$ScopeIndex.class",
+            "ghidradwarfforge/coverage/VariableCoverageInventory$StorageEvidence.class",
+            "ghidradwarfforge/coverage/VariableCoverageInventory$StorageKey.class",
+            "ghidradwarfforge/coverage/VariableCoverageInventory$Variable.class",
+            "ghidradwarfforge/coverage/VariableCoverageInventory.class",
+            "ghidradwarfforge/coverage/VariableCoverageTotals.class",
+            "ghidradwarfforge/dwarf/Dwarf5LineTable$Result.class",
+            "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter$ProductionResult.class",
+            "ghidradwarfforge/output/CoverageComparison$Change.class",
+            "ghidradwarfforge/output/CoverageComparison$Changes.class",
+            "ghidradwarfforge/output/CoverageComparison$Result.class",
+            "ghidradwarfforge/output/CoverageComparison.class",
+            "ghidradwarfforge/output/CoverageComparisonPresentation.class",
+            "ghidradwarfforge/output/CoveragePresentation$DisplayText.class",
+            "ghidradwarfforge/output/CoveragePresentation.class",
+            "ghidradwarfforge/output/CoverageReportClaims$1.class",
+            "ghidradwarfforge/output/CoverageReportClaims$FunctionFields.class",
+            "ghidradwarfforge/output/CoverageReportClaims$OwnedVariable.class",
+            "ghidradwarfforge/output/CoverageReportClaims$Parser$NamedValue.class",
+            "ghidradwarfforge/output/CoverageReportClaims$Parser.class",
+            "ghidradwarfforge/output/CoverageReportClaims$StorageRange.class",
+            "ghidradwarfforge/output/CoverageReportClaims$Summary.class",
+            "ghidradwarfforge/output/CoverageReportClaims$VariableKey.class",
+            "ghidradwarfforge/output/CoverageReportClaims.class",
+            "ghidradwarfforge/output/CoverageReportGui$1.class",
+            "ghidradwarfforge/output/CoverageReportGui$2.class",
+            "ghidradwarfforge/output/CoverageReportGui$3.class",
+            "ghidradwarfforge/output/CoverageReportGui$4.class",
+            "ghidradwarfforge/output/CoverageReportGui.class",
+            "ghidradwarfforge/output/CoverageReportJson$BoundedWriter.class",
+            "ghidradwarfforge/output/CoverageReportJson$Profile.class",
+            "ghidradwarfforge/output/CoverageReportJson$StorageDetail.class",
+            "ghidradwarfforge/output/CoverageReportJson.class",
+            "ghidradwarfforge/output/CoverageReportTool.class",
+            "ghidradwarfforge/output/CoverageTypeEvidence$Roots.class",
+            "ghidradwarfforge/output/CoverageTypeEvidence.class",
+            "ghidradwarfforge/output/CoverageVariableComparison$Binding.class",
+            "ghidradwarfforge/output/CoverageVariableComparison$Sink.class",
+            "ghidradwarfforge/output/CoverageVariableComparison.class",
+            "ghidradwarfforge/output/ExportReport$JsonObjectWriter.class",
+            "ghidradwarfforge/output/ExportReportClaims$WithCoverage.class",
+            "ghidradwarfforge/output/ReportFileSave.class",
+            "ghidradwarfforge/output/ReportValueReader$Budget.class",
+            "ghidradwarfforge/output/ReportValueReader$FieldReader.class",
+            "ghidradwarfforge/output/ReportValueReader$NullableReader.class",
+            "ghidradwarfforge/output/ReportValueReader$ValuePopulation.class",
+            "ghidradwarfforge/output/ReportValueReader$ValueReader.class",
+            "ghidradwarfforge/output/ReportValueReader.class",
+            "ghidradwarfforge/source/SyntheticSourceFile$FunctionTokens.class"
+        ],
+        "removed": [
+            "ghidradwarfforge/output/ExportReportClaims$Parser$FieldReader.class",
+            "ghidradwarfforge/output/ExportReportClaims$Parser$NullableReader.class",
+            "ghidradwarfforge/output/ExportReportClaims$Parser$ValueReader.class"
+        ],
+        "unchangedShared": 458,
+        "classMajor": 65,
+        "changedSources": {
+            "ghidradwarfforge/GhidraInstructionEvidence.java": {
+                "baselineSha256": null,
+                "candidateSha256": "bac7dd9fd09cbd9861d76c1f37789b98d247b43f40cc3d308bc3f9f16659ff11"
+            },
+            "ghidradwarfforge/coverage/DecodedInstructions.java": {
+                "baselineSha256": null,
+                "candidateSha256": "c96321defd514ad62a499468ae27a8bbe56f271ebae2db0be8d17a34d69e57fb"
+            },
+            "ghidradwarfforge/coverage/ExportCoverage.java": {
+                "baselineSha256": null,
+                "candidateSha256": "d09eb93d533069de8bb022119c495cc3513c6740fe69877362be5664fa7d0912"
+            },
+            "ghidradwarfforge/coverage/ExportEmission.java": {
+                "baselineSha256": null,
+                "candidateSha256": "f3c1a0ccdb33548a6aa246634256d4dc1eb407112468c85fc84fa39246b43c59"
+            },
+            "ghidradwarfforge/coverage/LocationCoverage.java": {
+                "baselineSha256": null,
+                "candidateSha256": "2d72ec67cc39ca5cfac1a087de5b959efe18c262d65a57c32310cc7bb9362760"
+            },
+            "ghidradwarfforge/coverage/SourceCoverage.java": {
+                "baselineSha256": null,
+                "candidateSha256": "f706d8c0dc350ab001ee3522a8703a88f68096707c0526fb7bc546b199f3da5c"
+            },
+            "ghidradwarfforge/coverage/SourceCoverageIndex.java": {
+                "baselineSha256": null,
+                "candidateSha256": "1df4511e38708b815e64a869db3995de8c7fba5860e0e74c8331178c74cf8d0b"
+            },
+            "ghidradwarfforge/coverage/SourceCoverageInventory.java": {
+                "baselineSha256": null,
+                "candidateSha256": "f2bc25ac4bbc08c74248f2bf5dea564f7b378f84af5c8883d67e81b0a08736f1"
+            },
+            "ghidradwarfforge/coverage/TypeCoverage.java": {
+                "baselineSha256": null,
+                "candidateSha256": "158f14da53d659690c15c3b409775e9fc1c690161bf128f9982d3b2bc6b4488e"
+            },
+            "ghidradwarfforge/coverage/TypeCoverageIndex.java": {
+                "baselineSha256": null,
+                "candidateSha256": "6169a3918b0d2c3724556124af749e2400217c3e11b13dde6a1da3293da284aa"
+            },
+            "ghidradwarfforge/coverage/TypeGraphEvidence.java": {
+                "baselineSha256": null,
+                "candidateSha256": "e3622cad6d4d377552d1c5d1a8079dd97a70f07270a5b1ae8068fc5f222e2073"
+            },
+            "ghidradwarfforge/coverage/VariableCoverageInventory.java": {
+                "baselineSha256": null,
+                "candidateSha256": "ac42c938a91e96fa7567682fa23bbfad073f618d28a0c03b19ed4f8c1799c7ff"
+            },
+            "ghidradwarfforge/coverage/VariableCoverageTotals.java": {
+                "baselineSha256": null,
+                "candidateSha256": "4007417684e5afae12552ae9718b7f5fa03da09f4980785c18dec12ba1d1cd21"
+            },
+            "ghidradwarfforge/dwarf/Dwarf5LineTable.java": {
+                "baselineSha256": "780136558655400c495de529f8b5a5e56aa462524eb92b944ce083fe8f5e0745",
+                "candidateSha256": "eda653c61abcae151b3cbb2638d29abc89a7461190eaaa5a9a4c3a87f70424c0"
+            },
+            "ghidradwarfforge/dwarf/Dwarf5LocationLists.java": {
+                "baselineSha256": "510914b8baac1f161e5c9b87de4cbcd2c7fb60ddc705d8d6cb5d62ce3b00e8f4",
+                "candidateSha256": "3d0315988828924e2cf933ca0044312c46eaf66e8669f9baa8244c717625f3a6"
+            },
+            "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter.java": {
+                "baselineSha256": "9152cfbd67a7d228f5a033b636ca096eb2c905b173792e0852d69e3dec85b940",
+                "candidateSha256": "bd85f93dd900880898d67c01d1c76b1cb336f7850a83cb1e0444f710fe6bb032"
+            },
+            "ghidradwarfforge/output/CoverageComparison.java": {
+                "baselineSha256": null,
+                "candidateSha256": "6629b237d357c36972ad41b4f236cbc421f69b2752b5daea9a9792bc5bb0806c"
+            },
+            "ghidradwarfforge/output/CoverageComparisonPresentation.java": {
+                "baselineSha256": null,
+                "candidateSha256": "d67539e69d02a8224caef671b4b827601d030628a1771544111770aa098f8de9"
+            },
+            "ghidradwarfforge/output/CoveragePresentation.java": {
+                "baselineSha256": null,
+                "candidateSha256": "7b51bb4779158d6bdd5953f94d8ef7c6d34c4d5474b186ed60d9648b01e0b943"
+            },
+            "ghidradwarfforge/output/CoverageReportClaims.java": {
+                "baselineSha256": null,
+                "candidateSha256": "2e925ed7a3ff96e7f5ce1ea7e534584d314fd12de1c2344f4a2e62162ae125da"
+            },
+            "ghidradwarfforge/output/CoverageReportGui.java": {
+                "baselineSha256": null,
+                "candidateSha256": "305fcd87a9a22273377e6bf33f46dfc7a8abec379b63ae91b8207826b4a1f15a"
+            },
+            "ghidradwarfforge/output/CoverageReportJson.java": {
+                "baselineSha256": null,
+                "candidateSha256": "cb25e44778b47ce36a7d4d54781d7d96e9169494171a4ca8df9a3615d2924e26"
+            },
+            "ghidradwarfforge/output/CoverageReportTool.java": {
+                "baselineSha256": null,
+                "candidateSha256": "0707c6c15bfc2dc6cc641341bccbd4528e0bf216760a49fcce812bba965d2b55"
+            },
+            "ghidradwarfforge/output/CoverageTypeEvidence.java": {
+                "baselineSha256": null,
+                "candidateSha256": "3a15a1e488ee5f9c278dbd0ba21ddc2e63b890211a3417466caedb0d0c4d97a4"
+            },
+            "ghidradwarfforge/output/CoverageVariableComparison.java": {
+                "baselineSha256": null,
+                "candidateSha256": "27253c7c675b33dd30d747e8dcef02ca56487a284d68b9ca6569807ec8af3408"
+            },
+            "ghidradwarfforge/output/ExportReport.java": {
+                "baselineSha256": "cc5166556e907dc64c7c1303ae317c268da7f52c0f5b61f3e3d3df3924b5bc24",
+                "candidateSha256": "8970c4445584e96a0b8f9879a1321c7e5e6c1237af14be5befad5c440963e494"
+            },
+            "ghidradwarfforge/output/ExportReportClaims.java": {
+                "baselineSha256": "e1d105ddeb3509677076ba20a4d9f14266bdcbf2fbb7a7d56cc86281068cd1b6",
+                "candidateSha256": "94e66179e63c2c8ae47a4ae21e45ea32780f1f5677271fc3431fb06279bb52d0"
+            },
+            "ghidradwarfforge/output/ReportFileSave.java": {
+                "baselineSha256": null,
+                "candidateSha256": "58fc6adec4873a28a90a04977152e79b321dff70a6e33e96e47697240a05f180"
+            },
+            "ghidradwarfforge/output/ReportJsonReader.java": {
+                "baselineSha256": "7b74aeb97819d4183890f465629a3abc5a0e0b484d227887fee8f2e4c365b430",
+                "candidateSha256": "5f43b7db4af55e0d09e0022b97508544c1475fc09d0b55eb040c2d45e296da40"
+            },
+            "ghidradwarfforge/output/ReportValueReader.java": {
+                "baselineSha256": null,
+                "candidateSha256": "946b748e4f1e7196f51cd80964d8636feea721a0112d9fa64c0ab83ac98e2ce8"
+            },
+            "ghidradwarfforge/source/SyntheticSourceFile.java": {
+                "baselineSha256": "3c61fd4fdad3c57b883ecbffe4dff70e599ad5bea791e340fe57ce20d8ce2011",
+                "candidateSha256": "c90b0cd142e06a51a79d07077ab17cc0564b7cdb8053972bcbb52df261b27c4a"
+            }
+        },
+        "scope": "Whole coverage revision comparison, not phase-hook overhead. Every bytecode delta has a changed source root; all classes from unchanged source must be byte-identical.",
+        "nativeFiles": {
+            "os/linux_x86_64/BUILD-METADATA.txt": {
+                "baselineSha256": "f4db17cb5b3d9bf5aa68ef63142720567063485d660f40a3215eb288b4e0b931",
+                "candidateSha256": "f4db17cb5b3d9bf5aa68ef63142720567063485d660f40a3215eb288b4e0b931"
+            },
+            "os/linux_x86_64/NATIVE-PAIR.properties": {
+                "baselineSha256": "ba741e747ae1811df1a45a3f4dcc43f98ed9841fa12c8e0affa9af61ca65c1cd",
+                "candidateSha256": "ba741e747ae1811df1a45a3f4dcc43f98ed9841fa12c8e0affa9af61ca65c1cd"
+            },
+            "os/linux_x86_64/SHA256SUMS": {
+                "baselineSha256": "385a4d2141a4bbc7d399319ed64ca12b416a9de6f0aab171cbaa4c06dccd4680",
+                "candidateSha256": "9f7e18077e5bfaea3b797a0ebe2291b18c1d090e7f241d557aa84196992980c5"
+            },
+            "os/linux_x86_64/SUPERVISOR-BUILD-METADATA.txt": {
+                "baselineSha256": "e77bba375ee263c780d03351ab3d853e1b0182f4209bcc5969c8cb7a044326a3",
+                "candidateSha256": "aa17c3882073b605d859ce816ef9c50ac1e65c7b1eaa6837a1a1bcd5a21013df"
+            },
+            "os/linux_x86_64/forge-validator-supervisor": {
+                "baselineSha256": "2ad8f8cb195d21231c34a68685ff27dcd8d7c4f981e7a90646ffc220ba984385",
+                "candidateSha256": "2ad8f8cb195d21231c34a68685ff27dcd8d7c4f981e7a90646ffc220ba984385"
+            },
+            "os/linux_x86_64/libdwarf.so.2": {
+                "baselineSha256": "613d86accc88ea0fe369b7d6ade0d4fe605a451a7675b0c2453f21b328de81b7",
+                "candidateSha256": "613d86accc88ea0fe369b7d6ade0d4fe605a451a7675b0c2453f21b328de81b7"
+            },
+            "os/linux_x86_64/libdwarf.so.2.3.2": {
+                "baselineSha256": "613d86accc88ea0fe369b7d6ade0d4fe605a451a7675b0c2453f21b328de81b7",
+                "candidateSha256": "613d86accc88ea0fe369b7d6ade0d4fe605a451a7675b0c2453f21b328de81b7"
+            },
+            "os/linux_x86_64/libdwarfp.so.2.3.2": {
+                "baselineSha256": "fa82f4524de69634c7301fa5bdd53327aa89040da92c1d086271df51119531ad",
+                "candidateSha256": "fa82f4524de69634c7301fa5bdd53327aa89040da92c1d086271df51119531ad"
+            },
+            "os/win_x86_64/BUILD-METADATA.txt": {
+                "baselineSha256": "1f975dfbd4c3ba1fb0c0660333f057e8e0912eeab1f44abc5fec1c9e74047ac8",
+                "candidateSha256": "1f975dfbd4c3ba1fb0c0660333f057e8e0912eeab1f44abc5fec1c9e74047ac8"
+            },
+            "os/win_x86_64/NATIVE-PAIR.properties": {
+                "baselineSha256": "52523e0712f8c635c7afaeeee79c356cafa733d534a9642b4d64338aa23c65e7",
+                "candidateSha256": "52523e0712f8c635c7afaeeee79c356cafa733d534a9642b4d64338aa23c65e7"
+            },
+            "os/win_x86_64/SHA256SUMS": {
+                "baselineSha256": "db4c866d87a764675102468e436aec21cbf447135c08580514882af9d16d0f01",
+                "candidateSha256": "36ef132a93e6f43a1c62788f337ed9b1a50dbff6338a660fa7d33cb86ac0c6e0"
+            },
+            "os/win_x86_64/SUPERVISOR-BUILD-METADATA.txt": {
+                "baselineSha256": "cc5d8aed67668ef4b6891ac177af7c2e53aaf3d3bed184cd75018b51f6362221",
+                "candidateSha256": "0eb293cd74cb61b0062dddd23978d4845010b0a8d059189e7e6c04705fd7541f"
+            },
+            "os/win_x86_64/forge-validator-supervisor.exe": {
+                "baselineSha256": "40e539cb8a4e9715071a330de5f217367e33bf77c9cc2f7e7d8ccacea9c498af",
+                "candidateSha256": "40e539cb8a4e9715071a330de5f217367e33bf77c9cc2f7e7d8ccacea9c498af"
+            },
+            "os/win_x86_64/libdwarf-2.dll": {
+                "baselineSha256": "58a57dfc07b91baa331ec16bbeea5a7ed7289882d919b14c90c0c400f93fc538",
+                "candidateSha256": "58a57dfc07b91baa331ec16bbeea5a7ed7289882d919b14c90c0c400f93fc538"
+            },
+            "os/win_x86_64/libdwarfp-2.dll": {
+                "baselineSha256": "f526f0a783180fc7dc05573150a3548d41ba5576035b59e6ba61bec14c913555",
+                "candidateSha256": "f526f0a783180fc7dc05573150a3548d41ba5576035b59e6ba61bec14c913555"
+            },
+            "os/win_x86_64/libzstd.dll": {
+                "baselineSha256": "b95c223a9548a9ecf51377c962e0bc8f0c51eb0c6f67a296dbc885996f0dd40d",
+                "candidateSha256": "b95c223a9548a9ecf51377c962e0bc8f0c51eb0c6f67a296dbc885996f0dd40d"
+            },
+            "os/win_x86_64/zlib1.dll": {
+                "baselineSha256": "a2efc7d0985a82364e79e0fdde3570f7ad66cb8cf5d60d54355a80c2504325fe",
+                "candidateSha256": "a2efc7d0985a82364e79e0fdde3570f7ad66cb8cf5d60d54355a80c2504325fe"
+            }
+        }
+    },
+    "workflowContract": [
+        "Fetch digest-bound candidate and main 1bb4c14 production packages from the sole production CI workflow. Do not rebuild production natives.",
+        "Keep the original baseline module outside Ghidra search paths. Derive a new measurement-only module with the exact shared array correction.",
+        "Require pinned before/after source hashes and exact equality of all three isolated-compiled class files with the real candidate package. Preserve every other JAR member and native/resource file.",
+        "Preserve original baseline and candidate modules throughout the workload; hash the derived module and record all input/control identities.",
+        "Audit class changes against changed source roots and require Java 21 class files. Reject drift in unchanged source, missing source and invalid manifests.",
+        "Measure the entire coverage revision delta, with native-file identities retained explicitly; independent production rebuild effects are not isolated from coverage Java cost.",
+        "Retain five AB/BA pairs, separate JFR profile, exact artifact/semantic equality, deterministic full report bytes per variant, structural validators and independent Linux GDB replay.",
+        "Exercise large-report PowerShell summary/self-comparison separately from export timing, retain compressed full report evidence and check selected report preservation."
+    ],
+    "limitations": [
+        "Local helper execution cannot prove native Windows paths/compiler/runtime behavior; the hosted job is still required.",
+        "This audit establishes correspondence between bytecode and changed source roots, not semantic proof of every change or complete compiler isolation inside changed sources.",
+        "Full report gzip archiving occurs outside measured export commands. No general speed/memory guarantee."
+    ],
+    "retainedSetupFailure": "The first local isolated compile omitted symlinked Ghidra framework directories; /dev/shm/forge-array-compile-j1k4pmte/compile.log retains that failure. The helper now traverses the installation framework with os.walk(followlinks=True) while excluding Extensions/data. Exact published-main derivation passes.",
+    "files": {
+        "build/coverage-workload-package/windows-control/acceptance.json": "f004ce6a2292525ca60750e9718793df3c7ef4c317343c9a2619111ca30be3a9",
+        "build/coverage-workload-package/windows-control/class-audit.json": "f3a03140802ebf9cca4bac7e4dc44faf768bd9a4b51032286be3f93ac0dc2bee",
+        "build/coverage-workload-package/windows-control/evidence/receipt.json": "208c84aced584883bf1d800ece629be5c3d86c1d36ccb620b792d5fd4e31780b",
+        "build/coverage-workload-package/windows-control/evidence/compile.log": "88f10de65309efd9a5c886f99695df18b52c4fd8605a4feb29ac501805ea421d",
+        "build/coverage-measurement-package-controls-2.log": "199ba496f288116d36c62f29346d4fbf0bd75745a1c893abfcbdaa4c6d5b1033",
+        "build/coverage-measurement-workflow-lint-2.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "src/test/performance/coverage-measurement-package.py": "e8c20ca7113e09cbda95665108bf4beb375fa37bdad9523dc87ea66f77d9a423",
+        "src/test/performance/windows-workloads.py": "580bc48605bcd622194aee15948b1f810e102cd23a2312291f610662966eacfb"
+    }
+}

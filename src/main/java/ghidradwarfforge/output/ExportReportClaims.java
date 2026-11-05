@@ -8,7 +8,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -21,16 +20,22 @@ import java.util.function.BooleanSupplier;
  * opened. Artifact paths and hashes retain their exporting-host spelling;
  * referenced artifacts are never opened, resolved, normalized or compared.
  *
- * The reader accepts the current schema-one shape, including the required
+ * The reader accepts schema two and the current schema-one shape, including the required
  * functionStaticVariables count. Older schema-one shapes are unsupported;
  * version/field presence cannot attest exporter version or count semantics.
  * The lightweight read methods validate and discard inventories. Their five explicit cardinalities
  * and SUCCESS/PARTIAL status rule are checked without inferring relationships
- * between independently supplied function, type, or variable counts.
+ * between independently supplied legacy function, type, or variable counts.
+ * Schema two additionally validates its required coverage payload, even in
+ * lightweight reads. Only readWithCoverage retains that payload in its result;
+ * schema one's coverage is explicitly unavailable. Coverage is informational.
  *
  * Reader resource limits, not writer/JSON format constraints: 64 MiB input
  * (plus at most one byte to detect overflow), 65536 UTF-16 units per string,
- * nesting eight, one million values, and 250000 elements per array. Strings
+ * nesting eight, one million legacy values, five million coverage values,
+ * six million total values, and 250000 elements per array. Schema one retains
+ * its one-million-value limit. Coverage counters are shared across all nested
+ * decoders and cannot be reused for legacy fields. Strings
  * are bounded before Gson can grow an unbounded token. Cancellation is checked
  * before opening, around reads, per character/value and after EOF; it cannot
  * interrupt a blocked filesystem read. The owned stream always closes.
@@ -43,7 +48,7 @@ public record ExportReportClaims(int schemaVersion, ExportReport.Status status,
         ExportReport.TargetInfo target, ExportReport.Artifacts artifacts,
         ExportReport.Counts counts, ExportReport.ValidationStatus validationStatus,
         String libdwarfVersion) {
-    private static final int CURRENT_SCHEMA = 1;
+    private static final int CURRENT_SCHEMA = 2;
 
     /** Reported inventory values in input order, without classification or normalization. */
     public record Inventories(List<ExportReport.FunctionFailure> failedFunctions,
@@ -84,6 +89,16 @@ public record ExportReportClaims(int schemaVersion, ExportReport.Status status,
         }
     }
 
+    /** Reported coverage from the same complete parse; null means schema one, not zero coverage. */
+    public record WithCoverage(ExportReportClaims claims, CoverageReportClaims coverage) {
+        public WithCoverage {
+            Objects.requireNonNull(claims, "claims");
+            if ((claims.schemaVersion() == 2) != (coverage != null)) {
+                throw new IllegalArgumentException("coverage availability differs from report schema");
+            }
+        }
+    }
+
     static final RetentionLimits DEFAULT_RETENTION = new RetentionLimits(16384, 1048576);
 
     /** Reader-only bounds; numeric address fields are not retained string units. */
@@ -96,7 +111,7 @@ public record ExportReportClaims(int schemaVersion, ExportReport.Status status,
     }
 
     public ExportReportClaims {
-        if (schemaVersion != CURRENT_SCHEMA ||
+        if ((schemaVersion != 1 && schemaVersion != CURRENT_SCHEMA) ||
                 (status != ExportReport.Status.SUCCESS && status != ExportReport.Status.PARTIAL)) {
             throw new IllegalArgumentException("completed current-schema report claims are required");
         }
@@ -155,10 +170,19 @@ public record ExportReportClaims(int schemaVersion, ExportReport.Status status,
             ReportJsonReader.DEFAULT_LIMITS, DEFAULT_RETENTION);
     }
 
+    public static WithCoverage readWithCoverage(Path report, BooleanSupplier cancelled) throws IOException {
+        return readWithCoverage(report, cancelled, Files::newInputStream, ReportJsonReader.DEFAULT_LIMITS);
+    }
+
+    static WithCoverage readWithCoverage(Path report, BooleanSupplier cancelled, InputOpener opener,
+            ReportJsonReader.Limits limits) throws IOException {
+        return parse(report, cancelled, opener, limits, null);
+    }
+
     static Detailed readDetailed(Path report, BooleanSupplier cancelled, InputOpener opener,
             ReportJsonReader.Limits limits, RetentionLimits retentionLimits) throws IOException {
         Retention retained = new Retention(Objects.requireNonNull(retentionLimits, "retentionLimits"));
-        ExportReportClaims claims = parse(report, cancelled, opener, limits, retained);
+        ExportReportClaims claims = parse(report, cancelled, opener, limits, retained).claims();
         // Nothing escapes until the complete strict parse AND owned stream close.
         ReportJsonReader.checkCancelled(cancelled);
         Detailed detailed = new Detailed(claims, retained.inventories());
@@ -169,21 +193,24 @@ public record ExportReportClaims(int schemaVersion, ExportReport.Status status,
     /** Test seam: this method owns a successfully opened input; no artifact is accessed. */
     static ExportReportClaims read(Path report, BooleanSupplier cancelled, InputOpener opener,
             ReportJsonReader.Limits limits) throws IOException {
-        return parse(report, cancelled, opener, limits, null);
+        return parse(report, cancelled, opener, limits, null).claims();
     }
 
-    private static ExportReportClaims parse(Path report, BooleanSupplier cancelled, InputOpener opener,
+    private static WithCoverage parse(Path report, BooleanSupplier cancelled, InputOpener opener,
             ReportJsonReader.Limits limits, Retention retained) throws IOException {
         Objects.requireNonNull(report, "report");
         Objects.requireNonNull(cancelled, "cancelled");
         Objects.requireNonNull(opener, "opener");
         Objects.requireNonNull(limits, "limits");
         ReportJsonReader.checkCancelled(cancelled);
+        WithCoverage result;
         try (JsonReader json = new JsonReader(new ReportJsonReader(
                 Objects.requireNonNull(opener.open(report), "opened report"), cancelled, limits))) {
             json.setLenient(false);
-            return new Parser(json, cancelled, limits, retained).read();
+            result = new Parser(json, cancelled, limits, retained).read();
         }
+        ReportJsonReader.checkCancelled(cancelled);
+        return result;
     }
 
     private static final class Retention {
@@ -218,7 +245,7 @@ public record ExportReportClaims(int schemaVersion, ExportReport.Status status,
         }
     }
 
-    private static final class Parser {
+    private static final class Parser extends ReportValueReader {
         private static final Set<String> ROOT_FIELDS = Set.of("schemaVersion", "status", "target",
             "artifacts", "counts", "sections", "failedFunctions", "skippedFunctions",
             "omittedLocations", "unsupportedConstructs", "diagnostics", "validation", "native", "failure");
@@ -229,11 +256,7 @@ public record ExportReportClaims(int schemaVersion, ExportReport.Status status,
         private static final Set<String> ARTIFACT_FIELDS = Set.of("inputPath", "inputSha256",
             "outputPath", "outputSha256", "sourcePath", "sourceSha256");
 
-        private final JsonReader json;
-        private final BooleanSupplier cancelled;
-        private final ReportJsonReader.Limits limits;
         private final Retention retained;
-        private int values;
         private int schema;
         private ExportReport.Status status;
         private ExportReport.TargetInfo target;
@@ -247,21 +270,20 @@ public record ExportReportClaims(int schemaVersion, ExportReport.Status status,
         private int omitted;
         private int unsupported;
         private int diagnostics;
+        private CoverageReportClaims coverage;
 
         private Parser(JsonReader json, BooleanSupplier cancelled, ReportJsonReader.Limits limits,
                 Retention retained) {
-            this.json = json;
-            this.cancelled = cancelled;
-            this.limits = limits;
+            super(json, cancelled, limits);
             this.retained = retained;
         }
 
-        private ExportReportClaims read() throws IOException {
-            object("report", ROOT_FIELDS, name -> {
+        private WithCoverage read() throws IOException {
+            Set<String> present = object("report", ROOT_FIELDS, Set.of("coverage"), name -> {
                 switch (name) {
                     case "schemaVersion" -> {
                         schema = integer();
-                        if (schema != CURRENT_SCHEMA) {
+                        if (schema != 1 && schema != CURRENT_SCHEMA) {
                             throw new UnsupportedReportShapeException("unsupported report schema version " + schema);
                         }
                     }
@@ -277,6 +299,7 @@ public record ExportReportClaims(int schemaVersion, ExportReport.Status status,
                     case "target" -> target = nullable(this::target);
                     case "artifacts" -> artifacts = nullable(this::artifacts);
                     case "counts" -> counts = nullable(this::counts);
+                    case "coverage" -> coverage = nullable(() -> CoverageReportClaims.read(this));
                     case "sections" -> sections = array(() -> text(false));
                     case "failedFunctions" -> failed = array(this::failedFunction);
                     case "skippedFunctions" -> skipped = array(this::skippedFunction);
@@ -297,6 +320,12 @@ public record ExportReportClaims(int schemaVersion, ExportReport.Status status,
                     default -> throw new AssertionError("unhandled known report field");
                 }
             });
+            if (schema == 1 && present.contains("coverage")) {
+                throw invalid("schema one cannot contain coverage");
+            }
+            if (schema == 2 && !present.contains("coverage")) {
+                throw new UnsupportedReportShapeException("schema two requires its coverage field");
+            }
             if (json.peek() != JsonToken.END_DOCUMENT) {
                 throw invalid("trailing content after report");
             }
@@ -304,13 +333,19 @@ public record ExportReportClaims(int schemaVersion, ExportReport.Status status,
             if (status == ExportReport.Status.CANCELLED || status == ExportReport.Status.FATAL) {
                 if (target != null || artifacts != null || counts != null || nativeVersion != null ||
                         !failure || sections != 0 || failed != 0 || skipped != 0 || omitted != 0 ||
-                        unsupported != 0 || diagnostics != 0) {
+                        unsupported != 0 || diagnostics != 0 || coverage != null) {
                     throw invalid("terminal report has inconsistent fields or inventories");
                 }
                 throw new TerminalReportException(status);
             }
             if (target == null || artifacts == null || counts == null || nativeVersion == null || failure) {
                 throw invalid("completed report requires target, artifacts, counts, native version and null failure");
+            }
+            if (schema == 2 && coverage == null) {
+                throw invalid("completed schema two requires coverage claims");
+            }
+            if (coverage != null && coverage.coverage().functions().size() != counts.functionsExported()) {
+                throw invalid("coverage function population differs from exported count");
             }
             if (counts.functionsFailed() != failed || counts.functionsSkipped() != skipped ||
                     counts.omittedLocationRanges() != omitted || counts.unsupportedConstructs() != unsupported ||
@@ -321,8 +356,8 @@ public record ExportReportClaims(int schemaVersion, ExportReport.Status status,
             if (partial != (status == ExportReport.Status.PARTIAL)) {
                 throw invalid("SUCCESS/PARTIAL status disagrees with report inventories");
             }
-            return new ExportReportClaims(schema, status, target, artifacts, counts,
-                ExportReport.ValidationStatus.NOT_RUN, nativeVersion);
+            return new WithCoverage(new ExportReportClaims(schema, status, target, artifacts, counts,
+                ExportReport.ValidationStatus.NOT_RUN, nativeVersion), coverage);
         }
 
         private ExportReport.TargetInfo target() throws IOException {
@@ -449,120 +484,13 @@ public record ExportReportClaims(int schemaVersion, ExportReport.Status status,
             }
         }
 
-        private long address() throws IOException {
-            String value = text(true);
-            if (!value.matches("0x(?:0|[1-9a-f][0-9a-f]{0,15})")) {
-                throw invalid("invalid report address spelling");
+        @Override
+        protected IOException missingFields(String description, Set<String> missing) {
+            if (description.equals("counts") && missing.equals(Set.of("functionStaticVariables"))) {
+                return new UnsupportedReportShapeException(
+                    "unsupported historical schema-one report shape: counts.functionStaticVariables is required");
             }
-            return Long.parseUnsignedLong(value.substring(2), 16);
-        }
-
-        private void textObject(String description, Set<String> fields) throws IOException {
-            object(description, fields, ignored -> text(true));
-        }
-
-        private void object(String description, Set<String> fields, FieldReader reader) throws IOException {
-            value(JsonToken.BEGIN_OBJECT);
-            json.beginObject();
-            Set<String> seen = new HashSet<>();
-            while (json.hasNext()) {
-                ReportJsonReader.checkCancelled(cancelled);
-                String name = json.nextName();
-                if (!fields.contains(name)) {
-                    throw invalid("unknown field in " + description);
-                }
-                if (!seen.add(name)) {
-                    throw invalid("duplicate decoded field in " + description);
-                }
-                reader.read(name);
-            }
-            json.endObject();
-            if (!seen.equals(fields)) {
-                Set<String> missing = new HashSet<>(fields);
-                missing.removeAll(seen);
-                if (description.equals("counts") && missing.equals(Set.of("functionStaticVariables"))) {
-                    throw new UnsupportedReportShapeException(
-                        "unsupported historical schema-one report shape: counts.functionStaticVariables is required");
-                }
-                throw invalid("missing field in " + description);
-            }
-        }
-
-        private int array(ValueReader reader) throws IOException {
-            value(JsonToken.BEGIN_ARRAY);
-            json.beginArray();
-            int count = 0;
-            while (json.hasNext()) {
-                if (count == limits.arrayItems()) {
-                    throw invalid("array exceeds safety limit " + limits.arrayItems());
-                }
-                count++;
-                reader.read();
-            }
-            json.endArray();
-            return count;
-        }
-
-        private <T> T nullable(NullableReader<T> reader) throws IOException {
-            if (json.peek() == JsonToken.NULL) {
-                value(JsonToken.NULL);
-                json.nextNull();
-                return null;
-            }
-            return reader.read();
-        }
-
-        private String text(boolean nonblank) throws IOException {
-            value(JsonToken.STRING);
-            String text = json.nextString();
-            if (nonblank && text.isBlank()) {
-                throw invalid("required report text is blank");
-            }
-            return text;
-        }
-
-        private int integer() throws IOException {
-            value(JsonToken.NUMBER);
-            String spelling = json.nextString();
-            if (!spelling.matches("0|[1-9][0-9]{0,9}")) {
-                throw invalid("expected canonical nonnegative report integer");
-            }
-            try {
-                return Integer.parseInt(spelling);
-            }
-            catch (NumberFormatException overflow) {
-                throw new IOException("report integer exceeds signed 32-bit range", overflow);
-            }
-        }
-
-        private void value(JsonToken expected) throws IOException {
-            ReportJsonReader.checkCancelled(cancelled);
-            if (values == limits.values()) {
-                throw invalid("value count exceeds safety limit " + limits.values());
-            }
-            values++;
-            if (json.peek() != expected) {
-                throw invalid("expected " + expected + " report value");
-            }
-        }
-
-        private static IOException invalid(String detail) {
-            return new IOException("invalid export report: " + detail);
-        }
-
-        @FunctionalInterface
-        private interface FieldReader {
-            void read(String name) throws IOException;
-        }
-
-        @FunctionalInterface
-        private interface ValueReader {
-            void read() throws IOException;
-        }
-
-        @FunctionalInterface
-        private interface NullableReader<T> {
-            T read() throws IOException;
+            return super.missingFields(description, missing);
         }
     }
 }

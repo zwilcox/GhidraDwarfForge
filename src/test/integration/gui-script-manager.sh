@@ -54,7 +54,7 @@ javac --release 21 -cp "$classpath" -d "$work/classes" \
     "$repository/src/test/integration/gui/GuiFileChooserSmoke.java" \
     "$repository/src/test/integration/gui/GuiTaskCancellation.java" \
     "$repository/src/test/integration/gui/GuiScriptManagerSmoke.java"
-"$xvfb" -displayfd 3 -screen 0 1280x1024x24 -nolisten tcp \
+"$xvfb" -displayfd 3 -screen 0 "${GHIDRA_GUI_SCREEN:-1280x1024x24}" -nolisten tcp \
     3>"$work/display.txt" >"$work/xvfb.log" 2>&1 &
 xvfb_pid=$!
 for ((attempt=0; attempt<100; attempt++)); do
@@ -185,4 +185,6 @@ if [[ ${GHIDRA_GUI_NATIVE_ATTACHMENT:-0} == 1 ]]; then
     python3 "$repository/src/test/integration/gui-attachment-verify.py" \
         "$work/select/attachment-native" "$fixture" "$function_address"
 fi
+python3 "$repository/src/test/integration/coverage-report-tool.py" "$ghidra" "$module" \
+    "$work/select/coverage-report.json"
 echo "gui-script-manager-integration=PASS"

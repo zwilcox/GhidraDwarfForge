@@ -484,6 +484,203 @@ tasks.register("dwarfLineTableSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.dwarf.Dwarf5LineTableSmoke"
 }
 
+tasks.register("ghidraVariableIdentitySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks database variable identity stability and unsafe undo/fork correspondence"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.GhidraVariableIdentitySmoke"
+    args ghidraInstallDir, file("build/test-results/variable-identity").absolutePath
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/variable-identity/settings").absolutePath
+}
+
+tasks.register("ghidraInstructionEvidenceSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks real decoded instruction inventories, rebasing and unavailable evidence"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.GhidraInstructionEvidenceSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/instruction-evidence/settings").absolutePath
+}
+
+tasks.register("sourceCoverageSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks static source coverage against independently decoded line bytes"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.coverage.SourceCoverageSmoke"
+}
+
+tasks.register("sourceCoverageInventorySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks unknown source evidence and unique instruction unions across functions"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.coverage.SourceCoverageInventorySmoke"
+}
+
+tasks.register("coverageComparisonPresentationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded GUI comparison display, admission and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CoverageComparisonPresentationSmoke"
+}
+
+tasks.register("coverageVariableComparisonSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks reported variable binding/range differences and identity ambiguity"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CoverageVariableComparisonSmoke"
+}
+
+tasks.register("coverageTypeEvidenceSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks versioned individual type evidence and comparison"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CoverageTypeEvidenceSmoke"
+}
+
+tasks.register("typeGraphEvidenceSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks individual type states, repeated references, cycles and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.coverage.TypeGraphEvidenceSmoke"
+}
+
+tasks.register("typeCoverageSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks canonical type coverage, omitted edges, cycles and implicit void"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.coverage.TypeCoverageSmoke"
+}
+
+tasks.register("locationEmissionPlanSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks retained location plans against raw DWARF list bytes and omission controls"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.coverage.LocationEmissionPlanSmoke"
+}
+
+tasks.register("locationCoverageSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks independently evidenced scope denominators and static location extent"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.coverage.LocationCoverageSmoke"
+}
+
+tasks.register("variableCoverageInventorySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks recovered declarations, actual emission and independent scope provenance"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.coverage.VariableCoverageInventorySmoke"
+}
+
+tasks.register("exportCoverageSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks assembled per-function scorecards, unknown populations and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.coverage.ExportCoverageSmoke"
+}
+
+tasks.register("coverageComparisonSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks CLI coverage, matching identities, exact point changes and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CoverageComparisonSmoke"
+}
+
+tasks.register("coveragePresentationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks honest coverage presentation and non-overwriting full report saves"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CoveragePresentationSmoke"
+}
+
+tasks.register("coverageReportJsonSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks exact coverage JSON counters, Unicode budgets and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CoverageReportJsonSmoke"
+}
+
+tasks.register("reportValueReaderSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks shared streaming report budgets across child decoders"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.ReportValueReaderSmoke"
+}
+
+tasks.register("coverageReportClaimsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks strict coverage field/metric/ownership validation and shared limits"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CoverageReportClaimsSmoke"
+}
+
+tasks.register("exportReportCoverageSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks schema-two coverage readers and schema-one receipt compatibility"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.ExportReportCoverageSmoke"
+}
+
+tasks.register("coverageReportWorkload", JavaExec) {
+    group = "verification"
+    description = "Measures synthetic coverage report size and bounded reader behavior (exploratory)"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CoverageReportWorkload"
+    maxHeapSize = "768m"
+    args providers.gradleProperty("coverageWorkloads").getOrElse("100,1000,10000").split(",")
+    doFirst {
+        layout.buildDirectory.file("coverage-report-workload-classpath.txt").get().asFile.text = classpath.asPath
+    }
+}
+
+tasks.register("coverageReportFileProbe", JavaExec) {
+    group = "verification"
+    description = "Measures strict decoding and payload roundtrip for one retained coverage report"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CoverageReportFileProbe"
+    maxHeapSize = "512m"
+    doFirst {
+        args providers.gradleProperty("coverageReport").get()
+    }
+}
+
+tasks.register("emissionEvidenceSmoke", JavaExec) {
+    group = "verification"
+    description = "Retains actual producer emission evidence for independent DWARF/GDB inspection"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.coverage.EmissionEvidenceSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+    doFirst {
+        setArgs(["libdwarfPath", "libdwarfpPath", "sidecarInput", "sidecarOutput", "fixtureSymbols"].collect {
+            project.property(it)
+        })
+    }
+}
+
 tasks.register("dwarfLocationListsSmoke", JavaExec) {
     group = "verification"
     description = "Checks deterministic DWARF 5 variable location-list encoding"

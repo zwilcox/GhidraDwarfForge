@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Compare installed exporters against one copied saved benchmark project."""
 import argparse
+import gzip
+import hashlib
 import importlib.util
 import json
 import os
@@ -23,6 +25,8 @@ def main():
     parser.add_argument('baseline_ghidra', type=Path)
     parser.add_argument('candidate_ghidra', type=Path)
     parser.add_argument('--pairs', type=int, default=5)
+    parser.add_argument('--coverage', action='store_true',
+        help='compare schema-one baseline with definition-two scorecards; verify deterministic reports and archive large logs')
     kind = parser.add_mutually_exclusive_group()
     kind.add_argument('--synthetic-functions', type=int, help='Select a synthetic export-benchmark.py case of this size')
     kind.add_argument('--uboot', action='store_true', help='Select a passing pinned U-Boot benchmark case')
@@ -96,6 +100,8 @@ def main():
     samples = []
     first_hashes = None
     first_counts = None
+    first_reports = {}
+    candidate_report = case / 'candidate-first.report.json'
     for pair in range(args.pairs):
         order = ('baseline', 'candidate') if pair % 2 == 0 else ('candidate', 'baseline')
         for variant in order:
@@ -111,10 +117,12 @@ def main():
             sample = run(name, command, timeout=1800, measured=True)
             sample['runtime'] = support.verify_headless(case / (name + '.log'),
                 ghidra / 'Ghidra/Extensions/GhidraDwarfForge', exported=True)
-            reports = [json.JSONDecoder().raw_decode(line.split('GhidraDwarfForge report: ', 1)[1])[0]
+            bodies = [line.split('GhidraDwarfForge report: ', 1)[1]
                 for line in (case / (name + '.log')).read_text().splitlines()
                 if 'GhidraDwarfForge report: {' in line]
-            report, = reports
+            body, = bodies
+            report, report_end = json.JSONDecoder().raw_decode(body)
+            assert body[report_end:].strip() == '(GhidraScript)'
             assert report['failure'] is None
             if args.uboot:
                 # Retain the known timeout rather than relabeling this PARTIAL
@@ -123,7 +131,29 @@ def main():
                     assert report[field] == expected_report[field], field
             else:
                 assert not report['failedFunctions']
-            write(name + '.report.json', report)
+            if args.coverage:
+                raw = body[:report_end].encode('utf-8')
+                report_sha = hashlib.sha256(raw).hexdigest()
+                assert report_sha == first_reports.setdefault(variant, report_sha), 'report bytes changed across repeated exports'
+                assert report['schemaVersion'] == (1 if variant == 'baseline' else 2)
+                if variant == 'candidate':
+                    assert report['coverage']['definitionVersion'] == 2
+                    assert report['validation'] == {'status': 'NOT_RUN'}
+                    assert len(raw) <= 64 * 1024 * 1024
+                    if not candidate_report.exists():
+                        candidate_report.write_bytes(raw)
+                    sample['coverageSummary'] = report['coverage']['summary']
+                else:
+                    assert 'coverage' not in report
+                with gzip.open(case / (name + '.report.json.gz'), 'wb') as stream:
+                    stream.write(raw)
+                with gzip.open(case / (name + '.report.json.gz'), 'rb') as stream:
+                    assert hashlib.file_digest(stream, 'sha256').hexdigest() == report_sha
+                sample.update(reportUtf8Bytes=len(raw), reportSha256=report_sha,
+                    schemaVersion=report['schemaVersion'])
+                sample['logArchive'] = archive_log(case / (name + '.log'))
+            else:
+                write(name + '.report.json', report)
             suffixes = ('', '.c', '.gdb.py') if args.uboot else ('', '.c')
             hashes = [support.digest(Path(str(output) + suffix)) for suffix in suffixes]
             if first_hashes is None:
@@ -157,6 +187,22 @@ def main():
         else:
             validate_sqlite_behavior(case, binary, output, run)
         strict_result = case / 'strict-checks.log.check.json'
+    if args.coverage:
+        module = installations['candidate'] / 'Ghidra/Extensions/GhidraDwarfForge'
+        launcher = module / 'support/ghidra-dwarf-forge-report'
+        prefix = [launcher, '--ghidra-dir=' + str(installations['candidate']),
+            '--extension-dir=' + str(module), '--report=' + str(candidate_report)]
+        cli = {}
+        for name, options in [('summary', ['--summary']), ('comparison', ['--before=' + str(candidate_report)])]:
+            cli[name] = run('coverage-cli-' + name, [*prefix, *options], timeout=600, measured=True)
+            text = (case / ('coverage-cli-' + name + '.log')).read_text()
+            assert not (case / ('coverage-cli-' + name + '.stderr')).read_text().strip()
+            if name == 'comparison':
+                assert 'Reported changes: 0;' in text
+            else:
+                assert 'not execution coverage' in text
+        write('coverage-cli.json', cli)
+        archive_log(candidate_report)
     after = {str(p): support.digest(p) for p in protected}
     write('protected-after.json', after)
     assert before == after
@@ -172,8 +218,35 @@ def main():
             for name in installations}, 'protectedUnchanged': True, 'projectBackupChanges': changes,
         'strict': json.loads(strict_result.read_text()), 'gdb': 'PASS',
         'scope': workload + ' on this host; identical artifact bytes, no general speed/memory guarantee.'}
+    if args.coverage:
+        result['coverage'] = {'reportSha256': first_reports, 'cli': cli,
+            'medianUserSeconds': {name: statistics.median(s['userSeconds'] for s in samples if s['variant'] == name)
+                for name in installations},
+            'medianSystemSeconds': {name: statistics.median(s['systemSeconds'] for s in samples if s['variant'] == name)
+                for name in installations},
+            'medianResidentKiB': {name: statistics.median(s['maximumResidentKiB'] for s in samples if s['variant'] == name)
+                for name in installations},
+            'pairs': [{metric: {name: next(s[metric] for s in samples if s['pair'] == pair and s['variant'] == name)
+                    for name in installations} for metric in ('elapsedSeconds', 'userSeconds', 'systemSeconds', 'maximumResidentKiB')}
+                for pair in range(args.pairs)]}
     write('result.json', result)
     print('paired-saved-exports=PASS ' + str(case), flush=True)
+
+
+def archive_log(path):
+    """Retain exact evidence without accumulating large repeated JSON lines on disk."""
+    original_sha = support.digest(path)
+    archive = path.with_suffix(path.suffix + '.gz')
+    assert not archive.exists()
+    with path.open('rb') as source_stream, gzip.open(archive, 'wb') as target:
+        shutil.copyfileobj(source_stream, target)
+    with gzip.open(archive, 'rb') as stream:
+        assert hashlib.file_digest(stream, 'sha256').hexdigest() == original_sha
+    assert support.digest(path) == original_sha
+    result = {'original': str(path), 'archive': str(archive), 'sha256': original_sha,
+        'originalBytes': path.stat().st_size, 'archiveBytes': archive.stat().st_size, 'verified': True}
+    path.unlink()
+    return result
 
 
 def validate_sqlite_behavior(case, binary, output, run):

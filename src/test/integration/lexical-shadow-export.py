@@ -22,6 +22,7 @@ def main():
     parser.add_argument('--discontiguous', action='store_true', help='record an explicit analyst visibility gap around an effect-free instruction')
     parser.add_argument('--calls', action='store_true', help='compose both lexical identities with inspected calls')
     parser.add_argument('--controls', action='store_true', help='also test stale/coalesced evidence, actual decompiler failure and cancellation')
+    parser.add_argument('--coverage-controls', action='store_true', help='also test production coverage staging cancellation and failure preservation')
     args = parser.parse_args()
     ghidra = args.ghidra.resolve(strict=True)
     repository = Path(__file__).resolve().parents[3]
@@ -147,6 +148,14 @@ def main():
         'observations': len(json.loads((case / 'forge-observations.json').read_text())),
         'scope': 'explicit analyst block visibility, shadow lookup, initialization gaps; full goal remains open'}
     (case / 'acceptance.json').write_text(json.dumps(receipt, indent=4) + '\n')
+    if args.coverage_controls:
+        run('coverage-staging-driver', ['python3', harness / 'coverage-staging.py', ghidra, case], timeout=900)
+        run('coverage-limit-driver', ['python3', harness / 'coverage-staging.py', ghidra, case, '--real-limit'], timeout=900)
+        run('coverage-byte-limit-driver', ['python3', harness / 'coverage-staging.py', ghidra, case, '--byte-limit'], timeout=1200)
+        run('coverage-curation-driver', ['python3', harness / 'coverage-curation.py', ghidra, case], timeout=900)
+        receipt['coverageCuration'] = 'PASS'
+        receipt['coverageStaging'] = 'PASS'
+        (case / 'acceptance.json').write_text(json.dumps(receipt, indent=4) + '\n')
     if args.controls:
         run('negative-driver', ['python3', harness / 'lexical-shadow-controls.py', case, ghidra], timeout=900)
         run('failure-driver', ['python3', harness / 'lexical-shadow-failure.py', case, ghidra], timeout=900)

@@ -1,0 +1,113 @@
+{
+    "issue": 108,
+    "status": "CONFIRMED locally; hosted and complete issue acceptance pending",
+    "date": "2026-11-05",
+    "baselineCommit": "f55fe4ccd932dd5fa2dde820b47081f7eaffb8e2",
+    "installation": {
+        "installation": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-gui-final-java21",
+        "protectedBase": {
+            "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-staging-java21/support/launch.properties": "dde008a0d7583f2e4c77afbd2bc78edd29a2f5f8a132be37d162f68f76f7df64",
+            "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-staging-java21/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "aeeacfd496c1b6f549981552963afad301bbd36e9cfd576146af3a72a9f4dd48"
+        },
+        "packageSha256": "efeb48b22ede54e6f40a1b57a1d98fb38377ba64e3f19431de23861af1b89de6",
+        "jarSha256": "09be045b3b40c5f492cf94c7bf2a586f02fcf631bf7ff6f209d81d7046b965bc",
+        "scriptSha256": "55f1e2d4d94d3d2991e155b79d812b2688ef3a0f46983ee40b7cc3b20cb05f5b"
+    },
+    "guiRuns": [
+        {
+            "path": "build/test-results/gui-script-manager/run.7fUyxjEk",
+            "mode": "companion",
+            "savedReportBytes": 82250,
+            "consoleCharacters": 5567,
+            "functions": 15,
+            "inputSha256": "68a3cec9be4183c88c001c77be28fc0da5061fd3399937664d7cfa94d14f07f5",
+            "files": {
+                "build/test-results/gui-script-manager/run.7fUyxjEk/result.txt": "c220bab44d6a14953d87ba552d9a07d992ee5179952b2f8cf491486bc414cc61",
+                "build/test-results/gui-script-manager/run.7fUyxjEk/select/attachment-prepare/result.txt": "7e8ca3843ebe743bbcb807e9be54c84fa69917a8269e934a1d093547fb2b3dc5",
+                "build/test-results/gui-script-manager/run.7fUyxjEk/select/export-console.txt": "e38273cbf8406f4499b1c523cca570057c8a2db06197d5c5d778404a87d70921",
+                "build/test-results/gui-script-manager/run.7fUyxjEk/select/coverage.png": "164da8c1c4755abea5c5ca500872ddef4d523b39d9b7f814e5b9d5634bc5ee89",
+                "build/test-results/gui-script-manager/run.7fUyxjEk/select/coverage-report.json": "b88c75c8925a03607db81e0caf86b2d3f782d1fda68b598ba29d85245fe038ae",
+                "build/test-results/gui-script-manager/run.7fUyxjEk/select/attachment-prepare/records/forge-attachment-12724872006604963267/export.json": "6cd927b6a0d0a35bd0b6330aa8ea11370b101764e7e5863685d26210448ab6d4",
+                "build/test-results/gui-script-manager/run.7fUyxjEk/llvm-verify.txt": "a31da316b0daf141067d81f074d699513df5ec94e6b436750dab160bcd50c744",
+                "build/test-results/gui-script-manager/run.7fUyxjEk/dwarfdump.txt.check.json": "28fd035050832f441eb9cad354e2813a9e2bce856f40c3c2d8bca5b6c817007a",
+                "build/test-results/gui-script-manager/run.7fUyxjEk/gdb.txt": "5d5c7db62968559b7439d9d20e094016386fdd00b01d9619064b5ac4afc7dd21",
+                "build/test-results/gui-script-manager/run.7fUyxjEk/select/attachment-prepare/validation/result.txt": "eee6871859101889c64f0c1adbd2582f19ff1f5aa3ca7ce73836b394b6ba30d0",
+                "build/test-results/gui-script-manager/run.7fUyxjEk/select/attachment-prepare/validation/gdb.txt": "de5a48f027035fca4d7ac725537175eb095176d35a4c4a0f751dd747befcbf1f",
+                "build/test-results/gui-script-manager/run.7fUyxjEk/select/attachment-prepare/validation/llvm-verify.txt": "da4edeb99f0584fbaaa94dd6417a574bc669c903d76260feacfde2cc7b0bbd5a",
+                "build/test-results/gui-script-manager/run.7fUyxjEk/select/attachment-prepare/validation/dwarfdump.txt.check.json": "82f6191a183fef1a450f4fa91319bcd51798a5eae412b4e39365968e36568e6f"
+            }
+        },
+        {
+            "path": "build/test-results/gui-script-manager/run.RmVJAb73",
+            "mode": "ordinary-pair",
+            "savedReportBytes": 82250,
+            "consoleCharacters": 5110,
+            "functions": 15,
+            "inputSha256": "68a3cec9be4183c88c001c77be28fc0da5061fd3399937664d7cfa94d14f07f5",
+            "files": {
+                "build/test-results/gui-script-manager/run.RmVJAb73/result.txt": "c220bab44d6a14953d87ba552d9a07d992ee5179952b2f8cf491486bc414cc61",
+                "build/test-results/gui-script-manager/run.RmVJAb73/select/attachment-prepare/result.txt": "7e8ca3843ebe743bbcb807e9be54c84fa69917a8269e934a1d093547fb2b3dc5",
+                "build/test-results/gui-script-manager/run.RmVJAb73/select/export-console.txt": "52d00432505347181db0b3149f4e250bd9546f89df428e69fdc8202ac29ce1b1",
+                "build/test-results/gui-script-manager/run.RmVJAb73/select/coverage.png": "164da8c1c4755abea5c5ca500872ddef4d523b39d9b7f814e5b9d5634bc5ee89",
+                "build/test-results/gui-script-manager/run.RmVJAb73/select/coverage-report.json": "986010d6b4e051f7e1749529af60b18602bf8d464f11f7af06727e6405b2ee14",
+                "build/test-results/gui-script-manager/run.RmVJAb73/select/attachment-prepare/records/forge-attachment-8995877692130581628/export.json": "02354bc41ff1cba6a33d6665b56ce3fea87c93a538cfe60498973dd6b91c22ee",
+                "build/test-results/gui-script-manager/run.RmVJAb73/llvm-verify.txt": "294771bb51c8161a8862677efe35abf0b1ff2917938c859ba8db8f418211c1ff",
+                "build/test-results/gui-script-manager/run.RmVJAb73/dwarfdump.txt.check.json": "bffd35031e29eb2594f79cf695991e7b09f9e7a3fdb453b1c12231e247c983d8",
+                "build/test-results/gui-script-manager/run.RmVJAb73/gdb.txt": "7559564f78e9abddfdc9f27ff27690ab43b3115d640f2226ab6accfb7527c020",
+                "build/test-results/gui-script-manager/run.RmVJAb73/select/attachment-prepare/validation/result.txt": "eee6871859101889c64f0c1adbd2582f19ff1f5aa3ca7ce73836b394b6ba30d0",
+                "build/test-results/gui-script-manager/run.RmVJAb73/select/attachment-prepare/validation/gdb.txt": "c02c2a79cef724aaaf5d075fd909decaac64daaef87cc360178b4c2415b30d43",
+                "build/test-results/gui-script-manager/run.RmVJAb73/select/attachment-prepare/validation/llvm-verify.txt": "62eff91956a1cd32f8f6f4fff5d9e93f8c53940b49384b1468359d2187c22afe",
+                "build/test-results/gui-script-manager/run.RmVJAb73/select/attachment-prepare/validation/dwarfdump.txt.check.json": "b29abd2ed70deea6427b5354537d7c9a918602f15c5d431c8b628792747a2f80"
+            }
+        }
+    ],
+    "checks": [
+        "Java21 coveragePresentationSmoke: unknown/zero/overflow/exact ratios, bounded Unicode details, complete UTF8 save, existing file/symlink/hardlink rejection, racing file preservation, cancellation/stage cleanup",
+        "exportReportCoverageSmoke:117 rejected controls,256 sampled cancellations",
+        "Java21 buildExtension",
+        "actual ScriptManager export, readable coverage, real Save chooser, strict saved report read, saved artifact hashes, default-decline attachment preview, real preparation retained coverage, cancellation",
+        "GNU/LLVM/pinned strict validation and GDB source/function/type/break/next/step/normal exit on exported and prepared pairs",
+        "packaged headless-symbol-export x86_64 PASS on earlier GUI package; same script, final change only adds selected detail metrics and disables lexical percentage sorting"
+    ],
+    "headless": {
+        "log": "build/coverage-gui-headless.log",
+        "resultDirectory": "build/test-results/coverage-gui-headless",
+        "installation": "build/installations/coverage-gui-java21"
+    },
+    "retainedAttempts": [
+        {
+            "path": "build/coverage-gui-integration.log",
+            "reason": "GUI harness compilation failed: incorrect version accessor"
+        },
+        {
+            "path": "build/coverage-gui-integration-2.log",
+            "reason": "GUI harness compilation failed: checked exception in callback"
+        },
+        {
+            "path": "build/test-results/gui-script-manager/run.jD9JuTEg",
+            "reason": "Robot clicked covered Save button; fixed by foregrounding the target window"
+        },
+        {
+            "path": "build/test-results/gui-script-manager/run.22IhWXKq",
+            "reason": "Harness nested invokeAndWait inside await EDT callback; fixed callback use"
+        },
+        {
+            "path": "build/test-results/gui-script-manager/run.3Bs6Roey",
+            "reason": "Initial complete GUI/validator/GDB PASS before bounded selected-metric display refinement"
+        }
+    ],
+    "limits": [
+        "Linux GUI only; Windows host acceptance remains pending",
+        "No native privileged target-attachment operation in these local runs; preparation and default decline only",
+        "Report comparison and standalone CLI presentation remain pending",
+        "Large-workload repeated overhead, full byte-limit stress/cancellation and hosted matrix remain pending"
+    ],
+    "sourceDigests": {
+        "ghidra_scripts/GhidraDwarfForge.java": "55f1e2d4d94d3d2991e155b79d812b2688ef3a0f46983ee40b7cc3b20cb05f5b",
+        "src/main/java/ghidradwarfforge/output/CoveragePresentation.java": "eadf7f114919746b1d23e5600f0ba3b7805e090f9ba461d6142283d26a905b98",
+        "src/main/java/ghidradwarfforge/output/CoverageReportGui.java": "15340c9246fb82bca7b79b0c845bd322ea52640aca33addf39a8bca1c9f44078",
+        "src/main/java/ghidradwarfforge/output/ReportFileSave.java": "58fc6adec4873a28a90a04977152e79b321dff70a6e33e96e47697240a05f180",
+        "src/test/java/ghidradwarfforge/output/CoveragePresentationSmoke.java": "44c6fb77b862427a029aec63df280228b25fcb108944c5ea719137fb55ce2a37",
+        "src/test/integration/gui/GuiScriptManagerSmoke.java": "71901449d8a64f075056f7ed2e3419f23723bc7e3fb97796b632477b525dac23"
+    }
+}

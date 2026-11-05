@@ -19,5 +19,5 @@ FORGE_LEXICAL_CASE="$case_dir" FORGE_LEXICAL_MODE="$mode" FORGE_LEXICAL_REMOTE="
     -ex 'set pagination off' -ex 'set confirm off' -ex 'set debuginfod enabled off' \
     -ex 'set auto-solib-add off' -ex 'set disable-randomization off' "${options[@]}" \
     -ex "file \"$case_dir/stripped\"" -ex "symbol-file \"$symbols\"" \
-    -x "$repository/src/test/integration/lexical-shadow-gdb.py"
+    -x "${5:-$repository/src/test/integration/lexical-shadow-gdb.py}"
 if [[ -n "$remote" ]]; then qemu_socket_wait; fi

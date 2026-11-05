@@ -1,0 +1,69 @@
+{
+    "issue": 108,
+    "status": "CONFIRMED local presentation correction and terminal-fixture repair; fresh hosted gate required",
+    "parentHead": "3829626050f57fd3a3e21e89bc64dcf39f76e4b5",
+    "reviewedUtc": "2026-11-05T20:26:56.662896+00:00",
+    "findings": [
+        {
+            "problem": "Unavailable recovered signatures produce an unknown variable inventory, but the per-function display showed N/A (0/0) and mixed summaries omitted that exclusion.",
+            "change": "Show Unknown for unavailable per-function variable and scope inventories; aggregate summaries disclose unavailable function inventories and retain the explicitly observed declaration/scope subset. Known empty inventories remain N/A.",
+            "evidence": "coveragePresentationSmoke failed on column 5 before the fix. Unknown-only/mixed/known-empty controls, strict report round trip and CLI summary/details pass after the fix."
+        },
+        {
+            "problem": "The connected candidate-preparation terminal control copied completed schema-two coverage into CANCELLED/FATAL reports. The reader correctly returned IOException instead of the expected valid-terminal exception.",
+            "hostedFailure": {
+                "run": 42088664715,
+                "job": 127466580984,
+                "artifact": 13448973772,
+                "step": "Automatic build-ID and debuglink sidecar association",
+                "head": "3829626050f57fd3a3e21e89bc64dcf39f76e4b5"
+            },
+            "change": "Valid terminal controls explicitly clear coverage. Separate malformed controls retain completed coverage and still require IOException before opening missing artifact inputs or creating output.",
+            "evidence": "Actual packaged connected-preparation replay of the retained failing report passes six controls: both terminal statuses under schema one/two and two schema-two malformed-coverage negatives."
+        }
+    ],
+    "tests": {
+        "componentTasks": [
+            "coveragePresentationSmoke",
+            "coverageComparisonSmoke",
+            "coverageComparisonPresentationSmoke",
+            "coverageReportClaimsSmoke",
+            "exportReportCoverageSmoke"
+        ],
+        "extensionBuild": "PASS Java 21 / Ghidra 12.0.3; no clean",
+        "packagedCli": "PASS ten actual-report and report-only mutation cases in build/test-results/coverage-report-tool/run.wkcssi4j",
+        "terminalReplay": "PASS six cases in build/coverage-terminal-preparation/result.json",
+        "pythonSyntax": "PASS reported-candidate-preparation.py"
+    },
+    "classDelta": {
+        "changed": [
+            "ghidradwarfforge/output/CoveragePresentation$DisplayText.class",
+            "ghidradwarfforge/output/CoveragePresentation.class"
+        ],
+        "unchanged": 585,
+        "scope": "All ELF/DWARF/extraction/report reader and writer class bytes unchanged from reviewed 3829626 package."
+    },
+    "scope": [
+        "Presentation and integration-fixture changes only; all 585 other production class bytes match the reviewed package, including extraction, ELF/DWARF serialization, native mapping, reader and report writer.",
+        "No new ELF/DWARF behavior is claimed by the presentation tests. Existing workload/validator/GDB evidence remains bound to its exact earlier head; final current-head integration is still required.",
+        "The first expanded CLI test used null report models and was rejected by the existing writer precondition. It was corrected to explicit empty models; this was test setup, not a production failure."
+    ],
+    "files": {
+        "src/main/java/ghidradwarfforge/output/CoveragePresentation.java": "5bc71b12dafc78fb3ea0b604d7a84372c9e3369281dd2855389a120fad2ad8d3",
+        "src/test/java/ghidradwarfforge/output/CoveragePresentationSmoke.java": "866f8701220931d6c6c168c7f73ddfe493c0bfcd8c75fdca7f8d8034a277e4d8",
+        "src/test/integration/reported-candidate-preparation.py": "70e27cd179743991fc927ce5109a7094dc99965ce25b96395a7c95c3890204a8",
+        "build/coverage-unknown-inventory-red.log": "690c8cd650e87115f31d3bd2cc8a4df2d370267b39ad06cc392cf494ae962095",
+        "build/coverage-unknown-inventory-green.log": "f593c304c796c2f7e2077952ae715505038fbca8440f4d1325dbaa103668d490",
+        "build/coverage-unknown-inventory-green-2.log": "313feec656a44affc5094f31db7f2117688342c5e6cf97ae84fcb490ef075f6c",
+        "build/coverage-unknown-inventory-green-3.log": "920d06e87b97973bf5e57215449050108ff66693cc5112648bf00b7098074ea3",
+        "build/coverage-unknown-inventory-green-4.log": "cb1a2d0be8b0d821d3f0e2b2eaa69069737bfadcf950b500bd96ca45cdb70bd0",
+        "build/coverage-terminal-preparation/result.json": "bd307530ace0ac365e7a455ed4b39d1f83fcc3cc93ba5048a98faad404e5d56a",
+        "build/test-results/coverage-report-tool/run.wkcssi4j/result.json": "26dd368b18d67393ea1dedcd5542e425c7e3459ca624e712562eb36e2614de08",
+        "build/ci-42088664715-mips32le.log": "700b0180a6f32fa2d169dd64e2717b6feab7134b92d47857fad5e23d9fbf1ff1",
+        "build/coverage-final-review-fixes/extension.zip": "9e161e6bd98fdb90b031220e2b8e38518ba0e0e7be323286d8111f6db859e67b",
+        "build/coverage-final-review-fixes/terminal-replay.tar.gz": "060c517a448092a322afe0f27261ca5942228660c737ebec536f45d48a9da82d",
+        "build/coverage-final-review-fixes/mips32le-reported-preparation-failure.tar.gz": "ac4e31888fe2aff0c5bf7133c01527a3b5c3a743d2ab9bf0b53008be3e6b436f",
+        "build/coverage-final-review-fixes/mips32le-artifact.json": "2e3a20c0a6df9b248047d41a43f28f82b737e415c1193acc1013ce34a1a9cef0",
+        "build/coverage-unknown-inventory-final.log": "71240666e2333770ffa17823e54a2d7c2e751309376c93b1e0e3d9896e3d5a3d"
+    }
+}

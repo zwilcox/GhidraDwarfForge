@@ -52,6 +52,26 @@ class PhaseSummaryTest(unittest.TestCase):
             with self.subTest(recording=recording), self.assertRaises(ValueError):
                 phases.summarize(recording)
 
+    def test_coverage_phases_are_complete_and_bounded(self):
+        recording = self.recording()
+        for index, phase in enumerate(sorted(phases.COVERAGE_PHASES), start=5):
+            event = copy.deepcopy(recording['recording']['events'][1])
+            event['values'].update(phase=phase, startTime=f'2026-11-04T12:00:0{index}.123456789-06:00')
+            recording['recording']['events'].append(event)
+        result = phases.summarize(recording)
+        self.assertEqual(result['unattributedExportSeconds'], 6.5)
+        self.assertEqual(set(result['phases']), phases.PHASES | phases.COVERAGE_PHASES)
+        for field, value in [('completed', False), ('duration', 'PT20S'),
+                ('startTime', '2026-11-04T12:00:05.123456789-06:00')]:
+            bad = copy.deepcopy(recording)
+            bad['recording']['events'][-1]['values'][field] = value
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                phases.summarize(bad)
+        for _ in range(2):
+            recording['recording']['events'].pop()
+            with self.assertRaises(ValueError):
+                phases.summarize(recording)
+
 
 if __name__ == '__main__':
     unittest.main()

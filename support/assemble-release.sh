@@ -69,6 +69,14 @@ chmod 755 "$module/support/ghidra-dwarf-forge-attach"
     exit 1
 }
 
+for report_launcher in ghidra-dwarf-forge-report ghidra-dwarf-forge-report.ps1; do
+    [[ -s "$module/support/$report_launcher" ]] || {
+        echo "base ZIP is missing report launcher: $report_launcher" >&2
+        exit 1
+    }
+done
+chmod 755 "$module/support/ghidra-dwarf-forge-report"
+
 for bundled_directory in os third_party/libdwarf third_party/windows-runtime; do
     if [[ -e "$module/$bundled_directory" || -L "$module/$bundled_directory" ]]; then
         echo "base ZIP already contains $bundled_directory; supply the unbundled Gradle extension ZIP" >&2

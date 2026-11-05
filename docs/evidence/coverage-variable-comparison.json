@@ -1,0 +1,199 @@
+{
+    "issue": 108,
+    "baselineCommit": "a053eeb",
+    "status": "CONFIRMED locally: reported variable binding/range comparison with real Ghidra curation regressions; full issue acceptance pending",
+    "correspondence": {
+        "parameters": "ordinal within normalized function entry",
+        "locals": "internal name and lexical block within normalized function entry",
+        "functionStatics": "internal name, lexical block and normalized storage address within normalized function entry",
+        "limits": "Reported binding correspondence is not proof of declaration lineage. Local rename/rekey is removed/added; no match is inferred from reused database/symbol IDs."
+    },
+    "coverage": "Raw location and scope changes are independent. Lost/gained coverage uses only intersecting evidenced scope ranges; unknown portions/populations do not become zero.",
+    "installation": {
+        "installation": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-variable-comparison-java21",
+        "packageSha256": "4132aac646fc2def33911eb47d245a92788a362dc044bd6eb0abc7cebb9e1a1e",
+        "jarSha256": "9d8a3ea9c4305f30f505c56a66fa437ccd4a8ccd3fa6704ebbd96bb28cc92cdb",
+        "protectedBase": {
+            "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-type-evidence-java21/support/launch.properties": "dde008a0d7583f2e4c77afbd2bc78edd29a2f5f8a132be37d162f68f76f7df64",
+            "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-type-evidence-java21/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "fb95604ba4e8b57d7f45305a16a85ada7ff32357c2f3b3c231c92b4da14bec7a"
+        }
+    },
+    "checks": {
+        "componentChecks": 65555,
+        "exhaustiveIntervalCases": 65536,
+        "variableCancellationPoints": 149,
+        "deepIntervalPopulation": 20000,
+        "deepTraversalCheckpoints": 40002,
+        "existingSourceComparisonCancellationPoints": 50,
+        "existingTypeComparisonCancellationPoints": 109,
+        "strictReportRoundtripAndCli": "PASS with equal-count shifted ranges",
+        "realCuration": [
+            {
+                "status": "PASS",
+                "target": "x86_64",
+                "role": "exec",
+                "phases": [
+                    "before",
+                    "rebased",
+                    "curated",
+                    "renamed"
+                ],
+                "rawInnerLocations": {
+                    "before": [
+                        [
+                            4198700,
+                            4198707
+                        ]
+                    ],
+                    "rebased": [
+                        [
+                            4198700,
+                            4198707
+                        ]
+                    ],
+                    "curated": [],
+                    "renamed": []
+                },
+                "protected": {
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/stripped": "dc0f309c07a23795d95ef1f96de19fb4c4e8d4c74fceb1da94aa6b5a93e76160",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/reference": "b6a8b2e6fcb9f4dfff3a91385b7f84ab2ab9066a866e51936acd065f98c9f8eb",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/forge.dbg": "f09c02d0d4df3809a8b484167dc658093ce6d2c429ca04c9be1a35ae3f00c248",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/forge.dbg.c": "9cb5af3eab4c015e74ef6a2d19385a256c45c14b717f1b7d1bb04600dce02a80",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/labels.json": "404ff616e5fc3b07ea4cb893c8b0278a2b44c910aa6bfa5f56e4a1be33578e59",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/compiler-storage.json": "5e1ba845477b267d9a6ad76f6f587b016066e18533e39601fc9e6e02b3a0cc77",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/prepared.json": "79e8bdb36b61895a2103c4d13c0a37c8fdce7e20aead2a983bb114faf8c8d7da",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-variable-comparison-java21/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "9d8a3ea9c4305f30f505c56a66fa437ccd4a8ccd3fa6704ebbd96bb28cc92cdb",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-variable-comparison-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java": "1f960997ced5510ff9dceebd94e8d2e442190df08a3a4bb11bc9749445178a42",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/coverage-curation.py": "c7316edd509d2b38b42c84e121d80540c3324d03e4e164994ce780c36f406e44",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/ghidra_scripts/CoverageCurationComparison.java": "4928b291c133b70aa139358764ec587e1a559b1a9d08e626d6a8f43488c293d6",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/coverage-curation-gdb.py": "333318a1562a103ceefc2e6bf2b5d2c344c8932adb87db636a955c40d7a92e04"
+                },
+                "projectBackupChanges": [],
+                "scope": "real in-memory Ghidra rebase, saved use-site edit and rename; production exports, independent raw DWARF, native/QEMU GDB and CLI comparison"
+            },
+            {
+                "status": "PASS",
+                "target": "aarch64",
+                "role": "pie-rebased",
+                "phases": [
+                    "before",
+                    "rebased",
+                    "curated",
+                    "renamed"
+                ],
+                "rawInnerLocations": {
+                    "before": [
+                        [
+                            1860,
+                            1880
+                        ]
+                    ],
+                    "rebased": [
+                        [
+                            1860,
+                            1880
+                        ]
+                    ],
+                    "curated": [],
+                    "renamed": []
+                },
+                "protected": {
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/stripped": "049de48ab797ed9067aec449f772a2fc4939c8b979a78d2db94982017a47c2c0",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/reference": "be10a098225faa572a4d1fa115d5bb436865b62071d53b78bf6cfbe434d834d2",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/forge.dbg": "9dc166dbf3ece2d182df530dc2bf14d959af320b84d5cbf7fc91dd2cfef2b092",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/forge.dbg.c": "e7bb80b562585efffd7a868d3ab4cb50ac477497521a6af7a91c9913ae9a527e",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/labels.json": "a4f10a2f64bf13d87c6f543f9893760042b52442b31cea5b025ee02c35fcf853",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/compiler-storage.json": "62f747dc889c364841af5d77d9c549702ef7c3200bae69efb6440656cc4651e0",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/prepared.json": "8c7accf2cc75cfc6e60d294ab0e76e9461a6ca4a3a4023a305ef07f2b55e5a06",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-variable-comparison-java21/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "9d8a3ea9c4305f30f505c56a66fa437ccd4a8ccd3fa6704ebbd96bb28cc92cdb",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-variable-comparison-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java": "1f960997ced5510ff9dceebd94e8d2e442190df08a3a4bb11bc9749445178a42",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/coverage-curation.py": "c7316edd509d2b38b42c84e121d80540c3324d03e4e164994ce780c36f406e44",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/ghidra_scripts/CoverageCurationComparison.java": "4928b291c133b70aa139358764ec587e1a559b1a9d08e626d6a8f43488c293d6",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/coverage-curation-gdb.py": "333318a1562a103ceefc2e6bf2b5d2c344c8932adb87db636a955c40d7a92e04"
+                },
+                "projectBackupChanges": [],
+                "scope": "real in-memory Ghidra rebase, saved use-site edit and rename; production exports, independent raw DWARF, native/QEMU GDB and CLI comparison"
+            }
+        ]
+    },
+    "commands": [
+        "Java21/Ghidra12.0.3 ./gradlew coverageVariableComparisonSmoke coverageComparisonSmoke coverageTypeEvidenceSmoke buildExtension",
+        "support/assemble-release.sh <base extension> <accepted Linux natives> <accepted Windows natives> <new package>",
+        "python3 src/test/integration/coverage-curation.py <private installation> <accepted x86_64 lexical case>",
+        "python3 src/test/integration/coverage-curation.py <private installation> <accepted rebased AArch64 PIE lexical case>",
+        "actionlint .github/workflows/ci.yml; bash -n src/test/integration/lexical-shadow-gdb.sh; Python compile of changed/new harnesses; git diff --check"
+    ],
+    "limitations": [
+        "GUI comparison remains planned.",
+        "Native before/after individual type-state transitions have component coverage and raw single-artifact type validation; additional paired type regression evidence remains pending.",
+        "Repeated large-workload overhead and complete byte-bound stress remain pending.",
+        "Windows/hosted/full target acceptance remains pending.",
+        "Rebase acceptance asserts no scorecard change for the selected curated function; other automatically generated names may change and remain disclosed."
+    ],
+    "files": {
+        "build/variable-comparison-tests.log": "e6f273f6c42117c4cf871547d6aba6d4a3faa4e27caeb62405b37b0a129d4c65",
+        "build/variable-comparison-build.log": "6e5bbf1f999b245aa42045d074a1b3bb502eeab2392191da2570ab41f6d5c7e3",
+        "build/variable-comparison-package.log": "d869045102d50b8863a8fb8629bb398f468e24dad61d203deba284eaca91efe2",
+        "build/variable-comparison-curation-x86.log": "debc14dc9a35e92b21d77eee0353f31d485b3686627e2a5cf0a5ee3883d05d07",
+        "build/variable-comparison-curation-aarch64.log": "5694f0c85b3a3f590771e9b3e90201e127b2ead4b8b202ecf3bf10178e8194af",
+        "build/coverage-workload-package/variable-comparison-installation.json": "ad8fc72e56c21c48a3bfd3718868fbb684adda8f217436e2797a9b9eb3f40cdf",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/acceptance.json": "fe1ae047e13e5d748c2957104c569075072276519c929c6b48b4344ce8e118fe",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/commands.json": "7fccdd9bac065ba7ff563dcee421ab0213b400e3c19e6939fef327d31ec0f987",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/rebased-compare.log": "8e1a02a2270edd5c97c38434e5ee7c8ff421ef0bf9d99db9551a918f967835cc",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/curated-compare.log": "ad6bc04a2d5b1833c203805441c2704640cb462d7c3ea132f4411bad2cd1c9a8",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/renamed-compare.log": "f3eb5e08b86adc66bf266dade1b7b41712496bd0bc9b4d6d9ac621344ea7bcc1",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/before.json": "00fbed63445f0110309049e7db736dcad42a85e745e958b13a9ea5f7ed071c10",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/before-info.log": "ef2a5a117e29ab5e380bbd059423ed734c4eb8f44e442d2f94e81c2048957c30",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/before-loc.log": "1d9e48aab27756fd4d8161c00c94a9eac4b3633bcef692707048422a0b0d5dc3",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/before-llvm.log": "ee4195eee2b68cc346f0fab3064d2d65d647c8902fe5bbc17f67decd3a21155a",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/before-dwarfdump.log.check.json": "5b533766d885d1c86eb8481d4984503633de7e030bf55d8dabf90cecbb3a47ff",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/before-gdb.log": "683342da00f773477d101f4d66edca75de9515208fad25ce3d23feb564419b86",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/rebased.json": "c5a56b8399b0433d70e008a1dd610490012bda6de1312177de230ebedc01a7c9",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/rebased-info.log": "636e2ef1d369ea8579a3fbd4910d3939de5e7274409589ac02a14fca10b3d514",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/rebased-loc.log": "1d9e48aab27756fd4d8161c00c94a9eac4b3633bcef692707048422a0b0d5dc3",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/rebased-llvm.log": "811fc8206e4b1fb24399b6b9413f331612ccb34336a585905783aca0495bcafc",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/rebased-dwarfdump.log.check.json": "dd69f798c73986552a23e4132829ff259a336e5ea29223ead37a418d32f72270",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/rebased-gdb.log": "20a548a54655faa2366649d03c7c9ac0d8880092797806f68f74a54d89f54b14",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/curated.json": "577aacff1fe077e3f352607b2c31847f9dd7ff5a2fb8e8237811271bd5be5084",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/curated-info.log": "3d8fc7c31655035c9be9314ef0d4cf1f0086887cc3367c88760abace25db2db2",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/curated-loc.log": "cee0d5c48a20bff8b2be004df3bb98209dbfda40cd93a897ffc111e6a7f37ba6",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/curated-llvm.log": "4fd0aff52b186c4921f627227f51af86b887b6c2a5031a557bd227c50d93a4d6",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/curated-dwarfdump.log.check.json": "b977addb31ac5e9e89471712bbe2a90d25bf69ecb8c25a6302f19a8fb05b7020",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/curated-gdb.log": "7146cc1b381d2cf166fa769c33616557be8eb6eb7fe94a64623e05291a7523bb",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/renamed.json": "a1fcc9511dedf6adfcec3cf66c9fb3c6a6389529cfe2e8e54571daf37260cefb",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/renamed-info.log": "690afc27abaff4951ae65c1d438b8db029fe6dfe5a87b117d99e73e19b92fc8a",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/renamed-loc.log": "cee0d5c48a20bff8b2be004df3bb98209dbfda40cd93a897ffc111e6a7f37ba6",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/renamed-llvm.log": "f91738245ef2e765c807e430f510e3dd5c80d69e20184542f8a737dd73118308",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/renamed-dwarfdump.log.check.json": "e8a25accaa56ba56caad1766e0828b7893d5e0bfd8fe1bcbe2d9b633c31f3cc3",
+        "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-curation-3ezovb40/renamed-gdb.log": "52f3ae38268e02434bf9ba5bbdce5ff056e250e960c19e2a044404854ea184d0",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/acceptance.json": "7e6763f853659434f6236f656ad561ef9dd100a403895ac771fb66049cee5bb2",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/commands.json": "af007c468d894a885c2bbd9ac97b5145d892979d265e433cc624742a6fdcc53c",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/rebased-compare.log": "d967fe3eefc38d37c436527fddae1cb688979ebd2e45294cdefdf8d4dbbbf8ee",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/curated-compare.log": "362e16da536cf0171d10820ef0214f3bceb31e2dc7982cc16cfad68fe2917863",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/renamed-compare.log": "2e6104701ac706214381fd7c8369a5edae7ddd953b089febfe133aecebec197b",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/before.json": "3ef487f188766aac987a66b783e4c7347d56d76e069e457f4b6733844f532a34",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/before-info.log": "4eb781d51281d133c7200ecef2e0eb00c11c054e4259954683a3d00198351cb0",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/before-loc.log": "7619e99687f5720814d636306a919c0d6e18c03026669993e83f9d2038191d6b",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/before-llvm.log": "e0a9edb483656a32ec6b5ad3efd6e6c1ca80ce79f6f4cba3f4a3aaaca4f1ab0b",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/before-dwarfdump.log.check.json": "064701dbde8e370843b66d77743bf78d73c43799d2d77106467b89ab91d130bf",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/before-gdb.log": "6e2bcfd9ce6e0994e3ca76216fe14e2e079128b7fa4d58d8a0e6c3e0dd49e41f",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/rebased.json": "7a49350aafd8a26258dcf39b5af0b3b7e6143327a3087bc7e5cc8418ce0e8c69",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/rebased-info.log": "921b630371e795c98726d1c95191b3b39ba70a8fab7289524ac08cace307c6ce",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/rebased-loc.log": "7619e99687f5720814d636306a919c0d6e18c03026669993e83f9d2038191d6b",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/rebased-llvm.log": "4c3291bd29739137cd34a7786ff800466c01294bf9054cd561b875cf8bcda9d4",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/rebased-dwarfdump.log.check.json": "1d451fbbfc808d41ccdea3dca98133fec9dde2e3716cb317747227434d1329f0",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/rebased-gdb.log": "4611ecda65bb845ff72fbe6d0a8d95f046ac850ee8d2b23f4507cb9441c731ca",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/curated.json": "ca4f96b98065193fd5adbaa84321d8cc16f86ce043c4d3b43fb2cfd8a50050c9",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/curated-info.log": "a1f02efb4c841e7d10133e6ed205f471a10801a12a1294b176c130047e232055",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/curated-loc.log": "cb202e8ec3d06373337fc0a42098cf5d05debd899c6243c098aa5a99053e6ef4",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/curated-llvm.log": "fc19279613113089d2f83ff876a565dc2278c4a0fa3ef44725cec1dc6e64f638",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/curated-dwarfdump.log.check.json": "468fc24e9d20c15b81cdcd4d0fcab9e5e07bdb906b22abc5f1972749cb3998dd",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/curated-gdb.log": "bf5de5f6c51748cf9b38a2facdba9c66ca7b3784d795081504e26208e587efce",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/renamed.json": "1c57a627dd3a566bf44850c71d78a939006ea0bfb6f49c7fddf831e7e755b3b3",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/renamed-info.log": "c1effa358bda9aed2d163a3df67122d76285e94c2dd47fadf98f799a375a4d3c",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/renamed-loc.log": "cb202e8ec3d06373337fc0a42098cf5d05debd899c6243c098aa5a99053e6ef4",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/renamed-llvm.log": "c05abf0789326ad95cd98775e0dc191b0dcd30e7b3909d77f72f9b8d6d7c15bb",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/renamed-dwarfdump.log.check.json": "d2e9c74ad0d2672ed5cab6dadf5e690192c774d1ac53eeb5e9d6d74ad1cd5d85",
+        "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-curation-9u96ekr3/renamed-gdb.log": "2194a0b16b35acb90229b7de8742ef7ac798bdcf740e760696f40f3b70ad5c20"
+    }
+}

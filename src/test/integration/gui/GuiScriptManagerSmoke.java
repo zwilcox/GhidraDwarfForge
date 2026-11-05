@@ -231,7 +231,7 @@ public final class GuiScriptManagerSmoke {
                                 "GUI console does not identify the companion");
                         }
                         runAttachmentDecline(tool, input, chosen.resolve("fixture.dbg"),
-                            chosen.resolve("fixture.dbg.c"), caseDirectory, transcript);
+                            chosen.resolve("fixture.dbg.c"), caseDirectory, saveCoverageReport(caseDirectory));
                         runPreparationDecline(tool, input, caseDirectory);
                         if ("1".equals(System.getenv("GHIDRA_GUI_NATIVE_ATTACHMENT"))) {
                             runNativeAttachment(tool, program, input, caseDirectory, functionAddress);
@@ -271,8 +271,136 @@ public final class GuiScriptManagerSmoke {
         }
     }
 
+    private static Path saveCoverageReport(Path directory) throws Exception {
+        var dialog = GuiTestSupport.dialog(ghidradwarfforge.output.CoverageReportGui.TITLE);
+        var robot = new Robot();
+        GuiTestSupport.onSwing(() -> {
+            var table = (javax.swing.JTable) GuiTestSupport.find(dialog,
+                component -> "coverage-functions".equals(component.getName()));
+            var summary = (javax.swing.JTextArea) GuiTestSupport.find(dialog,
+                component -> "coverage-summary".equals(component.getName()));
+            var details = (javax.swing.JTextArea) GuiTestSupport.find(dialog,
+                component -> "coverage-details".equals(component.getName()));
+            GuiTestSupport.require(table != null && table.getRowCount() > 0 && table.getColumnCount() == 8,
+                "missing per-function coverage table");
+            GuiTestSupport.require(summary.getText().contains("not execution coverage") &&
+                summary.getText().contains("unknown scopes excluded"), "coverage summary hides metric limits");
+            table.setRowSelectionInterval(0, 0);
+            GuiTestSupport.require(details.getText().contains("Signature provenance:"), "missing function evidence");
+            return null;
+        });
+        GuiTestSupport.foregroundWindow(((javax.swing.JDialog) dialog).getRootPane());
+        requireCoverageOnScreen(dialog);
+        GuiTestSupport.screenshot(robot, dialog, directory.resolve("coverage.png"));
+        Path report = directory.resolve("coverage-report.json").toAbsolutePath();
+        GuiTestSupport.clickButton(robot, dialog, "Save report...");
+        var chooser = GuiTestSupport.dialog("Save coverage report");
+        GuiTestSupport.onSwing(() -> {
+            var filename = (javax.swing.JTextField) GuiTestSupport.find(chooser, component ->
+                component instanceof javax.swing.JTextField && "filenameTextField".equals(component.getName()));
+            GuiTestSupport.require(filename != null, "missing report filename field");
+            filename.setText(report.toString());
+            return null;
+        });
+        GuiTestSupport.clickButton(robot, chooser, "Save");
+        GuiTestSupport.await("complete report save", () -> {
+            var status = (javax.swing.JTextArea) GuiTestSupport.find(dialog,
+                component -> "coverage-save-status".equals(component.getName()));
+            GuiTestSupport.require(!status.getText().startsWith("Report save failed:"), status.getText());
+            return status.getText().startsWith("Report saved:") ? Boolean.TRUE : null;
+        });
+        var retained = ghidradwarfforge.output.ExportReportClaims.readWithCoverage(report, () -> false);
+        GuiTestSupport.require(retained.claims().schemaVersion() == 2 && retained.coverage() != null,
+            "saved report lost schema-two coverage");
+        GuiTestSupport.onSwing(() -> {
+            var table = (javax.swing.JTable) GuiTestSupport.find(dialog,
+                component -> "coverage-functions".equals(component.getName()));
+            GuiTestSupport.require(table.getRowCount() == retained.coverage().coverage().functions().size(),
+                "saved and displayed function populations differ");
+            return null;
+        });
+        compareCoverageReports(dialog, robot, directory, report);
+        GuiTestSupport.clickButton(robot, dialog, "Close");
+        return report;
+    }
+
+    private static void compareCoverageReports(java.awt.Dialog dialog, Robot robot, Path directory, Path report) throws Exception {
+        String original = Files.readString(report);
+        chooseCoverageComparison(dialog, robot, report);
+        checkCoverageComparison(robot, directory.resolve("comparison-identical.txt"), "Reported changes: 0", "does not prove declaration lineage");
+        var changed = com.google.gson.JsonParser.parseString(original).getAsJsonObject();
+        var first = changed.getAsJsonObject("coverage").getAsJsonArray("functions").get(0).getAsJsonObject();
+        first.addProperty("name", first.get("name").getAsString() + " previous λ");
+        Path previous = Files.writeString(directory.resolve("coverage-earlier.json"), changed.toString());
+        chooseCoverageComparison(dialog, robot, previous);
+        checkCoverageComparison(robot, directory.resolve("comparison-changed.txt"), "FUNCTION_RENAMED", "previous λ");
+        var legacy = com.google.gson.JsonParser.parseString(original).getAsJsonObject();
+        legacy.addProperty("schemaVersion", 1);
+        legacy.remove("coverage");
+        Path legacyFile = Files.writeString(directory.resolve("coverage-legacy.json"), legacy.toString());
+        chooseCoverageComparison(dialog, robot, legacyFile);
+        checkCoverageComparison(robot, directory.resolve("comparison-incomparable.txt"), "INCOMPARABLE", "Coverage unavailable");
+        Path malformed = Files.writeString(directory.resolve("coverage-malformed.json"), "{");
+        chooseCoverageComparison(dialog, robot, malformed);
+        GuiTestSupport.await("malformed comparison error", () -> {
+            var status = (javax.swing.JTextArea) GuiTestSupport.find(dialog,
+                component -> "coverage-save-status".equals(component.getName()));
+            return status.getText().startsWith("Comparison failed:") ? Boolean.TRUE : null;
+        });
+        chooseCoverageComparison(dialog, robot, report);
+        checkCoverageComparison(robot, directory.resolve("comparison-retry.txt"), "Reported changes: 0", "No differences in the compared evidence fields");
+        GuiTestSupport.require(Files.readString(report).equals(original) && Files.readString(previous).equals(changed.toString()) &&
+            Files.readString(legacyFile).equals(legacy.toString()) && Files.readString(malformed).equals("{"), "GUI comparison modified selected reports");
+        Files.writeString(directory.resolve("comparison-result.txt"), "gui-comparison=PASS identical/changed/incomparable/malformed/retry/read-only\n");
+    }
+
+    private static void chooseCoverageComparison(java.awt.Dialog dialog, Robot robot, Path earlier) throws Exception {
+        GuiTestSupport.foregroundWindow(((javax.swing.JDialog) dialog).getRootPane());
+        GuiTestSupport.clickButton(robot, dialog, "Compare report...");
+        var chooser = GuiTestSupport.dialog("Select earlier coverage report");
+        GuiTestSupport.onSwing(() -> {
+            var filename = (javax.swing.JTextField) GuiTestSupport.find(chooser, component ->
+                component instanceof javax.swing.JTextField && "filenameTextField".equals(component.getName()));
+            GuiTestSupport.require(filename != null, "missing earlier report filename field");
+            filename.setText(earlier.toAbsolutePath().toString());
+            return null;
+        });
+        GuiTestSupport.clickButton(robot, chooser, "Compare");
+    }
+
+    private static void checkCoverageComparison(Robot robot, Path result, String required, String detail) throws Exception {
+        var dialog = GuiTestSupport.dialog(ghidradwarfforge.output.CoverageReportGui.COMPARISON_TITLE);
+        String text = GuiTestSupport.onSwing(() -> {
+            var area = (javax.swing.JTextArea) GuiTestSupport.find(dialog,
+                component -> "coverage-comparison-result".equals(component.getName()));
+            GuiTestSupport.require(area != null && !area.isEditable(), "missing read-only comparison results");
+            GuiTestSupport.require(area.getText().contains(required) && area.getText().contains(detail), "comparison content mismatch: " + area.getText());
+            return area.getText();
+        });
+        Files.writeString(result, text);
+        GuiTestSupport.foregroundWindow(((javax.swing.JDialog) dialog).getRootPane());
+        requireCoverageOnScreen(dialog);
+        GuiTestSupport.screenshot(robot, dialog, Path.of(result + ".png"));
+        GuiTestSupport.clickButton(robot, dialog, "Close comparison");
+    }
+
+    private static void requireCoverageOnScreen(java.awt.Dialog dialog) throws Exception {
+        GuiTestSupport.onSwing(() -> {
+            var configuration = dialog.getGraphicsConfiguration();
+            var usable = new java.awt.Rectangle(configuration.getBounds());
+            var insets = java.awt.Toolkit.getDefaultToolkit().getScreenInsets(configuration);
+            usable.x += insets.left;
+            usable.y += insets.top;
+            usable.width -= insets.left + insets.right;
+            usable.height -= insets.top + insets.bottom;
+            GuiTestSupport.require(usable.contains(dialog.getBounds()),
+                "coverage window exceeds usable desktop: " + dialog.getBounds() + " / " + usable);
+            return null;
+        });
+    }
+
     private static void runAttachmentDecline(ProbeTool tool, Path input, Path sidecar, Path source,
-            Path caseDirectory, String exportTranscript) throws Exception {
+            Path caseDirectory, Path savedReport) throws Exception {
         Path work = Files.createDirectory(caseDirectory.resolve("attachment-decline"));
         // The export fallback fixture deliberately separates the pair from its
         // read-only target directory. Attachment discovery requires neighbors;
@@ -280,10 +408,12 @@ public final class GuiScriptManagerSmoke {
         Path target = Files.copy(input, work.resolve("fixture"));
         Path pair = Files.copy(sidecar, work.resolve("fixture.dbg"));
         Path synthetic = Files.copy(source, work.resolve("fixture.dbg.c"));
-        String marker = "GhidraDwarfForge report: ";
-        String report = exportTranscript.lines().filter(line -> line.contains(marker))
-            .map(line -> line.substring(line.indexOf(marker) + marker.length())).findFirst().orElseThrow();
-        Path exportReport = Files.writeString(work.resolve("export.json"), report + "\n");
+        Path exportReport = Files.copy(savedReport, work.resolve("export.json"));
+        var reported = ghidradwarfforge.output.ExportReportClaims.read(exportReport).artifacts();
+        GuiTestSupport.require(reported.inputSha256().equals(GuiTestSupport.sha256(input)) &&
+            reported.outputSha256().equals(GuiTestSupport.sha256(sidecar)) &&
+            reported.sourceSha256().equals(GuiTestSupport.sha256(source)),
+            "saved coverage report does not describe the exported generation");
         var tools = new java.util.HashMap<String, Path>();
         for (String role : java.util.List.of("helper", "readelf", "llvm", "strict", "configuration")) {
             tools.put(role, Files.writeString(work.resolve(role), "not executed in declined GUI operation"));
@@ -426,6 +556,11 @@ public final class GuiScriptManagerSmoke {
         request.preflight(directory.resolve("request.json")).recheck();
         var binding = ghidradwarfforge.output.ExportArtifactHashBinding.observe(request.operation().exportReport(),
             target, request.operation().sidecar(), request.operation().source());
+        var reported = ghidradwarfforge.output.ExportReportClaims.readWithCoverage(
+            request.operation().exportReport(), () -> false);
+        GuiTestSupport.require(reported.claims().schemaVersion() == 2 && reported.coverage() != null &&
+            reported.claims().counts().functionsExported() == reported.coverage().coverage().functions().size(),
+            "prepared GUI generation did not retain its schema-two coverage report");
         for (var artifact : java.util.List.of(binding.original(), binding.sidecar(), binding.source())) {
             GuiTestSupport.require(artifact.agreement() == ghidradwarfforge.output.ExportArtifactHashBinding.Agreement.MATCHING_REPORTED_SHA256,
                 "captured report differs from actual exported bytes");
@@ -436,7 +571,7 @@ public final class GuiScriptManagerSmoke {
             GuiTestSupport.require(files.map(path -> path.getFileName().toString()).sorted().toList()
                 .equals(java.util.List.of("export.json", "request.json")), "declined preparation started transaction or left stages");
         }
-        Files.writeString(work.resolve("result.txt"), "real-curated-export=PASS\ncaptured-report-bound-to-files=PASS\nseparate-default-decline=PASS\noriginal-unchanged=PASS\nno-transaction-outputs=PASS\n");
+        Files.writeString(work.resolve("result.txt"), "real-curated-export=PASS\ncaptured-report-bound-to-files=PASS\ncoverage-report-retained=PASS\nseparate-default-decline=PASS\noriginal-unchanged=PASS\nno-transaction-outputs=PASS\n");
     }
 
     private static void runNativeAttachment(ProbeTool tool, Program program, Path input,

@@ -1,0 +1,128 @@
+{
+    "issue": 108,
+    "head": "3829626050f57fd3a3e21e89bc64dcf39f76e4b5",
+    "status": "CONFIRMED bounded source review; full acceptance remains pending",
+    "review": [
+        {
+            "topic": "Source populations",
+            "files": {
+                "coverage/SourceCoverageIndex.java": "1df4511e38708b815e64a869db3995de8c7fba5860e0e74c8331178c74cf8d0b",
+                "coverage/SourceCoverageInventory.java": "f2bc25ac4bbc08c74248f2bf5dea564f7b378f84af5c8883d67e81b0a08736f1"
+            },
+            "findings": [
+                "Decoded starts are deduplicated and constrained to complete function bodies. Token anchors require the emitted row line to match that function token; visibility follows emitted sequences.",
+                "Whole-program source totals use unions; missing instruction/token evidence suppresses the applicable percentage."
+            ]
+        },
+        {
+            "topic": "Location and declaration populations",
+            "files": {
+                "coverage/LocationCoverage.java": "2d72ec67cc39ca5cfac1a087de5b959efe18c262d65a57c32310cc7bb9362760",
+                "coverage/VariableCoverageInventory.java": "ac42c938a91e96fa7567682fa23bbfad073f618d28a0c03b19ed4f8c1799c7ff",
+                "coverage/ExportEmission.java": "f3c1a0ccdb33548a6aa246634256d4dc1eb407112468c85fc84fa39246b43c59"
+            },
+            "findings": [
+                "Recovered variables are joined to successful producer declarations; filtered declarations retain a denominator and omission reason.",
+                "Known scope derives from formal/lexical evidence, never location-list extent. Unknown scope remains explicit. Location ranges intersect owner and known complete scope.",
+                "Producer facts contain immutable Java snapshots, with no escaping native pointers."
+            ]
+        },
+        {
+            "topic": "Type graph and comparisons",
+            "files": {
+                "coverage/TypeCoverageIndex.java": "6169a3918b0d2c3724556124af749e2400217c3e11b13dde6a1da3293da284aa",
+                "output/CoverageVariableComparison.java": "27253c7c675b33dd30d747e8dcef02ca56487a284d68b9ca6569807ec8af3408"
+            },
+            "findings": [
+                "Canonical type reachability is iterative and cycle-safe. Repeated reference counts govern completeness; allocated but unattached nodes cannot complete a function.",
+                "Variable correspondence uses declared bindings without inferred lineage. Coverage gains/losses use common known scope; raw interval and provenance changes remain separate."
+            ]
+        },
+        {
+            "topic": "Report admission",
+            "files": {
+                "output/ReportValueReader.java": "946b748e4f1e7196f51cd80964d8636feea721a0112d9fa64c0ab83ac98e2ce8",
+                "output/ReportJsonReader.java": "5f43b7db4af55e0d09e0022b97508544c1475fc09d0b55eb040c2d45e296da40",
+                "output/ExportReportClaims.java": "94e66179e63c2c8ae47a4ae21e45ea32780f1f5677271fc3431fb06279bb52d0"
+            },
+            "findings": [
+                "Nested readers share whole-document and scoped legacy/coverage budgets. The lexical guard bounds bytes, strings and depth before Gson token growth.",
+                "Schema-one coverage is forbidden; schema-two coverage is required. Terminal reports cannot carry completed coverage/artifact claims. Validation remains NOT_RUN.",
+                "The selected report is the only opened input; artifact strings do not authorize or perform attachment."
+            ]
+        },
+        {
+            "topic": "Presentation and saving",
+            "files": {
+                "output/ReportFileSave.java": "58fc6adec4873a28a90a04977152e79b321dff70a6e33e96e47697240a05f180",
+                "output/CoverageReportGui.java": "305fcd87a9a22273377e6bf33f46dfc7a8abec379b63ae91b8207826b4a1f15a",
+                "output/CoverageComparisonPresentation.java": "d67539e69d02a8224caef671b4b827601d030628a1771544111770aa098f8de9"
+            },
+            "findings": [
+                "Report save uses a staged same-filesystem hard link with create-if-absent semantics; existing paths are never replaced.",
+                "GUI file parsing/comparison runs in a SwingWorker, with cancellation and no partial result publication. Display saturation preserves exact change counting.",
+                "Dialog size and location are constrained to usable desktop bounds."
+            ]
+        },
+        {
+            "topic": "Emission integration",
+            "files": {
+                "dwarf/Dwarf5LineTable.java": "eda653c61abcae151b3cbb2638d29abc89a7461190eaaa5a9a4c3a87f70424c0",
+                "dwarf/Dwarf5LocationLists.java": "3d0315988828924e2cf933ca0044312c46eaf66e8669f9baa8244c717625f3a6",
+                "nativeapi/MinimalDwarfSidecarExporter.java": "bd85f93dd900880898d67c01d1c76b1cb336f7850a83cb1e0444f710fe6bb032"
+            },
+            "findings": [
+                "The scorecard observes the exact serialized line/location plans and type branches after successful producer calls.",
+                "The location-list prefilter simplification preserves behavior: at most one range cannot change storage, and an all-unavailable list yields no plan. Available ranges still require successful full-value expression planning.",
+                "Producer completion releases native resources before immutable emission evidence escapes; existing finally cleanup remains in place."
+            ]
+        }
+    ],
+    "script": {
+        "sha256": "1f960997ced5510ff9dceebd94e8d2e442190df08a3a4bb11bc9749445178a42",
+        "findings": [
+            "Coverage assembly, serialization and strict readback occur while both artifacts are staged, before publication. Companion and attachment-preparation paths use the same source/report staging writer.",
+            "Presentation runs after successful publication; GUI presentation exceptions cannot claim the completed artifacts failed."
+        ]
+    },
+    "supportingEvidence": [
+        "coverage-ci-3829626-package.json",
+        "coverage-ci-3829626-windows.json",
+        "coverage-ci-3829626-attachments.json",
+        "coverage-large-workloads.json",
+        "coverage-whole-report-limit.json",
+        "coverage-type-pairs.json",
+        "coverage-ci-3829626-workloads.json",
+        "coverage-final-review-fixes.json"
+    ],
+    "scope": "Bounded source reviews of metric semantics, emission integration, report admission/publication and presentation. Extended review found and corrected the presentation defect recorded separately. Full architecture acceptance and current-head protected integration remain required.",
+    "validation": "Initial source review changed documentation only. Extended review produced the presentation correction and meaningful regressions recorded in coverage-final-review-fixes.json. Component/packaged checks pass locally; full corrected hosted acceptance remains pending.",
+    "extendedReview": {
+        "scope": "Follow-up source review at the same parent plus the presentation correction; exact files recorded below. This does not replace the required runtime gates.",
+        "files": {
+            "GhidraInstructionEvidence.java": "bac7dd9fd09cbd9861d76c1f37789b98d247b43f40cc3d308bc3f9f16659ff11",
+            "coverage/DecodedInstructions.java": "c96321defd514ad62a499468ae27a8bbe56f271ebae2db0be8d17a34d69e57fb",
+            "coverage/ExportCoverage.java": "d09eb93d533069de8bb022119c495cc3513c6740fe69877362be5664fa7d0912",
+            "coverage/VariableCoverageTotals.java": "4007417684e5afae12552ae9718b7f5fa03da09f4980785c18dec12ba1d1cd21",
+            "coverage/TypeGraphEvidence.java": "e3622cad6d4d377552d1c5d1a8079dd97a70f07270a5b1ae8068fc5f222e2073",
+            "coverage/TypeCoverage.java": "158f14da53d659690c15c3b409775e9fc1c690161bf128f9982d3b2bc6b4488e",
+            "output/CoverageTypeEvidence.java": "3a15a1e488ee5f9c278dbd0ba21ddc2e63b890211a3417466caedb0d0c4d97a4",
+            "output/CoverageReportClaims.java": "2e925ed7a3ff96e7f5ce1ea7e534584d314fd12de1c2344f4a2e62162ae125da",
+            "output/CoverageReportJson.java": "cb25e44778b47ce36a7d4d54781d7d96e9169494171a4ca8df9a3615d2924e26",
+            "output/CoverageComparison.java": "6629b237d357c36972ad41b4f236cbc421f69b2752b5daea9a9792bc5bb0806c",
+            "output/CoverageReportTool.java": "0707c6c15bfc2dc6cc641341bccbd4528e0bf216760a49fcce812bba965d2b55",
+            "output/CoveragePresentation.java": "5bc71b12dafc78fb3ea0b604d7a84372c9e3369281dd2855389a120fad2ad8d3",
+            "output/ExportReport.java": "8970c4445584e96a0b8f9879a1321c7e5e6c1237af14be5befad5c440963e494",
+            "source/SyntheticSourceFile.java": "c90b0cd142e06a51a79d07077ab17cc0564b7cdb8053972bcbb52df261b27c4a",
+            "GhidraTypeGraph.java": "7f3f5238927bb16822cd0ac821ea99036778d9f1300002cdea9f77c8abafc112"
+        },
+        "findings": [
+            "Listing inventory uses actual Ghidra starts and matching body ranges; unavailable or ambiguous extraction does not retain partial denominators.",
+            "Decoder recomputes point unions, variable range intersections and per-kind totals; type graph evidence recomputes function/union states and validates attached roots.",
+            "Serializer preserves ordered evidence dictionaries and exact scalar strings, bounds UTF-8 including split surrogate pairs, and rejects malformed strings before publication.",
+            "Comparison limits source gains/losses to common decoded populations; canonical type keys are correspondence rather than historical lineage. CLI opens selected reports only and neutralizes terminal controls.",
+            "Presentation review found an unknown-variable-inventory defect, now covered by a failing-before/passing-after regression and corrected. See coverage-final-review-fixes.json.",
+            "Source token snapshots are captured before declaration-line merging; the array identity correction affects transient arrays while retaining persisted named type IDs."
+        ]
+    }
+}

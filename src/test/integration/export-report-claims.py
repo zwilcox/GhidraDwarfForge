@@ -67,7 +67,7 @@ DECODER = json.JSONDecoder(object_pairs_hook=unique_object, parse_int=integer,
 
 
 def claims(report):
-    require(report["schemaVersion"] == 1 and report["status"] in ("SUCCESS", "PARTIAL"),
+    require(report["schemaVersion"] in (1, 2) and report["status"] in ("SUCCESS", "PARTIAL"),
             "not a completed current report")
     require(report["failure"] is None and report["validation"] == {"status": "NOT_RUN"},
             "unexpected failure or validator attestation")
@@ -76,10 +76,49 @@ def claims(report):
         require(report["counts"][count] == len(report[inventory]), "report cardinality mismatch")
     partial = any(report[inventory] for inventory in CARDINALITIES.values())
     require(report["status"] == ("PARTIAL" if partial else "SUCCESS"), "report status mismatch")
+    if report["schemaVersion"] == 1:
+        require("coverage" not in report, "legacy report unexpectedly carries coverage")
+    else:
+        coverage_claims(report)
     return {"schemaVersion": report["schemaVersion"], "status": report["status"],
             "target": report["target"], "artifacts": report["artifacts"],
             "counts": report["counts"], "validationStatus": report["validation"]["status"],
             "libdwarfVersion": report["native"]["libdwarfVersion"]}
+
+
+def coverage_claims(report):
+    """Independent source population arithmetic; artifact truth needs raw DWARF/GDB oracles."""
+    coverage = report["coverage"]
+    require(coverage["definitionVersion"] in (1, 2) and coverage["addressModel"] == "ELF_LINK_TIME",
+            "unsupported coverage definition or address model")
+    functions = coverage["functions"]
+    require(coverage["summary"]["functions"] == str(len(functions)) ==
+            str(report["counts"]["functionsExported"]), "coverage function population differs")
+    require(all(coverage["profile"][key] for key in ("languageId", "compilerSpecId")),
+            "missing captured target profile")
+    unions = {key: set() for key in ("decoded", "anchored", "lineVisible")}
+    for function in functions:
+        source = function["source"]
+        points = {}
+        for key in unions:
+            starts = source[key + "Starts"]
+            count = source[key + "Instructions"]
+            require((starts is None) == (count is None), "unknown source count differs from evidence")
+            if starts is None:
+                points[key] = None
+                continue
+            addresses = [int(address, 16) for address in starts]
+            require(addresses == sorted(set(addresses)) and count == str(len(addresses)),
+                    "source starts/count/order differ")
+            points[key] = set(addresses)
+            unions[key].update(addresses)
+        if points["decoded"] is not None:
+            require(points["lineVisible"] <= points["decoded"], "visible instructions outside population")
+            if points["anchored"] is not None:
+                require(points["anchored"] <= points["lineVisible"], "anchors outside visible population")
+    for key, starts in unions.items():
+        require(coverage["summary"]["source"][key + "Instructions"] == str(len(starts)),
+                "source union does not deduplicate overlapping functions")
 
 
 def run(command, prefix):
@@ -334,7 +373,13 @@ def main():
             inputSha256="A" * 64, outputSha256="B" * 64, sourceSha256="C" * 64)
         reordered = dict(reversed(list(opaque.items())))
         reordered["counts"] = dict(reversed(list(reordered["counts"].items())))
-        for name, value in (("opaque-paths", opaque), ("reordered", reordered)):
+        positive_values = [("opaque-paths", opaque), ("reordered", reordered)]
+        if base["schemaVersion"] == 2:
+            legacy = copy.deepcopy(base)
+            legacy["schemaVersion"] = 1
+            legacy.pop("coverage")
+            positive_values.append(("compatible-legacy-shape", legacy))
+        for name, value in positive_values:
             path = work / (name + ".json")
             path.write_bytes(encoded(value))
             positives.append(path)
@@ -347,10 +392,12 @@ def main():
 
     negatives = {}
     raw = encoded(base)
-    negatives["duplicate-root"] = raw.replace(b'"schemaVersion":1', b'"schemaVersion":1,"schemaVersion":1', 1)
-    negatives["escaped-duplicate-key"] = raw.replace(b'"schemaVersion":1', b'"schemaVersion":1,"schema\\u0056ersion":1', 1)
-    negatives["decimal-integer"] = raw.replace(b'"schemaVersion":1', b'"schemaVersion":1.0', 1)
-    negatives["quoted-integer"] = raw.replace(b'"schemaVersion":1', b'"schemaVersion":"1"', 1)
+    schema = str(base["schemaVersion"]).encode()
+    schema_field = b'"schemaVersion":' + schema
+    negatives["duplicate-root"] = raw.replace(schema_field, schema_field + b',' + schema_field, 1)
+    negatives["escaped-duplicate-key"] = raw.replace(schema_field, schema_field + b',"schema\\u0056ersion":' + schema, 1)
+    negatives["decimal-integer"] = raw.replace(schema_field, schema_field + b'.0', 1)
+    negatives["quoted-integer"] = raw.replace(schema_field, b'"schemaVersion":"' + schema + b'"', 1)
     negatives["uppercase-null"] = raw.replace(b'"failure":null', b'"failure":NULL', 1)
     negatives["trailing-root"] = raw + b' {}'
     negatives["utf8-bom"] = b'\xef\xbb\xbf' + raw
@@ -361,7 +408,7 @@ def main():
         negatives[name] = raw.replace(b'"architecture":"' + base["target"]["architecture"].encode() + b'"',
                                       b'"architecture":' + value, 1)
     mutations = {
-        "unknown-schema": lambda value: value.update(schemaVersion=2),
+        "unknown-schema": lambda value: value.update(schemaVersion=3),
         "missing-static-count": lambda value: value["counts"].pop("functionStaticVariables"),
         "unknown-field": lambda value: value["target"].update(unrecognized=1),
         "null-target": lambda value: value.update(target=None),
@@ -369,6 +416,14 @@ def main():
         "false-validator-claim": lambda value: value["validation"].update(status="PASSED"),
         "invalid-hash": lambda value: value["artifacts"].update(inputSha256="x" * 64),
     }
+    if base["schemaVersion"] == 2:
+        mutations.update({
+            "missing-coverage": lambda value: value.pop("coverage"),
+            "null-completed-coverage": lambda value: value.update(coverage=None),
+            "unknown-coverage-definition": lambda value: value["coverage"].update(definitionVersion=3),
+            "coverage-function-count": lambda value: value["coverage"]["summary"].update(functions="999999999"),
+            "legacy-with-coverage": lambda value: value.update(schemaVersion=1),
+        })
     for name, mutate in mutations.items():
         changed = copy.deepcopy(base)
         mutate(changed)
@@ -377,6 +432,8 @@ def main():
         terminal = copy.deepcopy(base)
         terminal.update(status=status, target=None, artifacts=None, counts=None,
                         native={"libdwarfVersion": None}, failure={"type": "fixture", "message": "fixture"})
+        if terminal["schemaVersion"] == 2:
+            terminal["coverage"] = None
         for key in ("sections", *CARDINALITIES.values()):
             terminal[key] = []
         negatives[status.lower() + "-no-claims"] = encoded(terminal)

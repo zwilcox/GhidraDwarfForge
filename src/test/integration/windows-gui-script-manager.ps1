@@ -167,4 +167,6 @@ $prepared = Join-Path $work "select/attachment-prepare"
 $validation = Join-Path $prepared "validation"
 New-Item -ItemType Directory $validation | Out-Null
 Test-ExportedPair $validation (Join-Path $prepared "fixture") (Join-Path $prepared "prepared.dbg")
+& python (Join-Path $repository 'src/test/integration/coverage-report-tool.py') $ghidra $module (Join-Path $work 'select/coverage-report.json')
+if ($LASTEXITCODE -ne 0) { throw 'Packaged coverage CLI validation failed' }
 Write-Output "windows-gui-script-manager-integration=PASS"

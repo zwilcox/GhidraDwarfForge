@@ -1,5 +1,268 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — #108 final review corrections:** unavailable function
+variable inventories now display Unknown instead of N/A (0/0); mixed summaries
+disclose missing inventories while retaining observed counts. A failing-before
+regression, unknown/mixed/known-empty controls, strict CLI round trips, component
+checks, extension build and ten packaged CLI cases pass. The MIPS32LE lane at
+`3829626` also exposed a connected-preparation test fixture that retained
+completed coverage in a terminal report. Production correctly rejected it;
+the fixture now clears coverage and separately tests malformed retained claims.
+Six actual packaged terminal controls pass. See
+`docs/evidence/coverage-final-review-fixes.json`. The presentation is the only
+production behavior changed in this follow-up; fresh hosted acceptance remains
+required. Earlier Windows evidence below stays bound to `3829626`.
+
+**CONFIRMED — #108 Windows workload acceptance:** performance run `42088664392`
+at `3829626` passes all five jobs, including the independent Linux GDB consumer.
+Review verifies all 22 reports from ten alternating measurement pairs and two
+separate profiled exports, exact artifact/report repeatability, original hashes,
+both hosts' validators, nine JFR phases and actual large-report CLI readback.
+SQLite median wall time is 87.08/87.34 seconds; U-Boot is 184.17/192.16 seconds.
+U-Boot median peak job commitment grows from 1.35 to 2.40 GB; this Windows metric
+is not Linux RSS. Project program data is unchanged, with only Ghidra index/journal
+backup maintenance. See `docs/evidence/coverage-ci-3829626-workloads.json` for
+the exact scope, baseline correction, retained artifacts and limitations.
+The five full architecture lanes and protected integration remain pending.
+
+**CONFIRMED — #108 current Windows host acceptance:** run `42088664715` at
+`3829626` passes the Windows host and downstream GDB jobs. Review verifies the
+downloaded artifact digests, three GUI report/input/output/source bindings and
+all 930 hashes protected by the consumer. Plain, compressed and companion GUI
+exports retain working save/comparison/error/retry controls within the desktop.
+The Windows-produced attachment generations pass Linux GNU/LLVM/pinned strict
+validation and actual GDB with explicit source relocation. One message after
+the GUI PASS marker matches an OpenJDK Java2D disposal catch path; its exact
+exception is not recorded and remains uncertain. Evidence and limits are in
+`docs/evidence/coverage-ci-3829626-windows.json`. Five target lanes and protected
+integration are still pending; #108 remains active.
+
+**CONFIRMED locally — #108 Windows measurement preparation:** the workflow now
+compares against production main `1bb4c14` with a separately derived, explicitly
+non-release array correction. Its three recompiled classes must match the actual
+candidate; all 507 baseline classes also match the independent clean Gradle build
+locally. A source-root audit accounts for the candidate delta and rejects changes
+to classes with unchanged source. Original modules remain protected; native build
+identities are recorded rather than attributing all revision cost to Java alone.
+Five pairs, exact artifact equality, deterministic reports, large-report CLI,
+JFR/validators and independent GDB remain required on Windows. Local helper,
+negative controls and workflow lint pass; hosted execution is pending. See
+`docs/evidence/coverage-windows-measurement-control.json`.
+
+**CONFIRMED locally — #108 final paired workloads and CI follow-ups:** five
+alternating baseline/candidate pairs each for SQLite and U-Boot preserve exact
+artifacts and deterministic reports, with validator/GDB checks passing. Median
+wall time is 34.62/39.28 seconds and 114.82/126.58 seconds; scorecards materially
+increase memory use. See `docs/evidence/coverage-large-workloads.json` for the
+matched array correction, exact populations, costs and retained failures.
+Hosted run `42080744656` exposed an invalid schema-two terminal test fixture and
+a coverage window larger than the Windows desktop. The terminal controls are
+corrected; screen-bounded coverage/comparison windows pass the real 1024x768
+Linux GUI journey, validators, GDB and CLI. Current JFR phase controls pass too.
+See `docs/evidence/coverage-ci-followups.json`. Corrected hosted acceptance and
+the Windows workload comparison remain pending; its old instrumentation-only
+class guard must be replaced with an audited coverage-feature comparison.
+
+**CONFIRMED defect and local correction — #108 transient array keys:** the first
+repeated SQLite experiment found a fresh-process array ID changing in otherwise
+identical reports. Ghidra `ArrayDataType` inherits a generated ID; persisted
+`ArrayDB` has none. Array keys now use the existing structural fallback, while
+named persistent identities remain intact. Regression checks pass on all five
+profiles, before/after immutable reopen. Final repeated workload, artifact and
+hosted acceptance remain pending. The measurement baseline receives this same
+single correction to isolate scorecard overhead and retain exact artifact equality.
+Hosted fixture inventory failures were also fixed by listing the two new reviewed
+emission sources; local x86/AArch64 reproducibility passes. See
+`docs/evidence/coverage-array-identity.json`.
+
+**CONFIRMED locally — #108 whole-report byte bound:** 1,500 saved Ghidra locals
+with individually legal 48,084-unit derived type paths exceed the unchanged 64 MiB
+production report budget. x86-64 and rebased AArch64 PIE reject before publication,
+preserve existing pair/companion files, and pass deterministic retry plus validators
+and native/QEMU GDB checks. The original string-limit regression still passes.
+The cross-architecture coverage controls now include this byte-bound test. See
+`docs/evidence/coverage-whole-report-limit.json`. Repeated final large-workload
+overhead and hosted acceptance remain pending.
+
+**CONFIRMED locally — #108 paired native type regressions:** actual production
+exports swap two canonical types between resolved and opaque while preserving all
+summary totals. Independent raw-DIE traversal predicts the exact CLI state changes
+in both directions. A source-failure export retains allocated type DIEs but correctly
+reports all three types as unattached to the function. GNU/LLVM/pinned strict
+validators and GDB pass for all three artifacts; sidecar, source and report bytes
+are deterministic on rerun. This is an isolated controlled-model emission test,
+not a Ghidra extraction/identity claim. See `docs/evidence/coverage-type-pairs.json`.
+Repeated final large-workload overhead, whole-report byte stress and hosted
+host/target acceptance remain pending.
+
+**ACTIVE hosted validation — #108 draft PR [#164](https://github.com/zwilcox/GhidraDwarfForge/pull/164):**
+the first extension-build gate flagged generic “PC” prose as register-specific
+logic. Those five comments/labels now spell out address ranges/bytes; the guard
+and audited-file boundary are unchanged. Architecture controls and presentation
+checks pass locally; fresh hosted acceptance remains pending. See
+`docs/evidence/coverage-hosted-architecture-gate.json`.
+
+**CONFIRMED locally — #108 GUI comparison:** the coverage window now offers
+Compare report, with a background read/compare task, cooperative cancellation,
+explicit incomparability/errors, and a bounded result view that preserves the exact
+change count after display clipping. The real Linux GUI passes identical/changed/
+legacy/malformed/retry cases and preserves selected report files. The full export,
+save, attachment preview/preparation, cancellation, validator/GDB and packaged CLI
+journey also passes. Component cancellation and clipped-count checks pass; Windows/
+hosted acceptance, paired native type regressions and large-workload overhead
+remain pending. See `docs/evidence/coverage-gui-comparison.json`.
+
+**CONFIRMED locally — #108 variable comparison and real curation:** CLI comparison
+now exposes declaration/type/provenance/storage changes and exact location ranges
+at explicitly reported variable bindings. Coverage loss/gain uses only common
+evidenced scope; unknown populations remain unavailable. Parameter ordinals,
+local internal-name/block pairs and static name/block/address tuples are reported
+correspondence, not declaration lineage. Renamed locals appear as removed/added.
+65,536 interval controls and all 149 variable-comparison cancellation points pass.
+Real production exports before/after rebase, saved use-site curation and rename
+pass raw-DWARF, validators, GDB and CLI checks on x86-64 and rebased AArch64 PIE.
+The selected curated function is unchanged by rebase; exact lost inner-local
+ranges match raw DWARF and GDB's unavailable value. GUI comparison, paired type
+regression evidence, large-workload overhead and hosted acceptance remain pending.
+See `docs/evidence/coverage-variable-comparison.json`.
+
+**CONFIRMED locally — #108 individual type reporting and comparison:** production
+schema-two reports now use metric definition two, with a shared canonical type
+graph and per-function recovered/attached roots. The strict reader recomputes
+function and union counts; legacy definition-one bytes remain compatible. CLI
+comparison exposes individual resolved/opaque/missing states and reference changes
+by reported canonical key, including offsetting changes hidden by equal totals.
+The raw-DWARF/GDB fixture, packaged x86-64 and rebased AArch64 PIE journeys, and
+20 staging failure/cancellation controls per target pass locally. Individual
+variable/range correspondence, GUI comparison, repeated large-workload overhead
+and hosted acceptance remain required. See
+`docs/evidence/coverage-type-report.json`.
+
+**CONFIRMED locally — #108 comparison evidence:** real Ghidra database probes on
+x86-64, AArch64 and both MIPS32 byte orders reproduce reuse of the same database/
+symbol ID after undo and a different declaration. Those IDs cannot prove local
+identity across reports. A canonical type graph evidence component retains
+individual resolved/opaque/absent states and reference multiplicities, including
+implicit void and failed-function attachment gaps. Component cancellation/deep
+shared-graph checks and independent raw-DWARF/validator/GDB checks pass. Production
+wire-format integration and individual comparison remain planned; #108 remains
+incomplete. See `docs/evidence/coverage-identity-and-type-graph.json`.
+
+**CONFIRMED locally — #108 CLI and partial comparison:** the packaged read-only
+report launcher displays summaries, per-function rows and selected evidence. It
+matches reported original SHA/profile and ELF-link-time function entries, handles
+renames/path moves, and exposes individual lost/gained source anchors even when
+totals are equal. Unknown populations and incompatible reports remain explicit.
+Java 21 checks, ten packaged CLI cases, release assembly, and a fresh GUI/validator/
+GDB journey pass on Linux. Windows execution remains **PRESENT, UNVERIFIED**.
+Comparison is incomplete: export-local variable IDs and absent per-type states
+cannot prove individual variable/range/type transitions; every comparison states
+these limits. Extend that evidence and implement GUI comparison before claiming
+#108 complete. Repeated large-workload overhead and hosted acceptance also remain.
+See `docs/evidence/coverage-cli-comparison.json`.
+
+**CONFIRMED locally — #108 GUI presentation:** the console now receives a short
+coverage summary; a modeless per-function view shows static metrics, provenance
+and omission reasons. Explicit Save report retains the complete preflighted JSON
+in a new file without replacing existing files or aliases. Ordinary-pair and
+companion GUI journeys pass real report saving, hash binding, attachment preview/
+decline, fresh preparation with retained coverage, cancellation, validators and
+GDB on Linux. The fixture saves 82,250 bytes while retaining only 5,110/5,567
+console characters. Windows/hosted acceptance, CLI/report comparison and repeated
+large-workload overhead remain pending. See
+`docs/evidence/coverage-gui-presentation.json`. The earlier GUI truncation failure
+below is retained history; #108 remains incomplete.
+
+**HISTORICAL #108 GUI defect; report-limit preservation remains confirmed:** a real derived
+Ghidra pointer type exceeds the 65,536-unit report string limit. Pair and companion
+rejection preserve existing files, clean stages and retry deterministically on
+x86-64 and rebased AArch64 PIE; validators/GDB pass. The first named-typedef probe
+did not exceed the emitted limit because it used a compact universal ID.
+A fresh real GUI run exposes console truncation: an 82,321-character report line
+overflows the 50,000-character console, losing its prefix and earlier status text.
+The actual exported pair matches the logged hashes, but the GUI journey fails
+before attachment preparation. Readable coverage presentation and access to the
+complete JSON are the next priority; increasing the console limit is not a fix.
+See `docs/evidence/coverage-report-limits-and-gui.json`. #108 remains incomplete.
+
+**CONFIRMED local production staging for #108; full acceptance pending:** the
+ordinary installed exporter now captures decoded instructions and prepares its
+schema-two coverage report before publishing the sidecar/source generation.
+The same callback serves normal pairs, GDB companions and fresh attachment
+preparation. Terminal reports carry null coverage; legacy `toJson()` and schema-one
+readers remain compatible. Packaged x86-64 and rebased AArch64 PIE exports pass
+validators/GDB and deterministic reruns. Both targets pass 16 cancellation/injected
+failure controls spanning capture, assembly, writing and readback, preserving prior
+pairs/companions and leaving no stages. Fresh GUI attachment acceptance, real
+large-report limit failures, repeated overhead, comparison/presentation and the
+full hosted matrix remain required. Earlier statements that ordinary exports
+still use schema one describe the historical component checkpoint below.
+
+**HISTORICAL #108 component checkpoint before production staging:** an isolated follow-on
+branch now retains the exact line-emission plan and indexes decoded instruction
+coverage without conflating token anchors with debugger line carry-forward.
+Native-free byte-decoding tests cover overlap, gaps, declarations, collisions,
+duplicates, empty/failed functions and cancellation in both widths/byte orders.
+Four baseline/candidate line sections are byte-identical. The capture helper now
+passes real Ghidra database tests for x86-64, AArch64 and both MIPS32 byte orders,
+including rebases, undecoded gaps, missing/changed functions and cancellation.
+Per-function token provenance excludes declaration-only rows, with unchanged
+source bytes and old mappings in baseline comparisons. The helper is not yet
+connected to exporter reports. Canonical type accounting passes 29 native-free
+checks, including opaque targets, implicit void, missing/repeated edges and a
+20,000-node shared chain. Actual producer emission evidence is now returned
+through `ExportResult`: exact lines, represented types and per-function
+declarations with expressions/lists/omissions. A source-built fixture independently
+checks serialized DIE ownership/type edges, raw lists and native GDB values,
+including opaque/recursive/void types, partial-location rejection, symbol-only
+failure and native-phase cancellation. Full parent/candidate sidecar/source bytes
+match. The updated package passes the lexical journeys below; report consumption
+remains pending. Location extent now distinguishes actual owner ranges from
+independently evidenced visibility, withholds percentages for unknown scopes,
+retains failed declarations in counts and exposes aggregate overflow. Twenty-one
+component checks and the expanded raw-DWARF/GDB fixture pass: the late local
+has 2/5 visible PC-byte coverage, and ten recovered declarations include four
+known-scope variables with 12/21 variable-PC-byte coverage plus six explicitly
+excluded unknown-scope variables. The recovered/emitted inventory now passes 27 component checks, all 273 cancellation
+checkpoints and the raw-DWARF/GDB fixture. It retains per-kind populations,
+export-local scoped identities, declaration/storage provenance, omitted
+declarations and explicit unknown scopes. Source inventory now also preserves null versus zero evidence, exact instruction
+points and union totals across overlapping functions. Its 64 checks and independent
+raw-line/disassembly/native-GDB fixture pass (six decoded/two anchored/four visible).
+The combined scorecard assembler passes its native raw-DWARF/GDB fixture and all
+148 cancellation checkpoints. It retains failed/unknown signatures, canonical
+function type unions, separate recovered globals and post-policy ABI restrictions.
+A proposed exact-counter coverage JSON payload passes UTF-8/string bounds,
+2,260 cancellation points and native raw-metric comparison. Shared streaming
+reader primitives preserve all 429 malformed-report and 432 detailed-reader
+checks. The proposed payload's strict decoder passes 503 malformed controls,
+287 sampled cancellation points and exact native-fixture object/byte round trips.
+It validates internal consistency without authenticating reported artifact facts.
+Explicit schema-two writing and all reader paths now pass local migration,
+full-document budget, selected-byte binding and native-fixture round-trip checks.
+Legacy schema-one bytes remain unchanged. Production staging, comparison/UI
+and measured overhead remain pending; ordinary exports still use schema one.
+Actual saved SQLite/U-Boot probes now pass with a lossless storage-evidence
+dictionary and explicit scoped limits: one million legacy values, five million
+coverage values, six million total, unchanged 64 MiB/string/depth/array caps.
+SQLite's payload shrinks from 56,392,815 to 19,897,363 bytes with every range/detail
+independently compared; U-Boot's compact payload is 54,600,521 bytes and repeats
+identically across two processes. Full report preflight, strict validators and
+GDB behavior pass; original/module/project snapshots match. Single-run timing/RSS
+observations are retained, not generalized performance acceptance. Production
+staging, repeated overhead/failure/cancellation controls and the full matrix remain
+required; see `docs/evidence/coverage-workload-admission.json`.
+Location-list results retain their actual immutable plans and honor cancellation.
+Their four byte streams match the parent; 237 raw-byte/negative checks pass.
+Real packaged x86-64 and rebased AArch64 PIE lexical-variable journeys pass
+validators and GDB (QEMU for AArch64), including x86-64 failure/cancellation
+controls. This is refactor validation, not public scorecard acceptance.
+Report schema integration, variable coverage, serialized type validation,
+comparison/presentation,
+large-workload cost and full validator/GDB acceptance remain planned. This does
+not complete #108 or move its integration ahead of #74. See
+`docs/COVERAGE-SCORECARDS.md` for definitions and the full remaining acceptance.
+
 **CONFIRMED #74 implementation and measured acceptance:** measurement PR159
 merged as `762dbbd` after CI `41989520429` and performance workflow `41989520582`
 passed. Compression PR160 merged as `5d81e4f` after all 15 jobs in combined CI
@@ -9,9 +272,10 @@ Linux/Windows GUI and GDB consumers, original preservation and cancellation.
 Pinned SQLite/U-Boot workloads and all optimization decisions are documented;
 no general speed or memory improvement is claimed. See
 `docs/PERFORMANCE-ACCEPTANCE.md` and
-`docs/evidence/compression-integrated-42010699187.json`. This change reconciles
-final documentation; issue closure follows its protected integration. No release
-publication or completion of later goal issues is included.
+`docs/evidence/compression-integrated-42010699187.json`. Final documentation PR161 merged as `1bb4c14` after all 15 jobs in
+`42027852702` passed; the merge tree equals tested head `238da8c`. The final
+closure audit passed and #74 is closed. No release publication or completion
+of later goal issues is included.
 
 **HISTORICAL pre-integration checkpoints follow.**
 

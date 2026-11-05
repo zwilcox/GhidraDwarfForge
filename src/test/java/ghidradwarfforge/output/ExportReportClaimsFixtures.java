@@ -34,6 +34,10 @@ final class ExportReportClaimsFixtures {
     }
 
     static ExportReport completed(boolean partial) {
+        return completed(partial, 99);
+    }
+
+    static ExportReport completed(boolean partial, int functionCount) {
         TypeRef integer = new TypeRef("int");
         BaseType base = new BaseType(integer.key(), "int", 4, BaseEncoding.SIGNED);
         TypeGraph types = new TypeGraph(partial
@@ -62,7 +66,7 @@ final class ExportReportClaimsFixtures {
             "reported version", Path.of("unopened", "..", "input.elf"), "A".repeat(64),
             Path.of("unopened", "output.dbg"), "b".repeat(64),
             Path.of("unopened", "output.dbg.c"), "C".repeat(64),
-            99, List.of("", ".debug_info"), source, model,
+            functionCount, List.of("", ".debug_info"), source, model,
             partial ? List.of(new SkippedFunction("external", SkipReason.EXTERNAL_IMPORT)) : List.of(),
             partial ? List.of("", "analyst \"message\"\\\n😀") : List.of());
         if (report.status() != (partial ? ExportReport.Status.PARTIAL : ExportReport.Status.SUCCESS)) {
