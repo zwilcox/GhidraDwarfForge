@@ -8,10 +8,14 @@ remains the integration priority; this isolated branch prepares their fixtures.
 **CONFIRMED fixture preparation:** `analyst-annotations.c` builds deterministic
 PIE/non-PIE compiler references for x86-64, AArch64 and both MIPS32 byte orders.
 GNU inspection, LLVM verification, pinned strict checks and actual native/QEMU
-GDB pass eight cases, each with fourteen exact value/width observations. PIE
+GDB pass eight cases, each with sixteen exact value/width observations. PIE
 checks observe nonzero runtime load bias. Compiler/global/local/type/enum names
-provide conflicts for later equate-lookup tests; their existence in compiler
-DWARF does not mean the stripped Ghidra program has recovered all those names.
+provide conflicts for later equate-lookup tests. The preparation script now
+explicitly applies the global, structure and enum type and saves the conflicting
+local in a separate function. Its stack offset comes from actual compiler GDB
+observations relative to entry SP, and its first-use offset is the observed live
+marker. No architecture-specific storage offset is guessed. This fixture
+curation does not claim automatic recovery from stripped input.
 
 `PrepareAnalystAnnotations.java` applies fifty comments across ten addresses
 and all five categories, including instruction interiors, an explicit function
@@ -56,6 +60,16 @@ exact native-decompiler hash/value resolution on all four saved-program cases.
 The stored operand index stays `-1`, and no decoded-instruction constant hash
 claims this reference. Its scope is decompiler evidence, not original source
 syntax or a proved C type. Production extraction/composition, complete named-constant
-policy, saved local/type collision curation, genuine
-decompiler failure, cancellation and full exported-artifact/GUI/headless tests
+policy, genuine decompiler failure, cancellation and full
+exported-artifact/GUI/headless tests
 remain required. These fixtures do not close either issue.
+
+The [saved-conflict receipt](evidence/annotation-saved-conflicts.json) extends the
+fixture with a separate `annotation_conflicts` function so naming its local does
+not disturb the probe's folded constant53. It records all eight compiler cases,
+four complete saved-program cases and the preserved inputs. Readback requires
+USER_DEFINED local provenance, exact storage/first-use/width, the applied
+structure/member, enum member/value and real global label/value. The initial
+constructor compilation error and nondeterministic test-JSON field order remain
+in the evidence archive; corrected runs pass. This establishes collision inputs
+for later real exporter/GDB tests, not the constant-name policy itself.

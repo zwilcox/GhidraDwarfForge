@@ -9,7 +9,13 @@ import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.address.AddressSpace;
 import ghidra.program.model.data.DataTypeConflictHandler;
 import ghidra.program.model.data.EnumDataType;
+import ghidra.program.model.data.IntegerDataType;
+import ghidra.program.model.data.StructureDataType;
+import ghidra.program.model.data.Structure;
+import ghidra.program.model.data.DataUtilities;
 import ghidra.program.model.listing.CommentType;
+import ghidra.program.model.listing.LocalVariable;
+import ghidra.program.model.listing.LocalVariableImpl;
 import ghidra.program.model.scalar.Scalar;
 import ghidra.program.model.symbol.SourceType;
 import com.google.gson.GsonBuilder;
@@ -82,6 +88,11 @@ public class PrepareAnalystAnnotations extends GhidraScript {
             throw new IllegalArgumentException("setup|read labels.json observations.json");
         }
         var labels = JsonParser.parseString(Files.readString(Path.of(args[1]))).getAsJsonObject();
+        var storage = JsonParser.parseString(Files.readString(Path.of(args[1]).resolveSibling(
+            "compiler-storage.json"))).getAsJsonObject();
+        if (!storage.get("function").getAsString().equals("annotation_conflicts") ||
+                !storage.get("local").getAsString().equals("ANNOTATION_LOCAL") ||
+                storage.get("bytes").getAsInt() != 4) throw new AssertionError("unexpected compiler storage");
         var factory = currentProgram.getAddressFactory();
         Address entry = address(labels, "annotation_probe");
         var function = getFunctionAt(entry);
@@ -93,7 +104,8 @@ public class PrepareAnalystAnnotations extends GhidraScript {
                 if (name.startsWith("_")) continue;
                 Address address = address(labels, name);
                 var at = getFunctionAt(address);
-                if (at != null && (name.equals("annotation_probe") || name.equals("annotation_failure"))) {
+                if (at != null && (name.equals("annotation_probe") || name.equals("annotation_failure") ||
+                        name.equals("annotation_conflicts"))) {
                     at.setName(name, SourceType.USER_DEFINED);
                 }
                 else {
@@ -101,6 +113,25 @@ public class PrepareAnalystAnnotations extends GhidraScript {
                 }
             }
             seedDynamicEquate(function);
+            var conflictFunction = getFunctionAt(address(labels, "annotation_conflicts"));
+            if (conflictFunction == null) throw new AssertionError("conflict function missing");
+            for (var variable : conflictFunction.getLocalVariables()) conflictFunction.removeVariable(variable);
+            var local = (LocalVariable) conflictFunction.addLocalVariable(new LocalVariableImpl(
+                "ANNOTATION_LOCAL", new IntegerDataType(currentProgram.getDataTypeManager()),
+                storage.get("stackOffset").getAsInt(), currentProgram, SourceType.USER_DEFINED), SourceType.USER_DEFINED);
+            local.setFirstUseOffset(storage.get("firstUseOffset").getAsInt());
+            var integer = new IntegerDataType(currentProgram.getDataTypeManager());
+            DataUtilities.createData(currentProgram, address(labels, "ANNOTATION_COLLISION"), integer, 4,
+                DataUtilities.ClearDataMode.CLEAR_ALL_CONFLICT_DATA);
+            var structure = new StructureDataType("ANNOTATION_TYPE", 0, currentProgram.getDataTypeManager());
+            structure.add(integer, "member", null);
+            DataUtilities.createData(currentProgram, address(labels, "annotation_object"), structure, 4,
+                DataUtilities.ClearDataMode.CLEAR_ALL_CONFLICT_DATA);
+            var originalEnum = new EnumDataType(ghidra.program.model.data.CategoryPath.ROOT,
+                "annotation_enum", 4, currentProgram.getDataTypeManager());
+            originalEnum.add("ANNOTATION_ENUM_COLLISION", 3);
+            DataUtilities.createData(currentProgram, address(labels, "annotation_enum_object"), originalEnum, 4,
+                DataUtilities.ClearDataMode.CLEAR_ALL_CONFLICT_DATA);
             Address live = address(labels, "annotation_live");
             Address interior = null;
             for (var instructions = listing.getInstructions(function.getBody(), true); instructions.hasNext();) {
@@ -301,6 +332,33 @@ public class PrepareAnalystAnnotations extends GhidraScript {
         result.put("comments", comments);
         result.put("equates", equates);
         result.put("resolvedDynamicEquate", dynamicObservation);
+        var conflicts = new LinkedHashMap<String, Object>();
+        var conflictFunction = getFunctionAt(address(labels, "annotation_conflicts"));
+        var locals = java.util.Arrays.stream(conflictFunction.getLocalVariables())
+            .filter(variable -> variable.getName().equals("ANNOTATION_LOCAL")).toList();
+        if (locals.size() != 1) throw new AssertionError("saved local conflict missing");
+        var local = locals.getFirst();
+        if (!local.isStackVariable() || local.getStackOffset() != storage.get("stackOffset").getAsInt() ||
+                local.getLength() != 4 || local.getFirstUseOffset() != storage.get("firstUseOffset").getAsInt() ||
+                local.getSource() != SourceType.USER_DEFINED) throw new AssertionError("saved local evidence changed");
+        conflicts.put("local", new java.util.TreeMap<>(Map.of("name", local.getName(), "stackOffset", local.getStackOffset(),
+            "bytes", local.getLength(), "firstUseOffset", local.getFirstUseOffset(), "source", local.getSource().toString())));
+        var object = listing.getDataAt(address(labels, "annotation_object"));
+        if (!(object.getDataType() instanceof Structure structure) || !structure.getName().equals("ANNOTATION_TYPE") ||
+                structure.getLength() != 4 || !structure.getComponent(0).getFieldName().equals("member") ||
+                structure.getComponent(0).getOffset() != 0) throw new AssertionError("saved type conflict missing");
+        conflicts.put("type", new java.util.TreeMap<>(Map.of("name", structure.getName(), "bytes", structure.getLength(), "member", "member")));
+        var enumObject = listing.getDataAt(address(labels, "annotation_enum_object"));
+        if (!(enumObject.getDataType() instanceof ghidra.program.model.data.Enum enumeration) ||
+                enumeration.getLength() != 4 || enumeration.getValue("ANNOTATION_ENUM_COLLISION") != 3) {
+            throw new AssertionError("saved enum conflict missing");
+        }
+        conflicts.put("enum", new java.util.TreeMap<>(Map.of("name", "ANNOTATION_ENUM_COLLISION", "value", 3, "bytes", 4)));
+        var global = listing.getDataAt(address(labels, "ANNOTATION_COLLISION"));
+        if (global.getLength() != 4 || !global.getLabel().equals("ANNOTATION_COLLISION") ||
+                global.getInt(0) != 101) throw new AssertionError("saved global conflict missing");
+        conflicts.put("global", new java.util.TreeMap<>(Map.of("name", global.getLabel(), "value", global.getInt(0), "bytes", 4)));
+        result.put("savedConflicts", conflicts);
         result.put("functionRanges", ranges);
         result.put("scannedCommentAddresses", scanned);
         Files.writeString(Path.of(args[2]), new GsonBuilder().serializeNulls().setPrettyPrinting().create().toJson(result) + "\n");

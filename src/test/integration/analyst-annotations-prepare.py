@@ -37,7 +37,7 @@ def main():
     source = Path(__file__).with_name('ghidra_scripts') / 'PrepareAnalystAnnotations.java'
     shutil.copy2(source, scripts / source.name)
     protected = {str(path): digest(path) for path in (source, Path(__file__), case / 'reference',
-        case / 'stripped', case / 'labels.json')}
+        case / 'stripped', case / 'labels.json', case / 'compiler-storage.json')}
     commands = []
 
     def run(label, extra):
@@ -71,6 +71,10 @@ def main():
     assert current['resolvedDynamicEquate']['operand'] == -1
     assert current['resolvedDynamicEquate']['bytes'] == 4 and current['resolvedDynamicEquate']['value'] == '53'
     assert int(current['resolvedDynamicEquate']['hash']) != 0
+    assert set(current['savedConflicts']) == {'local', 'type', 'enum', 'global'}
+    storage = json.loads((case / 'compiler-storage.json').read_text())
+    for field in ('stackOffset', 'firstUseOffset', 'bytes'):
+        assert current['savedConflicts']['local'][field] == storage[field]
     shared = [row for row in current['equates'] if row.get('displayName') == 'ANNOTATION_SHARED_DISPLAY']
     assert len(shared) == 2 and {row['storedValue'] for row in shared} == {'19', '23'}
     assert all(row['enumBytes'] == 1 and row['references'] for row in shared)
@@ -88,7 +92,8 @@ def main():
     receipt = {'status': 'PASS_SAVED_ANNOTATIONS', 'target': reference['target'], 'role': reference['role'],
         'protectedSha256': protected, 'projectChanges': changes, 'comments': 50, 'equates': 14,
         'readbackSha256': digest(root / 'read1.json'),
-        'limits': 'Saved Ghidra annotation fixture only. No production annotation emission or genuine decompiler-failure claim. Dynamic-only equates and explicit local/type collision curation remain subsequent fixture work.'}
+        'savedConflicts': current['savedConflicts'],
+        'limits': 'Saved Ghidra annotation fixture only, including resolved dynamic-only equates and explicit local/type conflicts. No production annotation emission or genuine decompiler-failure claim.'}
     (root / 'result.json').write_text(json.dumps(receipt, indent=4) + '\n')
     print('analyst-annotations-prepare=PASS ' + str(root))
 

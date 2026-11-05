@@ -1,14 +1,13 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
-**CONFIRMED preparation only — #116/#114:** an isolated compiler and saved-program
-fixture now passes eight native/QEMU reference cases and four deterministic
-annotation readback cases. A four-byte dynamic-only constant53 now resolves after
-curation and both saved reopens on all four profiles; see
-`docs/evidence/annotation-dynamic-reference.json`. MIPS exposed a signed stack-range enumeration gap;
-separate database-key scans preserve all comments. AArch64 PIE uses explicit
-link-time/Ghidra address translation. See `docs/ANALYST-ANNOTATIONS.md` and its
-receipt. Production annotation implementation remains planned; #108 protected
-integration is still the current priority.
+**CONFIRMED preparation only — #116/#114:** eight compiler-reference cases now
+pass sixteen native/QEMU GDB value/width checks each. Four saved-program cases
+preserve actual conflicting local/type/enum/global names alongside all fifty
+comments and fourteen equates, with identical independent reopens. Local storage
+comes from observed compiler GDB entry-SP evidence; dynamic-only constant53 still
+resolves. See `docs/evidence/annotation-saved-conflicts.json` and
+`docs/ANALYST-ANNOTATIONS.md`. Production annotation implementation remains
+planned; #108 protected integration is still the current priority.
 
 **CONFIRMED locally — #108 final review corrections:** unavailable function
 variable inventories now display Unknown instead of N/A (0/0); mixed summaries

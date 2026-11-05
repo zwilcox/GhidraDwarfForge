@@ -90,7 +90,8 @@ def main():
     labels = {}
     wanted = {'annotation_probe', 'annotation_failure', 'annotation_data', 'ANNOTATION_COLLISION',
         'annotation_literal_19', 'annotation_literal_23', 'annotation_live',
-        'annotation_gap_begin', 'annotation_gap_end'}
+        'annotation_gap_begin', 'annotation_gap_end', 'annotation_conflicts',
+        'annotation_conflict_live', 'annotation_object', 'annotation_enum_object'}
     for line in (case / 'symbols.stdout').read_text().splitlines():
         fields = line.split()
         if fields[-1] in wanted:
@@ -109,12 +110,13 @@ def main():
     labels['_imageBase'] = {'address': min(loads)}
     (case / 'labels.json').write_text(json.dumps(labels, indent=4, sort_keys=True) + '\n')
     run('gdb', ['bash', Path(__file__).with_name('analyst-annotations-reference-gdb.sh'), case, args.target])
-    assert 'analyst-annotations-compiler=PASS values=14' in (case / 'gdb.stdout').read_text()
+    assert 'analyst-annotations-compiler=PASS values=16' in (case / 'gdb.stdout').read_text()
     assert protected == {path: digest(Path(path)) for path in protected}
     receipt = {'status': 'PASS_COMPILER_REFERENCE', 'target': args.target, 'role': args.role,
         'protectedSha256': protected, 'labels': labels,
         'strictFrameReference': 'The stripped copy independently retains the exact compiler frame sections; only byte-matched frame diagnostics may be corroborated, not arbitrary compiler DWARF errors.',
         'observations': json.loads((case / 'compiler-observations.json').read_text()),
+        'storage': json.loads((case / 'compiler-storage.json').read_text()),
         'limits': 'Compiler reference only. Ghidra annotation curation, actual Forge emission, production GUI/headless integration remain required. Compiler strict validation is separate from emitted Forge artifact validation.'}
     (case / 'result.json').write_text(json.dumps(receipt, indent=4) + '\n')
     print('analyst-annotations-reference=PASS ' + args.target + ' ' + args.role)

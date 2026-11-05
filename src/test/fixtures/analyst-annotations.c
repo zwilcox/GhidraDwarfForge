@@ -40,6 +40,14 @@ __attribute__((noinline, noclone)) int annotation_probe(int input)
     return sum;
 }
 
+/* Keep this local separate from the folded dynamic-equate expression above. */
+__attribute__((noinline, noclone)) int annotation_conflicts(int input)
+{
+    int ANNOTATION_LOCAL = 11;
+    __asm__ volatile(".globl annotation_conflict_live\nannotation_conflict_live:\nnop" ::: "memory");
+    return input + ANNOTATION_LOCAL;
+}
+
 /* A genuine native decompiler instruction-budget failure can target this body.
  * Calling it still succeeds in the unmodified compiler reference.
  */
@@ -54,7 +62,8 @@ __attribute__((noinline, noclone)) int annotation_failure(int input)
 
 int main(void)
 {
-    return annotation_probe(7) != 161 || annotation_failure(5) != 15 ||
+    return annotation_probe(7) != 161 || annotation_conflicts(7) != 18 ||
+        annotation_failure(5) != 15 ||
         ANNOTATION_COLLISION != 101 || annotation_object.member != 5 ||
         annotation_enum_object != ANNOTATION_ENUM_COLLISION;
 }
