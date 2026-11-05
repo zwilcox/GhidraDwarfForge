@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — #108 whole-report byte bound:** 1,500 saved Ghidra locals
+with individually legal 48,084-unit derived type paths exceed the unchanged 64 MiB
+production report budget. x86-64 and rebased AArch64 PIE reject before publication,
+preserve existing pair/companion files, and pass deterministic retry plus validators
+and native/QEMU GDB checks. The original string-limit regression still passes.
+The cross-architecture coverage controls now include this byte-bound test. See
+`docs/evidence/coverage-whole-report-limit.json`. Repeated final large-workload
+overhead and hosted acceptance remain pending.
+
 **CONFIRMED locally — #108 paired native type regressions:** actual production
 exports swap two canonical types between resolved and opaque while preserving all
 summary totals. Independent raw-DIE traversal predicts the exact CLI state changes

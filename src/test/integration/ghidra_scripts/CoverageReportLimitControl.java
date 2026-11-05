@@ -6,6 +6,8 @@ import ghidra.program.model.data.CategoryPath;
 import ghidra.program.model.data.DataTypeConflictHandler;
 import ghidra.program.model.data.TypedefDataType;
 import ghidra.program.model.data.PointerDataType;
+import ghidra.program.model.listing.LocalVariableImpl;
+import ghidra.program.model.listing.Variable;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.util.task.TaskMonitor;
 import ghidra.util.task.WrappingTaskMonitor;
@@ -23,7 +25,10 @@ public class CoverageReportLimitControl extends GhidraScript {
     @Override
     protected void run() throws Exception {
         String[] args = getScriptArgs();
-        if (args.length != 2) throw new IllegalArgumentException("usage: <input> <new controls directory>");
+        if (args.length != 2 && !(args.length == 3 && args[2].equals("--bytes"))) {
+            throw new IllegalArgumentException("usage: <input> <new controls directory> [--bytes]");
+        }
+        boolean byteLimit = args.length == 3;
         Path input = Path.of(args[0]);
         Path root = Files.createDirectory(Path.of(args[1]));
         String inputHash = FileDigests.read(input).sha256();
@@ -38,7 +43,7 @@ public class CoverageReportLimitControl extends GhidraScript {
             .filter(variable -> variable.getName().equals("shadow")).findFirst().orElseThrow();
         var originalType = local.getDataType();
         CategoryPath category = CategoryPath.ROOT;
-        for (int index = 0; index < 34; index++) {
+        for (int index = 0; index < (byteLimit ? 24 : 34); index++) {
             category = new CategoryPath(category, "coverage_" + index + "_" + "x".repeat(1990));
         }
         var manager = currentProgram.getDataTypeManager();
@@ -48,7 +53,9 @@ public class CoverageReportLimitControl extends GhidraScript {
         // have no universal ID and retain their full category path in coverage.
         var oversized = manager.addDataType(new PointerDataType(named, originalType.getLength(), manager),
             DataTypeConflictHandler.DEFAULT_HANDLER);
-        if (oversized.getPathName().length() <= 65536) throw new AssertionError("type does not exceed report string limit");
+        if (byteLimit ? oversized.getPathName().length() >= 65536 : oversized.getPathName().length() <= 65536) {
+            throw new AssertionError("type does not exercise selected report limit");
+        }
         if (oversized.getUniversalID() != null) throw new AssertionError("derived type unexpectedly has a compact universal ID");
         println("coverage-limit-type-units=" + oversized.getPathName().length());
         for (boolean companion : List.of(false, true)) {
@@ -62,17 +69,34 @@ public class CoverageReportLimitControl extends GhidraScript {
             TaskMonitor originalMonitor = monitor;
             var probe = new ObserveReport(originalMonitor, directory);
             boolean rejected = false;
+            List<Variable> added = new ArrayList<>();
             try {
                 local.setDataType(oversized, SourceType.USER_DEFINED);
+                if (byteLimit) {
+                    // Each legal, individually bounded recovered type key recurs
+                    // in a separate saved local. Even one key per local exceeds
+                    // the real 64 MiB budget; no admission limit is replaced.
+                    for (int index = 0; index < 1500; index++) {
+                        added.add(selected.addLocalVariable(new LocalVariableImpl("byte_limit_" + index,
+                            oversized, -4096 - index * 8, currentProgram, SourceType.USER_DEFINED),
+                            SourceType.USER_DEFINED));
+                    }
+                    if ((long) oversized.getPathName().length() * added.size() <= 64L * 1024 * 1024) {
+                        throw new AssertionError("saved local keys cannot exceed whole-report byte budget");
+                    }
+                }
                 monitor = probe;
                 runScript("GhidraDwarfForge.java", options.toArray(String[]::new));
             }
             catch (IOException expected) {
-                if (!expected.getMessage().equals("coverage string exceeds UTF-16 unit budget")) throw expected;
+                String message = byteLimit ? "coverage exceeds UTF-8 byte budget 67108864"
+                    : "coverage string exceeds UTF-16 unit budget";
+                if (!expected.getMessage().equals(message)) throw expected;
                 rejected = true;
             }
             finally {
                 monitor = originalMonitor;
+                for (Variable variable : added) selected.removeVariable(variable);
                 local.setDataType(originalType, SourceType.USER_DEFINED);
             }
             if (!rejected || probe.stagedFiles < 2 || !previous.equals(snapshot(directory))) {

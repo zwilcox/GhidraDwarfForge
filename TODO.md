@@ -2791,8 +2791,10 @@ Remaining #108 acceptance:
   GDB/CLI checks. See `docs/evidence/coverage-type-pairs.json`; hosted acceptance
   remains required. Reported binding correspondence does not prove lineage.
 - Hosted GUI report-comparison acceptance; the Linux workflow now passes locally.
-- Repeated large-workload measurements and whole-report byte-bound stress after
-  the definition-two evidence extension.
+- Repeated large-workload measurements after the definition-two evidence extension.
+  Actual whole-report byte-bound stress now passes locally on x86-64 and rebased
+  AArch64 PIE, including preservation/retry and validators/GDB; hosted acceptance
+  remains required (`docs/evidence/coverage-whole-report-limit.json`).
 - Final host/target pipeline acceptance, including Windows and updated GUI paths.
 
 The baseline exporter, source/type/location machinery, five target lanes,

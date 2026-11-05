@@ -1,0 +1,128 @@
+{
+    "issue": 108,
+    "baselineCommit": "af306d04acf775e2dcc14cc8c44937c76c8c77ef",
+    "status": "CONFIRMED locally: production 64 MiB whole-report rejection preserves existing generations on x86-64 and rebased AArch64 PIE",
+    "installation": {
+        "installation": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-gui-comparison-final-java21",
+        "packageSha256": "e1d6883581484b0411b5a3026f94966d7a6b7b3290a0a2d29f1fe50ddbbe0d4c",
+        "jarSha256": "732d03c16ca7db37266b7791378382f97436812adc77c1c2ec2c154b8cd06171",
+        "protectedBase": {
+            "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-gui-comparison-java21/support/launch.properties": "dde008a0d7583f2e4c77afbd2bc78edd29a2f5f8a132be37d162f68f76f7df64",
+            "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-gui-comparison-java21/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "40619b8be8f7284d5e90030a6ff56030d1a286cf8221e374d703e6cd5e84c023"
+        }
+    },
+    "installedCodeScope": "Uses the last GUI-comparison production package. Subsequent production changes are generic prose/labels only; subsequent type-pair commit changes tests/docs. Hosted exact-head acceptance remains pending.",
+    "fixture": {
+        "savedLocalsAdded": 1500,
+        "derivedTypePathUtf16Units": 48084,
+        "minimumRepeatedKeyBytes": 72126000,
+        "stringLimitUtf16Units": 65536,
+        "productionReportByteLimit": 67108864,
+        "mechanism": "Read-only saved Ghidra program: apply one individually legal long-path derived pointer to additional saved locals; export through the unmodified installed production script and real native producer. Restore locals and original type before retry. No reduced or injected byte limit.",
+        "expectedRejection": "coverage exceeds UTF-8 byte budget 67108864"
+    },
+    "runs": [
+        {
+            "case": "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-staging-b6kwmt4e",
+            "acceptance": {
+                "status": "COVERAGE_STAGING_PASS",
+                "target": "x86_64",
+                "controls": [
+                    "mode=pair staged=2",
+                    "mode=companion staged=3"
+                ],
+                "reportStatuses": {
+                    "PARTIAL": 4,
+                    "FATAL": 2
+                },
+                "protected": {
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/stripped": "dc0f309c07a23795d95ef1f96de19fb4c4e8d4c74fceb1da94aa6b5a93e76160",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/reference": "b6a8b2e6fcb9f4dfff3a91385b7f84ab2ab9066a866e51936acd065f98c9f8eb",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/forge.dbg": "f09c02d0d4df3809a8b484167dc658093ce6d2c429ca04c9be1a35ae3f00c248",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/forge.dbg.c": "9cb5af3eab4c015e74ef6a2d19385a256c45c14b717f1b7d1bb04600dce02a80",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/compiler-gdb.log": "eb95bc12ff614e6291f581fa84a2e4286e6b766384b5a15e79af1df43f442560",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-gui-comparison-final-java21/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "732d03c16ca7db37266b7791378382f97436812adc77c1c2ec2c154b8cd06171",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-gui-comparison-final-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java": "1f960997ced5510ff9dceebd94e8d2e442190df08a3a4bb11bc9749445178a42",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/ghidra_scripts/CoverageReportLimitControl.java": "2f14f5a6f0dc934b7be190f2d421820589f1a35ecbd261cd57d0223f92c89451",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/coverage-staging.py": "46c03816f3c64568deedd532a351f626dc2af54d980ecbf79eec60f0bfb527ce"
+                },
+                "projectBackupChanges": [],
+                "scope": "actual saved locals exceed production 64 MiB whole-report byte budget; pair and companion preservation/retry; validators and GDB"
+            },
+            "commands": "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-staging-b6kwmt4e/commands.json",
+            "acceptanceSha256": "7d5589a17ac1d40804c025e69974b12c37cffc3f1c0c7e92733851557f6be407"
+        },
+        {
+            "case": "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-staging-4ir4wfh6",
+            "acceptance": {
+                "status": "COVERAGE_STAGING_PASS",
+                "target": "aarch64",
+                "controls": [
+                    "mode=pair staged=2",
+                    "mode=companion staged=3"
+                ],
+                "reportStatuses": {
+                    "PARTIAL": 4,
+                    "FATAL": 2
+                },
+                "protected": {
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/stripped": "049de48ab797ed9067aec449f772a2fc4939c8b979a78d2db94982017a47c2c0",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/reference": "be10a098225faa572a4d1fa115d5bb436865b62071d53b78bf6cfbe434d834d2",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/forge.dbg": "9dc166dbf3ece2d182df530dc2bf14d959af320b84d5cbf7fc91dd2cfef2b092",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/forge.dbg.c": "e7bb80b562585efffd7a868d3ab4cb50ac477497521a6af7a91c9913ae9a527e",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/compiler-gdb.log": "d61ac99295f59a0f6671dc0e4e4a8f053c135a8a253cd46df79a720d32fe41b9",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-gui-comparison-final-java21/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "732d03c16ca7db37266b7791378382f97436812adc77c1c2ec2c154b8cd06171",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-gui-comparison-final-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java": "1f960997ced5510ff9dceebd94e8d2e442190df08a3a4bb11bc9749445178a42",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/ghidra_scripts/CoverageReportLimitControl.java": "2f14f5a6f0dc934b7be190f2d421820589f1a35ecbd261cd57d0223f92c89451",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/coverage-staging.py": "46c03816f3c64568deedd532a351f626dc2af54d980ecbf79eec60f0bfb527ce"
+                },
+                "projectBackupChanges": [],
+                "scope": "actual saved locals exceed production 64 MiB whole-report byte budget; pair and companion preservation/retry; validators and GDB"
+            },
+            "commands": "build/test-results/lexical-shadow/aarch64-pie-rebased-zslc6ksn/coverage-staging-4ir4wfh6/commands.json",
+            "acceptanceSha256": "7c20895e5167e6b956f0de6fdc1471a9631d560c8d9feb93c1af131d7c4b8d0d"
+        }
+    ],
+    "stringLimitRegression": {
+        "case": "build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/coverage-staging-4ayycgfe",
+        "acceptance": {
+            "status": "COVERAGE_STAGING_PASS",
+            "target": "x86_64",
+            "controls": [
+                "mode=pair staged=2",
+                "mode=companion staged=3"
+            ],
+            "reportStatuses": {
+                "PARTIAL": 4,
+                "FATAL": 2
+            },
+            "protected": {
+                "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/stripped": "dc0f309c07a23795d95ef1f96de19fb4c4e8d4c74fceb1da94aa6b5a93e76160",
+                "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/reference": "b6a8b2e6fcb9f4dfff3a91385b7f84ab2ab9066a866e51936acd065f98c9f8eb",
+                "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/forge.dbg": "f09c02d0d4df3809a8b484167dc658093ce6d2c429ca04c9be1a35ae3f00c248",
+                "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/forge.dbg.c": "9cb5af3eab4c015e74ef6a2d19385a256c45c14b717f1b7d1bb04600dce02a80",
+                "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/x86_64-exec-s1rp6xtl/compiler-gdb.log": "eb95bc12ff614e6291f581fa84a2e4286e6b766384b5a15e79af1df43f442560",
+                "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-gui-comparison-final-java21/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "732d03c16ca7db37266b7791378382f97436812adc77c1c2ec2c154b8cd06171",
+                "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-gui-comparison-final-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java": "1f960997ced5510ff9dceebd94e8d2e442190df08a3a4bb11bc9749445178a42",
+                "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/ghidra_scripts/CoverageReportLimitControl.java": "2f14f5a6f0dc934b7be190f2d421820589f1a35ecbd261cd57d0223f92c89451",
+                "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/coverage-staging.py": "46c03816f3c64568deedd532a351f626dc2af54d980ecbf79eec60f0bfb527ce"
+            },
+            "projectBackupChanges": [],
+            "scope": "actual captured type identifier exceeds production UTF-16 string limit; pair and companion preservation/retry; validators and GDB"
+        }
+    },
+    "checks": [
+        "Actual over-limit reports fail with exact byte-budget diagnostic while two artifact files are staged (three with companion).",
+        "Previous final artifacts and directory inventory remain identical after rejection; retry after restoring curation is byte deterministic.",
+        "Six production reports per target: four completed PARTIAL reports and two expected FATAL reports. Fatal reports have no artifact claims or coverage.",
+        "GNU readelf, LLVM verify and pinned strict dwarfdump accept retained/retried artifacts. Native x86 and QEMU AArch64 GDB lexical checks pass for both output modes.",
+        "Protected executable/reference/baseline artifacts/module/scripts remain byte-identical; only documented project backup metadata may change.",
+        "Existing real UTF-16 string limit remains passing on x86-64 after optional byte-limit mode was added.",
+        "Python compilation and git diff --check pass."
+    ],
+    "pipeline": "Existing lexical-shadow --coverage-controls workflow now invokes the actual byte-limit regression after the string-limit controls.",
+    "remaining": [
+        "Repeated final-definition large-workload overhead measurements",
+        "Hosted host/target checks, including Windows GUI/CLI, and required-validation"
+    ]
+}

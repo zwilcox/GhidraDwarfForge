@@ -19,8 +19,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
     parser.add_argument('lexical_case', type=Path)
-    parser.add_argument('--real-limit', action='store_true', help='exercise the actual string limit using a derived Ghidra type')
+    limits = parser.add_mutually_exclusive_group()
+    limits.add_argument('--real-limit', action='store_true', help='exercise the actual string limit using a derived Ghidra type')
+    limits.add_argument('--byte-limit', action='store_true', help='exceed the actual 64 MiB report budget using saved Ghidra locals')
     args = parser.parse_args()
+    real_limit = args.real_limit or args.byte_limit
     ghidra, case = args.ghidra.resolve(strict=True), args.lexical_case.resolve(strict=True)
     harness = Path(__file__).resolve().parent
     spec = importlib.util.spec_from_file_location('report_claims', harness / 'export-report-claims.py')
@@ -33,7 +36,7 @@ def main():
     print('coverage-staging-results=' + str(work), flush=True)
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
     protected_paths = [case / name for name in ('stripped', 'reference', 'forge.dbg', 'forge.dbg.c', 'compiler-gdb.log')]
-    driver = 'CoverageReportLimitControl.java' if args.real_limit else 'CoverageStagingControls.java'
+    driver = 'CoverageReportLimitControl.java' if real_limit else 'CoverageStagingControls.java'
     protected_paths += [module / 'lib/GhidraDwarfForge.jar', module / 'ghidra_scripts/GhidraDwarfForge.java',
         harness / 'ghidra_scripts' / driver, Path(__file__)]
     protected = {str(p): digest(p) for p in protected_paths}
@@ -50,9 +53,10 @@ def main():
 
     run('export', [ghidra / 'support/analyzeHeadless', project, 'Lexical', '-process', 'stripped',
         '-readOnly', '-noanalysis', '-scriptPath', harness / 'ghidra_scripts',
-        '-postScript', driver, case / 'stripped', work / 'outputs'])
+        '-postScript', driver, case / 'stripped', work / 'outputs',
+        *(['--bytes'] if args.byte_limit else [])], timeout=900 if args.byte_limit else 240)
     log = (work / 'export.log').read_text()
-    if args.real_limit:
+    if real_limit:
         assert 'coverage-real-limit-controls=PASS controls=2' in log
         marker_prefix = 'coverage-real-limit=PASS '
         markers = [line.split(marker_prefix, 1)[1].split(' (GhidraScript)')[0]
@@ -71,9 +75,11 @@ def main():
     reports = [claims.DECODER.raw_decode(line.split('GhidraDwarfForge report: ', 1)[1])[0]
         for line in log.splitlines() if 'GhidraDwarfForge report: ' in line]
     statuses = Counter(report['status'] for report in reports)
-    if args.real_limit:
+    if real_limit:
         assert len(reports) == 6 and statuses['FATAL'] == 2 and statuses['CANCELLED'] == 0
-        assert all(report['failure']['message'] == 'coverage string exceeds UTF-16 unit budget'
+        expected_error = ('coverage exceeds UTF-8 byte budget 67108864' if args.byte_limit else
+            'coverage string exceeds UTF-16 unit budget')
+        assert all(report['failure']['message'] == expected_error
             for report in reports if report['status'] == 'FATAL')
     else:
         assert len(reports) == 24 and statuses['FATAL'] == statuses['CANCELLED'] == 10
@@ -109,7 +115,8 @@ def main():
     assert changed <= {str(project / 'Lexical.rep/idata' / name) for name in ('~index.bak', '~journal.bak')}
     receipt = {'status': 'COVERAGE_STAGING_PASS', 'target': target, 'controls': markers,
         'reportStatuses': dict(statuses), 'protected': protected, 'projectBackupChanges': sorted(changed),
-        'scope': ('actual captured type identifier exceeds production UTF-16 string limit' if args.real_limit else
+        'scope': ('actual saved locals exceed production 64 MiB whole-report byte budget' if args.byte_limit else
+            'actual captured type identifier exceeds production UTF-16 string limit' if args.real_limit else
             'production capture/assembly/write/read cancellation and injected failures') +
             '; pair and companion preservation/retry; validators and GDB'}
     (work / 'acceptance.json').write_text(json.dumps(receipt, indent=4) + '\n')
