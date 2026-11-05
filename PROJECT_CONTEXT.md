@@ -1,5 +1,17 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED Windows #74 measurements; consumer correction validated locally:**
+run `41977254778` at `cfc212c` completes five native Windows baseline/candidate
+pairs and a separate profile for both pinned workloads, with unchanged artifacts,
+curated report counts and protected inputs. Native GNU/LLVM/libdwarf checks pass.
+The hosted Linux consumer fails because compiler-reference source paths still
+refer to the build worker. Explicit relocation from verified corpus sources now
+passes local replay of both unchanged Windows artifacts and real-GDB positive/
+negative source controls. No diagnostic is suppressed. Fresh hosted acceptance
+and the required gate remain pending. Cache and parallel-decompilation deferrals
+are now explicit against both hosts' measurements; compression remains in PR160.
+See `docs/PERFORMANCE-WORKPLAN.md`; full #74 and all later goal issues stay open.
+
 **CONFIRMED Windows runtime-observer correction; workload acceptance pending:**
 Run `41975183135` passes native accounting, corpus and package preparation,
 imports SQLite and completes the first baseline export. Its observer then

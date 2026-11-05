@@ -1,5 +1,16 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED #74 Windows measurement checkpoint; incomplete integration:**
+run `41977254778` completes both five-pair/profile workload suites and native
+validators. Its hosted Linux consumer then fails missing compiler-source lookup.
+The source relocation correction passes local replay of both untouched Windows
+artifacts plus real-GDB controls for missing/changed/escaped sources and the wrong
+archive. New hosted consumer and exact-head required gates remain pending.
+Caching and parallelism are explicitly deferred against both hosts' measured
+profiles and the required correctness/resource contracts. PR160 contains the
+selected compression implementation and its production workload evidence.
+Neither component alone closes #74; later goal issues remain untouched.
+
 **CONFIRMED #74 harness correction; hosted acceptance pending:** Windows run
 `41975183135` completes import and its first SQLite export, then rejects an
 SGR-colored Java 21 banner. The observer now strips only color presentation,

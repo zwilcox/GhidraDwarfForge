@@ -5,6 +5,56 @@ Java 21 runtime/bytecode, existing pinned libdwarf 2.3.2. No ABI change is plann
 The user-directed sequence is #74, #108, #116/#114, #112, #110, then #109.
 This plan does not reduce any of those issues' acceptance criteria.
 
+## Windows measurement checkpoint and consumer correction
+
+**CONFIRMED native Windows measurements; corrected hosted consumer pending:**
+run `41977254778` at `cfc212c` completes both pinned imports, five alternating
+baseline/candidate pairs per workload, separate JFR exports and native
+GNU/LLVM/pinned libdwarf validation. All eleven exports per workload preserve
+sidecar/source bytes and report counts. The raw review binds the exact baseline
+and candidate packages, Java 21.0.13 runtime/script observations, paired metrics,
+program database hashes and validators. Existing partial coverage and U-Boot's
+one-function timeout remain visible. See
+`docs/evidence/performance-windows-workloads-41977254778.json`.
+
+| Windows observation | SQLite baseline / candidate | U-Boot baseline / candidate |
+| --- | ---: | ---: |
+| Median fresh-process export, seconds | 102.982 / 104.449 | 233.503 / 233.882 |
+| Median descendant CPU, seconds | 141.297 / 141.109 | 292.844 / 290.609 |
+| Maximum job commitment, bytes | 1,466,216,448 / 1,377,759,232 | 1,383,165,952 / 1,449,435,136 |
+
+Candidate-minus-baseline paired elapsed differences are
+`-4.362, +10.744, -0.543, +1.982, -1.137` seconds for SQLite and
+`+2.087, -4.700, +1.137, -7.645, -0.750` for U-Boot. Retain every sample;
+these mixed differences do not establish a general speedup or zero overhead.
+Windows job commitment is not Linux RSS, and these hosted timings are not a
+controlled cross-platform comparison. Imports take 84.353/166.795 seconds;
+validation and profiling remain outside the unprofiled export population.
+
+Separate profiled Windows exports observe decompilation/source at
+76.733/188.631 seconds, types/storage at 13.737/28.155, native production at
+1.731/13.850 and ELF packaging at 0.0125/0.0201, for SQLite/U-Boot respectively.
+Inclusive export times are 93.994/233.939 seconds; do not add inclusive and child
+times or treat these observations as CPU measurements.
+
+The hosted Linux consumer then fails a real diagnostic: its SQLite compiler
+reference records a build-worker source path unavailable after artifact
+transfer. Its values and exit pass, but GDB warns that `sqlite-workload.c` is
+missing. The correction copies hash-verified SQLite sources and extracts the
+pinned U-Boot source archive into private consumer storage, then installs exact
+source/build-directory substitutions from retained build commands. Recorded
+paths are never opened on the consumer host. At each compiler breakpoint, GDB
+must resolve the expected source file and verify its SHA-256 before listing it.
+The diagnostic checks remain strict.
+
+**CONFIRMED local replay:** both unchanged Windows artifacts now pass independent
+Linux validators and compiler/Forge GDB, including source, values, stepping and
+normal exit. A small real-GDB control reproduces the missing-source warning,
+proves relocation and rejects changed/missing/escaped sources and a wrong source
+archive. This local evidence does not turn the failed hosted consumer run into
+a passing run; fresh hosted acceptance and the complete required gate remain
+pending.
+
 ## Measurements and corpus
 
 - **CONFIRMED retained Windows observer failure:** run `41975183135` completes
@@ -258,7 +308,7 @@ bytes peak job commitment; timeout terminates every job member. Raw artifact
 hashes and all case outcomes are in
 `docs/evidence/performance-windows-controls-20261105.json`.
 
-**PRESENT, UNVERIFIED real Windows workload pipeline:** `prepare-host-corpus.py`
+**CONFIRMED native Windows workload pipeline; corrected hosted consumer pending:** `prepare-host-corpus.py`
 builds pinned SQLite and U-Boot ELFs and retains their corresponding source.
 `fetch-ci-packages.py` selects exact-commit artifacts from the sole production
 CI workflow and verifies their archive digests; it does not rebuild natives.
@@ -266,8 +316,9 @@ CI workflow and verifies their archive digests; it does not rebuild natives.
 baseline/candidate pairs plus a separate JFR run, with artifact/report identity,
 protected-file checks and native validators. `host-consumer.py` independently
 validates the unchanged Windows artifacts and runs compiler/Forge GDB behavior
-on Linux with explicit source relocation and PIE bias. No Windows workload
-performance claim is accepted until these new jobs actually pass.
+on Linux with explicit source relocation and PIE bias. Native workload and
+validator jobs now pass at `cfc212c`; the missing compiler-source relocation
+failure and its local correction are recorded in the current checkpoint above.
 
 The first workload run `41973112213` passes corpus/package/control jobs and
 completes its first Windows import, then fails the mandatory runtime observation:
@@ -366,15 +417,40 @@ or speed of an indexed implementation.
   already reduces the repeated address bytes while preserving all existing
   decompressed DWARF. This is a priority decision, not a claim that address
   indexing cannot improve performance.
-- Incremental caching and bounded parallel decompilation still require final
-  decisions after the Windows phase/resource results and an explicit review of
-  analyst-change invalidation, ordering, memory bounds and cancellation.
+- Incremental caching and bounded parallel decompilation are deferred in the
+  final decision section below, based on both hosts' phase/resource results and
+  the analyst-change invalidation, ordering, memory and cancellation contracts.
 
 Any selected implementation requires semantic/byte comparisons, strict
 GNU/LLVM/pinned-libdwarf validation, source/type/location and applicable GDB
 behavior, unchanged originals, cancellation/failure controls, and bounded
 resources. Preserve negative measurements; do not silently replace a difficult
 workload with an easier one to obtain a passing result.
+
+## Final caching and parallelism decisions
+
+**CONFIRMED decisions for #74: defer both implementations.** The complete local
+and native Windows profiles confirm that decompilation/source dominates elapsed
+export time. They establish an opportunity, not the correctness or resource
+cost of either optimization.
+
+`DeterministicSourceBuilder` gathers source, token locations, resolved calls and
+static-local evidence together, resets the decompiler on failure and disposes it
+in `finally`. Allocation callbacks also depend on mapped callees and saved call
+overrides. A function-byte hash alone cannot validate a cached result.
+
+| Candidate | Decision and evidence needed to revisit |
+| --- | --- |
+| Incremental caching | **DEFER.** Repeated unchanged-project benchmarks do not measure the frequency or locality of real analyst edits. Require mutation traces and a versioned invalidation contract for program context, function bodies, namespaces, signatures/storage, canonical types, callers/callees, saved bindings and decompiler/ABI options. Cache source and location/type evidence together, account for output-directory-dependent line tables, and never cache a timeout as completed recovery. |
+| Bounded parallel decompilation | **DEFER.** Both hosts show dominant decompilation, including U-Boot's known 60-second timeout, but no controlled worker-count experiment proves a net benefit within the memory budget. Require independent decompilers, a consistent program view, deterministic assembly/diagnostics, aggregate worker-memory measurement, per-function failure isolation, and cancellation that reaps every native worker. Windows commitment and Linux process-family RSS cannot stand in for aggregate parallel memory. |
+
+Opt-in zlib compression remains the selected bounded production optimization,
+implemented and measured separately in stacked PR160. GDB indexes, zstd and
+string/address indexing retain the explicit deferrals above; the tested
+`.debug_names` route remains rejected on its actual validator failure. These
+decisions resolve the evaluation requirement without claiming unimplemented
+speedups. Full #74 completion still requires compression acceptance, the
+corrected hosted consumer and normal protected integration.
 
 ## Integration gate
 
