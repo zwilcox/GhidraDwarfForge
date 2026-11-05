@@ -36,6 +36,18 @@ def main():
         "sys.exit(int(os.environ.get('CHECK_EXIT', '0')))\n")
     fake.chmod(0o755)
 
+    # Explicit native-checker configuration cannot silently select a different
+    # register table or overwrite a log before its pinned bytes are checked.
+    bad_configuration = work / "modified dwarfdump.conf"
+    bad_configuration.write_bytes(b"untrusted configuration\n")
+    config_log = work / "rejected-configuration.log"
+    rejected = subprocess.run([sys.executable, str(helper), str(artifact), str(config_log),
+        "--tool", str(fake), "--configuration", str(bad_configuration)], text=True, capture_output=True)
+    assert rejected.returncode != 0 and "differs from pinned configuration" in rejected.stderr
+    assert not config_log.exists() and not config_log.with_name(config_log.name + ".check.json").exists()
+    assert bad_configuration.read_bytes() == b"untrusted configuration\n"
+    print("modified-explicit-configuration-rejected-before-launch=PASS", flush=True)
+
     def run_case(name, text, expected, exit_status=0, stderr=""):
         replay = work / (name + ".replay")
         replay.write_text(text)

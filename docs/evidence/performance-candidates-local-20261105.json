@@ -1,0 +1,1064 @@
+{
+    "status": "CONFIRMED_LOCAL_COMPONENT",
+    "productionSource": "393c3e524a80e13c254ed45f4a828b4d33b26910",
+    "ubootPairs": {
+        "status": "PASS",
+        "samples": [
+            {
+                "elapsedSeconds": 115.66,
+                "userSeconds": 131.1,
+                "systemSeconds": 2.69,
+                "maximumResidentKiB": 1050760,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/installations/baseline-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 0,
+                "variant": "baseline",
+                "artifactSha256": [
+                    "b72edd2666f41c6a7173f471133e0a0f4405c32f90369e5963868ffc5511aafd",
+                    "a69bc1e1755482514e2799112613f75202bff00e08e181155b8d6250ce8ffae5",
+                    "eca452cbdf4727befb6bd981ea70b9e6c8c2d8a181ab78fa288cee683d5a9442"
+                ]
+            },
+            {
+                "elapsedSeconds": 114.89,
+                "userSeconds": 129.47,
+                "systemSeconds": 2.75,
+                "maximumResidentKiB": 1386068,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/installations/candidate-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 0,
+                "variant": "candidate",
+                "artifactSha256": [
+                    "b72edd2666f41c6a7173f471133e0a0f4405c32f90369e5963868ffc5511aafd",
+                    "a69bc1e1755482514e2799112613f75202bff00e08e181155b8d6250ce8ffae5",
+                    "eca452cbdf4727befb6bd981ea70b9e6c8c2d8a181ab78fa288cee683d5a9442"
+                ]
+            },
+            {
+                "elapsedSeconds": 114.81,
+                "userSeconds": 130.23,
+                "systemSeconds": 2.66,
+                "maximumResidentKiB": 1102664,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/installations/candidate-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 1,
+                "variant": "candidate",
+                "artifactSha256": [
+                    "b72edd2666f41c6a7173f471133e0a0f4405c32f90369e5963868ffc5511aafd",
+                    "a69bc1e1755482514e2799112613f75202bff00e08e181155b8d6250ce8ffae5",
+                    "eca452cbdf4727befb6bd981ea70b9e6c8c2d8a181ab78fa288cee683d5a9442"
+                ]
+            },
+            {
+                "elapsedSeconds": 115.02,
+                "userSeconds": 129.33,
+                "systemSeconds": 2.68,
+                "maximumResidentKiB": 1050828,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/installations/baseline-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 1,
+                "variant": "baseline",
+                "artifactSha256": [
+                    "b72edd2666f41c6a7173f471133e0a0f4405c32f90369e5963868ffc5511aafd",
+                    "a69bc1e1755482514e2799112613f75202bff00e08e181155b8d6250ce8ffae5",
+                    "eca452cbdf4727befb6bd981ea70b9e6c8c2d8a181ab78fa288cee683d5a9442"
+                ]
+            },
+            {
+                "elapsedSeconds": 116.32,
+                "userSeconds": 134.41,
+                "systemSeconds": 2.8,
+                "maximumResidentKiB": 1071224,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/installations/baseline-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 2,
+                "variant": "baseline",
+                "artifactSha256": [
+                    "b72edd2666f41c6a7173f471133e0a0f4405c32f90369e5963868ffc5511aafd",
+                    "a69bc1e1755482514e2799112613f75202bff00e08e181155b8d6250ce8ffae5",
+                    "eca452cbdf4727befb6bd981ea70b9e6c8c2d8a181ab78fa288cee683d5a9442"
+                ]
+            },
+            {
+                "elapsedSeconds": 114.98,
+                "userSeconds": 130.7,
+                "systemSeconds": 2.68,
+                "maximumResidentKiB": 1055076,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/installations/candidate-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 2,
+                "variant": "candidate",
+                "artifactSha256": [
+                    "b72edd2666f41c6a7173f471133e0a0f4405c32f90369e5963868ffc5511aafd",
+                    "a69bc1e1755482514e2799112613f75202bff00e08e181155b8d6250ce8ffae5",
+                    "eca452cbdf4727befb6bd981ea70b9e6c8c2d8a181ab78fa288cee683d5a9442"
+                ]
+            },
+            {
+                "elapsedSeconds": 115.15,
+                "userSeconds": 130.42,
+                "systemSeconds": 2.75,
+                "maximumResidentKiB": 1082100,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/installations/candidate-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 3,
+                "variant": "candidate",
+                "artifactSha256": [
+                    "b72edd2666f41c6a7173f471133e0a0f4405c32f90369e5963868ffc5511aafd",
+                    "a69bc1e1755482514e2799112613f75202bff00e08e181155b8d6250ce8ffae5",
+                    "eca452cbdf4727befb6bd981ea70b9e6c8c2d8a181ab78fa288cee683d5a9442"
+                ]
+            },
+            {
+                "elapsedSeconds": 115.64,
+                "userSeconds": 134.24,
+                "systemSeconds": 2.73,
+                "maximumResidentKiB": 1060672,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/installations/baseline-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 3,
+                "variant": "baseline",
+                "artifactSha256": [
+                    "b72edd2666f41c6a7173f471133e0a0f4405c32f90369e5963868ffc5511aafd",
+                    "a69bc1e1755482514e2799112613f75202bff00e08e181155b8d6250ce8ffae5",
+                    "eca452cbdf4727befb6bd981ea70b9e6c8c2d8a181ab78fa288cee683d5a9442"
+                ]
+            },
+            {
+                "elapsedSeconds": 115.72,
+                "userSeconds": 134.72,
+                "systemSeconds": 2.8,
+                "maximumResidentKiB": 1081636,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/installations/baseline-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 4,
+                "variant": "baseline",
+                "artifactSha256": [
+                    "b72edd2666f41c6a7173f471133e0a0f4405c32f90369e5963868ffc5511aafd",
+                    "a69bc1e1755482514e2799112613f75202bff00e08e181155b8d6250ce8ffae5",
+                    "eca452cbdf4727befb6bd981ea70b9e6c8c2d8a181ab78fa288cee683d5a9442"
+                ]
+            },
+            {
+                "elapsedSeconds": 114.72,
+                "userSeconds": 130.41,
+                "systemSeconds": 2.7,
+                "maximumResidentKiB": 1061928,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/installations/candidate-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 4,
+                "variant": "candidate",
+                "artifactSha256": [
+                    "b72edd2666f41c6a7173f471133e0a0f4405c32f90369e5963868ffc5511aafd",
+                    "a69bc1e1755482514e2799112613f75202bff00e08e181155b8d6250ce8ffae5",
+                    "eca452cbdf4727befb6bd981ea70b9e6c8c2d8a181ab78fa288cee683d5a9442"
+                ]
+            }
+        ],
+        "mediansSeconds": {
+            "baseline": 115.66,
+            "candidate": 114.89
+        },
+        "maximumResidentKiB": {
+            "baseline": 1081636,
+            "candidate": 1386068
+        },
+        "counts": {
+            "functionsExported": 6375,
+            "functionsDecompiled": 6374,
+            "functionsFailed": 1,
+            "functionsSkipped": 268,
+            "functionSignatures": 6375,
+            "parameters": 3935,
+            "localVariables": 15846,
+            "globalVariables": 11677,
+            "functionStaticVariables": 0,
+            "canonicalTypes": 298,
+            "defensibleVariableLocations": 15903,
+            "omittedLocationRanges": 4497,
+            "mappedSourceLines": 222853,
+            "unsupportedConstructs": 10,
+            "diagnostics": 7229
+        },
+        "protectedUnchanged": true,
+        "projectBackupChanges": [],
+        "gdb": "PASS"
+    },
+    "candidateExperiments": {
+        "sqlite": {
+            "case": "build/test-results/consumer-candidates/run.pd7izo2k",
+            "status": "EXPERIMENT_COMPLETE",
+            "scope": "Private-copy experiments only. Two generation runs, independent validators and runtime GDB; rotating fresh-GDB measurements with index cache disabled. Warm filesystem cache, uncontrolled host load. Baseline generation is a no-op, not export time. Failed candidates retained. No production feature or Windows/LLDB compatibility claim.",
+            "protectedUnchanged": true,
+            "results": {
+                "baseline": {
+                    "status": "VALIDATED",
+                    "artifactSha256": "7fbf6b3d16361bc43c2a1d1bdd89e004df49ac251f613049761056d6a2944ed6",
+                    "fileBytes": 5638224,
+                    "generation": [
+                        {
+                            "elapsedSeconds": 0.0,
+                            "userSeconds": 0.0,
+                            "systemSeconds": 0.0,
+                            "maximumResidentKiB": 1132
+                        },
+                        {
+                            "elapsedSeconds": 0.0,
+                            "userSeconds": 0.0,
+                            "systemSeconds": 0.0,
+                            "maximumResidentKiB": 1132
+                        }
+                    ],
+                    "samples": [
+                        {
+                            "elapsedSeconds": 0.07,
+                            "userSeconds": 0.06,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 47812,
+                            "round": 0,
+                            "internal": {
+                                "loadSeconds": 0.004341594,
+                                "lookupSeconds": 0.009749671
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.08,
+                            "userSeconds": 0.06,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 48256,
+                            "round": 1,
+                            "internal": {
+                                "loadSeconds": 0.005012319,
+                                "lookupSeconds": 0.01018212
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.08,
+                            "userSeconds": 0.05,
+                            "systemSeconds": 0.02,
+                            "maximumResidentKiB": 48120,
+                            "round": 2,
+                            "internal": {
+                                "loadSeconds": 0.004933546,
+                                "lookupSeconds": 0.00933975
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.08,
+                            "userSeconds": 0.06,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 48236,
+                            "round": 3,
+                            "internal": {
+                                "loadSeconds": 0.004933594,
+                                "lookupSeconds": 0.009467493
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.07,
+                            "userSeconds": 0.06,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 48364,
+                            "round": 4,
+                            "internal": {
+                                "loadSeconds": 0.004858406,
+                                "lookupSeconds": 0.009348091
+                            }
+                        }
+                    ],
+                    "medianProcessSeconds": 0.08,
+                    "medianLoadSeconds": 0.004933546,
+                    "medianLookupSeconds": 0.009467493,
+                    "strict": {
+                        "status": "PASS",
+                        "reported_errors": 828,
+                        "uncorroborated_errors": 0
+                    }
+                },
+                "zlib": {
+                    "status": "VALIDATED",
+                    "artifactSha256": "a82a421a8b0ab38ce2c6c29f9949f813a51892b235dc994c3e0d02df5a9bfb10",
+                    "fileBytes": 1938296,
+                    "generation": [
+                        {
+                            "elapsedSeconds": 0.09,
+                            "userSeconds": 0.07,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 51796
+                        },
+                        {
+                            "elapsedSeconds": 0.08,
+                            "userSeconds": 0.07,
+                            "systemSeconds": 0.0,
+                            "maximumResidentKiB": 52052
+                        }
+                    ],
+                    "samples": [
+                        {
+                            "elapsedSeconds": 0.07,
+                            "userSeconds": 0.06,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 51632,
+                            "round": 0,
+                            "internal": {
+                                "loadSeconds": 0.007411886,
+                                "lookupSeconds": 0.013584825
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.08,
+                            "userSeconds": 0.06,
+                            "systemSeconds": 0.02,
+                            "maximumResidentKiB": 51408,
+                            "round": 1,
+                            "internal": {
+                                "loadSeconds": 0.007073372,
+                                "lookupSeconds": 0.013933948
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.09,
+                            "userSeconds": 0.07,
+                            "systemSeconds": 0.02,
+                            "maximumResidentKiB": 51772,
+                            "round": 2,
+                            "internal": {
+                                "loadSeconds": 0.007435107,
+                                "lookupSeconds": 0.012918942
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.08,
+                            "userSeconds": 0.06,
+                            "systemSeconds": 0.02,
+                            "maximumResidentKiB": 51680,
+                            "round": 3,
+                            "internal": {
+                                "loadSeconds": 0.007629029,
+                                "lookupSeconds": 0.012870188
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.07,
+                            "userSeconds": 0.06,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 51688,
+                            "round": 4,
+                            "internal": {
+                                "loadSeconds": 0.007754232,
+                                "lookupSeconds": 0.015049041
+                            }
+                        }
+                    ],
+                    "medianProcessSeconds": 0.08,
+                    "medianLoadSeconds": 0.007435107,
+                    "medianLookupSeconds": 0.013584825,
+                    "strict": {
+                        "status": "PASS",
+                        "reported_errors": 828,
+                        "uncorroborated_errors": 0
+                    }
+                },
+                "zstd": {
+                    "status": "VALIDATED",
+                    "artifactSha256": "3249f0265a7c65f33222e54d064cbb10040ba38990a5b6f5065ec0a06a3ede75",
+                    "fileBytes": 1711032,
+                    "generation": [
+                        {
+                            "elapsedSeconds": 0.03,
+                            "userSeconds": 0.02,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 53072
+                        },
+                        {
+                            "elapsedSeconds": 0.03,
+                            "userSeconds": 0.02,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 53068
+                        }
+                    ],
+                    "samples": [
+                        {
+                            "elapsedSeconds": 0.07,
+                            "userSeconds": 0.05,
+                            "systemSeconds": 0.02,
+                            "maximumResidentKiB": 51580,
+                            "round": 0,
+                            "internal": {
+                                "loadSeconds": 0.005888216,
+                                "lookupSeconds": 0.012827239
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.08,
+                            "userSeconds": 0.06,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 51628,
+                            "round": 1,
+                            "internal": {
+                                "loadSeconds": 0.004813283,
+                                "lookupSeconds": 0.01122887
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.08,
+                            "userSeconds": 0.06,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 51092,
+                            "round": 2,
+                            "internal": {
+                                "loadSeconds": 0.005547315,
+                                "lookupSeconds": 0.010917222
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.07,
+                            "userSeconds": 0.05,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 51860,
+                            "round": 3,
+                            "internal": {
+                                "loadSeconds": 0.005290745,
+                                "lookupSeconds": 0.010855798
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.07,
+                            "userSeconds": 0.05,
+                            "systemSeconds": 0.02,
+                            "maximumResidentKiB": 52016,
+                            "round": 4,
+                            "internal": {
+                                "loadSeconds": 0.004681484,
+                                "lookupSeconds": 0.012030004
+                            }
+                        }
+                    ],
+                    "medianProcessSeconds": 0.07,
+                    "medianLoadSeconds": 0.005290745,
+                    "medianLookupSeconds": 0.01122887,
+                    "strict": {
+                        "status": "PASS",
+                        "reported_errors": 828,
+                        "uncorroborated_errors": 0
+                    }
+                },
+                "gdb-index": {
+                    "status": "VALIDATED",
+                    "artifactSha256": "c0a28f774aaa316040b1bc6cf67b154826451f6b326e07b8accbeae81eae3c3a",
+                    "fileBytes": 5881272,
+                    "generation": [
+                        {
+                            "elapsedSeconds": 0.1,
+                            "userSeconds": 0.07,
+                            "systemSeconds": 0.03,
+                            "maximumResidentKiB": 55308
+                        },
+                        {
+                            "elapsedSeconds": 0.1,
+                            "userSeconds": 0.06,
+                            "systemSeconds": 0.03,
+                            "maximumResidentKiB": 55628
+                        }
+                    ],
+                    "samples": [
+                        {
+                            "elapsedSeconds": 0.07,
+                            "userSeconds": 0.05,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 47148,
+                            "round": 0,
+                            "internal": {
+                                "loadSeconds": 0.002974965,
+                                "lookupSeconds": 0.010078285
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.07,
+                            "userSeconds": 0.06,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 46996,
+                            "round": 1,
+                            "internal": {
+                                "loadSeconds": 0.002796721,
+                                "lookupSeconds": 0.009519135
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.07,
+                            "userSeconds": 0.06,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 46560,
+                            "round": 2,
+                            "internal": {
+                                "loadSeconds": 0.002729132,
+                                "lookupSeconds": 0.010280912
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.07,
+                            "userSeconds": 0.05,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 46680,
+                            "round": 3,
+                            "internal": {
+                                "loadSeconds": 0.002901102,
+                                "lookupSeconds": 0.011595143
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.07,
+                            "userSeconds": 0.05,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 47328,
+                            "round": 4,
+                            "internal": {
+                                "loadSeconds": 0.002640048,
+                                "lookupSeconds": 0.010214905
+                            }
+                        }
+                    ],
+                    "medianProcessSeconds": 0.07,
+                    "medianLoadSeconds": 0.002796721,
+                    "medianLookupSeconds": 0.010214905,
+                    "strict": {
+                        "status": "PASS",
+                        "reported_errors": 828,
+                        "uncorroborated_errors": 0
+                    }
+                },
+                "debug-names": {
+                    "status": "FAILED",
+                    "error": "Command '['/usr/bin/time', '-o', '/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/test-results/consumer-candidates/run.pd7izo2k/debug-names/llvm.metrics.json', '-f', '{\"elapsedSeconds\":%e,\"userSeconds\":%U,\"systemSeconds\":%S,\"maximumResidentKiB\":%M}', 'llvm-dwarfdump', '--verify', '/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/test-results/consumer-candidates/run.pd7izo2k/debug-names/sqlite-workload.dbg']' returned non-zero exit status 1.",
+                    "scope": "Retained negative candidate; do not report passing timing or compatibility."
+                }
+            }
+        },
+        "uboot": {
+            "case": "build/test-results/consumer-candidates/run.2wrbht7k",
+            "status": "EXPERIMENT_COMPLETE",
+            "scope": "Private-copy experiments only. Two generation runs, independent validators and runtime GDB; rotating fresh-GDB measurements with index cache disabled. Warm filesystem cache, uncontrolled host load. Baseline generation is a no-op, not export time. Failed candidates retained. No production feature or Windows/LLDB compatibility claim.",
+            "protectedUnchanged": true,
+            "results": {
+                "baseline": {
+                    "status": "VALIDATED",
+                    "artifactSha256": "3dcde8009079f244693186a00e791908cb54c6a45f9c6fefc06af4b4b198114d",
+                    "fileBytes": 17029464,
+                    "generation": [
+                        {
+                            "elapsedSeconds": 0.0,
+                            "userSeconds": 0.0,
+                            "systemSeconds": 0.0,
+                            "maximumResidentKiB": 1132
+                        },
+                        {
+                            "elapsedSeconds": 0.0,
+                            "userSeconds": 0.0,
+                            "systemSeconds": 0.0,
+                            "maximumResidentKiB": 1132
+                        }
+                    ],
+                    "samples": [
+                        {
+                            "elapsedSeconds": 0.09,
+                            "userSeconds": 0.07,
+                            "systemSeconds": 0.02,
+                            "maximumResidentKiB": 64604,
+                            "round": 0,
+                            "internal": {
+                                "loadSeconds": 0.010682456,
+                                "lookupSeconds": 0.022910572
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.1,
+                            "userSeconds": 0.09,
+                            "systemSeconds": 0.02,
+                            "maximumResidentKiB": 65236,
+                            "round": 1,
+                            "internal": {
+                                "loadSeconds": 0.013246216,
+                                "lookupSeconds": 0.029251571
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.1,
+                            "userSeconds": 0.08,
+                            "systemSeconds": 0.02,
+                            "maximumResidentKiB": 65044,
+                            "round": 2,
+                            "internal": {
+                                "loadSeconds": 0.010817016,
+                                "lookupSeconds": 0.022925652
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.1,
+                            "userSeconds": 0.08,
+                            "systemSeconds": 0.02,
+                            "maximumResidentKiB": 65056,
+                            "round": 3,
+                            "internal": {
+                                "loadSeconds": 0.011750005,
+                                "lookupSeconds": 0.025537577
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.1,
+                            "userSeconds": 0.08,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 64728,
+                            "round": 4,
+                            "internal": {
+                                "loadSeconds": 0.01564735,
+                                "lookupSeconds": 0.031024298
+                            }
+                        }
+                    ],
+                    "medianProcessSeconds": 0.1,
+                    "medianLoadSeconds": 0.011750005,
+                    "medianLookupSeconds": 0.025537577,
+                    "strict": {
+                        "status": "PASS",
+                        "reported_errors": 3735,
+                        "uncorroborated_errors": 0
+                    }
+                },
+                "zlib": {
+                    "status": "VALIDATED",
+                    "artifactSha256": "57383a1daf98f44531a99c006f4c88e942ad488c66242e3337804f042bc11f10",
+                    "fileBytes": 6515992,
+                    "generation": [
+                        {
+                            "elapsedSeconds": 0.18,
+                            "userSeconds": 0.16,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 70036
+                        },
+                        {
+                            "elapsedSeconds": 0.16,
+                            "userSeconds": 0.14,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 70264
+                        }
+                    ],
+                    "samples": [
+                        {
+                            "elapsedSeconds": 0.11,
+                            "userSeconds": 0.1,
+                            "systemSeconds": 0.02,
+                            "maximumResidentKiB": 75768,
+                            "round": 0,
+                            "internal": {
+                                "loadSeconds": 0.018167146,
+                                "lookupSeconds": 0.034261948
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.11,
+                            "userSeconds": 0.1,
+                            "systemSeconds": 0.02,
+                            "maximumResidentKiB": 74616,
+                            "round": 1,
+                            "internal": {
+                                "loadSeconds": 0.026597865,
+                                "lookupSeconds": 0.036736773
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.11,
+                            "userSeconds": 0.1,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 74776,
+                            "round": 2,
+                            "internal": {
+                                "loadSeconds": 0.016129876,
+                                "lookupSeconds": 0.035118081
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.11,
+                            "userSeconds": 0.09,
+                            "systemSeconds": 0.02,
+                            "maximumResidentKiB": 74980,
+                            "round": 3,
+                            "internal": {
+                                "loadSeconds": 0.016048898,
+                                "lookupSeconds": 0.03429542
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.12,
+                            "userSeconds": 0.1,
+                            "systemSeconds": 0.02,
+                            "maximumResidentKiB": 74520,
+                            "round": 4,
+                            "internal": {
+                                "loadSeconds": 0.01713721,
+                                "lookupSeconds": 0.035275158
+                            }
+                        }
+                    ],
+                    "medianProcessSeconds": 0.11,
+                    "medianLoadSeconds": 0.01713721,
+                    "medianLookupSeconds": 0.035118081,
+                    "strict": {
+                        "status": "PASS",
+                        "reported_errors": 3735,
+                        "uncorroborated_errors": 0
+                    }
+                },
+                "zstd": {
+                    "status": "VALIDATED",
+                    "artifactSha256": "9a7122018b1846d8a8a946a872c00c164685766bd3acbf5ec576dc8cbfdaaf91",
+                    "fileBytes": 6022128,
+                    "generation": [
+                        {
+                            "elapsedSeconds": 0.05,
+                            "userSeconds": 0.03,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 73076
+                        },
+                        {
+                            "elapsedSeconds": 0.05,
+                            "userSeconds": 0.03,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 73124
+                        }
+                    ],
+                    "samples": [
+                        {
+                            "elapsedSeconds": 0.1,
+                            "userSeconds": 0.08,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 75476,
+                            "round": 0,
+                            "internal": {
+                                "loadSeconds": 0.016607053,
+                                "lookupSeconds": 0.03137083
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.1,
+                            "userSeconds": 0.08,
+                            "systemSeconds": 0.02,
+                            "maximumResidentKiB": 75652,
+                            "round": 1,
+                            "internal": {
+                                "loadSeconds": 0.015078845,
+                                "lookupSeconds": 0.027996398
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.09,
+                            "userSeconds": 0.07,
+                            "systemSeconds": 0.02,
+                            "maximumResidentKiB": 75764,
+                            "round": 2,
+                            "internal": {
+                                "loadSeconds": 0.013941132,
+                                "lookupSeconds": 0.027907372
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.1,
+                            "userSeconds": 0.08,
+                            "systemSeconds": 0.02,
+                            "maximumResidentKiB": 75088,
+                            "round": 3,
+                            "internal": {
+                                "loadSeconds": 0.015228577,
+                                "lookupSeconds": 0.028656382
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.1,
+                            "userSeconds": 0.08,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 74892,
+                            "round": 4,
+                            "internal": {
+                                "loadSeconds": 0.014718325,
+                                "lookupSeconds": 0.032816144
+                            }
+                        }
+                    ],
+                    "medianProcessSeconds": 0.1,
+                    "medianLoadSeconds": 0.015078845,
+                    "medianLookupSeconds": 0.028656382,
+                    "strict": {
+                        "status": "PASS",
+                        "reported_errors": 3735,
+                        "uncorroborated_errors": 0
+                    }
+                },
+                "gdb-index": {
+                    "status": "VALIDATED",
+                    "artifactSha256": "b9547a6fd8a18c9c5ee7251594474f048f894186c2ce4358563d798dbbbe7834",
+                    "fileBytes": 17367904,
+                    "generation": [
+                        {
+                            "elapsedSeconds": 0.13,
+                            "userSeconds": 0.09,
+                            "systemSeconds": 0.03,
+                            "maximumResidentKiB": 79684
+                        },
+                        {
+                            "elapsedSeconds": 0.1,
+                            "userSeconds": 0.06,
+                            "systemSeconds": 0.03,
+                            "maximumResidentKiB": 80064
+                        }
+                    ],
+                    "samples": [
+                        {
+                            "elapsedSeconds": 0.09,
+                            "userSeconds": 0.08,
+                            "systemSeconds": 0.02,
+                            "maximumResidentKiB": 64708,
+                            "round": 0,
+                            "internal": {
+                                "loadSeconds": 0.005932052,
+                                "lookupSeconds": 0.027840563
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.09,
+                            "userSeconds": 0.07,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 64800,
+                            "round": 1,
+                            "internal": {
+                                "loadSeconds": 0.005395709,
+                                "lookupSeconds": 0.027267568
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.09,
+                            "userSeconds": 0.08,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 64624,
+                            "round": 2,
+                            "internal": {
+                                "loadSeconds": 0.006666514,
+                                "lookupSeconds": 0.030429281
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.07,
+                            "userSeconds": 0.06,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 64960,
+                            "round": 3,
+                            "internal": {
+                                "loadSeconds": 0.005763403,
+                                "lookupSeconds": 0.026374007
+                            }
+                        },
+                        {
+                            "elapsedSeconds": 0.09,
+                            "userSeconds": 0.08,
+                            "systemSeconds": 0.01,
+                            "maximumResidentKiB": 64488,
+                            "round": 4,
+                            "internal": {
+                                "loadSeconds": 0.005603093,
+                                "lookupSeconds": 0.027215278
+                            }
+                        }
+                    ],
+                    "medianProcessSeconds": 0.09,
+                    "medianLoadSeconds": 0.005763403,
+                    "medianLookupSeconds": 0.027267568,
+                    "strict": {
+                        "status": "PASS",
+                        "reported_errors": 3735,
+                        "uncorroborated_errors": 0
+                    }
+                },
+                "debug-names": {
+                    "status": "FAILED",
+                    "error": "Command '['/usr/bin/time', '-o', '/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/test-results/consumer-candidates/run.2wrbht7k/debug-names/llvm.metrics.json', '-f', '{\"elapsedSeconds\":%e,\"userSeconds\":%U,\"systemSeconds\":%S,\"maximumResidentKiB\":%M}', 'llvm-dwarfdump', '--verify', '/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/test-results/consumer-candidates/run.2wrbht7k/debug-names/u-boot.dbg']' returned non-zero exit status 1.",
+                    "scope": "Retained negative candidate; do not report passing timing or compatibility."
+                }
+            }
+        }
+    },
+    "sectionInventory": {
+        "status": "PASS",
+        "artifacts": {
+            "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/test-results/sqlite-benchmark/run.fml1pwam/sqlite-workload.dbg": {
+                "sha256": "7fbf6b3d16361bc43c2a1d1bdd89e004df49ac251f613049761056d6a2944ed6",
+                "fileBytes": 5638224,
+                "sectionBytes": {
+                    ".debug_info": 154947,
+                    ".debug_abbrev": 524,
+                    ".debug_str": 62525,
+                    ".debug_line": 643609,
+                    ".debug_rnglists": 223665,
+                    ".debug_loclists": 3347399,
+                    ".debug_aranges": 106352
+                },
+                "sectionSha256": {
+                    ".debug_info": "3bf39eeb75ebefce78b0d1990b74d0f3e6d32106ebad98804b98176ceeb26433",
+                    ".debug_abbrev": "67b347084858fac6637e31383fe7b3aa99ddda3372fb0f1fd6e784b03316abd8",
+                    ".debug_str": "b729885834561daec913c9f764f9c0f48b46f08bcdf985af229f7dd4e80e13e6",
+                    ".debug_line": "5a8f13dc453bd72900510f6f3729b16273752b12b107f7a67628a12b756ceea9",
+                    ".debug_rnglists": "3a44fbb59f7c34390c590e188200b7988c3a3c0a60e62a09195841ebebf963c6",
+                    ".debug_loclists": "cfedf938ad47b03579611e2a2b04a193db51374ec6b04087b0aa40b3b5ab8f8f",
+                    ".debug_aranges": "f515b71e93fae33f6c0d6c4571f10a1bb97f18c7e52c8d8f1478e3ca600419d8"
+                },
+                "strings": {
+                    "entries": 4014,
+                    "unique": 4014,
+                    "duplicateBytes": 0
+                },
+                "locations": {
+                    "lists": 4870,
+                    "uniqueLists": 4870,
+                    "exactDuplicateListBytes": 0,
+                    "addressOperands": 309232,
+                    "uniqueAddressOperands": 19260,
+                    "currentAddressBytes": 2473856,
+                    "uniqueAddressPoolBytesWithoutHeaderOrIndexes": 154080,
+                    "expressions": 154616,
+                    "uniqueExpressions": 951
+                }
+            },
+            "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/test-results/uboot-benchmark/run.1mhp4wmk/u-boot.dbg": {
+                "sha256": "3dcde8009079f244693186a00e791908cb54c6a45f9c6fefc06af4b4b198114d",
+                "fileBytes": 17029464,
+                "sectionBytes": {
+                    ".debug_info": 639524,
+                    ".debug_abbrev": 1001,
+                    ".debug_str": 363245,
+                    ".debug_line": 1397553,
+                    ".debug_rnglists": 1771,
+                    ".debug_loclists": 10112818,
+                    ".debug_aranges": 1360
+                },
+                "sectionSha256": {
+                    ".debug_info": "0cc8ea9674cb02f40653e5c4cf80ff4b5c8fd856c04e615d35b23c39b3cb2f8b",
+                    ".debug_abbrev": "a62da9e000b89b02029a34ee9f631052304f67e4b20d1ed3227fb70f836edb67",
+                    ".debug_str": "cf0bb03d06fc48fb2855776928ae1a1ad238a4ccd40db12bc4d83ba9b6cca602",
+                    ".debug_line": "5f31cdb900e1d5369501b1bf648fee0adc75b684230af22631354233d0b8e3f2",
+                    ".debug_rnglists": "6ae3e2f8885edc41c4a50504b2d47bd15573a2f482e56a9e978fcfd44beedf2b",
+                    ".debug_loclists": "befb982e469c399a69a0abc3640e94983036e0a986b845936e5be3fe8e0261e3",
+                    ".debug_aranges": "0ccd110898ebed65aba2b0b631ba3675089af02248cb67b14bf444aee5df83a6"
+                },
+                "strings": {
+                    "entries": 19228,
+                    "unique": 19228,
+                    "duplicateBytes": 0
+                },
+                "locations": {
+                    "lists": 15861,
+                    "uniqueLists": 15861,
+                    "exactDuplicateListBytes": 0,
+                    "addressOperands": 938882,
+                    "uniqueAddressOperands": 76793,
+                    "currentAddressBytes": 7511056,
+                    "uniqueAddressPoolBytesWithoutHeaderOrIndexes": 614344,
+                    "expressions": 469441,
+                    "uniqueExpressions": 2977
+                }
+            }
+        },
+        "scope": "Observed uncompressed Forge section bytes and exact duplication only. Not an implementation, performance measurement or proof of consumer compatibility."
+    },
+    "receipts": {
+        "build/test-results/paired-saved-exports/run.kuxfk4nd/result.json": {
+            "sha256": "3a85e75f67ad6d96dd0701d961c0e545ca5f824d7e14c1f1eb4858a1065d82d9",
+            "bytes": 904822
+        },
+        "build/test-results/consumer-candidates/run.pd7izo2k/summary.json": {
+            "sha256": "a7f6d0df3293d0e487493e6883085028d35946dbff3d2632dc29ac353d2d54c2",
+            "bytes": 841974
+        },
+        "build/test-results/consumer-candidates/run.2wrbht7k/summary.json": {
+            "sha256": "085a3c019bc6c292372f8c5b3ae9617bdf8c337d8b2560cbc77fbaf3e0796ec5",
+            "bytes": 3714054
+        },
+        "build/section-inventory.json": {
+            "sha256": "254ba7d8da8bc29ff46c2086c22797d731a4d959f41f8992465ab4c986505325",
+            "bytes": 2597
+        },
+        "build/section-inventory-v2.json": {
+            "sha256": "cfae75b72e31ab3423e29957773411b14e45095da4cf443dbb4d9b93192215d3",
+            "bytes": 4097
+        }
+    },
+    "harnesses": {
+        "src/test/performance/paired-saved-exports.py": "88cc073d2fad6bfb2fb3ca25d50290d4262ab1d65a0a2560f0db77b50a80b146",
+        "src/test/performance/consumer-candidates.py": "7be5ce3792f15a960c7a0b46b609f1c7f0994c7e79cb4b7b1d6e107361fa56e0",
+        "src/test/performance/host-consumer.py": "a7bf242ef170e0c5f622f58efc8660cd12053406289b57c5abc3af1c3caeb49e",
+        "src/test/performance/section-inventory.py": "0a001ab8e6c502dcc7d84a131f74a4b055959b5b36dc4ff8a6988e48b545b66b"
+    },
+    "checkerArtifact": {
+        "id": 13391006157,
+        "node_id": "MDg6QXJ0aWZhY3QxMzM5MTAwNjE1Nw==",
+        "name": "dwarfdump-linux-validation",
+        "size_in_bytes": 5451370,
+        "url": "https://api.github.com/repos/zwilcox/GhidraDwarfForge/actions/artifacts/13391006157",
+        "archive_download_url": "https://api.github.com/repos/zwilcox/GhidraDwarfForge/actions/artifacts/13391006157/zip",
+        "expired": false,
+        "digest": "sha256:aa7a39219d5cf7b45bf83571b1334cf5b88c87e272a281de414011979ee39ab4",
+        "created_at": "2026-11-05T05:19:32Z",
+        "updated_at": "2026-11-05T05:19:32Z",
+        "expires_at": "2027-02-03T05:17:49Z",
+        "workflow_run": {
+            "id": 41973112217,
+            "repository_id": 969721342,
+            "head_repository_id": 969721342,
+            "head_branch": "work/performance-workloads",
+            "head_sha": "393c3e524a80e13c254ed45f4a828b4d33b26910"
+        }
+    },
+    "retainedFailures": {
+        "run.na9a9vlq": "GNU BFD objcopy rejects rewriting matched SQLite sidecar; no experiment pass claimed",
+        "run.pvr5w_h6": "LLVM rewrite works; older local checker lacks compression support; compressed candidates remain failed in this run",
+        "debug-names": "GDB-produced index fails LLVM18 verification including DW_IDX_parent unexpected DW_FORM_udata; not adopted",
+        "configured-checker.zp901a3w": "First raw configured-checker probe omitted original frame evidence; rerun.zmhpafo5 corroborates it and rejects changed configuration before launch"
+    },
+    "scope": "Linux experiments only. No selected production optimization, Windows workload acceptance, full #74 closure or later-goal completion."
+}

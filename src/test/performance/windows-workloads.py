@@ -11,6 +11,7 @@ import statistics
 import subprocess
 import sys
 import tempfile
+import zipfile
 
 SOURCE = Path(__file__).resolve().parent
 
@@ -58,6 +59,7 @@ def main():
         SOURCE / 'headless-observations.py', SOURCE / 'jfr-phases.py', corpus / 'corpus.json']
     protected += [corpus / name for name in metadata['files']]
     for ghidra in installations.values():
+        protected.append(ghidra / 'support/launch.properties')
         module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
         for line in (module / 'RELEASE-SHA256SUMS').read_text().splitlines():
             digest, name = line.split(None, 1)
@@ -66,9 +68,27 @@ def main():
         protected += [p for p in module.rglob('*') if p.is_file()]
     before = {str(p): support.digest(p) for p in protected}
     write(root / 'protected-before.json', before)
+    classes = {}
+    for role, ghidra in installations.items():
+        jar = ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar'
+        with zipfile.ZipFile(jar) as packed:
+            classes[role] = {name: packed.read(name) for name in packed.namelist() if name.endswith('.class')}
+    baseline_classes, candidate_classes = classes['baseline'], classes['candidate']
+    changed_classes = sorted(name for name in baseline_classes.keys() & candidate_classes.keys()
+        if baseline_classes[name] != candidate_classes[name])
+    # This comparison concerns phase instrumentation. Refuse compiler/version
+    # drift in unrelated classes rather than attributing its cost to the hooks.
+    assert all(name.startswith('ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter')
+        for name in changed_classes), changed_classes
+    assert not baseline_classes.keys() - candidate_classes.keys()
+    added_classes = sorted(candidate_classes.keys() - baseline_classes.keys())
+    assert all(name.startswith('ghidradwarfforge/performance/ExportPhase') for name in added_classes)
+    assert all(int.from_bytes(value[6:8], 'big') == 65 for value in candidate_classes.values())
     write(root / 'environment.json', {'host': platform.platform(), 'cpuCount': os.cpu_count(),
         'python': sys.version, 'pairs': args.pairs, 'installations': {k: str(v) for k, v in installations.items()},
         'helperSha256': support.digest(helper), 'corpusSha256': support.digest(corpus / 'corpus.json'),
+        'classComparison': {'changed': changed_classes, 'added': added_classes,
+            'unchangedShared': len(baseline_classes) - len(changed_classes), 'classMajor': 65},
         'measurementBoundary': 'Fresh PowerShell/wrapper/JVM jobs; all descendant CPU and peak commitment. '
             'Launcher CPU excluded; 10ms membership polling included in wall time. '
             'Peak commitment is NOT Linux RSS. Import, validation, profiling and Linux GDB replay separate. '

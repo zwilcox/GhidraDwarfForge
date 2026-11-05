@@ -14,6 +14,77 @@ SUPPORT = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(SUPPORT)
 
 
+def validate_gdb(workload, corpus, case, artifact_dir, sidecar, binary, reference):
+    """Shared runtime oracle for host transfer and private candidate experiments."""
+    def run(name, command, **kwargs):
+        return SUPPORT.run(command, case / (name + '.log'), **kwargs)
+    validation = {}
+    variants = (('compiler', reference), ('forge', binary)) if reference is not None else (('forge', binary),)
+    for variant, executable in variants:
+        commands = ['set pagination off', 'set confirm off', 'set debuginfod enabled off',
+            'set auto-solib-add off', 'set disable-randomization off', 'set startup-with-shell on',
+            'file ' + json.dumps(str(executable)), 'directory ' + str(artifact_dir)]
+        if workload['name'] == 'uboot':
+            commands += ['set args ' + shlex.join(['-d', str(corpus / workload['dtb']),
+                '-c', 'echo forge-uboot-gdb=PASS']) + ' > ' +
+                shlex.quote(str(case / (variant + '-inferior.log'))) + ' 2>&1']
+        commands += ['starti', 'python', 'exits = []',
+            'gdb.events.exited.connect(lambda event: exits.append(getattr(event, "exit_code", None)))',
+            'expected = ' + repr(workload['addresses']),
+            'bias = int(gdb.parse_and_eval("&main")) - expected["main"]',
+            'assert bias ' + ('> 0' if workload['kind'] == 'pie' else '== 0')]
+        if variant == 'forge':
+            commands += ['gdb.execute("symbol-file -o " + hex(bias) + " " + ' + repr(str(sidecar)) + ')',
+                'for name, address in expected.items():']
+            if workload['name'] == 'uboot':
+                commands += ['    if name == "main": continue  # explicitly omitted imported thunk']
+            commands += ['    symbol = gdb.lookup_global_symbol(name) or gdb.lookup_static_symbol(name)',
+                # do_echo also names a legitimate static data object. Test
+                # function ownership at its named breakpoint below instead.
+                '    if name == "do_echo": continue',
+                '    assert symbol and symbol.is_function and symbol.symtab, name',
+                '    assert symbol.symtab.filename.endswith(".dbg.c"), name',
+                '    assert int(symbol.value().address) == bias + address, name']
+        commands += ['end']
+        point = 'do_echo' if workload['name'] == 'uboot' else 'benchmark_checkpoint'
+        commands += ['ptype ' + ('sandbox_main' if workload['name'] == 'uboot' else point),
+            'python point = gdb.Breakpoint(' + (repr(point) if workload['name'] == 'uboot'
+                else '"*" + hex(bias + expected["benchmark_checkpoint"])') + ')', 'continue', 'python',
+            'assert int(gdb.parse_and_eval("$pc")) == bias + expected[' + repr(point) + ']']
+        if variant == 'forge':
+            commands += ['block = gdb.block_for_pc(int(gdb.parse_and_eval("$pc")))',
+                'while block is not None and block.function is None: block = block.superblock',
+                'assert block and block.function.symtab.filename.endswith(".dbg.c")',
+                'sal = gdb.selected_frame().find_sal()', 'assert sal.line > 0',
+                'listing = gdb.execute("list *$pc", to_string=True)',
+                'assert "No such file" not in listing and "No source" not in listing',
+                'print(listing)']
+        if workload['name'] == 'uboot':
+            commands += (['assert int(gdb.parse_and_eval("argc")) == 2',
+                'assert gdb.parse_and_eval("argv[1]").string() == "forge-uboot-gdb=PASS"']
+                if variant == 'compiler' else ['assert int(gdb.parse_and_eval("*(unsigned long*)&gd")) != 0'])
+            commands += ['end', 'disable breakpoints', 'next', 'step', 'continue', 'python assert exits == [0]']
+        else:
+            commands += ['assert int(gdb.parse_and_eval("*(unsigned int*)&observed_count")) == 100',
+                'assert int(gdb.parse_and_eval("*(unsigned int*)&observed_sum")) == 5050',
+                'gdb.execute("disable breakpoints")',
+                'finish = gdb.FinishBreakpoint(gdb.newest_frame(), internal=True)',
+                'gdb.execute("next")', 'assert finish.return_value is None', 'gdb.execute("step")',
+                'if finish.return_value is None: gdb.execute("continue")',
+                'assert int(finish.return_value) == 5150', 'gdb.execute("continue")',
+                'assert exits == [0]', 'end']
+        commands += ['echo host-consumer-' + variant + '=PASS\\n', '']
+        script = case / (variant + '.gdb')
+        script.write_text('\n'.join(commands))
+        validation[variant + '-gdb'] = run(variant + '-gdb',
+            ['gdb-multiarch', '-nx', '-q', '-batch', '-x', script], measured=True, timeout=180, cwd=case)
+        SUPPORT.require_clean(case / (variant + '-gdb.log'))
+        assert 'host-consumer-' + variant + '=PASS' in (case / (variant + '-gdb.log')).read_text()
+        if workload['name'] == 'uboot':
+            assert 'forge-uboot-gdb=PASS' in (case / (variant + '-inferior.log')).read_text()
+    return validation
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('corpus', type=Path)
@@ -66,68 +137,7 @@ def main():
             validation[name] = run(name, command, measured=True, timeout=600)
             SUPPORT.require_clean(case / (name + '.log'))
         assert 'No errors.' in (case / 'llvm.log').read_text()
-        for variant, executable in (('compiler', reference), ('forge', binary)):
-            commands = ['set pagination off', 'set confirm off', 'set debuginfod enabled off',
-                'set auto-solib-add off', 'set disable-randomization off', 'set startup-with-shell on',
-                'file ' + json.dumps(str(executable)), 'directory ' + str(artifact_dir)]
-            if workload['name'] == 'uboot':
-                commands += ['set args ' + shlex.join(['-d', str(corpus / workload['dtb']),
-                    '-c', 'echo forge-uboot-gdb=PASS']) + ' > ' +
-                    shlex.quote(str(case / (variant + '-inferior.log'))) + ' 2>&1']
-            commands += ['starti', 'python', 'exits = []',
-                'gdb.events.exited.connect(lambda event: exits.append(getattr(event, "exit_code", None)))',
-                'expected = ' + repr(workload['addresses']),
-                'bias = int(gdb.parse_and_eval("&main")) - expected["main"]',
-                'assert bias ' + ('> 0' if workload['kind'] == 'pie' else '== 0')]
-            if variant == 'forge':
-                commands += ['gdb.execute("symbol-file -o " + hex(bias) + " " + ' + repr(str(sidecar)) + ')',
-                    'for name, address in expected.items():']
-                if workload['name'] == 'uboot':
-                    commands += ['    if name == "main": continue  # explicitly omitted imported thunk']
-                commands += ['    symbol = gdb.lookup_global_symbol(name) or gdb.lookup_static_symbol(name)',
-                    # do_echo also names a legitimate static data object. Test
-                    # function ownership at its named breakpoint below instead.
-                    '    if name == "do_echo": continue',
-                    '    assert symbol and symbol.is_function and symbol.symtab, name',
-                    '    assert symbol.symtab.filename.endswith(".dbg.c"), name',
-                    '    assert int(symbol.value().address) == bias + address, name']
-            commands += ['end']
-            point = 'do_echo' if workload['name'] == 'uboot' else 'benchmark_checkpoint'
-            commands += ['ptype ' + ('sandbox_main' if workload['name'] == 'uboot' else point),
-                'python point = gdb.Breakpoint(' + (repr(point) if workload['name'] == 'uboot'
-                    else '"*" + hex(bias + expected["benchmark_checkpoint"])') + ')', 'continue', 'python',
-                'assert int(gdb.parse_and_eval("$pc")) == bias + expected[' + repr(point) + ']']
-            if variant == 'forge':
-                commands += ['block = gdb.block_for_pc(int(gdb.parse_and_eval("$pc")))',
-                    'while block is not None and block.function is None: block = block.superblock',
-                    'assert block and block.function.symtab.filename.endswith(".dbg.c")',
-                    'sal = gdb.selected_frame().find_sal()', 'assert sal.line > 0',
-                    'listing = gdb.execute("list *$pc", to_string=True)',
-                    'assert "No such file" not in listing and "No source" not in listing',
-                    'print(listing)']
-            if workload['name'] == 'uboot':
-                commands += (['assert int(gdb.parse_and_eval("argc")) == 2',
-                    'assert gdb.parse_and_eval("argv[1]").string() == "forge-uboot-gdb=PASS"']
-                    if variant == 'compiler' else ['assert int(gdb.parse_and_eval("*(unsigned long*)&gd")) != 0'])
-                commands += ['end', 'disable breakpoints', 'next', 'step', 'continue', 'python assert exits == [0]']
-            else:
-                commands += ['assert int(gdb.parse_and_eval("*(unsigned int*)&observed_count")) == 100',
-                    'assert int(gdb.parse_and_eval("*(unsigned int*)&observed_sum")) == 5050',
-                    'gdb.execute("disable breakpoints")',
-                    'finish = gdb.FinishBreakpoint(gdb.newest_frame(), internal=True)',
-                    'gdb.execute("next")', 'assert finish.return_value is None', 'gdb.execute("step")',
-                    'if finish.return_value is None: gdb.execute("continue")',
-                    'assert int(finish.return_value) == 5150', 'gdb.execute("continue")',
-                    'assert exits == [0]', 'end']
-            commands += ['echo host-consumer-' + variant + '=PASS\\n', '']
-            script = case / (variant + '.gdb')
-            script.write_text('\n'.join(commands))
-            validation[variant + '-gdb'] = run(variant + '-gdb',
-                ['gdb-multiarch', '-nx', '-q', '-batch', '-x', script], measured=True, timeout=180, cwd=case)
-            SUPPORT.require_clean(case / (variant + '-gdb.log'))
-            assert 'host-consumer-' + variant + '=PASS' in (case / (variant + '-gdb.log')).read_text()
-            if workload['name'] == 'uboot':
-                assert 'forge-uboot-gdb=PASS' in (case / (variant + '-inferior.log')).read_text()
+        validation.update(validate_gdb(workload, corpus, case, artifact_dir, sidecar, binary, reference))
         outcomes.append({'workload': workload['name'], 'artifactSha256': summary['artifactSha256'],
             'validation': validation, 'strict': json.loads((case / 'strict-checks.log.check.json').read_text())})
     after = {str(p): SUPPORT.digest(p) for p in protected}

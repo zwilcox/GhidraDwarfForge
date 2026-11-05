@@ -171,6 +171,15 @@ jobs:
                       $destination = Join-Path $env:RUNNER_TEMP "performance-$role"
                       Expand-Archive $archive -DestinationPath $destination
                       $ghidra = Join-Path $destination 'ghidra_12.0.3_PUBLIC'
+                      # launch.bat does not print the selected JVM version by
+                      # default. Observe the real Ghidra JVM, not a separate
+                      # PATH java process, in both measured installations.
+                      $launchProperties = Join-Path $ghidra 'support/launch.properties'
+                      $configuration = Get-Content -Raw $launchProperties
+                      $javaOverride = 'JAVA_HOME_OVERRIDE=' + $env:JAVA_HOME.Replace('\', '/')
+                      $configuration = $configuration -replace '(?m)^JAVA_HOME_OVERRIDE=.*$', $javaOverride
+                      $configuration += "`nVMARGS=-showversion`n"
+                      [IO.File]::WriteAllText($launchProperties, $configuration, [Text.UTF8Encoding]::new($false))
                       $extensions = @(Get-ChildItem "packages/$role" -Filter '*.zip')
                       if ($extensions.Count -ne 1) { throw "ambiguous $role extension" }
                       Expand-Archive $extensions[0].FullName -DestinationPath (Join-Path $ghidra 'Ghidra/Extensions')

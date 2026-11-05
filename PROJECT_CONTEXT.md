@@ -1,5 +1,18 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED broader local measurements; Windows workloads pending:** five
+same-compiler U-Boot pairs pass artifact/report identity, validators, GDB and
+preservation checks. Private-copy compression/index experiments pass for zlib,
+zstd and GDB indexes on SQLite/U-Boot; the tested `.debug_names` route fails LLVM
+verification. Opt-in zlib compression is selected as the next bounded production
+change, but remains **PLANNED**. Native Windows accounting and the shared pinned
+corpus build pass. Windows workload run `41973112213` completes its first import
+then fails the mandatory runtime observation because `launch.bat` emits no JVM
+version banner by default. Both isolated test installations now pin Java 21 and
+request `-showversion`; the corrected native workload run is pending. See
+`docs/PERFORMANCE-WORKPLAN.md` and `docs/evidence/performance-candidates-local-20261105.json`.
+Full #74 acceptance and every later goal issue remain incomplete.
+
 **CONFIRMED local performance continuation; #74 remains incomplete:** the
 current work preserves Ghidra 12.0.3/Java 21 and pinned libdwarf 2.3.2. Optional
 JFR phase events pass real Java 21 failure/cancellation tests and a packaged

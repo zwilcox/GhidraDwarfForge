@@ -205,6 +205,15 @@ remains PARTIAL with 4,497 omitted location ranges and 10 unsupported constructs
 Protected corpus/module/harness bytes remain unchanged; only the documented
 two Ghidra backup metadata files change.
 
+The five same-compiler U-Boot pairs (`paired-saved-exports/run.kuxfk4nd`)
+subsequently pass ten exports, artifact/report identity, compiler/Forge GDB,
+strict validators and protected-file checks. Baseline/candidate medians are
+115.66/114.89s; within-pair differences are -0.77/-0.21/-1.34/-0.49/-1.00s.
+Maximum process-family RSS is 1,081,636/1,386,068KiB. These observations do not
+establish lower memory usage or a general instrumentation speedup; SQLite's
+small timing difference has the opposite sign. Both timing populations include
+the unchanged U-Boot decompilation timeout, and this host was not dedicated.
+
 The updated 100-function synthetic harness (`export-benchmark/run.thbraean`)
 passes repeated deterministic exports, structural checks, runtime observations
 and GDB. The real copy-cancellation control (`run.5mcAIuwz`) leaves original
@@ -251,10 +260,22 @@ validates the unchanged Windows artifacts and runs compiler/Forge GDB behavior
 on Linux with explicit source relocation and PIE bias. No Windows workload
 performance claim is accepted until these new jobs actually pass.
 
+The first workload run `41973112213` passes corpus/package/control jobs and
+completes its first Windows import, then fails the mandatory runtime observation:
+Ghidra's Windows launcher does not print the selected JVM version by default.
+The log contains no version evidence; environment variables alone are not a
+replacement. The corrected workflow configures both private installations with
+the selected Java 21 override and `VMARGS=-showversion`, which `LaunchSupport`
+passes to the actual Ghidra JVM. It protects those configuration files during
+measurement and retains the same runtime/script checks. The corrected native
+workload/consumer run remains required.
+
 ## Optimization decisions still required
 
 For each candidate below, document measured motivation, compatibility/resource
-cost, and an explicit implement/defer/reject decision. No decision is yet made.
+cost, and an explicit implement/defer/reject decision. The local experiments
+below support a first selection; production implementation and full host
+acceptance remain incomplete.
 
 | Candidate | Evidence needed |
 |---|---|
@@ -263,6 +284,82 @@ cost, and an explicit implement/defer/reject decision. No decision is yet made.
 | String/address indexing | Actual section duplication/size and lookup/serialization cost |
 | Incremental export caching | Repeated work cost and reliable invalidation for analyst changes |
 | Bounded parallel decompilation | External decompiler CPU/wait cost, memory, ordering and cancellation |
+
+### Confirmed local consumer experiments
+
+`consumer-candidates.py` uses private copies, two deterministic generation runs,
+unchanged decompressed core DWARF sections, strict/LLVM/GNU checks, runtime GDB
+and five rotating fresh-GDB samples with the index cache disabled. U-Boot also
+checks its compiler reference. The baseline remains untouched. The full local
+evidence is `docs/evidence/performance-candidates-local-20261105.json`.
+
+| Workload / variant | Sidecar bytes | Median load / first lookups | Whole GDB process |
+|---|---:|---:|---:|
+| SQLite baseline | 5,638,224 | 4.93 / 9.47ms | 0.08s |
+| SQLite zlib | 1,938,296 | 7.44 / 13.58ms | 0.08s |
+| SQLite zstd | 1,711,032 | 5.29 / 11.23ms | 0.07s |
+| SQLite GDB index | 5,881,272 | 2.80 / 10.21ms | 0.07s |
+| U-Boot baseline | 17,029,464 | 11.75 / 25.54ms | 0.10s |
+| U-Boot zlib | 6,515,992 | 17.14 / 35.12ms | 0.11s |
+| U-Boot zstd | 6,022,128 | 15.08 / 28.66ms | 0.10s |
+| U-Boot GDB index | 17,367,904 | 5.76 / 27.27ms | 0.09s |
+
+These are warm-cache, single-host observations; hundredth-second whole-process
+resolution cannot justify fine-grained speed claims. Zlib generation takes
+0.08–0.09s for SQLite and 0.16–0.18s for U-Boot. The core decompressed DWARF
+bytes remain identical. No Windows compression or LLDB compatibility is claimed.
+
+Retained failures matter to the selection:
+
+- GNU BFD `objcopy` refuses to rewrite the matched non-loadable SQLite sidecar
+  with a PHDR/LOAD diagnostic. `run.na9a9vlq` is failed, including its unnecessary
+  baseline rewrite. LLVM 18.1.3 `llvm-objcopy` supports the tested copies; the
+  corrected baseline is not rewritten. Do not recommend an untested GNU
+  postprocessing command for these artifacts.
+- The older local checker lacks zlib/zstd support; `run.pvr5w_h6` retains those
+  failures. The exact-head CI checker from run `41973112217`, downloaded with
+  archive digest and complete manifest verification, accepts both compressed
+  variants in `run.pd7izo2k` and `run.2wrbht7k`.
+- GDB-generated `.debug_names` fails LLVM verification on both workloads,
+  including an unexpected `DW_FORM_udata` for `DW_IDX_parent`. No timings or
+  compatibility claim are accepted for this candidate. The supported index
+  generation interfaces are described in the
+  [GDB manual](https://sourceware.org/gdb/current/onlinedocs/gdb.html/Index-Files.html);
+  the failure is an observed limit of the tested producer/consumer combination.
+
+`section-inventory.py` additionally finds zero duplicate strings and zero exact
+duplicate location lists in either artifact. Location-list address operands
+occupy 2,473,856 bytes (SQLite) and 7,511,056 bytes (U-Boot), with 19,260 and
+76,793 unique addresses. Those counts establish repetition, not the final size
+or speed of an indexed implementation.
+
+### Selected next implementation and provisional deferrals
+
+- **PLANNED: implement opt-in zlib section compression** after this measurement
+  component is accepted. The observed whole-sidecar reduction is 65.62% and
+  61.74%, with modest measured generation cost. Keep the default uncompressed;
+  use the standard ELF compressed-section representation and Java's existing
+  zlib implementation rather than introducing another native ABI. Require
+  target class/endianness handling, cancellation, deterministic output,
+  cross-architecture validators/GDB, and Linux/Windows packaged execution.
+  This selection is not an implementation or acceptance claim. Zstd remains
+  deferred because its additional measured reduction would require another
+  production codec dependency or external tool contract.
+- **DEFER built-in GDB indexes; reject the tested `.debug_names` route.** The
+  valid GDB index adds 4.31%/1.99% to these artifacts and saves only about
+  2.1/6.0ms of measured initial load, with slightly higher first-lookup times.
+  Revisit when a larger or multi-CU consumer workload demonstrates sufficient
+  benefit; do not weaken validators for the rejected index.
+- **DEFER string/address indexing in favor of the selected compression work.**
+  Additional string or exact-list deduplication has no opportunity in these
+  samples. Address indexing has real size potential, but requires new address
+  tables, CU bases and index forms plus their target/consumer tests. Compression
+  already reduces the repeated address bytes while preserving all existing
+  decompressed DWARF. This is a priority decision, not a claim that address
+  indexing cannot improve performance.
+- Incremental caching and bounded parallel decompilation still require final
+  decisions after the Windows phase/resource results and an explicit review of
+  analyst-change invalidation, ordering, memory bounds and cancellation.
 
 Any selected implementation requires semantic/byte comparisons, strict
 GNU/LLVM/pinned-libdwarf validation, source/type/location and applicable GDB

@@ -4760,7 +4760,11 @@ retains the full broader-workload, host, measurement and optimization-decision
 scope. Internal JFR observations, same-compiler SQLite comparisons, and the
 complete pinned U-Boot sandbox benchmark pass locally. Native Windows accounting
 controls pass run `41971951834`; real Windows workload/consumer jobs remain
-unverified. Workload measurements, candidate decisions, hosted review and integration remain
+unverified. Five U-Boot pairs and private-copy compression/index experiments
+also pass within their documented limits; the tested `.debug_names` route fails
+validation. Opt-in zlib compression is selected but **PLANNED**, with caching
+and parallel-decompilation decisions still pending. Workload measurements,
+selected implementation, hosted review and integration remain
 required; these component results do not close the issue.
 
 **CONFIRMED through PR53's complete hosted gate:** instruction-level stack profiles are created only
