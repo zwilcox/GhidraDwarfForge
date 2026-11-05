@@ -170,8 +170,20 @@ public final class EmissionEvidenceSmoke {
         require(variableTotals.equals(new VariableCoverageTotals(10, 9, 4, 4, 6,
             3 * (end - entry) + symbols.get("failed_end") - symbols.get("failed"),
             2 * (end - entry) + end - moved, "")), "actual emission and recovered-scope totals");
+        var inventory = VariableCoverageInventory.build(model, facts, () -> false);
+        require(inventory.totals().equals(variableTotals), "automatic recovered/emitted inventory matches independent fixture totals");
+        for (var function : inventory.functions()) {
+            for (var variable : function.variables()) {
+                String key = function.function().name().equals("failed") ? "failed::hidden" : variable.identity().internalName();
+                var independent = locationCounts.get(key);
+                require(independent != null && variable.location().knownScopeBytes() == independent.knownScopeBytes() &&
+                    variable.location().coveredScopeBytes() == independent.coveredScopeBytes() &&
+                    variable.location().locatedRanges().equals(independent.locatedRanges()) &&
+                    variable.location().scopeComplete() == independent.scopeComplete(), "automatic inventory extent " + key);
+            }
+        }
         Files.writeString(Path.of(output + ".evidence.json"), gson.toJson(
-            Map.of("emission", facts, "types", counts, "locations", locationCounts, "variableTotals", variableTotals)) + "\n");
+            Map.of("emission", facts, "types", counts, "locations", locationCounts, "variableTotals", variableTotals, "variableInventory", inventory)) + "\n");
         Path cancelled = Path.of(output + ".cancelled");
         byte[] previous = "previous artifact".getBytes(java.nio.charset.StandardCharsets.UTF_8);
         Files.write(cancelled, previous);

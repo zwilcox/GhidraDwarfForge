@@ -173,6 +173,32 @@ def inspect(case):
         'variablesWithLocation': 4, 'knownScopeVariables': 4, 'unknownScopeVariables': 6,
         'knownScopeBytes': 3 * body_size + int(named('failed', 'DW_TAG_subprogram')['attributes']['high_pc']),
         'coveredScopeBytes': 2 * body_size + metrics['late']['coveredScopeBytes'], 'extentUnavailableReason': ''}
+    inventory = evidence['variableInventory']
+    assert inventory['totals'] == evidence['variableTotals']
+    rows = {f['function']['name']: f for f in inventory['functions']}
+    assert set(rows) == {'observed', 'failed', 'empty'}
+    assert all(f['recoveredSignatureKnown'] for f in rows.values())
+    assert len(rows['observed']['variables']) == 9 and len(rows['failed']['variables']) == 1
+    assert rows['empty']['variables'] == []
+    for function_name, function in rows.items():
+        for variable in function['variables']:
+            name = variable['identity']['internalName']
+            metric = metrics[('failed::' if function_name == 'failed' else '') + name]
+            for field in ['declarationEmitted', 'scopeComplete', 'knownScopeRanges', 'locatedRanges',
+                          'knownScopeBytes', 'coveredScopeBytes', 'locatedBytes']:
+                assert variable['location'][field] == metric[field], (function_name, name, field)
+            if function_name == 'failed':
+                assert variable['emittedType'] is None and variable['omissionReason'] == 'SIGNATURE_NOT_EMITTED'
+            else:
+                assert variable['emittedType'] == variable['recoveredType']
+            if name == 'late':
+                assert variable['storageEvidence'][0]['omissionReason'] == 'UNKNOWN_LIFETIME'
+                assert variable['storageEvidence'][0]['start'] == body_start
+                assert variable['storageEvidence'][0]['end'] == available['range']['start']
+            if name == 'counter':
+                assert variable['identity']['staticAddress'] == int(named('counter', 'DW_TAG_variable')['attributes']['location'].split('DW_OP_addr: ')[1].split(')')[0], 16)
+    assert {k: v['recoveredVariables'] for k, v in inventory['byKind'].items()} == {
+        'PARAMETER': 2, 'LOCAL': 7, 'FUNCTION_STATIC': 1}
     return {'rawTypeNodes': 5, 'opaqueNodes': 1, 'variables': 9, 'locations': 4, 'omittedLocations': 5,
             'knownScopeVariables': 3, 'lateCoveredScopeBytes': metrics['late']['coveredScopeBytes'],
             'lateKnownScopeBytes': metrics['late']['knownScopeBytes']}

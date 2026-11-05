@@ -25,7 +25,10 @@ retains failed declarations in counts and exposes aggregate overflow. Twenty-one
 component checks and the expanded raw-DWARF/GDB fixture pass: the late local
 has 2/5 visible PC-byte coverage, and ten recovered declarations include four
 known-scope variables with 12/21 variable-PC-byte coverage plus six explicitly
-excluded unknown-scope variables. These helpers are not exposed in reports yet.
+excluded unknown-scope variables. The recovered/emitted inventory now passes 27 component checks, all 273 cancellation
+checkpoints and the raw-DWARF/GDB fixture. It retains per-kind populations,
+export-local scoped identities, declaration/storage provenance, omitted
+declarations and explicit unknown scopes. Public reporting remains pending.
 Location-list results retain their actual immutable plans and honor cancellation.
 Their four byte streams match the parent; 237 raw-byte/negative checks pass.
 Real packaged x86-64 and rebased AArch64 PIE lexical-variable journeys pass

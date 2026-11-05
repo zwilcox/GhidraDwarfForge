@@ -108,12 +108,41 @@ it must not infer visibility from available storage. Current native evidence is
 `build/test-results/emission-evidence/run.6dwshckm/acceptance.json` and local component
 output is `build/location-coverage-validation.log`.
 
+## Recovered declaration inventory
+
+**CONFIRMED locally:** `VariableCoverageInventory` now joins the original
+recovered model to actual producer declarations, with per-function and per-kind
+counts. Parameter ordinals distinguish duplicate/blank names; scoped internal
+local names distinguish shadowed display names; statics retain their memory
+address and lexical owner. These are export-local keys, not proof that renamed
+locals correspond across different reports. Globals remain outside the function
+variable denominator. Missing recovery is explicit, distinct from a known empty
+signature. Unmatched/ambiguous inventories and stale lexical bodies are rejected.
+
+Formal parameters use function-body scope, explicitly bound locals use their
+recorded visibility, and block statics use explicit lexical ranges. Unbound locals
+and root statics keep unknown visibility even if storage exists. Recovered but
+unemitted declarations retain their denominators and an omission reason. Storage
+ranges preserve their individual evidence categories and unavailable-prefix
+reasons. Signature provenance is labeled as signature evidence; compound source
+diagnostics remain verbatim with unknown category rather than guessed provenance.
+
+Twenty-seven component checks pass, including every one of 273 cancellation
+checkpoints, discontiguous scope clipping, duplicate/shadowed names, failed
+functions, per-kind totals and immutable deterministic ordering. The existing
+native fixture independently verifies the automatic inventory against raw DIEs,
+locations and GDB: ten recovered declarations, nine emitted, four located, and
+12/21 known-scope variable-PC-bytes with six unknown scopes. Evidence is
+`build/test-results/emission-evidence/run.5d5c7_h0/acceptance.json`; build and
+component checks are in `build/variable-inventory-validation.log`. Public schema,
+comparison, UI, large-workload cost and hosted acceptance remain pending.
+
 ## Current component checks
 
 With the supported Java21/Ghidra12.0.3 environment, run:
 
 ```bash
-./gradlew ghidraInstructionEvidenceSmoke syntheticSourceSmoke sourceCoverageSmoke dwarfLineTableSmoke typeCoverageSmoke locationEmissionPlanSmoke locationCoverageSmoke dwarfLocationListsSmoke buildExtension
+./gradlew ghidraInstructionEvidenceSmoke syntheticSourceSmoke sourceCoverageSmoke dwarfLineTableSmoke typeCoverageSmoke locationEmissionPlanSmoke locationCoverageSmoke variableCoverageInventorySmoke dwarfLocationListsSmoke buildExtension
 ```
 
 Observed local results: instruction evidence passes 44 checks across four
