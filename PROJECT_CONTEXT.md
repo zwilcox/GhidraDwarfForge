@@ -13,6 +13,11 @@ source bytes and old mappings in baseline comparisons. The helper is not yet
 connected to exporter reports. Canonical type accounting passes 29 native-free
 checks, including opaque targets, implicit void, missing/repeated edges and a
 20,000-node shared chain; actual producer emission evidence remains pending.
+Location-list results retain their actual immutable plans and honor cancellation.
+Their four byte streams match the parent; 237 raw-byte/negative checks pass.
+Real packaged x86-64 and rebased AArch64 PIE lexical-variable journeys pass
+validators and GDB (QEMU for AArch64), including x86-64 failure/cancellation
+controls. This is refactor validation, not public scorecard acceptance.
 Report schema integration, variable coverage, serialized type validation,
 comparison/presentation,
 large-workload cost and full validator/GDB acceptance remain planned. This does

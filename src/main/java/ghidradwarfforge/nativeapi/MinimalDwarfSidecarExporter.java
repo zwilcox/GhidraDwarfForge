@@ -454,7 +454,7 @@ public final class MinimalDwarfSidecarExporter {
             typeModel == null ? List.of() : typeModel.variableStorage().variables().stream()
                 .filter(variable -> emittedSignatures.containsKey(new FunctionKey(
                     variable.functionName(), variable.functionAddress()))).toList(),
-            target.addressBytes(), elf.byteOrder());
+            target.addressBytes(), elf.byteOrder(), cancelled);
         Map<String, byte[]> sections;
         try (var phase = ExportPhase.start("native-production")) {
             sections = produce(producer, consumer, target, ordered,

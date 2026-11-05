@@ -13,6 +13,9 @@ are not yet connected to a public report. Canonical type accounting now passes
 29 native-free checks for opaque targets, filtered roots, missing/repeated edges,
 implicit void, cycles, cancellation and a 20,000-node shared chain. Its emission
 input remains a fixture until producer integration supplies actual evidence.
+Location-list results now retain their actual immutable range/expression plan;
+the exporter threads cancellation into planning/encoding. Independent byte checks
+and real x86-64/AArch64 lexical-variable regressions pass for this refactor.
 Report integration, variable/type
 coverage, CLI/GUI comparison and full validator/GDB/performance acceptance remain
 planned.
@@ -23,7 +26,7 @@ Issue 74 retains integration priority; no public schema has changed.
 With the supported Java21/Ghidra12.0.3 environment, run:
 
 ```bash
-./gradlew ghidraInstructionEvidenceSmoke syntheticSourceSmoke sourceCoverageSmoke dwarfLineTableSmoke typeCoverageSmoke buildExtension
+./gradlew ghidraInstructionEvidenceSmoke syntheticSourceSmoke sourceCoverageSmoke dwarfLineTableSmoke typeCoverageSmoke locationEmissionPlanSmoke dwarfLocationListsSmoke buildExtension
 ```
 
 Observed local results: instruction evidence passes 44 checks across four
@@ -32,6 +35,35 @@ the extension builds. The ordinary exporter/report path does not yet invoke
 instruction capture or publish metrics. Baseline comparisons cover four line
 encodings and synthetic source/mapping/boundary bytes. Full serialized ELF/DWARF,
 GDB, report compatibility, GUI and performance acceptance is still outstanding.
+
+The location-plan refactor additionally passes 237 native-free checks across both
+address widths/byte orders. The retained intervals and expressions match an
+independent raw decoder. Single partial registers, rejected mixed lists, invalid
+piece widths, unavailable ranges and unresolved stack coordinates do not acquire
+phantom list coverage. A stable full expression remains distinct from a list.
+Four parent/candidate section streams are byte-identical (combined dump SHA-256
+`e4c09ff79358e887b78908efd2de18e8bcae81d1b016c309c8a417d3941734a6`).
+
+Using the current locally assembled package in a private Ghidra12.0.3/Java21
+installation and the pinned libdwarf checker, these commands passed:
+
+```bash
+python3 src/test/integration/lexical-shadow-export.py <private-installation> x86_64 --discontiguous --controls
+python3 src/test/integration/lexical-shadow-export.py <private-installation> aarch64 --role pie-rebased --discontiguous
+```
+
+Both run the actual exporter twice, GNU/LLVM/libdwarf checks, compiler-reference
+and Forge GDB journeys. The AArch64 journey uses QEMU. There are 23 x86-64 and
+27 AArch64 instruction-boundary observations: outer value 11, inner value 23,
+uninitialized unavailable states and correct scope-gap lookup. x86-64 also passes
+stale/coalesced evidence, actual decompiler failure and copy-cancellation controls.
+Repeated report/sidecar/source bytes and 14 protected hashes per case match.
+Exports honestly remain `PARTIAL` for unrelated existing recovery omissions.
+Strict checks have zero uncorroborated errors; the only accepted diagnostics
+match the original's unchanged inherited frame records. This validates unchanged
+debugger behavior, not public scorecard numbers. Evidence:
+`build/coverage-package/local-review.json`, `build/coverage-location-validation.log`
+and `build/location-plan-baseline/result.json`. Hosted acceptance remains pending.
 
 ## Populations and exact units
 

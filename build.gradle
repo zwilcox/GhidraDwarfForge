@@ -511,6 +511,14 @@ tasks.register("typeCoverageSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.coverage.TypeCoverageSmoke"
 }
 
+tasks.register("locationEmissionPlanSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks retained location plans against raw DWARF list bytes and omission controls"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.coverage.LocationEmissionPlanSmoke"
+}
+
 tasks.register("dwarfLocationListsSmoke", JavaExec) {
     group = "verification"
     description = "Checks deterministic DWARF 5 variable location-list encoding"

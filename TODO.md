@@ -2673,6 +2673,10 @@ including rebases/gaps/body drift/cancellation, and token provenance is preserve
 separately from declaration rows. Canonical type accounting passes 29 native-free
 checks for implicit void, opaque targets, filtering, missing/repeated references,
 deep cycles/shared graphs and cancellation; producer evidence is not wired yet.
+The actual location-list plan is now retained, with 237 independent byte/negative
+checks and byte-identical parent comparisons. Real packaged lexical-variable
+journeys pass on x86-64 and rebased AArch64 PIE/QEMU, including structural
+validators and scope-boundary GDB values. Full scorecard acceptance remains open.
 The public report is unchanged. [The metric contract and
 acceptance matrix](docs/COVERAGE-SCORECARDS.md) retain the full instruction,
 variable/location/type, provenance, compatibility, comparison/presentation and
