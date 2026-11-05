@@ -6,6 +6,9 @@ param(
     [string] $Output,
     [switch] $GdbLoader,
     [string] $CompressDebugSections = 'none',
+    [string] $AnnotationRecordLimit,
+    [string] $AnnotationTextLimit,
+    [string] $AnnotationSourceLimit,
     [string] $Import,
     [string] $ProjectDirectory,
     [string] $ProjectName,
@@ -260,6 +263,15 @@ try {
     }
     if ($CompressDebugSections -eq 'zlib') {
         $exportOptions += @('--compress-debug-sections=zlib')
+    }
+    foreach ($entry in @(
+        @('AnnotationRecordLimit', 'annotation-record-limit'),
+        @('AnnotationTextLimit', 'annotation-text-limit'),
+        @('AnnotationSourceLimit', 'annotation-source-limit')
+    )) {
+        if ($PSBoundParameters.ContainsKey($entry[0])) {
+            $exportOptions += @("--$($entry[1])=$($PSBoundParameters[$entry[0]])")
+        }
     }
 
     if ($importMode) {

@@ -2,8 +2,9 @@
 
 **PLANNED:** issues #116/#114 will preserve listing comments and equates in
 synthetic source and debugger lookup, with optional assembly/p-code context.
-The default export entry points do not yet implement these features. Tested
-components and controlled production API exports are described below. #108
+The default export entry points now include listing comments. Equate debugger
+lookup and optional context remain planned. The installed-path tests below pass
+locally on Linux; earlier component-only notes describe their historical scope. #108
 implementation is merged; its final documentation is tracked by PR #165.
 
 **CONFIRMED fixture preparation:** `analyst-annotations.c` builds deterministic
@@ -227,3 +228,48 @@ The CI pipeline supplies these native paths for all four profiles; hosted
 execution remains unverified. This controlled export has three functions and no
 type model. It does not establish the default GUI/headless integration, equate
 lookup or optional instruction context. Those remain required for #116/#114.
+
+The shared GUI/headless script now reads the stored annotation inventory and
+composes listing comments before DWARF/report creation. Incidental listing
+comments are disabled in native decompilation; native warnings remain enabled.
+Type recovery still uses the same decompilation results, and coverage consumes
+the remapped executable evidence. Complete comment metadata remains in the
+synthetic source; this change does not add fields to the strict report schema or
+count annotations as recovered variables. Equate values still require their
+separate implementation.
+
+Per-export limits default to 1,000,000 inventory records (comments, equates and
+references), 16,777,216 stored UTF-16 units and 134,217,728 complete source UTF-8
+bytes. Exceeding a limit fails before publication; it never truncates stored
+text. These initial limits are resource bounds, not measured workload guarantees.
+All three may be set to decimal integers from 0 through 2,147,483,647 in the
+script or headless wrapper:
+
+- `--annotation-record-limit=<n>`
+- `--annotation-text-limit=<n>`
+- `--annotation-source-limit=<n>`
+
+The PowerShell wrapper spells these `-AnnotationRecordLimit`,
+`-AnnotationTextLimit` and `-AnnotationSourceLimit`. The GUI uses the same defaults;
+for larger limits use the script arguments or headless wrapper. The separate
+`source-annotations` JFR phase makes composition cost visible without changing
+the measured decompilation phase. The phase reader continues to accept historical
+complete recordings and rejects incomplete current recordings.
+
+The [installed default-export receipt](evidence/annotation-default-export.json)
+records successful x86-64, AArch64 PIE and MIPS32 BE/LE cases plus a fresh full
+x86-64 pipeline. Each invokes the packaged shared export script with the real
+type model, validates its sidecar, recovers all fifty fixture comment payloads,
+and checks source lookup/stepping, the applied structure tag and real global
+values in GDB. A second JVM produces identical output. Record/text/source-limit
+failures and an invalid numeric option preserve the existing output pair and
+saved project. The actual JFR recording passes the updated reader and retains
+identical output hashes. All 603 Java 21 classes in the final extension match
+the tested installed module; current wrappers are packaged.
+
+The first debugger oracle requested a compiler typedef absent from the saved
+Ghidra model. The actual saved type and emitted DIE are a structure tag, so the
+correct lookup is `ptype struct ANNOTATION_TYPE`. This test correction did not
+change the exporter. GUI interaction, Windows wrapper execution and the complete
+hosted/workload gates remain pending. No equate debugger or optional context
+support is claimed yet.

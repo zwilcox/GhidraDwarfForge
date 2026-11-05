@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED installed default comments — #116/#114:** the shared export script
+now preserves stored listing comments with separate native warning handling.
+Five Linux headless cases (four architecture profiles plus a fresh x86-64
+pipeline) pass GNU/LLVM/pinned strict validation, GDB source/type/global checks,
+identical reruns and four pre-publication limit failures each. An actual JFR
+recording includes the new source-annotations phase with unchanged artifacts.
+See `docs/evidence/annotation-default-export.json`. GUI interaction, Windows,
+hosted/full workload acceptance, equate debugger values and optional context
+remain required. Earlier component-only notes below describe historical scope.
+
 **CONFIRMED controlled saved-comment export — #116/#114:** listing comments now
 compose with actual native token evidence on x86-64, AArch64 PIE and MIPS32 in
 both byte orders. GNU/LLVM/pinned strict validation and native/QEMU GDB pass;

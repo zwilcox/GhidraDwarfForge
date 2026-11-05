@@ -42,14 +42,21 @@ def main():
     result = json.loads((inventory / 'result.json').read_text())
     assert result['status'] == 'PASS_PACKAGED_ANNOTATION_INVENTORY'
     placement = None
+    default_export = None
     if args.consumer:
         run('placement', ['python3', harness / 'annotation-placement.py', args.ghidra, curation,
             args.consumer.resolve(strict=True), args.producer.resolve(strict=True)])
         placement, = curation.glob('placement-*')
         assert json.loads((placement / 'result.json').read_text())['status'] == 'PASS_SAVED_COMMENT_PLACEMENT'
+        run('default-export', ['python3', harness / 'annotation-default-export.py', args.ghidra, curation,
+            args.consumer.resolve(strict=True), args.producer.resolve(strict=True),
+            '--placement-control', placement])
+        default_export, = curation.glob('default-export-*')
+        assert json.loads((default_export / 'result.json').read_text())['status'] == 'PASS_INSTALLED_DEFAULT_COMMENTS'
     (root / 'result.json').write_text(json.dumps({'status': result['status'], 'target': args.target,
         'role': role, 'case': str(case), 'curation': str(curation), 'inventory': str(inventory),
-        'placement': str(placement) if placement else None}, indent=4) + '\n')
+        'placement': str(placement) if placement else None,
+        'defaultExport': str(default_export) if default_export else None}, indent=4) + '\n')
     print('annotation-inventory-pipeline=PASS ' + args.target + ' ' + role)
 
 

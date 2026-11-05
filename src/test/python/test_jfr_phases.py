@@ -72,6 +72,18 @@ class PhaseSummaryTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 phases.summarize(recording)
 
+    def test_annotations_preserve_complete_coverage_phase_requirement(self):
+        recording = self.recording()
+        for index, phase in enumerate(sorted(phases.TYPE_COVERAGE_PHASES | phases.ANNOTATION_PHASES), start=5):
+            event = copy.deepcopy(recording['recording']['events'][1])
+            event['values'].update(phase=phase, startTime=f'2026-11-04T12:00:0{index}.123456789-06:00')
+            recording['recording']['events'].append(event)
+        result = phases.summarize(recording)
+        self.assertEqual(result['unattributedExportSeconds'], 5.5)
+        del recording['recording']['events'][5]
+        with self.assertRaises(ValueError):
+            phases.summarize(recording)
+
 
 if __name__ == '__main__':
     unittest.main()

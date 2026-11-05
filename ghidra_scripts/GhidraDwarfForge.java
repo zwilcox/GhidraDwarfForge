@@ -76,6 +76,7 @@ public class GhidraDwarfForge extends GhidraScript {
         }
 
         Map<String, String> options = parseOptions(arguments);
+        var annotationLimits = ghidradwarfforge.source.AnnotationLimits.fromOptions(options);
         var compression = ghidradwarfforge.elf.DebugSectionCompression.parse(
             options.getOrDefault("compress-debug-sections", "none"));
         boolean attachmentPreparation = options.containsKey("attachment-preparation");
@@ -198,7 +199,20 @@ public class GhidraDwarfForge extends GhidraScript {
         var decompilation = ExportPhase.measure("decompilation-and-source", () ->
             GhidraSyntheticSource.decompileDetailed(currentProgram, functions,
                 rebaseDelta, monitor, allocation, diagnostic));
-        var source = decompilation.source();
+        var source = ExportPhase.measure("source-annotations", () -> {
+            var inventory = ghidradwarfforge.GhidraAnnotationInventory.read(currentProgram,
+                new ghidradwarfforge.GhidraAnnotationInventory.Limits(
+                    annotationLimits.records(), annotationLimits.textUnits()), monitor);
+            try {
+                return ghidradwarfforge.GhidraListingAnnotationSource.compose(currentProgram,
+                    inventory, decompilation.source(), rebaseDelta,
+                    annotationLimits.sourceBytes(), monitor).source();
+            }
+            catch (IllegalArgumentException limit) {
+                throw new IllegalArgumentException(limit.getMessage() +
+                    "; raise --annotation-source-limit to preserve the full source; outputs were not published", limit);
+            }
+        });
         monitor.checkCancelled();
         var registers = ghidradwarfforge.locations.TargetRegisterMap.forElf(
             target.name(), originalElf, monitor::isCancelled);
@@ -362,7 +376,9 @@ public class GhidraDwarfForge extends GhidraScript {
             if (!name.equals("libdwarf") && !name.equals("libdwarfp") &&
                     !name.equals("input") && !name.equals("output") &&
                     !name.equals("packaged-natives") && !name.equals("gdb-loader") && !name.equals("attachment-preparation") &&
-                    !name.equals("compress-debug-sections")) {
+                    !name.equals("compress-debug-sections") &&
+                    !name.equals("annotation-record-limit") && !name.equals("annotation-text-limit") &&
+                    !name.equals("annotation-source-limit")) {
                 throw new IllegalArgumentException("unknown option --" + name);
             }
             if ((name.equals("packaged-natives") || name.equals("gdb-loader") || name.equals("attachment-preparation")) &&
