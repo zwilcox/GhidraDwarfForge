@@ -522,6 +522,14 @@ tasks.register("sourceCoverageInventorySmoke", JavaExec) {
     mainClass = "ghidradwarfforge.coverage.SourceCoverageInventorySmoke"
 }
 
+tasks.register("coverageTypeEvidenceSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks versioned individual type evidence and comparison"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CoverageTypeEvidenceSmoke"
+}
+
 tasks.register("typeGraphEvidenceSmoke", JavaExec) {
     group = "verification"
     description = "Checks individual type states, repeated references, cycles and cancellation"

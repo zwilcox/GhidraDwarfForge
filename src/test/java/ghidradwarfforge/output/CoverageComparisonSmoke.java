@@ -64,7 +64,7 @@ public final class CoverageComparisonSmoke {
             moved.getAsJsonObject("coverage").getAsJsonObject("profile").addProperty("compilerSpecId", "different");
             Files.writeString(movedPath, moved.toString());
             require(run("--report", movedPath.toString(), "--before", before.toString()).status() == 2, "different compiler profile compared");
-            moved.getAsJsonObject("coverage").addProperty("definitionVersion", 2);
+            moved.getAsJsonObject("coverage").addProperty("definitionVersion", 3);
             Files.writeString(movedPath, moved.toString());
             require(run("--report", movedPath.toString()).status() == 1, "unknown metric version admitted");
 

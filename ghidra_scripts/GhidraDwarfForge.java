@@ -239,7 +239,10 @@ public class GhidraDwarfForge extends GhidraScript {
                 input, inputHash, output, outputHash, sourceOutput, sourceHash,
                 result.functionCount(), result.sectionNames(), source, typeModel,
                 extraction.skippedFunctions(), diagnostics);
-            var claims = new CoverageReportClaims(profile, coverage);
+            var typeEvidence = ExportPhase.measure("coverage-type-evidence", () ->
+                ghidradwarfforge.output.CoverageTypeEvidence.capture(typeModel, result.emission(), coverage,
+                    monitor::isCancelled));
+            var claims = new CoverageReportClaims(profile, coverage, typeEvidence);
             String json = ExportPhase.measure("coverage-report-preflight", () ->
                 report.toJsonWithCoverage(claims,
                     monitor::isCancelled));

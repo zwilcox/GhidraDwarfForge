@@ -23,6 +23,7 @@ import ghidradwarfforge.coverage.LocationCoverage;
 import ghidradwarfforge.coverage.SourceCoverageIndex;
 import ghidradwarfforge.coverage.SourceCoverageInventory;
 import ghidradwarfforge.coverage.TypeCoverage;
+import ghidradwarfforge.coverage.TypeGraphEvidence;
 import ghidradwarfforge.coverage.VariableCoverageInventory;
 import ghidradwarfforge.coverage.VariableCoverageTotals;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionRange;
@@ -35,7 +36,11 @@ import ghidradwarfforge.types.TypeGraph.TypeRef;
  * facts or attachment authority. No referenced artifact is opened. Type-union
  * counts cannot establish canonical graph identity without the producer graph.
  */
-public record CoverageReportClaims(CoverageReportJson.Profile profile, ExportCoverage coverage) {
+public record CoverageReportClaims(CoverageReportJson.Profile profile, ExportCoverage coverage,
+        CoverageTypeEvidence typeEvidence) {
+    /** Legacy definition one remains byte-compatible and has no individual graph evidence. */
+    public CoverageReportClaims(CoverageReportJson.Profile profile, ExportCoverage coverage) { this(profile, coverage, null); }
+    public int definitionVersion() { return typeEvidence == null ? 1 : 2; }
     public CoverageReportClaims {
         java.util.Objects.requireNonNull(profile);
         java.util.Objects.requireNonNull(coverage);
@@ -95,7 +100,8 @@ public record CoverageReportClaims(CoverageReportJson.Profile profile, ExportCov
         Parser(ReportValueReader parent) { super(parent, ValuePopulation.COVERAGE); }
 
         CoverageReportClaims document() throws IOException {
-            Map<String, Object> root = fields("coverage", ROOT, name -> switch (name) {
+            Map<String, Object> root = new HashMap<>();
+            object("coverage", ROOT, Set.of("typeNodes", "functionTypeRoots"), name -> root.put(name, switch (name) {
                 case "definitionVersion" -> integer();
                 case "addressModel" -> text(true);
                 case "profile" -> profile();
@@ -104,9 +110,14 @@ public record CoverageReportClaims(CoverageReportJson.Profile profile, ExportCov
                 case "variables" -> list(this::variable);
                 case "recoveredGlobals" -> list(this::global);
                 case "storageEvidenceDetails" -> storageDetails();
+                case "typeNodes" -> list(this::typeNode);
+                case "functionTypeRoots" -> typeRoots();
                 default -> throw new AssertionError();
-            });
-            require(root.get("definitionVersion").equals(CoverageReportJson.DEFINITION_VERSION), "unsupported metric definition");
+            }));
+            int definition = get(root, "definitionVersion");
+            require(definition == 1 || definition == 2, "unsupported metric definition");
+            require((definition == 2) == root.containsKey("typeNodes") &&
+                (definition == 2) == root.containsKey("functionTypeRoots"), "type evidence differs from definition version");
             require(root.get("addressModel").equals("ELF_LINK_TIME"), "unsupported address model");
             Summary summary = get(root, "summary");
             List<FunctionFields> functions = get(root, "functions");
@@ -193,8 +204,50 @@ public record CoverageReportClaims(CoverageReportJson.Profile profile, ExportCov
                 decoded.size(), anchored.size(), visible.size())), "source union counts");
             require(summary.variables().equals(VariableCoverageTotals.measure(allLocations, cancelled)), "aggregate variable totals");
             require(summary.byKind().equals(totals(allKinds)), "aggregate per-kind totals");
-            return new CoverageReportClaims(get(root, "profile"), new ExportCoverage(result, summary.source(), summary.variables(),
-                summary.byKind(), summary.types(), unknownSignatures, globals, summary.globalsKnown()));
+            var coverage = new ExportCoverage(result, summary.source(), summary.variables(),
+                summary.byKind(), summary.types(), unknownSignatures, globals, summary.globalsKnown());
+            CoverageTypeEvidence evidence = null;
+            if (definition == 2) {
+                evidence = new CoverageTypeEvidence(TypeGraphEvidence.of(get(root, "typeNodes"), cancelled), get(root, "functionTypeRoots"));
+                evidence.validate(coverage, cancelled);
+            }
+            return new CoverageReportClaims(get(root, "profile"), coverage, evidence);
+        }
+
+        private TypeGraphEvidence.Node typeNode() throws IOException {
+            var row = fields("type node", Set.of("key", "name", "definitionKind", "byteSize", "kind", "emitted",
+                "recoveredReferences", "emittedReferences", "diagnostic"), name -> switch (name) {
+                    case "byteSize" -> decimal();
+                    case "emitted" -> flag();
+                    case "recoveredReferences", "emittedReferences" -> typeReferences();
+                    case "diagnostic" -> text(false);
+                    default -> text(true);
+                });
+            return new TypeGraphEvidence.Node(get(row, "key"), get(row, "name"), get(row, "definitionKind"),
+                get(row, "byteSize"), TypeGraphEvidence.Kind.valueOf(get(row, "kind")), get(row, "emitted"),
+                get(row, "recoveredReferences"), get(row, "emittedReferences"), get(row, "diagnostic"));
+        }
+
+        private Map<String, Integer> typeReferences() throws IOException {
+            var result = new java.util.TreeMap<String, Integer>();
+            array(() -> {
+                var edge = fields("type reference", Set.of("key", "count"), name -> name.equals("key") ? text(true) : decimal());
+                long count = get(edge, "count");
+                require(count > 0 && count <= Integer.MAX_VALUE, "invalid type edge count");
+                require(result.put(get(edge, "key"), (int) count) == null, "duplicate type edge");
+            });
+            return result;
+        }
+
+        private Map<Long, CoverageTypeEvidence.Roots> typeRoots() throws IOException {
+            var result = new java.util.TreeMap<Long, CoverageTypeEvidence.Roots>();
+            array(() -> {
+                var row = fields("function type roots", Set.of("entry", "recovered", "emitted"), name ->
+                    name.equals("entry") ? supportedAddress() : list(() -> new TypeRef(text(true))));
+                require(result.put(get(row, "entry"), new CoverageTypeEvidence.Roots(get(row, "recovered"), get(row, "emitted"))) == null,
+                    "duplicate type root owner");
+            });
+            return result;
         }
 
         private CoverageReportJson.Profile profile() throws IOException {

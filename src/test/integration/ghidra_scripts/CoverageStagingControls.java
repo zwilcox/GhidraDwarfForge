@@ -29,6 +29,7 @@ public class CoverageStagingControls extends GhidraScript {
         List<Phase> phases = List.of(
             new Phase("capture", "ghidradwarfforge.GhidraInstructionEvidence"),
             new Phase("assembly", "ghidradwarfforge.coverage.ExportCoverage"),
+            new Phase("type-evidence", "ghidradwarfforge.output.CoverageTypeEvidence"),
             new Phase("writer", "ghidradwarfforge.output.CoverageReportJson"),
             new Phase("reader", "ghidradwarfforge.output.CoverageReportClaims"));
         int controls = 0;

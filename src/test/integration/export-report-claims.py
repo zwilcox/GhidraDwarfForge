@@ -89,7 +89,7 @@ def claims(report):
 def coverage_claims(report):
     """Independent source population arithmetic; artifact truth needs raw DWARF/GDB oracles."""
     coverage = report["coverage"]
-    require(coverage["definitionVersion"] == 1 and coverage["addressModel"] == "ELF_LINK_TIME",
+    require(coverage["definitionVersion"] in (1, 2) and coverage["addressModel"] == "ELF_LINK_TIME",
             "unsupported coverage definition or address model")
     functions = coverage["functions"]
     require(coverage["summary"]["functions"] == str(len(functions)) ==
@@ -420,7 +420,7 @@ def main():
         mutations.update({
             "missing-coverage": lambda value: value.pop("coverage"),
             "null-completed-coverage": lambda value: value.update(coverage=None),
-            "unknown-coverage-definition": lambda value: value["coverage"].update(definitionVersion=2),
+            "unknown-coverage-definition": lambda value: value["coverage"].update(definitionVersion=3),
             "coverage-function-count": lambda value: value["coverage"]["summary"].update(functions="999999999"),
             "legacy-with-coverage": lambda value: value.update(schemaVersion=1),
         })

@@ -30,7 +30,7 @@ public final class CoverageComparison {
         if (!before.claims().target().equals(after.claims().target())) reasons.add("Target profile differs");
         if (before.coverage() != null && after.coverage() != null &&
                 !before.coverage().profile().equals(after.coverage().profile())) reasons.add("Ghidra language/compiler profile differs");
-        // The strict reader admits only metric definition 1 and ELF_LINK_TIME.
+        // The strict reader admits metric definitions 1/2 with the same counts and ELF_LINK_TIME.
         // An unknown definition/address model is rejected before comparison.
         if (!reasons.isEmpty()) return new Result(false, 0, reasons);
         var left = index(before.coverage().coverage().functions(), cancelled);
@@ -44,14 +44,19 @@ public final class CoverageComparison {
             Function old = left.get(address), next = right.get(address);
             if (old == null) changes.add("FUNCTION_ADDED", address, next.function().qualifiedDisplayName());
             else if (next == null) changes.add("FUNCTION_REMOVED", address, old.function().qualifiedDisplayName());
-            else compareFunction(old, next, changes, cancelled);
+            else {
+                compareFunction(old, next, changes, cancelled);
+                compareTypes(old, next, before.coverage().typeEvidence(), after.coverage().typeEvidence(), changes, cancelled);
+            }
         }
         check(cancelled);
         return new Result(true, changes.count, List.of(
             "Comparison uses reported original SHA-256 and ELF-link-time addresses; no referenced artifact was opened.",
             "Changed function bodies/decoded populations are disclosed. Point losses/gains compare only starts decoded in both reports.",
             "Local identities are export-local: individual local renames and location-range transitions are not established.",
-            "Type reports contain counts, not node states: individual resolved-to-opaque transitions may be hidden by other changes.",
+            before.coverage().typeEvidence() == null || after.coverage().typeEvidence() == null
+                ? "Individual type evidence unavailable in at least one metric-definition-one report: individual resolved-to-opaque transitions may be hidden."
+                : "Type correspondence uses reported canonical keys, not historical identity: renamed/rekeyed definitions appear as additions/removals.",
             "Variable totals are compared, not individual variable correspondence. This is not an exhaustive semantic equivalence check."));
     }
 
@@ -94,6 +99,41 @@ public final class CoverageComparison {
         }
         points("LINE_VISIBILITY_LOST", entry, old.lineVisible(), next.lineVisible(), next.decoded(), changes, cancelled);
         points("LINE_VISIBILITY_GAINED", entry, next.lineVisible(), old.lineVisible(), old.decoded(), changes, cancelled);
+    }
+
+    private static void compareTypes(Function before, Function after, CoverageTypeEvidence left, CoverageTypeEvidence right,
+            Changes changes, BooleanSupplier cancelled) {
+        if (left == null || right == null || before.types() == null || after.types() == null) return;
+        long entry = before.function().address();
+        var oldRoots = left.functions().get(entry);
+        var newRoots = right.functions().get(entry);
+        different("TYPE_ROOTS_CHANGED", entry, oldRoots, newRoots, changes);
+        var old = left.graph().inspect(oldRoots.recovered(), oldRoots.emitted(), cancelled).states();
+        var next = right.graph().inspect(newRoots.recovered(), newRoots.emitted(), cancelled).states();
+        var keys = new TreeSet<String>();
+        for (String key : old.keySet()) { check(cancelled); keys.add(key); }
+        for (String key : next.keySet()) { check(cancelled); keys.add(key); }
+        for (String key : keys) {
+            check(cancelled);
+            if (!old.containsKey(key)) changes.add("TYPE_NODE_ADDED", entry, key + " state=" + next.get(key));
+            else if (!next.containsKey(key)) changes.add("TYPE_NODE_REMOVED", entry, key + " state=" + old.get(key));
+            else {
+                if (old.get(key) != next.get(key)) changes.add("TYPE_STATE_CHANGED", entry, key + ": " + old.get(key) + " -> " + next.get(key));
+                var a = left.graph().nodes().get(key);
+                var b = right.graph().nodes().get(key);
+                typeField("TYPE_NAME_CHANGED", entry, key, a.name(), b.name(), changes);
+                typeField("TYPE_DEFINITION_CHANGED", entry, key, a.definitionKind(), b.definitionKind(), changes);
+                typeField("TYPE_SIZE_CHANGED", entry, key, a.byteSize(), b.byteSize(), changes);
+                typeField("TYPE_DIAGNOSTIC_CHANGED", entry, key, a.diagnostic(), b.diagnostic(), changes);
+                typeField("TYPE_RECOVERED_REFERENCES_CHANGED", entry, key, a.recoveredReferences(), b.recoveredReferences(), changes);
+                typeField("TYPE_EMITTED_REFERENCES_CHANGED", entry, key, a.emittedReferences(), b.emittedReferences(), changes);
+            }
+        }
+    }
+
+    private static void typeField(String kind, long entry, String key, Object before, Object after, Changes changes) {
+        check(changes.cancelled);
+        if (!java.util.Objects.equals(before, after)) changes.add(kind, entry, key + ": " + before + " -> " + after);
     }
 
     /** Linear merge over reader-validated sorted unique starts; no per-function address-set copies. */

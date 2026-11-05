@@ -1,5 +1,17 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — #108 individual type reporting and comparison:** production
+schema-two reports now use metric definition two, with a shared canonical type
+graph and per-function recovered/attached roots. The strict reader recomputes
+function and union counts; legacy definition-one bytes remain compatible. CLI
+comparison exposes individual resolved/opaque/missing states and reference changes
+by reported canonical key, including offsetting changes hidden by equal totals.
+The raw-DWARF/GDB fixture, packaged x86-64 and rebased AArch64 PIE journeys, and
+20 staging failure/cancellation controls per target pass locally. Individual
+variable/range correspondence, GUI comparison, repeated large-workload overhead
+and hosted acceptance remain required. See
+`docs/evidence/coverage-type-report.json`.
+
 **CONFIRMED locally — #108 comparison evidence:** real Ghidra database probes on
 x86-64, AArch64 and both MIPS32 byte orders reproduce reuse of the same database/
 symbol ID after undo and a different declaration. Those IDs cannot prove local

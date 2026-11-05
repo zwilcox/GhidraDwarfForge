@@ -60,12 +60,12 @@ def main():
         assert len(markers) == len(set(markers)) == 2
         assert {marker.split(' staged=')[0] for marker in markers} == {'mode=pair', 'mode=companion'}
     else:
-        assert 'coverage-staging-controls=PASS controls=16' in log
+        assert 'coverage-staging-controls=PASS controls=20' in log
         markers = [line.split('coverage-staging-control=PASS ', 1)[1].split(' (GhidraScript)')[0]
             for line in log.splitlines() if 'coverage-staging-control=PASS ' in line]
-        assert len(markers) == len(set(markers)) == 16
+        assert len(markers) == len(set(markers)) == 20
         expected = {f'mode={mode} phase={phase} outcome={outcome}'
-            for mode in ('pair', 'companion') for phase in ('capture', 'assembly', 'writer', 'reader')
+            for mode in ('pair', 'companion') for phase in ('capture', 'assembly', 'type-evidence', 'writer', 'reader')
             for outcome in ('FATAL', 'CANCELLED')}
         assert {marker.split(' polls=')[0] for marker in markers} == expected
     reports = [claims.DECODER.raw_decode(line.split('GhidraDwarfForge report: ', 1)[1])[0]
@@ -76,7 +76,7 @@ def main():
         assert all(report['failure']['message'] == 'coverage string exceeds UTF-16 unit budget'
             for report in reports if report['status'] == 'FATAL')
     else:
-        assert len(reports) == 20 and statuses['FATAL'] == statuses['CANCELLED'] == 8
+        assert len(reports) == 24 and statuses['FATAL'] == statuses['CANCELLED'] == 10
     for index, report in enumerate(reports):
         assert report['schemaVersion'] == 2 and report['validation'] == {'status': 'NOT_RUN'}
         if report['status'] in ('FATAL', 'CANCELLED'):

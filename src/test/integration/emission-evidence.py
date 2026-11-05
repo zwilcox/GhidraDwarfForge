@@ -315,9 +315,25 @@ def inspect(case):
         assert score['signature']['recovered'] and score['signature']['emitted'] == (name != 'failed')
         assert score['typeProvenance'] == 'UNKNOWN_PER_TYPE'
     wire = json.loads((case / 'forge.dbg.coverage.json').read_text())
-    assert set(wire) == {'definitionVersion', 'addressModel', 'profile', 'summary', 'functions', 'variables', 'recoveredGlobals', 'storageEvidenceDetails'}
-    assert wire['definitionVersion'] == 1 and wire['addressModel'] == 'ELF_LINK_TIME'
+    assert set(wire) == {'definitionVersion', 'addressModel', 'profile', 'summary', 'functions', 'variables', 'recoveredGlobals', 'storageEvidenceDetails', 'typeNodes', 'functionTypeRoots'}
+    assert wire['definitionVersion'] == 2 and wire['addressModel'] == 'ELF_LINK_TIME'
     assert wire['profile'] == {'languageId': 'x86:LE:64:default', 'compilerSpecId': 'gcc'}
+    assert len(wire['typeNodes']) == len(graph)
+    for record in wire['typeNodes']:
+        expected = graph[record['key']]
+        for field in ['name', 'definitionKind', 'kind', 'diagnostic']:
+            assert record[field] == expected[field]
+        assert record['byteSize'] == str(expected['byteSize'])
+        assert record['emitted'] == ('YES' if expected['emitted'] else 'NO')
+        for field in ['recoveredReferences', 'emittedReferences']:
+            assert record[field] == [{'key': key, 'count': str(count)} for key, count in sorted(expected[field].items())]
+    roots = {int(record['entry'], 16): record for record in wire['functionTypeRoots']}
+    assert len(roots) == len(functions)
+    for name, function in functions.items():
+        actual_roots = sorted({function['signature']['returnType']['key']} | {variable['type']['key'] for variable in function['variables']}) if function.get('signature') else []
+        expected_roots = ['u64'] if name == 'failed' else actual_roots
+        row = roots[function['function']['address']]
+        assert row['recovered'] == expected_roots and row['emitted'] == actual_roots
     report = json.loads((case / 'forge.dbg.report.json').read_text())
     assert report['schemaVersion'] == 2 and report['coverage'] == wire
     assert report['status'] == 'PARTIAL' and report['validation']['status'] == 'NOT_RUN'
@@ -417,7 +433,7 @@ def main():
     assert 'emission-evidence-gdb=PASS' in (case / 'gdb.log').read_text()
     assert not re.search(r'(?im)^\s*(warning:|error:)', (case / 'gdb.log').read_text())
     assert protected == {p: digest(Path(p)) for p in protected}
-    result = {'status': 'PASS', 'scope': 'isolated producer emission facts, raw DWARF and native x86-64 GDB; public reports pending',
+    result = {'status': 'PASS', 'scope': 'isolated producer facts and definition-two type report, raw DWARF and native x86-64 GDB',
         'checks': checked, 'protected': protected, 'sidecarSha256': digest(case / 'forge.dbg'),
         'sourceSha256': digest(case / 'forge.dbg.c'), 'schemaTwoReportSha256': digest(case / 'forge.dbg.report.json')}
     (case / 'acceptance.json').write_text(json.dumps(result, indent=4) + '\n')

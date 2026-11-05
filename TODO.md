@@ -1,5 +1,17 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally — #108 individual type reporting and comparison:** production
+schema-two reports now use metric definition two, with a shared canonical type
+graph and per-function recovered/attached roots. The strict reader recomputes
+function and union counts; legacy definition-one bytes remain compatible. CLI
+comparison exposes individual resolved/opaque/missing states and reference changes
+by reported canonical key, including offsetting changes hidden by equal totals.
+The raw-DWARF/GDB fixture, packaged x86-64 and rebased AArch64 PIE journeys, and
+20 staging failure/cancellation controls per target pass locally. Individual
+variable/range correspondence, GUI comparison, repeated large-workload overhead
+and hosted acceptance remain required. See
+`docs/evidence/coverage-type-report.json`.
+
 **CONFIRMED locally — #108 comparison evidence:** real Ghidra database probes on
 x86-64, AArch64 and both MIPS32 byte orders reproduce reuse of the same database/
 symbol ID after undo and a different declaration. Those IDs cannot prove local
@@ -2734,32 +2746,22 @@ own pinned-header audit and isolated-process test.
 
 ## 1.1 Current remaining work
 
-**PRESENT, UNVERIFIED end to end — [#108](https://github.com/zwilcox/GhidraDwarfForge/issues/108):**
-source-coverage primitives retain the actual encoded line plan and pass independent
-raw-line-byte checks. Actual Ghidra listing-capture tests pass on four profiles,
-including rebases/gaps/body drift/cancellation, and token provenance is preserved
-separately from declaration rows. Canonical type accounting passes 29 native-free
-checks for implicit void, opaque targets, filtering, missing/repeated references,
-deep cycles/shared graphs and cancellation. Producer evidence is now returned
-through `ExportResult` and passes an independent raw-DWARF/native-GDB fixture:
-nine emitted declarations, four full locations, five omissions, recursive/opaque/void
-types and a symbol-only failed function. Native cancellation preserves prior
-output and repeat determinism. Complete parent/candidate sidecar/source bytes
-match; public report consumption is still pending.
-Location extent and variable totals now retain independently evidenced scope
-denominators, disclose unknown populations, handle zero/overflow and cancellation.
-Twenty-one checks and raw-DWARF/GDB assertions pass, including a 2/5-PC-byte local
-and a recovered-but-unemitted parameter. Inventory/provenance integration remains
-required; these are not yet public scorecards.
-The actual location-list plan is now retained, with 237 independent byte/negative
-checks and byte-identical parent comparisons. Real packaged lexical-variable
-journeys pass on x86-64 and rebased AArch64 PIE/QEMU, including structural
-validators and scope-boundary GDB values. Full scorecard acceptance remains open.
-The public report is unchanged. [The metric contract and
-acceptance matrix](docs/COVERAGE-SCORECARDS.md) retain the full instruction,
-variable/location/type, provenance, compatibility, comparison/presentation and
-bounded-overhead scope. Capture-to-report integration and end-to-end acceptance
-remain required. #74 retains integration priority.
+**ACTIVE — [#108](https://github.com/zwilcox/GhidraDwarfForge/issues/108):**
+production static scorecards, strict versioned reports, Linux CLI/GUI presentation,
+source-point comparison and individual type-key comparison are locally validated.
+See the current checkpoints above and `docs/COVERAGE-SCORECARDS.md` for exact
+scope and receipts. The earlier component-only status and #74-first dependency
+are historical; #74 is complete.
+
+Remaining #108 acceptance:
+
+- Individual variable/location-range comparison with explicit correspondence and
+  ambiguity; database/symbol IDs alone fail the undo/reuse control.
+- Actual before/after curation/rebase regression artifacts, not just report mutations.
+- GUI report comparison.
+- Repeated large-workload measurements and whole-report byte-bound stress after
+  the definition-two evidence extension.
+- Final host/target pipeline acceptance, including Windows and updated GUI paths.
 
 The baseline exporter, source/type/location machinery, five target lanes,
 Windows headless host, and release packaging already exist. The remaining

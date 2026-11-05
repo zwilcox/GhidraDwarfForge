@@ -20,13 +20,13 @@ import ghidradwarfforge.coverage.VariableCoverageTotals;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionRange;
 
 /**
- * Proposed metric-definition-one payload for report schema two. Counts are exact
+ * Metric definitions one and two for report schema two. Counts are exact
  * canonical decimal strings, addresses are canonical hexadecimal strings, and
  * YES/NO flags keep the existing strict lexical report grammar unchanged.
  * Production prepares and strictly reads the full report before artifact publication.
  */
 public final class CoverageReportJson {
-    public static final int DEFINITION_VERSION = 1;
+    public static final int DEFINITION_VERSION = 2;
     static final long MAX_BYTES = 64L * 1024 * 1024;
 
     public record Profile(String languageId, String compilerSpecId) {
@@ -54,13 +54,23 @@ public final class CoverageReportJson {
     }
 
     static String write(ExportCoverage coverage, Profile profile, BooleanSupplier cancelled, long byteLimit) throws IOException {
+        return write(new CoverageReportClaims(profile, coverage), cancelled, byteLimit);
+    }
+
+    public static String write(CoverageReportClaims claims, BooleanSupplier cancelled) throws IOException {
+        return write(claims, cancelled, MAX_BYTES);
+    }
+
+    private static String write(CoverageReportClaims claims, BooleanSupplier cancelled, long byteLimit) throws IOException {
+        var coverage = claims.coverage();
+        var profile = claims.profile();
         Objects.requireNonNull(coverage);
         Objects.requireNonNull(profile);
         check(cancelled);
         var output = new BoundedWriter(byteLimit, cancelled);
         try (var json = new JsonWriter(output)) {
             json.setSerializeNulls(true);
-            new CoverageReportJson(json, cancelled).document(coverage, profile);
+            new CoverageReportJson(json, cancelled).document(claims);
         }
         check(cancelled);
         return output.result();
@@ -68,12 +78,14 @@ public final class CoverageReportJson {
 
     /** Writes one value into the enclosing report's bounded stream. */
     static void writeTo(JsonWriter json, CoverageReportClaims claims, BooleanSupplier cancelled) throws IOException {
-        new CoverageReportJson(json, cancelled).document(claims.coverage(), claims.profile());
+        new CoverageReportJson(json, cancelled).document(claims);
     }
 
-    private void document(ExportCoverage coverage, Profile profile) throws IOException {
+    private void document(CoverageReportClaims claims) throws IOException {
+        var coverage = claims.coverage();
+        var profile = claims.profile();
         json.beginObject();
-        json.name("definitionVersion").value(DEFINITION_VERSION);
+        json.name("definitionVersion").value(claims.definitionVersion());
         text("addressModel", "ELF_LINK_TIME");
         json.name("profile").beginObject();
         text("languageId", profile.languageId());
@@ -163,7 +175,55 @@ public final class CoverageReportJson {
             json.endObject();
         }
         json.endArray();
+        if (claims.typeEvidence() != null) typeEvidence(claims.typeEvidence());
         json.endObject();
+    }
+
+    private void typeEvidence(CoverageTypeEvidence evidence) throws IOException {
+        json.name("typeNodes").beginArray();
+        for (var node : evidence.graph().nodes().values()) {
+            check(cancelled);
+            json.beginObject();
+            text("key", node.key());
+            text("name", node.name());
+            text("definitionKind", node.definitionKind());
+            number("byteSize", node.byteSize());
+            text("kind", node.kind().name());
+            flag("emitted", node.emitted());
+            typeReferences("recoveredReferences", node.recoveredReferences());
+            typeReferences("emittedReferences", node.emittedReferences());
+            text("diagnostic", node.diagnostic());
+            json.endObject();
+        }
+        json.endArray();
+        json.name("functionTypeRoots").beginArray();
+        for (var row : evidence.functions().entrySet()) {
+            check(cancelled);
+            json.beginObject();
+            address("entry", row.getKey());
+            typeRoots("recovered", row.getValue().recovered());
+            typeRoots("emitted", row.getValue().emitted());
+            json.endObject();
+        }
+        json.endArray();
+    }
+
+    private void typeReferences(String name, Map<String, Integer> references) throws IOException {
+        json.name(name).beginArray();
+        for (var reference : references.entrySet()) {
+            check(cancelled);
+            json.beginObject();
+            text("key", reference.getKey());
+            number("count", reference.getValue().longValue());
+            json.endObject();
+        }
+        json.endArray();
+    }
+
+    private void typeRoots(String name, List<ghidradwarfforge.types.TypeGraph.TypeRef> roots) throws IOException {
+        json.name(name).beginArray();
+        for (var root : roots) { check(cancelled); json.value(root.key()); }
+        json.endArray();
     }
 
     private void source(SourceCoverageInventory.FunctionInventory source) throws IOException {

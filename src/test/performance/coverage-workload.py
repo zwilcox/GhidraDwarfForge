@@ -154,7 +154,7 @@ def main():
         assert len(bodies) == 1
         report, end = json.JSONDecoder().raw_decode(bodies[0])
         assert report['schemaVersion'] == 2 and report['status'] in ('SUCCESS', 'PARTIAL')
-        assert report['coverage']['definitionVersion'] == 1 and report['validation'] == {'status': 'NOT_RUN'}
+        assert report['coverage']['definitionVersion'] in (1, 2) and report['validation'] == {'status': 'NOT_RUN'}
         assert bodies[0][end:].strip() == '(GhidraScript)'
         for kind, path in [('input', binary), ('output', sidecar), ('source', Path(str(sidecar) + '.c'))]:
             assert report['artifacts'][kind + 'Path'] == str(path)

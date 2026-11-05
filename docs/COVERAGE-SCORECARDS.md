@@ -1,5 +1,59 @@
 # Proposed coverage contract for issue 108
 
+## Metric definition two: individual type evidence
+
+**CONFIRMED locally — #108 individual type reporting and comparison:** production
+schema-two reports now use metric definition two, with a shared canonical type
+graph and per-function recovered/attached roots. The strict reader recomputes
+function and union counts; legacy definition-one bytes remain compatible. CLI
+comparison exposes individual resolved/opaque/missing states and reference changes
+by reported canonical key, including offsetting changes hidden by equal totals.
+The raw-DWARF/GDB fixture, packaged x86-64 and rebased AArch64 PIE journeys, and
+20 staging failure/cancellation controls per target pass locally. Individual
+variable/range correspondence, GUI comparison, repeated large-workload overhead
+and hosted acceptance remain required. See
+`docs/evidence/coverage-type-report.json`.
+
+Definition two keeps the existing numerators and denominators and adds required
+`typeNodes` and `functionTypeRoots` arrays. Definition one forbids those fields and
+continues to read/write byte-identically. The enclosing report schema stays two;
+schema-one reports still have no coverage. Unknown definitions are rejected.
+Object-field order does not control decoding. New fields use the existing exact
+string counts, YES/NO flags, canonical addresses and shared safety limits.
+
+Nodes record canonical key, name, definition kind, byte size, resolved/opaque/void
+classification, successful emission, omission diagnostic and recovered/emitted
+reference multiplicities. Per-function root sets are sorted and unique. The graph
+is serialized once; per-function node states are derived from roots. A type
+allocated for another function is not credited to an untyped symbol-only function.
+The strict reader validates graph edges, root ownership, declaration type roots,
+per-function counts and the canonical union. These remain reported claims and do
+not authorize attachment or authenticate artifacts.
+
+Comparison uses canonical keys as its explicit correspondence basis. It reports
+node addition/removal, individual state changes, size/name/definition/diagnostic
+changes, root changes and exact reference multiplicities. A renamed or rekeyed
+definition appears as removal/addition; the tool does not invent historical type
+identity. Comparing with definition one retains comparable source/count metrics
+and explicitly marks individual type evidence unavailable. No exhaustive semantic
+equivalence claim is made; member names, qualifiers and layouts beyond the recorded
+node facts are not fully compared. Per-type recovery provenance remains unknown
+unless independently captured; a node state does not change that policy.
+
+The deterministic component fixture swaps one resolved type to opaque and another
+the other way, preserving all aggregate counts. Both changes are exposed. It passes
+15 malformed graph/version controls, 4,514 reader cancellation checkpoints and
+108 type-comparison cancellation checkpoints. The independent native fixture now
+checks the public definition-two graph and roots against raw DIEs, not only the
+internal evidence object. Existing legacy/detailed report regressions pass. A fresh Linux GUI run saves a
+93,317-byte definition-two report, strictly reads it back, previews/declines
+attachment and prepares a fresh report, with validators/GDB and packaged CLI
+checks passing. Both production targets pass the real string-bound rejection
+controls as well as the 20 injected failure/cancellation controls.
+
+The existing declaration identity and earlier wire-format checkpoints below are
+historical where superseded by this section. Full issue acceptance remains open.
+
 ## Declaration identity and individual type evidence
 
 **CONFIRMED locally — #108 comparison evidence:** real Ghidra database probes on

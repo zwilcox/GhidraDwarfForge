@@ -21,9 +21,11 @@ import java.util.function.BooleanSupplier;
 /**
  * Canonical recovered nodes and successful producer references, retained once per graph.
  * Keys identify reported definitions, not proof of historical identity across database forks.
- * This component is not yet part of the versioned report wire format.
+ * Retained in metric definition two as one shared graph plus function roots.
  */
 public final class TypeGraphEvidence {
+    private static final Set<String> RESOLVED_DEFINITIONS = Set.of("BaseType", "IndirectionType", "QualifiedType",
+        "ArrayType", "TypedefType", "EnumType", "AggregateType", "SubroutineType");
     public enum Kind { RESOLVED, OPAQUE, IMPLICIT_VOID }
     public enum State { RESOLVED, OPAQUE, NOT_EMITTED, IMPLICIT_VOID, VOID_NOT_EMITTED }
 
@@ -35,6 +37,12 @@ public final class TypeGraphEvidence {
                     definitionKind == null || definitionKind.isBlank() || byteSize < 0 || kind == null || diagnostic == null) {
                 throw new IllegalArgumentException("invalid type evidence node");
             }
+            boolean validKind = switch (kind) {
+                case RESOLVED -> RESOLVED_DEFINITIONS.contains(definitionKind);
+                case OPAQUE -> definitionKind.equals("OpaqueType");
+                case IMPLICIT_VOID -> definitionKind.equals("VoidType") && byteSize == 0;
+            };
+            if (!validKind) throw new IllegalArgumentException("type kind differs from definition");
             recoveredReferences = owned(recoveredReferences);
             emittedReferences = owned(emittedReferences);
             if ((!emitted && !emittedReferences.isEmpty()) ||
@@ -68,6 +76,10 @@ public final class TypeGraphEvidence {
     }
 
     public Map<String, Node> nodes() { return nodes; }
+    @Override public boolean equals(Object other) {
+        return other instanceof TypeGraphEvidence evidence && nodes.equals(evidence.nodes);
+    }
+    @Override public int hashCode() { return nodes.hashCode(); }
 
     public static TypeGraphEvidence capture(TypeGraph recovered, Map<String, List<TypeRef>> actual,
             BooleanSupplier cancelled) {

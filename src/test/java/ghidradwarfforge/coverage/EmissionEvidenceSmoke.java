@@ -213,11 +213,13 @@ public final class EmissionEvidenceSmoke {
         for (var function : coverage.functions()) {
             require(function.types().equals(counts.get(function.function().name())), "assembled per-function canonical types");
         }
-        Files.writeString(Path.of(output + ".coverage.json"), ghidradwarfforge.output.CoverageReportJson.write(coverage,
-            new ghidradwarfforge.output.CoverageReportJson.Profile("x86:LE:64:default", "gcc"), () -> false));
+        var typed = new ghidradwarfforge.output.CoverageReportClaims(
+            new ghidradwarfforge.output.CoverageReportJson.Profile("x86:LE:64:default", "gcc"), coverage,
+            ghidradwarfforge.output.CoverageTypeEvidence.capture(model, facts, coverage, () -> false));
+        Files.writeString(Path.of(output + ".coverage.json"), ghidradwarfforge.output.CoverageReportJson.write(typed, () -> false));
         var claims = ghidradwarfforge.output.CoverageReportClaims.read(Path.of(output + ".coverage.json"), () -> false);
         require(claims.coverage().equals(coverage), "strict coverage claims roundtrip preserves assembled metrics");
-        require(ghidradwarfforge.output.CoverageReportJson.write(claims.coverage(), claims.profile(), () -> false)
+        require(ghidradwarfforge.output.CoverageReportJson.write(claims, () -> false)
             .equals(Files.readString(Path.of(output + ".coverage.json"))), "strict coverage roundtrip preserves exact payload bytes");
         Path sourcePath = Path.of(output + ".c");
         var report = ghidradwarfforge.output.ExportReport.completed(result.target(), result.libdwarfVersion(),
