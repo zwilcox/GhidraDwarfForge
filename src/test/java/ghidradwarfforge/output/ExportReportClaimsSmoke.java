@@ -278,7 +278,9 @@ public final class ExportReportClaimsSmoke {
     }
 
     private static void budgets(JsonObject success) throws Exception {
-        require(LIMITS.equals(new ReportJsonReader.Limits(64L * 1024 * 1024, 65536, 8, 1_000_000, 250000)),
+        // Coverage has its own reviewed allowance; the exact million-value legacy
+        // boundary below must still reject the next value, even with that unused allowance.
+        require(LIMITS.equals(new ReportJsonReader.Limits(64L * 1024 * 1024, 65536, 8, 1_000_000, 250000, 5_000_000, 6_000_000)),
             "public safety limits changed without boundary review");
         parse(rawPath(success, "x".repeat(65536)));
         reject(rawPath(success, "x".repeat(65537)));

@@ -211,8 +211,8 @@ Function records carry exact source starts, type metrics, signature restrictions
 and variable totals. A flat variable table references its owner entry and retains
 scoped identities, provenance, unavailable storage and evidenced/located ranges.
 Recovered globals stay separately labeled. This shape fits the existing depth
-eight limit when embedded in a report. Full reader/schema validation and exact
-comparison identities are still required before this becomes a public contract.
+eight limit when embedded in a report. Exact comparison identities and production
+integration are still required before this becomes a public contract.
 
 Serialization checks cancellation throughout and bounds actual UTF-8 output to
 64 MiB before appending each character, including split surrogate pairs; it
@@ -276,7 +276,7 @@ not automatically constrain these additional structures.
 
 ### Exploratory workload admission evidence
 
-**CONFIRMED local limitation; production wiring remains pending:** the default
+**HISTORICAL initial limitation; production wiring remains pending:** the original
 one-million-value document budget accepts a sparse 10,000-function payload but
 rejects a denser synthetic 6,375-function payload with 12 decoded instructions
 and four full-scope locals per function. The latter contains 1,447,193 payload
@@ -300,11 +300,75 @@ are not repeated benchmark medians and establish no exporter speed or memory
 improvement. The Gradle client's `/usr/bin/time` RSS is not the worker JVM's RSS.
 
 Raw command/output/timing hashes and observations are recorded in
-`docs/evidence/coverage-report-admission-probe.json`. Production reader limits
-remain unchanged. Before connecting ordinary exports, select an explicit bounded
-schema-two admission or representation policy using real workload populations;
-preserve legacy report compatibility and failure/cancellation behavior. Merely
-passing sparse fixtures is insufficient evidence for large-program acceptance.
+`docs/evidence/coverage-report-admission-probe.json`. The decision below supersedes
+this initial admission policy. Merely passing sparse fixtures is insufficient
+evidence for large-program acceptance.
+
+### Lossless evidence dictionary and scoped admission
+
+**CONFIRMED locally; production staging and hosted acceptance pending:** actual
+saved SQLite/U-Boot probes show that repeated storage evidence text dominates the
+initial payload. SQLite repeats three exact detail tuples across 167,163 ranges;
+its original payload is 56,392,815 bytes and 2,210,528 values. U-Boot's initial
+payload exceeds the 64 MiB writer cap. Neither rejected probe counts as coverage
+acceptance, and neither changes the original inputs or saved projects.
+
+The proposed payload now includes `storageEvidenceDetails`, an ordered dictionary
+of exact category/source/omission-reason/diagnostic tuples. Each variable's storage
+evidence consists of `[start, end, detailIndex]` triples using canonical hexadecimal
+addresses and decimal-string indices. Dictionary order follows first occurrence;
+all range boundaries, evidence text and per-variable order are preserved. Readers
+reject missing/out-of-range references, duplicate or unused details, overlapping
+ranges and malformed tuples. Object-field order does not matter. This revises the
+unpublished proposal; ordinary schema-one exports are unchanged.
+
+One shared input budget now tracks three counters: at most **1,000,000 legacy
+values**, **5,000,000 coverage values**, and **6,000,000 total values**. Coverage
+cannot spend the legacy allowance or reset a counter when entering another child.
+The unchanged 64 MiB byte cap, 65,536 UTF-16 units per string, depth eight and
+250,000 elements per array still apply to the entire document. Old schema-one
+reports still reject their 1,000,001st value, tested at the actual boundary as well
+as with small scoped budgets and reversed field order. The five-argument test
+limits retain their original exact whole-document ceiling.
+
+The five-million coverage ceiling admits the measured compact U-Boot population
+of 4,395,987 values without raising the document byte cap. These are explicit
+resource limits, not a claim that every possible input size fits. A bound violation
+must fail before ordinary output publication, never truncate the scorecard.
+
+| Saved workload | Functions / decoded instructions / recovered variables | Payload bytes / values | Complete report bytes |
+| --- | --- | --- | --- |
+| SQLite 3.46.1 | 1,539 / 199,606 / 7,064 | 19,897,363 / 1,709,055 | 23,061,568 |
+| U-Boot 2025.01 sandbox | 6,375 / 544,845 / 19,781 | 54,600,521 / 4,395,987 | 56,530,307 |
+
+Both instrumented saved-project probes now pass full report preflight, GNU/LLVM/
+pinned strict validation and their existing GDB behavior journeys. SQLite's
+independent before/after comparison proves every range/detail and all other
+coverage fields unchanged; the two compact U-Boot payloads are byte-identical
+across separate processes/output directories. Original/module/project snapshots
+match before/after (343/346 protected files). U-Boot retains its one failed
+decompilation, and unknown variable scopes remain explicit.
+
+Single observations place coverage assembly at 0.20/0.35 seconds and full report
+writing/preflight at 1.04/2.23 seconds for SQLite/U-Boot. Whole-probe peak RSS is
+1,243,528/1,946,200 KiB; this includes Ghidra, native decompilation, evidence capture,
+serialization and parser work, not isolated incremental reporting memory. These
+are not repeated benchmark medians or a general speed/memory improvement claim.
+
+Commands and bound raw evidence are retained by `src/test/performance/coverage-workload.py`:
+
+```bash
+python3 src/test/performance/coverage-workload.py sqlite <saved-sqlite-case> <private-ghidra>
+python3 src/test/performance/coverage-workload.py uboot <saved-uboot-case> <private-ghidra>
+```
+
+See `docs/evidence/coverage-workload-admission.json`, the native fixture
+`run.lph7dfjx`, and `build/coverage-admission-final-validation-2.log`. The component
+passes 828 payload rejection controls, 117 migration/binding rejections, legacy
+429 malformed/432 detailed-reader checks, attachment/receipt checks, cancellation
+and the native raw-DWARF/GDB fixture. Ordinary production staging, meaningful
+comparison/presentation, repeated overhead controls and the full matrix remain
+required; this does not complete #108.
 
 ## Current component checks
 
@@ -469,7 +533,8 @@ ExportResult. Consuming that summary in report creation remains planned. Do not
 rebuild a second, slightly different approximation from the pre-filtered extraction
 model. Line-map provenance is preserved before declaration rows are merged.
 Cancellation is checked during instruction/type accounting, list planning and
-the new producer evidence loops; report/comparison loops remain to be implemented.
+the new producer evidence loops. Report serialization/reading now check
+cancellation; production staging and comparison loops remain to be implemented.
 
 The current native-free probe proves why this boundary matters: model-level
 hasDefensibleLocation() is true for a partial register slice and a mixed list
@@ -485,8 +550,9 @@ coverage unavailable, never inferred zero. Keep attachment validator/artifact
 binding requirements identical; coverage is informational and cannot authorize a
 write or bypass rejection.
 
-Specify bounded nonnegative integer representation deliberately: existing reader
-limits are depth 8, 64 MiB, one million values, 250,000 array entries, 65,536 string
+Specify bounded nonnegative integer representation deliberately: reader limits
+are depth 8, 64 MiB, one million legacy values plus the scoped coverage allowance
+above, 250,000 array entries, 65,536 string
 characters and ten-digit numeric literals. New counts/range sums may exceed the
 old integer limit. Use checked arithmetic and define overflow/unavailable status,
 not wraparound or an accidental unlimited parser. Ratios are presentation only;

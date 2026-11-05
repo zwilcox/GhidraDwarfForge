@@ -42,11 +42,14 @@ public final class CoverageReportWorkload {
             result.addProperty("localsPerFunction", locals);
             result.addProperty("javaVersion", System.getProperty("java.version"));
             result.addProperty("heapLimitBytes", Runtime.getRuntime().maxMemory());
-            int valueLimit = Integer.getInteger("forge.workload.values", ReportJsonReader.DEFAULT_LIMITS.values());
-            var limits = new ReportJsonReader.Limits(ReportJsonReader.DEFAULT_LIMITS.bytes(),
+            Integer valueLimit = Integer.getInteger("forge.workload.values");
+            var limits = valueLimit == null ? ReportJsonReader.DEFAULT_LIMITS : new ReportJsonReader.Limits(ReportJsonReader.DEFAULT_LIMITS.bytes(),
                 ReportJsonReader.DEFAULT_LIMITS.stringUnits(), ReportJsonReader.DEFAULT_LIMITS.depth(), valueLimit,
                 ReportJsonReader.DEFAULT_LIMITS.arrayItems());
-            result.addProperty("experimentalValueLimit", valueLimit);
+            result.addProperty("legacyValueLimit", limits.values());
+            result.addProperty("coverageValueLimit", limits.coverageValues());
+            result.addProperty("totalValueLimit", limits.totalValues());
+            result.addProperty("experimentalOverride", valueLimit != null);
             long start = System.nanoTime();
             try {
                 payloadSize(coverage, profile, result);

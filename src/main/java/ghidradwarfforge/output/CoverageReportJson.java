@@ -3,6 +3,8 @@ package ghidradwarfforge.output;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.function.BooleanSupplier;
@@ -37,6 +39,10 @@ public final class CoverageReportJson {
 
     private final JsonWriter json;
     private final BooleanSupplier cancelled;
+    private final Map<StorageDetail, Integer> storageDetails = new LinkedHashMap<>();
+
+    /** Exact repeated evidence text, shared without dropping individual range boundaries. */
+    record StorageDetail(String category, String source, String omissionReason, String diagnostic) { }
 
     private CoverageReportJson(JsonWriter json, BooleanSupplier cancelled) {
         this.json = json;
@@ -146,6 +152,17 @@ public final class CoverageReportJson {
             json.endObject();
         }
         json.endArray();
+        json.name("storageEvidenceDetails").beginArray();
+        for (var detail : storageDetails.keySet()) {
+            check(cancelled);
+            json.beginObject();
+            text("category", detail.category());
+            text("source", detail.source());
+            text("omissionReason", detail.omissionReason());
+            text("diagnostic", detail.diagnostic());
+            json.endObject();
+        }
+        json.endArray();
         json.endObject();
     }
 
@@ -196,14 +213,16 @@ public final class CoverageReportJson {
         json.name("storageEvidence").beginArray();
         for (var evidence : variable.storageEvidence()) {
             check(cancelled);
-            json.beginObject();
-            address("start", evidence.start());
-            address("end", evidence.end());
-            text("category", evidence.category());
-            text("source", evidence.source());
-            text("omissionReason", evidence.omissionReason());
-            text("diagnostic", evidence.diagnostic());
-            json.endObject();
+            var detail = new StorageDetail(evidence.category(), evidence.source(), evidence.omissionReason(), evidence.diagnostic());
+            Integer index = storageDetails.get(detail);
+            if (index == null) {
+                if (storageDetails.size() == ReportJsonReader.DEFAULT_LIMITS.arrayItems()) {
+                    throw new IOException("storage evidence dictionary exceeds array budget");
+                }
+                index = storageDetails.size();
+                storageDetails.put(detail, index);
+            }
+            json.beginArray().value(hex(evidence.start())).value(hex(evidence.end())).value(Integer.toString(index)).endArray();
         }
         json.endArray();
         json.name("location").beginObject();

@@ -26,6 +26,7 @@ import ghidradwarfforge.coverage.DecodedInstructions;
 import ghidradwarfforge.coverage.ExportCoverage;
 import ghidradwarfforge.coverage.ExportEmission;
 import ghidradwarfforge.coverage.ExportEmission.FunctionEmission;
+import ghidradwarfforge.coverage.VariableCoverageInventory;
 import ghidradwarfforge.dwarf.Dwarf5LineTable;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
 import ghidradwarfforge.source.SyntheticSourceFile;
@@ -45,12 +46,33 @@ public final class CoverageReportClaimsSmoke {
     public static void main(String[] args) throws Exception {
         String huge = CoverageReportJson.write(CoverageReportJsonSmoke.fixture(), PROFILE, () -> false);
         String known = CoverageReportJson.write(knownFixture(), PROFILE, () -> false);
-        for (String text : List.of(huge, known)) {
+        String storage = CoverageReportJson.write(storageFixture(), PROFILE, () -> false);
+        for (String text : List.of(huge, known, storage)) {
             var claims = parse(text);
             require(CoverageReportJson.write(claims.coverage(), claims.profile(), () -> false).equals(text), "exact writer roundtrip");
             require(parse(reverse(JsonParser.parseString(text)).toString()).equals(claims), "object field order independent");
             fieldControls(JsonParser.parseString(text).getAsJsonObject());
         }
+        var dictionary = JsonParser.parseString(storage).getAsJsonObject();
+        require(dictionary.getAsJsonArray("storageEvidenceDetails").size() == 2, "exact evidence details shared across owners");
+        require(parse(storage).coverage().equals(storageFixture()), "dictionary roundtrip preserves every range and exact text");
+        for (String reference : List.of("-1", "01", "2", "2147483648", "9223372036854775807")) {
+            mutate(dictionary, d -> d.getAsJsonArray("variables").get(0).getAsJsonObject().getAsJsonArray("storageEvidence")
+                .get(0).getAsJsonArray().set(2, new com.google.gson.JsonPrimitive(reference)));
+        }
+        mutate(dictionary, d -> d.getAsJsonArray("variables").get(0).getAsJsonObject().getAsJsonArray("storageEvidence").get(0).getAsJsonArray().add("0"));
+        mutate(dictionary, d -> d.getAsJsonArray("variables").get(0).getAsJsonObject().getAsJsonArray("storageEvidence").get(0).getAsJsonArray().remove(2));
+        mutate(dictionary, d -> d.getAsJsonArray("variables").get(0).getAsJsonObject().getAsJsonArray("storageEvidence").get(1).getAsJsonArray()
+            .set(0, new com.google.gson.JsonPrimitive("0x0")));
+        mutate(dictionary, d -> d.getAsJsonArray("storageEvidenceDetails").add(d.getAsJsonArray("storageEvidenceDetails").get(0).deepCopy()));
+        mutate(dictionary, d -> {
+            var unused = d.getAsJsonArray("storageEvidenceDetails").get(0).getAsJsonObject().deepCopy();
+            unused.addProperty("source", "unreferenced detail");
+            d.getAsJsonArray("storageEvidenceDetails").add(unused);
+        });
+        mutate(dictionary, d -> d.getAsJsonArray("storageEvidenceDetails").get(0).getAsJsonObject().addProperty("source", ""));
+        mutate(dictionary, d -> d.getAsJsonArray("storageEvidenceDetails").get(0).getAsJsonObject().addProperty("category", "UNKNOWN"));
+        mutate(dictionary, d -> d.getAsJsonArray("storageEvidenceDetails").get(0).getAsJsonObject().addProperty("omissionReason", "UNPAIRED"));
         var document = JsonParser.parseString(huge).getAsJsonObject();
         for (String count : List.of("", "-1", "+1", "01", "1e3", "1.0", "9223372036854775808", " 1", "١")) {
             var bad = document.deepCopy();
@@ -134,6 +156,25 @@ public final class CoverageReportClaimsSmoke {
         var lines = Dwarf5LineTable.buildWithPlan("f.c", ".", 8, ByteOrder.LITTLE_ENDIAN, List.of(symbol), source.mappedLines());
         var actual = new ExportEmission(graph, Map.of("int", List.of()), lines, List.of(new FunctionEmission(symbol, signature, List.of())));
         return ExportCoverage.build(model, source, List.of(new DecodedInstructions(symbol, List.of(100L, 102L), "")), actual, () -> false);
+    }
+
+    private static ExportCoverage storageFixture() {
+        var base = CoverageReportJsonSmoke.fixture();
+        var functions = new ArrayList<ExportCoverage.Function>();
+        for (var function : base.functions()) {
+            long entry = function.function().address();
+            var variable = function.variables().variables().getFirst();
+            var evidence = List.of(
+                new VariableCoverageInventory.StorageEvidence(entry, entry + 1, "ANALYSIS", "evidence 🛠", "", ""),
+                new VariableCoverageInventory.StorageEvidence(entry + 1, entry + 2, "DECOMPILER", "recovered evidence", "UNKNOWN_LIFETIME", "unknown\nrange"));
+            var changed = new VariableCoverageInventory.Variable(variable.identity(), variable.displayName(), variable.recoveredType(),
+                variable.emittedType(), variable.declarationProvenance(), evidence, variable.location(), variable.omissionReason(), variable.diagnostic());
+            var inventory = new VariableCoverageInventory.FunctionInventory(function.function(), true, List.of(changed),
+                function.variables().totals(), function.variables().byKind());
+            functions.add(new ExportCoverage.Function(function.function(), function.source(), inventory, function.types(), function.signature(), function.typeProvenance()));
+        }
+        return new ExportCoverage(functions, base.sourceUnion(), base.variables(), base.variablesByKind(), base.functionTypeUnion(),
+            base.unknownSignatureFunctions(), base.recoveredGlobals(), base.recoveredGlobalsKnown());
     }
 
     private static JsonObject source(JsonObject document) {

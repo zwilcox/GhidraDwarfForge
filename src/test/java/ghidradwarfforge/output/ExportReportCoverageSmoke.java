@@ -25,6 +25,9 @@ public final class ExportReportCoverageSmoke {
     private record ReadResult(ExportReportClaims claims, CoverageReportClaims coverage) { }
 
     public static void main(String[] args) throws Exception {
+        require(LIMITS.values() == 1_000_000 && LIMITS.coverageValues() == 5_000_000 && LIMITS.totalValues() == 6_000_000 &&
+            LIMITS.bytes() == 64L * 1024 * 1024 && LIMITS.depth() == 8 && LIMITS.stringUnits() == 65536 && LIMITS.arrayItems() == 250000,
+            "explicit bounded schema-two policy changed");
         var profile = new CoverageReportJson.Profile("x86:LE:64:default", "gcc");
         var evidence = CoverageReportClaimsSmoke.knownFixture();
         var coverageClaims = new CoverageReportClaims(profile, evidence);
@@ -52,6 +55,15 @@ public final class ExportReportCoverageSmoke {
             }
             int values = values(report);
             int bytes = text.getBytes(StandardCharsets.UTF_8).length;
+            int coverageValues = values(report.get("coverage"));
+            int legacyValues = values - coverageValues;
+            var scoped = new ReportJsonReader.Limits(bytes, 65536, 8, legacyValues, 250000, coverageValues, values);
+            read(text, 2, scoped, () -> false);
+            read(reverse(report).toString(), 2, scoped, () -> false);
+            rejectAll(text, new ReportJsonReader.Limits(bytes, 65536, 8, legacyValues - 1, 250000, coverageValues + 1, values));
+            rejectAll(text, new ReportJsonReader.Limits(bytes, 65536, 8, legacyValues + 1, 250000, coverageValues - 1, values));
+            int oldValues = values(JsonParser.parseString(legacy));
+            rejectAll(legacy, new ReportJsonReader.Limits(bytes, 65536, 8, oldValues - 1, 250000, coverageValues, values));
             read(text, 2, limits(bytes, values, 8), () -> false);
             rejectAll(text, limits(bytes - 1, values, 8));
             rejectAll(text, limits(bytes, values - 1, 8));

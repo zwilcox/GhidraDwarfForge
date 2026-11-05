@@ -596,6 +596,18 @@ tasks.register("coverageReportWorkload", JavaExec) {
     }
 }
 
+tasks.register("coverageReportFileProbe", JavaExec) {
+    group = "verification"
+    description = "Measures strict decoding and payload roundtrip for one retained coverage report"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CoverageReportFileProbe"
+    maxHeapSize = "512m"
+    doFirst {
+        args providers.gradleProperty("coverageReport").get()
+    }
+}
+
 tasks.register("emissionEvidenceSmoke", JavaExec) {
     group = "verification"
     description = "Retains actual producer emission evidence for independent DWARF/GDB inspection"

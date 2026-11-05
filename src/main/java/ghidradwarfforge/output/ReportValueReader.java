@@ -15,24 +15,39 @@ abstract class ReportValueReader {
     protected final BooleanSupplier cancelled;
     protected final ReportJsonReader.Limits limits;
     private final Budget budget;
+    protected enum ValuePopulation { LEGACY, COVERAGE }
+    private final ValuePopulation population;
 
     private static final class Budget {
         private int values;
+        private int legacy;
+        private int coverage;
     }
 
     ReportValueReader(JsonReader json, BooleanSupplier cancelled, ReportJsonReader.Limits limits) {
+        this(json, cancelled, limits, ValuePopulation.LEGACY);
+    }
+
+    ReportValueReader(JsonReader json, BooleanSupplier cancelled, ReportJsonReader.Limits limits, ValuePopulation population) {
         this.json = Objects.requireNonNull(json);
         this.cancelled = Objects.requireNonNull(cancelled);
         this.limits = Objects.requireNonNull(limits);
         budget = new Budget();
+        this.population = Objects.requireNonNull(population);
     }
 
     /** Child decoders never reset input-wide value, byte, string or depth limits. */
     ReportValueReader(ReportValueReader parent) {
+        this(parent, parent.population);
+    }
+
+    /** Scoped populations share the original counters; entering a child never replenishes any budget. */
+    ReportValueReader(ReportValueReader parent, ValuePopulation population) {
         json = parent.json;
         cancelled = parent.cancelled;
         limits = parent.limits;
         budget = parent.budget;
+        this.population = Objects.requireNonNull(population);
     }
 
     protected IOException missingFields(String description, Set<String> missing) {
@@ -130,10 +145,22 @@ abstract class ReportValueReader {
 
     protected void value(JsonToken expected) throws IOException {
         ReportJsonReader.checkCancelled(cancelled);
-        if (budget.values == limits.values()) {
-            throw invalid("value count exceeds safety limit " + limits.values());
+        if (budget.values == limits.totalValues()) {
+            throw invalid("value count exceeds safety limit " + limits.totalValues());
         }
         budget.values++;
+        if (population == ValuePopulation.COVERAGE) {
+            if (budget.coverage == limits.coverageValues()) {
+                throw invalid("coverage value count exceeds safety limit " + limits.coverageValues());
+            }
+            budget.coverage++;
+        }
+        else {
+            if (budget.legacy == limits.values()) {
+                throw invalid("legacy value count exceeds safety limit " + limits.values());
+            }
+            budget.legacy++;
+        }
         if (json.peek() != expected) {
             throw invalid("expected " + expected + " report value");
         }

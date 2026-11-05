@@ -73,7 +73,8 @@ public record CoverageReportClaims(CoverageReportJson.Profile profile, ExportCov
     }
 
     private record VariableKey(Kind kind, int ordinal, String name, String block) { }
-    private record OwnedVariable(long owner, VariableCoverageInventory.Variable variable) { }
+    private record StorageRange(long start, long end, int detail) { }
+    private record OwnedVariable(long owner, VariableCoverageInventory.Variable variable, List<StorageRange> storage) { }
     private record FunctionFields(FunctionSymbol symbol, SourceCoverageInventory.FunctionInventory source,
             ExportCoverage.SignatureEvidence signature, TypeCoverage types, VariableCoverageTotals variables,
             Map<Kind, VariableCoverageTotals> byKind, String typeProvenance) { }
@@ -83,15 +84,15 @@ public record CoverageReportClaims(CoverageReportJson.Profile profile, ExportCov
 
     private static final class Parser extends ReportValueReader {
         private static final Set<String> ROOT = Set.of("definitionVersion", "addressModel", "profile", "summary",
-            "functions", "variables", "recoveredGlobals");
+            "functions", "variables", "recoveredGlobals", "storageEvidenceDetails");
         private static final List<String> TYPE_FIELDS = List.of("recoveredRoots", "emittedRoots", "opaqueFreeEmittedRoots",
             "recoveredNodes", "resolvedEmittedNodes", "opaqueEmittedNodes", "notEmittedNodes", "implicitVoidNodes", "emittedImplicitVoidNodes");
         private static final Set<String> VARIABLE_TOTALS = Set.of("recoveredVariables", "emittedVariables", "variablesWithLocation",
             "knownScopeVariables", "unknownScopeVariables", "knownScopeBytes", "coveredScopeBytes", "extentUnavailableReason");
         private static final Set<String> CATEGORIES = Set.of("USER_DEFINED", "IMPORTED", "ANALYSIS", "DECOMPILER");
 
-        Parser(JsonReader json, BooleanSupplier cancelled, ReportJsonReader.Limits limits) { super(json, cancelled, limits); }
-        Parser(ReportValueReader parent) { super(parent); }
+        Parser(JsonReader json, BooleanSupplier cancelled, ReportJsonReader.Limits limits) { super(json, cancelled, limits, ValuePopulation.COVERAGE); }
+        Parser(ReportValueReader parent) { super(parent, ValuePopulation.COVERAGE); }
 
         CoverageReportClaims document() throws IOException {
             Map<String, Object> root = fields("coverage", ROOT, name -> switch (name) {
@@ -102,6 +103,7 @@ public record CoverageReportClaims(CoverageReportJson.Profile profile, ExportCov
                 case "functions" -> list(this::function);
                 case "variables" -> list(this::variable);
                 case "recoveredGlobals" -> list(this::global);
+                case "storageEvidenceDetails" -> storageDetails();
                 default -> throw new AssertionError();
             });
             require(root.get("definitionVersion").equals(CoverageReportJson.DEFINITION_VERSION), "unsupported metric definition");
@@ -110,6 +112,8 @@ public record CoverageReportClaims(CoverageReportJson.Profile profile, ExportCov
             List<FunctionFields> functions = get(root, "functions");
             List<OwnedVariable> variables = get(root, "variables");
             List<GlobalVariable> globals = get(root, "recoveredGlobals");
+            List<CoverageReportJson.StorageDetail> details = get(root, "storageEvidenceDetails");
+            boolean[] usedDetails = new boolean[details.size()];
             require(summary.functions() == functions.size() && summary.globals() == globals.size(), "summary cardinalities");
             Map<Long, FunctionFields> owners = new HashMap<>();
             for (var function : functions) {
@@ -124,7 +128,7 @@ public record CoverageReportClaims(CoverageReportJson.Profile profile, ExportCov
                 check();
                 var owner = owners.get(row.owner());
                 require(owner != null, "variable owner is missing");
-                var variable = row.variable();
+                var variable = resolveStorage(row, details, usedDetails);
                 var identity = variable.identity();
                 var key = new VariableKey(identity.kind(), identity.parameterOrdinal(),
                     identity.kind() == Kind.PARAMETER ? "" : identity.internalName(), identity.block());
@@ -146,6 +150,7 @@ public record CoverageReportClaims(CoverageReportJson.Profile profile, ExportCov
                 allLocations.add(variable.location());
                 allKinds.get(identity.kind()).add(variable.location());
             }
+            for (boolean used : usedDetails) { check(); require(used, "unreferenced storage evidence detail"); }
             List<ExportCoverage.Function> result = new ArrayList<>();
             var decoded = new TreeSet<Long>();
             var anchored = new TreeSet<Long>();
@@ -352,12 +357,12 @@ public record CoverageReportClaims(CoverageReportJson.Profile profile, ExportCov
             VariableCoverageInventory.Provenance provenance = get(fields, "declarationProvenance");
             String subject = switch (kind) { case PARAMETER -> "SIGNATURE"; case LOCAL -> "LOCAL_DECLARATION"; case FUNCTION_STATIC -> "STATIC_DECLARATION"; };
             require(provenance.subject().equals(subject), "provenance subject differs from declaration kind");
-            List<VariableCoverageInventory.StorageEvidence> storage = get(fields, "storageEvidence");
+            List<StorageRange> storage = get(fields, "storageEvidence");
             if (kind == Kind.FUNCTION_STATIC) require(storage.isEmpty(), "static has unexpected automatic storage evidence");
             return new OwnedVariable(get(fields, "function"), new VariableCoverageInventory.Variable(
                 new VariableCoverageInventory.Identity(kind, ordinal == null ? -1 : Math.toIntExact(ordinal), name, block, address),
                 display, new TypeRef(get(fields, "recoveredType")), emittedType == null ? null : new TypeRef(emittedType), provenance,
-                storage, location, reason, diagnostic));
+                List.of(), location, reason, diagnostic), storage);
         }
 
         private VariableCoverageInventory.Provenance provenance() throws IOException {
@@ -367,22 +372,52 @@ public record CoverageReportClaims(CoverageReportJson.Profile profile, ExportCov
             return new VariableCoverageInventory.Provenance(get(fields, "category"), source, get(fields, "subject"));
         }
 
-        private List<VariableCoverageInventory.StorageEvidence> storageEvidence() throws IOException {
-            List<VariableCoverageInventory.StorageEvidence> result = list(() -> {
-                var fields = fields("storage evidence", Set.of("start", "end", "category", "source", "omissionReason", "diagnostic"),
-                    name -> name.equals("start") || name.equals("end") ? supportedAddress() : text(false));
-                long start = get(fields, "start");
-                long end = get(fields, "end");
-                require(end > start && CATEGORIES.contains(fields.get("category")), "invalid storage range/category");
+        private List<CoverageReportJson.StorageDetail> storageDetails() throws IOException {
+            Set<CoverageReportJson.StorageDetail> unique = new HashSet<>();
+            return list(() -> {
+                var fields = fields("storage evidence detail", Set.of("category", "source", "omissionReason", "diagnostic"), name -> text(false));
+                require(CATEGORIES.contains(fields.get("category")), "invalid storage category");
                 require(!((String) fields.get("source")).isBlank(), "missing storage evidence source");
                 require(((String) fields.get("omissionReason")).isEmpty() == ((String) fields.get("diagnostic")).isEmpty(),
                     "storage omission reason/diagnostic differ");
-                return new VariableCoverageInventory.StorageEvidence(start, end, get(fields, "category"), get(fields, "source"),
+                var detail = new CoverageReportJson.StorageDetail(get(fields, "category"), get(fields, "source"),
                     get(fields, "omissionReason"), get(fields, "diagnostic"));
+                require(unique.add(detail), "duplicate storage evidence detail");
+                return detail;
+            });
+        }
+
+        private List<StorageRange> storageEvidence() throws IOException {
+            List<StorageRange> result = list(() -> {
+                long[] tuple = new long[3];
+                int[] position = {0};
+                array(() -> {
+                    require(position[0] < 3, "storage range has more than three fields");
+                    tuple[position[0]] = position[0] == 2 ? decimal() : supportedAddress();
+                    position[0]++;
+                });
+                require(position[0] == 3 && tuple[1] > tuple[0], "expected storage start/end/detail tuple");
+                return new StorageRange(tuple[0], tuple[1], Math.toIntExact(tuple[2]));
             });
             long end = -1;
             for (var range : result) { check(); require(range.start() >= end, "overlapping storage evidence"); end = range.end(); }
             return result;
+        }
+
+        private VariableCoverageInventory.Variable resolveStorage(OwnedVariable row,
+                List<CoverageReportJson.StorageDetail> details, boolean[] used) throws IOException {
+            var evidence = new ArrayList<VariableCoverageInventory.StorageEvidence>(row.storage().size());
+            for (var range : row.storage()) {
+                check();
+                require(range.detail() < details.size(), "storage evidence reference is missing");
+                var detail = details.get(range.detail());
+                used[range.detail()] = true;
+                evidence.add(new VariableCoverageInventory.StorageEvidence(range.start(), range.end(), detail.category(),
+                    detail.source(), detail.omissionReason(), detail.diagnostic()));
+            }
+            var variable = row.variable();
+            return new VariableCoverageInventory.Variable(variable.identity(), variable.displayName(), variable.recoveredType(),
+                variable.emittedType(), variable.declarationProvenance(), evidence, variable.location(), variable.omissionReason(), variable.diagnostic());
         }
 
         private LocationCoverage location() throws IOException {

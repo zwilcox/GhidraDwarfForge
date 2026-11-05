@@ -18,12 +18,19 @@ import java.util.function.BooleanSupplier;
  */
 final class ReportJsonReader extends Reader {
     static final Limits DEFAULT_LIMITS = new Limits(64L * 1024 * 1024, 65536, 8,
-        1_000_000, 250_000);
+        1_000_000, 250_000, 5_000_000, 6_000_000);
 
     /** Package-private smaller budgets support boundary tests without public policy knobs. */
-    record Limits(long bytes, int stringUnits, int depth, int values, int arrayItems) {
+    record Limits(long bytes, int stringUnits, int depth, int values, int arrayItems,
+            int coverageValues, int totalValues) {
+        /** Existing small-budget seams retain their exact whole-document ceiling. */
+        Limits(long bytes, int stringUnits, int depth, int values, int arrayItems) {
+            this(bytes, stringUnits, depth, values, arrayItems, values, values);
+        }
+
         Limits {
-            if (bytes < 1 || stringUnits < 1 || depth < 1 || values < 1 || arrayItems < 1) {
+            if (bytes < 1 || stringUnits < 1 || depth < 1 || values < 1 || arrayItems < 1 ||
+                    coverageValues < 1 || totalValues < 1) {
                 throw new IllegalArgumentException("report reader limits must be positive");
             }
         }

@@ -32,7 +32,10 @@ import java.util.function.BooleanSupplier;
  *
  * Reader resource limits, not writer/JSON format constraints: 64 MiB input
  * (plus at most one byte to detect overflow), 65536 UTF-16 units per string,
- * nesting eight, one million values, and 250000 elements per array. Strings
+ * nesting eight, one million legacy values, five million coverage values,
+ * six million total values, and 250000 elements per array. Schema one retains
+ * its one-million-value limit. Coverage counters are shared across all nested
+ * decoders and cannot be reused for legacy fields. Strings
  * are bounded before Gson can grow an unbounded token. Cancellation is checked
  * before opening, around reads, per character/value and after EOF; it cannot
  * interrupt a blocked filesystem read. The owned stream always closes.

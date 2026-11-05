@@ -44,11 +44,16 @@ Explicit schema-two writing and all reader paths now pass local migration,
 full-document budget, selected-byte binding and native-fixture round-trip checks.
 Legacy schema-one bytes remain unchanged. Production staging, comparison/UI
 and measured overhead remain pending; ordinary exports still use schema one.
-An exploratory denser synthetic report exceeds the existing one-million-value
-budget (1,447,193 values, 27,677,206 payload bytes). A test-only two-million-value
-limit admits it on both 256/768 MiB heaps, but production limits are unchanged.
-Real-workload population measurement and explicit bounded admission/format policy
-must precede production wiring; see the coverage contract's retained probe evidence.
+Actual saved SQLite/U-Boot probes now pass with a lossless storage-evidence
+dictionary and explicit scoped limits: one million legacy values, five million
+coverage values, six million total, unchanged 64 MiB/string/depth/array caps.
+SQLite's payload shrinks from 56,392,815 to 19,897,363 bytes with every range/detail
+independently compared; U-Boot's compact payload is 54,600,521 bytes and repeats
+identically across two processes. Full report preflight, strict validators and
+GDB behavior pass; original/module/project snapshots match. Single-run timing/RSS
+observations are retained, not generalized performance acceptance. Production
+staging, repeated overhead/failure/cancellation controls and the full matrix remain
+required; see `docs/evidence/coverage-workload-admission.json`.
 Location-list results retain their actual immutable plans and honor cancellation.
 Their four byte streams match the parent; 237 raw-byte/negative checks pass.
 Real packaged x86-64 and rebased AArch64 PIE lexical-variable journeys pass

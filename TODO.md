@@ -10,8 +10,9 @@ serialization, strict payload decoding and shared reader budgets pass locally
 writing and all reader paths now pass migration and selected-byte binding checks;
 production staging, comparison/CLI/GUI, large-workload cost and hosted acceptance
 remain pending. Ordinary exports still emit schema one.
-A dense synthetic workload currently hits the one-million-value budget; resolve
-explicit schema-two admission/representation bounds before production wiring.
+Real SQLite/U-Boot probes now fit the explicit scoped coverage budget after
+lossless evidence deduplication, with validators/GDB and original preservation.
+Production staging and repeated overhead/failure controls remain required.
 See `docs/COVERAGE-SCORECARDS.md`; #74 final acceptance retains integration priority.
 
 **CONFIRMED measurement integration and compression component validation:**

@@ -295,7 +295,7 @@ def inspect(case):
         assert score['signature']['recovered'] and score['signature']['emitted'] == (name != 'failed')
         assert score['typeProvenance'] == 'UNKNOWN_PER_TYPE'
     wire = json.loads((case / 'forge.dbg.coverage.json').read_text())
-    assert set(wire) == {'definitionVersion', 'addressModel', 'profile', 'summary', 'functions', 'variables', 'recoveredGlobals'}
+    assert set(wire) == {'definitionVersion', 'addressModel', 'profile', 'summary', 'functions', 'variables', 'recoveredGlobals', 'storageEvidenceDetails'}
     assert wire['definitionVersion'] == 1 and wire['addressModel'] == 'ELF_LINK_TIME'
     assert wire['profile'] == {'languageId': 'x86:LE:64:default', 'compilerSpecId': 'gcc'}
     report = json.loads((case / 'forge.dbg.report.json').read_text())
@@ -338,6 +338,11 @@ def inspect(case):
         for field in ['knownScopeRanges', 'locatedRanges']:
             assert record['location'][field] == [[hex(r['address']), hex(r['address'] + r['size'])] for r in variable['location'][field]]
         assert record['omissionReason'] == variable['omissionReason']
+        expanded = []
+        for start, end, index in record['storageEvidence']:
+            detail = wire['storageEvidenceDetails'][int(index)]
+            expanded.append({'start': int(start, 16), 'end': int(end, 16), **detail})
+        assert expanded == variable['storageEvidence']
     return {'rawTypeNodes': 5, 'opaqueNodes': 1, 'variables': 9, 'locations': 4, 'omittedLocations': 5,
             'knownScopeVariables': 3, 'lateCoveredScopeBytes': metrics['late']['coveredScopeBytes'],
             'lateKnownScopeBytes': metrics['late']['knownScopeBytes']}
