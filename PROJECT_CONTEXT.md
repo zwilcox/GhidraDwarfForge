@@ -1,5 +1,18 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — #108 CLI and partial comparison:** the packaged read-only
+report launcher displays summaries, per-function rows and selected evidence. It
+matches reported original SHA/profile and ELF-link-time function entries, handles
+renames/path moves, and exposes individual lost/gained source anchors even when
+totals are equal. Unknown populations and incompatible reports remain explicit.
+Java 21 checks, ten packaged CLI cases, release assembly, and a fresh GUI/validator/
+GDB journey pass on Linux. Windows execution remains **PRESENT, UNVERIFIED**.
+Comparison is incomplete: export-local variable IDs and absent per-type states
+cannot prove individual variable/range/type transitions; every comparison states
+these limits. Extend that evidence and implement GUI comparison before claiming
+#108 complete. Repeated large-workload overhead and hosted acceptance also remain.
+See `docs/evidence/coverage-cli-comparison.json`.
+
 **CONFIRMED locally — #108 GUI presentation:** the console now receives a short
 coverage summary; a modeless per-function view shows static metrics, provenance
 and omission reasons. Explicit Save report retains the complete preflighted JSON

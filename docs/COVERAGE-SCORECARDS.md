@@ -1,5 +1,71 @@
 # Proposed coverage contract for issue 108
 
+## Read-only CLI and partial comparison checkpoint
+
+**CONFIRMED locally on Linux; complete comparison remains PLANNED.** The packaged
+`support/ghidra-dwarf-forge-report` opens only explicitly selected report files.
+It uses the strict versioned reader, preserves schema-one coverage as unavailable,
+and never opens referenced ELF/source paths or grants attachment authority.
+The PowerShell counterpart is **PRESENT, UNVERIFIED** locally; both host GUI
+integration harnesses now invoke the respective packaged launcher.
+
+```bash
+support/ghidra-dwarf-forge-report --ghidra-dir="$GHIDRA_INSTALL_DIR" \
+    --report=sample.dbg.report.json
+support/ghidra-dwarf-forge-report --ghidra-dir="$GHIDRA_INSTALL_DIR" \
+    --report=sample.dbg.report.json --function=0x401136
+support/ghidra-dwarf-forge-report --ghidra-dir="$GHIDRA_INSTALL_DIR" \
+    --report=after.json --before=before.json
+```
+
+Default output is a readable summary and per-function TSV rows; `--summary`
+omits rows. `--function` selects a normalized ELF-link-time entry and shows the
+same bounded evidence details as the GUI, with an explicit display-limit notice.
+Names and diagnostics cannot inject ANSI/bidi controls into terminals or split
+TSV cells. The original JSON remains the complete evidence record. The launcher
+uses Java 21+ and the installed extension plus Ghidra's existing Gson/JNA jars;
+it starts no Ghidra analysis or native producer.
+
+On Windows, use `support/ghidra-dwarf-forge-report.ps1` with `-ReportFile`, optional
+`-BeforeFile`, `-Function` or `-Summary`, and `-GhidraDirectory`. Paths travel as
+canonical Base64 UTF-8 across Java's Windows launcher boundary. Arguments are
+passed directly to a separate process, and output streams without retaining the
+complete comparison in the PowerShell parent. Native Windows acceptance is pending.
+
+Comparison requires matching reported original SHA-256, target description and
+Ghidra language/compiler profile. The strict reader admits only the supported
+metric definition/address model. Function correspondence uses ELF-link-time entry,
+so names and artifact paths may change. Body/decoded-population changes are
+reported separately. Lost/gained anchors and line visibility are compared over
+instruction starts decoded in both reports; unknown evidence is never converted
+to zero. Output includes each changed PC, not just a net total, so offsetting gains
+do not hide losses. Function additions/removals, signature/provenance/diagnostic
+changes and variable/type count changes are also reported.
+
+**Known incompleteness:** definition one's local identities are export-local and
+its type metrics omit individual graph-node states. The current comparison cannot
+establish local renames, individual variable location-range regressions or every
+resolved-to-opaque type transition. It prints these limitations on every matching
+comparison, including when no supported field changed. Extending identity/evidence,
+independent real curation/rebase regression fixtures and an actual GUI comparison
+remain required. This checkpoint does not satisfy all issue #108 comparison criteria.
+
+Exit codes are 0 for successful display (including reported changes), 1 for
+read/output errors, 2 for incomparable reports, 11 for cancellation and 64 for
+usage errors. Exit zero never means validator success, semantic equivalence or
+absence of regressions. Output preceding failure/cancellation may be incomplete.
+
+Java 21 component checks pass all 49 comparison cancellation checkpoints, exact
+point changes with equal totals, population changes, unknowns, moved paths, renames,
+incompatibility, legacy reports, terminal escaping and broken-output handling.
+Ten packaged-launcher cases use a real GUI export and explicit report-only
+mutations; these mutations are protocol controls, not new raw-DWARF regression
+artifacts. A fresh full GUI export/preparation/decline/cancellation journey and
+GNU/LLVM/pinned strict/GDB checks pass. Release-package determinism/manifests and
+launcher contents/modes pass. The initial invalid nested-set test fixture remains
+retained; the strict writer correctly rejected it. See
+[`coverage-cli-comparison.json`](evidence/coverage-cli-comparison.json).
+
 ## GUI presentation checkpoint
 
 **CONFIRMED locally; full #108 and hosted acceptance pending.** GUI exports print

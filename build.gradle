@@ -551,6 +551,14 @@ tasks.register("exportCoverageSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.coverage.ExportCoverageSmoke"
 }
 
+tasks.register("coverageComparisonSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks CLI coverage, matching identities, exact point changes and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CoverageComparisonSmoke"
+}
+
 tasks.register("coveragePresentationSmoke", JavaExec) {
     group = "verification"
     description = "Checks honest coverage presentation and non-overwriting full report saves"

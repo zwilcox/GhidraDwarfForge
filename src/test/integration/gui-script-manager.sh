@@ -185,4 +185,6 @@ if [[ ${GHIDRA_GUI_NATIVE_ATTACHMENT:-0} == 1 ]]; then
     python3 "$repository/src/test/integration/gui-attachment-verify.py" \
         "$work/select/attachment-native" "$fixture" "$function_address"
 fi
+python3 "$repository/src/test/integration/coverage-report-tool.py" "$ghidra" "$module" \
+    "$work/select/coverage-report.json"
 echo "gui-script-manager-integration=PASS"

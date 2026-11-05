@@ -31,6 +31,10 @@ chmod 755 "$work/base/GhidraDwarfForge/support/wrapper"
 cp "$repository_dir/support/ghidra-dwarf-forge-attach" "$work/base/GhidraDwarfForge/support/ghidra-dwarf-forge-attach"
 chmod 644 "$work/base/GhidraDwarfForge/support/ghidra-dwarf-forge-attach"
 cp "$repository_dir/support/ghidra-dwarf-forge-attach.ps1" "$work/base/GhidraDwarfForge/support/ghidra-dwarf-forge-attach.ps1"
+for report_launcher in ghidra-dwarf-forge-report ghidra-dwarf-forge-report.ps1; do
+    cp "$repository_dir/support/$report_launcher" "$work/base/GhidraDwarfForge/support/$report_launcher"
+    chmod 644 "$work/base/GhidraDwarfForge/support/$report_launcher"
+done
 for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java AttachGhidraDwarfForge.java RecoverGhidraDwarfForgeAttachment.java ExportAndAttachGhidraDwarfForge.java; do
     printf '// fixture %s\n' "$entry_point" \
         > "$work/base/GhidraDwarfForge/ghidra_scripts/$entry_point"
@@ -269,6 +273,10 @@ grep -Fxq 'consumer=libdwarf.so.2.3.2' \
 grep -Fxq 'producer=libdwarfp-2.dll' \
     "$module/os/win_x86_64/NATIVE-PAIR.properties"
 test -s "$module/THIRD_PARTY_NOTICES.md"
+test -x "$module/support/ghidra-dwarf-forge-report"
+for report_launcher in ghidra-dwarf-forge-report ghidra-dwarf-forge-report.ps1; do
+    cmp "$repository_dir/support/$report_launcher" "$module/support/$report_launcher"
+done
 test -x "$module/support/ghidra-dwarf-forge-attach"
 cmp "$repository_dir/support/ghidra-dwarf-forge-attach" "$module/support/ghidra-dwarf-forge-attach"
 for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java AttachGhidraDwarfForge.java RecoverGhidraDwarfForgeAttachment.java ExportAndAttachGhidraDwarfForge.java; do
