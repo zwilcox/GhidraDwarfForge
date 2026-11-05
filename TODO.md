@@ -4758,8 +4758,9 @@ Tracking: [#74](https://github.com/zwilcox/GhidraDwarfForge/issues/74).
 **CONFIRMED local component; broader work remains:** [PERFORMANCE-WORKPLAN.md](docs/PERFORMANCE-WORKPLAN.md)
 retains the full broader-workload, host, measurement and optimization-decision
 scope. Internal JFR observations, same-compiler SQLite comparisons, and the
-complete pinned U-Boot sandbox benchmark pass locally. Windows accounting and
-workload measurements, candidate decisions, hosted review and integration remain
+complete pinned U-Boot sandbox benchmark pass locally. Native Windows accounting
+controls pass run `41971951834`; real Windows workload/consumer jobs remain
+unverified. Workload measurements, candidate decisions, hosted review and integration remain
 required; these component results do not close the issue.
 
 **CONFIRMED through PR53's complete hosted gate:** instruction-level stack profiles are created only

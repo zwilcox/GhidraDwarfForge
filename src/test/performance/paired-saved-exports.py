@@ -19,11 +19,13 @@ spec.loader.exec_module(support)
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('reference_case', type=Path, help='Recorded SQLite or synthetic benchmark case directory')
+    parser.add_argument('reference_case', type=Path, help='Recorded SQLite, U-Boot or synthetic benchmark case directory')
     parser.add_argument('baseline_ghidra', type=Path)
     parser.add_argument('candidate_ghidra', type=Path)
     parser.add_argument('--pairs', type=int, default=5)
-    parser.add_argument('--synthetic-functions', type=int, help='Select a synthetic export-benchmark.py case of this size')
+    kind = parser.add_mutually_exclusive_group()
+    kind.add_argument('--synthetic-functions', type=int, help='Select a synthetic export-benchmark.py case of this size')
+    kind.add_argument('--uboot', action='store_true', help='Select a passing pinned U-Boot benchmark case')
     args = parser.parse_args()
     if not 2 <= args.pairs <= 10:
         parser.error('pairs must be between 2 and 10')
@@ -36,6 +38,23 @@ def main():
         binary, program_name = reference / 'benchmark', 'Benchmark'
         evidence = [reference.parent / 'summary.json', reference / 'benchmark.c']
         workload = f'Synthetic {args.synthetic_functions}-function fixture'
+    elif args.uboot:
+        summary = json.loads((reference / 'summary.json').read_text())
+        assert summary['status'] == 'PASS'
+        built = Path(summary['buildCase']).resolve(strict=True)
+        receipt = json.loads((built / 'build-result.json').read_text())
+        assert receipt['status'] == 'PASS' and receipt['version'] == '2025.01'
+        assert receipt['archiveSha256'] == 'cdef7d507c93f1bbd9f015ea9bc21fa074268481405501945abc6f854d5b686f'
+        for name in ('u-boot.reference', 'u-boot.workload', 'u-boot.dtb', 'build.config'):
+            assert support.digest(built / name) == receipt['artifacts'][name]['sha256']
+        binary, program_name = built / 'u-boot.workload', 'UBoot'
+        summary['inputSha256'] = receipt['artifacts'][binary.name]['sha256']
+        expected_report = json.loads((reference / 'export-0.report.json').read_text())
+        addresses = json.loads((reference / 'function-addresses.json').read_text())
+        evidence = [reference / name for name in ('summary.json', 'export-0.report.json', 'function-addresses.json')]
+        evidence += [built / name for name in ('build-result.json', 'u-boot.reference', 'u-boot.dtb', 'build.config')]
+        evidence += [source / 'uboot-benchmark.py']
+        workload = 'U-Boot 2025.01 sandbox firmware code (not bare-metal hardware)'
     else:
         summary = json.loads((reference / 'summary.json').read_text())
         assert summary['status'] == 'PASS'
@@ -84,18 +103,29 @@ def main():
             ghidra = installations[variant]
             wrapper = ghidra / 'Ghidra/Extensions/GhidraDwarfForge/support/ghidra-dwarf-forge-headless'
             name = f'{pair}-{variant}'
-            sample = run(name, [wrapper, '--ghidra-dir=' + str(ghidra),
+            command = [wrapper, '--ghidra-dir=' + str(ghidra),
                 '--project-dir=' + str(project), '--project-name=' + program_name, '--program=' + binary.name,
-                '--input=' + str(binary), '--output=' + str(output)], timeout=1800, measured=True)
+                '--input=' + str(binary), '--output=' + str(output)]
+            if args.uboot:
+                command += ['--gdb-loader']
+            sample = run(name, command, timeout=1800, measured=True)
             sample['runtime'] = support.verify_headless(case / (name + '.log'),
                 ghidra / 'Ghidra/Extensions/GhidraDwarfForge', exported=True)
             reports = [json.JSONDecoder().raw_decode(line.split('GhidraDwarfForge report: ', 1)[1])[0]
                 for line in (case / (name + '.log')).read_text().splitlines()
                 if 'GhidraDwarfForge report: {' in line]
             report, = reports
-            assert report['failure'] is None and not report['failedFunctions']
+            assert report['failure'] is None
+            if args.uboot:
+                # Retain the known timeout rather than relabeling this PARTIAL
+                # workload as complete recovery or replacing it with an easier one.
+                for field in ('status', 'counts', 'failedFunctions', 'skippedFunctions'):
+                    assert report[field] == expected_report[field], field
+            else:
+                assert not report['failedFunctions']
             write(name + '.report.json', report)
-            hashes = [support.digest(output), support.digest(Path(str(output) + '.c'))]
+            suffixes = ('', '.c', '.gdb.py') if args.uboot else ('', '.c')
+            hashes = [support.digest(Path(str(output) + suffix)) for suffix in suffixes]
             if first_hashes is None:
                 first_hashes, first_counts = hashes, report['counts']
                 shutil.copyfile(output, case / 'first.dbg')
@@ -119,29 +149,13 @@ def main():
             run(name, command, timeout=300)
             support.require_clean(case / (name + '.log'))
         assert 'No errors.' in (case / 'llvm.log').read_text()
-        script = case / 'behavior.gdb'
-        script.write_text('\n'.join([
-            'set pagination off', 'set confirm off', 'set debuginfod enabled off', 'set auto-solib-add off',
-            'set disable-randomization off', 'set python print-stack full',
-            'file ' + str(binary), 'symbol-file ' + str(output), 'python',
-            'exits = []', 'gdb.events.exited.connect(lambda event: exits.append(getattr(event, "exit_code", None)))',
-            'for name in ("benchmark_checkpoint", "sqlite3_step", "sqlite3_exec"):',
-            '    symbol = gdb.lookup_global_symbol(name) or gdb.lookup_static_symbol(name)',
-            '    assert symbol is not None and symbol.type.code == gdb.TYPE_CODE_FUNC and symbol.symtab is not None',
-            '    assert symbol.type.target().strip_typedefs().code == gdb.TYPE_CODE_INT',
-            '    assert symbol.type.target().sizeof == 4', 'end',
-            'ptype benchmark_checkpoint', 'list benchmark_checkpoint', 'break *benchmark_checkpoint', 'run',
-            'disable breakpoints', 'python',
-            'assert int(gdb.parse_and_eval("*(unsigned int*)&observed_count")) == 100',
-            'assert int(gdb.parse_and_eval("*(unsigned int*)&observed_sum")) == 5050',
-            'finish = gdb.FinishBreakpoint(gdb.newest_frame(), internal=True)', 'gdb.execute("next")',
-            'assert finish.return_value is None', 'gdb.execute("step")',
-            'if finish.return_value is None: gdb.execute("continue")',
-            'assert int(finish.return_value) == 5150', 'gdb.execute("continue")',
-            'assert exits == [0]', 'end', 'echo sqlite-paired-gdb=PASS\\n', '']))
-        run('gdb', ['gdb-multiarch', '-q', '-nx', '-batch', '-x', script], timeout=180)
-        support.require_clean(case / 'gdb.log')
-        assert 'sqlite-paired-gdb=PASS' in (case / 'gdb.log').read_text()
+        if args.uboot:
+            behavior_spec = importlib.util.spec_from_file_location('uboot_behavior', source / 'uboot-benchmark.py')
+            behavior = importlib.util.module_from_spec(behavior_spec)
+            behavior_spec.loader.exec_module(behavior)
+            behavior.validate_behavior(case, built / 'u-boot.reference', binary, built / 'u-boot.dtb', output, addresses)
+        else:
+            validate_sqlite_behavior(case, binary, output, run)
         strict_result = case / 'strict-checks.log.check.json'
     after = {str(p): support.digest(p) for p in protected}
     write('protected-after.json', after)
@@ -160,6 +174,32 @@ def main():
         'scope': workload + ' on this host; identical artifact bytes, no general speed/memory guarantee.'}
     write('result.json', result)
     print('paired-saved-exports=PASS ' + str(case), flush=True)
+
+
+def validate_sqlite_behavior(case, binary, output, run):
+    script = case / 'behavior.gdb'
+    script.write_text('\n'.join([
+        'set pagination off', 'set confirm off', 'set debuginfod enabled off', 'set auto-solib-add off',
+        'set disable-randomization off', 'set python print-stack full',
+        'file ' + str(binary), 'symbol-file ' + str(output), 'python',
+        'exits = []', 'gdb.events.exited.connect(lambda event: exits.append(getattr(event, "exit_code", None)))',
+        'for name in ("benchmark_checkpoint", "sqlite3_step", "sqlite3_exec"):',
+        '    symbol = gdb.lookup_global_symbol(name) or gdb.lookup_static_symbol(name)',
+        '    assert symbol is not None and symbol.type.code == gdb.TYPE_CODE_FUNC and symbol.symtab is not None',
+        '    assert symbol.type.target().strip_typedefs().code == gdb.TYPE_CODE_INT',
+        '    assert symbol.type.target().sizeof == 4', 'end',
+        'ptype benchmark_checkpoint', 'list benchmark_checkpoint', 'break *benchmark_checkpoint', 'run',
+        'disable breakpoints', 'python',
+        'assert int(gdb.parse_and_eval("*(unsigned int*)&observed_count")) == 100',
+        'assert int(gdb.parse_and_eval("*(unsigned int*)&observed_sum")) == 5050',
+        'finish = gdb.FinishBreakpoint(gdb.newest_frame(), internal=True)', 'gdb.execute("next")',
+        'assert finish.return_value is None', 'gdb.execute("step")',
+        'if finish.return_value is None: gdb.execute("continue")',
+        'assert int(finish.return_value) == 5150', 'gdb.execute("continue")',
+        'assert exits == [0]', 'end', 'echo sqlite-paired-gdb=PASS\\n', '']))
+    run('gdb', ['gdb-multiarch', '-q', '-nx', '-batch', '-x', script], timeout=180)
+    support.require_clean(case / 'gdb.log')
+    assert 'sqlite-paired-gdb=PASS' in (case / 'gdb.log').read_text()
 
 
 if __name__ == '__main__':

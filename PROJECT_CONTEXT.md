@@ -8,8 +8,9 @@ The source/decompilation phase dominates the profiled SQLite and U-Boot runs;
 this does not justify a general optimization or architecture claim. The full
 pinned U-Boot harness now passes locally, including its honest single timeout,
 and same-compiler SQLite pairs preserve every artifact byte. Cancellation and
-forced decompilation-failure regressions pass. Windows accounting controls are
-present but await actual Windows execution. Full corpus/host measurements, candidate
+forced decompilation-failure regressions pass. Native Windows accounting controls pass run
+`41971951834`; the initial process-count oracle failure is retained. Real Windows
+workload/consumer jobs are present but unverified. Full corpus/host measurements, candidate
 decisions, final CI and integration remain required. See
 `docs/PERFORMANCE-WORKPLAN.md` for scope, observed timings and retained failures.
 

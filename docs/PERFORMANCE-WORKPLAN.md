@@ -124,7 +124,7 @@ This new run supersedes manual-only phase extraction as harness evidence.
 
 ## Firmware build recipe
 
-**CONFIRMED local build/runtime sanity; exporter acceptance pending:**
+**CONFIRMED local build/runtime sanity and corrected exporter acceptance below:**
 `build-uboot.py` verifies the pinned archive, preserves compiler reference
 DWARF, strips debug data only from a new workload copy, retains the final
 configuration and tool commands, and executes an echo command with the built
@@ -188,7 +188,11 @@ checks. Medians are 34.96s baseline and 34.98s candidate. The within-pair
 candidate-minus-baseline differences are +0.23/-0.22/+0.16/+0.23/+0.21s:
 four of five are slower, with a median +0.21s. Retain this small observed cost
 and the raw population instead of claiming a speedup or zero overhead.
-An additional short-workload comparison will investigate startup cost.
+The additional 100-function five-pair comparison (`run.b7fqns55`) passes,
+with medians 2.65s baseline and 2.67s candidate and mixed within-pair signs.
+An isolated Java 21 probe reports FlightRecorder.isInitialized() false both
+before and after an unrecorded phase hook; it does not support adding a lazy
+recorder initialization guard. Neither result establishes zero overhead.
 Both use Java 21.0.12.1 compilation and
 runtime, with only the intended producer class family and phase utility changed.
 
@@ -211,7 +215,7 @@ of #74 remain pending; these tests do not cover Windows workload measurements.
 
 ## Windows measurement boundary
 
-**PRESENT, UNVERIFIED on native Windows:** `windows-measure.c` is a test-only
+**CONFIRMED native Windows controls at `61e7c1d`:** `windows-measure.c` is a test-only
 launcher, not part of the installed extension. It creates a suspended process,
 assigns a kill-on-close Job Object before resuming it, waits for the entire job,
 and records cumulative user/kernel CPU plus peak job/process memory commitment.
@@ -227,10 +231,25 @@ and the continually tracked
 Native controls launch a child that outlives its root, commit 64MiB while touching
 one page, consume independently measured child CPU, and test timeout cleanup,
 failing/missing executables, argument transport and preservation of existing logs.
-Linux MinGW cross-compilation is confirmed, but only the dedicated Windows
-workflow can establish these runtime properties. An accounting-control pass
-will still not establish Windows exporter performance; real workload runs and
-consumer validation remain required.
+Run `41971951834` passes all native controls. The first run `41971376880`
+failed its incorrect exact-two-process oracle: the job reports four processes.
+The corrected oracle accepts additional job support processes and retains the
+independent child CPU, committed memory, marker, zero-live-member and child-death
+checks. The successful descendant case records 0.21875s job CPU and 69,353,472
+bytes peak job commitment; timeout terminates every job member. Raw artifact
+hashes and all case outcomes are in
+`docs/evidence/performance-windows-controls-20261105.json`.
+
+**PRESENT, UNVERIFIED real Windows workload pipeline:** `prepare-host-corpus.py`
+builds pinned SQLite and U-Boot ELFs and retains their corresponding source.
+`fetch-ci-packages.py` selects exact-commit artifacts from the sole production
+CI workflow and verifies their archive digests; it does not rebuild natives.
+`windows-workloads.py` imports each input once and measures five alternating
+baseline/candidate pairs plus a separate JFR run, with artifact/report identity,
+protected-file checks and native validators. `host-consumer.py` independently
+validates the unchanged Windows artifacts and runs compiler/Forge GDB behavior
+on Linux with explicit source relocation and PIE bias. No Windows workload
+performance claim is accepted until these new jobs actually pass.
 
 ## Optimization decisions still required
 
