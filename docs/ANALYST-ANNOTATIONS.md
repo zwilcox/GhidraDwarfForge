@@ -89,3 +89,21 @@ python3 src/test/integration/analyst-annotations-failures.py "$GHIDRA_INSTALL_DI
 This is a reusable native failure fixture, not a production exporter acceptance
 test. In-flight export cancellation, atomic cleanup, symbol-only failed output
 and validator/GDB checks of the resulting diagnostic source remain required.
+
+The [name-policy experiment](evidence/annotation-name-policy.json) consumes the
+actual saved equate records and produces an independent synthetic constant unit
+through the audited producer. GDB loads this alongside the original compiler
+DWARF: 528 exact value/width/read-only checks pass in two real frames across four
+profiles, with the original conflicting local/global/type/enum names intact.
+The catalog provides stable ASCII aliases and file-qualified lookup. Only the
+unique validated enum display `ANNOTATION_NEGATIVE` gets direct lookup in this
+fixture; duplicate or conflicting names retain aliases. Signed stored values,
+unsigned stored bit patterns, enum widths and dynamic unsigned bits remain
+explicitly distinct views.
+
+All four experimental sidecars pass GNU/LLVM/pinned strict validation and are
+byte-identical across independent producer processes. AArch64 GDB's system-DSO
+string-table warning also appears identically with only the compiler symbols;
+the receipt retains that control. The candidate is not the complete production
+name collector or exporter. Full real-name reservation, keyword/reference
+conflict handling, source composition and production acceptance remain required.
