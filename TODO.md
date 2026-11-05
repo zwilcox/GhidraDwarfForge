@@ -1,5 +1,12 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED CI portability correction — #116/#114:** PR #166 run
+`42132969992` stopped in the wrapper test because its new assertion required
+`rg`, absent on the extension-build runner. The assertion now uses the existing
+`grep` dependency; the complete Linux wrapper test passes locally. Exporter
+behavior is unchanged. A new hosted run is required; this failed run is not
+acceptance evidence.
+
 **CONFIRMED installed default comments — #116/#114:** the shared export script
 now preserves stored listing comments with separate native warning handling.
 Five Linux headless cases (four architecture profiles plus a fresh x86-64

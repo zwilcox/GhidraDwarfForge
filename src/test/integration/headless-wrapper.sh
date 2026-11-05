@@ -65,7 +65,7 @@ run_status 64 SUCCESS 0 --import="$input" --output="$output" --compress-debug-se
 run_status 0 SUCCESS 0 --import="$input" --output="$output" \
     --annotation-record-limit=123 --annotation-text-limit=456 --annotation-source-limit=789
 for option in --annotation-record-limit=123 --annotation-text-limit=456 --annotation-source-limit=789; do
-    rg -Fqx -- "$option" "$argument_log"
+    grep -Fxq -- "$option" "$argument_log"
 done
 
 run_status 0 PARTIAL 0 --import="$input"
