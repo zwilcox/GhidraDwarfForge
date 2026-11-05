@@ -2792,6 +2792,10 @@ Remaining #108 acceptance:
   remains required. Reported binding correspondence does not prove lineage.
 - Hosted GUI report-comparison acceptance; the Linux workflow now passes locally.
 - Repeated large-workload measurements after the definition-two evidence extension.
+  The first repeated SQLite run exposed transient array-ID nondeterminism; the
+  structural-key correction passes cross-target extraction/reopen tests. New
+  measurements and artifact validation are running with the same correction in
+  the baseline control (`docs/evidence/coverage-array-identity.json`).
   Actual whole-report byte-bound stress now passes locally on x86-64 and rebased
   AArch64 PIE, including preservation/retry and validators/GDB; hosted acceptance
   remains required (`docs/evidence/coverage-whole-report-limit.json`).

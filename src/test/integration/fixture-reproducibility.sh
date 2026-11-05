@@ -74,6 +74,8 @@ expected_sources=(
     dynamic-composite-caller.c
     dynamic-composite-scalar.c
     dynamic-parameter-storage.c
+    emission-evidence-x86_64.S
+    emission-evidence.c
     external-function-declarations.c
     formal-function-return.c
     fp_register_aliases.c

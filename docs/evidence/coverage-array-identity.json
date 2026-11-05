@@ -1,0 +1,72 @@
+{
+    "issue": 108,
+    "baselineCommit": "c64422cae5fd8da36e719668813095631fccc82e",
+    "status": "CONFIRMED defect reproduced and cross-target extraction regression fixed; final repeated workload/validator acceptance remains pending",
+    "failure": {
+        "case": "build/test-results/paired-saved-exports/run.vjtgmknj",
+        "log": "build/coverage-final-sqlite-pairs.log",
+        "symptom": "Second fresh-process candidate export changed one canonical array key plus its two references. Counts and artifact hashes remained equal.",
+        "array": "undefined1[16]",
+        "firstKey": "uid:34359aded26dced2",
+        "secondKey": "uid:34359af3200f1852",
+        "archiveReceipt": "build/test-results/paired-saved-exports/run.vjtgmknj/failure-archive-receipt.json"
+    },
+    "ghidraSourceAudit": {
+        "ghidra/program/model/data/ArrayDataType.java": {
+            "sha256": "66e227e2b293f1ce54ec119737fb2a8065fed7b76ad5d599ce831ace9ec7e58e"
+        },
+        "ghidra/program/model/data/DataTypeImpl.java": {
+            "sha256": "6e9d61013e9abf8a40071346b1768d26268325339d9333fcd84d249833f1109d"
+        },
+        "ghidra/program/database/data/ArrayDB.java": {
+            "sha256": "8a1eefebe731415a317c902d8161dd68b2dfc83d00302ef2b99c5f6d08e00fa8"
+        },
+        "finding": "ArrayDataType constructs DataTypeImpl without a supplied ID; DataTypeImpl uses UniversalIdGenerator.nextID(). ArrayDB.getUniversalID() explicitly returns null for arrays/pointers."
+    },
+    "fix": "Ignore process-generated UniversalID for Array just as for DefaultDataType, using the existing class/path/size structural key with equivalence/collision checks. Persistent named typedef/aggregate identities are unchanged. Transient ArrayDataType and persisted ArrayDB keep their distinct class-qualified correspondence; no historical lineage claim.",
+    "checks": {
+        "red": "build/coverage-array-key-red.log: equivalent reconstructed array graphs differ before fix",
+        "green": "build/coverage-array-key-green-2.log: recoveredParameterSmoke PASS 610 checks and functionPointerCallPolicySmoke PASS 1994 checks; extension builds",
+        "targets": [
+            "x86-64",
+            "AArch64",
+            "ARM32",
+            "MIPS32 big endian",
+            "MIPS32 little endian"
+        ],
+        "cases": "Fresh equivalent arrays with distinct generated IDs yield equal graphs; different bounds remain distinct; named persistent aliases keep distinct UID keys; each profile tested live and after immutable reopen.",
+        "fixtureInventory": "Hosted x86-64/AArch64 lanes rejected emission-evidence.c and emission-evidence-x86_64.S because the explicit reviewed source inventory omitted them. Added only these two source-built fixtures; guard unchanged. Local reproducibility scripts pass both targets.",
+        "fixtureLogs": [
+            "build/coverage-fixture-inventory-x86.log",
+            "build/coverage-fixture-inventory-aarch64.log"
+        ],
+        "hostedFailure": "build/ci-42078061062-x86.log"
+    },
+    "measurementControl": {
+        "installations": [
+            {
+                "variant": "baseline-array",
+                "installation": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-baseline-array-java21",
+                "packageSha256": "7408a494aefffcae101d8e3a4bbb7ab6579014d54984814e8a22098158407ac7",
+                "jarSha256": "f0a926eae581ac635bec1153c5fe39d74af1cb2bacbd4c62849b39f17f86b700",
+                "installedScriptSha256": "dbac9d700ec6cd7fc65ea148cf433b77f7fc5b90af92960bfc7a7a3533853ec7"
+            },
+            {
+                "variant": "array-candidate",
+                "installation": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-array-candidate-java21",
+                "packageSha256": "80fcee489045d77ba4455277b96936c40f9772b36707bd5385cd2f6a341a793d",
+                "jarSha256": "c3680f3a4101e73dfd7529e587021e75e796e2e7041284cd169aaf98142ae3d8",
+                "installedScriptSha256": "1f960997ced5510ff9dceebd94e8d2e442190df08a3a4bb11bc9749445178a42"
+            }
+        ],
+        "protectedBase": {
+            "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-final-measurement-java21/support/launch.properties": "dde008a0d7583f2e4c77afbd2bc78edd29a2f5f8a132be37d162f68f76f7df64",
+            "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-final-measurement-java21/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "4555da02ac4fdf4de70ef3a148fccb086b20972d02c9b88b694435ba59914c5f"
+        },
+        "baselineCorrection": "main 1bb4c14 plus the exact same GhidraTypeGraph.java array correction; see baseline-array-fix.patch. This isolates scorecard overhead while retaining exact cross-variant artifact equality."
+    },
+    "remaining": [
+        "Finish new five-pair SQLite and U-Boot measurements, deterministic reports and unchanged cross-variant artifacts, validators and GDB/CLI",
+        "Hosted current-head host/target acceptance"
+    ]
+}

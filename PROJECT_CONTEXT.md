@@ -1,5 +1,17 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED defect and local correction — #108 transient array keys:** the first
+repeated SQLite experiment found a fresh-process array ID changing in otherwise
+identical reports. Ghidra `ArrayDataType` inherits a generated ID; persisted
+`ArrayDB` has none. Array keys now use the existing structural fallback, while
+named persistent identities remain intact. Regression checks pass on all five
+profiles, before/after immutable reopen. Final repeated workload, artifact and
+hosted acceptance remain pending. The measurement baseline receives this same
+single correction to isolate scorecard overhead and retain exact artifact equality.
+Hosted fixture inventory failures were also fixed by listing the two new reviewed
+emission sources; local x86/AArch64 reproducibility passes. See
+`docs/evidence/coverage-array-identity.json`.
+
 **CONFIRMED locally — #108 whole-report byte bound:** 1,500 saved Ghidra locals
 with individually legal 48,084-unit derived type paths exceed the unchanged 64 MiB
 production report budget. x86-64 and rebased AArch64 PIE reject before publication,
