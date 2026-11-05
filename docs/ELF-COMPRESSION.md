@@ -68,10 +68,11 @@ package and artifact hashes, runtime/script observations and retained results.
 - The real Linux Script Manager compression shortcut, output chooser selection
   and cancellation, console, read-only attachment preview and preparation pass.
   Both produced pairs pass validators and GDB. A separate unchanged-artifact
-  consumer replay also passes; its Windows execution remains pending.
+  consumer replay also passes. Windows execution and consumer review at
+  `995e0df` are recorded below; the corrected full gate remains pending.
 - Bash wrapper controls pass. Native Windows wrapper/container/GUI tests and
-  Linux GDB replay of the Windows-produced compressed artifact are wired into
-  CI but are **PRESENT, UNVERIFIED** until their exact-head jobs pass.
+  Linux GDB replay of the Windows-produced compressed artifact pass at
+  `995e0df`; this does not substitute for the full corrected exact-head gate.
 
 Retained initial failures include the missing ARM compiler in PATH (resolved
 using the existing private ARM toolchain), an address-index
@@ -92,9 +93,118 @@ requires the corrected run; the failed assertion is not a passing wrapper test.
 
 ## Remaining acceptance
 
-Native Windows packaged execution and consumer replay, the complete required
-CI gate, review and normal integration remain open. Measure the production
-compression option on the pinned SQLite/U-Boot saved projects before completing
-the optimization's performance decision. The private-copy size reductions are
-motivation, not measurements of the new Java implementation. Full #74 also
-requires final host measurements and explicit caching/parallelism decisions.
+The complete required CI gate, final review and normal integration remain open.
+Production Linux compression measurements now pass for both pinned workloads,
+and the scoped Windows packaged GUI/consumer checks pass. Full #74 also requires
+the broader Windows workload measurements and final caching/parallelism
+decisions. Private-copy and production sizes/timings are separate populations.
+
+## Production workload and Windows checkpoints
+
+### Reproduce the Linux production comparison
+
+Use a private Ghidra 12.0.3 installation containing the assembled candidate
+release, its complete manifests and Java 21 configuration. Set `JAVA_HOME` to
+the complete Java 21 JDK and `DWARFDUMP` to the pinned CI checker built with
+compression support. Keep the installed module, saved programs and harness
+files unchanged until measurement finishes. The commands below run sequentially;
+`<...-case>` denotes the passing result directory printed by the preceding
+workload harness, not an arbitrary saved Ghidra project.
+
+```bash
+python3 src/test/performance/sqlite-benchmark.py "$GHIDRA_INSTALL_DIR" --repeats 2
+python3 src/test/integration/compression-workload.py \
+    "<sqlite-case>" "$GHIDRA_INSTALL_DIR" --workload sqlite
+python3 src/test/performance/build-uboot.py
+python3 src/test/performance/uboot-benchmark.py \
+    "$GHIDRA_INSTALL_DIR" "<uboot-build-case>" --repeats 2
+python3 src/test/integration/compression-workload.py \
+    "<uboot-benchmark-case>" "$GHIDRA_INSTALL_DIR" --workload uboot
+```
+
+The comparison defaults to five alternating pairs and adds two separate JFR
+exports. It copies the accepted saved project, checks corpus provenance and
+release manifests, verifies the running Java/script identity, compares every
+decompressed section and source hash, and validates each freshly published
+profile pair before another export can change source timestamps. Retain the
+entire printed result directory, including negative runs and command logs.
+
+### Observed checkpoints
+
+**CONFIRMED production SQLite measurement:**
+`compression-workload/sqlite.7bvmu704` uses the same installed exporter,
+copied saved program and output path for five alternating plain/zlib pairs,
+followed by two separate JFR exports. All twelve exports retain identical
+decompressed DWARF and source, repeatable per-mode sidecar bytes, unchanged
+protected inputs and unchanged program database files. Both published modes
+pass GNU/LLVM/pinned strict checks and GDB function/type/source/global-value,
+next/step, checkpoint-return and normal-exit checks.
+
+| Measurement | Plain | Production zlib |
+| --- | ---: | ---: |
+| Sidecar bytes | 5,638,224 | 1,951,304 |
+| Median fresh-process export, seconds | 34.76 | 35.06 |
+| Maximum observed RSS, KiB | 1,194,748 | 1,191,844 |
+
+The sidecar is 65.39% smaller. Paired zlib-minus-plain elapsed differences are
+`+0.54, +0.13, +0.38, -0.13, +0.09` seconds. This supports an opt-in size
+benefit, not a general speed or memory improvement. Separate JFR runs observe
+0.0123/0.0696 seconds in plain/zlib ELF packaging; their inclusive export times
+are not part of the unprofiled timing population. Warm caches and host load
+remain uncontrolled.
+Exact samples, CPU/RSS measurements, phase observations, artifact hashes and
+validator-log hashes are retained in
+`docs/evidence/compression-sqlite-production-20261105.json`.
+
+**CONFIRMED production U-Boot measurement:**
+`compression-workload/uboot.74ha_hcl` passes the same five-pair/two-profile
+protocol, all twelve per-mode deterministic and cross-mode equivalent exports,
+unchanged protected inputs and saved-program bytes, both modes' strict/GNU/LLVM
+checks and compiler/Forge GDB. The recovered report retains all 6,375 functions,
+6,374 successful decompilations and the known one-function 60-second timeout;
+that timeout remains included in timings. This Linux sandbox workload does not
+establish bare-metal firmware support.
+
+| Measurement | Plain | Production zlib |
+| --- | ---: | ---: |
+| Sidecar bytes | 17,029,480 | 6,792,336 |
+| Median fresh-process export, seconds | 114.80 | 115.35 |
+| Median descendant CPU, seconds | 134.86 | 133.76 |
+| Maximum observed RSS, KiB | 1,297,588 | 1,151,252 |
+
+The sidecar is 60.11% smaller. Paired zlib-minus-plain elapsed differences are
+`+0.67, -0.06, +4.04, +0.75, -0.11` seconds; retain the larger third-pair cost
+rather than dropping it as an outlier. Separate JFR packaging observations are
+0.0169/0.1480 seconds. The lower sampled CPU/RSS does not establish a resource
+improvement: compression retains additional payloads, and fresh-JVM behavior
+and host load vary. Complete samples, phase observations, unchanged report
+counts, artifact hashes and validator-log hashes are in
+`docs/evidence/compression-uboot-production-20261105.json`.
+
+**CONFIRMED scoped Windows acceptance:** run `41979031365` at `995e0df` passes
+native Windows controls, the compressed Script Manager selection/cancellation
+journey and Linux GDB consumption of that unchanged Windows artifact. Review
+verifies both API archive digests, 139 protected host-file hashes, matching
+original/sidecar/source copies, compressed-section headers and hashes,
+GNU/LLVM/pinned strict results and the raw GDB transcript. Its parameters remain
+optimized out; this check establishes function/type/source/stepping behavior,
+not additional variable coverage. Source lookup after host transfer uses an
+explicit source directory. Three inherited frame diagnostics are corroborated
+against original bytes; no uncorroborated errors remain.
+The scoped review and API archive digests are recorded in
+`docs/evidence/compression-windows-41979031365.json`.
+
+That run's full CI gate fails because the independent large-ELF smoke script's
+manual `javac` source list omitted the new compression enum. Commit `05953e9`
+adds that dependency, and its exact compiler invocation passes on Java 21.
+The complete local standalone regression also passes at
+`large-elf-sidecar/run.IiO3Kxgi`: a 2,147,487,745-byte original and
+2,147,491,256-byte sidecar under a 64-MiB Java heap, deterministic copies,
+GNU/LLVM/pinned strict validators and GDB values/source/normal exit. Its two
+inherited frame diagnostics are corroborated against the original. The large
+files are removed by the harness after validation; retained log hashes are in
+`docs/evidence/compression-large-elf-20261105.json`. This is a standalone
+container oracle, not a Ghidra analysis-memory claim.
+The corrected full hosted gate remains pending. These checkpoints supersede
+the earlier local-only/pending-component wording above without claiming final
+#74 acceptance or integration.

@@ -4,9 +4,14 @@
 section compression passes eight container layouts, 75 exports over 25 real
 five-target cases, validators/GDB, default/source/decompressed-DWARF identity,
 determinism, production cancellation/retry and a real Linux GUI journey.
-Windows execution/replay and the required hosted gate remain pending, along
-with production large-workload measurements, review/integration and the other
-#74 decisions. See `docs/ELF-COMPRESSION.md`; no later goal issue is complete.
+Windows compressed GUI execution/replay pass at `995e0df` with retained-artifact
+review. Production SQLite's five pairs plus two profiles pass, reducing sidecar
+size 65.39%, with medians 34.76s plain/35.06s zlib. U-Boot's production comparison
+also passes: 60.11% smaller, medians 114.80s/115.35s, and the known timeout remains
+included. Windows broader workloads, the corrected full hosted gate, review/integration
+and final #74 decisions remain pending. The large-ELF standalone compilation
+dependency is fixed in `05953e9`. See `docs/ELF-COMPRESSION.md`; no later goal
+issue is complete.
 
 **CONFIRMED #74 harness correction; hosted acceptance pending:** Windows run
 `41975183135` completes import and its first SQLite export, then rejects an

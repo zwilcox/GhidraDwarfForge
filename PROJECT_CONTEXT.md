@@ -5,9 +5,16 @@ gABI zlib compression preserves the default plain output. Eight ELF container
 layouts and 25 actual five-target exec/PIE/shared/sectionless/rebased cases pass
 equivalence, determinism, validators and GDB. Production compression cancellation
 preserves the prior pair and permits retry. The Linux Script Manager shortcut
-and independent compressed-artifact consumer replay pass. Native Windows and
-exact-head CI remain **PRESENT, UNVERIFIED**. Production large-workload
-measurements and final #74 acceptance remain open; see `docs/ELF-COMPRESSION.md`.
+and independent compressed-artifact consumer replay pass. Native Windows's
+compressed GUI journey and Linux replay pass at `995e0df`; archive and 139
+protected-file hashes have been reviewed. Production SQLite's five paired
+comparisons plus two profiles pass: 65.39% smaller, medians 34.76s plain/35.06s
+zlib, no speed/memory improvement claim. Production U-Boot also passes the
+five-pair/two-profile protocol: 60.11% smaller, medians 114.80s/115.35s, existing
+timeout and omissions retained. Broader Windows measurements and corrected
+exact-head CI remain pending. `05953e9` fixes the
+large-ELF smoke's missing standalone compilation dependency. Final #74 acceptance
+remains open; see `docs/ELF-COMPRESSION.md`.
 
 **CONFIRMED Windows runtime-observer correction; workload acceptance pending:**
 Run `41975183135` passes native accounting, corpus and package preparation,

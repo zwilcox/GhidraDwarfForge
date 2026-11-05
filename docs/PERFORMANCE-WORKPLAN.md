@@ -344,14 +344,18 @@ or speed of an indexed implementation.
 
 ### Selected next implementation and provisional deferrals
 
-- **PLANNED: implement opt-in zlib section compression** after this measurement
-  component is accepted. The observed whole-sidecar reduction is 65.62% and
+- **Selected: opt-in zlib section compression**, integrated only after this
+  measurement component is accepted. The observed private-copy whole-sidecar reduction is 65.62% and
   61.74%, with modest measured generation cost. Keep the default uncompressed;
   use the standard ELF compressed-section representation and Java's existing
   zlib implementation rather than introducing another native ABI. Require
   target class/endianness handling, cancellation, deterministic output,
   cross-architecture validators/GDB, and Linux/Windows packaged execution.
-  This selection is not an implementation or acceptance claim. Zstd remains
+  The production candidate now passes the local correctness evidence and both
+  five-pair/two-profile workloads in `ELF-COMPRESSION.md`, with 65.39%/60.11%
+  smaller sidecars and slightly higher median elapsed times. The Windows GUI
+  and consumer replay pass with artifact review; complete exact-head CI and
+  integration remain pending. Zstd remains
   deferred because its additional measured reduction would require another
   production codec dependency or external tool contract.
 - **DEFER built-in GDB indexes; reject the tested `.debug_names` route.** The
@@ -370,6 +374,27 @@ or speed of an indexed implementation.
   decisions after the Windows phase/resource results and an explicit review of
   analyst-change invalidation, ordering, memory bounds and cancellation.
 
+### Caching and parallelism design review
+
+**CONFIRMED code inspection; provisional defer recommendation:**
+`GhidraSyntheticSource.decompileDetailed` creates one decompiler per export,
+visits functions in address order and retains token mappings, recovered
+signatures and static-local evidence together. It resets the decompiler after a
+failed function and disposes it in `finally`. `GhidraAllocationDecompiler` also
+reads mapped callee symbols and saved call overrides during callbacks. Therefore
+a hash of one function's bytes is insufficient to validate a cached result.
+
+| Candidate | Required contract before implementation | Present evidence and recommendation |
+|---|---|---|
+| Incremental caching | Versioned fingerprints of program bytes/context, function bodies, symbols/namespaces, types and their identity, signatures/storage, caller/callee overrides, persisted analyst bindings, target/ABI and decompiler options/version. Invalidate dependent callers and token/type/location evidence together. Handle output-directory-dependent line tables separately. Do not permanently cache timeouts as completed recovery. | Repeated unchanged-project exports dominate these benchmark samples by construction; this does not measure the frequency or locality of real analyst edits. No complete persistent invalidation contract is implemented. Provisionally defer until mutation-heavy traces and positive/negative invalidation fixtures justify the additional state. |
+| Bounded parallel decompilation | Independent decompiler instances, a consistent analysis view, deterministic assembly and diagnostics, and explicit worker/process memory limits. Preserve allocation callbacks and per-function failure isolation. Cancel and reap every worker, including native decompilers, on cancellation or publication failure. | Decompilation dominates both local profiles, but U-Boot includes a single 60-second timeout. Overlapping other functions might hide some of that time; this is an unmeasured opportunity. Current GNU-time RSS is not aggregate worker memory. Provisionally defer until a controlled worker-count experiment measures total memory, order equivalence and cancellation under the supported heap budget. |
+
+Neither candidate is rejected as intrinsically unsafe or unhelpful. The current
+production change targets demonstrated artifact-size cost without introducing
+either cache invalidation or concurrent extraction. Finalize these decisions
+against the complete Windows workload/resource observations; do not turn this
+design review into an implementation or a speedup claim.
+
 Any selected implementation requires semantic/byte comparisons, strict
 GNU/LLVM/pinned-libdwarf validation, source/type/location and applicable GDB
 behavior, unchanged originals, cancellation/failure controls, and bounded
@@ -383,3 +408,14 @@ artifacts; reconcile PROJECT_CONTEXT/TODO; review the final source and package;
 pass enforced exact-head CI; integrate through a normal protected merge.
 Component PRs must not auto-close #74. The issue remains open until all of its
 remaining requirements are implemented or explicitly resolved with evidence.
+
+### Acceptance audit while measurements run
+
+| Issue requirement | Evidence and remaining work |
+| --- | --- |
+| Pinned representative workloads | **CONFIRMED locally:** source-built SQLite 3.46.1 and U-Boot 2025.01 sandbox, with archive hashes, build configuration and compiler references. Sandbox covers firmware code on a Linux host; it does not establish bare-metal support. Shared pinned Windows corpus builds successfully. |
+| Repeated wall/CPU/memory and phase measurements | **CONFIRMED locally:** five alternating same-compiler pairs for both workloads, plus separate JFR recordings; import and validation are outside export timing. **PRESENT, UNVERIFIED:** complete Windows workload measurements and Linux consumer replay. Native Windows accounting controls pass; commitment and Linux RSS remain distinct. |
+| Explicit optimization choices | Zlib is selected; zstd, GDB indexes and string/address indexing have documented deferrals; the tested `.debug_names` route is rejected on validator evidence. Cache/parallel design review is present, with final decisions pending Windows observations. |
+| Selected production optimization | **CONFIRMED:** 25 target cases, 75 packaged exports, identity/equivalence/determinism, validators and GDB; production cancellation/retry; Linux GUI; scoped Windows GUI and consumer review. Both production five-pair/two-profile workload comparisons pass: SQLite 65.39% smaller, U-Boot 60.11% smaller; median elapsed time is slightly higher for both. The corrected full CI gate remains pending. |
+| Preservation and honest recovery | Protected input/project/module hashes and report comparisons are checked. Existing omitted locations and the U-Boot decompilation timeout remain visible; compression does not claim to recover them. |
+| Documentation and integration | Local evidence and reproduction commands are recorded in `ELF-COMPRESSION.md` and its linked JSON evidence. PR159 must pass its required and performance gates plus artifact review before integration; stacked PR160 then requires retargeting and a fresh protected gate. Neither PR alone closes this issue. |
