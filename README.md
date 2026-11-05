@@ -181,6 +181,12 @@ The PowerShell equivalent is `support/ghidra-dwarf-forge-headless.ps1` with
 `-Input`, `-Output`, and `-Log` parameters. `-Libdwarf` and `-Libdwarfp` are
 optional paired overrides for development builds.
 
+Development builds offer opt-in ELF debug-section compression with
+`--compress-debug-sections=zlib` (PowerShell `-CompressDebugSections zlib`).
+The default is `none`. The source file and recovered DWARF content are unchanged;
+sections stay plain when compression would increase their size. See
+[compression usage and validation status](docs/ELF-COMPRESSION.md).
+
 Development builds can additionally generate an explicitly invoked GDB loader
 with `--gdb-loader` (PowerShell `-GdbLoader`). It produces `<sidecar>.gdb.py`
 alongside the sidecar/source pair. See [GDB companion usage and current
@@ -214,6 +220,10 @@ The separate **ExportGhidraDwarfForgeWithGdbLoader.java** launcher opts into the
 companion as well. Its complete GUI acceptance remains in progress; the ordinary
 export launcher retains its existing behavior.
 
+**ExportCompressedGhidraDwarfForge.java** selects zlib compression from Script
+Manager. Its Linux journey is validated locally; native Windows acceptance is
+pending. It uses the same output chooser and artifact-pair publication.
+
 The underlying `GhidraDwarfForge.java` script remains available from Script
 Manager for native-free metadata preflight, or directly through
 `analyzeHeadless` for argument-driven export. Script Manager's ordinary Run
@@ -226,6 +236,7 @@ for GUI export. The underlying script's opt-in export accepts:
 --packaged-natives
 --input=/optional/path/to/original-when-Ghidra-path-is-stale
 --output=/optional/path/to/binary.dbg
+--compress-debug-sections=none|zlib
 ```
 
 Choose either `--packaged-natives` or the two explicit native paths. The

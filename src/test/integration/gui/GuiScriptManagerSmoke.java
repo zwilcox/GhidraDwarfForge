@@ -36,7 +36,9 @@ import ghidra.util.task.SwingUpdateManager;
 /** Uses the installed Script Manager table and Run task, not direct script construction. */
 public final class GuiScriptManagerSmoke {
     private static final String PREFLIGHT = "GhidraDwarfForge.java";
-    private static final String EXPORT = "ExportGhidraDwarfForge.java";
+    private static final boolean WITH_COMPRESSION = "1".equals(System.getenv("GHIDRA_GUI_COMPRESSION"));
+    private static final String EXPORT = WITH_COMPRESSION ? "ExportCompressedGhidraDwarfForge.java" :
+        "ExportGhidraDwarfForge.java";
     private static final String LOADER_EXPORT = "ExportGhidraDwarfForgeWithGdbLoader.java";
     private static final String ATTACH = "AttachGhidraDwarfForge.java";
     private static final String RECOVER = "RecoverGhidraDwarfForgeAttachment.java";
@@ -80,6 +82,7 @@ public final class GuiScriptManagerSmoke {
         GuiTestSupport.require(arguments.length == 5,
             "expected ghidra-dir module-dir fixture result-dir function-address");
         GuiTestSupport.require(!GraphicsEnvironment.isHeadless(), "a real desktop is required");
+        GuiTestSupport.require(!(WITH_COMPRESSION && WITH_LOADER), "select one GUI shortcut per journey");
         Path ghidra = Path.of(arguments[0]);
         Path module = Path.of(arguments[1]);
         Path fixture = Path.of(arguments[2]);
@@ -244,6 +247,7 @@ public final class GuiScriptManagerSmoke {
                     Files.writeString(caseDirectory.resolve("result.txt"),
                         "script-manager-action=double-click\nchooser=" + (cancel ? "cancel" : "select") +
                         "\ngdb-loader=" + WITH_LOADER +
+                        "\ncompression=" + WITH_COMPRESSION +
                         "\ninput_sha256=" + originalHash + "\nresult=PASS\n");
                 }
                 catch (Exception | Error failure) {

@@ -1,13 +1,59 @@
 # Broader workload and profiling acceptance (#74)
 
+PR159 is integrated as `762dbbd` with a tree identical to tested `3276396`;
+CI `41989520429` and performance workflow `41989520582` pass. Compression
+component CI `41993381342` also passes. Reconciled PR160 needs fresh validation
+and protected integration before #74 closes. Earlier pre-integration checkpoint
+wording below retains its historical scope.
+
 Baseline: main `6c776d7415fc5222f7e1314c0c5192454c8aced5`, Ghidra 12.0.3,
 Java 21 runtime/bytecode, existing pinned libdwarf 2.3.2. No ABI change is planned.
 The user-directed sequence is #74, #108, #116/#114, #112, #110, then #109.
 This plan does not reduce any of those issues' acceptance criteria.
 
-## Windows measurement checkpoint and consumer correction
+## Current Windows measurement and consumer acceptance
 
-**CONFIRMED native Windows measurements; corrected hosted consumer pending:**
+**CONFIRMED:** performance workflow `41989520582` at `3276396` passes all five
+jobs, including 22 native Windows exports, native validators, source-relocation
+controls and independent Linux compiler/Forge GDB journeys. Retained raw review
+verifies 717 of 719 protected file hashes, archived program databases, exact
+package/runtime/script identity, and both binary JFR recordings. The two private
+installation settings files are observed unchanged by the job but unavailable
+for independent artifact replay. Full integration gates and normal PR merges
+remain required; this measurement result alone does not complete #74.
+See [the current evidence](evidence/performance-windows-workloads-41989520582.json).
+
+| Windows observation | SQLite baseline / candidate | U-Boot baseline / candidate |
+| --- | ---: | ---: |
+| Median fresh-process export, seconds | 109.522 / 110.814 | 236.894 / 238.896 |
+| Median descendant CPU, seconds | 151.250 / 154.438 | 294.078 / 291.922 |
+| Maximum job commitment, bytes | 1,460,269,056 / 1,376,288,768 | 1,438,969,856 / 1,290,035,200 |
+
+Paired candidate-minus-baseline elapsed differences are
+`-2.036, -5.224, +7.160, -0.614, -3.846` seconds for SQLite and
+`-2.738, +3.354, +2.003, +6.915, +7.271` for U-Boot. Keep this population
+separate from the previous run. Neither population proves a general speedup,
+zero overhead or memory benefit. Windows commitment is not Linux RSS. Import
+times are 85.260/166.275 seconds and remain outside export measurements.
+
+Separate JFR exports observe decompilation/source at 82.276/192.919 seconds,
+types/storage at 13.308/28.564, native production at 1.819/15.969 and ELF
+packaging at 0.0131/0.0218 for SQLite/U-Boot. Inclusive export times are
+99.108/240.744 seconds. These are elapsed observations, not pure CPU; inclusive
+and child times must not be added. Independent Java 21 extraction of the binary
+recordings matches the hosted phase summaries.
+
+The corrected consumer resolves compiler source to hash-verified private copies,
+proves the source path/hash in GDB, lists source, checks globals/selected values,
+steps and exits normally for both compiler references and Forge artifacts.
+Negative controls reject changed/missing/escaped sources and an incorrect source
+archive. U-Boot remains a Linux sandbox with partial recovered knowledge and its
+known decompilation timeout. No bare-metal or complete variable-coverage claim
+follows from these results.
+
+## Historical Windows measurement checkpoint and consumer correction
+
+**HISTORICAL native Windows measurement population; that hosted consumer failed:**
 run `41977254778` at `cfc212c` completes both pinned imports, five alternating
 baseline/candidate pairs per workload, separate JFR exports and native
 GNU/LLVM/pinned libdwarf validation. All eleven exports per workload preserve
@@ -53,7 +99,7 @@ normal exit. A small real-GDB control reproduces the missing-source warning,
 proves relocation and rejects changed/missing/escaped sources and a wrong source
 archive. This local evidence does not turn the failed hosted consumer run into
 a passing run; fresh hosted acceptance and the complete required gate remain
-pending.
+pending at that checkpoint. The current corrected hosted run passes as recorded above.
 
 ## Measurements and corpus
 
@@ -65,7 +111,7 @@ pending.
   SGR sequences. Twelve controls cover plain/colored stdout/stderr, missing,
   wrong or conflicting versions, unrelated mentions, missing/duplicate/wrong
   scripts and non-SGR escapes. Local replay verifies the retained runtime
-  banner; Windows path identity and the full measurements require a fresh run.
+  banner. The corrected full native measurements and consumer now pass as recorded above.
 - **CONFIRMED existing corpus:** source-generated scaling fixtures and pinned
   SQLite 3.46.1. Re-run on the current packaged baseline; historical timings do
   not describe the current exporter.
@@ -77,11 +123,11 @@ pending.
   bare-metal, Cortex-M or general firmware support. See the upstream
   [sandbox description](https://docs.u-boot-project.org/en/latest/arch/sandbox/sandbox.html).
   A successful build alone is not an accepted benchmark.
-- **PLANNED host coverage:** repeat representative saved-program exports on
+- **CONFIRMED host measurements:** representative saved-program exports run on
   Linux and Windows using the same production path and pinned ELF inputs.
   Record host-specific measurement boundaries and tool availability. Linux
   replay of Windows artifacts is a consumer check, not a Windows timing result.
-- **PLANNED reproducible statistics:** separate fixture build, import/analysis,
+- **CONFIRMED measurement protocol:** separate fixture build, import/analysis,
   fresh-JVM exports, validation and debugger costs. Measure wall time, CPU and
   peak memory. Use repeated alternating baseline/candidate pairs for changes;
   retain samples and inconclusive/negative observations. Keep profiling runs
@@ -90,7 +136,7 @@ pending.
 
 ## Internal phase observations
 
-**CONFIRMED locally on SQLite; hosted acceptance pending:** optional JFR `ghidradwarfforge.ExportPhase`
+**CONFIRMED Linux/native Windows observations:** optional JFR `ghidradwarfforge.ExportPhase`
 events measure the export operation, decompilation/source generation,
 type/storage extraction, native production and ELF packaging. They are outside
 the deterministic report/sidecar/source and carry normal-completion status.
@@ -308,7 +354,7 @@ bytes peak job commitment; timeout terminates every job member. Raw artifact
 hashes and all case outcomes are in
 `docs/evidence/performance-windows-controls-20261105.json`.
 
-**CONFIRMED native Windows workload pipeline; corrected hosted consumer pending:** `prepare-host-corpus.py`
+**CONFIRMED native Windows workload pipeline and corrected hosted consumer:** `prepare-host-corpus.py`
 builds pinned SQLite and U-Boot ELFs and retains their corresponding source.
 `fetch-ci-packages.py` selects exact-commit artifacts from the sole production
 CI workflow and verifies their archive digests; it does not rebuild natives.
@@ -393,18 +439,17 @@ occupy 2,473,856 bytes (SQLite) and 7,511,056 bytes (U-Boot), with 19,260 and
 76,793 unique addresses. Those counts establish repetition, not the final size
 or speed of an indexed implementation.
 
-### Selected next implementation and provisional deferrals
+### Selected implementation and explicit deferrals
 
-- **PLANNED: implement opt-in zlib section compression** after this measurement
-  component is accepted. The observed whole-sidecar reduction is 65.62% and
-  61.74%, with modest measured generation cost. Keep the default uncompressed;
-  use the standard ELF compressed-section representation and Java's existing
-  zlib implementation rather than introducing another native ABI. Require
-  target class/endianness handling, cancellation, deterministic output,
-  cross-architecture validators/GDB, and Linux/Windows packaged execution.
-  This selection is not an implementation or acceptance claim. Zstd remains
-  deferred because its additional measured reduction would require another
-  production codec dependency or external tool contract.
+- **CONFIRMED opt-in zlib production implementation in PR160; integration pending.**
+  The earlier private-copy experiment reduced whole-sidecar size 65.62%/61.74%.
+  Separate production comparisons reduce SQLite/U-Boot sidecars 65.39%/60.11%.
+  Keep these populations distinct. The default remains uncompressed, using
+  standard target-class/endian ELF compression headers and Java zlib without a
+  new native ABI. Actual exporter tests cover deterministic/decompressed equality,
+  cancellation, validators/GDB and both host paths; full corrected integration
+  remains required. See [production evidence](ELF-COMPRESSION.md). Zstd is
+  deferred because it requires another production codec or external-tool contract.
 - **DEFER built-in GDB indexes; reject the tested `.debug_names` route.** The
   valid GDB index adds 4.31%/1.99% to these artifacts and saves only about
   2.1/6.0ms of measured initial load, with slightly higher first-lookup times.
@@ -450,7 +495,7 @@ string/address indexing retain the explicit deferrals above; the tested
 `.debug_names` route remains rejected on its actual validator failure. These
 decisions resolve the evaluation requirement without claiming unimplemented
 speedups. Full #74 completion still requires compression acceptance, the
-corrected hosted consumer and normal protected integration.
+complete required gates and normal protected integration. The corrected hosted consumer passes.
 
 ## Integration gate
 

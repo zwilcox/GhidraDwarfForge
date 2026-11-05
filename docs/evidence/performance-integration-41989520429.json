@@ -1,0 +1,173 @@
+{
+    "status": "PASS_SOURCE_AND_EXACT_HEAD_ACCEPTANCE",
+    "head": "3276396594d880171f006a07fa0ca668acf1ebc0",
+    "pullRequest": 159,
+    "priorReview": "build/review-pr159-cfc212c.json",
+    "deltaScope": "Only compiler-reference consumer source relocation, real-GDB controls, performance workflow and documentation changed from cfc212c.",
+    "findings": [
+        "Current packaged JAR is byte-identical to reviewed cfc package; 505 classes are Java 21 major65 and unchanged; all six compared Linux/Windows native binaries are also byte-identical. All nested/whole manifests pass.",
+        "Source relocation verifies corpus file hashes and resolved containment before use. Original recorded build paths are mapping strings only. SQLite paths derive from unique recorded compilation arguments; U-Boot extraction requires the fixed archive digest and data filter.",
+        "Compiler GDB stops at expected address and independently verifies the resolved source file path and SHA before listing. Existing warnings, values and runtime checks remain strict; Forge behavior unchanged.",
+        "Real-GDB control makes original build sources genuinely unavailable, observes the missing-source diagnostic, proves source/list/global values with relocation, rejects changed/missing/escaping source and wrong U-Boot archive.",
+        "Local replay of both unchanged Windows workload artifacts passes; fresh hosted source-control/workload/consumer acceptance subsequently passes in 41989520582 as recorded below.",
+        "Current exact-head Windows package/CLI/GUI consumer review binds744protected files, nine commands, four output generations and CRC-negative controls.",
+        "Current exact-head 15 five-profile production attachment cases bind105receipt files and480validator logs; independent ELF debuglink checks pass. Two refresh cases additionally bind166preserved generation hashes and140validator logs; raw GDB confirms curated names/member, args19/23, source and normal exit."
+    ],
+    "evidence": [
+        "build/review-ci-41989520429/package-review.json",
+        "build/review-ci-41989520429/windows-review.json",
+        "build/review-ci-41989520429/windows-consumer-retained-review.json",
+        "build/review-ci-41989520429/attachment-review.json",
+        "docs/evidence/performance-windows-workloads-41977254778.json",
+        "build/review-ci-41989520429/x86_64-target-review.json",
+        "build/review-ci-41989520429/aarch64-target-review.json",
+        "build/review-ci-41989520429/arm32-target-review.json",
+        "build/review-ci-41989520429/mips32be-target-review.json",
+        "build/review-ci-41989520429/mips32le-target-review.json",
+        "build/performance-windows-workloads-41989520582.json",
+        "build/review-ci-41989520429/linux-gui-review.json"
+    ],
+    "pending": [
+        "Reconciled PR160 fresh protected validation and normal integration",
+        "Final #74 acceptance reconciliation"
+    ],
+    "currentValidation": {
+        "ci": {
+            "conclusion": "success",
+            "headSha": "3276396594d880171f006a07fa0ca668acf1ebc0",
+            "jobs": [
+                {
+                    "name": "native-windows",
+                    "databaseId": 127118140185,
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "native-linux",
+                    "databaseId": 127118140380,
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "extension-build",
+                    "databaseId": 127118140499,
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "workflow-lint",
+                    "databaseId": 127118140530,
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "release-package",
+                    "databaseId": 127121481953,
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "attachment-windows",
+                    "databaseId": 127121481996,
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "target-preflight (mips32le)",
+                    "databaseId": 127121635394,
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "target-preflight (x86_64)",
+                    "databaseId": 127121635407,
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "target-preflight (arm32)",
+                    "databaseId": 127121635490,
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "target-preflight (aarch64)",
+                    "databaseId": 127121635509,
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "linux-x86-export-reference",
+                    "databaseId": 127121635534,
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "target-preflight (mips32be)",
+                    "databaseId": 127121635611,
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "windows-host",
+                    "databaseId": 127122355862,
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "windows-attachment-gdb",
+                    "databaseId": 127127973883,
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "required-validation",
+                    "databaseId": 127186849930,
+                    "status": "completed",
+                    "conclusion": "success"
+                }
+            ],
+            "status": "completed"
+        },
+        "performance": {
+            "conclusion": "success",
+            "headSha": "3276396594d880171f006a07fa0ca668acf1ebc0",
+            "jobs": [
+                {
+                    "name": "packages",
+                    "databaseId": 127118139758,
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "corpus",
+                    "databaseId": 127118140000,
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "windows-measurement",
+                    "databaseId": 127118140084,
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "windows-workloads",
+                    "databaseId": 127121724845,
+                    "status": "completed",
+                    "conclusion": "success"
+                },
+                {
+                    "name": "windows-consumer",
+                    "databaseId": 127151791220,
+                    "status": "completed",
+                    "conclusion": "success"
+                }
+            ],
+            "status": "completed"
+        }
+    },
+    "reviewLimit": "Review conducted by the task agent through separate source and raw-artifact inspection; not a second human reviewer or formal self-approval.",
+    "integratedCommit": "762dbbd55d3f5859b23ac4c54abea16acdfd79a2",
+    "integratedTreeMatchesTestedHead": true
+}

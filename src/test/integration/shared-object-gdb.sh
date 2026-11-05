@@ -2,8 +2,8 @@
 set -euo pipefail
 
 repository_dir=$(realpath "$(dirname "$0")/../../..")
-fixture_dir="$repository_dir/build/fixtures"
-result_dir="$repository_dir/build/test-results/shared-object-gdb"
+fixture_dir=${FORGE_SYMBOL_FIXTURES:-"$repository_dir/build/fixtures"}
+result_dir=${FORGE_GDB_SYMBOL_RESULTS:-"$repository_dir/build/test-results/shared-object-gdb"}
 source "$repository_dir/src/test/integration/qemu-socket.sh"
 if [[ $# -eq 0 ]]; then
     targets=(x86_64 aarch64 arm32 mips32be mips32le)

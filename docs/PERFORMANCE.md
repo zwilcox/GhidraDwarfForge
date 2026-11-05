@@ -1,5 +1,22 @@
 # Export performance measurements
 
+PR159 is integrated as `762dbbd` with a tree identical to tested `3276396`;
+CI `41989520429` and performance workflow `41989520582` pass. Compression
+component CI `41993381342` also passes. Reconciled PR160 needs fresh validation
+and protected integration before #74 closes. Earlier pre-integration checkpoint
+wording below retains its historical scope.
+
+Current broader-workload measurements and optimization decisions are in
+[PERFORMANCE-WORKPLAN.md](PERFORMANCE-WORKPLAN.md); production opt-in size
+measurements are in [ELF-COMPRESSION.md](ELF-COMPRESSION.md). The corrected native
+Windows workload/consumer workflow `41989520582` passes. Full integration gates
+and normal merges remain required for #74.
+
+The dated observations below are **HISTORICAL** populations. Their old runtime,
+partial-recovery findings and then-planned work do not describe current coverage
+or reopen fixes already accepted elsewhere. Preserve each measurement's exact
+scope; do not combine populations or generalize one result to every target.
+
 ## Representative SQLite workload
 
 **CONFIRMED locally (2026-10-25):** a source-built SQLite 3.46.1 workload

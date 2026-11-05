@@ -1,0 +1,1611 @@
+{
+    "status": "PASS_WITHIN_SCOPE",
+    "date": "2026-11-05",
+    "case": "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/test-results/compression-workload/uboot.74ha_hcl",
+    "summary": {
+        "status": "PASS",
+        "workload": {
+            "name": "uboot",
+            "kind": "pie",
+            "addresses": {
+                "main": 271360,
+                "sandbox_main": 281681,
+                "do_echo": 406159,
+                "run_command": 617075,
+                "simple_strtoul": 1439552
+            },
+            "dtb": "u-boot.dtb"
+        },
+        "samples": [
+            {
+                "elapsedSeconds": 114.68,
+                "userSeconds": 132.11,
+                "systemSeconds": 2.75,
+                "maximumResidentKiB": 1297588,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/installations/compression-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 0,
+                "mode": "none",
+                "artifactSha256": "425348fcfdd14385b1c907505c95d1058cfc5606beaa26b1a34979919f4f7334"
+            },
+            {
+                "elapsedSeconds": 115.35,
+                "userSeconds": 131.32,
+                "systemSeconds": 2.57,
+                "maximumResidentKiB": 1056760,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/installations/compression-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 0,
+                "mode": "zlib",
+                "artifactSha256": "3c35eb09615e04d95b13216611ea59988f2106cc7e45f8ade815b95e2a4885cc"
+            },
+            {
+                "elapsedSeconds": 115.06,
+                "userSeconds": 131.1,
+                "systemSeconds": 2.66,
+                "maximumResidentKiB": 1114296,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/installations/compression-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 1,
+                "mode": "zlib",
+                "artifactSha256": "3c35eb09615e04d95b13216611ea59988f2106cc7e45f8ade815b95e2a4885cc"
+            },
+            {
+                "elapsedSeconds": 115.12,
+                "userSeconds": 132.44,
+                "systemSeconds": 2.73,
+                "maximumResidentKiB": 1192092,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/installations/compression-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 1,
+                "mode": "none",
+                "artifactSha256": "425348fcfdd14385b1c907505c95d1058cfc5606beaa26b1a34979919f4f7334"
+            },
+            {
+                "elapsedSeconds": 115.34,
+                "userSeconds": 133.47,
+                "systemSeconds": 2.78,
+                "maximumResidentKiB": 1084196,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/installations/compression-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 2,
+                "mode": "none",
+                "artifactSha256": "425348fcfdd14385b1c907505c95d1058cfc5606beaa26b1a34979919f4f7334"
+            },
+            {
+                "elapsedSeconds": 119.38,
+                "userSeconds": 134.85,
+                "systemSeconds": 2.7,
+                "maximumResidentKiB": 1058444,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/installations/compression-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 2,
+                "mode": "zlib",
+                "artifactSha256": "3c35eb09615e04d95b13216611ea59988f2106cc7e45f8ade815b95e2a4885cc"
+            },
+            {
+                "elapsedSeconds": 115.5,
+                "userSeconds": 130.4,
+                "systemSeconds": 2.74,
+                "maximumResidentKiB": 1151252,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/installations/compression-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 3,
+                "mode": "zlib",
+                "artifactSha256": "3c35eb09615e04d95b13216611ea59988f2106cc7e45f8ade815b95e2a4885cc"
+            },
+            {
+                "elapsedSeconds": 114.75,
+                "userSeconds": 129.03,
+                "systemSeconds": 2.67,
+                "maximumResidentKiB": 1049496,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/installations/compression-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 3,
+                "mode": "none",
+                "artifactSha256": "425348fcfdd14385b1c907505c95d1058cfc5606beaa26b1a34979919f4f7334"
+            },
+            {
+                "elapsedSeconds": 114.8,
+                "userSeconds": 130.65,
+                "systemSeconds": 2.63,
+                "maximumResidentKiB": 1266820,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/installations/compression-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 4,
+                "mode": "none",
+                "artifactSha256": "425348fcfdd14385b1c907505c95d1058cfc5606beaa26b1a34979919f4f7334"
+            },
+            {
+                "elapsedSeconds": 114.69,
+                "userSeconds": 129.96,
+                "systemSeconds": 2.61,
+                "maximumResidentKiB": 1109476,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/installations/compression-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 4,
+                "mode": "zlib",
+                "artifactSha256": "3c35eb09615e04d95b13216611ea59988f2106cc7e45f8ade815b95e2a4885cc"
+            }
+        ],
+        "modes": {
+            "none": {
+                "sha256": "425348fcfdd14385b1c907505c95d1058cfc5606beaa26b1a34979919f4f7334",
+                "bytes": 17029480,
+                "sections": {
+                    ".debug_info": {
+                        "plainSha256": "1a11428f77ffe79d3e3cf1b4496a11685a08812fce66dcc31d537f81dc593a27",
+                        "plainBytes": 639524,
+                        "storedBytes": 639524,
+                        "compressed": false
+                    },
+                    ".debug_abbrev": {
+                        "plainSha256": "a62da9e000b89b02029a34ee9f631052304f67e4b20d1ed3227fb70f836edb67",
+                        "plainBytes": 1001,
+                        "storedBytes": 1001,
+                        "compressed": false
+                    },
+                    ".debug_str": {
+                        "plainSha256": "f5832e0a027d5a10efb6f69aa9639b472c1a7224a32445f71040e8417f0099e8",
+                        "plainBytes": 363254,
+                        "storedBytes": 363254,
+                        "compressed": false
+                    },
+                    ".debug_line": {
+                        "plainSha256": "0b618f6e63110cd78c0d0ae2c7de337fc3765efc109260e0076bb0313f938682",
+                        "plainBytes": 1397563,
+                        "storedBytes": 1397563,
+                        "compressed": false
+                    },
+                    ".debug_rnglists": {
+                        "plainSha256": "6ae3e2f8885edc41c4a50504b2d47bd15573a2f482e56a9e978fcfd44beedf2b",
+                        "plainBytes": 1771,
+                        "storedBytes": 1771,
+                        "compressed": false
+                    },
+                    ".debug_loclists": {
+                        "plainSha256": "befb982e469c399a69a0abc3640e94983036e0a986b845936e5be3fe8e0261e3",
+                        "plainBytes": 10112818,
+                        "storedBytes": 10112818,
+                        "compressed": false
+                    },
+                    ".debug_aranges": {
+                        "plainSha256": "0ccd110898ebed65aba2b0b631ba3675089af02248cb67b14bf444aee5df83a6",
+                        "plainBytes": 1360,
+                        "storedBytes": 1360,
+                        "compressed": false
+                    }
+                }
+            },
+            "zlib": {
+                "sha256": "3c35eb09615e04d95b13216611ea59988f2106cc7e45f8ade815b95e2a4885cc",
+                "bytes": 6792336,
+                "sections": {
+                    ".debug_info": {
+                        "plainSha256": "1a11428f77ffe79d3e3cf1b4496a11685a08812fce66dcc31d537f81dc593a27",
+                        "plainBytes": 639524,
+                        "storedBytes": 233171,
+                        "compressed": true
+                    },
+                    ".debug_abbrev": {
+                        "plainSha256": "a62da9e000b89b02029a34ee9f631052304f67e4b20d1ed3227fb70f836edb67",
+                        "plainBytes": 1001,
+                        "storedBytes": 408,
+                        "compressed": true
+                    },
+                    ".debug_str": {
+                        "plainSha256": "f5832e0a027d5a10efb6f69aa9639b472c1a7224a32445f71040e8417f0099e8",
+                        "plainBytes": 363254,
+                        "storedBytes": 85332,
+                        "compressed": true
+                    },
+                    ".debug_line": {
+                        "plainSha256": "0b618f6e63110cd78c0d0ae2c7de337fc3765efc109260e0076bb0313f938682",
+                        "plainBytes": 1397563,
+                        "storedBytes": 373956,
+                        "compressed": true
+                    },
+                    ".debug_rnglists": {
+                        "plainSha256": "6ae3e2f8885edc41c4a50504b2d47bd15573a2f482e56a9e978fcfd44beedf2b",
+                        "plainBytes": 1771,
+                        "storedBytes": 573,
+                        "compressed": true
+                    },
+                    ".debug_loclists": {
+                        "plainSha256": "befb982e469c399a69a0abc3640e94983036e0a986b845936e5be3fe8e0261e3",
+                        "plainBytes": 10112818,
+                        "storedBytes": 1586089,
+                        "compressed": true
+                    },
+                    ".debug_aranges": {
+                        "plainSha256": "0ccd110898ebed65aba2b0b631ba3675089af02248cb67b14bf444aee5df83a6",
+                        "plainBytes": 1360,
+                        "storedBytes": 590,
+                        "compressed": true
+                    }
+                }
+            }
+        },
+        "semantic": {
+            "sections": {
+                ".debug_info": "1a11428f77ffe79d3e3cf1b4496a11685a08812fce66dcc31d537f81dc593a27",
+                ".debug_abbrev": "a62da9e000b89b02029a34ee9f631052304f67e4b20d1ed3227fb70f836edb67",
+                ".debug_str": "f5832e0a027d5a10efb6f69aa9639b472c1a7224a32445f71040e8417f0099e8",
+                ".debug_line": "0b618f6e63110cd78c0d0ae2c7de337fc3765efc109260e0076bb0313f938682",
+                ".debug_rnglists": "6ae3e2f8885edc41c4a50504b2d47bd15573a2f482e56a9e978fcfd44beedf2b",
+                ".debug_loclists": "befb982e469c399a69a0abc3640e94983036e0a986b845936e5be3fe8e0261e3",
+                ".debug_aranges": "0ccd110898ebed65aba2b0b631ba3675089af02248cb67b14bf444aee5df83a6"
+            },
+            "source": "a69bc1e1755482514e2799112613f75202bff00e08e181155b8d6250ce8ffae5"
+        },
+        "projectBackupChanges": [],
+        "protectedUnchanged": true,
+        "mediansSeconds": {
+            "none": 114.8,
+            "zlib": 115.35
+        },
+        "maximumResidentKiB": {
+            "none": 1297588,
+            "zlib": 1151252
+        },
+        "scope": "Paired production opt-in storage comparison on one Linux host; no general speed or memory claim."
+    },
+    "environment": {
+        "host": "Linux-7.0.0-38-generic-x86_64-with-glibc2.39",
+        "loadAverage": [
+            1.7734375,
+            1.4599609375,
+            1.16259765625
+        ],
+        "workload": {
+            "name": "uboot",
+            "kind": "pie",
+            "addresses": {
+                "main": 271360,
+                "sandbox_main": 281681,
+                "do_echo": 406159,
+                "run_command": 617075,
+                "simple_strtoul": 1439552
+            },
+            "dtb": "u-boot.dtb"
+        },
+        "pairs": 5,
+        "reference": "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/test-results/uboot-benchmark/run.1mhp4wmk",
+        "jarSha256": "a0f1e1cdd9377ff0213a7b325e019596d1d4539026e14666905987f6cbef760d",
+        "scope": "Same installed exporter and copied saved program, alternating none/zlib pairs. GNU time covers fresh wrapper/JVM/export, excluding analysis, validators and GDB. CPU includes descendants; RSS is process-family high water, not summed memory. Warm caches and host load uncontrolled. Profiles are separate from timed populations."
+    },
+    "protectedFileCount": 336,
+    "protectedSnapshotSha256": "b47145abb88bdfbeda60b1ab18eecca7ed61795a3a2ed3dc18bbb437bc8f9b40",
+    "pairedZlibMinusPlainSeconds": [
+        0.67,
+        -0.06,
+        4.04,
+        0.75,
+        -0.11
+    ],
+    "medianCpuSeconds": {
+        "none": 134.86,
+        "zlib": 133.76
+    },
+    "profiles": {
+        "none": {
+            "schemaVersion": 1,
+            "status": "PASS",
+            "phases": {
+                "decompilation-and-source": {
+                    "startNanoseconds": 1793861252029912555,
+                    "durationNanoseconds": 94051729774,
+                    "elapsedSeconds": 94.051729774
+                },
+                "elf-packaging": {
+                    "startNanoseconds": 1793861364333968203,
+                    "durationNanoseconds": 16899720,
+                    "elapsedSeconds": 0.01689972
+                },
+                "export": {
+                    "startNanoseconds": 1793861251233319735,
+                    "durationNanoseconds": 113209885183,
+                    "elapsedSeconds": 113.209885183
+                },
+                "native-production": {
+                    "startNanoseconds": 1793861359057539222,
+                    "durationNanoseconds": 5276393221,
+                    "elapsedSeconds": 5.276393221
+                },
+                "types-and-storage": {
+                    "startNanoseconds": 1793861346083557762,
+                    "durationNanoseconds": 12612384560,
+                    "elapsedSeconds": 12.61238456
+                }
+            },
+            "unattributedExportSeconds": 1.252477908,
+            "scope": "One profiled export; elapsed wall time including waits, not CPU. Outer export includes child phases. Startup/project opening are outside export. Native production includes Java DIE construction, JNA/native work and section materialization."
+        },
+        "zlib": {
+            "schemaVersion": 1,
+            "status": "PASS",
+            "phases": {
+                "decompilation-and-source": {
+                    "startNanoseconds": 1793861370659254009,
+                    "durationNanoseconds": 94395923946,
+                    "elapsedSeconds": 94.395923946
+                },
+                "elf-packaging": {
+                    "startNanoseconds": 1793861483051361600,
+                    "durationNanoseconds": 148003604,
+                    "elapsedSeconds": 0.148003604
+                },
+                "export": {
+                    "startNanoseconds": 1793861369933262628,
+                    "durationNanoseconds": 113362605256,
+                    "elapsedSeconds": 113.362605256
+                },
+                "native-production": {
+                    "startNanoseconds": 1793861477915937610,
+                    "durationNanoseconds": 5135394578,
+                    "elapsedSeconds": 5.135394578
+                },
+                "types-and-storage": {
+                    "startNanoseconds": 1793861465057233878,
+                    "durationNanoseconds": 12502651057,
+                    "elapsedSeconds": 12.502651057
+                }
+            },
+            "unattributedExportSeconds": 1.180632071,
+            "scope": "One profiled export; elapsed wall time including waits, not CPU. Outer export includes child phases. Startup/project opening are outside export. Native production includes Java DIE construction, JNA/native work and section materialization."
+        }
+    },
+    "validation": {
+        "none": {
+            "strictStatus": "PASS",
+            "corroboratedFrameDiagnostics": 3735,
+            "uncorroboratedErrors": 0,
+            "sha256": {
+                "Ranges.command.json": "e248bc7757bb095152d8dcbe1a2ed9243dcb02bfc7413daec70e6188ff58a614",
+                "Ranges.log": "6f60848719d52378e7f5192e2591aa87abcebbcfb324973202202920101c0175",
+                "Ranges.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "abbrev.command.json": "ceb687dedc802ca606fb8f8ef79057d02b7f7f2941f74de4fefd1c68012b4530",
+                "abbrev.log": "f707d92cd5d5f88c4328639d8448eed2733045a3dc060f85b266c9b10815c57b",
+                "abbrev.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "aranges.command.json": "638f3fca880a971e0035311573b6a4f097090a4737570d7699d7cc2326bf7c78",
+                "aranges.log": "cfa30318a8d505b8eef41e37cb2e137a81cad8f53025ccb67a216e0499c20fa0",
+                "aranges.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "compiler-gdb.command.json": "e8057e72940dacb606da6f9232cc37d2519fb66f6cbdc7c64b567bfc51e84889",
+                "compiler-gdb.log": "6896bb918cea111a53135f9f1c0775471a6a9707fa8bde4af5bf0e6a232d2102",
+                "compiler-gdb.metrics.json": "eb3b5ed52b3d1155a38c727439ca1d856630805de60e03d0a1c03576c466baf1",
+                "compiler-gdb.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "compiler-inferior.log": "b43346c33f73816ec11709fce36fb256680b82f50a5ebd4b326f7cbc08ea3f84",
+                "compiler.gdb": "f5de7b5e0613ecd519dfd4fadb7403c480310da393c412a8332260479ff98106",
+                "decodedline.command.json": "d9bf4c1c46c0e334e24818efc9bb60f4fd5db716e7367dd6cc82efcb6a64ed4e",
+                "decodedline.log": "17bc6a56a39f59e8da40035142202964b29b332793f9f27452d46d1912fd3a3c",
+                "decodedline.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "forge-gdb.command.json": "0dd329d1440a69d0a99d3a2c0a82bb5bb917bb449858faa726f7fc64e8138ded",
+                "forge-gdb.log": "0ccab1f07a1fe5dcda736c4f10338327b1c11ef0ed7324aa2121e267eef0f89d",
+                "forge-gdb.metrics.json": "cb82c0a1441779b574bb22ad9a9b4f2a99a4b7ea63c8c2e5a4bd44b2fd32e4b8",
+                "forge-gdb.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "forge-inferior.log": "301bf72ccb8f5d07222d244e7e1edb0036f605b285f506dc4246d2f5e0ffb0a0",
+                "forge.gdb": "cb29791cfffe8e90f7be402e15e734fabfa75ff66e5c91c09a340f98282633e6",
+                "identity.command.json": "fdd620a281817c354af64bd8bc09659879082cc6a7a800fae72c1282f96abbdf",
+                "identity.log": "c5f1f174c476cf062ea3fbd69c8f295cbff1d1df7c0662804f46ccb41d725065",
+                "identity.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "info.command.json": "502f6ca05bd89e4bf784b28bf8d94653aa447e1ecf3be58ac9dd50729d60216b",
+                "info.log": "a175a7e745c7907d461322c435d6028524879aa2eff96a380bcc8588cad0994c",
+                "info.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "llvm.command.json": "d77353b60c082be871644d013036a874efb82f3d0b582dda7841cc3e98e04ef6",
+                "llvm.log": "68f5f922cb4a30decd1ab5ded89a4947258d2c8d2afed2b1a2d6a4f2231dd9c5",
+                "llvm.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "loc.command.json": "13c842703eb02da8cdca5c004e68fc84588002fb4b1677e1c0d7b12ec7a9e777",
+                "loc.log": "fdbeb86c62a8654095dfb54cfbf0a1267946a53b8e2da0f73eb5b2de40b5fc6b",
+                "loc.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "strict-checks.log": "d5c4abd44f6d3e7f63768eab2ee257822b7408af6676cd24e6ed359471a08028",
+                "strict-checks.log.check.json": "aac3f959d22ef0f524fabb8956b98e4416a732bc101247f6da19548671f3e057",
+                "strict-checks.log.original.txt": "60a5b98aa76cdc17eeadaf44f4b934b217620711ab1a6ed861eac48934af289d",
+                "strict-checks.log.original.txt.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "strict-checks.log.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "strict.command.json": "ab16f821c7fe981339c4e01fb79842702289e144f34697d1c249d13f5d3760bc",
+                "strict.log": "39fc7c51a7291cf1541a6d287007000cbcf7ae9548aefbe5d611fae155563963",
+                "strict.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+        },
+        "zlib": {
+            "strictStatus": "PASS",
+            "corroboratedFrameDiagnostics": 3735,
+            "uncorroboratedErrors": 0,
+            "sha256": {
+                "Ranges.command.json": "e248bc7757bb095152d8dcbe1a2ed9243dcb02bfc7413daec70e6188ff58a614",
+                "Ranges.log": "6f60848719d52378e7f5192e2591aa87abcebbcfb324973202202920101c0175",
+                "Ranges.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "abbrev.command.json": "ceb687dedc802ca606fb8f8ef79057d02b7f7f2941f74de4fefd1c68012b4530",
+                "abbrev.log": "f707d92cd5d5f88c4328639d8448eed2733045a3dc060f85b266c9b10815c57b",
+                "abbrev.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "aranges.command.json": "638f3fca880a971e0035311573b6a4f097090a4737570d7699d7cc2326bf7c78",
+                "aranges.log": "cfa30318a8d505b8eef41e37cb2e137a81cad8f53025ccb67a216e0499c20fa0",
+                "aranges.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "compiler-gdb.command.json": "c592c587671f09ac3effbb01eb550ccd9d094ec88e44bcea0eb49f36afd2b6f2",
+                "compiler-gdb.log": "ed30b39b0867b6beb2e8a88dfa68ae08fad148c2ba07a1c729be80e129ae501c",
+                "compiler-gdb.metrics.json": "e7566705928acf021db76fc5639efea469f533275234043b48cf1d93fa4aad2a",
+                "compiler-gdb.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "compiler-inferior.log": "8ab578278dbc91fcf323cc6ed3a0b3b05e9770f126ed7cc72221ec74e44ac2c5",
+                "compiler.gdb": "4d3df17e90382eaca195e8a7a5a4fe3d8e644add5d0f25c4a95390b1a5492507",
+                "decodedline.command.json": "d9bf4c1c46c0e334e24818efc9bb60f4fd5db716e7367dd6cc82efcb6a64ed4e",
+                "decodedline.log": "17bc6a56a39f59e8da40035142202964b29b332793f9f27452d46d1912fd3a3c",
+                "decodedline.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "forge-gdb.command.json": "2c1e24d88626f4abd72e4f3824e8ce017da15bfa80239c4ff21815937e459bbf",
+                "forge-gdb.log": "c13d8939100c4c8cedcf30457700e1b7c17fa0d6dc9f2637ecd5f3b7283207c3",
+                "forge-gdb.metrics.json": "036e5b589cc0f568551af36069af087902233875134517528db5bed21a6d9db4",
+                "forge-gdb.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "forge-inferior.log": "cceb0370533957cf34d298755ce03cb15242f45298f3996184e798663d54ff3c",
+                "forge.gdb": "7f891cc5e6c61e8fdd06a0d62468bfddaac18ac672b78b7c6979acc62b7c7351",
+                "identity.command.json": "fdd620a281817c354af64bd8bc09659879082cc6a7a800fae72c1282f96abbdf",
+                "identity.log": "838cb08c1953559c82231ea69602ce425ae9ccb058cb47ef0b6345b28d2a286b",
+                "identity.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "info.command.json": "502f6ca05bd89e4bf784b28bf8d94653aa447e1ecf3be58ac9dd50729d60216b",
+                "info.log": "a175a7e745c7907d461322c435d6028524879aa2eff96a380bcc8588cad0994c",
+                "info.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "llvm.command.json": "d77353b60c082be871644d013036a874efb82f3d0b582dda7841cc3e98e04ef6",
+                "llvm.log": "68f5f922cb4a30decd1ab5ded89a4947258d2c8d2afed2b1a2d6a4f2231dd9c5",
+                "llvm.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "loc.command.json": "13c842703eb02da8cdca5c004e68fc84588002fb4b1677e1c0d7b12ec7a9e777",
+                "loc.log": "fdbeb86c62a8654095dfb54cfbf0a1267946a53b8e2da0f73eb5b2de40b5fc6b",
+                "loc.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "strict-checks.log": "f707b6bd44ffc22fff34c69f8846beec756679f51343d4a2b4f393840d642fb5",
+                "strict-checks.log.check.json": "b095a656bf9464ea5f05d9ce42dbed3fb5225f979b0323ae1971eda2720f9d8f",
+                "strict-checks.log.original.txt": "60a5b98aa76cdc17eeadaf44f4b934b217620711ab1a6ed861eac48934af289d",
+                "strict-checks.log.original.txt.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "strict-checks.log.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "strict.command.json": "bf43276ca75c9aed8aa95304948f6beccf06349244f19c1780a323987c70fcf0",
+                "strict.log": "53b837e6f182e961d9dbaae8266f20eb311a00df35cad90b8b0459e4337a56ea",
+                "strict.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+        }
+    },
+    "report": {
+        "status": "PARTIAL",
+        "counts": {
+            "functionsExported": 6375,
+            "functionsDecompiled": 6374,
+            "functionsFailed": 1,
+            "functionsSkipped": 268,
+            "functionSignatures": 6375,
+            "parameters": 3935,
+            "localVariables": 15846,
+            "globalVariables": 11677,
+            "functionStaticVariables": 0,
+            "canonicalTypes": 298,
+            "defensibleVariableLocations": 15903,
+            "omittedLocationRanges": 4497,
+            "mappedSourceLines": 222853,
+            "unsupportedConstructs": 10,
+            "diagnostics": 7229
+        },
+        "failedFunctions": [
+            {
+                "name": "lib_test_alist_has",
+                "address": "0x1e6e3a",
+                "diagnostic": "Exception while decompiling 002e6e3a: process: timeout\n"
+            }
+        ],
+        "skippedFunctions": [
+            {
+                "name": "<EXTERNAL>::_ITM_deregisterTMCloneTable",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::_ITM_registerTMCloneTable",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::__cxa_atexit",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::__cxa_finalize",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::__errno_location",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::__gmon_start__",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::__isoc23_sscanf",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::__isoc23_strtol",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::__libc_start_main",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::abort",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::access",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::alarm",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::bind",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::calloc",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::clock_gettime",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::close",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::closedir",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::execv",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::exit",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::fcntl",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::free",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::ftruncate",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::getenv",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::getopt_long",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::getpagesize",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::gettimeofday",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::if_freenameindex",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::if_indextoname",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::if_nameindex",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::if_nametoindex",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::ioctl",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::localtime",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::longjmp",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::lseek",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::malloc",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::mkostemp",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::mmap",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::mprotect",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::munmap",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::open",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::opendir",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::raise",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::read",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::readdir",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::recvfrom",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::sendto",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::setenv",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::setjmp",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::setsockopt",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::sigaction",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::sigemptyset",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::sigfillset",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::signal",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::sigprocmask",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::socket",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::stat",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::strerror",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::tcgetattr",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::tcsetattr",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::time",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::unlink",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::usleep",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::vfprintf",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "<EXTERNAL>::write",
+                "reason": "EXTERNAL_IMPORT"
+            },
+            {
+                "name": "_ITM_deregisterTMCloneTable",
+                "reason": "THUNK"
+            },
+            {
+                "name": "_ITM_registerTMCloneTable",
+                "reason": "THUNK"
+            },
+            {
+                "name": "__cxa_atexit",
+                "reason": "THUNK"
+            },
+            {
+                "name": "__cxa_atexit",
+                "reason": "THUNK"
+            },
+            {
+                "name": "__cxa_finalize",
+                "reason": "THUNK"
+            },
+            {
+                "name": "__cxa_finalize",
+                "reason": "THUNK"
+            },
+            {
+                "name": "__errno_location",
+                "reason": "THUNK"
+            },
+            {
+                "name": "__errno_location",
+                "reason": "THUNK"
+            },
+            {
+                "name": "__gmon_start__",
+                "reason": "THUNK"
+            },
+            {
+                "name": "__isoc23_sscanf",
+                "reason": "THUNK"
+            },
+            {
+                "name": "__isoc23_sscanf",
+                "reason": "THUNK"
+            },
+            {
+                "name": "__isoc23_strtol",
+                "reason": "THUNK"
+            },
+            {
+                "name": "__isoc23_strtol",
+                "reason": "THUNK"
+            },
+            {
+                "name": "__libc_start_main",
+                "reason": "THUNK"
+            },
+            {
+                "name": "_rproc_probe_dev",
+                "reason": "THUNK"
+            },
+            {
+                "name": "abort",
+                "reason": "THUNK"
+            },
+            {
+                "name": "abort",
+                "reason": "THUNK"
+            },
+            {
+                "name": "access",
+                "reason": "THUNK"
+            },
+            {
+                "name": "access",
+                "reason": "THUNK"
+            },
+            {
+                "name": "act8846_read",
+                "reason": "THUNK"
+            },
+            {
+                "name": "alarm",
+                "reason": "THUNK"
+            },
+            {
+                "name": "alarm",
+                "reason": "THUNK"
+            },
+            {
+                "name": "avb_memcpy",
+                "reason": "THUNK"
+            },
+            {
+                "name": "bind",
+                "reason": "THUNK"
+            },
+            {
+                "name": "bind",
+                "reason": "THUNK"
+            },
+            {
+                "name": "blk_dread.isra.0",
+                "reason": "THUNK"
+            },
+            {
+                "name": "blk_dwrite.isra.0",
+                "reason": "THUNK"
+            },
+            {
+                "name": "bootflow_iter_uninit.isra.0",
+                "reason": "THUNK"
+            },
+            {
+                "name": "calloc",
+                "reason": "THUNK"
+            },
+            {
+                "name": "calloc",
+                "reason": "THUNK"
+            },
+            {
+                "name": "clk_generic_get_rate",
+                "reason": "THUNK"
+            },
+            {
+                "name": "clk_get_by_index.isra.0",
+                "reason": "THUNK"
+            },
+            {
+                "name": "clock_gettime",
+                "reason": "THUNK"
+            },
+            {
+                "name": "clock_gettime",
+                "reason": "THUNK"
+            },
+            {
+                "name": "close",
+                "reason": "THUNK"
+            },
+            {
+                "name": "close",
+                "reason": "THUNK"
+            },
+            {
+                "name": "closedir",
+                "reason": "THUNK"
+            },
+            {
+                "name": "closedir",
+                "reason": "THUNK"
+            },
+            {
+                "name": "cros_ec_probe.lto_priv.0",
+                "reason": "THUNK"
+            },
+            {
+                "name": "cros_ec_probe.lto_priv.1",
+                "reason": "THUNK"
+            },
+            {
+                "name": "cros_ec_probe.lto_priv.2",
+                "reason": "THUNK"
+            },
+            {
+                "name": "demo_shape_of_to_plat",
+                "reason": "THUNK"
+            },
+            {
+                "name": "dev_count_phandle_with_args.isra.0",
+                "reason": "THUNK"
+            },
+            {
+                "name": "dev_read_bool.isra.0",
+                "reason": "THUNK"
+            },
+            {
+                "name": "dev_read_first_prop.isra.0",
+                "reason": "THUNK"
+            },
+            {
+                "name": "dev_read_first_subnode.isra.0",
+                "reason": "THUNK"
+            },
+            {
+                "name": "dev_read_phandle_with_args.isra.0",
+                "reason": "THUNK"
+            },
+            {
+                "name": "dev_read_prop.isra.0",
+                "reason": "THUNK"
+            },
+            {
+                "name": "dev_read_size.isra.0",
+                "reason": "THUNK"
+            },
+            {
+                "name": "dev_read_string.isra.0",
+                "reason": "THUNK"
+            },
+            {
+                "name": "dev_read_stringlist_search.isra.0",
+                "reason": "THUNK"
+            },
+            {
+                "name": "dev_read_subnode.isra.0",
+                "reason": "THUNK"
+            },
+            {
+                "name": "dev_read_u32.isra.0",
+                "reason": "THUNK"
+            },
+            {
+                "name": "dev_read_u32_array.isra.0",
+                "reason": "THUNK"
+            },
+            {
+                "name": "dev_read_u32_default.isra.0",
+                "reason": "THUNK"
+            },
+            {
+                "name": "dev_read_u32_index.isra.0",
+                "reason": "THUNK"
+            },
+            {
+                "name": "dm_test_bus_parent_data",
+                "reason": "THUNK"
+            },
+            {
+                "name": "dm_test_bus_parent_plat",
+                "reason": "THUNK"
+            },
+            {
+                "name": "do_ext2load",
+                "reason": "THUNK"
+            },
+            {
+                "name": "efi_cin_reset_ex.lto_priv.0",
+                "reason": "THUNK"
+            },
+            {
+                "name": "erofs_closedir",
+                "reason": "THUNK"
+            },
+            {
+                "name": "execv",
+                "reason": "THUNK"
+            },
+            {
+                "name": "execv",
+                "reason": "THUNK"
+            },
+            {
+                "name": "exit",
+                "reason": "THUNK"
+            },
+            {
+                "name": "exit",
+                "reason": "THUNK"
+            },
+            {
+                "name": "ext4fs_size",
+                "reason": "THUNK"
+            },
+            {
+                "name": "extlinux_pxe_getfile",
+                "reason": "THUNK"
+            },
+            {
+                "name": "fcntl",
+                "reason": "THUNK"
+            },
+            {
+                "name": "fcntl",
+                "reason": "THUNK"
+            },
+            {
+                "name": "frame_dummy",
+                "reason": "THUNK"
+            },
+            {
+                "name": "free",
+                "reason": "THUNK"
+            },
+            {
+                "name": "free",
+                "reason": "THUNK"
+            },
+            {
+                "name": "free_map_lookup",
+                "reason": "THUNK"
+            },
+            {
+                "name": "ftruncate",
+                "reason": "THUNK"
+            },
+            {
+                "name": "ftruncate",
+                "reason": "THUNK"
+            },
+            {
+                "name": "getenv",
+                "reason": "THUNK"
+            },
+            {
+                "name": "getenv",
+                "reason": "THUNK"
+            },
+            {
+                "name": "getopt_long",
+                "reason": "THUNK"
+            },
+            {
+                "name": "getopt_long",
+                "reason": "THUNK"
+            },
+            {
+                "name": "getpagesize",
+                "reason": "THUNK"
+            },
+            {
+                "name": "getpagesize",
+                "reason": "THUNK"
+            },
+            {
+                "name": "gettimeofday",
+                "reason": "THUNK"
+            },
+            {
+                "name": "gettimeofday",
+                "reason": "THUNK"
+            },
+            {
+                "name": "gpio_led_get_state",
+                "reason": "THUNK"
+            },
+            {
+                "name": "i2c_eeprom_std_read",
+                "reason": "THUNK"
+            },
+            {
+                "name": "i2c_post_bind.lto_priv.0",
+                "reason": "THUNK"
+            },
+            {
+                "name": "if_freenameindex",
+                "reason": "THUNK"
+            },
+            {
+                "name": "if_freenameindex",
+                "reason": "THUNK"
+            },
+            {
+                "name": "if_indextoname",
+                "reason": "THUNK"
+            },
+            {
+                "name": "if_indextoname",
+                "reason": "THUNK"
+            },
+            {
+                "name": "if_nameindex",
+                "reason": "THUNK"
+            },
+            {
+                "name": "if_nameindex",
+                "reason": "THUNK"
+            },
+            {
+                "name": "if_nametoindex",
+                "reason": "THUNK"
+            },
+            {
+                "name": "if_nametoindex",
+                "reason": "THUNK"
+            },
+            {
+                "name": "ioctl",
+                "reason": "THUNK"
+            },
+            {
+                "name": "ioctl",
+                "reason": "THUNK"
+            },
+            {
+                "name": "ldo_get_enable.lto_priv.3",
+                "reason": "THUNK"
+            },
+            {
+                "name": "localtime",
+                "reason": "THUNK"
+            },
+            {
+                "name": "localtime",
+                "reason": "THUNK"
+            },
+            {
+                "name": "longjmp",
+                "reason": "THUNK"
+            },
+            {
+                "name": "longjmp",
+                "reason": "THUNK"
+            },
+            {
+                "name": "lseek",
+                "reason": "THUNK"
+            },
+            {
+                "name": "lseek",
+                "reason": "THUNK"
+            },
+            {
+                "name": "main",
+                "reason": "THUNK"
+            },
+            {
+                "name": "malloc",
+                "reason": "THUNK"
+            },
+            {
+                "name": "malloc",
+                "reason": "THUNK"
+            },
+            {
+                "name": "max313xx_read8",
+                "reason": "THUNK"
+            },
+            {
+                "name": "max313xx_write8",
+                "reason": "THUNK"
+            },
+            {
+                "name": "mkostemp",
+                "reason": "THUNK"
+            },
+            {
+                "name": "mkostemp",
+                "reason": "THUNK"
+            },
+            {
+                "name": "mmap",
+                "reason": "THUNK"
+            },
+            {
+                "name": "mmap",
+                "reason": "THUNK"
+            },
+            {
+                "name": "mprotect",
+                "reason": "THUNK"
+            },
+            {
+                "name": "mprotect",
+                "reason": "THUNK"
+            },
+            {
+                "name": "munmap",
+                "reason": "THUNK"
+            },
+            {
+                "name": "munmap",
+                "reason": "THUNK"
+            },
+            {
+                "name": "nvme_bootdev_bind",
+                "reason": "THUNK"
+            },
+            {
+                "name": "of_bus_default_translate.lto_priv.1",
+                "reason": "THUNK"
+            },
+            {
+                "name": "open",
+                "reason": "THUNK"
+            },
+            {
+                "name": "open",
+                "reason": "THUNK"
+            },
+            {
+                "name": "opendir",
+                "reason": "THUNK"
+            },
+            {
+                "name": "opendir",
+                "reason": "THUNK"
+            },
+            {
+                "name": "p2sb_post_bind",
+                "reason": "THUNK"
+            },
+            {
+                "name": "part_get_info_iso",
+                "reason": "THUNK"
+            },
+            {
+                "name": "ping6_timeout",
+                "reason": "THUNK"
+            },
+            {
+                "name": "qfw_bootdev_bind",
+                "reason": "THUNK"
+            },
+            {
+                "name": "raise",
+                "reason": "THUNK"
+            },
+            {
+                "name": "raise",
+                "reason": "THUNK"
+            },
+            {
+                "name": "read",
+                "reason": "THUNK"
+            },
+            {
+                "name": "read",
+                "reason": "THUNK"
+            },
+            {
+                "name": "readdir",
+                "reason": "THUNK"
+            },
+            {
+                "name": "readdir",
+                "reason": "THUNK"
+            },
+            {
+                "name": "recvfrom",
+                "reason": "THUNK"
+            },
+            {
+                "name": "recvfrom",
+                "reason": "THUNK"
+            },
+            {
+                "name": "s5m8767_buck_probe",
+                "reason": "THUNK"
+            },
+            {
+                "name": "s5m8767_ldo_probe",
+                "reason": "THUNK"
+            },
+            {
+                "name": "sandbox_flash_remove",
+                "reason": "THUNK"
+            },
+            {
+                "name": "sandbox_fs_size",
+                "reason": "THUNK"
+            },
+            {
+                "name": "sandbox_osd_set_size",
+                "reason": "THUNK"
+            },
+            {
+                "name": "sandbox_rtc_read8",
+                "reason": "THUNK"
+            },
+            {
+                "name": "sandbox_rtc_write8",
+                "reason": "THUNK"
+            },
+            {
+                "name": "sandbox_scsi_remove",
+                "reason": "THUNK"
+            },
+            {
+                "name": "sandbox_store_remove",
+                "reason": "THUNK"
+            },
+            {
+                "name": "sandbox_testproc_init",
+                "reason": "THUNK"
+            },
+            {
+                "name": "sb_gpio_get_value",
+                "reason": "THUNK"
+            },
+            {
+                "name": "scmi_reset_probe.lto_priv.0",
+                "reason": "THUNK"
+            },
+            {
+                "name": "scsi_bootdev_bind",
+                "reason": "THUNK"
+            },
+            {
+                "name": "sendto",
+                "reason": "THUNK"
+            },
+            {
+                "name": "sendto",
+                "reason": "THUNK"
+            },
+            {
+                "name": "serial_initialize",
+                "reason": "THUNK"
+            },
+            {
+                "name": "setenv",
+                "reason": "THUNK"
+            },
+            {
+                "name": "setenv",
+                "reason": "THUNK"
+            },
+            {
+                "name": "setjmp",
+                "reason": "THUNK"
+            },
+            {
+                "name": "setjmp",
+                "reason": "THUNK"
+            },
+            {
+                "name": "setsockopt",
+                "reason": "THUNK"
+            },
+            {
+                "name": "setsockopt",
+                "reason": "THUNK"
+            },
+            {
+                "name": "sigaction",
+                "reason": "THUNK"
+            },
+            {
+                "name": "sigaction",
+                "reason": "THUNK"
+            },
+            {
+                "name": "sigemptyset",
+                "reason": "THUNK"
+            },
+            {
+                "name": "sigemptyset",
+                "reason": "THUNK"
+            },
+            {
+                "name": "sigfillset",
+                "reason": "THUNK"
+            },
+            {
+                "name": "sigfillset",
+                "reason": "THUNK"
+            },
+            {
+                "name": "signal",
+                "reason": "THUNK"
+            },
+            {
+                "name": "signal",
+                "reason": "THUNK"
+            },
+            {
+                "name": "sigprocmask",
+                "reason": "THUNK"
+            },
+            {
+                "name": "sigprocmask",
+                "reason": "THUNK"
+            },
+            {
+                "name": "sntp_timeout_handler",
+                "reason": "THUNK"
+            },
+            {
+                "name": "socket",
+                "reason": "THUNK"
+            },
+            {
+                "name": "socket",
+                "reason": "THUNK"
+            },
+            {
+                "name": "stat",
+                "reason": "THUNK"
+            },
+            {
+                "name": "stat",
+                "reason": "THUNK"
+            },
+            {
+                "name": "stdio_serial_flush",
+                "reason": "THUNK"
+            },
+            {
+                "name": "stdio_serial_getc",
+                "reason": "THUNK"
+            },
+            {
+                "name": "stdio_serial_tstc",
+                "reason": "THUNK"
+            },
+            {
+                "name": "strerror",
+                "reason": "THUNK"
+            },
+            {
+                "name": "strerror",
+                "reason": "THUNK"
+            },
+            {
+                "name": "ta_avb_open_session",
+                "reason": "THUNK"
+            },
+            {
+                "name": "ta_rpc_test_open_session",
+                "reason": "THUNK"
+            },
+            {
+                "name": "tcgetattr",
+                "reason": "THUNK"
+            },
+            {
+                "name": "tcgetattr",
+                "reason": "THUNK"
+            },
+            {
+                "name": "tcsetattr",
+                "reason": "THUNK"
+            },
+            {
+                "name": "tcsetattr",
+                "reason": "THUNK"
+            },
+            {
+                "name": "testbus_drv_probe",
+                "reason": "THUNK"
+            },
+            {
+                "name": "testdrv_ping",
+                "reason": "THUNK"
+            },
+            {
+                "name": "time",
+                "reason": "THUNK"
+            },
+            {
+                "name": "time",
+                "reason": "THUNK"
+            },
+            {
+                "name": "toshiba_nand_init",
+                "reason": "THUNK"
+            },
+            {
+                "name": "tpm_init",
+                "reason": "THUNK"
+            },
+            {
+                "name": "unlink",
+                "reason": "THUNK"
+            },
+            {
+                "name": "unlink",
+                "reason": "THUNK"
+            },
+            {
+                "name": "usb_bootdev_bind",
+                "reason": "THUNK"
+            },
+            {
+                "name": "usleep",
+                "reason": "THUNK"
+            },
+            {
+                "name": "usleep",
+                "reason": "THUNK"
+            },
+            {
+                "name": "ustrtoull",
+                "reason": "THUNK"
+            },
+            {
+                "name": "vbe_req_aslr_rand",
+                "reason": "THUNK"
+            },
+            {
+                "name": "vfprintf",
+                "reason": "THUNK"
+            },
+            {
+                "name": "vfprintf",
+                "reason": "THUNK"
+            },
+            {
+                "name": "vidconsole_sync_copy.isra.0",
+                "reason": "THUNK"
+            },
+            {
+                "name": "video_idle",
+                "reason": "THUNK"
+            },
+            {
+                "name": "virtio_bootdev_bind",
+                "reason": "THUNK"
+            },
+            {
+                "name": "vsnprintf",
+                "reason": "THUNK"
+            },
+            {
+                "name": "write",
+                "reason": "THUNK"
+            },
+            {
+                "name": "write",
+                "reason": "THUNK"
+            },
+            {
+                "name": "write_dev_tables",
+                "reason": "THUNK"
+            }
+        ]
+    },
+    "limits": [
+        "Warm caches and host load uncontrolled; one Linux host",
+        "Profiles separate from timed samples",
+        "No general speed or memory improvement claim",
+        "Known decompilation timeout preserved, not excluded from timing",
+        "Sandbox firmware code runs on Linux; not bare-metal validation",
+        "Full exact-head gate and Windows broader workloads still pending"
+    ]
+}

@@ -17,7 +17,7 @@ else
 fi
 
 repository_dir=$(realpath "$(dirname "$0")/../../..")
-fixture_dir="$repository_dir/build/fixtures"
+fixture_dir=${FORGE_SYMBOL_FIXTURES:-"$repository_dir/build/fixtures"}
 result_dir=${FORGE_SYMBOL_RESULTS:-"$repository_dir/build/test-results/headless-symbol-export"}
 artifact_suffix=${FORGE_SYMBOL_SUFFIX:-ghidra-forge.dbg}
 [[ "$artifact_suffix" =~ ^[a-zA-Z0-9_-][a-zA-Z0-9_.-]*[.]dbg$ ]] || {
@@ -31,6 +31,11 @@ project_rebase_delta=${GHIDRA_REBASE_DELTA:-0}
 project_rebase_delta=$((project_rebase_delta))
 stale_executable_path=${GHIDRA_STALE_EXECUTABLE_PATH:-}
 use_default_output=${GHIDRA_USE_DEFAULT_OUTPUT:-0}
+compression=${GHIDRA_DEBUG_COMPRESSION:-none}
+case "$compression" in
+    none|zlib) ;;
+    *) echo 'invalid debug compression mode' >&2; exit 64 ;;
+esac
 loader_options=()
 if [[ "${GHIDRA_FORCE_ELF_LOADER:-0}" == 1 ]]; then
     loader_options=(-loader ElfLoader)
@@ -123,6 +128,9 @@ for target in "${targets[@]}"; do
     fi
 
     export_options=("--libdwarf=$consumer" "--libdwarfp=$producer")
+    if [[ "$compression" != none ]]; then
+        export_options+=("--compress-debug-sections=$compression")
+    fi
     if [[ "${GHIDRA_GDB_LOADER:-0}" == 1 ]]; then
         export_options+=("--gdb-loader")
     fi
@@ -215,7 +223,7 @@ for target in "${targets[@]}"; do
         >"$result_dir/$target.$fixture_role.readelf-info.txt" 2>>"$warnings"
     readelf --debug-dump=abbrev "$output" \
         >"$result_dir/$target.$fixture_role.readelf-abbrev.txt" 2>>"$warnings"
-    readelf --string-dump=.debug_str "$output" \
+    readelf --decompress --string-dump=.debug_str "$output" \
         >"$result_dir/$target.$fixture_role.readelf-strings.txt" 2>>"$warnings"
     readelf --debug-dump=aranges "$output" >/dev/null 2>>"$warnings"
     readelf --debug-dump=decodedline "$output" \

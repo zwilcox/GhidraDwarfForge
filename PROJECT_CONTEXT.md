@@ -1,5 +1,70 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED measurement integration and compression component validation:**
+PR159 merged as `762dbbd` after complete CI `41989520429` and performance
+workflow `41989520582` passed at `3276396`. The merge tree matches the tested
+head exactly. Independent review covers all five target artifacts, Linux GUI,
+Windows native/GUI/consumer checks, attachment preservation and paired workloads.
+
+Compression CI `41993381342` passes all 15 jobs at `7fbc726`, with independent
+review of all five target artifacts and both host paths. All 75 compression
+exports preserve decompressed DWARF/source, originals and private fixture inputs.
+See `docs/evidence/compression-hosted-41993381342.json`. PR160 now includes a
+normal merge of main and the corrected performance consumer. **PRESENT,
+UNVERIFIED as a combined revision:** its fresh required gate and protected merge
+remain necessary before #74 can close. No release publication is included.
+
+**HISTORICAL pre-integration checkpoints follow.**
+
+**HISTORICAL #74 measurements and consumer validation before PR159 integration:**
+performance workflow `41989520582` at `3276396` passes all five jobs, including
+native Windows paired exports and independent Linux compiler/Forge GDB checks.
+Raw review binds all 22 exports, 717 independently checked protected-file hashes,
+both binary JFR recordings and source-relocation positive/negative controls.
+Two private `launch.properties` files are recorded unchanged by the Windows job
+but are unavailable in the retained artifact subset. See
+`docs/evidence/performance-windows-workloads-41989520582.json`.
+
+Opt-in zlib is implemented and measured in PR160: production Linux SQLite and
+U-Boot sidecars shrink 65.39% and 60.11%, with no general speed or memory claim.
+The fixture-isolation correction preserves report-bound shared outputs.
+Cache, parallelism and other candidate decisions are explicitly resolved in
+`docs/PERFORMANCE-WORKPLAN.md`; deferral is not implementation. Full required
+integration gates, normal merges and final acceptance remain required. #74 and
+the later goal issues are open; no release publication is included.
+
+**HISTORICAL checkpoint paragraphs follow.** Earlier pending Windows measurements
+and provisional optimization decisions retain the evidence available at their
+dates; the current paragraph and P3.5 acceptance section supersede them within
+their stated scope. They do not reopen already accepted unrelated work.
+
+**CONFIRMED compression test interference; corrected locally:** run `41983547971`
+passes all five MIPS big-endian compression cases, then correctly rejects automatic
+association because the compression harness overwrote shared fixture sidecars
+bound to earlier producer reports. Compression now uses private input/reference
+copies and checks preservation of shared file content, sizes, modes and mtimes,
+including failure cleanup. Ten x86-64/MIPS big-endian cases (30 real exports)
+pass GNU/LLVM/pinned checks, GDB, decompression equivalence and determinism;
+shared fixtures and private inputs remain unchanged. The correction changes test
+harnesses only. Full corrected hosted acceptance and #74 integration remain open.
+See `docs/evidence/compression-fixture-isolation-20261105.json`.
+
+**CONFIRMED local compression candidate; hosted acceptance pending:** opt-in
+gABI zlib compression preserves the default plain output. Eight ELF container
+layouts and 25 actual five-target exec/PIE/shared/sectionless/rebased cases pass
+equivalence, determinism, validators and GDB. Production compression cancellation
+preserves the prior pair and permits retry. The Linux Script Manager shortcut
+and independent compressed-artifact consumer replay pass. Native Windows's
+compressed GUI journey and Linux replay pass at `995e0df`; archive and 139
+protected-file hashes have been reviewed. Production SQLite's five paired
+comparisons plus two profiles pass: 65.39% smaller, medians 34.76s plain/35.06s
+zlib, no speed/memory improvement claim. Production U-Boot also passes the
+five-pair/two-profile protocol: 60.11% smaller, medians 114.80s/115.35s, existing
+timeout and omissions retained. Broader Windows measurements and corrected
+exact-head CI remain pending. `05953e9` fixes the
+large-ELF smoke's missing standalone compilation dependency. Final #74 acceptance
+remains open; see `docs/ELF-COMPRESSION.md`.
+
 **CONFIRMED Windows #74 measurements; consumer correction validated locally:**
 run `41977254778` at `cfc212c` completes five native Windows baseline/candidate
 pairs and a separate profile for both pinned workloads, with unchanged artifacts,
