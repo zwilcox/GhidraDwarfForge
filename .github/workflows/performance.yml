@@ -13,7 +13,7 @@ permissions:
 
 env:
     PERFORMANCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
-    PERFORMANCE_BASELINE: 6c776d7415fc5222f7e1314c0c5192454c8aced5
+    PERFORMANCE_BASELINE: 1bb4c14c550d277817315cf0ed97853a949e1e03
     GHIDRA_ARCHIVE: ghidra_12.0.3_PUBLIC_20260210.zip
     GHIDRA_ARCHIVE_SHA256: 90d3fffb20b00030dcef8d2a24dd0f422d3a61e432b3ad43f77233ac6d667981
     GHIDRA_DOWNLOAD_URL: https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_12.0.3_build/ghidra_12.0.3_PUBLIC_20260210.zip
@@ -56,6 +56,8 @@ jobs:
                   if ($LASTEXITCODE -ne 0) { throw 'headless observation controls failed' }
                   python src/test/performance/test-jfr-phases.py
                   if ($LASTEXITCODE -ne 0) { throw 'JFR phase controls failed' }
+                  python src/test/performance/test-coverage-measurement-package.py
+                  if ($LASTEXITCODE -ne 0) { throw 'measurement package audit controls failed' }
                   python src/test/performance/test-windows-measurement.py `
                       build/test-results/windows-measurement/windows-measure.exe `
                       build/test-results/windows-measurement/payload.exe `
@@ -186,9 +188,29 @@ jobs:
                       [IO.File]::WriteAllText($launchProperties, $configuration, [Text.UTF8Encoding]::new($false))
                       $extensions = @(Get-ChildItem "packages/$role" -Filter '*.zip')
                       if ($extensions.Count -ne 1) { throw "ambiguous $role extension" }
-                      Expand-Archive $extensions[0].FullName -DestinationPath (Join-Path $ghidra 'Ghidra/Extensions')
+                      if ($role -eq 'baseline') {
+                          # Preserve the original production module outside Ghidra's
+                          # search path; derive a separately receipted control below.
+                          $production = Join-Path $env:RUNNER_TEMP 'performance-baseline-production'
+                          Expand-Archive $extensions[0].FullName -DestinationPath $production
+                          "PERFORMANCE_BASELINE_PRODUCTION=$production" | Out-File $env:GITHUB_ENV -Append
+                      }
+                      else {
+                          Expand-Archive $extensions[0].FullName -DestinationPath (Join-Path $ghidra 'Ghidra/Extensions')
+                      }
                       "PERFORMANCE_$($role.ToUpperInvariant())_DIR=$ghidra" | Out-File $env:GITHUB_ENV -Append
                   }
+            - name: Derive audited array-corrected baseline measurement control
+              shell: pwsh
+              run: |
+                  $ErrorActionPreference = 'Stop'
+                  python src/test/performance/coverage-measurement-package.py `
+                      (Join-Path $env:PERFORMANCE_BASELINE_PRODUCTION 'GhidraDwarfForge') `
+                      (Join-Path $env:PERFORMANCE_CANDIDATE_DIR 'Ghidra/Extensions/GhidraDwarfForge') `
+                      $env:PERFORMANCE_BASELINE_DIR `
+                      (Join-Path $env:PERFORMANCE_BASELINE_DIR 'Ghidra/Extensions/GhidraDwarfForge') `
+                      build/test-results/windows-workloads/baseline-control
+                  if ($LASTEXITCODE -ne 0) { throw 'baseline measurement control failed' }
             - name: Measure actual Windows imports, paired exports, phases and validators
               shell: pwsh
               env:
@@ -200,7 +222,8 @@ jobs:
                   python src/test/performance/windows-workloads.py corpus `
                       $env:PERFORMANCE_BASELINE_DIR $env:PERFORMANCE_CANDIDATE_DIR `
                       measurement/windows-measure.exe build/test-results/windows-workloads --pairs 5 `
-                      --checker-configuration packages/checker-windows/share/dwarfdump/dwarfdump.conf
+                      --checker-configuration packages/checker-windows/share/dwarfdump/dwarfdump.conf `
+                      --baseline-control-receipt build/test-results/windows-workloads/baseline-control/receipt.json
                   if ($LASTEXITCODE -ne 0) { throw 'Windows workload measurement/validation failed' }
             - uses: actions/upload-artifact@v7
               if: always()

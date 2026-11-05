@@ -256,6 +256,7 @@ and debugger behavior:
 | [Array identity](evidence/coverage-array-identity.json) | Reproduced fresh-process nondeterminism, cross-target live/reopen correction, large SQLite artifact validators/GDB and CLI. |
 | [Large workloads](evidence/coverage-large-workloads.json) | Five alternating pairs each for SQLite and U-Boot, deterministic reports, identical artifacts, validators/GDB and preserved inputs/projects. |
 | [CI follow-ups](evidence/coverage-ci-followups.json) | Corrected terminal fixtures, complete JFR phase sets, and screen-bounded GUI save/comparison at 1024x768. Corrected Windows execution remains pending. |
+| [Windows measurement control](evidence/coverage-windows-measurement-control.json) | Audited derivation from the exact published main package, clean-build class equality and rejecting package/class controls. Hosted Windows measurements remain pending. |
 
 **CONFIRMED locally:** median export wall time increases from 34.62 to 39.28 seconds
 for SQLite and 114.82 to 126.58 seconds for U-Boot. Median process maximum RSS
@@ -273,6 +274,14 @@ baseline has the same isolated array-key correction as the candidate to isolate
 scorecard cost while retaining exact artifact equality. Failed runs are retained
 and excluded from successful measurements. One host's measurements do not imply
 a general speed or memory guarantee.
+
+The Windows workflow uses production main `1bb4c14` plus the same audited array
+correction as an explicitly non-release measurement control. It preserves the
+original package, records source/class hashes and requires unchanged-source
+classes to remain byte-identical. It measures the coverage revision as a whole,
+including any independently rebuilt native differences recorded in its inventory;
+it no longer labels this comparison as phase-instrumentation overhead. Export
+timing excludes report archival, large-report CLI, profiling and validation.
 
 [Historical development checkpoints](history/COVERAGE-DEVELOPMENT.md) preserve
 component stages, admission experiments and superseded limitations.

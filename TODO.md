@@ -1,5 +1,13 @@
 # TODO.md — GhidraDwarfForge
 
+**#108 Windows measurement harness updated, hosted run pending:** production main
+plus the shared audited array correction is now a separately receipted control.
+All baseline class bytes match the independent local Gradle build; changed-source
+inventory and unchanged-class mutation controls pass. The workflow retains exact
+artifact/report repeatability, full validators/GDB and now large-report CLI checks.
+See `docs/evidence/coverage-windows-measurement-control.json`. Run and inspect the
+corrected exact-head host/target/performance gates before integration.
+
 **ACTIVE #108 — local paired measurements complete; hosted corrections pending:**
 SQLite and U-Boot each pass five alternating pairs with identical artifacts,
 deterministic reports, validators/GDB and preserved inputs/projects. Record the

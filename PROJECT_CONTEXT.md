@@ -1,5 +1,17 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — #108 Windows measurement preparation:** the workflow now
+compares against production main `1bb4c14` with a separately derived, explicitly
+non-release array correction. Its three recompiled classes must match the actual
+candidate; all 507 baseline classes also match the independent clean Gradle build
+locally. A source-root audit accounts for the candidate delta and rejects changes
+to classes with unchanged source. Original modules remain protected; native build
+identities are recorded rather than attributing all revision cost to Java alone.
+Five pairs, exact artifact equality, deterministic reports, large-report CLI,
+JFR/validators and independent GDB remain required on Windows. Local helper,
+negative controls and workflow lint pass; hosted execution is pending. See
+`docs/evidence/coverage-windows-measurement-control.json`.
+
 **CONFIRMED locally — #108 final paired workloads and CI follow-ups:** five
 alternating baseline/candidate pairs each for SQLite and U-Boot preserve exact
 artifacts and deterministic reports, with validator/GDB checks passing. Median
