@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally — #108 GUI comparison:** the coverage window now offers
+Compare report, with a background read/compare task, cooperative cancellation,
+explicit incomparability/errors, and a bounded result view that preserves the exact
+change count after display clipping. The real Linux GUI passes identical/changed/
+legacy/malformed/retry cases and preserves selected report files. The full export,
+save, attachment preview/preparation, cancellation, validator/GDB and packaged CLI
+journey also passes. Component cancellation and clipped-count checks pass; Windows/
+hosted acceptance, paired native type regressions and large-workload overhead
+remain pending. See `docs/evidence/coverage-gui-comparison.json`.
+
 **CONFIRMED locally — #108 variable comparison and real curation:** CLI comparison
 now exposes declaration/type/provenance/storage changes and exact location ranges
 at explicitly reported variable bindings. Coverage loss/gain uses only common
@@ -2772,7 +2782,7 @@ Remaining #108 acceptance:
 - Complete remaining paired native type-state regression evidence. Variable/range
   comparison and actual rebase/use-site/rename artifact pairs now pass locally;
   reported binding correspondence does not prove declaration lineage.
-- GUI report comparison.
+- Hosted GUI report-comparison acceptance; the Linux workflow now passes locally.
 - Repeated large-workload measurements and whole-report byte-bound stress after
   the definition-two evidence extension.
 - Final host/target pipeline acceptance, including Windows and updated GUI paths.

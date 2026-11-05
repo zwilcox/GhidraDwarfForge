@@ -318,8 +318,68 @@ public final class GuiScriptManagerSmoke {
                 "saved and displayed function populations differ");
             return null;
         });
+        compareCoverageReports(dialog, robot, directory, report);
         GuiTestSupport.clickButton(robot, dialog, "Close");
         return report;
+    }
+
+    private static void compareCoverageReports(java.awt.Dialog dialog, Robot robot, Path directory, Path report) throws Exception {
+        String original = Files.readString(report);
+        chooseCoverageComparison(dialog, robot, report);
+        checkCoverageComparison(robot, directory.resolve("comparison-identical.txt"), "Reported changes: 0", "does not prove declaration lineage");
+        var changed = com.google.gson.JsonParser.parseString(original).getAsJsonObject();
+        var first = changed.getAsJsonObject("coverage").getAsJsonArray("functions").get(0).getAsJsonObject();
+        first.addProperty("name", first.get("name").getAsString() + " previous λ");
+        Path previous = Files.writeString(directory.resolve("coverage-earlier.json"), changed.toString());
+        chooseCoverageComparison(dialog, robot, previous);
+        checkCoverageComparison(robot, directory.resolve("comparison-changed.txt"), "FUNCTION_RENAMED", "previous λ");
+        var legacy = com.google.gson.JsonParser.parseString(original).getAsJsonObject();
+        legacy.addProperty("schemaVersion", 1);
+        legacy.remove("coverage");
+        Path legacyFile = Files.writeString(directory.resolve("coverage-legacy.json"), legacy.toString());
+        chooseCoverageComparison(dialog, robot, legacyFile);
+        checkCoverageComparison(robot, directory.resolve("comparison-incomparable.txt"), "INCOMPARABLE", "Coverage unavailable");
+        Path malformed = Files.writeString(directory.resolve("coverage-malformed.json"), "{");
+        chooseCoverageComparison(dialog, robot, malformed);
+        GuiTestSupport.await("malformed comparison error", () -> {
+            var status = (javax.swing.JTextArea) GuiTestSupport.find(dialog,
+                component -> "coverage-save-status".equals(component.getName()));
+            return status.getText().startsWith("Comparison failed:") ? Boolean.TRUE : null;
+        });
+        chooseCoverageComparison(dialog, robot, report);
+        checkCoverageComparison(robot, directory.resolve("comparison-retry.txt"), "Reported changes: 0", "No differences in the compared evidence fields");
+        GuiTestSupport.require(Files.readString(report).equals(original) && Files.readString(previous).equals(changed.toString()) &&
+            Files.readString(legacyFile).equals(legacy.toString()) && Files.readString(malformed).equals("{"), "GUI comparison modified selected reports");
+        Files.writeString(directory.resolve("comparison-result.txt"), "gui-comparison=PASS identical/changed/incomparable/malformed/retry/read-only\n");
+    }
+
+    private static void chooseCoverageComparison(java.awt.Dialog dialog, Robot robot, Path earlier) throws Exception {
+        GuiTestSupport.foregroundWindow(((javax.swing.JDialog) dialog).getRootPane());
+        GuiTestSupport.clickButton(robot, dialog, "Compare report...");
+        var chooser = GuiTestSupport.dialog("Select earlier coverage report");
+        GuiTestSupport.onSwing(() -> {
+            var filename = (javax.swing.JTextField) GuiTestSupport.find(chooser, component ->
+                component instanceof javax.swing.JTextField && "filenameTextField".equals(component.getName()));
+            GuiTestSupport.require(filename != null, "missing earlier report filename field");
+            filename.setText(earlier.toAbsolutePath().toString());
+            return null;
+        });
+        GuiTestSupport.clickButton(robot, chooser, "Compare");
+    }
+
+    private static void checkCoverageComparison(Robot robot, Path result, String required, String detail) throws Exception {
+        var dialog = GuiTestSupport.dialog(ghidradwarfforge.output.CoverageReportGui.COMPARISON_TITLE);
+        String text = GuiTestSupport.onSwing(() -> {
+            var area = (javax.swing.JTextArea) GuiTestSupport.find(dialog,
+                component -> "coverage-comparison-result".equals(component.getName()));
+            GuiTestSupport.require(area != null && !area.isEditable(), "missing read-only comparison results");
+            GuiTestSupport.require(area.getText().contains(required) && area.getText().contains(detail), "comparison content mismatch: " + area.getText());
+            return area.getText();
+        });
+        Files.writeString(result, text);
+        GuiTestSupport.foregroundWindow(((javax.swing.JDialog) dialog).getRootPane());
+        GuiTestSupport.screenshot(robot, dialog, Path.of(result + ".png"));
+        GuiTestSupport.clickButton(robot, dialog, "Close comparison");
     }
 
     private static void runAttachmentDecline(ProbeTool tool, Path input, Path sidecar, Path source,

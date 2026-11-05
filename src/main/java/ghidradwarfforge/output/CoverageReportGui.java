@@ -23,6 +23,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 /** Modeless view of captured export evidence. Saving is explicit and never replaces a file. */
 public final class CoverageReportGui {
     public static final String TITLE = "GhidraDwarfForge export coverage";
+    public static final String COMPARISON_TITLE = "GhidraDwarfForge coverage comparison";
     private CoverageReportGui() { }
 
     public static void show(Window owner, CoverageReportClaims claims, String status,
@@ -34,6 +35,7 @@ public final class CoverageReportGui {
         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         var closed = new AtomicBoolean();
         dialog.addWindowListener(new WindowAdapter() {
+            @Override public void windowClosing(WindowEvent event) { closed.set(true); }
             @Override public void windowClosed(WindowEvent event) { closed.set(true); }
         });
         var summary = area(CoveragePresentation.summary(claims, status), "coverage-summary");
@@ -89,7 +91,7 @@ public final class CoverageReportGui {
                     return ReportFileSave.writeNew(selected.toPath(), report, closed::get);
                 }
                 @Override protected void done() {
-                    if (closed.get()) return;
+                    if (closed.get() || !dialog.isDisplayable()) return;
                     save.setEnabled(true);
                     try { saveStatus.setText("Report saved: " + get()); }
                     catch (Exception failure) {
@@ -100,8 +102,60 @@ public final class CoverageReportGui {
             }.execute();
         });
         buttons.add(save);
+        var compare = new JButton("Compare report...");
+        var cancelComparison = new JButton("Cancel comparison");
+        cancelComparison.setEnabled(false);
+        var comparisonCancelled = new AtomicBoolean();
+        cancelComparison.addActionListener(event -> {
+            comparisonCancelled.set(true);
+            saveStatus.setText("Cancelling comparison...");
+        });
+        compare.addActionListener(event -> {
+            var chooser = new GhidraFileChooser(dialog);
+            java.io.File selected;
+            try {
+                chooser.setTitle("Select earlier coverage report");
+                chooser.setApproveButtonText("Compare");
+                chooser.setSelectedFile(suggestedPath.toFile());
+                selected = chooser.getSelectedFile();
+            }
+            finally { chooser.dispose(); }
+            if (selected == null || closed.get()) return;
+            comparisonCancelled.set(false);
+            compare.setEnabled(false);
+            cancelComparison.setEnabled(true);
+            saveStatus.setText("Comparing selected earlier report with this export...");
+            new SwingWorker<String, Void>() {
+                @Override protected String doInBackground() throws Exception {
+                    return CoverageComparisonPresentation.compare(report, selected.toPath(),
+                        () -> closed.get() || comparisonCancelled.get());
+                }
+                @Override protected void done() {
+                    if (closed.get() || !dialog.isDisplayable()) return;
+                    compare.setEnabled(true);
+                    cancelComparison.setEnabled(false);
+                    try {
+                        String text = get();
+                        if (comparisonCancelled.get()) {
+                            saveStatus.setText("Comparison cancelled; no complete result is shown.");
+                            return;
+                        }
+                        saveStatus.setText("Comparison finished. Selected earlier report: " + selected);
+                        showComparison(dialog, text);
+                    }
+                    catch (Exception failure) {
+                        Throwable cause = failure.getCause() == null ? failure : failure.getCause();
+                        saveStatus.setText(cause instanceof java.util.concurrent.CancellationException
+                            ? "Comparison cancelled; no complete result is shown."
+                            : "Comparison failed: " + cause.getMessage());
+                    }
+                }
+            }.execute();
+        });
+        buttons.add(compare);
+        buttons.add(cancelComparison);
         var close = new JButton("Close");
-        close.addActionListener(event -> dialog.dispose());
+        close.addActionListener(event -> { closed.set(true); dialog.dispose(); });
         buttons.add(close);
         controls.add(buttons, BorderLayout.EAST);
         content.add(controls, BorderLayout.SOUTH);
@@ -111,6 +165,21 @@ public final class CoverageReportGui {
         dialog.setLocationRelativeTo(owner);
         dialog.setVisible(true);
         if (!functions.isEmpty()) table.setRowSelectionInterval(0, 0);
+    }
+
+    private static void showComparison(Window owner, String text) {
+        var dialog = new JDialog(owner, COMPARISON_TITLE, java.awt.Dialog.ModalityType.MODELESS);
+        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        var content = new JPanel(new BorderLayout(8, 8));
+        content.add(new JScrollPane(area(text, "coverage-comparison-result")), BorderLayout.CENTER);
+        var close = new JButton("Close comparison");
+        close.addActionListener(event -> dialog.dispose());
+        content.add(close, BorderLayout.SOUTH);
+        dialog.setContentPane(content);
+        dialog.getRootPane().setDefaultButton(close);
+        dialog.setSize(1050, 650);
+        dialog.setLocationRelativeTo(owner);
+        dialog.setVisible(true);
     }
 
     private static JTextArea area(String text, String name) {

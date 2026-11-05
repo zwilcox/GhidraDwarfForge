@@ -1,5 +1,42 @@
 # Proposed coverage contract for issue 108
 
+## GUI report comparison
+
+**CONFIRMED locally — #108 GUI comparison:** the coverage window now offers
+Compare report, with a background read/compare task, cooperative cancellation,
+explicit incomparability/errors, and a bounded result view that preserves the exact
+change count after display clipping. The real Linux GUI passes identical/changed/
+legacy/malformed/retry cases and preserves selected report files. The full export,
+save, attachment preview/preparation, cancellation, validator/GDB and packaged CLI
+journey also passes. Component cancellation and clipped-count checks pass; Windows/
+hosted acceptance, paired native type regressions and large-workload overhead
+remain pending. See `docs/evidence/coverage-gui-comparison.json`.
+
+Choose **Compare report...** in the export coverage window, then select an earlier
+saved JSON report. The comparison direction is earlier selected report → current
+captured export. It uses the same source, variable, type and compatibility logic
+as the CLI. It opens neither report's referenced executable, source nor sidecar,
+and does not grant attachment authority. Schema-one coverage remains unavailable,
+with an explicit incomparable result rather than a zero-change claim.
+
+The selected report is read and compared in a background task. **Cancel comparison**
+and closing the parent window request cancellation; a cancelled or failed operation
+does not display a partial result as complete. The result window is modeless plain
+text. The change-detail prefix is bounded to 64 KiB of UTF-16; an explicit notice
+states when it is clipped, while the total includes all compared changes. The
+saved input reports and the report CLI provide the complete evidence/comparison.
+The view does not label zero changes as proof of semantic equivalence.
+
+Sixty-one component cancellation checkpoints pass, including after display clipping;
+exact totals, unknown/incomparable/malformed inputs, Unicode paths and unchanged
+selected report bytes are checked. The real GUI harness drives the actual button,
+chooser and result dialogs for identical reports, an explicitly report-only function
+rename, a legacy incomparable report, malformed input and successful retry. It saves
+the result text and screenshots. The final package also passes the surrounding
+export/save/preparation/decline/cancellation journey and native validation. A live
+GUI comparison-worker cancellation race has not been stress-tested; component
+cancellation and the reviewed close guards are the current evidence for that path.
+
 ## Reported variable binding and range comparison
 
 **CONFIRMED locally — #108 variable comparison and real curation:** CLI comparison

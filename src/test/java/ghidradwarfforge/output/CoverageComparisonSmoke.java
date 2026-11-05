@@ -115,7 +115,7 @@ public final class CoverageComparisonSmoke {
         }
     }
 
-    private static String report(String name, List<Long> decoded, List<Long> anchors, List<Long> visible) throws Exception {
+    static String report(String name, List<Long> decoded, List<Long> anchors, List<Long> visible) throws Exception {
         var base = CoverageReportClaimsSmoke.knownFixture();
         var function = base.functions().getFirst();
         var symbol = new FunctionSymbol(name, 100, 10);
