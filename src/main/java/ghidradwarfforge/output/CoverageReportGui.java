@@ -3,6 +3,8 @@ package ghidradwarfforge.output;
 import docking.widgets.filechooser.GhidraFileChooser;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.Rectangle;
+import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -161,8 +163,7 @@ public final class CoverageReportGui {
         content.add(controls, BorderLayout.SOUTH);
         dialog.setContentPane(content);
         dialog.getRootPane().setDefaultButton(close);
-        dialog.setSize(1150, 750);
-        dialog.setLocationRelativeTo(owner);
+        fitScreen(dialog, owner, 1150, 750);
         dialog.setVisible(true);
         if (!functions.isEmpty()) table.setRowSelectionInterval(0, 0);
     }
@@ -177,9 +178,24 @@ public final class CoverageReportGui {
         content.add(close, BorderLayout.SOUTH);
         dialog.setContentPane(content);
         dialog.getRootPane().setDefaultButton(close);
-        dialog.setSize(1050, 650);
-        dialog.setLocationRelativeTo(owner);
+        fitScreen(dialog, owner, 1050, 650);
         dialog.setVisible(true);
+    }
+
+    private static void fitScreen(JDialog dialog, Window owner, int width, int height) {
+        var configuration = dialog.getGraphicsConfiguration();
+        var bounds = new Rectangle(configuration.getBounds());
+        var insets = Toolkit.getDefaultToolkit().getScreenInsets(configuration);
+        bounds.x += insets.left;
+        bounds.y += insets.top;
+        bounds.width -= insets.left + insets.right;
+        bounds.height -= insets.top + insets.bottom;
+        dialog.setSize(Math.min(width, bounds.width), Math.min(height, bounds.height));
+        dialog.setLocationRelativeTo(owner);
+        dialog.setLocation(Math.max(bounds.x, Math.min(dialog.getX(),
+                bounds.x + bounds.width - dialog.getWidth())),
+            Math.max(bounds.y, Math.min(dialog.getY(),
+                bounds.y + bounds.height - dialog.getHeight())));
     }
 
     private static JTextArea area(String text, String name) {

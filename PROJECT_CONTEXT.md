@@ -1,5 +1,19 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — #108 final paired workloads and CI follow-ups:** five
+alternating baseline/candidate pairs each for SQLite and U-Boot preserve exact
+artifacts and deterministic reports, with validator/GDB checks passing. Median
+wall time is 34.62/39.28 seconds and 114.82/126.58 seconds; scorecards materially
+increase memory use. See `docs/evidence/coverage-large-workloads.json` for the
+matched array correction, exact populations, costs and retained failures.
+Hosted run `42080744656` exposed an invalid schema-two terminal test fixture and
+a coverage window larger than the Windows desktop. The terminal controls are
+corrected; screen-bounded coverage/comparison windows pass the real 1024x768
+Linux GUI journey, validators, GDB and CLI. Current JFR phase controls pass too.
+See `docs/evidence/coverage-ci-followups.json`. Corrected hosted acceptance and
+the Windows workload comparison remain pending; its old instrumentation-only
+class guard must be replaced with an audited coverage-feature comparison.
+
 **CONFIRMED defect and local correction — #108 transient array keys:** the first
 repeated SQLite experiment found a fresh-process array ID changing in otherwise
 identical reports. Ghidra `ArrayDataType` inherits a generated ID; persisted

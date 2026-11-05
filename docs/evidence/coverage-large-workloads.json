@@ -1,0 +1,416 @@
+{
+    "issue": 108,
+    "status": "CONFIRMED local five-pair workload measurements; hosted acceptance pending",
+    "baseline": "main 1bb4c14c550d277817315cf0ed97853a949e1e03 plus the isolated array-key correction shared with candidate",
+    "candidateProductionCommit": "f5797132415103a8aeec66c2a8959466e32264b5",
+    "installations": {
+        "installations": [
+            {
+                "variant": "baseline-array",
+                "installation": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-baseline-array-java21",
+                "packageSha256": "7408a494aefffcae101d8e3a4bbb7ab6579014d54984814e8a22098158407ac7",
+                "jarSha256": "f0a926eae581ac635bec1153c5fe39d74af1cb2bacbd4c62849b39f17f86b700",
+                "installedScriptSha256": "dbac9d700ec6cd7fc65ea148cf433b77f7fc5b90af92960bfc7a7a3533853ec7"
+            },
+            {
+                "variant": "array-candidate",
+                "installation": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-array-candidate-java21",
+                "packageSha256": "80fcee489045d77ba4455277b96936c40f9772b36707bd5385cd2f6a341a793d",
+                "jarSha256": "c3680f3a4101e73dfd7529e587021e75e796e2e7041284cd169aaf98142ae3d8",
+                "installedScriptSha256": "1f960997ced5510ff9dceebd94e8d2e442190df08a3a4bb11bc9749445178a42"
+            }
+        ],
+        "protectedBase": {
+            "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-final-measurement-java21/support/launch.properties": "dde008a0d7583f2e4c77afbd2bc78edd29a2f5f8a132be37d162f68f76f7df64",
+            "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-final-measurement-java21/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "4555da02ac4fdf4de70ef3a148fccb086b20972d02c9b88b694435ba59914c5f"
+        },
+        "baselineCorrection": "main 1bb4c14 plus the exact same GhidraTypeGraph.java array correction; see baseline-array-fix.patch. This isolates scorecard overhead while retaining exact cross-variant artifact equality."
+    },
+    "workloads": {
+        "sqlite": {
+            "status": "PASS",
+            "artifactSha256": [
+                "93211742884684918b8f3e049c3872969057c4e94b81207407b9dcb536661c8d",
+                "7928e43c6575363fecc7b4be9de1245e8ee97180fa704032ee5503018dc28abb"
+            ],
+            "counts": {
+                "functionsExported": 1539,
+                "functionsDecompiled": 1539,
+                "functionsFailed": 0,
+                "functionsSkipped": 161,
+                "functionSignatures": 1539,
+                "parameters": 2194,
+                "localVariables": 4870,
+                "globalVariables": 1774,
+                "functionStaticVariables": 0,
+                "canonicalTypes": 140,
+                "defensibleVariableLocations": 4870,
+                "omittedLocationRanges": 12547,
+                "mappedSourceLines": 87579,
+                "unsupportedConstructs": 11,
+                "diagnostics": 1922
+            },
+            "mediansSeconds": {
+                "baseline": 34.62,
+                "candidate": 39.28
+            },
+            "maximumResidentKiB": {
+                "baseline": 902500,
+                "candidate": 1237740
+            },
+            "protectedUnchanged": true,
+            "projectBackupChanges": [],
+            "gdb": "PASS",
+            "scope": "SQLite 3.46.1 benchmark on this host; identical artifact bytes, no general speed/memory guarantee.",
+            "coverage": {
+                "reportSha256": {
+                    "baseline": "0c3a581bf6ca1e84daecb6ff1fb3e9bedc9f03c9fc9345cda932fcff2933eb09",
+                    "candidate": "25b744213978a605fba8e606c148b510c87972e03ee935cbb6fc14e11aeb1451"
+                },
+                "cli": {
+                    "summary": {
+                        "elapsedSeconds": 0.82,
+                        "userSeconds": 3.11,
+                        "systemSeconds": 0.21,
+                        "maximumResidentKiB": 655292
+                    },
+                    "comparison": {
+                        "elapsedSeconds": 1.5,
+                        "userSeconds": 4.57,
+                        "systemSeconds": 0.34,
+                        "maximumResidentKiB": 980408
+                    }
+                },
+                "medianUserSeconds": {
+                    "baseline": 45.22,
+                    "candidate": 50.27
+                },
+                "medianSystemSeconds": {
+                    "baseline": 1.27,
+                    "candidate": 2.9
+                },
+                "medianResidentKiB": {
+                    "baseline": 873916,
+                    "candidate": 1083056
+                },
+                "pairs": [
+                    {
+                        "elapsedSeconds": {
+                            "baseline": 34.62,
+                            "candidate": 39.5
+                        },
+                        "userSeconds": {
+                            "baseline": 45.22,
+                            "candidate": 51.17
+                        },
+                        "systemSeconds": {
+                            "baseline": 1.24,
+                            "candidate": 2.85
+                        },
+                        "maximumResidentKiB": {
+                            "baseline": 803440,
+                            "candidate": 1068516
+                        }
+                    },
+                    {
+                        "elapsedSeconds": {
+                            "baseline": 34.71,
+                            "candidate": 39.28
+                        },
+                        "userSeconds": {
+                            "baseline": 45.43,
+                            "candidate": 50.07
+                        },
+                        "systemSeconds": {
+                            "baseline": 1.27,
+                            "candidate": 2.99
+                        },
+                        "maximumResidentKiB": {
+                            "baseline": 873916,
+                            "candidate": 1237740
+                        }
+                    },
+                    {
+                        "elapsedSeconds": {
+                            "baseline": 34.58,
+                            "candidate": 39.27
+                        },
+                        "userSeconds": {
+                            "baseline": 44.68,
+                            "candidate": 50.29
+                        },
+                        "systemSeconds": {
+                            "baseline": 1.3,
+                            "candidate": 2.84
+                        },
+                        "maximumResidentKiB": {
+                            "baseline": 902500,
+                            "candidate": 1118860
+                        }
+                    },
+                    {
+                        "elapsedSeconds": {
+                            "baseline": 34.81,
+                            "candidate": 39.01
+                        },
+                        "userSeconds": {
+                            "baseline": 45.98,
+                            "candidate": 50.27
+                        },
+                        "systemSeconds": {
+                            "baseline": 1.3,
+                            "candidate": 2.9
+                        },
+                        "maximumResidentKiB": {
+                            "baseline": 864772,
+                            "candidate": 1007352
+                        }
+                    },
+                    {
+                        "elapsedSeconds": {
+                            "baseline": 34.51,
+                            "candidate": 39.34
+                        },
+                        "userSeconds": {
+                            "baseline": 45.16,
+                            "candidate": 50.24
+                        },
+                        "systemSeconds": {
+                            "baseline": 1.23,
+                            "candidate": 2.98
+                        },
+                        "maximumResidentKiB": {
+                            "baseline": 897184,
+                            "candidate": 1083056
+                        }
+                    }
+                ]
+            },
+            "case": "build/test-results/paired-saved-exports/run.mid2c1l5",
+            "reportUtf8Bytes": {
+                "baseline": 3164193,
+                "candidate": 23768866
+            },
+            "strict": {
+                "status": "PASS",
+                "exit_status": 0,
+                "reported_errors": 828,
+                "uncorroborated_errors": 0,
+                "inheritedFrameIdentity": {
+                    "class": 2,
+                    "byte_order": 1,
+                    "os_abi": 0,
+                    "abi_version": 0,
+                    "machine": 62,
+                    "flags": 0,
+                    "section_address": 5134536,
+                    "section_size": 61500,
+                    "section_sha256": "e268e2e2ca6344cd272e8f317162b96ec43a64449cadfa0e05a211efc1048796"
+                }
+            }
+        },
+        "uboot": {
+            "status": "PASS",
+            "artifactSha256": [
+                "e460854cf3fc0ca63bfb6883b9f33de3f85e1e026c873c091e062af002fad48e",
+                "a69bc1e1755482514e2799112613f75202bff00e08e181155b8d6250ce8ffae5",
+                "bb10983ecb4e98c81b9cff6232d92e2ed9de2271e0dc5241b6e1825fa0a1a435"
+            ],
+            "counts": {
+                "functionsExported": 6375,
+                "functionsDecompiled": 6374,
+                "functionsFailed": 1,
+                "functionsSkipped": 268,
+                "functionSignatures": 6375,
+                "parameters": 3935,
+                "localVariables": 15846,
+                "globalVariables": 11677,
+                "functionStaticVariables": 0,
+                "canonicalTypes": 298,
+                "defensibleVariableLocations": 15903,
+                "omittedLocationRanges": 4497,
+                "mappedSourceLines": 222853,
+                "unsupportedConstructs": 10,
+                "diagnostics": 7229
+            },
+            "mediansSeconds": {
+                "baseline": 114.82,
+                "candidate": 126.58
+            },
+            "maximumResidentKiB": {
+                "baseline": 1207140,
+                "candidate": 2027080
+            },
+            "protectedUnchanged": true,
+            "projectBackupChanges": [],
+            "gdb": "PASS",
+            "scope": "U-Boot 2025.01 sandbox firmware code (not bare-metal hardware) on this host; identical artifact bytes, no general speed/memory guarantee.",
+            "coverage": {
+                "reportSha256": {
+                    "baseline": "0ffad5d85e848523cfaf36e3cda4999338ca8a527116ff2926028fe2e2bda887",
+                    "candidate": "044a42196a479746d78550b4d8723dbacb4f55aa81dce5ea7e070a18e52c30c8"
+                },
+                "cli": {
+                    "summary": {
+                        "elapsedSeconds": 1.59,
+                        "userSeconds": 3.87,
+                        "systemSeconds": 0.33,
+                        "maximumResidentKiB": 1124452
+                    },
+                    "comparison": {
+                        "elapsedSeconds": 3.19,
+                        "userSeconds": 7.48,
+                        "systemSeconds": 0.5,
+                        "maximumResidentKiB": 1940232
+                    }
+                },
+                "medianUserSeconds": {
+                    "baseline": 130.26,
+                    "candidate": 142.18
+                },
+                "medianSystemSeconds": {
+                    "baseline": 2.71,
+                    "candidate": 7.26
+                },
+                "medianResidentKiB": {
+                    "baseline": 1119508,
+                    "candidate": 1889664
+                },
+                "pairs": [
+                    {
+                        "elapsedSeconds": {
+                            "baseline": 115.33,
+                            "candidate": 126.76
+                        },
+                        "userSeconds": {
+                            "baseline": 130.99,
+                            "candidate": 141.04
+                        },
+                        "systemSeconds": {
+                            "baseline": 2.66,
+                            "candidate": 7.29
+                        },
+                        "maximumResidentKiB": {
+                            "baseline": 1119508,
+                            "candidate": 1791440
+                        }
+                    },
+                    {
+                        "elapsedSeconds": {
+                            "baseline": 114.48,
+                            "candidate": 126.53
+                        },
+                        "userSeconds": {
+                            "baseline": 129.81,
+                            "candidate": 142.21
+                        },
+                        "systemSeconds": {
+                            "baseline": 2.64,
+                            "candidate": 7.06
+                        },
+                        "maximumResidentKiB": {
+                            "baseline": 1164416,
+                            "candidate": 1636432
+                        }
+                    },
+                    {
+                        "elapsedSeconds": {
+                            "baseline": 114.77,
+                            "candidate": 126.6
+                        },
+                        "userSeconds": {
+                            "baseline": 130.26,
+                            "candidate": 142.18
+                        },
+                        "systemSeconds": {
+                            "baseline": 2.71,
+                            "candidate": 7.26
+                        },
+                        "maximumResidentKiB": {
+                            "baseline": 1099296,
+                            "candidate": 1932044
+                        }
+                    },
+                    {
+                        "elapsedSeconds": {
+                            "baseline": 114.82,
+                            "candidate": 126.26
+                        },
+                        "userSeconds": {
+                            "baseline": 130.51,
+                            "candidate": 141.96
+                        },
+                        "systemSeconds": {
+                            "baseline": 2.73,
+                            "candidate": 7.27
+                        },
+                        "maximumResidentKiB": {
+                            "baseline": 1207140,
+                            "candidate": 1889664
+                        }
+                    },
+                    {
+                        "elapsedSeconds": {
+                            "baseline": 115.41,
+                            "candidate": 126.58
+                        },
+                        "userSeconds": {
+                            "baseline": 129.89,
+                            "candidate": 142.28
+                        },
+                        "systemSeconds": {
+                            "baseline": 2.71,
+                            "candidate": 7.11
+                        },
+                        "maximumResidentKiB": {
+                            "baseline": 1083188,
+                            "candidate": 2027080
+                        }
+                    }
+                ]
+            },
+            "case": "build/test-results/paired-saved-exports/run.ztgjg50o",
+            "reportUtf8Bytes": {
+                "baseline": 1929776,
+                "candidate": 58740566
+            },
+            "strict": {
+                "status": "PASS",
+                "exit_status": 0,
+                "reported_errors": 3735,
+                "uncorroborated_errors": 0,
+                "inheritedFrameIdentity": {
+                    "class": 2,
+                    "byte_order": 1,
+                    "os_abi": 0,
+                    "abi_version": 0,
+                    "machine": 62,
+                    "flags": 0,
+                    "section_address": 3273472,
+                    "section_size": 467704,
+                    "section_sha256": "96a2ede3133943ae30133823d2762ac33d57cbe20ce915880afdacb52830b892"
+                }
+            }
+        }
+    },
+    "limitations": [
+        "Fresh JVM export of a copied saved analyzed program; import, validators, GDB and report CLI are outside export timing.",
+        "Five alternating baseline/candidate pairs on one Linux host; uncontrolled caches and other host activity, including evidence archival during U-Boot.",
+        "Report bytes are deterministic within each variant; baseline schema one intentionally differs from candidate schema two/metric definition two.",
+        "All sidecar, synthetic source and companion bytes match across variants and repeats; original inputs, installed modules and saved projects remain unchanged.",
+        "The known U-Boot decompilation timeout is retained as one failed function; the workload is sandbox firmware code, not bare-metal execution.",
+        "Strict validator frame diagnostics are accepted only after exact original-section identity and diagnostic corroboration; no uncorroborated errors.",
+        "CLI observations are separate single summary/self-comparison invocations, not repeated performance estimates.",
+        "Observed memory and runtime increases are real costs of detailed scorecards, not a general performance guarantee.",
+        "Failed run.vjtgmknj (transient array IDs) and run.feia3emi (duplicate log marker during encoder recovery) are excluded; see coverage-array-identity.json."
+    ],
+    "files": {
+        "build/test-results/paired-saved-exports/run.mid2c1l5/result.json": "0c24c964edd562b36fd18f19a6d224d2382ca19602bf5d66bd48c9a8bcfbb44a",
+        "build/test-results/paired-saved-exports/run.ztgjg50o/result.json": "4b2a5e3fae130c65dcaff333106c98d0d4ebe434a9c9be3a7dfc7bd67e326f58",
+        "build/coverage-final-sqlite-pairs-3.log": "affe5c5e710195f1eaaf9e32f346faf7535852bbd62c3fb3290bd46ac9108afd",
+        "build/coverage-final-uboot-pairs.log": "e5e8ec3db4fca28e4c711e3fef310840caf31f7acce85cbebbd3870fdf5c64ba",
+        "build/coverage-workload-package/baseline-array-build.json": "bff8ac6fb181ed6d727829949ba301b0f934c1f21f926787bc97e17387796804",
+        "build/coverage-workload-package/baseline-array-fix.patch": "15c8743ddf96e2e8fce756e35608e0a14f5485e7b68e98234b67d260b4e539f2",
+        "src/test/performance/paired-saved-exports.py": "23a6b848daa680841082edb8a9bdf941d6f7214521841026f4c7c8cb2c83e9ea"
+    }
+}

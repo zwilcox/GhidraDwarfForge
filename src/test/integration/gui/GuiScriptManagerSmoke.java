@@ -290,6 +290,7 @@ public final class GuiScriptManagerSmoke {
             return null;
         });
         GuiTestSupport.foregroundWindow(((javax.swing.JDialog) dialog).getRootPane());
+        requireCoverageOnScreen(dialog);
         GuiTestSupport.screenshot(robot, dialog, directory.resolve("coverage.png"));
         Path report = directory.resolve("coverage-report.json").toAbsolutePath();
         GuiTestSupport.clickButton(robot, dialog, "Save report...");
@@ -378,8 +379,24 @@ public final class GuiScriptManagerSmoke {
         });
         Files.writeString(result, text);
         GuiTestSupport.foregroundWindow(((javax.swing.JDialog) dialog).getRootPane());
+        requireCoverageOnScreen(dialog);
         GuiTestSupport.screenshot(robot, dialog, Path.of(result + ".png"));
         GuiTestSupport.clickButton(robot, dialog, "Close comparison");
+    }
+
+    private static void requireCoverageOnScreen(java.awt.Dialog dialog) throws Exception {
+        GuiTestSupport.onSwing(() -> {
+            var configuration = dialog.getGraphicsConfiguration();
+            var usable = new java.awt.Rectangle(configuration.getBounds());
+            var insets = java.awt.Toolkit.getDefaultToolkit().getScreenInsets(configuration);
+            usable.x += insets.left;
+            usable.y += insets.top;
+            usable.width -= insets.left + insets.right;
+            usable.height -= insets.top + insets.bottom;
+            GuiTestSupport.require(usable.contains(dialog.getBounds()),
+                "coverage window exceeds usable desktop: " + dialog.getBounds() + " / " + usable);
+            return null;
+        });
     }
 
     private static void runAttachmentDecline(ProbeTool tool, Path input, Path sidecar, Path source,

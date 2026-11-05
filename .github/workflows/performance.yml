@@ -54,6 +54,8 @@ jobs:
                   python --version
                   python src/test/performance/test-headless-observations.py
                   if ($LASTEXITCODE -ne 0) { throw 'headless observation controls failed' }
+                  python src/test/performance/test-jfr-phases.py
+                  if ($LASTEXITCODE -ne 0) { throw 'JFR phase controls failed' }
                   python src/test/performance/test-windows-measurement.py `
                       build/test-results/windows-measurement/windows-measure.exe `
                       build/test-results/windows-measurement/payload.exe `

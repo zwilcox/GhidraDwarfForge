@@ -1,5 +1,16 @@
 # TODO.md — GhidraDwarfForge
 
+**ACTIVE #108 — local paired measurements complete; hosted corrections pending:**
+SQLite and U-Boot each pass five alternating pairs with identical artifacts,
+deterministic reports, validators/GDB and preserved inputs/projects. Record the
+measured runtime/memory cost in `docs/evidence/coverage-large-workloads.json`.
+Schema-two terminal test controls and the real small-desktop coverage-window
+defect are corrected locally; the 1024x768 GUI journey and report CLI pass.
+Current JFR parser controls also pass. See
+`docs/evidence/coverage-ci-followups.json`. Finish the audited Windows coverage
+workload comparison, rerun the corrected host/target gate, review its artifacts,
+and integrate #108 before proceeding to #116/#114. #74 remains complete.
+
 **ACTIVE hosted validation — #108 draft PR [#164](https://github.com/zwilcox/GhidraDwarfForge/pull/164):**
 the first extension-build gate flagged generic “PC” prose as register-specific
 logic. Those five comments/labels now spell out address ranges/bytes; the guard
