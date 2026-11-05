@@ -1,5 +1,17 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED #108 report-limit preservation and GUI defect:** a real derived
+Ghidra pointer type exceeds the 65,536-unit report string limit. Pair and companion
+rejection preserve existing files, clean stages and retry deterministically on
+x86-64 and rebased AArch64 PIE; validators/GDB pass. The first named-typedef probe
+did not exceed the emitted limit because it used a compact universal ID.
+A fresh real GUI run exposes console truncation: an 82,321-character report line
+overflows the 50,000-character console, losing its prefix and earlier status text.
+The actual exported pair matches the logged hashes, but the GUI journey fails
+before attachment preparation. Readable coverage presentation and access to the
+complete JSON are the next priority; increasing the console limit is not a fix.
+See `docs/evidence/coverage-report-limits-and-gui.json`. #108 remains incomplete.
+
 **CONFIRMED local production staging for #108; full acceptance pending:** the
 ordinary installed exporter now captures decoded instructions and prepares its
 schema-two coverage report before publishing the sidecar/source generation.

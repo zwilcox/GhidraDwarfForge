@@ -150,6 +150,7 @@ def main():
     (case / 'acceptance.json').write_text(json.dumps(receipt, indent=4) + '\n')
     if args.coverage_controls:
         run('coverage-staging-driver', ['python3', harness / 'coverage-staging.py', ghidra, case], timeout=900)
+        run('coverage-limit-driver', ['python3', harness / 'coverage-staging.py', ghidra, case, '--real-limit'], timeout=900)
         receipt['coverageStaging'] = 'PASS'
         (case / 'acceptance.json').write_text(json.dumps(receipt, indent=4) + '\n')
     if args.controls:

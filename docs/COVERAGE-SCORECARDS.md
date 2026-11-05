@@ -2,6 +2,26 @@
 
 ## Production staging checkpoint
 
+**CONFIRMED follow-up:** `coverage-staging.py --real-limit` now exercises a real
+derived pointer type with a category path over 68,000 characters. Named types use
+compact universal IDs; the retained initial named-typedef probe therefore did not
+exceed the serialized limit and failed its fixture assertion. The derived pointer
+has no universal ID and exceeds the actual 65,536 UTF-16-unit string limit during
+staged report writing. Both x86-64 and rebased AArch64 PIE pass rejection/preservation,
+cleanup, deterministic retry, validators and GDB for pair and companion modes.
+This is actual string-bound acceptance, not a complete 64 MiB byte-limit stress test.
+
+**CONFIRMED GUI defect, unresolved:** a fresh real Script Manager export logs a
+complete schema-two report and produces hash-matching artifacts, but the 82,321-
+character report line exceeds the 50,000-character console buffer. The retained
+console and screenshot show only the JSON tail and the script completion text;
+the report marker and preceding status lines are gone. The GUI harness fails
+before attachment preparation. The next presentation work must make coverage
+readable and the complete JSON accessible without enlarging the console buffer
+or weakening the GUI assertions. The preparation assertion additionally requires
+retained schema-two coverage once that journey can proceed. Evidence:
+[`coverage-report-limits-and-gui.json`](evidence/coverage-report-limits-and-gui.json).
+
 **CONFIRMED locally; hosted and full #108 acceptance pending.** The ordinary
 installed script captures actual decoded starts, assembles coverage from successful
 native emission, and serializes/strictly reads back schema two while the artifact

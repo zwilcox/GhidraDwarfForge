@@ -19,6 +19,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
     parser.add_argument('lexical_case', type=Path)
+    parser.add_argument('--real-limit', action='store_true', help='exercise the actual string limit using a derived Ghidra type')
     args = parser.parse_args()
     ghidra, case = args.ghidra.resolve(strict=True), args.lexical_case.resolve(strict=True)
     harness = Path(__file__).resolve().parent
@@ -32,8 +33,9 @@ def main():
     print('coverage-staging-results=' + str(work), flush=True)
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
     protected_paths = [case / name for name in ('stripped', 'reference', 'forge.dbg', 'forge.dbg.c', 'compiler-gdb.log')]
+    driver = 'CoverageReportLimitControl.java' if args.real_limit else 'CoverageStagingControls.java'
     protected_paths += [module / 'lib/GhidraDwarfForge.jar', module / 'ghidra_scripts/GhidraDwarfForge.java',
-        harness / 'ghidra_scripts/CoverageStagingControls.java', Path(__file__)]
+        harness / 'ghidra_scripts' / driver, Path(__file__)]
     protected = {str(p): digest(p) for p in protected_paths}
     project = case / 'project'
     before = {str(p): digest(p) for p in project.rglob('*') if p.is_file() and not p.name.endswith('.lock')}
@@ -48,20 +50,33 @@ def main():
 
     run('export', [ghidra / 'support/analyzeHeadless', project, 'Lexical', '-process', 'stripped',
         '-readOnly', '-noanalysis', '-scriptPath', harness / 'ghidra_scripts',
-        '-postScript', 'CoverageStagingControls.java', case / 'stripped', work / 'outputs'])
+        '-postScript', driver, case / 'stripped', work / 'outputs'])
     log = (work / 'export.log').read_text()
-    assert 'coverage-staging-controls=PASS controls=16' in log
-    markers = [line.split('coverage-staging-control=PASS ', 1)[1].split(' (GhidraScript)')[0]
-        for line in log.splitlines() if 'coverage-staging-control=PASS ' in line]
-    assert len(markers) == len(set(markers)) == 16
-    expected = {f'mode={mode} phase={phase} outcome={outcome}'
-        for mode in ('pair', 'companion') for phase in ('capture', 'assembly', 'writer', 'reader')
-        for outcome in ('FATAL', 'CANCELLED')}
-    assert {marker.split(' polls=')[0] for marker in markers} == expected
+    if args.real_limit:
+        assert 'coverage-real-limit-controls=PASS controls=2' in log
+        marker_prefix = 'coverage-real-limit=PASS '
+        markers = [line.split(marker_prefix, 1)[1].split(' (GhidraScript)')[0]
+            for line in log.splitlines() if marker_prefix in line]
+        assert len(markers) == len(set(markers)) == 2
+        assert {marker.split(' staged=')[0] for marker in markers} == {'mode=pair', 'mode=companion'}
+    else:
+        assert 'coverage-staging-controls=PASS controls=16' in log
+        markers = [line.split('coverage-staging-control=PASS ', 1)[1].split(' (GhidraScript)')[0]
+            for line in log.splitlines() if 'coverage-staging-control=PASS ' in line]
+        assert len(markers) == len(set(markers)) == 16
+        expected = {f'mode={mode} phase={phase} outcome={outcome}'
+            for mode in ('pair', 'companion') for phase in ('capture', 'assembly', 'writer', 'reader')
+            for outcome in ('FATAL', 'CANCELLED')}
+        assert {marker.split(' polls=')[0] for marker in markers} == expected
     reports = [claims.DECODER.raw_decode(line.split('GhidraDwarfForge report: ', 1)[1])[0]
         for line in log.splitlines() if 'GhidraDwarfForge report: ' in line]
     statuses = Counter(report['status'] for report in reports)
-    assert len(reports) == 20 and statuses['FATAL'] == statuses['CANCELLED'] == 8
+    if args.real_limit:
+        assert len(reports) == 6 and statuses['FATAL'] == 2 and statuses['CANCELLED'] == 0
+        assert all(report['failure']['message'] == 'coverage string exceeds UTF-16 unit budget'
+            for report in reports if report['status'] == 'FATAL')
+    else:
+        assert len(reports) == 20 and statuses['FATAL'] == statuses['CANCELLED'] == 8
     for index, report in enumerate(reports):
         assert report['schemaVersion'] == 2 and report['validation'] == {'status': 'NOT_RUN'}
         if report['status'] in ('FATAL', 'CANCELLED'):
@@ -94,7 +109,9 @@ def main():
     assert changed <= {str(project / 'Lexical.rep/idata' / name) for name in ('~index.bak', '~journal.bak')}
     receipt = {'status': 'COVERAGE_STAGING_PASS', 'target': target, 'controls': markers,
         'reportStatuses': dict(statuses), 'protected': protected, 'projectBackupChanges': sorted(changed),
-        'scope': 'real production capture/assembly/write/read cancellation and injected failures; pair and companion preservation/retry; validators and GDB'}
+        'scope': ('actual captured type identifier exceeds production UTF-16 string limit' if args.real_limit else
+            'production capture/assembly/write/read cancellation and injected failures') +
+            '; pair and companion preservation/retry; validators and GDB'}
     (work / 'acceptance.json').write_text(json.dumps(receipt, indent=4) + '\n')
     print('coverage-staging=PASS', flush=True)
 

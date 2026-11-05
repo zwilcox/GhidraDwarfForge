@@ -426,6 +426,11 @@ public final class GuiScriptManagerSmoke {
         request.preflight(directory.resolve("request.json")).recheck();
         var binding = ghidradwarfforge.output.ExportArtifactHashBinding.observe(request.operation().exportReport(),
             target, request.operation().sidecar(), request.operation().source());
+        var reported = ghidradwarfforge.output.ExportReportClaims.readWithCoverage(
+            request.operation().exportReport(), () -> false);
+        GuiTestSupport.require(reported.claims().schemaVersion() == 2 && reported.coverage() != null &&
+            reported.claims().counts().functionsExported() == reported.coverage().coverage().functions().size(),
+            "prepared GUI generation did not retain its schema-two coverage report");
         for (var artifact : java.util.List.of(binding.original(), binding.sidecar(), binding.source())) {
             GuiTestSupport.require(artifact.agreement() == ghidradwarfforge.output.ExportArtifactHashBinding.Agreement.MATCHING_REPORTED_SHA256,
                 "captured report differs from actual exported bytes");
@@ -436,7 +441,7 @@ public final class GuiScriptManagerSmoke {
             GuiTestSupport.require(files.map(path -> path.getFileName().toString()).sorted().toList()
                 .equals(java.util.List.of("export.json", "request.json")), "declined preparation started transaction or left stages");
         }
-        Files.writeString(work.resolve("result.txt"), "real-curated-export=PASS\ncaptured-report-bound-to-files=PASS\nseparate-default-decline=PASS\noriginal-unchanged=PASS\nno-transaction-outputs=PASS\n");
+        Files.writeString(work.resolve("result.txt"), "real-curated-export=PASS\ncaptured-report-bound-to-files=PASS\ncoverage-report-retained=PASS\nseparate-default-decline=PASS\noriginal-unchanged=PASS\nno-transaction-outputs=PASS\n");
     }
 
     private static void runNativeAttachment(ProbeTool tool, Program program, Path input,

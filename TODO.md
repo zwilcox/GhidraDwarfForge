@@ -1,5 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED #108 next priority:** fix GUI report presentation. A real export
+produces an 82,321-character JSON line; Ghidra's 50,000-character console loses
+the report prefix and prior statuses, so the GUI journey fails before attachment
+preparation. Add readable presentation and complete-report access, then rerun
+the unchanged end-to-end expectations. Actual report string-limit rejection now
+passes pair/companion preservation, cleanup, retry, validators and GDB on both
+x86-64 and rebased AArch64 PIE. Whole-report byte-limit stress, repeated overhead,
+comparison and full host/matrix acceptance remain open.
+
 **CONFIRMED locally — #108 production staging:** the ordinary installed script
 now prepares and strictly reads back a schema-two report before publishing any
 generation. Real x86-64 and rebased AArch64 PIE pairs pass validators/GDB and
