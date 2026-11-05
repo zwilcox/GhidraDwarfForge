@@ -8,6 +8,10 @@ comes from observed compiler GDB entry-SP evidence; dynamic-only constant53 stil
 resolves. See `docs/evidence/annotation-saved-conflicts.json` and
 `docs/ANALYST-ANNOTATIONS.md`. Production annotation implementation remains
 planned; #108 protected integration is still the current priority.
+Four profiles also pass real native instruction-limit failure, pre-cancelled
+invocation and recovery through the same interfaces with unchanged projects.
+See `docs/evidence/annotation-native-failures.json`; this does not establish
+production export failure/cancellation behavior.
 
 **CONFIRMED locally — #108 final review corrections:** unavailable function
 variable inventories now display Unknown instead of N/A (0/0); mixed summaries

@@ -73,3 +73,19 @@ structure/member, enum member/value and real global label/value. The initial
 constructor compilation error and nondeterministic test-JSON field order remain
 in the evidence archive; corrected runs pass. This establishes collision inputs
 for later real exporter/GDB tests, not the constant-name policy itself.
+
+The [native-failure receipt](evidence/annotation-native-failures.json) proves the
+reserved function can genuinely fail decompilation on all four saved-program
+profiles using a one-instruction native budget. All five comments remain readable
+through the listing API. Restoring the budget on the same interface recovers the
+identical normal output. A separate pre-cancelled invocation returns no source,
+and that interface also recovers. Two independent reopens have byte-identical
+observations and change no project files. Run against a successful curation case:
+
+```bash
+python3 src/test/integration/analyst-annotations-failures.py "$GHIDRA_INSTALL_DIR" /path/to/curation-case
+```
+
+This is a reusable native failure fixture, not a production exporter acceptance
+test. In-flight export cancellation, atomic cleanup, symbol-only failed output
+and validator/GDB checks of the resulting diagnostic source remain required.
