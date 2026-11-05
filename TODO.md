@@ -2672,7 +2672,12 @@ raw-line-byte checks. Actual Ghidra listing-capture tests pass on four profiles,
 including rebases/gaps/body drift/cancellation, and token provenance is preserved
 separately from declaration rows. Canonical type accounting passes 29 native-free
 checks for implicit void, opaque targets, filtering, missing/repeated references,
-deep cycles/shared graphs and cancellation; producer evidence is not wired yet.
+deep cycles/shared graphs and cancellation. Producer evidence is now returned
+through `ExportResult` and passes an independent raw-DWARF/native-GDB fixture:
+eight declarations, three full locations, five omissions, recursive/opaque/void
+types and a symbol-only failed function. Native cancellation preserves prior
+output and repeat determinism. Complete parent/candidate sidecar/source bytes
+match; public report consumption is still pending.
 The actual location-list plan is now retained, with 237 independent byte/negative
 checks and byte-identical parent comparisons. Real packaged lexical-variable
 journeys pass on x86-64 and rebased AArch64 PIE/QEMU, including structural

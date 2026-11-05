@@ -12,7 +12,7 @@ function boundaries remain byte-identical in a parent comparison. These helpers
 are not yet connected to a public report. Canonical type accounting now passes
 29 native-free checks for opaque targets, filtered roots, missing/repeated edges,
 implicit void, cycles, cancellation and a 20,000-node shared chain. Its emission
-input remains a fixture until producer integration supplies actual evidence.
+input now also comes from successful producer emission through `ExportResult`.
 Location-list results now retain their actual immutable range/expression plan;
 the exporter threads cancellation into planning/encoding. Independent byte checks
 and real x86-64/AArch64 lexical-variable regressions pass for this refactor.
@@ -20,6 +20,53 @@ Report integration, variable/type
 coverage, CLI/GUI comparison and full validator/GDB/performance acceptance remain
 planned.
 Issue 74 retains integration priority; no public schema has changed.
+
+## Actual emission boundary
+
+`ExportResult.emission()` now carries immutable successful-production facts:
+the exact encoded line plan, represented canonical type references (including
+implicit void), and per-function emitted signatures/declarations. A symbol-only
+function has a null signature and no invented parameter/local roots. Parameter
+ordinals, internal versus displayed local names, lexical ownership, artificial
+return-buffer carriers and function statics retain their separate identities.
+No native pointers survive the producer lifetime.
+
+Location facts distinguish an actual expression, an actual referenced list with
+its exact ranges/expressions, and an explicit omission. They are recorded only
+after the relevant attribute calls succeed. Expressions do not invent PC ranges;
+the future scorecard must obtain evidenced visibility independently. Type edges
+are retained after their node's population succeeds, not merely allocation.
+Native-phase cancellation still finishes the producer and leaves a prior output
+unchanged; a succeeding repeat in the same isolated JVM remains deterministic.
+
+The source-built `emission-evidence` fixture independently inspects actual ELF
+line bytes, DIE ownership/type edges, location expressions and lists. Its eight
+declarations have three emitted full locations and five explicit omissions;
+the reachable graph has five canonical DIE nodes, including one opaque target.
+The recursive graph and implicit-void function retain their distinct semantics;
+the failed function has no emitted signature despite globally allocated types.
+Native GDB confirms parameters/changing-register local values, the static object,
+types/source, `next`/`step`, unavailable partial/mixed storage, failed-function
+lookup and normal exit. These are producer facts, not a public scorecard yet.
+
+Run with Java21, the selected Ghidra installation and pinned native/checker paths:
+
+```bash
+python3 src/test/integration/emission-evidence.py <ghidra> <libdwarf> <libdwarfp>
+```
+
+The harness retains command logs and `acceptance.json` under
+`build/test-results/emission-evidence/run.*`. The first GDB oracle attempted to
+source-step after returning to an unexported caller; adding a separate return
+line to the fixture corrected that harness error. The corrected full journey
+passes. A separate same-path parent/candidate production comparison preserves
+complete sidecar and source bytes (`build/emission-baseline/result.json`).
+The updated package also passes the two real headless lexical-variable journeys
+below; current evidence is `build/emission-package/local-review.json`.
+The follow-on workflow now includes the instruction/source/type/location smoke
+tasks and the isolated native evidence fixture in the x86-64 target lane. Workflow
+lint and the isolated-process harness pass locally; this unpublished branch has
+not run those additions on hosted CI.
 
 ## Current component checks
 
@@ -157,9 +204,10 @@ from that function's actually emitted roots. The current component measures:
 The type index accepts an explicit semantic emission map, not an allocation list.
 Reference multiplicity is preserved for completeness checks; node totals are
 deduplicated. Invalid/unknown roots and inconsistent edges are rejected instead
-of inventing types. The actual producer must provide the map, including explicit
-implicit-void decisions, after successful population. The component's hand-counted
-fixtures do not yet prove serialized type-DIE or report accuracy.
+of inventing types. The actual producer provides the map, including explicit
+implicit-void decisions, after successful population. The hand-counted fixtures
+are complemented by the raw-DIE/GDB producer fixture above; public report accuracy
+is still unverified.
 
 ## Provenance and identity
 
@@ -177,12 +225,13 @@ is otherwise proven. Per-function type sets deduplicate canonical identities.
 
 ## Required implementation boundary
 
-The producer already computes emitted signatures, line sequences and location
-lists after target-specific restrictions. Return an immutable emission summary
-(or a shared immutable emission plan) through ExportResult; consume that in report
-creation. Do not rebuild a second, slightly different approximation from the
-pre-filtered extraction model. Preserve line-map provenance before declaration
-rows are merged. Thread cancellation through inventory/planning/report loops.
+The producer computes emitted signatures, line sequences and location lists after
+target-specific restrictions and now returns their immutable evidence through
+ExportResult. Consuming that summary in report creation remains planned. Do not
+rebuild a second, slightly different approximation from the pre-filtered extraction
+model. Line-map provenance is preserved before declaration rows are merged.
+Cancellation is checked during instruction/type accounting, list planning and
+the new producer evidence loops; report/comparison loops remain to be implemented.
 
 The current native-free probe proves why this boundary matters: model-level
 hasDefensibleLocation() is true for a partial register slice and a mixed list
@@ -234,7 +283,7 @@ a total elsewhere improves. Avoid a fabricated combined quality score.
   report determinism, recorded added wall/CPU/memory cost, cancellation at each
   new expensive phase and unchanged atomic failure behavior.
 
-Source inventory/provenance and source/type accounting components exist; producer
-integration and public scorecards remain unimplemented. No final schema approval or
+Source inventory/provenance, source/type accounting and producer emission evidence
+exist; public scorecards remain unimplemented. No final schema approval or
 end-to-end scorecard acceptance is claimed by this draft. Review the open scope/identity details
 against fixtures before making these definitions a public contract.

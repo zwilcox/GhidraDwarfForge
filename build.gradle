@@ -519,6 +519,20 @@ tasks.register("locationEmissionPlanSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.coverage.LocationEmissionPlanSmoke"
 }
 
+tasks.register("emissionEvidenceSmoke", JavaExec) {
+    group = "verification"
+    description = "Retains actual producer emission evidence for independent DWARF/GDB inspection"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.coverage.EmissionEvidenceSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+    doFirst {
+        setArgs(["libdwarfPath", "libdwarfpPath", "sidecarInput", "sidecarOutput", "fixtureSymbols"].collect {
+            project.property(it)
+        })
+    }
+}
+
 tasks.register("dwarfLocationListsSmoke", JavaExec) {
     group = "verification"
     description = "Checks deterministic DWARF 5 variable location-list encoding"

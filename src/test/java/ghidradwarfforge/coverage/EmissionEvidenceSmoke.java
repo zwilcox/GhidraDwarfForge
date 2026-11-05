@@ -1,0 +1,162 @@
+package ghidradwarfforge.coverage;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CancellationException;
+
+import com.google.gson.GsonBuilder;
+
+import ghidradwarfforge.coverage.ExportEmission.*;
+import ghidradwarfforge.locations.TargetRegisterMap;
+import ghidradwarfforge.locations.VariableStorageModel;
+import ghidradwarfforge.locations.VariableStorageModel.*;
+import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter;
+import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
+import ghidradwarfforge.source.SyntheticSourceFile;
+import ghidradwarfforge.source.SyntheticSourceFile.FunctionText;
+import ghidradwarfforge.source.SyntheticSourceFile.RelativeLine;
+import ghidradwarfforge.types.ProgramTypeModel;
+import ghidradwarfforge.types.ProgramTypeModel.*;
+import ghidradwarfforge.types.TypeGraph;
+import ghidradwarfforge.types.TypeGraph.*;
+
+/** Actual producer facts; Python separately inspects DWARF and runs the fixture. */
+public final class EmissionEvidenceSmoke {
+    public static void main(String[] args) throws Exception {
+        if (args.length != 5 && !(args.length == 6 && args[5].equals("--export-only"))) {
+            throw new IllegalArgumentException("consumer producer input output nm-symbols [--export-only]");
+        }
+        Path input = Path.of(args[2]);
+        Path output = Path.of(args[3]);
+        byte[] original = Files.readAllBytes(input);
+        Map<String, Long> symbols = new LinkedHashMap<>();
+        for (String line : Files.readAllLines(Path.of(args[4]))) {
+            String[] fields = line.trim().split("\\s+");
+            if (fields.length >= 3 && fields[0].matches("[0-9a-fA-F]+")) {
+                symbols.put(fields[fields.length - 1], Long.parseLong(fields[0], 16));
+            }
+        }
+        long entry = symbols.get("observed");
+        long moved = symbols.get("observed_moved");
+        long end = symbols.get("observed_end");
+        TypeRef scalar = new TypeRef("u64");
+        TypeRef voidType = new TypeRef("void");
+        TypeRef opaquePointer = new TypeRef("opaque-pointer");
+        TypeRef node = new TypeRef("node");
+        var graph = new TypeGraph(List.of(new VoidType("void"),
+            new BaseType("u64", "uint64_t", 8, BaseEncoding.UNSIGNED),
+            new OpaqueType("opaque", "OpaquePayload", 0, "fixture has no target definition"),
+            new IndirectionType("opaque-pointer", "OpaquePayload *", 8, IndirectionKind.POINTER,
+                new TypeRef("opaque")),
+            new AggregateType("node", "Node", 8, AggregateKind.STRUCTURE,
+                List.of(new Member("next", new TypeRef("node-pointer"), 0))),
+            new IndirectionType("node-pointer", "Node *", 8, IndirectionKind.POINTER, node)));
+        List<LocalVariable> locals = new ArrayList<>();
+        for (String name : List.of("moving", "partial", "mixed", "no_storage")) {
+            locals.add(new LocalVariable(name, 8, scalar, 0, true, "USER_DEFINED"));
+        }
+        locals.add(new LocalVariable("opaque_pointer", 8, opaquePointer, 0, false, "USER_DEFINED"));
+        locals.add(new LocalVariable("recursive", 8, node, 0, false, "USER_DEFINED"));
+        var signature = new FunctionSignature("observed", entry, scalar,
+            List.of(new Parameter("x", scalar, false)), locals, false, false, "default", "USER_DEFINED");
+        var failed = new FunctionSignature("failed", symbols.get("failed"), scalar,
+            List.of(new Parameter("hidden", scalar, false)), List.of(), false, false, "default", "USER_DEFINED");
+        var empty = new FunctionSignature("empty", symbols.get("empty"), voidType,
+            List.of(), List.of(), false, false, "default", "USER_DEFINED");
+        var registers = TargetRegisterMap.forTarget("x86_64");
+        var evidence = new Evidence(Confidence.USER_DEFINED, "fixture instruction and register oracle");
+        var rdi = registers.register("RDI", 0, 64);
+        var rax = registers.register("RAX", 0, 64);
+        var half = registers.register("RAX", 0, 32);
+        var storage = new VariableStorageModel(List.of(
+            new VariableLocation("observed", entry, "x", VariableKind.PARAMETER, 8,
+                List.of(new LocationRange(entry, end, rdi, evidence))),
+            new VariableLocation("observed", entry, "moving", VariableKind.LOCAL, 8,
+                List.of(new LocationRange(entry, moved, rdi, evidence), new LocationRange(moved, end, rax, evidence))),
+            new VariableLocation("observed", entry, "partial", VariableKind.LOCAL, 8,
+                List.of(new LocationRange(entry, end, half, evidence))),
+            new VariableLocation("observed", entry, "mixed", VariableKind.LOCAL, 8,
+                List.of(new LocationRange(entry, moved, rdi, evidence), new LocationRange(moved, end, half, evidence)))));
+        var model = new ProgramTypeModel(graph, List.of(signature, failed, empty), List.of(), storage,
+            List.of(new FunctionStaticVariable("counter", symbols.get("counter"), 8, scalar, entry, "USER_DEFINED")));
+        List<FunctionSymbol> functions = List.of(new FunctionSymbol("observed", entry, end - entry),
+            new FunctionSymbol("failed", symbols.get("failed"), symbols.get("failed_end") - symbols.get("failed")),
+            new FunctionSymbol("empty", symbols.get("empty"), symbols.get("empty_end") - symbols.get("empty")));
+        var source = SyntheticSourceFile.build("emission fixture", "curated fixture", List.of(
+            new FunctionText("observed", entry, "uint64_t observed(uint64_t x)\n{\n    x = x;\n    return x;\n}\n", null,
+                List.of(new RelativeLine(2, List.of(entry)), new RelativeLine(3, List.of(moved)),
+                    new RelativeLine(4, List.of(symbols.get("observed_return"))))),
+            new FunctionText("failed", symbols.get("failed"), null, "controlled unavailable source"),
+            new FunctionText("empty", symbols.get("empty"), "void empty(void)\n{\n    return;\n}\n", null,
+                List.of(new RelativeLine(3, List.of(symbols.get("empty")))))));
+        var exporter = new MinimalDwarfSidecarExporter();
+        var result = exporter.export(input, output, Path.of(args[0]), Path.of(args[1]), functions, source, model);
+        Files.write(Path.of(output + ".c"), source.utf8());
+        if (args.length == 6) {
+            // This branch intentionally uses only the parent revision's API.
+            System.out.println("emission-export-only=PASS");
+            return;
+        }
+        var facts = result.emission();
+        require(facts.functions().size() == 3 && facts.typeReferences().size() == 6, "complete emitted inventories");
+        var observed = facts.functions().stream().filter(f -> f.function().name().equals("observed")).findFirst().orElseThrow();
+        require(observed.variables().size() == 8, "parameter, six locals, function static");
+        Map<String, VariableEmission> variables = new LinkedHashMap<>();
+        observed.variables().forEach(v -> variables.put(v.internalName(), v));
+        require(variables.get("x").location() instanceof ExpressionLocation &&
+            variables.get("x").parameterOrdinal() == 0, "actual formal expression");
+        require(variables.get("moving").location() instanceof ListLocation list && list.ranges().size() == 2,
+            "actual referenced changing list");
+        require(variables.get("counter").kind() == Kind.FUNCTION_STATIC &&
+            variables.get("counter").location() instanceof ExpressionLocation, "actual static memory expression");
+        for (String name : List.of("partial", "mixed", "no_storage", "opaque_pointer", "recursive")) {
+            require(variables.get(name).location() instanceof NoLocation, "actual absent location " + name);
+        }
+        var types = new TypeCoverageIndex(facts.types(), facts.typeReferences(), () -> false);
+        Map<String, TypeCoverage> counts = new LinkedHashMap<>();
+        counts.put("observed", types.measure(observed.typeRoots(), observed.typeRoots(), () -> false));
+        require(counts.get("observed").equals(new TypeCoverage(3, 3, 2, 5, 4, 1, 0, 0, 0)),
+            "actual recursive/opaque emitted type graph");
+        for (FunctionEmission function : facts.functions()) {
+            if (function.function().name().equals("failed")) {
+                require(function.signature() == null && function.variables().isEmpty() && function.typeRoots().isEmpty(),
+                    "failed function does not inherit allocated types or variables");
+                counts.put("failed", types.measure(List.of(scalar), function.typeRoots(), () -> false));
+                require(counts.get("failed").equals(new TypeCoverage(1, 0, 0, 1, 0, 0, 1, 0, 0)), "failed denominator retained");
+            }
+            if (function.function().name().equals("empty")) {
+                counts.put("empty", types.measure(List.of(voidType), function.typeRoots(), () -> false));
+                require(counts.get("empty").equals(new TypeCoverage(1, 1, 1, 0, 0, 0, 0, 1, 1)), "implicit void from producer");
+            }
+        }
+        var gson = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
+        Files.writeString(Path.of(output + ".evidence.json"), gson.toJson(Map.of("emission", facts, "types", counts)) + "\n");
+        Path cancelled = Path.of(output + ".cancelled");
+        byte[] previous = "previous artifact".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        Files.write(cancelled, previous);
+        try {
+            exporter.export(input, cancelled, Path.of(args[0]), Path.of(args[1]), functions, source, model,
+                output.getFileName() + ".c", () -> Arrays.stream(Thread.currentThread().getStackTrace())
+                    .anyMatch(frame -> frame.getMethodName().equals("populateTypes")));
+            throw new AssertionError("native-phase cancellation ignored");
+        }
+        catch (CancellationException expected) {
+            require(Arrays.equals(previous, Files.readAllBytes(cancelled)), "cancelled native phase preserves prior artifact");
+        }
+        byte[] first = Files.readAllBytes(output);
+        var repeated = exporter.export(input, output, Path.of(args[0]), Path.of(args[1]), functions, source, model);
+        require(Arrays.equals(first, Files.readAllBytes(output)), "deterministic repeat after native cancellation");
+        require(gson.toJson(repeated.emission()).equals(gson.toJson(facts)), "deterministic emission evidence");
+        require(Arrays.equals(original, Files.readAllBytes(input)), "original input unchanged");
+        System.out.println("emission-evidence-native=PASS");
+    }
+
+    private static void require(boolean condition, String message) {
+        if (!condition) throw new AssertionError(message);
+    }
+}

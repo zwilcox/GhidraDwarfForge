@@ -617,6 +617,7 @@ jobs:
               debugCompressionSmoke matchedElfPrefixSmoke matchedElfAllocationsSmoke executableProgramBytesSmoke \
               debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke \
               syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
+              ghidraInstructionEvidenceSmoke sourceCoverageSmoke typeCoverageSmoke locationEmissionPlanSmoke \
               variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke intraInstructionFlowSmoke registerByteSliceFlowSmoke armCompositeParameterAllocationSmoke armHfaParameterAllocationSmoke upperAliasValueFlowSmoke terminalStackValueSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke \
               stackFirstUseSmoke \
               opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke arm32CallPolicySmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
@@ -1944,6 +1945,13 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
         run: src/test/integration/dynamic-composite-storage-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
+
+      - name: Actual emission evidence matches raw DWARF and debugger behavior
+        if: matrix.target == 'x86_64'
+        run: |
+          python3 src/test/integration/emission-evidence.py "$GHIDRA_INSTALL_DIR" \
+              "$PWD/native-integration/libdwarf.so.2.3.2" \
+              "$PWD/native-integration/libdwarfp.so.2.3.2"
 
       - name: Isolated indirect pointer producer and operand-free dereference
         if: matrix.target == 'aarch64'

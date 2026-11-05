@@ -12,7 +12,14 @@ Per-function token provenance excludes declaration-only rows, with unchanged
 source bytes and old mappings in baseline comparisons. The helper is not yet
 connected to exporter reports. Canonical type accounting passes 29 native-free
 checks, including opaque targets, implicit void, missing/repeated edges and a
-20,000-node shared chain; actual producer emission evidence remains pending.
+20,000-node shared chain. Actual producer emission evidence is now returned
+through `ExportResult`: exact lines, represented types and per-function
+declarations with expressions/lists/omissions. A source-built fixture independently
+checks serialized DIE ownership/type edges, raw lists and native GDB values,
+including opaque/recursive/void types, partial-location rejection, symbol-only
+failure and native-phase cancellation. Full parent/candidate sidecar/source bytes
+match. The updated package passes the lexical journeys below; report consumption
+and scope coverage remain pending.
 Location-list results retain their actual immutable plans and honor cancellation.
 Their four byte streams match the parent; 237 raw-byte/negative checks pass.
 Real packaged x86-64 and rebased AArch64 PIE lexical-variable journeys pass
