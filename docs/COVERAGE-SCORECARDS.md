@@ -40,8 +40,8 @@ Native-phase cancellation still finishes the producer and leaves a prior output
 unchanged; a succeeding repeat in the same isolated JVM remains deterministic.
 
 The source-built `emission-evidence` fixture independently inspects actual ELF
-line bytes, DIE ownership/type edges, location expressions and lists. Its eight
-declarations have three emitted full locations and five explicit omissions;
+line bytes, DIE ownership/type edges, location expressions and lists. Its nine
+declarations have four emitted full locations and five explicit omissions;
 the reachable graph has five canonical DIE nodes, including one opaque target.
 The recursive graph and implicit-void function retain their distinct semantics;
 the failed function has no emitted signature despite globally allocated types.
@@ -61,6 +61,8 @@ source-step after returning to an unexported caller; adding a separate return
 line to the fixture corrected that harness error. The corrected full journey
 passes. A separate same-path parent/candidate production comparison preserves
 complete sidecar and source bytes (`build/emission-baseline/result.json`).
+The later nine-declaration scope fixture has its own byte-identical comparison
+at `build/location-coverage-baseline/result.json`.
 The updated package also passes the two real headless lexical-variable journeys
 below; current evidence is `build/emission-package/local-review.json`.
 The follow-on workflow now includes the instruction/source/type/location smoke
@@ -68,12 +70,50 @@ tasks and the isolated native evidence fixture in the x86-64 target lane. Workfl
 lint and the isolated-process harness pass locally; this unpublished branch has
 not run those additions on hosted CI.
 
+## Location extent and known-scope totals
+
+`LocationCoverage` measures unions/intersections of half-open link-time PC-byte
+ranges. It receives actual enclosing DIE ranges and recovered visibility as
+separate inputs. A missing declaration, an emitted declaration without a location,
+a full expression and a referenced list remain distinct. Complete known visibility
+clips located ranges; unknown visibility retains owner-bounded ranges as descriptive
+information and withholds a whole-scope percentage. Some known visibility intervals
+do not make the rest of an unknown lifetime disappear.
+
+`VariableCoverageTotals` retains all recovered declarations in the location-count
+denominator, including failed-function declarations. Extent totals include only
+complete known-scope populations and disclose the excluded unknown-scope count.
+Their unit is variable-PC-bytes. Checked aggregate overflow produces null extents
+with `OVERFLOW`, not wrapped values or fabricated zero; individual variable counts
+remain available. Empty denominators are not applicable.
+
+The component passes 21 local checks, including discontiguous/overlapping ranges,
+independently enumerated PCs, absent/omitted declarations, unknown/partial/empty
+scope knowledge, maximum addresses, aggregate overflow and cancellation. The
+actual producer fixture now records explicit root visibility for `moving` and
+`late`. Raw DWARF and GDB confirm `late` is unavailable at entry and available
+after the move: 2 covered PC-bytes out of 5 visible PC-bytes. The static object
+has a usable memory location but unknown visibility, so it gets no scope percentage.
+Across the fixture's ten recovered declarations (including the failed function's
+unemitted parameter), nine are emitted and four have locations. Four variables
+have complete known scopes; six have unknown scopes. The known population totals
+12 covered variable-PC-bytes out of 21. These numbers are independently checked
+in `emission-evidence.py`; they are not yet published by the production report.
+
+Root static ownership alone does not establish a visibility interval: the existing
+static-binding record has no root-scope fingerprint. Nonempty explicit lexical
+block evidence and explicit local bindings can establish ranges. The public
+inventory builder must retain that distinction and declaration/storage provenance;
+it must not infer visibility from available storage. Current native evidence is
+`build/test-results/emission-evidence/run.6dwshckm/acceptance.json` and local component
+output is `build/location-coverage-validation.log`.
+
 ## Current component checks
 
 With the supported Java21/Ghidra12.0.3 environment, run:
 
 ```bash
-./gradlew ghidraInstructionEvidenceSmoke syntheticSourceSmoke sourceCoverageSmoke dwarfLineTableSmoke typeCoverageSmoke locationEmissionPlanSmoke dwarfLocationListsSmoke buildExtension
+./gradlew ghidraInstructionEvidenceSmoke syntheticSourceSmoke sourceCoverageSmoke dwarfLineTableSmoke typeCoverageSmoke locationEmissionPlanSmoke locationCoverageSmoke dwarfLocationListsSmoke buildExtension
 ```
 
 Observed local results: instruction evidence passes 44 checks across four

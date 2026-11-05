@@ -19,7 +19,13 @@ checks serialized DIE ownership/type edges, raw lists and native GDB values,
 including opaque/recursive/void types, partial-location rejection, symbol-only
 failure and native-phase cancellation. Full parent/candidate sidecar/source bytes
 match. The updated package passes the lexical journeys below; report consumption
-and scope coverage remain pending.
+remains pending. Location extent now distinguishes actual owner ranges from
+independently evidenced visibility, withholds percentages for unknown scopes,
+retains failed declarations in counts and exposes aggregate overflow. Twenty-one
+component checks and the expanded raw-DWARF/GDB fixture pass: the late local
+has 2/5 visible PC-byte coverage, and ten recovered declarations include four
+known-scope variables with 12/21 variable-PC-byte coverage plus six explicitly
+excluded unknown-scope variables. These helpers are not exposed in reports yet.
 Location-list results retain their actual immutable plans and honor cancellation.
 Their four byte streams match the parent; 237 raw-byte/negative checks pass.
 Real packaged x86-64 and rebased AArch64 PIE lexical-variable journeys pass

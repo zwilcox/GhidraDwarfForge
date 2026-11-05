@@ -2674,10 +2674,15 @@ separately from declaration rows. Canonical type accounting passes 29 native-fre
 checks for implicit void, opaque targets, filtering, missing/repeated references,
 deep cycles/shared graphs and cancellation. Producer evidence is now returned
 through `ExportResult` and passes an independent raw-DWARF/native-GDB fixture:
-eight declarations, three full locations, five omissions, recursive/opaque/void
+nine emitted declarations, four full locations, five omissions, recursive/opaque/void
 types and a symbol-only failed function. Native cancellation preserves prior
 output and repeat determinism. Complete parent/candidate sidecar/source bytes
 match; public report consumption is still pending.
+Location extent and variable totals now retain independently evidenced scope
+denominators, disclose unknown populations, handle zero/overflow and cancellation.
+Twenty-one checks and raw-DWARF/GDB assertions pass, including a 2/5-PC-byte local
+and a recovered-but-unemitted parameter. Inventory/provenance integration remains
+required; these are not yet public scorecards.
 The actual location-list plan is now retained, with 237 independent byte/negative
 checks and byte-identical parent comparisons. Real packaged lexical-variable
 journeys pass on x86-64 and rebased AArch64 PIE/QEMU, including structural

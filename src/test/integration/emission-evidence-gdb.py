@@ -11,11 +11,12 @@ gdb.execute('run')
 for name, expected in [('x', 41), ('moving', 41), ('counter', 23)]:
     gdb.execute('print ' + name)
     assert int(gdb.parse_and_eval(name)) == expected
-for name in ['partial', 'mixed', 'no_storage', 'opaque_pointer', 'recursive']:
+for name in ['late', 'partial', 'mixed', 'no_storage', 'opaque_pointer', 'recursive']:
     assert gdb.parse_and_eval(name).is_optimized_out, name
 gdb.execute('ptype opaque_pointer')
 gdb.execute('stepi')
 assert int(gdb.parse_and_eval('moving')) == 41
+assert int(gdb.parse_and_eval('late')) == 41
 assert int(gdb.parse_and_eval('$rax')) == 41
 gdb.Breakpoint('*failed', temporary=True)
 gdb.execute('next')

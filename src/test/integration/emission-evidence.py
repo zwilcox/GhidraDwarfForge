@@ -87,6 +87,7 @@ def inspect(case):
     assert emitted['typeReferences']['void'] == []
     functions = {f['function']['name']: f for f in emitted['functions']}
     assert functions.keys() == {'observed', 'failed', 'empty'}
+    consumed_lists = []
     for name, function in functions.items():
         raw_function = named(name, 'DW_TAG_subprogram')
         assert int(raw_function['attributes']['low_pc'], 16) == function['function']['address']
@@ -105,7 +106,8 @@ def inspect(case):
                 assert struct.unpack_from('<I', content)[0] == len(content) - 4
                 assert content[4:12] == bytes([5, 0, 8, 0, 0, 0, 0, 0])
                 cursor = location['offset']
-                assert cursor == 12 and len(location['ranges']) == 2
+                assert len(location['ranges']) == (1 if child['name'] == 'late' else 2)
+                start_offset = cursor
                 for item in location['ranges']:
                     assert content[cursor] == 7
                     start, end = struct.unpack_from('<QQ', content, cursor + 1)
@@ -113,7 +115,8 @@ def inspect(case):
                     assert content[cursor + 17:cursor + 19] == b'\x02\x90'
                     assert item['expression']['operations'] == [{'opcode': 0x90, 'operand1': content[cursor + 19], 'operand2': 0}]
                     cursor += 20
-                assert content[cursor:] == b'\0', 'no orphan list entries'
+                assert content[cursor] == 0
+                consumed_lists.append((start_offset, cursor + 1))
             else:
                 block = re.match(r'(\d+) byte block: ([0-9a-f ]+)\s+\(', child['attributes']['location'])
                 assert block
@@ -128,6 +131,11 @@ def inspect(case):
     assert named('failed', 'DW_TAG_subprogram')['type'] is None and functions['failed']['signature'] is None
     assert named('empty', 'DW_TAG_subprogram')['type'] is None and functions['empty']['signature']['returnType']['key'] == 'void'
     assert named('observed', 'DW_TAG_subprogram')['type'] == types['u64']['offset']
+    cursor = 12
+    for start, end in sorted(consumed_lists):
+        assert start == cursor, 'no orphan/overlapping location lists'
+        cursor = end
+    assert cursor == len(raw['.debug_loclists'])
     # Independent fixture populations and recursive edge traversal, not just JSON presence.
     seen, pending = set(), [types[k]['offset'] for k in ['u64', 'node', 'opaque-pointer']]
     while pending:
@@ -145,7 +153,29 @@ def inspect(case):
     assert evidence['types']['observed']['opaqueFreeEmittedRoots'] == 2
     assert evidence['types']['failed']['notEmittedNodes'] == 1
     assert evidence['types']['empty']['emittedImplicitVoidNodes'] == 1
-    return {'rawTypeNodes': 5, 'opaqueNodes': 1, 'variables': 8, 'locations': 3, 'omittedLocations': 5}
+    metrics = evidence['locations']
+    body_start = functions['observed']['function']['address']
+    body_size = int(named('observed', 'DW_TAG_subprogram')['attributes']['high_pc'])
+    for name in ['x', 'moving', 'late']:
+        metric = metrics[name]
+        assert metric['scopeComplete'] and metric['knownScopeBytes'] == body_size
+        assert metric['knownScopeRanges'] == [{'address': body_start, 'size': body_size}]
+    assert metrics['moving']['coveredScopeBytes'] == metrics['x']['coveredScopeBytes'] == body_size
+    late, = [v for v in functions['observed']['variables'] if v['internalName'] == 'late']
+    available, = late['location']['ranges']
+    assert metrics['late']['coveredScopeBytes'] == available['range']['end'] - available['range']['start'] < body_size
+    assert metrics['late']['locatedRanges'] == [{'address': available['range']['start'], 'size': metrics['late']['coveredScopeBytes']}]
+    assert not metrics['counter']['scopeComplete'] and metrics['counter']['knownScopeBytes'] == 0
+    assert metrics['counter']['locatedBytes'] == body_size and metrics['counter']['coveredScopeBytes'] == 0
+    assert not metrics['failed::hidden']['declarationEmitted'] and metrics['failed::hidden']['knownScopeBytes'] > 0
+    assert metrics['failed::hidden']['coveredScopeBytes'] == 0
+    assert evidence['variableTotals'] == {'recoveredVariables': 10, 'emittedVariables': 9,
+        'variablesWithLocation': 4, 'knownScopeVariables': 4, 'unknownScopeVariables': 6,
+        'knownScopeBytes': 3 * body_size + int(named('failed', 'DW_TAG_subprogram')['attributes']['high_pc']),
+        'coveredScopeBytes': 2 * body_size + metrics['late']['coveredScopeBytes'], 'extentUnavailableReason': ''}
+    return {'rawTypeNodes': 5, 'opaqueNodes': 1, 'variables': 9, 'locations': 4, 'omittedLocations': 5,
+            'knownScopeVariables': 3, 'lateCoveredScopeBytes': metrics['late']['coveredScopeBytes'],
+            'lateKnownScopeBytes': metrics['late']['knownScopeBytes']}
 
 
 def main():

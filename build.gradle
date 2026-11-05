@@ -519,6 +519,14 @@ tasks.register("locationEmissionPlanSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.coverage.LocationEmissionPlanSmoke"
 }
 
+tasks.register("locationCoverageSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks independently evidenced scope denominators and static location extent"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.coverage.LocationCoverageSmoke"
+}
+
 tasks.register("emissionEvidenceSmoke", JavaExec) {
     group = "verification"
     description = "Retains actual producer emission evidence for independent DWARF/GDB inspection"

@@ -21,6 +21,7 @@ import ghidradwarfforge.source.SyntheticSourceFile;
 import ghidradwarfforge.source.SyntheticSourceFile.FunctionText;
 import ghidradwarfforge.source.SyntheticSourceFile.RelativeLine;
 import ghidradwarfforge.types.ProgramTypeModel;
+import ghidradwarfforge.types.LexicalScopeModel;
 import ghidradwarfforge.types.ProgramTypeModel.*;
 import ghidradwarfforge.types.TypeGraph;
 import ghidradwarfforge.types.TypeGraph.*;
@@ -57,7 +58,7 @@ public final class EmissionEvidenceSmoke {
                 List.of(new Member("next", new TypeRef("node-pointer"), 0))),
             new IndirectionType("node-pointer", "Node *", 8, IndirectionKind.POINTER, node)));
         List<LocalVariable> locals = new ArrayList<>();
-        for (String name : List.of("moving", "partial", "mixed", "no_storage")) {
+        for (String name : List.of("moving", "late", "partial", "mixed", "no_storage")) {
             locals.add(new LocalVariable(name, 8, scalar, 0, true, "USER_DEFINED"));
         }
         locals.add(new LocalVariable("opaque_pointer", 8, opaquePointer, 0, false, "USER_DEFINED"));
@@ -78,12 +79,21 @@ public final class EmissionEvidenceSmoke {
                 List.of(new LocationRange(entry, end, rdi, evidence))),
             new VariableLocation("observed", entry, "moving", VariableKind.LOCAL, 8,
                 List.of(new LocationRange(entry, moved, rdi, evidence), new LocationRange(moved, end, rax, evidence))),
+            new VariableLocation("observed", entry, "late", VariableKind.LOCAL, 8,
+                List.of(new LocationRange(entry, moved,
+                    new UnavailableStorage(OmissionReason.UNKNOWN_LIFETIME, "fixture has no entry storage proof"), evidence),
+                    new LocationRange(moved, end, rax, evidence))),
             new VariableLocation("observed", entry, "partial", VariableKind.LOCAL, 8,
                 List.of(new LocationRange(entry, end, half, evidence))),
             new VariableLocation("observed", entry, "mixed", VariableKind.LOCAL, 8,
                 List.of(new LocationRange(entry, moved, rdi, evidence), new LocationRange(moved, end, half, evidence)))));
+        var scopes = new LexicalScopeModel(entry,
+            List.of(new MinimalDwarfSidecarExporter.FunctionRange(entry, end - entry)), List.of(),
+            List.of(new LexicalScopeModel.Local("moving", "", "moving"),
+                new LexicalScopeModel.Local("late", "", "late")), "explicit fixture root visibility");
         var model = new ProgramTypeModel(graph, List.of(signature, failed, empty), List.of(), storage,
-            List.of(new FunctionStaticVariable("counter", symbols.get("counter"), 8, scalar, entry, "USER_DEFINED")));
+            List.of(new FunctionStaticVariable("counter", symbols.get("counter"), 8, scalar, entry, "USER_DEFINED")),
+            List.of(), List.of(scopes));
         List<FunctionSymbol> functions = List.of(new FunctionSymbol("observed", entry, end - entry),
             new FunctionSymbol("failed", symbols.get("failed"), symbols.get("failed_end") - symbols.get("failed")),
             new FunctionSymbol("empty", symbols.get("empty"), symbols.get("empty_end") - symbols.get("empty")));
@@ -105,7 +115,7 @@ public final class EmissionEvidenceSmoke {
         var facts = result.emission();
         require(facts.functions().size() == 3 && facts.typeReferences().size() == 6, "complete emitted inventories");
         var observed = facts.functions().stream().filter(f -> f.function().name().equals("observed")).findFirst().orElseThrow();
-        require(observed.variables().size() == 8, "parameter, six locals, function static");
+        require(observed.variables().size() == 9, "parameter, seven locals, function static");
         Map<String, VariableEmission> variables = new LinkedHashMap<>();
         observed.variables().forEach(v -> variables.put(v.internalName(), v));
         require(variables.get("x").location() instanceof ExpressionLocation &&
@@ -119,6 +129,24 @@ public final class EmissionEvidenceSmoke {
         }
         var types = new TypeCoverageIndex(facts.types(), facts.typeReferences(), () -> false);
         Map<String, TypeCoverage> counts = new LinkedHashMap<>();
+        Map<String, LocationCoverage> locationCounts = new LinkedHashMap<>();
+        for (var variable : observed.variables()) {
+            var binding = variable.kind() == Kind.LOCAL ? scopes.local(variable.internalName()) : null;
+            var visibility = variable.kind() == Kind.PARAMETER
+                ? new LocationCoverage.Visibility(observed.function().ranges(), true, "formal parameter scope")
+                : binding != null
+                    ? new LocationCoverage.Visibility(scopes.visibility(binding), true, scopes.evidence())
+                    : new LocationCoverage.Visibility(List.of(), false, "no explicit visibility evidence");
+            locationCounts.put(variable.internalName(), LocationCoverage.measure(variable.location(),
+                observed.function().ranges(), visibility, () -> false));
+        }
+        require(locationCounts.get("late").knownScopeBytes() == end - entry &&
+            locationCounts.get("late").coveredScopeBytes() == end - moved,
+            "unknown storage prefix remains inside evidenced scope denominator");
+        require(locationCounts.get("moving").coveredScopeBytes() == end - entry,
+            "changing locations cover the known scope without double counting");
+        require(locationCounts.get("counter").hasFullValueLocation() &&
+            !locationCounts.get("counter").percentageApplicable(), "static storage does not invent lexical visibility");
         counts.put("observed", types.measure(observed.typeRoots(), observed.typeRoots(), () -> false));
         require(counts.get("observed").equals(new TypeCoverage(3, 3, 2, 5, 4, 1, 0, 0, 0)),
             "actual recursive/opaque emitted type graph");
@@ -128,6 +156,9 @@ public final class EmissionEvidenceSmoke {
                     "failed function does not inherit allocated types or variables");
                 counts.put("failed", types.measure(List.of(scalar), function.typeRoots(), () -> false));
                 require(counts.get("failed").equals(new TypeCoverage(1, 0, 0, 1, 0, 0, 1, 0, 0)), "failed denominator retained");
+                locationCounts.put("failed::hidden", LocationCoverage.measure(null, List.of(),
+                    new LocationCoverage.Visibility(function.function().ranges(), true, "recovered formal parameter scope"),
+                    () -> false));
             }
             if (function.function().name().equals("empty")) {
                 counts.put("empty", types.measure(List.of(voidType), function.typeRoots(), () -> false));
@@ -135,7 +166,12 @@ public final class EmissionEvidenceSmoke {
             }
         }
         var gson = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
-        Files.writeString(Path.of(output + ".evidence.json"), gson.toJson(Map.of("emission", facts, "types", counts)) + "\n");
+        var variableTotals = VariableCoverageTotals.measure(new ArrayList<>(locationCounts.values()), () -> false);
+        require(variableTotals.equals(new VariableCoverageTotals(10, 9, 4, 4, 6,
+            3 * (end - entry) + symbols.get("failed_end") - symbols.get("failed"),
+            2 * (end - entry) + end - moved, "")), "actual emission and recovered-scope totals");
+        Files.writeString(Path.of(output + ".evidence.json"), gson.toJson(
+            Map.of("emission", facts, "types", counts, "locations", locationCounts, "variableTotals", variableTotals)) + "\n");
         Path cancelled = Path.of(output + ".cancelled");
         byte[] previous = "previous artifact".getBytes(java.nio.charset.StandardCharsets.UTF_8);
         Files.write(cancelled, previous);
