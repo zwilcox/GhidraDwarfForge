@@ -4970,6 +4970,20 @@ Potential features only after correctness:
 
 ---
 
+## Low-priority README badges
+
+**CONFIRMED requested (2026-11-05); implementation PLANNED.** Queue both
+after the current goal items: #74, #108, #116/#114, #112, #110 and #109.
+
+- [ ] [#162](https://github.com/zwilcox/GhidraDwarfForge/issues/162): add a
+  dynamic test code-coverage percentage badge backed by CI measurements and
+  linked to a detailed report. Document the metric, measured population and
+  exclusions; this measures test code coverage separately from #108's export
+  evidence scorecards.
+- [ ] [#163](https://github.com/zwilcox/GhidraDwarfForge/issues/163): add a
+  live production CI status badge scoped to `main`, linked to workflow runs.
+  Preserve the existing required-validation gate and architecture/host matrix.
+
 # 2. Issue reconciliation checklist
 
 Use the following acceptance gates before updating the original GitHub issues:
