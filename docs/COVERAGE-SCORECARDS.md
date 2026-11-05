@@ -1,5 +1,48 @@
 # Proposed coverage contract for issue 108
 
+## GUI presentation checkpoint
+
+**CONFIRMED locally; full #108 and hosted acceptance pending.** GUI exports print
+an approximately one-screen summary instead of sending the entire JSON through
+Ghidra's bounded console. The modeless **GhidraDwarfForge export coverage** window
+has one row per exported function. Select a row to read its complete metrics,
+declaration/storage provenance and omission reasons. Unknown populations remain
+unknown; empty denominators show N/A. Percentages show exact counts and round
+down so incomplete coverage never appears as 100%. No combined confidence score
+is calculated. Table rows retain export order; percentage strings are not sorted
+lexicographically. Narrow columns do not lose evidence: selected-function details
+include the same metrics. Detail display is bounded at 32 KiB of UTF-16 text with
+an explicit truncation notice; the report retains all fields and ranges.
+
+Choose **Save report...**, then a new filename, to save the complete schema-two
+JSON. This is an explicit extra output, not an automatic change to the default
+artifact pair. Saving runs off the event thread, stages UTF-8 in the selected
+parent, and publishes with an atomic create-if-absent link. Existing regular files,
+symlinks, hard links and racing directory entries are never replaced. Closing the
+window requests cancellation; a save already published remains a complete file.
+On a filesystem without hard-link support, saving reports an error and leaves
+existing files intact. No in-place or overwrite fallback is used.
+
+Headless exports retain the complete JSON report line. Fresh GUI attachment
+preparation retains the full report directly in its existing capture/records flow;
+it prints the short summary without opening an intervening coverage window.
+Coverage remains informational and does not upgrade NOT_RUN validation or
+PARTIAL status, or authorize modifying an executable.
+
+Java 21 builds and focused ratio/unknown/overflow/Unicode/cancellation/racing-file
+checks pass. Real Linux Script Manager ordinary-pair and companion journeys save
+82,250-byte reports while keeping console text to 5,110 and 5,567 characters.
+Each saves through the actual chooser, strictly reads the full report, compares
+artifact hashes, previews/declines attachment, prepares a fresh export with
+retained coverage, and cancels a separate export. GNU/LLVM/pinned strict checks
+and GDB function/type/source/breakpoint/next/step/normal-exit checks pass for both
+exported and prepared pairs. The separate packaged headless regression passes.
+Four initial harness failures and the earlier console defect remain retained.
+Windows presentation, native target attachment on the new report path, comparison,
+CLI presentation and large-workload overhead remain pending. Exact package,
+commands/harnesses, raw paths and hashes:
+[`coverage-gui-presentation.json`](evidence/coverage-gui-presentation.json).
+
 ## Production staging checkpoint
 
 **CONFIRMED follow-up:** `coverage-staging.py --real-limit` now exercises a real
@@ -11,7 +54,7 @@ staged report writing. Both x86-64 and rebased AArch64 PIE pass rejection/preser
 cleanup, deterministic retry, validators and GDB for pair and companion modes.
 This is actual string-bound acceptance, not a complete 64 MiB byte-limit stress test.
 
-**CONFIRMED GUI defect, unresolved:** a fresh real Script Manager export logs a
+**HISTORICAL GUI defect, now resolved locally as described above:** a fresh real Script Manager export logs a
 complete schema-two report and produces hash-matching artifacts, but the 82,321-
 character report line exceeds the 50,000-character console buffer. The retained
 console and screenshot show only the JSON tail and the script completion text;
@@ -56,7 +99,7 @@ measurement alone establishes incremental memory or CPU cost.
 Use `--historical-instrumented` only with an earlier schema-one installation to
 reproduce the exploratory probes below. Repeated overhead, actual resource-limit
 failures, fresh GUI/attachment checks, comparison/presentation and the full matrix
-remain pending. #108 stays unpublished until #74 final acceptance.
+remain pending. #74 is complete; #108 now has integration priority after its remaining acceptance work.
 
 The first ordinary production saved-workload runs also pass report preflight,
 validators and GDB. SQLite covers 1,539 functions in a 23,061,568-byte report;

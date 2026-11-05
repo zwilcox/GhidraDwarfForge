@@ -1,6 +1,18 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
-**CONFIRMED #108 report-limit preservation and GUI defect:** a real derived
+**CONFIRMED locally — #108 GUI presentation:** the console now receives a short
+coverage summary; a modeless per-function view shows static metrics, provenance
+and omission reasons. Explicit Save report retains the complete preflighted JSON
+in a new file without replacing existing files or aliases. Ordinary-pair and
+companion GUI journeys pass real report saving, hash binding, attachment preview/
+decline, fresh preparation with retained coverage, cancellation, validators and
+GDB on Linux. The fixture saves 82,250 bytes while retaining only 5,110/5,567
+console characters. Windows/hosted acceptance, CLI/report comparison and repeated
+large-workload overhead remain pending. See
+`docs/evidence/coverage-gui-presentation.json`. The earlier GUI truncation failure
+below is retained history; #108 remains incomplete.
+
+**HISTORICAL #108 GUI defect; report-limit preservation remains confirmed:** a real derived
 Ghidra pointer type exceeds the 65,536-unit report string limit. Pair and companion
 rejection preserve existing files, clean stages and retry deterministically on
 x86-64 and rebased AArch64 PIE; validators/GDB pass. The first named-typedef probe

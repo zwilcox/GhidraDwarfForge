@@ -239,10 +239,11 @@ public class GhidraDwarfForge extends GhidraScript {
                 input, inputHash, output, outputHash, sourceOutput, sourceHash,
                 result.functionCount(), result.sectionNames(), source, typeModel,
                 extraction.skippedFunctions(), diagnostics);
+            var claims = new CoverageReportClaims(profile, coverage);
             String json = ExportPhase.measure("coverage-report-preflight", () ->
-                report.toJsonWithCoverage(new CoverageReportClaims(profile, coverage),
+                report.toJsonWithCoverage(claims,
                     monitor::isCancelled));
-            reportHolder[0] = new PreparedReport(json, outputHash, sourceHash);
+            reportHolder[0] = new PreparedReport(json, outputHash, sourceHash, claims, report.status().name());
         };
         if (gdbLoader) {
             ghidradwarfforge.output.CompanionArtifactPublisher.stageAndPublish(
@@ -296,11 +297,32 @@ public class GhidraDwarfForge extends GhidraScript {
         println("  function-owned static variables: " +
             ghidradwarfforge.source.FunctionStaticPolicy.select(typeModel, source)
                 .exported().size());
-        println("GhidraDwarfForge report: " + prepared.json());
         if (attachmentPreparation) state.addEnvironmentVar(AttachmentPreparation.EXPORT_REPORT_KEY, prepared.json());
+        if (isRunningHeadless()) {
+            println("GhidraDwarfForge report: " + prepared.json());
+        }
+        else {
+            println("GhidraDwarfForge report: schema 2; " +
+                ghidradwarfforge.output.CoveragePresentation.summary(prepared.coverage(), prepared.status()));
+            if (!attachmentPreparation) {
+                // Publication is already complete. A presentation failure must not
+                // change the export outcome or masquerade as an artifact failure.
+                javax.swing.SwingUtilities.invokeLater(() -> {
+                    try {
+                        ghidradwarfforge.output.CoverageReportGui.show(state.getTool().getToolFrame(),
+                            prepared.coverage(), prepared.status(), prepared.json(),
+                            output.resolveSibling(output.getFileName() + ".report.json"));
+                    }
+                    catch (RuntimeException failure) {
+                        printerr("Coverage window could not open; artifacts were exported: " + failure);
+                    }
+                });
+            }
+        }
     }
 
-    private record PreparedReport(String json, String outputHash, String sourceHash) { }
+    private record PreparedReport(String json, String outputHash, String sourceHash,
+            CoverageReportClaims coverage, String status) { }
 
     private static Map<String, String> parseOptions(String[] arguments) {
         Map<String, String> result = new LinkedHashMap<>();
