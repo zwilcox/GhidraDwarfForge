@@ -484,6 +484,17 @@ tasks.register("dwarfLineTableSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.dwarf.Dwarf5LineTableSmoke"
 }
 
+tasks.register("ghidraVariableIdentitySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks database variable identity stability and unsafe undo/fork correspondence"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.GhidraVariableIdentitySmoke"
+    args ghidraInstallDir, file("build/test-results/variable-identity").absolutePath
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/variable-identity/settings").absolutePath
+}
+
 tasks.register("ghidraInstructionEvidenceSmoke", JavaExec) {
     group = "verification"
     description = "Checks real decoded instruction inventories, rebasing and unavailable evidence"
@@ -509,6 +520,14 @@ tasks.register("sourceCoverageInventorySmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.coverage.SourceCoverageInventorySmoke"
+}
+
+tasks.register("typeGraphEvidenceSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks individual type states, repeated references, cycles and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.coverage.TypeGraphEvidenceSmoke"
 }
 
 tasks.register("typeCoverageSmoke", JavaExec) {

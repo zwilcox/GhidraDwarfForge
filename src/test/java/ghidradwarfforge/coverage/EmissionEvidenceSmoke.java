@@ -165,6 +165,14 @@ public final class EmissionEvidenceSmoke {
                 require(counts.get("empty").equals(new TypeCoverage(1, 1, 1, 0, 0, 0, 0, 1, 1)), "implicit void from producer");
             }
         }
+        var graphEvidence = TypeGraphEvidence.capture(facts.types(), facts.typeReferences(), () -> false);
+        var typeViews = new LinkedHashMap<String, TypeGraphEvidence.View>();
+        for (var function : facts.functions()) {
+            var recoveredRoots = function.function().name().equals("failed") ? List.of(scalar) : function.typeRoots();
+            var view = graphEvidence.inspect(recoveredRoots, function.typeRoots(), () -> false);
+            require(view.totals().equals(counts.get(function.function().name())), "individual type states changed established totals");
+            typeViews.put(function.function().name(), view);
+        }
         var gson = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
         var variableTotals = VariableCoverageTotals.measure(new ArrayList<>(locationCounts.values()), () -> false);
         require(variableTotals.equals(new VariableCoverageTotals(10, 9, 4, 4, 6,
@@ -227,7 +235,7 @@ public final class EmissionEvidenceSmoke {
             "scorecards never upgrade failure/validation status");
         require(report.toJsonWithCoverage(claims, () -> false).equals(reportJson), "deterministic full report bytes");
         Files.writeString(Path.of(output + ".evidence.json"), gson.toJson(
-            Map.of("emission", facts, "types", counts, "locations", locationCounts, "variableTotals", variableTotals, "variableInventory", inventory, "sourceInventory", sourceInventory, "coverage", coverage)) + "\n");
+            Map.of("emission", facts, "types", counts, "locations", locationCounts, "variableTotals", variableTotals, "variableInventory", inventory, "sourceInventory", sourceInventory, "coverage", coverage, "typeNodes", graphEvidence.nodes(), "typeViews", typeViews)) + "\n");
         Path cancelled = Path.of(output + ".cancelled");
         byte[] previous = "previous artifact".getBytes(java.nio.charset.StandardCharsets.UTF_8);
         Files.write(cancelled, previous);

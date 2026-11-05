@@ -1,5 +1,35 @@
 # Proposed coverage contract for issue 108
 
+## Declaration identity and individual type evidence
+
+**CONFIRMED locally — #108 comparison evidence:** real Ghidra database probes on
+x86-64, AArch64 and both MIPS32 byte orders reproduce reuse of the same database/
+symbol ID after undo and a different declaration. Those IDs cannot prove local
+identity across reports. A canonical type graph evidence component retains
+individual resolved/opaque/absent states and reference multiplicities, including
+implicit void and failed-function attachment gaps. Component cancellation/deep
+shared-graph checks and independent raw-DWARF/validator/GDB checks pass. Production
+wire-format integration and individual comparison remain planned; #108 remains
+incomplete. See `docs/evidence/coverage-identity-and-type-graph.json`.
+
+The 72-check identity probe uses actual ProgramDB transactions, rename/retype,
+rebase, deletion, undo, branching and immutable save/reopen/copy. Ordinary edits
+preserve record keys; a new declaration after undo can reuse a key observed in an
+earlier export. The test retains both observations. Database/symbol pairs alone
+are therefore insufficient for historical identity. Comparison must disclose
+reported binding correspondence and ambiguous renames/replacements, rather than
+claim continuity or modify the analyst database to manufacture it.
+
+The type evidence component stores one canonical node dictionary and exact
+recovered/emitted edge multiplicities. A function view follows its actual attached
+roots; allocation for another function does not credit a failed function. An
+opaque-to-resolved swap alongside a resolved-to-opaque swap leaves counts unchanged
+but changes both individual states. A 20,001-node shared graph completes iteratively;
+all construction/view cancellation checkpoints pass. The native fixture checks
+five serialized type DIEs, implicit void, each type reference and function-relative
+state against independent raw DIE inspection. This component checkpoint does not
+yet change production metric definition one.
+
 ## Read-only CLI and partial comparison checkpoint
 
 **CONFIRMED locally on Linux; complete comparison remains PLANNED.** The packaged

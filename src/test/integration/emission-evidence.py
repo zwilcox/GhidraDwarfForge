@@ -138,6 +138,26 @@ def inspect(case):
         edges = ([node['type']] if node['type'] is not None else []) + [c['type'] for c in node['children'] if c['type'] is not None]
         assert Counter(edges) == Counter(types[r['key']]['offset'] for r in emitted['typeReferences'][key])
     assert emitted['typeReferences']['void'] == []
+    # Individual canonical states and reference multiplicity are compared with
+    # independently decoded DIE edges, not inferred from aggregate percentages.
+    graph = evidence['typeNodes']
+    assert set(graph) == set(types) | {'void'}
+    inverse_types = {node['offset']: key for key, node in types.items()}
+    for key, node in types.items():
+        observed_edges = ([node['type']] if node['type'] is not None else []) + [c['type'] for c in node['children'] if c['type'] is not None]
+        expected = dict(Counter(inverse_types[offset] for offset in observed_edges))
+        assert graph[key]['emittedReferences'] == expected
+        assert graph[key]['recoveredReferences'] == expected
+        assert graph[key]['emitted']
+        state = 'OPAQUE' if node['tag'] == 'DW_TAG_unspecified_type' else 'RESOLVED'
+        assert graph[key]['kind'] == state
+        assert evidence['typeViews']['observed']['states'][key] == state
+    assert graph['void']['kind'] == 'IMPLICIT_VOID' and graph['void']['emittedReferences'] == {}
+    assert evidence['typeViews']['empty']['states'] == {'void': 'IMPLICIT_VOID'}
+    assert evidence['typeViews']['failed']['states'] == {'u64': 'NOT_EMITTED'}
+    for name, view in evidence['typeViews'].items():
+        assert view['totals'] == evidence['types'][name]
+
     functions = {f['function']['name']: f for f in emitted['functions']}
     assert functions.keys() == {'observed', 'failed', 'empty'}
     consumed_lists = []

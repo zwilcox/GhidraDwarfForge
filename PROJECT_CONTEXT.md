@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — #108 comparison evidence:** real Ghidra database probes on
+x86-64, AArch64 and both MIPS32 byte orders reproduce reuse of the same database/
+symbol ID after undo and a different declaration. Those IDs cannot prove local
+identity across reports. A canonical type graph evidence component retains
+individual resolved/opaque/absent states and reference multiplicities, including
+implicit void and failed-function attachment gaps. Component cancellation/deep
+shared-graph checks and independent raw-DWARF/validator/GDB checks pass. Production
+wire-format integration and individual comparison remain planned; #108 remains
+incomplete. See `docs/evidence/coverage-identity-and-type-graph.json`.
+
 **CONFIRMED locally — #108 CLI and partial comparison:** the packaged read-only
 report launcher displays summaries, per-function rows and selected evidence. It
 matches reported original SHA/profile and ELF-link-time function entries, handles
