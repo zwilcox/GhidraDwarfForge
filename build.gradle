@@ -341,6 +341,14 @@ tasks.register("annotationTextSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.source.AnnotationTextSmoke"
 }
 
+tasks.register("annotatedSourceSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks annotation insertion and executable source-line preservation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.source.AnnotatedSourceSmoke"
+}
+
 tasks.register("functionEntrySmoke", JavaExec) {
     group = "verification"
     description = "Checks function entries independent of their lowest body address"

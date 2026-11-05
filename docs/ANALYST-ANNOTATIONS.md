@@ -121,6 +121,22 @@ round-trip/budget cases including every UTF-16 code unit and all fifty saved
 comments, 24 cancellation checkpoints and a GCC C-lexer corpus with trigraphs
 and warnings-as-errors. The Gradle smoke task and extension build pass locally;
 the task is wired into both host validation commands, with hosted execution
-pending. No emitted source or DWARF path uses the component yet. Source-line
-remapping, readable annotation composition and actual GDB stepping remain
+pending. No production emitted source or DWARF path uses the component yet. Production
+source-line remapping, readable annotation composition and actual GDB stepping remain
 required before claiming production support.
+
+`AnnotatedSourceFile` now composes text and line evidence together as a separate
+component. A statement insertion must cite an address already present in that
+line's executable token evidence; callers must also prove the annotation belongs
+there. Unmapped/uncertain records use the trailing catalog. Multiline text retains
+explicit original separators while displaying one payload row per original line.
+Function boundaries, declaration rows and token rows shift together. Inserted
+comment rows receive no addresses. Duplicate identities and unsupported placement
+fail explicitly, and the final UTF-8 byte bound includes all comment framing.
+
+The [composition receipt](evidence/annotation-composition.json) verifies exact
+source restoration after removing inserted rows, independent payload decoding,
+unchanged address populations through the line writer, deterministic ordering,
+538 cancellation checkpoints and negative/budget controls. GCC and Gradle pass.
+This is component evidence; production extraction/composition and complete
+validator/GDB source-stepping acceptance remain required.

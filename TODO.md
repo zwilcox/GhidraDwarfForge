@@ -1,12 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
-**CONFIRMED component only — #116/#114 annotation text:** a reversible, bounded,
-cancellable encoder now preserves exact text while neutralizing comment endings,
-trigraphs and display controls. Independent decoding, all UTF-16 code units,
-fifty saved comments, exact UTF-8 limits, cancellation and C lexical checks pass;
-Gradle smoke and extension packaging pass. See `docs/evidence/annotation-text.json`.
-The encoder is not yet connected to source composition. Production annotation
-support remains planned, and #108 protected integration remains the priority.
+**CONFIRMED components only — #116/#114 text and line composition:** the
+reversible encoder and a separate compositor now preserve annotation payloads,
+original source bytes, function boundaries and all executable line/token evidence.
+Model/writer checks retain coverage across both address widths and byte orders;
+538 composition cancellation checkpoints, budget/negative controls, C lexical
+checks, Gradle smoke and extension packaging pass. See
+`docs/evidence/annotation-composition.json` and `annotation-text.json` beside it.
+Neither component is connected to the production exporter yet. Real Ghidra
+extraction, validator/GDB integration and hosted acceptance remain planned;
+#108 protected integration remains the priority.
 
 **CONFIRMED preparation only — #116/#114:** eight compiler-reference cases now
 pass sixteen native/QEMU GDB value/width checks each. Four saved-program cases
