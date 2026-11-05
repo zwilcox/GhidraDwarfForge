@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED isolated exporter integration — #116/#114:** controlled annotations
+now pass through the real producer and matched ELF writer. GNU/LLVM/pinned strict
+validation and native x86-64 GDB pass: six inserted comment rows remain
+non-executable, original source mappings and variable values survive, and source
+lookup works from an unrelated working directory. Eight artifacts are identical
+across fresh producer JVMs; the unchanged baseline also passes. See
+`docs/evidence/annotation-emission.json`. The CI case is added but has not run
+hosted. Saved-program extraction and production GUI/headless integration remain
+planned; #108 protected integration is still the priority.
+
 **CONFIRMED components only — #116/#114 text and line composition:** the
 reversible encoder and a separate compositor now preserve annotation payloads,
 original source bytes, function boundaries and all executable line/token evidence.

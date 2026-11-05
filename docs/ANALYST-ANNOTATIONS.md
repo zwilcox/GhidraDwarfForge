@@ -140,3 +140,24 @@ unchanged address populations through the line writer, deterministic ordering,
 538 cancellation checkpoints and negative/budget controls. GCC and Gradle pass.
 This is component evidence; production extraction/composition and complete
 validator/GDB source-stepping acceptance remain required.
+
+The [emitted-annotation receipt](evidence/annotation-emission.json) adds an isolated
+production-producer test using the existing x86-64 instruction-correlated fixture.
+Controlled token-associated comments and an unassociated failed-function catalog
+pass through `AnnotatedSourceFile`, the real exporter and matched ELF writer.
+Independent raw DWARF reads and actual GDB prove that inserted comments have no
+executable rows, source stepping and variable values survive, and absolute source
+lookup works from an unrelated working directory. GNU/LLVM/pinned strict checks
+pass for every sidecar, including the three existing type-pair controls. Eight
+files are byte-identical across fresh producer processes; the baseline mode also
+passes. This is not yet saved-program extraction or installed-export acceptance.
+
+```bash
+python3 src/test/integration/emission-evidence.py "$GHIDRA_INSTALL_DIR" \
+    /path/to/libdwarf.so.2.3.2 /path/to/libdwarfp.so.2.3.2 --annotations
+```
+
+The x86-64 workflow invokes this mode separately. Hosted execution, other target
+runtime checks, real annotation inventory/association and production integration
+remain required. The modeled unavailable source here complements the separate
+real native failure fixture; it does not replace that acceptance requirement.

@@ -385,18 +385,63 @@ def inspect(case):
             'lateKnownScopeBytes': metrics['late']['knownScopeBytes']}
 
 
+def inspect_annotations(case):
+    manifest = json.loads((case / 'forge.dbg.annotations.json').read_text())
+    baseline, composed = manifest['baseline'], manifest['composed']
+    original = bytes(n & 255 for n in baseline['utf8'])
+    actual = (case / 'forge.dbg.c').read_bytes()
+    assert actual == bytes(n & 255 for n in composed['utf8'])
+    lines = actual.splitlines(keepends=True)
+    inserted = set(manifest['annotationLines'])
+    assert len(inserted) == len(manifest['annotationLines']) == 6
+    assert b''.join(line for number, line in enumerate(lines, 1) if number not in inserted) == original
+    inverse = {number: number - sum(extra < number for extra in inserted)
+        for number in range(1, len(lines) + 1) if number not in inserted}
+    for old, new in zip(baseline['functions'], composed['functions'], strict=True):
+        restored = dict(new, startLine=inverse[new['startLine']], endLine=inverse[new['endLine']])
+        assert restored == old
+    for old, new in zip(baseline['mappedLines'], composed['mappedLines'], strict=True):
+        assert dict(new, line=inverse[new['line']]) == old
+    for old, new in zip(baseline['functionTokens'], composed['functionTokens'], strict=True):
+        assert dict(new, lines=[dict(row, line=inverse[row['line']]) for row in new['lines']]) == old
+    # JSON is an independent decoder for the reversible comment field encoding.
+    cursor = iter(sorted(inserted))
+    for insertion in manifest['insertions']:
+        heading = lines[next(cursor) - 1].decode('utf-8')
+        assert json.loads('"' + heading[3:-4] + '"') == insertion['label']
+        payload = ''
+        for _ in insertion['text'].split('\n'):
+            row = lines[next(cursor) - 1].decode('utf-8')
+            assert row.startswith('/* ') and row.endswith(' */\n')
+            payload += json.loads('"' + row[3:-4] + '"')
+        assert payload == insertion['text']
+    assert next(cursor, None) is None
+    sequences = line_sequences(sections(case / 'forge.dbg')['.debug_line'])
+    raw_rows = [row for rows, _ in sequences for row in rows]
+    assert raw_rows and all(line not in inserted for _, line in raw_rows)
+    entries = dies((case / 'info.log').read_text())
+    failed, = [die for die in entries.values() if die['tag'] == 'DW_TAG_subprogram' and die['name'] == 'failed']
+    assert not {'decl_line', 'decl_file'} & failed['attributes'].keys()
+    return {'insertedRows': len(inserted), 'rawExecutableRows': len(raw_rows),
+        'sourceBytesRestored': True, 'commentPayloadsRecovered': True, 'failedFunctionStillSymbolOnly': True}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
     parser.add_argument('consumer', type=Path)
     parser.add_argument('producer', type=Path)
+    parser.add_argument('--annotations', action='store_true', help='Validate controlled annotation composition through the producer')
+    parser.add_argument('--results', type=Path, help='Override the retained test-results directory')
+    parser.add_argument('--gradle-init', type=Path, help='Optional Gradle build-directory configuration')
     args = parser.parse_args()
     repository = Path(__file__).resolve().parents[3]
-    base = repository / 'build/test-results/emission-evidence'
+    base = (args.results or repository / 'build/test-results/emission-evidence').resolve()
     base.mkdir(parents=True, exist_ok=True)
     case = Path(tempfile.mkdtemp(prefix='run.', dir=base))
     print('emission-evidence-results=' + str(case), flush=True)
-    env = dict(os.environ, GHIDRA_INSTALL_DIR=str(args.ghidra.resolve(strict=True)), FORGE_EMISSION_CASE=str(case))
+    env = dict(os.environ, GHIDRA_INSTALL_DIR=str(args.ghidra.resolve(strict=True)), FORGE_EMISSION_CASE=str(case),
+        FORGE_EMISSION_ANNOTATIONS='1' if args.annotations else '0')
     commands = []
 
     def run(label, command):
@@ -412,10 +457,15 @@ def main():
     run('symbols', ['nm', '-n', case / 'reference'])
     run('disassembly', ['objdump', '-d', case / 'reference'])
     protected = {str(p): digest(p) for p in [*sources, case / 'reference', case / 'input', args.consumer, args.producer]}
-    run('native', [repository / 'src/test/integration/run-isolated-native-smoke.sh', case / 'native-process',
-        repository / 'gradlew', 'emissionEvidenceSmoke', '-PlibdwarfPath=' + str(args.consumer.resolve()),
+    gradle_options = ['--no-daemon', '--project-cache-dir', str(case / 'gradle-cache')]
+    if args.gradle_init:
+        gradle_options.extend(['--init-script', str(args.gradle_init.resolve(strict=True))])
+    native_command = [repository / 'src/test/integration/run-isolated-native-smoke.sh', case / 'native-process',
+        repository / 'gradlew', *gradle_options, 'emissionEvidenceSmoke',
+        '-PemissionAnnotations=' + str(args.annotations).lower(), '-PlibdwarfPath=' + str(args.consumer.resolve()),
         '-PlibdwarfpPath=' + str(args.producer.resolve()), '-PsidecarInput=' + str(case / 'input'),
-        '-PsidecarOutput=' + str(case / 'forge.dbg'), '-PfixtureSymbols=' + str(case / 'symbols.log')])
+        '-PsidecarOutput=' + str(case / 'forge.dbg'), '-PfixtureSymbols=' + str(case / 'symbols.log')]
+    run('native', native_command)
     assert 'emission-evidence-native=PASS' in (case / 'native.log').read_text()
     for view in ['info', 'abbrev', 'aranges', 'decodedline', 'loc']:
         run(view, ['readelf', '--debug-dump=' + view, case / 'forge.dbg'])
@@ -427,7 +477,11 @@ def main():
     run('strict', ['python3', repository / 'src/test/integration/check-dwarfdump.py', case / 'forge.dbg',
         case / 'dwarfdump.log', '--original', case / 'input'])
     checked = inspect(case)
+    annotation_checks = inspect_annotations(case) if args.annotations else None
+    debugger_cwd = case / 'unrelated-debugger-cwd'
+    debugger_cwd.mkdir()
     run('gdb', ['gdb-multiarch', '-q', '-nx', '-batch', '-ex', 'set pagination off', '-ex', 'set confirm off',
+        '-ex', 'cd ' + str(debugger_cwd),
         '-ex', 'set debuginfod enabled off', '-ex', 'set auto-solib-add off', '-ex', 'set disable-randomization off',
         '-ex', 'file ' + str(case / 'input'), '-ex', 'symbol-file ' + str(case / 'forge.dbg'),
         '-x', repository / 'src/test/integration/emission-evidence-gdb.py'])
@@ -458,9 +512,17 @@ def main():
     oracle = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(oracle)
     type_pairs = oracle.inspect(case, dies)
+    if args.annotations:
+        names = ['forge.dbg', 'forge.dbg.c', 'forge.dbg.annotations.json', 'forge.dbg.report.json',
+            'forge.dbg.coverage.json', 'type-before.dbg', 'type-after.dbg', 'type-unattached.dbg']
+        repeated = {name: digest(case / name) for name in names}
+        run('native-repeat', [native_command[0], case / 'native-process-repeat', *native_command[2:]])
+        assert 'emission-evidence-native=PASS' in (case / 'native-repeat.log').read_text()
+        assert repeated == {name: digest(case / name) for name in names}
+        annotation_checks['freshProcessIdenticalFiles'] = repeated
     assert protected == {p: digest(Path(p)) for p in protected}
     result = {'status': 'PASS', 'scope': 'isolated producer facts and definition-two type report, raw DWARF and native x86-64 GDB',
-        'checks': checked, 'typePairs': type_pairs, 'protected': protected, 'sidecarSha256': digest(case / 'forge.dbg'),
+        'checks': checked, 'annotations': annotation_checks, 'typePairs': type_pairs, 'protected': protected, 'sidecarSha256': digest(case / 'forge.dbg'),
         'sourceSha256': digest(case / 'forge.dbg.c'), 'schemaTwoReportSha256': digest(case / 'forge.dbg.report.json')}
     (case / 'acceptance.json').write_text(json.dumps(result, indent=4) + '\n')
     print(json.dumps({'status': 'PASS', 'checks': checked, 'typePairs': type_pairs}))

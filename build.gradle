@@ -694,6 +694,9 @@ tasks.register("emissionEvidenceSmoke", JavaExec) {
         setArgs(["libdwarfPath", "libdwarfpPath", "sidecarInput", "sidecarOutput", "fixtureSymbols"].collect {
             project.property(it)
         })
+        if (project.findProperty("emissionAnnotations") == "true") {
+            args "--annotations"
+        }
     }
 }
 
