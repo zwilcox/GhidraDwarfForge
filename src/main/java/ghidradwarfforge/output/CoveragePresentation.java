@@ -9,7 +9,7 @@ import ghidradwarfforge.coverage.VariableCoverageTotals;
 /** Plain text shared by coverage views; percentages are static populations, never confidence. */
 public final class CoveragePresentation {
     public static final String[] COLUMNS = {"Function", "ELF entry", "Source", "Token anchors",
-        "Line visibility", "Variables located", "Known-scope PC bytes", "Resolved types"};
+        "Line visibility", "Variables located", "Known-scope address bytes", "Resolved types"};
     private CoveragePresentation() { }
 
     public static String ratio(Long numerator, Long denominator) {
@@ -65,7 +65,7 @@ public final class CoveragePresentation {
             "Decoded instruction token anchors: " + anchors + "; line visibility: " + visible + "\n" +
             "Variables with a valid location: " + ratio(coverage.variables().variablesWithLocation(),
                 coverage.variables().recoveredVariables()) + "\n" +
-            "Known-scope variable-PC bytes: " + scopes(coverage.variables()) + "\n" +
+            "Known-scope variable address bytes: " + scopes(coverage.variables()) + "\n" +
             "Canonical function types: " + (coverage.unknownSignatureFunctions() == 0 ? types(coverage.functionTypeUnion()) :
                 "Unknown (" + coverage.unknownSignatureFunctions() + " unavailable signatures)") + "\n" +
             "Select a function for provenance and omission reasons. Save report retains all evidence.";

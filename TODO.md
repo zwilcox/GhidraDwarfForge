@@ -1,5 +1,12 @@
 # TODO.md — GhidraDwarfForge
 
+**ACTIVE hosted validation — #108 draft PR [#164](https://github.com/zwilcox/GhidraDwarfForge/pull/164):**
+the first extension-build gate flagged generic “PC” prose as register-specific
+logic. Those five comments/labels now spell out address ranges/bytes; the guard
+and audited-file boundary are unchanged. Architecture controls and presentation
+checks pass locally; fresh hosted acceptance remains pending. See
+`docs/evidence/coverage-hosted-architecture-gate.json`.
+
 **CONFIRMED locally — #108 GUI comparison:** the coverage window now offers
 Compare report, with a background read/compare task, cooperative cancellation,
 explicit incomparability/errors, and a bounded result view that preserves the exact

@@ -45,7 +45,7 @@ public record ExportEmission(TypeGraph types, Map<String, List<TypeRef>> typeRef
         }
     }
 
-    /** An expression has no encoded PC interval; do not invent a lifetime here. */
+    /** An expression has no encoded address interval; do not invent a lifetime here. */
     public record ExpressionLocation(Expression expression) implements Location {
         public ExpressionLocation {
             Objects.requireNonNull(expression);

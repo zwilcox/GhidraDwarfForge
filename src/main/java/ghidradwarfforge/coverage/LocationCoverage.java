@@ -12,7 +12,7 @@ import ghidradwarfforge.coverage.ExportEmission.ListLocation;
 import ghidradwarfforge.coverage.ExportEmission.Location;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionRange;
 
-/** Static PC-byte coverage for one recovered declaration, never execution/time coverage. */
+/** Static address-range coverage for one recovered declaration, never execution/time coverage. */
 public record LocationCoverage(boolean declarationEmitted, boolean scopeComplete,
         String scopeEvidence, List<FunctionRange> knownScopeRanges,
         List<FunctionRange> locatedRanges, long knownScopeBytes, long coveredScopeBytes,

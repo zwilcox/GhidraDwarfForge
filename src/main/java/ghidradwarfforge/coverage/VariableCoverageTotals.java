@@ -5,7 +5,7 @@ import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.function.BooleanSupplier;
 
-/** Declaration counts plus explicitly restricted known-scope variable-PC-byte totals. */
+/** Declaration counts and sums of address-range lengths for known-scope variables. */
 public record VariableCoverageTotals(long recoveredVariables, long emittedVariables,
         long variablesWithLocation, long knownScopeVariables, long unknownScopeVariables,
         Long knownScopeBytes, Long coveredScopeBytes, String extentUnavailableReason) {
