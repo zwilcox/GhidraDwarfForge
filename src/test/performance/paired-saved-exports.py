@@ -55,7 +55,8 @@ def main():
         (case / name).write_text(json.dumps(value, indent=4) + '\n')
     def run(name, command, **kwargs):
         return support.run(command, case / (name + '.log'), **kwargs)
-    protected = [Path(__file__).resolve(), source / 'export-benchmark.py', binary, *evidence]
+    protected = [Path(__file__).resolve(), source / 'export-benchmark.py',
+        source / 'headless-observations.py', binary, *evidence]
     protected += [p for p in (reference / 'project').rglob('*') if p.is_file()]
     for ghidra in installations.values():
         protected += [p for p in (ghidra / 'Ghidra/Extensions/GhidraDwarfForge').rglob('*') if p.is_file()]
@@ -86,6 +87,8 @@ def main():
             sample = run(name, [wrapper, '--ghidra-dir=' + str(ghidra),
                 '--project-dir=' + str(project), '--project-name=' + program_name, '--program=' + binary.name,
                 '--input=' + str(binary), '--output=' + str(output)], timeout=1800, measured=True)
+            sample['runtime'] = support.verify_headless(case / (name + '.log'),
+                ghidra / 'Ghidra/Extensions/GhidraDwarfForge', exported=True)
             reports = [json.JSONDecoder().raw_decode(line.split('GhidraDwarfForge report: ', 1)[1])[0]
                 for line in (case / (name + '.log')).read_text().splitlines()
                 if 'GhidraDwarfForge report: {' in line]

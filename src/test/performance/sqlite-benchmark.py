@@ -35,6 +35,7 @@ def main():
     parser.add_argument('ghidra', type=Path)
     parser.add_argument('--repeats', type=int, default=3)
     parser.add_argument('--profile', action='store_true')
+    parser.add_argument('--jfr', default='jfr', help='Selected JDK jfr executable for phase extraction')
     args = parser.parse_args()
     if not 2 <= args.repeats <= 10:
         parser.error('repeats must be between 2 and 10')
@@ -49,7 +50,8 @@ def main():
         (case / name).write_text(json.dumps(value, indent=4) + '\n')
     def run(name, command, **kwargs):
         return support.run(command, case / (name + '.log'), **kwargs)
-    protected = [source / 'sqlite-benchmark.py', source / 'export-benchmark.py', source / 'fixtures/sqlite-workload.c']
+    protected = [source / name for name in ('sqlite-benchmark.py', 'export-benchmark.py',
+        'headless-observations.py', 'jfr-phases.py', 'fixtures/sqlite-workload.c')]
     protected += [p for p in module.rglob('*') if p.is_file()]
     before = {str(p): support.digest(p) for p in protected}
     write('protected-before.json', before)
@@ -94,6 +96,7 @@ def main():
     imported = run('import', [ghidra / 'support/analyzeHeadless', project, 'SQLite', '-import', binary,
         '-loader', 'ElfLoader', '-analysisTimeoutPerFile', '1200', '-max-cpu', '4'], timeout=1800, measured=True)
     assert 'REPORT: Analysis succeeded' in (case / 'import.log').read_text()
+    imported['runtime'] = support.verify_headless(case / 'import.log', module)
     project_before = {str(p.relative_to(project)): support.digest(p) for p in project.rglob('*') if p.is_file()}
     write('project-before.json', project_before)
     wrapper = module / 'support/ghidra-dwarf-forge-headless'
@@ -127,17 +130,22 @@ def main():
         hashes = observed
         assert support.digest(binary) == input_hash
         sample.update({'counts': report['counts'], 'status': report['status'], 'profiled': profiling})
+        sample['runtime'] = support.verify_headless(case / (name + '.log'), module, exported=True)
         if not profiling:
             samples.append(sample)
         else:
             write('profile.metrics.json', sample)
         write('samples.json', samples)
+    if args.profile:
+        run('phases', [args.jfr, 'print', '--json', '--events', 'ghidradwarfforge.ExportPhase', case / 'export.jfr'])
+        run('phase-summary', ['python3', source / 'jfr-phases.py', case / 'phases.log', case / 'phase-summary.json'])
     strict = source.parent / 'integration/check-dwarfdump.py'
+    validation_samples = {}
     for name, argv in [('llvm', ['llvm-dwarfdump', '--verify', sidecar]),
             ('strict', ['python3', strict, sidecar, case / 'strict-checks.log', '--original', binary]),
             *[(view, ['readelf', '--debug-dump=' + view, sidecar]) for view in ('info', 'abbrev', 'aranges', 'decodedline', 'Ranges', 'loc')],
             ('header', ['readelf', '-h', sidecar]), ('sections', ['readelf', '-SW', sidecar]), ('notes', ['readelf', '-n', sidecar])]:
-        run(name, argv, timeout=300)
+        validation_samples[name] = run(name, argv, timeout=300, measured=True)
         support.require_clean(case / (name + '.log'))
     assert 'No errors.' in (case / 'llvm.log').read_text()
     behavior = case / 'behavior.gdb'
@@ -161,7 +169,7 @@ def main():
         'if not exits: gdb.execute("step")',
         'if not exits: gdb.execute("continue")',
         'assert exits == [0]', 'end', 'echo sqlite-benchmark-gdb=PASS\\n', '']))
-    run('gdb', ['gdb-multiarch', '-q', '-nx', '-batch', '-x', behavior], timeout=180)
+    validation_samples['gdb'] = run('gdb', ['gdb-multiarch', '-q', '-nx', '-batch', '-x', behavior], timeout=180, measured=True)
     support.require_clean(case / 'gdb.log')
     assert 'sqlite-benchmark-gdb=PASS' in (case / 'gdb.log').read_text()
     after = {str(p): support.digest(p) for p in protected}
@@ -173,6 +181,8 @@ def main():
     summary = {'status': 'PASS', 'inputSha256': input_hash, 'inputBytes': binary.stat().st_size,
         'sidecarBytes': sidecar.stat().st_size, 'sourceBytes': Path(str(sidecar) + '.c').stat().st_size,
         'artifactSha256': hashes, 'import': imported, 'exports': samples,
+        'validation': validation_samples,
+        'profilePhases': json.loads((case / 'phase-summary.json').read_text()) if args.profile else None,
         'exportMedianSeconds': statistics.median(row['elapsedSeconds'] for row in samples),
         'exportMaximumResidentKiB': max(row['maximumResidentKiB'] for row in samples),
         'counts': samples[-1]['counts'], 'strict': json.loads((case / 'strict-checks.log.check.json').read_text()),

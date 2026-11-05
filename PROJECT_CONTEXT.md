@@ -1,5 +1,22 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local performance continuation; #74 remains incomplete:** the
+current work preserves Ghidra 12.0.3/Java 21 and pinned libdwarf 2.3.2. Optional
+JFR phase events pass real Java 21 failure/cancellation tests and a packaged
+SQLite headless export with deterministic artifacts and validator/GDB checks.
+The source/decompilation phase dominates that single profiled run; this does
+not justify a general optimization or architecture claim. A pinned U-Boot
+sandbox workload is being prepared. Full corpus/host measurements, candidate
+decisions, final CI and integration remain required. See
+`docs/PERFORMANCE-WORKPLAN.md` for scope, observed timings and retained failures.
+
+**CONFIRMED integration baseline:** PR158 is merged as
+`6c776d7415fc5222f7e1314c0c5192454c8aced5`; its separate main-push run
+`41921433443` reports success at that exact commit. The earlier Windows race
+and pending-integration notes below are historical checkpoints. This resolves
+their conflict with the current merged baseline; it does not substitute for
+new #74 validation or authorize release publication.
+
 **CONFIRMED Windows chooser correction; separate clean-launch click oracle fixed locally:**
 At `ba65267`, run41897626643/job126818305192 passes the delayed-chooser control
 and the first modifying Windows GUI journey: attachment, changed-curation refresh,

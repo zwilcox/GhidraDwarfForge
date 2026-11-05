@@ -1,0 +1,206 @@
+# Broader workload and profiling acceptance (#74)
+
+Baseline: main `6c776d7415fc5222f7e1314c0c5192454c8aced5`, Ghidra 12.0.3,
+Java 21 runtime/bytecode, existing pinned libdwarf 2.3.2. No ABI change is planned.
+The user-directed sequence is #74, #108, #116/#114, #112, #110, then #109.
+This plan does not reduce any of those issues' acceptance criteria.
+
+## Measurements and corpus
+
+- **CONFIRMED existing corpus:** source-generated scaling fixtures and pinned
+  SQLite 3.46.1. Re-run on the current packaged baseline; historical timings do
+  not describe the current exporter.
+- **PLANNED firmware-code corpus:** U-Boot 2025.01 sandbox, archive SHA-256
+  `cdef7d507c93f1bbd9f015ea9bc21fa074268481405501945abc6f854d5b686f`.
+  Preserve the archive URL, exact configuration, source license, compiler,
+  build commands and source/binary hashes. Sandbox executes firmware code on
+  Linux but excludes architecture-specific hardware code; it cannot establish
+  bare-metal, Cortex-M or general firmware support. See the upstream
+  [sandbox description](https://docs.u-boot-project.org/en/latest/arch/sandbox/sandbox.html).
+  A successful build alone is not an accepted benchmark.
+- **PLANNED host coverage:** repeat representative saved-program exports on
+  Linux and Windows using the same production path and pinned ELF inputs.
+  Record host-specific measurement boundaries and tool availability. Linux
+  replay of Windows artifacts is a consumer check, not a Windows timing result.
+- **PLANNED reproducible statistics:** separate fixture build, import/analysis,
+  fresh-JVM exports, validation and debugger costs. Measure wall time, CPU and
+  peak memory. Use repeated alternating baseline/candidate pairs for changes;
+  retain samples and inconclusive/negative observations. Keep profiling runs
+  separate from unprofiled timing populations. Record background load and
+  cache limitations rather than claiming controlled hardware.
+
+## Internal phase observations
+
+**CONFIRMED locally on SQLite; hosted acceptance pending:** optional JFR `ghidradwarfforge.ExportPhase`
+events measure the export operation, decompilation/source generation,
+type/storage extraction, native production and ELF packaging. They are outside
+the deterministic report/sidecar/source and carry normal-completion status.
+Native production includes Java DIE construction, JNA calls, native producer
+work and section materialization; it is not a measurement of pure native CPU.
+The outer export event contains the child phases. Do not sum inclusive times.
+Startup/project opening are outside that event but inside whole-process time.
+Time not attributed to a child remains explicitly unattributed.
+
+Acceptance requires real Java 21 event tests (including exception and
+cancellation propagation), a real recorded headless export, independent
+validator/GDB checks, deterministic profile/unprofiled artifacts, and paired
+baseline/candidate runs to quantify instrumentation overhead. JFR samples
+and per-process CPU measurements are complementary, not interchangeable.
+
+Local run `build/test-results/sqlite-benchmark/run.kk3l_v4w` completes all
+1,539 decompilations on actual Java 21.0.12.1. Two unprofiled exports and a
+separate JFR export produce identical sidecar/source bytes. GNU/LLVM and the
+pinned strict checker pass; the checker's 828 inherited frame diagnostics are
+corroborated against identical original frame bytes, not suppressed wholesale.
+GDB checks named DWARF functions, source lookup, raw global values, next/step
+and normal exit. The report remains PARTIAL with 12,547 omitted location ranges
+and 11 unsupported constructs; the benchmark does not establish complete
+variable/signature recovery. Input and program database bytes remain unchanged;
+only the two documented Ghidra backup metadata files rotate.
+
+The profiled export observes 24.737s decompilation/source, 7.054s type/storage,
+0.619s native production and 0.018s ELF packaging within 32.991s export time;
+0.562s remains unattributed. Fresh-process unprofiled samples are 35.24/36.61s.
+These are observations on this host, not a speedup claim. U-Boot preparation
+overlapped part of the initial run; independent paired measurements follow
+without that build load. Baseline package JAR SHA-256:
+`80d57bb096febc46b8699d4205481a4c1219c7f59d9070880f72454d67e40b96`;
+instrumented candidate:
+`cb9e497ba45b41b73310e4b80239d1ccda2974bee73b82a1aab9f6a61f3c3763`.
+
+Retained initial failures are not timing evidence: the first Java 21 build
+attempt selected a JRE without `javac`; compilation then used the available
+compiler with Java 21 production bytecode, and the standalone phase smoke was
+explicitly compiled with `--release 21` and executed on Java 21. The first
+private headless setup resolved the shared installation's old script and Java
+25 (`run.j2k9kb86`). Giving the private installation its own Utility module and
+a complete private Java 21 toolchain corrected discovery. Log checks now verify
+the actual JVM version and selected packaged script, not just environment vars.
+
+To inspect one recording (use the `jfr` executable from the selected JDK):
+
+```bash
+jfr print --json --events ghidradwarfforge.ExportPhase export.jfr > phases.json
+python3 src/test/performance/jfr-phases.py phases.json phase-summary.json
+```
+
+The summarizer rejects missing, duplicate, failed, mixed-thread or overlapping
+phases; it does not publish a partial recording as a complete phase breakdown.
+
+Five alternating baseline/candidate pairs in
+`build/test-results/paired-saved-exports/run.41vnf2fz` pass artifact-byte/count
+equality, strict/LLVM/GNU checks, GDB return-value/source/runtime checks and
+protected-file checks. All ten logs independently identify Java 21 and the
+intended installed script. Baseline times are
+35.75/35.01/35.08/34.84/34.73s; candidate times are
+35.17/35.25/35.02/34.84/35.35s. Their medians are 35.01 and 35.17s, but the
+median within-pair difference is zero and signs vary. This does not establish
+a consistent timing effect or a speedup. **CONFIRMED comparison confounder:**
+the hosted baseline used Java 21 compilation while this first local candidate
+used Java 25 with Java 21-compatible production bytecode. Independent JAR
+comparison finds 67 changed shared classes, exceeding the intended producer
+change. Artifact equality and runtime checks remain valid, but these timings
+cannot isolate instrumentation overhead. Rebuild both variants with the same
+Java 21 compiler and repeat the comparison before drawing that conclusion.
+Maximum process-family RSS
+is 1,183,972 and 1,172,460KiB respectively, with no general memory claim.
+
+Both variants have now been rebuilt with the same full Java 21.0.12.1 JDK.
+The rebuilt baseline JAR exactly matches the reviewed hosted baseline above.
+The candidate JAR is
+`ab67c0d16aeb7738e0991c1a70b92cc7bc728a9600376363b71ba7da57f0aa17`;
+all differing shared classes belong to the intentionally changed
+`MinimalDwarfSidecarExporter` source. The standard release assembler accepts
+the reused, hash/provenance-checked native artifacts; both complete installation
+manifests pass (309/310 files). New isolated installation roles preserve the
+earlier measured installations. The same-compiler timing rerun remains pending.
+
+The updated automated SQLite harness also passes `run.fml1pwam`: two fresh
+exports (median 35.10s), a separate recorded export, runtime/script checks,
+automatic phase-summary checks, validators and GDB. Timed validation is
+0.06s LLVM, 0.19s strict, and 0.13s GDB; individual GNU views are 0.00–0.03s
+at GNU time's hundredth-second resolution. A printed zero is not zero cost.
+This new run supersedes manual-only phase extraction as harness evidence.
+
+## Firmware build recipe
+
+**CONFIRMED local build/runtime sanity; exporter acceptance pending:**
+`build-uboot.py` verifies the pinned archive, preserves compiler reference
+DWARF, strips debug data only from a new workload copy, retains the final
+configuration and tool commands, and executes an echo command with the built
+device tree. It does not install dependencies or touch user target files.
+On Ubuntu the build dependencies include GCC/make, bison/flex/m4, swig,
+Python development/setuptools support, OpenSSL development headers and
+efitools; see the pinned source's `doc/build/gcc.rst` for upstream context.
+The workload disables SDL and the capsule creation tool; firmware test code
+and its device-tree/signature build dependencies remain present.
+
+```bash
+python3 src/test/performance/build-uboot.py --archive /path/to/u-boot-2025.01.tar.bz2
+DWARFDUMP=/path/to/pinned/checker python3 src/test/performance/uboot-benchmark.py \
+    /path/to/isolated/ghidra /path/to/uboot-build/run.directory \
+    --repeats 3 --profile --jfr /path/to/java21/bin/jfr
+```
+
+The optional archive argument avoids downloading again; its digest is always
+checked. The recipe uses a fixed build timestamp/user/host but does not claim
+bit-identical compiler-reference files across different build paths/toolchains.
+The benchmark binds each built artifact by digest before import, saves repeated
+read-only exports, and separately validates the compiler reference and Forge
+runtime behavior. U-Boot's uncurated recovered types are not assumed to equal
+compiler debug types. Import/export failures and honest omissions are retained.
+
+**CONFIRMED scoped first firmware results:** `uboot-build/run.tm7eo7ga` builds
+and runs the pinned fixture. `uboot-benchmark/run.hw644d9x` imports it in 91.06s;
+two exports take 115.20/116.10s. Both and a separate JFR export produce identical
+sidecar/source/companion bytes. All 6,375 functions export; 6,374 decompile, with
+one timeout retained for `lib_test_alist_has`. GNU/LLVM and strict validation
+pass. The profile attributes 94.705s to decompilation/source (including the
+timeout), 12.630s to type/storage, 5.271s to native production and 0.016s to ELF
+packaging. These are local observations with the initial compiler setup.
+
+The first complete harness run fails its compiler GDB invocation because
+shell-disabled argument handling passes the quoted echo command incorrectly.
+Corrected behavior replay preserves that failure and redirects only the
+inferior's console output, leaving debugger diagnostics independently checked.
+The next replay reveals an incorrect oracle assumption: U-Boot's `main` is a
+nine-byte `endbr64; jmp sandbox_main` thunk. The existing exporter deliberately
+omits uncurated imported thunks and reports `main` as THUNK; its minimal ELF
+symbol must not be counted as DWARF coverage. The oracle now explicitly checks
+that omission, uses the actual `sandbox_main` body for full-DWARF lookup, and
+retains `main` only as an independently known relocation anchor.
+
+`behavior-replay-2` passes compiler argc/argv values and Forge named
+`do_echo` breakpoints, actual source ownership, function lookup, raw `gd`
+pointer, next/step and normal exit. It also exercises the legitimate same-named
+static function/data objects called `do_echo`: function breakpoints work even
+though a generic expression lookup selects the data object. Full rerun of the
+corrected harness with the Java 21-compiled candidate remains pending; the old
+failed run is not relabeled as a fully passing harness run.
+
+## Optimization decisions still required
+
+For each candidate below, document measured motivation, compatibility/resource
+cost, and an explicit implement/defer/reject decision. No decision is yet made.
+
+| Candidate | Evidence needed |
+|---|---|
+| `.debug_names` / GDB index | Consumer load/lookup cost and stale-index handling |
+| DWARF compression | Artifact size, production cost, consumer/validator compatibility |
+| String/address indexing | Actual section duplication/size and lookup/serialization cost |
+| Incremental export caching | Repeated work cost and reliable invalidation for analyst changes |
+| Bounded parallel decompilation | External decompiler CPU/wait cost, memory, ordering and cancellation |
+
+Any selected implementation requires semantic/byte comparisons, strict
+GNU/LLVM/pinned-libdwarf validation, source/type/location and applicable GDB
+behavior, unchanged originals, cancellation/failure controls, and bounded
+resources. Preserve negative measurements; do not silently replace a difficult
+workload with an easier one to obtain a passing result.
+
+## Integration gate
+
+**PLANNED:** document datasets, versions, commands, all samples and retained
+artifacts; reconcile PROJECT_CONTEXT/TODO; review the final source and package;
+pass enforced exact-head CI; integrate through a normal protected merge.
+Component PRs must not auto-close #74. The issue remains open until all of its
+remaining requirements are implemented or explicitly resolved with evidence.

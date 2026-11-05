@@ -601,6 +601,8 @@ jobs:
             src/test/integration/architecture-neutrality.sh
             python3 src/test/integration/architecture-neutrality-smoke.py
             python3 -B -m unittest discover -s src/test/python -p test_gdb_loader.py -v
+            python3 -B -m unittest discover -s src/test/python -p test_jfr_phases.py -v
+            python3 -B -m unittest discover -s src/test/python -p test_headless_observations.py -v
             cc -std=c11 -Wall -Wextra -Werror src/test/native/linux-rename-contract.c -o build/linux-rename-contract
             build/linux-rename-contract
             cc -std=c11 -O2 -Wall -Wextra -Werror native/supervisor/forge-supervisor-linux.c -o build/forge-validator-supervisor
@@ -608,7 +610,7 @@ jobs:
                 -PsupervisorPath="$PWD/build/forge-validator-supervisor" \
                 -PsupervisorPython="$(command -v python3)" \
                 -PsupervisorResults="$PWD/build/test-results/extension-build/supervisor"
-            ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke \
+            ./gradlew exportPhaseSmoke addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke \
               ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke companionArtifactPublisherSmoke strictDwarfReportSmoke attachmentProtocolSmoke attachmentReceiptStoreSmoke attachmentFileStoreSmoke attachmentTargetStoreSmoke attachmentTransactionSmoke attachmentExportBindingSmoke attachmentOperationSmoke attachmentInvocationSmoke attachmentHelperSmoke attachmentGuiProcessSmoke attachmentPreparationSmoke attachmentRecoveryInvocationSmoke debuglinkBasenameSmoke \
               exportReportSmoke exportReportClaimsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke \
               fileDigestsSmoke elfBuildIdSmoke \
@@ -2611,6 +2613,10 @@ jobs:
         run: |
           $resultDirectory = 'build\test-results\windows-host'
           New-Item -ItemType Directory -Force $resultDirectory | Out-Null
+          python -B -m unittest discover -s src/test/python -p test_jfr_phases.py -v
+          if ($LASTEXITCODE -ne 0) { throw 'JFR phase summary controls failed' }
+          python -B -m unittest discover -s src/test/python -p test_headless_observations.py -v
+          if ($LASTEXITCODE -ne 0) { throw 'Headless observation controls failed' }
           [scriptblock]::Create((Get-Content -Raw .\support\ghidra-dwarf-forge-headless.ps1)) | Out-Null
           & .\src\test\integration\attachment-path-argument.ps1 |
             Tee-Object -FilePath "$resultDirectory\path-argument.log"
@@ -2618,7 +2624,7 @@ jobs:
           if ($null -eq $extension) { throw 'extension ZIP is missing' }
           Expand-Archive -Path $extension.FullName `
             -DestinationPath (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions') -Force
-          & .\gradlew.bat dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke companionArtifactPublisherSmoke strictDwarfReportSmoke attachmentProtocolSmoke attachmentInvocationSmoke attachmentHelperSmoke attachmentGuiProcessSmoke attachmentPreparationSmoke attachmentRecoveryInvocationSmoke exportReportSmoke `
+          & .\gradlew.bat exportPhaseSmoke dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke companionArtifactPublisherSmoke strictDwarfReportSmoke attachmentProtocolSmoke attachmentInvocationSmoke attachmentHelperSmoke attachmentGuiProcessSmoke attachmentPreparationSmoke attachmentRecoveryInvocationSmoke exportReportSmoke `
             syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke arm32CallPolicySmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
             functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke arm32SectionModesSmoke ghidraArm32SectionModesSmoke ghidraArmBe8ProfileSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke i386AbiSelectionSmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke i386ParameterAllocationSmoke allocationDecompilerSmoke floatingTypeLayoutSmoke mipsN32ParameterAllocationSmoke delayedReturnPrefixSmoke truncatedStackDepthSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke mipsWideCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `

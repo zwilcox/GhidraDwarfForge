@@ -65,6 +65,14 @@ tasks.register("nativeProducerSmoke", JavaExec) {
     }
 }
 
+tasks.register("exportPhaseSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks real JFR phase observations and failure/cancellation propagation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.performance.ExportPhaseSmoke"
+}
+
 tasks.register("packagedNativeProducerSmoke", JavaExec) {
     group = "verification"
     description = "Resolves and runs the packaged libdwarf pair in an isolated JVM"
