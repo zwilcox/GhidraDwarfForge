@@ -484,6 +484,17 @@ tasks.register("dwarfLineTableSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.dwarf.Dwarf5LineTableSmoke"
 }
 
+tasks.register("ghidraInstructionEvidenceSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks real decoded instruction inventories, rebasing and unavailable evidence"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.GhidraInstructionEvidenceSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/instruction-evidence/settings").absolutePath
+}
+
 tasks.register("sourceCoverageSmoke", JavaExec) {
     group = "verification"
     description = "Checks static source coverage against independently decoded line bytes"

@@ -2668,10 +2668,12 @@ own pinned-header audit and isolated-process test.
 
 **PRESENT, UNVERIFIED end to end — [#108](https://github.com/zwilcox/GhidraDwarfForge/issues/108):**
 source-coverage primitives retain the actual encoded line plan and pass independent
-raw-line-byte checks; the public report is unchanged. [The metric contract and
+raw-line-byte checks. Actual Ghidra listing-capture tests pass on four profiles,
+including rebases/gaps/body drift/cancellation, and token provenance is preserved
+separately from declaration rows. The public report is unchanged. [The metric contract and
 acceptance matrix](docs/COVERAGE-SCORECARDS.md) retain the full instruction,
 variable/location/type, provenance, compatibility, comparison/presentation and
-bounded-overhead scope. Extraction/report integration and end-to-end acceptance
+bounded-overhead scope. Capture-to-report integration and end-to-end acceptance
 remain required. #74 retains integration priority.
 
 The baseline exporter, source/type/location machinery, five target lanes,

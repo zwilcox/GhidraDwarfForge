@@ -5,9 +5,29 @@ retains the exact encoded line plan and measures direct token anchors separately
 from line-table visibility. Native-free tests independently decode generated
 DWARF5 line bytes for both address widths and byte orders; baseline comparisons
 preserve all four section byte streams. This is not an exposed scorecard yet.
-Ghidra instruction/token extraction, report integration, variable/type coverage,
-CLI/GUI comparison and full validator/GDB/performance acceptance remain planned.
+The instruction capture helper passes 44 checks using actual Ghidra databases
+for x86-64, AArch64 and both MIPS32 byte orders. Per-function token provenance is
+preserved before declaration rows are merged. Source text, existing mappings and
+function boundaries remain byte-identical in a parent comparison. These helpers
+are not yet connected to a public report. Report integration, variable/type
+coverage, CLI/GUI comparison and full validator/GDB/performance acceptance remain
+planned.
 Issue 74 retains integration priority; no public schema has changed.
+
+## Current component checks
+
+With the supported Java21/Ghidra12.0.3 environment, run:
+
+```bash
+./gradlew ghidraInstructionEvidenceSmoke syntheticSourceSmoke sourceCoverageSmoke dwarfLineTableSmoke buildExtension
+```
+
+Observed local results: instruction evidence passes 44 checks across four
+profiles; source provenance and independent line-byte coverage checks pass;
+the extension builds. The ordinary exporter/report path does not yet invoke
+instruction capture or publish metrics. Baseline comparisons cover four line
+encodings and synthetic source/mapping/boundary bytes. Full serialized ELF/DWARF,
+GDB, report compatibility, GUI and performance acceptance is still outstanding.
 
 ## Populations and exact units
 

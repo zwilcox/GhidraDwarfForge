@@ -5,8 +5,13 @@ branch now retains the exact line-emission plan and indexes decoded instruction
 coverage without conflating token anchors with debugger line carry-forward.
 Native-free byte-decoding tests cover overlap, gaps, declarations, collisions,
 duplicates, empty/failed functions and cancellation in both widths/byte orders.
-Four baseline/candidate line sections are byte-identical. Listing/token extraction,
-report schema integration, variable/type coverage, comparison/presentation,
+Four baseline/candidate line sections are byte-identical. The capture helper now
+passes real Ghidra database tests for x86-64, AArch64 and both MIPS32 byte orders,
+including rebases, undecoded gaps, missing/changed functions and cancellation.
+Per-function token provenance excludes declaration-only rows, with unchanged
+source bytes and old mappings in baseline comparisons. The helper is not yet
+connected to exporter reports. Report schema integration, variable/type coverage,
+comparison/presentation,
 large-workload cost and full validator/GDB acceptance remain planned. This does
 not complete #108 or move its integration ahead of #74. See
 `docs/COVERAGE-SCORECARDS.md` for definitions and the full remaining acceptance.
