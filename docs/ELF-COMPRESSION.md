@@ -2,8 +2,8 @@
 
 ## Current hosted acceptance
 
-[Run 41993381342](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/41993381342)
-passes all 15 jobs, including `required-validation`, at `7fbc726`. Retained raw
+[Run 42010699187](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42010699187)
+passes all 15 jobs, including `required-validation`, at `6281660`. Retained raw
 review covers 25 cases and 75 plain/zlib/repeat exports across all five profiles,
 producer-report hashes, bounded section inflation, deterministic bytes,
 source equivalence, original preservation and applicable GDB behavior.
@@ -20,20 +20,20 @@ the later rebase test republishes two ordinary baseline files with identical
 hashes, explaining their final mtime changes. Compression-local snapshots still
 prove unchanged shared content, size, mode and mtime; all other final shared
 captures match those snapshots. Details and scoped limitations are retained in
-[evidence](evidence/compression-hosted-41993381342.json).
+[evidence](evidence/compression-integrated-42010699187.json).
 
 PR159 is merged as `762dbbd`; its full CI and separate Windows performance
-workflow pass. PR160 incorporates that main revision through a normal merge.
-**PRESENT, UNVERIFIED as a combined revision:** fresh required validation and
-protected integration remain pending. The older pending/failure checkpoints
-below describe earlier revisions and do not supersede this acceptance record.
+workflow pass. PR160 is merged as `5d81e4f`, with a tree identical to the combined
+revision tested above. Both host paths and all five target archives have current
+raw-artifact review. The separate main-push run is not represented as completed
+by this PR validation record.
 
-**CONFIRMED local and hosted component validation; final integration pending:** the development exporter can
-store newly generated DWARF sections using gABI zlib compression. The default
-remains uncompressed. This is the bounded production candidate selected by
-[#74](https://github.com/zwilcox/GhidraDwarfForge/issues/74); it does not complete
-that issue or publish a release. See `PERFORMANCE-WORKPLAN.md` for the measured
-private-copy experiments, other candidates and passing Windows workload measurements.
+**CONFIRMED implemented and integrated:** production exports can store newly
+generated DWARF with opt-in gABI zlib compression. Default output stays plain.
+This is the selected bounded optimization for #74; see
+[final acceptance](PERFORMANCE-ACCEPTANCE.md) for the full requirement mapping,
+measured limits and explicit deferrals. No release publication is included.
+Earlier pending/failure checkpoints below describe their historical revisions.
 
 ## Invocation
 
