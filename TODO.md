@@ -1,7 +1,8 @@
 # TODO.md — GhidraDwarfForge
 
 **PRESENT, UNVERIFIED end to end — #108:** recovered/emitted variable inventory
-and source evidence inventories pass local component/raw-DWARF/GDB checks. Source
+and source evidence inventories, plus combined scorecard assembly, pass local
+component/raw-DWARF/GDB checks. Source
 counts retain unknown versus zero and union overlapping instructions; variables
 retain unexported declarations and unknown scopes. Public scorecard/schema,
 comparison/CLI/GUI, large-workload cost and hosted acceptance remain pending.

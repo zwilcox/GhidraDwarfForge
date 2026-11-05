@@ -169,12 +169,39 @@ and the full rerun passes. Public report assembly/schema/comparison and measured
 large-workload overhead remain pending; exact point retention is not yet a
 public serialization contract.
 
+## Combined scorecard assembly
+
+**CONFIRMED locally:** `ExportCoverage` combines actual per-function emission,
+source inventories, recovered variable populations and canonical type coverage.
+A failed function keeps its recovered type denominator even when that type is
+emitted elsewhere. Aggregate function types use a canonical union, not the sum
+of per-function graphs. Missing recovered signatures produce null per-function
+type metrics and an explicit unknown-signature count; whole-population type
+percentages are withheld while any signature is unknown. Recovered globals stay
+in a separate inventory, with no claim that all of them were emitted.
+
+Signature evidence retains the recorded convention separately from the actual
+post-policy effective convention and debugger-call restriction. Signature source
+is not propagated into invented per-type provenance. The assembler is designed
+to run inside artifact staging before publication; it is not yet connected to
+the ordinary script/report path and is not a public wire format.
+
+The combined smoke passes all 148 cancellation checkpoints and checks unknown
+model/source/listing evidence, failed functions, canonical unions, separate
+globals and post-policy restrictions. Native raw-DWARF/GDB inspection verifies
+the assembled fixture's per-function type/source/variable metrics and its union
+of five DIE-required canonical nodes (four resolved, one opaque) plus implicit
+void. Evidence is `build/coverage-assembly-validation.log` and
+`build/test-results/emission-evidence/run.nw9dlv3j/acceptance.json`.
+Versioned bounded serialization/reading, exact comparison identity, presentation,
+large-workload overhead and full hosted acceptance remain pending.
+
 ## Current component checks
 
 With the supported Java21/Ghidra12.0.3 environment, run:
 
 ```bash
-./gradlew ghidraInstructionEvidenceSmoke syntheticSourceSmoke sourceCoverageSmoke sourceCoverageInventorySmoke dwarfLineTableSmoke typeCoverageSmoke locationEmissionPlanSmoke locationCoverageSmoke variableCoverageInventorySmoke dwarfLocationListsSmoke buildExtension
+./gradlew ghidraInstructionEvidenceSmoke syntheticSourceSmoke sourceCoverageSmoke sourceCoverageInventorySmoke dwarfLineTableSmoke typeCoverageSmoke locationEmissionPlanSmoke locationCoverageSmoke variableCoverageInventorySmoke exportCoverageSmoke dwarfLocationListsSmoke buildExtension
 ```
 
 Observed local results: instruction evidence passes 44 checks across four

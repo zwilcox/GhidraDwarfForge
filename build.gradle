@@ -543,6 +543,14 @@ tasks.register("variableCoverageInventorySmoke", JavaExec) {
     mainClass = "ghidradwarfforge.coverage.VariableCoverageInventorySmoke"
 }
 
+tasks.register("exportCoverageSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks assembled per-function scorecards, unknown populations and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.coverage.ExportCoverageSmoke"
+}
+
 tasks.register("emissionEvidenceSmoke", JavaExec) {
     group = "verification"
     description = "Retains actual producer emission evidence for independent DWARF/GDB inspection"

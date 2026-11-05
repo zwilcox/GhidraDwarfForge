@@ -280,6 +280,20 @@ def inspect(case):
         'unavailableTokenFunctions': 0, 'decodedInstructions': len(all_decoded), 'anchoredInstructions': len(all_anchored),
         'lineVisibleInstructions': len(all_visible)}
     assert (len(all_decoded), len(all_anchored), len(all_visible)) == (6, 2, 4)
+    scorecards = evidence['coverage']
+    assert scorecards['variables'] == inventory['totals']
+    assert scorecards['sourceUnion'] == evidence['sourceInventory']['observedUnion']
+    assert scorecards['unknownSignatureFunctions'] == 0 and scorecards['recoveredGlobalsKnown']
+    assert scorecards['recoveredGlobals'] == []
+    assert scorecards['functionTypeUnion'] == {'recoveredRoots': 4, 'emittedRoots': 4, 'opaqueFreeEmittedRoots': 3,
+        'recoveredNodes': len(seen), 'resolvedEmittedNodes': 4, 'opaqueEmittedNodes': 1,
+        'notEmittedNodes': 0, 'implicitVoidNodes': 1, 'emittedImplicitVoidNodes': 1}
+    for score in scorecards['functions']:
+        name = score['function']['name']
+        assert score['types'] == evidence['types'][name]
+        assert score['variables'] == rows[name]
+        assert score['signature']['recovered'] and score['signature']['emitted'] == (name != 'failed')
+        assert score['typeProvenance'] == 'UNKNOWN_PER_TYPE'
     return {'rawTypeNodes': 5, 'opaqueNodes': 1, 'variables': 9, 'locations': 4, 'omittedLocations': 5,
             'knownScopeVariables': 3, 'lateCoveredScopeBytes': metrics['late']['coveredScopeBytes'],
             'lateKnownScopeBytes': metrics['late']['knownScopeBytes']}

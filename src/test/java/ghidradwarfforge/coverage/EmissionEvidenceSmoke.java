@@ -197,8 +197,16 @@ public final class EmissionEvidenceSmoke {
             decoded, source, facts.lines(), () -> false);
         require(sourceInventory.observedUnion().equals(new SourceCoverageInventory.Union(3, 0, 0, 6, 2, 4)),
             "fixture instruction/token/visibility union; Python independently checks disassembly and line bytes");
+        var coverage = ExportCoverage.build(model, source, decoded, facts, () -> false);
+        require(coverage.variables().equals(variableTotals) && coverage.sourceUnion().equals(sourceInventory.observedUnion()),
+            "assembled scorecards preserve independent inventory populations");
+        require(coverage.functionTypeUnion().equals(new TypeCoverage(4, 4, 3, 5, 4, 1, 0, 1, 1)),
+            "function type union deduplicates shared and failed roots; implicit void remains separate");
+        for (var function : coverage.functions()) {
+            require(function.types().equals(counts.get(function.function().name())), "assembled per-function canonical types");
+        }
         Files.writeString(Path.of(output + ".evidence.json"), gson.toJson(
-            Map.of("emission", facts, "types", counts, "locations", locationCounts, "variableTotals", variableTotals, "variableInventory", inventory, "sourceInventory", sourceInventory)) + "\n");
+            Map.of("emission", facts, "types", counts, "locations", locationCounts, "variableTotals", variableTotals, "variableInventory", inventory, "sourceInventory", sourceInventory, "coverage", coverage)) + "\n");
         Path cancelled = Path.of(output + ".cancelled");
         byte[] previous = "previous artifact".getBytes(java.nio.charset.StandardCharsets.UTF_8);
         Files.write(cancelled, previous);
