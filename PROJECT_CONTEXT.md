@@ -1,5 +1,59 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED Windows #74 measurements; consumer correction validated locally:**
+run `41977254778` at `cfc212c` completes five native Windows baseline/candidate
+pairs and a separate profile for both pinned workloads, with unchanged artifacts,
+curated report counts and protected inputs. Native GNU/LLVM/libdwarf checks pass.
+The hosted Linux consumer fails because compiler-reference source paths still
+refer to the build worker. Explicit relocation from verified corpus sources now
+passes local replay of both unchanged Windows artifacts and real-GDB positive/
+negative source controls. No diagnostic is suppressed. Fresh hosted acceptance
+and the required gate remain pending. Cache and parallel-decompilation deferrals
+are now explicit against both hosts' measurements; compression remains in PR160.
+See `docs/PERFORMANCE-WORKPLAN.md`; full #74 and all later goal issues stay open.
+
+**CONFIRMED Windows runtime-observer correction; workload acceptance pending:**
+Run `41975183135` passes native accounting, corpus and package preparation,
+imports SQLite and completes the first baseline export. Its observer then
+rejects PowerShell's SGR-colored Java 21 banner. The retained log contains
+`openjdk version "21.0.13"`; the observer now removes only SGR presentation
+codes, with positive/negative controls preserving runtime and packaged-script
+identity checks. No full Windows measurement or consumer acceptance is claimed.
+
+**CONFIRMED broader local measurements; Windows workloads pending:** five
+same-compiler U-Boot pairs pass artifact/report identity, validators, GDB and
+preservation checks. Private-copy compression/index experiments pass for zlib,
+zstd and GDB indexes on SQLite/U-Boot; the tested `.debug_names` route fails LLVM
+verification. Opt-in zlib compression is selected as the next bounded production
+change, but remains **PLANNED**. Native Windows accounting and the shared pinned
+corpus build pass. Windows workload run `41973112213` completes its first import
+then fails the mandatory runtime observation because `launch.bat` emits no JVM
+version banner by default. Both isolated test installations now pin Java 21 and
+request `-showversion`; the corrected native workload run is pending. See
+`docs/PERFORMANCE-WORKPLAN.md` and `docs/evidence/performance-candidates-local-20261105.json`.
+Full #74 acceptance and every later goal issue remain incomplete.
+
+**CONFIRMED local performance continuation; #74 remains incomplete:** the
+current work preserves Ghidra 12.0.3/Java 21 and pinned libdwarf 2.3.2. Optional
+JFR phase events pass real Java 21 failure/cancellation tests and a packaged
+SQLite headless export with deterministic artifacts and validator/GDB checks.
+The source/decompilation phase dominates the profiled SQLite and U-Boot runs;
+this does not justify a general optimization or architecture claim. The full
+pinned U-Boot harness now passes locally, including its honest single timeout,
+and same-compiler SQLite pairs preserve every artifact byte. Cancellation and
+forced decompilation-failure regressions pass. Native Windows accounting controls pass run
+`41971951834`; the initial process-count oracle failure is retained. Real Windows
+workload/consumer jobs are present but unverified. Full corpus/host measurements, candidate
+decisions, final CI and integration remain required. See
+`docs/PERFORMANCE-WORKPLAN.md` for scope, observed timings and retained failures.
+
+**CONFIRMED integration baseline:** PR158 is merged as
+`6c776d7415fc5222f7e1314c0c5192454c8aced5`; its separate main-push run
+`41921433443` reports success at that exact commit. The earlier Windows race
+and pending-integration notes below are historical checkpoints. This resolves
+their conflict with the current merged baseline; it does not substitute for
+new #74 validation or authorize release publication.
+
 **CONFIRMED Windows chooser correction; separate clean-launch click oracle fixed locally:**
 At `ba65267`, run41897626643/job126818305192 passes the delayed-chooser control
 and the first modifying Windows GUI journey: attachment, changed-curation refresh,

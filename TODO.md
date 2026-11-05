@@ -1,5 +1,23 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED #74 Windows measurement checkpoint; incomplete integration:**
+run `41977254778` completes both five-pair/profile workload suites and native
+validators. Its hosted Linux consumer then fails missing compiler-source lookup.
+The source relocation correction passes local replay of both untouched Windows
+artifacts plus real-GDB controls for missing/changed/escaped sources and the wrong
+archive. New hosted consumer and exact-head required gates remain pending.
+Caching and parallelism are explicitly deferred against both hosts' measured
+profiles and the required correctness/resource contracts. PR160 contains the
+selected compression implementation and its production workload evidence.
+Neither component alone closes #74; later goal issues remain untouched.
+
+**CONFIRMED #74 harness correction; hosted acceptance pending:** Windows run
+`41975183135` completes import and its first SQLite export, then rejects an
+SGR-colored Java 21 banner. The observer now strips only color presentation,
+with missing/wrong/conflicting-runtime and wrong-script controls. The raw
+failure is retained; complete Windows paired workloads and consumer validation
+remain required, along with selected optimization acceptance and integration.
+
 **CONFIRMED Windows chooser correction; separate clean-launch click oracle fixed locally:**
 At `ba65267`, run41897626643/job126818305192 passes the delayed-chooser control
 and the first modifying Windows GUI journey: attachment, changed-curation refresh,
@@ -2602,7 +2620,7 @@ combined run `40068401197`; its conditional-step scope is recorded in
 | Additional range/location cases (P1.8, P1.11a) | **CONFIRMED:** bounded entry/ranges, code-only address indexing and incoming-register prefixes pass. PR #29 adds one proven direct-register backup; PR #30 omits unsupported nonzero stack-local starts. Their exact hosted gates pass. The bounded direct-leaf-call backup and additional x86-64/AArch64 exec/PIE/rebased-PIE cases are accepted through PR54. PR59 accepts terminal-return and mixed incoming prefixes through its complete hosted gate; its failed component heads remain historical. PR60 accepts one complete incoming scalar stack save; PR61 accepts explicit curated read-start register locals. PR62 accepts explicit curated definition-start locals. P1.11a remains partial: general register/memory migration, broader call/flow shapes, stack-slot reuse and additional composite storage still require instruction-specific GDB values and honest unavailable gaps. |
 | Target-profile coverage (P2.3/3a/3b/3c) | **CONFIRMED complete for the selected expanded requirements:** all twenty original rows pass combined acceptance. AArch64 ABI/HFA/SIMD, distinct MIPS O32/N32/N64 profiles in both byte orders, ARM/Thumb/BE8 and per-function base/VFP, and selected libc-backed i386 floating/vector/aggregate/convention cases are recorded in [the acceptance audit](docs/TARGET-ABI-ACCEPTANCE.md). FPXX/FP64A has a verified FR=1 reference; unproven production whole-pair locations remain unavailable. The [profile contract](docs/TARGET-PROFILES.md) retains exact layouts, consumer limits and honest location gaps. This does not establish every ABI of those processors. |
 | GUI and output paths (P2.7) | **CONFIRMED:** both hosts' real Script Manager/chooser journeys pass. PR #31 adds actual parent traversal, complete publisher alias preflight and native Windows short-parent/trailing-dot controls; its exact PR/main gates and artifact reviews pass. Geometry/GDB run on Linux; Windows uses native GNU/LLVM, with independent libdwarf unavailable and Linux-ELF runtime GDB not run. |
-| Optional debuglink (P2.8) | **CONFIRMED implementation and host acceptance:** opt-in CLI/GUI attachment, validated receipt chains, independent backup, atomic replacement, saved-curation refresh and recovery are implemented in PR #158. Current Linux/Windows host and scoped target evidence is recorded above; the full final gate and protected integration remain incomplete. Default export leaves the original unchanged. |
+| Optional debuglink (P2.8) | **CONFIRMED integrated:** PR #158 merged as `6c776d7415fc5222f7e1314c0c5192454c8aced5`; separate main run `41921433443` reports success at that commit. Opt-in CLI/GUI attachment, receipt chains, backup, atomic replacement, saved-curation refresh and recovery retain their documented validation scope. Earlier pending-integration notes are historical. Default export leaves the original unchanged. |
 | Inline reconstruction (P3.4) | **CONFIRMED investigation complete:** ADR 0003 and a reproducible compiler/Ghidra probe distinguish real inline instances from Ghidra's decompiler flag and record surviving locals/source information. Inline emission remains deferred until explicit instance/origin/range evidence and GDB acceptance exist. |
 | Performance (P3.5) | **CONFIRMED:** the indexed planner and configured-checker gates pass component run `40065823442` and combined run `40068401197`. Historical local paired 10,000-function exports reduce median process time by 15.5% with byte-identical artifacts; a fresh strict/GDB replay validates the retained result without rerunning timing. Hosted CI is not a new timing measurement. The pinned SQLite complex-application harness and a bounded JFR profile pass locally; broader workloads and further profiling remain **PLANNED**. No blanket speed or memory claim. See `docs/PERFORMANCE.md`. |
 
@@ -4754,6 +4772,18 @@ surviving knowledge, or describe inline export as complete.
 ## P3.5 Add optional size/performance features
 
 Tracking: [#74](https://github.com/zwilcox/GhidraDwarfForge/issues/74).
+
+**CONFIRMED local component; broader work remains:** [PERFORMANCE-WORKPLAN.md](docs/PERFORMANCE-WORKPLAN.md)
+retains the full broader-workload, host, measurement and optimization-decision
+scope. Internal JFR observations, same-compiler SQLite comparisons, and the
+complete pinned U-Boot sandbox benchmark pass locally. Native Windows accounting
+controls pass run `41971951834`; real Windows workload/consumer jobs remain
+unverified. Five U-Boot pairs and private-copy compression/index experiments
+also pass within their documented limits; the tested `.debug_names` route fails
+validation. Opt-in zlib compression is selected but **PLANNED**, with caching
+and parallel-decompilation decisions still pending. Workload measurements,
+selected implementation, hosted review and integration remain
+required; these component results do not close the issue.
 
 **CONFIRMED through PR53's complete hosted gate:** instruction-level stack profiles are created only
 when an exported stack location consumes them, then reused within the function.

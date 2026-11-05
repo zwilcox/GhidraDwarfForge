@@ -114,6 +114,7 @@ import ghidradwarfforge.nativeapi.DwarfNativeTypes.Die;
 import ghidradwarfforge.nativeapi.DwarfNativeTypes.Error;
 import ghidradwarfforge.nativeapi.DwarfNativeTypes.Expr;
 import ghidradwarfforge.output.FileSystemPaths;
+import ghidradwarfforge.performance.ExportPhase;
 import ghidradwarfforge.source.SyntheticSourceFile;
 import ghidradwarfforge.source.FunctionStaticPolicy;
 import ghidradwarfforge.source.SyntheticSourceFile.FunctionLines;
@@ -444,13 +445,20 @@ public final class MinimalDwarfSidecarExporter {
                 .filter(variable -> emittedSignatures.containsKey(new FunctionKey(
                     variable.functionName(), variable.functionAddress()))).toList(),
             target.addressBytes(), elf.byteOrder());
-        Map<String, byte[]> sections = produce(producer, consumer, target, ordered,
-            unitName, syntheticSource, typeModel, lineTable, rangeLists, locationLists,
-            elf.byteOrder(), relatedAliases, globalNames);
+        Map<String, byte[]> sections;
+        try (var phase = ExportPhase.start("native-production")) {
+            sections = produce(producer, consumer, target, ordered,
+                unitName, syntheticSource, typeModel, lineTable, rangeLists, locationLists,
+                elf.byteOrder(), relatedAliases, globalNames);
+            phase.completed = true;
+        }
         if (sections.putIfAbsent(".debug_aranges", addressRanges) != null) {
             throw new IllegalStateException("producer supplied an unexpected address lookup");
         }
-        new MatchedElfSidecarWriter().write(elf, destination, sections, supplemental, cancelled, diagnostic);
+        try (var phase = ExportPhase.start("elf-packaging")) {
+            new MatchedElfSidecarWriter().write(elf, destination, sections, supplemental, cancelled, diagnostic);
+            phase.completed = true;
+        }
         return new ExportResult(target, ordered.size(), List.copyOf(sections.keySet()),
             version);
     }

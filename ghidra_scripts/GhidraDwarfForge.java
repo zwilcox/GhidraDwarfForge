@@ -20,6 +20,7 @@ import ghidradwarfforge.output.AttachmentPreparation;
 import ghidradwarfforge.output.ExportReport;
 import ghidradwarfforge.output.FileDigests;
 import ghidradwarfforge.output.OutputPathPolicy;
+import ghidradwarfforge.performance.ExportPhase;
 import ghidra.util.exception.CancelledException;
 
 import java.io.File;
@@ -38,7 +39,10 @@ public class GhidraDwarfForge extends GhidraScript {
     @Override
     protected void run() throws Exception {
         try {
-            runExport();
+            ExportPhase.measure("export", () -> {
+                runExport();
+                return null;
+            });
         }
         catch (CancelledException | CancellationException cancelled) {
             printerr("GhidraDwarfForge report: " +
@@ -180,18 +184,21 @@ public class GhidraDwarfForge extends GhidraScript {
         monitor.checkCancelled();
         var allocation = ghidradwarfforge.targets.TargetParameterAllocation.forProgram(
             currentProgram, originalElf, monitor, diagnostic);
-        var decompilation = GhidraSyntheticSource.decompileDetailed(currentProgram, functions,
-            rebaseDelta, monitor, allocation, diagnostic);
+        var decompilation = ExportPhase.measure("decompilation-and-source", () ->
+            GhidraSyntheticSource.decompileDetailed(currentProgram, functions,
+                rebaseDelta, monitor, allocation, diagnostic));
         var source = decompilation.source();
         monitor.checkCancelled();
         var registers = ghidradwarfforge.locations.TargetRegisterMap.forElf(
             target.name(), originalElf, monitor::isCancelled);
-        var extractedTypes = GhidraTypeGraph.extract(currentProgram, functions, registers,
-            rebaseDelta, monitor, diagnostic, decompilation.recoveredReturns(),
-            decompilation.recoveredParameters(), decompilation.recoveredStatics(),
-            allocation);
-        var typeModel = ghidradwarfforge.GhidraCompilerCallPolicy.apply(currentProgram,
-            target, originalElf, extractedTypes, monitor, diagnostic);
+        var typeModel = ExportPhase.measure("types-and-storage", () -> {
+            var extractedTypes = GhidraTypeGraph.extract(currentProgram, functions, registers,
+                rebaseDelta, monitor, diagnostic, decompilation.recoveredReturns(),
+                decompilation.recoveredParameters(), decompilation.recoveredStatics(),
+                allocation);
+            return ghidradwarfforge.GhidraCompilerCallPolicy.apply(currentProgram,
+                target, originalElf, extractedTypes, monitor, diagnostic);
+        });
         monitor.checkCancelled();
         var resultHolder = new MinimalDwarfSidecarExporter.ExportResult[1];
         ArtifactPairPublisher.StagedWriter sidecarWriter =
