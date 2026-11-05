@@ -52,13 +52,19 @@ abstract class ReportValueReader {
     }
 
     protected void object(String description, Set<String> fields, FieldReader reader) throws IOException {
+        object(description, fields, Set.of(), reader);
+    }
+
+    /** Optional fields still participate in unknown/decoded-duplicate checks. */
+    protected Set<String> object(String description, Set<String> fields, Set<String> optional,
+            FieldReader reader) throws IOException {
         value(JsonToken.BEGIN_OBJECT);
         json.beginObject();
         Set<String> seen = new HashSet<>();
         while (json.hasNext()) {
             ReportJsonReader.checkCancelled(cancelled);
             String name = json.nextName();
-            if (!fields.contains(name)) {
+            if (!fields.contains(name) && !optional.contains(name)) {
                 throw invalid("unknown field in " + description);
             }
             if (!seen.add(name)) {
@@ -67,11 +73,12 @@ abstract class ReportValueReader {
             reader.read(name);
         }
         json.endObject();
-        if (!seen.equals(fields)) {
+        if (!seen.containsAll(fields)) {
             Set<String> missing = new HashSet<>(fields);
             missing.removeAll(seen);
             throw missingFields(description, missing);
         }
+        return Set.copyOf(seen);
     }
 
     protected int array(ValueReader reader) throws IOException {

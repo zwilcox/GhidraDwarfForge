@@ -575,6 +575,14 @@ tasks.register("coverageReportClaimsSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.output.CoverageReportClaimsSmoke"
 }
 
+tasks.register("exportReportCoverageSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks schema-two coverage readers and schema-one receipt compatibility"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.ExportReportCoverageSmoke"
+}
+
 tasks.register("emissionEvidenceSmoke", JavaExec) {
     group = "verification"
     description = "Retains actual producer emission evidence for independent DWARF/GDB inspection"

@@ -40,8 +40,10 @@ reader primitives preserve all 429 malformed-report and 432 detailed-reader
 checks. The proposed payload's strict decoder passes 503 malformed controls,
 287 sampled cancellation points and exact native-fixture object/byte round trips.
 It validates internal consistency without authenticating reported artifact facts.
-Schema-two root integration, production staging, comparison/UI
-and measured overhead remain pending; public reports still use schema one.
+Explicit schema-two writing and all reader paths now pass local migration,
+full-document budget, selected-byte binding and native-fixture round-trip checks.
+Legacy schema-one bytes remain unchanged. Production staging, comparison/UI
+and measured overhead remain pending; ordinary exports still use schema one.
 Location-list results retain their actual immutable plans and honor cancellation.
 Their four byte streams match the parent; 237 raw-byte/negative checks pass.
 Real packaged x86-64 and rebased AArch64 PIE lexical-variable journeys pass

@@ -123,7 +123,7 @@ public final class CoverageReportClaimsSmoke {
         System.out.println("coverage-report-claims=PASS rejected=" + rejected + " sampled-cancellations=" + stops.size() + " values=" + values);
     }
 
-    private static ExportCoverage knownFixture() {
+    static ExportCoverage knownFixture() {
         var type = new TypeRef("int");
         var graph = new TypeGraph(List.of(new BaseType("int", "int", 4, BaseEncoding.SIGNED)));
         var signature = new FunctionSignature("f", 100, type, List.of(), List.of(), false, false, "default", "USER_DEFINED");

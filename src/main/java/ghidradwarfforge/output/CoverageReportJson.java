@@ -60,6 +60,11 @@ public final class CoverageReportJson {
         return output.result();
     }
 
+    /** Writes one value into the enclosing report's bounded stream. */
+    static void writeTo(JsonWriter json, CoverageReportClaims claims, BooleanSupplier cancelled) throws IOException {
+        new CoverageReportJson(json, cancelled).document(claims.coverage(), claims.profile());
+    }
+
     private void document(ExportCoverage coverage, Profile profile) throws IOException {
         json.beginObject();
         json.name("definitionVersion").value(DEFINITION_VERSION);
@@ -318,7 +323,7 @@ public final class CoverageReportJson {
     }
 
     /** Counts actual UTF-8 bytes before appending, including surrogate pairs split across writes. */
-    private static final class BoundedWriter extends Writer {
+    static final class BoundedWriter extends Writer {
         private final StringBuilder output = new StringBuilder();
         private final BooleanSupplier cancelled;
         private final long limit;

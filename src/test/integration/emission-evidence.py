@@ -298,6 +298,13 @@ def inspect(case):
     assert set(wire) == {'definitionVersion', 'addressModel', 'profile', 'summary', 'functions', 'variables', 'recoveredGlobals'}
     assert wire['definitionVersion'] == 1 and wire['addressModel'] == 'ELF_LINK_TIME'
     assert wire['profile'] == {'languageId': 'x86:LE:64:default', 'compilerSpecId': 'gcc'}
+    report = json.loads((case / 'forge.dbg.report.json').read_text())
+    assert report['schemaVersion'] == 2 and report['coverage'] == wire
+    assert report['status'] == 'PARTIAL' and report['validation']['status'] == 'NOT_RUN'
+    assert report['counts']['functionsExported'] == len(scorecards['functions']) == 3
+    for role, name in [('input', 'input'), ('output', 'forge.dbg'), ('source', 'forge.dbg.c')]:
+        assert report['artifacts'][role + 'Sha256'] == digest(case / name)
+        assert Path(report['artifacts'][role + 'Path']) == case / name
 
     def decimal_fields(metrics):
         return {k: str(v) if isinstance(v, int) else v for k, v in metrics.items()}
@@ -387,7 +394,7 @@ def main():
     assert protected == {p: digest(Path(p)) for p in protected}
     result = {'status': 'PASS', 'scope': 'isolated producer emission facts, raw DWARF and native x86-64 GDB; public reports pending',
         'checks': checked, 'protected': protected, 'sidecarSha256': digest(case / 'forge.dbg'),
-        'sourceSha256': digest(case / 'forge.dbg.c')}
+        'sourceSha256': digest(case / 'forge.dbg.c'), 'schemaTwoReportSha256': digest(case / 'forge.dbg.report.json')}
     (case / 'acceptance.json').write_text(json.dumps(result, indent=4) + '\n')
     print(json.dumps({'status': 'PASS', 'checks': checked}))
 

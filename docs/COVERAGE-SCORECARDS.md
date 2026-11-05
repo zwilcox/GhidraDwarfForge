@@ -247,9 +247,30 @@ fixture round-trips its coverage object and serialized bytes through this reader
 GNU/LLVM/pinned strict validation and GDB behavior still pass. Evidence:
 `build/coverage-claims-final-validation.log` and
 `build/test-results/emission-evidence/run.ui63r2z2/acceptance.json`.
-Schema-two root integration, production script staging, CLI/GUI/comparison and
-large-workload overhead remain planned. No ordinary export emits this proposed
-payload yet; schema one remains the current public writer. The retained payload's
+The versioned root reader now accepts schema two with a required coverage object
+on completed reports and explicit null on terminal reports. Schema one rejects
+that field and still requires the previously accepted complete legacy shape.
+All three reader paths validate the payload; `readWithCoverage` retains it, while
+the lightweight and diagnostic-retaining results discard it. A schema-one result
+has unavailable coverage, never zero. A function population mismatch is rejected.
+The seven-field legacy claims API and diagnostic inventories remain unchanged.
+
+`ExportReport.toJsonWithCoverage` explicitly writes schema two. It shares one
+bounded UTF-8 stream with the payload and completes strict full-document preflight
+before returning. The existing `toJson()` still emits byte-compatible schema one.
+Report writing checks cancellation throughout serialization and preflight; byte,
+value and depth overflow fail without returning publishable text. The production
+script must call this during staging before replacing the artifact pair.
+
+Local migration checks include all reader paths, reversed fields, null/version
+rules, complete-document budgets, 256 sampled read/write cancellation points,
+terminal statuses and selected-file hash binding. Matching coverage cannot hide
+changed sidecar bytes, upgrade PARTIAL/NOT_RUN or bypass malformed-report rejection
+before artifact inspection. Native fixture `run.lngcyr7b` round-trips the complete
+schema-two report; Python independently checks its embedded metrics and all three
+file hashes against the validated DWARF/GDB fixture. Production script staging,
+CLI/GUI/comparison and large-workload overhead remain planned. No ordinary export
+emits this proposed payload yet. The retained payload's
 large-workload cost is unmeasured; old diagnostic-inventory retention limits do
 not automatically constrain these additional structures.
 

@@ -211,6 +211,21 @@ public final class EmissionEvidenceSmoke {
         require(claims.coverage().equals(coverage), "strict coverage claims roundtrip preserves assembled metrics");
         require(ghidradwarfforge.output.CoverageReportJson.write(claims.coverage(), claims.profile(), () -> false)
             .equals(Files.readString(Path.of(output + ".coverage.json"))), "strict coverage roundtrip preserves exact payload bytes");
+        Path sourcePath = Path.of(output + ".c");
+        var report = ghidradwarfforge.output.ExportReport.completed(result.target(), result.libdwarfVersion(),
+            input, ghidradwarfforge.output.FileDigests.read(input).sha256(),
+            output, ghidradwarfforge.output.FileDigests.read(output).sha256(),
+            sourcePath, ghidradwarfforge.output.FileDigests.read(sourcePath).sha256(),
+            result.functionCount(), result.sectionNames(), source, model, List.of(), List.of());
+        String reportJson = report.toJsonWithCoverage(claims, () -> false);
+        Path reportPath = Path.of(output + ".report.json");
+        Files.writeString(reportPath, reportJson);
+        var reportClaims = ghidradwarfforge.output.ExportReportClaims.readWithCoverage(reportPath, () -> false);
+        require(reportClaims.coverage().equals(claims), "full schema-two report preserves native metric claims");
+        require(reportClaims.claims().status() == ghidradwarfforge.output.ExportReport.Status.PARTIAL &&
+            reportClaims.claims().validationStatus() == ghidradwarfforge.output.ExportReport.ValidationStatus.NOT_RUN,
+            "scorecards never upgrade failure/validation status");
+        require(report.toJsonWithCoverage(claims, () -> false).equals(reportJson), "deterministic full report bytes");
         Files.writeString(Path.of(output + ".evidence.json"), gson.toJson(
             Map.of("emission", facts, "types", counts, "locations", locationCounts, "variableTotals", variableTotals, "variableInventory", inventory, "sourceInventory", sourceInventory, "coverage", coverage)) + "\n");
         Path cancelled = Path.of(output + ".cancelled");

@@ -6,8 +6,10 @@ component/raw-DWARF/GDB checks. Source
 counts retain unknown versus zero and union overlapping instructions; variables
 retain unexported declarations and unknown scopes. Proposed bounded payload
 serialization, strict payload decoding and shared reader budgets pass locally
-(503 malformed controls and native raw-DWARF/GDB round trips); public schema-two reading/writing,
-comparison/CLI/GUI, large-workload cost and hosted acceptance remain pending.
+(503 malformed controls and native raw-DWARF/GDB round trips). Explicit schema-two
+writing and all reader paths now pass migration and selected-byte binding checks;
+production staging, comparison/CLI/GUI, large-workload cost and hosted acceptance
+remain pending. Ordinary exports still emit schema one.
 See `docs/COVERAGE-SCORECARDS.md`; #74 final acceptance retains integration priority.
 
 **CONFIRMED measurement integration and compression component validation:**
