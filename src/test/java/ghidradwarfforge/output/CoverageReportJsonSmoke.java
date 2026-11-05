@@ -27,22 +27,7 @@ import ghidradwarfforge.types.TypeGraph.*;
 /** Exact decimal/UTF-8 budgets, nulls, deterministic ordering and unchanged lexical grammar. */
 public final class CoverageReportJsonSmoke {
     public static void main(String[] args) throws Exception {
-        var integer = new TypeRef("int");
-        var graph = new TypeGraph(List.of(new BaseType("int", "int", 4, BaseEncoding.SIGNED)));
-        var f = new FunctionSignature("f", 0, integer, List.of(new Parameter("x", integer, false)),
-            List.of(), false, false, "default", "USER_DEFINED");
-        var g = new FunctionSignature("g", 1, integer, List.of(new Parameter("x", integer, false)),
-            List.of(), false, false, "default", "IMPORTED");
-        var model = new ProgramTypeModel(graph, List.of(f, g), List.of(
-            new GlobalVariable("lambda λ 🛠\n\"", 4096, 4, integer, false, "USER_DEFINED")));
-        var first = new FunctionSymbol("f", 0, Long.MAX_VALUE);
-        var second = new FunctionSymbol("g", 1, Long.MAX_VALUE - 1);
-        var line = Dwarf5LineTable.buildWithPlan("fixture.c", ".", 8, ByteOrder.LITTLE_ENDIAN, List.of(first, second), List.of());
-        var variable = new VariableEmission(Kind.PARAMETER, 0, "x", "x", "", integer, false, false,
-            new NoLocation("UNASSIGNED", "unknown storage"));
-        var actual = new ExportEmission(graph, Map.of("int", List.of()), line, List.of(
-            new FunctionEmission(first, f, List.of(variable)), new FunctionEmission(second, g, List.of(variable))));
-        var coverage = ExportCoverage.build(model, null, List.of(), actual, () -> false);
+        var coverage = fixture();
         var profile = new CoverageReportJson.Profile("x86:LE:64:default λ 🛠", "gcc");
         String text = CoverageReportJson.write(coverage, profile, () -> false);
         var document = JsonParser.parseString(text).getAsJsonObject();
@@ -89,6 +74,25 @@ public final class CoverageReportJsonSmoke {
             catch (CancellationException expected) { }
         }
         System.out.println("coverage-report-json=PASS utf8-bytes=" + bytes + " cancellation-points=" + points);
+    }
+
+    static ExportCoverage fixture() {
+        var integer = new TypeRef("int");
+        var graph = new TypeGraph(List.of(new BaseType("int", "int", 4, BaseEncoding.SIGNED)));
+        var f = new FunctionSignature("f", 0, integer, List.of(new Parameter("x", integer, false)),
+            List.of(), false, false, "default", "USER_DEFINED");
+        var g = new FunctionSignature("g", 1, integer, List.of(new Parameter("x", integer, false)),
+            List.of(), false, false, "default", "IMPORTED");
+        var model = new ProgramTypeModel(graph, List.of(f, g), List.of(
+            new GlobalVariable("lambda λ 🛠\n\"", 4096, 4, integer, false, "USER_DEFINED")));
+        var first = new FunctionSymbol("f", 0, Long.MAX_VALUE);
+        var second = new FunctionSymbol("g", 1, Long.MAX_VALUE - 1);
+        var line = Dwarf5LineTable.buildWithPlan("fixture.c", ".", 8, ByteOrder.LITTLE_ENDIAN, List.of(first, second), List.of());
+        var variable = new VariableEmission(Kind.PARAMETER, 0, "x", "x", "", integer, false, false,
+            new NoLocation("UNASSIGNED", "unknown storage"));
+        var actual = new ExportEmission(graph, Map.of("int", List.of()), line, List.of(
+            new FunctionEmission(first, f, List.of(variable)), new FunctionEmission(second, g, List.of(variable))));
+        return ExportCoverage.build(model, null, List.of(), actual, () -> false);
     }
 
     private static void scalars(JsonElement value, String key) {

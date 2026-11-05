@@ -207,6 +207,10 @@ public final class EmissionEvidenceSmoke {
         }
         Files.writeString(Path.of(output + ".coverage.json"), ghidradwarfforge.output.CoverageReportJson.write(coverage,
             new ghidradwarfforge.output.CoverageReportJson.Profile("x86:LE:64:default", "gcc"), () -> false));
+        var claims = ghidradwarfforge.output.CoverageReportClaims.read(Path.of(output + ".coverage.json"), () -> false);
+        require(claims.coverage().equals(coverage), "strict coverage claims roundtrip preserves assembled metrics");
+        require(ghidradwarfforge.output.CoverageReportJson.write(claims.coverage(), claims.profile(), () -> false)
+            .equals(Files.readString(Path.of(output + ".coverage.json"))), "strict coverage roundtrip preserves exact payload bytes");
         Files.writeString(Path.of(output + ".evidence.json"), gson.toJson(
             Map.of("emission", facts, "types", counts, "locations", locationCounts, "variableTotals", variableTotals, "variableInventory", inventory, "sourceInventory", sourceInventory, "coverage", coverage)) + "\n");
         Path cancelled = Path.of(output + ".cancelled");

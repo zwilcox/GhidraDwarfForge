@@ -37,7 +37,10 @@ function type unions, separate recovered globals and post-policy ABI restriction
 A proposed exact-counter coverage JSON payload passes UTF-8/string bounds,
 2,260 cancellation points and native raw-metric comparison. Shared streaming
 reader primitives preserve all 429 malformed-report and 432 detailed-reader
-checks. Schema-two decoding/root integration, production staging, comparison/UI
+checks. The proposed payload's strict decoder passes 503 malformed controls,
+287 sampled cancellation points and exact native-fixture object/byte round trips.
+It validates internal consistency without authenticating reported artifact facts.
+Schema-two root integration, production staging, comparison/UI
 and measured overhead remain pending; public reports still use schema one.
 Location-list results retain their actual immutable plans and honor cancellation.
 Their four byte streams match the parent; 237 raw-byte/negative checks pass.

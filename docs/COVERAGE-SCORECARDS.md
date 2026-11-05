@@ -233,9 +233,25 @@ The isolated native fixture also verifies payload counters, addresses, ranges,
 nulls and ownership against its already independently checked raw-DWARF/GDB
 metrics. Evidence: `build/coverage-json-final-validation.log` and
 `build/test-results/emission-evidence/run.m6oa17f2/acceptance.json`.
-The coverage decoder, schema-two root, production script staging integration,
-CLI/GUI/comparison and large-workload overhead remain planned. No ordinary export
-emits this proposed payload yet; schema one remains the current public writer.
+The strict `CoverageReportClaims` decoder now retains the proposed payload and
+recomputes source unions, variable totals and location intersections. It rejects
+missing/unknown/duplicate fields, noncanonical counters, invalid ownership,
+contradictory availability and impossible type-union bounds. A consistent report
+remains a claim: it does not authenticate source anchors or canonical type identity
+against artifacts and grants no attachment authority. Embedded decoding shares
+the enclosing report's value budget rather than resetting it.
+
+Local checks pass 503 malformed controls and 287 sampled cancellation points,
+exact UTF-8/value budgets, reordered fields and stream closure. The actual native
+fixture round-trips its coverage object and serialized bytes through this reader;
+GNU/LLVM/pinned strict validation and GDB behavior still pass. Evidence:
+`build/coverage-claims-final-validation.log` and
+`build/test-results/emission-evidence/run.ui63r2z2/acceptance.json`.
+Schema-two root integration, production script staging, CLI/GUI/comparison and
+large-workload overhead remain planned. No ordinary export emits this proposed
+payload yet; schema one remains the current public writer. The retained payload's
+large-workload cost is unmeasured; old diagnostic-inventory retention limits do
+not automatically constrain these additional structures.
 
 ## Current component checks
 
