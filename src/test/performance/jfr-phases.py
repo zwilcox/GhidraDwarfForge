@@ -10,6 +10,7 @@ import re
 
 PHASES = {'export', 'decompilation-and-source', 'types-and-storage',
     'native-production', 'elf-packaging'}
+COVERAGE_PHASES = {'coverage-instruction-capture', 'coverage-assembly', 'coverage-report-preflight'}
 
 
 def duration_ns(value):
@@ -40,13 +41,13 @@ def summarize(recording):
             continue
         values = event['values']
         phase = values['phase']
-        if phase not in PHASES or phase in rows or values['completed'] is not True:
+        if phase not in PHASES | COVERAGE_PHASES or phase in rows or values['completed'] is not True:
             raise ValueError('unknown, duplicate or incomplete export phase: ' + phase)
         start = instant_ns(values['startTime'])
         duration = duration_ns(values['duration'])
         rows[phase] = {'startNanoseconds': start, 'durationNanoseconds': duration}
         threads.add(values['eventThread']['javaThreadId'])
-    if rows.keys() != PHASES or len(threads) != 1:
+    if rows.keys() not in (PHASES, PHASES | COVERAGE_PHASES) or len(threads) != 1:
         raise ValueError('expected one complete export on one thread')
     outer = rows['export']
     end = outer['startNanoseconds'] + outer['durationNanoseconds']

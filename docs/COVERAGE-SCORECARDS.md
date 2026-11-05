@@ -1,5 +1,56 @@
 # Proposed coverage contract for issue 108
 
+## Production staging checkpoint
+
+**CONFIRMED locally; hosted and full #108 acceptance pending.** The ordinary
+installed script captures actual decoded starts, assembles coverage from successful
+native emission, and serializes/strictly reads back schema two while the artifact
+and source files are staged. Report paths name the final generation; digests come
+from the staged bytes. Report failure or cancellation prevents publication. The
+same callback serves ordinary pairs, companions and fresh attachment preparation.
+Terminal reports contain null coverage and no completed artifact claims. The
+legacy writer remains byte-compatible and readers accept both supported versions.
+
+The packaged exporter passes x86-64 and rebased AArch64 PIE lexical journeys:
+23/27 runtime observations, GNU/LLVM/pinned strict checks and byte-identical reruns.
+Each target also passes 16 production staging controls: cancellation and injected
+exceptions during instruction capture, assembly, writing and strict readback, for
+both pair and companion modes. Controls inspect stages at interruption, preserve
+the prior complete generation, verify cleanup and retry deterministically. Both
+retried generations pass validators and GDB; originals and saved program contents
+remain unchanged. This tests injected failure isolation, not a real oversized
+workload rejection or a GUI attachment journey.
+
+Run `coverage-staging.py <private-ghidra> <validated-lexical-case>` or pass
+`--coverage-controls` to `lexical-shadow-export.py`. The workflow requests these
+controls on both x86-64/AArch64 rebased PIE lanes. An initial harness run correctly
+finished all controls but read the GDB diagnostic log from the wrong directory;
+the corrected complete runs are retained separately.
+
+Three additional JFR phases measure instruction capture, assembly and report
+preflight. The phase reader accepts either the complete older phase set or all
+three additional phases; partial/mixed records remain rejected. No elapsed phase
+measurement alone establishes incremental memory or CPU cost.
+
+`coverage-workload.py` now defaults to the unmodified installed production script.
+Use `--historical-instrumented` only with an earlier schema-one installation to
+reproduce the exploratory probes below. Repeated overhead, actual resource-limit
+failures, fresh GUI/attachment checks, comparison/presentation and the full matrix
+remain pending. #108 stays unpublished until #74 final acceptance.
+
+The first ordinary production saved-workload runs also pass report preflight,
+validators and GDB. SQLite covers 1,539 functions in a 23,061,568-byte report;
+U-Boot covers 6,375 functions in a 56,530,307-byte report and retains its one
+known decompilation failure. Every coverage JSON field equals the respective
+earlier instrumented result. Original, saved-project and installed-module hashes
+are preserved (344/347 protected files). Single process observations are
+36.15/117.84 seconds and peak RSS 973,108/2,022,028 KiB. These are not repeated
+overhead medians; U-Boot memory cost remains a specific acceptance concern.
+See [`evidence/coverage-production-staging.json`](evidence/coverage-production-staging.json)
+for package/script identities, raw acceptance receipts and comparison hashes.
+
+## Historical component checkpoints
+
 Status: **PRESENT, UNVERIFIED end to end.** The first source-coverage component
 retains the exact encoded line plan and measures direct token anchors separately
 from line-table visibility. Native-free tests independently decode generated

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Probe actual coverage populations from a copied saved workload; no production admission policy override."""
+"""Measure ordinary production coverage from a copied saved workload, with validators/GDB."""
 import argparse
 import importlib.util
 import json
@@ -94,6 +94,8 @@ def main():
     parser.add_argument('kind', choices=['sqlite', 'uboot'])
     parser.add_argument('reference_case', type=Path)
     parser.add_argument('ghidra', type=Path)
+    parser.add_argument('--historical-instrumented', action='store_true',
+        help='reproduce the pre-integration probe using an older schema-one installation')
     args = parser.parse_args()
     reference = args.reference_case.resolve(strict=True)
     ghidra = args.ghidra.resolve(strict=True)
@@ -133,16 +135,38 @@ def main():
     scripts = case / 'scripts'
     scripts.mkdir()
     installed_script = module / 'ghidra_scripts/GhidraDwarfForge.java'
-    (scripts / 'CoverageWorkloadExport.java').write_text(instrument(installed_script.read_text()))
+    if args.historical_instrumented:
+        (scripts / 'CoverageWorkloadExport.java').write_text(instrument(installed_script.read_text()))
     sidecar = case / (binary.name + '.dbg')
     command = [ghidra / 'support/analyzeHeadless', case / 'project', project_name,
         '-process', binary.name, '-noanalysis', '-readOnly', '-max-cpu', '4', '-scriptPath', scripts,
-        '-postScript', 'CoverageWorkloadExport.java', '--packaged-natives', '--input=' + str(binary), '--output=' + str(sidecar)]
+        '-postScript', 'CoverageWorkloadExport.java' if args.historical_instrumented else 'GhidraDwarfForge.java',
+        '--packaged-natives', '--input=' + str(binary), '--output=' + str(sidecar)]
     if args.kind == 'uboot':
         command.append('--gdb-loader')
     metrics = support.run(command, case / 'export.log', timeout=1800, measured=True)
-    runtime = support.verify_headless(case / 'export.log', module)
-    observation = json.loads(Path(str(sidecar) + '.coverage-observation.json').read_text())
+    runtime = support.verify_headless(case / 'export.log', module, exported=not args.historical_instrumented)
+    if args.historical_instrumented:
+        observation = json.loads(Path(str(sidecar) + '.coverage-observation.json').read_text())
+    else:
+        bodies = [line.split('GhidraDwarfForge report: ', 1)[1]
+            for line in (case / 'export.log').read_text().splitlines() if 'GhidraDwarfForge report: ' in line]
+        assert len(bodies) == 1
+        report, end = json.JSONDecoder().raw_decode(bodies[0])
+        assert report['schemaVersion'] == 2 and report['status'] in ('SUCCESS', 'PARTIAL')
+        assert report['coverage']['definitionVersion'] == 1 and report['validation'] == {'status': 'NOT_RUN'}
+        assert bodies[0][end:].strip() == '(GhidraScript)'
+        for kind, path in [('input', binary), ('output', sidecar), ('source', Path(str(sidecar) + '.c'))]:
+            assert report['artifacts'][kind + 'Path'] == str(path)
+            assert report['artifacts'][kind + 'Sha256'] == support.digest(path)
+        report_path = case / 'production-report.json'
+        report_path.write_text(bodies[0][:end], encoding='utf-8')
+        coverage = report['coverage']
+        observation = {'status': 'ACCEPTED', 'scope': 'ordinary installed production exporter, report preflight before publication',
+            'functions': len(coverage['functions']), 'summary': coverage['summary'],
+            'reportUtf8Bytes': report_path.stat().st_size, 'reportSha256': support.digest(report_path),
+            'exportStatus': report['status'], 'functionsFailed': report['counts']['functionsFailed']}
+        (case / 'coverage-observation.json').write_text(json.dumps(observation, indent=4) + '\n')
     assert observation['status'] in ('ACCEPTED', 'ADMISSION_REJECTED')
     for name, command in [('llvm', ['llvm-dwarfdump', '--verify', sidecar]),
             ('elf', ['readelf', '-hSWn', sidecar]),
@@ -168,10 +192,11 @@ def main():
     assert project_before == project_after, 'read-only copied project changed'
     result = {'probeStatus': 'OBSERVED', 'kind': args.kind, 'observation': observation, 'processMetrics': metrics, 'runtime': runtime,
         'referenceCase': str(reference), 'originalSha256': support.digest(binary),
-        'installedScriptSha256': support.digest(installed_script), 'probeScriptSha256': support.digest(scripts / 'CoverageWorkloadExport.java'),
+        'installedScriptSha256': support.digest(installed_script),
+        'probeScriptSha256': support.digest(scripts / 'CoverageWorkloadExport.java') if args.historical_instrumented else None,
         'jarSha256': support.digest(module / 'lib/GhidraDwarfForge.jar'), 'protectedFiles': len(before),
         'gdbBehavior': 'PASS',
-        'limits': 'Single probe; no performance claim, no ordinary exporter wiring or full coverage acceptance.'}
+        'limits': 'Single observation; no repeated performance medians or full coverage acceptance.'}
     (case / 'observation.json').write_text(json.dumps(result, indent=4) + '\n')
     print(json.dumps(result), flush=True)
 

@@ -1615,7 +1615,11 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: |
           for role in exec pie pie-rebased; do
-              python3 src/test/integration/lexical-shadow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
+              coverage_controls=()
+              if [[ "$role" == pie-rebased ]]; then
+                  coverage_controls=(--coverage-controls)
+              fi
+              python3 src/test/integration/lexical-shadow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" "${coverage_controls[@]}"
               python3 src/test/integration/lexical-shadow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --discontiguous --controls
               python3 src/test/integration/lexical-shadow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --discontiguous --controls --calls
           done

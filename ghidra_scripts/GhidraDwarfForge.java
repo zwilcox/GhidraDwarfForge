@@ -8,6 +8,7 @@ import ghidradwarfforge.GhidraArm32FunctionModes;
 import ghidradwarfforge.GhidraFunctionSymbols;
 import ghidradwarfforge.GhidraFunctionAliases;
 import ghidradwarfforge.GhidraImageBase;
+import ghidradwarfforge.GhidraInstructionEvidence;
 import ghidradwarfforge.GhidraSyntheticSource;
 import ghidradwarfforge.GhidraTargetAgreement;
 import ghidradwarfforge.GhidraTypeGraph;
@@ -18,6 +19,9 @@ import ghidradwarfforge.nativeapi.PackagedNativeLibraries;
 import ghidradwarfforge.output.ArtifactPairPublisher;
 import ghidradwarfforge.output.AttachmentPreparation;
 import ghidradwarfforge.output.ExportReport;
+import ghidradwarfforge.output.CoverageReportClaims;
+import ghidradwarfforge.output.CoverageReportJson;
+import ghidradwarfforge.coverage.ExportCoverage;
 import ghidradwarfforge.output.FileDigests;
 import ghidradwarfforge.output.OutputPathPolicy;
 import ghidradwarfforge.performance.ExportPhase;
@@ -46,12 +50,14 @@ public class GhidraDwarfForge extends GhidraScript {
         }
         catch (CancelledException | CancellationException cancelled) {
             printerr("GhidraDwarfForge report: " +
-                ExportReport.terminal(ExportReport.Status.CANCELLED, cancelled).toJson());
+                ExportReport.terminal(ExportReport.Status.CANCELLED, cancelled)
+                    .toJsonWithCoverage(null, () -> false));
             throw cancelled;
         }
         catch (Exception failure) {
             printerr("GhidraDwarfForge report: " +
-                ExportReport.terminal(ExportReport.Status.FATAL, failure).toJson());
+                ExportReport.terminal(ExportReport.Status.FATAL, failure)
+                    .toJsonWithCoverage(null, () -> false));
             throw failure;
         }
     }
@@ -175,6 +181,9 @@ public class GhidraDwarfForge extends GhidraScript {
         var extraction = GhidraFunctionSymbols.extractDetailed(currentProgram, monitor,
             diagnostic, rebaseDelta);
         var functions = extraction.functions();
+        var decoded = ExportPhase.measure("coverage-instruction-capture", () ->
+            GhidraInstructionEvidence.capture(currentProgram, functions,
+                rebaseDelta, monitor, diagnostic));
         var aliases = GhidraFunctionAliases.extract(currentProgram, functions,
             rebaseDelta, monitor, diagnostic);
         var sectionModes = ghidradwarfforge.GhidraArm32SectionModes.extract(currentProgram,
@@ -203,17 +212,43 @@ public class GhidraDwarfForge extends GhidraScript {
         });
         monitor.checkCancelled();
         var resultHolder = new MinimalDwarfSidecarExporter.ExportResult[1];
-        ArtifactPairPublisher.StagedWriter sidecarWriter =
-            stagedOutput -> resultHolder[0] = new MinimalDwarfSidecarExporter(compression).export(
+        var stagedSidecarHolder = new Path[1];
+        var reportHolder = new PreparedReport[1];
+        ArtifactPairPublisher.StagedWriter sidecarWriter = stagedOutput -> {
+            resultHolder[0] = new MinimalDwarfSidecarExporter(compression).export(
                 input, stagedOutput,
                 consumer, producer, functions, source, typeModel,
                 sourceOutput.getFileName().toString(), monitor::isCancelled,
                 modeCues, aliases, aliasModeCues, sectionModes, diagnostic);
+            stagedSidecarHolder[0] = stagedOutput;
+        };
+        ArtifactPairPublisher.StagedWriter sourceWriter = stagedSource -> {
+            source.writeAtomically(stagedSource);
+            // Validate the complete report while both files are still staged. Report
+            // paths describe the final generation; digests describe its staged bytes.
+            var result = resultHolder[0];
+            var coverage = ExportPhase.measure("coverage-assembly", () ->
+                ExportCoverage.build(typeModel, source, decoded, result.emission(),
+                    monitor::isCancelled));
+            var profile = new CoverageReportJson.Profile(
+                currentProgram.getLanguageID().getIdAsString(),
+                currentProgram.getCompilerSpec().getCompilerSpecID().getIdAsString());
+            String outputHash = FileDigests.read(stagedSidecarHolder[0], monitor::isCancelled).sha256();
+            String sourceHash = FileDigests.read(stagedSource, monitor::isCancelled).sha256();
+            ExportReport report = ExportReport.completed(result.target(), result.libdwarfVersion(),
+                input, inputHash, output, outputHash, sourceOutput, sourceHash,
+                result.functionCount(), result.sectionNames(), source, typeModel,
+                extraction.skippedFunctions(), diagnostics);
+            String json = ExportPhase.measure("coverage-report-preflight", () ->
+                report.toJsonWithCoverage(new CoverageReportClaims(profile, coverage),
+                    monitor::isCancelled));
+            reportHolder[0] = new PreparedReport(json, outputHash, sourceHash);
+        };
         if (gdbLoader) {
             ghidradwarfforge.output.CompanionArtifactPublisher.stageAndPublish(
                 input, output, sourceOutput, companionOutput, (stagedSidecar, stagedSource, stagedCompanion) -> {
                     sidecarWriter.write(stagedSidecar);
-                    source.writeAtomically(stagedSource);
+                    sourceWriter.write(stagedSource);
                     String companion = ghidradwarfforge.elf.GdbCompanion.render(input,
                         stagedSidecar, stagedSource, output, sourceOutput, monitor::isCancelled);
                     if (!inputHash.equals(sha256(input))) {
@@ -224,28 +259,23 @@ public class GhidraDwarfForge extends GhidraScript {
         }
         else if (attachmentPreparation) {
             ArtifactPairPublisher.stageAndPublishNew(output, sourceOutput,
-                sidecarWriter, source::writeAtomically, monitor::checkCancelled);
+                sidecarWriter, sourceWriter, monitor::checkCancelled);
         }
         else {
             ArtifactPairPublisher.stageAndPublish(output, sourceOutput,
-                sidecarWriter, source::writeAtomically, monitor::checkCancelled);
+                sidecarWriter, sourceWriter, monitor::checkCancelled);
         }
         MinimalDwarfSidecarExporter.ExportResult result = resultHolder[0];
-        String outputHash = sha256(output);
-        String sourceHash = sha256(sourceOutput);
-        ExportReport report = ExportReport.completed(result.target(), result.libdwarfVersion(),
-            input, inputHash, output, outputHash, sourceOutput, sourceHash,
-            result.functionCount(), result.sectionNames(), source, typeModel,
-            extraction.skippedFunctions(), diagnostics);
+        PreparedReport prepared = reportHolder[0];
         println("GhidraDwarfForge symbol export PASS");
         println("  output: " + output);
-        println("  output SHA-256: " + outputHash);
+        println("  output SHA-256: " + prepared.outputHash());
         println("  input SHA-256: " + inputHash);
         println("  target: " + result.target().name());
         println("  functions: " + result.functionCount());
         println("  sections: " + result.sectionNames());
         println("  source: " + sourceOutput);
-        println("  source SHA-256: " + sourceHash);
+        println("  source SHA-256: " + prepared.sourceHash());
         if (gdbLoader) {
             println("  GDB companion: " + companionOutput);
             println("  GDB companion SHA-256: " + sha256(companionOutput));
@@ -266,9 +296,11 @@ public class GhidraDwarfForge extends GhidraScript {
         println("  function-owned static variables: " +
             ghidradwarfforge.source.FunctionStaticPolicy.select(typeModel, source)
                 .exported().size());
-        println("GhidraDwarfForge report: " + report.toJson());
-        if (attachmentPreparation) state.addEnvironmentVar(AttachmentPreparation.EXPORT_REPORT_KEY, report.toJson());
+        println("GhidraDwarfForge report: " + prepared.json());
+        if (attachmentPreparation) state.addEnvironmentVar(AttachmentPreparation.EXPORT_REPORT_KEY, prepared.json());
     }
+
+    private record PreparedReport(String json, String outputHash, String sourceHash) { }
 
     private static Map<String, String> parseOptions(String[] arguments) {
         Map<String, String> result = new LinkedHashMap<>();

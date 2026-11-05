@@ -1,5 +1,18 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local production staging for #108; full acceptance pending:** the
+ordinary installed exporter now captures decoded instructions and prepares its
+schema-two coverage report before publishing the sidecar/source generation.
+The same callback serves normal pairs, GDB companions and fresh attachment
+preparation. Terminal reports carry null coverage; legacy `toJson()` and schema-one
+readers remain compatible. Packaged x86-64 and rebased AArch64 PIE exports pass
+validators/GDB and deterministic reruns. Both targets pass 16 cancellation/injected
+failure controls spanning capture, assembly, writing and readback, preserving prior
+pairs/companions and leaving no stages. Fresh GUI attachment acceptance, real
+large-report limit failures, repeated overhead, comparison/presentation and the
+full hosted matrix remain required. Earlier statements that ordinary exports
+still use schema one describe the historical component checkpoint below.
+
 **PRESENT, UNVERIFIED end-to-end #108 source coverage:** an isolated follow-on
 branch now retains the exact line-emission plan and indexes decoded instruction
 coverage without conflating token anchors with debugger line carry-forward.

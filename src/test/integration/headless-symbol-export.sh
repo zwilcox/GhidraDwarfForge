@@ -155,7 +155,7 @@ for target in "${targets[@]}"; do
     after=$(sha256sum "$input" | cut -d' ' -f1)
     test "$before" = "$after"
     grep -q "GhidraDwarfForge symbol export PASS" "$log"
-    grep -Fq 'GhidraDwarfForge report: {"schemaVersion":1,"status":"PARTIAL"' "$log"
+    grep -Fq 'GhidraDwarfForge report: {"schemaVersion":2,"status":"PARTIAL"' "$log"
     grep -Eq '"functionsExported":[1-9][0-9]*' "$log"
     grep -Eq '"functionsSkipped":[1-9][0-9]*' "$log"
     grep -Fq '"validation":{"status":"NOT_RUN"}' "$log"

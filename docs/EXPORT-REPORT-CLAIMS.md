@@ -1,5 +1,17 @@
 # Read-only export report claims
 
+**CONFIRMED locally, integration pending:** the #108 candidate accepts completed
+schema-one and schema-two reports. Schema two requires a coverage object (null for
+terminal reports); schema one forbids that field. All reader paths validate
+coverage, and `readWithCoverage()` retains it. Ordinary exports prepare schema two
+before publication; the legacy writer remains unchanged. See
+[`COVERAGE-SCORECARDS.md`](COVERAGE-SCORECARDS.md) for definitions and evidence.
+Shared limits now allow one million legacy values, five million coverage values
+and six million total, with unchanged 64 MiB/string/depth/array caps. The production
+schema-two writer enforces these limits during staging. Historical version-one
+acceptance details below still apply to legacy reports; parsing remains a claim
+reader, never attachment authorization or independent artifact validation.
+
 **CONFIRMED:** PR #33 head `67785a4`, exact hosted run `40094712284`, passes
 all twelve jobs. Independent package, all-five-target reader artifact and both
 GUI reviews are clear, including fifteen native Windows focused checks. Normal

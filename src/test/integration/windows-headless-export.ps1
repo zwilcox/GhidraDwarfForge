@@ -92,7 +92,7 @@ finally {
 $logText = Get-Content -Raw $log
 foreach ($pattern in @(
         'GhidraDwarfForge symbol export PASS',
-        'GhidraDwarfForge report: {"schemaVersion":1,"status":"PARTIAL"',
+        'GhidraDwarfForge report: {"schemaVersion":2,"status":"PARTIAL"',
         '"validation":{"status":"NOT_RUN"}',
         '"native":{"libdwarfVersion":"2.3.2"}',
         'REPORT: Import succeeded',

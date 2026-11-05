@@ -23,7 +23,7 @@ import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionRange;
  * Proposed metric-definition-one payload for report schema two. Counts are exact
  * canonical decimal strings, addresses are canonical hexadecimal strings, and
  * YES/NO flags keep the existing strict lexical report grammar unchanged.
- * No public exporter invokes this until its reader/attachment compatibility passes.
+ * Production prepares and strictly reads the full report before artifact publication.
  */
 public final class CoverageReportJson {
     public static final int DEFINITION_VERSION = 1;

@@ -51,7 +51,7 @@ case "$failure_projects" in
     /tmp/ghidra-dwarf-forge-fatal-report.*) rm -rf -- "$failure_projects" ;;
     *) echo "refusing to remove unexpected temporary path: $failure_projects" >&2; exit 1 ;;
 esac
-grep -Fq 'GhidraDwarfForge report: {"schemaVersion":1,"status":"FATAL"' \
+grep -Fq 'GhidraDwarfForge report: {"schemaVersion":2,"status":"FATAL"' \
     "$failure_log"
 grep -Fq 'selected original ELF does not match Ghidra' "$failure_log"
 test ! -e "$failure_output"

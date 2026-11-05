@@ -1,5 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally — #108 production staging:** the ordinary installed script
+now prepares and strictly reads back a schema-two report before publishing any
+generation. Real x86-64 and rebased AArch64 PIE pairs pass validators/GDB and
+deterministic reruns; 16 cancellation/injected-failure controls per target preserve
+existing pair/companion files and permit deterministic retry. Fresh GUI attachment,
+real oversized-report preservation, repeated large-workload overhead, comparison/
+CLI/GUI and full hosted acceptance remain pending. The schema-one production
+statements below are historical. #74 final acceptance retains integration priority.
+
 **PRESENT, UNVERIFIED end to end — #108:** recovered/emitted variable inventory
 and source evidence inventories, plus combined scorecard assembly, pass local
 component/raw-DWARF/GDB checks. Source
