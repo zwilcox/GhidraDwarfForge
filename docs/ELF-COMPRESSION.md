@@ -83,6 +83,13 @@ QEMU symbol tests use the existing private UNIX-socket helper, with startup and
 exit checks; all four emulated profiles have passing socket replays. The original
 failed directories are retained and are not labeled passing runs.
 
+The first hosted compression run `41978631212` stops at the new Windows wrapper
+assertion: the fake batch launcher records all arguments on one line, while the
+new assertion expected a separate line per argument. The check now matches a
+complete optionally quoted argument within that line, and the explicit-none
+check rejects the option anywhere in the capture. Native Windows acceptance
+requires the corrected run; the failed assertion is not a passing wrapper test.
+
 ## Remaining acceptance
 
 Native Windows packaged execution and consumer replay, the complete required
