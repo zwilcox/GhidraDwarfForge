@@ -1,0 +1,57 @@
+name: Performance measurement controls
+
+on:
+    workflow_dispatch:
+    pull_request:
+        paths:
+            - '.github/workflows/performance.yml'
+            - 'src/test/performance/**'
+
+permissions:
+    contents: read
+
+jobs:
+    windows-measurement:
+        runs-on: windows-2025
+        timeout-minutes: 15
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  persist-credentials: false
+            - uses: msys2/setup-msys2@v2
+              with:
+                  msystem: MINGW64
+                  update: true
+                  install: mingw-w64-x86_64-gcc
+            - name: Compile isolated measurement helper and independent child fixture
+              shell: msys2 {0}
+              run: |
+                  set -euo pipefail
+                  mkdir -p build/test-results/windows-measurement
+                  gcc --version > build/test-results/windows-measurement/compiler.txt
+                  gcc -std=c11 -O2 -Wall -Wextra -Werror -municode \
+                      src/test/performance/windows-measure.c \
+                      -o build/test-results/windows-measurement/windows-measure.exe
+                  gcc -std=c11 -O2 -Wall -Wextra -Werror -municode \
+                      src/test/performance/windows-measure-payload.c \
+                      -o build/test-results/windows-measurement/payload.exe
+                  sha256sum src/test/performance/windows-measure*.c \
+                      build/test-results/windows-measurement/*.exe \
+                      > build/test-results/windows-measurement/SHA256SUMS
+            - name: Prove native Windows process-tree accounting and failure controls
+              shell: pwsh
+              run: |
+                  $ErrorActionPreference = 'Stop'
+                  python --version
+                  python src/test/performance/test-windows-measurement.py `
+                      build/test-results/windows-measurement/windows-measure.exe `
+                      build/test-results/windows-measurement/payload.exe `
+                      build/test-results/windows-measurement
+                  if ($LASTEXITCODE -ne 0) { throw 'native accounting controls failed' }
+            - uses: actions/upload-artifact@v7
+              if: always()
+              with:
+                  name: windows-performance-measurement-controls
+                  path: build/test-results/windows-measurement/
+                  if-no-files-found: error
+                  retention-days: 14

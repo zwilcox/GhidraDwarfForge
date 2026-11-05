@@ -4755,10 +4755,12 @@ surviving knowledge, or describe inline export as complete.
 
 Tracking: [#74](https://github.com/zwilcox/GhidraDwarfForge/issues/74).
 
-**PLANNED current continuation:** [PERFORMANCE-WORKPLAN.md](docs/PERFORMANCE-WORKPLAN.md)
+**CONFIRMED local component; broader work remains:** [PERFORMANCE-WORKPLAN.md](docs/PERFORMANCE-WORKPLAN.md)
 retains the full broader-workload, host, measurement and optimization-decision
-scope. Internal JFR phase observations and a pinned U-Boot sandbox builder are
-being validated; neither a build nor an isolated profile closes this issue.
+scope. Internal JFR observations, same-compiler SQLite comparisons, and the
+complete pinned U-Boot sandbox benchmark pass locally. Windows accounting and
+workload measurements, candidate decisions, hosted review and integration remain
+required; these component results do not close the issue.
 
 **CONFIRMED through PR53's complete hosted gate:** instruction-level stack profiles are created only
 when an exported stack location consumes them, then reused within the function.

@@ -10,7 +10,7 @@ This plan does not reduce any of those issues' acceptance criteria.
 - **CONFIRMED existing corpus:** source-generated scaling fixtures and pinned
   SQLite 3.46.1. Re-run on the current packaged baseline; historical timings do
   not describe the current exporter.
-- **PLANNED firmware-code corpus:** U-Boot 2025.01 sandbox, archive SHA-256
+- **CONFIRMED local firmware-code corpus:** U-Boot 2025.01 sandbox, archive SHA-256
   `cdef7d507c93f1bbd9f015ea9bc21fa074268481405501945abc6f854d5b686f`.
   Preserve the archive URL, exact configuration, source license, compiler,
   build commands and source/binary hashes. Sandbox executes firmware code on
@@ -113,7 +113,7 @@ all differing shared classes belong to the intentionally changed
 `MinimalDwarfSidecarExporter` source. The standard release assembler accepts
 the reused, hash/provenance-checked native artifacts; both complete installation
 manifests pass (309/310 files). New isolated installation roles preserve the
-earlier measured installations. The same-compiler timing rerun remains pending.
+earlier measured installations. The same-compiler timing rerun passes as recorded below.
 
 The updated automated SQLite harness also passes `run.fml1pwam`: two fresh
 exports (median 35.10s), a separate recorded export, runtime/script checks,
@@ -175,8 +175,62 @@ retains `main` only as an independently known relocation anchor.
 pointer, next/step and normal exit. It also exercises the legitimate same-named
 static function/data objects called `do_echo`: function breakpoints work even
 though a generic expression lookup selects the data object. Full rerun of the
-corrected harness with the Java 21-compiled candidate remains pending; the old
-failed run is not relabeled as a fully passing harness run.
+corrected harness with the Java 21-compiled candidate was then pending; the old
+failed run is not relabeled as a fully passing harness run. The full corrected
+run subsequently passes as recorded below.
+
+## Confirmed local component acceptance
+
+The same-compiler comparison `paired-saved-exports/run.qbzuwn7x` passes all ten
+exports with identical artifact bytes/counts, actual Java 21/runtime-script
+observations, independent validators/GDB and protected input/project/module
+checks. Medians are 34.96s baseline and 34.98s candidate. The within-pair
+candidate-minus-baseline differences are +0.23/-0.22/+0.16/+0.23/+0.21s:
+four of five are slower, with a median +0.21s. Retain this small observed cost
+and the raw population instead of claiming a speedup or zero overhead.
+An additional short-workload comparison will investigate startup cost.
+Both use Java 21.0.12.1 compilation and
+runtime, with only the intended producer class family and phase utility changed.
+
+The complete corrected `uboot-benchmark/run.1mhp4wmk` passes two exports and a
+separate JFR export, byte-identical sidecar/source/companion output, GNU/LLVM/
+pinned strict validation, compiler argc/argv and Forge named breakpoint/source/
+step/exit checks. Its median is 115.47s, including the unchanged single
+decompilation timeout. All 6,375 functions export, 6,374 decompile; the report
+remains PARTIAL with 4,497 omitted location ranges and 10 unsupported constructs.
+Protected corpus/module/harness bytes remain unchanged; only the documented
+two Ghidra backup metadata files change.
+
+The updated 100-function synthetic harness (`export-benchmark/run.thbraean`)
+passes repeated deterministic exports, structural checks, runtime observations
+and GDB. The real copy-cancellation control (`run.5mcAIuwz`) leaves original
+and prior output generation intact. The controlled decompiler-failure harness
+passes symbol-only fallback plus strict validation. The sequential local
+validation queue terminates with `complete 0`. Hosted acceptance and the rest
+of #74 remain pending; these tests do not cover Windows workload measurements.
+
+## Windows measurement boundary
+
+**PRESENT, UNVERIFIED on native Windows:** `windows-measure.c` is a test-only
+launcher, not part of the installed extension. It creates a suspended process,
+assigns a kill-on-close Job Object before resuming it, waits for the entire job,
+and records cumulative user/kernel CPU plus peak job/process memory commitment.
+It uses a restricted inherited-handle list, exclusive log creation, a bounded
+timeout/cleanup period and an observed 256MiB-per-stream output limit. The 10ms
+membership polling is included in wall time. Launcher CPU itself is excluded.
+
+Windows peak commitment (`peakJobCommitBytes`, `peakProcessCommitBytes`) must
+not be compared as if it were Linux GNU time RSS. Microsoft documents the
+[job accounting interface](https://learn.microsoft.com/en-us/windows/win32/procthread/job-objects)
+and the continually tracked
+[peak memory counters](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-jobobject_extended_limit_information).
+Native controls launch a child that outlives its root, commit 64MiB while touching
+one page, consume independently measured child CPU, and test timeout cleanup,
+failing/missing executables, argument transport and preservation of existing logs.
+Linux MinGW cross-compilation is confirmed, but only the dedicated Windows
+workflow can establish these runtime properties. An accounting-control pass
+will still not establish Windows exporter performance; real workload runs and
+consumer validation remain required.
 
 ## Optimization decisions still required
 

@@ -4,9 +4,12 @@
 current work preserves Ghidra 12.0.3/Java 21 and pinned libdwarf 2.3.2. Optional
 JFR phase events pass real Java 21 failure/cancellation tests and a packaged
 SQLite headless export with deterministic artifacts and validator/GDB checks.
-The source/decompilation phase dominates that single profiled run; this does
-not justify a general optimization or architecture claim. A pinned U-Boot
-sandbox workload is being prepared. Full corpus/host measurements, candidate
+The source/decompilation phase dominates the profiled SQLite and U-Boot runs;
+this does not justify a general optimization or architecture claim. The full
+pinned U-Boot harness now passes locally, including its honest single timeout,
+and same-compiler SQLite pairs preserve every artifact byte. Cancellation and
+forced decompilation-failure regressions pass. Windows accounting controls are
+present but await actual Windows execution. Full corpus/host measurements, candidate
 decisions, final CI and integration remain required. See
 `docs/PERFORMANCE-WORKPLAN.md` for scope, observed timings and retained failures.
 

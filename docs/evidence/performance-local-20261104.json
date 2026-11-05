@@ -1,0 +1,278 @@
+{
+    "status": "PASS",
+    "scope": "Local component validation only; does not close74 or establish hosted/Windows workload acceptance.",
+    "productionSourceCommit": "5a507983dcc984736704afd12f8d6e10f0b348f3",
+    "producerSources": {
+        "src/main/java/ghidradwarfforge/performance/ExportPhase.java": "23bc5b476d1d8d97a29aaf4906c0d3182d97b547bfaf3adff7f6e83dde38016e",
+        "src/main/java/ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter.java": "f9c90c2e972852c307f1d28bbf4f570209c10d593a5089042f705e2b55bfefa8",
+        "ghidra_scripts/GhidraDwarfForge.java": "b5b6b05e03435405bbdd721c2bb16619069f1356d36af0ee74c581cd56d2d481"
+    },
+    "packages": {
+        "baseline": {
+            "packageSha256": "6efdfffc4320bbe92a5a40dffb53924a87150b1784cdb8c3df2802b8b988e6d1",
+            "jarSha256": "80d57bb096febc46b8699d4205481a4c1219c7f59d9070880f72454d67e40b96",
+            "manifestFiles": 309
+        },
+        "candidate": {
+            "packageSha256": "127463b6a883a2f1d9171068bd332ed94b5895e4e09305e91d6ec9f988f1ad45",
+            "jarSha256": "ab67c0d16aeb7738e0991c1a70b92cc7bc728a9600376363b71ba7da57f0aa17",
+            "manifestFiles": 310
+        }
+    },
+    "sqlitePairs": {
+        "mediansSeconds": {
+            "baseline": 34.96,
+            "candidate": 34.98
+        },
+        "pairedCandidateMinusBaselineSeconds": [
+            0.23,
+            -0.22,
+            0.16,
+            0.23,
+            0.21
+        ],
+        "medianPairedDifferenceSeconds": 0.21,
+        "artifactSha256": [
+            "172e9f6258406e8fe06fdf8e47d7accfe1b9473afb2f6083cd2eb78fb10cee23",
+            "7928e43c6575363fecc7b4be9de1245e8ee97180fa704032ee5503018dc28abb"
+        ],
+        "samples": [
+            {
+                "elapsedSeconds": 35.44,
+                "userSeconds": 46.8,
+                "systemSeconds": 1.32,
+                "maximumResidentKiB": 903832,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/installations/baseline-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 0,
+                "variant": "baseline",
+                "artifactSha256": [
+                    "172e9f6258406e8fe06fdf8e47d7accfe1b9473afb2f6083cd2eb78fb10cee23",
+                    "7928e43c6575363fecc7b4be9de1245e8ee97180fa704032ee5503018dc28abb"
+                ]
+            },
+            {
+                "elapsedSeconds": 35.67,
+                "userSeconds": 48.11,
+                "systemSeconds": 1.41,
+                "maximumResidentKiB": 928140,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/installations/candidate-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 0,
+                "variant": "candidate",
+                "artifactSha256": [
+                    "172e9f6258406e8fe06fdf8e47d7accfe1b9473afb2f6083cd2eb78fb10cee23",
+                    "7928e43c6575363fecc7b4be9de1245e8ee97180fa704032ee5503018dc28abb"
+                ]
+            },
+            {
+                "elapsedSeconds": 34.85,
+                "userSeconds": 45.74,
+                "systemSeconds": 1.27,
+                "maximumResidentKiB": 875152,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/installations/candidate-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 1,
+                "variant": "candidate",
+                "artifactSha256": [
+                    "172e9f6258406e8fe06fdf8e47d7accfe1b9473afb2f6083cd2eb78fb10cee23",
+                    "7928e43c6575363fecc7b4be9de1245e8ee97180fa704032ee5503018dc28abb"
+                ]
+            },
+            {
+                "elapsedSeconds": 35.07,
+                "userSeconds": 45.51,
+                "systemSeconds": 1.27,
+                "maximumResidentKiB": 1180116,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/installations/baseline-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 1,
+                "variant": "baseline",
+                "artifactSha256": [
+                    "172e9f6258406e8fe06fdf8e47d7accfe1b9473afb2f6083cd2eb78fb10cee23",
+                    "7928e43c6575363fecc7b4be9de1245e8ee97180fa704032ee5503018dc28abb"
+                ]
+            },
+            {
+                "elapsedSeconds": 34.77,
+                "userSeconds": 45.01,
+                "systemSeconds": 1.34,
+                "maximumResidentKiB": 1145908,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/installations/baseline-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 2,
+                "variant": "baseline",
+                "artifactSha256": [
+                    "172e9f6258406e8fe06fdf8e47d7accfe1b9473afb2f6083cd2eb78fb10cee23",
+                    "7928e43c6575363fecc7b4be9de1245e8ee97180fa704032ee5503018dc28abb"
+                ]
+            },
+            {
+                "elapsedSeconds": 34.93,
+                "userSeconds": 46.25,
+                "systemSeconds": 1.31,
+                "maximumResidentKiB": 832612,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/installations/candidate-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 2,
+                "variant": "candidate",
+                "artifactSha256": [
+                    "172e9f6258406e8fe06fdf8e47d7accfe1b9473afb2f6083cd2eb78fb10cee23",
+                    "7928e43c6575363fecc7b4be9de1245e8ee97180fa704032ee5503018dc28abb"
+                ]
+            },
+            {
+                "elapsedSeconds": 34.98,
+                "userSeconds": 46.13,
+                "systemSeconds": 1.31,
+                "maximumResidentKiB": 796668,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/installations/candidate-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 3,
+                "variant": "candidate",
+                "artifactSha256": [
+                    "172e9f6258406e8fe06fdf8e47d7accfe1b9473afb2f6083cd2eb78fb10cee23",
+                    "7928e43c6575363fecc7b4be9de1245e8ee97180fa704032ee5503018dc28abb"
+                ]
+            },
+            {
+                "elapsedSeconds": 34.75,
+                "userSeconds": 45.69,
+                "systemSeconds": 1.29,
+                "maximumResidentKiB": 879168,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/installations/baseline-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 3,
+                "variant": "baseline",
+                "artifactSha256": [
+                    "172e9f6258406e8fe06fdf8e47d7accfe1b9473afb2f6083cd2eb78fb10cee23",
+                    "7928e43c6575363fecc7b4be9de1245e8ee97180fa704032ee5503018dc28abb"
+                ]
+            },
+            {
+                "elapsedSeconds": 34.96,
+                "userSeconds": 46.52,
+                "systemSeconds": 1.35,
+                "maximumResidentKiB": 885904,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/installations/baseline-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 4,
+                "variant": "baseline",
+                "artifactSha256": [
+                    "172e9f6258406e8fe06fdf8e47d7accfe1b9473afb2f6083cd2eb78fb10cee23",
+                    "7928e43c6575363fecc7b4be9de1245e8ee97180fa704032ee5503018dc28abb"
+                ]
+            },
+            {
+                "elapsedSeconds": 35.17,
+                "userSeconds": 46.12,
+                "systemSeconds": 1.26,
+                "maximumResidentKiB": 863484,
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/installations/candidate-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "pair": 4,
+                "variant": "candidate",
+                "artifactSha256": [
+                    "172e9f6258406e8fe06fdf8e47d7accfe1b9473afb2f6083cd2eb78fb10cee23",
+                    "7928e43c6575363fecc7b4be9de1245e8ee97180fa704032ee5503018dc28abb"
+                ]
+            }
+        ],
+        "interpretation": "No speedup or zero-overhead claim; five same-host pairs with warm caches and uncontrolled background load."
+    },
+    "firmware": {
+        "status": "PASS",
+        "exportMedianSeconds": 115.47,
+        "exportMaximumResidentKiB": 1179644,
+        "counts": {
+            "functionsExported": 6375,
+            "functionsDecompiled": 6374,
+            "functionsFailed": 1,
+            "functionsSkipped": 268,
+            "functionSignatures": 6375,
+            "parameters": 3935,
+            "localVariables": 15846,
+            "globalVariables": 11677,
+            "functionStaticVariables": 0,
+            "canonicalTypes": 298,
+            "defensibleVariableLocations": 15903,
+            "omittedLocationRanges": 4497,
+            "mappedSourceLines": 222853,
+            "unsupportedConstructs": 10,
+            "diagnostics": 7229
+        },
+        "artifactSha256": [
+            "3dcde8009079f244693186a00e791908cb54c6a45f9c6fefc06af4b4b198114d",
+            "a69bc1e1755482514e2799112613f75202bff00e08e181155b8d6250ce8ffae5",
+            "6f0cbe528b1630ee0b9ecf032c815988a2796c83c65734046f6b82f34bdf1c12"
+        ],
+        "protectedUnchanged": true,
+        "projectBackupChanges": [
+            "UBoot.rep/idata/~index.bak",
+            "UBoot.rep/idata/~journal.bak"
+        ],
+        "scope": "One Linux x86-64 sandbox PIE; compiler argc/argv reference; Forge function/source lookup, raw gd pointer, stepping and exit. No complete recovered types/locals or hardware claim."
+    },
+    "controls": {
+        "actualJava21PhaseSmoke": "PASS",
+        "synthetic100": "PASS",
+        "copyCancellation": "PASS",
+        "controlledDecompilerFailure": "PASS",
+        "workflowLint": "PASS"
+    },
+    "files": {
+        "build/test-results/paired-saved-exports/run.qbzuwn7x/result.json": "4b5f652d3e58fad9fd5443f901e165c211698c5275639de06e58f82888e474d2",
+        "build/test-results/paired-saved-exports/run.qbzuwn7x/environment.json": "ec900a725cfacaf5fc741047eec3c04da13e1d6ce040a0f528c98c9fc715c583",
+        "build/test-results/paired-saved-exports/run.qbzuwn7x/protected-before.json": "b9e9e77d4e47e267fe7ce4b0cdd4f80d2b776851c4034d14210081882e9962d8",
+        "build/test-results/paired-saved-exports/run.qbzuwn7x/protected-after.json": "b9e9e77d4e47e267fe7ce4b0cdd4f80d2b776851c4034d14210081882e9962d8",
+        "build/test-results/uboot-benchmark/run.1mhp4wmk/summary.json": "afd98f59ba6ec6facdbdf4bd424e83f2f0c9b0be929a0914c6ae829c529d0091",
+        "build/test-results/uboot-benchmark/run.1mhp4wmk/protected-before.json": "e9c9566535456807605bd81bc18d29cfa8e5250e716d5ff54998a47839882f5b",
+        "build/test-results/uboot-benchmark/run.1mhp4wmk/protected-after.json": "e9c9566535456807605bd81bc18d29cfa8e5250e716d5ff54998a47839882f5b",
+        "build/test-results/uboot-benchmark/run.1mhp4wmk/phase-summary.json": "9358908275a2b2ec0b97e475783a59d48f6f6649e061b6717f8f8fc717bc09a5",
+        "build/packages/java21-installation-receipt.json": "9084244a144eca9497635a9cfdff9c709e95f866bb51a7e64d06050bd33b3c92",
+        "build/copy-cancellation-java21.log": "b55da1f2f39c0121e52088a84e274a833609b60b99ea98eb1d0b2350becac3ef",
+        "build/controlled-failure-java21.log": "e41eb063cf5a70adc9ecae539f7d8e7e4367ea7ec6d9d7bf04d3164318a53246",
+        "build/synthetic-java21.log": "b12820fcfea1638547bf89a7011233ef4e77504711fc3beac9cb6d7b9159fa51",
+        "build/local-validation-queue.status": "532e0120b18a29772e8ee0bed0f5ef9579ea8c8e0e9fb532a7f1bf1a2a49c897"
+    }
+}
