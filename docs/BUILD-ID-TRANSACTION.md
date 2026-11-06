@@ -99,6 +99,14 @@ The receipt is [build-id-transaction.json](evidence/build-id-transaction.json).
 - Extension build and test-class compilation pass. Both control runs invoke
   fresh production structural validators before successful publication. All
   selected input hashes remain unchanged.
+- Thirteen additional production Linux identity controls pass; see
+  [build-id-identity.json](evidence/build-id-identity.json). Owned ELF64
+  little-endian fixture copies model absent, malformed and conflicting IDs,
+  different original bytes sharing an ID, selected-input aliases/hardlinks and
+  six invalid path IDs. Test reports are explicitly adjusted for those artificial
+  mutations; they are not presented as real producer exports. Refusals leave
+  existing registrations unchanged or a fresh debug root empty. The unchanged
+  positive baseline invokes the production structural validators.
 
 Historical interrupted harness runs are retained: one assumed raw logs had a
 `.log` suffix (they use `tool.stdout`), and another encountered JNA temporary-file
@@ -108,8 +116,7 @@ temporary directory. Neither interrupted run is counted as a pass.
 ## Remaining acceptance
 
 The compression-different refresh fixtures prove replacement, not an actual
-analyst name/type edit. Add the curated refresh oracle, missing/malformed or
-ambiguous build-ID and same-ID/different-original controls, shared and applicable
+analyst name/type edit. Add the curated refresh oracle, shared and applicable
 sectionless discovery, LLDB and perf installation-specific checks, native Windows
 acceptance, launcher/setup/cancellation behavior, workflow coverage and protected
 integration. Retained component tests do not establish those requirements.

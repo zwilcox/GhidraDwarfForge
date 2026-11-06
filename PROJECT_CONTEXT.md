@@ -6,6 +6,8 @@ Linux ext4 host. Ten exec/PIE target layouts pass fresh GDB discovery, source,
 value and stepping checks; the nine additional layouts use the test metadata
 host. Linux checks additionally preserve non-default permissions, an access ACL
 and user attribute. Root and transaction-directory identity safeguards pass.
+Thirteen production-host identity controls additionally reject absent, malformed
+and conflicting IDs, a same-ID/different-original collision and input aliases.
 See `docs/BUILD-ID-TRANSACTION.md` for exact evidence and limits. The launcher,
 Windows installation, curated refresh and full consumer/identity matrix remain
 PLANNED; #110 hosted acceptance and protected integration remain required.
