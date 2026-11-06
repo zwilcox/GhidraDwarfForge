@@ -1054,6 +1054,17 @@ jobs:
             done
           done
 
+      - name: Preserve runtime unwind records alongside recovered native frames
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for family in unwind-frame-recovery unwind-shrinkwrap; do
+            python3 src/test/integration/unwind-export.py "$GHIDRA_INSTALL_DIR" \
+              "build/test-results/$family/$TARGET" "build/test-results/native-runtime-coexistence/$family/$TARGET" \
+              --target "$TARGET" --original-runtime --dwarfdump "$DWARFDUMP"
+          done
+
       - name: Preserve inherited unavailable-register limits
         if: matrix.target == 'aarch64'
         run: |

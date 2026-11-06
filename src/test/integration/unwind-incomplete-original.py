@@ -67,7 +67,7 @@ def main():
             text = run([args.dwarfdump, '--no-follow-debuglink', '-ka', '-ki', '-kd', path],
                 work / (name + '-strict.log'))
             checked = validate_original(text, original=True)
-            (work / (name + '-strict.check.json')).write_text(json.dumps(checked, indent=4) + '\n')
+            (work / (name + '-input-validation.json')).write_text(json.dumps(checked, indent=4) + '\n')
     results, warnings = {}, {}
     for name, path in (('reference', work / 'reference'), ('forge', artifact)):
         prefix = work / ('gdb-' + name)
@@ -80,6 +80,8 @@ def main():
     assert all(re.fullmatch(r'warning: BFD: warning: system-supplied DSO at 0x[0-9a-f]+ has a corrupt string table index', line)
         for line in warnings['reference'])
     assert protected == {name: digest(Path(name)) for name in protected}
+    run([sys.executable, SCRIPTS / 'retained-validator-reports.py', work,
+        '--output', work / 'retained-validator-reports.json'], work / 'retained-validator-reports.log')
     (work / 'result.json').write_text(json.dumps({'status': 'PASS_INHERITED_UNAVAILABLE_CONTROL',
         'protected': protected, 'observations': results, 'warnings': warnings,
         'limit': 'The original omits x29 and outer-boundary CFI; both consumers stop at the same four frames. This is not full-chain acceptance.'}, indent=4) + '\n')

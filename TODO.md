@@ -1,5 +1,17 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 runtime/original frame coexistence:** twelve real
+export cases pass across x86-64/AArch64, both assembler families and exec/PIE/shared
+roles. Original `.eh_frame` and `.eh_frame_hdr` retain exact bytes and geometry;
+only uncovered recursive records are generated. This includes 108 exports,
+24 staged failure controls, 48 validator-clean/corroborated sidecars and 108 GDB
+sessions. The complete matrix was rerun after correcting input-summary receipt
+names and adding standalone retention checks. See
+`docs/RUNTIME-FRAME-COEXISTENCE.md`. Hosted acceptance, compiler-C storage policy,
+ADR/provenance and normal CLI/GUI enablement remain open. PR166 has merged as
+`8041fdab`; its final acceptance documentation is PR175. Earlier pending-PR166
+statements below are historical. Full #112/#110/#109 remain incomplete.
+
 **CONFIRMED locally — #112 native original/generated frame coexistence:**
 thirty-six real-export cases pass with plain/gABI/GNU original records across
 both initial targets, fixture families and exec/PIE/shared roles: 324 exports,

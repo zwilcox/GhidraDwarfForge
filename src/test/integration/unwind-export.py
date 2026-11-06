@@ -100,6 +100,104 @@ def generated_suffix(raw, prefix, expected):
     assert decode(suffix, 8, 'little') == expected
 
 
+def add_runtime_frames(case, target, role, family, expected, dwarfdump):
+    """Source-build partial runtime CFI and an independent complete reference."""
+    source = ROOT / 'src/test/fixtures' / ('cfi-' + family + '-' + target + '.S')
+    text = source.read_text()
+    first, tail = text.split('cf_recurse:', 1)
+    middle, last = tail.split('    .size cf_recurse,.-cf_recurse', 1)
+    middle = '\n'.join(line for line in middle.split('\n')
+        if not line.strip().startswith('.cfi_') and line.strip() != 'ordinary_rules')
+    partial = (first + 'cf_recurse:' + middle + '    .size cf_recurse,.-cf_recurse' + last)
+    partial = partial.replace('.cfi_sections .debug_frame', '.cfi_sections .eh_frame')
+    complete = text.replace('.cfi_sections .debug_frame', '.cfi_sections .eh_frame, .debug_frame')
+    prefix = '' if target == 'x86_64' else 'aarch64-linux-gnu-'
+    flags = {'exec': ['-static', '-no-pie'], 'pie': ['-fPIE', '-static-pie'],
+        'shared': ['-fPIC', '-shared', '-Wl,-Bsymbolic', '-DCFI_SHARED']}[role]
+    previous = case / 'prior-original'
+    shutil.copy2(case / 'original', previous)
+    for name, content in (('original', partial), ('reference', complete)):
+        generated = case / (name + '.S'); generated.write_text(content)
+        for suffix in ('', '-repeat'):
+            run([prefix + 'gcc', '-nostdlib', *flags, '-Wl,--build-id=none', '-Wl,--eh-frame-hdr',
+                generated, '-o', case / (name + suffix)], case / (name + suffix + '-build.log'))
+        assert (case / name).read_bytes() == (case / (name + '-repeat')).read_bytes()
+
+    def symbols(path):
+        found = {}
+        for line in run(['readelf', '-Ws', path], case / (path.name + '-symbols.log')).splitlines():
+            fields = line.split()
+            if len(fields) == 8 and fields[7] in ('cf_checkpoint', 'cf_recurse', '_start'):
+                found[fields[7]] = (int(fields[1], 16), int(fields[2]))
+        assert len(found) == 3
+        return found
+
+    original, reference = case / 'original', case / 'reference'
+    old_symbols, new_symbols = symbols(previous), symbols(original)
+    assert new_symbols == symbols(reference)
+    old_meta, new_meta, ref_meta = map(metadata, (previous, original, reference))
+    for name in ('.text', '.rodata'):
+        new, = [s for s in new_meta['sections'] if s['name'] == name]
+        ref, = [s for s in ref_meta['sections'] if s['name'] == name]
+        assert new['address'] == ref['address'] and new['size'] == ref['size']
+        assert original.read_bytes()[new['offset']:new['offset'] + new['size']] == \
+            reference.read_bytes()[ref['offset']:ref['offset'] + ref['size']]
+    # Adding runtime headers may move text. Reuse earlier recovered rows only
+    # after proving the recursive function's actual instructions are identical.
+    old_text, = [s for s in old_meta['sections'] if s['name'] == '.text']
+    new_text, = [s for s in new_meta['sections'] if s['name'] == '.text']
+    old_address, size = old_symbols['cf_recurse']
+    new_address, new_size = new_symbols['cf_recurse']
+    assert size == new_size
+    old_offset = old_text['offset'] + old_address - old_text['address']
+    new_offset = new_text['offset'] + new_address - new_text['address']
+    assert previous.read_bytes()[old_offset:old_offset + size] == original.read_bytes()[new_offset:new_offset + size]
+    delta = new_address - old_address
+    assert all(new_symbols[name] == (address + delta, length) for name, (address, length) in old_symbols.items())
+    expected = copy.deepcopy(expected)
+    for frame in expected:
+        frame['address'] += delta
+        for row in frame['rows']:
+            row['address'] += delta
+    original_range = new_symbols['cf_checkpoint']
+    checker = runpy.run_path(str(SCRIPTS / 'check-dwarfdump.py'))
+    for name, path in (('original', original), ('reference', reference)):
+        text = run(['readelf', '-h', '-S', '--debug-dump=frames', path], case / (name + '-gnu.log'))
+        assert not re.search(r'warning:|error:', text, re.IGNORECASE)
+        run(['llvm-dwarfdump', '--verify', path], case / (name + '-llvm.log'))
+        frames = run([dwarfdump, '--no-follow-debuglink', '--print-eh-frame', '--print-frame', path],
+            case / (name + '-frames.log'))
+        assert '\nfde:\n' in frames and '\ncie:\n' in frames
+        assert not re.search(r'DW_DLE_|\b(?:warning|error|fatal):', frames, re.IGNORECASE)
+        text = run([dwarfdump, '--no-follow-debuglink', '-ka', '-ki', '-kd', path], case / (name + '-strict.log'))
+        # Assembler controls have no compilation units; exported sidecars below
+        # still use the ordinary nonzero-CU strict validation contract.
+        # GNU runtime FDEs are four-byte aligned. The pinned libdwarf checker
+        # also diagnoses records not aligned to the eight-byte address size.
+        # Independently reconstruct every such notice from the actual input
+        # bytes; do not accept an arbitrary diagnostic merely because it exists.
+        unused, raw = checker['elf_frame_identity'](path)
+        offset, notices = 0, []
+        while offset < len(raw):
+            length = int.from_bytes(raw[offset:offset + 4], 'little')
+            if length == 0:
+                assert not any(raw[offset:])
+                break
+            total = length + 4
+            assert 4 <= length < 0xfffffff0 and offset + total <= len(raw) and total % 4 == 0
+            if total % 8:
+                kind = 'cie' if raw[offset + 4:offset + 8] == b'\0' * 4 else 'fde'
+                notices.append('*** DWARF CHECK: DW_DLE_DEBUG_FRAME_LENGTH_NOT_MULTIPLE '
+                    f'len=0x{length:08x}, len size=0x00000004, extn size=0x00000000, '
+                    f'totl length=0x{total:08x}, addr size=0x00000008, mod=0x{total % 8:08x} '
+                    f'must be zero in {kind}, offset 0x{offset:08x}. ***')
+            offset += total
+        checked = checker['validate_output'](text, notices, original=True)
+        checked['inputFrameNoticesConfirmedFromBytes'] = notices
+        (case / (name + '-input-validation.json')).write_text(json.dumps(checked, indent=4) + '\n')
+    return expected, original_range
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
@@ -111,8 +209,11 @@ def main():
     parser.add_argument('--target', choices=('x86_64', 'aarch64', 'all'), default='all')
     parser.add_argument('--roles', nargs='+', choices=('exec', 'pie', 'shared'), default=('exec', 'pie', 'shared'))
     parser.add_argument('--failed-source-name', default='none')
-    parser.add_argument('--original-encoding', choices=('plain', 'gabi', 'gnu'),
+    originals = parser.add_mutually_exclusive_group()
+    originals.add_argument('--original-encoding', choices=('plain', 'gabi', 'gnu'),
         help='Retain assembler leaf/outer-boundary records and recover only the uncovered recursive frame')
+    originals.add_argument('--original-runtime', action='store_true',
+        help='Source-build original leaf/outer-boundary .eh_frame and recover the recursive frame')
     args = parser.parse_args()
     assert bool(args.libdwarf) == bool(args.libdwarfp)
     work = args.output.resolve(); work.mkdir(parents=True, exist_ok=False)
@@ -126,6 +227,9 @@ def main():
         ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar',
         SCRIPTS / 'ghidra_scripts/ExportRecoveredFrames.java',
         SCRIPTS / 'ghidra_scripts/RecoveredFrameExportControls.java')}
+    if args.original_runtime:
+        for source in (ROOT / 'src/test/fixtures').glob('cfi-*.S'):
+            protected[str(source.resolve())] = digest(source)
     outcomes = []
     for item in prior['cases']:
         target, role, family = (item[key] for key in ('target', 'role', 'fixtureFamily'))
@@ -146,6 +250,10 @@ def main():
         remaining = expected
         if args.original_encoding:
             original_prefix, original_range = add_original_frames(case, target, args.original_encoding)
+        if args.original_runtime:
+            expected, original_range = add_runtime_frames(case, target, role, family, expected, args.dwarfdump)
+            inputs += ['original.S', 'reference.S', 'prior-original']
+        if original_range:
             remaining = [f for f in expected if (f['address'], f['size']) != original_range]
             assert len(remaining) == len(expected) - 1 and remaining
         before = {str(case / name): digest(case / name) for name in inputs}
@@ -180,7 +288,14 @@ def main():
                 assert artifact.read_bytes()[preserved['offset']:preserved['offset'] + preserved['size']] == \
                     original.read_bytes()[inherited['offset']:inherited['offset'] + inherited['size']]
             else:
-                assert decode(raw, 8, 'little') == expected, 'real import changed recovered frame rules'
+                assert decode(raw, 8, 'little') == remaining, 'real import changed recovered frame rules'
+            if args.original_runtime:
+                for name in ('.eh_frame', '.eh_frame_hdr'):
+                    inherited, = [s for s in metadata(original)['sections'] if s['name'] == name]
+                    preserved, = [s for s in sections if s['name'] == name]
+                    assert all(preserved[k] == inherited[k] for k in ('offset', 'size', 'type', 'flags', 'address'))
+                    assert artifact.read_bytes()[preserved['offset']:preserved['offset'] + preserved['size']] == \
+                        original.read_bytes()[inherited['offset']:inherited['offset'] + inherited['size']]
             (case / (variant + '.frame')).write_bytes(raw)
             text = run(['readelf', '-h', '-S', '--debug-dump=frames,info,abbrev,aranges,decodedline', artifact], case / (variant + '-gnu.log'))
             assert 'warning:' not in text.lower() and 'error:' not in text.lower()
@@ -225,10 +340,10 @@ def main():
                 for level, pc in re.findall(r'level=(\d+),type=NORMAL_FRAME,unwinder="dwarf2",pc=(0x[0-9a-f]+)', text)
                 if any(f['address'] <= int(pc, 16) - bias < f['address'] + f['size'] for f in expected)))
             uses_cfi = mode not in ('absent', 'disabled')
-            if mode == 'disabled' or (mode == 'absent' and not args.original_encoding):
+            if mode == 'disabled' or (mode == 'absent' and not original_range):
                 assert not selected, selected
             for level in range(4 if family == 'shrinkwrap' else 5):
-                wanted = uses_cfi or (mode == 'absent' and args.original_encoding and level == 0)
+                wanted = uses_cfi or (mode == 'absent' and original_range and level == 0)
                 assert any(found == level for found, pc in selected) == bool(wanted), (mode, level, selected)
             if role == 'shared': assert result['moduleBias'] > 0 and bias == result['moduleBias']
             result['selectedDwarfFrames'] = selected
@@ -257,8 +372,11 @@ def main():
             source_warnings = [line for line in Path(str(prefix) + '.log').read_text().splitlines() if 'warning:' in line.lower()]
             assert source_warnings == warnings['reference'], source_warnings
         assert before == {name: digest(Path(name)) for name in before}
+        run([sys.executable, SCRIPTS / 'retained-validator-reports.py', case,
+            '--output', case / 'retained-validator-reports.json'], case / 'retained-validator-reports.log')
         outcomes.append({'target': target, 'role': role, 'family': family, 'artifacts': artifacts,
             'originalEncoding': args.original_encoding, 'originalFrameRange': original_range,
+            'originalRuntime': args.original_runtime,
             'originalFramePrefixSha256': hashlib.sha256(original_prefix).hexdigest() if original_prefix else None,
             'runtime': results, 'sourceRuntime': source_results, 'warnings': warnings, 'inputHashes': before,
             'successfulExports': 9, 'failureControls': 2})
@@ -268,6 +386,7 @@ def main():
     assert protected == {name: digest(Path(name)) for name in protected}
     (work / 'result.json').write_text(json.dumps({'status': 'PASS_NATIVE_FRAME_EXPORT', 'protected': protected,
         'failedSourceName': args.failed_source_name, 'originalEncoding': args.original_encoding, 'cases': outcomes,
+        'originalRuntime': args.original_runtime,
         'scope': 'Real ELF import, decompiler, native producer and staged frame writer; explicit test entry, not enabled CLI synthesis'}, indent=4) + '\n')
 
 

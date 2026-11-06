@@ -1,8 +1,9 @@
 # Evidence model for synthetic call-frame information (#112)
 
 **PLANNED production behavior; CONFIRMED compiler-reference checkpoint.**
-This document proposes how to satisfy #112. The exporter does not yet synthesize
-CFI. [ADR-0002](ADR-0002-DEBUG-FRAME.md)'s production prohibition remains in force
+This document proposes how to satisfy #112. Normal CLI/GUI export does not
+yet enable synthesis. The explicit internal exporter API is exercised by
+`NATIVE-FRAME-EXPORT.md` and the original/runtime coexistence harnesses. [ADR-0002](ADR-0002-DEBUG-FRAME.md)'s production prohibition remains in force
 until the model, preservation path and runtime tests below are implemented.
 Neither this checkpoint nor historical #8 closes #112.
 
