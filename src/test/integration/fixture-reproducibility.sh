@@ -131,6 +131,9 @@ expected_sources=(
     stack-local-effects.c
     stack-spill.c
     stack-value-transitions.c
+    synthetic-cfi-start-aarch64.S
+    synthetic-cfi-start-x86_64.S
+    synthetic-cfi.c
     terminal-composite.c
 )
 mapfile -t actual_sources < <(

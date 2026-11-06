@@ -1,5 +1,14 @@
 # Integration fixtures
 
+`synthetic-cfi.c` and its two `synthetic-cfi-start-*.S` startup files are
+freestanding x86-64/AArch64 compiler references for #112. The dedicated
+`synthetic-cfi-reference.py` harness builds them with `.debug_frame` and no
+runtime unwind tables, then creates a separate input with debug information
+removed. It compares compiler, absent-CFI and disabled-DWARF-unwinder behavior
+through nested calls and recursive returns. This tests the independent oracle;
+it does not establish production synthetic-CFI support. See
+`docs/SYNTHETIC-CFI-EVIDENCE.md` for commands and remaining acceptance.
+
 `semantic.c` and `shared_semantic.c` are redistributable source-built fixtures
 shared across target architectures. They intentionally contain functions,
 globals, parameters, locals, arrays, an enum, union, typedef, function pointer,

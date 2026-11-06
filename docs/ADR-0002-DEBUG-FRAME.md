@@ -40,3 +40,14 @@ instruction-address-varying CFA and saved-register rules. Any implementation
 must then pass nested-call, prologue, body, epilogue, and failure-path unwind
 tests on every architecture it claims. No generic fallback may assume a frame
 pointer, stack direction, return-address register, or calling convention.
+
+## Issue #112 reconsideration (2026-11-05)
+
+**PLANNED:** [the proposed recovery and validation model](SYNTHETIC-CFI-EVIDENCE.md)
+now separates instruction-range evidence from frame serialization and requires
+original unwind metadata precedence. Independent compiler reference harnesses
+exist for x86-64 and AArch64, including no-CFI and disabled-unwinder controls.
+They do not validate Forge-generated CFI. This ADR's production prohibition
+remains active until the proposal's full acceptance criteria pass; #112 remains
+open. The new requirement supersedes any historical interpretation that closing
+#8 also completed synthetic unwinding.

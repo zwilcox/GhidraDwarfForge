@@ -980,6 +980,14 @@ jobs:
           make -C src/test/fixtures "$TARGET"
           src/test/integration/fixture-reproducibility.sh "$TARGET"
 
+      - name: Validate independent compiler unwind references
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/synthetic-cfi-reference.py "$TARGET" \
+            "build/test-results/synthetic-cfi-reference/$TARGET" --dwarfdump "$DWARFDUMP"
+
       - name: Verify fixture identity and stripping
         env:
           TARGET: ${{ matrix.target }}

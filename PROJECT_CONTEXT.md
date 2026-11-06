@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 independent compiler references; synthesis PLANNED:**
+the new x86-64/AArch64 harness validates compiler `.debug_frame`, exact nested
+caller values, recursive return stepping, deterministic builds and unchanged
+allocated input bytes. No-CFI and disabled-DWARF controls show that AArch64's
+fallback can pass the same backtrace, so actual DWARF-unwinder selection is part
+of the oracle. The proposed evidence model, original `.debug_frame` preservation
+gap and complete remaining acceptance are in `docs/SYNTHETIC-CFI-EVIDENCE.md`.
+ADR-0002 still prohibits production synthesis. #116/#114 PR166 hosted acceptance
+has priority; #112, #110 and #109 remain open. No release is implied.
+
 **CONFIRMED — #108 implementation integrated and final acceptance published:**
 all fifteen integration jobs and five performance jobs pass at `6e0cb95`.
 Independent package, raw DWARF/GDB, host GUI, workload and complete ARM32 reviews

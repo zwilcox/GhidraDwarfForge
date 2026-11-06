@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 compiler-reference checkpoint; production PLANNED:**
+x86-64 and AArch64 reference harnesses pass structural and runtime checks with
+explicit absent-CFI/disabled-unwinder controls. The AArch64 fallback reproduces
+the complete backtrace; acceptance therefore checks actual DWARF unwinder use.
+`docs/SYNTHETIC-CFI-EVIDENCE.md` records the proposed evidence model and remaining
+preservation, extraction, encoding, prologue/join/failure and production-GDB
+tests. ADR-0002 remains unchanged for production. This does not complete #112;
+#116/#114 PR166 hosted acceptance remains the first priority, followed by the
+full #112/#110/#109 goal. Hosted reference checks are PRESENT, UNVERIFIED.
+
 **CONFIRMED — #108 implementation integrated and final acceptance published:**
 all fifteen integration jobs and five performance jobs pass at `6e0cb95`.
 Independent package, raw DWARF/GDB, host GUI, workload and complete ARM32 reviews
