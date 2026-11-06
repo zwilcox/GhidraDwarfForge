@@ -42,7 +42,8 @@ def main():
     protected_paths = [reference / 'stripped', reference / 'reference', reference / 'labels.json',
         curation / 'read1.json', args.consumer, args.producer, module / 'lib/GhidraDwarfForge.jar',
         module / 'ghidra_scripts/GhidraDwarfForge.java', Path(__file__),
-        harness / 'annotation-default-gdb.py', harness / 'annotation-default-gdb.sh']
+        harness / 'annotation-default-gdb.py', harness / 'annotation-default-gdb.sh',
+        harness / 'ghidra_scripts/CancelDuringAnnotations.java']
     protected = {str(p): digest(p) for p in protected_paths}
     if args.equate_evidence:
         protected[str(args.equate_evidence.resolve())] = digest(args.equate_evidence)
@@ -115,6 +116,24 @@ def main():
                 text = ('Lookup ' + constant['name'] + ' [' + constant['view'] + '; ' +
                     ('signed ' if value['signed'] else 'unsigned ') + str(value['bits']) + ' bits] = ' + str(number) + '\n')
                 assert text in decoded, text
+        def value_text(value):
+            number = value['value'] if value['signed'] else value['value'] & ((1 << value['bits']) - 1)
+            return ('signed ' if value['signed'] else 'unsigned ') + str(value['bits']) + ' bits = ' + str(number)
+
+        def resolution_text(resolution):
+            value = resolution.get('value')
+            return resolution['status'] + (' [' + value_text(value) + ']' if value is not None else '')
+
+        for equate in observations['equates']:
+            enum = equate['enumeration']
+            if enum.get('value') is not None:
+                assert 'Enum value: ' + value_text(enum['value']) + '\n' in decoded
+            for observation in equate['references']:
+                expected = ('Reference ' + observation['space'] + ':0x' + observation['offset'] +
+                    ' operand=' + str(observation['operand']) + ' dynamicHash=0x' + format(int(observation['dynamicHash']), 'x') + '\n' +
+                    'Operand evidence: ' + resolution_text(observation['scalar']) +
+                    '; high-p-code evidence: ' + resolution_text(observation['dynamic']) + '\n')
+                assert expected in decoded, expected
         inserted.update(range(start + 1, len(rows) + 1))
         (root / 'equate-expected.json').write_text(json.dumps(constants, indent=4) + '\n')
         equate_count = len(constants)
@@ -154,12 +173,28 @@ def main():
         assert 'GhidraDwarfForge symbol export PASS' not in log
         assert 'FATAL' in log and message in log
         assert generations[1] == {name: digest(root / name) for name in generations[1]}
+    cancellation_stages = 0
+    if args.equate_evidence:
+        scripts = root / 'scripts'
+        scripts.mkdir()
+        shutil.copy2(harness / 'ghidra_scripts/CancelDuringAnnotations.java', scripts)
+        cancel = run('cancellation', [ghidra / 'support/analyzeHeadless', project, 'Annotations',
+            '-process', 'stripped', '-readOnly', '-noanalysis', '-scriptPath',
+            str(scripts) + ';' + str(module / 'ghidra_scripts'), '-postScript', 'CancelDuringAnnotations.java',
+            reference / 'stripped', output, args.consumer, args.producer])
+        assert 'annotation-cancellation-recovery=PASS stages=7' in cancel
+        assert cancel.count('annotation-cancellation-stage=PASS ') == 7
+        reports = [json.loads(m[1]) for m in re.finditer(r'GhidraDwarfForge report: (\{.*\}) \(GhidraScript\)', cancel)]
+        assert [r['status'] for r in reports[:-1]] == ['CANCELLED'] * 7
+        assert reports[-1]['status'] in ('SUCCESS', 'PARTIAL') and 'FATAL' not in cancel
+        assert generations[1] == {name: digest(root / name) for name in generations[1]}
+        cancellation_stages = 7
     assert original_project == snapshot(curation / 'project')
     assert states[-1] == snapshot(project)
     assert protected == {p: digest(Path(p)) for p in protected}
     result = {'status': 'PASS_INSTALLED_DEFAULT_COMMENTS', 'target': receipt['target'],
         'role': receipt['role'], 'comments': len(seen), 'rawLineRows': len(raw),
-        'equateConstants': equate_count,
+        'equateConstants': equate_count, 'cancellationStages': cancellation_stages,
         'generations': generations, 'protected': protected, 'limitFailures': list(failures),
         'originalProjectUnchanged': True, 'firstReopenBackupChanges': changed,
         'warnings': warnings, 'compilerWarnings': compiler_warnings,

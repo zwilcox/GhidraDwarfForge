@@ -1,5 +1,16 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED reference details, cancellation and Linux desktop — #116:** each
+equate reference now retains its own resolved width/sign/value beside its owner
+and status. Five default cases pass seven in-flight cancellation points and a
+same-process retry each, including native constant emission and the equate
+compositor. Previous output pairs and saved programs remain unchanged. Both
+ordinary and compressed Script Manager journeys preserve all comment categories
+and typed lookup, with validators, GDB and a relocated compressed-artifact
+consumer passing. The shared Windows journey now includes these checks; hosted
+Windows acceptance remains pending. See `docs/evidence/equate-cancellation-gui.json`.
+Optional #114 context and later #112/#110/#109 remain in scope.
+
 **CONFIRMED default equate integration — #116:** the shared exporter now collects
 live high-p-code evidence, writes a reversible non-executable lookup catalog and
 emits collision-safe synthetic constants. Four Linux profiles (x86-64, AArch64

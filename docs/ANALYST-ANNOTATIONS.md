@@ -3,7 +3,7 @@
 **CONFIRMED Linux default integration:** issues #116/#114 preserve listing
 comments and equates through the shared exporter. Equates have a non-executable
 source catalog and tested synthetic debugger constants. Optional assembly/p-code
-context, GUI/Windows interaction and full hosted/workload acceptance remain
+context, Windows interaction and full hosted/workload acceptance remain
 **PLANNED**. Earlier component-only notes describe their historical scope. #108
 implementation is merged; its final documentation is tracked by PR #165.
 
@@ -354,7 +354,8 @@ additional reservations so generated type names cannot shadow retained functions
 The reversible appended catalog records each exact stored name, database signed
 value and unsigned bit pattern, direct-name decision, all typed lookup names,
 enum status/member metadata, and each address-space/operand/dynamic-hash owner
-with its resolution status. It has no executable rows or fabricated lifetime.
+with its resolution status and resolved width/sign/value. Enum storage width and
+use-site width remain separately visible. It has no executable rows or fabricated lifetime.
 Annotation inventory and composition have separate complete JFR phases.
 
 [Default export evidence](evidence/equate-default-export.json) covers four saved
@@ -373,7 +374,7 @@ correct curated functions; ten synthetic constants pass twenty lookups, and a
 synthetic type name receives a collision suffix. This fixture now runs in the
 x86-64 annotation pipeline. Completeness for all consumer-specific demangled
 spellings remains **UNCERTAIN**; this evidence establishes the tested GNU C++ case.
-GUI/Windows interaction, full hosted/workload acceptance and optional #114
+Windows interaction, full hosted/workload acceptance and optional #114
 assembly/p-code context remain required.
 
 The earlier Windows workload run `42134637694` stopped at its historical
@@ -386,3 +387,30 @@ and any per-version/profile nondeterminism. Eleven malformed/executable mutation
 controls reject. The three portable comparison tests and three phase-reader tests
 pass; fresh complete Windows/U-Boot pairs and downstream GDB remain pending.
 See [the hosted artifact review](evidence/annotation-windows-catalog.json).
+
+**CONFIRMED combined cancellation and Linux desktop acceptance:** the installed
+entry point is interrupted during inventory, live high-function collection,
+interpretation, retained-name observation, equate catalog construction, actual
+equate composition, and native constant emission. The compositor interruption
+requires an enclosing equate-source frame, so an earlier listing-comment pass
+cannot satisfy that control. Five cases pass all seven interruptions, retain the
+previous output pair without temporary files, report cancellation rather than
+failure, and then produce byte-identical output in the same JVM. Saved projects
+and original executables remain unchanged.
+
+The shared Script Manager fixture now stores all five comment categories with
+Unicode and delimiter escapes, a typed 32-bit equate, and a conflicting function
+name. Ordinary and compressed Linux GUI journeys pass actual Script Manager
+export, output selection, chooser cancellation, stored-annotation preservation,
+report save/comparison, explicit attachment decline and preparation. GNU/LLVM/
+pinned strict validators and GDB confirm the direct constant value, width and
+addresslessness alongside the original function breakpoint and source stepping.
+A separate copied compressed-artifact consumer passes source relocation and the
+same typed lookup, without changing incoming artifacts. Its existing strict
+checker recognizes three independently corroborated GNU frame terminators;
+there are no unexplained validator findings.
+
+See [the combined evidence](evidence/equate-cancellation-gui.json). The Java GUI
+fixture and compressed consumer are shared by Windows CI, but local Linux
+success does not establish Windows acceptance. Full hosted/workload validation,
+optional #114 context and broader consumer-specific demangling remain pending.

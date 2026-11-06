@@ -25,6 +25,9 @@ public final class GhidraEquateSource {
             append(text, "Database 64-bit pattern: 0x" + Long.toUnsignedString(evidence.stored().storedValue(), 16), remaining, monitor);
             append(text, "Direct lookup: " + entry.directReason(), remaining, monitor);
             append(text, "Enum evidence: " + evidence.enumeration().status(), remaining, monitor);
+            if (evidence.enumeration().value() != null) {
+                append(text, "Enum value: " + valueText(evidence.enumeration().value()), remaining, monitor);
+            }
             if (evidence.enumeration().typePath() != null) {
                 append(text, "Enum type: " + evidence.enumeration().typePath(), remaining, monitor);
             }
@@ -42,8 +45,8 @@ public final class GhidraEquateSource {
                 append(text, "Reference " + stored.address().getAddressSpace().getName() + ":0x" +
                     Long.toUnsignedString(stored.address().getOffset(), 16) + " operand=" + stored.operand() +
                     " dynamicHash=0x" + Long.toUnsignedString(stored.dynamicHash(), 16), remaining, monitor);
-                append(text, "Operand evidence: " + reference.scalar().status() +
-                    "; high-p-code evidence: " + reference.dynamic().status(), remaining, monitor);
+                append(text, "Operand evidence: " + resolutionText(reference.scalar()) +
+                    "; high-p-code evidence: " + resolutionText(reference.dynamic()), remaining, monitor);
             }
             String name = evidence.stored().storedName();
             insertions.add(new AnnotatedSourceFile.Insertion("equate:" + name.length() + ":" + name,
@@ -54,6 +57,16 @@ public final class GhidraEquateSource {
             return AnnotatedSourceFile.compose(source, insertions, maxUtf8Bytes, monitor::isCancelled).source();
         }
         catch (java.util.concurrent.CancellationException cancelled) { throw new CancelledException(); }
+    }
+
+    private static String resolutionText(GhidraEquateEvidence.Resolution resolution) {
+        return resolution.status().toString() +
+            (resolution.value() == null ? "" : " [" + valueText(resolution.value()) + "]");
+    }
+
+    private static String valueText(GhidraEquateEvidence.Value value) {
+        return (value.signed() ? "signed " : "unsigned ") + value.bits() + " bits = " +
+            (value.signed() ? Long.toString(value.value()) : Long.toUnsignedString(value.value()));
     }
 
     private static void append(StringBuilder text, String line, long[] remaining, TaskMonitor monitor)

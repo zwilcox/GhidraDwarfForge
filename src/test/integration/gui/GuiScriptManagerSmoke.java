@@ -45,6 +45,12 @@ public final class GuiScriptManagerSmoke {
     private static final String PREPARE = "ExportAndAttachGhidraDwarfForge.java";
     private static final boolean WITH_LOADER = "1".equals(System.getenv("GHIDRA_GUI_GDB_LOADER"));
     private static final boolean WINDOWS = System.getProperty("os.name").startsWith("Windows");
+    private static final String GUI_EQUATE = "GUI_EQUATE_VALUE";
+    private static final long GUI_EQUATE_VALUE = 0x31415926L;
+
+    private static String annotation(ghidra.program.model.listing.CommentType category) {
+        return "GUI_ANNOTATION_" + category.name() + " λ */ \\";
+    }
 
     private static final class ProbeFrontEnd extends FrontEndTool {
         ProbeFrontEnd(ProjectManager manager) {
@@ -171,6 +177,17 @@ public final class GuiScriptManagerSmoke {
                     var function = program.getFunctionManager().getFunctionAt(address);
                     GuiTestSupport.require(function != null, "missing fixture function at " + address);
                     function.setName("gui_recovered_add", SourceType.USER_DEFINED);
+                    for (var category : ghidra.program.model.listing.CommentType.values()) {
+                        program.getListing().setComment(address, category, annotation(category));
+                    }
+                    var enumeration = new ghidra.program.model.data.EnumDataType("GuiAnnotationValues", 4);
+                    enumeration.add(GUI_EQUATE, GUI_EQUATE_VALUE);
+                    var saved = program.getDataTypeManager().addDataType(enumeration,
+                        ghidra.program.model.data.DataTypeConflictHandler.DEFAULT_HANDLER);
+                    program.getEquateTable().createEquate(
+                        ghidra.program.database.symbol.EquateManager.formatNameForEquate(saved.getUniversalID(), GUI_EQUATE_VALUE),
+                        GUI_EQUATE_VALUE);
+                    program.getEquateTable().createEquate("gui_recovered_add", 77);
                 }
                 finally {
                     program.endTransaction(transaction, true);
@@ -224,6 +241,21 @@ public final class GuiScriptManagerSmoke {
                         GuiTestSupport.require(Files.size(chosen.resolve("fixture.dbg")) > 0 &&
                             Files.size(chosen.resolve("fixture.dbg.c")) > 0,
                             "completed GUI artifact pair is missing");
+                        String synthetic = Files.readString(chosen.resolve("fixture.dbg.c"));
+                        var address = program.getAddressFactory().getAddress(functionAddress);
+                        for (var category : ghidra.program.model.listing.CommentType.values()) {
+                            String expected = annotation(category);
+                            GuiTestSupport.require(expected.equals(program.getListing().getComment(category, address)),
+                                "GUI export changed a saved annotation");
+                            GuiTestSupport.require(synthetic.contains(ghidradwarfforge.source.AnnotationText.encode(
+                                expected, 4096, () -> false)), "GUI export omitted annotation " + category);
+                        }
+                        GuiTestSupport.require(synthetic.contains("Lookup " + GUI_EQUATE + " [typed; unsigned 32 bits] = " + GUI_EQUATE_VALUE),
+                            "GUI export omitted the typed equate lookup");
+                        GuiTestSupport.require(program.getEquateTable().getEquate("gui_recovered_add").getValue() == 77,
+                            "GUI export changed a conflicting saved equate");
+                        Files.writeString(caseDirectory.resolve("annotations.txt"),
+                            "all-listing-categories=PASS\ntyped-equate-catalog=PASS\nsaved-annotations-unchanged=PASS\n");
                         if (WITH_LOADER) {
                             GuiTestSupport.require(Files.size(chosen.resolve("fixture.dbg.gdb.py")) > 0,
                                 "completed GUI companion is missing");
