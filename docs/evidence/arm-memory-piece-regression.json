@@ -1,0 +1,1169 @@
+{
+    "status": "CONFIRMED_LOCAL_ARM_MEMORY_BYTE_PIECE_ORACLE",
+    "parent": "9c3ad9e9aaec8268eabb4e6ba4d1bfb9ff51cd16",
+    "failedHostedRun": 42275426779,
+    "failedArtifact": 13538922805,
+    "failedArtifactSha256": "1717e5671be88f27fdef18c30a8ce0857ad7b55ed0e9bbbf6b062468386b09dd",
+    "cause": "The decoder already expected memory DW_OP_piece, but the final exact ARM r3/SP entry expression assertion still spelled DW_OP_bit_piece. Require exact 4/1/8 byte tails while retaining the r3 bit-piece requirement.",
+    "productionCodeChanged": false,
+    "failedArtifactReplay": "physical-location checker PASS for all 14 functions on the same failing CI artifact",
+    "package": {
+        "installation": "/dev/shm/forge-lldb-worktree/build/arm-memory-piece-regression/ghidra",
+        "packageSha256": "9db1af2283b2f8e5faf5cf51b3188bd84ddc5afa81986c4b841a5d7460cc37de",
+        "jarSha256": "eb23322efeb51ec3d44a9c51f4ad47c649d2a0a08699cf6fbf97cfe2bee2fff1"
+    },
+    "cases": [
+        {
+            "status": "PASS",
+            "order": "big",
+            "role": "exec-rebased",
+            "availabilityContract": "audited-prefix",
+            "compilerObservations": 256,
+            "forgeObservations": 256,
+            "physicalCarrierObservations": 256,
+            "referenceMismatchesRetained": 84,
+            "unavailable": 0,
+            "requiredUnavailableFields": 116,
+            "incorrect": [],
+            "deterministic": true,
+            "protectedFilesUnchanged": true,
+            "savedProjectUnchanged": true
+        },
+        {
+            "status": "PASS",
+            "order": "big",
+            "role": "exec",
+            "availabilityContract": "audited-prefix",
+            "compilerObservations": 256,
+            "forgeObservations": 256,
+            "physicalCarrierObservations": 256,
+            "referenceMismatchesRetained": 84,
+            "unavailable": 0,
+            "requiredUnavailableFields": 116,
+            "incorrect": [],
+            "deterministic": true,
+            "protectedFilesUnchanged": true,
+            "savedProjectUnchanged": true
+        },
+        {
+            "status": "PASS",
+            "order": "big",
+            "role": "pie-rebased",
+            "availabilityContract": "audited-prefix",
+            "compilerObservations": 260,
+            "forgeObservations": 260,
+            "physicalCarrierObservations": 260,
+            "referenceMismatchesRetained": 90,
+            "unavailable": 0,
+            "requiredUnavailableFields": 134,
+            "incorrect": [],
+            "deterministic": true,
+            "protectedFilesUnchanged": true,
+            "savedProjectUnchanged": true
+        },
+        {
+            "status": "PASS",
+            "order": "big",
+            "role": "pie",
+            "availabilityContract": "audited-prefix",
+            "compilerObservations": 260,
+            "forgeObservations": 260,
+            "physicalCarrierObservations": 260,
+            "referenceMismatchesRetained": 90,
+            "unavailable": 0,
+            "requiredUnavailableFields": 134,
+            "incorrect": [],
+            "deterministic": true,
+            "protectedFilesUnchanged": true,
+            "savedProjectUnchanged": true
+        },
+        {
+            "status": "PASS",
+            "order": "little",
+            "role": "exec-rebased",
+            "availabilityContract": "audited-prefix",
+            "compilerObservations": 250,
+            "forgeObservations": 250,
+            "physicalCarrierObservations": 250,
+            "referenceMismatchesRetained": 90,
+            "unavailable": 0,
+            "requiredUnavailableFields": 130,
+            "incorrect": [],
+            "deterministic": true,
+            "protectedFilesUnchanged": true,
+            "savedProjectUnchanged": true
+        },
+        {
+            "status": "PASS",
+            "order": "little",
+            "role": "exec",
+            "availabilityContract": "audited-prefix",
+            "compilerObservations": 250,
+            "forgeObservations": 250,
+            "physicalCarrierObservations": 250,
+            "referenceMismatchesRetained": 90,
+            "unavailable": 0,
+            "requiredUnavailableFields": 130,
+            "incorrect": [],
+            "deterministic": true,
+            "protectedFilesUnchanged": true,
+            "savedProjectUnchanged": true
+        },
+        {
+            "status": "PASS",
+            "order": "little",
+            "role": "pie-rebased",
+            "availabilityContract": "audited-prefix",
+            "compilerObservations": 250,
+            "forgeObservations": 250,
+            "physicalCarrierObservations": 250,
+            "referenceMismatchesRetained": 90,
+            "unavailable": 0,
+            "requiredUnavailableFields": 130,
+            "incorrect": [],
+            "deterministic": true,
+            "protectedFilesUnchanged": true,
+            "savedProjectUnchanged": true
+        },
+        {
+            "status": "PASS",
+            "order": "little",
+            "role": "pie",
+            "availabilityContract": "audited-prefix",
+            "compilerObservations": 250,
+            "forgeObservations": 250,
+            "physicalCarrierObservations": 250,
+            "referenceMismatchesRetained": 90,
+            "unavailable": 0,
+            "requiredUnavailableFields": 130,
+            "incorrect": [],
+            "deterministic": true,
+            "protectedFilesUnchanged": true,
+            "savedProjectUnchanged": true
+        },
+        {
+            "status": "PASS",
+            "order": "little",
+            "role": "shared-rebased",
+            "availabilityContract": "audited-prefix",
+            "compilerObservations": 330,
+            "forgeObservations": 330,
+            "physicalCarrierObservations": 330,
+            "referenceMismatchesRetained": 85,
+            "unavailable": 0,
+            "requiredUnavailableFields": 236,
+            "incorrect": [],
+            "deterministic": true,
+            "protectedFilesUnchanged": true,
+            "savedProjectUnchanged": true
+        },
+        {
+            "status": "PASS",
+            "order": "little",
+            "role": "shared",
+            "availabilityContract": "audited-prefix",
+            "compilerObservations": 330,
+            "forgeObservations": 330,
+            "physicalCarrierObservations": 330,
+            "referenceMismatchesRetained": 85,
+            "unavailable": 0,
+            "requiredUnavailableFields": 236,
+            "incorrect": [],
+            "deterministic": true,
+            "protectedFilesUnchanged": true,
+            "savedProjectUnchanged": true
+        }
+    ],
+    "failureControls": [
+        {
+            "status": "PASS",
+            "failureExports": 8,
+            "cancellations": 1,
+            "results": {
+                "neighbor": {
+                    "failedFunction": "entry",
+                    "hashes": [
+                        "2cad10f64057c3d31c69f0ebe5096092afade279223226c7cca97419cbacb1d4",
+                        "7478b2d0cbe0d7032fbd75180f9940982412f437f7b362624088e392dd7a310c"
+                    ],
+                    "symbolOnlyInstructions": 0,
+                    "neighborInstructions": 256
+                },
+                "base_packed": {
+                    "failedFunction": "base_packed",
+                    "hashes": [
+                        "b2f96cadd97738e17cf952a4fde014b8b6456d30990157af18e58d3d00500efd",
+                        "dc2ec6d970241791c131b7ed39662018435845fc2ffe055689c34a47412008ca"
+                    ],
+                    "symbolOnlyInstructions": 19,
+                    "neighborInstructions": 237
+                },
+                "base_bytes": {
+                    "failedFunction": "base_bytes",
+                    "hashes": [
+                        "dc5f74514acf958f783fa4e6a7dbe8c64c98b258ab38c6cf3d2c166e923272d0",
+                        "956c7ba3c0d7239be003927389e51454d62b3392238f40cbbed9e2fea67f5ed2"
+                    ],
+                    "symbolOnlyInstructions": 18,
+                    "neighborInstructions": 238
+                },
+                "base_floats": {
+                    "failedFunction": "base_floats",
+                    "hashes": [
+                        "14bb589e160f22c6ca6a16f93f31353b00b9586b82e7cf5986fb85a77dc9d58b",
+                        "1b70119abcd86227cc397752cc321ead23d61197375bcc1a079bc524915bfb70"
+                    ],
+                    "symbolOnlyInstructions": 26,
+                    "neighborInstructions": 230
+                }
+            },
+            "cancelledAfterBytes": 16777216,
+            "savedProgramDataUnchanged": true,
+            "rotatedIndexBackups": [
+                "Stack.rep/idata/~index.bak",
+                "Stack.rep/idata/~journal.bak"
+            ],
+            "existingOutputsUnchanged": true
+        },
+        {
+            "status": "PASS",
+            "failureExports": 8,
+            "cancellations": 1,
+            "results": {
+                "neighbor": {
+                    "failedFunction": "entry",
+                    "hashes": [
+                        "45ccc9d65916dfb820cbdc07475d0407139ecfd2b90b4bbd474c55f273f7e972",
+                        "00f64942ed0ae609aacf648f94532d96174e458e2c89d95a43ddc352c110d175"
+                    ],
+                    "symbolOnlyInstructions": 0,
+                    "neighborInstructions": 256
+                },
+                "base_packed": {
+                    "failedFunction": "base_packed",
+                    "hashes": [
+                        "15eb00a145c18059e274f7cfec71187b51f16c340fbce0f1d83c45cddf898376",
+                        "91289e70b42f06bc3589775557501cba661ef3de66bce3244818cb6da1f603c2"
+                    ],
+                    "symbolOnlyInstructions": 19,
+                    "neighborInstructions": 237
+                },
+                "base_bytes": {
+                    "failedFunction": "base_bytes",
+                    "hashes": [
+                        "e4da1c69255803aa1de27775732670676f289aee138fd188fcd6765e3606d1c4",
+                        "8c8f43b4bf384e2106b1d45da225ce4f4ae509ab5d447c111fabfb2341d5c662"
+                    ],
+                    "symbolOnlyInstructions": 18,
+                    "neighborInstructions": 238
+                },
+                "base_floats": {
+                    "failedFunction": "base_floats",
+                    "hashes": [
+                        "1a31a938d89f12e53e0852fe748d1adb172c18632341d3ca94bc09319026d8f8",
+                        "84ccd46a5a61ecc6fd867b39be6aff975af59136466129a0a3b5bd757bd71b74"
+                    ],
+                    "symbolOnlyInstructions": 26,
+                    "neighborInstructions": 230
+                }
+            },
+            "cancelledAfterBytes": 16777216,
+            "savedProgramDataUnchanged": true,
+            "rotatedIndexBackups": [
+                "Stack.rep/idata/~index.bak",
+                "Stack.rep/idata/~journal.bak"
+            ],
+            "existingOutputsUnchanged": true
+        },
+        {
+            "status": "PASS",
+            "failureExports": 8,
+            "cancellations": 1,
+            "results": {
+                "neighbor": {
+                    "failedFunction": "entry",
+                    "hashes": [
+                        "d8bca190dee90b1242682b2b45d5dbc29be7a1f52151255e6d10c08a7f157ef6",
+                        "be25abdfac953021e4e67282d35010106c2a96e34c0a9a1c432e61b7437e7fe0"
+                    ],
+                    "symbolOnlyInstructions": 0,
+                    "neighborInstructions": 260
+                },
+                "base_packed": {
+                    "failedFunction": "base_packed",
+                    "hashes": [
+                        "934b00bf4d00e27de1ba1065ee627debb09df0a73dfbc8758a206eb667828987",
+                        "b24473c8c6bb8673d0b3f395859c8fdc803da650e2c18947a1b787b18a50ff66"
+                    ],
+                    "symbolOnlyInstructions": 19,
+                    "neighborInstructions": 241
+                },
+                "base_bytes": {
+                    "failedFunction": "base_bytes",
+                    "hashes": [
+                        "4d25f520062fd58c34a177d4c51c1f18aed7e24142ae69cbeaf45d5e4de22174",
+                        "1a14751ed6add72b0e257e6d03e50155b65633269108dc3495b825e4b0311cd3"
+                    ],
+                    "symbolOnlyInstructions": 20,
+                    "neighborInstructions": 240
+                },
+                "base_floats": {
+                    "failedFunction": "base_floats",
+                    "hashes": [
+                        "bb1d00784272e3dc7c09c7064e7bf4c605e5ef52c8f8867194dbd7e0d5f94bed",
+                        "1b028cace1533e25bfc7e90ee169d8f06bb3d9564fb4790db0b29ad8fb34657e"
+                    ],
+                    "symbolOnlyInstructions": 26,
+                    "neighborInstructions": 234
+                }
+            },
+            "cancelledAfterBytes": 16777216,
+            "savedProgramDataUnchanged": true,
+            "rotatedIndexBackups": [
+                "Stack.rep/idata/~index.bak",
+                "Stack.rep/idata/~journal.bak"
+            ],
+            "existingOutputsUnchanged": true
+        },
+        {
+            "status": "PASS",
+            "failureExports": 8,
+            "cancellations": 1,
+            "results": {
+                "neighbor": {
+                    "failedFunction": "entry",
+                    "hashes": [
+                        "f6ec6b8871fc97cf85c2fe44fae727141d8761b1110dda9413243b97cd3157c4",
+                        "dea8593bc5521a4ad3729a2ffad5b017f5c9f2208a9b89ce1dd652d1cdc0f3df"
+                    ],
+                    "symbolOnlyInstructions": 0,
+                    "neighborInstructions": 260
+                },
+                "base_packed": {
+                    "failedFunction": "base_packed",
+                    "hashes": [
+                        "d155555c1f9b840a24b2f918436da0897bcf280e085a40e0eb80de2986d347bb",
+                        "5329a2378417ffe19484d2f06a36aa2871622caba121f8f4f372856470e95018"
+                    ],
+                    "symbolOnlyInstructions": 19,
+                    "neighborInstructions": 241
+                },
+                "base_bytes": {
+                    "failedFunction": "base_bytes",
+                    "hashes": [
+                        "7bbbcba9168ed4d189dacdf8de04ccb1a3fe90a32b8a4adf6a67c465db308865",
+                        "3a55428b56c888a13e15247893a36c2864cec7177c294cd4c64ec0285aa9e497"
+                    ],
+                    "symbolOnlyInstructions": 20,
+                    "neighborInstructions": 240
+                },
+                "base_floats": {
+                    "failedFunction": "base_floats",
+                    "hashes": [
+                        "5ebbacee0cb8e437aa8366735f1b403558b9d34191213148746a44e38f793de8",
+                        "8854a9249ed169e1c98f7809e62a14c05d8a7c7743ce627cbe1b10d501cd369a"
+                    ],
+                    "symbolOnlyInstructions": 26,
+                    "neighborInstructions": 234
+                }
+            },
+            "cancelledAfterBytes": 16777216,
+            "savedProgramDataUnchanged": true,
+            "rotatedIndexBackups": [
+                "Stack.rep/idata/~index.bak",
+                "Stack.rep/idata/~journal.bak"
+            ],
+            "existingOutputsUnchanged": true
+        },
+        {
+            "status": "PASS",
+            "failureExports": 8,
+            "cancellations": 1,
+            "results": {
+                "neighbor": {
+                    "failedFunction": "entry",
+                    "hashes": [
+                        "2c2f5e01e3a6efc0f6f7e56c5d558f4836537b16c55a86dc05960d90383ce2a6",
+                        "997b1b5e9a6924b2e2567827feea074c05163fec7bbbc8753683dddb6faddfe6"
+                    ],
+                    "symbolOnlyInstructions": 0,
+                    "neighborInstructions": 250
+                },
+                "base_packed": {
+                    "failedFunction": "base_packed",
+                    "hashes": [
+                        "cbdb15ff989ab1c1d2c62b0c38e5d8e7301ab8fa43de40caea52c15184339584",
+                        "78be71cba5f74ea542fd96548c4751fdf4301e46d9b64a668d5ed048c2162882"
+                    ],
+                    "symbolOnlyInstructions": 18,
+                    "neighborInstructions": 232
+                },
+                "base_bytes": {
+                    "failedFunction": "base_bytes",
+                    "hashes": [
+                        "d7f01e0e9ec17cdad9f559f1735eb8c9e34135be9585b3036301ed91779aaeb7",
+                        "20fbfa19a93343e0df8865a1c3042fff877ca6ff33b4739f9192fba8b19bace5"
+                    ],
+                    "symbolOnlyInstructions": 16,
+                    "neighborInstructions": 234
+                },
+                "base_floats": {
+                    "failedFunction": "base_floats",
+                    "hashes": [
+                        "fc7de135e038de2f87c767ab50d53477390bbdb43c5c42e2c14ba8c94f54db94",
+                        "e5eba3904abde4d590f3abf43ce82c109014a22254a574b88ef5d8f5fc6a23c0"
+                    ],
+                    "symbolOnlyInstructions": 26,
+                    "neighborInstructions": 224
+                }
+            },
+            "cancelledAfterBytes": 16777216,
+            "savedProgramDataUnchanged": true,
+            "rotatedIndexBackups": [
+                "Stack.rep/idata/~index.bak",
+                "Stack.rep/idata/~journal.bak"
+            ],
+            "existingOutputsUnchanged": true
+        },
+        {
+            "status": "PASS",
+            "failureExports": 8,
+            "cancellations": 1,
+            "results": {
+                "neighbor": {
+                    "failedFunction": "entry",
+                    "hashes": [
+                        "a8df92c9a693f05529e61f0c53892ed09c09f0fd7a6aeb42827a85b13c160bc1",
+                        "1218103b7dff3c6103c64d5187b257fdc646f558997bd95a330b00cbdeae67d4"
+                    ],
+                    "symbolOnlyInstructions": 0,
+                    "neighborInstructions": 250
+                },
+                "base_packed": {
+                    "failedFunction": "base_packed",
+                    "hashes": [
+                        "282f907302e01e8e572a7a71313abb0ad02b1907edd63bdcc2e169319f8afb47",
+                        "139a1948075d5539b0798e264facaf2642d2825895ed22b123dc1d3e7bfd3d94"
+                    ],
+                    "symbolOnlyInstructions": 18,
+                    "neighborInstructions": 232
+                },
+                "base_bytes": {
+                    "failedFunction": "base_bytes",
+                    "hashes": [
+                        "b03f681fb00c208ddd3ee49655cd913268988bc56c7929f2e4262fa77f4225ab",
+                        "4f393604e830ead8d44122be27df41f47f4716bdefcd5cca387d93aa5c230035"
+                    ],
+                    "symbolOnlyInstructions": 16,
+                    "neighborInstructions": 234
+                },
+                "base_floats": {
+                    "failedFunction": "base_floats",
+                    "hashes": [
+                        "08129b903ff573e3cd8f7b265306302253a985b478e19b2680adfff8d8477cb5",
+                        "1ce72e921632ad86bc719194e2d4a2e3b9a75781d1e3349fec366e175c7d5167"
+                    ],
+                    "symbolOnlyInstructions": 26,
+                    "neighborInstructions": 224
+                }
+            },
+            "cancelledAfterBytes": 16777216,
+            "savedProgramDataUnchanged": true,
+            "rotatedIndexBackups": [
+                "Stack.rep/idata/~index.bak",
+                "Stack.rep/idata/~journal.bak"
+            ],
+            "existingOutputsUnchanged": true
+        },
+        {
+            "status": "PASS",
+            "failureExports": 8,
+            "cancellations": 1,
+            "results": {
+                "neighbor": {
+                    "failedFunction": "entry",
+                    "hashes": [
+                        "b4bf8dfb8d3cd3677f845bce656b32b455856d8ba69193f4ec3b59d308702fec",
+                        "c573fd9b4337fc7dfe76b1030613d49ec44cfcfa831d1ad9d0b52d4adc12689b"
+                    ],
+                    "symbolOnlyInstructions": 0,
+                    "neighborInstructions": 250
+                },
+                "base_packed": {
+                    "failedFunction": "base_packed",
+                    "hashes": [
+                        "9046521b1ac80c74858ddff55deef5116185b2d5fd555656481fc931023ef5d6",
+                        "2e47aed24a6eb2d3ecd4008119e3aee147e5019eb757f7501019d01b5ba29a5d"
+                    ],
+                    "symbolOnlyInstructions": 18,
+                    "neighborInstructions": 232
+                },
+                "base_bytes": {
+                    "failedFunction": "base_bytes",
+                    "hashes": [
+                        "27968b3dcb0b399dc7ea553798a5d0b5cf36f5bc21d577be02cc14cbcbf71e1d",
+                        "c6a0a76959307e29bb62f32d123876355260f419c971337bfbe89d14f0943b3b"
+                    ],
+                    "symbolOnlyInstructions": 16,
+                    "neighborInstructions": 234
+                },
+                "base_floats": {
+                    "failedFunction": "base_floats",
+                    "hashes": [
+                        "68e6d00874871529188c59f1fa31eb60ba50f10d49e8a76f6aecc0cefa661a1b",
+                        "8ea1941b6bbee558fb7d67aa6157c3ade59aad2cde2f1ce30d7a621eab2a2141"
+                    ],
+                    "symbolOnlyInstructions": 26,
+                    "neighborInstructions": 224
+                }
+            },
+            "cancelledAfterBytes": 16777216,
+            "savedProgramDataUnchanged": true,
+            "rotatedIndexBackups": [
+                "Stack.rep/idata/~index.bak",
+                "Stack.rep/idata/~journal.bak"
+            ],
+            "existingOutputsUnchanged": true
+        },
+        {
+            "status": "PASS",
+            "failureExports": 8,
+            "cancellations": 1,
+            "results": {
+                "neighbor": {
+                    "failedFunction": "entry",
+                    "hashes": [
+                        "8f6bebc28933b4441fa776f65ba8da0d0005c072f367d41e48b12882bc2dd814",
+                        "42149b01c2fd2c8107db4e1cf27c7199cb519e3404e9abc714cfab510ef3a1fb"
+                    ],
+                    "symbolOnlyInstructions": 0,
+                    "neighborInstructions": 250
+                },
+                "base_packed": {
+                    "failedFunction": "base_packed",
+                    "hashes": [
+                        "fb3066e0bd765f3e471febbec85babb453eb3349f6cfa704a4f4ab3af97849e0",
+                        "be61fc555f3a41612d79a6c75fd963cbbc205a20e36efa31dfbd5e70894f2e33"
+                    ],
+                    "symbolOnlyInstructions": 18,
+                    "neighborInstructions": 232
+                },
+                "base_bytes": {
+                    "failedFunction": "base_bytes",
+                    "hashes": [
+                        "bdfd0a491b9951b80f431646f12a59206f131469736dc24b7f9722e438eaf891",
+                        "63aecb44d9580ed4d5386cc4a0d93178ed36092e7b4681b6946841df46798a17"
+                    ],
+                    "symbolOnlyInstructions": 16,
+                    "neighborInstructions": 234
+                },
+                "base_floats": {
+                    "failedFunction": "base_floats",
+                    "hashes": [
+                        "d697f167d0e49d94fa73f1085a75bf372ca6e76584d5cfc892b2530db9f420bf",
+                        "d88f9d097c7e114884e3813799ca8b6f2eba1dbee92fbf8076be170bc87b417b"
+                    ],
+                    "symbolOnlyInstructions": 26,
+                    "neighborInstructions": 224
+                }
+            },
+            "cancelledAfterBytes": 16777216,
+            "savedProgramDataUnchanged": true,
+            "rotatedIndexBackups": [
+                "Stack.rep/idata/~index.bak",
+                "Stack.rep/idata/~journal.bak"
+            ],
+            "existingOutputsUnchanged": true
+        },
+        {
+            "status": "PASS",
+            "failureExports": 8,
+            "cancellations": 1,
+            "results": {
+                "neighbor": {
+                    "failedFunction": "aggregate_fixture_before",
+                    "hashes": [
+                        "b04c6818929aa5426b7cd1df46655e40edf4ce038ba5b469fcc443c358e51448",
+                        "1e9e1e56db9da89be69da5bc440858ed1cef156a58c5763a82200737dcfccdea"
+                    ],
+                    "symbolOnlyInstructions": 0,
+                    "neighborInstructions": 330
+                },
+                "base_packed": {
+                    "failedFunction": "base_packed",
+                    "hashes": [
+                        "e9c38883a0cd513b09238c05a4a18568d34f0bc41e94c443c732fae357c1e604",
+                        "b051c98ffbaf3aae32992e9b1b4ea67eb65d4cad5be72919e608946781004515"
+                    ],
+                    "symbolOnlyInstructions": 23,
+                    "neighborInstructions": 307
+                },
+                "base_bytes": {
+                    "failedFunction": "base_bytes",
+                    "hashes": [
+                        "e37df6a5ccdfd2256b6a8832f23b2530fdb40027dbe4cce0de1f80316caedc3b",
+                        "c875da4426f8a0cc6fecfd95aae6ca5b9a20a9304c088a6fbdb61cd94c0af4b9"
+                    ],
+                    "symbolOnlyInstructions": 22,
+                    "neighborInstructions": 308
+                },
+                "base_floats": {
+                    "failedFunction": "base_floats",
+                    "hashes": [
+                        "56108692e9502b6cf6273335611edb5771416a84773dc000dc05605d70f493ee",
+                        "b8053e79f521d77682f92ffef0ea6cec707d4b0b4042e9549aeebd773b71a1da"
+                    ],
+                    "symbolOnlyInstructions": 31,
+                    "neighborInstructions": 299
+                }
+            },
+            "cancelledAfterBytes": 16777216,
+            "savedProgramDataUnchanged": true,
+            "rotatedIndexBackups": [
+                "Stack.rep/idata/~index.bak",
+                "Stack.rep/idata/~journal.bak"
+            ],
+            "existingOutputsUnchanged": true
+        },
+        {
+            "status": "PASS",
+            "failureExports": 8,
+            "cancellations": 1,
+            "results": {
+                "neighbor": {
+                    "failedFunction": "aggregate_fixture_before",
+                    "hashes": [
+                        "d88338d3b5335c6a1b53d816eed712c10b084a45303ada5a509a325028d6a640",
+                        "b80ffc0075bdc7d41d0b00767d2509578f8b0f52e31cb362f029d38406b62944"
+                    ],
+                    "symbolOnlyInstructions": 0,
+                    "neighborInstructions": 330
+                },
+                "base_packed": {
+                    "failedFunction": "base_packed",
+                    "hashes": [
+                        "427ba9897712da31d318eb652743849d607c09dcbc109c2b0378b1f39e58a3d4",
+                        "8afece5c95d914961e267e417bf334a52c7c6ab15b5657feb29f85068b6cbf76"
+                    ],
+                    "symbolOnlyInstructions": 23,
+                    "neighborInstructions": 307
+                },
+                "base_bytes": {
+                    "failedFunction": "base_bytes",
+                    "hashes": [
+                        "974f93fcb3e2d322b1b0a450164c7867c99f4930f2516be181416bf8836c73ea",
+                        "026990e060826c7ad1efe4886d3d7832e7df6f7a51e7c86d3e5123d7ed374257"
+                    ],
+                    "symbolOnlyInstructions": 22,
+                    "neighborInstructions": 308
+                },
+                "base_floats": {
+                    "failedFunction": "base_floats",
+                    "hashes": [
+                        "f2dad11b25f674718397952f9fa4d76464fb3c8525a49bdff10525c7dd2654e3",
+                        "96d708dfdf783f192e64dfdf704c951e580ecfb740fbaa6a7c033c828f2994cb"
+                    ],
+                    "symbolOnlyInstructions": 31,
+                    "neighborInstructions": 299
+                }
+            },
+            "cancelledAfterBytes": 16777216,
+            "savedProgramDataUnchanged": true,
+            "rotatedIndexBackups": [
+                "Stack.rep/idata/~index.bak",
+                "Stack.rep/idata/~journal.bak"
+            ],
+            "existingOutputsUnchanged": true
+        }
+    ],
+    "strictReports": [
+        {
+            "path": "cases/big.exec-rebased.ekua0g8a/dbg-strict.txt",
+            "sha256": "922d8246ea1ca6c9d9713401d0afd8cb2b63c83e5d6724e75666a78f5cdae637"
+        },
+        {
+            "path": "cases/big.exec-rebased.ekua0g8a/reference-strict.txt",
+            "sha256": "5dfb67c17f5858f77b2452e7e451563df240b20d88c8b4331fe171bbbcb6a05e"
+        },
+        {
+            "path": "cases/big.exec-rebased.ekua0g8a/failure-controls.dtqd9xut/base_floats/strict.log",
+            "sha256": "b1f7e25b18787247b9ee2eca8b5cd212cc20e347af96e326a3e5e913092daf2f"
+        },
+        {
+            "path": "cases/big.exec-rebased.ekua0g8a/failure-controls.dtqd9xut/base_bytes/strict.log",
+            "sha256": "edfab508b7797fdc356888bee380687733e752505289836f30fcff44070bd902"
+        },
+        {
+            "path": "cases/big.exec-rebased.ekua0g8a/failure-controls.dtqd9xut/base_packed/strict.log",
+            "sha256": "c3c4431013c24ee02d29f2419ad2ae6f4d2b9e0ab0818ce54858aea08e5b6424"
+        },
+        {
+            "path": "cases/big.exec-rebased.ekua0g8a/failure-controls.dtqd9xut/neighbor/strict.log",
+            "sha256": "9a2130e6eadd664a07fbf7dcedcdd5b13a5ec001b838213bca8bbe12b878ad45"
+        },
+        {
+            "path": "cases/big.exec.nidowt2m/dbg-strict.txt",
+            "sha256": "922d8246ea1ca6c9d9713401d0afd8cb2b63c83e5d6724e75666a78f5cdae637"
+        },
+        {
+            "path": "cases/big.exec.nidowt2m/reference-strict.txt",
+            "sha256": "5dfb67c17f5858f77b2452e7e451563df240b20d88c8b4331fe171bbbcb6a05e"
+        },
+        {
+            "path": "cases/big.exec.nidowt2m/failure-controls.ilcphsrr/base_floats/strict.log",
+            "sha256": "b1f7e25b18787247b9ee2eca8b5cd212cc20e347af96e326a3e5e913092daf2f"
+        },
+        {
+            "path": "cases/big.exec.nidowt2m/failure-controls.ilcphsrr/base_bytes/strict.log",
+            "sha256": "1593560fe9151123f25175ed4f2147c6f4e531bc05b5121951524a3ff27d12f4"
+        },
+        {
+            "path": "cases/big.exec.nidowt2m/failure-controls.ilcphsrr/base_packed/strict.log",
+            "sha256": "c3c4431013c24ee02d29f2419ad2ae6f4d2b9e0ab0818ce54858aea08e5b6424"
+        },
+        {
+            "path": "cases/big.exec.nidowt2m/failure-controls.ilcphsrr/neighbor/strict.log",
+            "sha256": "9a2130e6eadd664a07fbf7dcedcdd5b13a5ec001b838213bca8bbe12b878ad45"
+        },
+        {
+            "path": "cases/big.pie-rebased.5lb3k1v4/dbg-strict.txt",
+            "sha256": "24622c2abe9ced67c4d0fcd70aad29f24f45ff0ed058c26373e443d17ba49049"
+        },
+        {
+            "path": "cases/big.pie-rebased.5lb3k1v4/reference-strict.txt",
+            "sha256": "4e50a573d1ac0bc546af03281725fedd7e4665c2aa002d264971fb4b4e833283"
+        },
+        {
+            "path": "cases/big.pie-rebased.5lb3k1v4/failure-controls.n7ojqgl6/base_floats/strict.log",
+            "sha256": "cd9338a7a3386a80e467ee0ab15c596a0806a4e49dd31917411e9d5bbd0605db"
+        },
+        {
+            "path": "cases/big.pie-rebased.5lb3k1v4/failure-controls.n7ojqgl6/base_bytes/strict.log",
+            "sha256": "8d86ceaf5b70d38d5f04677dc6e05445b4403a7e38b03b09f84f3514236a50ec"
+        },
+        {
+            "path": "cases/big.pie-rebased.5lb3k1v4/failure-controls.n7ojqgl6/base_packed/strict.log",
+            "sha256": "7d792f4cf48922fe8d95a64b4f45e872054a2ba6e62eb87a8e48a72cdf3bbfe9"
+        },
+        {
+            "path": "cases/big.pie-rebased.5lb3k1v4/failure-controls.n7ojqgl6/neighbor/strict.log",
+            "sha256": "8d4b6d77d3b71a077b6a8c0bcb3729ccd4d178c3e4be1cd0574c0f7f3b2be096"
+        },
+        {
+            "path": "cases/big.pie.2sgzagjy/dbg-strict.txt",
+            "sha256": "24622c2abe9ced67c4d0fcd70aad29f24f45ff0ed058c26373e443d17ba49049"
+        },
+        {
+            "path": "cases/big.pie.2sgzagjy/reference-strict.txt",
+            "sha256": "4e50a573d1ac0bc546af03281725fedd7e4665c2aa002d264971fb4b4e833283"
+        },
+        {
+            "path": "cases/big.pie.2sgzagjy/failure-controls.ymocvyxp/base_floats/strict.log",
+            "sha256": "cd9338a7a3386a80e467ee0ab15c596a0806a4e49dd31917411e9d5bbd0605db"
+        },
+        {
+            "path": "cases/big.pie.2sgzagjy/failure-controls.ymocvyxp/base_bytes/strict.log",
+            "sha256": "8d86ceaf5b70d38d5f04677dc6e05445b4403a7e38b03b09f84f3514236a50ec"
+        },
+        {
+            "path": "cases/big.pie.2sgzagjy/failure-controls.ymocvyxp/base_packed/strict.log",
+            "sha256": "7d792f4cf48922fe8d95a64b4f45e872054a2ba6e62eb87a8e48a72cdf3bbfe9"
+        },
+        {
+            "path": "cases/big.pie.2sgzagjy/failure-controls.ymocvyxp/neighbor/strict.log",
+            "sha256": "8d4b6d77d3b71a077b6a8c0bcb3729ccd4d178c3e4be1cd0574c0f7f3b2be096"
+        },
+        {
+            "path": "cases/little.exec-rebased.f2s7kg29/dbg-strict.txt",
+            "sha256": "217d0ea724d8c562e2b502e2a9b774a08709e3176afb764ef801f1eb8809f5ed"
+        },
+        {
+            "path": "cases/little.exec-rebased.f2s7kg29/reference-strict.txt",
+            "sha256": "b60487552f5c2825710ce8060ff7bae7f120e1e6f2668d4c04111b257e39b63a"
+        },
+        {
+            "path": "cases/little.exec-rebased.f2s7kg29/failure-controls.vjq6umok/base_floats/strict.log",
+            "sha256": "4fb2b02359833fa8702c59a831ae6b0ececa1183519aeeb2b92e58726bb097b0"
+        },
+        {
+            "path": "cases/little.exec-rebased.f2s7kg29/failure-controls.vjq6umok/base_bytes/strict.log",
+            "sha256": "b084a43328e62055fa0a396801e60f523a4bd521b9dc00621f97d6bcd7c146c6"
+        },
+        {
+            "path": "cases/little.exec-rebased.f2s7kg29/failure-controls.vjq6umok/base_packed/strict.log",
+            "sha256": "46e99d283c1b39a302ba9f27a05ddc4327a5068e3c7ec0cb0e04142a73742b01"
+        },
+        {
+            "path": "cases/little.exec-rebased.f2s7kg29/failure-controls.vjq6umok/neighbor/strict.log",
+            "sha256": "4e87ea885d852aae68dd3733b58cc9fdc455fa2506e5100a97110dc106501497"
+        },
+        {
+            "path": "cases/little.exec.ap6vvba5/dbg-strict.txt",
+            "sha256": "217d0ea724d8c562e2b502e2a9b774a08709e3176afb764ef801f1eb8809f5ed"
+        },
+        {
+            "path": "cases/little.exec.ap6vvba5/reference-strict.txt",
+            "sha256": "b60487552f5c2825710ce8060ff7bae7f120e1e6f2668d4c04111b257e39b63a"
+        },
+        {
+            "path": "cases/little.exec.ap6vvba5/failure-controls.5tyc7mhd/base_floats/strict.log",
+            "sha256": "4fb2b02359833fa8702c59a831ae6b0ececa1183519aeeb2b92e58726bb097b0"
+        },
+        {
+            "path": "cases/little.exec.ap6vvba5/failure-controls.5tyc7mhd/base_bytes/strict.log",
+            "sha256": "b084a43328e62055fa0a396801e60f523a4bd521b9dc00621f97d6bcd7c146c6"
+        },
+        {
+            "path": "cases/little.exec.ap6vvba5/failure-controls.5tyc7mhd/base_packed/strict.log",
+            "sha256": "7a33baab0556fc713d0e5665618f39c82ecedd317f8122c202b61015f55706c0"
+        },
+        {
+            "path": "cases/little.exec.ap6vvba5/failure-controls.5tyc7mhd/neighbor/strict.log",
+            "sha256": "4e87ea885d852aae68dd3733b58cc9fdc455fa2506e5100a97110dc106501497"
+        },
+        {
+            "path": "cases/little.pie-rebased.3m8cgj_g/dbg-strict.txt",
+            "sha256": "2b35e1a71c6ac4287ea490cf8c39d191b70678ae38caccd0a9b1668b349a9980"
+        },
+        {
+            "path": "cases/little.pie-rebased.3m8cgj_g/reference-strict.txt",
+            "sha256": "52474355f861826dd4d832cecc9ebf35df20b70e0b30991f573602a62d18c168"
+        },
+        {
+            "path": "cases/little.pie-rebased.3m8cgj_g/failure-controls.d_ovcz29/base_floats/strict.log",
+            "sha256": "9495931cebe5e76ee09002aa4ef75d657f21dc10600625e49d53aaf33ea5fead"
+        },
+        {
+            "path": "cases/little.pie-rebased.3m8cgj_g/failure-controls.d_ovcz29/base_bytes/strict.log",
+            "sha256": "0c549928a338385f2e70c9d313eff6a34dd13ad808b8c074f02a3e84cd250f26"
+        },
+        {
+            "path": "cases/little.pie-rebased.3m8cgj_g/failure-controls.d_ovcz29/base_packed/strict.log",
+            "sha256": "2b21afa5ca555acb06653682ebd3c4aaf456766d96039deb87c85599ac2f5cac"
+        },
+        {
+            "path": "cases/little.pie-rebased.3m8cgj_g/failure-controls.d_ovcz29/neighbor/strict.log",
+            "sha256": "9ea8dfff9faf1e6444f451a8dfb89d44016ad17d61ed7ad473295d3eed38c9e3"
+        },
+        {
+            "path": "cases/little.pie._xg3dix6/dbg-strict.txt",
+            "sha256": "2b35e1a71c6ac4287ea490cf8c39d191b70678ae38caccd0a9b1668b349a9980"
+        },
+        {
+            "path": "cases/little.pie._xg3dix6/reference-strict.txt",
+            "sha256": "52474355f861826dd4d832cecc9ebf35df20b70e0b30991f573602a62d18c168"
+        },
+        {
+            "path": "cases/little.pie._xg3dix6/failure-controls.q24te3wb/base_floats/strict.log",
+            "sha256": "9495931cebe5e76ee09002aa4ef75d657f21dc10600625e49d53aaf33ea5fead"
+        },
+        {
+            "path": "cases/little.pie._xg3dix6/failure-controls.q24te3wb/base_bytes/strict.log",
+            "sha256": "0c549928a338385f2e70c9d313eff6a34dd13ad808b8c074f02a3e84cd250f26"
+        },
+        {
+            "path": "cases/little.pie._xg3dix6/failure-controls.q24te3wb/base_packed/strict.log",
+            "sha256": "2b21afa5ca555acb06653682ebd3c4aaf456766d96039deb87c85599ac2f5cac"
+        },
+        {
+            "path": "cases/little.pie._xg3dix6/failure-controls.q24te3wb/neighbor/strict.log",
+            "sha256": "9ea8dfff9faf1e6444f451a8dfb89d44016ad17d61ed7ad473295d3eed38c9e3"
+        },
+        {
+            "path": "cases/little.shared-rebased.s5eex40t/dbg-strict.txt",
+            "sha256": "5159fc408e4c3d329d9c85f9ef5c7c9731d637fed6bcf7d79a8b7d09179bf345"
+        },
+        {
+            "path": "cases/little.shared-rebased.s5eex40t/reference-strict.txt",
+            "sha256": "b6ff96db88e56df535b782f6f083baa4de1a44a37985a3a230b2e516c2813847"
+        },
+        {
+            "path": "cases/little.shared-rebased.s5eex40t/failure-controls.kuxaheyd/base_floats/strict.log",
+            "sha256": "cadfc76862403da3cb47ceec67142685a2188bb4bc3564016c7acadb0bad10f8"
+        },
+        {
+            "path": "cases/little.shared-rebased.s5eex40t/failure-controls.kuxaheyd/base_bytes/strict.log",
+            "sha256": "5d27a2b9f7fa396d1ae1b84628933cbb95af2d6843a0fc913a6a7cc4ef5f58c7"
+        },
+        {
+            "path": "cases/little.shared-rebased.s5eex40t/failure-controls.kuxaheyd/base_packed/strict.log",
+            "sha256": "86d57c67ce73edcfaa95c5a1b7092b0ed8f13ead8649347f3e5013ae0e642dd5"
+        },
+        {
+            "path": "cases/little.shared-rebased.s5eex40t/failure-controls.kuxaheyd/neighbor/strict.log",
+            "sha256": "f2abc805ab22c8ab5c075cc627d47481f1863bf5a55b864baf102b364d91f881"
+        },
+        {
+            "path": "cases/little.shared.2zk_z7gg/dbg-strict.txt",
+            "sha256": "5159fc408e4c3d329d9c85f9ef5c7c9731d637fed6bcf7d79a8b7d09179bf345"
+        },
+        {
+            "path": "cases/little.shared.2zk_z7gg/reference-strict.txt",
+            "sha256": "b6ff96db88e56df535b782f6f083baa4de1a44a37985a3a230b2e516c2813847"
+        },
+        {
+            "path": "cases/little.shared.2zk_z7gg/failure-controls.vzzv6l14/base_floats/strict.log",
+            "sha256": "cadfc76862403da3cb47ceec67142685a2188bb4bc3564016c7acadb0bad10f8"
+        },
+        {
+            "path": "cases/little.shared.2zk_z7gg/failure-controls.vzzv6l14/base_bytes/strict.log",
+            "sha256": "5d27a2b9f7fa396d1ae1b84628933cbb95af2d6843a0fc913a6a7cc4ef5f58c7"
+        },
+        {
+            "path": "cases/little.shared.2zk_z7gg/failure-controls.vzzv6l14/base_packed/strict.log",
+            "sha256": "86d57c67ce73edcfaa95c5a1b7092b0ed8f13ead8649347f3e5013ae0e642dd5"
+        },
+        {
+            "path": "cases/little.shared.2zk_z7gg/failure-controls.vzzv6l14/neighbor/strict.log",
+            "sha256": "f2abc805ab22c8ab5c075cc627d47481f1863bf5a55b864baf102b364d91f881"
+        }
+    ],
+    "commands": [
+        {
+            "name": "little-exec",
+            "command": [
+                "python3",
+                "src/test/integration/arm-stack-aggregates.py",
+                "/dev/shm/forge-lldb-worktree/build/arm-memory-piece-regression/ghidra",
+                "--order",
+                "little",
+                "--role",
+                "exec",
+                "--qemu",
+                "/home/ziggy/GhidraDwarfForge-worktrees/arm-pcs-profile/build/arm-pcs-profile/qemu-alias-corrected/build/qemu-arm",
+                "--gdb",
+                "/usr/bin/gdb-multiarch",
+                "--gdb-data",
+                "/usr/share/gdb",
+                "--availability-contract",
+                "audited-prefix",
+                "--with-controls",
+                "--results-root",
+                "/dev/shm/forge-lldb-worktree/build/arm-memory-piece-regression/cases"
+            ],
+            "exit": 0
+        },
+        {
+            "name": "little-exec-rebased",
+            "command": [
+                "python3",
+                "src/test/integration/arm-stack-aggregates.py",
+                "/dev/shm/forge-lldb-worktree/build/arm-memory-piece-regression/ghidra",
+                "--order",
+                "little",
+                "--role",
+                "exec-rebased",
+                "--qemu",
+                "/home/ziggy/GhidraDwarfForge-worktrees/arm-pcs-profile/build/arm-pcs-profile/qemu-alias-corrected/build/qemu-arm",
+                "--gdb",
+                "/usr/bin/gdb-multiarch",
+                "--gdb-data",
+                "/usr/share/gdb",
+                "--availability-contract",
+                "audited-prefix",
+                "--with-controls",
+                "--results-root",
+                "/dev/shm/forge-lldb-worktree/build/arm-memory-piece-regression/cases"
+            ],
+            "exit": 0
+        },
+        {
+            "name": "little-pie",
+            "command": [
+                "python3",
+                "src/test/integration/arm-stack-aggregates.py",
+                "/dev/shm/forge-lldb-worktree/build/arm-memory-piece-regression/ghidra",
+                "--order",
+                "little",
+                "--role",
+                "pie",
+                "--qemu",
+                "/home/ziggy/GhidraDwarfForge-worktrees/arm-pcs-profile/build/arm-pcs-profile/qemu-alias-corrected/build/qemu-arm",
+                "--gdb",
+                "/usr/bin/gdb-multiarch",
+                "--gdb-data",
+                "/usr/share/gdb",
+                "--availability-contract",
+                "audited-prefix",
+                "--with-controls",
+                "--results-root",
+                "/dev/shm/forge-lldb-worktree/build/arm-memory-piece-regression/cases"
+            ],
+            "exit": 0
+        },
+        {
+            "name": "little-pie-rebased",
+            "command": [
+                "python3",
+                "src/test/integration/arm-stack-aggregates.py",
+                "/dev/shm/forge-lldb-worktree/build/arm-memory-piece-regression/ghidra",
+                "--order",
+                "little",
+                "--role",
+                "pie-rebased",
+                "--qemu",
+                "/home/ziggy/GhidraDwarfForge-worktrees/arm-pcs-profile/build/arm-pcs-profile/qemu-alias-corrected/build/qemu-arm",
+                "--gdb",
+                "/usr/bin/gdb-multiarch",
+                "--gdb-data",
+                "/usr/share/gdb",
+                "--availability-contract",
+                "audited-prefix",
+                "--with-controls",
+                "--results-root",
+                "/dev/shm/forge-lldb-worktree/build/arm-memory-piece-regression/cases"
+            ],
+            "exit": 0
+        },
+        {
+            "name": "little-shared",
+            "command": [
+                "python3",
+                "src/test/integration/arm-stack-aggregates.py",
+                "/dev/shm/forge-lldb-worktree/build/arm-memory-piece-regression/ghidra",
+                "--order",
+                "little",
+                "--role",
+                "shared",
+                "--qemu",
+                "/home/ziggy/GhidraDwarfForge-worktrees/arm-pcs-profile/build/arm-pcs-profile/qemu-alias-corrected/build/qemu-arm",
+                "--gdb",
+                "/usr/bin/gdb-multiarch",
+                "--gdb-data",
+                "/usr/share/gdb",
+                "--availability-contract",
+                "audited-prefix",
+                "--with-controls",
+                "--results-root",
+                "/dev/shm/forge-lldb-worktree/build/arm-memory-piece-regression/cases"
+            ],
+            "exit": 0
+        },
+        {
+            "name": "little-shared-rebased",
+            "command": [
+                "python3",
+                "src/test/integration/arm-stack-aggregates.py",
+                "/dev/shm/forge-lldb-worktree/build/arm-memory-piece-regression/ghidra",
+                "--order",
+                "little",
+                "--role",
+                "shared-rebased",
+                "--qemu",
+                "/home/ziggy/GhidraDwarfForge-worktrees/arm-pcs-profile/build/arm-pcs-profile/qemu-alias-corrected/build/qemu-arm",
+                "--gdb",
+                "/usr/bin/gdb-multiarch",
+                "--gdb-data",
+                "/usr/share/gdb",
+                "--availability-contract",
+                "audited-prefix",
+                "--with-controls",
+                "--results-root",
+                "/dev/shm/forge-lldb-worktree/build/arm-memory-piece-regression/cases"
+            ],
+            "exit": 0
+        },
+        {
+            "name": "big-exec",
+            "command": [
+                "python3",
+                "src/test/integration/arm-stack-aggregates.py",
+                "/dev/shm/forge-lldb-worktree/build/arm-memory-piece-regression/ghidra",
+                "--order",
+                "big",
+                "--role",
+                "exec",
+                "--qemu",
+                "/home/ziggy/GhidraDwarfForge-worktrees/arm-pcs-profile/build/arm-pcs-profile/qemu-alias-corrected/build/qemu-armeb",
+                "--gdb",
+                "/home/ziggy/GhidraDwarfForge-worktrees/arm-be8-profile/build/arm-be8-profile/gdb17-arm/build/gdb/gdb",
+                "--gdb-data",
+                "/home/ziggy/GhidraDwarfForge-worktrees/arm-be8-profile/build/arm-be8-profile/gdb17-arm/build/gdb/data-directory",
+                "--availability-contract",
+                "audited-prefix",
+                "--with-controls",
+                "--results-root",
+                "/dev/shm/forge-lldb-worktree/build/arm-memory-piece-regression/cases"
+            ],
+            "exit": 0
+        },
+        {
+            "name": "big-exec-rebased",
+            "command": [
+                "python3",
+                "src/test/integration/arm-stack-aggregates.py",
+                "/dev/shm/forge-lldb-worktree/build/arm-memory-piece-regression/ghidra",
+                "--order",
+                "big",
+                "--role",
+                "exec-rebased",
+                "--qemu",
+                "/home/ziggy/GhidraDwarfForge-worktrees/arm-pcs-profile/build/arm-pcs-profile/qemu-alias-corrected/build/qemu-armeb",
+                "--gdb",
+                "/home/ziggy/GhidraDwarfForge-worktrees/arm-be8-profile/build/arm-be8-profile/gdb17-arm/build/gdb/gdb",
+                "--gdb-data",
+                "/home/ziggy/GhidraDwarfForge-worktrees/arm-be8-profile/build/arm-be8-profile/gdb17-arm/build/gdb/data-directory",
+                "--availability-contract",
+                "audited-prefix",
+                "--with-controls",
+                "--results-root",
+                "/dev/shm/forge-lldb-worktree/build/arm-memory-piece-regression/cases"
+            ],
+            "exit": 0
+        },
+        {
+            "name": "big-pie",
+            "command": [
+                "python3",
+                "src/test/integration/arm-stack-aggregates.py",
+                "/dev/shm/forge-lldb-worktree/build/arm-memory-piece-regression/ghidra",
+                "--order",
+                "big",
+                "--role",
+                "pie",
+                "--qemu",
+                "/home/ziggy/GhidraDwarfForge-worktrees/arm-pcs-profile/build/arm-pcs-profile/qemu-alias-corrected/build/qemu-armeb",
+                "--gdb",
+                "/home/ziggy/GhidraDwarfForge-worktrees/arm-be8-profile/build/arm-be8-profile/gdb17-arm/build/gdb/gdb",
+                "--gdb-data",
+                "/home/ziggy/GhidraDwarfForge-worktrees/arm-be8-profile/build/arm-be8-profile/gdb17-arm/build/gdb/data-directory",
+                "--availability-contract",
+                "audited-prefix",
+                "--with-controls",
+                "--results-root",
+                "/dev/shm/forge-lldb-worktree/build/arm-memory-piece-regression/cases"
+            ],
+            "exit": 0
+        },
+        {
+            "name": "big-pie-rebased",
+            "command": [
+                "python3",
+                "src/test/integration/arm-stack-aggregates.py",
+                "/dev/shm/forge-lldb-worktree/build/arm-memory-piece-regression/ghidra",
+                "--order",
+                "big",
+                "--role",
+                "pie-rebased",
+                "--qemu",
+                "/home/ziggy/GhidraDwarfForge-worktrees/arm-pcs-profile/build/arm-pcs-profile/qemu-alias-corrected/build/qemu-armeb",
+                "--gdb",
+                "/home/ziggy/GhidraDwarfForge-worktrees/arm-be8-profile/build/arm-be8-profile/gdb17-arm/build/gdb/gdb",
+                "--gdb-data",
+                "/home/ziggy/GhidraDwarfForge-worktrees/arm-be8-profile/build/arm-be8-profile/gdb17-arm/build/gdb/data-directory",
+                "--availability-contract",
+                "audited-prefix",
+                "--with-controls",
+                "--results-root",
+                "/dev/shm/forge-lldb-worktree/build/arm-memory-piece-regression/cases"
+            ],
+            "exit": 0
+        }
+    ],
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/arm-memory-piece-regression.tar.gz",
+        "sha256": "f1e6c0ed3b16c13c7a6eff1d3a583b3ef9d326ba8b3d452f4b9c249588b49838",
+        "verifiedMembers": 2943
+    },
+    "limits": "Latest-head hosted gate and protected integration still required. No ARM LLDB support claim; these are independent ARM GDB/compiler/physical-carrier regressions."
+}

@@ -147,8 +147,10 @@ def main(case):
         # padding. Later choices are read physically at each actual GDB stop.
         first = parameters['value'][0]['bytes']
         if kind in ('pair', 'packed', 'words'):
-            trailing = {'pair': '20', 'packed': '08', 'words': '40'}[kind]
-            assert first == '90039d2000920d009d' + trailing + '00', (name, first)
+            # ARM's r3 fragment retains its explicit register bit piece. The
+            # remaining whole bytes at entry SP use the memory byte piece.
+            trailing_bytes = {'pair': '04', 'packed': '01', 'words': '08'}[kind]
+            assert first == '90039d2000920d0093' + trailing_bytes, (name, first)
         elif kind == 'bytes':
             assert first == ('9003' if order == '<' else '90039d1808'), (name, first)
         else:
