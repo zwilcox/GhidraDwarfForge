@@ -113,6 +113,14 @@ tasks.register("unwindFrameRowsSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.unwind.UnwindFrameRowsSmoke"
 }
 
+tasks.register("originalFrameSourcesSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded original frame source discovery, compression and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.OriginalFrameSourcesSmoke"
+}
+
 tasks.register("originalFrameRangesSmoke", JavaExec) {
     group = "verification"
     description = "Checks bounded original CIE/FDE range inventory and unknown-coverage failures"

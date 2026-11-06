@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 original ELF frame sources:** named, compressed,
+sectionless and unnamed frame inventories now retain file/hash evidence and
+cross-check EH search-table addresses against referenced FDEs. The initial
+collector's mismatched-address acceptance has a failing-before regression.
+1158 source checks and 36 compiler-built variants pass alongside range,
+sectionless and encoder regressions. See docs/ORIGINAL-FRAME-SOURCES.md.
+Runtime relocation qualification, precedence and production integration remain
+PLANNED; these inventories alone do not authorize synthesis. PR166 integration
+and the full #112/#110/#109 objective remain open.
+
 **CONFIRMED locally — #112 original frame range reader:** complete CIE/FDE
 header inventories now distinguish declared coverage from unknown metadata.
 The bounded parser passes 4275 checks; twelve unchanged compiler-reference

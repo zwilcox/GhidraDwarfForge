@@ -97,6 +97,9 @@ reader/compiler checks are wired into both target lanes but are
 
 ## Next integration obligations
 
+[Source discovery/decompression](ORIGINAL-FRAME-SOURCES.md) now has local evidence;
+its remaining relocation and production obligations are explicit there.
+
 Inventory every named/compressed frame source and program-header-derived source,
 including uncertainty and conflicting-source handling. Bind original bytes and
 relocations to that inventory, exclude declared ranges from generated intervals,
