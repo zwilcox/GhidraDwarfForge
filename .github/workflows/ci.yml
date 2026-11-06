@@ -2567,7 +2567,7 @@ jobs:
           TARGET: ${{ matrix.target }}
           GHIDRA_GUI_UNWIND: '1'
         run: |
-          role=exec
+          role='exec'
           export GHIDRA_GUI_UNWIND_TARGET="$TARGET"
           if [[ "$TARGET" == aarch64 ]]; then
             role=shared

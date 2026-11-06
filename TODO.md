@@ -1,5 +1,13 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED hosted lint correction:** PR176's updated head `50b1da3` started
+run `42235018469`; ShellCheck rejected the unquoted literal `role=exec` in the
+new GUI step. Quoting it reproduces and resolves SC2209 with explicit local
+ShellCheck. Prior local Actionlint invocations omitted optional ShellCheck because
+it was absent from PATH. See `docs/evidence/powershell-unwind-ci-lint.json`.
+The production code and validated outputs are unchanged; updated hosted acceptance
+is still required. Full #112, then #110/#109, remain active.
+
 **CONFIRMED locally — PowerShell unwind forwarding for #112:** the installed
 PowerShell wrapper passes five real Linux exports through an explicit isolated
 launcher adapter, preserves its four-file generation on an invalid range, and
