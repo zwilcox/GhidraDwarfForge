@@ -626,7 +626,7 @@ jobs:
               dwarfAddressRangesSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
               packagedNativeLibrariesSmoke existingDebugSidecarSmoke callFrameEncoderSmoke unwindFlowSmoke ghidraUnwindInstructionsSmoke unwindAbiProfileSmoke \
-              unwindCallsSmoke ghidraUnwindCallsSmoke unwindFrameRowsSmoke elfCodeBytesSmoke \
+              unwindCallsSmoke ghidraUnwindCallsSmoke unwindFrameRowsSmoke elfCodeBytesSmoke originalFrameRangesSmoke \
               extendedSectionNumberingSmoke elfImageReaderSmoke \
               elfCopyCancellationSmoke ghidraImageBaseSmoke buildExtension
             python3 -B src/test/integration/debuglink-basename.py \
@@ -1006,6 +1006,15 @@ jobs:
           ./gradlew unwindFrameRowsSmoke ghidraUnwindCallsSmoke elfCodeBytesSmoke
           python3 src/test/integration/unwind-frame-recovery.py build/classes/java \
             "build/test-results/unwind-frame-recovery/$TARGET" --target "$TARGET" --dwarfdump "$DWARFDUMP"
+
+      - name: Compare original frame ranges with independent compiler and validator inventories
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          ./gradlew originalFrameRangesSmoke
+          python3 src/test/integration/original-frame-ranges.py build/classes/java \
+            "build/test-results/original-frame-ranges/$TARGET" --target "$TARGET" --dwarfdump "$DWARFDUMP"
 
       - name: Verify fixture identity and stripping
         env:

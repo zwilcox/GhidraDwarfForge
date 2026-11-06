@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 original frame range reader:** complete CIE/FDE
+header inventories now distinguish declared coverage from unknown metadata.
+The bounded parser passes 4275 checks; twelve unchanged compiler-reference
+exec/PIE/shared cases across x86-64/AArch64 and debug/EH formats agree with GNU
+and LLVM. Strict EH alignment diagnostics are retained and corroborated against
+independent byte-identical rebuilds. See docs/ORIGINAL-FRAME-RANGES.md.
+ELF source/decompression/relocation qualification, precedence and production
+integration remain PLANNED; parsed ranges do not certify unwind rule semantics.
+PR166 integration and the full #112/#110/#109 goal remain open.
+
 **CONFIRMED locally — #112 original instruction agreement:** the native call
 verifier now checks every captured instruction against its original executable
 load mapping and retains file-offset/hash evidence. Patched instruction, sparse
