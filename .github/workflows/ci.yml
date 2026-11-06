@@ -1403,8 +1403,16 @@ jobs:
                   else
                       src/test/integration/shared-object-gdb.sh "$TARGET"
                   fi
+                  if [[ "$TARGET" == x86_64 || "$TARGET" == aarch64 ]]; then
+                      python3 src/test/integration/shared-object-lldb.py build/fixtures \
+                          "build/test-results/lldb-shared-$TARGET" --target "$TARGET" --lldb lldb-18
+                  fi
               else
                   FIXTURE_ROLE="$role" src/test/integration/qemu-gdb-symbols.sh "$TARGET"
+                  if [[ "$role" == exec.no-sections && ( "$TARGET" == x86_64 || "$TARGET" == aarch64 ) ]]; then
+                      python3 src/test/integration/sectionless-lldb.py build/fixtures \
+                          "build/test-results/lldb-sectionless-$TARGET" --target "$TARGET" --lldb lldb-18
+                  fi
               fi
               if [[ "$TARGET:$role" == "x86_64:pie" ]]; then
                   python3 -B src/test/integration/gdb-companion-native.py \
@@ -1486,6 +1494,11 @@ jobs:
                   "$GHIDRA_INSTALL_DIR" "$consumer" "$producer" "$TARGET"
               if [[ "$role" == shared ]]; then
                   src/test/integration/gdb-companion-shared.sh "$TARGET" ambiguous
+                  if [[ "$TARGET" == x86_64 || "$TARGET" == aarch64 ]]; then
+                      python3 src/test/integration/shared-object-lldb.py build/fixtures \
+                          "build/test-results/lldb-shared-rebased-$TARGET" --target "$TARGET" \
+                          --suffix "$FORGE_SYMBOL_SUFFIX" --lldb lldb-18
+                  fi
               elif [[ "$TARGET" == x86_64 ]]; then
                   python3 -B src/test/integration/gdb-companion-native.py \
                       --input "build/fixtures/$TARGET/semantic.pie.stripped" \

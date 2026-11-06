@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local #110 shared/sectionless checkpoint:** both selected targets
+pass explicitly loaded shared-library source/value checks, including rebased
+analysis and real runtime load bias. Sectionless ET_EXEC lookup succeeds with
+direct attachment but LLDB 18.1.3 misses its named breakpoint with either
+compiler or Forge symbols; an explicitly loaded separate symbol module passes
+the original-byte/source-step/exit checks. See `docs/LLDB-ELF-LAYOUTS.md` for the
+exact workflow and limits. Hosted integration, remaining storage/discovery
+controls and the final LLDB support contract remain open; #112 and #109 ordering
+is unchanged.
+
 **CONFIRMED local #110 memory-piece and bitfield checkpoint:** exact byte-aligned
 memory fragments now use equivalent byte pieces that LLDB 18.1.3 can consume.
 Both selected targets pass compiler/GDB/LLDB instruction comparisons for exec,

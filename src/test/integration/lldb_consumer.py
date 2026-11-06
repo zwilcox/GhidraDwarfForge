@@ -17,11 +17,13 @@ def versions(debugger, target):
     return {'debugger': version, 'transport': transport}
 
 
-def run(original, symbols, output, debugger, target, before, after, environment):
+def run(original, symbols, output, debugger, target, before, after, environment,
+        stop_at_entry=False, separate_symbol_module=False):
     """Run commands at fresh CLI boundaries; callers validate their JSON result."""
     output.mkdir()
-    commands = ['target create ' + shlex.quote(str(original)),
-        'target symbols add --shlib ' + shlex.quote(str(original)) + ' ' + shlex.quote(str(symbols)), *before]
+    symbol_command = ('target modules add ' + shlex.quote(str(symbols)) if separate_symbol_module else
+        'target symbols add --shlib ' + shlex.quote(str(original)) + ' ' + shlex.quote(str(symbols)))
+    commands = ['target create ' + shlex.quote(str(original)), symbol_command, *before]
     qemu = None
     qlog = None
     try:
@@ -35,10 +37,13 @@ def run(original, symbols, output, debugger, target, before, after, environment)
             qemu = subprocess.Popen(qcommand, stdout=qlog, stderr=subprocess.STDOUT)
             time.sleep(0.2)
             assert qemu.poll() is None, 'QEMU exited before LLDB connected'
-            commands.extend(['gdb-remote 127.0.0.1:' + str(port), 'continue'])
+            commands.append('gdb-remote 127.0.0.1:' + str(port))
+            if not stop_at_entry:
+                commands.append('continue')
         else:
             assert target == 'x86_64'
-            commands.extend(['settings set target.disable-aslr false', 'run'])
+            commands.extend(['settings set target.disable-aslr false',
+                'process launch --stop-at-entry' if stop_at_entry else 'run'])
         commands.extend(after)
         command = [debugger, '--no-lldbinit', '--batch']
         for item in commands:
