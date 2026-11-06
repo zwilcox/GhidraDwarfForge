@@ -19,14 +19,14 @@ public class CancelDuringAnnotations extends GhidraScript {
 
     @Override protected void run() throws Exception {
         String[] args = getScriptArgs();
-        if (args.length != 4) throw new IllegalArgumentException("usage: input output consumer producer");
+        if (args.length != 4 && args.length != 5) throw new IllegalArgumentException("usage: input output consumer producer [source-context]");
         Path output = Path.of(args[1]);
         Path source = Path.of(args[1] + ".c");
         byte[] beforeOutput = Files.readAllBytes(output);
         byte[] beforeSource = Files.readAllBytes(source);
         Set<String> beforeFiles = files(output.getParent());
         String[] options = {"--input", args[0], "--output", args[1], "--libdwarf", args[2], "--libdwarfp", args[3]};
-        var stages = List.of(
+        var stages = new java.util.ArrayList<>(List.of(
             new Stage("ghidradwarfforge.GhidraAnnotationInventory", "read", 5),
             new Stage("ghidradwarfforge.GhidraEquateEvidence$DynamicCollector", "accept", 2),
             new Stage("ghidradwarfforge.GhidraEquateEvidence", "interpret", 5),
@@ -34,7 +34,16 @@ public class CancelDuringAnnotations extends GhidraScript {
             new Stage("ghidradwarfforge.GhidraEquateSource", "append", 5),
             new Stage("ghidradwarfforge.source.AnnotatedSourceFile", "compose", 5,
                 "ghidradwarfforge.GhidraEquateSource"),
-            new Stage("ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter", "emitSyntheticConstants", 5));
+            new Stage("ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter", "emitSyntheticConstants", 5)));
+        if (args.length == 5 && !args[4].equals("off")) {
+            var extended = new java.util.ArrayList<>(List.of(options));
+            extended.add("--source-context=" + args[4]);
+            options = extended.toArray(String[]::new);
+            stages.add(new Stage("ghidradwarfforge.GhidraSourceContext", "accept", 2));
+            stages.add(new Stage("ghidradwarfforge.GhidraSourceContext", "render", 2));
+            stages.add(new Stage("ghidradwarfforge.GhidraSourceContext$BoundedText", "row", 2));
+            stages.add(new Stage("ghidradwarfforge.GhidraSourceContext", "compose", 2));
+        }
         TaskMonitor original = monitor;
         for (Stage stage : stages) {
             var probe = new Probe(original, stage);

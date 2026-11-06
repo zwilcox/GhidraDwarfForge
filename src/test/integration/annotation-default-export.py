@@ -26,6 +26,7 @@ def main():
     parser.add_argument('--placement-control', type=Path,
         help='successful controlled placement export for exact unannotated GDB warning comparison')
     parser.add_argument('--equate-evidence', type=Path, help='independently validated saved-equate planner observations')
+    parser.add_argument('--source-context', choices=['off', 'assembly', 'pcode', 'both'], default='off')
     args = parser.parse_args()
     ghidra, curation = args.ghidra.resolve(strict=True), args.curation.resolve(strict=True)
     reference = curation.parent
@@ -63,6 +64,8 @@ def main():
         '-process', 'stripped', '-readOnly', '-noanalysis', '-scriptPath', module / 'ghidra_scripts',
         '-postScript', 'GhidraDwarfForge.java', '--input', reference / 'stripped', '--output', output,
         '--libdwarf', args.consumer, '--libdwarfp', args.producer]
+    if args.source_context != 'off':
+        command += ['--source-context=' + args.source_context]
     generations, states = [], [snapshot(project)]
     for phase in ('read1', 'read2'):
         log = run(phase, command)
@@ -82,6 +85,17 @@ def main():
     expected = {'Ghidra listing comment ' + r['category'] + ' at ' + r['space'] + ':0x' + r['offset']: r['text']
         for r in saved['comments']}
     seen, inserted = set(), set()
+    context_lines = set()
+    if args.source_context != 'off':
+        for index, row in enumerate(rows):
+            if not row.startswith('/* Ghidra instruction context '):
+                continue
+            end = index
+            while end < len(rows) and rows[end].startswith('/* ') and rows[end].endswith(' */'):
+                context_lines.add(end + 1)
+                end += 1
+        assert context_lines, 'fixture did not exercise optional context'
+        inserted.update(context_lines)
     for index, row in enumerate(rows):
         if not row.startswith('/* Ghidra listing comment '):
             continue
@@ -181,20 +195,22 @@ def main():
         cancel = run('cancellation', [ghidra / 'support/analyzeHeadless', project, 'Annotations',
             '-process', 'stripped', '-readOnly', '-noanalysis', '-scriptPath',
             str(scripts) + ';' + str(module / 'ghidra_scripts'), '-postScript', 'CancelDuringAnnotations.java',
-            reference / 'stripped', output, args.consumer, args.producer])
-        assert 'annotation-cancellation-recovery=PASS stages=7' in cancel
-        assert cancel.count('annotation-cancellation-stage=PASS ') == 7
+            reference / 'stripped', output, args.consumer, args.producer, args.source_context])
+        expected_stages = 7 if args.source_context == 'off' else 11
+        assert 'annotation-cancellation-recovery=PASS stages=' + str(expected_stages) in cancel
+        assert cancel.count('annotation-cancellation-stage=PASS ') == expected_stages
         reports = [json.loads(m[1]) for m in re.finditer(r'GhidraDwarfForge report: (\{.*\}) \(GhidraScript\)', cancel)]
-        assert [r['status'] for r in reports[:-1]] == ['CANCELLED'] * 7
+        assert [r['status'] for r in reports[:-1]] == ['CANCELLED'] * expected_stages
         assert reports[-1]['status'] in ('SUCCESS', 'PARTIAL') and 'FATAL' not in cancel
         assert generations[1] == {name: digest(root / name) for name in generations[1]}
-        cancellation_stages = 7
+        cancellation_stages = expected_stages
     assert original_project == snapshot(curation / 'project')
     assert states[-1] == snapshot(project)
     assert protected == {p: digest(Path(p)) for p in protected}
     result = {'status': 'PASS_INSTALLED_DEFAULT_COMMENTS', 'target': receipt['target'],
         'role': receipt['role'], 'comments': len(seen), 'rawLineRows': len(raw),
         'equateConstants': equate_count, 'cancellationStages': cancellation_stages,
+        'sourceContext': args.source_context, 'contextRows': len(context_lines),
         'generations': generations, 'protected': protected, 'limitFailures': list(failures),
         'originalProjectUnchanged': True, 'firstReopenBackupChanges': changed,
         'warnings': warnings, 'compilerWarnings': compiler_warnings,

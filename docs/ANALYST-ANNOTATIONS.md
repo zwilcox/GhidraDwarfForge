@@ -414,3 +414,61 @@ See [the combined evidence](evidence/equate-cancellation-gui.json). The Java GUI
 fixture and compressed consumer are shared by Windows CI, but local Linux
 success does not establish Windows acceptance. Full hosted/workload validation,
 optional #114 context and broader consumer-specific demangling remain pending.
+
+## Optional instruction context checkpoint (#114)
+
+**CONFIRMED locally:** `--source-context=off|assembly|pcode|both` reaches the
+shared exporter, with `off` as the default. PowerShell exposes the same values
+through `-SourceContext`. `ExportGhidraDwarfForgeWithContext.java` offers the four
+choices through an opt-in Script Manager launcher. **PRESENT, UNVERIFIED:** the
+new GUI interaction and Windows wrapper execution still need their hosted tests.
+
+Context comes from actual native failure results, native warning comment markup,
+operation-backed CALLOTHER tokens, and `halt_baddata` operation tokens attached to
+RETURN. Arbitrary function names are not triggers. Native warnings without a
+causal operation address remain explicitly unmapped. Failure context is labeled
+as an entry-region sample, not a diagnosis of the failure address. Warning
+excerpts may be clipped; the complete native warning remains in the original
+synthetic text. Stored listing comments and equates retain their separate
+complete-or-fail policy.
+
+The reader observes existing instructions and memory without analysis or
+mutation. It retains Ghidra addresses, body-range boundaries, actual bytes,
+listing/parsed lengths, language/compiler identity, masked context-register
+state, delay-slot membership/depth, and flow overrides. Raw instruction p-code
+and effective flow-override p-code are labeled separately. Missing, unreadable
+or truncated bytes never receive invented assembly or p-code. The selected
+instruction and at most its adjacent predecessor/successor stay inside one body
+range; gaps are never bridged.
+
+Context has fixed limits: eight triggers, sixteen unique instructions and 256
+instruction bytes per function; 64 bytes per trigger; 64 visited p-code
+operations shared between both variants per instruction; 64 KiB rendered text
+per function; and 4 MiB per export. Text accounting includes reversible escaping
+and C-comment framing. Reserved space supplies visible limit markers. Counts
+state known omitted triggers or uninspected functions; they do not invent the
+number of unvisited instructions. Shared instructions are referenced rather than
+copied. Function/address/kind ordering and token order determine selection.
+
+An operation-backed token may place context beside its matching source line.
+Every other observation goes into the catalog. The existing compositor remaps
+all function and executable token lines; context rows themselves are never
+executable. **CONFIRMED design decision:** this catalog lives in the synthetic
+source, whose SHA-256 is already bound by schema-two reports. No new report field
+or recovered-knowledge metric is introduced. Context is diagnostic evidence,
+not an inferred program variable, type, source statement or confidence score.
+
+Local tests cover all five reader profiles and actual native failures/warnings
+on each. Four default exporter profiles (x86-64, AArch64 PIE and both MIPS32 byte
+orders) pass GNU/LLVM/pinned strict validation, native/QEMU GDB, deterministic
+reruns and eleven in-flight cancellation/recovery stages with context enabled.
+The x86 default-off source remains byte-identical to the prior accepted source.
+Independent decoded-line projections preserve the same address/source-text pairs
+and report counts in all four profiles. See `evidence/source-context.json`.
+
+**PLANNED remaining acceptance:** dedicated CALLOTHER and same-spelled ordinary
+function controls; all-failed-function file-only source lookup through GDB;
+production failure-sample DWARF validation; broader ARM mode and delay-slot body
+boundary controls; actual GUI chooser cancellation and Windows journeys; current
+hosted target/workload acceptance. The new tests and local success do not close
+#114 or the remaining #116 host/workload requirements.

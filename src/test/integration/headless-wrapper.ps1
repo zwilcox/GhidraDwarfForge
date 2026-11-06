@@ -181,6 +181,14 @@ exit /b %FAKE_HEADLESS_EXIT%
         throw 'explicit none unexpectedly changed default exporter arguments'
     }
     $null = Invoke-Wrapper 64 ($importOptions + @('-CompressDebugSections', 'zstd'))
+    foreach ($mode in @('assembly', 'pcode', 'both')) {
+        $null = Invoke-Wrapper 0 ($importOptions + @('-SourceContext', $mode))
+        Assert-Condition ((Get-Content -LiteralPath $argumentLog -Raw).Contains("--source-context=$mode")) 'context option was not forwarded'
+    }
+    $null = Invoke-Wrapper 0 ($importOptions + @('-SourceContext', 'off'))
+    Assert-Condition ((Get-Content -LiteralPath $argumentLog -Raw) -notmatch '--source-context=') 'off changed exporter arguments'
+    $null = Invoke-Wrapper 64 ($importOptions + @('-SourceContext', 'invalid'))
+    $null = Invoke-Wrapper 64 ($importOptions + @('-SourceContext', 'BOTH'))
     foreach ($log in @($output, "$output.c", "$output.gdb.py")) {
         Assert-RejectedLog $log ($importOptions + @('-Output', $output))
     }

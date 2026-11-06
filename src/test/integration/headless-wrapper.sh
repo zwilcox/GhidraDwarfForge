@@ -62,6 +62,16 @@ if grep -Fq -- '--compress-debug-sections=' "$argument_log"; then
     exit 1
 fi
 run_status 64 SUCCESS 0 --import="$input" --output="$output" --compress-debug-sections=zstd
+for mode in assembly pcode both; do
+    run_status 0 SUCCESS 0 --import="$input" --output="$output" --source-context="$mode"
+    grep -Fxq -- "--source-context=$mode" "$argument_log"
+done
+run_status 0 SUCCESS 0 --import="$input" --output="$output" --source-context=off
+if grep -Fq -- '--source-context=' "$argument_log"; then
+    echo 'off unexpectedly changed default exporter arguments' >&2
+    exit 1
+fi
+run_status 64 SUCCESS 0 --import="$input" --source-context=invalid
 run_status 0 SUCCESS 0 --import="$input" --output="$output" \
     --annotation-record-limit=123 --annotation-text-limit=456 --annotation-source-limit=789
 for option in --annotation-record-limit=123 --annotation-text-limit=456 --annotation-source-limit=789; do

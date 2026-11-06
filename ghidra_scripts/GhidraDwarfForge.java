@@ -77,6 +77,8 @@ public class GhidraDwarfForge extends GhidraScript {
 
         Map<String, String> options = parseOptions(arguments);
         var annotationLimits = ghidradwarfforge.source.AnnotationLimits.fromOptions(options);
+        var sourceContextMode = ghidradwarfforge.source.SourceContextMode.parse(
+            options.getOrDefault("source-context", "off"));
         var compression = ghidradwarfforge.elf.DebugSectionCompression.parse(
             options.getOrDefault("compress-debug-sections", "none"));
         boolean attachmentPreparation = options.containsKey("attachment-preparation");
@@ -201,10 +203,13 @@ public class GhidraDwarfForge extends GhidraScript {
                 new ghidradwarfforge.GhidraAnnotationInventory.Limits(
                     annotationLimits.records(), annotationLimits.textUnits()), monitor));
         var dynamicEquates = new ghidradwarfforge.GhidraEquateEvidence.DynamicCollector(currentProgram, inventory, monitor);
+        var sourceContext = new ghidradwarfforge.GhidraSourceContext(currentProgram, sourceContextMode,
+            ghidradwarfforge.GhidraSourceContext.Limits.DEFAULT);
         var decompilation = ExportPhase.measure("decompilation-and-source", () ->
             GhidraSyntheticSource.decompileDetailed(currentProgram, functions,
                 rebaseDelta, monitor, (decompiler, function, timeout, taskMonitor) -> {
                     var result = decompiler.decompileFunction(function, timeout, taskMonitor);
+                    sourceContext.accept(function, result, taskMonitor);
                     if (result != null && result.decompileCompleted() && result.getHighFunction() != null) {
                         dynamicEquates.accept(result.getHighFunction(), taskMonitor);
                     }
@@ -223,11 +228,13 @@ public class GhidraDwarfForge extends GhidraScript {
         });
         monitor.checkCancelled();
         var annotated = ExportPhase.measure("source-annotations", () -> {
+            var contextualSource = sourceContext.compose(decompilation.source(), rebaseDelta,
+                annotationLimits.sourceBytes(), monitor);
             var evidence = ghidradwarfforge.GhidraEquateEvidence.interpret(currentProgram, inventory,
                 dynamicEquates.snapshot(monitor), monitor);
             if (evidence.isEmpty()) {
                 var comments = ghidradwarfforge.GhidraListingAnnotationSource.compose(currentProgram,
-                    inventory, decompilation.source(), rebaseDelta, annotationLimits.sourceBytes(), monitor).source();
+                    inventory, contextualSource, rebaseDelta, annotationLimits.sourceBytes(), monitor).source();
                 return new PreparedSource(comments,
                     new ghidradwarfforge.annotations.SyntheticConstants(List.of(), java.util.Set.of()));
             }
@@ -240,7 +247,7 @@ public class GhidraDwarfForge extends GhidraScript {
                     constant.value().bits(), constant.value().signed(), constant.value().value())).toList();
             try {
                 var comments = ghidradwarfforge.GhidraListingAnnotationSource.compose(currentProgram,
-                    inventory, decompilation.source(), rebaseDelta, annotationLimits.sourceBytes(), monitor).source();
+                    inventory, contextualSource, rebaseDelta, annotationLimits.sourceBytes(), monitor).source();
                 var source = ghidradwarfforge.GhidraEquateSource.compose(comments, catalog, annotationLimits.sourceBytes(), monitor);
                 return new PreparedSource(source, new ghidradwarfforge.annotations.SyntheticConstants(constants,
                     reserved.namedReservations()));
@@ -405,7 +412,7 @@ public class GhidraDwarfForge extends GhidraScript {
             if (!name.equals("libdwarf") && !name.equals("libdwarfp") &&
                     !name.equals("input") && !name.equals("output") &&
                     !name.equals("packaged-natives") && !name.equals("gdb-loader") && !name.equals("attachment-preparation") &&
-                    !name.equals("compress-debug-sections") &&
+                    !name.equals("compress-debug-sections") && !name.equals("source-context") &&
                     !name.equals("annotation-record-limit") && !name.equals("annotation-text-limit") &&
                     !name.equals("annotation-source-limit")) {
                 throw new IllegalArgumentException("unknown option --" + name);

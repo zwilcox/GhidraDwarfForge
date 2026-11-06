@@ -49,6 +49,7 @@ def main():
     default_export = None
     constants = None
     retained_names = None
+    context_export = None
     if args.consumer:
         classes = root / 'classes'
         classes.mkdir()
@@ -74,6 +75,16 @@ def main():
             '--placement-control', placement, '--equate-evidence', equate_evidence / 'read1.json'])
         default_export, = curation.glob('default-export-*')
         assert json.loads((default_export / 'result.json').read_text())['status'] == 'PASS_INSTALLED_DEFAULT_COMMENTS'
+        existing_exports = set(curation.glob('default-export-*'))
+        run('context-export', ['python3', harness / 'annotation-default-export.py', args.ghidra, curation,
+            args.consumer.resolve(strict=True), args.producer.resolve(strict=True),
+            '--placement-control', placement, '--equate-evidence', equate_evidence / 'read1.json',
+            '--source-context', 'both'])
+        context_export, = set(curation.glob('default-export-*')) - existing_exports
+        context_result = json.loads((context_export / 'result.json').read_text())
+        assert context_result['status'] == 'PASS_INSTALLED_DEFAULT_COMMENTS'
+        assert context_result['sourceContext'] == 'both' and context_result['contextRows'] > 0
+        assert context_result['cancellationStages'] == 11
         if args.target == 'x86_64':
             run('retained-names', ['python3', harness / 'equate-retained-names.py', args.ghidra,
                 args.consumer.resolve(strict=True), args.producer.resolve(strict=True), root])
@@ -85,6 +96,7 @@ def main():
         'constants': str(constants) if constants else None,
         'retainedNames': str(retained_names) if retained_names else None,
         'placement': str(placement) if placement else None,
+        'contextExport': str(context_export) if context_export else None,
         'defaultExport': str(default_export) if default_export else None}, indent=4) + '\n')
     print('annotation-inventory-pipeline=PASS ' + args.target + ' ' + role)
 

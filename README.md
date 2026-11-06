@@ -187,6 +187,15 @@ The default is `none`. The source file and recovered DWARF content are unchanged
 sections stay plain when compression would increase their size. See
 [compression usage and validation status](docs/ELF-COMPRESSION.md).
 
+Development builds can include diagnostic instruction context with
+`--source-context=off|assembly|pcode|both` (PowerShell `-SourceContext`). The
+default is `off`. Context explains native warnings, intrinsic operations and
+decompilation failures using bounded observations of existing instructions.
+It does not create executable source lines. The opt-in Script Manager launcher
+`ExportGhidraDwarfForgeWithContext.java` offers the same four choices; its GUI
+interaction and Windows acceptance remain under validation. See
+[annotation and context limits](docs/ANALYST-ANNOTATIONS.md#optional-instruction-context-checkpoint-114).
+
 Development builds can additionally generate an explicitly invoked GDB loader
 with `--gdb-loader` (PowerShell `-GdbLoader`). It produces `<sidecar>.gdb.py`
 alongside the sidecar/source pair. See [GDB companion usage and current
@@ -237,6 +246,7 @@ for GUI export. The underlying script's opt-in export accepts:
 --input=/optional/path/to/original-when-Ghidra-path-is-stale
 --output=/optional/path/to/binary.dbg
 --compress-debug-sections=none|zlib
+--source-context=off|assembly|pcode|both
 ```
 
 Choose either `--packaged-natives` or the two explicit native paths. The

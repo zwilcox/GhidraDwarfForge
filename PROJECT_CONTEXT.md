@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local optional instruction context — #114:** the reader and native
+warning/failure composition pass all five profiles. Four context-enabled default
+exporter profiles pass validators, native/QEMU GDB, deterministic reruns and eleven
+cancellation/recovery stages each; default-off x86 source is unchanged. CLI and
+an opt-in GUI launcher use the shared mode. GUI/Windows interaction, dedicated
+intrinsic controls, all-failed source lookup and current hosted acceptance remain
+required. See `docs/evidence/source-context.json` and `docs/ANALYST-ANNOTATIONS.md`.
+#108's final PR165 passed all fifteen checks and merged normally as `6793b701`;
+issue #108 is closed. Remaining goal: #116/#114, then #112/#110/#109.
+
 **CONFIRMED fixture inventory correction — #116:** hosted run `42143872354`
 stopped the x86-64 and AArch64 lanes before exporter validation because
 `equate-retained-names.cpp` was absent from the reviewed source inventory. The

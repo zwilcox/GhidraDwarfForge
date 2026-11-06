@@ -216,6 +216,9 @@ public final class GhidraSyntheticSource {
                         decompiler.resetDecompiler();
                     }
                 }
+                catch (java.util.concurrent.CancellationException cancelled) {
+                    throw new CancelledException();
+                }
                 catch (RuntimeException failure) {
                     texts.add(new FunctionText(symbol.name(), symbol.address(), null,
                         failure.getClass().getSimpleName() + ": " + failure.getMessage()));
