@@ -26,6 +26,9 @@ import ghidradwarfforge.unwind.UnwindFlow.*;
 
 /** Real Sleigh decode and CFG controls; no exported CFI or ABI-support claim. */
 public final class GhidraUnwindInstructionsSmoke {
+    // This suite observes raw decoding, including deliberately unsupported opcodes.
+    // It makes no ABI/profile acceptance claim; production recovery must supply its guard.
+    private static final GhidraUnwindInstructions.InstructionPolicy RAW_DECODER_ONLY = (instruction, monitor) -> monitor.checkCancelled();
     private static int checks;
     private static final StringBuilder evidence = new StringBuilder();
 
@@ -86,7 +89,7 @@ public final class GhidraUnwindInstructionsSmoke {
                 if (shape.equals("discontiguous")) body.delete(entry.add(arm ? 4 : 2), entry.add(15));
                 require(new DisassembleCommand(entry, body, true).applyTo(program, TaskMonitor.DUMMY), "decode " + shape);
                 var function = program.getFunctionManager().createFunction("test_frame", entry, body, SourceType.USER_DEFINED);
-                var captured = GhidraUnwindInstructions.capture(program, function, instruction -> null, TaskMonitor.DUMMY);
+                var captured = GhidraUnwindInstructions.capture(program, function, RAW_DECODER_ONLY, instruction -> null, TaskMonitor.DUMMY);
                 Cell sp = register(program, arm ? "sp" : "RSP");
                 Cell saved = register(program, arm ? "x19" : "R12");
                 var initial = new LinkedHashMap<Cell, Value>();
@@ -116,7 +119,7 @@ public final class GhidraUnwindInstructionsSmoke {
                 var counting = new TaskMonitorAdapter(true) {
                     @Override public void checkCancelled() { polls[0]++; }
                 };
-                GhidraUnwindInstructions.capture(program, function, instruction -> null, counting);
+                GhidraUnwindInstructions.capture(program, function, RAW_DECODER_ONLY, instruction -> null, counting);
                 for (int stopPoll = 1; stopPoll <= polls[0]; stopPoll++) {
                     int selected = stopPoll;
                     int[] counter = {0};
@@ -126,24 +129,24 @@ public final class GhidraUnwindInstructionsSmoke {
                         }
                     };
                     try {
-                        GhidraUnwindInstructions.capture(program, function, instruction -> null, cancelled);
+                        GhidraUnwindInstructions.capture(program, function, RAW_DECODER_ONLY, instruction -> null, cancelled);
                         throw new AssertionError("capture ignored cancellation " + selected);
                     }
                     catch (CancelledException expected) { checks++; }
                 }
-                require(GhidraUnwindInstructions.capture(program, function, instruction -> null, TaskMonitor.DUMMY)
+                require(GhidraUnwindInstructions.capture(program, function, RAW_DECODER_ONLY, instruction -> null, TaskMonitor.DUMMY)
                     .equals(captured), "capture retry changed evidence");
                 var first = program.getListing().getInstructionAt(entry);
                 first.setFlowOverride(FlowOverride.RETURN);
-                rejected(() -> GhidraUnwindInstructions.capture(program, function, instruction -> null, TaskMonitor.DUMMY));
+                rejected(() -> GhidraUnwindInstructions.capture(program, function, RAW_DECODER_ONLY, instruction -> null, TaskMonitor.DUMMY));
                 first.setFlowOverride(FlowOverride.NONE);
                 var partial = new AddressSet(body);
                 partial.delete(end, end);
                 function.setBody(partial);
-                rejected(() -> GhidraUnwindInstructions.capture(program, function, instruction -> null, TaskMonitor.DUMMY));
+                rejected(() -> GhidraUnwindInstructions.capture(program, function, RAW_DECODER_ONLY, instruction -> null, TaskMonitor.DUMMY));
                 function.setBody(body);
                 program.getListing().clearCodeUnits(entry, entry.add(first.getLength() - 1), false);
-                rejected(() -> GhidraUnwindInstructions.capture(program, function, instruction -> null, TaskMonitor.DUMMY));
+                rejected(() -> GhidraUnwindInstructions.capture(program, function, RAW_DECODER_ONLY, instruction -> null, TaskMonitor.DUMMY));
             }
             finally { program.endTransaction(transaction, false); }
         }

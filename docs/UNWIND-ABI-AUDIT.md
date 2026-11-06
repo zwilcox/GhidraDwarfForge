@@ -1,7 +1,8 @@
 # Initial unwind ABI audit (#112)
 
 **CONFIRMED:** the pinned source and Ghidra-resource observations below.
-**PLANNED:** production ABI selection, symbolic recovery and all support claims.
+**CONFIRMED locally:** isolated [profile selection](UNWIND-PROFILES.md) and native
+flow components. **PLANNED:** production recovery and all new support claims.
 The [receipt](evidence/unwind-abi-audit.json) binds source revisions, resource
 hashes and a retained local archive. No native/JNA interface changes are needed.
 

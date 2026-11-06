@@ -26,6 +26,11 @@ import ghidradwarfforge.unwind.UnwindFlow.*;
 /** Native listing capture; it supplies no ABI entry state or implicit call proof. */
 public final class GhidraUnwindInstructions {
     @FunctionalInterface
+    public interface InstructionPolicy {
+        /** Validate semantics that may be hidden by the processor's p-code options. */
+        void require(Instruction instruction, TaskMonitor monitor) throws CancelledException;
+    }
+    @FunctionalInterface
     public interface CallProof {
         /** Null means the call effects are unknown, not the ordinary ABI. */
         Call resolve(Instruction instruction) throws CancelledException;
@@ -38,8 +43,10 @@ public final class GhidraUnwindInstructions {
 
     private GhidraUnwindInstructions() { }
 
-    public static Captured capture(Program program, Function function, CallProof calls, TaskMonitor monitor)
+    public static Captured capture(Program program, Function function, InstructionPolicy policy,
+            CallProof calls, TaskMonitor monitor)
             throws CancelledException {
+        Objects.requireNonNull(policy);
         Objects.requireNonNull(calls);
         monitor.checkCancelled();
         var body = new AddressSet(function.getBody());
@@ -71,6 +78,7 @@ public final class GhidraUnwindInstructions {
             catch (ghidra.program.model.mem.MemoryAccessException failure) {
                 throw new IllegalArgumentException("unreadable instruction at " + address, failure);
             }
+            policy.require(instruction, monitor);
             var flow = instruction.getFlowType();
             var successors = new LinkedHashSet<Address>();
             if (flow.hasFallthrough()) {

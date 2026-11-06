@@ -1,7 +1,7 @@
 # Caller identity flow and native instruction capture (#112)
 
 **CONFIRMED locally:** the isolated state analysis and native listing adapter
-pass their component controls. **PLANNED:** ABI/profile selection, proved call
+pass their component controls. ABI/profile selection is now [locally tested](UNWIND-PROFILES.md). **PLANNED:** proved call
 summaries, conversion into evidence-backed frame rows and production synthesis.
 Neither component is called by the exporter. This does not complete #112.
 
@@ -55,8 +55,9 @@ The adapter lowers copies, addition/subtraction and exact-width memory operation
 Known pure arithmetic kills its explicit output when identity cannot be proved.
 Unknown user operations, unsupported memory spaces or widths and unmodeled
 internal p-code branches make the whole instruction opaque. Empty p-code for an
-ordinary decoded fallthrough instruction is an observed no-effect case; both
-reference targets exercise it. Calls require an explicit resolver result. A
+ordinary decoded fallthrough instruction is accepted only under an explicit
+instruction policy. The [profile guard](UNWIND-PROFILES.md) rejects hidden PAC
+even when its p-code is empty; raw decoder fixtures do not establish ABI safety. Calls require an explicit resolver result. A
 call-flow/raw-call disagreement is not interpreted as an ordinary call.
 
 A native x86 call-next/pop sequence is decoded as a push and an intra-function
@@ -79,7 +80,7 @@ agreeing joins in both traversal orders, loops, unreachable paths, partial
 register/memory writes, unknown stores/calls, stack switches/releases, width and
 overflow controls, every observed cancellation poll and retry.
 
-Seventeen actual Sleigh-decoded cases across x86-64 and AArch64 pass 582 checks.
+Seventeen actual Sleigh-decoded cases across x86-64 and AArch64 originally passed 582 checks; mandatory policy cancellation polls now bring the suite to 653.
 They include agreeing/conflicting split saves, conditional save/restore paths,
 discontiguous bodies, ordinary save/restore sequences, no-effect instructions,
 call-next/pop, unknown direct/indirect calls and an opaque syscall. Each also
@@ -92,7 +93,7 @@ compiler/GDB validation of generated unwind information. The existing encoder's
 Hosted component execution is wired and **PRESENT, UNVERIFIED**.
 See [the receipt](evidence/unwind-flow.json) for exact sources, logs and failures.
 
-Next: select audited ABI profiles; establish entry and return invariants; prove
+Next: extend verified entry/return invariants into callee proofs; prove
 callee register restoration and memory-write effects (including recursive call
 graphs); derive complete CFA/return/register rows with explicit omitted ranges;
 respect original-CFI precedence; run the real exporter with compiler/GDB oracles

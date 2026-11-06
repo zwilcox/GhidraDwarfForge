@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 ordinary unwind profile boundary:** exact ELF and
+Ghidra compiler/convention selection now seeds separate caller/register/stack
+identities. Mandatory instruction policies reject hidden AArch64 PAC (observed
+empty p-code), SIMD and wrong execution modes. Eleven native fixtures pass 235
+checks, including complete return identities and cancellation/retry; existing
+flow/native/encoder suites and extension build pass. See
+`docs/UNWIND-PROFILES.md`. Verified call summaries, frame projection, original-byte
+agreement and production synthesis remain PLANNED. PR166 current hosted/workload
+acceptance retains priority; full #112/#110/#109 remain open.
+
 **CONFIRMED locally — #112 caller-identity flow component:** a fixed-point
 analysis and real Ghidra instruction adapter now prove agreeing joins, reject
 conflicting facts, track exact saves/restores and preserve discontiguous decoded
@@ -7,7 +17,7 @@ bodies. Native AArch64 post-increment evidence exposed premature stack-slot
 expiration; it now occurs at the machine-instruction boundary. The effect suite
 passes 75 checks and 17 native instruction cases pass 582, including cancellation,
 partial/override rejection and missing-call-proof omissions. See
-`docs/UNWIND-FLOW.md`. ABI selection, verified call summaries, rule projection and
+`docs/UNWIND-FLOW.md`. ABI selection is now tested above; verified call summaries, rule projection and
 production synthesis remain PLANNED; current PR166 integration has priority.
 
 **CONFIRMED pinned unwind ABI observations — #112:** AMD64 psABI
@@ -17,7 +27,7 @@ Ghidra's AArch64 unaffected-X30 entry cannot prove incoming LR survival through
 calls; caller return-address identity needs separate treatment. The audit also
 records partial SIMD preservation and ordinary versus process-entry conventions.
 See `docs/UNWIND-ABI-AUDIT.md`. Profile selection and instruction/control-flow
-recovery remain PLANNED; no new architecture support is claimed.
+components now have local evidence above; production recovery remains PLANNED; no new architecture support is claimed.
 
 **CONFIRMED locally — #112 CIE initialization audit correction:** explicit
 immutable CIE rules replace the encoder's unconditional undefined defaults.

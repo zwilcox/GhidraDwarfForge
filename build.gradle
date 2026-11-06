@@ -109,6 +109,18 @@ tasks.register("ghidraUnwindInstructionsSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/unwind-instructions/cache").absolutePath
 }
 
+tasks.register("unwindAbiProfileSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks unwind ABI selection, hidden authentication and register-mode exclusions"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.unwind.UnwindAbiProfileSmoke"
+    args ghidraInstallDir, layout.buildDirectory.dir("test-results/unwind-profiles").get().asFile
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/unwind-profiles/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/unwind-profiles/cache").absolutePath
+}
+
 tasks.register("packagedNativeProducerSmoke", JavaExec) {
     group = "verification"
     description = "Resolves and runs the packaged libdwarf pair in an isolated JVM"
