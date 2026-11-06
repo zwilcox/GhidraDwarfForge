@@ -1453,6 +1453,14 @@ jobs:
             --output "$evidence_root/index.json"
           echo "FORGE_VALIDATION_EVIDENCE_INDEX=$evidence_root/index.json" >> "$GITHUB_ENV"
 
+      - name: LLDB compiler and Forge source, types, stack and register pieces
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/semantic-lldb.py build/fixtures \
+            "build/test-results/lldb-semantic-$TARGET" --target "$TARGET" --lldb lldb-18
+
       - name: Retain production attachment evidence before broader target tests
         if: always()
         uses: actions/upload-artifact@v7

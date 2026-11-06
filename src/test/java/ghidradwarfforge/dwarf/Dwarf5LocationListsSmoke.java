@@ -77,9 +77,9 @@ public final class Dwarf5LocationListsSmoke {
             8, ByteOrder.LITTLE_ENDIAN).section();
         if (!contains(compositeSection, new byte[] {
                 (byte) DwarfLocationExpression.DW_OP_REGX, 0,
-                (byte) DwarfLocationExpression.DW_OP_BIT_PIECE, 32, 0,
+                (byte) DwarfLocationExpression.DW_OP_PIECE, 4,
                 (byte) DwarfLocationExpression.DW_OP_REGX, 1,
-                (byte) DwarfLocationExpression.DW_OP_BIT_PIECE, 32, 0 })) {
+                (byte) DwarfLocationExpression.DW_OP_PIECE, 4 })) {
             throw new AssertionError("composite location-list expression is incorrect");
         }
         var indirect = new VariableLocation("function", 0x1000, "indirect", VariableKind.PARAMETER, 24,

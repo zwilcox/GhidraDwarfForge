@@ -334,6 +334,9 @@ for target in "${targets[@]}"; do
         esac
         if [[ "$target" == "arm32" ]]; then
             grep -q "Omitted location for recovered_composite::analyst_composite:" "$log"
+        elif [[ "$target" == "x86_64" || "$target" == "aarch64" ]]; then
+            test "$(grep -o 'DW_OP_piece: 4' \
+                "$result_dir/$target.$fixture_role.readelf-info.txt" | wc -l)" -ge 2
         else
             test "$(grep -o 'DW_OP_bit_piece: size: 32 offset: 0' \
                 "$result_dir/$target.$fixture_role.readelf-info.txt" | wc -l)" -ge 2

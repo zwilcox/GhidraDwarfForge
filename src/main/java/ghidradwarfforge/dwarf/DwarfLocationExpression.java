@@ -24,6 +24,7 @@ public final class DwarfLocationExpression {
     public static final int DW_OP_DEREF = 0x06;
     public static final int DW_OP_REGX = 0x90;
     public static final int DW_OP_BREGX = 0x92;
+    public static final int DW_OP_PIECE = 0x93;
     public static final int DW_OP_BIT_PIECE = 0x9d;
 
     public sealed interface Result permits Expression, Omitted {
@@ -128,8 +129,14 @@ public final class DwarfLocationExpression {
                         register.bitSize() == piece.bitSize()) {
                     operations.add(new GenericOperation(DW_OP_REGX,
                         register.register().dwarfNumber(), 0));
-                    operations.add(new GenericOperation(DW_OP_BIT_PIECE,
-                        piece.bitSize(), register.valueBitOffset()));
+                    if (register.valueBitOffset() == 0 && piece.bitSize() % Byte.SIZE == 0 &&
+                            piece.bitSize() <= register.register().lowBytePieceBits()) {
+                        operations.add(new GenericOperation(DW_OP_PIECE, piece.bitSize() / Byte.SIZE, 0));
+                    }
+                    else {
+                        operations.add(new GenericOperation(DW_OP_BIT_PIECE,
+                            piece.bitSize(), register.valueBitOffset()));
+                    }
                 }
                 else if (piece.storage() instanceof RegisterRelativeStorage relative &&
                         piece.bitSize() % Byte.SIZE == 0) {

@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local #110 register-piece and semantic checkpoint:** LLDB 18.1.3
+misreads the previous split-register bit-piece expression as a memory address.
+Explicit target metadata now permits byte-piece encoding for validated AMD64
+and AAPCS64 general registers; other slices retain their explicit bit offsets.
+Fresh production exports pass both GDB and LLDB semantic checks, with honest
+AArch64 unavailable tails and a separately corroborated compiler union-array
+consumer limitation. See `docs/LLDB-REGISTER-PIECES.md`. Hosted validation and
+the complete #110 layout/storage/discovery matrix remain incomplete; #112's
+protected integration still comes first, followed by full #110 and #109.
+
 **CONFIRMED local #110 CFI compatibility checkpoint:** LLDB 18.1.3 stops
 reading the original generated CIE at its CFA-relative value opcode. An equivalent
 standard value expression preserves all following rules. Fresh normal exports

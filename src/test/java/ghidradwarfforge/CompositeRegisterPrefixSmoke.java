@@ -197,10 +197,10 @@ public final class CompositeRegisterPrefixSmoke {
         var buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
         require(data[offset] == 7 && buffer.getLong(offset + 1) == 0x1000 &&
             buffer.getLong(offset + 9) == 0x1000 + target.boundary(), "location-list address range changed");
-        byte[] expression = { (byte) 0x90, map.dwarfNumbers().get(target.first()).byteValue(), (byte) 0x9d, 64, 0,
-            (byte) 0x90, map.dwarfNumbers().get(target.second()).byteValue(), (byte) 0x9d, 64, 0 };
-        require(data[offset + 17] == 10 && Arrays.equals(expression, Arrays.copyOfRange(data, offset + 18, offset + 28)) &&
-            data[offset + 28] == 0 && data.length == offset + 29, "not one complete object-order expression plus unavailable tail");
+        byte[] expression = { (byte) 0x90, map.dwarfNumbers().get(target.first()).byteValue(), (byte) 0x93, 8,
+            (byte) 0x90, map.dwarfNumbers().get(target.second()).byteValue(), (byte) 0x93, 8 };
+        require(data[offset + 17] == 8 && Arrays.equals(expression, Arrays.copyOfRange(data, offset + 18, offset + 26)) &&
+            data[offset + 26] == 0 && data.length == offset + 27, "not one complete object-order expression plus unavailable tail");
     }
 
     private static void checkIntervals(List<StorageInterval> intervals, long start, long boundary, long end,

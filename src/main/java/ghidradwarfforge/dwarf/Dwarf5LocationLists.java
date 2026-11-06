@@ -166,7 +166,7 @@ public final class Dwarf5LocationLists {
                 case DwarfLocationExpression.DW_OP_DEREF -> {
                     // Target-address-sized memory dereference has no operands.
                 }
-                case DwarfLocationExpression.DW_OP_REGX -> writeUleb(output,
+                case DwarfLocationExpression.DW_OP_REGX, DwarfLocationExpression.DW_OP_PIECE -> writeUleb(output,
                     generic.operand1());
                 case DwarfLocationExpression.DW_OP_BREGX -> {
                     writeUleb(output, generic.operand1());
