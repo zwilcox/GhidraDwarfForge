@@ -113,7 +113,7 @@ def main():
             assert not re.search(r'warning:|error:', text, re.I)
         run(mode + '-identity', ['readelf', '-hSWn', original, output])
         assert 'No errors.' in run(mode + '-llvm', ['llvm-dwarfdump', '--verify', output])
-        run(mode + '-strict', ['python3', harness / 'check-dwarfdump.py', output,
+        run(mode + '-strict-command', ['python3', harness / 'check-dwarfdump.py', output,
             root / (mode + '-strict.log'), '--original', original])
         mapped = [(int(m[2], 16), int(m[1])) for m in re.finditer(r'(?m)^\S+\s+(\d+)\s+(0x[0-9a-fA-F]+)\b',
             (root / (mode + '-decodedline.log')).read_text())]
@@ -135,6 +135,8 @@ def main():
     changed = {p for p in states[0].keys() | states[1].keys() if states[0].get(p) != states[1].get(p)}
     assert changed <= {'Intrinsics.rep/idata/~index.bak', 'Intrinsics.rep/idata/~journal.bak'}
     assert all(state == states[1] for state in states[1:])
+    run('retained-validator-reports', ['python3', harness / 'retained-validator-reports.py', root,
+        '--output', root / 'retained-validator-reports.json'])
     assert protected == {p: digest(Path(p)) for p in protected}
     (root / 'result.json').write_text(json.dumps({'status': 'PASS_INSTALLED_INTRINSIC_CONTEXT',
         'target': 'x86_64', 'outputs': outputs, 'protectedSha256': protected,

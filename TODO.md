@@ -1,5 +1,18 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED intrinsic report retention correction — #116/#114:** current-head
+run `42176440117` failed the final x86-64 retention audit because the intrinsic
+harness reused wrapper stdout as its raw strict-report path. Independent artifact
+review found exactly four overwritten reports and 589 intact passing reports.
+The paths are now separate and the standalone harness checks retention before
+success. Fresh installed exports pass all four modes/eight exports, deterministic
+pairs, GNU/LLVM/strict validation, GDB and four retained reports. The existing
+three positive/ten negative retention controls pass. Production code is unchanged;
+635 installed classes match the reviewed head. See
+`docs/evidence/intrinsic-report-retention.json`. The same head's Windows workload
+and independent consumer review passed, but fresh hosted gates remain required
+before PR166 integration. Full #112/#110/#109 remain open.
+
 **CONFIRMED context report retention correction — #116/#114:** run
 `42160948862` at `3543c78` failed the final MIPS little-endian retention audit.
 The boundary harness reused its wrapper stdout path as the strict validator's
