@@ -73,13 +73,33 @@ See [the evidence receipt](evidence/conditioned-compiler-unwind.json) for comman
 hashes and archived raw evidence. The workflow adds this test to both target
 lanes; its hosted acceptance is **PRESENT, UNVERIFIED**.
 
+## Complete executed instruction-path follow-up
+
+A separate GDB oracle now stops at `cfi_main` entry and single-steps through every
+executed ordinary instruction until returning to `_start`. It observes all four
+functions, four recursive depths and both recursive branch outcomes. For each
+boundary, it records the complete caller chain, relative PCs, caller stack-pointer
+offsets and saved-register witnesses. The log is delimited per snapshot and the
+harness requires actual DWARF unwinder selection at every ordinary frame level
+in **each** snapshot; a successful fallback backtrace is insufficient.
+
+The independent compiler reference runs first. All four generated variants then
+match its entire trace exactly: 90 snapshots on x86-64, 77 on AArch64. This spans
+the executed prologues, bodies, global increment, nested/recursive calls and
+returns. The original checkpoint/`finish`/epilogue oracle remains unchanged and
+also runs. The stronger matrix passes 18 exports, 8 failure controls, 8 sidecars
+and 26 GDB sessions, with 10 complete strict reports retained. No production
+Java/native code changes at this follow-up; the same tested package is used.
+See [the instruction-path receipt](evidence/compiler-unwind-boundaries.json).
+
 ## Remaining scope
 
-These results cover a checkpoint and recursive return path, not all prologue,
-body, epilogue, ABI, signal or asynchronous states. A passing run does not prove
+These results cover all ordinary boundaries on this fixture's executed path,
+not all possible inputs, ABI, signal, exception or asynchronous states. Compiler
+PIE/shared and additional compiler variation remain outside this checkpoint. A passing run does not prove
 the external condition for arbitrary executions. Full #112 still requires its
 remaining compiler/state matrix, production policy and ADR, and normal
 CLI/GUI integration with explicit provenance. LLDB (#110) and build-ID
 installation (#109) remain later goal items. The separate PR176 integration run
-has a confirmed standalone large-ELF compile failure; it is being corrected on
-its own branch. PR175's required gate retains first integration priority.
+failed standalone large-ELF compilation; correction `34c42c3` passes locally and
+has a new hosted run pending on its own branch. PR175's required gate retains first integration priority.

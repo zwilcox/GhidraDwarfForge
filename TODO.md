@@ -1,5 +1,17 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally — complete executed compiler instruction paths for #112:**
+all four conditioned sidecar variants now match independent compiler references
+at every executed ordinary instruction boundary: 90 snapshots on x86-64 and 77
+on AArch64. Caller PCs, stack-pointer offsets, saved-register witnesses and actual
+DWARF unwinder selection agree throughout prologues, nested/recursive calls, the
+global write and returns. The new matrix passes 18 exports, 8 failure controls,
+8 sidecars and 26 GDB sessions. See `docs/CONDITIONED-COMPILER-UNWIND.md`. This is
+one executed non-PIE path per target, not universal coverage or proof of external
+stack separation. Normal CLI/GUI synthesis remains off; #112/#110/#109 stay open.
+PR176's large-ELF compile correction is pushed as `34c42c3`; its new gate and
+PR175's existing gate remain pending.
+
 **CONFIRMED locally — conditioned compiler/GDB export for #112:** explicit
 projection and collection retain their accepted stack-separation condition in
 normalized evidence JSON. Real headless exports of unchanged compiler C match

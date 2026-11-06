@@ -45,6 +45,10 @@ if [[ "$target" == aarch64 ]]; then
     qemu_socket_start "$prefix.qemu" qemu-aarch64-static /usr/aarch64-linux-gnu "$runtime" "${inferior_args[@]}"
     export FORGE_CFI_REMOTE="$qemu_socket_path"
 fi
+oracle="$script_dir/synthetic-cfi-reference-gdb.py"
+if [[ "${FORGE_CFI_ALL_BOUNDARIES:-}" == 1 ]]; then
+    oracle="$script_dir/compiler-cfi-boundaries-gdb.py"
+fi
 timeout --kill-after=5 90 "$debugger" -q -nx -batch \
     "${debugger_options[@]}" \
     -ex 'set pagination off' -ex 'set confirm off' \
@@ -53,7 +57,7 @@ timeout --kill-after=5 90 "$debugger" -q -nx -batch \
     -ex "directory \"$script_dir/../fixtures\"" \
     -ex "file \"$runtime\"" -ex "symbol-file \"$load_symbols\"" \
     -ex "set args ${inferior_args[*]}" \
-    -x "$script_dir/synthetic-cfi-reference-gdb.py" > "$prefix.log" 2>&1
+    -x "$oracle" > "$prefix.log" 2>&1
 if [[ "$target" == aarch64 ]]; then
     qemu_socket_wait
 fi

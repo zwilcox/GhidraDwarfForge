@@ -25,6 +25,21 @@ def comparable(record):
     return result
 
 
+def boundaries(target, symbols, original, prefix):
+    run(['bash', SCRIPTS / 'synthetic-cfi-reference-gdb.sh', target, 'compiler', symbols, original, prefix],
+        Path(str(prefix) + '-command.log'), {'FORGE_CFI_ALL_BOUNDARIES': '1'})
+    data = json.loads(Path(str(prefix) + '.json').read_text())
+    log = Path(str(prefix) + '.log').read_text()
+    blocks = re.findall(r'(?ms)^FORGE_BOUNDARY_BEGIN (\d+)\n(.*?)^FORGE_BOUNDARY_END \1\n', log)
+    assert len(blocks) == len(data['trace']) and data['maxDepth'] == 8
+    for index, (recorded, block) in enumerate(blocks):
+        assert int(recorded) == index
+        selected = set(map(int, re.findall(r'level=(\d+),type=NORMAL_FRAME,unwinder="dwarf2",pc=0x[0-9a-f]+', block)))
+        assert set(range(len(data['trace'][index]) - 1)) <= selected, (target, index, selected)
+    assert 'Traceback' not in log
+    return data
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('output', type=Path)
@@ -40,6 +55,8 @@ def main():
         args.ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar',
         ROOT / 'src/test/fixtures/synthetic-cfi.c',
         SCRIPTS / 'synthetic-cfi-reference-gdb.py',
+        SCRIPTS / 'synthetic-cfi-reference-gdb.sh',
+        SCRIPTS / 'compiler-cfi-boundaries-gdb.py',
         SCRIPTS / 'ghidra_scripts/ExportRecoveredFrames.java',
         SCRIPTS / 'ghidra_scripts/RecoveredFrameExportControls.java')}
     results = []
@@ -55,6 +72,7 @@ def main():
         original = reference_dir / 'without-cfi'
         reference = reference_dir / 'reference'
         protected.update({str(p): digest(p) for p in (original, reference)})
+        boundary_reference = boundaries(target, reference, original, case / 'boundaries-reference')
         symbols = run(['readelf', '-sW', original], case / 'symbols.log')
         candidates = re.findall(r'(?m)^\s*\d+:\s*([0-9a-f]+)\s+(\d+)\s+OBJECT\s+GLOBAL\s+DEFAULT\s+\d+\s+cfi_sink$', symbols)
         assert len(candidates) == 1, candidates
@@ -130,8 +148,18 @@ def main():
             normalize = lambda lines: [re.sub(r'0x[0-9a-f]+', '<address>', line) for line in lines]
             assert normalize(warnings) == normalize(expected_warnings), warnings
             assert 'Traceback' not in log
+            boundary_prefix = case / ('boundaries-' + variant)
+            boundary_result = boundaries(target, artifact, original, boundary_prefix)
+            assert boundary_result == boundary_reference, (target, variant, 'instruction boundary mismatch')
+            boundary_warnings = [line for line in Path(str(boundary_prefix) + '.log').read_text().splitlines()
+                if 'warning:' in line.lower()]
+            boundary_warnings = [line for line in boundary_warnings if not (variant.startswith('before-') and
+                line == 'warning: Source file is more recent than executable.')]
+            assert normalize(boundary_warnings) == normalize(expected_warnings), boundary_warnings
             artifacts.append({'variant': variant, 'sha256': digest(artifact), 'evidence': description,
                 'selectedDwarfLevels': selected, 'traceSnapshots': len(observed['instructionTrace']),
+                'boundarySnapshots': len(boundary_result['trace']),
+                'boundaryResultSha256': digest(Path(str(boundary_prefix) + '.json')),
                 'gdbResultSha256': digest(Path(str(prefix) + '.json'))})
         disabled = case / 'gdb-disabled'
         run(['bash', SCRIPTS / 'synthetic-cfi-reference-gdb.sh', target, 'disabled', outputs / 'none.dbg', original, disabled],
@@ -139,9 +167,9 @@ def main():
         assert 'unwinder="dwarf2"' not in Path(str(disabled) + '.log').read_text()
         assert protected == {path: digest(Path(path)) for path in protected}
         results.append({'target': target, 'externalCondition': condition, 'exports': 9, 'failureControls': 4,
-            'gdbSessions': 8, 'artifacts': artifacts, 'compilerReferenceResultSha256': digest(reference_dir / 'result.json')})
+            'gdbSessions': 13, 'artifacts': artifacts, 'compilerReferenceResultSha256': digest(reference_dir / 'result.json')})
     report = {'status': 'PASS_CONDITIONED_COMPILER_EXPORT', 'cases': results, 'protectedSha256': protected,
-        'scope': 'Explicit test condition; checkpoint/recursive epilogue compiler equivalence; no universal separation proof or CLI/GUI enablement'}
+        'scope': 'Explicit test condition; executed ordinary instruction-path compiler equivalence; no universal separation proof or CLI/GUI enablement'}
     (work / 'result.json').write_text(json.dumps(report, indent=4) + '\n')
     print('compiler-unwind-export=PASS cases=' + str(len(results)))
 
