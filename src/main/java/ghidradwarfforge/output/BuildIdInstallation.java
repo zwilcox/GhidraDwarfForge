@@ -8,8 +8,6 @@ import ghidradwarfforge.elf.SyntheticSourceSidecar;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
-import java.nio.channels.OverlappingFileLockException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
@@ -249,9 +247,8 @@ public final class BuildIdInstallation {
         final AttachmentOperation.Host host;
         final BooleanSupplier cancelled;
         final Map<Path, String> directories = new LinkedHashMap<>();
-        FileChannel lockChannel;
-        FileLock lock;
-        AttachmentFileStore.Snapshot lockSnapshot, stateSnapshot;
+        BuildIdFileLock lock;
+        AttachmentFileStore.Snapshot stateSnapshot;
         Path transactionPath;
         String transactionIdentity;
         String originalSha;
@@ -303,14 +300,7 @@ public final class BuildIdInstallation {
                 }
                 host.syncDirectory(namespace);
             }
-            lockSnapshot = AttachmentFileStore.observe(path, host, cancelled);
-            require(lockSnapshot.digest().byteCount() == magic.length &&
-                java.util.Arrays.equals(Files.readAllBytes(path), magic), "foreign or incomplete build-ID lock");
-            lockChannel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE, LinkOption.NOFOLLOW_LINKS);
-            try { lock = lockChannel.tryLock(); }
-            catch (OverlappingFileLockException busy) { throw new IOException("build-ID installation is busy", busy); }
-            require(lock != null, "build-ID installation is busy");
-            AttachmentFileStore.unchanged(lockSnapshot, host, cancelled);
+            lock = BuildIdFileLock.acquire(path, magic, host, cancelled);
             recheckDirectories();
         }
 
@@ -331,7 +321,7 @@ public final class BuildIdInstallation {
         void recheckDirectories() throws IOException {
             for (var entry : directories.entrySet()) require(entry.getValue().equals(directory(entry.getKey())), "installation directory changed: " + entry.getKey());
             if (transactionPath != null) require(transactionIdentity.equals(directory(transactionPath)), "installation transaction directory changed");
-            if (lockSnapshot != null) AttachmentFileStore.unchanged(lockSnapshot, host, verificationCancellation());
+            if (lock != null) lock.verify(verificationCancellation());
         }
 
         void rejectInputAliases(AttachmentExportBinding export) throws IOException {
@@ -543,8 +533,7 @@ public final class BuildIdInstallation {
         }
 
         @Override public void close() throws IOException {
-            try { if (lock != null) lock.release(); }
-            finally { if (lockChannel != null) lockChannel.close(); }
+            if (lock != null) lock.close();
         }
     }
 

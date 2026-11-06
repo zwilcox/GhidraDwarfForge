@@ -1,0 +1,189 @@
+{
+    "status": "CONFIRMED_DEFECTS_LOCAL_LINUX_FIX_WINDOWS_FIX_UNVERIFIED",
+    "date": "2026-11-06",
+    "issue": 109,
+    "windowsFailure": {
+        "run": 42309910798,
+        "head": "5e8c0e0672885e04fa7337987c24413b20db750f",
+        "job": 128213534618,
+        "artifact": 13548459721,
+        "archive": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-windows-installer-corrected-fixture-13548459721.zip",
+        "archiveSha256": "f51424ed0858448af264e5deee2e20808da4beccc0719e461449a198b737e7d4",
+        "saclFixture": {
+            "status": "OBSERVED",
+            "created": false,
+            "disabledPrivilegeOpenError": 1314,
+            "insufficientHandleQueryError": 5,
+            "initialPrivilegeAttributes": 0,
+            "restoredPrivilegeAttributes": 0,
+            "before": {
+                "control": 32772,
+                "saclPresent": false,
+                "saclDefaulted": false,
+                "auditAces": 0,
+                "labelAces": 0,
+                "saclHex": null
+            },
+            "complete": {
+                "control": 37892,
+                "saclPresent": false,
+                "saclDefaulted": false,
+                "auditAces": 0,
+                "labelAces": 0,
+                "saclHex": null
+            },
+            "highLevel": {
+                "control": 37892,
+                "saclPresent": false,
+                "saclDefaulted": false,
+                "auditAces": 0,
+                "labelAces": 0,
+                "saclHex": null
+            },
+            "canonicalApi": "GetKernelObjectSecurity",
+            "insufficientKernelQueryError": 5,
+            "ordinary": {
+                "control": 37892,
+                "saclPresent": false,
+                "saclDefaulted": false,
+                "auditAces": 0,
+                "labelAces": 0,
+                "saclHex": null
+            },
+            "queryFields": 65536,
+            "queryAccess": 16908288,
+            "openedAccess": 17170432,
+            "handleCycles": 128,
+            "handlesBefore": 69,
+            "handlesAfter": 69
+        },
+        "nullSaclControl": {
+            "status": "OBSERVED",
+            "created": false,
+            "disabledPrivilegeOpenError": 1314,
+            "insufficientHandleQueryError": 5,
+            "initialPrivilegeAttributes": 0,
+            "restoredPrivilegeAttributes": 0,
+            "before": {
+                "control": 32772,
+                "saclPresent": false,
+                "saclDefaulted": false,
+                "auditAces": 0,
+                "labelAces": 0,
+                "saclHex": null
+            },
+            "complete": {
+                "control": 43028,
+                "saclPresent": true,
+                "saclDefaulted": false,
+                "auditAces": 0,
+                "labelAces": 0,
+                "saclHex": null
+            },
+            "highLevel": {
+                "control": 43028,
+                "saclPresent": true,
+                "saclDefaulted": false,
+                "auditAces": 0,
+                "labelAces": 0,
+                "saclHex": null
+            },
+            "canonicalApi": "GetKernelObjectSecurity",
+            "insufficientKernelQueryError": 5,
+            "ordinary": {
+                "control": 32772,
+                "saclPresent": false,
+                "saclDefaulted": false,
+                "auditAces": 0,
+                "labelAces": 0,
+                "saclHex": null
+            },
+            "queryFields": 65536,
+            "queryAccess": 16908288,
+            "openedAccess": 16908288,
+            "handleCycles": 128,
+            "handlesBefore": 69,
+            "handlesAfter": 69
+        },
+        "failure": {
+            "schemaVersion": 1,
+            "modifiesOriginal": false,
+            "action": "install",
+            "root": "D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\windows-host\\build-id-installation\\debug root \u03bb \u96ea 'quote' $literal",
+            "requestSha256": "de4df4608bcc7b31eb845b6c5d8798f878b5eac71cf17358b80c2b478f0d76d3",
+            "outcome": "FAILED",
+            "error": "java.io.IOException: The process cannot access the file because another process has locked a portion of the file",
+            "exitCode": 1
+        },
+        "managedFiles": [
+            "windows-host/build-id-installation/debug root \u03bb \u96ea 'quote' $literal/.forge-build-id/v1/3babcbaddc336a3a04c489fc649ff555afa87159/lock"
+        ]
+    },
+    "linuxReproduction": {
+        "command": "Java 21 FileChannel.tryLock; child contender; Files.readAllBytes through a second handle; child contender; FileLock.isValid",
+        "observed": [
+            "before-second-handle=BUSY",
+            "after-second-handle=ACQUIRED",
+            "java-lock-still-valid=true"
+        ],
+        "logSha256": "0a333cc52ee7a34831571b7683321592f3adcf015609061311bac4351c87f466"
+    },
+    "fix": "Whole-file format/exclusion remains unchanged. Windows verifies lock bytes through the actual locking FileChannel. Linux uses audited F_OFD_SETLK on a dedicated O_CLOEXEC descriptor so host metadata/data handle closes cannot discard the lease. No fallback to unsafe process locks. Identity/metadata and complete magic bytes are still checked. Busy acquisition precedes byte reads.",
+    "abi": {
+        "host": "Linux Intel LP64 UTF-8; libc6-dev:amd64 2.39-0ubuntu8.9",
+        "auditSource": "src/test/native/linux-build-id-lock-contract.c",
+        "auditSourceSha256": "fefa360abe411da066a91c1ac6469e2d9a01636a8df4529a0616d94c081d32d3",
+        "auditOutput": "linux-build-id-lock-contract=PASS LP64 flock=32 type=0 whence=2 start=8 length=16 pid=24",
+        "headers": {
+            "/usr/include/x86_64-linux-gnu/bits/fcntl-linux.h": "8d50bc7737bcc76f42b1f406244acb287bcf0463d180b6b0566d27d1f23b3e98",
+            "/usr/include/x86_64-linux-gnu/bits/fcntl.h": "dd4dfce9d1624326b478f1ad3405b15f637f1419d8b04c88fe83556753285a73",
+            "/usr/include/asm-generic/fcntl.h": "61b9dc40467839c0fd8b0693623695eb04b6c2e3c8b9e246377c5eedb322be85"
+        },
+        "libdwarf": "Pinned af7b278c6aa2ae9daad94fb7f8bffdc0e9980993 unchanged; no producer mappings modified."
+    },
+    "isolatedLinux": {
+        "output": [
+            "LEGACY_LINUX_SECOND_HANDLE_RELEASED_LOCK",
+            "build-id-file-lock=PASS host=linux"
+        ],
+        "logSha256": "6abe69562e91e805895dbd45ca601d5c4d56398efc363bbeb3c23a4b6f247ae0",
+        "checks": "Legacy failure reproduced; production metadata inspections and independent reads keep other processes excluded; same-JVM contention, cancellation, release, malformed-content and length controls pass."
+    },
+    "linuxTransaction": {
+        "path": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-lock-fix/transaction-x86/result.json",
+        "sha256": "5f2fedec1bd42cfbd45d6a1d5975856fda5ddadbf97b9b4003c98dd4f71e914e",
+        "status": "PASS_BUILD_ID_TRANSACTION_LINUX_HOST",
+        "checks": 123,
+        "consumers": 4
+    },
+    "package": {
+        "ghidra": "/dev/shm/forge-lldb-worktree/build/build-id-lock-review/packaged/ghidra",
+        "jarSha256": "668745d239d243cebf59d58b68b619c987647ad9f0164f116443f526f953fef5",
+        "releaseSha256": "93508d635c10b659ef68253bccf28b99202b9bc819b82857d118cb2db7592e53",
+        "changedJarEntries": [
+            "ghidradwarfforge/output/BuildIdFileLock$LibC.class",
+            "ghidradwarfforge/output/BuildIdFileLock.class",
+            "ghidradwarfforge/output/BuildIdInstallation$Boundary.class",
+            "ghidradwarfforge/output/BuildIdInstallation$Mode.class",
+            "ghidradwarfforge/output/BuildIdInstallation$Outcome.class",
+            "ghidradwarfforge/output/BuildIdInstallation$Request.class",
+            "ghidradwarfforge/output/BuildIdInstallation$Result.class",
+            "ghidradwarfforge/output/BuildIdInstallation$Session.class",
+            "ghidradwarfforge/output/BuildIdInstallation.class"
+        ]
+    },
+    "upstreamSemantics": [
+        "https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-lockfileex"
+    ],
+    "remaining": [
+        "Native Windows isolated lease smoke and complete installer/recovery/downstream checks",
+        "Full latest-head hosted gate and protected integration"
+    ],
+    "linuxCommand": {
+        "path": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-lock-fix/command-x86/result.json",
+        "sha256": "343a241c7c7c96b30b7cacb87c8d6064605e30dce786c62a3d39b2f7a2c33843",
+        "status": "PASS_LINUX_COMMAND",
+        "checks": 27,
+        "gdbSessions": 10
+    }
+}

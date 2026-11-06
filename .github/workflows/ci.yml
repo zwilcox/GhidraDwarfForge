@@ -608,6 +608,9 @@ jobs:
             python3 -B -m unittest discover -s src/test/python -p test_headless_observations.py -v
             cc -std=c11 -Wall -Wextra -Werror src/test/native/linux-rename-contract.c -o build/linux-rename-contract
             build/linux-rename-contract
+            cc -std=c11 -Wall -Wextra -Werror src/test/native/linux-build-id-lock-contract.c -o build/linux-build-id-lock-contract
+            build/linux-build-id-lock-contract
+            ./gradlew buildIdFileLockSmoke -PbuildIdLockFile="$PWD/build/test-results/extension-build/owned-build-id-lock"
             cc -std=c11 -O2 -Wall -Wextra -Werror native/supervisor/forge-supervisor-linux.c -o build/forge-validator-supervisor
             ./gradlew validatorSupervisorSmoke \
                 -PsupervisorPath="$PWD/build/forge-validator-supervisor" \

@@ -1,5 +1,19 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED #109 lock defects and local Linux correction (2026-11-06):**
+the corrected Windows SACL fixture passes, then native installation exposes a
+production lock readback failure: Windows rejects reading the exclusively locked
+file through a second handle. Independent Linux reproduction also proves that
+closing such a second handle silently releases the old process-scoped lock while
+Java still reports it valid. Windows now verifies bytes through the locking
+channel; Linux uses an audited open-file-description lock that survives metadata
+handle closes. Isolated Linux contention/cancellation tests, 123 transaction
+checks and 27 packaged command checks with ten GDB sessions pass. Native Windows
+lock/lifecycle acceptance remains **PRESENT, UNVERIFIED**. The unchanged format
+still supports whole-file exclusion and full identity/metadata/content checks.
+See `docs/evidence/build-id-locking.json`. Final perf/hosted acceptance and
+protected integration remain outstanding.
+
 **CONFIRMED local #109 perf fixture preflight (2026-11-06):**
 new native x86-64 exec/PIE fixtures pass four packaged headless exports, saved
 analyst-name edits, production install/update/remove, strict/LLVM validation,

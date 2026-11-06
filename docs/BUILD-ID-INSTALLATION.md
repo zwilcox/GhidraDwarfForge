@@ -161,8 +161,21 @@ consumer acceptance is separate.
 The first native installer run refused unsupported SACL metadata after the test's
 high-level `Get-Acl`/`Set-Acl` DACL setup. The corrected fixture reuses the existing
 native DACL-only helper and checks unchanged absent-SACL state; it does not relax
-production metadata admission. Corrected native acceptance remains pending. See
+production metadata admission. The corrected fixture now passes its native
+DACL/SACL controls; the following installation exposed a separate lock readback
+defect. Native acceptance of the lock correction remains pending. See
 [the retained failure and correction](evidence/windows-build-id-sacl-fixture.json).
+
+The old whole-file lock implementation had two independently observed defects:
+Windows rejected its second-handle byte read, and Linux silently released its
+process-scoped lock when that second handle closed. The corrected implementation
+uses the actual locking channel for Windows reads and an audited Linux Intel
+LP64 open-file-description lock for Linux. Metadata inspection and content
+checks retain the original contract. Isolated Linux tests prove that independent
+metadata/data reads and same-JVM contenders do not release exclusion; production
+transaction and command regressions pass. An early native Windows smoke and the
+full native lifecycle/downstream tests are still required. See the
+[lock reproduction, ABI audit and validation receipt](evidence/build-id-locking.json).
 
 The downstream Linux job now runs `windows-build-id-gdb.py` on those exact
 retained initial and curated installed generations. It verifies their recorded

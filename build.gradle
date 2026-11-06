@@ -300,6 +300,19 @@ tasks.register("companionArtifactPublisherSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.output.CompanionArtifactPublisherSmoke"
 }
 
+tasks.register("buildIdFileLockSmoke", JavaExec) {
+    group = "verification"
+    description = "Exercises real host build-ID lease exclusion across metadata reads and competing processes"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.BuildIdFileLockSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+    doFirst {
+        if (!project.hasProperty("buildIdLockFile")) throw new GradleException("Missing -PbuildIdLockFile")
+        args "exercise", project.property("buildIdLockFile")
+    }
+}
+
 tasks.register("attachmentProtocolSmoke", JavaExec) {
     group = "verification"
     description = "Checks attachment receipt parsing/transitions and all-role path preflight"

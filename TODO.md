@@ -1,5 +1,19 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED #109 lock defects and local Linux correction (2026-11-06):**
+the corrected Windows SACL fixture passes, then native installation exposes a
+production lock readback failure: Windows rejects reading the exclusively locked
+file through a second handle. Independent Linux reproduction also proves that
+closing such a second handle silently releases the old process-scoped lock while
+Java still reports it valid. Windows now verifies bytes through the locking
+channel; Linux uses an audited open-file-description lock that survives metadata
+handle closes. Isolated Linux contention/cancellation tests, 123 transaction
+checks and 27 packaged command checks with ten GDB sessions pass. Native Windows
+lock/lifecycle acceptance remains **PRESENT, UNVERIFIED**. The unchanged format
+still supports whole-file exclusion and full identity/metadata/content checks.
+See `docs/evidence/build-id-locking.json`. Final perf/hosted acceptance and
+protected integration remain outstanding.
+
 **CONFIRMED local #109 perf fixture preflight (2026-11-06):**
 new native x86-64 exec/PIE fixtures pass four packaged headless exports, saved
 analyst-name edits, production install/update/remove, strict/LLVM validation,
@@ -3768,10 +3782,18 @@ normal protected PR164 merge preserves the tested tree. See
 
 **CONFIRMED integrated — #116/#114:** comments/equates and optional instruction
 context pass the complete current host/target/workload gate and protected PR166
-merge. See [final acceptance](docs/ANNOTATION-ACCEPTANCE.md). Documentation publication,
-issue reconciliation and separate main-push observation remain.
-**ACTIVE next — #112:** evidence-backed CFI, followed by #110 (LLDB) and
-#109 (build-ID installation).
+merge. Both issues are closed. See [final acceptance](docs/ANNOTATION-ACCEPTANCE.md).
+
+**CONFIRMED integrated — #112/#110:** evidence-backed CFI and LLDB validation
+meet their documented acceptance profiles; PR183 merged with the complete gate
+passing and an independently reviewed artifact set. Both issues are closed.
+See [final LLDB/unwind acceptance](docs/evidence/lldb-final-acceptance.json).
+
+**ACTIVE — #109:** build-ID installation is implemented in PR186. Local Linux
+installation, source retention, GDB, LLDB and offline perf checks pass. Native
+Windows installer/downstream acceptance, actual perf sample/report
+characterization, the full latest-head gate and protected integration remain.
+See [installation acceptance](docs/BUILD-ID-ACCEPTANCE.md).
 Low-priority test-coverage/CI badges remain #162/#163.
 
 The baseline exporter, source/type/location machinery, five target lanes,
