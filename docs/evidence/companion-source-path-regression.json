@@ -1,0 +1,586 @@
+{
+    "status": "CONFIRMED_LOCAL_COMPANION_ABSOLUTE_SOURCE_PRESENTATION",
+    "parent": "6a1c9aa990dd5bd0e64d40d18fdeb585c34853d8",
+    "failedHostedRun": 42281982134,
+    "failedArtifact": 13537835817,
+    "failedArtifactSha256": "cb1760bedf3222690cab091012fa3d94349cf6b265c3be852f6822a2518d65bd",
+    "cause": "Companion-loader tests asserted absolute source filenames using default relative GDB presentation after DW_AT_comp_dir was added. Three oracles now explicitly request absolute display; source/path/value/lifetime assertions remain unchanged.",
+    "productionCodeChanged": false,
+    "targets": [
+        "mips32be",
+        "mips32le",
+        "arm32",
+        "x86_64",
+        "aarch64"
+    ],
+    "roles": [
+        "exec",
+        "pie",
+        "exec.no-sections"
+    ],
+    "freshHeadlessExports": 15,
+    "strictReports": [
+        {
+            "target": "mips32be",
+            "role": "exec",
+            "rawSha256": "3c6e4e9e721b7a6bfd2926e767de2bff39c669487813d38e0b9d15348e6ccf50"
+        },
+        {
+            "target": "mips32be",
+            "role": "pie",
+            "rawSha256": "26e9b6114919f860ae43dde131ead71d6abcaed9e485dfc9113b3aabc3cbb01a"
+        },
+        {
+            "target": "mips32be",
+            "role": "exec.no-sections",
+            "rawSha256": "f388be16088931d4c864ecd4de45739b5391612cadbde469d3d6e2113e448063"
+        },
+        {
+            "target": "mips32le",
+            "role": "exec",
+            "rawSha256": "c971e95cec3c087e26cabbfeeafff40b4252513e4fc4ff1196f8eacac7ebab37"
+        },
+        {
+            "target": "mips32le",
+            "role": "pie",
+            "rawSha256": "82528c13cc5068e10382bffca3dc0ee426f823fbc4f99e386aee9332c357fef9"
+        },
+        {
+            "target": "mips32le",
+            "role": "exec.no-sections",
+            "rawSha256": "4eaf32251389ed21d70bec1c2b9c2c3ec564ee6400eb2dc7cb4fb5c4221271e1"
+        },
+        {
+            "target": "arm32",
+            "role": "exec",
+            "rawSha256": "0a662ef35d31b1bd9b7fff4bb58b8eadda7e551f8e292526b2f458cb1ce756fd"
+        },
+        {
+            "target": "arm32",
+            "role": "pie",
+            "rawSha256": "500367821d21c8ba2828c1a59a30956cfbd2dd2c1c051fa3482b9b3ae33a3765"
+        },
+        {
+            "target": "arm32",
+            "role": "exec.no-sections",
+            "rawSha256": "19ac084d0dc77c2575d83b2b350afbf7eb157a580f6f13f757619df40d31f861"
+        },
+        {
+            "target": "x86_64",
+            "role": "exec",
+            "rawSha256": "2c2067b3f2456a6f11b3935038cfbbc2a308b1030bb0ef7419e09daa651de459"
+        },
+        {
+            "target": "x86_64",
+            "role": "pie",
+            "rawSha256": "d443ef2e414564a21d0e7702ca68dca9fb04c98c87a29c265022cfb4c6fb8f9a"
+        },
+        {
+            "target": "x86_64",
+            "role": "exec.no-sections",
+            "rawSha256": "6781ea56675866f4711c956c30535935b3f3b5284bd8d4d97438ba3a996d6b58"
+        },
+        {
+            "target": "aarch64",
+            "role": "exec",
+            "rawSha256": "98d7f5c8c14b45dcbe4251b8661902e9ed953900f040ae571fea995b0cc2c0f2"
+        },
+        {
+            "target": "aarch64",
+            "role": "pie",
+            "rawSha256": "7d49d84db5f594be4328fe843e758ad451a79efa599e67afc82350dae192f4f5"
+        },
+        {
+            "target": "aarch64",
+            "role": "exec.no-sections",
+            "rawSha256": "5a5216c7079c470a5ae76b3771eb78fa449ef18c818f138c9348421e8618c2c9"
+        }
+    ],
+    "remoteOrNativeCompanionSessions": 19,
+    "nativeAslrSessions": 3,
+    "nativeAttachExecSessions": 1,
+    "negativeControls": {
+        "oldNativeOracleExit": 1,
+        "sameArtifactRelativeAndAbsoluteInfoLine": [
+            "Line 70 of \"semantic.pie.ghidra-forge.dbg.c\" starts at address 0x1149 <recovered_add> and ends at 0x1163 <recovered_add+26>.",
+            "Line 70 of \"/dev/shm/forge-source-directory-fix/build/fixtures/x86_64/semantic.pie.ghidra-forge.dbg.c\" starts at address 0x1149 <recovered_add> and ends at 0x1163 <recovered_add+26>."
+        ]
+    },
+    "package": {
+        "installation": "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra",
+        "packageSha256": "875e344a9ee46d785aac8c4a3e7ad4834e9d956e5e3828afa16078b7b1c35b9e",
+        "jarSha256": "55e2088e522d34b44703010868a630c27dfc66cd9f0fd3c7e5e87b3cf7b83a16"
+    },
+    "commands": [
+        {
+            "name": "fixtures",
+            "command": [
+                "make",
+                "-C",
+                "src/test/fixtures",
+                "../../../build/fixtures/mips32be/semantic.exec.no-sections.stripped",
+                "../../../build/fixtures/mips32le/semantic.exec.no-sections.stripped",
+                "../../../build/fixtures/arm32/semantic.exec.no-sections.stripped",
+                "../../../build/fixtures/x86_64/semantic.exec.no-sections.stripped",
+                "../../../build/fixtures/aarch64/semantic.exec.no-sections.stripped"
+            ],
+            "environment": {}
+        },
+        {
+            "name": "mips32be-exec-export",
+            "command": [
+                "bash",
+                "src/test/integration/headless-symbol-export.sh",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarf.so.2.3.2",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarfp.so.2.3.2",
+                "mips32be"
+            ],
+            "environment": {
+                "FIXTURE_ROLE": "exec"
+            }
+        },
+        {
+            "name": "mips32be-exec-companion",
+            "command": [
+                "bash",
+                "src/test/integration/gdb-companion-remote.sh",
+                "mips32be",
+                "exec"
+            ],
+            "environment": {}
+        },
+        {
+            "name": "mips32be-pie-export",
+            "command": [
+                "bash",
+                "src/test/integration/headless-symbol-export.sh",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarf.so.2.3.2",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarfp.so.2.3.2",
+                "mips32be"
+            ],
+            "environment": {
+                "FIXTURE_ROLE": "pie"
+            }
+        },
+        {
+            "name": "mips32be-pie-companion",
+            "command": [
+                "bash",
+                "src/test/integration/gdb-companion-remote.sh",
+                "mips32be",
+                "pie"
+            ],
+            "environment": {}
+        },
+        {
+            "name": "mips32be-pie-no-hostio",
+            "command": [
+                "bash",
+                "src/test/integration/gdb-companion-remote.sh",
+                "mips32be",
+                "pie",
+                "no-hostio"
+            ],
+            "environment": {}
+        },
+        {
+            "name": "mips32be-exec.no-sections-export",
+            "command": [
+                "bash",
+                "src/test/integration/headless-symbol-export.sh",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarf.so.2.3.2",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarfp.so.2.3.2",
+                "mips32be"
+            ],
+            "environment": {
+                "FIXTURE_ROLE": "exec.no-sections"
+            }
+        },
+        {
+            "name": "mips32be-exec.no-sections-companion",
+            "command": [
+                "bash",
+                "src/test/integration/gdb-companion-remote.sh",
+                "mips32be",
+                "exec.no-sections"
+            ],
+            "environment": {}
+        },
+        {
+            "name": "mips32le-exec-export",
+            "command": [
+                "bash",
+                "src/test/integration/headless-symbol-export.sh",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarf.so.2.3.2",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarfp.so.2.3.2",
+                "mips32le"
+            ],
+            "environment": {
+                "FIXTURE_ROLE": "exec"
+            }
+        },
+        {
+            "name": "mips32le-exec-companion",
+            "command": [
+                "bash",
+                "src/test/integration/gdb-companion-remote.sh",
+                "mips32le",
+                "exec"
+            ],
+            "environment": {}
+        },
+        {
+            "name": "mips32le-pie-export",
+            "command": [
+                "bash",
+                "src/test/integration/headless-symbol-export.sh",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarf.so.2.3.2",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarfp.so.2.3.2",
+                "mips32le"
+            ],
+            "environment": {
+                "FIXTURE_ROLE": "pie"
+            }
+        },
+        {
+            "name": "mips32le-pie-companion",
+            "command": [
+                "bash",
+                "src/test/integration/gdb-companion-remote.sh",
+                "mips32le",
+                "pie"
+            ],
+            "environment": {}
+        },
+        {
+            "name": "mips32le-pie-no-hostio",
+            "command": [
+                "bash",
+                "src/test/integration/gdb-companion-remote.sh",
+                "mips32le",
+                "pie",
+                "no-hostio"
+            ],
+            "environment": {}
+        },
+        {
+            "name": "mips32le-exec.no-sections-export",
+            "command": [
+                "bash",
+                "src/test/integration/headless-symbol-export.sh",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarf.so.2.3.2",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarfp.so.2.3.2",
+                "mips32le"
+            ],
+            "environment": {
+                "FIXTURE_ROLE": "exec.no-sections"
+            }
+        },
+        {
+            "name": "mips32le-exec.no-sections-companion",
+            "command": [
+                "bash",
+                "src/test/integration/gdb-companion-remote.sh",
+                "mips32le",
+                "exec.no-sections"
+            ],
+            "environment": {}
+        },
+        {
+            "name": "arm32-exec-export",
+            "command": [
+                "bash",
+                "src/test/integration/headless-symbol-export.sh",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarf.so.2.3.2",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarfp.so.2.3.2",
+                "arm32"
+            ],
+            "environment": {
+                "FIXTURE_ROLE": "exec"
+            }
+        },
+        {
+            "name": "arm32-exec-companion",
+            "command": [
+                "bash",
+                "src/test/integration/gdb-companion-remote.sh",
+                "arm32",
+                "exec"
+            ],
+            "environment": {}
+        },
+        {
+            "name": "arm32-pie-export",
+            "command": [
+                "bash",
+                "src/test/integration/headless-symbol-export.sh",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarf.so.2.3.2",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarfp.so.2.3.2",
+                "arm32"
+            ],
+            "environment": {
+                "FIXTURE_ROLE": "pie"
+            }
+        },
+        {
+            "name": "arm32-pie-companion",
+            "command": [
+                "bash",
+                "src/test/integration/gdb-companion-remote.sh",
+                "arm32",
+                "pie"
+            ],
+            "environment": {}
+        },
+        {
+            "name": "arm32-pie-no-hostio",
+            "command": [
+                "bash",
+                "src/test/integration/gdb-companion-remote.sh",
+                "arm32",
+                "pie",
+                "no-hostio"
+            ],
+            "environment": {}
+        },
+        {
+            "name": "arm32-exec.no-sections-export",
+            "command": [
+                "bash",
+                "src/test/integration/headless-symbol-export.sh",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarf.so.2.3.2",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarfp.so.2.3.2",
+                "arm32"
+            ],
+            "environment": {
+                "FIXTURE_ROLE": "exec.no-sections"
+            }
+        },
+        {
+            "name": "arm32-exec.no-sections-companion",
+            "command": [
+                "bash",
+                "src/test/integration/gdb-companion-remote.sh",
+                "arm32",
+                "exec.no-sections"
+            ],
+            "environment": {}
+        },
+        {
+            "name": "x86_64-exec-export",
+            "command": [
+                "bash",
+                "src/test/integration/headless-symbol-export.sh",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarf.so.2.3.2",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarfp.so.2.3.2",
+                "x86_64"
+            ],
+            "environment": {
+                "FIXTURE_ROLE": "exec"
+            }
+        },
+        {
+            "name": "x86_64-exec-companion",
+            "command": [
+                "bash",
+                "src/test/integration/gdb-companion-remote.sh",
+                "x86_64",
+                "exec"
+            ],
+            "environment": {}
+        },
+        {
+            "name": "x86_64-pie-export",
+            "command": [
+                "bash",
+                "src/test/integration/headless-symbol-export.sh",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarf.so.2.3.2",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarfp.so.2.3.2",
+                "x86_64"
+            ],
+            "environment": {
+                "FIXTURE_ROLE": "pie"
+            }
+        },
+        {
+            "name": "x86_64-pie-companion",
+            "command": [
+                "bash",
+                "src/test/integration/gdb-companion-remote.sh",
+                "x86_64",
+                "pie"
+            ],
+            "environment": {}
+        },
+        {
+            "name": "native-aslr",
+            "command": [
+                "python3",
+                "src/test/integration/gdb-companion-native.py",
+                "--input",
+                "/dev/shm/forge-source-directory-fix/build/fixtures/x86_64/semantic.pie.stripped",
+                "--sidecar",
+                "/dev/shm/forge-source-directory-fix/build/fixtures/x86_64/semantic.pie.ghidra-forge.dbg",
+                "--reference",
+                "/dev/shm/forge-source-directory-fix/build/fixtures/x86_64/semantic.pie.reference",
+                "--results",
+                "/dev/shm/forge-source-directory-fix/build/companion-source-regression/native"
+            ],
+            "environment": {}
+        },
+        {
+            "name": "native-attach",
+            "command": [
+                "python3",
+                "src/test/integration/gdb-companion-attach.py",
+                "--input",
+                "/dev/shm/forge-source-directory-fix/build/fixtures/x86_64/semantic.pie.stripped",
+                "--sidecar",
+                "/dev/shm/forge-source-directory-fix/build/fixtures/x86_64/semantic.pie.ghidra-forge.dbg",
+                "--results",
+                "/dev/shm/forge-source-directory-fix/build/companion-source-regression/attach"
+            ],
+            "environment": {}
+        },
+        {
+            "name": "old-native",
+            "command": [
+                "python3",
+                "/dev/shm/forge-source-directory-fix/build/companion-source-regression/old-native.py",
+                "--input",
+                "/dev/shm/forge-source-directory-fix/build/fixtures/x86_64/semantic.pie.stripped",
+                "--sidecar",
+                "/dev/shm/forge-source-directory-fix/build/fixtures/x86_64/semantic.pie.ghidra-forge.dbg",
+                "--reference",
+                "/dev/shm/forge-source-directory-fix/build/fixtures/x86_64/semantic.pie.reference",
+                "--results",
+                "/dev/shm/forge-source-directory-fix/build/companion-source-regression/old-native"
+            ],
+            "environment": {}
+        },
+        {
+            "name": "x86_64-exec.no-sections-export",
+            "command": [
+                "bash",
+                "src/test/integration/headless-symbol-export.sh",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarf.so.2.3.2",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarfp.so.2.3.2",
+                "x86_64"
+            ],
+            "environment": {
+                "FIXTURE_ROLE": "exec.no-sections"
+            }
+        },
+        {
+            "name": "x86_64-exec.no-sections-companion",
+            "command": [
+                "bash",
+                "src/test/integration/gdb-companion-remote.sh",
+                "x86_64",
+                "exec.no-sections"
+            ],
+            "environment": {}
+        },
+        {
+            "name": "aarch64-exec-export",
+            "command": [
+                "bash",
+                "src/test/integration/headless-symbol-export.sh",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarf.so.2.3.2",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarfp.so.2.3.2",
+                "aarch64"
+            ],
+            "environment": {
+                "FIXTURE_ROLE": "exec"
+            }
+        },
+        {
+            "name": "aarch64-exec-companion",
+            "command": [
+                "bash",
+                "src/test/integration/gdb-companion-remote.sh",
+                "aarch64",
+                "exec"
+            ],
+            "environment": {}
+        },
+        {
+            "name": "aarch64-pie-export",
+            "command": [
+                "bash",
+                "src/test/integration/headless-symbol-export.sh",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarf.so.2.3.2",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarfp.so.2.3.2",
+                "aarch64"
+            ],
+            "environment": {
+                "FIXTURE_ROLE": "pie"
+            }
+        },
+        {
+            "name": "aarch64-pie-companion",
+            "command": [
+                "bash",
+                "src/test/integration/gdb-companion-remote.sh",
+                "aarch64",
+                "pie"
+            ],
+            "environment": {}
+        },
+        {
+            "name": "aarch64-pie-no-hostio",
+            "command": [
+                "bash",
+                "src/test/integration/gdb-companion-remote.sh",
+                "aarch64",
+                "pie",
+                "no-hostio"
+            ],
+            "environment": {}
+        },
+        {
+            "name": "aarch64-exec.no-sections-export",
+            "command": [
+                "bash",
+                "src/test/integration/headless-symbol-export.sh",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarf.so.2.3.2",
+                "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarfp.so.2.3.2",
+                "aarch64"
+            ],
+            "environment": {
+                "FIXTURE_ROLE": "exec.no-sections"
+            }
+        },
+        {
+            "name": "aarch64-exec.no-sections-companion",
+            "command": [
+                "bash",
+                "src/test/integration/gdb-companion-remote.sh",
+                "aarch64",
+                "exec.no-sections"
+            ],
+            "environment": {}
+        }
+    ],
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/companion-source-path-regression.tar.gz",
+        "sha256": "db57922ed7647a341366e08d03ca87d5cd1c58780e516aea239b90c7dc090201",
+        "verifiedMembers": 606
+    },
+    "limits": "Hosted rerun is required. This fixes test presentation only and does not complete issue 109 installation."
+}
