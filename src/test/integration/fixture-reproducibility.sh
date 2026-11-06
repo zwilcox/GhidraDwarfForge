@@ -40,6 +40,7 @@ expected_sources=(
     aarch64-abi.h
     aarch64-vector.c
     aggregate-return-calls.c
+    analyst-annotations.c
     arm-aggregate-pcs.c
     arm-dynamic-pcs.c
     arm-hfa-controls.S
@@ -76,6 +77,7 @@ expected_sources=(
     dynamic-parameter-storage.c
     emission-evidence-x86_64.S
     emission-evidence.c
+    equate-retained-names.cpp
     external-function-declarations.c
     formal-function-return.c
     fp_register_aliases.c
@@ -91,6 +93,7 @@ expected_sources=(
     i386-extended-return.c
     i386-profile.c
     inspected-call-callees.c
+    intrinsic-context-x86_64.c
     later-register-local.c
     lexical-shadow.c
     lexical-statics.c
@@ -98,6 +101,8 @@ expected_sources=(
     local-definition-flow.c
     merged-local-mappings.c
     minimal.c
+    mips-delay-context.S
+    mips-delay-context.c
     mips-floating-call.c
     mips-fpr-system-start.S
     mips-truncated-space-start.S

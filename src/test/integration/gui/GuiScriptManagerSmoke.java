@@ -40,11 +40,18 @@ public final class GuiScriptManagerSmoke {
     private static final String EXPORT = WITH_COMPRESSION ? "ExportCompressedGhidraDwarfForge.java" :
         "ExportGhidraDwarfForge.java";
     private static final String LOADER_EXPORT = "ExportGhidraDwarfForgeWithGdbLoader.java";
+    private static final String CONTEXT_EXPORT = "ExportGhidraDwarfForgeWithContext.java";
     private static final String ATTACH = "AttachGhidraDwarfForge.java";
     private static final String RECOVER = "RecoverGhidraDwarfForgeAttachment.java";
     private static final String PREPARE = "ExportAndAttachGhidraDwarfForge.java";
     private static final boolean WITH_LOADER = "1".equals(System.getenv("GHIDRA_GUI_GDB_LOADER"));
     private static final boolean WINDOWS = System.getProperty("os.name").startsWith("Windows");
+    private static final String GUI_EQUATE = "GUI_EQUATE_VALUE";
+    private static final long GUI_EQUATE_VALUE = 0x31415926L;
+
+    private static String annotation(ghidra.program.model.listing.CommentType category) {
+        return "GUI_ANNOTATION_" + category.name() + " λ */ \\";
+    }
 
     private static final class ProbeFrontEnd extends FrontEndTool {
         ProbeFrontEnd(ProjectManager manager) {
@@ -124,7 +131,7 @@ public final class GuiScriptManagerSmoke {
                 return result;
             });
             try {
-                for (String script : new String[] { PREFLIGHT, EXPORT, LOADER_EXPORT, ATTACH, RECOVER, PREPARE }) {
+                for (String script : new String[] { PREFLIGHT, EXPORT, LOADER_EXPORT, CONTEXT_EXPORT, ATTACH, RECOVER, PREPARE }) {
                     var found = GhidraScriptUtil.findScriptByName(script);
                     GuiTestSupport.require(found != null, "installed script was not discovered: " + script);
                     GuiTestSupport.require(found.getFile(false).toPath().toRealPath().equals(
@@ -171,6 +178,17 @@ public final class GuiScriptManagerSmoke {
                     var function = program.getFunctionManager().getFunctionAt(address);
                     GuiTestSupport.require(function != null, "missing fixture function at " + address);
                     function.setName("gui_recovered_add", SourceType.USER_DEFINED);
+                    for (var category : ghidra.program.model.listing.CommentType.values()) {
+                        program.getListing().setComment(address, category, annotation(category));
+                    }
+                    var enumeration = new ghidra.program.model.data.EnumDataType("GuiAnnotationValues", 4);
+                    enumeration.add(GUI_EQUATE, GUI_EQUATE_VALUE);
+                    var saved = program.getDataTypeManager().addDataType(enumeration,
+                        ghidra.program.model.data.DataTypeConflictHandler.DEFAULT_HANDLER);
+                    program.getEquateTable().createEquate(
+                        ghidra.program.database.symbol.EquateManager.formatNameForEquate(saved.getUniversalID(), GUI_EQUATE_VALUE),
+                        GUI_EQUATE_VALUE);
+                    program.getEquateTable().createEquate("gui_recovered_add", 77);
                 }
                 finally {
                     program.endTransaction(transaction, true);
@@ -224,6 +242,21 @@ public final class GuiScriptManagerSmoke {
                         GuiTestSupport.require(Files.size(chosen.resolve("fixture.dbg")) > 0 &&
                             Files.size(chosen.resolve("fixture.dbg.c")) > 0,
                             "completed GUI artifact pair is missing");
+                        String synthetic = Files.readString(chosen.resolve("fixture.dbg.c"));
+                        var address = program.getAddressFactory().getAddress(functionAddress);
+                        for (var category : ghidra.program.model.listing.CommentType.values()) {
+                            String expected = annotation(category);
+                            GuiTestSupport.require(expected.equals(program.getListing().getComment(category, address)),
+                                "GUI export changed a saved annotation");
+                            GuiTestSupport.require(synthetic.contains(ghidradwarfforge.source.AnnotationText.encode(
+                                expected, 4096, () -> false)), "GUI export omitted annotation " + category);
+                        }
+                        GuiTestSupport.require(synthetic.contains("Lookup " + GUI_EQUATE + " [typed; unsigned 32 bits] = " + GUI_EQUATE_VALUE),
+                            "GUI export omitted the typed equate lookup");
+                        GuiTestSupport.require(program.getEquateTable().getEquate("gui_recovered_add").getValue() == 77,
+                            "GUI export changed a conflicting saved equate");
+                        Files.writeString(caseDirectory.resolve("annotations.txt"),
+                            "all-listing-categories=PASS\ntyped-equate-catalog=PASS\nsaved-annotations-unchanged=PASS\n");
                         if (WITH_LOADER) {
                             GuiTestSupport.require(Files.size(chosen.resolve("fixture.dbg.gdb.py")) > 0,
                                 "completed GUI companion is missing");
@@ -233,6 +266,11 @@ public final class GuiScriptManagerSmoke {
                         runAttachmentDecline(tool, input, chosen.resolve("fixture.dbg"),
                             chosen.resolve("fixture.dbg.c"), caseDirectory, saveCoverageReport(caseDirectory));
                         runPreparationDecline(tool, input, caseDirectory);
+                        if (!WITH_COMPRESSION && !WITH_LOADER) {
+                            // Compare the same curated program: the native attachment journey
+                            // below deliberately renames a function for its refresh generation.
+                            runContextChoices(tool, input, chosen, caseDirectory);
+                        }
                         if ("1".equals(System.getenv("GHIDRA_GUI_NATIVE_ATTACHMENT"))) {
                             runNativeAttachment(tool, program, input, caseDirectory, functionAddress);
                         }
@@ -268,6 +306,92 @@ public final class GuiScriptManagerSmoke {
             finally {
                 program.release(owner);
             }
+        }
+    }
+
+    private static void runContextChoices(ProbeTool tool, Path input, Path baseline, Path caseDirectory) throws Exception {
+        Path root = Files.createDirectory(caseDirectory.resolve("source-context"));
+        ConsoleService console = tool.getService(ConsoleService.class);
+        String original = GuiTestSupport.sha256(input);
+        String baselineSidecar = GuiTestSupport.sha256(baseline.resolve("fixture.dbg"));
+        String baselineSource = GuiTestSupport.sha256(baseline.resolve("fixture.dbg.c"));
+        for (String mode : java.util.List.of("Cancel", "Off", "Assembly", "P-code", "Both")) {
+            Path work = Files.createDirectory(root.resolve(mode.toLowerCase(java.util.Locale.ROOT)));
+            Path output = Files.createDirectory(work.resolve("output"));
+            clearConsole(console);
+            var interaction = CompletableFuture.runAsync(() -> {
+                try {
+                    var dialog = GuiTestSupport.dialog("Source context");
+                    var choices = (javax.swing.JComboBox<?>) GuiTestSupport.find(dialog,
+                        component -> component instanceof javax.swing.JComboBox<?>);
+                    GuiTestSupport.require(choices != null, "context choice control is missing");
+                    GuiTestSupport.onSwing(() -> {
+                        // Ghidra's doAsk preserves the last explicit selection in this session.
+                        String expected = switch (mode) {
+                            case "P-code" -> "Assembly";
+                            case "Both" -> "P-code";
+                            default -> "Off";
+                        };
+                        GuiTestSupport.require(expected.equals(choices.getSelectedItem()),
+                            "context initial/remembered choice differs: " + choices.getSelectedItem());
+                        var actual = new java.util.ArrayList<Object>();
+                        for (int i = 0; i < choices.getItemCount(); i++) actual.add(choices.getItemAt(i));
+                        GuiTestSupport.require(actual.equals(java.util.List.of("Off", "Assembly", "P-code", "Both")),
+                            "unexpected context choices: " + actual);
+                        return null;
+                    });
+                    Robot robot = new Robot();
+                    robot.setAutoDelay(80);
+                    if (!mode.equals("Cancel")) {
+                        GuiTestSupport.foregroundWindow(choices);
+                        GuiTestSupport.click(robot, GuiTestSupport.bounds(choices), 1);
+                        robot.keyPress(java.awt.event.KeyEvent.VK_HOME);
+                        robot.keyRelease(java.awt.event.KeyEvent.VK_HOME);
+                        int index = java.util.List.of("Off", "Assembly", "P-code", "Both").indexOf(mode);
+                        for (int i = 0; i < index; i++) {
+                            robot.keyPress(java.awt.event.KeyEvent.VK_DOWN);
+                            robot.keyRelease(java.awt.event.KeyEvent.VK_DOWN);
+                        }
+                        robot.keyPress(java.awt.event.KeyEvent.VK_ENTER);
+                        robot.keyRelease(java.awt.event.KeyEvent.VK_ENTER);
+                        robot.waitForIdle();
+                        GuiTestSupport.onSwing(() -> {
+                            GuiTestSupport.require(mode.equals(choices.getSelectedItem()), "context selection differs");
+                            return null;
+                        });
+                    }
+                    GuiTestSupport.screenshot(robot, dialog, work.resolve("context-choice.png"));
+                    GuiTestSupport.clickButton(robot, dialog, mode.equals("Cancel") ? "Cancel" : "OK");
+                    if (!mode.equals("Cancel")) GuiTestSupport.operateChooser(output, work, false);
+                }
+                catch (Exception failure) { throw new RuntimeException(failure); }
+            });
+            launchFromTable(tool, CONTEXT_EXPORT, work.resolve("script-manager.png"));
+            interaction.get(100, TimeUnit.SECONDS);
+            awaitConsole(console, mode.equals("Cancel") ? "User cancelled script." : "Finished!");
+            String transcript = consoleText(console);
+            Files.writeString(work.resolve("console.txt"), transcript);
+            try (var paths = Files.list(output)) {
+                GuiTestSupport.require(paths.count() == (mode.equals("Cancel") ? 0 : 2), "context artifact count differs");
+            }
+            if (mode.equals("Cancel")) {
+                GuiTestSupport.require(!transcript.contains("native policy:") &&
+                    !transcript.contains("GhidraDwarfForge symbol export PASS"), "cancelled choice started export");
+            }
+            else {
+                GuiTestSupport.require(transcript.contains("GhidraDwarfForge symbol export PASS") &&
+                    !transcript.contains("\"status\":\"FATAL\""), "context export failed");
+                String source = Files.readString(output.resolve("fixture.dbg.c"));
+                GuiTestSupport.require(source.contains("/* Ghidra instruction context ") != mode.equals("Off"),
+                    "context toggle was not reflected in generated source");
+                if (mode.equals("Off")) GuiTestSupport.require(baselineSource.equals(
+                    GuiTestSupport.sha256(output.resolve("fixture.dbg.c"))), "off changed default source");
+            }
+            GuiTestSupport.require(original.equals(GuiTestSupport.sha256(input)) &&
+                baselineSidecar.equals(GuiTestSupport.sha256(baseline.resolve("fixture.dbg"))) &&
+                baselineSource.equals(GuiTestSupport.sha256(baseline.resolve("fixture.dbg.c"))),
+                "context choice changed original or prior output pair");
+            Files.writeString(work.resolve("result.txt"), "choice=" + mode + "\nresult=PASS\n");
         }
     }
 

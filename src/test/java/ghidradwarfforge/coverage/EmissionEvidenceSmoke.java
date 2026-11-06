@@ -18,6 +18,7 @@ import ghidradwarfforge.locations.VariableStorageModel.*;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
 import ghidradwarfforge.source.SyntheticSourceFile;
+import ghidradwarfforge.source.AnnotatedSourceFile;
 import ghidradwarfforge.source.SyntheticSourceFile.FunctionText;
 import ghidradwarfforge.source.SyntheticSourceFile.RelativeLine;
 import ghidradwarfforge.types.ProgramTypeModel;
@@ -29,8 +30,9 @@ import ghidradwarfforge.types.TypeGraph.*;
 /** Actual producer facts; Python separately inspects DWARF and runs the fixture. */
 public final class EmissionEvidenceSmoke {
     public static void main(String[] args) throws Exception {
-        if (args.length != 5 && !(args.length == 6 && args[5].equals("--export-only"))) {
-            throw new IllegalArgumentException("consumer producer input output nm-symbols [--export-only]");
+        if (args.length != 5 && !(args.length == 6 &&
+                List.of("--export-only", "--annotations").contains(args[5]))) {
+            throw new IllegalArgumentException("consumer producer input output nm-symbols [--export-only|--annotations]");
         }
         Path input = Path.of(args[2]);
         Path output = Path.of(args[3]);
@@ -104,10 +106,25 @@ public final class EmissionEvidenceSmoke {
             new FunctionText("failed", symbols.get("failed"), null, "controlled unavailable source"),
             new FunctionText("empty", symbols.get("empty"), "void empty(void)\n{\n    return;\n}\n", null,
                 List.of(new RelativeLine(3, List.of(symbols.get("empty")))))));
+        if (args.length == 6 && args[5].equals("--annotations")) {
+            var baseline = source;
+            int beforeLine = source.functionTokens().stream().flatMap(f -> f.lines().stream())
+                .filter(line -> line.addresses().contains(moved)).findFirst().orElseThrow().line();
+            var insertions = List.of(
+                new AnnotatedSourceFile.Insertion("fixture-statement", "Controlled statement annotation",
+                    "FORGE_STATEMENT λ */ literal\\n\r\nsecond line\tend\n", beforeLine, moved),
+                new AnnotatedSourceFile.Insertion("fixture-failed", "Controlled unavailable-source annotation",
+                    "FORGE_FAILED_CATALOG: no executable source association", 0, null));
+            var composed = AnnotatedSourceFile.compose(source, insertions, 65536, () -> false);
+            source = composed.source();
+            Files.writeString(Path.of(output + ".annotations.json"), new GsonBuilder().setPrettyPrinting()
+                .create().toJson(new java.util.TreeMap<>(Map.of("baseline", baseline, "composed", source,
+                    "annotationLines", composed.annotationLines(), "insertions", insertions))) + "\n");
+        }
         var exporter = new MinimalDwarfSidecarExporter();
         var result = exporter.export(input, output, Path.of(args[0]), Path.of(args[1]), functions, source, model);
         Files.write(Path.of(output + ".c"), source.utf8());
-        if (args.length == 6) {
+        if (args.length == 6 && args[5].equals("--export-only")) {
             // This branch intentionally uses only the parent revision's API.
             System.out.println("emission-export-only=PASS");
             return;

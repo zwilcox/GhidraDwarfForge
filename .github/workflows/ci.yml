@@ -616,7 +616,7 @@ jobs:
               fileDigestsSmoke elfBuildIdSmoke \
               debugCompressionSmoke matchedElfPrefixSmoke matchedElfAllocationsSmoke executableProgramBytesSmoke \
               debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke \
-              syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
+              syntheticSourceSmoke annotationTextSmoke annotatedSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
               ghidraVariableIdentitySmoke ghidraInstructionEvidenceSmoke sourceCoverageSmoke sourceCoverageInventorySmoke coverageComparisonPresentationSmoke coverageVariableComparisonSmoke coverageTypeEvidenceSmoke typeGraphEvidenceSmoke typeCoverageSmoke locationEmissionPlanSmoke locationCoverageSmoke variableCoverageInventorySmoke exportCoverageSmoke coverageComparisonSmoke coveragePresentationSmoke coverageReportJsonSmoke reportValueReaderSmoke coverageReportClaimsSmoke exportReportCoverageSmoke \
               variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke intraInstructionFlowSmoke registerByteSliceFlowSmoke armCompositeParameterAllocationSmoke armHfaParameterAllocationSmoke upperAliasValueFlowSmoke terminalStackValueSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke \
               stackFirstUseSmoke \
@@ -1957,6 +1957,48 @@ jobs:
               "$PWD/native-integration/libdwarf.so.2.3.2" \
               "$PWD/native-integration/libdwarfp.so.2.3.2"
 
+      - name: Annotation composition preserves executable lines and debugger lookup
+        if: matrix.target == 'x86_64'
+        run: |
+          python3 src/test/integration/emission-evidence.py "$GHIDRA_INSTALL_DIR" \
+              "$PWD/native-integration/libdwarf.so.2.3.2" \
+              "$PWD/native-integration/libdwarfp.so.2.3.2" --annotations
+
+      - name: Bounded instruction context and native diagnostic source composition
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/instruction-context-pipeline.py "$GHIDRA_INSTALL_DIR" \
+              "$PWD/build/fixtures/$TARGET/semantic.exec.stripped" \
+              "$PWD/build/test-results/instruction-context/$TARGET"
+
+      - name: Saved annotations retain all categories, spaces and raw equate references
+        if: matrix.target != 'arm32'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/annotation-inventory-pipeline.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+              --consumer "$PWD/native-integration/libdwarf.so.2.3.2" \
+              --producer "$PWD/native-integration/libdwarfp.so.2.3.2"
+
+      - name: Instruction context preserves ARM modes and delay-slot body boundaries
+        if: matrix.target == 'arm32' || matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/context-boundaries.py "$TARGET" "$GHIDRA_INSTALL_DIR" \
+              "$PWD/native-integration/libdwarf.so.2.3.2" \
+              "$PWD/native-integration/libdwarfp.so.2.3.2" \
+              "$PWD/build/test-results/context-boundaries/$TARGET"
+
+      - name: Intrinsic instruction context and same-spelled ordinary calls
+        if: matrix.target == 'x86_64'
+        run: |
+          python3 src/test/integration/intrinsic-context.py "$GHIDRA_INSTALL_DIR" \
+              "$PWD/native-integration/libdwarf.so.2.3.2" \
+              "$PWD/native-integration/libdwarfp.so.2.3.2" \
+              "$PWD/build/test-results/intrinsic-context"
+
       - name: Isolated indirect pointer producer and operand-free dereference
         if: matrix.target == 'aarch64'
         run: |
@@ -2651,7 +2693,7 @@ jobs:
           Expand-Archive -Path $extension.FullName `
             -DestinationPath (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions') -Force
           & .\gradlew.bat exportPhaseSmoke dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke companionArtifactPublisherSmoke strictDwarfReportSmoke attachmentProtocolSmoke attachmentInvocationSmoke attachmentHelperSmoke attachmentGuiProcessSmoke attachmentPreparationSmoke attachmentRecoveryInvocationSmoke exportReportSmoke `
-            syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
+            syntheticSourceSmoke annotationTextSmoke annotatedSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke arm32CallPolicySmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
             functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke arm32SectionModesSmoke ghidraArm32SectionModesSmoke ghidraArmBe8ProfileSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke i386AbiSelectionSmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke i386ParameterAllocationSmoke allocationDecompilerSmoke floatingTypeLayoutSmoke mipsN32ParameterAllocationSmoke delayedReturnPrefixSmoke truncatedStackDepthSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke mipsWideCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
             registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke intraInstructionFlowSmoke registerByteSliceFlowSmoke armCompositeParameterAllocationSmoke armHfaParameterAllocationSmoke upperAliasValueFlowSmoke terminalStackValueSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `

@@ -56,6 +56,8 @@ jobs:
                   if ($LASTEXITCODE -ne 0) { throw 'headless observation controls failed' }
                   python src/test/performance/test-jfr-phases.py
                   if ($LASTEXITCODE -ne 0) { throw 'JFR phase controls failed' }
+                  python src/test/performance/test-catalog-source-equivalence.py
+                  if ($LASTEXITCODE -ne 0) { throw 'source catalog comparison controls failed' }
                   python src/test/performance/test-coverage-measurement-package.py
                   if ($LASTEXITCODE -ne 0) { throw 'measurement package audit controls failed' }
                   python src/test/performance/test-windows-measurement.py `

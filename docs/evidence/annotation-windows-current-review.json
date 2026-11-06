@@ -1,0 +1,207 @@
+{
+    "issues": [
+        116,
+        114
+    ],
+    "status": "CONFIRMED Windows workload and independent consumer review at 3543c78; current integration gate failed retained boundary reports",
+    "head": "3543c78597ebc9755a15df453ced1597291e4e81",
+    "run": 42160948934,
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr166-windows-workload-42160948934.tar.gz",
+        "sha256": "0d4f7f095302bdd49ade81bd265fe43ade9151e9876148e85565e7ff4c2a6069",
+        "bytes": 320427421
+    },
+    "artifacts": {
+        "workloads": {
+            "id": 13481999646,
+            "sha256": "bfdac2cdd140112b88e873ed70fc204d7349f1b2059d4b4306f5daa8e4d3ed8b",
+            "bytes": 113564401
+        },
+        "packages": {
+            "id": 13478574906,
+            "sha256": "4d0fb1b779b01033b26d89c8693e5ab5caf4f02e1f9e923f18b2e7d5fbc6588a",
+            "bytes": 67930524
+        },
+        "corpus": {
+            "id": 13478370033,
+            "sha256": "d3f8147c6e7a52808d81f7d02ff759c061b080a4fb16625f4fb3f12b32d57495",
+            "bytes": 51178465
+        },
+        "controls": {
+            "id": 13477273819,
+            "sha256": "0fc0c07c19a446c0e627d9adfed78e57f86bfe87503c418f86c73f6d13a4de91",
+            "bytes": 135705
+        }
+    },
+    "consumerArtifact": {
+        "id": 13482109774,
+        "sha256": "e6f93b5cbebf100a851febc757a90f10fe3065d60dbff71e9d00e70c75e08944",
+        "bytes": 93620292
+    },
+    "verifiedDownloadedFiles": {
+        "candidateModule": 383,
+        "originalBaselineModule": 328,
+        "harness": 6,
+        "corpus": 87
+    },
+    "protectedBeforeAfterEntries": 1136,
+    "candidateClassesMatchReviewedCurrentRelease": 635,
+    "workloads": [
+        {
+            "workload": "sqlite",
+            "counts": {
+                "functionsExported": 1539,
+                "functionsDecompiled": 1539,
+                "functionsFailed": 0,
+                "functionsSkipped": 161,
+                "functionSignatures": 1539,
+                "parameters": 2194,
+                "localVariables": 4870,
+                "globalVariables": 1774,
+                "functionStaticVariables": 0,
+                "canonicalTypes": 140,
+                "defensibleVariableLocations": 4870,
+                "omittedLocationRanges": 12547,
+                "mappedSourceLines": 87579,
+                "unsupportedConstructs": 11,
+                "diagnostics": 1922
+            },
+            "failedFunctions": [],
+            "mediansSeconds": {
+                "baseline": 111.6712176,
+                "candidate": 117.1567007
+            },
+            "reportUtf8Bytes": {
+                "baseline": 3164128,
+                "candidate": 23768801
+            },
+            "samplesVerified": 11,
+            "sourceComparison": {
+                "relation": "EXACT_PREFIX_WITH_LISTING_CATALOG",
+                "baselineSourceSha256": "5abb137d1e088deeaff7955a7d42c0ecec7b6508c11e814dd1a4108295e8efcc",
+                "catalogBytes": 1131957,
+                "catalogRecords": 12044,
+                "catalogSha256": "356282e81074d46a5cbc0c05dbbef85382c9c66ba463571409bf83564bab3c10"
+            },
+            "strictReportedErrors": 828,
+            "strictUncorroboratedErrors": 0,
+            "artifactSha256": [
+                "a9dd9ce666c56776a9717aaa0fe91da4fb399425cd09a61f0ea75ad8e5018c50",
+                "2231aef45f608ea5526e4a946e527e045eca86c00e2a48bce35452f1d4f4229f"
+            ],
+            "reportSha256": {
+                "baseline": "a6faef91e3cc485d42a5c8a26fe7967f87c391233971747cdb81c5ef2380f585",
+                "candidate": "2c3d0131470d87074fbc5777bc0f30c016ed965fa570c20a8d872c774a60fbc7"
+            }
+        },
+        {
+            "workload": "uboot",
+            "counts": {
+                "functionsExported": 6375,
+                "functionsDecompiled": 6374,
+                "functionsFailed": 1,
+                "functionsSkipped": 268,
+                "functionSignatures": 6375,
+                "parameters": 3935,
+                "localVariables": 15846,
+                "globalVariables": 11677,
+                "functionStaticVariables": 0,
+                "canonicalTypes": 298,
+                "defensibleVariableLocations": 15903,
+                "omittedLocationRanges": 4497,
+                "mappedSourceLines": 222853,
+                "unsupportedConstructs": 10,
+                "diagnostics": 7229
+            },
+            "failedFunctions": [
+                {
+                    "name": "lib_test_alist_has",
+                    "address": "0x1e6e3a",
+                    "diagnostic": "Exception while decompiling 002e6e3a: process: timeout\n"
+                }
+            ],
+            "mediansSeconds": {
+                "baseline": 236.4349471,
+                "candidate": 244.0298623
+            },
+            "reportUtf8Bytes": {
+                "baseline": 1929713,
+                "candidate": 58740503
+            },
+            "samplesVerified": 11,
+            "sourceComparison": {
+                "relation": "EXACT_PREFIX_WITH_LISTING_CATALOG",
+                "baselineSourceSha256": "a69bc1e1755482514e2799112613f75202bff00e08e181155b8d6250ce8ffae5",
+                "catalogBytes": 5247573,
+                "catalogRecords": 55102,
+                "catalogSha256": "7885f048e7c68a4b23895eed8d01ea63d46eca46d996ef4dac8bd578ddfbe701"
+            },
+            "strictReportedErrors": 3735,
+            "strictUncorroboratedErrors": 0,
+            "artifactSha256": [
+                "cb5af8e3ae032f794305b70e5bb363e6112c4755ebfa0376519f6b0b11185d3b",
+                "12c518d0f3509d16c4c986a1d51c8cef62931c843dd5434f2f2dd6c73471b030"
+            ],
+            "reportSha256": {
+                "baseline": "1b90f9ea3dc827392e7f7ca445673d3d48037c71c152fecd758b9e9a72940b66",
+                "candidate": "6d053602a41aa27e85587e7da26a2df6267ac52e848708675038d96485197115"
+            }
+        }
+    ],
+    "consumers": [
+        {
+            "workload": "sqlite",
+            "artifactSha256": [
+                "a9dd9ce666c56776a9717aaa0fe91da4fb399425cd09a61f0ea75ad8e5018c50",
+                "2231aef45f608ea5526e4a946e527e045eca86c00e2a48bce35452f1d4f4229f"
+            ],
+            "gdb": {
+                "compiler": {
+                    "scriptSha256": "397dcbb452c0081ab497a4310138a8dc3b25de7c026cafd913d2c2622e96fb0c",
+                    "logSha256": "a76b43a5d81f6930df31e29ce40b5c1a1f47ab227c8ec5062d135849194910e2"
+                },
+                "forge": {
+                    "scriptSha256": "252401bad55df404b58a9781a89a2da76077b60e7cc9c211978388a9490524ad",
+                    "logSha256": "ffe2ffe2f9847596c45cc6882ddda20c308bb472d0848446e17d653371d4b511"
+                }
+            },
+            "strictReportedErrors": 828,
+            "strictUncorroboratedErrors": 0,
+            "originalFrameIdentityAndBytesMatch": true,
+            "relocatedCompilerSourcesVerified": true
+        },
+        {
+            "workload": "uboot",
+            "artifactSha256": [
+                "cb5af8e3ae032f794305b70e5bb363e6112c4755ebfa0376519f6b0b11185d3b",
+                "12c518d0f3509d16c4c986a1d51c8cef62931c843dd5434f2f2dd6c73471b030"
+            ],
+            "gdb": {
+                "compiler": {
+                    "scriptSha256": "3dd7317ba3204e395c6baed3cd13542327c3de9b1ee74b0598007e54c86a8b2c",
+                    "logSha256": "e07017d232996663f20f01df22dee03aa23cfe1a2610b20e2e6cda3c48343d75"
+                },
+                "forge": {
+                    "scriptSha256": "b1677742036cdbe2a6d23186be6b2ef55a0dd1c14a944292164363c55b693b7d",
+                    "logSha256": "347d96b4b61af503caef60b0c67057d3c25b57fe33228745e5a7233c76a78720"
+                }
+            },
+            "strictReportedErrors": 3735,
+            "strictUncorroboratedErrors": 0,
+            "originalFrameIdentityAndBytesMatch": true,
+            "relocatedCompilerSourcesVerified": true
+        }
+    ],
+    "reviewScripts": {
+        "review.py": "fa7e1dfaf26a3834472396622ccde607b7a44d3b66b5f9196b5bfa43e7f14896",
+        "consumer-review.py": "a235d3ce98b1c835f467a693ce298decd01decf26a492932ebee5a8a2315083a"
+    },
+    "auditCorrections": "Initial audit incorrectly included RELEASE-SHA256SUMS in the receipt file maps, assumed LF for the Windows-regenerated manifest, and assumed LF for six Windows checkout scripts. Corrected using the exact control generator and verified exact CRLF hashes. Original script revisions and failed logs retained. No production/harness alteration for these audit assumptions.",
+    "remaining": "Fresh exact-head hosted acceptance after context report retention fix; ordinary PR review/merge. No release publication. Full #112/#110/#109 goal remains open.",
+    "limits": [
+        "Independent Linux consumer/GDB and current integration gate still required before merge",
+        "Known U-Boot decompilation timeout is identical in baseline/candidate; it is not a complete decompilation claim",
+        "Observed hosted timing medians do not isolate causation or establish a stable performance regression",
+        "No PR merge or release publication in this review"
+    ]
+}

@@ -158,6 +158,7 @@ validate_pair() {
         -ex 'list gui_recovered_add' -ex 'break gui_recovered_add' \
         -ex 'python exits=[]; gdb.events.exited.connect(lambda event: exits.append(event.exit_code))' \
         -ex "$start_command" -ex 'python assert gdb.selected_frame().name() == "gui_recovered_add"' \
+        -ex 'python constant=gdb.parse_and_eval("GUI_EQUATE_VALUE"); assert int(constant) == 0x31415926 and constant.type.sizeof == 4 and constant.address is None' \
         -ex 'python import os; assert os.path.isfile(gdb.selected_frame().find_sal().symtab.fullname())' \
         -ex 'python before=int(gdb.parse_and_eval("$pc"))' -ex next \
         -ex 'python assert int(gdb.parse_and_eval("$pc")) != before' \
@@ -174,6 +175,13 @@ validate_pair() {
         >> "$work/result.txt"
 }
 validate_pair "$work" "$work/select/readonly/fixture" "$work/select/chosen/fixture.dbg" export
+if [[ ${GHIDRA_GUI_COMPRESSION:-0} != 1 && ${GHIDRA_GUI_GDB_LOADER:-0} != 1 ]]; then
+    for mode in off assembly p-code both; do
+        context_case="$work/select/source-context/$mode"
+        validate_pair "$context_case" "$work/select/readonly/fixture" "$context_case/output/fixture.dbg" context
+    done
+    python3 "$repository/src/test/integration/gui-context-evidence.py" "$work/select/source-context"
+fi
 readelf -SW "$work/select/chosen/fixture.dbg" > "$work/export-sections.txt"
 if [[ ${GHIDRA_GUI_COMPRESSION:-0} == 1 ]]; then
     grep -Eq '[.]debug_info[[:space:]]+PROGBITS.*[[:space:]]C[[:space:]]' "$work/export-sections.txt"

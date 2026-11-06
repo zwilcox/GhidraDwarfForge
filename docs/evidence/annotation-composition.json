@@ -1,0 +1,50 @@
+{
+    "issues": [
+        116,
+        114
+    ],
+    "status": "CONFIRMED composition component; production extraction/export integration PLANNED",
+    "baseline": {
+        "ghidra": "12.0.3",
+        "java": 21,
+        "parentCommit": "db3ce7c"
+    },
+    "sourceSha256": {
+        "src/main/java/ghidradwarfforge/source/AnnotatedSourceFile.java": "39c6788fbd0077ecb1ffebdbe0e61d9082b1424db718f680ab5324e20003d32c",
+        "src/test/java/ghidradwarfforge/source/AnnotatedSourceSmoke.java": "d4a971e37a87eb2f7c5c4232e64d41687350005953eb27cc5efe64342f2a6cdc",
+        "build.gradle": "79213ba2a6794a321bf10521c8eed609d32a48de720061af5b19473e147ff55d",
+        ".github/workflows/ci.yml": "b01f618b56bbba27b61ae2eaead240113562a05d327112a46db94b6d3c3f947b"
+    },
+    "checks": [
+        "Removing exactly the inserted rows restores original source bytes; an independent inverse row map verifies every original function boundary, source row and function token row retains its identity, addresses and disposition.",
+        "Targeted insertion requires an exact address/line pair in executable token evidence. Synthetic declaration-only rows and unrelated addresses are rejected; unknown placement uses a trailing non-executable catalog. Callers still must establish the actual annotation-to-token association.",
+        "Independent JSON decoding reconstructs complete labels and multiline payloads, including CR/LF, final LF/empty row, Unicode and malicious closing delimiter/preprocessor text.",
+        "Alias/discontiguous model rows retain their addresses and sequence bounds through the real DWARF line writer for 32/64-bit widths and both byte orders. Source coverage stays exactly4decoded/2anchored/3visible; no inserted comment row becomes executable. This is model/writer compatibility, not a full exported-artifact validator/GDB result.",
+        "Unknown or failed functions do not acquire executable rows or successful source status. Empty insertion lists preserve bytes. Permuted input ordering yields identical output.",
+        "Exact final UTF-8 budget passes; one-byte-short and undersized-original budgets fail. Duplicate identities, missing token evidence, malformed UTF-8, CRLF input and out-of-range metadata are rejected.",
+        "All538observed cancellation checkpoints abort immediately; input source bytes remain unchanged.",
+        "Gradle smoke and extension build pass; GCC C11/trigraph/warnings-as-errors accepts composed source. Actionlint passes and both Linux/Windows workflow commands include the new smoke task. Hosted execution remains pending."
+    ],
+    "counts": {
+        "insertedCommentRows": 10,
+        "preservedMappedRows": 3,
+        "negativeControls": 8,
+        "cancellationCheckpoints": 538,
+        "lineWriterConfigurations": 4
+    },
+    "extension": {
+        "path": "dist/ghidra_12.0.3_PUBLIC_20261105_GhidraDwarfForge.zip",
+        "sha256": "01a4385a76e72486400869e4fce2a1102c0bce9b5b7cbdac75ca1513115c3f17"
+    },
+    "archive": {
+        "path": "build/test-results/annotation-composition-evidence.tar.gz",
+        "sha256": "429b5dfd88a6dcc0303f5e5356574a67ee7e776190a4f1ed921ebe317149854a",
+        "bytes": 43378
+    },
+    "limits": [
+        "No production exporter invokes this component yet. Saved-program annotation extraction, incidental-comment suppression, context options, named constants and report integration remain required.",
+        "The fixture uses controlled source/address models and C lexical checks. Real emitted ELF/DWARF structural validators and actual GDB list/next/step/failure/cancellation acceptance remain required.",
+        "Final annotation association and user-facing labels require evidence from Ghidra; this component verifies the supplied token anchor exists but cannot establish external annotation ownership.",
+        "#108 code/PR/package remain unchanged; this component is isolated on the subsequent annotation branch."
+    ]
+}

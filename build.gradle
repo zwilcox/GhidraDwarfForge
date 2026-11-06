@@ -333,6 +333,22 @@ tasks.register("syntheticSourceSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.source.SyntheticSourceSmoke"
 }
 
+tasks.register("annotationTextSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks reversible bounded annotation text and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.source.AnnotationTextSmoke"
+}
+
+tasks.register("annotatedSourceSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks annotation insertion and executable source-line preservation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.source.AnnotatedSourceSmoke"
+}
+
 tasks.register("functionEntrySmoke", JavaExec) {
     group = "verification"
     description = "Checks function entries independent of their lowest body address"
@@ -678,6 +694,9 @@ tasks.register("emissionEvidenceSmoke", JavaExec) {
         setArgs(["libdwarfPath", "libdwarfpPath", "sidecarInput", "sidecarOutput", "fixtureSymbols"].collect {
             project.property(it)
         })
+        if (project.findProperty("emissionAnnotations") == "true") {
+            args "--annotations"
+        }
     }
 }
 

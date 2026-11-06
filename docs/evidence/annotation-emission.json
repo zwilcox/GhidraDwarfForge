@@ -1,0 +1,1248 @@
+{
+    "issues": [
+        116,
+        114
+    ],
+    "status": "CONFIRMED isolated composition-to-producer integration; production Ghidra extraction/integration PLANNED",
+    "baseline": {
+        "ghidra": "12.0.3",
+        "java": 21,
+        "parentCommit": "0f18fc0",
+        "libdwarf": "2.3.2",
+        "libdwarfRevision": "af7b278c6aa2ae9daad94fb7f8bffdc0e9980993"
+    },
+    "sourceSha256": {
+        "src/main/java/ghidradwarfforge/source/AnnotationText.java": "846976cccd8be864d7e3bd2514ef185a1204a74eacf793285aef24ba2f813cb0",
+        "src/main/java/ghidradwarfforge/source/AnnotatedSourceFile.java": "39c6788fbd0077ecb1ffebdbe0e61d9082b1424db718f680ab5324e20003d32c",
+        "src/test/java/ghidradwarfforge/coverage/EmissionEvidenceSmoke.java": "18ff49d0fc3425cc80b6949ef20d08b6d7989b63b6a1cbb43f45ff9617caa944",
+        "src/test/integration/emission-evidence.py": "ac9878d0b080c624b999ff46c874308aad64a083f8b27e405276e31550258f00",
+        "src/test/integration/emission-evidence-gdb.py": "2116bac3e62be360c9acf44f45e4160e640784c6503d35b2567c0f178dc83998",
+        "build.gradle": "aee966499b518564cee75aba2bccdda50d9921d8da80683eef0987d600d7bcb3",
+        ".github/workflows/ci.yml": "362fa2a1d095b98bfcc02023e9a188c9dc7b28003314852df56fd44fc428d88c"
+    },
+    "runs": {
+        "annotated": {
+            "directory": "/dev/shm/forge-annotation-emission/run.4h1k1pw7",
+            "result": {
+                "status": "PASS",
+                "scope": "isolated producer facts and definition-two type report, raw DWARF and native x86-64 GDB",
+                "checks": {
+                    "rawTypeNodes": 5,
+                    "opaqueNodes": 1,
+                    "variables": 9,
+                    "locations": 4,
+                    "omittedLocations": 5,
+                    "knownScopeVariables": 3,
+                    "lateCoveredScopeBytes": 2,
+                    "lateKnownScopeBytes": 5
+                },
+                "annotations": {
+                    "insertedRows": 6,
+                    "rawExecutableRows": 4,
+                    "sourceBytesRestored": true,
+                    "commentPayloadsRecovered": true,
+                    "failedFunctionStillSymbolOnly": true,
+                    "freshProcessIdenticalFiles": {
+                        "forge.dbg": "4fb7f6eb5518f75f87202355eadec77e161e738a6b048df708afc9ff9e924ee5",
+                        "forge.dbg.c": "9f9bc21b5483970c369a3f0d7517303ecf5b7645359f4907a6613805f74fb86a",
+                        "forge.dbg.annotations.json": "ed0f266799d2c6e53ce58cb4b89ece5b9dcd1feb1bd883150eb75784283e2488",
+                        "forge.dbg.report.json": "5f78c9f319ca4258b0b31b1f2b4a5ef4bd6a9e7645b6b9e12fe5ce26fd1ec8fa",
+                        "forge.dbg.coverage.json": "c20893043d1b81f5c8841b8999816f6724035ee0a7e5b8467653b11eb4323eb4",
+                        "type-before.dbg": "c1fa1a4a4a4993c6996240ea709a6e415c88e4a8d0efd31bbfdd5a407868f587",
+                        "type-after.dbg": "e8e1ec939ab476a38afaba0c9af400732bc59276a9b73bbf2629267ec5521620",
+                        "type-unattached.dbg": "85696fda1251d8a4bc008d5e78d2d6499d83957c84a9a3df862b04ecaaf3a05d"
+                    }
+                },
+                "typePairs": {
+                    "phases": 3,
+                    "deterministicExports": 6,
+                    "comparisons": 4,
+                    "statesFromRawDwarf": {
+                        "before": {
+                            "a": "RESOLVED",
+                            "b": "OPAQUE",
+                            "u64": "RESOLVED"
+                        },
+                        "after": {
+                            "a": "OPAQUE",
+                            "b": "RESOLVED",
+                            "u64": "RESOLVED"
+                        },
+                        "unattached": {
+                            "a": "NOT_EMITTED",
+                            "b": "NOT_EMITTED",
+                            "u64": "NOT_EMITTED"
+                        }
+                    }
+                },
+                "protected": {
+                    "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/fixtures/emission-evidence.c": "dcf1bc6bf2ab425488defa77e50aab20f51cb3c9a3a2eede94164252825f0a9a",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/fixtures/emission-evidence-x86_64.S": "3d20877cb77d80dc3d482cb8455c3ef6acd02523a0e2e8a2aae5aacd3daf0ebb",
+                    "/dev/shm/forge-annotation-emission/run.4h1k1pw7/reference": "4ef80cd5e08729d9ffdbaff4a427e4ac3c92c3167138f64315441f88702f3b36",
+                    "/dev/shm/forge-annotation-emission/run.4h1k1pw7/input": "9bac3ac50eace9362f678263a83c9d612f1ee31a83f447f239d807cce3b2c2eb",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarf.so.2.3.2": "613d86accc88ea0fe369b7d6ade0d4fe605a451a7675b0c2453f21b328de81b7",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarfp.so.2.3.2": "fa82f4524de69634c7301fa5bdd53327aa89040da92c1d086271df51119531ad"
+                },
+                "sidecarSha256": "4fb7f6eb5518f75f87202355eadec77e161e738a6b048df708afc9ff9e924ee5",
+                "sourceSha256": "9f9bc21b5483970c369a3f0d7517303ecf5b7645359f4907a6613805f74fb86a",
+                "schemaTwoReportSha256": "5f78c9f319ca4258b0b31b1f2b4a5ef4bd6a9e7645b6b9e12fe5ce26fd1ec8fa"
+            },
+            "commands": [
+                {
+                    "label": "compile",
+                    "argv": [
+                        "gcc",
+                        "-O0",
+                        "-g",
+                        "-gdwarf-5",
+                        "-fno-pie",
+                        "-no-pie",
+                        "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/fixtures/emission-evidence.c",
+                        "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/fixtures/emission-evidence-x86_64.S",
+                        "-o",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/reference"
+                    ]
+                },
+                {
+                    "label": "strip",
+                    "argv": [
+                        "objcopy",
+                        "--strip-all",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/reference",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/input"
+                    ]
+                },
+                {
+                    "label": "symbols",
+                    "argv": [
+                        "nm",
+                        "-n",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/reference"
+                    ]
+                },
+                {
+                    "label": "disassembly",
+                    "argv": [
+                        "objdump",
+                        "-d",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/reference"
+                    ]
+                },
+                {
+                    "label": "native",
+                    "argv": [
+                        "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/run-isolated-native-smoke.sh",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/native-process",
+                        "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/gradlew",
+                        "--no-daemon",
+                        "--project-cache-dir",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/gradle-cache",
+                        "--init-script",
+                        "/dev/shm/forge-annotation-text-ntzxa_ms/build-output.gradle",
+                        "emissionEvidenceSmoke",
+                        "-PemissionAnnotations=true",
+                        "-PlibdwarfPath=/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarf.so.2.3.2",
+                        "-PlibdwarfpPath=/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarfp.so.2.3.2",
+                        "-PsidecarInput=/dev/shm/forge-annotation-emission/run.4h1k1pw7/input",
+                        "-PsidecarOutput=/dev/shm/forge-annotation-emission/run.4h1k1pw7/forge.dbg",
+                        "-PfixtureSymbols=/dev/shm/forge-annotation-emission/run.4h1k1pw7/symbols.log"
+                    ]
+                },
+                {
+                    "label": "info",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=info",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/forge.dbg"
+                    ]
+                },
+                {
+                    "label": "abbrev",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=abbrev",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/forge.dbg"
+                    ]
+                },
+                {
+                    "label": "aranges",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=aranges",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/forge.dbg"
+                    ]
+                },
+                {
+                    "label": "decodedline",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=decodedline",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/forge.dbg"
+                    ]
+                },
+                {
+                    "label": "loc",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=loc",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/forge.dbg"
+                    ]
+                },
+                {
+                    "label": "input-elf",
+                    "argv": [
+                        "readelf",
+                        "-hSWn",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/input"
+                    ]
+                },
+                {
+                    "label": "forge.dbg-elf",
+                    "argv": [
+                        "readelf",
+                        "-hSWn",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/forge.dbg"
+                    ]
+                },
+                {
+                    "label": "llvm",
+                    "argv": [
+                        "llvm-dwarfdump",
+                        "--verify",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/forge.dbg"
+                    ]
+                },
+                {
+                    "label": "strict",
+                    "argv": [
+                        "python3",
+                        "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/check-dwarfdump.py",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/forge.dbg",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/dwarfdump.log",
+                        "--original",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/input"
+                    ]
+                },
+                {
+                    "label": "gdb",
+                    "argv": [
+                        "gdb-multiarch",
+                        "-q",
+                        "-nx",
+                        "-batch",
+                        "-ex",
+                        "set pagination off",
+                        "-ex",
+                        "set confirm off",
+                        "-ex",
+                        "cd /dev/shm/forge-annotation-emission/run.4h1k1pw7/unrelated-debugger-cwd",
+                        "-ex",
+                        "set debuginfod enabled off",
+                        "-ex",
+                        "set auto-solib-add off",
+                        "-ex",
+                        "set disable-randomization off",
+                        "-ex",
+                        "file /dev/shm/forge-annotation-emission/run.4h1k1pw7/input",
+                        "-ex",
+                        "symbol-file /dev/shm/forge-annotation-emission/run.4h1k1pw7/forge.dbg",
+                        "-x",
+                        "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/emission-evidence-gdb.py"
+                    ]
+                },
+                {
+                    "label": "type-before-info",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=info",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-before.dbg"
+                    ]
+                },
+                {
+                    "label": "type-before-abbrev",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=abbrev",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-before.dbg"
+                    ]
+                },
+                {
+                    "label": "type-before-aranges",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=aranges",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-before.dbg"
+                    ]
+                },
+                {
+                    "label": "type-before-decodedline",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=decodedline",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-before.dbg"
+                    ]
+                },
+                {
+                    "label": "type-before-loc",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=loc",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-before.dbg"
+                    ]
+                },
+                {
+                    "label": "type-before-elf",
+                    "argv": [
+                        "readelf",
+                        "-hSWn",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-before.dbg"
+                    ]
+                },
+                {
+                    "label": "type-before-llvm",
+                    "argv": [
+                        "llvm-dwarfdump",
+                        "--verify",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-before.dbg"
+                    ]
+                },
+                {
+                    "label": "type-before-strict",
+                    "argv": [
+                        "python3",
+                        "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/check-dwarfdump.py",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-before.dbg",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-before-dwarfdump.log",
+                        "--original",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/input"
+                    ]
+                },
+                {
+                    "label": "type-before-gdb",
+                    "argv": [
+                        "gdb-multiarch",
+                        "-q",
+                        "-nx",
+                        "-batch",
+                        "-ex",
+                        "set pagination off",
+                        "-ex",
+                        "set confirm off",
+                        "-ex",
+                        "set debuginfod enabled off",
+                        "-ex",
+                        "set auto-solib-add off",
+                        "-ex",
+                        "set disable-randomization off",
+                        "-ex",
+                        "file /dev/shm/forge-annotation-emission/run.4h1k1pw7/input",
+                        "-ex",
+                        "symbol-file /dev/shm/forge-annotation-emission/run.4h1k1pw7/type-before.dbg",
+                        "-x",
+                        "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/type-pair-gdb.py"
+                    ]
+                },
+                {
+                    "label": "type-after-info",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=info",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-after.dbg"
+                    ]
+                },
+                {
+                    "label": "type-after-abbrev",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=abbrev",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-after.dbg"
+                    ]
+                },
+                {
+                    "label": "type-after-aranges",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=aranges",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-after.dbg"
+                    ]
+                },
+                {
+                    "label": "type-after-decodedline",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=decodedline",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-after.dbg"
+                    ]
+                },
+                {
+                    "label": "type-after-loc",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=loc",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-after.dbg"
+                    ]
+                },
+                {
+                    "label": "type-after-elf",
+                    "argv": [
+                        "readelf",
+                        "-hSWn",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-after.dbg"
+                    ]
+                },
+                {
+                    "label": "type-after-llvm",
+                    "argv": [
+                        "llvm-dwarfdump",
+                        "--verify",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-after.dbg"
+                    ]
+                },
+                {
+                    "label": "type-after-strict",
+                    "argv": [
+                        "python3",
+                        "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/check-dwarfdump.py",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-after.dbg",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-after-dwarfdump.log",
+                        "--original",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/input"
+                    ]
+                },
+                {
+                    "label": "type-after-gdb",
+                    "argv": [
+                        "gdb-multiarch",
+                        "-q",
+                        "-nx",
+                        "-batch",
+                        "-ex",
+                        "set pagination off",
+                        "-ex",
+                        "set confirm off",
+                        "-ex",
+                        "set debuginfod enabled off",
+                        "-ex",
+                        "set auto-solib-add off",
+                        "-ex",
+                        "set disable-randomization off",
+                        "-ex",
+                        "file /dev/shm/forge-annotation-emission/run.4h1k1pw7/input",
+                        "-ex",
+                        "symbol-file /dev/shm/forge-annotation-emission/run.4h1k1pw7/type-after.dbg",
+                        "-x",
+                        "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/type-pair-gdb.py"
+                    ]
+                },
+                {
+                    "label": "type-unattached-info",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=info",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-unattached.dbg"
+                    ]
+                },
+                {
+                    "label": "type-unattached-abbrev",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=abbrev",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-unattached.dbg"
+                    ]
+                },
+                {
+                    "label": "type-unattached-aranges",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=aranges",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-unattached.dbg"
+                    ]
+                },
+                {
+                    "label": "type-unattached-decodedline",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=decodedline",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-unattached.dbg"
+                    ]
+                },
+                {
+                    "label": "type-unattached-loc",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=loc",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-unattached.dbg"
+                    ]
+                },
+                {
+                    "label": "type-unattached-elf",
+                    "argv": [
+                        "readelf",
+                        "-hSWn",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-unattached.dbg"
+                    ]
+                },
+                {
+                    "label": "type-unattached-llvm",
+                    "argv": [
+                        "llvm-dwarfdump",
+                        "--verify",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-unattached.dbg"
+                    ]
+                },
+                {
+                    "label": "type-unattached-strict",
+                    "argv": [
+                        "python3",
+                        "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/check-dwarfdump.py",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-unattached.dbg",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/type-unattached-dwarfdump.log",
+                        "--original",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/input"
+                    ]
+                },
+                {
+                    "label": "type-unattached-gdb",
+                    "argv": [
+                        "gdb-multiarch",
+                        "-q",
+                        "-nx",
+                        "-batch",
+                        "-ex",
+                        "set pagination off",
+                        "-ex",
+                        "set confirm off",
+                        "-ex",
+                        "set debuginfod enabled off",
+                        "-ex",
+                        "set auto-solib-add off",
+                        "-ex",
+                        "set disable-randomization off",
+                        "-ex",
+                        "file /dev/shm/forge-annotation-emission/run.4h1k1pw7/input",
+                        "-ex",
+                        "symbol-file /dev/shm/forge-annotation-emission/run.4h1k1pw7/type-unattached.dbg",
+                        "-x",
+                        "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/type-pair-gdb.py"
+                    ]
+                },
+                {
+                    "label": "native-repeat",
+                    "argv": [
+                        "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/run-isolated-native-smoke.sh",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/native-process-repeat",
+                        "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/gradlew",
+                        "--no-daemon",
+                        "--project-cache-dir",
+                        "/dev/shm/forge-annotation-emission/run.4h1k1pw7/gradle-cache",
+                        "--init-script",
+                        "/dev/shm/forge-annotation-text-ntzxa_ms/build-output.gradle",
+                        "emissionEvidenceSmoke",
+                        "-PemissionAnnotations=true",
+                        "-PlibdwarfPath=/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarf.so.2.3.2",
+                        "-PlibdwarfpPath=/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarfp.so.2.3.2",
+                        "-PsidecarInput=/dev/shm/forge-annotation-emission/run.4h1k1pw7/input",
+                        "-PsidecarOutput=/dev/shm/forge-annotation-emission/run.4h1k1pw7/forge.dbg",
+                        "-PfixtureSymbols=/dev/shm/forge-annotation-emission/run.4h1k1pw7/symbols.log"
+                    ]
+                }
+            ]
+        },
+        "baseline": {
+            "directory": "/dev/shm/forge-annotation-emission/run.hyanz3p9",
+            "result": {
+                "status": "PASS",
+                "scope": "isolated producer facts and definition-two type report, raw DWARF and native x86-64 GDB",
+                "checks": {
+                    "rawTypeNodes": 5,
+                    "opaqueNodes": 1,
+                    "variables": 9,
+                    "locations": 4,
+                    "omittedLocations": 5,
+                    "knownScopeVariables": 3,
+                    "lateCoveredScopeBytes": 2,
+                    "lateKnownScopeBytes": 5
+                },
+                "annotations": null,
+                "typePairs": {
+                    "phases": 3,
+                    "deterministicExports": 6,
+                    "comparisons": 4,
+                    "statesFromRawDwarf": {
+                        "before": {
+                            "a": "RESOLVED",
+                            "b": "OPAQUE",
+                            "u64": "RESOLVED"
+                        },
+                        "after": {
+                            "a": "OPAQUE",
+                            "b": "RESOLVED",
+                            "u64": "RESOLVED"
+                        },
+                        "unattached": {
+                            "a": "NOT_EMITTED",
+                            "b": "NOT_EMITTED",
+                            "u64": "NOT_EMITTED"
+                        }
+                    }
+                },
+                "protected": {
+                    "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/fixtures/emission-evidence.c": "dcf1bc6bf2ab425488defa77e50aab20f51cb3c9a3a2eede94164252825f0a9a",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/fixtures/emission-evidence-x86_64.S": "3d20877cb77d80dc3d482cb8455c3ef6acd02523a0e2e8a2aae5aacd3daf0ebb",
+                    "/dev/shm/forge-annotation-emission/run.hyanz3p9/reference": "4ef80cd5e08729d9ffdbaff4a427e4ac3c92c3167138f64315441f88702f3b36",
+                    "/dev/shm/forge-annotation-emission/run.hyanz3p9/input": "9bac3ac50eace9362f678263a83c9d612f1ee31a83f447f239d807cce3b2c2eb",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarf.so.2.3.2": "613d86accc88ea0fe369b7d6ade0d4fe605a451a7675b0c2453f21b328de81b7",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarfp.so.2.3.2": "fa82f4524de69634c7301fa5bdd53327aa89040da92c1d086271df51119531ad"
+                },
+                "sidecarSha256": "0efdbe02ee8c5d9df504b2b66954e7b9c97e922fd99d2abd8937c89c6dc0934d",
+                "sourceSha256": "095daf48a16783796984853fae9c4b21d50afb1a9483edd1471a9c46fdb9de83",
+                "schemaTwoReportSha256": "86db183bd0e015eea05af8dbb10fcea3500e659019843bdfc43595f28e03a02c"
+            },
+            "commands": [
+                {
+                    "label": "compile",
+                    "argv": [
+                        "gcc",
+                        "-O0",
+                        "-g",
+                        "-gdwarf-5",
+                        "-fno-pie",
+                        "-no-pie",
+                        "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/fixtures/emission-evidence.c",
+                        "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/fixtures/emission-evidence-x86_64.S",
+                        "-o",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/reference"
+                    ]
+                },
+                {
+                    "label": "strip",
+                    "argv": [
+                        "objcopy",
+                        "--strip-all",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/reference",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/input"
+                    ]
+                },
+                {
+                    "label": "symbols",
+                    "argv": [
+                        "nm",
+                        "-n",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/reference"
+                    ]
+                },
+                {
+                    "label": "disassembly",
+                    "argv": [
+                        "objdump",
+                        "-d",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/reference"
+                    ]
+                },
+                {
+                    "label": "native",
+                    "argv": [
+                        "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/run-isolated-native-smoke.sh",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/native-process",
+                        "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/gradlew",
+                        "--no-daemon",
+                        "--project-cache-dir",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/gradle-cache",
+                        "--init-script",
+                        "/dev/shm/forge-annotation-text-ntzxa_ms/build-output.gradle",
+                        "emissionEvidenceSmoke",
+                        "-PemissionAnnotations=false",
+                        "-PlibdwarfPath=/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarf.so.2.3.2",
+                        "-PlibdwarfpPath=/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarfp.so.2.3.2",
+                        "-PsidecarInput=/dev/shm/forge-annotation-emission/run.hyanz3p9/input",
+                        "-PsidecarOutput=/dev/shm/forge-annotation-emission/run.hyanz3p9/forge.dbg",
+                        "-PfixtureSymbols=/dev/shm/forge-annotation-emission/run.hyanz3p9/symbols.log"
+                    ]
+                },
+                {
+                    "label": "info",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=info",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/forge.dbg"
+                    ]
+                },
+                {
+                    "label": "abbrev",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=abbrev",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/forge.dbg"
+                    ]
+                },
+                {
+                    "label": "aranges",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=aranges",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/forge.dbg"
+                    ]
+                },
+                {
+                    "label": "decodedline",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=decodedline",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/forge.dbg"
+                    ]
+                },
+                {
+                    "label": "loc",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=loc",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/forge.dbg"
+                    ]
+                },
+                {
+                    "label": "input-elf",
+                    "argv": [
+                        "readelf",
+                        "-hSWn",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/input"
+                    ]
+                },
+                {
+                    "label": "forge.dbg-elf",
+                    "argv": [
+                        "readelf",
+                        "-hSWn",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/forge.dbg"
+                    ]
+                },
+                {
+                    "label": "llvm",
+                    "argv": [
+                        "llvm-dwarfdump",
+                        "--verify",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/forge.dbg"
+                    ]
+                },
+                {
+                    "label": "strict",
+                    "argv": [
+                        "python3",
+                        "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/check-dwarfdump.py",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/forge.dbg",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/dwarfdump.log",
+                        "--original",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/input"
+                    ]
+                },
+                {
+                    "label": "gdb",
+                    "argv": [
+                        "gdb-multiarch",
+                        "-q",
+                        "-nx",
+                        "-batch",
+                        "-ex",
+                        "set pagination off",
+                        "-ex",
+                        "set confirm off",
+                        "-ex",
+                        "cd /dev/shm/forge-annotation-emission/run.hyanz3p9/unrelated-debugger-cwd",
+                        "-ex",
+                        "set debuginfod enabled off",
+                        "-ex",
+                        "set auto-solib-add off",
+                        "-ex",
+                        "set disable-randomization off",
+                        "-ex",
+                        "file /dev/shm/forge-annotation-emission/run.hyanz3p9/input",
+                        "-ex",
+                        "symbol-file /dev/shm/forge-annotation-emission/run.hyanz3p9/forge.dbg",
+                        "-x",
+                        "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/emission-evidence-gdb.py"
+                    ]
+                },
+                {
+                    "label": "type-before-info",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=info",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-before.dbg"
+                    ]
+                },
+                {
+                    "label": "type-before-abbrev",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=abbrev",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-before.dbg"
+                    ]
+                },
+                {
+                    "label": "type-before-aranges",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=aranges",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-before.dbg"
+                    ]
+                },
+                {
+                    "label": "type-before-decodedline",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=decodedline",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-before.dbg"
+                    ]
+                },
+                {
+                    "label": "type-before-loc",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=loc",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-before.dbg"
+                    ]
+                },
+                {
+                    "label": "type-before-elf",
+                    "argv": [
+                        "readelf",
+                        "-hSWn",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-before.dbg"
+                    ]
+                },
+                {
+                    "label": "type-before-llvm",
+                    "argv": [
+                        "llvm-dwarfdump",
+                        "--verify",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-before.dbg"
+                    ]
+                },
+                {
+                    "label": "type-before-strict",
+                    "argv": [
+                        "python3",
+                        "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/check-dwarfdump.py",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-before.dbg",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-before-dwarfdump.log",
+                        "--original",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/input"
+                    ]
+                },
+                {
+                    "label": "type-before-gdb",
+                    "argv": [
+                        "gdb-multiarch",
+                        "-q",
+                        "-nx",
+                        "-batch",
+                        "-ex",
+                        "set pagination off",
+                        "-ex",
+                        "set confirm off",
+                        "-ex",
+                        "set debuginfod enabled off",
+                        "-ex",
+                        "set auto-solib-add off",
+                        "-ex",
+                        "set disable-randomization off",
+                        "-ex",
+                        "file /dev/shm/forge-annotation-emission/run.hyanz3p9/input",
+                        "-ex",
+                        "symbol-file /dev/shm/forge-annotation-emission/run.hyanz3p9/type-before.dbg",
+                        "-x",
+                        "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/type-pair-gdb.py"
+                    ]
+                },
+                {
+                    "label": "type-after-info",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=info",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-after.dbg"
+                    ]
+                },
+                {
+                    "label": "type-after-abbrev",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=abbrev",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-after.dbg"
+                    ]
+                },
+                {
+                    "label": "type-after-aranges",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=aranges",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-after.dbg"
+                    ]
+                },
+                {
+                    "label": "type-after-decodedline",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=decodedline",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-after.dbg"
+                    ]
+                },
+                {
+                    "label": "type-after-loc",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=loc",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-after.dbg"
+                    ]
+                },
+                {
+                    "label": "type-after-elf",
+                    "argv": [
+                        "readelf",
+                        "-hSWn",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-after.dbg"
+                    ]
+                },
+                {
+                    "label": "type-after-llvm",
+                    "argv": [
+                        "llvm-dwarfdump",
+                        "--verify",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-after.dbg"
+                    ]
+                },
+                {
+                    "label": "type-after-strict",
+                    "argv": [
+                        "python3",
+                        "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/check-dwarfdump.py",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-after.dbg",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-after-dwarfdump.log",
+                        "--original",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/input"
+                    ]
+                },
+                {
+                    "label": "type-after-gdb",
+                    "argv": [
+                        "gdb-multiarch",
+                        "-q",
+                        "-nx",
+                        "-batch",
+                        "-ex",
+                        "set pagination off",
+                        "-ex",
+                        "set confirm off",
+                        "-ex",
+                        "set debuginfod enabled off",
+                        "-ex",
+                        "set auto-solib-add off",
+                        "-ex",
+                        "set disable-randomization off",
+                        "-ex",
+                        "file /dev/shm/forge-annotation-emission/run.hyanz3p9/input",
+                        "-ex",
+                        "symbol-file /dev/shm/forge-annotation-emission/run.hyanz3p9/type-after.dbg",
+                        "-x",
+                        "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/type-pair-gdb.py"
+                    ]
+                },
+                {
+                    "label": "type-unattached-info",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=info",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-unattached.dbg"
+                    ]
+                },
+                {
+                    "label": "type-unattached-abbrev",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=abbrev",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-unattached.dbg"
+                    ]
+                },
+                {
+                    "label": "type-unattached-aranges",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=aranges",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-unattached.dbg"
+                    ]
+                },
+                {
+                    "label": "type-unattached-decodedline",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=decodedline",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-unattached.dbg"
+                    ]
+                },
+                {
+                    "label": "type-unattached-loc",
+                    "argv": [
+                        "readelf",
+                        "--debug-dump=loc",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-unattached.dbg"
+                    ]
+                },
+                {
+                    "label": "type-unattached-elf",
+                    "argv": [
+                        "readelf",
+                        "-hSWn",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-unattached.dbg"
+                    ]
+                },
+                {
+                    "label": "type-unattached-llvm",
+                    "argv": [
+                        "llvm-dwarfdump",
+                        "--verify",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-unattached.dbg"
+                    ]
+                },
+                {
+                    "label": "type-unattached-strict",
+                    "argv": [
+                        "python3",
+                        "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/check-dwarfdump.py",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-unattached.dbg",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/type-unattached-dwarfdump.log",
+                        "--original",
+                        "/dev/shm/forge-annotation-emission/run.hyanz3p9/input"
+                    ]
+                },
+                {
+                    "label": "type-unattached-gdb",
+                    "argv": [
+                        "gdb-multiarch",
+                        "-q",
+                        "-nx",
+                        "-batch",
+                        "-ex",
+                        "set pagination off",
+                        "-ex",
+                        "set confirm off",
+                        "-ex",
+                        "set debuginfod enabled off",
+                        "-ex",
+                        "set auto-solib-add off",
+                        "-ex",
+                        "set disable-randomization off",
+                        "-ex",
+                        "file /dev/shm/forge-annotation-emission/run.hyanz3p9/input",
+                        "-ex",
+                        "symbol-file /dev/shm/forge-annotation-emission/run.hyanz3p9/type-unattached.dbg",
+                        "-x",
+                        "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/type-pair-gdb.py"
+                    ]
+                }
+            ]
+        }
+    },
+    "environment": {
+        "JAVA_HOME": "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/workloads/tools/root/usr/lib/jvm/java-21-openjdk-amd64",
+        "DWARFDUMP": "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/dwarfdump-linux-validation/bin/dwarfdump"
+    },
+    "checks": [
+        "Controlled token-associated and unassociated annotations pass through the production MinimalDwarfSidecarExporter and matched ELF writer, using the existing audited producer bindings.",
+        "Independent Python reads raw DWARF line rows and DIEs: six inserted comment rows have no executable entries; four executable rows retain their original addresses/text. Removing inserted rows restores exact original bytes, all function boundaries and token/source metadata.",
+        "Independent JSON decoding reconstructs multiline payloads with Unicode, delimiter attacks, literal escapes, CR/LF, tabs and final empty line.",
+        "Actual GDB loads the absolute sidecar from an unrelated working directory. Function and explicit file/line listing show annotations; instruction/source stepping lands on the original x=x and return lines. Existing parameter/local/static values, changing-location availability, type and unavailable-variable assertions pass; inferior exits zero.",
+        "Controlled failed function retains no declaration-file/line, signature or parameter DIE. Its catalog comment is readable without invented executable association.",
+        "Both baseline and annotated modes pass all existing raw coverage/type/location/report assertions and three type-pair artifact consumers. GNU/LLVM/pinned strict validators pass for each generated sidecar; original fixture/native hashes are preserved.",
+        "Native-phase cancellation preserves the prior output and subsequent production is deterministic. Eight files, including sidecar/source/report/annotation manifest and all three type-pair sidecars, are byte-identical across fresh producer JVMs.",
+        "Actionlint and git diff --check pass. The x86-64 workflow now invokes the annotation mode separately; hosted execution remains unverified."
+    ],
+    "limits": [
+        "This is a controlled x86-64 non-PIE model fixture, not saved-program listing/equate extraction or the installed GUI/headless exporter path.",
+        "No production call site invokes the new annotation compositor yet. Other target/host runtime acceptance and optional disassembly/p-code/named constants remain required.",
+        "The failed source is modeled here. Real native instruction-budget failures were verified separately; complete production failed-function publication remains unverified.",
+        "No release or support claim, and neither issue is closed. Issue108 protected integration remains the priority."
+    ],
+    "archive": {
+        "path": "build/test-results/annotation-emission-evidence.tar.gz",
+        "sha256": "b1821fe34e8da39edbad8d1dfca3f31fa6c31c79d871dbe6a548d44ac222f7bb",
+        "bytes": 120479,
+        "files": {
+            "annotated/abbrev.log": "5e81d46a7750d9ee7af46c82bf856d62652033241e2034a0bcea924ab6180e03",
+            "annotated/acceptance.json": "2ac74b30be0d1a0f6d6139658289db751a8bb643b7f6bc2695f3167635861dc1",
+            "annotated/aranges.log": "db3410b0dd34f465e6c7b7142b87035c1ba49770ef2e9a737dfaf5343f96c5f5",
+            "annotated/commands.json": "d1a03148916d4d8d55a56be797a055c61da2345924e33e8aef1d642c44a95998",
+            "annotated/compile.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "annotated/decodedline.log": "21653e9c6115cbaecaa041d3952e01685c126abf50b1f1b608287765081c5522",
+            "annotated/disassembly.log": "64be7e2b0bd7d2b596295d5843b6ff4ad71038fddad55a92fd6f023d378c11a9",
+            "annotated/dwarfdump.log": "5ef59915c2abb0578d6234e64944adf760ad8cb40822160cb97960a7a860b4f1",
+            "annotated/dwarfdump.log.check.json": "5189209d33a416b8c677a2d60f7360bea68db7660567694991c17b14c3c6e2d3",
+            "annotated/dwarfdump.log.original.txt": "6648d29a69100e6cf886ca51ee99cbd79929428064a1641494a3687373e5aabc",
+            "annotated/dwarfdump.log.original.txt.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "annotated/dwarfdump.log.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "annotated/forge.dbg": "4fb7f6eb5518f75f87202355eadec77e161e738a6b048df708afc9ff9e924ee5",
+            "annotated/forge.dbg-elf.log": "c36a638a602f8e4ffef992e6ca5634da314fe2b05cebb03e165b4e4632cb1d3f",
+            "annotated/forge.dbg.annotations.json": "ed0f266799d2c6e53ce58cb4b89ece5b9dcd1feb1bd883150eb75784283e2488",
+            "annotated/forge.dbg.c": "9f9bc21b5483970c369a3f0d7517303ecf5b7645359f4907a6613805f74fb86a",
+            "annotated/forge.dbg.cancelled": "26239061ed00d2a3451dde22793b1b71ada2ce778d72bf7051d950c93bea9dc7",
+            "annotated/forge.dbg.coverage.json": "c20893043d1b81f5c8841b8999816f6724035ee0a7e5b8467653b11eb4323eb4",
+            "annotated/forge.dbg.evidence.json": "9461b680d81bb6d2623482a4f8f8e32a3565da0eb3ada0ecfa52477f6dbae545",
+            "annotated/forge.dbg.report.json": "5f78c9f319ca4258b0b31b1f2b4a5ef4bd6a9e7645b6b9e12fe5ce26fd1ec8fa",
+            "annotated/gdb.log": "aacf004132acd56b462962ed06f340debd334edb70f32da162fc50c37e109ce0",
+            "annotated/info.log": "e60b6c30033b6c474f731bd13e9907ab3e4c0adaadf9b2a1fb0b1d4241b05bd3",
+            "annotated/input": "9bac3ac50eace9362f678263a83c9d612f1ee31a83f447f239d807cce3b2c2eb",
+            "annotated/input-elf.log": "ef434acd1b4cc412e9848aed7a769c95b3343331ea2a3c3d7eebdd8a65302215",
+            "annotated/llvm.log": "7de620f2bcd39b906fad0395a3429e2b8bd0d0303f7f896b7b511a61398d4abf",
+            "annotated/loc.log": "dd19d3355e2400d890c2a25d21a56eb9ed7697c749f4bedc5aaf31fe8a7b36ba",
+            "annotated/native-process/native-producer-status.txt": "637fb39f021bffc1dd73cd7c9512d8b5ec16c1b9aa643e7da8eda0747fd084c0",
+            "annotated/native-process/native-producer.log": "946a80383dc87e5f68474e8dde21da81c869889b6bb205b0b263844c33debe2e",
+            "annotated/native-process-repeat/native-producer-status.txt": "637fb39f021bffc1dd73cd7c9512d8b5ec16c1b9aa643e7da8eda0747fd084c0",
+            "annotated/native-process-repeat/native-producer.log": "50e0a5875eb509d912e45b222948244624990b09dc0b11ff4853a44b8b9c51ad",
+            "annotated/native-repeat.log": "1f86f127b4a9b3e30670d1da9e455b10c5f53bb95aa8236972f85d538db63316",
+            "annotated/native.log": "2a547cac02b46f631cdad18893fecab65a19c269f53b51a586e0447168dfb382",
+            "annotated/reference": "4ef80cd5e08729d9ffdbaff4a427e4ac3c92c3167138f64315441f88702f3b36",
+            "annotated/strict.log": "20c1855b50955102f0e2fa147ecd91abad52083c7b7ce8b4b45c7125bc338c18",
+            "annotated/strip.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "annotated/symbols.log": "09fe2609ed583994d1153fd795e4cc1fd0ea3e4f0d154f85488d274a7cd47f78",
+            "annotated/type-after-abbrev.log": "e6047bf9469969024902f4d4479a7f6038ca94a3b2ac46cdd6e9bc3ac0da5097",
+            "annotated/type-after-aranges.log": "885e17dfb24f23fd5742c3485b79166b9a78ab69ab5430542e339716a777bb42",
+            "annotated/type-after-decodedline.log": "414c0787636eb8a30826189e92aa500910e58809c1be547e598ed962cc233dc7",
+            "annotated/type-after-dwarfdump.log": "1d85ea156e900a0b8ac6188ad56db2e3aae98cc9d834ad819a3138b99b7034d3",
+            "annotated/type-after-dwarfdump.log.check.json": "ae3e34107f34e5748a82f727f4d701c80318b9934a042e40b0e87491b5fd2f17",
+            "annotated/type-after-dwarfdump.log.original.txt": "6648d29a69100e6cf886ca51ee99cbd79929428064a1641494a3687373e5aabc",
+            "annotated/type-after-dwarfdump.log.original.txt.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "annotated/type-after-dwarfdump.log.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "annotated/type-after-elf.log": "2758f6b103c5508b16425ba7f418ddff856846c6b6a138782e9b086d4545b108",
+            "annotated/type-after-gdb.log": "549a1430c11e7070c8df65d297c0da91058a64dbb5469f1559a0b5420e2c9846",
+            "annotated/type-after-info.log": "d8d658fb139baf28ea9647892ca4961a0768fbbdc480c4ce3b35f6632117dfb1",
+            "annotated/type-after-llvm.log": "20b87b177f8c74760e4111e56194ce068c43c00057e9dd27fe62e844eee5b05c",
+            "annotated/type-after-loc.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "annotated/type-after-strict.log": "041221d20e2d5db5c087d13c73d7406981709fb121c05c28394b4765fed646df",
+            "annotated/type-after.dbg": "e8e1ec939ab476a38afaba0c9af400732bc59276a9b73bbf2629267ec5521620",
+            "annotated/type-after.dbg.c": "8f7b23a21a2f40710f9c5db391d1c631d2e4df85bf734789a0008ca22254ab1b",
+            "annotated/type-after.dbg.report.json": "326ff3b918ff18d2fef1188bc73ccad446ee398a24fac6e2ce3c97fb4230311e",
+            "annotated/type-before-abbrev.log": "6ebe3c15fd3cc2633dc61ca540fa20c43ebbd15ceea5d8ac579640d6ed6d4886",
+            "annotated/type-before-aranges.log": "885e17dfb24f23fd5742c3485b79166b9a78ab69ab5430542e339716a777bb42",
+            "annotated/type-before-decodedline.log": "87846d2096da8fa6ed84c6842c888645c8f3ab56ce10da8a8d20a8e990cec747",
+            "annotated/type-before-dwarfdump.log": "52dce49c612e0457513ce4d9d38b25e4dcdb08a07480cd79e6c40324dc02ff46",
+            "annotated/type-before-dwarfdump.log.check.json": "ad04709d304d60cf7f3a9d0ab89a1cfec27987aedd1ce136acbc45d7faec9698",
+            "annotated/type-before-dwarfdump.log.original.txt": "6648d29a69100e6cf886ca51ee99cbd79929428064a1641494a3687373e5aabc",
+            "annotated/type-before-dwarfdump.log.original.txt.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "annotated/type-before-dwarfdump.log.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "annotated/type-before-elf.log": "c37a8d8c2fb0670dd6502b107a2a586d78e07d8f667b9aa79a733d7fdd2d49e7",
+            "annotated/type-before-gdb.log": "57c3b3b1901293f4ed3cb7ac3fc60d31acf0cc768f5b9de4e66bb25be4bddeae",
+            "annotated/type-before-info.log": "0389c568a719e0850a4bdbc2f3e83e1d4fc804b747d56695aa5506f712fa35a4",
+            "annotated/type-before-llvm.log": "1538c725c1804f1d6d260b4ef7aa32ddfe019fb92a0a7bbad932d410c1d881e0",
+            "annotated/type-before-loc.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "annotated/type-before-strict.log": "5fb806eed78dc381d785a99f2de960d334ea472c1ef188d18de752ea6c7cb67e",
+            "annotated/type-before.dbg": "c1fa1a4a4a4993c6996240ea709a6e415c88e4a8d0efd31bbfdd5a407868f587",
+            "annotated/type-before.dbg.c": "8f7b23a21a2f40710f9c5db391d1c631d2e4df85bf734789a0008ca22254ab1b",
+            "annotated/type-before.dbg.report.json": "22ba249ec33a3f77cf01e8623d6647d1782d76eeacdc338c64d7a993ccb4b926",
+            "annotated/type-compare-after-after.log": "e5199b8a3e5215cf7a57f4e478d40102c9af0f7383647136f6f62fbb4143cd15",
+            "annotated/type-compare-after-before.log": "d68e955ff805b99ef617f2d0a4467e85bb59ec77a1215bf8ae0b54e1276de1cb",
+            "annotated/type-compare-after-unattached.log": "076953db6dcb6041df648ab4eaaa727c5ed36218a6eb6de07d2a763e36091fa7",
+            "annotated/type-compare-before-after.log": "fd6c258abc6463c3c6546500fc73f90f155b3fde352ca459e9a4c2d7ac1c7d77",
+            "annotated/type-unattached-abbrev.log": "ffca61687f340892eed18a6389994418fa31e977f2e354a17fe91ced984b3e3a",
+            "annotated/type-unattached-aranges.log": "885e17dfb24f23fd5742c3485b79166b9a78ab69ab5430542e339716a777bb42",
+            "annotated/type-unattached-decodedline.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "annotated/type-unattached-dwarfdump.log": "349500213cb99b55bf159cf63a41f3be59d0755f896852f153024f56df5e44eb",
+            "annotated/type-unattached-dwarfdump.log.check.json": "533339a68bbf109741c85a112958842ea223fa7cd1a0d802e0221a03d95f648a",
+            "annotated/type-unattached-dwarfdump.log.original.txt": "6648d29a69100e6cf886ca51ee99cbd79929428064a1641494a3687373e5aabc",
+            "annotated/type-unattached-dwarfdump.log.original.txt.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "annotated/type-unattached-dwarfdump.log.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "annotated/type-unattached-elf.log": "906b67ad3de7d711f571198c3fb5f96494ded1f589ef7ffb6f3269829a9f4228",
+            "annotated/type-unattached-gdb.log": "d50ee22bc3ec117056fdcb56a13cad07fd8509483d002810fe72b16d03b2a8cc",
+            "annotated/type-unattached-info.log": "405d2c69a57561d53186ca3d4d9b813207b3bcaf758cef1036ea6057d16409a2",
+            "annotated/type-unattached-llvm.log": "faf487a9d59dffdb2bc96b29075b561e02d0453e45d5aa272aae04773ee17dc3",
+            "annotated/type-unattached-loc.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "annotated/type-unattached-strict.log": "f6b5849121929fe557ffd0fe31803ef1c43f33ba75ced20a3464af06390dbdf6",
+            "annotated/type-unattached.dbg": "85696fda1251d8a4bc008d5e78d2d6499d83957c84a9a3df862b04ecaaf3a05d",
+            "annotated/type-unattached.dbg.c": "0875927f39d338f69fb126e2e1adb151c15c5c3a6e16512776b7ba911a4346ca",
+            "annotated/type-unattached.dbg.report.json": "dfc4d44af3b7ff504e4e088dfe8ffddca2daa0218f86c4d45c4407d7e953a6fc",
+            "baseline/abbrev.log": "5e81d46a7750d9ee7af46c82bf856d62652033241e2034a0bcea924ab6180e03",
+            "baseline/acceptance.json": "268709f864e720d4999ab2bd4c1f3f0f3ce90723e8a1cbc7446a749c1aa47011",
+            "baseline/aranges.log": "db3410b0dd34f465e6c7b7142b87035c1ba49770ef2e9a737dfaf5343f96c5f5",
+            "baseline/commands.json": "b659378d814e9a6924182fd715377a39282f73889f34567a1977614277e6c2c8",
+            "baseline/compile.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "baseline/decodedline.log": "166fb53672a193b640db33c9391dfd6e858397a3f51c2524c23b0e0ff9dca840",
+            "baseline/disassembly.log": "0e8021258e7b21e2b7a43f1394324ad6c34d390039be1615177268f621630132",
+            "baseline/dwarfdump.log": "5ef59915c2abb0578d6234e64944adf760ad8cb40822160cb97960a7a860b4f1",
+            "baseline/dwarfdump.log.check.json": "44c7de25e5d116f031d84975e0dc1f82c286acfd33dc47d443cb36815de97c42",
+            "baseline/dwarfdump.log.original.txt": "6648d29a69100e6cf886ca51ee99cbd79929428064a1641494a3687373e5aabc",
+            "baseline/dwarfdump.log.original.txt.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "baseline/dwarfdump.log.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "baseline/forge.dbg": "0efdbe02ee8c5d9df504b2b66954e7b9c97e922fd99d2abd8937c89c6dc0934d",
+            "baseline/forge.dbg-elf.log": "c36a638a602f8e4ffef992e6ca5634da314fe2b05cebb03e165b4e4632cb1d3f",
+            "baseline/forge.dbg.c": "095daf48a16783796984853fae9c4b21d50afb1a9483edd1471a9c46fdb9de83",
+            "baseline/forge.dbg.cancelled": "26239061ed00d2a3451dde22793b1b71ada2ce778d72bf7051d950c93bea9dc7",
+            "baseline/forge.dbg.coverage.json": "c20893043d1b81f5c8841b8999816f6724035ee0a7e5b8467653b11eb4323eb4",
+            "baseline/forge.dbg.evidence.json": "77b28d95f968b777602852acc5948879d4ede6324ce98f56adaf96ad5f8476df",
+            "baseline/forge.dbg.report.json": "86db183bd0e015eea05af8dbb10fcea3500e659019843bdfc43595f28e03a02c",
+            "baseline/gdb.log": "ff3d9828746cced11338646c078f3b007d1d39445fc72ea0b1d25a06885a0854",
+            "baseline/info.log": "1c5b77736e2685d12dcff3b442af6e8162b77735d00295ec601b04ce0a3388fd",
+            "baseline/input": "9bac3ac50eace9362f678263a83c9d612f1ee31a83f447f239d807cce3b2c2eb",
+            "baseline/input-elf.log": "ef434acd1b4cc412e9848aed7a769c95b3343331ea2a3c3d7eebdd8a65302215",
+            "baseline/llvm.log": "ad9be582d8a8dd45107cb8af5e3ab69fb0f4f1b5d524e0e137e6f0adc5a15415",
+            "baseline/loc.log": "dd19d3355e2400d890c2a25d21a56eb9ed7697c749f4bedc5aaf31fe8a7b36ba",
+            "baseline/native-process/native-producer-status.txt": "637fb39f021bffc1dd73cd7c9512d8b5ec16c1b9aa643e7da8eda0747fd084c0",
+            "baseline/native-process/native-producer.log": "946a80383dc87e5f68474e8dde21da81c869889b6bb205b0b263844c33debe2e",
+            "baseline/native.log": "2a547cac02b46f631cdad18893fecab65a19c269f53b51a586e0447168dfb382",
+            "baseline/reference": "4ef80cd5e08729d9ffdbaff4a427e4ac3c92c3167138f64315441f88702f3b36",
+            "baseline/strict.log": "07f2299a3058b94b47b5e8f486e15bd5e566593319adfa9bbc7ef351c5e4ae11",
+            "baseline/strip.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "baseline/symbols.log": "09fe2609ed583994d1153fd795e4cc1fd0ea3e4f0d154f85488d274a7cd47f78",
+            "baseline/type-after-abbrev.log": "e6047bf9469969024902f4d4479a7f6038ca94a3b2ac46cdd6e9bc3ac0da5097",
+            "baseline/type-after-aranges.log": "885e17dfb24f23fd5742c3485b79166b9a78ab69ab5430542e339716a777bb42",
+            "baseline/type-after-decodedline.log": "0eba7fc580fe29ae3f1914207547c2a146fb19c2c954069b007e037f335e8cda",
+            "baseline/type-after-dwarfdump.log": "1d85ea156e900a0b8ac6188ad56db2e3aae98cc9d834ad819a3138b99b7034d3",
+            "baseline/type-after-dwarfdump.log.check.json": "4a58640ece649b9821bd7420415c151371733a99bd2baa0ff859002b0c6f8d21",
+            "baseline/type-after-dwarfdump.log.original.txt": "6648d29a69100e6cf886ca51ee99cbd79929428064a1641494a3687373e5aabc",
+            "baseline/type-after-dwarfdump.log.original.txt.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "baseline/type-after-dwarfdump.log.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "baseline/type-after-elf.log": "2758f6b103c5508b16425ba7f418ddff856846c6b6a138782e9b086d4545b108",
+            "baseline/type-after-gdb.log": "7635dcf556d3a2bb004e8399279f7f475ef8bf5446b36355b82298d448127250",
+            "baseline/type-after-info.log": "d8d658fb139baf28ea9647892ca4961a0768fbbdc480c4ce3b35f6632117dfb1",
+            "baseline/type-after-llvm.log": "1d76a6533b2361d9df69fcae63e561693eb8cf27d5857f2bce3e6f21bceb64a5",
+            "baseline/type-after-loc.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "baseline/type-after-strict.log": "4a5b87f954b724b95b1c58a979e98d7dbca6e5b2d1d8649266a4e7a6e3c44465",
+            "baseline/type-after.dbg": "f251d3da0c0efeceb45b8f9f91155454b8cedc44de176b68a331606cef147e4e",
+            "baseline/type-after.dbg.c": "8f7b23a21a2f40710f9c5db391d1c631d2e4df85bf734789a0008ca22254ab1b",
+            "baseline/type-after.dbg.report.json": "0185404a80947e1e7eeac736014e0c71da1704e2ad7fab1e260eaad1ef983498",
+            "baseline/type-before-abbrev.log": "6ebe3c15fd3cc2633dc61ca540fa20c43ebbd15ceea5d8ac579640d6ed6d4886",
+            "baseline/type-before-aranges.log": "885e17dfb24f23fd5742c3485b79166b9a78ab69ab5430542e339716a777bb42",
+            "baseline/type-before-decodedline.log": "bc835dbd77643f04619ab3a43c48ea5a422bb852f5b7968a16e87a347ccfbde8",
+            "baseline/type-before-dwarfdump.log": "52dce49c612e0457513ce4d9d38b25e4dcdb08a07480cd79e6c40324dc02ff46",
+            "baseline/type-before-dwarfdump.log.check.json": "bdc433572040fbcd8a856d4281d4dc09d7c73b15c1a39210cb2dbb96d606eed2",
+            "baseline/type-before-dwarfdump.log.original.txt": "6648d29a69100e6cf886ca51ee99cbd79929428064a1641494a3687373e5aabc",
+            "baseline/type-before-dwarfdump.log.original.txt.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "baseline/type-before-dwarfdump.log.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "baseline/type-before-elf.log": "c37a8d8c2fb0670dd6502b107a2a586d78e07d8f667b9aa79a733d7fdd2d49e7",
+            "baseline/type-before-gdb.log": "81dfc03d4edf49e75822831d3a92f5f227ec69987e324aa6b939ce551f2f7a0f",
+            "baseline/type-before-info.log": "0389c568a719e0850a4bdbc2f3e83e1d4fc804b747d56695aa5506f712fa35a4",
+            "baseline/type-before-llvm.log": "c77e9180b8ac49aca13a8467e552af5e6cab1441267098cba4a7c9484cabfc27",
+            "baseline/type-before-loc.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "baseline/type-before-strict.log": "b33016e139250a742a0a01c3548b7e83e17d8dbc752c4551f0e596866fa1d8ac",
+            "baseline/type-before.dbg": "a0fd88d554adf7276064e3f01fec8431043be3dc7debe2f3bfb8c5555e10dc49",
+            "baseline/type-before.dbg.c": "8f7b23a21a2f40710f9c5db391d1c631d2e4df85bf734789a0008ca22254ab1b",
+            "baseline/type-before.dbg.report.json": "f991287f7877b65290d18065fde5b65d484fe392a468969ce29677d61fdd8f8e",
+            "baseline/type-compare-after-after.log": "e5199b8a3e5215cf7a57f4e478d40102c9af0f7383647136f6f62fbb4143cd15",
+            "baseline/type-compare-after-before.log": "d68e955ff805b99ef617f2d0a4467e85bb59ec77a1215bf8ae0b54e1276de1cb",
+            "baseline/type-compare-after-unattached.log": "076953db6dcb6041df648ab4eaaa727c5ed36218a6eb6de07d2a763e36091fa7",
+            "baseline/type-compare-before-after.log": "fd6c258abc6463c3c6546500fc73f90f155b3fde352ca459e9a4c2d7ac1c7d77",
+            "baseline/type-unattached-abbrev.log": "ffca61687f340892eed18a6389994418fa31e977f2e354a17fe91ced984b3e3a",
+            "baseline/type-unattached-aranges.log": "885e17dfb24f23fd5742c3485b79166b9a78ab69ab5430542e339716a777bb42",
+            "baseline/type-unattached-decodedline.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "baseline/type-unattached-dwarfdump.log": "349500213cb99b55bf159cf63a41f3be59d0755f896852f153024f56df5e44eb",
+            "baseline/type-unattached-dwarfdump.log.check.json": "ff4505d789d887bc006c87818489642d0dd46a28bb8eb8678722410d9edd1b94",
+            "baseline/type-unattached-dwarfdump.log.original.txt": "6648d29a69100e6cf886ca51ee99cbd79929428064a1641494a3687373e5aabc",
+            "baseline/type-unattached-dwarfdump.log.original.txt.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "baseline/type-unattached-dwarfdump.log.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "baseline/type-unattached-elf.log": "906b67ad3de7d711f571198c3fb5f96494ded1f589ef7ffb6f3269829a9f4228",
+            "baseline/type-unattached-gdb.log": "ec7e93ed5d4e77171da9c9564ddea974fd15058cfe9ce612cb0d47ac63ea32c7",
+            "baseline/type-unattached-info.log": "405d2c69a57561d53186ca3d4d9b813207b3bcaf758cef1036ea6057d16409a2",
+            "baseline/type-unattached-llvm.log": "0cc3da1c1483899e141afb34c0091ba46487141646c7b22c7037e90276afe158",
+            "baseline/type-unattached-loc.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "baseline/type-unattached-strict.log": "654ae52b916d17735ceb3001a5671d26eda824ae5e225a90d4902dad976789a9",
+            "baseline/type-unattached.dbg": "85696fda1251d8a4bc008d5e78d2d6499d83957c84a9a3df862b04ecaaf3a05d",
+            "baseline/type-unattached.dbg.c": "0875927f39d338f69fb126e2e1adb151c15c5c3a6e16512776b7ba911a4346ca",
+            "baseline/type-unattached.dbg.report.json": "c2caec289e3ffe37ed32ea462f8bfe598c53972fcaee499890b792ea5213738f"
+        }
+    }
+}
