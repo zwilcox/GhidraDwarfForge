@@ -56,6 +56,13 @@ public final class UnwindEvidenceJson {
                     json.beginObject().name("first").value(hex(AddressNormalizer.toElfAddress(region.first(), rebaseDelta)));
                     json.name("last").value(hex(AddressNormalizer.toElfAddress(region.last(), rebaseDelta))).endObject();
                 }
+                json.endArray();
+                json.name("fixedPointers").beginArray();
+                for (var pointer : separation.fixedPointers()) {
+                    check(cancelled);
+                    json.beginObject().name("address").value(hex(AddressNormalizer.toElfAddress(pointer.address(), rebaseDelta)));
+                    json.name("value").value(hex(AddressNormalizer.toElfAddress(pointer.value(), rebaseDelta))).endObject();
+                }
                 json.endArray().endObject();
             }
             json.name("inputSha256").value(inputSha256);
@@ -145,6 +152,12 @@ public final class UnwindEvidenceJson {
                     (image.is64Bit() || Long.compareUnsigned(last, 0xffff_ffffL) <= 0),
                     "separation region wraps or exceeds original address width");
             }
+        }
+        for (var pointer : separation.fixedPointers()) {
+            check(cancelled);
+            long value = AddressNormalizer.toElfAddress(pointer.value(), delta);
+            require(image.is64Bit() || Long.compareUnsigned(value, 0xffff_ffffL) <= 0,
+                "fixed pointer value exceeds original address width");
         }
         require(recovered.verifiedFunctions().size() <= 65536 && recovered.refusals().size() <= 65536 &&
             recovered.observations().size() <= 1_000_000, "recovery report population exceeds bounds");

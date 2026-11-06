@@ -1,5 +1,18 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — relocated-pointer compiler matrix for #112:** both targets
+now pass executable/PIE/shared exports of the unchanged C fixture. AArch64's GOT
+load uses a separately acknowledged fixed-pointer condition qualified from
+original relative-relocation/RELRO metadata; it is not an inferred runtime fact.
+The six cases pass 54 exports, 24 staged controls, 24 sidecars and 78 GDB sessions;
+strict regressions and 14 native refusal controls also pass. See
+`docs/RELOCATED-POINTER-UNWIND.md`. The exact tested package is recorded in its
+receipt. Normal CLI/GUI synthesis, shipping policy, additional compiler/state
+variation and ADR acceptance remain incomplete. Full #112/#110/#109 stay open.
+PR176's CI fix is merged into this branch; its hosted gate remains pending.
+PR175 passed all fifteen jobs and merged normally as `5b4ca014`; #116/#114
+are closed with the acceptance map on main. Earlier pending entries are historical.
+
 **CONFIRMED locally — complete executed compiler instruction paths for #112:**
 all four conditioned sidecar variants now match independent compiler references
 at every executed ordinary instruction boundary: 90 snapshots on x86-64 and 77

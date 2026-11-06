@@ -98,7 +98,8 @@ public final class UnwindEvidenceJsonSmoke {
                 "refusal-only report invents a plan");
             require(json.get("stackSeparation").isJsonNull(), "strict report invents a separation condition");
             var condition = new UnwindStackSeparation(8,
-                List.of(new UnwindStackSeparation.Region(0x403000, 0x403007)), "external test basis Ω 😃");
+                List.of(new UnwindStackSeparation.Region(0x403000, 0x403007)), "external test basis Ω 😃",
+                List.of(new ghidradwarfforge.unwind.UnwindStackSeparation.Pointer(0x403000, 0x405000)));
             var conditioned = new Recovered(recovered.plan(), recovered.verifiedFunctions(), recovered.observations(),
                 recovered.originalBytes(), recovered.refusals(), condition);
             String conditionalText = describe(image, conditioned, 0x400000);
@@ -112,6 +113,9 @@ public final class UnwindEvidenceJsonSmoke {
             var regionJson = separationJson.getAsJsonArray("ranges").get(0).getAsJsonObject();
             require(regionJson.get("first").getAsString().equals("0x3000") && regionJson.get("last").getAsString().equals("0x3007"),
                 "condition was not normalized with frame addresses");
+            var pointerJson = separationJson.getAsJsonArray("fixedPointers").get(0).getAsJsonObject();
+            require(pointerJson.get("address").getAsString().equals("0x3000") &&
+                pointerJson.get("value").getAsString().equals("0x5000"), "fixed pointer normalization lost condition");
             int conditionalLength = conditionalText.getBytes(StandardCharsets.UTF_8).length;
             require(conditionalText.equals(UnwindEvidenceJson.describe(image, conditioned, 0x400000, HASH, HASH, HASH,
                 () -> false, conditionalLength)), "exact conditional UTF-8 bound rejected");

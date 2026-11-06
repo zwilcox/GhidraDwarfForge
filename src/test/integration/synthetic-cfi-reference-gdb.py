@@ -45,6 +45,7 @@ if shared:
     gdb.Breakpoint("cfi_ready", temporary=True)
     gdb.execute("continue" if remote else "run")
     bias = int(gdb.parse_and_eval("cfi_module_bias"))
+    assert bias > 0, "shared library was not relocated"
     symbols = os.environ["FORGE_CFI_SYMBOLS"]
     gdb.execute('add-symbol-file "' + symbols + '" -o ' + hex(bias))
 gdb.Breakpoint("*cfi_checkpoint", temporary=True)
@@ -86,5 +87,7 @@ Path(os.environ["FORGE_CFI_RESULT"]).write_text(json.dumps({
     "mode": mode, "complete": complete, "frames": frames,
     "instructionTrace": trace, "exitcode": 0,
     "checkpointAddress": checkpoint_address,
+    "rootAddress": int(gdb.parse_and_eval("&main")) if shared else checkpoint_address,
+    "moduleBias": bias if shared else 0,
 }, indent=4) + "\n")
 print("synthetic-cfi-reference-gdb=" + mode + " PASS")

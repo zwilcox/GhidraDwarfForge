@@ -109,6 +109,7 @@ public final class UnwindStackSeparationSmoke {
         require(mutual.summary(0).separation().equals(CONDITION) && mutual.summary(100).separation().equals(CONDITION),
             "mutual recursion lost its shared condition");
         reject(() -> UnwindCalls.verify(Map.of(0, first, 100, second), contract(UnwindStackSeparation.NONE), () -> false));
+        fixedPointers();
         int[] polls = {0};
         UnwindCalls.verify(Map.of(0, recursive), contract(CONDITION), () -> { polls[0]++; return false; });
         for (int stop = 1; stop <= polls[0]; stop++) {
@@ -121,4 +122,48 @@ public final class UnwindStackSeparationSmoke {
         }
         System.out.println("unwind-stack-separation=PASS checks=" + checks + " cancellation-points=" + polls[0]);
     }
+    private static void fixedPointers() {
+        var regions = List.of(new UnwindStackSeparation.Region(0x500000, 0x500007), CONDITION.regions().getFirst());
+        var pointer = new UnwindStackSeparation.Pointer(0x500000, 0x600000);
+        var condition = new UnwindStackSeparation(8, regions, "external immutable pointer test condition", List.of(pointer));
+        var loaded = new Body<>(0, Map.of(0, node(List.of(new Load(ADDRESS, new Constant(0x500000, 8)),
+            new Store(ADDRESS, SAVED, 8), new Load(TARGET, STACK), new Add(STACK, STACK, new Constant(8, 8), false)))),
+            Map.of(), Set.of(0));
+        reject(() -> UnwindCalls.verify(Map.of(0, loaded), contract(CONDITION), () -> false));
+        var proof = UnwindCalls.verify(Map.of(0, loaded), contract(condition), () -> false);
+        require(proof.separation().equals(condition) && proof.summary(0).separation().equals(condition), "fixed pointer provenance lost");
+        require(new Constant(0x600000, 8).equals(proof.flows().get(0).after().get(0).values().get(ADDRESS)), "pointer load not recovered");
+        var without = new UnwindStackSeparation(8, regions, condition.basis());
+        reject(() -> UnwindFlow.analyze(Map.of(0, node(List.of(proof.summary(0)))), 0, ENTRY, STACK, () -> false, null, without));
+        require(condition.readPointer(new Constant(0x500000, 8), 4) == null &&
+            condition.readPointer(new Constant(0x500001, 8), 8) == null &&
+            condition.readPointer(new Constant(0x500000, 4), 8) == null, "partial/wrong-width pointer read accepted");
+        for (Effect effect : List.of(new Store(new Constant(0x500000, 8), SAVED, 8),
+                new Store(new Constant(0x4fffff, 8), SAVED, 2), new Store(new Constant(0x500007, 8), SAVED, 1),
+                new Store(ADDRESS, SAVED, 8), new Opaque("unknown memory effect"),
+                new Call(Set.of(SAVED), 0, null, "unknown memory call"))) {
+            reject(() -> UnwindFlow.analyze(Map.of(0, node(List.of(effect, new Load(ADDRESS, new Constant(0x500000, 8))))),
+                0, ENTRY, STACK, () -> false, null, condition));
+        }
+        for (var pointers : List.of(List.of(pointer, pointer), List.of(new UnwindStackSeparation.Pointer(0x500001, 0x600000)),
+                List.of(new UnwindStackSeparation.Pointer(-4, 0x600000)))) {
+            reject(() -> new UnwindStackSeparation(8, regions, condition.basis(), pointers));
+        }
+        reject(() -> new UnwindStackSeparation(0, List.of(), "", List.of(pointer)));
+        reject(() -> new UnwindStackSeparation(4, regions, condition.basis(), List.of(new UnwindStackSeparation.Pointer(0x500000, 0x100000000L))));
+        var flow = UnwindFlow.analyze(Map.of(0, node(List.of(new Store(new Constant(0x500008, 8), SAVED, 1),
+            new Load(ADDRESS, new Constant(0x500000, 8))))), 0, ENTRY, STACK, () -> false, null, condition);
+        require(new Constant(0x600000, 8).equals(flow.after().get(0).values().get(ADDRESS)), "nonoverlapping write invalidated fixed pointer");
+        int[] polls = {0};
+        UnwindCalls.verify(Map.of(0, loaded), contract(condition), () -> { polls[0]++; return false; });
+        for (int stop = 1; stop <= polls[0]; stop++) {
+            int selected = stop; int[] count = {0};
+            try {
+                UnwindCalls.verify(Map.of(0, loaded), contract(condition), () -> ++count[0] == selected);
+                throw new AssertionError("fixed pointer proof ignored cancellation");
+            }
+            catch (CancellationException expected) { checks++; }
+        }
+    }
+
 }

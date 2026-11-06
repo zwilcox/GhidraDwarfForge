@@ -21,7 +21,7 @@ import java.util.function.Consumer;
 public class ExportRecoveredFrames extends GhidraScript {
     @Override protected void run() throws Exception {
         String[] args = getScriptArgs();
-        if (args.length != 6 && args.length != 7) throw new IllegalArgumentException("libdwarf libdwarfp output compression rebase failed-source-name [external-separation-first:last]");
+        if (args.length < 6 || args.length > 8) throw new IllegalArgumentException("libdwarf libdwarfp output compression rebase failed-source-name [external-separation-first:last]");
         Path input = Path.of(currentProgram.getExecutablePath()).toRealPath();
         Path output = Path.of(args[2]).toAbsolutePath(), sourceOutput = Path.of(output + ".c");
         long requestedRebase = Long.decode(args[4]);
@@ -35,7 +35,7 @@ public class ExportRecoveredFrames extends GhidraScript {
         var diagnostics = new ArrayList<String>();
         Consumer<String> diagnostic = message -> { diagnostics.add(message); printerr(message); };
         var condition = UnwindStackSeparation.NONE;
-        if (args.length == 7) {
+        if (args.length >= 7) {
             String[] range = args[6].split(":", -1);
             if (range.length != 2) throw new IllegalArgumentException("expected original ELF hex first:last");
             long first = Long.parseUnsignedLong(range[0], 16), last = Long.parseUnsignedLong(range[1], 16);
@@ -43,6 +43,30 @@ public class ExportRecoveredFrames extends GhidraScript {
             condition = new UnwindStackSeparation(image.is64Bit() ? 8 : 4,
                 List.of(new UnwindStackSeparation.Region(first + delta, last + delta)),
                 "Explicit test assumption: this ELF range never overlaps live stack storage of this call group or its callers");
+        }
+        if (args.length == 8) {
+            if (!args[7].equals("relocated-pointers")) throw new IllegalArgumentException("unknown pointer condition option");
+            var candidates = ghidradwarfforge.elf.ElfRelocatedPointers.inspect(image, monitor::isCancelled);
+            var regions = new ArrayList<>(condition.regions());
+            var pointers = new ArrayList<UnwindStackSeparation.Pointer>();
+            for (var pointer : candidates) {
+                long address = pointer.address() + delta, value = pointer.value() + delta;
+                // This condition concerns the original executable after loading.
+                // setImageBase moves database addresses without rewriting pointer
+                // bytes. Do not treat that stale database literal as a runtime
+                // relocation value or rewrite analyst memory to make it agree.
+                var slot = currentProgram.getAddressFactory().getDefaultAddressSpace().getAddress(address);
+                long databaseValue = image.is64Bit() ? currentProgram.getMemory().getLong(slot) :
+                    Integer.toUnsignedLong(currentProgram.getMemory().getInt(slot));
+                println("pointer-condition original-slot=" + Long.toHexString(pointer.address()) +
+                    " original-value=" + Long.toHexString(pointer.value()) + " database-observation=" + Long.toHexString(databaseValue));
+                regions.add(new UnwindStackSeparation.Region(address, address + condition.addressBytes() - 1));
+                pointers.add(new UnwindStackSeparation.Pointer(address, value));
+            }
+            regions.sort((left, right) -> Long.compareUnsigned(left.first(), right.first()));
+            if (!pointers.isEmpty()) condition = new UnwindStackSeparation(condition.addressBytes(), regions,
+                condition.basis() + "; after ordinary relocation each listed pointer retains its recorded value throughout execution and all stack-relative accesses remain disjoint from its slot", pointers);
+            Files.writeString(Path.of(output + ".loader-pointers.txt"), candidates.toString() + "\n");
         }
         var recovered = condition.conditional() ?
             GhidraUnwindRecovery.recoverConditioned(currentProgram, image, delta, monitor, condition) :

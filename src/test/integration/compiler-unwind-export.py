@@ -21,13 +21,13 @@ def comparable(record):
     result = copy.deepcopy({key: record[key] for key in ('frames', 'instructionTrace', 'complete', 'exitcode')})
     for stack in [result['frames'], *result['instructionTrace']]:
         for frame in stack:
-            frame['pc'] -= record['checkpointAddress']
+            frame['pc'] -= record.get('rootAddress', record['checkpointAddress']) if frame['name'] == 'main' else record['checkpointAddress']
     return result
 
 
-def boundaries(target, symbols, original, prefix):
+def boundaries(target, symbols, original, prefix, env):
     run(['bash', SCRIPTS / 'synthetic-cfi-reference-gdb.sh', target, 'compiler', symbols, original, prefix],
-        Path(str(prefix) + '-command.log'), {'FORGE_CFI_ALL_BOUNDARIES': '1'})
+        Path(str(prefix) + '-command.log'), {**env, 'FORGE_CFI_ALL_BOUNDARIES': '1'})
     data = json.loads(Path(str(prefix) + '.json').read_text())
     log = Path(str(prefix) + '.log').read_text()
     blocks = re.findall(r'(?ms)^FORGE_BOUNDARY_BEGIN (\d+)\n(.*?)^FORGE_BOUNDARY_END \1\n', log)
@@ -43,6 +43,8 @@ def boundaries(target, symbols, original, prefix):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('output', type=Path)
+    parser.add_argument('--relocated-pointers', action='store_true', help='Explicitly condition immutable loader-established pointer slots')
+    parser.add_argument('--role', choices=('exec', 'pie', 'shared'), default='exec')
     parser.add_argument('--target', choices=('x86_64', 'aarch64', 'all'), default='all')
     parser.add_argument('--ghidra', required=True, type=Path)
     parser.add_argument('--libdwarf', required=True, type=Path)
@@ -54,6 +56,8 @@ def main():
         args.libdwarf, args.libdwarfp,
         args.ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar',
         ROOT / 'src/test/fixtures/synthetic-cfi.c',
+        ROOT / 'src/test/fixtures/synthetic-cfi-shared-driver.c',
+        SCRIPTS / 'synthetic-cfi-reference.py',
         SCRIPTS / 'synthetic-cfi-reference-gdb.py',
         SCRIPTS / 'synthetic-cfi-reference-gdb.sh',
         SCRIPTS / 'compiler-cfi-boundaries-gdb.py',
@@ -63,22 +67,34 @@ def main():
     for target in ('x86_64', 'aarch64'):
         if args.target not in ('all', target):
             continue
-        case = work / target; case.mkdir()
+        case = work / (target + '-' + args.role); case.mkdir()
         reference_dir = case / 'compiler'
         run([sys.executable, SCRIPTS / 'synthetic-cfi-reference.py', target, reference_dir,
-            '--dwarfdump', args.dwarfdump], case / 'reference.log')
+            '--dwarfdump', args.dwarfdump, '--role', args.role], case / 'reference.log')
         reference_result = json.loads((reference_dir / 'result.json').read_text())
         assert reference_result['status'] == 'PASS_COMPILER_REFERENCE'
         original = reference_dir / 'without-cfi'
         reference = reference_dir / 'reference'
         protected.update({str(p): digest(p) for p in (original, reference)})
-        boundary_reference = boundaries(target, reference, original, case / 'boundaries-reference')
+        runtime_env = {'FORGE_CFI_SHARED': '1' if args.role == 'shared' else '0',
+                       'FORGE_CFI_DRIVER': str(reference_dir / 'driver')}
+        if args.role == 'shared':
+            protected[str(reference_dir / 'driver')] = digest(reference_dir / 'driver')
         symbols = run(['readelf', '-sW', original], case / 'symbols.log')
         candidates = re.findall(r'(?m)^\s*\d+:\s*([0-9a-f]+)\s+(\d+)\s+OBJECT\s+GLOBAL\s+DEFAULT\s+\d+\s+cfi_sink$', symbols)
+        candidates = sorted(set(candidates))
         assert len(candidates) == 1, candidates
         first, size = int(candidates[0][0], 16), int(candidates[0][1])
         assert size == 8
         last = first + size - 1
+        fixed_pointers = []
+        if args.relocated_pointers:
+            relocations = run(['readelf', '-rW', original], case / 'relocations.log')
+            fixed_pointers = [{'address': hex(int(slot, 16)), 'value': hex(int(value, 16))} for slot, value in re.findall(
+                r'(?m)^([0-9a-f]+)\s+[0-9a-f]+\s+R_[A-Z0-9_]+_RELATIVE\s+([0-9a-f]+)\s*$', relocations)]
+            assert len(fixed_pointers) == (1 if args.role == 'shared' and target == 'aarch64' else 0), fixed_pointers
+        runtime_env['FORGE_CFI_FIXED_POINTERS'] = json.dumps(fixed_pointers)
+        boundary_reference = boundaries(target, reference, original, case / 'boundaries-reference', runtime_env)
         # Symbol location supplies only the range. Disjointness from the live
         # stack is an explicitly external test condition, not an ELF inference.
         condition = f'{first:x}:{last:x}'
@@ -87,7 +103,7 @@ def main():
         text = run([args.ghidra.resolve() / 'support/analyzeHeadless', project, 'CompilerFrames',
             '-import', original, '-scriptPath', SCRIPTS / 'ghidra_scripts', '-postScript',
             'RecoveredFrameExportControls.java', args.libdwarf.resolve(), args.libdwarfp.resolve(),
-            outputs, 'none', condition], case / 'export.log')
+            outputs, 'none', condition, *(['relocated-pointers'] if args.relocated_pointers else [])], case / 'export.log')
         assert 'native-frame-export-controls=PASS successful=9 controls=4' in text
         assert text.count('native-frame-export=PASS ') == 9
         assert text.count('native-frame-staging-control=PASS ') == 4
@@ -115,11 +131,17 @@ def main():
             description = check_description(description_path, artifact, original, frames)
             evidence = json.loads(description_path.read_text())
             separation = evidence['stackSeparation']
+            basis = 'Explicit test assumption: this ELF range never overlaps live stack storage of this call group or its callers'
+            regions = [{'first': hex(first), 'last': hex(last)}]
+            if fixed_pointers:
+                basis += '; after ordinary relocation each listed pointer retains its recorded value throughout execution and all stack-relative accesses remain disjoint from its slot'
+                regions += [{'first': p['address'], 'last': hex(int(p['address'], 16) + 7)} for p in fixed_pointers]
+                regions.sort(key=lambda region: int(region['first'], 16))
             assert separation == {
                 'status': 'EXTERNAL_CONDITION_NOT_PROVED',
-                'basis': 'Explicit test assumption: this ELF range never overlaps live stack storage of this call group or its callers',
+                'basis': basis,
                 'addressDomain': 'original ELF virtual address; apply runtime image load bias',
-                'ranges': [{'first': hex(first), 'last': hex(last)}]}, separation
+                'ranges': regions, 'fixedPointers': fixed_pointers}, separation
             assert evidence['memoryPolicy'].startswith('explicitly conditioned ')
             assert len(evidence['verifiedFunctions']) == 4
             assert int(evidence['databaseRebaseDelta'], 16) == deltas[0 if variant.startswith('before-') else -1]
@@ -132,7 +154,7 @@ def main():
             prefix = case / ('gdb-' + variant)
             # Use the unchanged compiler oracle and complete positive assertions.
             run(['bash', SCRIPTS / 'synthetic-cfi-reference-gdb.sh', target, 'compiler', artifact, original, prefix],
-                case / ('gdb-' + variant + '-command.log'))
+                case / ('gdb-' + variant + '-command.log'), runtime_env)
             observed = json.loads(Path(str(prefix) + '.json').read_text())
             assert comparable(observed) == comparable(reference_result['modes']['compiler']), (target, variant)
             log = Path(str(prefix) + '.log').read_text()
@@ -149,7 +171,7 @@ def main():
             assert normalize(warnings) == normalize(expected_warnings), warnings
             assert 'Traceback' not in log
             boundary_prefix = case / ('boundaries-' + variant)
-            boundary_result = boundaries(target, artifact, original, boundary_prefix)
+            boundary_result = boundaries(target, artifact, original, boundary_prefix, runtime_env)
             assert boundary_result == boundary_reference, (target, variant, 'instruction boundary mismatch')
             boundary_warnings = [line for line in Path(str(boundary_prefix) + '.log').read_text().splitlines()
                 if 'warning:' in line.lower()]
@@ -163,10 +185,10 @@ def main():
                 'gdbResultSha256': digest(Path(str(prefix) + '.json'))})
         disabled = case / 'gdb-disabled'
         run(['bash', SCRIPTS / 'synthetic-cfi-reference-gdb.sh', target, 'disabled', outputs / 'none.dbg', original, disabled],
-            case / 'gdb-disabled-command.log')
+            case / 'gdb-disabled-command.log', runtime_env)
         assert 'unwinder="dwarf2"' not in Path(str(disabled) + '.log').read_text()
         assert protected == {path: digest(Path(path)) for path in protected}
-        results.append({'target': target, 'externalCondition': condition, 'exports': 9, 'failureControls': 4,
+        results.append({'target': target, 'role': args.role, 'externalCondition': condition, 'fixedPointers': fixed_pointers, 'exports': 9, 'failureControls': 4,
             'gdbSessions': 13, 'artifacts': artifacts, 'compilerReferenceResultSha256': digest(reference_dir / 'result.json')})
     report = {'status': 'PASS_CONDITIONED_COMPILER_EXPORT', 'cases': results, 'protectedSha256': protected,
         'scope': 'Explicit test condition; executed ordinary instruction-path compiler equivalence; no universal separation proof or CLI/GUI enablement'}

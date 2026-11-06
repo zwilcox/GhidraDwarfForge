@@ -1,5 +1,9 @@
 # Conditioned compiler unwind export (#112)
 
+The later [relocated-pointer matrix](RELOCATED-POINTER-UNWIND.md) extends this
+historical non-PIE checkpoint to PIE and shared objects on both initial targets,
+with explicit immutable-pointer conditions and native refusal controls.
+
 **CONFIRMED locally:** the real headless exporter can now project an explicitly
 conditioned call proof, retain the condition in its evidence report, and emit
 frames that match the unchanged compiler fixture's observed GDB behavior on

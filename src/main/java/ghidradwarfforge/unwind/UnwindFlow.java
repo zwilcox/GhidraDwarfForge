@@ -259,6 +259,7 @@ public final class UnwindFlow {
             if (effect instanceof Store store) {
                 Value address = read(store.address(), values);
                 Value value = read(store.input(), values);
+                separation.requireCompatibleStore(address, store.bytes());
                 if (address instanceof StackAddress stack && fits(stack.offset(), store.bytes())) {
                     Slot slot = new Slot(stack.offset(), store.bytes());
                     memory.keySet().removeIf(prior -> overlaps(prior.offset(), prior.bytes(), slot.offset(), slot.bytes()));
@@ -267,12 +268,16 @@ public final class UnwindFlow {
                 else if (!separation.permits(address, store.bytes())) memory.clear();
             }
             else if (effect instanceof Opaque) {
+                if (!separation.fixedPointers().isEmpty()) throw new IllegalArgumentException("opaque effect may change a fixed pointer condition");
                 values.clear();
                 memory.clear();
             }
             else if (effect instanceof Call call) {
                 if (!separation.admits(call.separation())) {
                     throw new IllegalArgumentException("call summary requires an unaccepted stack separation condition");
+                }
+                if (call.writeBound() == null && !separation.fixedPointers().isEmpty()) {
+                    throw new IllegalArgumentException("unbounded call may change a fixed pointer condition");
                 }
                 stackWritten = true;
                 if (new Constant(call.stackAdjustment(), stackPointer.bytes()).signed() != call.stackAdjustment()) {
@@ -304,7 +309,7 @@ public final class UnwindFlow {
                         output = load.output();
                         Value address = read(load.address(), values);
                         value = address instanceof StackAddress stack && fits(stack.offset(), output.bytes()) ?
-                            memory.get(new Slot(stack.offset(), output.bytes())) : null;
+                            memory.get(new Slot(stack.offset(), output.bytes())) : separation.readPointer(address, output.bytes());
                     }
                     case Kill kill -> { output = kill.output(); value = null; }
                     default -> throw new IllegalStateException("unhandled instruction effect");

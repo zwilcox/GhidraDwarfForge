@@ -12,7 +12,7 @@ import java.util.concurrent.CancellationException;
 public class RecoveredFrameExportControls extends GhidraScript {
     @Override protected void run() throws Exception {
         String[] args = getScriptArgs();
-        if (args.length != 4 && args.length != 5) throw new IllegalArgumentException("libdwarf libdwarfp output-directory failed-source-name [external-separation-first:last]");
+        if (args.length < 4 || args.length > 6) throw new IllegalArgumentException("libdwarf libdwarfp output-directory failed-source-name [external-separation-first:last]");
         Path directory = Path.of(args[2]);
         for (String compression : List.of("none", "zlib")) {
             Path output = directory.resolve(compression + ".dbg");
@@ -84,9 +84,9 @@ public class RecoveredFrameExportControls extends GhidraScript {
     }
 
     private void runExport(String[] args, String[] options) throws Exception {
-        if (args.length == 5) {
-            options = Arrays.copyOf(options, 7);
-            options[6] = args[4];
+        if (args.length > 4) {
+            options = Arrays.copyOf(options, 6 + args.length - 4);
+            System.arraycopy(args, 4, options, 6, args.length - 4);
         }
         runScript("ExportRecoveredFrames.java", options);
     }
