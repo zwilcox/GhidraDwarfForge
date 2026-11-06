@@ -47,6 +47,10 @@ def expression(data, width):
         if cursor == len(data):
             assert not pieces, 'unbounded trailing piece'
             bits, bit_offset = width * 8, 0
+        elif piece['kind'] == 'stack':
+            assert data[cursor] == 0x93, ('expected DW_OP_piece', data.hex())
+            byte_size, cursor = leb(data, cursor + 1)
+            bits, bit_offset = byte_size * 8, 0
         else:
             assert data[cursor] == 0x9d, ('expected DW_OP_bit_piece', data.hex())
             bits, cursor = leb(data, cursor + 1)

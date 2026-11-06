@@ -21,9 +21,8 @@ def validate_code(code, pie, entry, global_address):
 
 
 def location_rows(entry):
-    register = lambda number: f'DW_OP_regx: {number} (r{number})'
-    stack = lambda offset: f'DW_OP_bregx: 13 (r13) {offset}'
-    piece = '; DW_OP_bit_piece: size: 32 offset: 0 '
-    return [(entry + begin, entry + end, '(' + low + piece + '; ' + stack(high) + piece + ')')
+    register = lambda number: f'DW_OP_regx: {number} (r{number}); DW_OP_bit_piece: size: 32 offset: 0 '
+    stack = lambda offset: f'DW_OP_bregx: 13 (r13) {offset}; DW_OP_piece: 4'
+    return [(entry + begin, entry + end, '(' + low + '; ' + stack(high) + ')')
         for begin, end, low, high in ((0, 4, register(3), 0), (4, 12, register(3), 8),
             (12, 20, stack(4), 8), (20, 24, register(2), 8))]

@@ -191,7 +191,7 @@ public final class VariableStorageSmoke {
                     new GenericOperation(DwarfLocationExpression.DW_OP_REGX, 3, 0),
                     new GenericOperation(DwarfLocationExpression.DW_OP_BIT_PIECE, 32, 0),
                     new GenericOperation(DwarfLocationExpression.DW_OP_BREGX, 13, 8),
-                    new GenericOperation(DwarfLocationExpression.DW_OP_BIT_PIECE, 32, 0)))) {
+                    new GenericOperation(DwarfLocationExpression.DW_OP_PIECE, 4, 0)))) {
             throw new AssertionError("resolved mixed register/memory expression lost size, order or offset");
         }
         assertOmitted(new VariableLocation("mixed", 0x1000, "unresolved", VariableKind.PARAMETER, 8,

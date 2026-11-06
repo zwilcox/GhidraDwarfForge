@@ -31,8 +31,10 @@ Other target descriptions, floating/vector registers, nonzero bit offsets and
 non-byte-sized slices retain `DW_OP_bit_piece`. The ARM upper-half scalar test
 still emits a 32-bit piece at offset 32 and passes the native producer and
 structural validators. This checkpoint makes no LLDB claim for those remaining
-bit-piece forms. Memory pieces also retain their explicit bit-piece encoding;
-mixed register/memory LLDB compatibility remains part of the open work.
+bit-piece forms. **HISTORICAL at this checkpoint:** memory pieces retained
+their explicit bit-piece encoding. The subsequent
+[memory-piece checkpoint](LLDB-MEMORY-PIECES.md) changes exact byte-aligned
+memory fragments and validates their actual values and lifetimes.
 
 ## Semantic checks and honest gaps
 

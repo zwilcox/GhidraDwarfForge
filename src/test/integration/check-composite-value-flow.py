@@ -96,15 +96,9 @@ for name, cursor in offsets.items():
             else:
                 assert opcode == 0x90 and 0 <= register < (16 if target == 'x86_64' else 31)
                 item.update(kind='register')
-            if opcode == 0x90:
-                assert data[cursor] == 0x93
-                byte_size, cursor = leb(cursor + 1)
-                assert byte_size == 8
-            else:
-                assert data[cursor] == 0x9d
-                bits, cursor = leb(cursor + 1)
-                bit_offset, cursor = leb(cursor)
-                assert bits == 64 and bit_offset == 0
+            assert data[cursor] == 0x93
+            byte_size, cursor = leb(cursor + 1)
+            assert byte_size == 8
             pieces.append(item)
         assert cursor == expression_end and row['entry'] <= start < end <= row['end']
         if intervals:

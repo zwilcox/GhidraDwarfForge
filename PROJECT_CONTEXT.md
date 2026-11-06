@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local #110 memory-piece and bitfield checkpoint:** exact byte-aligned
+memory fragments now use equivalent byte pieces that LLDB 18.1.3 can consume.
+Both selected targets pass compiler/GDB/LLDB instruction comparisons for exec,
+PIE and rebased PIE, including honest unavailable intervals. Packed/ordinary
+bitfield values and deterministic exports pass both consumers; all twelve ARM32
+mixed-incoming cases pass the existing GDB/strict checks. See
+`docs/LLDB-MEMORY-PIECES.md`. Hosted acceptance, remaining LLDB layouts/discovery
+and final consumer support remain open; #112 integration still precedes full
+#110 completion, followed by #109.
+
 **CONFIRMED local #110 register-piece and semantic checkpoint:** LLDB 18.1.3
 misreads the previous split-register bit-piece expression as a memory address.
 Explicit target metadata now permits byte-piece encoding for validated AMD64

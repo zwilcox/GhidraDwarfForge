@@ -142,7 +142,7 @@ public final class DwarfLocationExpression {
                         piece.bitSize() % Byte.SIZE == 0) {
                     operations.add(new GenericOperation(DW_OP_BREGX,
                         relative.register().dwarfNumber(), relative.byteOffset()));
-                    operations.add(new GenericOperation(DW_OP_BIT_PIECE, piece.bitSize(), 0));
+                    operations.add(new GenericOperation(DW_OP_PIECE, piece.bitSize() / Byte.SIZE, 0));
                 }
                 else {
                     return omitted("composite piece lacks an exact register slice or resolved byte-aligned memory location");
