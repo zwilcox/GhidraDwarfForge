@@ -17,6 +17,9 @@
 cf_checkpoint:
     .cfi_startproc simple
     ordinary_rules
+    adrp x1,cf_observation
+    ldr x1,[x1,#:lo12:cf_observation]
+    cset w1,ne
     nop
     ret
     .cfi_endproc
@@ -71,4 +74,8 @@ _start:
     svc #0
     .cfi_endproc
     .size _start,.-_start
+    .section .rodata
+    .balign 8
+cf_observation:
+    .quad 0x1234
     .section .note.GNU-stack,"",%progbits

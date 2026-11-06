@@ -41,6 +41,10 @@ public final class GhidraUnwindInstructionsSmoke {
             check("AARCH64:LE:64:v8A", "diamond-" + conflict,
                 "60000034f37bbfa902000014" + (conflict ? "f47bbfa9" : "f37bbfa9") + "f37bc1a8c0035fd6", 20, !conflict);
         }
+        check("x86:LE:64:default", "global-load", "4154488b05f70f0000415cc3", 11, true);
+        check("x86:LE:64:default", "global-store", "415449c7c42a000000488905f00f0000415cc3", 18, false);
+        check("x86:LE:64:default", "global-rmw", "415449c7c42a00000048ff05f00f0000415cc3", 18, false);
+        check("x86:LE:64:default", "global-byte-store", "415449c7c42a0000000f9505f00f0000415cc3", 18, false);
         check("x86:LE:64:default", "save-restore", "41544989fc415cc3", 7, true);
         check("AARCH64:LE:64:v8A", "save-restore", "f37bbfa9130080d2f37bc1a8c0035fd6", 12, true);
         check("x86:LE:64:default", "empty-pcode", "415490415cc3", 5, true);
@@ -108,10 +112,33 @@ public final class GhidraUnwindInstructionsSmoke {
                     "native caller identity mismatch " + id + "/" + shape + " " + state + " " + captured.observations());
                 if (!shape.equals("opaque") && !shape.startsWith("call")) {
                     require(state.values().get(sp).equals(new StackAddress(0, 8)), "restore stack relation " + state);
-                    require(arm ? new ReturnAddress(8).equals(state.values().get(register(program, "x30"))) :
+                    if (shape.equals("global-store") || shape.equals("global-byte-store") || shape.equals("global-rmw")) {
+                        require(state.memory().isEmpty(), "unproved global/stack alias retained saved memory");
+                        require(captured.graph().values().stream().flatMap(node -> node.effects().stream()).anyMatch(effect ->
+                            effect instanceof Store store && store.address().equals(new Constant(0x2000, 8)) &&
+                            store.bytes() == (shape.equals("global-byte-store") ? 1 : 8)), "direct-memory store lost address or width");
+                    }
+                    else require(arm ? new ReturnAddress(8).equals(state.values().get(register(program, "x30"))) :
                         new ReturnAddress(8).equals(state.memory().get(new Slot(0, 8))), "caller return identity lost");
                     require(captured.observations().values().stream().allMatch(item -> item.omissions().isEmpty()),
                         "supported fixture has omitted effects");
+                    if (shape.startsWith("global-") && !shape.equals("global-load")) {
+                        for (var item : captured.graph().entrySet()) {
+                            var nativeInstruction = program.getListing().getInstructionAt(item.getKey());
+                            long rawEnd = 0;
+                            for (var operation : nativeInstruction.getPcode()) {
+                                var nodes = new java.util.ArrayList<Varnode>(List.of(operation.getInputs()));
+                                if (operation.getOutput() != null) nodes.add(operation.getOutput());
+                                for (var node : nodes) if (node.isUnique()) rawEnd = Math.max(rawEnd, node.getOffset() + node.getSize());
+                            }
+                            for (var effect : item.getValue().effects()) {
+                                if (effect instanceof Store store && store.address() instanceof Constant) {
+                                    require(store.input() instanceof Cell temporary && temporary.bank() == Bank.TEMPORARY &&
+                                        temporary.offset() >= rawEnd, "direct memory output aliases raw instruction temporaries");
+                                }
+                            }
+                        }
+                    }
                 }
                 else require(captured.observations().values().stream().anyMatch(item -> !item.omissions().isEmpty()),
                     "opaque/call proof omission was not recorded");

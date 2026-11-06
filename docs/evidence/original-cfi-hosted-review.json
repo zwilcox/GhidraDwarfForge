@@ -1,0 +1,309 @@
+{
+    "status": "CONFIRMED hosted original-CFI preservation; reviewed, ready, not merged",
+    "head": "06dbfec7ec9a622e7f90d6420fb68f1089887f5e",
+    "run": 42157905544,
+    "pr": 167,
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr167-hosted-preservation-42157905544.tar.gz",
+        "sha256": "1d2ebcf8a2a3b86b89b7a187728afaa49ae911bf6e508e24af002a4e88f32670",
+        "bytes": 380409708
+    },
+    "checks": {
+        "packagedExports": 60,
+        "preservationCases": 30,
+        "rawStrictReportsReparsed": 30,
+        "frameRemovalControls": 6
+    },
+    "artifacts": {
+        "x86_64": {
+            "id": 13485720333,
+            "sha256": "c0dd96d87a8edb58232742e323cf979b7132cacef0bcd3422ed183a0881a9d4b"
+        },
+        "aarch64": {
+            "id": 13481927331,
+            "sha256": "1952f5664f25e2021a1f14ef67eba96a6bee49f0e3020a639b7befe7f0ec31d2"
+        }
+    },
+    "scope": "Original CFI preservation, not synthetic recovery; PR166 remains first integration priority",
+    "review": {
+        "status": "PASS",
+        "head": "06dbfec7ec9a622e7f90d6420fb68f1089887f5e",
+        "run": 42157905544,
+        "cases": [
+            {
+                "target": "x86_64",
+                "role": "exec",
+                "variant": "plain",
+                "frameSha256": "4d30bb1c3fa7baf09ded3a93a741ac6f30c3d32f71632b49711ccd63025272cc",
+                "rawStrictSha256": "48e2f4bce2c25e2ef7150833fa82afeb450e7fce0eacb8060b795ea45ff66c01",
+                "sidecarSha256": "34c6bf5287f1636762c17b553d9576330cf4bab9f086a5fc4132ae04f20c5b7a",
+                "instructionStops": 25
+            },
+            {
+                "target": "x86_64",
+                "role": "exec",
+                "variant": "gabi",
+                "frameSha256": "df194f157f40ea876fa57f9de29264f3fcbcaa6180eeb4ce399c7453659ff0f6",
+                "rawStrictSha256": "48e2f4bce2c25e2ef7150833fa82afeb450e7fce0eacb8060b795ea45ff66c01",
+                "sidecarSha256": "5ea64c7f15fb390eba134b631c9b9d677de56b22ecc10ada91e4665c7e788dba",
+                "instructionStops": 25
+            },
+            {
+                "target": "x86_64",
+                "role": "exec",
+                "variant": "gnu",
+                "frameSha256": "5a4d4c43867bcfea37a28b7600a0a1e8a660d8206164a0881940ae539771095e",
+                "rawStrictSha256": "48e2f4bce2c25e2ef7150833fa82afeb450e7fce0eacb8060b795ea45ff66c01",
+                "sidecarSha256": "ff87d650d4ab7fe43f375e9936c6121be141b8cc9c496dba9197d8df95f08589",
+                "instructionStops": 25
+            },
+            {
+                "target": "x86_64",
+                "role": "exec",
+                "variant": "rebased",
+                "frameSha256": "4d30bb1c3fa7baf09ded3a93a741ac6f30c3d32f71632b49711ccd63025272cc",
+                "rawStrictSha256": "48e2f4bce2c25e2ef7150833fa82afeb450e7fce0eacb8060b795ea45ff66c01",
+                "sidecarSha256": "cf6ed5a70644a6cf00641a6bf58fc0d817c889a63d7a9e6fb936b3ef002ddb71",
+                "instructionStops": 25
+            },
+            {
+                "target": "x86_64",
+                "role": "exec",
+                "variant": "relocations",
+                "frameSha256": "4d30bb1c3fa7baf09ded3a93a741ac6f30c3d32f71632b49711ccd63025272cc",
+                "rawStrictSha256": "48e2f4bce2c25e2ef7150833fa82afeb450e7fce0eacb8060b795ea45ff66c01",
+                "sidecarSha256": "f33eb30de01526a0d9174e9e40988c61c4238d124f7e30c8abea8d050653e6c7",
+                "instructionStops": 25
+            },
+            {
+                "target": "x86_64",
+                "role": "pie",
+                "variant": "plain",
+                "frameSha256": "54fcbc356ceb8f3bc60221fa33c8e65aeae53e6a2c82a91739f037df1da5926f",
+                "rawStrictSha256": "166afb5a39d127f29466f6b9a686587c9dae69f3f3e7e026deb56219bb3b3611",
+                "sidecarSha256": "42b3b557aff8ce3292581e643b93b6b73b05b666ec7adb05b7e29e9fd7a8d5a8",
+                "instructionStops": 25
+            },
+            {
+                "target": "x86_64",
+                "role": "pie",
+                "variant": "gabi",
+                "frameSha256": "c8f1d034b43319619deb8a20c83454b41926ee604d9ac32790b7557175202250",
+                "rawStrictSha256": "166afb5a39d127f29466f6b9a686587c9dae69f3f3e7e026deb56219bb3b3611",
+                "sidecarSha256": "211ac694104addc307e9d4b1300cf2e12794587d572e3d501c26f5a4ccfa1cb0",
+                "instructionStops": 25
+            },
+            {
+                "target": "x86_64",
+                "role": "pie",
+                "variant": "gnu",
+                "frameSha256": "af6e6c4f3390e6b4b88c7ddeec2bcf35283d7aeee5fd0c4144c69e915358074a",
+                "rawStrictSha256": "166afb5a39d127f29466f6b9a686587c9dae69f3f3e7e026deb56219bb3b3611",
+                "sidecarSha256": "2807ade622becdb0354b22c6a2a4070511ba261374ab6f421cca8ed3cd73fb6d",
+                "instructionStops": 25
+            },
+            {
+                "target": "x86_64",
+                "role": "pie",
+                "variant": "rebased",
+                "frameSha256": "54fcbc356ceb8f3bc60221fa33c8e65aeae53e6a2c82a91739f037df1da5926f",
+                "rawStrictSha256": "166afb5a39d127f29466f6b9a686587c9dae69f3f3e7e026deb56219bb3b3611",
+                "sidecarSha256": "0b642fbf17f75f93723c86ffdd302a23607680713825eefaa43c11fd1a7db501",
+                "instructionStops": 25
+            },
+            {
+                "target": "x86_64",
+                "role": "pie",
+                "variant": "relocations",
+                "frameSha256": "54fcbc356ceb8f3bc60221fa33c8e65aeae53e6a2c82a91739f037df1da5926f",
+                "rawStrictSha256": "166afb5a39d127f29466f6b9a686587c9dae69f3f3e7e026deb56219bb3b3611",
+                "sidecarSha256": "be8d859153f47d522618ba15353fcaa43ac82550a9e5dda7e983f049a9492a2b",
+                "instructionStops": 25
+            },
+            {
+                "target": "x86_64",
+                "role": "shared",
+                "variant": "plain",
+                "frameSha256": "c6421ae12bbcc45527ac8ac2c2583d6c152d43beb0ffca5dd9c13b65c8b3430f",
+                "rawStrictSha256": "9ab022e078b6379a76c03f4721c683d6c5635857c4590fed47712e3d574b5d0b",
+                "sidecarSha256": "a8739b329937d75ba0b790a80ebe96137e6d4eff9f7583167f1385675f1e8447",
+                "instructionStops": 25
+            },
+            {
+                "target": "x86_64",
+                "role": "shared",
+                "variant": "gabi",
+                "frameSha256": "12a1af0331d983a51c6770f8dc42b56af6de38b25ab0f94cea9fc757218a25a1",
+                "rawStrictSha256": "9ab022e078b6379a76c03f4721c683d6c5635857c4590fed47712e3d574b5d0b",
+                "sidecarSha256": "83670239a6890a8a98c74cafcf2b8c74ee24df3a4bf485c58da8b98ba64b91a4",
+                "instructionStops": 25
+            },
+            {
+                "target": "x86_64",
+                "role": "shared",
+                "variant": "gnu",
+                "frameSha256": "82b5568350707eb915340b6f7609f382333e59af0735a2050030c89e63676f30",
+                "rawStrictSha256": "9ab022e078b6379a76c03f4721c683d6c5635857c4590fed47712e3d574b5d0b",
+                "sidecarSha256": "c7716f8451f1f9a20b72180e27e87770517c37aa89467ba87a060c45e8cf507c",
+                "instructionStops": 25
+            },
+            {
+                "target": "x86_64",
+                "role": "shared",
+                "variant": "rebased",
+                "frameSha256": "c6421ae12bbcc45527ac8ac2c2583d6c152d43beb0ffca5dd9c13b65c8b3430f",
+                "rawStrictSha256": "9ab022e078b6379a76c03f4721c683d6c5635857c4590fed47712e3d574b5d0b",
+                "sidecarSha256": "3e4c50eb813910d05de2345d1a21e93ca0ad128d1644c7fc394ea1aaf6d9f244",
+                "instructionStops": 25
+            },
+            {
+                "target": "x86_64",
+                "role": "shared",
+                "variant": "relocations",
+                "frameSha256": "c6421ae12bbcc45527ac8ac2c2583d6c152d43beb0ffca5dd9c13b65c8b3430f",
+                "rawStrictSha256": "9ab022e078b6379a76c03f4721c683d6c5635857c4590fed47712e3d574b5d0b",
+                "sidecarSha256": "0bdbd134f5247afe6ce347ebcd2b47a6caf7938b39a618f31111b2457aecc223",
+                "instructionStops": 25
+            },
+            {
+                "target": "aarch64",
+                "role": "exec",
+                "variant": "plain",
+                "frameSha256": "705d7c8a8f9963cfca253e3c622dfafbea4defe3a24d75165f072acc3d2bf963",
+                "rawStrictSha256": "995cb1da47a72ea5e368448cb4245660839157660968f7dddbd2344dfe08e141",
+                "sidecarSha256": "fa16b1f81c0a748cd4a3f82d39cc608dd5238955ede11ebf6f66af8a5a94aaf9",
+                "instructionStops": 21
+            },
+            {
+                "target": "aarch64",
+                "role": "exec",
+                "variant": "gabi",
+                "frameSha256": "fc0b22edbf3147e59c765d3ab34e471a3cfa29579211311740b7ae789924d0b9",
+                "rawStrictSha256": "995cb1da47a72ea5e368448cb4245660839157660968f7dddbd2344dfe08e141",
+                "sidecarSha256": "7c2759d1fd8f97ec48e8678240558dcb8300cc7d07a1c9ddf4abb82cc5ab48a1",
+                "instructionStops": 21
+            },
+            {
+                "target": "aarch64",
+                "role": "exec",
+                "variant": "gnu",
+                "frameSha256": "c7d83d115f72f6b3d07b0a225e85560d7b1c901bae151e8b0ddb6e08e801dc24",
+                "rawStrictSha256": "995cb1da47a72ea5e368448cb4245660839157660968f7dddbd2344dfe08e141",
+                "sidecarSha256": "bf26dfe61b8d908c7a980046d5b29d4f9d1c6ff542ac950c1c7852a65c74d65e",
+                "instructionStops": 21
+            },
+            {
+                "target": "aarch64",
+                "role": "exec",
+                "variant": "rebased",
+                "frameSha256": "705d7c8a8f9963cfca253e3c622dfafbea4defe3a24d75165f072acc3d2bf963",
+                "rawStrictSha256": "995cb1da47a72ea5e368448cb4245660839157660968f7dddbd2344dfe08e141",
+                "sidecarSha256": "1e04aa4576ccd377c318b0be1b6bcd4b546b64e28b7c3a2e9002b181ca0b4e5d",
+                "instructionStops": 21
+            },
+            {
+                "target": "aarch64",
+                "role": "exec",
+                "variant": "relocations",
+                "frameSha256": "705d7c8a8f9963cfca253e3c622dfafbea4defe3a24d75165f072acc3d2bf963",
+                "rawStrictSha256": "995cb1da47a72ea5e368448cb4245660839157660968f7dddbd2344dfe08e141",
+                "sidecarSha256": "aead50b816d3dbd29806d444d53b9b3d409e5205a6fee1c884abaa7847981db2",
+                "instructionStops": 21
+            },
+            {
+                "target": "aarch64",
+                "role": "pie",
+                "variant": "plain",
+                "frameSha256": "ed1cade5230bdb813f80ea2bc4f0e64eb518ef120bb2527148a550dba0459804",
+                "rawStrictSha256": "82664e236655322054bb571767cb175fe403a42c2c27d209b00999957fa0a609",
+                "sidecarSha256": "af14a5c9c293a852058f9271868a6990144091174cbbf93cc91d07cd18b415a9",
+                "instructionStops": 21
+            },
+            {
+                "target": "aarch64",
+                "role": "pie",
+                "variant": "gabi",
+                "frameSha256": "1607cd52d20baabdb3ab516ebce3c3c459e407aee759e5ef79ab85b1ee61e51d",
+                "rawStrictSha256": "82664e236655322054bb571767cb175fe403a42c2c27d209b00999957fa0a609",
+                "sidecarSha256": "3a89b51a78be20b3b72de9a8686302e4ede02b856929b840adcc7106d6a767ab",
+                "instructionStops": 21
+            },
+            {
+                "target": "aarch64",
+                "role": "pie",
+                "variant": "gnu",
+                "frameSha256": "f6745eaab91185e57e4b1d925c6fe04ce3c04eb4928929c7a6a380fd65ac4c47",
+                "rawStrictSha256": "82664e236655322054bb571767cb175fe403a42c2c27d209b00999957fa0a609",
+                "sidecarSha256": "9c6d241060351294d29fd34fd5a724245272ea7629f70d2c79156b25c9eb6944",
+                "instructionStops": 21
+            },
+            {
+                "target": "aarch64",
+                "role": "pie",
+                "variant": "rebased",
+                "frameSha256": "ed1cade5230bdb813f80ea2bc4f0e64eb518ef120bb2527148a550dba0459804",
+                "rawStrictSha256": "82664e236655322054bb571767cb175fe403a42c2c27d209b00999957fa0a609",
+                "sidecarSha256": "fd130e1108f6dd7d225190e98ea8b1a8bb85ba4600d4c3e9c4855c5c2a851634",
+                "instructionStops": 21
+            },
+            {
+                "target": "aarch64",
+                "role": "pie",
+                "variant": "relocations",
+                "frameSha256": "ed1cade5230bdb813f80ea2bc4f0e64eb518ef120bb2527148a550dba0459804",
+                "rawStrictSha256": "82664e236655322054bb571767cb175fe403a42c2c27d209b00999957fa0a609",
+                "sidecarSha256": "9b031f8eca84ebf3f73f3adcff406bdeebae2cbc7b1e0feb2025a1b11294f540",
+                "instructionStops": 21
+            },
+            {
+                "target": "aarch64",
+                "role": "shared",
+                "variant": "plain",
+                "frameSha256": "be3da91b313f13ef8a83b68f877ce27f5eebef6e542e69fa6bfceb109e861c7c",
+                "rawStrictSha256": "7ed05b29e6fe22b3366b93af26fe3b78da1e38e9206bac4cbff45204c81c7499",
+                "sidecarSha256": "519b418dffea11cc365c9ff9c79c307b181900ee87c56d4141a92da5e198ca4e",
+                "instructionStops": 21
+            },
+            {
+                "target": "aarch64",
+                "role": "shared",
+                "variant": "gabi",
+                "frameSha256": "5a9be456163f3365d2fca88111f0a933d9b930f6366c5c87c3638e5bc40ec1c9",
+                "rawStrictSha256": "7ed05b29e6fe22b3366b93af26fe3b78da1e38e9206bac4cbff45204c81c7499",
+                "sidecarSha256": "b8b986c7cb7e3c886f64bc905ee3db1e04bb33bfba87b8358cd22fd6cf17f480",
+                "instructionStops": 21
+            },
+            {
+                "target": "aarch64",
+                "role": "shared",
+                "variant": "gnu",
+                "frameSha256": "69c72f125d1e357ca2648eaf228dbc9fb2ce112047a6760501401f8fd012ba44",
+                "rawStrictSha256": "7ed05b29e6fe22b3366b93af26fe3b78da1e38e9206bac4cbff45204c81c7499",
+                "sidecarSha256": "07a3ca8866b9654c99243e16a0dc5fe2d4ed94663475d6a7e1a5bd7752ce4749",
+                "instructionStops": 21
+            },
+            {
+                "target": "aarch64",
+                "role": "shared",
+                "variant": "rebased",
+                "frameSha256": "be3da91b313f13ef8a83b68f877ce27f5eebef6e542e69fa6bfceb109e861c7c",
+                "rawStrictSha256": "7ed05b29e6fe22b3366b93af26fe3b78da1e38e9206bac4cbff45204c81c7499",
+                "sidecarSha256": "6b9db11d13ee922d6252ad0cd63cc103474f06be23b127cff6a3da8266c51cb4",
+                "instructionStops": 21
+            },
+            {
+                "target": "aarch64",
+                "role": "shared",
+                "variant": "relocations",
+                "frameSha256": "be3da91b313f13ef8a83b68f877ce27f5eebef6e542e69fa6bfceb109e861c7c",
+                "rawStrictSha256": "7ed05b29e6fe22b3366b93af26fe3b78da1e38e9206bac4cbff45204c81c7499",
+                "sidecarSha256": "491cf75e6664764b27aa462b018ae7953e31ca5cf1ca5fc88b79d58b1548c375",
+                "instructionStops": 21
+            }
+        ],
+        "packagedExports": 60,
+        "rawStrictReports": 30,
+        "frameRemovalControls": 6,
+        "scope": "Independent retained-byte, raw-validator and GDB trace review; not synthetic frame generation"
+    }
+}

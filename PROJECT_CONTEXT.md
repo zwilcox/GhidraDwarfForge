@@ -1,5 +1,22 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 compiler memory effects:** direct RAM operands now
+become explicit loads/stores with collision-free temporary coordinates. Audited
+ENDBR64/CSET/SETNZ support removes earlier compiler-reference blockers; 751
+profile, 1849 native instruction and 4470 native callee checks pass, along with
+encoder/recovered-frame validator and GDB regressions. Both unchanged compiler
+references resolve the exact global store and still refuse the unproved stack
+alias, including rebased probes. No storage-separation assumption was enabled;
+that profile boundary is awaiting user preference. See `docs/UNWIND-MEMORY-EFFECTS.md`.
+Production integration and full #112/#110/#109 acceptance remain PLANNED.
+
+**CONFIRMED hosted — #112 preservation prerequisite:** PR167 at `06dbfec7`
+passes all five targets, Windows and required-validation. Independent downloaded
+artifact review verifies thirty preservation cases, sixty packaged exports,
+thirty raw checker reports and six removed-frame controls. PR167 is ready,
+not merged; PR166 (#116/#114) still has first integration priority. See
+`docs/evidence/original-cfi-hosted-review.json`.
+
 **CONFIRMED locally — #112 original unwind precedence:** selected loader write
 footprints now protect the recovery verifier's original code/frame evidence.
 The planner excludes whole instructions touched by original FDE coverage, splits

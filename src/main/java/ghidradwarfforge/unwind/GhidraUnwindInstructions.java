@@ -104,11 +104,12 @@ public final class GhidraUnwindInstructions {
                 omissions.add("missing or unbounded p-code");
             }
             else {
+                var temporaries = new Temporaries(operations, monitor);
                 for (PcodeOp operation : operations) {
                     monitor.checkCancelled();
                     pcode.add(operation.toString());
                     try {
-                        lower(program, instruction, operation, calls, effects);
+                        lower(program, instruction, operation, calls, effects, temporaries);
                     }
                     catch (IllegalArgumentException unsupported) {
                         omissions.add(unsupported.getMessage());
@@ -145,19 +146,30 @@ public final class GhidraUnwindInstructions {
     }
 
     private static void lower(Program program, Instruction instruction, PcodeOp op,
-            CallProof calls, List<Effect> effects) throws CancelledException {
+            CallProof calls, List<Effect> effects, Temporaries temporaries) throws CancelledException {
         int opcode = op.getOpcode();
         switch (opcode) {
-            case PcodeOp.COPY -> effects.add(new Copy(cell(op.getOutput()), operand(op.getInput(0))));
-            case PcodeOp.INT_ADD, PcodeOp.INT_SUB -> effects.add(new Add(cell(op.getOutput()),
-                operand(op.getInput(0)), operand(op.getInput(1)), opcode == PcodeOp.INT_SUB));
+            case PcodeOp.COPY -> {
+                var destination = destination(program, op.getOutput(), temporaries);
+                effects.add(new Copy(destination.cell(), operand(program, op.getInput(0), effects, temporaries)));
+                destination.store(effects);
+            }
+            case PcodeOp.INT_ADD, PcodeOp.INT_SUB -> {
+                var destination = destination(program, op.getOutput(), temporaries);
+                effects.add(new Add(destination.cell(), operand(program, op.getInput(0), effects, temporaries),
+                    operand(program, op.getInput(1), effects, temporaries), opcode == PcodeOp.INT_SUB));
+                destination.store(effects);
+            }
             case PcodeOp.LOAD -> {
                 requireMemorySpace(program, op);
-                effects.add(new Load(cell(op.getOutput()), operand(op.getInput(1))));
+                var destination = destination(program, op.getOutput(), temporaries);
+                effects.add(new Load(destination.cell(), operand(program, op.getInput(1), effects, temporaries)));
+                destination.store(effects);
             }
             case PcodeOp.STORE -> {
                 requireMemorySpace(program, op);
-                effects.add(new Store(operand(op.getInput(1)), operand(op.getInput(2)), op.getInput(2).getSize()));
+                effects.add(new Store(operand(program, op.getInput(1), effects, temporaries),
+                    operand(program, op.getInput(2), effects, temporaries), op.getInput(2).getSize()));
             }
             case PcodeOp.CALL, PcodeOp.CALLIND -> {
                 if (!instruction.getFlowType().isCall()) throw new IllegalArgumentException("p-code call contradicts instruction flow");
@@ -183,7 +195,9 @@ public final class GhidraUnwindInstructions {
                 if (op.getOutput() == null || !pure(opcode)) {
                     throw new IllegalArgumentException("unmodeled operation: " + op.getMnemonic());
                 }
-                effects.add(new Kill(cell(op.getOutput())));
+                var destination = destination(program, op.getOutput(), temporaries);
+                effects.add(new Kill(destination.cell()));
+                destination.store(effects);
             }
         }
     }
@@ -214,7 +228,55 @@ public final class GhidraUnwindInstructions {
         }
         return new Cell(node.isRegister() ? Bank.REGISTER : Bank.TEMPORARY, node.getOffset(), node.getSize());
     }
-    private static Operand operand(Varnode node) {
-        return node.isConstant() ? new Constant(node.getOffset(), node.getSize()) : cell(node);
+    private record Destination(Cell cell, Constant address) {
+        void store(List<Effect> effects) {
+            if (address != null) effects.add(new Store(address, cell, cell.bytes()));
+        }
+    }
+
+    /** Direct RAM varnodes are memory contents, not immediate addresses or registers. */
+    private static Constant memoryAddress(Program program, Varnode node) {
+        var space = program.getAddressFactory().getDefaultAddressSpace();
+        if (!node.isAddress() || !node.getAddress().getAddressSpace().equals(space) || space.getAddressableUnitSize() != 1) {
+            throw new IllegalArgumentException("direct memory operand is outside byte-addressed default RAM");
+        }
+        return new Constant(node.getOffset(), space.getPointerSize());
+    }
+    private static Destination destination(Program program, Varnode node, Temporaries temporaries) {
+        if (node == null || !node.isAddress()) return new Destination(cell(node), null);
+        return new Destination(temporaries.next(node.getSize()), memoryAddress(program, node));
+    }
+    private static Operand operand(Program program, Varnode node, List<Effect> effects, Temporaries temporaries) {
+        if (node.isConstant()) return new Constant(node.getOffset(), node.getSize());
+        if (!node.isAddress()) return cell(node);
+        var temporary = temporaries.next(node.getSize());
+        effects.add(new Load(temporary, memoryAddress(program, node)));
+        return temporary;
+    }
+    /** Reserve fresh physical temporary coordinates beyond all raw unique cells. */
+    private static final class Temporaries {
+        private long next;
+        Temporaries(PcodeOp[] operations, TaskMonitor monitor) throws CancelledException {
+            try {
+                for (var operation : operations) {
+                    monitor.checkCancelled();
+                    var nodes = new ArrayList<Varnode>(List.of(operation.getInputs()));
+                    if (operation.getOutput() != null) nodes.add(operation.getOutput());
+                    for (var node : nodes) {
+                        monitor.checkCancelled();
+                        if (node.isUnique()) next = Math.max(next, Math.addExact(node.getOffset(), node.getSize()));
+                    }
+                }
+            }
+            catch (ArithmeticException overflow) { throw new IllegalArgumentException("temporary coordinate range overflows", overflow); }
+        }
+        Cell next(int bytes) {
+            try {
+                var result = new Cell(Bank.TEMPORARY, next, bytes);
+                next = Math.addExact(next, bytes);
+                return result;
+            }
+            catch (ArithmeticException overflow) { throw new IllegalArgumentException("temporary coordinate range overflows", overflow); }
+        }
     }
 }

@@ -16,6 +16,9 @@
 cf_checkpoint:
     .cfi_startproc simple
     ordinary_rules
+    endbr64
+    mov cf_observation(%rip),%rax
+    setnz %al
     nop
     ret
     .cfi_endproc
@@ -66,4 +69,8 @@ _start:
     syscall
     .cfi_endproc
     .size _start,.-_start
+    .section .rodata
+    .balign 8
+cf_observation:
+    .quad 0x1234
     .section .note.GNU-stack,"",@progbits

@@ -161,7 +161,9 @@ tasks.register("unwindFrameRecoveryProbe", JavaExec) {
     mainClass = "ghidradwarfforge.unwind.UnwindFrameRecoveryProbe"
     if (project.hasProperty("frameInput")) {
         args ghidraInstallDir, project.property("frameInput"), project.property("frameFunctions"),
-            project.property("framePlan"), project.findProperty("frameRebase") ?: "0"
+            project.property("framePlan"), project.findProperty("frameRebase") ?: "0",
+            project.findProperty("frameRoot") ?: "cf_recurse", project.findProperty("frameInspect") ?: "false",
+            project.findProperty("frameExpectedFailure") ?: ""
     }
     systemProperty "java.awt.headless", "true"
     systemProperty "application.settingsdir", file("build/tmp/unwind-frame-probe/settings").absolutePath

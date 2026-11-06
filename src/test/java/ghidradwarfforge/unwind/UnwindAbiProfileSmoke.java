@@ -43,6 +43,10 @@ public final class UnwindAbiProfileSmoke {
                 run(arm, compiler, "ordinary", arm ? "f37bbfa9f37bc1a8c0035fd6" : "415490415cc3", null);
             }
         }
+        run(false, "gcc", "ordinary-setnz", "0f95c0c3", null);
+        run(false, "gcc", "ordinary-endbr", "f30f1efa4154415cc3", null);
+        run(true, "default", "ordinary-cset32", "e0079f1ac0035fd6", null);
+        run(true, "default", "ordinary-cset64", "e0079f9ac0035fd6", null);
         run(true, "default", "pac-hidden", "3f2303d5c0035fd6", BigInteger.ZERO);
         run(true, "default", "pac-visible", "3f2303d5c0035fd6", BigInteger.ONE);
         run(true, "default", "pac-later", "1f2003d53f2303d5c0035fd6", BigInteger.ZERO);
@@ -105,7 +109,7 @@ public final class UnwindAbiProfileSmoke {
                     .append(" effective=").append(selected.description().convention())
                     .append(" instruction=").append(instruction).append(" pcode=")
                     .append(Arrays.toString(instruction.getPcode())).append('\n');
-                if (!shape.equals("ordinary")) {
+                if (!shape.startsWith("ordinary")) {
                     if (shape.equals("pac-hidden")) require(instruction.getPcode().length == 0, "hidden PAC did not reproduce empty p-code");
                     if (shape.equals("pac-visible")) require(instruction.getPcode().length > 0, "visible PAC has no p-code");
                     if (shape.equals("pac-later")) {
@@ -125,6 +129,10 @@ public final class UnwindAbiProfileSmoke {
                     selected::requireInstruction, ignored -> null, TaskMonitor.DUMMY);
                 var recovered = UnwindFlow.analyze(captured.graph(), entry, selected.entry(), selected.stackPointer(), () -> false);
                 var returned = recovered.after().get(program.getListing().getInstructionContaining(end).getAddress());
+                if (shape.startsWith("ordinary-cset") || shape.equals("ordinary-setnz")) require(!returned.values().containsKey(selected.registers().get(0)),
+                    "conditional set retained an incoming destination identity");
+                if (shape.equals("ordinary-endbr")) require(instruction.getPcode().length == 0,
+                    "end-branch fixture no longer exercises hidden state");
                 require(returned.values().get(selected.stackPointer()).equals(
                     new StackAddress(selected.description().returnStackAdjustment(), 8)), "ordinary return stack adjustment");
                 require(returned.values().get(selected.programCounter()).equals(new ReturnAddress(8)), "ordinary return target identity");

@@ -58,7 +58,45 @@ public final class UnwindFrameRecoveryProbe {
                     functions.put(fields[0], program.getFunctionManager().createFunction(fields[0], entry, body, SourceType.USER_DEFINED));
                 }
                 if (rebase != 0) program.setImageBase(program.getImageBase().add(rebase), true);
-                var evidence = GhidraUnwindCalls.verify(program, functions.get("cf_recurse"), image, rebase, TaskMonitor.DUMMY);
+                if (args.length > 6 && Boolean.parseBoolean(args[6])) {
+                    var observations = new StringBuilder();
+                    for (var function : functions.values()) {
+                        if (function.getName().equals("_start")) continue;
+                        var profile = ghidradwarfforge.targets.UnwindAbiProfile.select(program, function, image, rebase, TaskMonitor.DUMMY);
+                        var captured = GhidraUnwindInstructions.capture(program, function, profile::requireInstruction,
+                            instruction -> new UnwindFlow.Call(java.util.Set.copyOf(profile.calleeSavedCells()),
+                                profile.description().returnStackAdjustment(), 0L, "diagnostic hypothesis only"), TaskMonitor.DUMMY);
+                        var flow = UnwindFlow.analyze(captured.graph(), function.getEntryPoint(), profile.entry(), profile.stackPointer(), () -> false,
+                            (instruction, index, effect, before) -> {
+                                if (effect instanceof UnwindFlow.Store store) {
+                                    var address = store.address() instanceof UnwindFlow.Constant constant ? constant :
+                                        before.values().get((UnwindFlow.Cell) store.address());
+                                    String resolved = address instanceof UnwindFlow.Constant constant ? "absolute:" + Long.toHexString(constant.value()) :
+                                        address instanceof UnwindFlow.StackAddress stack ? "stack:" + stack.offset() : "unknown";
+                                    observations.append("MEMORY_WRITE ").append(function.getName()).append(' ').append(instruction)
+                                        .append(' ').append(resolved).append(' ').append(store.bytes()).append('\n');
+                                    observations.append("STORE ").append(function.getName()).append(' ').append(instruction)
+                                        .append(' ').append(effect).append(" before=").append(before).append('\n');
+                                }
+                            });
+                        observations.append(function.getName()).append(" captured=").append(captured).append(" flow=").append(flow).append('\n');
+                    }
+                    Files.writeString(Path.of(args[3] + ".inspection.txt"), observations.toString());
+                }
+                String expectedFailure = args.length > 7 ? args[7] : "";
+                GhidraUnwindCalls.Evidence evidence;
+                try {
+                    evidence = GhidraUnwindCalls.verify(program, functions.get(args.length > 5 ? args[5] : "cf_recurse"), image, rebase, TaskMonitor.DUMMY);
+                }
+                catch (IllegalArgumentException failure) {
+                    if (!expectedFailure.isEmpty() && failure.getMessage().equals(expectedFailure)) {
+                        Files.writeString(Path.of(args[3] + ".refusal.txt"), failure.getMessage() + "\n");
+                        System.out.println("recovered-frame-negative=PASS " + failure.getMessage());
+                        return;
+                    }
+                    throw failure;
+                }
+                if (!expectedFailure.isEmpty()) throw new AssertionError("unproved fixture unexpectedly qualified");
                 var planned = GhidraUnwindFrames.plan(evidence, rebase, TaskMonitor.DUMMY);
                 if (planned.observations().stream().anyMatch(row -> !row.projection().covered())) throw new AssertionError("fixture has omitted rows");
                 writePlan(Path.of(args[3]), planned.plan());

@@ -161,7 +161,7 @@ public final class UnwindAbiProfile {
             8, 8, true, List.of("RAX", "RDX", "RCX", "RBX", "RSI", "RDI", "RBP", "RSP",
                 "R8", "R9", "R10", "R11", "R12", "R13", "R14", "R15", "RIP"),
             Set.of(3, 6, 12, 13, 14, 15), List.of("CF", "PF", "AF", "ZF", "SF", "OF", "DF", "rflags"),
-            words("push pop mov movsx movsxd movzx lea add sub cmp test and or xor inc dec neg not imul mul div idiv shl shr sal sar rol ror nop call ret leave jmp jz jnz jg jge jl jle ja jae jb jbe jo jno js jns jp jnp"),
+            words("push pop mov movsx movsxd movzx lea add sub cmp test and or xor inc dec neg not imul mul div idiv shl shr sal sar rol ror nop endbr64 setnz call ret leave jmp jz jnz jg jge jl jle ja jae jb jbe jo jno js jns jp jnp"),
             "longMode", BigInteger.ONE, "AMD64 psABI e1ce098331da5dbd66e1ffc74162380bcc213236");
     }
     private static Description arm() {
@@ -173,7 +173,7 @@ public final class UnwindAbiProfile {
         return new Description("aarch64-aapcs64-integer", 183, "AARCH64:LE:64:v8A", "default", "__cdecl", 31, 30, 32,
             0, 0, false, List.copyOf(registers), Set.copyOf(saved),
             List.of("NG", "ZR", "CY", "OV", "shift_carry", "tmpCY", "tmpOV", "tmpNG", "tmpZR"),
-            words("add adds sub subs mov movk movn movz stp ldp str ldr stur ldur strb ldrb strh ldrh ldrsw cmp cmn tst and ands orr eor bic bics orn eon lsl lsr asr ror ubfx sbfx uxtb uxth sxtb sxth sxtw adr adrp cbz cbnz tbz tbnz b bl blr br ret nop b.eq b.ne b.cs b.hs b.cc b.lo b.mi b.pl b.vs b.vc b.hi b.ls b.ge b.lt b.gt b.le b.al b.nv"),
+            words("add adds sub subs mov movk movn movz stp ldp str ldr stur ldur strb ldrb strh ldrh ldrsw cmp cmn tst and ands orr eor bic bics orn eon lsl lsr asr ror ubfx sbfx uxtb uxth sxtb sxth sxtw cset adr adrp cbz cbnz tbz tbnz b bl blr br ret nop b.eq b.ne b.cs b.hs b.cc b.lo b.mi b.pl b.vs b.vc b.hi b.ls b.ge b.lt b.gt b.le b.al b.nv"),
             "", BigInteger.ZERO, "AAPCS64/AADWARF64 2025Q4 daa7a94ca55973736c0e434a67a6e4bbcd35d7fa");
     }
 }

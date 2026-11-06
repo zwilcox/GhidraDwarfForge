@@ -1006,6 +1006,8 @@ jobs:
           ./gradlew unwindFrameRowsSmoke ghidraUnwindCallsSmoke elfCodeBytesSmoke
           python3 src/test/integration/unwind-frame-recovery.py build/classes/java \
             "build/test-results/unwind-frame-recovery/$TARGET" --target "$TARGET" --dwarfdump "$DWARFDUMP"
+          python3 src/test/integration/compiler-memory-effects.py \
+            "build/test-results/compiler-memory-effects/$TARGET" --target "$TARGET"
 
       - name: Compare original frame ranges with independent compiler and validator inventories
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
