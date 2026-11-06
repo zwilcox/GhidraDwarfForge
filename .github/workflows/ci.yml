@@ -999,6 +999,11 @@ jobs:
             "build/test-results/cfi-encoder/$TARGET" --target "$TARGET" --dwarfdump "$DWARFDUMP"
           python3 src/test/integration/cfi-composition.py build/classes/java \
             "build/test-results/cfi-encoder/$TARGET" "build/test-results/cfi-composition/$TARGET" --dwarfdump "$DWARFDUMP"
+          for encoding in plain gabi gnu; do
+            python3 src/test/integration/cfi-composition.py build/classes/java \
+              "build/test-results/cfi-encoder/$TARGET" "build/test-results/cfi-writer/$TARGET/$encoding" \
+              --original-encoding "$encoding" --dwarfdump "$DWARFDUMP"
+          done
 
       - name: Validate native recovered CFI and instruction-boundary debugger behavior
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'

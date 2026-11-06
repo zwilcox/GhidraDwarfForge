@@ -96,10 +96,12 @@ def main():
             assert plans[0].read_bytes() == plans[1].read_bytes(), 'database rebasing changed original-image CFI rules'
             assert Path(str(plans[0]) + '.original-bytes.txt').read_bytes() == Path(str(plans[1]) + '.original-bytes.txt').read_bytes()
             modes = [('reference', reference), ('absent', original)]
+            empty_prefix = case / 'empty-original.frame'
+            empty_prefix.write_bytes(b'')
             for compression in ('none', 'zlib'):
                 artifact, raw = case / (compression + '.dbg'), case / (compression + '.frame')
                 command = [args.java, '-cp', classpath, 'ghidradwarfforge.unwind.CallFrameEncoderProbe',
-                           plans[0], original, artifact, raw, compression]
+                           plans[0], original, artifact, raw, compression, empty_prefix, 'from-original']
                 run(command, case / (compression + '-encode.log'))
                 first = artifact.read_bytes()
                 run(command, case / (compression + '-repeat.log'))

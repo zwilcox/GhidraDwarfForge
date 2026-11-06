@@ -37,6 +37,36 @@ public final class OriginalFrameSources {
     }
     private OriginalFrameSources() { }
 
+    /** Read only the inventoried debug-frame source, with fresh identity checks. */
+    static byte[] debugFrameBytes(ElfImage image, Inventory inventory, BooleanSupplier cancelled) throws IOException {
+        Source selected = null;
+        for (var source : inventory.sources()) {
+            check(cancelled);
+            if (!source.name().equals(".debug_frame") && !source.name().equals(".zdebug_frame")) continue;
+            require(selected == null, "multiple original debug-frame sources");
+            selected = source;
+        }
+        if (selected == null) return new byte[0];
+        ElfImage.Section section = null;
+        for (var candidate : image.sections()) {
+            check(cancelled);
+            if (candidate.name.equals(selected.name()) && candidate.offset == selected.offset() && candidate.size == selected.storedBytes()) {
+                require(section == null, "ambiguous original debug-frame section");
+                section = candidate;
+            }
+        }
+        require(section != null, "original debug-frame section no longer matches inventory");
+        try (var input = FileChannel.open(image.sourcePath(), StandardOpenOption.READ)) {
+            byte[] stored = read(image, input, selected.offset(), selected.storedBytes(), cancelled);
+            require(hash(stored, cancelled).equals(selected.storedSha256()), "original stored frame bytes changed");
+            byte[] plain = decode(stored, image.is64Bit(), image.byteOrder(), section.name, section.flags, new Budget(), cancelled);
+            require(plain.length == selected.decodedBytes() && hash(plain, cancelled).equals(selected.decodedSha256()),
+                "original decoded frame bytes changed");
+            image.requireUnchanged(input);
+            return plain;
+        }
+    }
+
     public static Inventory inspect(ElfImage image, BooleanSupplier cancelled) throws IOException {
         check(cancelled);
         require(image.type() == 2 || image.type() == 3, "original frame sources require a linked ELF");

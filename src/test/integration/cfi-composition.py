@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 import runpy
 import sys
+import zlib
 
 ROOT = Path(__file__).resolve().parents[3]
 SCRIPTS = ROOT / 'src/test/integration'
@@ -35,6 +36,8 @@ def main():
     parser.add_argument('output', type=Path)
     parser.add_argument('--java', default='java')
     parser.add_argument('--dwarfdump', required=True)
+    parser.add_argument('--original-encoding', choices=('plain', 'gabi', 'gnu'),
+        help='Exercise qualified writer composition from an original ELF containing the compiler prefix')
     args = parser.parse_args()
     work = args.output.resolve()
     work.mkdir(parents=True, exist_ok=False)
@@ -62,6 +65,16 @@ def main():
         size = int.from_bytes(raw[cie_end + 16:cie_end + 24], 'little')
         prefix = case / 'compiler-prefix.frame'
         prefix.write_bytes(raw[:fde_end])
+        if args.original_encoding:
+            decorated = case / 'original'
+            objcopy = 'objcopy' if target == 'x86_64' else 'aarch64-linux-gnu-objcopy'
+            run([objcopy, '--add-section', '.debug_frame=' + str(prefix), '--set-section-alignment',
+                '.debug_frame=8', '--set-section-flags', '.debug_frame=readonly,debug', original, decorated], case / 'add-original-frame.log')
+            if args.original_encoding != 'plain':
+                run([objcopy, '--compress-debug-sections=' + ('zlib-gabi' if args.original_encoding == 'gabi' else 'zlib-gnu'),
+                    decorated], case / 'compress-original-frame.log')
+            original = decorated
+            before[str(original)] = digest(original)
         expected = decode((source / 'none.frame').read_bytes(), 8, 'little')
         selected, = [f for f in expected if f['address'] == address and f['size'] == size]
         expected.remove(selected)
@@ -79,12 +92,25 @@ def main():
             artifact, frame = case / (mode + '.dbg'), case / (mode + '.frame')
             command = [args.java, '-cp', classpath, 'ghidradwarfforge.unwind.CallFrameEncoderProbe',
                 plan, original, artifact, frame, mode, prefix]
+            if args.original_encoding:
+                command.extend(['from-original', 'controls'])
             run(command, case / (mode + '-encode.log'))
             first = digest(artifact)
             run(command, case / (mode + '-repeat.log'))
             assert first == digest(artifact)
             data = frame.read_bytes()
             assert data[:fde_end] == prefix.read_bytes()
+            sections = metadata(artifact)['sections']
+            active, = [s for s in sections if s['name'] in ('.debug_frame', '.zdebug_frame')]
+            assert active['name'] == '.debug_frame'
+            payload = artifact.read_bytes()[active['offset']:active['offset'] + active['size']]
+            assert (zlib.decompress(payload[24:]) if active['flags'] & 0x800 else payload) == data
+            if args.original_encoding:
+                inherited, = [s for s in metadata(original)['sections'] if s['name'] in ('.debug_frame', '.zdebug_frame')]
+                preserved, = [s for s in sections if s['name'] == '.forge.stale' + inherited['name']]
+                assert all(preserved[k] == inherited[k] for k in ('offset', 'size', 'type', 'flags', 'address'))
+                assert artifact.read_bytes()[preserved['offset']:preserved['offset'] + preserved['size']] == \
+                    original.read_bytes()[inherited['offset']:inherited['offset'] + inherited['size']]
             # Independently inspect appended CIE pointers before decoding its rows
             # in a temporary zero-based view with the test-only consumer.
             suffix = bytearray(data[fde_end:])
@@ -116,7 +142,8 @@ def main():
             results[mode] = {'artifactSha256': first, 'runtime': result}
         assert before == {path: digest(Path(path)) for path in before}
         outcomes.append({'target': target, 'role': source.name.rsplit('-', 1)[1], 'compilerPrefixSha256': digest(prefix),
-            'prefixBytes': fde_end, 'originalRange': [address, size], 'generatedRanges': len(expected), 'results': results})
+            'originalEncoding': args.original_encoding, 'prefixBytes': fde_end,
+            'originalRange': [address, size], 'generatedRanges': len(expected), 'results': results})
         print(source.name + ' mixed compiler/generated CFI PASS', flush=True)
     assert outcomes
     (work / 'result.json').write_text(json.dumps({'status': 'PASS_FRAME_COMPOSITION', 'cases': outcomes,

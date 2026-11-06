@@ -16,9 +16,10 @@ within the complete `.debug_frame` section.
 
 This is a serialization prerequisite. It does not establish recovery evidence,
 validate original CFI instruction semantics, or qualify ELF relocation effects.
-The production writer's original-frame collision rejection remains in force.
-**PLANNED:** connect qualified original section decoding and coverage to this
-composition path, retaining old compressed-section identity and safe publication.
+The ordinary writer's original-frame collision rejection remains in force.
+**CONFIRMED locally:** the [explicit qualified writer API](QUALIFIED-FRAME-WRITER.md)
+connects original section decoding and coverage to this composition path,
+retaining old compressed-section identity and safe publication.
 Production synthesis still requires the full evidence/ADR acceptance.
 
 ## Validation

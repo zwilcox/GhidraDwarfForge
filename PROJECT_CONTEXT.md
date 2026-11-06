@@ -1,5 +1,13 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 qualified frame writer:** an explicit plan API now
+checks original coverage/loader writes, decodes original plain/GNU/gABI frame
+records with identity checks, and emits one active composed frame section while
+retaining original stored bytes. Twelve cases/twenty-four sidecars and GDB
+comparisons pass, including every observed writer cancellation poll. See
+`docs/QUALIFIED-FRAME-WRITER.md`. Automatic synthesis and full evidence/ADR
+acceptance remain PLANNED. PR166 integration retains first priority.
+
 **CONFIRMED locally — #112 frame composition:** original compiler CIE/FDE bytes
 can remain an exact prefix while disjoint generated records use correct section
 offsets. 362 component checks and four x86-64/AArch64 exec/PIE cases pass across
