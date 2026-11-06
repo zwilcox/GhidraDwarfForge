@@ -77,6 +77,7 @@ expected_sources=(
     dynamic-parameter-storage.c
     emission-evidence-x86_64.S
     emission-evidence.c
+    equate-retained-names.cpp
     external-function-declarations.c
     formal-function-return.c
     fp_register_aliases.c

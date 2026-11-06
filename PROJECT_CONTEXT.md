@@ -1,5 +1,13 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED fixture inventory correction — #116:** hosted run `42143872354`
+stopped the x86-64 and AArch64 lanes before exporter validation because
+`equate-retained-names.cpp` was absent from the reviewed source inventory. The
+fixture is now listed and documented. Both complete local
+`fixture-reproducibility.sh x86_64` and `fixture-reproducibility.sh aarch64`
+checks pass, including 15 byte-identical artifacts per target and retained
+partially stripped symbols. Fresh hosted acceptance remains pending.
+
 **CONFIRMED reference details, cancellation and Linux desktop — #116:** each
 equate reference now retains its own resolved width/sign/value beside its owner
 and status. Five default cases pass seven in-flight cancellation points and a

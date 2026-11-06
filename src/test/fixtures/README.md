@@ -720,3 +720,8 @@ conflicts, fixed-width values, code markers and a body suitable for an explicit
 curated gap. The separate preparation harness applies comments and equates to a
 private saved Ghidra program. See `docs/ANALYST-ANNOTATIONS.md`; passing these
 compiler/curation fixtures does not establish production annotation export.
+
+`equate-retained-names.cpp` supplies retained C++ function names that collide
+with synthetic equate names and type names. The `equate-retained-names.py`
+harness checks original function breakpoints and synthetic constant lookup
+through the installed exporter.

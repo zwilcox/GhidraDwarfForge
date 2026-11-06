@@ -1,5 +1,10 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED CI fixture correction — #116:** add the retained-name C++ fixture
+to the explicit source inventory. Both local x86-64 and AArch64 reproducibility
+checks pass (15 artifacts each). Run `42143872354` failed before exporter tests;
+fresh full hosted validation remains required. #114 context is still in progress.
+
 **CONFIRMED reference details, cancellation and Linux desktop — #116:** each
 equate reference now retains its own resolved width/sign/value beside its owner
 and status. Five default cases pass seven in-flight cancellation points and a
