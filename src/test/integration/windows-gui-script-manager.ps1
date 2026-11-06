@@ -156,6 +156,14 @@ function Test-ExportedPair {
         "source-fixture-sha256=$before") | Add-Content -LiteralPath (Join-Path $work 'result.txt')
 }
 Test-ExportedPair $work (Join-Path $work "select/readonly/fixture") (Join-Path $work "select/chosen/fixture.dbg")
+if ($env:GHIDRA_GUI_COMPRESSION -ne '1' -and $env:GHIDRA_GUI_GDB_LOADER -ne '1') {
+    foreach ($mode in @('off', 'assembly', 'p-code', 'both')) {
+        $contextCase = Join-Path $work "select/source-context/$mode"
+        Test-ExportedPair $contextCase (Join-Path $work 'select/readonly/fixture') (Join-Path $contextCase 'output/fixture.dbg')
+    }
+    & python (Join-Path $repository 'src/test/integration/gui-context-evidence.py') (Join-Path $work 'select/source-context') --readelf readelf.exe
+    if ($LASTEXITCODE -ne 0) { throw 'GUI context line evidence differs' }
+}
 if ($env:GHIDRA_GUI_COMPRESSION -eq '1') {
     Invoke-Validator 'readelf.exe' @('-SW', (Join-Path $work 'select/chosen/fixture.dbg')) 'export-sections'
     if ((Get-Content -Raw (Join-Path $work 'export-sections.txt')) -notmatch

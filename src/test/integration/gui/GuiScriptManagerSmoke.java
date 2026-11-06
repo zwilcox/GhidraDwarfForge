@@ -40,6 +40,7 @@ public final class GuiScriptManagerSmoke {
     private static final String EXPORT = WITH_COMPRESSION ? "ExportCompressedGhidraDwarfForge.java" :
         "ExportGhidraDwarfForge.java";
     private static final String LOADER_EXPORT = "ExportGhidraDwarfForgeWithGdbLoader.java";
+    private static final String CONTEXT_EXPORT = "ExportGhidraDwarfForgeWithContext.java";
     private static final String ATTACH = "AttachGhidraDwarfForge.java";
     private static final String RECOVER = "RecoverGhidraDwarfForgeAttachment.java";
     private static final String PREPARE = "ExportAndAttachGhidraDwarfForge.java";
@@ -130,7 +131,7 @@ public final class GuiScriptManagerSmoke {
                 return result;
             });
             try {
-                for (String script : new String[] { PREFLIGHT, EXPORT, LOADER_EXPORT, ATTACH, RECOVER, PREPARE }) {
+                for (String script : new String[] { PREFLIGHT, EXPORT, LOADER_EXPORT, CONTEXT_EXPORT, ATTACH, RECOVER, PREPARE }) {
                     var found = GhidraScriptUtil.findScriptByName(script);
                     GuiTestSupport.require(found != null, "installed script was not discovered: " + script);
                     GuiTestSupport.require(found.getFile(false).toPath().toRealPath().equals(
@@ -268,6 +269,9 @@ public final class GuiScriptManagerSmoke {
                         if ("1".equals(System.getenv("GHIDRA_GUI_NATIVE_ATTACHMENT"))) {
                             runNativeAttachment(tool, program, input, caseDirectory, functionAddress);
                         }
+                        if (!WITH_COMPRESSION && !WITH_LOADER) {
+                            runContextChoices(tool, input, chosen, caseDirectory);
+                        }
                     }
                     ComponentProvider provider = tool.getComponentProvider("Console");
                     GuiTestSupport.onSwing(() -> {
@@ -300,6 +304,92 @@ public final class GuiScriptManagerSmoke {
             finally {
                 program.release(owner);
             }
+        }
+    }
+
+    private static void runContextChoices(ProbeTool tool, Path input, Path baseline, Path caseDirectory) throws Exception {
+        Path root = Files.createDirectory(caseDirectory.resolve("source-context"));
+        ConsoleService console = tool.getService(ConsoleService.class);
+        String original = GuiTestSupport.sha256(input);
+        String baselineSidecar = GuiTestSupport.sha256(baseline.resolve("fixture.dbg"));
+        String baselineSource = GuiTestSupport.sha256(baseline.resolve("fixture.dbg.c"));
+        for (String mode : java.util.List.of("Cancel", "Off", "Assembly", "P-code", "Both")) {
+            Path work = Files.createDirectory(root.resolve(mode.toLowerCase(java.util.Locale.ROOT)));
+            Path output = Files.createDirectory(work.resolve("output"));
+            clearConsole(console);
+            var interaction = CompletableFuture.runAsync(() -> {
+                try {
+                    var dialog = GuiTestSupport.dialog("Source context");
+                    var choices = (javax.swing.JComboBox<?>) GuiTestSupport.find(dialog,
+                        component -> component instanceof javax.swing.JComboBox<?>);
+                    GuiTestSupport.require(choices != null, "context choice control is missing");
+                    GuiTestSupport.onSwing(() -> {
+                        // Ghidra's doAsk preserves the last explicit selection in this session.
+                        String expected = switch (mode) {
+                            case "P-code" -> "Assembly";
+                            case "Both" -> "P-code";
+                            default -> "Off";
+                        };
+                        GuiTestSupport.require(expected.equals(choices.getSelectedItem()),
+                            "context initial/remembered choice differs: " + choices.getSelectedItem());
+                        var actual = new java.util.ArrayList<Object>();
+                        for (int i = 0; i < choices.getItemCount(); i++) actual.add(choices.getItemAt(i));
+                        GuiTestSupport.require(actual.equals(java.util.List.of("Off", "Assembly", "P-code", "Both")),
+                            "unexpected context choices: " + actual);
+                        return null;
+                    });
+                    Robot robot = new Robot();
+                    robot.setAutoDelay(80);
+                    if (!mode.equals("Cancel")) {
+                        GuiTestSupport.foregroundWindow(choices);
+                        GuiTestSupport.click(robot, GuiTestSupport.bounds(choices), 1);
+                        robot.keyPress(java.awt.event.KeyEvent.VK_HOME);
+                        robot.keyRelease(java.awt.event.KeyEvent.VK_HOME);
+                        int index = java.util.List.of("Off", "Assembly", "P-code", "Both").indexOf(mode);
+                        for (int i = 0; i < index; i++) {
+                            robot.keyPress(java.awt.event.KeyEvent.VK_DOWN);
+                            robot.keyRelease(java.awt.event.KeyEvent.VK_DOWN);
+                        }
+                        robot.keyPress(java.awt.event.KeyEvent.VK_ENTER);
+                        robot.keyRelease(java.awt.event.KeyEvent.VK_ENTER);
+                        robot.waitForIdle();
+                        GuiTestSupport.onSwing(() -> {
+                            GuiTestSupport.require(mode.equals(choices.getSelectedItem()), "context selection differs");
+                            return null;
+                        });
+                    }
+                    GuiTestSupport.screenshot(robot, dialog, work.resolve("context-choice.png"));
+                    GuiTestSupport.clickButton(robot, dialog, mode.equals("Cancel") ? "Cancel" : "OK");
+                    if (!mode.equals("Cancel")) GuiTestSupport.operateChooser(output, work, false);
+                }
+                catch (Exception failure) { throw new RuntimeException(failure); }
+            });
+            launchFromTable(tool, CONTEXT_EXPORT, work.resolve("script-manager.png"));
+            interaction.get(100, TimeUnit.SECONDS);
+            awaitConsole(console, mode.equals("Cancel") ? "User cancelled script." : "Finished!");
+            String transcript = consoleText(console);
+            Files.writeString(work.resolve("console.txt"), transcript);
+            try (var paths = Files.list(output)) {
+                GuiTestSupport.require(paths.count() == (mode.equals("Cancel") ? 0 : 2), "context artifact count differs");
+            }
+            if (mode.equals("Cancel")) {
+                GuiTestSupport.require(!transcript.contains("native policy:") &&
+                    !transcript.contains("GhidraDwarfForge symbol export PASS"), "cancelled choice started export");
+            }
+            else {
+                GuiTestSupport.require(transcript.contains("GhidraDwarfForge symbol export PASS") &&
+                    !transcript.contains("\"status\":\"FATAL\""), "context export failed");
+                String source = Files.readString(output.resolve("fixture.dbg.c"));
+                GuiTestSupport.require(source.contains("/* Ghidra instruction context ") != mode.equals("Off"),
+                    "context toggle was not reflected in generated source");
+                if (mode.equals("Off")) GuiTestSupport.require(baselineSource.equals(
+                    GuiTestSupport.sha256(output.resolve("fixture.dbg.c"))), "off changed default source");
+            }
+            GuiTestSupport.require(original.equals(GuiTestSupport.sha256(input)) &&
+                baselineSidecar.equals(GuiTestSupport.sha256(baseline.resolve("fixture.dbg"))) &&
+                baselineSource.equals(GuiTestSupport.sha256(baseline.resolve("fixture.dbg.c"))),
+                "context choice changed original or prior output pair");
+            Files.writeString(work.resolve("result.txt"), "choice=" + mode + "\nresult=PASS\n");
         }
     }
 

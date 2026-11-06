@@ -467,7 +467,7 @@ Independent decoded-line projections preserve the same address/source-text pairs
 and report counts in all four profiles. See `evidence/source-context.json`.
 
 **PLANNED remaining acceptance:** broader ARM mode and delay-slot body
-boundary controls; actual GUI chooser cancellation and Windows journeys; current
+boundary controls; Windows journeys; current
 hosted target/workload acceptance. The new tests and local success do not close
 #114 or the remaining #116 host/workload requirements.
 
@@ -494,7 +494,7 @@ Real global types and values remain usable. AArch64's system-DSO warning matches
 the compiler control exactly; strict inherited-frame diagnostics retain their
 independent corroboration. The fresh x86 annotation pipeline passes with both
 these cases and its existing default/context/cancellation checks. See
-`evidence/failed-source-context.json`. Current hosted, GUI/Windows and broader mode/delay-gap acceptance still remain.
+`evidence/failed-source-context.json`. Current hosted, Windows and broader mode/delay-gap acceptance still remain.
 
 **CONFIRMED local intrinsic controls:** `intrinsic-context-x86_64.c` contains a
 real CPUID and ordinary functions named `halt_baddata` and `cpuid_basic_info`.
@@ -513,3 +513,33 @@ mode. Inputs, installed libraries and saved project remain unchanged, and each
 mode's independent exports are identical. CI runs the same harness in the x86-64
 lane. The reviewed fixture inventory, complete x86 fixture reproducibility check
 and workflow lint pass. See `evidence/intrinsic-context.json`.
+
+**CONFIRMED Linux GUI context choice:** the installed context launcher is
+located and double-clicked in the real Script Manager. A private Xvfb/Openbox
+desktop exercises Cancel, Off, Assembly, P-code and Both using mouse/keyboard
+input. The initial choice is Off; subsequent invocations preserve the last
+explicit choice, as Ghidra's `askChoice`/`doAsk` API specifies. Cancelling the
+choice starts no producer and leaves no artifacts. Every choice preserves the
+original and the earlier output pair; Off produces identical default source.
+
+GNU/LLVM/pinned strict validation and native GDB pass for all four output pairs.
+Independent line-table reads preserve the same 83 executable address/source-text
+pairs, with zero diagnostic comment rows. This GUI fixture supplies unmapped
+native warnings; the separate intrinsic fixture proves assembly/p-code payload
+selection. Existing annotation, equate, output cancellation, attachment preview
+and coverage CLI checks also pass. The initial local archive extraction lost
+launcher execute permissions; restoring the archive's modes and rerunning the
+final coverage CLI check resolved that test-environment failure. No product
+change was needed. Screenshots, commands and raw results are retained in
+`evidence/context-gui.json`. The shared Windows journey now includes these
+choices and structural comparisons; actual Windows execution remains unverified.
+
+**CONFIRMED historical Windows workload evidence:** run `42139043195`, revision
+`7e14037`, completed both Windows workloads and their Linux consumer job. Raw
+SQLite and U-Boot sources independently reproduce the exact old-source prefix
+and appended listing-catalog hashes. All ten paired samples per workload retain
+one sidecar hash and stable per-version source hashes, with complete process
+cleanup. Compiler and Forge GDB logs report normal exits and their PASS markers.
+This establishes the earlier catalog-comparison correction only; newer equate
+and context changes still need their own hosted acceptance. See
+`evidence/annotation-windows-workload-review.json`.

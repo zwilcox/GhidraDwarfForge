@@ -175,6 +175,13 @@ validate_pair() {
         >> "$work/result.txt"
 }
 validate_pair "$work" "$work/select/readonly/fixture" "$work/select/chosen/fixture.dbg" export
+if [[ ${GHIDRA_GUI_COMPRESSION:-0} != 1 && ${GHIDRA_GUI_GDB_LOADER:-0} != 1 ]]; then
+    for mode in off assembly p-code both; do
+        context_case="$work/select/source-context/$mode"
+        validate_pair "$context_case" "$work/select/readonly/fixture" "$context_case/output/fixture.dbg" context
+    done
+    python3 "$repository/src/test/integration/gui-context-evidence.py" "$work/select/source-context"
+fi
 readelf -SW "$work/select/chosen/fixture.dbg" > "$work/export-sections.txt"
 if [[ ${GHIDRA_GUI_COMPRESSION:-0} == 1 ]]; then
     grep -Eq '[.]debug_info[[:space:]]+PROGBITS.*[[:space:]]C[[:space:]]' "$work/export-sections.txt"

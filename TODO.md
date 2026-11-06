@@ -1,12 +1,28 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED Linux context chooser — #114:** the installed Script Manager
+launcher passes actual Cancel/Off/Assembly/P-code/Both interactions. Off preserves
+default source; all enabled choices retain diagnostic warnings. All four pairs
+pass GNU/LLVM/pinned strict validation and live GDB, with identical 83 executable
+address/source-text rows and no executable context comments. See
+`docs/evidence/context-gui.json`. Windows interaction is wired but remains
+**PRESENT, UNVERIFIED** for this addition. Broader ARM mode/MIPS delay-gap controls
+and current hosted/workload acceptance remain before closing #116/#114.
+
+**CONFIRMED historical Windows workload review:** run `42139043195` at
+`7e14037` passed Windows SQLite/U-Boot exports and downstream Linux GDB consumers.
+Retained artifact hashes, all ten paired samples per workload and exact source
+prefix/catalog hashes confirm the listing-catalog comparison fix. This does not
+substitute for current-head validation; see
+`docs/evidence/annotation-windows-workload-review.json`.
+
 **CONFIRMED local intrinsic controls — #114:** an x86-64 CPUID fixture passes
 all four context modes through the installed exporter, GNU/LLVM/pinned strict
 validators and live GDB. Independent native token inspection distinguishes actual
 CALLOTHER operations from ordinary calls named `halt_baddata` and
 `cpuid_basic_info`. Context comments have no executable rows; address/source-text
 pairs match context-off exactly. Fresh-process outputs and saved inputs are
-unchanged. See `docs/evidence/intrinsic-context.json`. GUI/Windows interaction,
+unchanged. See `docs/evidence/intrinsic-context.json`. Windows interaction,
 broader ARM mode/MIPS delay-gap controls and current hosted/workload gates remain;
 then continue #112/#110/#109. Neither #114 nor #116 is closed.
 
@@ -15,14 +31,14 @@ retain a DWARF5 file table without executable rows when all decompilations fail.
 Real native all-failed/mixed cases pass validators and native/QEMU GDB on x86-64,
 AArch64 PIE and both MIPS32 byte orders. Failed functions remain signature-free;
 coverage gains no executable evidence. Fresh x86 annotation integration passes.
-See `docs/evidence/failed-source-context.json`. GUI/Windows, broader mode/delay-gap and current hosted acceptance remain. The normal merge
+See `docs/evidence/failed-source-context.json`. Windows, broader mode/delay-gap and current hosted acceptance remain. The normal merge
 `efed29e` incorporates accepted #108 documentation and restores PR166 CI.
 
 **CONFIRMED local optional instruction context — #114:** the reader and native
 warning/failure composition pass all five profiles. Four context-enabled default
 exporter profiles pass validators, native/QEMU GDB, deterministic reruns and eleven
 cancellation/recovery stages each; default-off x86 source is unchanged. CLI and
-an opt-in GUI launcher use the shared mode. GUI/Windows interaction, broader mode/delay-gap controls and current hosted
+an opt-in GUI launcher use the shared mode. Windows interaction, broader mode/delay-gap controls and current hosted
 acceptance remain required. All-failed and intrinsic checks are recorded above. See `docs/evidence/source-context.json` and `docs/ANALYST-ANNOTATIONS.md`.
 #108's final PR165 passed all fifteen checks and merged normally as `6793b701`;
 issue #108 is closed. Remaining goal: #116/#114, then #112/#110/#109.
