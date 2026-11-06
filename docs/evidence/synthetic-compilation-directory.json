@@ -1,0 +1,453 @@
+{
+    "status": "CONFIRMED_LOCAL_SYNTHETIC_COMPILATION_DIRECTORY",
+    "parent": "9c3ad9e9aaec8268eabb4e6ba4d1bfb9ff51cd16",
+    "installation": {
+        "installation": "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra",
+        "packageSha256": "875e344a9ee46d785aac8c4a3e7ad4834e9d956e5e3828afa16078b7b1c35b9e",
+        "jarSha256": "55e2088e522d34b44703010868a630c27dfc66cd9f0fd3c7e5e87b3cf7b83a16"
+    },
+    "productionSourcesCompared": 210,
+    "nativeAudit": [
+        {
+            "command": [
+                "gcc",
+                "-std=c11",
+                "-Wall",
+                "-Wextra",
+                "-Werror",
+                "-I",
+                "build/comp-dir-abi",
+                "src/test/native/libdwarf-abi-probe.c",
+                "-o",
+                "build/comp-dir-abi/probe"
+            ],
+            "exit": 0,
+            "output": ""
+        },
+        {
+            "command": [
+                "build/comp-dir-abi/probe"
+            ],
+            "exit": 0,
+            "output": "libdwarf-abi-probe=PASS unsigned=8 signed=8 off=8 addr=8 half=2 small=1 pointer=8 relocation=24\n"
+        },
+        {
+            "command": [
+                "x86_64-w64-mingw32-gcc",
+                "-std=c11",
+                "-Wall",
+                "-Wextra",
+                "-Werror",
+                "-I",
+                "build/comp-dir-abi",
+                "src/test/native/libdwarf-abi-probe.c",
+                "-o",
+                "build/comp-dir-abi/probe.exe"
+            ],
+            "exit": 0,
+            "output": ""
+        },
+        {
+            "host": "linux",
+            "newExport": "0000000000006020 T dwarf_add_AT_comp_dir_a",
+            "scope": "Export inspection; not native Windows execution"
+        },
+        {
+            "host": "windows",
+            "newExport": "00000002f3fd3f50 T dwarf_add_AT_comp_dir_a",
+            "scope": "Export inspection; not native Windows execution"
+        }
+    ],
+    "headers": [
+        {
+            "url": "https://raw.githubusercontent.com/davea42/libdwarf-code/af7b278c6aa2ae9daad94fb7f8bffdc0e9980993/src/lib/libdwarf/libdwarf.h",
+            "sha256": "e96d60afd9b99ef9202d3b56e4510685e658c2f4945c7603afe2481d789f861f",
+            "matchesRetainedPinnedHeader": true
+        },
+        {
+            "url": "https://raw.githubusercontent.com/davea42/libdwarf-code/af7b278c6aa2ae9daad94fb7f8bffdc0e9980993/src/lib/libdwarf/dwarf.h",
+            "sha256": "e722bfad6165dc107224204c4664db49d2e15893b851aa8517e1f0ae40048479",
+            "matchesRetainedPinnedHeader": true
+        },
+        {
+            "url": "https://raw.githubusercontent.com/davea42/libdwarf-code/af7b278c6aa2ae9daad94fb7f8bffdc0e9980993/src/lib/libdwarfp/libdwarfp.h",
+            "sha256": "3fd4cc23c0f9363d1b8875f45c06363d196413475d75fd28e3be915a40d7f7ae",
+            "matchesRetainedPinnedHeader": true
+        }
+    ],
+    "isolatedProducerLifetimes": 16,
+    "validatedExports": 12,
+    "gdbSessions": 16,
+    "lldbScalarSessions": 24,
+    "lldbDiscoverySessions": 24,
+    "perfCommands": 32,
+    "positivePerfCommands": 16,
+    "negativePerfCommands": 16,
+    "cases": [
+        {
+            "target": "x86_64",
+            "role": "exec",
+            "perf": {
+                "status": "PASS_PERF_SOURCE_LOOKUP",
+                "version": "perf version 7.0.14",
+                "buildId": "4164847ae2f2e4fd17517393bcfa3a9a98bee764",
+                "compilationDirectory": "/dev/shm/forge-lldb-worktree/build/test-results/floating-registers/run.o1i5BzgZ/x86_64/exec/artifacts",
+                "cases": [
+                    {
+                        "producer": "compiler",
+                        "control": "empty",
+                        "check": "lines",
+                        "exit": 254,
+                        "log": "compiler-empty/lines.log",
+                        "sha256": "25fbe1d776803d8aabb60a97504543246810b2da8dcddb1aaf79dd4ed88a12b2"
+                    },
+                    {
+                        "producer": "compiler",
+                        "control": "empty",
+                        "check": "variables",
+                        "exit": 254,
+                        "log": "compiler-empty/variables.log",
+                        "sha256": "8715a307b094cb54c05c43b2985fd3179d688137e3dc6c3bb7a3f8cff0ad7a4e"
+                    },
+                    {
+                        "producer": "compiler",
+                        "control": "matched",
+                        "check": "lines",
+                        "exit": 0,
+                        "log": "compiler-matched/lines.log",
+                        "sha256": "bafe0e09e3805eaa3103b9beba89a5fc09b5b7264c6052f11d0523c3df7953f3"
+                    },
+                    {
+                        "producer": "compiler",
+                        "control": "matched",
+                        "check": "variables",
+                        "exit": 0,
+                        "log": "compiler-matched/variables.log",
+                        "sha256": "e65f62c16edb83d49e1f77c60a95bae4d86e262a14202e8666c70eb111d5c4ad"
+                    },
+                    {
+                        "producer": "forge",
+                        "control": "empty",
+                        "check": "lines",
+                        "exit": 254,
+                        "log": "forge-empty/lines.log",
+                        "sha256": "85c781f256a72e2492b29b13225b81319a2d32ac1250028f6b097b1c506ce7b3"
+                    },
+                    {
+                        "producer": "forge",
+                        "control": "empty",
+                        "check": "variables",
+                        "exit": 254,
+                        "log": "forge-empty/variables.log",
+                        "sha256": "e45676740a4f1e583c14ce32c98016c557a53425fc6b6d7a91741cfbcb808bc1"
+                    },
+                    {
+                        "producer": "forge",
+                        "control": "matched",
+                        "check": "lines",
+                        "exit": 0,
+                        "log": "forge-matched/lines.log",
+                        "sha256": "ca7ef8624a7977678f3313a06baf5f1340ef1667a3bafc197b21d7d4b3819948"
+                    },
+                    {
+                        "producer": "forge",
+                        "control": "matched",
+                        "check": "variables",
+                        "exit": 0,
+                        "log": "forge-matched/variables.log",
+                        "sha256": "e65f62c16edb83d49e1f77c60a95bae4d86e262a14202e8666c70eb111d5c4ad"
+                    }
+                ],
+                "protectedSha256": {
+                    "/dev/shm/forge-lldb-worktree/build/test-results/floating-registers/run.o1i5BzgZ/x86_64/exec/floating.stripped": "ae0fb81fa3f22d9d9742e3cac08130e84282ac4e10e6b566fbcacfa442b7131c",
+                    "/dev/shm/forge-lldb-worktree/build/test-results/floating-registers/run.o1i5BzgZ/x86_64/exec/floating.reference": "d0898116eb9c55e33e8e78ac1cb8be872fc0e53579622f8f562e144a349a15ed",
+                    "/dev/shm/forge-lldb-worktree/build/test-results/floating-registers/run.o1i5BzgZ/x86_64/exec/artifacts/floating.dbg": "714da86868ee2d2754b98d263c866d2f4fe703b36a64f6f279391e6c2984349c",
+                    "/dev/shm/forge-lldb-worktree/build/test-results/floating-registers/run.o1i5BzgZ/x86_64/exec/artifacts/floating.dbg.c": "5ed212ac5e786e3bf0d7073afd00b6fbafa7e16908c9ffd5e6a98f4dbc160984"
+                },
+                "scope": "Offline perf probe through a test-owned symfs build-ID root; no event recording, running-process probe installation, production installer or cache-discovery claim."
+            },
+            "discoveryCases": 6,
+            "samples": 3,
+            "deterministicSidecarAndSource": true,
+            "sourceIdenticalToPriorExporter": true
+        },
+        {
+            "target": "x86_64",
+            "role": "pie",
+            "perf": {
+                "status": "PASS_PERF_SOURCE_LOOKUP",
+                "version": "perf version 7.0.14",
+                "buildId": "b7e73c8eff58d20e397daea79e46901ea84779bd",
+                "compilationDirectory": "/dev/shm/forge-lldb-worktree/build/test-results/floating-registers/run.o1i5BzgZ/x86_64/pie/artifacts",
+                "cases": [
+                    {
+                        "producer": "compiler",
+                        "control": "empty",
+                        "check": "lines",
+                        "exit": 254,
+                        "log": "compiler-empty/lines.log",
+                        "sha256": "86145a0b7225e8be3640f0d801a71b2043d5684d412b2cec628c23bff2346117"
+                    },
+                    {
+                        "producer": "compiler",
+                        "control": "empty",
+                        "check": "variables",
+                        "exit": 254,
+                        "log": "compiler-empty/variables.log",
+                        "sha256": "202e8667043170cc84b5f39d34cbae1ab6065a4bec8680cfb04a59b3afde785e"
+                    },
+                    {
+                        "producer": "compiler",
+                        "control": "matched",
+                        "check": "lines",
+                        "exit": 0,
+                        "log": "compiler-matched/lines.log",
+                        "sha256": "bafe0e09e3805eaa3103b9beba89a5fc09b5b7264c6052f11d0523c3df7953f3"
+                    },
+                    {
+                        "producer": "compiler",
+                        "control": "matched",
+                        "check": "variables",
+                        "exit": 0,
+                        "log": "compiler-matched/variables.log",
+                        "sha256": "e65f62c16edb83d49e1f77c60a95bae4d86e262a14202e8666c70eb111d5c4ad"
+                    },
+                    {
+                        "producer": "forge",
+                        "control": "empty",
+                        "check": "lines",
+                        "exit": 254,
+                        "log": "forge-empty/lines.log",
+                        "sha256": "a4cf021c0fcdec76817d87f4c62128b19fdef48214ce78aaaa9d6aed14e3b6ad"
+                    },
+                    {
+                        "producer": "forge",
+                        "control": "empty",
+                        "check": "variables",
+                        "exit": 254,
+                        "log": "forge-empty/variables.log",
+                        "sha256": "cd00015faeaf03790e33c9ca12b3f4916d9782117b548680fe9526742ac12cf2"
+                    },
+                    {
+                        "producer": "forge",
+                        "control": "matched",
+                        "check": "lines",
+                        "exit": 0,
+                        "log": "forge-matched/lines.log",
+                        "sha256": "48ef00d1c5efe32473ed5b797cebef232a33aa808b080bf52c957db8353febbf"
+                    },
+                    {
+                        "producer": "forge",
+                        "control": "matched",
+                        "check": "variables",
+                        "exit": 0,
+                        "log": "forge-matched/variables.log",
+                        "sha256": "e65f62c16edb83d49e1f77c60a95bae4d86e262a14202e8666c70eb111d5c4ad"
+                    }
+                ],
+                "protectedSha256": {
+                    "/dev/shm/forge-lldb-worktree/build/test-results/floating-registers/run.o1i5BzgZ/x86_64/pie/floating.stripped": "4fbe955e40fdb624440ba8614a7010370146722e9deb6eb3f1b979d8f746a08a",
+                    "/dev/shm/forge-lldb-worktree/build/test-results/floating-registers/run.o1i5BzgZ/x86_64/pie/floating.reference": "5dcb08fb4167a7e8e6b5d2cd1eac1c9f35ffdab96156cfee473581c93f996c2e",
+                    "/dev/shm/forge-lldb-worktree/build/test-results/floating-registers/run.o1i5BzgZ/x86_64/pie/artifacts/floating.dbg": "1f358913e25106d2981f58110343cc598a2e88797b67dfe70da8ef8068932aaa",
+                    "/dev/shm/forge-lldb-worktree/build/test-results/floating-registers/run.o1i5BzgZ/x86_64/pie/artifacts/floating.dbg.c": "5fe7e71ff7c7ad2069bb474693d880bb3bf67b99812eaab444197ca648464f8b"
+                },
+                "scope": "Offline perf probe through a test-owned symfs build-ID root; no event recording, running-process probe installation, production installer or cache-discovery claim."
+            },
+            "discoveryCases": 6,
+            "samples": 3,
+            "deterministicSidecarAndSource": true,
+            "sourceIdenticalToPriorExporter": true
+        },
+        {
+            "target": "aarch64",
+            "role": "exec",
+            "perf": {
+                "status": "PASS_PERF_SOURCE_LOOKUP",
+                "version": "perf version 7.0.14",
+                "buildId": "039ed4f9deb303cd2438485f2f000640e6d1f9ee",
+                "compilationDirectory": "/dev/shm/forge-lldb-worktree/build/test-results/floating-registers/run.o1i5BzgZ/aarch64/exec/artifacts",
+                "cases": [
+                    {
+                        "producer": "compiler",
+                        "control": "empty",
+                        "check": "lines",
+                        "exit": 254,
+                        "log": "compiler-empty/lines.log",
+                        "sha256": "982bc4971add75375941b66748050de05f414b7777e062fc8c9b7d41f736ef06"
+                    },
+                    {
+                        "producer": "compiler",
+                        "control": "empty",
+                        "check": "variables",
+                        "exit": 254,
+                        "log": "compiler-empty/variables.log",
+                        "sha256": "df46fe9f46d4f08b3d3136ed36b2ccbb1485eb400cce9b837a1f8786da1ec715"
+                    },
+                    {
+                        "producer": "compiler",
+                        "control": "matched",
+                        "check": "lines",
+                        "exit": 0,
+                        "log": "compiler-matched/lines.log",
+                        "sha256": "bafe0e09e3805eaa3103b9beba89a5fc09b5b7264c6052f11d0523c3df7953f3"
+                    },
+                    {
+                        "producer": "compiler",
+                        "control": "matched",
+                        "check": "variables",
+                        "exit": 0,
+                        "log": "compiler-matched/variables.log",
+                        "sha256": "e65f62c16edb83d49e1f77c60a95bae4d86e262a14202e8666c70eb111d5c4ad"
+                    },
+                    {
+                        "producer": "forge",
+                        "control": "empty",
+                        "check": "lines",
+                        "exit": 254,
+                        "log": "forge-empty/lines.log",
+                        "sha256": "78b387da5ea36f9a20e00bbb0c6c5778792c2797a58cbff7f0e11ed781fcfedc"
+                    },
+                    {
+                        "producer": "forge",
+                        "control": "empty",
+                        "check": "variables",
+                        "exit": 254,
+                        "log": "forge-empty/variables.log",
+                        "sha256": "f759f1411ba5aadd8bd57894df02059ee23ee0ac0f798c8df3dbea892568f0d4"
+                    },
+                    {
+                        "producer": "forge",
+                        "control": "matched",
+                        "check": "lines",
+                        "exit": 0,
+                        "log": "forge-matched/lines.log",
+                        "sha256": "9905ca222b60b10d314cdd2e646bedd31e8f5d99c72248e83486ec27d43ad6c8"
+                    },
+                    {
+                        "producer": "forge",
+                        "control": "matched",
+                        "check": "variables",
+                        "exit": 0,
+                        "log": "forge-matched/variables.log",
+                        "sha256": "e65f62c16edb83d49e1f77c60a95bae4d86e262a14202e8666c70eb111d5c4ad"
+                    }
+                ],
+                "protectedSha256": {
+                    "/dev/shm/forge-lldb-worktree/build/test-results/floating-registers/run.o1i5BzgZ/aarch64/exec/floating.stripped": "833ed2e357e3e3c575a2340eaffe3232f5a087ed796e5a0d98288d23db6d9a8e",
+                    "/dev/shm/forge-lldb-worktree/build/test-results/floating-registers/run.o1i5BzgZ/aarch64/exec/floating.reference": "d278b592ae89c7c9791c5290f3d284503bfc9ea669dd9eb2f24a097fd447e62e",
+                    "/dev/shm/forge-lldb-worktree/build/test-results/floating-registers/run.o1i5BzgZ/aarch64/exec/artifacts/floating.dbg": "bf067aa6fd62e74916bc6cb4abe2857061932857a54781582aac020d70a98d31",
+                    "/dev/shm/forge-lldb-worktree/build/test-results/floating-registers/run.o1i5BzgZ/aarch64/exec/artifacts/floating.dbg.c": "f8e730f1ead87b4e6ea30bcf3c3bc828814b5f69cbaf33973b22a117f2437ef8"
+                },
+                "scope": "Offline perf probe through a test-owned symfs build-ID root; no event recording, running-process probe installation, production installer or cache-discovery claim."
+            },
+            "discoveryCases": 6,
+            "samples": 3,
+            "deterministicSidecarAndSource": true,
+            "sourceIdenticalToPriorExporter": true
+        },
+        {
+            "target": "aarch64",
+            "role": "pie",
+            "perf": {
+                "status": "PASS_PERF_SOURCE_LOOKUP",
+                "version": "perf version 7.0.14",
+                "buildId": "ea2594eaa7328b6e200d4bf3540cdfd170e2d912",
+                "compilationDirectory": "/dev/shm/forge-lldb-worktree/build/test-results/floating-registers/run.o1i5BzgZ/aarch64/pie/artifacts",
+                "cases": [
+                    {
+                        "producer": "compiler",
+                        "control": "empty",
+                        "check": "lines",
+                        "exit": 254,
+                        "log": "compiler-empty/lines.log",
+                        "sha256": "7de45a519674e8daca7ebd6bf80d6340e3d36dc87e5beca4b48357fa0917d742"
+                    },
+                    {
+                        "producer": "compiler",
+                        "control": "empty",
+                        "check": "variables",
+                        "exit": 254,
+                        "log": "compiler-empty/variables.log",
+                        "sha256": "534c900719e8d2a34d43c98c9470f17b2803b8905f2f6a1b107d50546cdd76ed"
+                    },
+                    {
+                        "producer": "compiler",
+                        "control": "matched",
+                        "check": "lines",
+                        "exit": 0,
+                        "log": "compiler-matched/lines.log",
+                        "sha256": "bafe0e09e3805eaa3103b9beba89a5fc09b5b7264c6052f11d0523c3df7953f3"
+                    },
+                    {
+                        "producer": "compiler",
+                        "control": "matched",
+                        "check": "variables",
+                        "exit": 0,
+                        "log": "compiler-matched/variables.log",
+                        "sha256": "e65f62c16edb83d49e1f77c60a95bae4d86e262a14202e8666c70eb111d5c4ad"
+                    },
+                    {
+                        "producer": "forge",
+                        "control": "empty",
+                        "check": "lines",
+                        "exit": 254,
+                        "log": "forge-empty/lines.log",
+                        "sha256": "a4bd9bc7cd72b273e63c9b0171934be97ebfd6ee4be27ef2223e9f502c4f40ef"
+                    },
+                    {
+                        "producer": "forge",
+                        "control": "empty",
+                        "check": "variables",
+                        "exit": 254,
+                        "log": "forge-empty/variables.log",
+                        "sha256": "f2f300380ece9ef5e17295484d5d6d8aa058ffdad1f554d57d5a50c3f7d93192"
+                    },
+                    {
+                        "producer": "forge",
+                        "control": "matched",
+                        "check": "lines",
+                        "exit": 0,
+                        "log": "forge-matched/lines.log",
+                        "sha256": "640707911d64ef0be971d4a6d9c1641d949d1050a26af7a5c780c059bb335ba6"
+                    },
+                    {
+                        "producer": "forge",
+                        "control": "matched",
+                        "check": "variables",
+                        "exit": 0,
+                        "log": "forge-matched/variables.log",
+                        "sha256": "e65f62c16edb83d49e1f77c60a95bae4d86e262a14202e8666c70eb111d5c4ad"
+                    }
+                ],
+                "protectedSha256": {
+                    "/dev/shm/forge-lldb-worktree/build/test-results/floating-registers/run.o1i5BzgZ/aarch64/pie/floating.stripped": "93a8f29180156833069426a69b51e654adeda8b18cb8005aebdfc591f7409d17",
+                    "/dev/shm/forge-lldb-worktree/build/test-results/floating-registers/run.o1i5BzgZ/aarch64/pie/floating.reference": "79155ea0d7993f4699e0e77155a42b8f83d12684ed00c1096398b30155922e94",
+                    "/dev/shm/forge-lldb-worktree/build/test-results/floating-registers/run.o1i5BzgZ/aarch64/pie/artifacts/floating.dbg": "3a396c7281d4ba9c220fbd0e42d6c82fe02d7ea1959cc2569bd6838532e0c9b7",
+                    "/dev/shm/forge-lldb-worktree/build/test-results/floating-registers/run.o1i5BzgZ/aarch64/pie/artifacts/floating.dbg.c": "43e366d0f0c54ed3ab7f8de06d573f942f4039a9a5c87004a81a8ae54e8ad34b"
+                },
+                "scope": "Offline perf probe through a test-owned symfs build-ID root; no event recording, running-process probe installation, production installer or cache-discovery claim."
+            },
+            "discoveryCases": 6,
+            "samples": 3,
+            "deterministicSidecarAndSource": true,
+            "sourceIdenticalToPriorExporter": true
+        }
+    ],
+    "rawRoot": "/dev/shm/forge-lldb-worktree/build/comp-dir-abi",
+    "matrixRoot": "/dev/shm/forge-lldb-worktree/build/test-results/floating-registers/run.o1i5BzgZ",
+    "archive": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/synthetic-compilation-directory.tar.gz",
+    "archiveSha256": "abed43c698ba04692a5ce285c70f8553315de9a21f022b7fafab3bca579e445b",
+    "archiveBytes": 14105041,
+    "regularMembersVerified": 1853,
+    "retainedFailures": [
+        "Original absent-comp_dir perf source-listing SIGSEGV; compiler control succeeds",
+        "First harness expected different missing-debug diagnostic; corrected against raw output",
+        "Second matrix completed runtime checks but shell failed after its source was edited while running; not counted as a passing run",
+        "Final complete matrix uses a frozen shell text snapshot and verifies the source remained unchanged"
+    ],
+    "limits": [
+        "Native Windows JVM/combined hosted acceptance pending",
+        "Offline perf probe only; local perf record denied by host policy",
+        "Production build-ID installer, source relocation, provenance and atomic update/removal remain unimplemented"
+    ]
+}

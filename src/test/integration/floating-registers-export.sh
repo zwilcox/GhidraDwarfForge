@@ -126,9 +126,9 @@ run_gdb() {
     grep -Fxq "floating-registers-gdb=$mode PASS" "$log"
 }
 for target in "${targets[@]}"; do
-    emulator= sysroot= extra=()
+    emulator='' sysroot='' extra=()
     case "$target" in
-        x86_64) cc=gcc; strip_tool=strip; extra=(-fcf-protection=none) ;;
+        x86_64) cc=gcc; strip_tool='strip'; extra=(-fcf-protection=none) ;;
         aarch64) cc=aarch64-linux-gnu-gcc; strip_tool=aarch64-linux-gnu-strip
             emulator=qemu-aarch64-static; sysroot=/usr/aarch64-linux-gnu ;;
         arm32) cc=arm-linux-gnueabihf-gcc; strip_tool=arm-linux-gnueabihf-strip
@@ -273,6 +273,10 @@ PY
         if [[ ${FORGE_FP_BASELINE:-0} != 1 ]]; then
             cmp "$case_root/baseline/floating.dbg" "$case_root/repeat/floating.dbg"
             cmp "$case_root/baseline/floating.dbg.c" "$case_root/repeat/floating.dbg.c"
+        fi
+        if [[ -n ${FORGE_PERF:-} && ( "$target" == x86_64 || "$target" == aarch64 ) ]]; then
+            python3 "$repository/src/test/integration/perf-source-lookup.py" \
+                "$case_root" "$case_root/perf-source" --perf "$FORGE_PERF"
         fi
     done
     if [[ -n ${FORGE_LLDB:-} && ${FORGE_FP_BASELINE:-0} != 1 &&

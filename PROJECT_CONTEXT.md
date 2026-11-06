@@ -1,5 +1,17 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local #109 prerequisite:** the exporter now records the actual
+synthetic-source directory in `DW_AT_comp_dir`, matching its line table. This
+avoids a reproduced perf 7.0.14 source-listing crash with an absent optional
+attribute. The pinned native binding passes C audits and sixteen isolated
+producer lifecycles before Ghidra use. Twelve real x86-64/AArch64 exec/PIE exports
+pass validators, GDB, LLDB and offline perf source/variable lookup, including
+rebasing, deterministic repeats and empty-root controls. See
+`docs/SYNTHETIC-SOURCE-DIRECTORY.md`. Combined hosted/Windows acceptance is
+pending; #109 installation, source retention, provenance and atomic update/removal
+remain unimplemented. PR #183 carries combined #110 validation and the final
+#112 documentation; both still need its protected integration.
+
 **CONFIRMED #112 implementation acceptance:** PR #176 merged normally as
 `6b582b4007311f334b954d361458b0775c35904e`; its tree exactly matches tested head
 `06348e1`. Run `42242341105` passes every required job, including both synthesis

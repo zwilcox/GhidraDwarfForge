@@ -282,6 +282,7 @@ public final class DwarfProducerSmoke {
                     ? target.functionAddress : sidecar.functionAddress();
             Die compileUnit = newDie(producer, consumer, debug, DW_TAG_COMPILE_UNIT, errorOut);
             addName(producer, consumer, compileUnit, "ghidra-dwarf-forge-smoke.c", errorOut);
+            addCompilationDirectory(producer, consumer, compileUnit, errorOut);
             addProducer(producer, consumer, compileUnit, errorOut);
             addUnsigned(producer, consumer, debug, compileUnit, DW_AT_LANGUAGE, DW_LANG_C11,
                 errorOut);
@@ -400,6 +401,15 @@ public final class DwarfProducerSmoke {
         checkCall(producer.dwarf_add_AT_name_a(die, name, attributeOut, errorOut),
             "dwarf_add_AT_name_a", errorOut, consumer);
         requirePointer(attributeOut, "name attribute");
+    }
+
+    private static void addCompilationDirectory(LibDwarfProducer producer,
+            LibDwarfConsumer consumer, Die die, PointerByReference errorOut) {
+        PointerByReference attributeOut = new PointerByReference();
+        checkCall(producer.dwarf_add_AT_comp_dir_a(die,
+            "/synthetic source/producer smoke", attributeOut, errorOut),
+            "dwarf_add_AT_comp_dir_a", errorOut, consumer);
+        requirePointer(attributeOut, "compilation-directory attribute");
     }
 
     private static void addProducer(LibDwarfProducer producer, LibDwarfConsumer consumer,
