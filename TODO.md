@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 closed callee obligations:** direct/self/mutual
+callee groups now verify actual native call targets, all reachable return
+identities and stack-relative write bounds before publishing a summary. The
+pure suite passes 182 checks; twenty native fixtures pass 662, with cancellation,
+retry and expected negative diagnostics. See `docs/UNWIND-CALLS.md`. This initial
+stack-writing verifier does not yet prove global-write alias safety: the existing
+compiler fixture's `cfi_sink` write remains an explicit outstanding requirement.
+Full projection/byte-agreement/precedence/exporter/GDB acceptance, #110 and #109
+remain open; PR166 current hosted/workload integration still has priority.
+
 **CONFIRMED locally — #112 converged-effect verification hook:** the flow
 analysis can now replay final reachable states through the same transfer logic,
 exposing immutable per-effect snapshots for callee write-bound verification.

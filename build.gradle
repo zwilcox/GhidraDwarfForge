@@ -97,6 +97,26 @@ tasks.register("unwindFlowSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.unwind.UnwindFlowSmoke"
 }
 
+tasks.register("unwindCallsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks closed direct and recursive callee restoration and write obligations"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.unwind.UnwindCallsSmoke"
+}
+
+tasks.register("ghidraUnwindCallsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks native direct and recursive callee proofs and rejected effects"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.unwind.GhidraUnwindCallsSmoke"
+    args ghidraInstallDir, layout.buildDirectory.dir("test-results/unwind-calls").get().asFile
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/unwind-calls/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/unwind-calls/cache").absolutePath
+}
+
 tasks.register("ghidraUnwindInstructionsSmoke", JavaExec) {
     group = "verification"
     description = "Checks native p-code caller identity flow and incomplete graph rejection"

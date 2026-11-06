@@ -117,3 +117,8 @@ The [evidence model](SYNTHETIC-CFI-EVIDENCE.md) and
 
 The later [replay receipt](evidence/unwind-replay.json) records the 102-check
 checkpoint; earlier receipts retain their original source hashes and counts.
+
+The [closed callee verifier](UNWIND-CALLS.md) now uses this replay to validate
+direct and recursive stack-writing groups locally. Its narrower write predicate
+does not yet cover the compiler fixture's global write or complete production
+call handling. Earlier checkpoint receipts retain their original scope.

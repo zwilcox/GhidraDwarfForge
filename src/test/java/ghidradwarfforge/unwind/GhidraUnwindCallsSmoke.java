@@ -1,0 +1,174 @@
+package ghidradwarfforge.unwind;
+
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.HexFormat;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import ghidra.GhidraApplicationLayout;
+import ghidra.app.cmd.disassemble.DisassembleCommand;
+import ghidra.framework.Application;
+import ghidra.framework.HeadlessGhidraApplicationConfiguration;
+import ghidra.program.database.ProgramDB;
+import ghidra.program.model.lang.CompilerSpecID;
+import ghidra.program.model.lang.LanguageID;
+import ghidra.program.model.listing.Function;
+import ghidra.program.model.symbol.SourceType;
+import ghidra.program.model.address.AddressSet;
+import ghidra.program.util.DefaultLanguageService;
+import ghidra.util.exception.CancelledException;
+import ghidra.util.task.TaskMonitor;
+import ghidra.util.task.TaskMonitorAdapter;
+import ghidradwarfforge.elf.ElfImage;
+
+/** Actual native direct/self/mutual call decoding and counterexamples. */
+public final class GhidraUnwindCallsSmoke {
+    private static int checks;
+    private static final StringBuilder evidence = new StringBuilder();
+    private static Path output;
+
+    public static void main(String[] args) throws Exception {
+        Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
+            new HeadlessGhidraApplicationConfiguration());
+        output = Path.of(args[1]); Files.createDirectories(output);
+        for (boolean arm : List.of(false, true)) {
+            for (String shape : List.of("leaf", "direct", "self", "mutual", "clobber", "unknown-write", "bad-stack", "missing", "indirect", "custom")) {
+                run(arm, shape);
+            }
+        }
+        Files.writeString(output.resolve("native.txt"), evidence.toString());
+        System.out.println("ghidra-unwind-calls-smoke=PASS checks=" + checks);
+    }
+    private static void require(boolean test, String reason) {
+        if (!test) throw new AssertionError(reason);
+        checks++;
+    }
+    private static String word(int value) {
+        return HexFormat.of().formatHex(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(value).array());
+    }
+    private static String call(boolean arm, int address, int target) {
+        return arm ? word(0x94000000 | ((target - address) >> 2) & 0x03ffffff) : "e8" + word(target - address - 5);
+    }
+    private static String caller(boolean arm, int address, int target, boolean recursive) {
+        if (arm) return "f37bbfa9" + (recursive ? "600000b4000400d1" : "") +
+            call(true, address + (recursive ? 12 : 4), target) + "f37bc1a8c0035fd6";
+        return "4154" + (recursive ? "4885ff74094883ef01" : "") +
+            call(false, address + (recursive ? 11 : 2), target) + "415cc3";
+    }
+    private static ElfImage image(boolean arm, String tag) throws Exception {
+        var bytes = ByteBuffer.allocate(64).order(ByteOrder.LITTLE_ENDIAN);
+        bytes.put(new byte[] {0x7f, 'E', 'L', 'F', 2, 1, 1, 0, 0});
+        bytes.putShort(16, (short) 2).putShort(18, (short) (arm ? 183 : 62)).putInt(20, 1);
+        bytes.putLong(24, 0x9000).putShort(52, (short) 64);
+        Path path = output.resolve(tag + ".elf"); Files.write(path, bytes.array());
+        return ElfImage.read(path);
+    }
+    private static void run(boolean arm, String shape) throws Exception {
+        String tag = (arm ? "aarch64" : "x86") + "-" + shape;
+        String leaf = arm ? "c0035fd6" : "c3";
+        var source = new LinkedHashMap<Integer, String>();
+        switch (shape) {
+            case "leaf" -> source.put(0x1000, leaf);
+            case "self" -> source.put(0x1000, caller(arm, 0x1000, 0x1000, true));
+            case "mutual" -> {
+                source.put(0x1000, caller(arm, 0x1000, 0x1100, true));
+                source.put(0x1100, caller(arm, 0x1100, 0x1000, true));
+            }
+            case "indirect" -> source.put(0x1000, (arm ? "00003fd6" : "ffd0") + leaf);
+            default -> {
+                source.put(0x1000, caller(arm, 0x1000, 0x1100, false));
+                if (!shape.equals("missing")) source.put(0x1100, switch (shape) {
+                    case "clobber" -> (arm ? "330580d2" : "49c7c42a000000") + leaf;
+                    case "unknown-write" -> (arm ? "200000f9" : "488907") + leaf;
+                    case "bad-stack" -> arm ? "ff430091" + leaf : "c20800";
+                    default -> leaf;
+                });
+            }
+        }
+        var language = DefaultLanguageService.getLanguageService().getLanguage(
+            new LanguageID(arm ? "AARCH64:LE:64:v8A" : "x86:LE:64:default"));
+        Object owner = new Object();
+        var program = new ProgramDB(tag, language, language.getCompilerSpecByID(new CompilerSpecID(arm ? "default" : "gcc")), owner);
+        try {
+            int transaction = program.startTransaction("native callee fixture");
+            try {
+                var functions = new LinkedHashMap<Integer, Function>();
+                for (var item : source.entrySet()) {
+                    byte[] bytes = HexFormat.of().parseHex(item.getValue());
+                    var entry = language.getDefaultSpace().getAddress(item.getKey());
+                    program.getMemory().createInitializedBlock("text" + item.getKey(), entry, bytes.length,
+                        (byte) 0, TaskMonitor.DUMMY, false).setExecute(true);
+                    program.getMemory().setBytes(entry, bytes);
+                }
+                for (var item : source.entrySet()) {
+                    var entry = language.getDefaultSpace().getAddress(item.getKey());
+                    var body = new AddressSet(entry, entry.add(item.getValue().length() / 2 - 1));
+                    require(new DisassembleCommand(entry, body, true).applyTo(program, TaskMonitor.DUMMY), "decode " + tag);
+                    functions.put(item.getKey(), program.getFunctionManager().createFunction("callee_" + item.getKey(), entry, body, SourceType.USER_DEFINED));
+                }
+                if (shape.equals("custom")) functions.get(0x1100).setCustomVariableStorage(true);
+                ElfImage image = image(arm, tag);
+                boolean positive = List.of("leaf", "direct", "self", "mutual").contains(shape);
+                try {
+                    var proof = GhidraUnwindCalls.verify(program, functions.get(0x1000), image, 0, TaskMonitor.DUMMY);
+                    require(positive, "unsupported native callee accepted: " + tag);
+                    require(proof.verified().bodies().size() == source.size(), "native closure omitted a callee");
+                    for (var item : proof.captures().entrySet()) {
+                        evidence.append(tag).append(" function=").append(item.getKey()).append('\n');
+                        item.getValue().observations().forEach((address, observation) ->
+                            evidence.append(address).append(' ').append(observation).append('\n'));
+                    }
+                    evidence.append("flow=").append(proof.verified().flows()).append('\n');
+                    if (shape.equals("direct")) {
+                        int[] polls = {0};
+                        var counting = new TaskMonitorAdapter(true) {
+                            @Override public void checkCancelled() { polls[0]++; }
+                        };
+                        GhidraUnwindCalls.verify(program, functions.get(0x1000), image, 0, counting);
+                        for (int limit = 1; limit <= polls[0]; limit++) {
+                            int stop = limit; int[] seen = {0};
+                            var cancelled = new TaskMonitorAdapter(true) {
+                                @Override public void checkCancelled() throws CancelledException {
+                                    if (++seen[0] == stop) throw new CancelledException();
+                                }
+                            };
+                            try {
+                                GhidraUnwindCalls.verify(program, functions.get(0x1000), image, 0, cancelled);
+                                throw new AssertionError("native callee cancellation ignored");
+                            }
+                            catch (CancelledException expected) { checks++; }
+                        }
+                        require(GhidraUnwindCalls.verify(program, functions.get(0x1000), image, 0, TaskMonitor.DUMMY)
+                            .verified().flows().equals(proof.verified().flows()), "native callee retry changed facts");
+                        evidence.append(tag).append(" cancellation-polls=").append(polls[0]).append('\n');
+                    }
+                }
+                catch (IllegalArgumentException rejected) {
+                    require(!positive, "positive native callee failed: " + tag + ": " + rejected.getMessage());
+                    String expected = switch (shape) {
+                        case "clobber" -> "register restoration is unproved";
+                        case "unknown-write" -> "store is not proved below entry stack";
+                        case "bad-stack" -> "return target or stack restoration is unproved";
+                        case "custom" -> "function convention is not the audited ordinary ABI";
+                        default -> "opaque reachable effects";
+                    };
+                    require(rejected.getMessage().contains(expected), "native counterexample failed for an unrelated reason: " + tag);
+                    evidence.append(tag).append(" rejected=").append(rejected.getMessage()).append('\n');
+                }
+                for (var item : source.entrySet()) {
+                    byte[] expected = HexFormat.of().parseHex(item.getValue()); byte[] actual = new byte[expected.length];
+                    require(program.getMemory().getBytes(language.getDefaultSpace().getAddress(item.getKey()), actual) == actual.length &&
+                        Arrays.equals(actual, expected), "native verification changed program bytes");
+                }
+            }
+            finally { program.endTransaction(transaction, false); }
+        }
+        finally { program.release(owner); }
+    }
+}
