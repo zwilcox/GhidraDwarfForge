@@ -58,6 +58,11 @@ _start:
     ordinary_rules
     .cfi_def_cfa_offset 0
     .cfi_undefined 16
+#ifdef CFI_SHARED
+    /* dlopen's driver enters by call; restore the kernel-entry alignment. */
+    sub $8,%rsp
+    .cfi_def_cfa_offset 8
+#endif
     xor %ebp,%ebp
     mov $0x6172,%r12
     mov $3,%edi

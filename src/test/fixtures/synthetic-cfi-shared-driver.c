@@ -12,6 +12,10 @@
 
 uintptr_t cfi_module_bias;
 
+#ifndef CFI_ENTRY_NAME
+#define CFI_ENTRY_NAME "cfi_main"
+#endif
+
 __attribute__((noinline)) void cfi_ready(void) {
     __asm__ volatile ("" ::: "memory");
 }
@@ -24,7 +28,7 @@ int main(int argc, char **argv) {
     if (!module) {
         return 11;
     }
-    int (*entry)(void) = (int (*)(void)) dlsym(module, "cfi_main");
+    int (*entry)(void) = (int (*)(void)) dlsym(module, CFI_ENTRY_NAME);
     Dl_info info;
     if (!entry || !dladdr((void *) entry, &info)) {
         return 12;

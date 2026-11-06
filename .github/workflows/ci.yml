@@ -1005,7 +1005,7 @@ jobs:
               --original-encoding "$encoding" --dwarfdump "$DWARFDUMP"
           done
 
-      - name: Validate native recovered CFI and instruction-boundary debugger behavior
+      - name: Validate recovered CFI in executables, PIE and loaded shared libraries
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
         env:
           TARGET: ${{ matrix.target }}

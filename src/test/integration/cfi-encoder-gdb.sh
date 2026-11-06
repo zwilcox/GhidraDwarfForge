@@ -9,6 +9,7 @@ symbols=$(realpath "$3")
 original=$(realpath "$4")
 prefix=$(realpath -m "$5")
 export FORGE_FRAME_RESULT="$prefix.json" FORGE_FRAME_REMOTE=
+export FORGE_FRAME_SYMBOLS="$symbols"
 scripts=$(realpath "$(dirname "$0")")
 source "$scripts/qemu-socket.sh"
 trap qemu_socket_cleanup EXIT
@@ -17,15 +18,27 @@ case "$FORGE_FRAME_TARGET" in
     x86_64) debugger=gdb ;;
     aarch64)
         debugger=gdb-multiarch
-        qemu_socket_start "$prefix.qemu" qemu-aarch64-static /usr/aarch64-linux-gnu "$original"
-        export FORGE_FRAME_REMOTE=$qemu_socket_path
         options=(-ex 'set sysroot /usr/aarch64-linux-gnu')
         ;;
     *) exit 2 ;;
 esac
+runtime=$original
+load_symbols=$symbols
+inferior_args=()
+if [[ "${FORGE_FRAME_SHARED:-}" == 1 ]]; then
+    runtime=$(realpath "${FORGE_FRAME_DRIVER:?shared fixture needs a driver}")
+    load_symbols=$runtime
+    inferior_args=("$original")
+    options+=(-ex "set solib-search-path $(dirname "$original")")
+fi
+if [[ "$FORGE_FRAME_TARGET" == aarch64 ]]; then
+    qemu_socket_start "$prefix.qemu" qemu-aarch64-static /usr/aarch64-linux-gnu "$runtime" "${inferior_args[@]}"
+    export FORGE_FRAME_REMOTE=$qemu_socket_path
+fi
 timeout --kill-after=5 90 "$debugger" -q -nx -batch "${options[@]}" \
     -ex 'set pagination off' -ex 'set confirm off' -ex 'set debuginfod enabled off' \
     -ex 'set disable-randomization off' -ex 'set auto-solib-add off' \
-    -ex "file \"$original\"" -ex "symbol-file \"$symbols\"" \
+    -ex "file \"$runtime\"" -ex "symbol-file \"$load_symbols\"" \
+    -ex "set args ${inferior_args[*]}" \
     -x "$scripts/cfi-encoder-gdb.py" > "$prefix.log" 2>&1
 if [[ "$FORGE_FRAME_TARGET" == aarch64 ]]; then qemu_socket_wait; fi

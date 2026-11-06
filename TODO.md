@@ -1,5 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 shared-library runtime frames:** both controlled
+fixture families now run after dynamic loading on native x86-64 and QEMU AArch64.
+Twelve executable/PIE/shared cases pass across twenty-four sidecars and sixty
+GDB sessions, including absent/disabled-CFI controls. The oracle checks actual
+relocated function addresses and ABI stack alignment; two initial test defects
+and their corrections are retained. See `docs/UNWIND-SHARED-RUNTIME.md`. These
+assembly references do not replace unchanged compiler-C or production-exporter
+acceptance. Hosted additions remain PRESENT, UNVERIFIED; PR166 keeps priority.
+
 **CONFIRMED locally — #112 split/shrink-wrapped runtime frames:** four new
 x86-64/AArch64 non-PIE/PIE cases exercise both an unsaved early return and separate
 allocation/register-save transitions before a common return. The existing proof
