@@ -48,6 +48,7 @@ def main():
     address = next(int(line.split()[0], 16) for line in symbols.splitlines()
         if len(line.split()) == 3 and line.split()[2] == "recovered_add")
     commands = ["set pagination off", "set confirm on", "set debuginfod enabled off",
+        "set filename-display absolute",
         "set auto-solib-add off", "set disable-randomization off", "file " + quoted(original),
         "source " + str(companion), "python biases=[]"]
     for iteration in range(3):
