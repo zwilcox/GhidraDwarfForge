@@ -22,7 +22,8 @@ public final class CallFrameEncoderSmoke {
     }
 
     private static CallFramePlan plan(int width, ByteOrder order, List<Frame> frames) {
-        return new CallFramePlan(width, order, 16, Set.of(7, 12, 16), frames);
+        return new CallFramePlan(width, order, 16, Set.of(7, 12, 16),
+            Map.of(7, new Undefined(), 12, new SameValue(), 16, new Undefined()), frames);
     }
 
     private static void rejected(Runnable action) {
@@ -71,6 +72,10 @@ public final class CallFrameEncoderSmoke {
         rejected(() -> new Cfa(-1, 0));
         rejected(() -> new InRegister(4096));
         rejected(() -> plan(2, ByteOrder.LITTLE_ENDIAN, List.of(first)));
+        rejected(() -> new CallFramePlan(8, ByteOrder.LITTLE_ENDIAN, 16, Set.of(7, 12, 16),
+            Map.of(7, new Undefined(), 16, new Undefined()), List.of(first)));
+        rejected(() -> new CallFramePlan(8, ByteOrder.LITTLE_ENDIAN, 16, Set.of(7, 12, 16),
+            Map.of(7, new Undefined(), 12, new InRegister(5), 16, new Undefined()), List.of(first)));
         rejected(() -> DwarfDebugFrame.build(plan(4, ByteOrder.LITTLE_ENDIAN,
             List.of(new Frame(0xffff_fff0L, 32, List.of(row(0xffff_fff0L, 8))))), () -> false));
         // Endpoints fit ELF32, but its address-sized FDE length cannot encode 2^32.
@@ -94,6 +99,11 @@ public final class CallFrameEncoderSmoke {
         mutable.clear();
         require(immutable.rules().size() == 3);
         var frames = new ArrayList<>(List.of(first));
+        var initialRules = new HashMap<Integer, Rule>(row(0x1000, 8).rules());
+        var initialPlan = new CallFramePlan(8, ByteOrder.LITTLE_ENDIAN, 16, Set.of(7, 12, 16),
+            initialRules, frames);
+        initialRules.clear();
+        require(initialPlan.initialRules().size() == 3);
         var immutablePlan = plan(8, ByteOrder.LITTLE_ENDIAN, frames);
         frames.clear();
         require(immutablePlan.frames().size() == 1);

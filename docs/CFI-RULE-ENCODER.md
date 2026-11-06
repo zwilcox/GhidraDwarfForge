@@ -11,7 +11,7 @@ complete #112 or change ADR-0002's production decision.
 `CallFramePlan` is immutable serialization input, not a recovered-evidence claim.
 Its caller supplies target byte order, four/eight-byte addresses, the return
 register, a complete declared register universe, non-overlapping FDE ranges and
-complete initial rows. Rules express undefined, unchanged, memory at CFA plus a
+explicit CIE initial rules and complete FDE initial rows. Rules express undefined, unchanged, memory at CFA plus a
 signed offset, the CFA-derived value itself, or a value held in another register.
 CFA is an explicit register plus signed offset. No architecture, ABI, stack
 layout, call effect or register number is inferred by the encoder.
@@ -19,8 +19,9 @@ layout, call effect or register number is inferred by the encoder.
 The format follows [DWARF 5 §§6.4 and 7.24](https://dwarfstd.org/doc/DWARF5.pdf):
 CIE version 4, DWARF32 lengths, explicit address width, section-relative CIE
 pointers and entries aligned to address width. Code/data factors are one, so
-rule offsets remain exact bytes. The CIE declares every selected register
-undefined; complete FDE entry rows override those rules. Unchanged rows are
+rule offsets remain exact bytes. The caller supplies every CIE initial rule;
+complete FDE entry rows override them where needed. This also permits ABI-specific
+initialization obligations without hard-coding an ABI in the serializer. Unchanged rows are
 coalesced. Large address advances use `DW_CFA_set_loc`. The writer uses the same
 uncompressed alignment in ELF section headers and gABI compression metadata.
 
@@ -48,7 +49,7 @@ QEMU user emulation and GDB-multiarch. GNU readelf, LLVM and the pinned libdwarf
 checker validate artifacts. Output directories must be new. CI wires both target
 commands and the component check; hosted execution is **PRESENT, UNVERIFIED**.
 
-The component suite passes 155 checks including cancellation at every observed
+The component suite passes 158 checks including cancellation at every observed
 poll and successful retry, unsigned high addresses, input immutability and invalid
 plans. Compression and original-CFI preservation regressions also pass.
 
@@ -86,9 +87,22 @@ checker requires one. It describes `plan.txt`, with no source rows or recovered
 types. Earlier attempts without a CU, with unordered fixture section iteration,
 and with undefined AArch64 PC are retained as failed experiments.
 
-See [the receipt](evidence/cfi-rule-encoder.json) for source hashes, commands,
+See [the initial receipt](evidence/cfi-rule-encoder.json) and
+[explicit CIE follow-up](evidence/cfi-explicit-cie.json) for source hashes, commands,
 results and retained raw evidence. Remaining work includes pinned ABI audits,
 original-unwind coverage decisions, Ghidra instruction/control-flow recovery,
 uncertainty diagnostics, joins/aliases/shrink-wrap controls and real-export
 PIE/shared/rebase/cancellation acceptance described in
 [SYNTHETIC-CFI-EVIDENCE.md](SYNTHETIC-CFI-EVIDENCE.md).
+
+## CIE initialization audit correction
+
+Pinned [AADWARF64 common information entries](https://github.com/ARM-software/abi-aa/blob/daa7a94ca55973736c0e434a67a6e4bbcd35d7fa/aadwarf64/aadwarf64.rst#common-information-entries)
+requires a defined CIE initialization for used callee-saved registers. The first
+encoder unconditionally declared all registers undefined and restored their rules
+in each FDE. Although the runtime tests passed, that API could not express the
+ABI's initial state. Plans now explicitly supply immutable CIE rules; an
+independent decoder verifies them. The earlier X19 CIE fails that assertion.
+Both complete target harnesses pass again, including all malformed-frame,
+compression, determinism and runtime controls. Production ABI recovery remains
+planned; the generic encoder does not choose these rules for a caller.
