@@ -75,3 +75,20 @@ script was edited during execution, so it is not counted as a passing run.
 The accepted final run executes a frozen text snapshot, confirms the source
 stayed unchanged, reaches the final success marker and exits zero. Workflow
 Actionlint with ShellCheck and the script's recursive ShellCheck pass.
+
+## GDB filename presentation regression
+
+Hosted run `42277301514` fails the extended-section oracle on ARM32 and both
+MIPS byte orders after successful export, validation and debugger execution.
+With `DW_AT_comp_dir` present, GDB's default `filename-display relative` prints
+the basename in frame summaries. The existing oracle requires the exact
+absolute generated-source path. Both native and emulated invocations now request
+`set filename-display absolute`; source lookup, breakpoints and all assertions
+remain unchanged.
+
+The [regression receipt](evidence/synthetic-source-path-regression.json) records
+a fresh reproduction with the previous oracle and fifteen passing exports/GDB
+runs with the corrected presentation on all five targets (exec/PIE plus repeated
+exec). Structural validation, original-byte preservation and five deterministic
+repeat comparisons pass. This local result does not substitute for the updated
+head's complete hosted gate.

@@ -1,5 +1,16 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local source-path regression fix:** hosted PR184 exposed a GDB
+presentation mismatch on ARM32 and both MIPS byte orders: the new compilation
+directory makes GDB print relative filenames, while the oracle requires the
+exact absolute source path. The oracle now explicitly requests absolute filename
+display and retains every assertion. Fifteen fresh extended-section exports and
+GDB runs pass across all five targets, including exec/PIE and five deterministic
+repeats; original hashes and strict validation pass. The old oracle's failure is
+reproduced after otherwise successful runtime. See
+`docs/evidence/synthetic-source-path-regression.json`. The full updated hosted
+gate remains required; #109 installation is still incomplete.
+
 **CONFIRMED local #109 prerequisite:** the exporter now records the actual
 synthetic-source directory in `DW_AT_comp_dir`, matching its line table. This
 avoids a reproduced perf 7.0.14 source-listing crash with an absent optional
