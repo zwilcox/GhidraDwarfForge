@@ -2558,6 +2558,23 @@ jobs:
               "$PWD/build/test-results/build-id/installation" --target "$TARGET" \
               --ghidra "$GHIDRA_INSTALL_DIR" --jar "$FORGE_SOURCE_RELOCATION_JAR" \
               --test-classes "$FORGE_DERIVED_TEST_CLASSES"
+          if [[ "$TARGET" == x86_64 || "$TARGET" == aarch64 ]]; then
+              for role in exec pie; do
+                  other='pie'
+                  if [[ "$role" == pie ]]; then
+                      other='exec'
+                  fi
+                  python3 src/test/integration/build-id-consumers.py \
+                      --configuration "$PWD/build/test-results/build-id/installation/none-$role.json" \
+                      --updated-configuration "$PWD/build/test-results/build-id/installation/zlib-$role.json" \
+                      --mismatch-sidecar "$none_run/$TARGET/$other/artifacts/floating.dbg" \
+                      --mismatch-reference "$none_run/$TARGET/$other/floating.reference" \
+                      --labels "$none_run/$TARGET/$role/labels.txt" \
+                      --ghidra "$GHIDRA_INSTALL_DIR" --java "$(command -v java)" \
+                      --lldb "$FORGE_LLDB" --perf "$FORGE_PERF" --target "$TARGET" \
+                      --output "$PWD/build/test-results/build-id/consumers-$role"
+              done
+          fi
           layout_root="$PWD/build/test-results/build-id/layouts"
           mkdir -p "$layout_root/fixtures/$TARGET"
           for name in semantic.exec.stripped semantic.exec.no-sections.stripped semantic.exec.reference \

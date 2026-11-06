@@ -84,8 +84,11 @@ list recovered_function
 
 `set debug-file-directory` replaces GDB's current search-path setting. Include
 other desired search roots yourself if needed. Installation does not modify
-GDB configuration, populate perf's separate cache, or prove another consumer's
-discovery behavior. Installation-specific LLDB/perf acceptance remains pending.
+GDB configuration or populate perf's separate cache. Installation-specific
+LLDB and offline perf lookup now pass locally for x86-64/AArch64 exec and PIE;
+see [consumer setup, cache rules and limitations](BUILD-ID-CONSUMERS.md).
+Hosted acceptance remains pending, and perf event/report symbolization has not
+been established by those offline tests.
 
 The installed DWARF points at a retained source generation within the root.
 The original export directory can disappear without losing that source. Keep

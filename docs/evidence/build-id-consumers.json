@@ -1,0 +1,667 @@
+{
+    "status": "CONFIRMED_LOCAL_INSTALLED_LLDB_AND_OFFLINE_PERF",
+    "issue": 109,
+    "parent": "6dec86c2bd5d12fcbeb8d3dcc20f223a934d4da1",
+    "package": {
+        "jarSha256": "5f2592c74a0cc55e1fb97f53ef8e0bcfe7bd6c24a09da5499984e125ae754362",
+        "releaseSha256": "b40dba07fc601e595eae1aa6bcae260937db1c8e136c29a371b94bd3cb08df6b",
+        "productionChanges": "None; consumer tests use the previously validated production package."
+    },
+    "acceptance": {
+        "cases": 4,
+        "lldbRuntimeSessions": 8,
+        "lldbRuntimeObservations": 80,
+        "lldbAbsenceAndMismatchSessions": 16,
+        "perfOfflineQueries": 64,
+        "installationOperations": 12,
+        "independentCacheOperations": 12
+    },
+    "cases": [
+        {
+            "case": "aarch64-exec-final",
+            "path": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-consumers/aarch64-exec-final/result.json",
+            "sha256": "f1b2114dc6a9fc71159f23b5519dfcfd519664ada618ac68754dbc479417178f",
+            "versions": {
+                "debugger": "lldb version 18.1.3",
+                "transport": "qemu-aarch64 version 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1.18)",
+                "perf": "perf version 7.0.14"
+            },
+            "observations": [
+                {
+                    "consumer": "perf",
+                    "phase": "empty",
+                    "check": "lines",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "empty",
+                    "check": "variables",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "lldb",
+                    "phase": "empty",
+                    "found": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "mismatched-forge",
+                    "check": "lines",
+                    "found": true,
+                    "mismatchedIdentityAccepted": true
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "mismatched-forge",
+                    "check": "variables",
+                    "found": true,
+                    "mismatchedIdentityAccepted": true
+                },
+                {
+                    "consumer": "lldb",
+                    "phase": "mismatched",
+                    "found": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "mismatched-compiler",
+                    "check": "lines",
+                    "found": true,
+                    "mismatchedIdentityAccepted": true
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "mismatched-compiler",
+                    "check": "variables",
+                    "found": true,
+                    "mismatchedIdentityAccepted": true
+                },
+                {
+                    "consumer": "lldb",
+                    "phase": "mismatched-compiler",
+                    "found": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "installed",
+                    "check": "lines",
+                    "found": true,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "installed",
+                    "check": "variables",
+                    "found": true,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "lldb",
+                    "phase": "installed",
+                    "found": true
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "installed-unconfigured",
+                    "check": "lines",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "installed-unconfigured",
+                    "check": "variables",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "cache-only",
+                    "check": "lines",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "cache-only",
+                    "check": "variables",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "updated",
+                    "check": "lines",
+                    "found": true,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "updated",
+                    "check": "variables",
+                    "found": true,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "lldb",
+                    "phase": "updated",
+                    "found": true
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "removed-cache-retained",
+                    "check": "lines",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "removed-cache-retained",
+                    "check": "variables",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "lldb",
+                    "phase": "removed",
+                    "found": false
+                }
+            ],
+            "cacheAddLinkCounts": {
+                "snapshot": 2,
+                "registration": 1
+            }
+        },
+        {
+            "case": "aarch64-pie-final",
+            "path": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-consumers/aarch64-pie-final/result.json",
+            "sha256": "23987019330beee9d57265016a3ecc8e09b5287a37a9e827493efcbf05c2e373",
+            "versions": {
+                "debugger": "lldb version 18.1.3",
+                "transport": "qemu-aarch64 version 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1.18)",
+                "perf": "perf version 7.0.14"
+            },
+            "observations": [
+                {
+                    "consumer": "perf",
+                    "phase": "empty",
+                    "check": "lines",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "empty",
+                    "check": "variables",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "lldb",
+                    "phase": "empty",
+                    "found": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "mismatched-forge",
+                    "check": "lines",
+                    "found": true,
+                    "mismatchedIdentityAccepted": true
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "mismatched-forge",
+                    "check": "variables",
+                    "found": true,
+                    "mismatchedIdentityAccepted": true
+                },
+                {
+                    "consumer": "lldb",
+                    "phase": "mismatched",
+                    "found": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "mismatched-compiler",
+                    "check": "lines",
+                    "found": true,
+                    "mismatchedIdentityAccepted": true
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "mismatched-compiler",
+                    "check": "variables",
+                    "found": true,
+                    "mismatchedIdentityAccepted": true
+                },
+                {
+                    "consumer": "lldb",
+                    "phase": "mismatched-compiler",
+                    "found": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "installed",
+                    "check": "lines",
+                    "found": true,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "installed",
+                    "check": "variables",
+                    "found": true,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "lldb",
+                    "phase": "installed",
+                    "found": true
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "installed-unconfigured",
+                    "check": "lines",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "installed-unconfigured",
+                    "check": "variables",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "cache-only",
+                    "check": "lines",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "cache-only",
+                    "check": "variables",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "updated",
+                    "check": "lines",
+                    "found": true,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "updated",
+                    "check": "variables",
+                    "found": true,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "lldb",
+                    "phase": "updated",
+                    "found": true
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "removed-cache-retained",
+                    "check": "lines",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "removed-cache-retained",
+                    "check": "variables",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "lldb",
+                    "phase": "removed",
+                    "found": false
+                }
+            ],
+            "cacheAddLinkCounts": {
+                "snapshot": 2,
+                "registration": 1
+            }
+        },
+        {
+            "case": "x86_64-exec-final",
+            "path": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-consumers/x86_64-exec-final/result.json",
+            "sha256": "7a13407aeec41154f80f360ace732c3ba85101c0abbe615ac67c35a90e55ea7c",
+            "versions": {
+                "debugger": "lldb version 18.1.3",
+                "transport": "native Linux",
+                "perf": "perf version 7.0.14"
+            },
+            "observations": [
+                {
+                    "consumer": "perf",
+                    "phase": "empty",
+                    "check": "lines",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "empty",
+                    "check": "variables",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "lldb",
+                    "phase": "empty",
+                    "found": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "mismatched-forge",
+                    "check": "lines",
+                    "found": true,
+                    "mismatchedIdentityAccepted": true
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "mismatched-forge",
+                    "check": "variables",
+                    "found": true,
+                    "mismatchedIdentityAccepted": true
+                },
+                {
+                    "consumer": "lldb",
+                    "phase": "mismatched",
+                    "found": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "mismatched-compiler",
+                    "check": "lines",
+                    "found": true,
+                    "mismatchedIdentityAccepted": true
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "mismatched-compiler",
+                    "check": "variables",
+                    "found": true,
+                    "mismatchedIdentityAccepted": true
+                },
+                {
+                    "consumer": "lldb",
+                    "phase": "mismatched-compiler",
+                    "found": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "installed",
+                    "check": "lines",
+                    "found": true,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "installed",
+                    "check": "variables",
+                    "found": true,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "lldb",
+                    "phase": "installed",
+                    "found": true
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "installed-unconfigured",
+                    "check": "lines",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "installed-unconfigured",
+                    "check": "variables",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "cache-only",
+                    "check": "lines",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "cache-only",
+                    "check": "variables",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "updated",
+                    "check": "lines",
+                    "found": true,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "updated",
+                    "check": "variables",
+                    "found": true,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "lldb",
+                    "phase": "updated",
+                    "found": true
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "removed-cache-retained",
+                    "check": "lines",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "removed-cache-retained",
+                    "check": "variables",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "lldb",
+                    "phase": "removed",
+                    "found": false
+                }
+            ],
+            "cacheAddLinkCounts": {
+                "snapshot": 2,
+                "registration": 1
+            }
+        },
+        {
+            "case": "x86_64-pie-final",
+            "path": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-consumers/x86_64-pie-final/result.json",
+            "sha256": "5fdf0067a707023fee971e34d732eaed2bd7098bc7f0550acce6712f968e6fe5",
+            "versions": {
+                "debugger": "lldb version 18.1.3",
+                "transport": "native Linux",
+                "perf": "perf version 7.0.14"
+            },
+            "observations": [
+                {
+                    "consumer": "perf",
+                    "phase": "empty",
+                    "check": "lines",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "empty",
+                    "check": "variables",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "lldb",
+                    "phase": "empty",
+                    "found": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "mismatched-forge",
+                    "check": "lines",
+                    "found": true,
+                    "mismatchedIdentityAccepted": true
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "mismatched-forge",
+                    "check": "variables",
+                    "found": true,
+                    "mismatchedIdentityAccepted": true
+                },
+                {
+                    "consumer": "lldb",
+                    "phase": "mismatched",
+                    "found": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "mismatched-compiler",
+                    "check": "lines",
+                    "found": true,
+                    "mismatchedIdentityAccepted": true
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "mismatched-compiler",
+                    "check": "variables",
+                    "found": true,
+                    "mismatchedIdentityAccepted": true
+                },
+                {
+                    "consumer": "lldb",
+                    "phase": "mismatched-compiler",
+                    "found": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "installed",
+                    "check": "lines",
+                    "found": true,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "installed",
+                    "check": "variables",
+                    "found": true,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "lldb",
+                    "phase": "installed",
+                    "found": true
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "installed-unconfigured",
+                    "check": "lines",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "installed-unconfigured",
+                    "check": "variables",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "cache-only",
+                    "check": "lines",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "cache-only",
+                    "check": "variables",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "updated",
+                    "check": "lines",
+                    "found": true,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "updated",
+                    "check": "variables",
+                    "found": true,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "lldb",
+                    "phase": "updated",
+                    "found": true
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "removed-cache-retained",
+                    "check": "lines",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "perf",
+                    "phase": "removed-cache-retained",
+                    "check": "variables",
+                    "found": false,
+                    "mismatchedIdentityAccepted": false
+                },
+                {
+                    "consumer": "lldb",
+                    "phase": "removed",
+                    "found": false
+                }
+            ],
+            "cacheAddLinkCounts": {
+                "snapshot": 2,
+                "registration": 1
+            }
+        }
+    ],
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/build-id-consumers-20261106.tar.gz",
+        "sha256": "0b7351671ad480a3a1e87ca8227a34f123f0bcf1b374bec5512e8c60221203e7",
+        "verifiedFiles": 1002
+    },
+    "harnessSha256": "1c8432337caba1cd2a4d6488be1bebc70a75d60548dae5e22ab23ab394de7d55",
+    "limitations": [
+        "perf accepts wrong-build-ID files at the expected symfs path; independent compiler and Forge controls agree.",
+        "perf cache-only probe source/variable lookup fails in the tested version.",
+        "No perf event recording or perf report symbolization claim.",
+        "No Windows installer acceptance or hosted acceptance from these Linux tests.",
+        "No shared/sectionless LLDB or perf installer claim from these exec/PIE cases."
+    ],
+    "earlierTrials": "Retained in archive, not passing acceptance: initial LLDB symbol-file fallback assumption; initial perf mismatch-rejection assumption; installer refuses LC_ALL=C native path encoding. Final harness uses compiler controls and C.UTF-8."
+}

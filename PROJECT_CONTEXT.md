@@ -1,5 +1,19 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local #109 installed-consumer checkpoint (2026-11-06):**
+production Linux install/update/remove passes LLDB 18.1.3 and offline perf 7.0.14
+on x86-64/AArch64 exec and PIE. Eight LLDB runtime sessions pass 80 observations;
+sixteen absence/mismatch sessions and 64 perf queries complete the controls.
+LLDB rejects mismatched Forge/compiler files. perf accepts their misplaced
+build-ID paths, independently confirming a consumer limitation rather than a
+Forge pairing guarantee. The separate perf cache is explicitly tested through
+independent snapshots: it hard-links inputs, stays stale until explicit update,
+and does not supply this version's cache-only probe lookup. See
+`docs/BUILD-ID-CONSUMERS.md` and its receipt. Hosted acceptance, Windows installer
+acceptance and protected integration remain outstanding; perf event/report
+symbolization remains unverified. This supersedes the pending local LLDB/perf
+statements in the earlier checkpoint history below.
+
 **CONFIRMED local #109 shared/sectionless checkpoint (2026-11-06):**
 ten fresh headless exports and production Linux installations pass across all
 five targets. Shared libraries pass fresh automatic GDB discovery, runtime
