@@ -93,6 +93,7 @@ expected_sources=(
     i386-extended-return.c
     i386-profile.c
     inspected-call-callees.c
+    intrinsic-context-x86_64.c
     later-register-local.c
     lexical-shadow.c
     lexical-statics.c

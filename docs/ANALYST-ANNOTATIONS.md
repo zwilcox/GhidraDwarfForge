@@ -466,9 +466,7 @@ The x86 default-off source remains byte-identical to the prior accepted source.
 Independent decoded-line projections preserve the same address/source-text pairs
 and report counts in all four profiles. See `evidence/source-context.json`.
 
-**PLANNED remaining acceptance:** dedicated CALLOTHER and same-spelled ordinary
-function controls; all-failed-function file-only source lookup through GDB;
-production failure-sample DWARF validation; broader ARM mode and delay-slot body
+**PLANNED remaining acceptance:** broader ARM mode and delay-slot body
 boundary controls; actual GUI chooser cancellation and Windows journeys; current
 hosted target/workload acceptance. The new tests and local success do not close
 #114 or the remaining #116 host/workload requirements.
@@ -496,6 +494,22 @@ Real global types and values remain usable. AArch64's system-DSO warning matches
 the compiler control exactly; strict inherited-frame diagnostics retain their
 independent corroboration. The fresh x86 annotation pipeline passes with both
 these cases and its existing default/context/cancellation checks. See
-`evidence/failed-source-context.json`. The earlier all-failed/failure-sample
-pending statements above are superseded locally by this evidence; current
-hosted, GUI/Windows, intrinsic and broader mode/delay-gap acceptance still remain.
+`evidence/failed-source-context.json`. Current hosted, GUI/Windows and broader mode/delay-gap acceptance still remain.
+
+**CONFIRMED local intrinsic controls:** `intrinsic-context-x86_64.c` contains a
+real CPUID and ordinary functions named `halt_baddata` and `cpuid_basic_info`.
+Independent native token observations prove CALLOTHER operations at the decoded
+CPUID and ordinary CALL operations at the same-spelled controls. Each context
+mode runs the installed production script twice in separate JVMs. The enabled
+modes label actual intrinsic context without adding diagnostics to the ordinary
+controls; unrelated genuine runtime warnings remain visible.
+
+All four outputs pass GNU/LLVM/pinned strict validation and live native GDB.
+The debugger hits each of the four functions, lists context from another working
+directory, steps through the intrinsic function and exits normally. Every
+executable address/source-text pair equals the off-mode projection; none points
+to an inserted comment. Assembly-only and p-code-only output respects the chosen
+mode. Inputs, installed libraries and saved project remain unchanged, and each
+mode's independent exports are identical. CI runs the same harness in the x86-64
+lane. The reviewed fixture inventory, complete x86 fixture reproducibility check
+and workflow lint pass. See `evidence/intrinsic-context.json`.
