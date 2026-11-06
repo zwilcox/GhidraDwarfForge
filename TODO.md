@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED #109 Windows installer refusal; fixture correction awaiting validation
+(2026-11-06):** run `42303689282` passes export/attachment but refuses the first
+installer operation for unsupported SACL metadata. The test used high-level
+`Get-Acl`/`Set-Acl` for DACL protection, unlike the already audited native
+DACL-only fixture. The harness now reuses that native helper, checks absent-SACL
+preservation, and separately requires explicit null-SACL installation refusal.
+Production admission is unchanged. Python/workflow checks and cross-compilation
+pass; the correction and downstream consumer remain **PRESENT, UNVERIFIED**
+until a native rerun passes. See `docs/evidence/windows-build-id-sacl-fixture.json`.
+
 **PRESENT, UNVERIFIED #109 Windows downstream consumer (2026-11-06):**
 `windows-build-id-gdb.py` and the downstream Linux CI step now verify hashes,
 native host provenance, validators, exact build-ID discovery and runtime

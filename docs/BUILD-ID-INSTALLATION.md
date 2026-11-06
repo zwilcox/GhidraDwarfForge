@@ -150,13 +150,19 @@ an administrator token. Installer-specific Windows acceptance is still required.
 
 The native Windows CI harness now consumes the existing Windows headless export
 and separately saved analyst-refresh export. It exercises the packaged PowerShell
-launcher, protected DACL preservation, 14 interrupted lifecycle boundaries,
+launcher, protected DACL preservation, explicit null-SACL refusal, 14 interrupted lifecycle boundaries,
 recovery, locking, cancellation, foreign registrations, junctions, hard links and
 alternate-stream refusals. It retains raw commands, results, native metadata
 snapshots and independent copies of both installed generations. **PRESENT,
 UNVERIFIED:** the native run must pass before these checks establish Windows
 installer acceptance. This harness does not claim Windows GDB runtime/discovery;
 consumer acceptance is separate.
+
+The first native installer run refused unsupported SACL metadata after the test's
+high-level `Get-Acl`/`Set-Acl` DACL setup. The corrected fixture reuses the existing
+native DACL-only helper and checks unchanged absent-SACL state; it does not relax
+production metadata admission. Corrected native acceptance remains pending. See
+[the retained failure and correction](evidence/windows-build-id-sacl-fixture.json).
 
 The downstream Linux job now runs `windows-build-id-gdb.py` on those exact
 retained initial and curated installed generations. It verifies their recorded

@@ -3257,6 +3257,7 @@ jobs:
             --original build/test-results/windows-host/work/semantic.exec.stripped `
             --sidecar build/test-results/windows-host/work/semantic.exec.ghidra-forge.dbg `
             --test-classes build/classes/java/test `
+            --compiler (Join-Path $mingwBin 'gcc.exe') `
             --results build/test-results/windows-host/build-id-installation
           if ($LASTEXITCODE -ne 0) { throw 'Native Windows build-ID installation failed' }
 

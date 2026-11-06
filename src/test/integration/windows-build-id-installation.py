@@ -21,7 +21,7 @@ def save(path, value):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ['ghidra', 'attachment-results', 'original', 'sidecar', 'test-classes', 'results']:
+    for name in ['ghidra', 'attachment-results', 'original', 'sidecar', 'test-classes', 'compiler', 'results']:
         parser.add_argument('--' + name, required=True, type=Path)
     args = parser.parse_args()
     assert os.name == 'nt', 'requires native Windows'
@@ -106,13 +106,22 @@ def main():
         configs.append((path, value))
     assert digest(configs[0][1]['files']['sidecar']) != digest(configs[1][1]['files']['sidecar'])
     protected.update({p: digest(p) for _, config in configs for p in config['files'].values()})
-    acl_script = root / 'protect-owned-dacl.ps1'
-    acl_script.write_text("$ErrorActionPreference = 'Stop'\n"
-        "$acl = Get-Acl -LiteralPath $args[0]\n"
-        "$acl.SetAccessRuleProtection($true, $true)\n"
-        "Set-Acl -LiteralPath $args[0] -AclObject $acl\n", encoding='utf-8')
-    execute('protect-owned-sidecar-dacl', [powershell, '-NoProfile', '-NonInteractive', '-File', acl_script,
-        configs[0][1]['files']['sidecar']])
+    # Get-Acl/Set-Acl can introduce a null SACL while changing only the intended
+    # DACL fixture. Reuse the independently audited native DACL-only operation
+    # and require full before/after SACL agreement. Production admission stays
+    # strict: absent and explicitly null SACLs are different states.
+    security_source = Path(__file__).resolve().parent.parent / 'native/windows-security-visibility.c'
+    protected[str(security_source)] = digest(security_source)
+    security_probe = root / 'security-visibility.exe'
+    execute('compile-security-probe', [args.compiler, '-std=c11', '-Wall', '-Wextra', '-Werror', '-municode',
+        security_source, '-ladvapi32', '-o', security_probe])
+    observed = json.loads(execute('protect-owned-sidecar-dacl', [security_probe, 'protect-dacl',
+        configs[0][1]['files']['sidecar']]))
+    before, after = observed['before'], observed['complete']
+    assert not before['saclPresent'] and not after['saclPresent']
+    assert after['control'] & 0x1000 and (before['control'] & 0x2a30) == (after['control'] & 0x2a30)
+    assert before['saclHex'] == after['saclHex'] is None
+    assert observed['initialPrivilegeAttributes'] == observed['restoredPrivilegeAttributes']
 
     def fresh(name):
         path = root / name
@@ -132,10 +141,10 @@ def main():
         checks.append({'name': name, 'exit': expected, 'outcome': result.get('outcome') if result else None})
         return result
 
-    def public(name, debug, action, index=0, extra=(), expected=0, outcome=None, contains=None):
+    def public(name, debug, action, index=0, extra=(), expected=0, outcome=None, contains=None, files_override=None):
         value = {'schema': 'forge-build-id-request-v1', 'action': action, 'root': str(debug)}
         if action in ['install', 'update']:
-            value.update(files=configs[index][1]['files'], tools=tools)
+            value.update(files=files_override or configs[index][1]['files'], tools=tools)
         else:
             value['buildId'] = build_id
         request = root / (name + ' request λ 雪.json')
@@ -179,6 +188,18 @@ def main():
             'directory': portable.name, 'originalSha256': digest(portable / 'original'),
             'sidecarSha256': digest(portable / 'sidecar'), 'sourceSha256': digest(portable / 'source')})
 
+    # Keep explicit null-SACL refusal as a regression control rather than
+    # weakening the host contract to accommodate the old fixture's metadata.
+    null_sacl = root / 'null-sacl-sidecar.dbg'
+    shutil.copy2(configs[0][1]['files']['sidecar'], null_sacl)
+    null_observed = json.loads(execute('create-null-sacl', [security_probe, 'null-sacl', null_sacl]))
+    assert null_observed['complete']['saclPresent'] and null_observed['complete']['saclHex'] is None
+    assert null_observed['initialPrivilegeAttributes'] == null_observed['restoredPrivilegeAttributes']
+    null_hash = digest(null_sacl)
+    null_root = fresh('null-sacl-refused')
+    public('null-sacl-refused', null_root, 'install', expected=1, outcome='FAILED', contains='SACL',
+        files_override=dict(configs[0][1]['files'], sidecar=str(null_sacl)))
+    assert not list(null_root.iterdir()) and digest(null_sacl) == null_hash
     debug = fresh("debug root λ 雪 'quote' $literal")
     public('preview', debug, 'install', extra=['-Preview'], outcome='PREVIEW_NOT_VALIDATED')
     assert not list(debug.iterdir())
