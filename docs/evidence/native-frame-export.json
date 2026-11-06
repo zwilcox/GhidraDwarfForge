@@ -1,0 +1,1361 @@
+{
+    "status": "CONFIRMED locally; standard CLI/GUI synthesis and hosted acceptance remain open",
+    "baseCommit": "7b40c8ab04587956966a3af1c9f5a93efad8d4f0",
+    "utc": "2026-11-06T10:46:40.827650+00:00",
+    "sourceSha256": {
+        ".github/workflows/ci.yml": "fbcde7534d732c23bc51d2e65d9f5d2d793b8a2cf4b70ad1173c2a9295e44845",
+        "PROJECT_CONTEXT.md": "a0b9f9c41d32d212543ccd5e51b6a9cb081c5c16e8fb3dbbcfc739c073e62a32",
+        "TODO.md": "3a6934e1d18fc44b6b5d2c80a0bd9d8e0e522b04b724df0f2ec7a0747c2d6749",
+        "docs/NATIVE-FRAME-EXPORT.md": "55b10d407d85adf6004a76777a39d43848422700adceee45a2c4ecbccccc0227",
+        "src/main/java/ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter.java": "e387dd03b4f0e69e29f4e896200590a6519b5b84b38c53e7319b92d0a7b09c1b",
+        "src/test/integration/cfi-encoder-gdb.sh": "74a5ae5ed1c4dc7ad0334c3a3cffeac971a10e3f3bad91e11b50a6c9aa7202a4",
+        "src/test/integration/unwind-export.py": "0213f48f0e442a736715e7f0f62c33b2f2d3c47ee175ebfe60b990a9001fe379",
+        "src/test/integration/unwind-source-gdb.py": "f75d40ce42fe8d26b9e074f504e5060dee575ae52cb1f130bfe3b9dd7714e43d",
+        "src/test/integration/ghidra_scripts/ExportRecoveredFrames.java": "04aa6af98c84dad000a11b723ecfb8b88f3a3d8a8dc54e0647c3225e6d7177fb",
+        "src/test/integration/ghidra_scripts/RecoveredFrameExportControls.java": "0f00941a1f6a857b39d4fb71fdb99567e3ade814a56ec6854c9cb18c00c510b9"
+    },
+    "testedInstallation": {
+        "base": "/dev/shm/forge-cfi-recovery-worktree/build/consistency-installation/ghidra",
+        "package": "/dev/shm/forge-cfi-recovery-worktree/build/flow-gradle/dist/ghidra_12.0.3_PUBLIC_20261106_GhidraDwarfForge.zip",
+        "sha256": "48060d7d6c5b87e2dbed9a04d910511018530abce16cfd479643ed5aeca6be6b",
+        "installed": "/dev/shm/forge-cfi-recovery-worktree/build/native-frame-installation/ghidra"
+    },
+    "nativePin": "af7b278c6aa2ae9daad94fb7f8bffdc0e9980993",
+    "matrix": [
+        {
+            "target": "x86_64",
+            "role": "exec",
+            "family": "encoder",
+            "failedSourceName": "none",
+            "artifacts": [
+                {
+                    "mode": "none",
+                    "sha256": "a7dfad8f3f039c3e39f83fb5c4381ad2e3da07da34ce341d529758702f5b3f7a",
+                    "sourceSha256": "d8c8b53b0d7af86d3ad016721395b86246823398dc90991db2320a95ddab3d2c",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 3,
+                        "functionsFailed": 0,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 0,
+                        "globalVariables": 1,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 3,
+                        "defensibleVariableLocations": 0,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 10,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 5
+                    }
+                },
+                {
+                    "mode": "zlib",
+                    "sha256": "f72122b1de9d4aeed7266bbe3c3728c5aa7d7f3c907afb41fd149767a9b7a85d",
+                    "sourceSha256": "d8c8b53b0d7af86d3ad016721395b86246823398dc90991db2320a95ddab3d2c",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 3,
+                        "functionsFailed": 0,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 0,
+                        "globalVariables": 1,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 3,
+                        "defensibleVariableLocations": 0,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 10,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 5
+                    }
+                },
+                {
+                    "mode": "before-rebase-none",
+                    "sha256": "a7dfad8f3f039c3e39f83fb5c4381ad2e3da07da34ce341d529758702f5b3f7a",
+                    "sourceSha256": "d8c8b53b0d7af86d3ad016721395b86246823398dc90991db2320a95ddab3d2c"
+                },
+                {
+                    "mode": "before-rebase-zlib",
+                    "sha256": "f72122b1de9d4aeed7266bbe3c3728c5aa7d7f3c907afb41fd149767a9b7a85d",
+                    "sourceSha256": "d8c8b53b0d7af86d3ad016721395b86246823398dc90991db2320a95ddab3d2c"
+                }
+            ],
+            "inputHashes": {
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-encoder/x86_64-exec/original": "57d43033812d56115becb37bc66c4930085a58170e844155cf364e6deee1df6e",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-encoder/x86_64-exec/reference": "ebc6cb5026ec164dbcc5ecd4c5ab712736301a0a33dfa404906acb74e6b9f1ed",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-encoder/x86_64-exec/none.frame": "b69d8d86cba2553da102bcf047e2941701766ce47f1a9167c21d5622de2d8f6b"
+            },
+            "warnings": {
+                "reference": [],
+                "absent": [],
+                "none": [],
+                "zlib": [],
+                "disabled": [],
+                "before-rebase-none": [
+                    "warning: Source file is more recent than executable."
+                ],
+                "before-rebase-zlib": [
+                    "warning: Source file is more recent than executable."
+                ]
+            }
+        },
+        {
+            "target": "x86_64",
+            "role": "pie",
+            "family": "encoder",
+            "failedSourceName": "none",
+            "artifacts": [
+                {
+                    "mode": "none",
+                    "sha256": "23e8f32a3fcd95a45b2bbfce3fffbbb157c2ccb650afd81869c32062ead308b4",
+                    "sourceSha256": "d8c8b53b0d7af86d3ad016721395b86246823398dc90991db2320a95ddab3d2c",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 3,
+                        "functionsFailed": 0,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 0,
+                        "globalVariables": 4,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 12,
+                        "defensibleVariableLocations": 0,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 10,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 5
+                    }
+                },
+                {
+                    "mode": "zlib",
+                    "sha256": "afa652472992c6b47e6fa9c22de9425dc175621f91990ec4faa6609e21f27cfa",
+                    "sourceSha256": "d8c8b53b0d7af86d3ad016721395b86246823398dc90991db2320a95ddab3d2c",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 3,
+                        "functionsFailed": 0,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 0,
+                        "globalVariables": 4,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 12,
+                        "defensibleVariableLocations": 0,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 10,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 5
+                    }
+                },
+                {
+                    "mode": "before-rebase-none",
+                    "sha256": "23e8f32a3fcd95a45b2bbfce3fffbbb157c2ccb650afd81869c32062ead308b4",
+                    "sourceSha256": "d8c8b53b0d7af86d3ad016721395b86246823398dc90991db2320a95ddab3d2c"
+                },
+                {
+                    "mode": "before-rebase-zlib",
+                    "sha256": "afa652472992c6b47e6fa9c22de9425dc175621f91990ec4faa6609e21f27cfa",
+                    "sourceSha256": "d8c8b53b0d7af86d3ad016721395b86246823398dc90991db2320a95ddab3d2c"
+                }
+            ],
+            "inputHashes": {
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-encoder/x86_64-pie/original": "8e915b8a3c46385706f926347b1a58dec73f071383272e08bf4dc7915501efc3",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-encoder/x86_64-pie/reference": "93268016fd42d75fdf11a2a19961857d10c3150a6f5b19eda017484029cf4bf7",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-encoder/x86_64-pie/none.frame": "968f9fc7d7e8ac2781cc8ebb63d78907380817d254ccd52d0fd2815441e3565a"
+            },
+            "warnings": {
+                "reference": [],
+                "absent": [],
+                "none": [],
+                "zlib": [],
+                "disabled": [],
+                "before-rebase-none": [
+                    "warning: Source file is more recent than executable."
+                ],
+                "before-rebase-zlib": [
+                    "warning: Source file is more recent than executable."
+                ]
+            }
+        },
+        {
+            "target": "x86_64",
+            "role": "shared",
+            "family": "encoder",
+            "failedSourceName": "none",
+            "artifacts": [
+                {
+                    "mode": "none",
+                    "sha256": "63d2d0299941d9d243bfa37d28a84c3f91c2fcf86f80c2e157333bad7bf60e7b",
+                    "sourceSha256": "d8c8b53b0d7af86d3ad016721395b86246823398dc90991db2320a95ddab3d2c",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 3,
+                        "functionsFailed": 0,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 0,
+                        "globalVariables": 4,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 12,
+                        "defensibleVariableLocations": 0,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 10,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 5
+                    }
+                },
+                {
+                    "mode": "zlib",
+                    "sha256": "481f43efebf738c8794a21ce04d52cb340ccfb9700aae30ef384085ccc4240bb",
+                    "sourceSha256": "d8c8b53b0d7af86d3ad016721395b86246823398dc90991db2320a95ddab3d2c",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 3,
+                        "functionsFailed": 0,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 0,
+                        "globalVariables": 4,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 12,
+                        "defensibleVariableLocations": 0,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 10,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 5
+                    }
+                },
+                {
+                    "mode": "before-rebase-none",
+                    "sha256": "63d2d0299941d9d243bfa37d28a84c3f91c2fcf86f80c2e157333bad7bf60e7b",
+                    "sourceSha256": "d8c8b53b0d7af86d3ad016721395b86246823398dc90991db2320a95ddab3d2c"
+                },
+                {
+                    "mode": "before-rebase-zlib",
+                    "sha256": "481f43efebf738c8794a21ce04d52cb340ccfb9700aae30ef384085ccc4240bb",
+                    "sourceSha256": "d8c8b53b0d7af86d3ad016721395b86246823398dc90991db2320a95ddab3d2c"
+                }
+            ],
+            "inputHashes": {
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-encoder/x86_64-shared/original": "15bf0ad2713d036e9bc8593dd4c31cf565e5bd1a9c5860292a865014fcc59566",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-encoder/x86_64-shared/reference": "a80851fb228e631d75969cc0bc6034a9e98e52dab8e41dd001886de85687ad47",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-encoder/x86_64-shared/none.frame": "968f9fc7d7e8ac2781cc8ebb63d78907380817d254ccd52d0fd2815441e3565a",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-encoder/x86_64-shared/driver": "8d69f5c1590de0d340fb7507e6ad6d04e2063d251af200fc014b2c6631e7aa01"
+            },
+            "warnings": {
+                "reference": [],
+                "absent": [],
+                "none": [],
+                "zlib": [],
+                "disabled": [],
+                "before-rebase-none": [
+                    "warning: Source file is more recent than executable."
+                ],
+                "before-rebase-zlib": [
+                    "warning: Source file is more recent than executable."
+                ]
+            }
+        },
+        {
+            "target": "aarch64",
+            "role": "exec",
+            "family": "encoder",
+            "failedSourceName": "none",
+            "artifacts": [
+                {
+                    "mode": "none",
+                    "sha256": "2fb6572d4b6323c7e05e97a8e43209d0279a1217051ae75e34981aaecd19d525",
+                    "sourceSha256": "ed64d07ada69b03c2c2329885c6aa89844e05d730be6454ff31052426fc7ca5a",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 3,
+                        "functionsFailed": 0,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 1,
+                        "globalVariables": 1,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 3,
+                        "defensibleVariableLocations": 1,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 10,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 4
+                    }
+                },
+                {
+                    "mode": "zlib",
+                    "sha256": "cd7912c44c355dea2454b2744482e98ad59487b4dee46eedf57533b9468c76ef",
+                    "sourceSha256": "ed64d07ada69b03c2c2329885c6aa89844e05d730be6454ff31052426fc7ca5a",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 3,
+                        "functionsFailed": 0,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 1,
+                        "globalVariables": 1,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 3,
+                        "defensibleVariableLocations": 1,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 10,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 4
+                    }
+                },
+                {
+                    "mode": "before-rebase-none",
+                    "sha256": "2fb6572d4b6323c7e05e97a8e43209d0279a1217051ae75e34981aaecd19d525",
+                    "sourceSha256": "ed64d07ada69b03c2c2329885c6aa89844e05d730be6454ff31052426fc7ca5a"
+                },
+                {
+                    "mode": "before-rebase-zlib",
+                    "sha256": "cd7912c44c355dea2454b2744482e98ad59487b4dee46eedf57533b9468c76ef",
+                    "sourceSha256": "ed64d07ada69b03c2c2329885c6aa89844e05d730be6454ff31052426fc7ca5a"
+                }
+            ],
+            "inputHashes": {
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-encoder/aarch64-exec/original": "75a30a4816206436af2c53614452a8e19c70b2dd9b0a8907d6117ed8418ca4fa",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-encoder/aarch64-exec/reference": "55f0f04931de2a7dcd838741864a317188d74132db1a92c8dce00d5fe4a7c741",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-encoder/aarch64-exec/none.frame": "0017c169f003dd13acaf3892cd3ae560076b219e0350ff061bcddc6a99b9b105"
+            },
+            "warnings": {
+                "reference": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "absent": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "none": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "zlib": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "disabled": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "before-rebase-none": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index",
+                    "warning: Source file is more recent than executable."
+                ],
+                "before-rebase-zlib": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index",
+                    "warning: Source file is more recent than executable."
+                ]
+            }
+        },
+        {
+            "target": "aarch64",
+            "role": "pie",
+            "family": "encoder",
+            "failedSourceName": "none",
+            "artifacts": [
+                {
+                    "mode": "none",
+                    "sha256": "f324099dd41042db7f09ddfe859e31e40a5854779876c22ef479a1094c4a596b",
+                    "sourceSha256": "03e471041cedfcef524da2da8bed762f1c3974bace7ae143800a6dfaa0a8dd9c",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 3,
+                        "functionsFailed": 0,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 1,
+                        "globalVariables": 4,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 12,
+                        "defensibleVariableLocations": 1,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 10,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 4
+                    }
+                },
+                {
+                    "mode": "zlib",
+                    "sha256": "e0ec11d83c4924c46a76c5559bc9cdc42dbee306461bb6d2887e65018c329091",
+                    "sourceSha256": "03e471041cedfcef524da2da8bed762f1c3974bace7ae143800a6dfaa0a8dd9c",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 3,
+                        "functionsFailed": 0,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 1,
+                        "globalVariables": 4,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 12,
+                        "defensibleVariableLocations": 1,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 10,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 4
+                    }
+                },
+                {
+                    "mode": "before-rebase-none",
+                    "sha256": "f324099dd41042db7f09ddfe859e31e40a5854779876c22ef479a1094c4a596b",
+                    "sourceSha256": "ea6fa8925ccc6774fbee2862ed43e7fff862c3e5d78c6b16ef401dd8ca78295d"
+                },
+                {
+                    "mode": "before-rebase-zlib",
+                    "sha256": "e0ec11d83c4924c46a76c5559bc9cdc42dbee306461bb6d2887e65018c329091",
+                    "sourceSha256": "ea6fa8925ccc6774fbee2862ed43e7fff862c3e5d78c6b16ef401dd8ca78295d"
+                }
+            ],
+            "inputHashes": {
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-encoder/aarch64-pie/original": "77fcb62eec2595325fa3e32097a10d53d67deb0f46b8507113c57993a5a79dd2",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-encoder/aarch64-pie/reference": "72fc0b8fbec81bc38073de2ac5aade6a6e49d67b97d0176acc512b62e3b6dbf3",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-encoder/aarch64-pie/none.frame": "f645495b988bca99631d3cef84a793467893567cf36935b95f06ed44e051ce13"
+            },
+            "warnings": {
+                "reference": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "absent": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "none": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "zlib": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "disabled": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "before-rebase-none": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index",
+                    "warning: Source file is more recent than executable."
+                ],
+                "before-rebase-zlib": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index",
+                    "warning: Source file is more recent than executable."
+                ]
+            }
+        },
+        {
+            "target": "aarch64",
+            "role": "shared",
+            "family": "encoder",
+            "failedSourceName": "none",
+            "artifacts": [
+                {
+                    "mode": "none",
+                    "sha256": "e1419803b09322469d38070b9322034ab43ee6f47cce0b8e5fb49ed9e87e61c9",
+                    "sourceSha256": "ed64d07ada69b03c2c2329885c6aa89844e05d730be6454ff31052426fc7ca5a",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 3,
+                        "functionsFailed": 0,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 1,
+                        "globalVariables": 4,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 12,
+                        "defensibleVariableLocations": 1,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 10,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 4
+                    }
+                },
+                {
+                    "mode": "zlib",
+                    "sha256": "8ce9a687f5457d6acf87a97a12cfd7537c7830dd223bb3ea5dad7d777dde8157",
+                    "sourceSha256": "ed64d07ada69b03c2c2329885c6aa89844e05d730be6454ff31052426fc7ca5a",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 3,
+                        "functionsFailed": 0,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 1,
+                        "globalVariables": 4,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 12,
+                        "defensibleVariableLocations": 1,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 10,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 4
+                    }
+                },
+                {
+                    "mode": "before-rebase-none",
+                    "sha256": "e1419803b09322469d38070b9322034ab43ee6f47cce0b8e5fb49ed9e87e61c9",
+                    "sourceSha256": "ed64d07ada69b03c2c2329885c6aa89844e05d730be6454ff31052426fc7ca5a"
+                },
+                {
+                    "mode": "before-rebase-zlib",
+                    "sha256": "8ce9a687f5457d6acf87a97a12cfd7537c7830dd223bb3ea5dad7d777dde8157",
+                    "sourceSha256": "ed64d07ada69b03c2c2329885c6aa89844e05d730be6454ff31052426fc7ca5a"
+                }
+            ],
+            "inputHashes": {
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-encoder/aarch64-shared/original": "ac1b85a08b26cd5c282bf102e02f29c62ca67928829dd6c7b0557c7d3950ab79",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-encoder/aarch64-shared/reference": "58036532f4c09265612d2f85fe5c2b726191dd703d50e982d6c29dee75d8dfb7",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-encoder/aarch64-shared/none.frame": "ad557a15a07d99a65a58dfffe5d7656435ad612aaedcf2f5b8fbe3f9aba716c3",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-encoder/aarch64-shared/driver": "38fe22b378465966bd9fcbf4d94d63c4eb473aeaf5fa31e612b6555709db681f"
+            },
+            "warnings": {
+                "reference": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000860000 has a corrupt string table index"
+                ],
+                "absent": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000860000 has a corrupt string table index"
+                ],
+                "none": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000860000 has a corrupt string table index"
+                ],
+                "zlib": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000860000 has a corrupt string table index"
+                ],
+                "disabled": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000860000 has a corrupt string table index"
+                ],
+                "before-rebase-none": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000860000 has a corrupt string table index",
+                    "warning: Source file is more recent than executable."
+                ],
+                "before-rebase-zlib": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000860000 has a corrupt string table index",
+                    "warning: Source file is more recent than executable."
+                ]
+            }
+        },
+        {
+            "target": "x86_64",
+            "role": "exec",
+            "family": "shrinkwrap",
+            "failedSourceName": "none",
+            "artifacts": [
+                {
+                    "mode": "none",
+                    "sha256": "2c56a111c2f1b228937535f6ade8cfbb80ec640984a2b99fb771c295a206594a",
+                    "sourceSha256": "0ad5e3e12030b542566b1d983ffb91f050433ab62487c894311fcff02a7f2a3d",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 3,
+                        "functionsFailed": 0,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 0,
+                        "globalVariables": 1,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 3,
+                        "defensibleVariableLocations": 0,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 10,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 5
+                    }
+                },
+                {
+                    "mode": "zlib",
+                    "sha256": "76894aa2adf2e4db9685ada5fa9c29987a309dba63b4276f03905f7642f28d17",
+                    "sourceSha256": "0ad5e3e12030b542566b1d983ffb91f050433ab62487c894311fcff02a7f2a3d",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 3,
+                        "functionsFailed": 0,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 0,
+                        "globalVariables": 1,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 3,
+                        "defensibleVariableLocations": 0,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 10,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 5
+                    }
+                },
+                {
+                    "mode": "before-rebase-none",
+                    "sha256": "2c56a111c2f1b228937535f6ade8cfbb80ec640984a2b99fb771c295a206594a",
+                    "sourceSha256": "0ad5e3e12030b542566b1d983ffb91f050433ab62487c894311fcff02a7f2a3d"
+                },
+                {
+                    "mode": "before-rebase-zlib",
+                    "sha256": "76894aa2adf2e4db9685ada5fa9c29987a309dba63b4276f03905f7642f28d17",
+                    "sourceSha256": "0ad5e3e12030b542566b1d983ffb91f050433ab62487c894311fcff02a7f2a3d"
+                }
+            ],
+            "inputHashes": {
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-shrinkwrap/x86_64-exec/original": "812f3b0e3080297553b62bb61fca2135a859015e6b754bf39ffea433d6fca85c",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-shrinkwrap/x86_64-exec/reference": "0b98798bebee6c98eb14b78eef5b34578f3191320db91b879b3c60048ad55be7",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-shrinkwrap/x86_64-exec/none.frame": "aca1ff65f5356c569cf0a04875360cb620914118936b1db6cce725eaf4619f15"
+            },
+            "warnings": {
+                "reference": [],
+                "absent": [],
+                "none": [],
+                "zlib": [],
+                "disabled": [],
+                "before-rebase-none": [
+                    "warning: Source file is more recent than executable."
+                ],
+                "before-rebase-zlib": [
+                    "warning: Source file is more recent than executable."
+                ]
+            }
+        },
+        {
+            "target": "x86_64",
+            "role": "pie",
+            "family": "shrinkwrap",
+            "failedSourceName": "none",
+            "artifacts": [
+                {
+                    "mode": "none",
+                    "sha256": "765764921a6bab21fc525772f2009f890e1fac6fcae24c2191106adb77735c64",
+                    "sourceSha256": "0ad5e3e12030b542566b1d983ffb91f050433ab62487c894311fcff02a7f2a3d",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 3,
+                        "functionsFailed": 0,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 0,
+                        "globalVariables": 4,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 12,
+                        "defensibleVariableLocations": 0,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 10,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 5
+                    }
+                },
+                {
+                    "mode": "zlib",
+                    "sha256": "47ff5d75c2da4adddf53e0e471a75c947c1a4dc6ab56107653594d3ec1f7ae76",
+                    "sourceSha256": "0ad5e3e12030b542566b1d983ffb91f050433ab62487c894311fcff02a7f2a3d",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 3,
+                        "functionsFailed": 0,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 0,
+                        "globalVariables": 4,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 12,
+                        "defensibleVariableLocations": 0,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 10,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 5
+                    }
+                },
+                {
+                    "mode": "before-rebase-none",
+                    "sha256": "765764921a6bab21fc525772f2009f890e1fac6fcae24c2191106adb77735c64",
+                    "sourceSha256": "0ad5e3e12030b542566b1d983ffb91f050433ab62487c894311fcff02a7f2a3d"
+                },
+                {
+                    "mode": "before-rebase-zlib",
+                    "sha256": "47ff5d75c2da4adddf53e0e471a75c947c1a4dc6ab56107653594d3ec1f7ae76",
+                    "sourceSha256": "0ad5e3e12030b542566b1d983ffb91f050433ab62487c894311fcff02a7f2a3d"
+                }
+            ],
+            "inputHashes": {
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-shrinkwrap/x86_64-pie/original": "74e5c5dc8edb2abe6417d6a54279cac98ddd614cb3921358d99395b96180ae77",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-shrinkwrap/x86_64-pie/reference": "54fd7c3a6a292f170a34973fb5223f657c2ac2b89644198a72b102d461e87b00",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-shrinkwrap/x86_64-pie/none.frame": "2ad255c194b120a9c1640acecd1b94f3b93e30dba01d0cc4ea499ebb1fc1587e"
+            },
+            "warnings": {
+                "reference": [],
+                "absent": [],
+                "none": [],
+                "zlib": [],
+                "disabled": [],
+                "before-rebase-none": [
+                    "warning: Source file is more recent than executable."
+                ],
+                "before-rebase-zlib": [
+                    "warning: Source file is more recent than executable."
+                ]
+            }
+        },
+        {
+            "target": "x86_64",
+            "role": "shared",
+            "family": "shrinkwrap",
+            "failedSourceName": "none",
+            "artifacts": [
+                {
+                    "mode": "none",
+                    "sha256": "f2db5bfd9628ca2a5e1d9cb991656dd60d83931593d7195fb990617d04dd1ea4",
+                    "sourceSha256": "0ad5e3e12030b542566b1d983ffb91f050433ab62487c894311fcff02a7f2a3d",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 3,
+                        "functionsFailed": 0,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 0,
+                        "globalVariables": 4,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 12,
+                        "defensibleVariableLocations": 0,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 10,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 5
+                    }
+                },
+                {
+                    "mode": "zlib",
+                    "sha256": "5e040ce61a7ad6bda0d5ff11bde5e55b5d3f1b2046fd7e963c523f9dd6534b4e",
+                    "sourceSha256": "0ad5e3e12030b542566b1d983ffb91f050433ab62487c894311fcff02a7f2a3d",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 3,
+                        "functionsFailed": 0,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 0,
+                        "globalVariables": 4,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 12,
+                        "defensibleVariableLocations": 0,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 10,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 5
+                    }
+                },
+                {
+                    "mode": "before-rebase-none",
+                    "sha256": "f2db5bfd9628ca2a5e1d9cb991656dd60d83931593d7195fb990617d04dd1ea4",
+                    "sourceSha256": "0ad5e3e12030b542566b1d983ffb91f050433ab62487c894311fcff02a7f2a3d"
+                },
+                {
+                    "mode": "before-rebase-zlib",
+                    "sha256": "5e040ce61a7ad6bda0d5ff11bde5e55b5d3f1b2046fd7e963c523f9dd6534b4e",
+                    "sourceSha256": "0ad5e3e12030b542566b1d983ffb91f050433ab62487c894311fcff02a7f2a3d"
+                }
+            ],
+            "inputHashes": {
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-shrinkwrap/x86_64-shared/original": "f85a030a6b1702091e551b8b648942e5ddfc994b18bf7215b92b5111978e751a",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-shrinkwrap/x86_64-shared/reference": "d8b6772fbc0754e95bf73d58b9f6f13058e607147b0ce514d3f22992e2c47ae8",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-shrinkwrap/x86_64-shared/none.frame": "2ad255c194b120a9c1640acecd1b94f3b93e30dba01d0cc4ea499ebb1fc1587e",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-shrinkwrap/x86_64-shared/driver": "8d69f5c1590de0d340fb7507e6ad6d04e2063d251af200fc014b2c6631e7aa01"
+            },
+            "warnings": {
+                "reference": [],
+                "absent": [],
+                "none": [],
+                "zlib": [],
+                "disabled": [],
+                "before-rebase-none": [
+                    "warning: Source file is more recent than executable."
+                ],
+                "before-rebase-zlib": [
+                    "warning: Source file is more recent than executable."
+                ]
+            }
+        },
+        {
+            "target": "aarch64",
+            "role": "exec",
+            "family": "shrinkwrap",
+            "failedSourceName": "none",
+            "artifacts": [
+                {
+                    "mode": "none",
+                    "sha256": "c09c2501b2b99c57c7024d28c8c1be40dd9d07ffd13d070bbfac3f28352c94fb",
+                    "sourceSha256": "f462a74be609f83b071d231676c9f2ecaf9cb6b93a0f874e641f7704e7073a99",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 3,
+                        "functionsFailed": 0,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 2,
+                        "globalVariables": 1,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 3,
+                        "defensibleVariableLocations": 2,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 10,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 4
+                    }
+                },
+                {
+                    "mode": "zlib",
+                    "sha256": "63104dbc6befd5820303bdf95a04fe5a937f335d24949b9f699e09fdcb2e5626",
+                    "sourceSha256": "f462a74be609f83b071d231676c9f2ecaf9cb6b93a0f874e641f7704e7073a99",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 3,
+                        "functionsFailed": 0,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 2,
+                        "globalVariables": 1,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 3,
+                        "defensibleVariableLocations": 2,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 10,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 4
+                    }
+                },
+                {
+                    "mode": "before-rebase-none",
+                    "sha256": "c09c2501b2b99c57c7024d28c8c1be40dd9d07ffd13d070bbfac3f28352c94fb",
+                    "sourceSha256": "ac5b1f4cf82a7d5a0fdc42fda6f0c05ceca8bc82f4b249660741e779cc7f2035"
+                },
+                {
+                    "mode": "before-rebase-zlib",
+                    "sha256": "63104dbc6befd5820303bdf95a04fe5a937f335d24949b9f699e09fdcb2e5626",
+                    "sourceSha256": "ac5b1f4cf82a7d5a0fdc42fda6f0c05ceca8bc82f4b249660741e779cc7f2035"
+                }
+            ],
+            "inputHashes": {
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-shrinkwrap/aarch64-exec/original": "f41e1b7199bd2766d70f1aceabae1fe390ccdfcbe065c03668285ec64110bca8",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-shrinkwrap/aarch64-exec/reference": "b2212f767137d51b7f4916bc3d4faca5de61cb5c74215c37e4ca2e76505d531a",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-shrinkwrap/aarch64-exec/none.frame": "4987b681ff54561817916c0e798319e0d8558d02a9503fca71f8d4041ff3ab11"
+            },
+            "warnings": {
+                "reference": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "absent": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "none": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "zlib": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "disabled": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "before-rebase-none": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index",
+                    "warning: Source file is more recent than executable."
+                ],
+                "before-rebase-zlib": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index",
+                    "warning: Source file is more recent than executable."
+                ]
+            }
+        },
+        {
+            "target": "aarch64",
+            "role": "pie",
+            "family": "shrinkwrap",
+            "failedSourceName": "none",
+            "artifacts": [
+                {
+                    "mode": "none",
+                    "sha256": "75e69190841b6e9bcdfdeff6017be1e96fed0784d222024b2d8485d6c00aa6e1",
+                    "sourceSha256": "dc73e70fdf5a76e68d677802518bdf2c3aee3a66b441edeacf69f55920f3524a",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 3,
+                        "functionsFailed": 0,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 2,
+                        "globalVariables": 4,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 12,
+                        "defensibleVariableLocations": 2,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 10,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 4
+                    }
+                },
+                {
+                    "mode": "zlib",
+                    "sha256": "31e84c16384d2b8a42600626f78e4787c60a5a79d4f2fb2a94457659d1308244",
+                    "sourceSha256": "dc73e70fdf5a76e68d677802518bdf2c3aee3a66b441edeacf69f55920f3524a",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 3,
+                        "functionsFailed": 0,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 2,
+                        "globalVariables": 4,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 12,
+                        "defensibleVariableLocations": 2,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 10,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 4
+                    }
+                },
+                {
+                    "mode": "before-rebase-none",
+                    "sha256": "75e69190841b6e9bcdfdeff6017be1e96fed0784d222024b2d8485d6c00aa6e1",
+                    "sourceSha256": "dc73e70fdf5a76e68d677802518bdf2c3aee3a66b441edeacf69f55920f3524a"
+                },
+                {
+                    "mode": "before-rebase-zlib",
+                    "sha256": "31e84c16384d2b8a42600626f78e4787c60a5a79d4f2fb2a94457659d1308244",
+                    "sourceSha256": "dc73e70fdf5a76e68d677802518bdf2c3aee3a66b441edeacf69f55920f3524a"
+                }
+            ],
+            "inputHashes": {
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-shrinkwrap/aarch64-pie/original": "5fe11dc842b69f0ef929003b60b52290bcf3a3d92b710309a7da8f6d5086469c",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-shrinkwrap/aarch64-pie/reference": "b06e7ec26e8e0334ddeeabd4838ba8d17f00fdb1fd101a86fdd55d13dc0c50c3",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-shrinkwrap/aarch64-pie/none.frame": "cfb87f4fddb6bfa70f1f1d23c8cde7b36726e223219089b7f21210c7513f7261"
+            },
+            "warnings": {
+                "reference": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "absent": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "none": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "zlib": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "disabled": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "before-rebase-none": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index",
+                    "warning: Source file is more recent than executable."
+                ],
+                "before-rebase-zlib": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index",
+                    "warning: Source file is more recent than executable."
+                ]
+            }
+        },
+        {
+            "target": "aarch64",
+            "role": "shared",
+            "family": "shrinkwrap",
+            "failedSourceName": "none",
+            "artifacts": [
+                {
+                    "mode": "none",
+                    "sha256": "a32670b8391c7d738cdf5c527f555b73fb962cd44a3d673e6660941e99a407a4",
+                    "sourceSha256": "dc73e70fdf5a76e68d677802518bdf2c3aee3a66b441edeacf69f55920f3524a",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 3,
+                        "functionsFailed": 0,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 2,
+                        "globalVariables": 4,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 12,
+                        "defensibleVariableLocations": 2,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 10,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 4
+                    }
+                },
+                {
+                    "mode": "zlib",
+                    "sha256": "7820b7e7ea73fe247707c9162044e0f14afae23eb2de25fb2b19702aa03829bf",
+                    "sourceSha256": "dc73e70fdf5a76e68d677802518bdf2c3aee3a66b441edeacf69f55920f3524a",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 3,
+                        "functionsFailed": 0,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 2,
+                        "globalVariables": 4,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 12,
+                        "defensibleVariableLocations": 2,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 10,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 4
+                    }
+                },
+                {
+                    "mode": "before-rebase-none",
+                    "sha256": "a32670b8391c7d738cdf5c527f555b73fb962cd44a3d673e6660941e99a407a4",
+                    "sourceSha256": "dc73e70fdf5a76e68d677802518bdf2c3aee3a66b441edeacf69f55920f3524a"
+                },
+                {
+                    "mode": "before-rebase-zlib",
+                    "sha256": "7820b7e7ea73fe247707c9162044e0f14afae23eb2de25fb2b19702aa03829bf",
+                    "sourceSha256": "dc73e70fdf5a76e68d677802518bdf2c3aee3a66b441edeacf69f55920f3524a"
+                }
+            ],
+            "inputHashes": {
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-shrinkwrap/aarch64-shared/original": "33fdfb7e21f20d5d11a803abcc0a9ae6a0c39719c07a6e1c76a3dd7b05c258ca",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-shrinkwrap/aarch64-shared/reference": "b2b24007eee790320ec065ce362fe94e826f90f2bb38a9a3ae7e12fe08544d13",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-shrinkwrap/aarch64-shared/none.frame": "4296fcd35ffc83d69788ec0572bd820e8e9ae4a7b33a60fe8c15668df22d3a40",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-checked-shrinkwrap/aarch64-shared/driver": "38fe22b378465966bd9fcbf4d94d63c4eb473aeaf5fa31e612b6555709db681f"
+            },
+            "warnings": {
+                "reference": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000860000 has a corrupt string table index"
+                ],
+                "absent": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000860000 has a corrupt string table index"
+                ],
+                "none": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000860000 has a corrupt string table index"
+                ],
+                "zlib": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000860000 has a corrupt string table index"
+                ],
+                "disabled": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000860000 has a corrupt string table index"
+                ],
+                "before-rebase-none": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000860000 has a corrupt string table index",
+                    "warning: Source file is more recent than executable."
+                ],
+                "before-rebase-zlib": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000860000 has a corrupt string table index",
+                    "warning: Source file is more recent than executable."
+                ]
+            }
+        },
+        {
+            "target": "x86_64",
+            "role": "exec",
+            "family": "encoder",
+            "failedSourceName": "cf_checkpoint",
+            "artifacts": [
+                {
+                    "mode": "none",
+                    "sha256": "809a0083a18588a94c05e5dc01a5474b10fdfbc9da063c668f0baf56b8775470",
+                    "sourceSha256": "ea466a8e0bc026224aaa3825c4884439790cc343dff872f0f2d54640c835472c",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 2,
+                        "functionsFailed": 1,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 0,
+                        "globalVariables": 1,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 3,
+                        "defensibleVariableLocations": 0,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 8,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 5
+                    }
+                },
+                {
+                    "mode": "zlib",
+                    "sha256": "59b4e6b7aaeb0eb63e158e5f250c7f15a14181c3420106b668ed9e237f7df0b5",
+                    "sourceSha256": "ea466a8e0bc026224aaa3825c4884439790cc343dff872f0f2d54640c835472c",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 2,
+                        "functionsFailed": 1,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 0,
+                        "globalVariables": 1,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 3,
+                        "defensibleVariableLocations": 0,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 8,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 5
+                    }
+                },
+                {
+                    "mode": "before-rebase-none",
+                    "sha256": "809a0083a18588a94c05e5dc01a5474b10fdfbc9da063c668f0baf56b8775470",
+                    "sourceSha256": "ea466a8e0bc026224aaa3825c4884439790cc343dff872f0f2d54640c835472c"
+                },
+                {
+                    "mode": "before-rebase-zlib",
+                    "sha256": "59b4e6b7aaeb0eb63e158e5f250c7f15a14181c3420106b668ed9e237f7df0b5",
+                    "sourceSha256": "ea466a8e0bc026224aaa3825c4884439790cc343dff872f0f2d54640c835472c"
+                }
+            ],
+            "inputHashes": {
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-symbol-only/x86_64-exec/original": "57d43033812d56115becb37bc66c4930085a58170e844155cf364e6deee1df6e",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-symbol-only/x86_64-exec/reference": "ebc6cb5026ec164dbcc5ecd4c5ab712736301a0a33dfa404906acb74e6b9f1ed",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-symbol-only/x86_64-exec/none.frame": "b69d8d86cba2553da102bcf047e2941701766ce47f1a9167c21d5622de2d8f6b"
+            },
+            "warnings": {
+                "reference": [],
+                "absent": [],
+                "none": [],
+                "zlib": [],
+                "disabled": [],
+                "before-rebase-none": [
+                    "warning: Source file is more recent than executable."
+                ],
+                "before-rebase-zlib": [
+                    "warning: Source file is more recent than executable."
+                ]
+            }
+        },
+        {
+            "target": "aarch64",
+            "role": "exec",
+            "family": "encoder",
+            "failedSourceName": "cf_checkpoint",
+            "artifacts": [
+                {
+                    "mode": "none",
+                    "sha256": "2050463c8bf3f70d3b351f1068b3a32bf76126733680a85969b83a2349be05f7",
+                    "sourceSha256": "843dde01b2dc620c1ff2bfe4a388aeb5e20f2d33034bba1b60b1e02b85fb43dc",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 2,
+                        "functionsFailed": 1,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 1,
+                        "globalVariables": 1,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 3,
+                        "defensibleVariableLocations": 1,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 8,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 4
+                    }
+                },
+                {
+                    "mode": "zlib",
+                    "sha256": "3aa51658c59b03718bbd23f044bf369349399115d84d3e06116c96242fca1d05",
+                    "sourceSha256": "843dde01b2dc620c1ff2bfe4a388aeb5e20f2d33034bba1b60b1e02b85fb43dc",
+                    "counts": {
+                        "functionsExported": 3,
+                        "functionsDecompiled": 2,
+                        "functionsFailed": 1,
+                        "functionsSkipped": 0,
+                        "functionSignatures": 3,
+                        "parameters": 1,
+                        "localVariables": 1,
+                        "globalVariables": 1,
+                        "functionStaticVariables": 0,
+                        "canonicalTypes": 3,
+                        "defensibleVariableLocations": 1,
+                        "omittedLocationRanges": 1,
+                        "mappedSourceLines": 8,
+                        "unsupportedConstructs": 2,
+                        "diagnostics": 4
+                    }
+                },
+                {
+                    "mode": "before-rebase-none",
+                    "sha256": "2050463c8bf3f70d3b351f1068b3a32bf76126733680a85969b83a2349be05f7",
+                    "sourceSha256": "843dde01b2dc620c1ff2bfe4a388aeb5e20f2d33034bba1b60b1e02b85fb43dc"
+                },
+                {
+                    "mode": "before-rebase-zlib",
+                    "sha256": "3aa51658c59b03718bbd23f044bf369349399115d84d3e06116c96242fca1d05",
+                    "sourceSha256": "843dde01b2dc620c1ff2bfe4a388aeb5e20f2d33034bba1b60b1e02b85fb43dc"
+                }
+            ],
+            "inputHashes": {
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-symbol-only/aarch64-exec/original": "75a30a4816206436af2c53614452a8e19c70b2dd9b0a8907d6117ed8418ca4fa",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-symbol-only/aarch64-exec/reference": "55f0f04931de2a7dcd838741864a317188d74132db1a92c8dce00d5fe4a7c741",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-export-symbol-only/aarch64-exec/none.frame": "0017c169f003dd13acaf3892cd3ae560076b219e0350ff061bcddc6a99b9b105"
+            },
+            "warnings": {
+                "reference": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "absent": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "none": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "zlib": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "disabled": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "before-rebase-none": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index",
+                    "warning: Source file is more recent than executable."
+                ],
+                "before-rebase-zlib": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index",
+                    "warning: Source file is more recent than executable."
+                ]
+            }
+        }
+    ],
+    "totals": {
+        "cases": 14,
+        "successfulExports": 126,
+        "failureControls": 28,
+        "retainedSidecars": 56,
+        "gdbSessions": 126
+    },
+    "ordinaryRegression": [
+        {
+            "status": "PASS_EXPORT_CONSISTENCY",
+            "target": "x86_64",
+            "controls": 4,
+            "successfulExports": 6,
+            "protected": {
+                "/dev/shm/forge-cfi-recovery-worktree/build/fixtures/x86_64/semantic.exec.reference": "308653c852d29bc74692f4259698543276e745112c769046e372570d3ee2a1c4",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-frame-installation/ghidra/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "b1ae5cceb054303976f333b78a58a27d8ed5888d31ee04f812aabe611bece774",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-frame-installation/ghidra/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java": "e065347d0435ae799c030d10e60c3d22be2f0ef357741381d77de396d7cef348",
+                "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarf.so.2.3.2": "613d86accc88ea0fe369b7d6ade0d4fe605a451a7675b0c2453f21b328de81b7",
+                "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarfp.so.2.3.2": "fa82f4524de69634c7301fa5bdd53327aa89040da92c1d086271df51119531ad"
+            },
+            "artifacts": [
+                {
+                    "mode": "pair",
+                    "sha256": "da3eaa802d69b345ce5a43c003692d8e7662455f89dcd4ad01a3037e5de252de",
+                    "sourceSha256": "d8b5b29581919e76a8bff7ff3f83c3a824b02e3fe012bcd067a9d5fd29675f20"
+                },
+                {
+                    "mode": "companion",
+                    "sha256": "d42e5aefe47495f6aa5d6f21c2a16a8a5119231294f95c3e4b8cfec843e7e710",
+                    "sourceSha256": "d8b5b29581919e76a8bff7ff3f83c3a824b02e3fe012bcd067a9d5fd29675f20"
+                }
+            ],
+            "compilerReferenceWarnings": []
+        },
+        {
+            "status": "PASS_EXPORT_CONSISTENCY",
+            "target": "aarch64",
+            "controls": 4,
+            "successfulExports": 6,
+            "protected": {
+                "/dev/shm/forge-cfi-recovery-worktree/build/fixtures/aarch64/semantic.exec.reference": "a1bb93de2291f6056da1615386b7eb248037e3b514a431094120253fd15e1f95",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-frame-installation/ghidra/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "b1ae5cceb054303976f333b78a58a27d8ed5888d31ee04f812aabe611bece774",
+                "/dev/shm/forge-cfi-recovery-worktree/build/native-frame-installation/ghidra/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java": "e065347d0435ae799c030d10e60c3d22be2f0ef357741381d77de396d7cef348",
+                "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarf.so.2.3.2": "613d86accc88ea0fe369b7d6ade0d4fe605a451a7675b0c2453f21b328de81b7",
+                "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarfp.so.2.3.2": "fa82f4524de69634c7301fa5bdd53327aa89040da92c1d086271df51119531ad"
+            },
+            "artifacts": [
+                {
+                    "mode": "pair",
+                    "sha256": "6880b712b0c850466ee1720001e6c4dc88b403cfc001ef172261ec349c018170",
+                    "sourceSha256": "a93625ed52c37cbe9d2dfe3053efd1a16d656302811bc82651ca2275c10597cc"
+                },
+                {
+                    "mode": "companion",
+                    "sha256": "557460bac3630c2cb00cac67744d88a72573f632722b63e97341e7cc756b3ba5",
+                    "sourceSha256": "a93625ed52c37cbe9d2dfe3053efd1a16d656302811bc82651ca2275c10597cc"
+                }
+            ],
+            "compilerReferenceWarnings": [
+                "warning: BFD: warning: system-supplied DSO at 0x400000860000 has a corrupt string table index"
+            ]
+        }
+    ],
+    "checks": [
+        {
+            "argv": [
+                "git",
+                "diff",
+                "--check"
+            ],
+            "exitCode": 0,
+            "stdout": "",
+            "stderr": ""
+        },
+        {
+            "argv": [
+                "actionlint"
+            ],
+            "exitCode": 0,
+            "stdout": "",
+            "stderr": ""
+        },
+        {
+            "argv": [
+                "python3",
+                "-m",
+                "py_compile",
+                "src/test/integration/unwind-export.py",
+                "src/test/integration/unwind-source-gdb.py"
+            ],
+            "exitCode": 0,
+            "stdout": "",
+            "stderr": ""
+        },
+        {
+            "argv": [
+                "bash",
+                "-n",
+                "src/test/integration/cfi-encoder-gdb.sh"
+            ],
+            "exitCode": 0,
+            "stdout": "",
+            "stderr": ""
+        },
+        {
+            "argv": [
+                "bash",
+                "src/test/integration/architecture-neutrality.sh"
+            ],
+            "exitCode": 0,
+            "stdout": "architecture-specific-files=ghidradwarfforge/GhidraArm32FunctionModes.java,ghidradwarfforge/GhidraArm32SectionModes.java,ghidradwarfforge/elf/Arm32CallAbi.java,ghidradwarfforge/elf/Arm32CallPolicy.java,ghidradwarfforge/elf/Arm32FunctionAliasSymbols.java,ghidradwarfforge/elf/Arm32ModeSymbols.java,ghidradwarfforge/elf/Arm32SectionModes.java,ghidradwarfforge/elf/Arm32SymbolValues.java,ghidradwarfforge/elf/MipsAbiFlags.java,ghidradwarfforge/elf/MipsFunctionAliasSymbols.java,ghidradwarfforge/locations/TargetRegisterMap.java,ghidradwarfforge/nativeapi/Arm32EndianProfile.java,ghidradwarfforge/nativeapi/DwarfTarget.java,ghidradwarfforge/nativeapi/PackagedNativeLibraries.java,ghidradwarfforge/targets/Aarch64ParameterAllocation.java,ghidradwarfforge/targets/ArmCompositeParameterAllocation.java,ghidradwarfforge/targets/ArmHfaParameterAllocation.java,ghidradwarfforge/targets/I386ParameterAllocation.java,ghidradwarfforge/targets/MipsWideParameterAllocation.java,ghidradwarfforge/targets/UnwindAbiProfile.java,ghidradwarfforge/targets/UnwindRelocationProfile.java\narchitecture-neutrality=PASS\n",
+            "stderr": ""
+        }
+    ],
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/native-frame-export.tar.gz",
+        "sha256": "f95ae806dedb6f1e1c4baee4a367ce1311fae6e1a6b915c1f51fbf01b304bd0b",
+        "bytes": 2994732
+    },
+    "limits": [
+        "Explicit internal/test entry only; standard CLI/GUI synthesis is not enabled",
+        "No new JNA calls; existing pinned producer mappings reused",
+        "Compiler-C global-writing case still refuses unsupported storage alias",
+        "Source literals can change under rebasing; exact CFI/GDB equivalence and unchanged-program determinism required",
+        "Hosted acceptance and original/generated coexistence through this API remain open",
+        "Prior failed test assumptions retained in raw archive; no skipped failure reported as a pass"
+    ]
+}

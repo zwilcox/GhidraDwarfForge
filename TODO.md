@@ -1,5 +1,16 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 real native frame export:** an explicit internal API
+now joins actual ELF import, decompiler/type extraction, native DWARF production
+and qualified frame packaging. Fourteen cases pass on x86-64/AArch64 across
+ordinary/shrink-wrapped exec/PIE/shared fixtures and failed decompilation:
+126 successful exports, 28 failure controls, 56 sidecars and 126 GDB sessions.
+Unchanged-program reruns are deterministic; rebased frame rules and debugger
+traces agree. Ordinary export regressions also pass. See
+`docs/NATIVE-FRAME-EXPORT.md`. Standard CLI/GUI synthesis, unchanged compiler-C
+storage policy, coexistence through this API and hosted acceptance remain open.
+PR166 retains first integration priority; #112/#110/#109 are not complete.
+
 **CONFIRMED locally — export consistency prerequisite for #112:** the installed
 exporter now checks input bytes and Ghidra's modification counter after extraction
 and before publishing pairs or companions. A real failing-before mutation

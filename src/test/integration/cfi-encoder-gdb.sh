@@ -40,5 +40,5 @@ timeout --kill-after=5 90 "$debugger" -q -nx -batch "${options[@]}" \
     -ex 'set disable-randomization off' -ex 'set auto-solib-add off' \
     -ex "file \"$runtime\"" -ex "symbol-file \"$load_symbols\"" \
     -ex "set args ${inferior_args[*]}" \
-    -x "$scripts/cfi-encoder-gdb.py" > "$prefix.log" 2>&1
+    -x "${FORGE_FRAME_GDB_SCRIPT:-$scripts/cfi-encoder-gdb.py}" > "$prefix.log" 2>&1
 if [[ "$FORGE_FRAME_TARGET" == aarch64 ]]; then qemu_socket_wait; fi
