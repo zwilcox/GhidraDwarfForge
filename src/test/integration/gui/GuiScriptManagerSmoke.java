@@ -266,11 +266,13 @@ public final class GuiScriptManagerSmoke {
                         runAttachmentDecline(tool, input, chosen.resolve("fixture.dbg"),
                             chosen.resolve("fixture.dbg.c"), caseDirectory, saveCoverageReport(caseDirectory));
                         runPreparationDecline(tool, input, caseDirectory);
+                        if (!WITH_COMPRESSION && !WITH_LOADER) {
+                            // Compare the same curated program: the native attachment journey
+                            // below deliberately renames a function for its refresh generation.
+                            runContextChoices(tool, input, chosen, caseDirectory);
+                        }
                         if ("1".equals(System.getenv("GHIDRA_GUI_NATIVE_ATTACHMENT"))) {
                             runNativeAttachment(tool, program, input, caseDirectory, functionAddress);
-                        }
-                        if (!WITH_COMPRESSION && !WITH_LOADER) {
-                            runContextChoices(tool, input, chosen, caseDirectory);
                         }
                     }
                     ComponentProvider provider = tool.getComponentProvider("Console");

@@ -1,0 +1,34 @@
+{
+    "issues": [
+        116,
+        114
+    ],
+    "status": "CONFIRMED hosted failure cause and local correction; full native GUI hosted rerun pending",
+    "failedRun": 42153031601,
+    "failedHead": "f64a00fa34498ab027d3a2b032f91f9d03bafb36",
+    "failedJob": 127702484696,
+    "cause": "Native attachment refresh deliberately changes gui_recovered_add to gui_refreshed_add before context Off compares against the earlier default export. Raw source diff contains only the renamed declaration/call and the resulting equate name-conflict diagnostic.",
+    "fix": "Exercise Cancel/Off/Assembly/P-code/Both against the unchanged curated program before the native attachment mutation. Keep exact source equality, file preservation and all native attachment generation checks.",
+    "productionChanges": false,
+    "localValidation": {
+        "command": "bash src/test/integration/gui-script-manager.sh /dev/shm/pr166-gui-failure/ghidra /dev/shm/pr166-gui-failure/module/GhidraDwarfForge <semantic.exec.stripped> <semantic.exec.reference>",
+        "exitCode": 0,
+        "packageSha256": "e9442d1d7bc395a47e0a13aa56ea3346253ff9108b658d24d160204d37b9893a",
+        "checks": [
+            "Real Script Manager context Cancel/Off/Assembly/P-code/Both; Off source byte-identical to initial default",
+            "GNU/LLVM and pinned strict checker; three inherited frame diagnostics corroborated against original per artifact",
+            "Live GDB name/type/equate/list/next/step and executable line-evidence equality in all four modes",
+            "Output cancellation, attachment preview/preparation and coverage CLI"
+        ],
+        "limits": [
+            "Native OS-authorized attachment mutation is not rerun locally; sudo -n is unavailable and disposable CI authorization policy is not installed on this host. Hosted corrected combined sequence remains required.",
+            "Windows combined sequence also requires current-head hosted validation."
+        ]
+    },
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/context-gui-ordering.tar.gz",
+        "sha256": "8ae1c8c45ea9422634e6b488017a845f8ddfab4def67a49934e48a5376267036",
+        "bytes": 18189543
+    },
+    "testSourceSha256": "5a888ab628ee859d35f26c074777299cc2509a1e7394c657a4589068e43866bd"
+}

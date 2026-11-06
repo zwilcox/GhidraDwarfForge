@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED GUI test-order correction — #116/#114:** hosted run `42153031601`
+failed the context Off equality check after its native attachment refresh deliberately
+renamed the function. Retained source differs only in the declaration/call name and
+its resulting equate-conflict diagnostic. Context choices now run before that
+mutation, preserving exact equality and all attachment checks. The current hosted
+package passes the corrected local Linux GUI journey, validators and GDB; the
+combined OS-authorized and Windows journeys still require hosted reruns. See
+`docs/evidence/context-gui-ordering.json`. No production exporter change.
+
 **CONFIRMED delay-slot containment and ARM mode controls — #114:** native
 MIPS p-code folds delay-slot effects under the branch address, so operation-address
 filtering alone crossed a selected body gap. The reader now completes bounded
