@@ -121,6 +121,7 @@ expected_sources=(
     register-copy.c
     register_prefix.c
     retained-function-aliases.cpp
+    runtime-relocations.c
     same-name-types.cpp
     second-register-copy.c
     semantic.c

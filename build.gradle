@@ -113,6 +113,14 @@ tasks.register("unwindFrameRowsSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.unwind.UnwindFrameRowsSmoke"
 }
 
+tasks.register("elfRuntimeRelocationsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded gABI runtime relocation inventories and retained-table distinction"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.ElfRuntimeRelocationsSmoke"
+}
+
 tasks.register("originalFrameSourcesSmoke", JavaExec) {
     group = "verification"
     description = "Checks bounded original frame source discovery, compression and cancellation"

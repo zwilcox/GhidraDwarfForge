@@ -1,5 +1,12 @@
 # Integration fixtures
 
+`runtime-relocations.c` creates ordinary and clustered relative dynamic
+relocations, including a PLT call. Its independent inventory harness builds
+x86-64/AArch64 executable, PIE and shared-object variants with retained link
+relocations and optional RELR packing. Sectionless copies must retain identical
+runtime inventories. It does not establish unwind synthesis or runtime ABI
+support for another target.
+
 `synthetic-cfi.c` and its two `synthetic-cfi-start-*.S` startup files are
 freestanding x86-64/AArch64 compiler references for #112. The dedicated
 `synthetic-cfi-reference.py` harness builds them with `.debug_frame` and no

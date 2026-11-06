@@ -1,5 +1,17 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 runtime relocation inventory:** the new bounded
+reader preserves gABI REL/RELA/PLT/RELR records, raw dynamic tags and table
+provenance, distinguishes retained link relocations, and rejects ambiguous or
+incomplete input. 932 component checks and twelve compiler cases/twenty-four
+named/sectionless variants pass against independent byte/GNU inventories.
+AArch64 RELR uses explicit LLD 18; initial compiler/validator/tool limitations
+are retained. See `docs/RUNTIME-RELOCATION-INVENTORY.md`. Processor-specific
+write/resolver effects and unknown relocation schemes still require qualification;
+this component does not authorize synthesis. Original/generated precedence,
+production integration and full #112/#110/#109 acceptance remain open. PR166's
+current checks at `86f0253` retain priority.
+
 **CONFIRMED locally — #112 original ELF frame sources:** named, compressed,
 sectionless and unnamed frame inventories now retain file/hash evidence and
 cross-check EH search-table addresses against referenced FDEs. The initial
