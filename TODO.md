@@ -1,5 +1,17 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 original unwind precedence:** selected loader write
+footprints now protect the recovery verifier's original code/frame evidence.
+The planner excludes whole instructions touched by original FDE coverage, splits
+ranges at those omissions, and preserves unrelated recovered coverage. 282 effect
+checks, 4352 native checks, four compiler/loader executions and all four existing
+recovered-CFI validator/GDB runtime cases pass. PIE COPY and implicit GOT/DT_DEBUG
+writes have explicit controls. See `docs/ORIGINAL-UNWIND-PRECEDENCE.md` for pinned
+sources, limitations and retained fixture failures. Production integration,
+global-write alias proof and full #112/#110/#109 acceptance remain PLANNED;
+PR166 current-head integration still has priority. Hosted additions are
+PRESENT, UNVERIFIED.
+
 **CONFIRMED locally — #112 runtime relocation inventory:** the new bounded
 reader preserves gABI REL/RELA/PLT/RELR records, raw dynamic tags and table
 provenance, distinguishes retained link relocations, and rejects ambiguous or

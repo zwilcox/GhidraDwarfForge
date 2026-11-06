@@ -626,7 +626,7 @@ jobs:
               dwarfAddressRangesSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
               packagedNativeLibrariesSmoke existingDebugSidecarSmoke callFrameEncoderSmoke unwindFlowSmoke ghidraUnwindInstructionsSmoke unwindAbiProfileSmoke \
-              unwindCallsSmoke ghidraUnwindCallsSmoke unwindFrameRowsSmoke elfCodeBytesSmoke originalFrameRangesSmoke originalFrameSourcesSmoke elfRuntimeRelocationsSmoke \
+              unwindCallsSmoke ghidraUnwindCallsSmoke unwindFrameRowsSmoke elfCodeBytesSmoke originalFrameRangesSmoke originalFrameSourcesSmoke elfRuntimeRelocationsSmoke elfRelocationEffectsSmoke \
               extendedSectionNumberingSmoke elfImageReaderSmoke \
               elfCopyCancellationSmoke ghidraImageBaseSmoke buildExtension
             python3 -B src/test/integration/debuglink-basename.py \
@@ -1024,6 +1024,16 @@ jobs:
           ./gradlew elfRuntimeRelocationsSmoke
           python3 src/test/integration/runtime-relocations.py build/classes/java \
             "build/test-results/runtime-relocations/$TARGET" --target "$TARGET" --dwarfdump "$DWARFDUMP"
+
+      - name: Verify COPY and TLS descriptor loader effects
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          ./gradlew elfRelocationEffectsSmoke
+          python3 src/test/integration/relocation-effects.py \
+            --classes "build/classes/java/main:build/classes/java/test" \
+            --output "build/test-results/relocation-effects/$TARGET" --target "$TARGET"
 
       - name: Verify fixture identity and stripping
         env:

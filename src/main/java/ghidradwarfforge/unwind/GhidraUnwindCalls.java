@@ -20,6 +20,7 @@ import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 import ghidradwarfforge.elf.ElfImage;
 import ghidradwarfforge.elf.ElfCodeBytes;
+import ghidradwarfforge.elf.OriginalUnwindCoverage;
 import ghidradwarfforge.AddressNormalizer;
 import ghidradwarfforge.targets.UnwindAbiProfile;
 import ghidradwarfforge.unwind.UnwindCalls.*;
@@ -28,7 +29,8 @@ import ghidradwarfforge.unwind.UnwindFlow.*;
 /** Native direct-call closure; no external/indirect callee contract is assumed. */
 public final class GhidraUnwindCalls {
     public record Evidence(UnwindAbiProfile.Bound profile, ByteOrder byteOrder, Verified<Address> verified,
-            Map<Address, GhidraUnwindInstructions.Captured> captures, Map<Address, ElfCodeBytes.Match> originalBytes) {
+            Map<Address, GhidraUnwindInstructions.Captured> captures, Map<Address, ElfCodeBytes.Match> originalBytes,
+            OriginalUnwindCoverage originalCoverage) {
         public Evidence {
             captures = Collections.unmodifiableMap(new LinkedHashMap<>(captures));
             originalBytes = Collections.unmodifiableMap(new LinkedHashMap<>(originalBytes));
@@ -102,12 +104,14 @@ public final class GhidraUnwindCalls {
                 try { monitor.checkCancelled(); return false; }
                 catch (CancelledException failure) { return true; }
             };
+            var originalCoverage = OriginalUnwindCoverage.inspect(image, cancelled);
             var originalBytes = new LinkedHashMap<Address, ElfCodeBytes.Match>();
             try (var original = ElfCodeBytes.open(image, cancelled)) {
                 for (var captured : captures.values()) {
                     for (var instruction : captured.observations().entrySet()) {
                         monitor.checkCancelled();
                         long normalized = AddressNormalizer.toElfAddress(instruction.getKey().getOffset(), rebaseDelta);
+                        originalCoverage.effects().requireUnchanged(normalized, instruction.getValue().bytes().length() / 2, cancelled);
                         originalBytes.put(instruction.getKey(), original.requireMatches(normalized,
                             HexFormat.of().parseHex(instruction.getValue().bytes()), cancelled));
                     }
@@ -115,7 +119,7 @@ public final class GhidraUnwindCalls {
             }
             var verified = UnwindCalls.verify(bodies, contract, cancelled);
             monitor.checkCancelled();
-            return new Evidence(profile, image.byteOrder(), verified, captures, originalBytes);
+            return new Evidence(profile, image.byteOrder(), verified, captures, originalBytes, originalCoverage);
         }
         catch (CancellationException cancelled) { throw new CancelledException(); }
     }

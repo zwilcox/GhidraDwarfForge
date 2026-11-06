@@ -10,6 +10,9 @@ import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import ghidradwarfforge.dwarf.DwarfDebugFrame;
+import ghidradwarfforge.unwind.CallFramePlan.*;
 
 import ghidra.GhidraApplicationLayout;
 import ghidra.app.cmd.disassemble.DisassembleCommand;
@@ -79,6 +82,25 @@ public final class GhidraUnwindCallsSmoke {
             bytes.position(offset); bytes.put(code); offset += code.length;
         }
         Path path = output.resolve(tag + ".elf"); Files.write(path, bytes.array());
+        return ElfImage.read(path);
+    }
+    private static ElfImage framed(ElfImage original, String name, long[][] ranges) throws Exception {
+        var frames = new java.util.ArrayList<Frame>();
+        for (var range : ranges) frames.add(new Frame(range[0], range[1], List.of(
+            new Row(range[0], new Cfa(0, 8), Map.of(0, new CfaValue(0), 1, new AtCfaOffset(-8))))));
+        byte[] data = DwarfDebugFrame.build(new CallFramePlan(8, ByteOrder.LITTLE_ENDIAN, 1, Set.of(0, 1),
+            Map.of(0, new Undefined(), 1, new Undefined()), frames), () -> false);
+        byte[] names = "\0.shstrtab\0.debug_frame\0".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        byte[] old = original.bytes();
+        int namesAt = old.length, dataAt = namesAt + names.length, table = dataAt + data.length;
+        var out = ByteBuffer.allocate(table + 3 * 64).order(ByteOrder.LITTLE_ENDIAN);
+        out.put(old).put(names).put(data);
+        out.putLong(40, table).putShort(58, (short) 64).putShort(60, (short) 3).putShort(62, (short) 1);
+        out.putInt(table + 64, 1).putInt(table + 68, 3).putLong(table + 88, namesAt)
+            .putLong(table + 96, names.length).putLong(table + 112, 1);
+        out.putInt(table + 128, 11).putInt(table + 132, 1).putLong(table + 152, dataAt)
+            .putLong(table + 160, data.length).putLong(table + 176, 1);
+        Path path = output.resolve(name + ".elf"); Files.write(path, out.array());
         return ElfImage.read(path);
     }
     private static void run(boolean arm, String shape) throws Exception {
@@ -159,6 +181,55 @@ public final class GhidraUnwindCallsSmoke {
                     }
                     evidence.append("flow=").append(proof.verified().flows()).append('\n');
                     if (shape.equals("direct")) {
+                        long callAddress = arm ? 0x1004 : 0x1002;
+                        ElfImage partial = framed(image, tag + "-original-partial", new long[][] {{callAddress + 1, 1}});
+                        var partialProof = GhidraUnwindCalls.verify(program, functions.get(0x1000), partial, 0, TaskMonitor.DUMMY);
+                        var partialPlan = GhidraUnwindFrames.plan(partialProof, 0, TaskMonitor.DUMMY);
+                        require(partialPlan.plan().frames().size() == 3, "original partial coverage did not split generated ranges");
+                        require(partialPlan.observations().stream().filter(row -> !row.projection().covered()).count() == 1,
+                            "partial original coverage did not omit exactly one whole instruction");
+                        require(partialPlan.observations().stream().anyMatch(row -> row.instruction().getOffset() == callAddress &&
+                            row.projection().omission().equals("original frame coverage takes precedence")), "missing original precedence diagnostic");
+                        for (var frame : partialPlan.plan().frames()) require(frame.address() + frame.size() <= callAddress ||
+                            frame.address() >= callAddress + (arm ? 4 : 5), "synthesized row overlaps original-covered instruction");
+                        ElfImage full = framed(image, tag + "-original-full", source.entrySet().stream()
+                            .map(item -> new long[] {item.getKey(), item.getValue().length() / 2}).toArray(long[][]::new));
+                        var fullProof = GhidraUnwindCalls.verify(program, functions.get(0x1000), full, 0, TaskMonitor.DUMMY);
+                        require(GhidraUnwindFrames.plan(fullProof, 0, TaskMonitor.DUMMY).plan().frames().isEmpty(),
+                            "original full coverage did not suppress synthesis");
+                        ElfImage unrelated = framed(image, tag + "-original-unrelated", new long[][] {{0x2000, 32}});
+                        var unrelatedProof = GhidraUnwindCalls.verify(program, functions.get(0x1000), unrelated, 0, TaskMonitor.DUMMY);
+                        require(GhidraUnwindFrames.plan(unrelatedProof, 0, TaskMonitor.DUMMY).equals(planned),
+                            "unrelated original coverage suppressed valid recovered frames");
+                        var coverage = partialProof.originalCoverage();
+                        require(coverage.overlaps(callAddress, 2) && !coverage.overlaps(callAddress, 1) &&
+                            !coverage.overlaps(callAddress + 2, 1), "original coverage half-open boundary");
+                        int[] coveragePolls = {0};
+                        ghidradwarfforge.elf.OriginalUnwindCoverage.inspect(partial, () -> { coveragePolls[0]++; return false; });
+                        for (int stopAt = 1; stopAt <= coveragePolls[0]; stopAt++) {
+                            int stop = stopAt; int[] seen = {0};
+                            try {
+                                ghidradwarfforge.elf.OriginalUnwindCoverage.inspect(partial, () -> ++seen[0] == stop);
+                                throw new AssertionError("original coverage cancellation ignored");
+                            }
+                            catch (java.util.concurrent.CancellationException expected) { checks++; }
+                        }
+                        require(ghidradwarfforge.elf.OriginalUnwindCoverage.inspect(partial, () -> false).intervals().equals(coverage.intervals()),
+                            "original coverage cancellation poisoned retry");
+                        byte[] malformed = partial.bytes();
+                        var broken = ByteBuffer.wrap(malformed).order(ByteOrder.LITTLE_ENDIAN);
+                        int sectionTable = Math.toIntExact(broken.getLong(40));
+                        int frameOffset = Math.toIntExact(broken.getLong(sectionTable + 152));
+                        broken.putInt(frameOffset, 0);
+                        Path malformedPath = output.resolve(tag + "-original-malformed.elf"); Files.write(malformedPath, malformed);
+                        try {
+                            GhidraUnwindCalls.verify(program, functions.get(0x1000), ElfImage.read(malformedPath), 0, TaskMonitor.DUMMY);
+                            throw new AssertionError("unknown original frame source treated as absence");
+                        }
+                        catch (IllegalArgumentException expected) {
+                            require(expected.getMessage().contains("zero length in .debug_frame"), "unrelated malformed-frame rejection");
+                        }
+                        evidence.append(tag).append(" original-precedence=partial/full/unrelated/malformed/cancellation PASS\n");
                         int[] planPolls = {0};
                         var planCounting = new TaskMonitorAdapter(true) {
                             @Override public void checkCancelled() { planPolls[0]++; }

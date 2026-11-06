@@ -2,6 +2,7 @@ package ghidradwarfforge.unwind;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.CancellationException;
 
@@ -45,7 +46,10 @@ public final class GhidraUnwindFrames {
                 }
                 boolean call = function.getValue().graph().get(address).effects().stream()
                     .anyMatch(effect -> effect instanceof UnwindFlow.Call);
-                var projected = project(flow.before().get(address), call ? flow.after().get(address) : null, policy, monitor);
+                long normalized = AddressNormalizer.toElfAddress(address.getOffset(), rebaseDelta);
+                var projected = evidence.originalCoverage().overlaps(normalized, length) ?
+                    new UnwindFrameRows.Projected(null, Map.of(), Map.of(), "original frame coverage takes precedence") :
+                    project(flow.before().get(address), call ? flow.after().get(address) : null, policy, monitor);
                 observations.add(new Observation(function.getKey(), address, length, projected));
                 boolean adjacent = previousEnd != null && address.equals(previousEnd.next());
                 if (!projected.covered() || !adjacent) {
@@ -54,7 +58,6 @@ public final class GhidraUnwindFrames {
                 }
                 previousEnd = null;
                 if (!projected.covered()) continue;
-                long normalized = AddressNormalizer.toElfAddress(address.getOffset(), rebaseDelta);
                 if (rows.isEmpty()) start = normalized;
                 size = Math.addExact(size, length);
                 rows.add(new Row(normalized, projected.cfa(), projected.rules()));
