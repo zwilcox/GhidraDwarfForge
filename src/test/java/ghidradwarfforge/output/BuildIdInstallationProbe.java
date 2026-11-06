@@ -10,10 +10,35 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /** Real filesystem/validator probe; production hosts require an explicit test selection. */
 public final class BuildIdInstallationProbe {
     public static void main(String[] args) throws Exception {
+        System.setOut(new java.io.PrintStream(System.out, true, java.nio.charset.StandardCharsets.UTF_8));
+        System.setErr(new java.io.PrintStream(System.err, true, java.nio.charset.StandardCharsets.UTF_8));
+        if (args.length == 2 && args[0].equals("--request-file")) {
+            args = new com.google.gson.Gson().fromJson(Files.readString(Path.of(args[1])), String[].class);
+        }
+        if (System.getProperty("forge.test.buildId.host", "model").equals("windows")) {
+            // Explicit test-host selection scopes an existing privilege to this
+            // isolated JVM. No elevation or adjustment of the caller's token.
+            try (var privilege = new WindowsAttachmentPrivilege()) {
+                run(args);
+            }
+        }
+        else run(args);
+    }
+
+    private static void run(String[] args) throws Exception {
         if (args.length != 3) throw new IllegalArgumentException("configuration root install|update|remove|recover");
         JsonObject config = JsonParser.parseString(Files.readString(Path.of(args[0]))).getAsJsonObject();
         Path root = Path.of(args[1]);
         String action = args[2];
+        if (action.equals("snapshot")) {
+            var snapshot = new WindowsAttachmentMetadata().inspect(root, () -> false);
+            var json = new JsonObject();
+            var gson = new com.google.gson.Gson();
+            json.add("snapshot", gson.toJsonTree(snapshot));
+            json.add("preservation", gson.toJsonTree(snapshot.preservation()));
+            System.out.println(json);
+            return;
+        }
         var cancelled = new AtomicBoolean();
         var published = new AtomicBoolean();
         AttachmentOperation.Host delegate = switch (System.getProperty("forge.test.buildId.host", "model")) {

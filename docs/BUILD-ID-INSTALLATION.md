@@ -136,3 +136,13 @@ The Windows host requires the existing local NTFS/raw-security metadata
 contract. `-EnableSecurityPrivilege` explicitly enables an already assigned
 token privilege for that host and restores it afterward; it does not obtain
 an administrator token. Installer-specific Windows acceptance is still required.
+
+The native Windows CI harness now consumes the existing Windows headless export
+and separately saved analyst-refresh export. It exercises the packaged PowerShell
+launcher, protected DACL preservation, 14 interrupted lifecycle boundaries,
+recovery, locking, cancellation, foreign registrations, junctions, hard links and
+alternate-stream refusals. It retains raw commands, results, native metadata
+snapshots and independent copies of both installed generations. **PRESENT,
+UNVERIFIED:** the native run must pass before these checks establish Windows
+installer acceptance. This harness does not claim Windows GDB runtime/discovery;
+consumer acceptance is separate.

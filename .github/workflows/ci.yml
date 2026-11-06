@@ -3204,6 +3204,23 @@ jobs:
             --results build/test-results/windows-host/attachment-operation
           if ($LASTEXITCODE -ne 0) { throw 'Native Windows real-ELF attachment failed' }
 
+      - name: Native Windows build-ID installation and interrupted recovery
+        shell: pwsh
+        timeout-minutes: 20
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+        run: |
+          $mingwBin = Join-Path $env:MSYS2_LOCATION 'mingw64\bin'
+          $env:PATH = "$mingwBin;$env:PATH"
+          python src/test/integration/windows-build-id-installation.py `
+            --ghidra $env:GHIDRA_INSTALL_DIR `
+            --attachment-results build/test-results/windows-host/attachment-operation `
+            --original build/test-results/windows-host/work/semantic.exec.stripped `
+            --sidecar build/test-results/windows-host/work/semantic.exec.ghidra-forge.dbg `
+            --test-classes build/classes/java/test `
+            --results build/test-results/windows-host/build-id-installation
+          if ($LASTEXITCODE -ne 0) { throw 'Native Windows build-ID installation failed' }
+
       - name: Native Windows Script Manager export, console, and chooser cancellation
         shell: pwsh
         timeout-minutes: 25

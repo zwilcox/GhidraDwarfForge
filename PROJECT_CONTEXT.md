@@ -10,7 +10,12 @@ prove analyst name/type/member refresh in exec and PIE with the old exports abse
 Two independently reproduced read-only installation/refresh defects are corrected;
 the final tested package, native metadata oracle and shared attachment regressions
 pass. See `docs/BUILD-ID-INSTALLATION.md` and `docs/evidence/build-id-command-linux.json`.
-Windows launcher code is **PRESENT, UNVERIFIED**. Shared/sectionless installation,
+Windows launcher code and its new native CI installer/recovery harness are
+**PRESENT, UNVERIFIED**. The harness consumes actual Windows original and saved-
+curation exports and tests the PowerShell command, metadata, crash recovery,
+locks, cancellation and Windows namespace controls. Local probe compilation and
+a seven-check/four-GDB-session Linux regression pass; those are not Windows
+acceptance. Shared/sectionless installation,
 installation-specific LLDB/perf acceptance, Windows acceptance and the full hosted
 gate/protected integration remain outstanding. #110 integration still precedes
 goal completion. Earlier transaction/component-only scope notes below are historical.
