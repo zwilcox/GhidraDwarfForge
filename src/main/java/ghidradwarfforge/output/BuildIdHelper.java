@@ -93,6 +93,8 @@ public final class BuildIdHelper {
                 check(cancelled);
                 invocation.plan().recheck();
                 readRequest(command, cancelled);
+                boolean sectionless = invocation.files().containsKey("original") &&
+                    ghidradwarfforge.elf.ElfImage.read(invocation.files().get("original")).sections().isEmpty();
                 try (var session = open(command.securityPrivilege())) {
                     var host = session.host();
                     BuildIdInstallation.Result result = switch (invocation.action()) {
@@ -123,6 +125,14 @@ public final class BuildIdHelper {
                         response.addProperty("gdbSetupCommand", "set debug-file-directory " + root);
                         response.addProperty("consumerSetup", "Apply the GDB search path before loading the original in a fresh session. " +
                             "Installation does not change debugger settings; retained source generations must remain in place.");
+                        if (sectionless) {
+                            response.addProperty("gdbAutomaticDiscovery", "UNAVAILABLE_IN_TESTED_GDB_FOR_SECTIONLESS_ELF");
+                            response.addProperty("consumerSetup", "The original ELF has no section-header table. " +
+                                "The tested GDB cannot discover its debug sidecar by build ID, including compiler-generated sidecars. " +
+                                "Load the original with file, then load the returned registration path with symbol-file, " +
+                                "or use the Forge loader. Installation and retained source remain valid; " +
+                                "the original executable is unchanged.");
+                        }
                     }
                 }
             }

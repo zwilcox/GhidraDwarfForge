@@ -93,6 +93,14 @@ the root at its installed path. Moving it leaves stale DWARF references and
 causes update/recovery to refuse; use the retained exported sidecar, source and
 report to install into a fresh root instead. Generations are not pruned.
 
+For section-header-free ELF inputs, installation and source retention do not imply
+automatic GDB discovery. Matching compiler controls and Forge tests on GDB 15.1
+show this limitation on all five target lanes. The command reports it on install/
+update. Explicit loading of the returned `registration` path is validated for
+the tested non-PIE ET_EXEC fixtures; relocated images need the appropriate runtime
+load bias. See [shared/sectionless acceptance](BUILD-ID-LAYOUTS.md) for the exact
+commands, controls and limits.
+
 ## Update, removal and recovery
 
 For a new analyst export of the same original, select the new sidecar/source/

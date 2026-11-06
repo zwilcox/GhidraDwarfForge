@@ -144,8 +144,10 @@ use only the installation and retained source with old exports absent.
 
 ## Remaining acceptance
 
-Add shared and applicable sectionless installation/discovery, installation-specific
-LLDB and perf checks, native Windows acceptance and protected integration. The
+The [shared/sectionless checkpoint](BUILD-ID-LAYOUTS.md) now covers all five
+targets, with an independently demonstrated GDB sectionless-discovery limitation
+and separately validated explicit fallback. Installation-specific LLDB/perf,
+native Windows acceptance and protected integration remain outstanding. The
 workflow now invokes the production Linux matrix and saved-program refresh tests,
 but the updated hosted gate is not yet accepted. The Windows command is present
 and explicitly unverified. Retained component tests do not establish those

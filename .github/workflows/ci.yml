@@ -2558,6 +2558,28 @@ jobs:
               "$PWD/build/test-results/build-id/installation" --target "$TARGET" \
               --ghidra "$GHIDRA_INSTALL_DIR" --jar "$FORGE_SOURCE_RELOCATION_JAR" \
               --test-classes "$FORGE_DERIVED_TEST_CLASSES"
+          layout_root="$PWD/build/test-results/build-id/layouts"
+          mkdir -p "$layout_root/fixtures/$TARGET"
+          for name in semantic.exec.stripped semantic.exec.no-sections.stripped semantic.exec.reference \
+              libsemantic.so.stripped libsemantic.so.reference \
+              semantic.shared-driver.stripped semantic.shared-driver.reference; do
+              cp -- "build/fixtures/$TARGET/$name" "$layout_root/fixtures/$TARGET/$name"
+          done
+          for role in shared exec.no-sections; do
+              FORGE_SYMBOL_FIXTURES="$layout_root/fixtures" FORGE_SYMBOL_RESULTS="$layout_root/exports" \
+                  FIXTURE_ROLE="$role" src/test/integration/headless-symbol-export.sh \
+                  "$GHIDRA_INSTALL_DIR" "$PWD/native-integration/libdwarf.so.2.3.2" \
+                  "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
+              layout_options=()
+              if [[ "$role" == exec.no-sections ]]; then
+                  layout_options+=(--sectionless-discovery-limit)
+              fi
+              python3 src/test/integration/build-id-layouts.py --fixtures "$layout_root/fixtures" \
+                  --exports "$layout_root/exports" --target "$TARGET" --role "$role" \
+                  --configuration "$PWD/build/test-results/build-id/installation/none-exec.json" \
+                  --ghidra "$GHIDRA_INSTALL_DIR" --java "$(command -v java)" \
+                  --output "$layout_root/$role" "${layout_options[@]}"
+          done
           if [[ "$TARGET" == x86_64 ]]; then
               for role in exec pie; do
                   python3 src/test/integration/build-id-curated-refresh.py \

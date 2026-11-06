@@ -1,5 +1,20 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local #109 shared/sectionless checkpoint (2026-11-06):**
+ten fresh headless exports and production Linux installations pass across all
+five targets. Shared libraries pass fresh automatic GDB discovery, runtime
+arguments/types/source stepping and removal controls. For sectionless ET_EXEC,
+matching compiler controls independently prove that GDB 15.1 cannot discover the
+sidecar by build ID; explicit loading of the installed Forge sidecar passes
+source lookup, exact addresses, breakpoints, stepping and normal exit. This is
+not sectionless automatic-discovery acceptance. The install/update command now
+reports that limitation and explicit-loading alternatives. The final package
+passes 35 layout runtime sessions, ten compiler controls and the 27-check/ten-
+GDB-session command regression. See `docs/BUILD-ID-LAYOUTS.md` and its receipt.
+The workflow includes these cases; hosted acceptance remains pending. Native
+Windows installation, installation-specific LLDB/perf and protected integration
+remain incomplete, including #110's prerequisite integration.
+
 **CONFIRMED local #109 command and Linux acceptance checkpoint (2026-11-06):**
 the packaged command now provides explicit install/update/remove/recover, bounded
 SHA-bound requests, preview, cancellation and GDB setup. The production Linux
