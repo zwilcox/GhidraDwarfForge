@@ -101,10 +101,12 @@ def main():
         assert not re.search(r'(?m)^\S+\s+\d+\s+0x[0-9a-fA-F]+\b', decoded)
         run(mode + '-identity', ['readelf', '-hSWn', root / 'original', sidecar])
         assert 'No errors.' in run(mode + '-llvm', ['llvm-dwarfdump', '--verify', sidecar])
-        run(mode + '-strict', ['python3', harness / 'check-dwarfdump.py', sidecar, root / (mode + '-strict.log'), '--original', root / 'original'])
+        run(mode + '-strict-command', ['python3', harness / 'check-dwarfdump.py', sidecar, root / (mode + '-strict.log'), '--original', root / 'original'])
         gdb = run(mode + '-gdb', ['bash', harness / 'context-boundaries-gdb.sh', root, args.target, mode])
         assert 'context-boundaries-gdb=PASS' in gdb
         assert re.findall(r'(?m)^warning:.*$', gdb) == compiler_warnings
+    run('retained-validator-reports', ['python3', harness / 'retained-validator-reports.py', root,
+        '--output', root / 'retained-validator-reports.json'])
     assert protected == {p: digest(Path(p)) for p in protected} and snapshot(project) == states[-1]
     (root / 'result.json').write_text(json.dumps({'status': 'PASS_CONTEXT_BOUNDARIES', 'target': args.target,
         'protectedSha256': protected, 'generations': generations, 'observations': observations,

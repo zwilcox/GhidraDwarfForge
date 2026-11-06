@@ -1,5 +1,34 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED context report retention correction — #116/#114:** run
+`42160948862` at `3543c78` failed the final MIPS little-endian retention audit.
+The boundary harness reused its wrapper stdout path as the strict validator's
+raw report path, overwriting the already-validated header with a success marker.
+The wrapper now has a separate log, and the standalone harness rechecks report
+retention before success. Fresh ARM32 and both MIPS byte orders pass fourteen
+native exports (seven deterministic output pairs), GNU/LLVM/pinned strict checks,
+compiler/Forge QEMU GDB, and all seven retained reports. Report-damage controls
+pass three positive and ten negative cases. The original damaged hosted report
+remains rejected; no checker rule changed. See
+`docs/evidence/context-report-retention.json`. Fresh hosted acceptance is still
+required before PR166 integration; #112/#110/#109 remain open.
+
+**CONFIRMED Windows workload and independent consumer review — #116/#114:**
+run `42160948934` at `3543c78` passes both workloads and downstream Linux GDB.
+Independent archive review binds the package's 635 production classes, six
+Windows checkout helpers, corpus files, 1,136 unchanged protected inputs, and
+all eleven export/profile samples per workload. Paired DWARF is identical;
+source changes are exactly the annotation catalog. Original frame bytes and
+strict diagnostic multiplicities match on Windows and Linux; source relocation,
+PIE bias, function lookup, stepping, global values and return/exit oracles pass.
+The existing U-Boot decompilation timeout is identical in both versions. Hosted
+median baseline/candidate times were 111.67/117.16 seconds for SQLite and
+236.43/244.03 for U-Boot; these observations do not isolate causation or establish
+a stable performance regression. See
+`docs/evidence/annotation-windows-current-review.json`. The separate integration
+run failed boundary-report retention as recorded above; this successful workload
+review does not replace fresh exact-head acceptance or close either issue.
+
 **CONFIRMED GUI test-order correction — #116/#114:** hosted run `42153031601`
 failed the context Off equality check after its native attachment refresh deliberately
 renamed the function. Retained source differs only in the declaration/call name and
