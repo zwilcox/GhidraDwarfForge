@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 captured unwind descriptions:** bounded deterministic
+JSON now records recovered instruction/byte evidence, exact frame rules, omissions
+and root refusals, bound to staged artifact/source hashes without claiming
+independent validation. The component passes 720 checks. Sixteen native/QEMU
+cases pass 144 exports, 64 failure controls, 64 sidecars and 144 GDB sessions;
+compressed/original runtime frames, rebases and failed decompilation are included.
+See `docs/UNWIND-EVIDENCE-REPORT.md`. Standard CLI/GUI synthesis and report
+publication, full compiler-reference/ADR acceptance and hosted stack integration
+remain incomplete. PR175 still awaits its architecture gate; #110/#109 remain queued.
+
 **CONFIRMED locally — #112 processor-typed runtime frames:** a real source-built
 AMD64 `SHT_X86_64_UNWIND` input reproduced the former PROGBITS-only refusal.
 An isolated target description now recognizes the validated ELF64 little-endian

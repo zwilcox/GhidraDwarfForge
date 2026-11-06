@@ -35,7 +35,7 @@ ordinary and split/shrink-wrapped families cover x86-64 and AArch64 executable,
 PIE and dynamically loaded shared-library roles. Additional executable cases
 inject a decompilation failure for `cf_checkpoint`.
 
-Each case requires nine successful native exports and two injected failures:
+The original checkpoint required nine successful native exports and two injected failures:
 plain/compressed repeated exports, a database rebase, repeated exports at the
 new base, cancellation and an exception during frame serialization, then a
 successful retry. Both failure paths must preserve the previous artifact/source
@@ -79,6 +79,10 @@ warning must match the independent reference; other warnings fail. Ghidra may
 also report terminal instruction/decompiler or empty GNU-hash markup warnings;
 raw logs retain them, and independently checked code/frame identity remains
 mandatory.
+
+The later [captured-evidence checkpoint](UNWIND-EVIDENCE-REPORT.md) adds report
+serialization, deterministic descriptions and two more pre-publication failure
+controls per case. The historical counts above retain their original scope.
 
 ## Reproduction
 

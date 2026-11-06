@@ -129,6 +129,14 @@ tasks.register("elfRuntimeRelocationsSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.elf.ElfRuntimeRelocationsSmoke"
 }
 
+tasks.register("unwindEvidenceJsonSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded unwind descriptions, evidence consistency and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.UnwindEvidenceJsonSmoke"
+}
+
 tasks.register("originalFrameSourcesSmoke", JavaExec) {
     group = "verification"
     description = "Checks bounded original frame source discovery, compression and cancellation"

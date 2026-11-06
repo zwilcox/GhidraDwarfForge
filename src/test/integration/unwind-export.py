@@ -100,6 +100,55 @@ def generated_suffix(raw, prefix, expected):
     assert decode(suffix, 8, 'little') == expected
 
 
+def check_unwind_description(path, artifact, original, expected):
+    data = json.loads(path.read_text())
+    assert data['schemaVersion'] == 1 and data['kind'] == 'ghidra-unwind-evidence'
+    assert data['validationStatus'] == 'NOT_RUN' and data['hasPlan']
+    assert data['inputSha256'] == digest(original) and data['sidecarSha256'] == digest(artifact)
+    assert data['sourceSha256'] == digest(Path(str(artifact) + '.c'))
+    def rules(values):
+        result = {}
+        for value in values:
+            kind = value['kind']
+            code = {'undefined': 'u', 'sameValue': 's', 'atCfaOffset': 'm', 'cfaValue': 'v', 'inRegister': 'r'}[kind]
+            rule = [code]
+            if kind == 'inRegister': rule.append(value['sourceRegister'])
+            elif kind in ('atCfaOffset', 'cfaValue'): rule.append(int(value['offset']))
+            assert value['register'] not in result
+            result[value['register']] = rule
+        return result
+    frames = [{'address': int(f['address'], 16), 'size': int(f['bytes']), 'rows': [
+        {'address': int(row['address'], 16), 'cfa': [row['cfa']['register'], int(row['cfa']['offset'])],
+         'rules': rules(row['rules'])} for row in f['rows']]} for f in data['plan']['frames']]
+    # Recovery records every instruction. The encoder only writes transitions
+    # when the CFA or a register rule changes; compare those exact transitions.
+    transitions = copy.deepcopy(frames)
+    for frame in transitions:
+        rows = []
+        for row in frame['rows']:
+            if not rows or (row['cfa'], row['rules']) != (rows[-1]['cfa'], rows[-1]['rules']):
+                rows.append(row)
+        frame['rows'] = rows
+    assert transitions == expected, 'captured report rules differ from emitted frame rows'
+    covered = {row['address'] for f in frames for row in f['rows']}
+    seen = set()
+    original_bytes = original.read_bytes()
+    delta = int(data['databaseRebaseDelta'], 16)
+    for observation in data['observations']:
+        address = int(observation['address'], 16)
+        assert address not in seen
+        seen.add(address)
+        assert (int(observation['instruction']['offset'], 16) - delta) % (1 << 64) == address
+        offset, length = int(observation['fileOffset'], 16), observation['bytes']
+        assert 0 <= offset < len(original_bytes) and 0 < length <= len(original_bytes) - offset
+        assert hashlib.sha256(original_bytes[offset:offset + length]).hexdigest() == observation['sha256']
+        assert observation['covered'] == (address in covered)
+        assert bool(observation['omission']) != observation['covered']
+    assert covered <= seen and all(item['reason'] for item in data['refusedRoots'])
+    return {'sha256': digest(path), 'observations': len(seen), 'generatedRows': len(covered),
+            'refusedRoots': len(data['refusedRoots'])}
+
+
 def add_runtime_frames(case, target, role, family, expected, dwarfdump, processor_type=False):
     """Source-build partial runtime CFI and an independent complete reference."""
     source = ROOT / 'src/test/fixtures' / ('cfi-' + family + '-' + target + '.S')
@@ -272,9 +321,9 @@ def main():
         log = run([ghidra / 'support/analyzeHeadless', project, 'Frames', '-import', original,
             '-scriptPath', SCRIPTS / 'ghidra_scripts', '-postScript', 'RecoveredFrameExportControls.java',
             args.libdwarf.resolve(), args.libdwarfp.resolve(), outputs, args.failed_source_name], case / 'export.log')
-        assert 'native-frame-export-controls=PASS successful=9 controls=2' in log
+        assert 'native-frame-export-controls=PASS successful=9 controls=4' in log
         assert log.count('native-frame-export=PASS ') == 9
-        assert log.count('native-frame-staging-control=PASS ') == 2
+        assert log.count('native-frame-staging-control=PASS ') == 4
         assert re.findall(r'native-frame-export=PASS frames=(\d+)', log) == [str(len(remaining))] * 9
         deltas = [int(value) for value in re.findall(r'native-frame-export=PASS .* delta=(\d+)', log)]
         assert deltas == [deltas[0]] * 4 + [deltas[0] + 0x400000] * 5, deltas
@@ -309,6 +358,7 @@ def main():
                     assert artifact.read_bytes()[preserved['offset']:preserved['offset'] + preserved['size']] == \
                         original.read_bytes()[inherited['offset']:inherited['offset'] + inherited['size']]
             (case / (variant + '.frame')).write_bytes(raw)
+            description = check_unwind_description(Path(str(artifact) + '.unwind.json'), artifact, original, remaining)
             text = run(['readelf', '-h', '-S', '--debug-dump=frames,info,abbrev,aranges,decodedline', artifact], case / (variant + '-gnu.log'))
             assert 'warning:' not in text.lower() and 'error:' not in text.lower()
             if args.failed_source_name != 'none':
@@ -323,7 +373,7 @@ def main():
                 case / (variant + '-strict-command.log'))
             if variant.startswith('before-rebase-'):
                 artifacts.append({'mode': variant, 'sha256': digest(artifact),
-                    'sourceSha256': digest(Path(str(artifact) + '.c'))})
+                    'sourceSha256': digest(Path(str(artifact) + '.c')), 'unwindEvidence': description})
                 continue
             report = json.loads(Path(str(artifact) + '.report.json').read_text())
             assert report['counts']['mappedSourceLines'] > 0 and '.debug_frame' in report['sections']
@@ -333,7 +383,8 @@ def main():
             else:
                 assert len(failed) == 1 and failed[0]['name'] == args.failed_source_name, failed
             artifacts.append({'mode': compression, 'sha256': digest(artifact),
-                'sourceSha256': digest(Path(str(artifact) + '.c')), 'counts': report['counts']})
+                'sourceSha256': digest(Path(str(artifact) + '.c')), 'counts': report['counts'],
+                'unwindEvidence': description})
         env = {'FORGE_FRAME_PROFILE': family, 'FORGE_FRAME_SHARED': '1' if role == 'shared' else '0',
                'FORGE_FRAME_DRIVER': str(case / 'driver')}
         results, warnings = {}, {}
@@ -392,7 +443,7 @@ def main():
             'runtimeSectionType': args.runtime_section_type,
             'originalFramePrefixSha256': hashlib.sha256(original_prefix).hexdigest() if original_prefix else None,
             'runtime': results, 'sourceRuntime': source_results, 'warnings': warnings, 'inputHashes': before,
-            'successfulExports': 9, 'failureControls': 2})
+            'successfulExports': 9, 'failureControls': 4})
         (work / 'progress.json').write_text(json.dumps(outcomes, indent=4) + '\n')
         print(target + ' ' + role + ' real native frame export PASS', flush=True)
     assert outcomes

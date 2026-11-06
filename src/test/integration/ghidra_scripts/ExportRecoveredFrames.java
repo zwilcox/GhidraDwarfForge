@@ -9,6 +9,7 @@ import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter;
 import ghidradwarfforge.output.ArtifactPairPublisher;
 import ghidradwarfforge.output.ExportReport;
 import ghidradwarfforge.output.FileDigests;
+import ghidradwarfforge.output.UnwindEvidenceJson;
 import ghidradwarfforge.unwind.GhidraUnwindRecovery;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -57,16 +58,32 @@ public class ExportRecoveredFrames extends GhidraScript {
         var sectionModes = GhidraArm32SectionModes.extract(currentProgram, image, functions, target, delta, monitor, diagnostic);
         consistency.requireUnchanged(monitor::isCancelled);
         var result = new MinimalDwarfSidecarExporter.ExportResult[1];
+        var stagedFiles = new Path[2];
+        var unwindJson = new String[1];
         ArtifactPairPublisher.stageAndPublish(output, sourceOutput,
-            staged -> result[0] = new MinimalDwarfSidecarExporter(DebugSectionCompression.parse(args[3])).exportWithFrames(
+            staged -> { stagedFiles[0] = staged; result[0] = new MinimalDwarfSidecarExporter(DebugSectionCompression.parse(args[3])).exportWithFrames(
                 input, staged, Path.of(args[0]), Path.of(args[1]), functions, source, model,
-                sourceOutput.getFileName().toString(), monitor::isCancelled, modes, aliases, aliasModes, sectionModes, diagnostic, plan),
-            source::writeAtomically, () -> consistency.requireUnchanged(monitor::isCancelled));
+                sourceOutput.getFileName().toString(), monitor::isCancelled, modes, aliases, aliasModes, sectionModes, diagnostic, plan); },
+            staged -> { stagedFiles[1] = staged; source.writeAtomically(staged); },
+            () -> {
+                consistency.requireUnchanged(monitor::isCancelled);
+                unwindJson[0] = UnwindEvidenceJson.describe(image, recovered, delta, consistency.inputSha256(),
+                    FileDigests.read(stagedFiles[0]).sha256(), FileDigests.read(stagedFiles[1]).sha256(), monitor::isCancelled);
+            });
         if (!result[0].sectionNames().contains(".debug_frame")) throw new AssertionError("frame section missing from exporter result");
         var report = ExportReport.completed(result[0].target(), result[0].libdwarfVersion(), input,
             consistency.inputSha256(), output, FileDigests.read(output).sha256(), sourceOutput, FileDigests.read(sourceOutput).sha256(),
             result[0].functionCount(), result[0].sectionNames(), source, model, extraction.skippedFunctions(), diagnostics);
         Files.writeString(Path.of(output + ".report.json"), report.toJson() + "\n");
+        // Test-only evidence attachment. Serialize before pair publication;
+        // retain it atomically after success, bound to the exact artifact hashes.
+        Path evidenceStage = Files.createTempFile(output.getParent(), ".unwind-evidence-", ".tmp");
+        try {
+            Files.writeString(evidenceStage, unwindJson[0] + "\n");
+            Files.move(evidenceStage, Path.of(output + ".unwind.json"),
+                java.nio.file.StandardCopyOption.ATOMIC_MOVE, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        }
+        finally { Files.deleteIfExists(evidenceStage); }
         println("native-frame-export=PASS frames=" + plan.frames().size() + " observations=" + recovered.observations().size() +
             " source-lines=" + source.mappedLines().size() + " delta=" + delta);
     }
