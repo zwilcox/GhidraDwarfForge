@@ -71,6 +71,13 @@ against the production stage. See `SOURCE-SIDECAR-RELOCATION.md` and its twenty
 plain/zlib runtime cases. This does not implement publication, metadata
 preservation, pair binding or the installation transaction below.
 
+**CONFIRMED locally:** the derived validation binding now proves the exact
+relocation bytes and source copy while retaining the original export report and
+its separate hashes. The existing structural policy emits schema 3 evidence for
+that derivative and keeps schema 2 ordinary-export evidence unchanged. See
+`DERIVED-ARTIFACT-VALIDATION.md`. The test metadata host does not establish the
+installer's native host or publication contract.
+
 ## Planned identity and publication contract
 
 - Require explicit selected input/report/sidecar/source paths and a debug root.

@@ -1,5 +1,16 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local #109 derived-artifact validation:** a read-only byte proof now
+binds the relocated sidecar and retained source to the original export without
+rewriting its report. Forty fresh GNU/LLVM/pinned-strict policy runs pass on
+twenty retained plain/zlib cases across all five targets; 220 refusal and 140
+sampled cancellation controls pass. Ordinary evidence remains schema 2; schema 3
+distinguishes derived inputs from reported export inputs. See
+`docs/DERIVED-ARTIFACT-VALIDATION.md`. The metadata adapter in these probes is
+explicitly test-only. Native host acceptance, required build-ID selection,
+retained-generation ownership, publication/update/removal and recovery remain
+PLANNED; #110 hosted acceptance/protected integration still precedes completion.
+
 **CONFIRMED local #109 ELF source-relocation stage:** production code now copies
 the matched sidecar, appends relocated plain/zlib payloads, and changes only
 three section offset/size fields. Sixty fresh exports and twenty relocated

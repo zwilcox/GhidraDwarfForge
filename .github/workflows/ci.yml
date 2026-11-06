@@ -2542,6 +2542,7 @@ jobs:
               export FORGE_PERF
           fi
           export FORGE_SOURCE_RELOCATION_JAR="$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar"
+          export FORGE_DERIVED_TEST_CLASSES="$PWD/build/classes/java/test"
           for compression in none zlib; do
               GHIDRA_DEBUG_COMPRESSION="$compression" src/test/integration/floating-registers-export.sh \
                 "$GHIDRA_INSTALL_DIR" \

@@ -60,6 +60,45 @@ public final class SyntheticSourceSidecar {
         public String fileName() { return fileName; }
         public long outputSize() { return size; }
 
+        /**
+         * Read-only proof that a selected candidate is exactly this transformation.
+         * The caller still brackets both paths with its native identity/hash checks.
+         */
+        public void requireMatches(Path candidate, BooleanSupplier cancelled) throws IOException {
+            Objects.requireNonNull(cancelled, "cancellation");
+            check(cancelled);
+            try (var original = FileChannel.open(image.sourcePath(), java.nio.file.StandardOpenOption.READ);
+                    var actual = FileChannel.open(candidate, java.nio.file.StandardOpenOption.READ)) {
+                image.requireUnchanged(original);
+                if (actual.size() != size) throw new IOException("derived sidecar length differs from relocation plan");
+                byte[] expected = new byte[CHUNK];
+                byte[] observed = new byte[CHUNK];
+                for (long offset = 0; offset < size;) {
+                    check(cancelled);
+                    int count = (int) Math.min(CHUNK, size - offset);
+                    Arrays.fill(expected, (byte) 0);
+                    if (offset < image.fileSize()) {
+                        int inherited = (int) Math.min(count, image.fileSize() - offset);
+                        read(original, ByteBuffer.wrap(expected, 0, inherited), offset, cancelled);
+                    }
+                    for (Change change : changes) {
+                        overlay(expected, offset, count, change.payloadOffset(), change.bytes());
+                        ByteBuffer fields = ByteBuffer.allocate(image.is64Bit() ? 16 : 8).order(image.byteOrder());
+                        if (image.is64Bit()) fields.putLong(change.payloadOffset()).putLong(change.bytes().length);
+                        else fields.putInt((int) change.payloadOffset()).putInt(change.bytes().length);
+                        overlay(expected, offset, count, change.headerOffset(), fields.array());
+                    }
+                    read(actual, ByteBuffer.wrap(observed, 0, count), offset, cancelled);
+                    int difference = Arrays.mismatch(expected, 0, count, observed, 0, count);
+                    if (difference >= 0) throw new IOException("derived sidecar differs from relocation plan at byte " + (offset + difference));
+                    offset += count;
+                }
+                image.requireUnchanged(original);
+                if (actual.size() != size) throw new IOException("derived sidecar length changed during comparison");
+                check(cancelled);
+            }
+        }
+
         /** A failed/cancelled write leaves an unpublished stage for its owner to discard. */
         public void writeStage(FileChannel stage, BooleanSupplier cancelled) throws IOException {
             Objects.requireNonNull(stage, "private stage");
@@ -221,6 +260,23 @@ public final class SyntheticSourceSidecar {
             return stored.toByteArray();
         }
         finally { compressor.end(); }
+    }
+
+    private static void overlay(byte[] expected, long offset, int count, long start, byte[] patch) {
+        long first = Math.max(offset, start);
+        long last = Math.min(offset + count, start + patch.length);
+        if (first < last) System.arraycopy(patch, (int) (first - start), expected,
+            (int) (first - offset), (int) (last - first));
+    }
+
+    private static void read(FileChannel channel, ByteBuffer bytes, long position,
+            BooleanSupplier cancelled) throws IOException {
+        while (bytes.hasRemaining()) {
+            check(cancelled);
+            int count = channel.read(bytes, position);
+            if (count <= 0) throw new IOException("source relocation comparison read made no progress");
+            position += count;
+        }
     }
 
     private static void write(FileChannel channel, ByteBuffer bytes, long position,

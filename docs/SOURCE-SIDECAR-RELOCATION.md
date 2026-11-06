@@ -57,5 +57,10 @@ passes 420 refusal checks and 10,216 cancellation boundaries. The raw archive is
 verified member by member. No additional ELF64 big-endian or Windows-hosted
 relocation claim follows from this local five-target matrix.
 
+`Plan.requireMatches` also provides a bounded read-only comparison against the
+complete expected artifact. The derived validation binding uses this proof
+before checking the artifact, without changing the original export report; see
+`DERIVED-ARTIFACT-VALIDATION.md` for its distinct evidence schema and tests.
+
 This component does not complete issue #109 or establish the installer's
 ownership, update, removal, interruption-recovery or consumer-setup contract.

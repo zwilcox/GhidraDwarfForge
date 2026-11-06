@@ -293,6 +293,17 @@ PY
                 "$case_root" "$case_root/source-relocation" --target "$target" \
                 --jar "$FORGE_SOURCE_RELOCATION_JAR" "${relocation_options[@]}"
         fi
+        if [[ -n ${FORGE_DERIVED_TEST_CLASSES:-} ]]; then
+            if [[ -z ${FORGE_SOURCE_RELOCATION_JAR:-} || -z ${DWARFDUMP:-} ]]; then
+                echo 'derived validation requires source relocation and the pinned strict bundle' >&2
+                exit 64
+            fi
+            strict_bundle=$(dirname "$(dirname "$(realpath "$DWARFDUMP")")")
+            python3 "$repository/src/test/integration/derived-artifact-validation.py" \
+                "$case_root" "$case_root/source-relocation" "$case_root/derived-validation" \
+                --jar "$FORGE_SOURCE_RELOCATION_JAR" --test-classes "$FORGE_DERIVED_TEST_CLASSES" \
+                --ghidra "$ghidra" --strict-bundle "$strict_bundle"
+        fi
     done
     if [[ -n ${FORGE_LLDB:-} && ${FORGE_FP_BASELINE:-0} != 1 &&
             ( "$target" == x86_64 || "$target" == aarch64 ) ]]; then
