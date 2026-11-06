@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**PRESENT, UNVERIFIED #109 Windows downstream consumer (2026-11-06):**
+`windows-build-id-gdb.py` and the downstream Linux CI step now verify hashes,
+native host provenance, validators, exact build-ID discovery and runtime
+behavior for the retained Windows installer initial/curated generations.
+Transferred Windows source paths require an explicit GDB substitution; an
+independent compiler control confirms the path behavior, including Unicode and
+shell punctuation. Actual native installer artifacts are still required before
+claiming this consumer path passes. See the Windows section of
+`docs/BUILD-ID-INSTALLATION.md` and `docs/evidence/windows-build-id-consumer-preflight.json`.
+
 **CONFIRMED local #109 installed-consumer checkpoint (2026-11-06):**
 production Linux install/update/remove passes LLDB 18.1.3 and offline perf 7.0.14
 on x86-64/AArch64 exec and PIE. Eight LLDB runtime sessions pass 80 observations;

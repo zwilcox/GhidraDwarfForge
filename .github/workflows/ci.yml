@@ -3399,6 +3399,9 @@ jobs:
           python3 src/test/integration/windows-attachment-gdb.py \
               --windows-results "$PWD/windows-artifacts/windows-host" \
               --results "$PWD/build/test-results/windows-attachment-gdb"
+          python3 src/test/integration/windows-build-id-gdb.py \
+              --windows-results "$PWD/windows-artifacts/windows-host" \
+              --results "$PWD/build/test-results/windows-attachment-gdb/build-id-installation"
           python3 src/test/integration/compressed-gui-gdb.py \
               --incoming "$PWD/windows-artifacts/windows-host/gui-script-manager" \
               --results "$PWD/build/test-results/windows-attachment-gdb/compression"

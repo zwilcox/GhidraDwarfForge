@@ -157,3 +157,15 @@ snapshots and independent copies of both installed generations. **PRESENT,
 UNVERIFIED:** the native run must pass before these checks establish Windows
 installer acceptance. This harness does not claim Windows GDB runtime/discovery;
 consumer acceptance is separate.
+
+The downstream Linux job now runs `windows-build-id-gdb.py` on those exact
+retained initial and curated installed generations. It verifies their recorded
+hashes and Windows host contract, reruns GNU/LLVM/pinned-strict validation, and
+requires GDB build-ID discovery, exact function addresses, analyst names/types,
+arguments and normal exit. Empty/removed registrations and unmapped Windows
+source paths are separate negative controls. Source substitution is explicit:
+the transferred DWARF is unchanged and still records its Windows installation
+directory. **PRESENT, UNVERIFIED:** this downstream installer harness awaits
+actual native Windows artifacts. An independent compiler fixture confirms GDB's
+Windows-path substitution behavior with Unicode, spaces, quotes and a dollar
+sign; that control is not Windows installer acceptance.
