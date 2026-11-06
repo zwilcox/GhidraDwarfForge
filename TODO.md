@@ -1,5 +1,16 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local companion source-path regression fix:** the next PR184 run
+reached companion-loader checks and exposed the same relative filename display
+assumption in their native, remote and attach/exec oracles. All three now request
+absolute GDB filename display without weakening assertions. Fifteen fresh exports
+pass strict validation across all five targets and exec/PIE/sectionless layouts;
+nineteen companion sessions, three native ASLR runs and one attach/exec run pass.
+The old native oracle fails on the same artifact, and direct `info line` output
+confirms that only presentation changes. See
+`docs/evidence/companion-source-path-regression.json`. Hosted acceptance is still
+required; build-ID installation remains incomplete.
+
 **CONFIRMED local #109 ELF source-relocation stage:** production code now copies
 the matched sidecar, appends relocated plain/zlib payloads, and changes only
 three section offset/size fields. Sixty fresh exports and twenty relocated

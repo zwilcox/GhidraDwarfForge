@@ -49,6 +49,7 @@ function_link = function_link.pop()
 function = "FUN_" + format(function_link, "08x") if sectionless else "recovered_add"
 discovery = os.environ["FORGE_LOADER_DISCOVERY"]
 commands = ["set pagination off", "set confirm off", "set debuginfod enabled off",
+    "set filename-display absolute",
     "set auto-solib-add off", "set sysroot " + os.environ["FORGE_LOADER_SYSROOT"],
     "file " + quoted(original)]
 if discovery == "no-hostio":
