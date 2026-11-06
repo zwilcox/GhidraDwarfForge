@@ -5,6 +5,35 @@ from pathlib import Path
 import lldb
 
 
+def sectionless_discovery_check(phase):
+    config = json.loads(Path(os.environ['FORGE_LLDB_SECTIONLESS_CONFIG']).read_text())
+    output = Path(config['observations'])
+    rows = json.loads(output.read_text()) if output.exists() else []
+    target = lldb.debugger.GetSelectedTarget()
+    assert Path(target.GetExecutable().fullpath) == Path(config['original'])
+    module = target.GetModuleAtIndex(0)
+    assert Path(module.GetFileSpec().fullpath) == Path(config['original'])
+    assert not module.GetUUIDString()
+    assert module.GetNumCompileUnits() == 0
+    assert module.FindFunctions(config['function']).GetSize() == 0
+    assert Path(module.GetSymbolFileSpec().fullpath) != Path(config['symbolsFile'])
+    if phase == 'lookup':
+        breakpoint = target.BreakpointCreateByName(config['function'])
+        assert breakpoint.IsValid() and breakpoint.GetNumLocations() == 0
+        row = {'phase': phase, 'uuid': module.GetUUIDString(), 'compileUnits': 0,
+            'namedBreakpointLocations': 0}
+    else:
+        assert phase == 'exit'
+        process = target.GetProcess()
+        assert process.GetState() == lldb.eStateExited and process.GetExitStatus() == 0
+        breakpoint = target.GetBreakpointAtIndex(0)
+        assert breakpoint.GetNumLocations() == 0 and breakpoint.GetHitCount() == 0
+        row = {'phase': phase, 'namedBreakpointHits': 0, 'exit': 0}
+    rows.append(row)
+    output.write_text(json.dumps(rows, indent=4) + '\n')
+    print('FORGE_LLDB_SECTIONLESS_DISCOVERY_LIMIT_PASS', phase)
+
+
 def sectionless_check(phase):
     config = json.loads(Path(os.environ['FORGE_LLDB_SECTIONLESS_CONFIG']).read_text())
     output = Path(config['observations'])

@@ -18,12 +18,17 @@ def versions(debugger, target):
 
 
 def run(original, symbols, output, debugger, target, before, after, environment,
-        stop_at_entry=False, separate_symbol_module=False, qemu_cpu=None):
+        stop_at_entry=False, separate_symbol_module=False, qemu_cpu=None,
+        setup=()):
     """Run commands at fresh CLI boundaries; callers validate their JSON result."""
     output.mkdir()
-    symbol_command = ('target modules add ' + shlex.quote(str(symbols)) if separate_symbol_module else
-        'target symbols add --shlib ' + shlex.quote(str(original)) + ' ' + shlex.quote(str(symbols)))
-    commands = ['target create ' + shlex.quote(str(original)), symbol_command, *before]
+    commands = [*setup, 'target create ' + shlex.quote(str(original))]
+    if symbols is not None:
+        commands.append('target modules add ' + shlex.quote(str(symbols)) if separate_symbol_module else
+            'target symbols add --shlib ' + shlex.quote(str(original)) + ' ' + shlex.quote(str(symbols)))
+    else:
+        assert not separate_symbol_module
+    commands.extend(before)
     qemu = None
     qlog = None
     try:

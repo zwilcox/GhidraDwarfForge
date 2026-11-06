@@ -1406,12 +1406,17 @@ jobs:
                   if [[ "$TARGET" == x86_64 || "$TARGET" == aarch64 ]]; then
                       python3 src/test/integration/shared-object-lldb.py build/fixtures \
                           "build/test-results/lldb-shared-$TARGET" --target "$TARGET" --lldb lldb-18
+                      python3 src/test/integration/shared-object-lldb.py build/fixtures \
+                          "build/test-results/lldb-shared-discovery-$TARGET" --target "$TARGET" --lldb lldb-18 --discovery
                   fi
               else
                   FIXTURE_ROLE="$role" src/test/integration/qemu-gdb-symbols.sh "$TARGET"
                   if [[ "$role" == exec.no-sections && ( "$TARGET" == x86_64 || "$TARGET" == aarch64 ) ]]; then
                       python3 src/test/integration/sectionless-lldb.py build/fixtures \
                           "build/test-results/lldb-sectionless-$TARGET" --target "$TARGET" --lldb lldb-18
+                      python3 src/test/integration/sectionless-lldb.py build/fixtures \
+                          "build/test-results/lldb-sectionless-discovery-limit-$TARGET" --target "$TARGET" \
+                          --lldb lldb-18 --loading automatic
                   fi
               fi
               if [[ "$TARGET:$role" == "x86_64:pie" ]]; then

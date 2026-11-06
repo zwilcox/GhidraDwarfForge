@@ -1,0 +1,183 @@
+{
+    "status": "CONFIRMED_LOCAL_DISCOVERY_CHECKPOINT",
+    "parent": "f61fb4be0483f8d83787759d6837a0f79d15be3f",
+    "productionChanges": false,
+    "testedJarSha256": "eb23322efeb51ec3d44a9c51f4ad47c649d2a0a08699cf6fbf97cfe2bee2fff1",
+    "packagedProductionSourcesByteCompared": 210,
+    "cases": [
+        {
+            "path": "build/lldb-discovery-runtime/x86_64-exec/result.json",
+            "sha256": "3e643a35dec51e5735844dd3523128b533af1a410b5bae83af0bacf7430b0b28",
+            "kind": "exec-pie-discovery",
+            "target": "x86_64",
+            "role": "exec",
+            "sessions": 6
+        },
+        {
+            "path": "build/lldb-discovery-runtime/x86_64-pie/result.json",
+            "sha256": "1097b3ecd4c1a329df480ceb5ace1a668e7f051fafab4347b83328d4c9a72dd8",
+            "kind": "exec-pie-discovery",
+            "target": "x86_64",
+            "role": "pie",
+            "sessions": 6
+        },
+        {
+            "path": "build/lldb-discovery-runtime/shared-x86_64-configured/result.json",
+            "sha256": "d703265a41692378abe376d78f71acca76af6a6e42db9bc734275f2641778f1a",
+            "kind": "shared-discovery",
+            "target": "x86_64",
+            "sessions": 2
+        },
+        {
+            "path": "build/lldb-discovery-runtime/sectionless-x86_64-automatic/result.json",
+            "sha256": "154a4cff49f01ed7381146474d1b53ea52b669344e2ebffaf3183721fd337de7",
+            "kind": "sectionless-limit",
+            "target": "x86_64",
+            "sessions": 2
+        },
+        {
+            "path": "build/lldb-discovery-runtime/sectionless-x86_64-module/result.json",
+            "sha256": "e1a41e3cc5be24e15cb07370db24bf7fa9d73b6eb22d321b59c5ee5dfc8a9202",
+            "kind": "sectionless-alternative",
+            "target": "x86_64",
+            "sessions": 2
+        },
+        {
+            "path": "build/lldb-discovery-runtime/aarch64-exec/result.json",
+            "sha256": "c290503d54e261a72a88202d0ba6aec8a826d78783a35a89ee62a866c77b2905",
+            "kind": "exec-pie-discovery",
+            "target": "aarch64",
+            "role": "exec",
+            "sessions": 6
+        },
+        {
+            "path": "build/lldb-discovery-runtime/aarch64-pie/result.json",
+            "sha256": "5b2f7fc6e12cf09d14a579d07aa888cbd4685da9a6e655557f137d78d7dcfae2",
+            "kind": "exec-pie-discovery",
+            "target": "aarch64",
+            "role": "pie",
+            "sessions": 6
+        },
+        {
+            "path": "build/lldb-discovery-runtime/shared-aarch64-configured/result.json",
+            "sha256": "059f913f84c11127ebd1e0c8e706f6f11da699627122cdd3a3c3080d2cf99d0e",
+            "kind": "shared-discovery",
+            "target": "aarch64",
+            "sessions": 2
+        },
+        {
+            "path": "build/lldb-discovery-runtime/sectionless-aarch64-automatic/result.json",
+            "sha256": "8dcfe7b2aaacb34bbabd6dad3e3a8a6dbed847bdd80068c809b652261aca566b",
+            "kind": "sectionless-limit",
+            "target": "aarch64",
+            "sessions": 2
+        },
+        {
+            "path": "build/lldb-discovery-runtime/sectionless-aarch64-module/result.json",
+            "sha256": "04be1c95fdb846b6ef74a7f883ec469baee8aa8ca96dbaccfca12cc4556a83cc",
+            "kind": "sectionless-alternative",
+            "target": "aarch64",
+            "sessions": 2
+        }
+    ],
+    "runtimeSessions": 36,
+    "preliminaryLookupOnlySessions": 24,
+    "sourceSha256": {
+        ".github/workflows/ci.yml": "9a8261c358e1f1df176bf2d6685b6c38e5311396849156156fc4a4422a7450f5",
+        "src/test/integration/lldb_consumer.py": "8ea246944eb892e87f3dc07ccf1ab9db728f179d19782954792cb18a10165838",
+        "src/test/integration/automatic-discovery-lldb.py": "b99b3b2fa332f088a26e89513d8816a7b42b58ee6f0147b58e6365b723f76c95",
+        "src/test/integration/automatic-discovery-lldb-observe.py": "b6d6ae607d181f2774b48686707b76e2ce8bc4d58f5e43b0659f2e60a782b470",
+        "src/test/integration/shared-object-lldb.py": "32494b04104b1d1fbbcf047030c66cea6b97933173d74f59b61e8c2849c31cf2",
+        "src/test/integration/shared-object-lldb-observe.py": "f997ee5302f958b2436bca4bad972051f61f26c1215d5e52f349cdd50388b8fc",
+        "src/test/integration/sectionless-lldb.py": "595854a2b2a9a4625400bb59cfa802e6edb822568592191718f9503f00a9e3ba",
+        "src/test/integration/sectionless-lldb-observe.py": "20e9ed472a2757e0bde4255e072d9cafcfc97663a1b4188b91ef99b744bf1982",
+        "src/test/integration/floating-registers-export.sh": "95b27275c2969be2c8324b9961acaec5dc3040c5afb617e999c0be0c39f28a6e",
+        "src/test/integration/floating-registers-lldb-observe.py": "86e64c2a2cf1b5ab9a31fefe9404c5601958ce5ca1d871070657099ea051f4f2",
+        "docs/LLDB-DISCOVERY.md": "8006b99d20f3b7d2baa68db1ade0e216413a20e8eb6f2c930294be32330d6d85",
+        "docs/DEBUGGER-CONSUMERS.md": "48b65a5a8030e4c68153685f6dc80764091288e852ef664443fe8c7b77004787"
+    },
+    "artifactProvenance": [
+        {
+            "path": "build/lldb-layout-preflight/final-shared-x86_64/result.json",
+            "sha256": "8827bdf666dadd28a1f1be784f02719710f8c94a8a8f0ae7e66d73c92c9d1d68"
+        },
+        {
+            "path": "build/lldb-layout-preflight/final-sectionless-x86_64/result.json",
+            "sha256": "e1a41e3cc5be24e15cb07370db24bf7fa9d73b6eb22d321b59c5ee5dfc8a9202"
+        },
+        {
+            "path": "build/test-results/floating-registers/run.RAkIdJwZ/x86_64/exec/repeat/lldb/result.json",
+            "sha256": "44c7b2d216ee11c99b63a9cce9d6076d05783fe7240cd5f8c7cf4e1c94090d5b"
+        },
+        {
+            "path": "build/test-results/floating-registers/run.RAkIdJwZ/x86_64/pie/repeat/lldb/result.json",
+            "sha256": "bf1fad4e7ce5f453e6a67e15c34bf29b936e75693687004e627b53592f5a462d"
+        },
+        {
+            "path": "build/lldb-layout-preflight/final-shared-aarch64/result.json",
+            "sha256": "0ffba43c4856b2964e8dcaa01d4cae86ae61a5dc81b3a6b3e177a482802972b5"
+        },
+        {
+            "path": "build/lldb-layout-preflight/final-sectionless-aarch64/result.json",
+            "sha256": "04be1c95fdb846b6ef74a7f883ec469baee8aa8ca96dbaccfca12cc4556a83cc"
+        },
+        {
+            "path": "build/test-results/floating-registers/run.RAkIdJwZ/aarch64/exec/repeat/lldb/result.json",
+            "sha256": "2be8fe396b60854c7f98719ba8c11b2e2b2e04bd12d6e73be80ec582cf252d08"
+        },
+        {
+            "path": "build/test-results/floating-registers/run.RAkIdJwZ/aarch64/pie/repeat/lldb/result.json",
+            "sha256": "bf13e5cab4e964a3e8afd2217755c3e9c29d19704827d536fcfe09cb19ec2357"
+        }
+    ],
+    "inheritedValidation": [
+        {
+            "receipt": {
+                "path": "docs/evidence/lldb-elf-layouts.json",
+                "sha256": "fdd73214fe5fd6570499b4d8c31678d3ddddf348e77dd7c862d48d342fdcb876"
+            },
+            "archive": {
+                "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/lldb-elf-layouts.tar.gz",
+                "sha256": "e675539f737e9e4e28d39fad2666aa9ee42b14cb1d678bf2f3e6c62dbec16bad",
+                "bytes": 971949,
+                "regularFilesVerified": 484
+            },
+            "verification": "Artifact hashes rechecked against the exact previously validated source/sidecar pairs; existing structural/GDB/determinism results reused, not rerun."
+        },
+        {
+            "receipt": {
+                "path": "docs/evidence/lldb-floating-vectors.json",
+                "sha256": "1fd3b7ab368da0f290dd082c29ad373537d561ecbc77d29e6605ad815de80dc1"
+            },
+            "archive": {
+                "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/lldb-floating-vectors.tar.gz",
+                "sha256": "b62752ce01ae158af1d1ca5da8f684dcd47111c5aff6e23c4a81a0b644ca0ca1",
+                "bytes": 2580953,
+                "regularFilesVerified": 1827
+            },
+            "verification": "Artifact hashes rechecked against the exact previously validated source/sidecar pairs; existing structural/GDB/determinism results reused, not rerun."
+        }
+    ],
+    "checks": {
+        "pythonCompilation": "PASS",
+        "bashSyntax": "PASS",
+        "actionlint": "PASS",
+        "diffCheck": "PASS"
+    },
+    "scope": "Fresh-session private build-ID lookup and runtime behavior on exec/PIE/shared; sectionless UUID limitation with tested explicit alternative. No production installation/refresh/removal, debuglink-only or perf claim.",
+    "retainedFailedExperiments": [
+        "First shared invocation used the default sidecar suffix, but owned fixtures use lldb-layout.dbg; corrected explicit suffix, no exporter change.",
+        "Initial sectionless automatic image lookup fails before runtime; diagnostic captures and permanent controls prove no UUID/compile units/named-breakpoint locations in both producers on both targets."
+    ],
+    "remaining": [
+        "Final combined hosted gates and raw artifact review",
+        "Protected integration following issue112",
+        "Issue109 production build-ID installer, provenance/refresh/removal and independent consumer acceptance"
+    ],
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/lldb-discovery.tar.gz",
+        "sha256": "4e04a685171e4f315ebd7c67e569059a3630947b16fbf1c65726ae0743f24810",
+        "bytes": 794981,
+        "regularFilesVerified": 572
+    }
+}

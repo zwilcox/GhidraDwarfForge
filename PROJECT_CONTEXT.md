@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local #110 automatic-discovery checkpoint:** configured build-ID
+roots resolve compiler/Forge symbols and pass actual x86-64/AArch64 exec/PIE
+and shared-library runtime checks. Wrong and unconfigured roots are rejected.
+Sectionless originals retain build IDs but LLDB 18 exposes no UUID; both
+producer controls fail automatic lookup as expected, while the explicit module
+workflow still passes. See `docs/LLDB-DISCOVERY.md` and the requirement map in
+`docs/DEBUGGER-CONSUMERS.md`. Hosted acceptance/protected integration remain;
+this fixture arrangement does not implement #109's installer or refresh policy.
+
 **CONFIRMED local #110 floating/vector checkpoint:** scalar floating-point values
 and clobber gaps pass compiler/Forge LLDB comparisons on x86-64 and AArch64.
 AArch64 exec/PIE/rebased-PIE vector traces match all 119 GDB instruction stops,

@@ -275,6 +275,14 @@ PY
             cmp "$case_root/baseline/floating.dbg.c" "$case_root/repeat/floating.dbg.c"
         fi
     done
+    if [[ -n ${FORGE_LLDB:-} && ${FORGE_FP_BASELINE:-0} != 1 &&
+            ( "$target" == x86_64 || "$target" == aarch64 ) ]]; then
+        for role in "${roles[@]}"; do
+            python3 "$repository/src/test/integration/automatic-discovery-lldb.py" \
+                "$results/$target/$role" "$results/$target/$role/lldb-discovery" \
+                --target "$target" --lldb "$FORGE_LLDB"
+        done
+    fi
 done
 if [[ "$abi_profile" == mips-fp32 ]]; then snapshot_fp32_inputs after; fi
 echo 'floating-registers-export=PASS'
