@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local #110 CFI compatibility checkpoint:** LLDB 18.1.3 stops
+reading the original generated CIE at its CFA-relative value opcode. An equivalent
+standard value expression preserves all following rules. Fresh normal exports
+pass the existing x86-64/AArch64 exec/PIE/shared GDB matrix; plain/compressed
+non-PIE sidecars additionally match compiler references at every executed ordinary
+LLDB boundary. See `docs/LLDB-CFI-COMPATIBILITY.md`. The new hosted LLDB step and
+full #110 source/type/location/layout/discovery matrix remain incomplete. This
+work is on a separate branch; #112's exact-head gate and integration come first,
+followed by full #110 and #109. No issue is closed by this checkpoint.
+
 **CONFIRMED scoped Windows checkpoint and #112 acceptance audit:** native Windows
 run `42235627038` passes the new PowerShell and GUI producers at `1872477`.
 Its eight downloaded sidecars pass fresh local GNU/LLVM/pinned strict validation

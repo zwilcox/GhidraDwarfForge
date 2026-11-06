@@ -805,6 +805,9 @@ jobs:
                 libc6-dev-mips64el-cross libc6-dev-mipsn32-mips64el-cross)
               ;;
           esac
+          if [[ "$TARGET" == x86_64 || "$TARGET" == aarch64 ]]; then
+              packages+=(lldb-18=1:18.1.3-1ubuntu1 python3-lldb-18=1:18.1.3-1ubuntu1)
+          fi
           if [[ "$TARGET" == mips32be || "$TARGET" == mips32le || "$TARGET" == arm32 ]]; then
               packages+=(build-essential python3-dev libgmp-dev libmpfr-dev
                 libexpat1-dev libncurses-dev texinfo)
@@ -1062,6 +1065,16 @@ jobs:
             --ghidra "$GHIDRA_INSTALL_DIR" \
             --libdwarf "$PWD/native-integration/libdwarf.so.2.3.2" \
             --libdwarfp "$PWD/native-integration/libdwarfp.so.2.3.2"
+
+      - name: Compare LLDB caller frames with independent compiler references
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/cfi-unwind-lldb.py \
+            "build/test-results/compiler-unwind-export/$TARGET/exec" \
+            "build/test-results/production-unwind-export/$TARGET/exec" \
+            "build/test-results/lldb-cfi/$TARGET" --target "$TARGET" --lldb lldb-18
 
       - name: Validate compiler frame pointers and recovered caller values
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
