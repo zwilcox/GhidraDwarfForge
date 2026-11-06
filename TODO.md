@@ -1,5 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED pinned unwind ABI observations — #112:** AMD64 psABI
+`e1ce098331da5dbd66e1ffc74162380bcc213236` and the existing Arm 2025Q4
+`daa7a94ca55973736c0e434a67a6e4bbcd35d7fa` baseline are captured with source hashes.
+Ghidra's AArch64 unaffected-X30 entry cannot prove incoming LR survival through
+calls; caller return-address identity needs separate treatment. The audit also
+records partial SIMD preservation and ordinary versus process-entry conventions.
+See `docs/UNWIND-ABI-AUDIT.md`. Profile selection and instruction/control-flow
+recovery remain PLANNED; no new architecture support is claimed.
+
 **CONFIRMED locally — #112 CIE initialization audit correction:** explicit
 immutable CIE rules replace the encoder's unconditional undefined defaults.
 Pinned AADWARF64's used-callee-saved initialization requirement exposed the gap;
