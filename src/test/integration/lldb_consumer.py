@@ -18,7 +18,7 @@ def versions(debugger, target):
 
 
 def run(original, symbols, output, debugger, target, before, after, environment,
-        stop_at_entry=False, separate_symbol_module=False):
+        stop_at_entry=False, separate_symbol_module=False, qemu_cpu=None):
     """Run commands at fresh CLI boundaries; callers validate their JSON result."""
     output.mkdir()
     symbol_command = ('target modules add ' + shlex.quote(str(symbols)) if separate_symbol_module else
@@ -31,7 +31,8 @@ def run(original, symbols, output, debugger, target, before, after, environment,
             with socket.socket() as reservation:
                 reservation.bind(('127.0.0.1', 0))
                 port = reservation.getsockname()[1]
-            qcommand = ['qemu-aarch64-static', '-L', '/usr/aarch64-linux-gnu', '-g', str(port), str(original)]
+            cpu = ['-cpu', qemu_cpu] if qemu_cpu is not None else []
+            qcommand = ['qemu-aarch64-static', *cpu, '-L', '/usr/aarch64-linux-gnu', '-g', str(port), str(original)]
             (output / 'qemu-command.json').write_text(json.dumps(qcommand, indent=4) + '\n')
             qlog = (output / 'qemu.log').open('w')
             qemu = subprocess.Popen(qcommand, stdout=qlog, stderr=subprocess.STDOUT)

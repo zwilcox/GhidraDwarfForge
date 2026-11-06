@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local #110 floating/vector checkpoint:** scalar floating-point values
+and clobber gaps pass compiler/Forge LLDB comparisons on x86-64 and AArch64.
+AArch64 exec/PIE/rebased-PIE vector traces match all 119 GDB instruction stops,
+including stack/register transitions and honest unavailable intervals. The
+explicit Cortex-A53 transport matches the existing GDB vector profile; the
+pinned LLDB default-SVE missing-Neon limitation is independently reproduced
+with compiler and Forge symbols. See `docs/LLDB-FLOATING-VECTORS.md`.
+Hosted acceptance and remaining #110 discovery/support work stay open; #112
+integration still precedes completion of #110, then #109.
+
 **CONFIRMED local #110 shared/sectionless checkpoint:** both selected targets
 pass explicitly loaded shared-library source/value checks, including rebased
 analysis and real runtime load bias. Sectionless ET_EXEC lookup succeeds with
