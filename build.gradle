@@ -129,6 +129,14 @@ tasks.register("elfRuntimeRelocationsSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.elf.ElfRuntimeRelocationsSmoke"
 }
 
+tasks.register("unwindStackSeparationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit conditional stack separation and summary isolation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.unwind.UnwindStackSeparationSmoke"
+}
+
 tasks.register("unwindEvidenceJsonSmoke", JavaExec) {
     group = "verification"
     description = "Checks bounded unwind descriptions, evidence consistency and cancellation"
@@ -171,7 +179,7 @@ tasks.register("unwindFrameRecoveryProbe", JavaExec) {
         args ghidraInstallDir, project.property("frameInput"), project.property("frameFunctions"),
             project.property("framePlan"), project.findProperty("frameRebase") ?: "0",
             project.findProperty("frameRoot") ?: "cf_recurse", project.findProperty("frameInspect") ?: "false",
-            project.findProperty("frameExpectedFailure") ?: ""
+            project.findProperty("frameExpectedFailure") ?: "", project.findProperty("frameSeparation") ?: ""
     }
     systemProperty "java.awt.headless", "true"
     systemProperty "application.settingsdir", file("build/tmp/unwind-frame-probe/settings").absolutePath

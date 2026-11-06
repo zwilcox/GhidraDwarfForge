@@ -1,0 +1,145 @@
+{
+    "status": "CONFIRMED local conditional analysis; no conditional CFI publication",
+    "dateUtc": "2026-11-06T12:41:01.370750+00:00",
+    "parent": "657aceb952c38e44b6d1989f9e23136606e4cefa",
+    "sourceSha256": {
+        ".github/workflows/ci.yml": "95cd9cd9292400145e497a6ece44f47a74fcf1d3b2382be1d2c82a288aa55eb3",
+        "PROJECT_CONTEXT.md": "3386d004a327ac4ba4d016cf4fb9d4bc290920e423b727c3c654460f84adc365",
+        "TODO.md": "86dc3ef3862678b43696e79f0482f265685786b4c1f902b2107855045d251242",
+        "build.gradle": "e80bd68120eab20d33ec9569b73a3c58f927ef3353bc24499cd2b4b3dc0cb2cf",
+        "docs/UNWIND-MEMORY-EFFECTS.md": "9c679c0d3fa271af2b3fee4377cde14dbde73c56631ab46b2f028d0f0af2165a",
+        "docs/UNWIND-STACK-SEPARATION.md": "564abed2ceef3d75debcd1a945dca7529a39f299c80f856e57a878dbd05374d4",
+        "src/main/java/ghidradwarfforge/unwind/GhidraUnwindCalls.java": "a34b003971f011d966e7539be56eb7beababe420cd1a1261c3e0934cd4e351ec",
+        "src/main/java/ghidradwarfforge/unwind/GhidraUnwindFrames.java": "e492e8981c5c0b75d35eb5eb2cd3a7f14801573e64d1971e1c4cfc4c8905d6c7",
+        "src/main/java/ghidradwarfforge/unwind/UnwindCalls.java": "feac9449c70144ed453d934bf2b7c7b86d332b7d9cfc483baa02fc774090b111",
+        "src/main/java/ghidradwarfforge/unwind/UnwindFlow.java": "ba1e3852822a074dea543e28e1961d715bab4d3f2459752651cada24a209beed",
+        "src/main/java/ghidradwarfforge/unwind/UnwindStackSeparation.java": "02631a7233bef0266808422a5c23b7459d9210ff717e5df126e49ff553411a49",
+        "src/test/fixtures/synthetic-cfi-start-aarch64.S": "d915b35e11c46eea1147617327df36967ec59881f000fd6148c4c1bb11a786fe",
+        "src/test/fixtures/synthetic-cfi-start-x86_64.S": "56e2c981beb7d6139100e6b7e4b0ee7aa2b2e8de985a56a56851d844052cd8c0",
+        "src/test/fixtures/synthetic-cfi.c": "82cc164cd030be86b50b0affa496c4b617ed183c35a5d6c82a6460c1aacf9145",
+        "src/test/integration/compiler-memory-effects.py": "56fc69f880f5d070e28003c66b036c8222a3a0f2ff6afa73ec3bcd9300a10134",
+        "src/test/java/ghidradwarfforge/unwind/UnwindFrameRecoveryProbe.java": "9e51fcc24657ae78369112fec7eb577b41d5b44aebb336c95ad51b8099dae9df",
+        "src/test/java/ghidradwarfforge/unwind/UnwindStackSeparationSmoke.java": "e6344e8a2bf3a2a437a6f1cebcaa0e32a5d663f5402264a71d26bde5f400c485"
+    },
+    "componentResults": [
+        "unwind-stack-separation=PASS checks=82 cancellation-points=50",
+        "unwind-flow-smoke=PASS checks=102 cancellation=30",
+        "unwind-calls-smoke=PASS checks=182 cancellation=152",
+        "ghidra-unwind-calls-smoke=PASS checks=10497",
+        "unwind-frame-rows-smoke=PASS checks=77 cancellation=19",
+        "unwind-evidence-json-smoke=PASS checks=720"
+    ],
+    "compilerCases": [
+        {
+            "target": "x86_64",
+            "result": "build/stack-separation-final-x86_64/result.json",
+            "sha256": "de7984b73f086ff8d6f9418ad0e0826fd5c12f0c9badf59b245c19055870ba50",
+            "observations": [
+                {
+                    "rebase": 0,
+                    "globalWrite": [
+                        "MEMORY_WRITE",
+                        "cfi_checkpoint",
+                        "0040100f",
+                        "absolute:402000",
+                        "8"
+                    ],
+                    "refusal": "callee store is not proved below entry stack",
+                    "inspectionSha256": "918f659a1f137476f83971fdd7fb4764de10bf4158f30df1018cd2989027029c",
+                    "conditionalProofSha256": "323212f108c7f32a185c5303e08260b1a7d4964f5cdc92574576386791fe6e1b",
+                    "condition": "402000:402007"
+                },
+                {
+                    "rebase": 4194304,
+                    "globalWrite": [
+                        "MEMORY_WRITE",
+                        "cfi_checkpoint",
+                        "0080100f",
+                        "absolute:802000",
+                        "8"
+                    ],
+                    "refusal": "callee store is not proved below entry stack",
+                    "inspectionSha256": "7ef554a91e5a09f1f634af72957bc80b83631ea7106f1b24ac2ecc9d7f6f3b49",
+                    "conditionalProofSha256": "42089a077d290c5edf6c515c5742638703c8cc1fd2786a52432e846a9bbc46cd",
+                    "condition": "802000:802007"
+                }
+            ]
+        },
+        {
+            "target": "aarch64",
+            "result": "build/stack-separation-final-aarch64/result.json",
+            "sha256": "0908ae3b29ff8b0c1b3ffc54530203973c68c52b537c131c9f25e59d356989c6",
+            "observations": [
+                {
+                    "rebase": 0,
+                    "globalWrite": [
+                        "MEMORY_WRITE",
+                        "cfi_checkpoint",
+                        "004000f4",
+                        "absolute:4101a0",
+                        "8"
+                    ],
+                    "refusal": "callee store is not proved below entry stack",
+                    "inspectionSha256": "fa6b61e3c24857ee2c3aa861c891e2c2f6471f334533e569ae806f1620405b2f",
+                    "conditionalProofSha256": "00f0b060366de81feedf5c70c3f9ce9137775fb1d6abbad979d6cabb7ad3f06c",
+                    "condition": "4101a0:4101a7"
+                },
+                {
+                    "rebase": 4194304,
+                    "globalWrite": [
+                        "MEMORY_WRITE",
+                        "cfi_checkpoint",
+                        "008000f4",
+                        "absolute:8101a0",
+                        "8"
+                    ],
+                    "refusal": "callee store is not proved below entry stack",
+                    "inspectionSha256": "e0e1f88988e73b14e9dd7e9952110d7f415bae516bde03826c0f7d1c0fdd59e5",
+                    "conditionalProofSha256": "b52bfda0ad2ff05a6359b2d0ca86bf8bb93da16df1980067d8c53d122c43742f",
+                    "condition": "8101a0:8101a7"
+                }
+            ]
+        }
+    ],
+    "strictRegression": {
+        "result": "build/stack-separation-regression/result.json",
+        "sha256": "d424f22ef541c6f03b4fc114076113508719c12f25e3ff3273f0a2916cb04cc3",
+        "cases": 2,
+        "exports": 18,
+        "failureControls": 8,
+        "sidecars": 8,
+        "gdbSessions": 18
+    },
+    "packageReview": {
+        "base": "/dev/shm/forge-cfi-recovery-worktree/build/native-frame-installation/ghidra",
+        "package": "/dev/shm/forge-cfi-recovery-worktree/build/flow-gradle/dist/ghidra_12.0.3_PUBLIC_20261106_GhidraDwarfForge.zip",
+        "sha256": "de9187180bcea7660a70b14da52b67ae5911e7ae6aad1857c1a154c4c6532578",
+        "installed": "/dev/shm/forge-cfi-recovery-worktree/build/stack-separation-installation/ghidra",
+        "classCount": 732,
+        "sourceCount": 208,
+        "jarSha256": "f0e330d75ccda1e9bb61f17697e2c272fca098de020c7fab3fd008e744d398ef"
+    },
+    "nativePin": "af7b278c6aa2ae9daad94fb7f8bffdc0e9980993",
+    "limits": [
+        "Explicit external condition; truth not inferred from ELF/ABI",
+        "Strict defaults unchanged",
+        "Unqualified projection rejects conditional proofs",
+        "No conditional compiler/GDB artifact acceptance yet",
+        "Shipping policy remains unresolved; no CLI/GUI synthesis"
+    ],
+    "commands": [
+        "JAVA_HOME=<Java21> GHIDRA_INSTALL_DIR=<Ghidra12.0.3> ./gradlew --init-script build/flow-gradle/init.gradle --project-cache-dir build/flow-gradle/cache unwindStackSeparationSmoke unwindFlowSmoke unwindCallsSmoke ghidraUnwindCallsSmoke unwindFrameRowsSmoke unwindEvidenceJsonSmoke buildExtension",
+        "python3 build/stack-separation-evidence/compiler-final.py",
+        "python3 build/stack-separation-evidence/install.py",
+        "JAVA_HOME=<Java21> python3 src/test/integration/unwind-export.py build/stack-separation-installation/ghidra build/program-recovery-encoder build/stack-separation-regression --roles exec <pinned-native-options>",
+        "python3 src/test/integration/retained-validator-reports.py build/stack-separation-regression --output build/stack-separation-evidence/retention.json",
+        "actionlint .github/workflows/ci.yml",
+        "bash src/test/integration/architecture-neutrality.sh",
+        "git diff --check"
+    ],
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/unwind-stack-separation.tar.gz",
+        "sha256": "19b7c043507fa9bb42c99079198feb84132c02ae98255031a7dbc8357fe97974",
+        "bytes": 4811118
+    }
+}

@@ -41,12 +41,18 @@ public final class GhidraUnwindCalls {
     /** Caller must hold a consistent program view and retain input identity through final publication. */
     public static Evidence verify(Program program, Function root, ElfImage image, long rebaseDelta, TaskMonitor monitor)
             throws CancelledException, IOException {
+        return verify(program, root, image, rebaseDelta, monitor, UnwindStackSeparation.NONE);
+    }
+
+    /** Explicit conditional analysis only; no separation is inferred from an ABI or ELF section. */
+    public static Evidence verify(Program program, Function root, ElfImage image, long rebaseDelta, TaskMonitor monitor,
+            UnwindStackSeparation separation) throws CancelledException, IOException {
         if (root.getProgram() != program) throw new IllegalArgumentException("function belongs to another program");
         var profile = UnwindAbiProfile.select(program, root, image, rebaseDelta, monitor);
         var preserved = new LinkedHashMap<Cell, Incoming>();
         for (Cell cell : profile.calleeSavedCells()) preserved.put(cell, (Incoming) profile.entry().values().get(cell));
         var contract = new Contract(profile.entry(), profile.stackPointer(), profile.programCounter(), preserved,
-            profile.description().returnStackAdjustment());
+            profile.description().returnStackAdjustment(), separation);
         var pending = new ArrayDeque<Function>();
         var discovered = new LinkedHashSet<Address>();
         var bodies = new LinkedHashMap<Address, Body<Address>>();

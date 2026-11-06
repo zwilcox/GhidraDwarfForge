@@ -22,6 +22,10 @@ public final class GhidraUnwindFrames {
 
     public static Planned plan(GhidraUnwindCalls.Evidence evidence, long rebaseDelta, TaskMonitor monitor)
             throws CancelledException {
+        monitor.checkCancelled();
+        if (evidence.verified().separation().conditional()) {
+            throw new IllegalArgumentException("conditional stack separation requires an explicit qualified projection path");
+        }
         var profile = evidence.profile();
         var description = profile.description();
         var policy = new UnwindFrameRows.Policy(profile.registers(), description.stackNumber(),

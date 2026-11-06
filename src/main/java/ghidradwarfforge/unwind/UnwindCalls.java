@@ -41,8 +41,13 @@ public final class UnwindCalls {
         }
     }
     public record Contract(State entry, Cell stackPointer, Cell returnTarget,
-            Map<Cell, Incoming> preserved, long returnAdjustment) {
+            Map<Cell, Incoming> preserved, long returnAdjustment, UnwindStackSeparation separation) {
+        public Contract(State entry, Cell stackPointer, Cell returnTarget,
+                Map<Cell, Incoming> preserved, long returnAdjustment) {
+            this(entry, stackPointer, returnTarget, preserved, returnAdjustment, UnwindStackSeparation.NONE);
+        }
         public Contract {
+            Objects.requireNonNull(separation);
             Objects.requireNonNull(entry);
             Objects.requireNonNull(stackPointer);
             Objects.requireNonNull(returnTarget);
@@ -51,6 +56,9 @@ public final class UnwindCalls {
                     stackPointer.equals(returnTarget) || stackPointer.bytes() != returnTarget.bytes() ||
                     !new StackAddress(0, stackPointer.bytes()).equals(entry.values().get(stackPointer))) {
                 throw new IllegalArgumentException("invalid callee entry stack/return target");
+            }
+            if (separation.conditional() && separation.addressBytes() != stackPointer.bytes()) {
+                throw new IllegalArgumentException("stack separation address width differs from contract");
             }
             new StackAddress(returnAdjustment, stackPointer.bytes());
             for (var item : preserved.entrySet()) {
@@ -61,7 +69,7 @@ public final class UnwindCalls {
             }
         }
         private Call hypothesis() {
-            return new Call(preserved.keySet(), returnAdjustment, 0L, "closed-group hypothesis; not yet verified");
+            return new Call(preserved.keySet(), returnAdjustment, 0L, "closed-group hypothesis; not yet verified", separation);
         }
     }
     public static final class Verified<K> {
@@ -74,12 +82,13 @@ public final class UnwindCalls {
             this.bodies = Collections.unmodifiableMap(new LinkedHashMap<>(bodies));
             this.flows = Collections.unmodifiableMap(new LinkedHashMap<>(flows));
         }
+        public UnwindStackSeparation separation() { return contract.separation(); }
         public Map<K, Body<K>> bodies() { return bodies; }
         public Map<K, Result<K>> flows() { return flows; }
         public Call summary(K callee) {
             if (!bodies.containsKey(callee)) throw new IllegalArgumentException("callee is outside the verified group");
             return new Call(contract.preserved().keySet(), contract.returnAdjustment(), 0L,
-                "verified closed stack-writing group: " + callee);
+                "verified closed group: " + callee, contract.separation());
         }
     }
 
@@ -87,7 +96,9 @@ public final class UnwindCalls {
      * All stores must end at or below the function's entry stack address. Calls
      * must enter at or below that address and target another member of the group.
      * This supports finite recursive executions by induction on call depth; it
-     * does not prove termination or authorize unknown/image-relative writes.
+     * does not prove termination. Explicit separated-region conditions additionally
+     * allow bounded absolute writes, and remain attached to the proof and summaries.
+     * Unknown addresses never inherit a separation condition.
      */
     public static <K> Verified<K> verify(Map<K, Body<K>> input, Contract contract, BooleanSupplier cancelled) {
         Objects.requireNonNull(contract);
@@ -140,7 +151,7 @@ public final class UnwindCalls {
             check(cancelled);
             Body<K> body = item.getValue();
             Result<K> flow = UnwindFlow.analyze(body.graph(), body.entry(), contract.entry(), contract.stackPointer(), cancelled,
-                (instruction, index, effect, before) -> verifyEffect(effect, before, contract));
+                (instruction, index, effect, before) -> verifyEffect(effect, before, contract), contract.separation());
             int returns = 0;
             for (K terminal : body.returns()) {
                 check(cancelled);
@@ -170,7 +181,8 @@ public final class UnwindCalls {
         if (effect instanceof Opaque) throw new IllegalArgumentException("callee contains opaque reachable effects");
         if (effect instanceof Store store) {
             Value address = store.address() instanceof Constant constant ? constant : before.values().get((Cell) store.address());
-            if (!(address instanceof StackAddress stack) || stack.offset() > -store.bytes()) {
+            if (!(address instanceof StackAddress stack && stack.offset() <= -store.bytes()) &&
+                    !contract.separation().permits(address, store.bytes())) {
                 throw new IllegalArgumentException("callee store is not proved below entry stack");
             }
         }

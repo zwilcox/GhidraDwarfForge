@@ -86,12 +86,18 @@ public final class UnwindFlow {
     /**
      * A separately proved call summary. A null write bound means arbitrary memory
      * writes. Otherwise all writes are strictly below the pre-call stack pointer plus the
-     * bound. Neither the bound nor preserved cells is inferred from an ABI name.
+     * bound, except writes to explicitly separated absolute regions when a condition
+     * is attached. Neither bounds, separation nor preserved cells are inferred from an ABI name.
      * stackAdjustment describes post-return stack pointer relative to the state at this
      * effect (which may already include the instruction's return-address push).
      */
-    public record Call(Set<Cell> preserved, long stackAdjustment, Long writeBound, String evidence) implements Effect {
+    public record Call(Set<Cell> preserved, long stackAdjustment, Long writeBound, String evidence,
+            UnwindStackSeparation separation) implements Effect {
+        public Call(Set<Cell> preserved, long stackAdjustment, Long writeBound, String evidence) {
+            this(preserved, stackAdjustment, writeBound, evidence, UnwindStackSeparation.NONE);
+        }
         public Call {
+            Objects.requireNonNull(separation);
             preserved = Set.copyOf(preserved);
             if (preserved.stream().anyMatch(cell -> cell.bank() != Bank.REGISTER) ||
                     evidence == null || evidence.isBlank()) throw new IllegalArgumentException("invalid call proof");
@@ -133,7 +139,7 @@ public final class UnwindFlow {
             memory = Collections.unmodifiableMap(slots);
         }
     }
-    public record Result<K>(Map<K, State> before, Map<K, State> after, int transfers) { }
+    public record Result<K>(Map<K, State> before, Map<K, State> after, int transfers, UnwindStackSeparation separation) { }
 
     @FunctionalInterface
     public interface EffectObserver<K> {
@@ -147,17 +153,28 @@ public final class UnwindFlow {
 
     public static <K> Result<K> analyze(Map<K, Node<K>> graph, K entry, State seed,
             Cell stackPointer, BooleanSupplier cancelled) {
-        return analyzeInternal(graph, entry, seed, stackPointer, cancelled, null);
+        return analyzeInternal(graph, entry, seed, stackPointer, cancelled, null, UnwindStackSeparation.NONE);
     }
 
     /** A verifier may reject a final effect; no result is returned after rejection or cancellation. */
     public static <K> Result<K> analyze(Map<K, Node<K>> graph, K entry, State seed,
             Cell stackPointer, BooleanSupplier cancelled, EffectObserver<K> observer) {
-        return analyzeInternal(graph, entry, seed, stackPointer, cancelled, Objects.requireNonNull(observer));
+        return analyzeInternal(graph, entry, seed, stackPointer, cancelled, Objects.requireNonNull(observer), UnwindStackSeparation.NONE);
+    }
+
+    public static <K> Result<K> analyze(Map<K, Node<K>> graph, K entry, State seed,
+            Cell stackPointer, BooleanSupplier cancelled, EffectObserver<K> observer,
+            UnwindStackSeparation separation) {
+        return analyzeInternal(graph, entry, seed, stackPointer, cancelled, observer, separation);
     }
 
     private static <K> Result<K> analyzeInternal(Map<K, Node<K>> graph, K entry, State seed,
-            Cell stackPointer, BooleanSupplier cancelled, EffectObserver<K> observer) {
+            Cell stackPointer, BooleanSupplier cancelled, EffectObserver<K> observer,
+            UnwindStackSeparation separation) {
+        Objects.requireNonNull(separation);
+        if (separation.conditional() && separation.addressBytes() != stackPointer.bytes()) {
+            throw new IllegalArgumentException("stack separation address width differs from analysis");
+        }
         Objects.requireNonNull(cancelled);
         check(cancelled);
         Objects.requireNonNull(stackPointer);
@@ -188,7 +205,7 @@ public final class UnwindFlow {
             if (++transfers > MAX_TRANSFERS) throw new IllegalArgumentException("unwind fixed-point budget exceeded");
             K key = queue.removeFirst();
             queued.remove(key);
-            State out = transfer(before.get(key), nodes.get(key).effects(), stackPointer, cancelled, null);
+            State out = transfer(before.get(key), nodes.get(key).effects(), stackPointer, cancelled, null, separation);
             if (out.equals(after.put(key, out))) continue;
             for (K target : nodes.get(key).successors()) {
                 check(cancelled);
@@ -208,12 +225,12 @@ public final class UnwindFlow {
                 K key = item.getKey();
                 if (!before.containsKey(key)) continue;
                 State replayed = transfer(before.get(key), item.getValue().effects(), stackPointer, cancelled,
-                    (index, effect, state) -> observer.observe(key, index, effect, state));
+                    (index, effect, state) -> observer.observe(key, index, effect, state), separation);
                 if (!replayed.equals(after.get(key))) throw new IllegalStateException("unwind replay differs from fixed point");
             }
         }
         check(cancelled);
-        return new Result<>(Collections.unmodifiableMap(before), Collections.unmodifiableMap(after), transfers);
+        return new Result<>(Collections.unmodifiableMap(before), Collections.unmodifiableMap(after), transfers, separation);
     }
 
     private static State intersect(State left, State right, BooleanSupplier cancelled) {
@@ -231,7 +248,7 @@ public final class UnwindFlow {
     }
 
     private static State transfer(State input, List<Effect> effects, Cell stackPointer, BooleanSupplier cancelled,
-            StepObserver observer) {
+            StepObserver observer, UnwindStackSeparation separation) {
         var values = new LinkedHashMap<>(input.values());
         var memory = new LinkedHashMap<>(input.memory());
         boolean stackWritten = false;
@@ -247,13 +264,16 @@ public final class UnwindFlow {
                     memory.keySet().removeIf(prior -> overlaps(prior.offset(), prior.bytes(), slot.offset(), slot.bytes()));
                     if (value != null && value.bytes() == store.bytes()) memory.put(slot, value);
                 }
-                else memory.clear();
+                else if (!separation.permits(address, store.bytes())) memory.clear();
             }
             else if (effect instanceof Opaque) {
                 values.clear();
                 memory.clear();
             }
             else if (effect instanceof Call call) {
+                if (!separation.admits(call.separation())) {
+                    throw new IllegalArgumentException("call summary requires an unaccepted stack separation condition");
+                }
                 stackWritten = true;
                 if (new Constant(call.stackAdjustment(), stackPointer.bytes()).signed() != call.stackAdjustment()) {
                     throw new IllegalArgumentException("call stack adjustment exceeds target width");

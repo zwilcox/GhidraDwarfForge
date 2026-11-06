@@ -82,3 +82,14 @@ checks and required-validation. An independent artifact review verifies thirty
 cases, sixty packaged exports, thirty raw strict reports and six removed-frame
 controls. It is ready but remains behind PR166's integration priority. See
 `docs/evidence/original-cfi-hosted-review.json` and the memory-effect receipt.
+
+## Explicit conditional analysis follow-up
+
+The [stack-separation condition model](UNWIND-STACK-SEPARATION.md) now records
+external assumptions on bounded absolute ranges and propagates them through
+flows and verified call summaries. The unchanged compiler fixture passes that
+explicitly conditioned analysis on both targets and rebases. Strict behavior is
+unchanged, and the ordinary frame projection rejects conditional evidence.
+This is an internal analysis checkpoint, not a shipping-policy choice or positive
+compiler/GDB acceptance of generated CFI. The pending preference above remains
+unanswered; normal CLI/GUI synthesis remains disabled.

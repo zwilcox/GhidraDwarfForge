@@ -626,7 +626,7 @@ jobs:
               dwarfAddressRangesSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
               packagedNativeLibrariesSmoke existingDebugSidecarSmoke callFrameEncoderSmoke unwindFlowSmoke ghidraUnwindInstructionsSmoke unwindAbiProfileSmoke \
-              unwindCallsSmoke ghidraUnwindCallsSmoke unwindFrameRowsSmoke unwindEvidenceJsonSmoke elfCodeBytesSmoke originalFrameRangesSmoke originalFrameSourcesSmoke elfRuntimeRelocationsSmoke elfRelocationEffectsSmoke \
+              unwindCallsSmoke unwindStackSeparationSmoke ghidraUnwindCallsSmoke unwindFrameRowsSmoke unwindEvidenceJsonSmoke elfCodeBytesSmoke originalFrameRangesSmoke originalFrameSourcesSmoke elfRuntimeRelocationsSmoke elfRelocationEffectsSmoke \
               extendedSectionNumberingSmoke elfImageReaderSmoke \
               elfCopyCancellationSmoke ghidraImageBaseSmoke exportConsistencySmoke buildExtension
             python3 -B src/test/integration/debuglink-basename.py \
@@ -1025,7 +1025,7 @@ jobs:
             "build/test-results/unwind-shrinkwrap/$TARGET" --target "$TARGET" \
             --fixture-family shrinkwrap --dwarfdump "$DWARFDUMP"
           python3 src/test/integration/compiler-memory-effects.py \
-            "build/test-results/compiler-memory-effects/$TARGET" --target "$TARGET"
+            "build/test-results/compiler-memory-effects/$TARGET" --target "$TARGET" --conditional-proof
 
       - name: Validate real native exports with recovered frames and source
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'

@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — conditional stack-separation analysis for #112:** explicit
+external address-range conditions now remain attached to flows, verified call
+groups and summaries; strict callers reject conditional summaries. Both unchanged
+compiler fixtures pass conditional four-function proofs at original/rebased
+addresses while strict and one-byte-short conditions still refuse. Unqualified
+frame projection rejects conditional evidence, so this does not emit CFI or settle
+shipping policy. The new suite passes 82 checks; strict native export regressions
+pass on both targets. See `docs/UNWIND-STACK-SEPARATION.md`. Conditional projection,
+provenance and compiler/GDB acceptance remain next; normal CLI/GUI synthesis is off.
+
 **CONFIRMED locally — combined unwind integration:** current main `8041fdab`
 and the preserved unwind commit stack now share one tested branch. Both
 annotation-aware normal exports and explicit frame exports retain their APIs.

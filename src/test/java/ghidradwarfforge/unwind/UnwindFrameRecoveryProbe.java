@@ -84,9 +84,17 @@ public final class UnwindFrameRecoveryProbe {
                     Files.writeString(Path.of(args[3] + ".inspection.txt"), observations.toString());
                 }
                 String expectedFailure = args.length > 7 ? args[7] : "";
+                var separation = UnwindStackSeparation.NONE;
+                if (args.length > 8 && !args[8].isEmpty()) {
+                    String[] range = args[8].split(":");
+                    if (range.length != 2) throw new IllegalArgumentException("expected an explicit address range");
+                    separation = new UnwindStackSeparation(8, List.of(new UnwindStackSeparation.Region(
+                        Long.parseUnsignedLong(range[0], 16), Long.parseUnsignedLong(range[1], 16))),
+                        "test-only assumption: supplied absolute range never aliases any live stack in this call group or its callers");
+                }
                 GhidraUnwindCalls.Evidence evidence;
                 try {
-                    evidence = GhidraUnwindCalls.verify(program, functions.get(args.length > 5 ? args[5] : "cf_recurse"), image, rebase, TaskMonitor.DUMMY);
+                    evidence = GhidraUnwindCalls.verify(program, functions.get(args.length > 5 ? args[5] : "cf_recurse"), image, rebase, TaskMonitor.DUMMY, separation);
                 }
                 catch (IllegalArgumentException failure) {
                     if (!expectedFailure.isEmpty() && failure.getMessage().equals(expectedFailure)) {
@@ -97,6 +105,28 @@ public final class UnwindFrameRecoveryProbe {
                     throw failure;
                 }
                 if (!expectedFailure.isEmpty()) throw new AssertionError("unproved fixture unexpectedly qualified");
+                if (separation.conditional()) {
+                    if (!evidence.verified().separation().equals(separation)) throw new AssertionError("native verification lost its condition");
+                    for (var flow : evidence.verified().flows().values()) {
+                        if (!flow.separation().equals(separation)) throw new AssertionError("native flow lost its condition");
+                    }
+                    for (var entry : evidence.verified().bodies().keySet()) {
+                        if (!evidence.verified().summary(entry).separation().equals(separation)) {
+                            throw new AssertionError("native call summary lost its condition");
+                        }
+                    }
+                    try {
+                        GhidraUnwindFrames.plan(evidence, rebase, TaskMonitor.DUMMY);
+                        throw new AssertionError("unqualified projection accepted conditional proof");
+                    }
+                    catch (IllegalArgumentException expected) {
+                        if (!expected.getMessage().equals("conditional stack separation requires an explicit qualified projection path")) throw expected;
+                    }
+                    Files.writeString(Path.of(args[3] + ".condition.txt"), separation + "\nfunctions=" +
+                        evidence.verified().bodies().keySet() + "\nflows=" + evidence.verified().flows() + "\n");
+                    System.out.println("conditional-native-proof=PASS functions=" + evidence.verified().bodies().size());
+                    return;
+                }
                 var planned = GhidraUnwindFrames.plan(evidence, rebase, TaskMonitor.DUMMY);
                 if (planned.observations().stream().anyMatch(row -> !row.projection().covered())) throw new AssertionError("fixture has omitted rows");
                 var recovered = GhidraUnwindRecovery.recover(program, image, rebase, TaskMonitor.DUMMY);

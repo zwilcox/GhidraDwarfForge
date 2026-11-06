@@ -21,6 +21,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('output', type=Path)
     parser.add_argument('--target', choices=('x86_64', 'aarch64'), required=True)
+    parser.add_argument('--conditional-proof', action='store_true', help='Also validate explicit stack separation; this does not publish a frame plan')
     parser.add_argument('--gradle-init', type=Path)
     parser.add_argument('--gradle-cache', type=Path)
     args = parser.parse_args()
@@ -71,10 +72,29 @@ def main():
         assert write[3] == 'absolute:' + format(sink + delta, 'x') and write[4] == '8', write
         observations.append({'rebase': delta, 'globalWrite': write, 'refusal': refusal,
             'inspectionSha256': digest(Path(str(plan) + '.inspection.txt'))})
+        if args.conditional_proof:
+            qualified = work / ('conditional-' + str(delta))
+            condition = f'{sink + delta:x}:{sink + delta + 7:x}'
+            text = run([*gradle, 'unwindFrameRecoveryProbe', '-PframeInput=' + str(original), '-PframeFunctions=' + str(functions),
+                '-PframePlan=' + str(qualified), '-PframeRebase=' + str(delta), '-PframeRoot=cfi_main',
+                '-PframeSeparation=' + condition], work / ('conditional-' + str(delta) + '.log'))
+            assert 'conditional-native-proof=PASS functions=4' in text
+            assert not qualified.exists(), 'conditional proof escaped into unqualified frame output'
+            observations[-1]['conditionalProofSha256'] = digest(Path(str(qualified) + '.condition.txt'))
+            observations[-1]['condition'] = condition
+            wrong = work / ('wrong-condition-' + str(delta))
+            text = run([*gradle, 'unwindFrameRecoveryProbe', '-PframeInput=' + str(original), '-PframeFunctions=' + str(functions),
+                '-PframePlan=' + str(wrong), '-PframeRebase=' + str(delta), '-PframeRoot=cfi_main',
+                '-PframeSeparation=' + f'{sink + delta + 1:x}:{sink + delta + 7:x}',
+                '-PframeExpectedFailure=' + refusal], work / ('wrong-condition-' + str(delta) + '.log'))
+            assert not wrong.exists() and not Path(str(wrong) + '.condition.txt').exists()
+            assert 'recovered-frame-negative=PASS ' + refusal in text
+
     assert protected == {path: digest(Path(path)) for path in protected}
     (work / 'result.json').write_text(json.dumps({'status': 'PASS_OBSERVATION_AND_ALIAS_REFUSAL',
         'target': args.target, 'observations': observations, 'protectedSha256': protected,
-        'scope': 'Exact compiler global-write capture; no separation assumption or generated CFI'}, indent=4) + '\n')
+        'conditionalProof': args.conditional_proof,
+        'scope': 'Strict refusal plus optional explicitly conditioned call proof; no generated CFI'}, indent=4) + '\n')
     print(args.target + ' compiler memory capture and conservative alias refusal PASS')
 
 
