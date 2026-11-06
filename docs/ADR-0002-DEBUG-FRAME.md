@@ -43,9 +43,12 @@ is not a claim of complete unwinding.
 **PRESENT, UNVERIFIED as a supported feature:** the normal-entry-point integration
 is being validated. The internal compiler matrix is accepted only in its exact
 local scope, documented in [relocated-pointer recovery](RELOCATED-POINTER-UNWIND.md).
-The new production path still needs its full wrapper/GUI, cancellation, preserved
-annotation, existing-CFI, architecture and hosted gates. This design revision does
-not complete #112 or authorize a release. Signal/interrupt/exception frames,
+The [acceptance audit](UNWIND-ACCEPTANCE.md) maps all six issue requirements to
+local wrapper/GUI, cancellation, preserved-annotation, original-CFI and target
+evidence, plus a native Windows producer and local Linux consumer checkpoint.
+The latest combined hosted gate, exact artifact review and protected integration
+remain required. This design revision does not complete #112 or authorize a
+release. Signal/interrupt/exception frames,
 pre-loader execution, mutable pointer slots, arbitrary indirect/interposable calls
 and the excluded target extensions remain unsupported.
 

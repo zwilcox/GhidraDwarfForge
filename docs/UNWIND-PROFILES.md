@@ -1,9 +1,12 @@
 # Ordinary unwind profiles (#112)
 
 **CONFIRMED locally:** metadata selection and guarded native instruction capture
-for the two initial integer profiles. **PLANNED:** verified call summaries,
-frame-rule projection, original-byte agreement and production synthesis.
-This component does not enable exporter CFI or complete #112.
+for the two initial integer profiles. The historical component checkpoint below
+predates call summaries and production recovery; see the current
+[acceptance audit](UNWIND-ACCEPTANCE.md) for their evidence and remaining gates.
+The audit expands the profile suite to 775 checks, including actual decoded
+x86-64 SYSCALL/INT/IRETQ and AArch64 SVC/HVC/ERET refusal through both the
+instruction policy and guarded capture. It does not claim asynchronous unwinding.
 
 ## Selection and entry evidence
 
@@ -61,7 +64,7 @@ exporter/runtime acceptance. No function-name heuristic recognizes special
 frames; metadata selection alone is not proof that arbitrary machine code obeys
 an ABI. Callee effects and every used recovery state still need verification.
 
-## Validation
+## Historical initial component validation
 
 ```bash
 ./gradlew unwindAbiProfileSmoke ghidraUnwindInstructionsSmoke unwindFlowSmoke callFrameEncoderSmoke buildExtension

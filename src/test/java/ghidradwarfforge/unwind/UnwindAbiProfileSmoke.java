@@ -52,6 +52,12 @@ public final class UnwindAbiProfileSmoke {
         run(true, "default", "pac-later", "1f2003d53f2303d5c0035fd6", BigInteger.ZERO);
         run(true, "default", "simd", "e80700fdc0035fd6", null);
         run(false, "gcc", "wrong-mode", "90c3", BigInteger.ZERO);
+        run(false, "gcc", "special-syscall", "0f05", null);
+        run(false, "gcc", "special-int", "cd80", null);
+        run(false, "gcc", "special-iretq", "48cf", null);
+        run(true, "default", "special-svc", "010000d4", null);
+        run(true, "default", "special-hvc", "020000d4", null);
+        run(true, "default", "special-eret", "e0039fd6", null);
         Files.writeString(output.resolve("observations.txt"), evidence.toString());
         System.out.println("unwind-abi-profile-smoke=PASS checks=" + checks);
     }
@@ -110,6 +116,9 @@ public final class UnwindAbiProfileSmoke {
                     .append(" instruction=").append(instruction).append(" pcode=")
                     .append(Arrays.toString(instruction.getPcode())).append('\n');
                 if (!shape.startsWith("ordinary")) {
+                    if (shape.startsWith("special-")) require(instruction.getMnemonicString()
+                        .equalsIgnoreCase(shape.substring("special-".length())),
+                        "special transition did not decode as intended: " + instruction);
                     if (shape.equals("pac-hidden")) require(instruction.getPcode().length == 0, "hidden PAC did not reproduce empty p-code");
                     if (shape.equals("pac-visible")) require(instruction.getPcode().length > 0, "visible PAC has no p-code");
                     if (shape.equals("pac-later")) {

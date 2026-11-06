@@ -1,5 +1,16 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED scoped Windows checkpoint and #112 acceptance audit:** native Windows
+run `42235627038` passes the new PowerShell and GUI producers at `1872477`.
+Its eight downloaded sidecars pass fresh local GNU/LLVM/pinned strict validation
+and fourteen compiler-reference GDB sessions, with transport hashes preserved.
+Six new actual decoder refusal cases cover syscall/interrupt/exception transitions;
+the expanded profile suite passes 775 checks. The six original issue requirements
+and promised matrix now have an explicit evidence map in `docs/UNWIND-ACCEPTANCE.md`.
+The latest full hosted gate, exact artifact review, final ADR acceptance and
+protected integration remain; #112 is not complete. Then continue #110/#109.
+Earlier checkpoint-specific pending statements below are historical.
+
 **CONFIRMED locally — discontiguous runtime and refusal cases for #112:** both
 targets pass non-PIE/PIE strict normal exports of curated split function bodies,
 including compression, rebasing, deterministic repeat, saved comments and

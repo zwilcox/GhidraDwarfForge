@@ -156,7 +156,13 @@ An initial AArch64 reproducibility failure was traced to the assembler's random
 temporary object filename in `.strtab`. An explicit `.file` directive in each
 owned startup fixture fixes it; independent builds now match.
 
-## Remaining acceptance before enabling production
+## Historical pre-integration acceptance checklist
+
+The items below record the original implementation prerequisites. Their scope
+is retained in the current [requirement-to-evidence audit](UNWIND-ACCEPTANCE.md),
+which distinguishes completed local work, the native Windows checkpoint and
+remaining combined hosted/ADR acceptance. They are not a current list of missing
+implementation.
 
 - Obtain hosted acceptance of original-metadata preservation. Implement trusted
   coverage discovery/merging before any synthesis alongside existing frames.

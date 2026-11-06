@@ -26,8 +26,8 @@ The PowerShell parameters are `-SynthesizeUnwind`, `-UnwindStackSeparation` and
 Strict and Explicit memory conditions. Its first choice is Off; conditional
 choices request the ranges and a separate pointer choice. Cancelling a chooser
 must publish nothing. Normal non-interactive script options are identical on
-both hosts. Linux GUI behavior is validated below; native Windows execution
-remains pending.
+both hosts. Linux GUI behavior is validated below; native Windows execution and
+local Linux consumption are recorded in [the acceptance audit](UNWIND-ACCEPTANCE.md).
 
 ## Artifacts and interaction with existing features
 
@@ -115,9 +115,11 @@ corrected test decodes their retained raw frame records and reads the original
 image base from the saved program's loader metadata.
 
 CI now invokes these Linux journeys and adds a native Windows chooser run whose
-artifacts feed Linux strict validation and GDB. The Windows additions are
-**PRESENT, UNVERIFIED** until their hosted execution passes. Complete native
-Windows and hosted/ADR acceptance remain required.
+artifacts feed Linux strict validation and GDB. Native Windows run `42235627038`
+passes both new producer steps; its downloaded eight sidecars also pass fresh
+local Linux strict/GDB consumption. See [the audit](UNWIND-ACCEPTANCE.md) for exact
+versions and limits. The latest full hosted gate and final ADR acceptance remain
+required.
 These local checks do not complete #112.
 See [the checkpoint receipt](evidence/production-unwind-entry.json).
 The additional journeys are recorded in

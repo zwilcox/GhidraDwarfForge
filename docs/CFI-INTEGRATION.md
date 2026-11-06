@@ -76,17 +76,19 @@ for the tested merge, package/source hashes and raw archive.
 
 ## Remaining acceptance
 
-The consolidated branch requires its current-base protected CI, native Windows
-execution and exact artifact review. PR175 is already merged and #116/#114 are
+The consolidated branch requires its current-base protected CI and exact artifact
+review. Native Windows production and fresh local Linux consumption now pass at
+the scoped checkpoint in [the acceptance audit](UNWIND-ACCEPTANCE.md); this does
+not replace the latest-head hosted gate. PR175 is already merged and #116/#114 are
 closed. PR167–174 should be reconciled only after their changes are accepted
 through this route; older component passes do not replace the combined gate.
 
 The unchanged compiler-C cases, explicit conditional memory policy, normal
 CLI/GUI flows, preserved analyst knowledge, frame-pointer caller values and
 actual split-body runtime/refusal checks now have local evidence in the linked
-checkpoints. Native Windows/transported-artifact consumers and the latest full
-hosted matrix remain unverified until their runs pass. A requirement-by-requirement
-#112 audit must bind those results, limitations and the ADR before closure.
+checkpoints. The latest full hosted matrix remains unverified until its run passes.
+The requirement-by-requirement #112 audit must bind those final results,
+limitations and the ADR before closure.
 The broader goal then continues with #110 LLDB validation and #109 build-ID
 installation.
 
