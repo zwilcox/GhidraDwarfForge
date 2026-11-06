@@ -278,6 +278,14 @@ PY
             python3 "$repository/src/test/integration/perf-source-lookup.py" \
                 "$case_root" "$case_root/perf-source" --perf "$FORGE_PERF"
         fi
+        if [[ -n ${FORGE_SOURCE_RELOCATION_JAR:-} ]]; then
+            relocation_options=()
+            if [[ -n ${FORGE_LLDB:-} ]]; then relocation_options+=(--lldb "$FORGE_LLDB"); fi
+            if [[ -n ${FORGE_PERF:-} ]]; then relocation_options+=(--perf "$FORGE_PERF"); fi
+            python3 "$repository/src/test/integration/source-relocation.py" \
+                "$case_root" "$case_root/source-relocation" --target "$target" \
+                --jar "$FORGE_SOURCE_RELOCATION_JAR" "${relocation_options[@]}"
+        fi
     done
     if [[ -n ${FORGE_LLDB:-} && ${FORGE_FP_BASELINE:-0} != 1 &&
             ( "$target" == x86_64 || "$target" == aarch64 ) ]]; then

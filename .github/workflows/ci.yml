@@ -2541,6 +2541,7 @@ jobs:
               FORGE_PERF=$(python3 -c 'from pathlib import Path; paths = sorted(p.resolve() for p in Path("/usr/lib/linux-tools").glob("*/perf") if p.is_file()); assert paths; print(paths[-1])')
               export FORGE_PERF
           fi
+          export FORGE_SOURCE_RELOCATION_JAR="$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar"
           src/test/integration/floating-registers-export.sh \
             "$GHIDRA_INSTALL_DIR" \
             "$PWD/native-integration/libdwarf.so.2.3.2" \

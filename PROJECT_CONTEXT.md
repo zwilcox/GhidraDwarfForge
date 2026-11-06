@@ -1,5 +1,16 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local #109 source-relocation component:** a pure Java transformer
+changes only the synthetic CU/line directory, retaining DIE offsets, existing
+strings and executable line-program bytes. Ten exec/PIE cases across all five
+targets pass validators and GDB with the former source absent; x86-64/AArch64
+also pass LLDB and offline perf source lookup. Refusal/cancellation, deterministic
+repeat and input-preservation controls pass. See
+`docs/ADR-0006-BUILD-ID-INSTALLATION.md` and its evidence receipt. This is not an
+installer: production ELF/compression packaging, identity-bound generations,
+atomic install/update/removal and recovery remain PLANNED. Hosted acceptance
+and #110 protected integration remain required before goal completion.
+
 **CONFIRMED local source-path regression fix:** hosted PR184 exposed a GDB
 presentation mismatch on ARM32 and both MIPS byte orders: the new compilation
 directory makes GDB print relative filenames, while the oracle requires the
