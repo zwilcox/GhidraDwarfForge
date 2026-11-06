@@ -35,7 +35,7 @@ def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def decode(data, width, order):
+def decode(data, width, order, initial_rules=None):
     """Consumer implementation: reconstruct rows, including CIE initial state."""
     offset = 0
     cies = {}
@@ -100,6 +100,8 @@ def decode(data, width, order):
             return_register = leb()
             initial, rows = instructions(end, {"cfa": None, "rules": {}}, None, None)
             assert not rows and return_register in initial["rules"]
+            if initial_rules is not None:
+                assert initial['rules'] == initial_rules
             cies[start] = (return_register, initial)
         else:
             assert pointer in cies
@@ -111,8 +113,9 @@ def decode(data, width, order):
     return frames
 
 
-def write_plan(path, width, order, return_register, registers, frames):
+def write_plan(path, width, order, return_register, registers, initial_rules, frames):
     lines = [f'{width} {order} {return_register} ' + ','.join(map(str, registers))]
+    lines.append('initial ' + ','.join(str(reg) + ':' + ':'.join(map(str, initial_rules[reg])) for reg in registers))
     for frame in frames:
         lines.append(f'frame {frame["address"]:x} {frame["size"]:x}')
         for row in frame["rows"]:
@@ -155,9 +158,10 @@ def main():
     classpath = os.pathsep.join(str(classes / name) for name in ('main', 'test'))
     reports = []
 
-    def encode(case, original, width, order, return_register, registers, frames):
+    def encode(case, original, width, order, return_register, registers, frames, initial_rules=None):
         plan = case / 'plan.txt'
-        write_plan(plan, width, order, return_register, registers, frames)
+        initial_rules = initial_rules if initial_rules is not None else {reg: ['u'] for reg in registers}
+        write_plan(plan, width, order, return_register, registers, initial_rules, frames)
         before = digest(original)
         plain = None
         for mode in ('none', 'zlib'):
@@ -169,7 +173,7 @@ def main():
             encoded = candidate.read_bytes()
             run(command, case / (mode + '-repeat.log'))
             assert encoded == candidate.read_bytes() and digest(original) == before
-            assert decode(raw.read_bytes(), width, order) == frames
+            assert decode(raw.read_bytes(), width, order, initial_rules) == frames
             if plain is None: plain = raw.read_bytes()
             assert raw.read_bytes() == plain
             section, = [s for s in metadata(candidate)['sections'] if s['name'] == '.debug_frame']
@@ -290,7 +294,7 @@ def main():
                          {'address': symbols['cf_restored'][0], 'cfa': [sp, entry_offset], 'rules': entry_rules}]
             frames.append({'address': address, 'size': size, 'rows': rows})
         frames.sort(key=lambda frame: frame['address'])
-        reports.append(encode(case, original, 8, 'little', ra, registers, frames))
+        reports.append(encode(case, original, 8, 'little', ra, registers, frames, entry_rules))
         results = {}
         warnings = {}
         for mode, artifact in [('reference', reference), ('none', case / 'none.dbg'),

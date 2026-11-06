@@ -6,7 +6,6 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Objects;
-import java.util.TreeMap;
 import java.util.concurrent.CancellationException;
 import java.util.function.BooleanSupplier;
 
@@ -67,12 +66,10 @@ public final class DwarfDebugFrame {
         out.uleb(1); // byte-sized code alignment; no target instruction assumption
         out.sleb(1); // signed offsets remain exact bytes
         out.uleb(plan.returnRegister());
-        Map<Integer, Rule> initial = new TreeMap<>();
-        for (int register : plan.registers()) {
+        Map<Integer, Rule> initial = plan.initialRules();
+        for (var rule : initial.entrySet()) {
             checkCancelled(cancelled);
-            initial.put(register, new Undefined());
-            out.octet(0x07); // DW_CFA_undefined, override consumer ABI defaults explicitly
-            out.uleb(register);
+            writeRule(out, rule.getKey(), rule.getValue());
         }
         out.finishEntry(cie, plan.addressBytes());
         for (Frame frame : frames) {

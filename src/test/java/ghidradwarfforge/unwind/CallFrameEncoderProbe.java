@@ -34,11 +34,27 @@ public final class CallFrameEncoderProbe {
         for (String part : header[3].split(",")) {
             if (!registers.add(Integer.parseInt(part))) throw new IllegalArgumentException("duplicate register");
         }
+        var initialRules = new TreeMap<Integer, Rule>();
+        String[] initialFields = lines.get(1).split(" ");
+        if (!initialFields[0].equals("initial")) throw new IllegalArgumentException("missing explicit CIE rules");
+        for (String item : initialFields[1].split(",")) {
+            String[] parts = item.split(":");
+            int register = Integer.parseInt(parts[0]);
+            Rule rule = switch (parts[1]) {
+                case "u" -> new Undefined();
+                case "s" -> new SameValue();
+                case "m" -> new AtCfaOffset(Long.parseLong(parts[2]));
+                case "v" -> new CfaValue(Long.parseLong(parts[2]));
+                case "r" -> new InRegister(Integer.parseInt(parts[2]));
+                default -> throw new IllegalArgumentException("unknown initial rule");
+            };
+            if (initialRules.put(register, rule) != null) throw new IllegalArgumentException("duplicate initial rule");
+        }
         var frames = new ArrayList<Frame>();
         var rows = new ArrayList<Row>();
         long address = 0;
         long size = 0;
-        for (String line : lines.subList(1, lines.size())) {
+        for (String line : lines.subList(2, lines.size())) {
             String[] fields = line.split(" ");
             if (fields[0].equals("frame")) {
                 if (size != 0) frames.add(new Frame(address, size, rows));
@@ -67,7 +83,7 @@ public final class CallFrameEncoderProbe {
             else throw new IllegalArgumentException("unknown plan record");
         }
         if (size != 0) frames.add(new Frame(address, size, rows));
-        byte[] bytes = DwarfDebugFrame.build(new CallFramePlan(width, order, returnRegister, registers, frames), () -> false);
+        byte[] bytes = DwarfDebugFrame.build(new CallFramePlan(width, order, returnRegister, registers, initialRules, frames), () -> false);
         // The repository's strict checker requires a completed CU. This
         // fixture-only CU identifies the explicit test plan, not original C
         // source, and supplies no lines, types or recovered unwind evidence.

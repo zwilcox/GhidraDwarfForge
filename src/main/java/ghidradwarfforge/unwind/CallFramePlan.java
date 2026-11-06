@@ -15,7 +15,7 @@ import java.util.TreeSet;
  * No processor, ABI, register defaults or instruction effects are inferred here.
  */
 public record CallFramePlan(int addressBytes, ByteOrder order, int returnRegister,
-        Set<Integer> registers, List<Frame> frames) {
+        Set<Integer> registers, Map<Integer, Rule> initialRules, List<Frame> frames) {
     public static final int MAX_REGISTER = 4095;
     public static final int MAX_REGISTERS = 512;
     public static final int MAX_FRAMES = 65536;
@@ -88,6 +88,19 @@ public record CallFramePlan(int addressBytes, ByteOrder order, int returnRegiste
         }
         for (int register : registers) checkRegister(register);
         registers = Collections.unmodifiableSet(new TreeSet<>(registers));
+        Objects.requireNonNull(initialRules, "CIE initial rules");
+        if (!initialRules.keySet().equals(registers)) {
+            throw new IllegalArgumentException("CIE initial rules do not match the register universe");
+        }
+        var initial = new TreeMap<Integer, Rule>();
+        for (var entry : initialRules.entrySet()) {
+            Rule rule = Objects.requireNonNull(entry.getValue(), "CIE initial rule");
+            if (rule instanceof InRegister in && !registers.contains(in.register())) {
+                throw new IllegalArgumentException("CIE recovery register is outside the declared universe");
+            }
+            initial.put(entry.getKey(), rule);
+        }
+        initialRules = Collections.unmodifiableMap(initial);
         if (frames.size() > MAX_FRAMES) {
             throw new IllegalArgumentException("too many frame descriptions");
         }

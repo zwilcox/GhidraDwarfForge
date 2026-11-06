@@ -1,5 +1,13 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 CIE initialization audit correction:** explicit
+immutable CIE rules replace the encoder's unconditional undefined defaults.
+Pinned AADWARF64's used-callee-saved initialization requirement exposed the gap;
+the prior X19 CIE fails the new independent assertion despite earlier GDB passes.
+All target harnesses pass again and the component suite now has 158 checks. See
+`docs/evidence/cfi-explicit-cie.json`. Production recovery remains PLANNED and
+current hosted acceptance is still required.
+
 **CONFIRMED locally — #112 explicit CFI encoder:** the immutable rule model,
 pure Java serializer and aligned plain/compressed ELF packaging pass 155 component
 checks and independent GNU/LLVM/pinned strict validation. Both runtime targets
