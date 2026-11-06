@@ -7,6 +7,9 @@ param(
     [switch] $GdbLoader,
     [string] $CompressDebugSections = 'none',
     [string] $SourceContext = 'off',
+    [ValidateSet('off', 'strict', 'conditioned')] [string] $SynthesizeUnwind = 'off',
+    [string] $UnwindStackSeparation,
+    [ValidateSet('off', 'fixed')] [string] $UnwindRelocatedPointers = 'off',
     [string] $AnnotationRecordLimit,
     [string] $AnnotationTextLimit,
     [string] $AnnotationSourceLimit,
@@ -181,6 +184,7 @@ namespace GhidraDwarfForge {
     if (-not [string]::IsNullOrWhiteSpace($selectedOutput)) {
         Assert-LogNotAlias "$selectedOutput.c"
         Assert-LogNotAlias "$selectedOutput.gdb.py"
+        Assert-LogNotAlias "$selectedOutput.unwind.json"
     }
     if ($projectMode) {
         Assert-LogNotAlias (Join-Path $ProjectDirectory "$ProjectName.gpr")
@@ -267,6 +271,15 @@ try {
     }
     if ($CompressDebugSections -eq 'zlib') {
         $exportOptions += @('--compress-debug-sections=zlib')
+    }
+    if ($SynthesizeUnwind -cne 'off') {
+        $exportOptions += @("--synthesize-unwind=$SynthesizeUnwind")
+    }
+    if ($PSBoundParameters.ContainsKey('UnwindStackSeparation')) {
+        $exportOptions += @("--unwind-stack-separation=$UnwindStackSeparation")
+    }
+    if ($UnwindRelocatedPointers -cne 'off') {
+        $exportOptions += @("--unwind-relocated-pointers=$UnwindRelocatedPointers")
     }
     if ($SourceContext -cne 'off') {
         $exportOptions += @("--source-context=$SourceContext")

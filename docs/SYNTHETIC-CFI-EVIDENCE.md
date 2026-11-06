@@ -1,11 +1,14 @@
 # Evidence model for synthetic call-frame information (#112)
 
-**PLANNED production behavior; CONFIRMED compiler-reference checkpoint.**
-This document proposes how to satisfy #112. Normal CLI/GUI export does not
-yet enable synthesis. The explicit internal exporter API is exercised by
-`NATIVE-FRAME-EXPORT.md` and the original/runtime coexistence harnesses. [ADR-0002](ADR-0002-DEBUG-FRAME.md)'s production prohibition remains in force
-until the model, preservation path and runtime tests below are implemented.
-Neither this checkpoint nor historical #8 closes #112.
+**PRESENT, UNVERIFIED normal-entry-point integration.** The revised
+[ADR-0002](ADR-0002-DEBUG-FRAME.md) selects opt-in strict recovery and separately
+acknowledged conditional recovery. The normal wrapper now stages a bound evidence
+report with each requested generation; ordinary export still defaults to off.
+The dedicated Script Manager chooser uses the same path. See
+[production integration](PRODUCTION-UNWIND.md) for the current acceptance scope.
+Internal compiler exports are locally validated across both targets and all three
+image roles; this does not yet complete production or hosted acceptance.
+Historical #8 did not close #112.
 
 ## Separate recovery from encoding
 

@@ -1,0 +1,265 @@
+{
+    "status": "CONFIRMED local normal wrapper integration; GUI/Windows/hosted acceptance incomplete",
+    "utc": "2026-11-06T13:59:25.784556+00:00",
+    "parent": "5b3e6d5e4e92fbcb6deeb420dfaec547909e33ae",
+    "sourceSha256": {
+        ".github/workflows/ci.yml": "bb9ad9e11ba34448fbf4b405e89065ff6a1fa2592c8dce2942bc6a79e97e4fbb",
+        "PROJECT_CONTEXT.md": "fe6ff4bdae9351a768d4eb354f885c66b62a83aa2d289b09d4cd3f13eadcd46a",
+        "TODO.md": "1f1218b01871980718175bd55587d4fe9430ac1d29cf6a817376979fd1fd3fbf",
+        "build.gradle": "b6d513fedb5f45b0eb3acc73ec9fd7cedcdcb7ec14d04c39b5845dea7f596b9d",
+        "docs/ADR-0002-DEBUG-FRAME.md": "4ffa5803fd8c3e0c45ac920fae45ccb16a890a8db96e479363e704166c7e64cd",
+        "docs/SYNTHETIC-CFI-EVIDENCE.md": "3f0ff812ce616d445813b5e4e943f494c6f96918355861776b829beaf4337843",
+        "ghidra_scripts/GhidraDwarfForge.java": "f549a6f39a1f78ad8e9c523276f0d2518a6023521e02c8f7ef1dccccff4e565a",
+        "src/main/java/ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter.java": "9af089aa6149771212d63441e80019aa39c929a2678a383cdec2aaec8a808436",
+        "src/main/java/ghidradwarfforge/output/CompanionArtifactPublisher.java": "0bcbd294002196e6c2f1d1602ea240460b0a4f566f84f16a7e1c6601d223d1b2",
+        "src/test/integration/headless-wrapper.ps1": "45bb368a10e50b2ecc67ded807ff338ec129be68d5a01dc313168fe7bb45b736",
+        "src/test/integration/headless-wrapper.sh": "7f1e1ac437c4a1a5c004cf0fe8536be12e133525c2316875bf98776c902f2e93",
+        "src/test/java/ghidradwarfforge/output/CompanionArtifactPublisherSmoke.java": "a67cb87d0464b6cb0d40da3b84aa59f060b3513181f3d47af2ccbe6506344f14",
+        "support/ghidra-dwarf-forge-headless": "b532f71f64355f794668e0b0fca4cb9fab33bb0d247fd5ebda43f33c7d96a6c5",
+        "support/ghidra-dwarf-forge-headless.ps1": "d61ec582ea4929687fab323cf92b5b6affaebeaa20c1ef0bc0b232583faf993e",
+        "docs/PRODUCTION-UNWIND.md": "343134797033f385f8f46d1c44cae5ada10fd5e52fcfc8056329537bf64a8da0",
+        "ghidra_scripts/ExportGhidraDwarfForgeWithUnwind.java": "3ea1e27401d52e8a28893a30bd82e7e6b96cd756c2e1d7116629b5bbf02f7070",
+        "src/main/java/ghidradwarfforge/unwind/UnwindOptions.java": "dbd40368491bbb8e5304ddc7c8abc28a18d2bed8b58368904cf2be0e3d0a9286",
+        "src/test/integration/ghidra_scripts/ProductionUnwindControls.java": "dea7ab64bdb8b8a1c4e6f56c74bb19da102c99fea89933bf0a243f69a41c0c0e",
+        "src/test/integration/production-unwind-controls.py": "2091cab688d26867704936499fa099abbae0543b0256dcb6e113e6861dd5cf9e",
+        "src/test/integration/production-unwind-export.py": "91bbf4686ff0a0d77a7e747f6fdc7e8809d27268cf238dcc0ee06742953eacfa",
+        "src/test/java/ghidradwarfforge/unwind/UnwindOptionsSmoke.java": "308a6379f1e8bbd7971658fc7ffebb6149e93650339f1ca161ea8e77e23b921f"
+    },
+    "package": {
+        "base": "/dev/shm/forge-cfi-recovery-worktree/build/native-frame-installation/ghidra",
+        "package": "/dev/shm/forge-cfi-recovery-worktree/build/flow-gradle/dist/ghidra_12.0.3_PUBLIC_20261106_GhidraDwarfForge.zip",
+        "sha256": "910a51a4f8dfc55eab71605d55ffa14267b659d03ad7c7e6319fc82293e3da11",
+        "installed": "/dev/shm/forge-cfi-recovery-worktree/build/production-unwind-installation/ghidra",
+        "classCount": 738,
+        "sourceCount": 210,
+        "jarSha256": "3346f363e47a97807a356cc38e6bd8d3f8c89ac3e67a57b5cb3c832cf61d7e6e",
+        "scriptSha256": {
+            "ghidra_scripts/GhidraDwarfForge.java": "f549a6f39a1f78ad8e9c523276f0d2518a6023521e02c8f7ef1dccccff4e565a",
+            "ghidra_scripts/ExportGhidraDwarfForgeWithUnwind.java": "3ea1e27401d52e8a28893a30bd82e7e6b96cd756c2e1d7116629b5bbf02f7070",
+            "support/ghidra-dwarf-forge-headless": "b532f71f64355f794668e0b0fca4cb9fab33bb0d247fd5ebda43f33c7d96a6c5",
+            "support/ghidra-dwarf-forge-headless.ps1": "d61ec582ea4929687fab323cf92b5b6affaebeaa20c1ef0bc0b232583faf993e"
+        },
+        "scope": "All current production classes, Java sources and changed installed entry points match; subsequent documentation/test/workflow edits are not in this earlier package"
+    },
+    "results": {
+        "shared-first": {
+            "sha256": "3e5182f9d084b40c81f6b46ec9962cf2a8a6ba828e69f59c8c4d076faa2b33e8",
+            "status": "PASS_PRODUCTION_UNWIND",
+            "cases": [
+                {
+                    "target": "x86_64",
+                    "role": "shared",
+                    "exports": 5,
+                    "invalidOptionControls": 1,
+                    "gdbSessions": 5,
+                    "boundarySnapshots": 92,
+                    "artifacts": [
+                        {
+                            "mode": "off",
+                            "sha256": "808279efeaab7a62730e4680af899e43f26c7c55a3b0c14ea4765100ebf296f7"
+                        },
+                        {
+                            "mode": "strict",
+                            "sha256": "92aa50f7f9b80dd638c00a01cde5171539e50b220acb19e00a44215bb5837d40"
+                        },
+                        {
+                            "mode": "conditioned",
+                            "sha256": "3c9baafab8c70bfa16dd1fcc1857ba71db230b9d02477a04c1429b898637cb1e"
+                        },
+                        {
+                            "mode": "compressed",
+                            "sha256": "dcc8ab0a2c52bcc010c2f1d40d26ec2091ba17eb5a004844156b982cb7a7ed9d"
+                        }
+                    ]
+                },
+                {
+                    "target": "aarch64",
+                    "role": "shared",
+                    "exports": 5,
+                    "invalidOptionControls": 1,
+                    "gdbSessions": 5,
+                    "boundarySnapshots": 79,
+                    "artifacts": [
+                        {
+                            "mode": "off",
+                            "sha256": "d5e5bb416768cf77dd07d750b20d75a32e972fa4d3261fee3f4f242f30b9f8e5"
+                        },
+                        {
+                            "mode": "strict",
+                            "sha256": "f645306cca6fd2bd665d4476da7daab8908b38726516f806f9cc227dd3802129"
+                        },
+                        {
+                            "mode": "conditioned",
+                            "sha256": "36e5754ae783a1bf62c4efa960967de611604ed0b4e1e7394b37ade72528f4f0"
+                        },
+                        {
+                            "mode": "compressed",
+                            "sha256": "0393e06c9ed82f448b9bd6503b71c899b7712301cfd3d5b71cd701ddb0363319"
+                        }
+                    ]
+                }
+            ]
+        },
+        "exec-first": {
+            "sha256": "1a708aabf960a04b40c4ac1acf443a18b9582805ddb35c4676436b62f131dff2",
+            "status": "PASS_PRODUCTION_UNWIND",
+            "cases": [
+                {
+                    "target": "x86_64",
+                    "role": "exec",
+                    "exports": 5,
+                    "invalidOptionControls": 1,
+                    "gdbSessions": 5,
+                    "boundarySnapshots": 90,
+                    "artifacts": [
+                        {
+                            "mode": "off",
+                            "sha256": "28bb90350ed13cf298f8fc8a70f71a75eaab5e217480e91e7e498066c0c9ec0e"
+                        },
+                        {
+                            "mode": "strict",
+                            "sha256": "4af4aa6db13ebe721af1c9ef98d80d83e0c0db1f4fdbe8a642d7668659a30256"
+                        },
+                        {
+                            "mode": "conditioned",
+                            "sha256": "5c76c3e17cd5ce112c2e5d305ff8e0b3f65d1a8a2102b04a8346f9a29d69a80e"
+                        },
+                        {
+                            "mode": "compressed",
+                            "sha256": "ca7f768692033bb9efea39bdef7725ce78368d3a9ccd5b58d6327bfbb6f83f11"
+                        }
+                    ]
+                },
+                {
+                    "target": "aarch64",
+                    "role": "exec",
+                    "exports": 5,
+                    "invalidOptionControls": 1,
+                    "gdbSessions": 5,
+                    "boundarySnapshots": 77,
+                    "artifacts": [
+                        {
+                            "mode": "off",
+                            "sha256": "5731f40d21fc2dc7412632b505d6c38b1e34680ba6ad27136bf0fa998b73be9b"
+                        },
+                        {
+                            "mode": "strict",
+                            "sha256": "f6bb0b0a7ebc6c6a9252b1801a671591951c3c9c80df39a186017d1ed7bffa54"
+                        },
+                        {
+                            "mode": "conditioned",
+                            "sha256": "a727dbd69c445330cbadb23d95d315d994605e73aba55b20b55a2e93c8e8d24a"
+                        },
+                        {
+                            "mode": "compressed",
+                            "sha256": "a078edf9d4c9e45904ed23d320208a3d94634cd9e55db9d8780b7f7d7cf309af"
+                        }
+                    ]
+                }
+            ]
+        },
+        "pie-first": {
+            "sha256": "36759295a7158851f92f1d23ff30735034546e19a672e9274dc3011843da93c6",
+            "status": "PASS_PRODUCTION_UNWIND",
+            "cases": [
+                {
+                    "target": "x86_64",
+                    "role": "pie",
+                    "exports": 5,
+                    "invalidOptionControls": 1,
+                    "gdbSessions": 5,
+                    "boundarySnapshots": 90,
+                    "artifacts": [
+                        {
+                            "mode": "off",
+                            "sha256": "d551c83f62c7d36c1235da6d8a4d4be1525c053ff04b14f1c77c2244db551762"
+                        },
+                        {
+                            "mode": "strict",
+                            "sha256": "cdfb715753feb01b4d1542800153aea662611e03ca63aa55ed66d7bd0efada5b"
+                        },
+                        {
+                            "mode": "conditioned",
+                            "sha256": "0315ece043471d8a5b62de0f5f5f947b1747b36bd76e36d1dd079a8225784eb1"
+                        },
+                        {
+                            "mode": "compressed",
+                            "sha256": "9c7adbaf947783020fd732e701ae4c88487767e00e10145b84d34aa8cc532cb1"
+                        }
+                    ]
+                },
+                {
+                    "target": "aarch64",
+                    "role": "pie",
+                    "exports": 5,
+                    "invalidOptionControls": 1,
+                    "gdbSessions": 5,
+                    "boundarySnapshots": 77,
+                    "artifacts": [
+                        {
+                            "mode": "off",
+                            "sha256": "2bdbbd686c1e39758768114e0a747947b2bf0be08f99bbdb8b813c2e24bfc4b9"
+                        },
+                        {
+                            "mode": "strict",
+                            "sha256": "4dea5f61b61cb6be634f53bc369e2363ba5f96dd965123188cc48d51ceaf4b45"
+                        },
+                        {
+                            "mode": "conditioned",
+                            "sha256": "a65ee882f64e08b010024c8f1b88ebe3fc821ff68002c32704ed318347a2a153"
+                        },
+                        {
+                            "mode": "compressed",
+                            "sha256": "78e4c2d1a3ef0c6640b6995510bd9bb47c49a517030256f561d2dd4b404b3926"
+                        }
+                    ]
+                }
+            ]
+        },
+        "controls-lookup": {
+            "sha256": "0a792583b3d152a5d5d25f740d7b61701367c663f78e1701e36d4076f7cee2a5",
+            "status": "PASS_PRODUCTION_UNWIND_CONTROLS",
+            "cases": [
+                {
+                    "target": "x86_64",
+                    "role": "shared",
+                    "exports": 3,
+                    "controls": 8,
+                    "gdbSessions": 4,
+                    "originalSha256": "04b8dfcb5e053ac8e343550830e31b5a4a0576d8638af582017fadf757e6e03d",
+                    "frameSha256": "0845422de0e91a93b9409dd69ebfa5515e0de8a784d18841e571364be22b94e7"
+                },
+                {
+                    "target": "aarch64",
+                    "role": "shared",
+                    "exports": 3,
+                    "controls": 8,
+                    "gdbSessions": 4,
+                    "originalSha256": "5584f2dfda2ad2860875b4f86bfc3e21ea07e7589c68bbfe485efa09a9650374",
+                    "frameSha256": "c79da37a1301e6333ed71bc1c88ae07f3da4ee67ef6cd288df0d83c11c37ad31"
+                }
+            ]
+        }
+    },
+    "retainedStrictReports": 28,
+    "additionalChecks": [
+        "unwindOptionsSmoke",
+        "companionArtifactPublisherSmoke including four-file rollback",
+        "Linux headless-wrapper fixture forwarding and evidence-path log aliases",
+        "architecture-neutrality",
+        "actionlint",
+        "git diff --check"
+    ],
+    "limits": [
+        "GUI chooser present but not exercised; Windows not executed locally (PowerShell unavailable)",
+        "Full issue112 remains incomplete, including normal-path original-CFI and saved-project journeys and hosted acceptance",
+        "Evidence validationStatus NOT_RUN is retained; validators recorded externally",
+        "Conditions remain explicitly unproved; no user response inferred to earlier optional policy preference",
+        "GDB loader generated and rollback-protected; combined loader consumption remains to test"
+    ],
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/production-unwind-entry.tar.gz",
+        "sha256": "3e6f572fb18ac8fd68f3a0aa91dfcb1f47722796fefe918ec7210a8edbc87006",
+        "bytes": 8261750
+    }
+}

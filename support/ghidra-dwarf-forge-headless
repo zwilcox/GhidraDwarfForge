@@ -22,6 +22,12 @@ Common options:
   --annotation-source-limit=<n>  Complete source UTF-8 bytes (default: 134217728)
   --source-context=off|assembly|pcode|both
                           Instruction context for incomplete source (default: off)
+  --synthesize-unwind=off|strict|conditioned
+                          Recover ordinary call frames (default: off)
+  --unwind-stack-separation=<hex-first:hex-last,...>
+                          Explicit condition: ranges never overlap live caller/group stack
+  --unwind-relocated-pointers=off|fixed
+                          Explicit invariant relocated-pointer condition (default: off)
   --log=<path>            Preserve the complete headless transcript
   --analysis-timeout=<s> Import-mode analysis timeout (default: 120)
 
@@ -103,6 +109,7 @@ validate_log_path() {
     if [[ -n "$selected_output" ]]; then
         reject_log_alias "$selected_output.c"
         reject_log_alias "$selected_output.gdb.py"
+        reject_log_alias "$selected_output.unwind.json"
     fi
     if ((project_mode)); then
         reject_log_alias "$project_dir/$project_name.gpr"
@@ -131,6 +138,7 @@ program=
 log_path=
 analysis_timeout=120
 annotation_options=()
+unwind_options=()
 
 for argument in "$@"; do
     case "$argument" in
@@ -142,6 +150,8 @@ for argument in "$@"; do
         --gdb-loader) gdb_loader=1 ;;
         --compress-debug-sections=*) debug_compression=${argument#*=} ;;
         --source-context=*) source_context=${argument#*=} ;;
+        --synthesize-unwind=*|--unwind-stack-separation=*|--unwind-relocated-pointers=*)
+            unwind_options+=("$argument") ;;
         --annotation-record-limit=*|--annotation-text-limit=*|--annotation-source-limit=*)
             annotation_options+=("$argument") ;;
         --import=*) import_path=${argument#*=} ;;
@@ -233,7 +243,7 @@ fi
 ((gdb_loader)) && export_options+=("--gdb-loader")
 [[ "$debug_compression" == zlib ]] && export_options+=("--compress-debug-sections=zlib")
 [[ "$source_context" != off ]] && export_options+=("--source-context=$source_context")
-export_options+=("${annotation_options[@]}")
+export_options+=("${annotation_options[@]}" "${unwind_options[@]}")
 
 if ((import_mode)); then
     [[ -f "$import_path" ]] || die_usage "import ELF does not exist: $import_path"

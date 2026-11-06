@@ -129,6 +129,14 @@ tasks.register("elfRuntimeRelocationsSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.elf.ElfRuntimeRelocationsSmoke"
 }
 
+tasks.register("unwindOptionsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit unwind policies, address ranges and condition normalization"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.unwind.UnwindOptionsSmoke"
+}
+
 tasks.register("elfRelocatedPointersSmoke", JavaExec) {
     group = "verification"
     description = "Checks qualified relative pointer candidates and rejection/cancellation"

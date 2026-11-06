@@ -103,9 +103,9 @@ exit /b %FAKE_HEADLESS_EXIT%
     $packagedDirectory = Join-Path $fakeGhidra 'Ghidra\Extensions\GhidraDwarfForge\os\win_x86_64'
     $packagedLibrary = Join-Path $packagedDirectory 'libdwarf.dll'
     New-Item -ItemType Directory -Path $databaseDirectory, $packagedDirectory -Force | Out-Null
-    foreach ($path in @($consumer, $producer, $inputElf, $override, $output, "$output.c", "$output.gdb.py",
-            "$inputElf.dbg", "$inputElf.dbg.c", "$inputElf.dbg.gdb.py",
-            "$override.dbg", "$override.dbg.c", "$override.dbg.gdb.py",
+    foreach ($path in @($consumer, $producer, $inputElf, $override, $output, "$output.c", "$output.gdb.py", "$output.unwind.json",
+            "$inputElf.dbg", "$inputElf.dbg.c", "$inputElf.dbg.gdb.py", "$inputElf.dbg.unwind.json",
+            "$override.dbg", "$override.dbg.c", "$override.dbg.gdb.py", "$override.dbg.unwind.json",
             (Join-Path $project 'Existing.gpr'), (Join-Path $project 'Existing.lock'),
             $database, $packagedLibrary)) {
         Preserve-File $path
@@ -181,6 +181,11 @@ exit /b %FAKE_HEADLESS_EXIT%
         throw 'explicit none unexpectedly changed default exporter arguments'
     }
     $null = Invoke-Wrapper 64 ($importOptions + @('-CompressDebugSections', 'zstd'))
+    Invoke-Wrapper 0 @('-Import', $inputElf, '-SynthesizeUnwind', 'conditioned',
+        '-UnwindStackSeparation', '100:107', '-UnwindRelocatedPointers', 'fixed') | Out-Null
+    foreach ($option in @('--synthesize-unwind=conditioned', '--unwind-stack-separation=100:107', '--unwind-relocated-pointers=fixed')) {
+        Assert-Condition ((Get-Content -LiteralPath $argumentLog -Raw).Contains($option)) 'unwind option was not forwarded'
+    }
     foreach ($mode in @('assembly', 'pcode', 'both')) {
         $null = Invoke-Wrapper 0 ($importOptions + @('-SourceContext', $mode))
         Assert-Condition ((Get-Content -LiteralPath $argumentLog -Raw).Contains("--source-context=$mode")) 'context option was not forwarded'
@@ -189,13 +194,13 @@ exit /b %FAKE_HEADLESS_EXIT%
     Assert-Condition ((Get-Content -LiteralPath $argumentLog -Raw) -notmatch '--source-context=') 'off changed exporter arguments'
     $null = Invoke-Wrapper 64 ($importOptions + @('-SourceContext', 'invalid'))
     $null = Invoke-Wrapper 64 ($importOptions + @('-SourceContext', 'BOTH'))
-    foreach ($log in @($output, "$output.c", "$output.gdb.py")) {
+    foreach ($log in @($output, "$output.c", "$output.gdb.py", "$output.unwind.json")) {
         Assert-RejectedLog $log ($importOptions + @('-Output', $output))
     }
-    foreach ($log in @("$inputElf.dbg", "$inputElf.dbg.c", "$inputElf.dbg.gdb.py")) {
+    foreach ($log in @("$inputElf.dbg", "$inputElf.dbg.c", "$inputElf.dbg.gdb.py", "$inputElf.dbg.unwind.json")) {
         Assert-RejectedLog $log $importOptions
     }
-    foreach ($log in @("$override.dbg", "$override.dbg.c", "$override.dbg.gdb.py")) {
+    foreach ($log in @("$override.dbg", "$override.dbg.c", "$override.dbg.gdb.py", "$override.dbg.unwind.json")) {
         Assert-RejectedLog $log ($importOptions + @('-OriginalElf', $override))
     }
     $newOutput = Join-Path $work 'new.dbg'

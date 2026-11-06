@@ -1,5 +1,17 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — normal-wrapper unwind integration for #112:** off/strict/
+conditioned/compressed exports pass on x86-64 and AArch64 executable/PIE/shared
+compiler fixtures, including deterministic generations, bound evidence, validators
+and instruction-boundary/recursive-return GDB comparisons. The normal exporter
+preserves analyst comments/constants with generated frames and passes sixteen
+real recovery/serialization/evidence/loader cancellation/failure controls across
+the two shared-library cases, including rebasing and typed constant lookup.
+See `docs/PRODUCTION-UNWIND.md`. The dedicated GUI chooser and Windows path are
+PRESENT, UNVERIFIED; existing-CFI production journeys and hosted gates remain.
+PR175 merged as `5b4ca014`, closing #116/#114; PR176 run `42221824335` still runs.
+#112 is incomplete; #110/#109 remain next. Earlier pending entries are historical.
+
 **CONFIRMED locally — relocated-pointer compiler matrix for #112:** both targets
 now pass executable/PIE/shared exports of the unchanged C fixture. AArch64's GOT
 load uses a separately acknowledged fixed-pointer condition qualified from

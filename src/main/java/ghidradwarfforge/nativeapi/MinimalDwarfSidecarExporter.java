@@ -419,10 +419,24 @@ public final class MinimalDwarfSidecarExporter {
             List<ElfFunctionAlias> aliases, List<ElfFunctionModeCue> aliasModeCues,
             List<ghidradwarfforge.elf.Arm32SectionModes.Evidence> sectionModes,
             java.util.function.Consumer<String> diagnostic, ghidradwarfforge.unwind.CallFramePlan framePlan) throws IOException {
+        return exportWithFrames(input, output, consumerLibrary, producerLibrary, functions, syntheticSource,
+            typeModel, sourceFileName, cancelled, modeCues, aliases, aliasModeCues, sectionModes,
+            new SyntheticConstants(List.of(), Set.of()), diagnostic, framePlan);
+    }
+
+    /** Retains analyst constants when adding independently recovered frame rules. */
+    public ExportResult exportWithFrames(Path input, Path output, Path consumerLibrary,
+            Path producerLibrary, List<FunctionSymbol> functions,
+            SyntheticSourceFile syntheticSource, ProgramTypeModel typeModel,
+            String sourceFileName, BooleanSupplier cancelled, List<ElfFunctionModeCue> modeCues,
+            List<ElfFunctionAlias> aliases, List<ElfFunctionModeCue> aliasModeCues,
+            List<ghidradwarfforge.elf.Arm32SectionModes.Evidence> sectionModes,
+            SyntheticConstants syntheticConstants, java.util.function.Consumer<String> diagnostic,
+            ghidradwarfforge.unwind.CallFramePlan framePlan) throws IOException {
         Objects.requireNonNull(framePlan, "proved frame plan");
         return exportInternal(input, output, consumerLibrary, producerLibrary, functions, syntheticSource,
             typeModel, sourceFileName, cancelled, modeCues, aliases, aliasModeCues, sectionModes,
-            new SyntheticConstants(List.of(), Set.of()), diagnostic, framePlan);
+            syntheticConstants, diagnostic, framePlan);
     }
 
     private ExportResult exportInternal(Path input, Path output, Path consumerLibrary,
