@@ -51,3 +51,9 @@ They do not validate Forge-generated CFI. This ADR's production prohibition
 remains active until the proposal's full acceptance criteria pass; #112 remains
 open. The new requirement supersedes any historical interpretation that closing
 #8 also completed synthetic unwinding.
+
+**CONFIRMED locally; hosted pending:** [original compiler-CFI preservation](ORIGINAL-CFI-PRESERVATION.md)
+now retains `.debug_frame`/`.zdebug_frame` in linked sidecars. This corrects the
+retirement bug; it does not synthesize frame rules and does not change this ADR's
+prohibition on unvalidated generation. New frame payloads cannot silently replace
+original unwind metadata.

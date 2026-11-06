@@ -1,5 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 original-CFI preservation:** thirty real-export/GDB
+cases pass on x86-64 and AArch64 across exec/PIE/shared, compression, rebasing and
+retained link relocations. Original frame bytes stay active and unchanged;
+generated collisions fail safely. Twelve component cases cover both ELF widths,
+byte orders, cancellation and ET_REL omission. See
+`docs/ORIGINAL-CFI-PRESERVATION.md`. Hosted acceptance, trusted coverage planning,
+ABI audit, rule recovery/encoding and the full synthetic-CFI matrix remain open.
+This does not complete #112 or change the #116/#114 → #112 → #110 → #109 priority.
+
 **CONFIRMED locally — #112 compiler-reference checkpoint; production PLANNED:**
 x86-64 and AArch64 reference harnesses pass structural and runtime checks with
 explicit absent-CFI/disabled-unwinder controls. The AArch64 fallback reproduces

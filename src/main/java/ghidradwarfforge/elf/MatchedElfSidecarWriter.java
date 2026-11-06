@@ -112,6 +112,13 @@ public final class MatchedElfSidecarWriter {
                 throw new IllegalArgumentException("invalid debug section " + entry.getKey());
             }
         }
+        if (debugSections.containsKey(".debug_frame") && image.sections().stream()
+                .anyMatch(section -> isOriginalDebugFrame(section.name))) {
+            // Replacing source/type DIEs does not invalidate original unwind
+            // rules. A future synthesis planner must reconcile coverage first;
+            // this writer must never silently overwrite either encoding.
+            throw new IllegalArgumentException("generated .debug_frame conflicts with original unwind metadata");
+        }
 
         Layout layout = prepare(image, debugSections, symbols, cancelled, diagnostic);
         Path temporary = Files.createTempFile(parent, ".ghidra-dwarf-forge-", ".tmp");
@@ -181,6 +188,12 @@ public final class MatchedElfSidecarWriter {
             }
         }
         else {
+            boolean linkedImage = image.type() == 2 || image.type() == 3;
+            if (!linkedImage && image.sections().stream()
+                    .anyMatch(section -> isOriginalDebugFrame(section.name))) {
+                diagnostic.accept("Original debug-frame metadata remains retired: " +
+                    "preservation requires a linked ET_EXEC or ET_DYN image");
+            }
             Set<String> replacementNames = new HashSet<>();
             for (Section section : image.sections()) {
                 Section copy = section.copy();
@@ -197,6 +210,7 @@ public final class MatchedElfSidecarWriter {
                     copy.name = ".shstrtab.old";
                 }
                 else if (isInheritedDebugMetadata(copy.name) &&
+                        !(linkedImage && isOriginalDebugFrame(copy.name)) &&
                         (!debugSections.containsKey(copy.name) ||
                             !replacementNames.add(copy.name))) {
                     copy.name = ".forge.stale" + copy.name;
@@ -586,10 +600,17 @@ public final class MatchedElfSidecarWriter {
         // The current export replaces the original debug view. Old indexes,
         // compressed DWARF, and separate-debug references must not remain active
         // alongside the newly generated sections. Their bytes are still retained.
+        // prepare() exempts original call-frame information in linked images:
+        // it is independent of the replaced DIE/line view. ET_REL still needs
+        // relocation processing and must not expose unresolved frame bytes.
         return name.startsWith(".debug_") || name.startsWith(".zdebug_") ||
             name.startsWith(".rel.debug_") || name.startsWith(".rela.debug_") ||
             name.equals(".gdb_index") || name.equals(".gnu_debuglink") ||
             name.equals(".gnu_debugaltlink") || name.equals(".gnu_debugdata");
+    }
+
+    private static boolean isOriginalDebugFrame(String name) {
+        return name.equals(".debug_frame") || name.equals(".zdebug_frame");
     }
 
     private static void omitRelocationSection(Section section) {

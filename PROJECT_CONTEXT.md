@@ -1,5 +1,16 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 original-CFI preservation prerequisite:** linked
+sidecars now retain compiler `.debug_frame`/`.zdebug_frame`; colliding generated
+frames are rejected and ET_REL frames remain inactive with a diagnostic.
+Thirty x86-64/AArch64 real-export cases cover exec, PIE and loaded shared objects
+with plain/gABI/GNU compression, rebasing and retained link relocations. GDB
+matches independent caller/register/return traces; six removed-frame controls
+prove target-frame DWARF use. Twelve layout/cancellation cases and compression,
+sectionless-unwind and allocation regressions pass. See
+`docs/ORIGINAL-CFI-PRESERVATION.md` for exact scope, curation and local/hosted
+limits. Hosted acceptance remains pending; production synthesis is still PLANNED.
+
 **CONFIRMED locally — #112 independent compiler references; synthesis PLANNED:**
 the new x86-64/AArch64 harness validates compiler `.debug_frame`, exact nested
 caller values, recursive return stepping, deterministic builds and unchanged
@@ -10,7 +21,7 @@ gap and complete remaining acceptance are in `docs/SYNTHETIC-CFI-EVIDENCE.md`.
 ADR-0002 still prohibits production synthesis. #116/#114 PR166 hosted acceptance
 has priority; #112, #110 and #109 remain open. No release is implied.
 
-**CONFIRMED #112 preservation defect, not yet fixed:** a real `f64a00f` export
+**HISTORICAL #112 preservation defect, fixed locally above:** a real `f64a00f` export
 retires the reference's compiler `.debug_frame`; explicit sidecar loading loses
 the full x86-64 backtrace. A diagnostic sidecar-only section-name restoration
 recovers all eight frames with identical original CFI bytes. Both variants pass

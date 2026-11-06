@@ -76,7 +76,7 @@ unwind discovery rules. Do not overlay synthetic FDEs on trusted original ranges
 If an existing unwind source cannot be interpreted sufficiently to establish
 coverage, report that uncertainty rather than assume its covered addresses.
 
-**CONFIRMED source inspection:** `MatchedElfSidecarWriter` currently retires
+**HISTORICAL source inspection:** `MatchedElfSidecarWriter` previously retired
 all `.debug_*` sections, including compiler `.debug_frame`, when it replaces the
 debug view. #112 must address original `.debug_frame` preservation explicitly.
 **CONFIRMED runtime reproduction:** a real export at `f64a00f` of the x86-64
@@ -88,9 +88,12 @@ all six register witnesses. Its payload hash exactly matches the original.
 Both sidecars pass GNU/LLVM/pinned strict validation; structural checks alone
 miss the loss of unwind behavior. The original remains unchanged. See the
 [reproduction receipt](evidence/synthetic-cfi-preservation-probe.json).
-This is an experiment, not a production fix. Plain/compressed records, relocation dependencies,
-PIE/shared-object load bias and rebased imports need actual packaging and runtime
-tests. Simply exempting the section name from retirement is insufficient.
+**CONFIRMED locally; hosted pending:** the [preservation fix](ORIGINAL-CFI-PRESERVATION.md)
+now keeps original linked-image frames active. Thirty real-export/GDB cases
+cover both targets, plain/compressed records, retained link relocations,
+PIE/shared-object load bias and rebased imports. Generated-frame collisions are
+rejected; unlinked frames remain inactive with diagnostics. This fixes the
+prerequisite without enabling synthesis or certifying arbitrary original CFI.
 
 Only after that precedence path is validated may absent coverage be synthesized.
 Keep frame addresses in the same original-image address domain as emitted DIEs
@@ -151,7 +154,8 @@ owned startup fixture fixes it; independent builds now match.
 
 ## Remaining acceptance before enabling production
 
-- Implement the original-metadata preservation/precedence tests above.
+- Obtain hosted acceptance of original-metadata preservation. Implement trusted
+  coverage discovery/merging before any synthesis alongside existing frames.
 - Audit and pin both ABI descriptions; add a pure range/rule encoder with
   independent structural and malformed-input tests.
 - Implement evidence extraction and control-flow analysis in Ghidra, with

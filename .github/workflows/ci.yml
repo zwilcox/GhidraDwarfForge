@@ -1006,6 +1006,14 @@ jobs:
           fi
           readelf -Ws "$partial" | grep -Eq '[[:space:]]recovered_add$'
 
+      - name: Preserve original compiler CFI through actual export and GDB
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/original-cfi-preservation.py "$TARGET" "$GHIDRA_INSTALL_DIR" \
+            "build/test-results/original-cfi-preservation/$TARGET" --dwarfdump "$DWARFDUMP"
+
       - name: Headless Ghidra preflight
         env:
           TARGET: ${{ matrix.target }}

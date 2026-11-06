@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
 
 /**
  * Native-independent retirement of inherited debug metadata in ELF32/ELF64.
@@ -40,7 +41,9 @@ public final class ExistingDebugSidecarSmoke {
         try {
             for (boolean elf64 : new boolean[] { false, true }) {
                 for (ByteOrder order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
-                    checkCase(directory, elf64, order);
+                    for (String frameFormat : List.of("plain", "gabi", "gnu")) {
+                        checkCase(directory, elf64, order, frameFormat);
+                    }
                 }
             }
         }
@@ -54,13 +57,14 @@ public final class ExistingDebugSidecarSmoke {
         System.out.println("existing-debug-sidecar-smoke=PASS");
     }
 
-    private static void checkCase(Path directory, boolean elf64, ByteOrder order)
+    private static void checkCase(Path directory, boolean elf64, ByteOrder order, String frameFormat)
             throws Exception {
         String caseName = (elf64 ? "elf64-" : "elf32-") +
-            (order == ByteOrder.LITTLE_ENDIAN ? "le" : "be");
+            (order == ByteOrder.LITTLE_ENDIAN ? "le" : "be") + "-" + frameFormat;
+        String frameName = frameFormat.equals("gnu") ? ".zdebug_frame" : ".debug_frame";
         Path input = directory.resolve(caseName);
         Path output = directory.resolve(caseName + ".dbg");
-        Files.write(input, fixture(elf64, order));
+        Files.write(input, fixture(elf64, order, frameFormat));
         byte[] originalBytes = Files.readAllBytes(input);
         byte[] originalHash = sha256(originalBytes);
         ElfImage original = ElfImage.read(input);
@@ -92,7 +96,8 @@ public final class ExistingDebugSidecarSmoke {
                 section.alignment == 1, "replacement retained stale metadata");
         }
         require(result.sections().stream().filter(section ->
-            section.name().startsWith(".debug_")).count() == replacement.size(),
+            section.name().startsWith(".debug_")).count() == replacement.size() +
+                (frameFormat.equals("gnu") ? 0 : 1),
             "unexpected active DWARF sections");
         for (String name : RETIRED_NAMES) {
             require(result.sections().stream().noneMatch(section -> section.name().equals(name)),
@@ -134,12 +139,14 @@ public final class ExistingDebugSidecarSmoke {
                     "original payload was changed: " + section.name());
             }
         }
-        for (String name : Set.of(".text", ".eh_frame", ".note.gnu.build-id")) {
+        for (String name : Set.of(".text", ".eh_frame", ".note.gnu.build-id", frameName)) {
             ElfImage.Section before = exactlyOne(original, name);
             ElfImage.Section after = exactlyOne(result, name);
             require(before.type == after.type && before.flags == after.flags &&
                 before.address == after.address && before.offset == after.offset &&
-                before.size == after.size, "non-debug metadata changed: " + name);
+                before.size == after.size && before.alignment == after.alignment &&
+                before.link == after.link && before.info == after.info &&
+                before.entrySize == after.entrySize, "preserved metadata changed: " + name);
             require(Arrays.equals(original.sectionData(before), result.sectionData(after)),
                 "non-debug section bytes changed: " + name);
         }
@@ -148,14 +155,68 @@ public final class ExistingDebugSidecarSmoke {
         new MatchedElfSidecarWriter().write(input, repeat, replacement);
         require(Arrays.equals(resultBytes, Files.readAllBytes(repeat)),
             "sidecar generation is not deterministic");
+        Map<String, byte[]> conflict = new LinkedHashMap<>(replacement);
+        conflict.put(".debug_frame", new byte[] { 9, 9, 9, 9 });
+        try {
+            new MatchedElfSidecarWriter().write(input, output, conflict);
+            throw new AssertionError("generated frame silently replaced original unwind metadata");
+        }
+        catch (IllegalArgumentException expected) {
+            require(expected.getMessage().contains("conflicts with original unwind metadata"),
+                "unexpected frame-conflict failure: " + expected);
+        }
+        require(Arrays.equals(resultBytes, Files.readAllBytes(output)),
+            "rejected frame replacement modified previous output");
+        require(Arrays.equals(originalHash, sha256(Files.readAllBytes(input))),
+            "rejected frame replacement modified original");
+        int[] observations = { 0 };
+        new MatchedElfSidecarWriter().write(input, output, replacement, () -> {
+            observations[0]++;
+            return false;
+        });
+        for (int checkpoint = 1; checkpoint <= observations[0]; checkpoint++) {
+            final int selected = checkpoint;
+            int[] visited = { 0 };
+            try {
+                new MatchedElfSidecarWriter().write(input, output, replacement,
+                    () -> ++visited[0] >= selected);
+                throw new AssertionError("frame-preserving write ignored cancellation " + selected);
+            }
+            catch (CancellationException expected) {
+                require(Arrays.equals(resultBytes, Files.readAllBytes(output)),
+                    "cancelled write modified previous sidecar at " + selected);
+            }
+        }
+        require(Arrays.equals(originalHash, sha256(Files.readAllBytes(input))),
+            "cancelled write modified original");
+        try (var files = Files.list(directory)) {
+            require(files.noneMatch(path -> path.getFileName().toString().startsWith(".ghidra-dwarf-forge-")),
+                "cancelled frame-preserving write leaked a temporary artifact");
+        }
+        byte[] relocatable = originalBytes.clone();
+        ByteBuffer.wrap(relocatable).order(order).putShort(16, (short) 1);
+        Path object = directory.resolve(caseName + ".o");
+        Path objectSidecar = directory.resolve(caseName + ".o.dbg");
+        Files.write(object, relocatable);
+        List<String> diagnostics = new ArrayList<>();
+        new MatchedElfSidecarWriter().write(ElfImage.read(object), objectSidecar,
+            replacement, List.of(), () -> false, diagnostics::add);
+        require(diagnostics.size() == 1 && diagnostics.getFirst().contains("linked ET_EXEC or ET_DYN"),
+            "unlinked frame omission was not explained");
+        require(ElfImage.read(objectSidecar).sections().stream()
+            .noneMatch(section -> section.name().equals(frameName)),
+            "unlinked frame bytes became active without relocation processing");
         System.out.println("existing-debug-sidecar-case=" + caseName + " PASS");
     }
 
-    private static byte[] fixture(boolean elf64, ByteOrder order) {
+    private static byte[] fixture(boolean elf64, ByteOrder order, String frameFormat) {
         List<FixtureSection> sections = new ArrayList<>();
         sections.add(new FixtureSection("", 0, 0, 0, new byte[0]));
         sections.add(new FixtureSection(".text", 1, 6, 0x1000, new byte[] { 1, 2, 3, 4 }));
         sections.add(new FixtureSection(".eh_frame", 1, 2, 0x2000, new byte[] { 0, 0, 0, 0 }));
+        sections.add(new FixtureSection(frameFormat.equals("gnu") ? ".zdebug_frame" : ".debug_frame",
+            1, frameFormat.equals("gabi") ? SHF_COMPRESSED : 0, 0,
+            ("opaque original frame: " + frameFormat).getBytes(StandardCharsets.UTF_8)));
         ByteBuffer note = ByteBuffer.allocate(20).order(order);
         note.putInt(4).putInt(4).putInt(3).put(new byte[] { 'G', 'N', 'U', 0 });
         note.put(new byte[] { 10, 20, 30, 40 });

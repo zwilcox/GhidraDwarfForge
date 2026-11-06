@@ -8,6 +8,11 @@ removed. It compares compiler, absent-CFI and disabled-DWARF-unwinder behavior
 through nested calls and recursive returns. This tests the independent oracle;
 it does not establish production synthetic-CFI support. See
 `docs/SYNTHETIC-CFI-EVIDENCE.md` for commands and remaining acceptance.
+`synthetic-cfi-shared-driver.c` supplies a real `dlopen` consumer and a stable
+call-preserved register witness for the original-CFI preservation matrix. Its
+load-bias observation supports explicit shared-sidecar loading in GDB. The
+preservation fixture explicitly curates source-built function names/extents;
+it never supplies unwind rules to the exporter.
 
 `semantic.c` and `shared_semantic.c` are redistributable source-built fixtures
 shared across target architectures. They intentionally contain functions,
