@@ -89,6 +89,26 @@ tasks.register("callFrameEncoderSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.unwind.CallFrameEncoderSmoke"
 }
 
+tasks.register("unwindFlowSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks caller-identity flow through joins, calls, saves and restores"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.unwind.UnwindFlowSmoke"
+}
+
+tasks.register("ghidraUnwindInstructionsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks native p-code caller identity flow and incomplete graph rejection"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.unwind.GhidraUnwindInstructionsSmoke"
+    args ghidraInstallDir, layout.buildDirectory.file("test-results/unwind-instructions/native.txt").get().asFile
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/unwind-instructions/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/unwind-instructions/cache").absolutePath
+}
+
 tasks.register("packagedNativeProducerSmoke", JavaExec) {
     group = "verification"
     description = "Resolves and runs the packaged libdwarf pair in an isolated JVM"

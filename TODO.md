@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 caller-identity flow component:** a fixed-point
+analysis and real Ghidra instruction adapter now prove agreeing joins, reject
+conflicting facts, track exact saves/restores and preserve discontiguous decoded
+bodies. Native AArch64 post-increment evidence exposed premature stack-slot
+expiration; it now occurs at the machine-instruction boundary. The effect suite
+passes 75 checks and 17 native instruction cases pass 582, including cancellation,
+partial/override rejection and missing-call-proof omissions. See
+`docs/UNWIND-FLOW.md`. ABI selection, verified call summaries, rule projection and
+production synthesis remain PLANNED; current PR166 integration has priority.
+
 **CONFIRMED pinned unwind ABI observations — #112:** AMD64 psABI
 `e1ce098331da5dbd66e1ffc74162380bcc213236` and the existing Arm 2025Q4
 `daa7a94ca55973736c0e434a67a6e4bbcd35d7fa` baseline are captured with source hashes.

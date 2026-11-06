@@ -159,9 +159,10 @@ owned startup fixture fixes it; independent builds now match.
 - Audit and pin both ABI descriptions. The [explicit rule encoder](CFI-RULE-ENCODER.md)
   now passes local structural, malformed-input and runtime tests; hosted acceptance
   remains required and its fixture plans are not recovered Ghidra evidence.
-- Implement evidence extraction and control-flow analysis in Ghidra, with
-  complete/partial/invalid instruction, join-conflict, stack-alias, opaque-call,
-  cancellation and bounded-resource controls.
+- The [caller-identity flow component](UNWIND-FLOW.md) now has local native
+  instruction and fixed-point controls. Complete audited profile selection,
+  verified call summaries and evidence-to-frame projection before enabling it;
+  full exporter failure/cancellation and runtime acceptance remain required.
 - Add compiler-reference cases for prologue/body/epilogue boundaries,
   frame-pointer use/omission, split and shrink-wrapped saves, discontiguous
   bodies, PIE/shared objects and rebased imports. The current fixture covers

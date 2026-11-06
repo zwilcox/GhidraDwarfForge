@@ -625,7 +625,7 @@ jobs:
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfAddressRangesSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
-              packagedNativeLibrariesSmoke existingDebugSidecarSmoke callFrameEncoderSmoke \
+              packagedNativeLibrariesSmoke existingDebugSidecarSmoke callFrameEncoderSmoke unwindFlowSmoke ghidraUnwindInstructionsSmoke \
               extendedSectionNumberingSmoke elfImageReaderSmoke \
               elfCopyCancellationSmoke ghidraImageBaseSmoke buildExtension
             python3 -B src/test/integration/debuglink-basename.py \
