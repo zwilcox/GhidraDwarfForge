@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — combined unwind integration:** current main `8041fdab`
+and the preserved unwind commit stack now share one tested branch. Both
+annotation-aware normal exports and explicit frame exports retain their APIs.
+Two saved-annotation profiles, eight native-frame cases and all intrinsic-context
+modes pass with 38 retained strict reports. The combined package has 730 matching
+Java 21 classes and 207 matching production sources. See `docs/CFI-INTEGRATION.md`.
+This replaces the planned serial integration route for PR167–174; those PRs remain
+open until combined hosted acceptance. PR175 keeps priority. Full #112 compiler,
+policy, provenance/ADR and normal-entry-point acceptance remain incomplete.
+
 **CONFIRMED locally — #112 captured unwind descriptions:** bounded deterministic
 JSON now records recovered instruction/byte evidence, exact frame rules, omissions
 and root refusals, bound to staged artifact/source hashes without claiming
