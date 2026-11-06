@@ -97,20 +97,20 @@ public final class GhidraListingAnnotationSource {
             return catalog(comment, Reason.INSTRUCTION_OUTSIDE_BODY);
         }
         long entry;
-        long pc;
+        long instructionAddress;
         try {
             entry = AddressNormalizer.toElfAddress(function.getEntryPoint().getOffset(), rebaseDelta);
-            pc = AddressNormalizer.toElfAddress(instruction.getMinAddress().getOffset(), rebaseDelta);
+            instructionAddress = AddressNormalizer.toElfAddress(instruction.getMinAddress().getOffset(), rebaseDelta);
         }
         catch (ArithmeticException overflow) {
             return catalog(comment, Reason.UNTRANSLATABLE_ADDRESS);
         }
         var byAddress = tokens.get(entry);
         if (byAddress == null) return catalog(comment, Reason.OUTSIDE_EXPORTED_FUNCTION);
-        var lines = byAddress.get(pc);
+        var lines = byAddress.get(instructionAddress);
         if (lines == null || lines.isEmpty()) return catalog(comment, Reason.NO_TOKEN_LINE);
         if (lines.size() != 1) return catalog(comment, Reason.AMBIGUOUS_TOKEN_LINES);
-        return new Placement(comment, Reason.TOKEN_LINE, lines.first(), instruction.getMinAddress(), pc);
+        return new Placement(comment, Reason.TOKEN_LINE, lines.first(), instruction.getMinAddress(), instructionAddress);
     }
 
     private static Placement catalog(GhidraAnnotationInventory.ListingComment comment, Reason reason) {

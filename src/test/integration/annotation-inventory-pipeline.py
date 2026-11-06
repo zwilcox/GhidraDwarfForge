@@ -41,6 +41,9 @@ def main():
     inventory, = curation.glob('inventory-*')
     result = json.loads((inventory / 'result.json').read_text())
     assert result['status'] == 'PASS_PACKAGED_ANNOTATION_INVENTORY'
+    run('equate-evidence', ['python3', harness / 'equate-evidence.py', args.ghidra, curation])
+    equate_evidence, = curation.glob('equate-evidence-*')
+    assert json.loads((equate_evidence / 'result.json').read_text())['status'] == 'PASS_PACKAGED_EQUATE_EVIDENCE'
     placement = None
     default_export = None
     if args.consumer:
@@ -55,6 +58,7 @@ def main():
         assert json.loads((default_export / 'result.json').read_text())['status'] == 'PASS_INSTALLED_DEFAULT_COMMENTS'
     (root / 'result.json').write_text(json.dumps({'status': result['status'], 'target': args.target,
         'role': role, 'case': str(case), 'curation': str(curation), 'inventory': str(inventory),
+        'equateEvidence': str(equate_evidence),
         'placement': str(placement) if placement else None,
         'defaultExport': str(default_export) if default_export else None}, indent=4) + '\n')
     print('annotation-inventory-pipeline=PASS ' + args.target + ' ' + role)

@@ -273,3 +273,36 @@ correct lookup is `ptype struct ANNOTATION_TYPE`. This test correction did not
 change the exporter. GUI interaction, Windows wrapper execution and the complete
 hosted/workload gates remain pending. No equate debugger or optional context
 support is claimed yet.
+
+`GhidraEquateEvidence` now validates stored enum metadata against the current
+Ghidra data-type manager and keeps it separate from operand and high-p-code
+observations. Malformed names, missing/wrong types, missing members, encoded
+value mismatches and values outside the declared width retain explicit reasons.
+The implementation reads exact stored names without invoking Ghidra's unsafe
+display helpers on malformed records. No stored value is truncated to fit a type.
+
+Decoded scalar evidence retains the operand's actual bit width, signedness and
+value. Dynamic hashes resolve against the live owning `HighFunction`; only small
+value records survive that call. Such a constant establishes unsigned bits and
+width, not C signedness. Operand and hash ownership stay independent. The current
+fixture illustrates why this matters: its enums are one byte while both decoded
+scalar observations are 32 bits on all four profiles. The dynamic-only folded
+constant is also 32 bits, with operand index `-1`.
+
+The [equate evidence receipt](evidence/equate-evidence.json) records four saved
+profiles plus a fresh full x86-64 pipeline. Eleven negative controls include a
+stored value whose low bits match but whose full value does not fit, so the
+implementation must reject truncation. Interpretation cancellation is tested at
+all 26 observed checkpoints. The decompilation callback now explicitly permits
+checked cancellation; a collector cancellation propagates instead of becoming
+an ordinary symbol-only failed function. Independent JVM readbacks and original
+project/input hashes agree.
+
+```bash
+python3 src/test/integration/equate-evidence.py "$GHIDRA_INSTALL_DIR" /path/to/curation-case
+```
+
+This is interpretation evidence, not debugger-constant support. The default
+exporter still needs to collect these observations, reserve all real names,
+allocate stable synthetic handles, emit the artificial constants and provide the
+source lookup catalog. Those are the next implementation steps for #116.

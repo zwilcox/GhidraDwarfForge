@@ -130,7 +130,7 @@ public final class GhidraAnnotationInventory {
             if (space.isStackSpace()) {
                 // Ghidra 12.0.3 AddressMapDB stores stack keys as unsigned 32-bit offsets.
                 // This is a database encoding constraint, not a target pointer/ABI width.
-                // Combining these signed halves would reverse the DB interval on MIPS32.
+                // Combining these signed halves would reverse the database interval.
                 long minimum = Math.max(space.getMinAddress().getOffset(), Integer.MIN_VALUE);
                 long maximum = Math.min(space.getMaxAddress().getOffset(), Integer.MAX_VALUE);
                 if (minimum < 0) scans.add(new AddressSet(space.getAddress(minimum), space.getAddress(-1)));

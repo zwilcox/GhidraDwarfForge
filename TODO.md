@@ -1,5 +1,19 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED equate evidence component — #116:** enum metadata, decoded operand
+values and live high-p-code constants now have separate validated observations.
+Four saved profiles and a fresh full x86-64 pipeline pass identical independent
+readbacks, eleven negative controls, all 26 interpretation cancellation points
+and checked callback cancellation. Source/validator/GDB checks still pass in the
+full pipeline. See `docs/evidence/equate-evidence.json`. Default equate collection,
+collision-safe debugger names and constant emission remain required.
+
+**CONFIRMED second CI correction:** after the wrapper fix, run `42133208293`
+reached the architecture guard and flagged a generic local named `pc` and a
+comment mentioning MIPS32. Renaming the local and removing the target-specific
+example from that comment preserves behavior. The unchanged gate and its seven
+rejection controls pass locally; fresh hosted acceptance remains required.
+
 **CONFIRMED CI portability correction — #116/#114:** PR #166 run
 `42132969992` stopped in the wrapper test because its new assertion required
 `rg`, absent on the extension-build runner. The assertion now uses the existing

@@ -79,7 +79,7 @@ public final class GhidraSyntheticSource {
     @FunctionalInterface
     public interface DecompileOperation {
         DecompileResults decompile(DecompInterface decompiler, Function function,
-                int timeoutSeconds, TaskMonitor monitor);
+                int timeoutSeconds, TaskMonitor monitor) throws CancelledException;
     }
 
     private GhidraSyntheticSource() {
