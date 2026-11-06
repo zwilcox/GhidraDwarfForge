@@ -221,17 +221,21 @@ Under **DWARF**, run **ExportGhidraDwarfForge.java** to export the current progr
 using the verified packaged native libraries. Open **Window → Console** for
 the output paths, coverage diagnostics, hashes, and final JSON report. If the
 original directory is unwritable, choose a writable directory when prompted;
-Cancel leaves no output pair. Linux Script Manager selection/cancellation is
-tested. Native Windows GUI interaction remains under validation; the Windows
-headless wrapper is already covered by CI.
+Cancel leaves no output pair. The current development build's Linux and Windows
+Script Manager selection, export and cancellation journeys are covered by CI.
+The coverage window shows per-function static source, variable and type evidence,
+with complete report saving and comparison. The read-only CLI supports the same
+reports; see [coverage scorecards](docs/COVERAGE-SCORECARDS.md) and their
+[acceptance record](docs/COVERAGE-ACCEPTANCE.md). These percentages describe
+exported knowledge, not execution coverage or confidence in correctness.
 
 The separate **ExportGhidraDwarfForgeWithGdbLoader.java** launcher opts into the
-companion as well. Its complete GUI acceptance remains in progress; the ordinary
-export launcher retains its existing behavior.
+companion as well. Its current Linux and Windows GUI journeys pass the same
+validated export and report workflow.
 
 **ExportCompressedGhidraDwarfForge.java** selects zlib compression from Script
-Manager. Its Linux journey is validated locally; native Windows acceptance is
-pending. It uses the same output chooser and artifact-pair publication.
+Manager. Its current Linux and Windows GUI journeys pass. It uses the same
+output chooser and artifact-pair publication.
 
 The underlying `GhidraDwarfForge.java` script remains available from Script
 Manager for native-free metadata preflight, or directly through

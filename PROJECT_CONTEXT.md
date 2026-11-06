@@ -150,6 +150,15 @@ checks in two frames on four profiles without shadowing real names; see
 `docs/evidence/annotation-name-policy.json`. This uses a separate synthetic
 unit alongside compiler DWARF, not the production recovered sidecar.
 
+**CONFIRMED — #108 implementation integrated and final acceptance published:**
+all fifteen integration jobs and five performance jobs pass at `6e0cb95`.
+Independent package, raw DWARF/GDB, host GUI, workload and complete ARM32 reviews
+are recorded in `docs/COVERAGE-ACCEPTANCE.md` and
+`docs/evidence/coverage-ci-6e0cb95.json`. PR164 merged normally as `41e85b9`
+with an identical tested tree and strict protection intact. Earlier pending
+#108 checkpoints below are historical. #74 remains complete. The remaining goal
+order is #116/#114, #112, #110, then #109; no release is implied.
+
 **CONFIRMED locally — #108 final review corrections:** unavailable function
 variable inventories now display Unknown instead of N/A (0/0); mixed summaries
 disclose missing inventories while retaining observed counts. A failing-before

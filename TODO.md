@@ -147,6 +147,15 @@ checks in two frames on four profiles without shadowing real names; see
 `docs/evidence/annotation-name-policy.json`. This uses a separate synthetic
 unit alongside compiler DWARF, not the production recovered sidecar.
 
+**CONFIRMED — #108 implementation integrated and final acceptance published:**
+all fifteen integration jobs and five performance jobs pass at `6e0cb95`.
+Independent package, raw DWARF/GDB, host GUI, workload and complete ARM32 reviews
+are recorded in `docs/COVERAGE-ACCEPTANCE.md` and
+`docs/evidence/coverage-ci-6e0cb95.json`. PR164 merged normally as `41e85b9`
+with an identical tested tree and strict protection intact. Earlier pending
+#108 checkpoints below are historical. #74 remains complete. The remaining goal
+order is #116/#114, #112, #110, then #109; no release is implied.
+
 **ACTIVE #108 — final review fixes need fresh hosted acceptance:** the unknown
 variable-inventory display bug is corrected, with unknown/mixed/known-empty and
 strict CLI regressions passing. The MIPS32LE automatic-association job at
@@ -2973,36 +2982,18 @@ own pinned-header audit and isolated-process test.
 
 ## 1.1 Current remaining work
 
-**ACTIVE — [#108](https://github.com/zwilcox/GhidraDwarfForge/issues/108):**
-production static scorecards, strict versioned reports, Linux CLI/GUI presentation,
-source-point comparison and individual type-key comparison are locally validated.
-See the current checkpoints above and `docs/COVERAGE-SCORECARDS.md` for exact
-scope and receipts. The earlier component-only status and #74-first dependency
-are historical; #74 is complete.
+**CONFIRMED — [#108](https://github.com/zwilcox/GhidraDwarfForge/issues/108):**
+static scorecards, strict versioned reports, Linux/Windows CLI/GUI, individual
+source/variable/type comparisons and bounded workload costs meet the six issue
+criteria. All five target lanes and exact-head host/performance gates pass; the
+normal protected PR164 merge preserves the tested tree. See
+[final acceptance](docs/COVERAGE-ACCEPTANCE.md) for independent evidence and limits.
 
-Remaining #108 acceptance:
-
-- Paired native type-state regressions now pass locally: offsetting resolved/opaque
-  transitions, source-failure attachment loss, deterministic reruns, raw DWARF and
-  GDB/CLI checks. See `docs/evidence/coverage-type-pairs.json`; hosted acceptance
-  remains required. Reported binding correspondence does not prove lineage.
-- Windows GUI report-comparison acceptance is now confirmed at `3829626`, including
-  artifact and screenshot review. Linux's hosted GUI journey remains pending;
-  its local 1024x768 control passes.
-- Definition-two Linux measurements are complete: five alternating pairs each on
-  SQLite and U-Boot, with exact artifacts, deterministic reports and recorded
-  runtime/memory cost (`docs/evidence/coverage-large-workloads.json`). Windows's
-  audited baseline derivation, five pairs per workload, JFR, large-report CLI and
-  downstream GDB review also pass at `3829626`
-  (`docs/evidence/coverage-ci-3829626-workloads.json`).
-- Actual whole-report byte-bound stress passes locally on x86-64 and rebased
-  AArch64 PIE, including preservation/retry and validators/GDB. Inspect the hosted
-  results (`docs/evidence/coverage-whole-report-limit.json`).
-- Finish the complete five-target pipeline and raw coverage-emission review.
-  Fifteen early attachment cases already pass reviewed report bindings,
-  validators and native/QEMU GDB (`docs/evidence/coverage-ci-3829626-attachments.json`).
-  These cases do not substitute for the rest of each target lane or the current
-  required-validation gate.
+**ACTIVE next — #116/#114:** preserve analyst comments/equates and add optional
+instruction context. Local isolated preparation exists on the annotation branch;
+production integration and complete host/target acceptance remain required.
+Then continue #112 (evidence-backed CFI), #110 (LLDB) and #109 (build-ID installation).
+Low-priority test-coverage/CI badges remain #162/#163.
 
 The baseline exporter, source/type/location machinery, five target lanes,
 Windows headless host, and release packaging already exist. The remaining
