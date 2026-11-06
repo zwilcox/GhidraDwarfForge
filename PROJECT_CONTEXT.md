@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local #109 transaction checkpoint:** installation/update/removal and
+recovery now pass 123 controls with both the test metadata host and the production
+Linux ext4 host. Ten exec/PIE target layouts pass fresh GDB discovery, source,
+value and stepping checks; the nine additional layouts use the test metadata
+host. Linux checks additionally preserve non-default permissions, an access ACL
+and user attribute. Root and transaction-directory identity safeguards pass.
+See `docs/BUILD-ID-TRANSACTION.md` for exact evidence and limits. The launcher,
+Windows installation, curated refresh and full consumer/identity matrix remain
+PLANNED; #110 hosted acceptance and protected integration remain required.
+
 **CONFIRMED local ARM aggregate oracle correction:** PR183's ARM32 lane found
 one stale exact-entry comparison after the memory byte-piece compatibility
 change. The independent decoder already required byte pieces; its final r3/SP

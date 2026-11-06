@@ -1,6 +1,6 @@
 # ADR-0006: Explicit build-ID installation with retained source generations
 
-- Status: Proposed transaction; source-relocation component locally validated
+- Status: Selected transaction; local Linux checkpoint, full acceptance pending
 - Date: 2026-11-06
 - Tracking: #109
 
@@ -78,7 +78,7 @@ that derivative and keeps schema 2 ordinary-export evidence unchanged. See
 `DERIVED-ARTIFACT-VALIDATION.md`. The test metadata host does not establish the
 installer's native host or publication contract.
 
-## Planned identity and publication contract
+## Selected identity and publication contract
 
 - Require explicit selected input/report/sidecar/source paths and a debug root.
   Reuse bounded build-ID parsing, export hash binding, matched ELF allocation
@@ -107,11 +107,14 @@ installer's native host or publication contract.
   and any later explicit pruning operation. Do not delete user-selected inputs
   or unrelated files. Interrupted preparation/recovery must never guess ownership.
 
-These are acceptance obligations, not implemented transaction guarantees.
-Existing host helpers supply native file identities and atomic file publication;
-directory publication, locking, recovery records and complete generation
-verification still require implementation and failure-injection tests. The
-installer must report actual host durability limits and propagate sync failures.
+**CONFIRMED local checkpoint:** the internal transaction, generation verification,
+OS locks, publication/update/removal and recovery now pass failure-injection tests
+with the model host and a production Linux ext4 host. See
+[BUILD-ID-TRANSACTION.md](BUILD-ID-TRANSACTION.md) for the exact host contract,
+retention policy and evidence. This supersedes earlier implementation-gap notes
+above for those mechanisms only. Public launcher, Windows installer acceptance,
+remaining identity/consumer cases and protected integration are still required.
+The installer must report actual host durability limits and propagate sync failures.
 
 ## Consumers and completion
 

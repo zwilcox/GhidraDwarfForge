@@ -1,0 +1,102 @@
+{
+    "schemaVersion": 1,
+    "status": "CONFIRMED_LOCAL_CHECKPOINT_NOT_ISSUE_COMPLETION",
+    "issue": 109,
+    "baseCommit": "d4a08b6d1c936a96f8b83b43344e3a3079f8dd9c",
+    "date": "2026-11-06",
+    "modelControls": {
+        "checks": 123,
+        "consumers": 4,
+        "resultSha256": "2f7c3961cdd157aa2daa13362c6a05f42413263decb8d2e7838ab50758e30992",
+        "jarSha256": "1b491688af5be577222aa938963123d4724b4dc4368dc15dcde1a52bb2bee21c"
+    },
+    "targetCases": [
+        {
+            "case": "aarch64-exec",
+            "checks": 7,
+            "consumers": 4,
+            "resultSha256": "107377c8b797112345a8d0d0d0910b723a52df19d932692eb9af7269a3ab04ed",
+            "jarSha256": "1b491688af5be577222aa938963123d4724b4dc4368dc15dcde1a52bb2bee21c"
+        },
+        {
+            "case": "aarch64-pie",
+            "checks": 7,
+            "consumers": 4,
+            "resultSha256": "cfdd226b46ae98c8494c8e34d3094bb9bb9ea54cff49a903cf5eaebc188e4411",
+            "jarSha256": "1b491688af5be577222aa938963123d4724b4dc4368dc15dcde1a52bb2bee21c"
+        },
+        {
+            "case": "arm32-exec",
+            "checks": 7,
+            "consumers": 4,
+            "resultSha256": "a6357698e570243c69313273a741a305c5187fca894467e59f8a03fd428b3180",
+            "jarSha256": "1b491688af5be577222aa938963123d4724b4dc4368dc15dcde1a52bb2bee21c"
+        },
+        {
+            "case": "arm32-pie",
+            "checks": 7,
+            "consumers": 4,
+            "resultSha256": "e2057f7b21d0de38da61b4c9d687884ac75d48e341e9b3d123d95601b8cfabee",
+            "jarSha256": "1b491688af5be577222aa938963123d4724b4dc4368dc15dcde1a52bb2bee21c"
+        },
+        {
+            "case": "mips32be-exec",
+            "checks": 7,
+            "consumers": 4,
+            "resultSha256": "d6f9ff41cdd2c40d61dcaecf832a95fde4fa2fbac56ae6b21e0cf0651f319875",
+            "jarSha256": "1b491688af5be577222aa938963123d4724b4dc4368dc15dcde1a52bb2bee21c"
+        },
+        {
+            "case": "mips32be-pie",
+            "checks": 7,
+            "consumers": 4,
+            "resultSha256": "f0e1ba41fd20d5d104809ba62ed76e9b07b3a2d8f3d7ee2a56a7b3f526228993",
+            "jarSha256": "1b491688af5be577222aa938963123d4724b4dc4368dc15dcde1a52bb2bee21c"
+        },
+        {
+            "case": "mips32le-exec",
+            "checks": 7,
+            "consumers": 4,
+            "resultSha256": "00bb5ad489141f18cd448749349a00c668ad4a8acd1ad784be6797560c02acc5",
+            "jarSha256": "1b491688af5be577222aa938963123d4724b4dc4368dc15dcde1a52bb2bee21c"
+        },
+        {
+            "case": "mips32le-pie",
+            "checks": 7,
+            "consumers": 4,
+            "resultSha256": "37b57eed849f04cd7b28ebc84abae3d1874a1b555bd42d7d58b9aa12a012a3cb",
+            "jarSha256": "1b491688af5be577222aa938963123d4724b4dc4368dc15dcde1a52bb2bee21c"
+        },
+        {
+            "case": "x86_64-pie",
+            "checks": 7,
+            "consumers": 4,
+            "resultSha256": "6cbc3635cf1b907249f410cc36d0d8888fb35a6ba02078cd31267ed839d83106",
+            "jarSha256": "0ceffca1553e6598fc3cd5c1331993317fcf071764dbed54e4def364469b8cea"
+        }
+    ],
+    "nativeLinux": {
+        "checks": 123,
+        "consumers": 4,
+        "resultSha256": "91b8ad8155af6441f87b812d0ff12a924fed04e5b7b2ffc564ac218d25aa5008",
+        "metadataComparisons": 6,
+        "metadataReceiptSha256": "4ff64a5c9346792a96af9cbad972812edc9cf88dc9c7a128a0151f29aaad89d7",
+        "hostContract": "linux-x64-ext4-build-id-visible-metadata-v1",
+        "jarSha256": "0ceffca1553e6598fc3cd5c1331993317fcf071764dbed54e4def364469b8cea",
+        "productionSources": 216,
+        "sourceManifestSha256": "e0c77800ee9044d839243a3677d539759073dfc48275474614a173a1f79e8fb2"
+    },
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/build-id-transaction-20261106.tar.gz",
+        "sha256": "5337ef2ad0dc308b5515c9bbab4f34babc78b2ff2c9c516c2c76fa1edb6ac1c1",
+        "bytes": 14444035,
+        "verifiedFiles": 10499
+    },
+    "limits": [
+        "Model metadata host for the ten-target layout matrix; production Linux host for x86-64 non-PIE controls.",
+        "Compression-different refresh is not an analyst-edit refresh oracle.",
+        "No Windows installation, public launcher, complete identity cases, shared/sectionless installation, LLDB or perf installer acceptance yet.",
+        "No hidden-metadata, adversarial filesystem-race or power-loss claim.",
+        "CI and protected integration remain required."
+    ]
+}
