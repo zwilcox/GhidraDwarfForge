@@ -50,6 +50,7 @@ def main():
     constants = None
     retained_names = None
     context_export = None
+    failed_source = None
     if args.consumer:
         classes = root / 'classes'
         classes.mkdir()
@@ -85,6 +86,10 @@ def main():
         assert context_result['status'] == 'PASS_INSTALLED_DEFAULT_COMMENTS'
         assert context_result['sourceContext'] == 'both' and context_result['contextRows'] > 0
         assert context_result['cancellationStages'] == 11
+        run('failed-source', ['python3', harness / 'failed-source-context.py', args.ghidra, curation,
+            args.consumer.resolve(strict=True), args.producer.resolve(strict=True)])
+        failed_source, = curation.glob('failed-source-*')
+        assert json.loads((failed_source / 'result.json').read_text())['status'] == 'PASS_NATIVE_FAILED_SOURCE_EXPORT'
         if args.target == 'x86_64':
             run('retained-names', ['python3', harness / 'equate-retained-names.py', args.ghidra,
                 args.consumer.resolve(strict=True), args.producer.resolve(strict=True), root])
@@ -97,6 +102,7 @@ def main():
         'retainedNames': str(retained_names) if retained_names else None,
         'placement': str(placement) if placement else None,
         'contextExport': str(context_export) if context_export else None,
+        'failedSource': str(failed_source) if failed_source else None,
         'defaultExport': str(default_export) if default_export else None}, indent=4) + '\n')
     print('annotation-inventory-pipeline=PASS ' + args.target + ' ' + role)
 

@@ -509,7 +509,7 @@ public final class MinimalDwarfSidecarExporter {
         }
         Dwarf5LineTable.Result linePlan = Dwarf5LineTable.buildWithPlan(
             unitName, directoryName, target.addressBytes(), elf.byteOrder(), ordered,
-            syntheticSource == null ? List.of() : syntheticSource.mappedLines());
+            syntheticSource == null ? List.of() : syntheticSource.mappedLines(), syntheticSource != null);
         byte[] lineTable = linePlan.section();
         // Failed source functions remain symbol-only. Do not serialize orphan
         // scope/location lists for declarations that produce() will not emit.

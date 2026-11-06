@@ -472,3 +472,30 @@ production failure-sample DWARF validation; broader ARM mode and delay-slot body
 boundary controls; actual GUI chooser cancellation and Windows journeys; current
 hosted target/workload acceptance. The new tests and local success do not close
 #114 or the remaining #116 host/workload requirements.
+
+**CONFIRMED local failed-source lookup:** a source-bearing export now retains a
+DWARF 5 file table even when no function has an executable source row. Its entire
+line program is `DW_LNS_set_file 0`; it contains no address, copy, end-sequence
+row or invented declaration location. Source-free symbol exports keep their
+previous behavior, and ordinary nonempty line sequences remain byte-identical.
+
+Real native instruction-budget failures exercise all three curated functions,
+and separately the first function followed by two successful decompilations.
+On x86-64, AArch64 PIE and both MIPS32 byte orders, GNU/LLVM/pinned strict checks
+pass. From an unrelated working directory, GDB lists the diagnostic source by
+absolute file/line, resolves function breakpoints, and observes no executable
+line table entries for the all-failed case. The mixed case preserves source
+stepping in subsequent functions. Original inputs and saved programs remain
+unchanged, and independent exports are identical.
+
+The fixture supplies real curated signatures before export and checks their
+omission from failed subprogram DIEs: no return type, parameter/local children
+or declaration rows are fabricated. Production coverage assembly reports zero
+line-visible instructions and no emitted signature for each failed function.
+Real global types and values remain usable. AArch64's system-DSO warning matches
+the compiler control exactly; strict inherited-frame diagnostics retain their
+independent corroboration. The fresh x86 annotation pipeline passes with both
+these cases and its existing default/context/cancellation checks. See
+`evidence/failed-source-context.json`. The earlier all-failed/failure-sample
+pending statements above are superseded locally by this evidence; current
+hosted, GUI/Windows, intrinsic and broader mode/delay-gap acceptance still remain.

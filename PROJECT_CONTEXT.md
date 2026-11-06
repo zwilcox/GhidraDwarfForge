@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local all-failed source lookup — #114:** source-bearing exports
+retain a DWARF5 file table without executable rows when all decompilations fail.
+Real native all-failed/mixed cases pass validators and native/QEMU GDB on x86-64,
+AArch64 PIE and both MIPS32 byte orders. Failed functions remain signature-free;
+coverage gains no executable evidence. Fresh x86 annotation integration passes.
+See `docs/evidence/failed-source-context.json`. Intrinsic controls, GUI/Windows,
+broader mode/delay-gap and current hosted acceptance remain. The normal merge
+`efed29e` incorporates accepted #108 documentation and restores PR166 CI.
+
 **CONFIRMED local optional instruction context — #114:** the reader and native
 warning/failure composition pass all five profiles. Four context-enabled default
 exporter profiles pass validators, native/QEMU GDB, deterministic reruns and eleven
