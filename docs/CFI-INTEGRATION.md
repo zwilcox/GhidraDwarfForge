@@ -76,3 +76,28 @@ ADR enablement, and the normal CLI/GUI flow with analyst knowledge preserved.
 Current strict memory behavior and ADR-0002's production prohibition remain in
 force. No ordinary export selects synthesized frames. The broader goal then
 continues with #110 LLDB validation and #109 build-ID installation.
+
+## Standalone large-ELF CI correction
+
+Hosted PR176 run `42217484551`, x86-64 job `127895477474`, stopped at the
+large-ELF compile step. The writer's new explicit frame method references types
+outside the test's fixed source-file list. The unchanged script reproduces all
+four missing-type errors locally. Supplying `src/main/java` as `javac`'s source
+path compiles the actual transitive closure; `jdeps` reports only `java.base`.
+No extension JAR, Ghidra classes or native libraries are added to its classpath.
+
+The full unchanged test then passes with a 67,108,864-byte maximum heap,
+2,147,487,745-byte input and 2,147,491,176-byte sidecar. It checks deterministic
+reruns, exact original payload/identity, alias rejection, failed publication,
+ELF32 overflow, GNU/LLVM/pinned strict validation and actual GDB source, type,
+values, stepping and normal exit. The strict checker retains two independently
+corroborated inherited compiler-frame diagnostics; this is not a warning-free
+raw libdwarf result. Its complete report and original-frame corroboration are
+retained in the [correction receipt](evidence/large-elf-ci-dependencies.json).
+
+An initial local run after compilation reached the alias check but failed because
+the external exFAT drive cannot create hard links. No test was weakened: the full
+run passed on Linux tmpfs after relocating 30 immutable CI archives with matching
+SHA-256 hashes and retaining their old paths as symlinks. Production Java/native
+source is unchanged from the combined checkpoint. Hosted acceptance of the new
+head remains required.

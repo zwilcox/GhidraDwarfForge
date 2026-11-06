@@ -1,0 +1,53 @@
+{
+    "status": "CONFIRMED local standalone correction; updated hosted gate pending",
+    "utc": "2026-11-06T12:58:55.053939+00:00",
+    "parent": "657aceb952c38e44b6d1989f9e23136606e4cefa",
+    "hostedFailure": {
+        "run": 42217484551,
+        "job": 127895477474,
+        "step": "Large ELF bounded-memory container and real exporter"
+    },
+    "change": "javac sourcepath resolves current pure-Java writer dependency closure; no product source change",
+    "acceptance": [
+        "max_heap_bytes=67108864",
+        "input_bytes=2147487745",
+        "sidecar_bytes=2147491176",
+        "input_sha256=7a730dc57785103ca347156b1476450dc7a10c420c5d51eb097354c85f7916e6",
+        "sidecar_sha256=bc5643005d06071cffa207df12d07e7607eb2c0a51ff4c513d5dedf77eeb2271",
+        "large-elf-sidecar-smoke=PASS",
+        "structural_validators=PASS",
+        "gdb_values_source_and_exit=PASS",
+        "large-elf-sidecar=PASS"
+    ],
+    "validation": "GNU/LLVM/GDB pass; pinned strict checker corroborates two inherited compiler-frame diagnostics",
+    "compileDependencies": "classes -> java.base",
+    "failedAttempts": [
+        "Baseline reproduces four missing javac types",
+        "External exFAT post-fix run fails required hard-link creation; full unchanged tmpfs rerun passes",
+        "sudo scratch-directory attempt unavailable; used owned storage with no elevation",
+        "Initial jdeps long options rejected; documented single-dash options pass"
+    ],
+    "archiveRelocation": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/relocated-ci-downloads/shm-20261106/relocation.json",
+        "sha256": "0e2b9bbff3761db97ca48316794e95793b7e6af1a2f0b17b1b68efbe9c5cb664",
+        "files": 30,
+        "bytes": 3857480005
+    },
+    "commands": [
+        "JAVA_HOME=<Java21> PATH=<Java21bin>:<pinned-checker-bin>:$PATH DWARFDUMP=<pinned-checker> bash src/test/integration/large-elf-sidecar.sh build/large-elf-ci-evidence/final",
+        "python3 src/test/integration/retained-validator-reports.py build/large-elf-ci-evidence/final --output build/large-elf-ci-evidence/retention.json",
+        "jdeps -recursive -summary build/large-elf-ci-evidence/final/run.1ff9KfEV/classes",
+        "git diff --check"
+    ],
+    "sourceSha256": {
+        "PROJECT_CONTEXT.md": "0609819eb883c96bb0dddad1178ae4cc8e80ab822626b6adb9468e4ce99c1f29",
+        "TODO.md": "0d95094c5d16977ecda73371dec86ee077461fceb934cf687ed0e99222a327ff",
+        "docs/CFI-INTEGRATION.md": "f46965f122afd7b08aeb84b153fb628854fa8dedbc932c4bc2918a82febd0507",
+        "src/test/integration/large-elf-sidecar.sh": "2c50cf2b55026ffdac7c335bc1dd774c44c12ea014d6c2c820a16a1f4fe4807a"
+    },
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/large-elf-ci-dependencies.tar.gz",
+        "sha256": "588305dc26fdc1da2c9c6d92da20f4376be9b4790bace32caba49bfd240c38e0",
+        "bytes": 453115
+    }
+}
