@@ -626,7 +626,7 @@ jobs:
               dwarfAddressRangesSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
               packagedNativeLibrariesSmoke existingDebugSidecarSmoke callFrameEncoderSmoke unwindFlowSmoke ghidraUnwindInstructionsSmoke unwindAbiProfileSmoke \
-              unwindCallsSmoke ghidraUnwindCallsSmoke \
+              unwindCallsSmoke ghidraUnwindCallsSmoke unwindFrameRowsSmoke \
               extendedSectionNumberingSmoke elfImageReaderSmoke \
               elfCopyCancellationSmoke ghidraImageBaseSmoke buildExtension
             python3 -B src/test/integration/debuglink-basename.py \
@@ -997,6 +997,15 @@ jobs:
           ./gradlew callFrameEncoderSmoke
           python3 src/test/integration/cfi-encoder.py build/classes/java \
             "build/test-results/cfi-encoder/$TARGET" --target "$TARGET" --dwarfdump "$DWARFDUMP"
+
+      - name: Validate native recovered CFI and instruction-boundary debugger behavior
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          ./gradlew unwindFrameRowsSmoke ghidraUnwindCallsSmoke
+          python3 src/test/integration/unwind-frame-recovery.py build/classes/java \
+            "build/test-results/unwind-frame-recovery/$TARGET" --target "$TARGET" --dwarfdump "$DWARFDUMP"
 
       - name: Verify fixture identity and stripping
         env:

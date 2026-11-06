@@ -1,5 +1,18 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 native recovered CFI runtime checkpoint:** recovered
+instruction states now produce complete frame rows with explicit unknown/gap
+omissions. An AArch64 GDB caller-PC bias exposed a pre-call link-register rule
+that validators accepted; call rows now require agreement before and after the
+call. Both targets' non-PIE/PIE plain/compressed artifacts pass GNU/LLVM/strict
+validation and match independent GDB traces at 40/36 instruction stops, including
+actual DWARF unwinder selection across five ordinary frames. Rebased independent
+JVM plans and repeated sidecars are deterministic. See
+`docs/UNWIND-FRAME-RECOVERY.md`. The test-only importer/CU is not production-exporter
+acceptance: global-write alias proof, original-byte/coverage checks and the full
+compiler/shared/failure matrix remain required. PR166 hosted/workload priority
+and the full #112/#110/#109 scope are unchanged.
+
 **CONFIRMED locally — #112 closed callee obligations:** direct/self/mutual
 callee groups now verify actual native call targets, all reachable return
 identities and stack-relative write bounds before publishing a summary. The

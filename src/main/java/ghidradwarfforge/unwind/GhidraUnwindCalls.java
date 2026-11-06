@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
+import java.nio.ByteOrder;
 
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Function;
@@ -22,7 +23,7 @@ import ghidradwarfforge.unwind.UnwindFlow.*;
 
 /** Native direct-call closure; no external/indirect callee contract is assumed. */
 public final class GhidraUnwindCalls {
-    public record Evidence(UnwindAbiProfile.Bound profile, Verified<Address> verified,
+    public record Evidence(UnwindAbiProfile.Bound profile, ByteOrder byteOrder, Verified<Address> verified,
             Map<Address, GhidraUnwindInstructions.Captured> captures) {
         public Evidence { captures = Collections.unmodifiableMap(new LinkedHashMap<>(captures)); }
     }
@@ -95,7 +96,7 @@ public final class GhidraUnwindCalls {
                 catch (CancelledException cancelled) { return true; }
             });
             monitor.checkCancelled();
-            return new Evidence(profile, verified, captures);
+            return new Evidence(profile, image.byteOrder(), verified, captures);
         }
         catch (CancellationException cancelled) { throw new CancelledException(); }
     }

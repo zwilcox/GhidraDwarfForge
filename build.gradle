@@ -105,6 +105,29 @@ tasks.register("unwindCallsSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.unwind.UnwindCallsSmoke"
 }
 
+tasks.register("unwindFrameRowsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks identity-backed frame rule projection and explicit omissions"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.unwind.UnwindFrameRowsSmoke"
+}
+
+tasks.register("unwindFrameRecoveryProbe", JavaExec) {
+    group = "verification"
+    description = "Recovers CFI plans from native runtime-fixture instructions"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.unwind.UnwindFrameRecoveryProbe"
+    if (project.hasProperty("frameInput")) {
+        args ghidraInstallDir, project.property("frameInput"), project.property("frameFunctions"),
+            project.property("framePlan"), project.findProperty("frameRebase") ?: "0"
+    }
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/unwind-frame-probe/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/unwind-frame-probe/cache").absolutePath
+}
+
 tasks.register("ghidraUnwindCallsSmoke", JavaExec) {
     group = "verification"
     description = "Checks native direct and recursive callee proofs and rejected effects"

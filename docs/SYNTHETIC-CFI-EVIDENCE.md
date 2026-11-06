@@ -163,7 +163,7 @@ owned startup fixture fixes it; independent builds now match.
   instruction and fixed-point controls. [Profile selection](UNWIND-PROFILES.md)
   and [closed stack-writing call summaries](UNWIND-CALLS.md) have local native
   controls. Extend call proofs to the unchanged global-writing compiler reference and
-  complete evidence-to-frame projection before enabling synthesis;
+  complete production integration of the [locally validated frame projection](UNWIND-FRAME-RECOVERY.md) before enabling synthesis;
   full exporter failure/cancellation and runtime acceptance remain required.
 - Add compiler-reference cases for prologue/body/epilogue boundaries,
   frame-pointer use/omission, split and shrink-wrapped saves, discontiguous

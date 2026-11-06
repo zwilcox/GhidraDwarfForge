@@ -38,7 +38,7 @@ public final class GhidraUnwindCallsSmoke {
             new HeadlessGhidraApplicationConfiguration());
         output = Path.of(args[1]); Files.createDirectories(output);
         for (boolean arm : List.of(false, true)) {
-            for (String shape : List.of("leaf", "direct", "self", "mutual", "clobber", "unknown-write", "bad-stack", "missing", "indirect", "custom")) {
+            for (String shape : List.of("leaf", "direct", "self", "mutual", "gap", "unreachable", "clobber", "unknown-write", "bad-stack", "missing", "indirect", "custom")) {
                 run(arm, shape);
             }
         }
@@ -75,6 +75,7 @@ public final class GhidraUnwindCallsSmoke {
         var source = new LinkedHashMap<Integer, String>();
         switch (shape) {
             case "leaf" -> source.put(0x1000, leaf);
+            case "gap", "unreachable" -> source.put(0x1000, arm ? "020000141f2003d5c0035fd6" : "eb0190c3");
             case "self" -> source.put(0x1000, caller(arm, 0x1000, 0x1000, true));
             case "mutual" -> {
                 source.put(0x1000, caller(arm, 0x1000, 0x1100, true));
@@ -109,16 +110,31 @@ public final class GhidraUnwindCallsSmoke {
                 for (var item : source.entrySet()) {
                     var entry = language.getDefaultSpace().getAddress(item.getKey());
                     var body = new AddressSet(entry, entry.add(item.getValue().length() / 2 - 1));
+                    if (shape.equals("gap")) body.delete(entry.add(arm ? 4 : 2), entry.add(arm ? 7 : 2));
                     require(new DisassembleCommand(entry, body, true).applyTo(program, TaskMonitor.DUMMY), "decode " + tag);
+                    if (shape.equals("unreachable")) require(new DisassembleCommand(entry.add(arm ? 4 : 2), body, true)
+                        .applyTo(program, TaskMonitor.DUMMY), "decode unreachable fixture instruction");
                     functions.put(item.getKey(), program.getFunctionManager().createFunction("callee_" + item.getKey(), entry, body, SourceType.USER_DEFINED));
                 }
                 if (shape.equals("custom")) functions.get(0x1100).setCustomVariableStorage(true);
                 ElfImage image = image(arm, tag);
-                boolean positive = List.of("leaf", "direct", "self", "mutual").contains(shape);
+                boolean positive = List.of("leaf", "direct", "self", "mutual", "gap", "unreachable").contains(shape);
                 try {
                     var proof = GhidraUnwindCalls.verify(program, functions.get(0x1000), image, 0, TaskMonitor.DUMMY);
                     require(positive, "unsupported native callee accepted: " + tag);
                     require(proof.verified().bodies().size() == source.size(), "native closure omitted a callee");
+                    var planned = GhidraUnwindFrames.plan(proof, 0, TaskMonitor.DUMMY);
+                    require(planned.plan().frames().size() == (shape.equals("gap") || shape.equals("unreachable") ? 2 : source.size()),
+                        "frame coverage bridged a body gap or omitted a callee");
+                    require(planned.observations().stream().filter(row -> !row.projection().covered()).count() ==
+                        (shape.equals("unreachable") ? 1 : 0), "unreachable coverage was not explicitly omitted");
+                    for (var frame : planned.plan().frames()) {
+                        for (var row : frame.rows()) require(row.rules().keySet().equals(planned.plan().registers()), "partial initial row rules");
+                    }
+                    if (shape.equals("gap") || shape.equals("unreachable")) {
+                        require(planned.plan().frames().get(0).size() == (arm ? 4 : 2) &&
+                            planned.plan().frames().get(1).address() == (arm ? 0x1008 : 0x1003), "unknown interval covered by previous frame row");
+                    }
                     for (var item : proof.captures().entrySet()) {
                         evidence.append(tag).append(" function=").append(item.getKey()).append('\n');
                         item.getValue().observations().forEach((address, observation) ->
@@ -126,6 +142,26 @@ public final class GhidraUnwindCallsSmoke {
                     }
                     evidence.append("flow=").append(proof.verified().flows()).append('\n');
                     if (shape.equals("direct")) {
+                        int[] planPolls = {0};
+                        var planCounting = new TaskMonitorAdapter(true) {
+                            @Override public void checkCancelled() { planPolls[0]++; }
+                        };
+                        GhidraUnwindFrames.plan(proof, 0, planCounting);
+                        for (int limit = 1; limit <= planPolls[0]; limit++) {
+                            int stop = limit; int[] seen = {0};
+                            var cancelled = new TaskMonitorAdapter(true) {
+                                @Override public void checkCancelled() throws CancelledException {
+                                    if (++seen[0] == stop) throw new CancelledException();
+                                }
+                            };
+                            try {
+                                GhidraUnwindFrames.plan(proof, 0, cancelled);
+                                throw new AssertionError("native frame planning cancellation ignored");
+                            }
+                            catch (CancelledException expected) { checks++; }
+                        }
+                        require(GhidraUnwindFrames.plan(proof, 0, TaskMonitor.DUMMY).equals(planned), "native frame planning retry changed rules");
+                        evidence.append(tag).append(" frame-planning-polls=").append(planPolls[0]).append('\n');
                         int[] polls = {0};
                         var counting = new TaskMonitorAdapter(true) {
                             @Override public void checkCancelled() { polls[0]++; }
