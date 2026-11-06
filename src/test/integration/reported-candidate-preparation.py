@@ -465,6 +465,7 @@ def controls(group, name, work, jar, gson, classes):
     empty.mkdir()
     stdout, stderr = owned.execute(["gdb-multiarch", "-q", "-nx", "-batch",
         "-ex", "set debuginfod enabled off", "-ex", "set auto-solib-add off",
+        "-ex", "set filename-display absolute",
         "-ex", f"set debug-file-directory {empty}", "-ex", f'file "{candidate}"', "-x", gdb_script],
         folder / "unresolved-source-gdb")
     require(not stderr and b"unresolved-source=PASS" in stdout, "missing recorded source was not proven by GDB")
