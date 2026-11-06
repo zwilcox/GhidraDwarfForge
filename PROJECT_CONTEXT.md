@@ -10,6 +10,12 @@ gap and complete remaining acceptance are in `docs/SYNTHETIC-CFI-EVIDENCE.md`.
 ADR-0002 still prohibits production synthesis. #116/#114 PR166 hosted acceptance
 has priority; #112, #110 and #109 remain open. No release is implied.
 
+**CONFIRMED #112 preservation defect, not yet fixed:** a real `f64a00f` export
+retires the reference's compiler `.debug_frame`; explicit sidecar loading loses
+the full x86-64 backtrace. A diagnostic sidecar-only section-name restoration
+recovers all eight frames with identical original CFI bytes. Both variants pass
+GNU/LLVM/strict validation. See `docs/evidence/synthetic-cfi-preservation-probe.json`.
+
 **CONFIRMED — #108 implementation integrated and final acceptance published:**
 all fifteen integration jobs and five performance jobs pass at `6e0cb95`.
 Independent package, raw DWARF/GDB, host GUI, workload and complete ARM32 reviews

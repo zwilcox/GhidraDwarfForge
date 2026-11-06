@@ -79,8 +79,16 @@ coverage, report that uncertainty rather than assume its covered addresses.
 **CONFIRMED source inspection:** `MatchedElfSidecarWriter` currently retires
 all `.debug_*` sections, including compiler `.debug_frame`, when it replaces the
 debug view. #112 must address original `.debug_frame` preservation explicitly.
-This checkpoint has not established how GDB combines that original section with
-each sidecar-loading mode. Plain/compressed records, relocation dependencies,
+**CONFIRMED runtime reproduction:** a real export at `f64a00f` of the x86-64
+compiler reference preserves the original bytes under `.forge.stale.debug_frame`
+but hides them from GDB. `file <original>` followed by `symbol-file <sidecar>`
+then recovers only two valid frames. Renaming that sidecar section back to
+`.debug_frame` in a separate diagnostic artifact restores all eight frames and
+all six register witnesses. Its payload hash exactly matches the original.
+Both sidecars pass GNU/LLVM/pinned strict validation; structural checks alone
+miss the loss of unwind behavior. The original remains unchanged. See the
+[reproduction receipt](evidence/synthetic-cfi-preservation-probe.json).
+This is an experiment, not a production fix. Plain/compressed records, relocation dependencies,
 PIE/shared-object load bias and rebased imports need actual packaging and runtime
 tests. Simply exempting the section name from retirement is insufficient.
 
