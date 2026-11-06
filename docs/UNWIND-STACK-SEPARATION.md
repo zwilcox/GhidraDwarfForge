@@ -1,5 +1,10 @@
 # Explicit stack-separation conditions (#112)
 
+The analysis-only checkpoint below is historical. The follow-up
+[conditioned compiler export](CONDITIONED-COMPILER-UNWIND.md) adds explicit
+projection and normalized provenance with local compiler/GDB validation.
+Default unqualified projection still refuses conditional evidence.
+
 **CONFIRMED locally; conditional analysis only.** The unchanged compiler fixture
 writes `cfi_sink`, and the strict verifier cannot prove that this absolute address
 is separate from saved stack values. The new internal condition model allows that

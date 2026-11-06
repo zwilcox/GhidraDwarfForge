@@ -24,8 +24,15 @@ public final class GhidraUnwindRecovery {
 
     public record Recovered(Optional<CallFramePlan> plan, Set<Address> verifiedFunctions,
             Map<Address, GhidraUnwindFrames.Observation> observations,
-            Map<Address, ElfCodeBytes.Match> originalBytes, Map<Address, String> refusals) {
+            Map<Address, ElfCodeBytes.Match> originalBytes, Map<Address, String> refusals,
+            UnwindStackSeparation separation) {
+        public Recovered(Optional<CallFramePlan> plan, Set<Address> verifiedFunctions,
+                Map<Address, GhidraUnwindFrames.Observation> observations,
+                Map<Address, ElfCodeBytes.Match> originalBytes, Map<Address, String> refusals) {
+            this(plan, verifiedFunctions, observations, originalBytes, refusals, UnwindStackSeparation.NONE);
+        }
         public Recovered {
+            java.util.Objects.requireNonNull(separation);
             verifiedFunctions = Collections.unmodifiableSet(new TreeSet<>(verifiedFunctions));
             observations = Collections.unmodifiableMap(new TreeMap<>(observations));
             originalBytes = Collections.unmodifiableMap(new TreeMap<>(originalBytes));
@@ -43,6 +50,19 @@ public final class GhidraUnwindRecovery {
      */
     public static Recovered recover(Program program, ElfImage image, long rebaseDelta, TaskMonitor monitor)
             throws IOException, CancelledException {
+        return recoverInternal(program, image, rebaseDelta, monitor, UnwindStackSeparation.NONE);
+    }
+
+    /** Explicitly conditioned collection; ordinary recovery continues to require unconditional evidence. */
+    public static Recovered recoverConditioned(Program program, ElfImage image, long rebaseDelta, TaskMonitor monitor,
+            UnwindStackSeparation accepted) throws IOException, CancelledException {
+        monitor.checkCancelled();
+        if (!accepted.conditional()) throw new IllegalArgumentException("conditioned collection requires an external condition");
+        return recoverInternal(program, image, rebaseDelta, monitor, accepted);
+    }
+
+    private static Recovered recoverInternal(Program program, ElfImage image, long rebaseDelta, TaskMonitor monitor,
+            UnwindStackSeparation separation) throws IOException, CancelledException {
         monitor.checkCancelled();
         var verified = new TreeSet<Address>();
         var observations = new TreeMap<Address, GhidraUnwindFrames.Observation>();
@@ -60,13 +80,17 @@ public final class GhidraUnwindRecovery {
             GhidraUnwindCalls.Evidence evidence;
             GhidraUnwindFrames.Planned planned;
             try {
-                evidence = GhidraUnwindCalls.verify(program, function, image, rebaseDelta, monitor);
-                planned = GhidraUnwindFrames.plan(evidence, rebaseDelta, monitor);
+                evidence = GhidraUnwindCalls.verify(program, function, image, rebaseDelta, monitor, separation);
+                planned = separation.conditional() ? GhidraUnwindFrames.planConditioned(evidence, rebaseDelta, monitor, separation) :
+                    GhidraUnwindFrames.plan(evidence, rebaseDelta, monitor);
             }
             catch (IllegalArgumentException unsupported) {
                 monitor.checkCancelled();
                 refusals.put(function.getEntryPoint(), unsupported.getMessage());
                 continue;
+            }
+            if (!separation.equals(evidence.verified().separation()) || !separation.equals(planned.separation())) {
+                throw new IOException("unwind collection changed its accepted separation condition");
             }
             var plan = planned.plan();
             if (template == null) template = plan;
@@ -110,7 +134,7 @@ public final class GhidraUnwindRecovery {
         Optional<CallFramePlan> result = template == null ? Optional.empty() : Optional.of(new CallFramePlan(
             template.addressBytes(), template.order(), template.returnRegister(), template.registers(),
             template.initialRules(), List.copyOf(frames.values())));
-        return new Recovered(result, verified, observations, originalBytes, refusals);
+        return new Recovered(result, verified, observations, originalBytes, refusals, separation);
     }
 
     private static <K, V> void requireSame(Map<K, V> values, K key, V value) throws IOException {

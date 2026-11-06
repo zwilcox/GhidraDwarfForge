@@ -11,6 +11,7 @@ import ghidradwarfforge.output.ExportReport;
 import ghidradwarfforge.output.FileDigests;
 import ghidradwarfforge.output.UnwindEvidenceJson;
 import ghidradwarfforge.unwind.GhidraUnwindRecovery;
+import ghidradwarfforge.unwind.UnwindStackSeparation;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -20,7 +21,7 @@ import java.util.function.Consumer;
 public class ExportRecoveredFrames extends GhidraScript {
     @Override protected void run() throws Exception {
         String[] args = getScriptArgs();
-        if (args.length != 6) throw new IllegalArgumentException("libdwarf libdwarfp output compression rebase failed-source-name");
+        if (args.length != 6 && args.length != 7) throw new IllegalArgumentException("libdwarf libdwarfp output compression rebase failed-source-name [external-separation-first:last]");
         Path input = Path.of(currentProgram.getExecutablePath()).toRealPath();
         Path output = Path.of(args[2]).toAbsolutePath(), sourceOutput = Path.of(output + ".c");
         long requestedRebase = Long.decode(args[4]);
@@ -33,7 +34,20 @@ public class ExportRecoveredFrames extends GhidraScript {
         long delta = AddressNormalizer.rebaseDelta(currentProgram.getImageBase().getOffset(), GhidraImageBase.originalImageBase(currentProgram));
         var diagnostics = new ArrayList<String>();
         Consumer<String> diagnostic = message -> { diagnostics.add(message); printerr(message); };
-        var recovered = GhidraUnwindRecovery.recover(currentProgram, image, delta, monitor);
+        var condition = UnwindStackSeparation.NONE;
+        if (args.length == 7) {
+            String[] range = args[6].split(":", -1);
+            if (range.length != 2) throw new IllegalArgumentException("expected original ELF hex first:last");
+            long first = Long.parseUnsignedLong(range[0], 16), last = Long.parseUnsignedLong(range[1], 16);
+            if (Long.compareUnsigned(first, last) > 0) throw new IllegalArgumentException("wrapping original separation range");
+            condition = new UnwindStackSeparation(image.is64Bit() ? 8 : 4,
+                List.of(new UnwindStackSeparation.Region(first + delta, last + delta)),
+                "Explicit test assumption: this ELF range never overlaps live stack storage of this call group or its callers");
+        }
+        var recovered = condition.conditional() ?
+            GhidraUnwindRecovery.recoverConditioned(currentProgram, image, delta, monitor, condition) :
+            GhidraUnwindRecovery.recover(currentProgram, image, delta, monitor);
+        if (!recovered.separation().equals(condition)) throw new AssertionError("collection lost external condition");
         Files.writeString(Path.of(output + ".recovery.txt"), recovered.toString() + "\n");
         var plan = recovered.plan().orElseThrow(() -> new AssertionError("real import produced no frame proof: " + recovered.refusals()));
         if (plan.frames().isEmpty()) throw new AssertionError("real import produced empty frame coverage");

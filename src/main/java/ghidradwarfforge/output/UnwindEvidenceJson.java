@@ -40,7 +40,24 @@ public final class UnwindEvidenceJson {
             json.name("kind").value("ghidra-unwind-evidence");
             json.name("provenance").value("instruction-and-ABI recovery; not original compiler facts");
             json.name("validationStatus").value("NOT_RUN");
-            json.name("memoryPolicy").value("unresolved stores invalidate saved-memory evidence");
+            var separation = recovered.separation();
+            json.name("memoryPolicy").value(separation.conditional() ?
+                "explicitly conditioned absolute-range separation; other unresolved stores invalidate saved-memory evidence" :
+                "unresolved stores invalidate saved-memory evidence");
+            json.name("stackSeparation");
+            if (!separation.conditional()) json.nullValue();
+            else {
+                json.beginObject().name("status").value("EXTERNAL_CONDITION_NOT_PROVED");
+                json.name("basis").value(separation.basis());
+                json.name("addressDomain").value("original ELF virtual address; apply runtime image load bias");
+                json.name("ranges").beginArray();
+                for (var region : separation.regions()) {
+                    check(cancelled);
+                    json.beginObject().name("first").value(hex(AddressNormalizer.toElfAddress(region.first(), rebaseDelta)));
+                    json.name("last").value(hex(AddressNormalizer.toElfAddress(region.last(), rebaseDelta))).endObject();
+                }
+                json.endArray().endObject();
+            }
             json.name("inputSha256").value(inputSha256);
             json.name("sidecarSha256").value(sidecarSha256);
             json.name("sourceSha256").value(sourceSha256);
@@ -117,6 +134,18 @@ public final class UnwindEvidenceJson {
 
     private static TreeMap<Long, Observation> validate(ElfImage image, Recovered recovered,
             long delta, BooleanSupplier cancelled) {
+        var separation = recovered.separation();
+        if (separation.conditional()) {
+            require(separation.addressBytes() == (image.is64Bit() ? 8 : 4), "separation condition target width differs");
+            for (var region : separation.regions()) {
+                check(cancelled);
+                long first = AddressNormalizer.toElfAddress(region.first(), delta);
+                long last = AddressNormalizer.toElfAddress(region.last(), delta);
+                require(Long.compareUnsigned(first, last) <= 0 &&
+                    (image.is64Bit() || Long.compareUnsigned(last, 0xffff_ffffL) <= 0),
+                    "separation region wraps or exceeds original address width");
+            }
+        }
         require(recovered.verifiedFunctions().size() <= 65536 && recovered.refusals().size() <= 65536 &&
             recovered.observations().size() <= 1_000_000, "recovery report population exceeds bounds");
         require(recovered.observations().keySet().equals(recovered.originalBytes().keySet()),

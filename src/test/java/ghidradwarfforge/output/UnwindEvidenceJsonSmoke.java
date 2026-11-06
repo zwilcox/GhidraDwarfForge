@@ -17,6 +17,7 @@ import ghidra.program.model.address.GenericAddressSpace;
 import ghidradwarfforge.elf.ElfImage;
 import ghidradwarfforge.elf.ElfCodeBytes.Match;
 import ghidradwarfforge.unwind.CallFramePlan;
+import ghidradwarfforge.unwind.UnwindStackSeparation;
 import ghidradwarfforge.unwind.CallFramePlan.*;
 import ghidradwarfforge.unwind.GhidraUnwindFrames.Observation;
 import ghidradwarfforge.unwind.GhidraUnwindRecovery.Recovered;
@@ -95,18 +96,49 @@ public final class UnwindEvidenceJsonSmoke {
             var noPlan = new Recovered(Optional.empty(), Set.of(), Map.of(), Map.of(), Map.of(refused, reason));
             require(JsonParser.parseString(describe(image, noPlan, 0)).getAsJsonObject().get("plan").isJsonNull(),
                 "refusal-only report invents a plan");
-            int[] polls = {0};
-            require(text.equals(UnwindEvidenceJson.describe(image, recovered, 0x400000, HASH, HASH, HASH,
-                () -> { polls[0]++; return false; })), "counting changed report");
-            for (int stop = 1; stop <= polls[0]; stop++) {
-                int selected = stop; int[] count = {0};
-                try {
-                    UnwindEvidenceJson.describe(image, recovered, 0x400000, HASH, HASH, HASH, () -> ++count[0] == selected);
-                    throw new AssertionError("report ignored cancellation");
-                }
-                catch (CancellationException expected) { checks++; }
+            require(json.get("stackSeparation").isJsonNull(), "strict report invents a separation condition");
+            var condition = new UnwindStackSeparation(8,
+                List.of(new UnwindStackSeparation.Region(0x403000, 0x403007)), "external test basis Ω 😃");
+            var conditioned = new Recovered(recovered.plan(), recovered.verifiedFunctions(), recovered.observations(),
+                recovered.originalBytes(), recovered.refusals(), condition);
+            String conditionalText = describe(image, conditioned, 0x400000);
+            var conditionalJson = JsonParser.parseString(conditionalText).getAsJsonObject();
+            var separationJson = conditionalJson.getAsJsonObject("stackSeparation");
+            require(separationJson.get("status").getAsString().equals("EXTERNAL_CONDITION_NOT_PROVED"),
+                "conditional report claims proof of separation");
+            require(separationJson.get("basis").getAsString().equals(condition.basis()), "external basis changed");
+            require(conditionalJson.get("validationStatus").getAsString().equals("NOT_RUN"), "conditional report claims validation");
+            require(!conditionalJson.get("memoryPolicy").equals(json.get("memoryPolicy")), "conditional policy labeled strict");
+            var regionJson = separationJson.getAsJsonArray("ranges").get(0).getAsJsonObject();
+            require(regionJson.get("first").getAsString().equals("0x3000") && regionJson.get("last").getAsString().equals("0x3007"),
+                "condition was not normalized with frame addresses");
+            int conditionalLength = conditionalText.getBytes(StandardCharsets.UTF_8).length;
+            require(conditionalText.equals(UnwindEvidenceJson.describe(image, conditioned, 0x400000, HASH, HASH, HASH,
+                () -> false, conditionalLength)), "exact conditional UTF-8 bound rejected");
+            reject(() -> UnwindEvidenceJson.describe(image, conditioned, 0x400000, HASH, HASH, HASH,
+                () -> false, conditionalLength - 1));
+            for (var invalid : List.of(
+                    new UnwindStackSeparation(4, condition.regions(), condition.basis()),
+                    new UnwindStackSeparation(8, List.of(new UnwindStackSeparation.Region(0x3fffff, 0x400001)), condition.basis()))) {
+                reject(() -> describe(image, new Recovered(recovered.plan(), recovered.verifiedFunctions(), recovered.observations(),
+                    recovered.originalBytes(), recovered.refusals(), invalid), 0x400000));
             }
-            require(text.equals(describe(image, recovered, 0x400000)), "cancelled report poisoned retry");
+            // Exercise cancellation at every output/provenance boundary on both policies.
+            for (var candidate : List.of(recovered, conditioned)) {
+                String expectedText = describe(image, candidate, 0x400000);
+                int[] polls = {0};
+                require(expectedText.equals(UnwindEvidenceJson.describe(image, candidate, 0x400000, HASH, HASH, HASH,
+                    () -> { polls[0]++; return false; })), "counting changed report");
+                for (int stop = 1; stop <= polls[0]; stop++) {
+                    int selected = stop; int[] count = {0};
+                    try {
+                        UnwindEvidenceJson.describe(image, candidate, 0x400000, HASH, HASH, HASH, () -> ++count[0] == selected);
+                        throw new AssertionError("report ignored cancellation");
+                    }
+                    catch (CancellationException expected) { checks++; }
+                }
+                require(expectedText.equals(describe(image, candidate, 0x400000)), "cancelled report poisoned retry");
+            }
         }
         finally { Files.delete(path); }
         System.out.println("unwind-evidence-json-smoke=PASS checks=" + checks);

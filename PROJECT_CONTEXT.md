@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — conditioned compiler/GDB export for #112:** explicit
+projection and collection retain their accepted stack-separation condition in
+normalized evidence JSON. Real headless exports of unchanged compiler C match
+all observed backtrace/register/recursive-return states on x86-64 and AArch64:
+18 exports, 8 failure controls, 8 sidecars and 16 GDB sessions. Strict regressions
+also pass on both targets. See `docs/CONDITIONED-COMPILER-UNWIND.md`. The external
+condition is not proved; normal CLI/GUI synthesis and shipping policy remain
+unsettled. Full #112/#110/#109 remain incomplete. PR176's standalone large-ELF
+compile dependency failure is being corrected separately; PR175 retains priority.
+
 **CONFIRMED locally — conditional stack-separation analysis for #112:** explicit
 external address-range conditions now remain attached to flows, verified call
 groups and summaries; strict callers reject conditional summaries. Both unchanged

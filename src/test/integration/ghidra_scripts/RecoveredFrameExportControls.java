@@ -12,32 +12,32 @@ import java.util.concurrent.CancellationException;
 public class RecoveredFrameExportControls extends GhidraScript {
     @Override protected void run() throws Exception {
         String[] args = getScriptArgs();
-        if (args.length != 4) throw new IllegalArgumentException("libdwarf libdwarfp output-directory failed-source-name");
+        if (args.length != 4 && args.length != 5) throw new IllegalArgumentException("libdwarf libdwarfp output-directory failed-source-name [external-separation-first:last]");
         Path directory = Path.of(args[2]);
         for (String compression : List.of("none", "zlib")) {
             Path output = directory.resolve(compression + ".dbg");
             String[] options = {args[0], args[1], output.toString(), compression, "0", args[3]};
-            runScript("ExportRecoveredFrames.java", options);
+            runExport(args, options);
             byte[] artifact = Files.readAllBytes(output), source = Files.readAllBytes(Path.of(output + ".c"));
             byte[] evidence = Files.readAllBytes(Path.of(output + ".unwind.json"));
-            runScript("ExportRecoveredFrames.java", options);
+            runExport(args, options);
             requireSame(output, artifact, source);
             requireEvidence(output, evidence);
             Files.write(directory.resolve("before-rebase-" + compression + ".dbg"), artifact);
             Files.write(directory.resolve("before-rebase-" + compression + ".dbg.c"), source);
             Files.write(directory.resolve("before-rebase-" + compression + ".dbg.unwind.json"), evidence);
         }
-        runScript("ExportRecoveredFrames.java", new String[] {args[0], args[1], directory.resolve("none.dbg").toString(), "none", "0x400000", args[3]});
+        runExport(args, new String[] {args[0], args[1], directory.resolve("none.dbg").toString(), "none", "0x400000", args[3]});
         // Rebasing changes decompiler literals in some terminal instructions.
         // Require deterministic bytes for each unchanged program; the external
         // consumer separately checks identical original-image frame rules.
         for (String compression : List.of("none", "zlib")) {
             Path output = directory.resolve(compression + ".dbg");
             String[] options = {args[0], args[1], output.toString(), compression, "0", args[3]};
-            if (compression.equals("zlib")) runScript("ExportRecoveredFrames.java", options);
+            if (compression.equals("zlib")) runExport(args, options);
             byte[] artifact = Files.readAllBytes(output), source = Files.readAllBytes(Path.of(output + ".c"));
             byte[] evidence = Files.readAllBytes(Path.of(output + ".unwind.json"));
-            runScript("ExportRecoveredFrames.java", options);
+            runExport(args, options);
             requireSame(output, artifact, source);
             requireEvidence(output, evidence);
         }
@@ -63,7 +63,7 @@ public class RecoveredFrameExportControls extends GhidraScript {
                 };
                 boolean caught = false;
                 try {
-                    runScript("ExportRecoveredFrames.java", new String[] {args[0], args[1], directory.resolve("none.dbg").toString(), "none", "0", args[3]});
+                    runExport(args, new String[] {args[0], args[1], directory.resolve("none.dbg").toString(), "none", "0", args[3]});
                 }
                 catch (CancellationException expected) { if (failure) throw expected; caught = true; }
                 catch (InjectedFailure expected) { if (!failure) throw expected; caught = true; }
@@ -77,10 +77,18 @@ public class RecoveredFrameExportControls extends GhidraScript {
                 println("native-frame-staging-control=PASS stage=" + stage + " failure=" + failure);
             }
         }
-        runScript("ExportRecoveredFrames.java", new String[] {args[0], args[1], directory.resolve("none.dbg").toString(), "none", "0", args[3]});
+        runExport(args, new String[] {args[0], args[1], directory.resolve("none.dbg").toString(), "none", "0", args[3]});
         requireSame(directory.resolve("none.dbg"), plain, plainSource);
         requireEvidence(directory.resolve("none.dbg"), plainEvidence);
         println("native-frame-export-controls=PASS successful=9 controls=4");
+    }
+
+    private void runExport(String[] args, String[] options) throws Exception {
+        if (args.length == 5) {
+            options = Arrays.copyOf(options, 7);
+            options[6] = args[4];
+        }
+        runScript("ExportRecoveredFrames.java", options);
     }
 
     private static void requireSame(Path output, byte[] artifact, byte[] source) throws Exception {

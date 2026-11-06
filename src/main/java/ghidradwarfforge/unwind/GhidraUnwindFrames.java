@@ -15,8 +15,8 @@ import ghidradwarfforge.unwind.CallFramePlan.*;
 /** Address-preserving evidence to original-image frame ranges; not an exporter entry point. */
 public final class GhidraUnwindFrames {
     public record Observation(Address function, Address instruction, int length, UnwindFrameRows.Projected projection) { }
-    public record Planned(CallFramePlan plan, List<Observation> observations) {
-        public Planned { observations = List.copyOf(observations); }
+    public record Planned(CallFramePlan plan, List<Observation> observations, UnwindStackSeparation separation) {
+        public Planned { observations = List.copyOf(observations); java.util.Objects.requireNonNull(separation); }
     }
     private GhidraUnwindFrames() { }
 
@@ -26,6 +26,21 @@ public final class GhidraUnwindFrames {
         if (evidence.verified().separation().conditional()) {
             throw new IllegalArgumentException("conditional stack separation requires an explicit qualified projection path");
         }
+        return planInternal(evidence, rebaseDelta, monitor);
+    }
+
+    /** Caller explicitly accepts the exact external condition; it remains attached to the projection. */
+    public static Planned planConditioned(GhidraUnwindCalls.Evidence evidence, long rebaseDelta,
+            TaskMonitor monitor, UnwindStackSeparation accepted) throws CancelledException {
+        monitor.checkCancelled();
+        if (!accepted.conditional() || !accepted.equals(evidence.verified().separation())) {
+            throw new IllegalArgumentException("conditional projection requires the exact accepted separation condition");
+        }
+        return planInternal(evidence, rebaseDelta, monitor);
+    }
+
+    private static Planned planInternal(GhidraUnwindCalls.Evidence evidence, long rebaseDelta, TaskMonitor monitor)
+            throws CancelledException {
         var profile = evidence.profile();
         var description = profile.description();
         var policy = new UnwindFrameRows.Policy(profile.registers(), description.stackNumber(),
@@ -76,7 +91,7 @@ public final class GhidraUnwindFrames {
         if (!initial.covered()) throw new IllegalArgumentException("profile has no complete initial frame rules");
         monitor.checkCancelled();
         return new Planned(new CallFramePlan(profile.stackPointer().bytes(), evidence.byteOrder(),
-            description.returnNumber(), profile.registers().keySet(), initial.rules(), frames), observations);
+            description.returnNumber(), profile.registers().keySet(), initial.rules(), frames), observations, evidence.verified().separation());
     }
 
     private static UnwindFrameRows.Projected project(UnwindFlow.State state, UnwindFlow.State after,

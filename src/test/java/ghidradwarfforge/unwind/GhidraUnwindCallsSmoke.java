@@ -104,6 +104,55 @@ public final class GhidraUnwindCallsSmoke {
         Path path = output.resolve(name + ".elf"); Files.write(path, out.array());
         return ElfImage.read(path);
     }
+    @FunctionalInterface private interface CheckedAction { void run() throws Exception; }
+    private static void refuses(CheckedAction action, String message) throws Exception {
+        try { action.run(); throw new AssertionError("conditional evidence accepted without exact acknowledgement"); }
+        catch (IllegalArgumentException expected) { require(expected.getMessage().equals(message), "wrong conditional refusal: " + expected); }
+    }
+    private static void conditioned(ProgramDB program, Function root, ElfImage image,
+            GhidraUnwindFrames.Planned strict) throws Exception {
+        var condition = new UnwindStackSeparation(8, List.of(new UnwindStackSeparation.Region(0x3000, 0x3007)),
+            "explicit unused test condition");
+        var proof = GhidraUnwindCalls.verify(program, root, image, 0, TaskMonitor.DUMMY, condition);
+        refuses(() -> GhidraUnwindFrames.plan(proof, 0, TaskMonitor.DUMMY),
+            "conditional stack separation requires an explicit qualified projection path");
+        for (var wrong : List.of(UnwindStackSeparation.NONE,
+                new UnwindStackSeparation(8, condition.regions(), "different basis"),
+                new UnwindStackSeparation(8, List.of(new UnwindStackSeparation.Region(0x3000, 0x3006)), condition.basis()))) {
+            refuses(() -> GhidraUnwindFrames.planConditioned(proof, 0, TaskMonitor.DUMMY, wrong),
+                "conditional projection requires the exact accepted separation condition");
+        }
+        var planned = GhidraUnwindFrames.planConditioned(proof, 0, TaskMonitor.DUMMY, condition);
+        require(planned.separation().equals(condition) && strict.separation().equals(UnwindStackSeparation.NONE),
+            "projection changed policy provenance");
+        require(planned.plan().equals(strict.plan()) && planned.observations().equals(strict.observations()),
+            "unused condition changed frame rules");
+        var collected = GhidraUnwindRecovery.recoverConditioned(program, image, 0, TaskMonitor.DUMMY, condition);
+        require(collected.separation().equals(condition) && collected.plan().orElseThrow().equals(strict.plan()),
+            "conditioned collection lost condition or changed rules");
+        refuses(() -> GhidraUnwindRecovery.recoverConditioned(program, image, 0, TaskMonitor.DUMMY, UnwindStackSeparation.NONE),
+            "conditioned collection requires an external condition");
+        int[] polls = {0};
+        var counting = new TaskMonitorAdapter() {
+            @Override public void checkCancelled() throws CancelledException { polls[0]++; }
+        };
+        require(GhidraUnwindFrames.planConditioned(proof, 0, counting, condition).equals(planned), "counted projection changed");
+        for (int stop = 1; stop <= polls[0]; stop++) {
+            int selected = stop; int[] count = {0};
+            var cancelling = new TaskMonitorAdapter() {
+                @Override public void checkCancelled() throws CancelledException {
+                    if (++count[0] == selected) throw new CancelledException();
+                }
+            };
+            try {
+                GhidraUnwindFrames.planConditioned(proof, 0, cancelling, condition);
+                throw new AssertionError("conditional projection ignored cancellation");
+            }
+            catch (CancelledException expected) { checks++; }
+        }
+        require(GhidraUnwindFrames.planConditioned(proof, 0, TaskMonitor.DUMMY, condition).equals(planned),
+            "cancelled conditional projection poisoned retry");
+    }
     private static void run(boolean arm, String shape) throws Exception {
         String tag = (arm ? "aarch64" : "x86") + "-" + shape;
         String leaf = arm ? "c0035fd6" : "c3";
@@ -164,6 +213,7 @@ public final class GhidraUnwindCallsSmoke {
                     require(proof.originalBytes().size() == proof.captures().values().stream()
                         .mapToInt(capture -> capture.observations().size()).sum(), "original byte agreement omitted an instruction");
                     var planned = GhidraUnwindFrames.plan(proof, 0, TaskMonitor.DUMMY);
+                    if (shape.equals("direct")) conditioned(program, functions.get(0x1000), image, planned);
                     var collected = GhidraUnwindRecovery.recover(program, image, 0, TaskMonitor.DUMMY);
                     require(collected.refusals().isEmpty() && collected.plan().orElseThrow().equals(planned.plan()) &&
                         collected.originalBytes().equals(proof.originalBytes()), "program collection changed a proved group");
