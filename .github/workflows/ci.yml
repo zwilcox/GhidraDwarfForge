@@ -1041,6 +1041,26 @@ jobs:
             "build/test-results/unwind-frame-recovery/$TARGET" "build/test-results/native-frame-failed-source/$TARGET" \
             --target "$TARGET" --roles exec --failed-source-name cf_checkpoint --dwarfdump "$DWARFDUMP"
 
+      - name: Preserve original records alongside recovered native frame exports
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for encoding in plain gabi gnu; do
+            for family in unwind-frame-recovery unwind-shrinkwrap; do
+              python3 src/test/integration/unwind-export.py "$GHIDRA_INSTALL_DIR" \
+                "build/test-results/$family/$TARGET" "build/test-results/native-coexistence/$encoding/$family/$TARGET" \
+                --target "$TARGET" --original-encoding "$encoding" --dwarfdump "$DWARFDUMP"
+            done
+          done
+
+      - name: Preserve inherited unavailable-register limits
+        if: matrix.target == 'aarch64'
+        run: |
+          python3 src/test/integration/unwind-incomplete-original.py "$GHIDRA_INSTALL_DIR" \
+            build/test-results/unwind-frame-recovery/aarch64 \
+            build/test-results/native-inherited-unavailable/aarch64 --dwarfdump "$DWARFDUMP"
+
       - name: Compare original frame ranges with independent compiler and validator inventories
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
         env:

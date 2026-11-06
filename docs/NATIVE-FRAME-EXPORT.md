@@ -102,7 +102,9 @@ initial target lane; hosted execution remains **PRESENT, UNVERIFIED**.
 ## Remaining work
 
 Enablement in the installed script/GUI, user-facing policy and provenance,
-unchanged global-writing compiler-C acceptance, full original/generated-frame
-coexistence through this API, and hosted acceptance remain open. The existing
+unchanged global-writing compiler-C acceptance, broader original-metadata
+combinations and hosted acceptance remain open. Original/generated `.debug_frame`
+coexistence is now locally validated under the explicit input contract in
+`NATIVE-FRAME-COEXISTENCE.md`. The existing
 strict storage-alias refusal remains in force. PR166 integration has priority;
 this work does not complete the remaining #112, #110 or #109 goal items.

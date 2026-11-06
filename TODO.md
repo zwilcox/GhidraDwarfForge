@@ -1,5 +1,16 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 native original/generated frame coexistence:**
+thirty-six real-export cases pass with plain/gABI/GNU original records across
+both initial targets, fixture families and exec/PIE/shared roles: 324 exports,
+72 failure controls, 144 sidecars and 324 GDB sessions. Original leaf/outer-boundary
+records remain exact; only the uncovered recursive frame is generated. An
+incomplete-original AArch64 control matches the independent assembler's same
+four frames and unavailable-x29 error, without inventing missing knowledge.
+Four no-original shared regressions also pass. See
+`docs/NATIVE-FRAME-COEXISTENCE.md`. Hosted acceptance, user-facing enablement and
+compiler-C storage policy remain open; PR166 retains priority.
+
 **CONFIRMED locally — #112 real native frame export:** an explicit internal API
 now joins actual ELF import, decompiler/type extraction, native DWARF production
 and qualified frame packaging. Fourteen cases pass on x86-64/AArch64 across

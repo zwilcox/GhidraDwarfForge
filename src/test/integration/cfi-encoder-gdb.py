@@ -62,7 +62,9 @@ for unused in range(128):
         gdb.execute("set debug frame 1")
         gdb.execute("maintenance flush register-cache")
         stack = frames()
-        gdb.execute("bt")
+        # The fixture oracle ends at its explicitly unsupported _start;
+        # never ask GDB to speculate beyond that captured boundary.
+        gdb.execute("bt " + str(len(stack)))
         gdb.execute("set debug frame 0")
         depth = 3 if profile == "shrinkwrap" else 4
         expected_witnesses = ([0x5101, 0x5101, 0x5102, 0x5103, 0x6172] if profile == "shrinkwrap" else
