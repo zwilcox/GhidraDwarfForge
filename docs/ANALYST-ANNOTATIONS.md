@@ -1,11 +1,13 @@
 # Analyst annotations and optional instruction context
 
-**CONFIRMED Linux default integration:** issues #116/#114 preserve listing
-comments and equates through the shared exporter. Equates have a non-executable
-source catalog and tested synthetic debugger constants. Optional assembly/p-code
-context, Windows interaction and full hosted/workload acceptance remain
-**PLANNED**. Earlier component-only notes describe their historical scope. #108
-implementation is merged; its final documentation is tracked by PR #165.
+**CONFIRMED integrated:** comments/equates and optional assembly/p-code context
+pass the current five-target, Linux/Windows and workload gates at `21f8da3`.
+PR166 merged normally as tree-identical `8041fdab`. See the
+[final requirement-by-requirement acceptance map](ANNOTATION-ACCEPTANCE.md) and
+[consolidated receipt](evidence/annotation-ci-21f8da3.json). Earlier pending and
+component-only statements below record historical checkpoints; they do not
+supersede that acceptance map. Separate main-push observation and publication of
+this documentation remain. #112/#110/#109 are still incomplete.
 
 **CONFIRMED fixture preparation:** `analyst-annotations.c` builds deterministic
 PIE/non-PIE compiler references for x86-64, AArch64 and both MIPS32 byte orders.

@@ -349,6 +349,16 @@ the full x86-64 backtrace. A diagnostic sidecar-only section-name restoration
 recovers all eight frames with identical original CFI bytes. Both variants pass
 GNU/LLVM/strict validation. See `docs/evidence/synthetic-cfi-preservation-probe.json`.
 
+**CONFIRMED integrated #116/#114:** PR166 at `21f8da3` passes all fifteen
+integration jobs and the performance workflow. Independent package, five-target,
+Windows host/workload and consumer review passes; normal protected merge
+`8041fdab` preserves the tested tree. See [the final acceptance map](docs/ANNOTATION-ACCEPTANCE.md)
+for each issue requirement, exact artifact bindings and limitations. Separate
+main-push run `42210149331` remains under observation. Earlier pending checkpoints
+below are historical within this scope. Continue #112, then #110 and #109;
+#162/#163 remain low priority. Documentation publication and issue reconciliation
+follow this acceptance record.
+
 **CONFIRMED intrinsic report retention correction — #116/#114:** current-head
 run `42176440117` failed the final x86-64 retention audit because the intrinsic
 harness reused wrapper stdout as its raw strict-report path. Independent artifact

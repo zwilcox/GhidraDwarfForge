@@ -341,6 +341,16 @@ tests. ADR-0002 remains unchanged for production. This does not complete #112;
 #116/#114 PR166 hosted acceptance remains the first priority, followed by the
 full #112/#110/#109 goal. Hosted reference checks are PRESENT, UNVERIFIED.
 
+**CONFIRMED integrated #116/#114:** PR166 at `21f8da3` passes all fifteen
+integration jobs and the performance workflow. Independent package, five-target,
+Windows host/workload and consumer review passes; normal protected merge
+`8041fdab` preserves the tested tree. See [the final acceptance map](docs/ANNOTATION-ACCEPTANCE.md)
+for each issue requirement, exact artifact bindings and limitations. Separate
+main-push run `42210149331` remains under observation. Earlier pending checkpoints
+below are historical within this scope. Continue #112, then #110 and #109;
+#162/#163 remain low priority. Documentation publication and issue reconciliation
+follow this acceptance record.
+
 **CONFIRMED intrinsic report retention correction — #116/#114:** current-head
 run `42176440117` failed the final x86-64 retention audit because the intrinsic
 harness reused wrapper stdout as its raw strict-report path. Independent artifact
@@ -3425,10 +3435,12 @@ criteria. All five target lanes and exact-head host/performance gates pass; the
 normal protected PR164 merge preserves the tested tree. See
 [final acceptance](docs/COVERAGE-ACCEPTANCE.md) for independent evidence and limits.
 
-**ACTIVE next — #116/#114:** preserve analyst comments/equates and add optional
-instruction context. Local isolated preparation exists on the annotation branch;
-production integration and complete host/target acceptance remain required.
-Then continue #112 (evidence-backed CFI), #110 (LLDB) and #109 (build-ID installation).
+**CONFIRMED integrated — #116/#114:** comments/equates and optional instruction
+context pass the complete current host/target/workload gate and protected PR166
+merge. See [final acceptance](docs/ANNOTATION-ACCEPTANCE.md). Documentation publication,
+issue reconciliation and separate main-push observation remain.
+**ACTIVE next — #112:** evidence-backed CFI, followed by #110 (LLDB) and
+#109 (build-ID installation).
 Low-priority test-coverage/CI badges remain #162/#163.
 
 The baseline exporter, source/type/location machinery, five target lanes,
