@@ -29,6 +29,7 @@ def main():
     parser.add_argument('--java', default='java')
     parser.add_argument('--dwarfdump', required=True)
     parser.add_argument('--target', choices=('x86_64', 'aarch64', 'all'), default='all')
+    parser.add_argument('--fixture-family', choices=('encoder', 'shrinkwrap'), default='encoder')
     parser.add_argument('--gradle-init', type=Path)
     parser.add_argument('--gradle-cache', type=Path)
     args = parser.parse_args()
@@ -45,7 +46,7 @@ def main():
             case = work / (target + '-' + role)
             case.mkdir()
             tool = '' if target == 'x86_64' else 'aarch64-linux-gnu-'
-            source = ROOT / 'src/test/fixtures' / ('cfi-encoder-' + target + '.S')
+            source = ROOT / 'src/test/fixtures' / ('cfi-' + args.fixture_family + '-' + target + '.S')
             reference, original = case / 'reference', case / 'original'
             flags = ['-static', '-no-pie'] if role == 'exec' else ['-fPIE', '-static-pie']
             run([tool + 'gcc', '-nostdlib', *flags, '-Wl,--build-id=none', source, '-o', reference], case / 'build.log')
@@ -122,10 +123,10 @@ def main():
             for mode, artifact in modes:
                 prefix = case / ('gdb-' + mode)
                 run(['bash', SCRIPTS / 'cfi-encoder-gdb.sh', target, mode, artifact, original, prefix],
-                    case / ('gdb-' + mode + '-driver.log'))
+                    case / ('gdb-' + mode + '-driver.log'), env={'FORGE_FRAME_PROFILE': args.fixture_family})
                 results[mode] = json.loads(Path(str(prefix) + '.json').read_text())
                 text = Path(str(prefix) + '.log').read_text()
-                for level in range(5):
+                for level in range(4 if args.fixture_family == 'shrinkwrap' else 5):
                     selected = f'level={level},type=NORMAL_FRAME,unwinder="dwarf2",pc='
                     assert (selected in text) == (mode != 'absent'), (target, role, mode, level)
                 warnings[mode] = [line for line in text.splitlines() if 'warning:' in line.lower()]
@@ -140,7 +141,8 @@ def main():
                 r'warning: BFD: warning: system-supplied DSO at 0x[0-9a-f]+ has a corrupt string table index', line)
                 for line in warnings['reference'])
             assert initial == {path: digest(Path(path)) for path in initial}
-            reports.append({'target': target, 'role': role, 'inputHashes': initial, 'planSha256': digest(plans[0]),
+            reports.append({'target': target, 'role': role, 'fixtureFamily': args.fixture_family,
+                            'inputHashes': initial, 'planSha256': digest(plans[0]),
                             'frameSha256': digest(case / 'none.frame'), 'runtime': results, 'warnings': warnings})
             print(target + ' ' + role + ' native recovered CFI PASS', flush=True)
     (work / 'result.json').write_text(json.dumps({'status': 'PASS_NATIVE_RECOVERED_CFI', 'cases': reports,

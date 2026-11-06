@@ -65,6 +65,8 @@ expected_sources=(
     calling-convention.c
     cfi-encoder-aarch64.S
     cfi-encoder-x86_64.S
+    cfi-shrinkwrap-aarch64.S
+    cfi-shrinkwrap-x86_64.S
     composite-register-prefix.c
     composite-value-flow.c
     curated-thunk.c

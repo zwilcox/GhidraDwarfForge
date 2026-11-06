@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 split/shrink-wrapped runtime frames:** four new
+x86-64/AArch64 non-PIE/PIE cases exercise both an unsaved early return and separate
+allocation/register-save transitions before a common return. The existing proof
+and projection pass without production algorithm changes: eight sidecars,
+sixteen debugger sessions, 51/53 instruction stops, original/rebased agreement,
+and unchanged inputs. Default-family regressions and all five fixture inventories
+also pass. See `docs/UNWIND-SHRINKWRAP.md`. These controlled assembly references
+do not replace the unchanged compiler-C acceptance. Automatic integration and
+full #112/#110/#109 remain PLANNED; PR166 retains first integration priority.
+
 **CONFIRMED locally — #112 qualified frame writer:** an explicit plan API now
 checks original coverage/loader writes, decodes original plain/GNU/gABI frame
 records with identity checks, and emits one active composed frame section while
@@ -12,8 +22,8 @@ acceptance remain PLANNED. PR166 integration retains first priority.
 can remain an exact prefix while disjoint generated records use correct section
 offsets. 362 component checks and four x86-64/AArch64 exec/PIE cases pass across
 eight validator-clean sidecars and eight compiler-comparison GDB sessions.
-See `docs/FRAME-COMPOSITION.md`. Production writer qualification/integration,
-global-store evidence and full synthesis acceptance remain PLANNED; the writer's
+See `docs/FRAME-COMPOSITION.md`. Automatic exporter integration, global-store
+evidence and full synthesis acceptance remain PLANNED; the ordinary raw-frame
 collision guard remains active. PR166 still has first integration priority.
 
 **CONFIRMED locally — #112 compiler memory effects:** direct RAM operands now
