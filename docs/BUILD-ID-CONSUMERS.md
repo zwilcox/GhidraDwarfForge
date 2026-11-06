@@ -90,6 +90,36 @@ validated route. Cache manipulation alone is not proof of source discovery,
 sample symbolization or `perf report` behavior. Event recording and report
 symbolization remain **UNVERIFIED** here; the local host restricts perf events.
 
+## Sample and report characterization
+
+**PRESENT, UNVERIFIED:** `build-id-perf-report.py` adds an independent native
+x86-64 exec/PIE experiment, required by the `perf-build-id` CI job. It builds a
+small CPU-loop fixture, exports a saved analyst name through packaged Ghidra,
+saves a second analyst name, reopens the program and exports again. The actual
+installer installs, refreshes and removes those generations under the selected
+symfs root. Original exports are hidden during consumer checks.
+
+The sampling run uses `cpu-clock:u` and retains the actual `perf.data`, build-ID
+list, reports and individual sample symbolizations. Its compiler reference must
+resolve at least 30 hot-function samples before the Forge results are assessed.
+A second independent compiler control removes only the hot function's ELF
+symbol while retaining its DWARF; GDB must still find that function's DIE.
+This distinguishes ELF symbol-table lookup from DWARF lookup. The experiment
+fails if Forge cannot resolve a name where that compiler DWARF-only control can.
+If both fail, it records the observed consumer limitation explicitly; a passing
+characterization is not a claim of successful recovered-name symbolization.
+Installed initial and refreshed names are assessed separately, including source
+paths when symbolization succeeds, followed by an absent-registration control.
+
+CI elevates only the bounded recorder and uses `setpriv` to run the source-built
+fixture as the ordinary runner user. The fixture itself refuses UID/EUID zero.
+It does not change kernel policy or populate perf's cache. Local `--prepare-only`
+runs validate exports, production installation, GDB lookup and offline perf
+queries; they report `PREPARED_SAMPLING_UNVERIFIED`, never sample acceptance.
+The ordinary full invocation requires permission to record events; CI explicitly
+selects `--record-with-sudo`. No unsupported recording attempt is skipped into a
+passing result.
+
 ## Reproduce
 
 `src/test/integration/build-id-consumers.py` takes two configurations produced

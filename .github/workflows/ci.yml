@@ -2944,6 +2944,86 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  perf-build-id:
+    needs: [ release-package, native-linux ]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install native perf fixture and validation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc binutils llvm gdb linux-tools-generic util-linux
+
+      - name: Cache Ghidra 12.0.3 archive
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/ghidra-download/${{ env.GHIDRA_ARCHIVE }}
+          key: ghidra-${{ env.GHIDRA_ARCHIVE_SHA256 }}
+
+      - name: Install pinned Ghidra
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ghidra-download" "$RUNNER_TEMP/ghidra"
+          archive="$RUNNER_TEMP/ghidra-download/$GHIDRA_ARCHIVE"
+          if [[ ! -f "$archive" ]]; then
+              curl -fL --retry 3 "$GHIDRA_DOWNLOAD_URL" -o "$archive"
+          fi
+          echo "$GHIDRA_ARCHIVE_SHA256  $archive" | sha256sum -c -
+          unzip -q "$archive" -d "$RUNNER_TEMP/ghidra"
+          echo "GHIDRA_INSTALL_DIR=$RUNNER_TEMP/ghidra/ghidra_12.0.3_PUBLIC" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: ghidra-dwarf-forge-extension
+          path: dist
+      - uses: actions/download-artifact@v8
+        with:
+          name: dwarfdump-linux-validation
+          path: validation-tool
+
+      - name: Record native exec and PIE samples and characterize installed symbolization
+        run: |
+          set -euo pipefail
+          (cd validation-tool && sha256sum -c SHA256SUMS)
+          chmod 755 validation-tool/bin/dwarfdump validation-tool/libexec/dwarfdump
+          unzip -q dist/*.zip -d "$GHIDRA_INSTALL_DIR/Ghidra/Extensions"
+          mkdir -p build/test-results/perf-build-id
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          import shutil
+          root = Path.cwd()
+          tools = {'readelf': shutil.which('readelf'), 'llvm': shutil.which('llvm-dwarfdump'),
+              'strict': str(root / 'validation-tool/libexec/dwarfdump'),
+              'configuration': str(root / 'validation-tool/share/dwarfdump/dwarfdump.conf')}
+          assert all(tools.values())
+          (root / 'build/test-results/perf-build-id/tools.json').write_text(json.dumps({'tools': tools}) + '\n')
+          PY
+          FORGE_PERF=$(python3 -c 'from pathlib import Path; paths = sorted(p.resolve() for p in Path("/usr/lib/linux-tools").glob("*/perf") if p.is_file()); assert paths; print(paths[-1])')
+          for role in exec pie; do
+              python3 src/test/integration/build-id-perf-report.py \
+                  --ghidra "$GHIDRA_INSTALL_DIR" --java "$(command -v java)" \
+                  --tools-configuration "$PWD/build/test-results/perf-build-id/tools.json" \
+                  --perf "$FORGE_PERF" --role "$role" --record-with-sudo \
+                  --output "$PWD/build/test-results/perf-build-id/$role" \
+                  --scratch "$RUNNER_TEMP/perf-build-id-$role"
+          done
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: perf-build-id-validation
+          include-hidden-files: true
+          path: build/test-results/perf-build-id/
+          if-no-files-found: error
+          retention-days: 14
+
   windows-host:
     needs: [ release-package, native-windows, linux-x86-export-reference ]
     # The reference files are uploaded before the Linux GUI journey. Still
@@ -3432,6 +3512,7 @@ jobs:
       - release-package
       - target-preflight
       - linux-x86-export-reference
+      - perf-build-id
       - windows-host
       - attachment-windows
       - windows-attachment-gdb
@@ -3446,6 +3527,7 @@ jobs:
           RELEASE_PACKAGE_RESULT: ${{ needs.release-package.result }}
           TARGET_PREFLIGHT_RESULT: ${{ needs.target-preflight.result }}
           LINUX_REFERENCE_RESULT: ${{ needs.linux-x86-export-reference.result }}
+          PERF_BUILD_ID_RESULT: ${{ needs.perf-build-id.result }}
           WINDOWS_HOST_RESULT: ${{ needs.windows-host.result }}
           ATTACHMENT_WINDOWS_RESULT: ${{ needs.attachment-windows.result }}
           WINDOWS_ATTACHMENT_GDB_RESULT: ${{ needs.windows-attachment-gdb.result }}
@@ -3456,7 +3538,7 @@ jobs:
               "$NATIVE_WINDOWS_RESULT" "$EXTENSION_BUILD_RESULT" \
               "$RELEASE_PACKAGE_RESULT" "$TARGET_PREFLIGHT_RESULT" \
               "$LINUX_REFERENCE_RESULT" "$WINDOWS_HOST_RESULT" "$ATTACHMENT_WINDOWS_RESULT" \
-              "$WINDOWS_ATTACHMENT_GDB_RESULT"; do
+              "$WINDOWS_ATTACHMENT_GDB_RESULT" "$PERF_BUILD_ID_RESULT"; do
             if [[ "$result" != success ]]; then
               failed=1
             fi

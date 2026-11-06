@@ -1,5 +1,18 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local #109 perf fixture preflight (2026-11-06):**
+new native x86-64 exec/PIE fixtures pass four packaged headless exports, saved
+analyst-name edits, production install/update/remove, strict/LLVM validation,
+GDB retained-source discovery and offline perf source queries. Actual sampling
+is **PRESENT, UNVERIFIED**: a separate required `perf-build-id` job records bounded
+software CPU-clock samples and compares installed/updated/removed generations
+with independent compiler ELF-symbol and DWARF-only controls. A successful
+characterization will distinguish actual recovered-name symbolization from a
+corroborated consumer limitation. No event/report support is claimed from the
+local preflight. See `docs/evidence/build-id-perf-preflight.json` and
+`docs/BUILD-ID-CONSUMERS.md`. Windows acceptance and final integration remain
+outstanding.
+
 **CONFIRMED #110 and final #112 protected integration (2026-11-06):**
 PR #183 merged normally as `9c3029f97a418eb3c63742213d68392608ff15a2`
 after required run `42291314960` passed every job. The tested and merged trees
