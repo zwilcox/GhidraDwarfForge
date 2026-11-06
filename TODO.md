@@ -1,5 +1,16 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED local ARM aggregate oracle correction:** PR183's ARM32 lane found
+one stale exact-entry comparison after the memory byte-piece compatibility
+change. The independent decoder already required byte pieces; its final r3/SP
+comparison now requires the exact 4/1/8-byte stack tails and retains the ARM
+register bit piece. The failing hosted artifact replays successfully. Ten fresh
+little-/big-endian exec/PIE/rebased layouts, plus little-endian shared layouts,
+pass 2,692 compiler/Forge/physical-carrier observations each, 60 strict reports,
+80 failure exports and ten cancellation controls. See
+`docs/evidence/arm-memory-piece-regression.json`. Production code is unchanged;
+latest-head hosted acceptance and #110 protected integration remain required.
+
 **CONFIRMED local companion source-path regression fix:** the next PR184 run
 reached companion-loader checks and exposed the same relative filename display
 assumption in their native, remote and attach/exec oracles. All three now request
