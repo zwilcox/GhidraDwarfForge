@@ -1,6 +1,13 @@
 # Debugger consumer contract
 
-**CONFIRMED local LLDB evidence; combined hosted/protected acceptance pending.**
+**CONFIRMED hosted and protected acceptance for the scoped LLDB profile.**
+PR #183 merged normally as `9c3029f97a418eb3c63742213d68392608ff15a2`
+after [run 42291314960](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42291314960)
+passed all required jobs. The tested and merged trees are identical. The
+[final receipt](evidence/lldb-final-acceptance.json) binds all five target
+artifacts, Windows results and the package audit. Issues #110 and #112 are closed;
+build-ID installation #109 remains separate and incomplete.
+
 This document describes what the #110 tests establish. It does not announce a
 release or extend every GDB target/ABI claim to LLDB. Existing GDB requirements
 and structural validators remain mandatory and are not replaced by LLDB.
@@ -40,6 +47,9 @@ Unproven locations must never be synthesized to satisfy a debugger display.
   one precisely corroborated LLDB parser diagnostic. Forge's explicit zero
   offset preserves the array. That control permits neither unrelated warnings
   nor malformed Forge DWARF.
+- The AArch64 compiler CFI fixture produces an assembler-language-plugin warning
+  in LLDB. Its register/caller-frame comparisons pass; those tests do not claim
+  assembler variable inspection. No such warning occurs in the Forge CFI runs.
 - Sectionless automatic discovery cannot obtain the original's UUID even when
   program-header build-ID notes exist. Use the tested explicit module workflow.
 - Nonzero register-bit offsets, non-byte-sized register slices, arbitrary ABI
@@ -55,15 +65,16 @@ Unproven locations must never be synthesized to satisfy a debugger display.
 
 ## Issue #110 requirement audit
 
-| Requirement | Authoritative local evidence | Remaining acceptance |
+| Requirement | Evidence | Final acceptance |
 | --- | --- | --- |
-| Reproducible x86-64 and AArch64 lanes with debugger/transport versions | Pinned workflow packages, `lldb_consumer.py`, per-session commands/QEMU invocations and versions in all linked receipts. | Latest combined hosted gates and protected integration. |
-| Compiler reference, stripped headless import/export and actual original/sidecar consumption | Native-inclusive installed package, production fixture drivers, package/source hashes and raw exported ELF/DWARF in the linked evidence archives. | Review hosted artifacts from the final accepted heads. |
-| Lookup, breakpoints, source, types, globals, bitfields, split/changing locations and honest gaps | Executable assertions in semantic, bitfield, value-flow, shared, floating/vector and sectionless consumers. | Same hosted requirement; no substitution of static inspection for behavior. |
-| PIE/shared bias, rebase, stripped/sectionless inputs, discovery separate from explicit loading | Layout/value matrices and automatic discovery controls above. Sectionless limitation is independently reproduced in compiler and Forge, with a validated explicit alternative. | Hosted results must preserve these scoped claims. |
-| Retain compiler/Forge transcripts, structural results and failures; unchanged inputs and deterministic exports | SHA-256-bound local archives, original/copy hash assertions, production repeat comparisons and GNU/LLVM/pinned strict logs. | Final hosted retention/integrity review. |
-| Document unsupported cases and integrate CI/support contract after passing | This contract, scoped checkpoint documents, explicit negative controls and CI hooks. | CI hooks are present, but full latest-head hosted acceptance is still unverified. |
+| Reproducible x86-64 and AArch64 lanes with debugger/transport versions | Pinned workflow packages, `lldb_consumer.py`, per-session commands/QEMU invocations and versions in all linked receipts. | Required combined run passed; normal protected merge completed. |
+| Compiler reference, stripped headless import/export and actual original/sidecar consumption | Native-inclusive installed package, production fixture drivers, package/source hashes and raw exported ELF/DWARF in the linked evidence archives. | Reviewed final artifacts; all 210 packaged source files match the tested head and all release/platform manifest entries match. |
+| Lookup, breakpoints, source, types, globals, bitfields, split/changing locations and honest gaps | Executable assertions in semantic, bitfield, value-flow, shared, floating/vector and sectionless consumers. | 47 hosted LLDB result records and raw transcript diagnostics inspected, preserving compiler controls and unavailable intervals. |
+| PIE/shared bias, rebase, stripped/sectionless inputs, discovery separate from explicit loading | Layout/value matrices and automatic discovery controls above. Sectionless limitation is independently reproduced in compiler and Forge, with a validated explicit alternative. | Hosted results confirm the same bounded profile and explicit limitations. |
+| Retain compiler/Forge transcripts, structural results and failures; unchanged inputs and deterministic exports | SHA-256-bound local archives, original/copy hash assertions, production repeat comparisons and GNU/LLVM/pinned strict logs. | Reparsed 2,844 positive strict records; rejected/mutated controls counted separately. Rehashed 68 retained LLDB inputs/snapshots. Unretained originals remain covered by runtime hash assertions, not independent download rehashing. |
+| Document unsupported cases and integrate CI/support contract after passing | This contract, scoped checkpoint documents, explicit negative controls and CI hooks. | CI hooks and bounded support contract integrated by PR #183 after all required checks passed. |
 
-These are local completion findings, not closure of #110. Preserve #112's
-protected integration priority, then integrate and audit the LLDB stack before
-closing #110. Continue with the full #109 installer requirements afterward.
+The earlier checkpoint documents describe local milestones and their then-pending
+hosted work. This final audit supersedes those pending statements. The remaining
+active goal item is the full #109 installer acceptance, including its distinct
+consumer discovery/cache and Windows requirements.

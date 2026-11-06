@@ -1,9 +1,12 @@
 # Synthetic unwind acceptance audit (#112)
 
-**CONFIRMED implementation acceptance at the tested and merged head below.**
+**CONFIRMED implementation and final-documentation integration.**
 This audit covers the six original issue requirements and the additional matrix
-promised in `SYNTHETIC-CFI-EVIDENCE.md`. Issue closure awaits integration of this
-final documentation update. The implementation is opt-in and limited to the ordinary integer x86-64 SysV LP64 and AArch64 AAPCS64
+promised in `SYNTHETIC-CFI-EVIDENCE.md`. PR #183 integrated this final audit as
+`9c3029f97a418eb3c63742213d68392608ff15a2` after required run `42291314960`
+passed; issue #112 is closed. Its LLDB follow-up also passed, as recorded in
+[the debugger consumer contract](DEBUGGER-CONSUMERS.md). The implementation is
+opt-in and limited to the ordinary integer x86-64 SysV LP64 and AArch64 AAPCS64
 LP64 profiles in [ADR-0002](ADR-0002-DEBUG-FRAME.md).
 
 The audited production implementation is unchanged between `23fbfef`, the

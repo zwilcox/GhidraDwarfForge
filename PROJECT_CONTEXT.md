@@ -1,5 +1,18 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED #110 and final #112 protected integration (2026-11-06):**
+PR #183 merged normally as `9c3029f97a418eb3c63742213d68392608ff15a2`
+after required run `42291314960` passed every job. The tested and merged trees
+are identical. Artifact review reparses 2,844 positive strict records, separates
+139 intentional rejection records and corrupted evidence controls, inspects 47
+LLDB result records, and verifies retained input hashes plus package/native/source
+manifests. All 210 packaged source files match tested head `0ee9a3d`. Issues #110
+and #112 are closed; component PRs #177–#182 are verified ancestors and reconciled.
+See `docs/evidence/lldb-final-acceptance.json` and `docs/DEBUGGER-CONSUMERS.md`.
+This supersedes pending-integration notes in the historical checkpoints below.
+Build-ID installation #109 remains active; its native Windows fixture correction
+and final combined hosted acceptance are still required. No release was published.
+
 **CONFIRMED #109 Windows installer refusal; fixture correction awaiting validation
 (2026-11-06):** run `42303689282` passes export/attachment but refuses the first
 installer operation for unsupported SACL metadata. The test used high-level
