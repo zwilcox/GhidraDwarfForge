@@ -21,21 +21,21 @@ def read(name):
 def check_location_list(raw, offset, start, boundary, end, target):
     assert len(raw) >= 12 and int.from_bytes(raw[:4], 'little') == len(raw) - 4
     assert raw[4:12] == bytes((5, 0, 8, 0, 0, 0, 0, 0))
-    assert 12 <= offset and offset + 29 <= len(raw)
+    assert 12 <= offset and offset + 27 <= len(raw)
     assert raw[offset] == 0x07  # DW_LLE_start_end
     assert int.from_bytes(raw[offset + 1:offset + 9], 'little') == start
     assert int.from_bytes(raw[offset + 9:offset + 17], 'little') == boundary
     # Complete object-order pieces, followed by the proved copied-register pair.
     first, second = (5, 4) if target == 'x86_64' else (0, 1)
-    expression = bytes((0x90, first, 0x9d, 64, 0, 0x90, second, 0x9d, 64, 0))
-    assert raw[offset + 17:offset + 28] == bytes((len(expression),)) + expression
-    offset += 28
+    expression = bytes((0x90, first, 0x93, 8, 0x90, second, 0x93, 8))
+    assert raw[offset + 17:offset + 26] == bytes((len(expression),)) + expression
+    offset += 26
     assert raw[offset] == 0x07
     assert int.from_bytes(raw[offset + 1:offset + 9], 'little') == boundary
     assert int.from_bytes(raw[offset + 9:offset + 17], 'little') == end
     backup = 0 if target == 'x86_64' else 2
-    migrated = bytes((0x90, backup, 0x9d, 64, 0, 0x90, second, 0x9d, 64, 0))
-    assert raw[offset + 17:offset + 29] == bytes((len(migrated),)) + migrated + b'\x00'
+    migrated = bytes((0x90, backup, 0x93, 8, 0x90, second, 0x93, 8))
+    assert raw[offset + 17:offset + 27] == bytes((len(migrated),)) + migrated + b'\x00'
 
 
 reference, original = (facts.facts.elf(case / name) for name in ('prefix.reference', 'prefix.stripped'))

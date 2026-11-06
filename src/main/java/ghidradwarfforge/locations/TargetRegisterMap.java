@@ -160,8 +160,22 @@ public record TargetRegisterMap(String target, String provenance,
         if (dwarfNumber == null) {
             return unavailable(ghidraName);
         }
-        return new RegisterStorage(new DwarfRegister(ghidraName, dwarfNumber),
+        return new RegisterStorage(new DwarfRegister(ghidraName, dwarfNumber,
+            lowBytePieceBits(dwarfNumber)),
             valueBitOffset, bitSize);
+    }
+
+    /**
+     * DW_OP_piece leaves partial-register placement to the ABI. Only the
+     * validated AMD64/AAPCS64 general-register profiles opt into low-bit byte
+     * pieces; other mappings retain explicit DW_OP_bit_piece offsets.
+     */
+    private int lowBytePieceBits(int dwarfNumber) {
+        return switch (target) {
+            case "x86_64" -> dwarfNumber <= 15 ? 64 : 0;
+            case "aarch64" -> dwarfNumber <= 31 ? 64 : 0;
+            default -> 0;
+        };
     }
 
     public Storage registerRelative(String ghidraName, long byteOffset) {
@@ -170,7 +184,7 @@ public record TargetRegisterMap(String target, String provenance,
             return unavailable(ghidraName);
         }
         return new RegisterRelativeStorage(
-            new DwarfRegister(ghidraName, dwarfNumber), byteOffset);
+            new DwarfRegister(ghidraName, dwarfNumber, lowBytePieceBits(dwarfNumber)), byteOffset);
     }
 
     private UnavailableStorage unavailable(String ghidraName) {

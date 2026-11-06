@@ -22,6 +22,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("ghidra", type=Path)
     parser.add_argument("--role", choices=("exec", "pie", "pie-rebased"), default="exec")
+    parser.add_argument("--lldb", help="also validate complete compiler/Forge vector lifetimes with LLDB")
     parser.add_argument(
         "--with-controls",
         action="store_true",
@@ -54,6 +55,9 @@ def main():
         source / "aarch64-vector-gdb.sh",
         source / "aarch64-vector-locations.py",
         source / "aarch64-vector-reference.py",
+        source / "aarch64-vector-lldb.py",
+        source / "aarch64-vector-lldb-observe.py",
+        source / "lldb_consumer.py",
         source / "check-stack-first-use.py",
         source / "aarch64-vector-controls.py",
         source / "aarch64-abi-locations.py",
@@ -309,6 +313,12 @@ def main():
         result["controls"] = json.loads(controls.read_text())
         assert result["controls"]["status"] == "PASS"
         result["status"] = "PASS"
+        write("result.json", result)
+    if args.lldb:
+        run("lldb", ["python3", source / "aarch64-vector-lldb.py", case,
+            case / "lldb", "--lldb", args.lldb])
+        result["lldb"] = json.loads((case / "lldb/result.json").read_text())
+        assert result["lldb"]["status"] == "PASS_LLDB_VECTOR"
         write("result.json", result)
     print("aarch64-vector=PASS", case, flush=True)
 

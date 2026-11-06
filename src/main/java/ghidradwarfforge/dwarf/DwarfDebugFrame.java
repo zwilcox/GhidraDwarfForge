@@ -183,14 +183,31 @@ public final class DwarfDebugFrame {
             case Undefined unused -> 0x07;
             case SameValue unused -> 0x08;
             case AtCfaOffset unused -> 0x11;
-            case CfaValue unused -> 0x15;
+            case CfaValue unused -> 0x16; // DW_CFA_val_expression
             case InRegister unused -> 0x09;
         };
         out.octet(opcode);
         out.uleb(register);
         switch (rule) {
             case AtCfaOffset at -> out.sleb(at.offset());
-            case CfaValue value -> out.sleb(value.offset());
+            case CfaValue value -> {
+                // DWARF 5 6.4.2.3 starts this expression with the CFA on the
+                // stack. LLDB 18 stops parsing a CIE at DW_CFA_val_offset_sf;
+                // an equivalent expression preserves subsequent register rules.
+                // DW_OP_call_frame_cfa is forbidden in CFI expressions.
+                Buffer expression = new Buffer(out.order);
+                if (value.offset() >= 0) {
+                    expression.octet(0x23); // DW_OP_plus_uconst
+                    expression.uleb(value.offset());
+                }
+                else {
+                    expression.octet(0x11); // DW_OP_consts
+                    expression.sleb(value.offset());
+                    expression.octet(0x22); // DW_OP_plus
+                }
+                out.uleb(expression.size());
+                for (byte octet : expression.toByteArray()) out.octet(octet & 0xff);
+            }
             case InRegister in -> out.uleb(in.register());
             default -> { }
         }

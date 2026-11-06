@@ -1,5 +1,88 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local ARM aggregate oracle correction:** PR183's ARM32 lane found
+one stale exact-entry comparison after the memory byte-piece compatibility
+change. The independent decoder already required byte pieces; its final r3/SP
+comparison now requires the exact 4/1/8-byte stack tails and retains the ARM
+register bit piece. The failing hosted artifact replays successfully. Ten fresh
+little-/big-endian exec/PIE/rebased layouts, plus little-endian shared layouts,
+pass 2,692 compiler/Forge/physical-carrier observations each, 60 strict reports,
+80 failure exports and ten cancellation controls. See
+`docs/evidence/arm-memory-piece-regression.json`. Production code is unchanged;
+latest-head hosted acceptance and #110 protected integration remain required.
+
+**CONFIRMED #112 implementation acceptance:** PR #176 merged normally as
+`6b582b4007311f334b954d361458b0775c35904e`; its tree exactly matches tested head
+`06348e1`. Run `42242341105` passes every required job, including both synthesis
+targets, the other three target regressions, Linux/Windows native builds and
+Windows-produced artifact consumption. Independent retained-artifact review
+rechecks 2,834 positive strict reports, intentional rejection controls, package
+identity and native provenance. See `docs/UNWIND-ACCEPTANCE.md` and its final
+receipt. The ADR now accepts only the documented opt-in ordinary integer
+profiles; no release or asynchronous-frame support is implied. Final acceptance
+documentation is awaiting protected integration alongside the combined #110
+LLDB stack. #110 hosted acceptance and #109 installation remain unfinished.
+Earlier checkpoint-specific pending statements below are historical.
+
+**CONFIRMED local #110 automatic-discovery checkpoint:** configured build-ID
+roots resolve compiler/Forge symbols and pass actual x86-64/AArch64 exec/PIE
+and shared-library runtime checks. Wrong and unconfigured roots are rejected.
+Sectionless originals retain build IDs but LLDB 18 exposes no UUID; both
+producer controls fail automatic lookup as expected, while the explicit module
+workflow still passes. See `docs/LLDB-DISCOVERY.md` and the requirement map in
+`docs/DEBUGGER-CONSUMERS.md`. Hosted acceptance/protected integration remain;
+this fixture arrangement does not implement #109's installer or refresh policy.
+
+**CONFIRMED local #110 floating/vector checkpoint:** scalar floating-point values
+and clobber gaps pass compiler/Forge LLDB comparisons on x86-64 and AArch64.
+AArch64 exec/PIE/rebased-PIE vector traces match all 119 GDB instruction stops,
+including stack/register transitions and honest unavailable intervals. The
+explicit Cortex-A53 transport matches the existing GDB vector profile; the
+pinned LLDB default-SVE missing-Neon limitation is independently reproduced
+with compiler and Forge symbols. See `docs/LLDB-FLOATING-VECTORS.md`.
+Hosted acceptance and remaining #110 discovery/support work stay open; #112
+integration still precedes completion of #110, then #109.
+
+**CONFIRMED local #110 shared/sectionless checkpoint:** both selected targets
+pass explicitly loaded shared-library source/value checks, including rebased
+analysis and real runtime load bias. Sectionless ET_EXEC lookup succeeds with
+direct attachment but LLDB 18.1.3 misses its named breakpoint with either
+compiler or Forge symbols; an explicitly loaded separate symbol module passes
+the original-byte/source-step/exit checks. See `docs/LLDB-ELF-LAYOUTS.md` for the
+exact workflow and limits. Hosted integration, remaining storage/discovery
+controls and the final LLDB support contract remain open; #112 and #109 ordering
+is unchanged.
+
+**CONFIRMED local #110 memory-piece and bitfield checkpoint:** exact byte-aligned
+memory fragments now use equivalent byte pieces that LLDB 18.1.3 can consume.
+Both selected targets pass compiler/GDB/LLDB instruction comparisons for exec,
+PIE and rebased PIE, including honest unavailable intervals. Packed/ordinary
+bitfield values and deterministic exports pass both consumers; all twelve ARM32
+mixed-incoming cases pass the existing GDB/strict checks. See
+`docs/LLDB-MEMORY-PIECES.md`. Hosted acceptance, remaining LLDB layouts/discovery
+and final consumer support remain open; #112 integration still precedes full
+#110 completion, followed by #109.
+
+**CONFIRMED local #110 register-piece and semantic checkpoint:** LLDB 18.1.3
+misreads the previous split-register bit-piece expression as a memory address.
+Explicit target metadata now permits byte-piece encoding for validated AMD64
+and AAPCS64 general registers; other slices retain their explicit bit offsets.
+Fresh production exports pass both GDB and LLDB semantic checks, with honest
+AArch64 unavailable tails and a separately corroborated compiler union-array
+consumer limitation. See `docs/LLDB-REGISTER-PIECES.md`. Hosted validation and
+the complete #110 layout/storage/discovery matrix remain incomplete; #112's
+protected integration still comes first, followed by full #110 and #109.
+
+**CONFIRMED local #110 CFI compatibility checkpoint:** LLDB 18.1.3 stops
+reading the original generated CIE at its CFA-relative value opcode. An equivalent
+standard value expression preserves all following rules. Fresh normal exports
+pass the existing x86-64/AArch64 exec/PIE/shared GDB matrix; plain/compressed
+non-PIE sidecars additionally match compiler references at every executed ordinary
+LLDB boundary. See `docs/LLDB-CFI-COMPATIBILITY.md`. The new hosted LLDB step and
+full #110 source/type/location/layout/discovery matrix remain incomplete. This
+work is on a separate branch; #112's exact-head gate and integration come first,
+followed by full #110 and #109. No issue is closed by this checkpoint.
+
 **CONFIRMED scoped Windows checkpoint and #112 acceptance audit:** native Windows
 run `42235627038` passes the new PowerShell and GUI producers at `1872477`.
 Its eight downloaded sidecars pass fresh local GNU/LLVM/pinned strict validation

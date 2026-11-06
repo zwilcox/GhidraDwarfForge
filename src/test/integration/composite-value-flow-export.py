@@ -24,6 +24,7 @@ def main():
     parser.add_argument('target', choices=('x86_64', 'aarch64'))
     parser.add_argument('--role', choices=('exec', 'pie', 'pie-rebased'), default='exec')
     parser.add_argument('--previous-ghidra', type=Path)
+    parser.add_argument('--lldb', help='also compare compiler/Forge instruction-boundary observations with LLDB')
     parser.add_argument('--red-zone', action='store_true')
     parser.add_argument('--frame-pointer-leaf', action='store_true')
     args = parser.parse_args()
@@ -55,6 +56,9 @@ def main():
         source / 'ghidra_scripts/PrepareCompositeValueFlow.java', source / 'ghidra_scripts/RebaseFixtureProgram.java', source / 'qemu-socket.sh',
         source / 'elf-layout-gdb-oracle.sh', source / 'check-dwarfdump.py', source / 'check-stack-first-use.py']
     files += [p for p in module.rglob('*') if p.is_file()]
+    if args.lldb:
+        files += [source / name for name in ('composite-value-flow-lldb.py',
+            'composite-value-flow-lldb-observe.py', 'lldb_consumer.py')]
     protected = {str(p): support.digest(p) for p in files}
     write('protected-before.json', protected)
     cc, objcopy = ('gcc', 'objcopy') if args.target == 'x86_64' else ('aarch64-linux-gnu-gcc', 'aarch64-linux-gnu-objcopy')
@@ -175,6 +179,10 @@ def main():
         'jarSha256': support.digest(module / 'lib/GhidraDwarfForge.jar'), 'projectBackupChanges': changes,
         'artifactSha256': [support.digest(case / name) for name in ('local.dbg', 'local.dbg.c')],
         'previousPackageCompared': bool(args.previous_ghidra), 'redZone': args.red_zone, 'framePointerLeaf': args.frame_pointer_leaf})
+    if args.lldb:
+        run('lldb-driver', ['python3', source / 'composite-value-flow-lldb.py', case,
+            '--target', args.target, '--lldb', args.lldb], timeout=300)
+        assert protected == {name: support.digest(Path(name)) for name in protected}
     print('composite-value-flow-export=PASS ' + str(case), flush=True)
 
 

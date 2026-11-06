@@ -1,6 +1,6 @@
 # ADR-0002: Opt-in evidence-backed `.debug_frame` recovery
 
-- Status: Revised design; production integration under validation, not release acceptance
+- Status: Accepted for the documented opt-in ordinary integer profiles; no release publication
 - Date: 2026-09-03
 - Revision: 2026-11-06
 
@@ -40,22 +40,23 @@ export a standalone generation. Unknown target/profile/function semantics produc
 explicit omissions, not architecture guesses. A successful export with omissions
 is not a claim of complete unwinding.
 
-**PRESENT, UNVERIFIED as a supported feature:** the normal-entry-point integration
-is being validated. The internal compiler matrix is accepted only in its exact
-local scope, documented in [relocated-pointer recovery](RELOCATED-POINTER-UNWIND.md).
-The [acceptance audit](UNWIND-ACCEPTANCE.md) maps all six issue requirements to
-local wrapper/GUI, cancellation, preserved-annotation, original-CFI and target
-evidence, plus a native Windows producer and local Linux consumer checkpoint.
-The latest combined hosted gate, exact artifact review and protected integration
-remain required. This design revision does not complete #112 or authorize a
-release. Signal/interrupt/exception frames,
+**CONFIRMED implementation acceptance:** the normal-entry-point integration
+passes exact-head run `42242341105` and independent retained-artifact review,
+and is integrated through PR #176 as `6b582b4007311f334b954d361458b0775c35904e`.
+The tested and merged trees are identical. The [acceptance audit](UNWIND-ACCEPTANCE.md)
+records all six issue requirements, local and hosted wrapper/GUI checks,
+cancellation, preserved analyst knowledge, original CFI, native Windows
+production and transported Linux consumption. Its final receipt binds the gate,
+package, native provenance and raw target reviews. These observations accept the
+explicit profiles and conditions above; they are not universal unwind proof or
+release authorization. Signal/interrupt/exception frames,
 pre-loader execution, mutable pointer slots, arbitrary indirect/interposable calls
 and the excluded target extensions remain unsupported.
 
 ## Historical decision (2026-09-03)
 
 The following records the earlier production policy, superseded only by the
-explicit revised design and its pending validation boundary above.
+explicit revised design and its validated acceptance boundary above.
 
 
 GhidraDwarfForge will not synthesize `.debug_frame` for the current ELF

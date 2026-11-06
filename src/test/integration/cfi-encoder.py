@@ -79,6 +79,26 @@ def decode(data, width, order, initial_rules=None):
             elif opcode in (9, 0x11, 0x15):
                 register = leb()
                 state["rules"][register] = [{9: "r", 0x11: "m", 0x15: "v"}[opcode], leb(opcode != 9)]
+            elif opcode == 0x16:
+                register, size = leb(), leb()
+                expression_end = offset + size
+                assert expression_end <= end
+                # Evaluate the constant displacement with the initial CFA set
+                # to zero. These expressions may not read registers or memory.
+                stack = [0]
+                while offset < expression_end:
+                    operation = integer(1)
+                    if operation == 0x11:
+                        stack.append(leb(True))
+                    elif operation == 0x23:
+                        stack[-1] += leb()
+                    elif operation == 0x22:
+                        right = stack.pop()
+                        stack[-1] += right
+                    else:
+                        raise AssertionError(('unexpected CFI expression operation', operation))
+                assert offset == expression_end and len(stack) == 1
+                state['rules'][register] = ['v', stack[0]]
             else:
                 raise AssertionError(("unexpected frame opcode", opcode))
         assert offset == end
@@ -233,9 +253,12 @@ def main():
                 {'address': 0x1000, 'cfa': [7, 8], 'rules': {0: ['u'], 7: ['v', 0], 12: ['s'], 16: ['m', -8], 129: ['r', 12]}},
                 {'address': 0x1010, 'cfa': [12, -129], 'rules': {0: ['s'], 7: ['v', 129], 12: ['m', -256], 16: ['r', 129], 129: ['u']}},
                 {'address': 0x1030, 'cfa': [7, 8], 'rules': {0: ['u'], 7: ['v', -129], 12: ['s'], 16: ['m', 256], 129: ['r', 16]}},
+                {'address': 0x1038, 'cfa': [7, 8], 'rules': {0: ['u'], 7: ['v', -(1 << 63)], 12: ['s'], 16: ['m', -8], 129: ['r', 16]}},
+                {'address': 0x103c, 'cfa': [7, 8], 'rules': {0: ['u'], 7: ['v', (1 << 63) - 1], 12: ['s'], 16: ['m', -8], 129: ['r', 16]}},
             ]
             reports.append(encode(case, original, width, order, 16, registers,
-                                  [{'address': 0x1000, 'size': 0x40, 'rows': rows}]))
+                                  [{'address': 0x1000, 'size': 0x40, 'rows': rows}],
+                                  initial_rules=rows[0]['rules']))
     for order in ('little', 'big'):
         case = work / ('large-gap-' + order)
         case.mkdir()

@@ -47,6 +47,10 @@ def expression(data, width):
         if cursor == len(data):
             assert not pieces, 'unbounded trailing piece'
             bits, bit_offset = width * 8, 0
+        elif piece['kind'] == 'stack':
+            assert data[cursor] == 0x93, ('expected DW_OP_piece', data.hex())
+            byte_size, cursor = leb(data, cursor + 1)
+            bits, bit_offset = byte_size * 8, 0
         else:
             assert data[cursor] == 0x9d, ('expected DW_OP_bit_piece', data.hex())
             bits, cursor = leb(data, cursor + 1)
@@ -143,8 +147,10 @@ def main(case):
         # padding. Later choices are read physically at each actual GDB stop.
         first = parameters['value'][0]['bytes']
         if kind in ('pair', 'packed', 'words'):
-            trailing = {'pair': '20', 'packed': '08', 'words': '40'}[kind]
-            assert first == '90039d2000920d009d' + trailing + '00', (name, first)
+            # ARM's r3 fragment retains its explicit register bit piece. The
+            # remaining whole bytes at entry SP use the memory byte piece.
+            trailing_bytes = {'pair': '04', 'packed': '01', 'words': '08'}[kind]
+            assert first == '90039d2000920d0093' + trailing_bytes, (name, first)
         elif kind == 'bytes':
             assert first == ('9003' if order == '<' else '90039d1808'), (name, first)
         else:

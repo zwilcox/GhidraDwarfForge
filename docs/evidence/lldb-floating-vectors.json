@@ -1,0 +1,205 @@
+{
+    "status": "CONFIRMED_LOCAL_FLOATING_VECTOR_CHECKPOINT",
+    "parent": "34c1ec44580f095179781fa90c51453282ff51b1",
+    "productionChanges": false,
+    "testedJarSha256": "eb23322efeb51ec3d44a9c51f4ad47c649d2a0a08699cf6fbf97cfe2bee2fff1",
+    "packageSha256": "65e3bfa7ce96eaf949bf976dc8068a21925ef9aea5611377a065e417c6e1a7eb",
+    "packagedProductionSourcesByteCompared": 210,
+    "scalarFreshExports": 12,
+    "scalarFreshLldbSessions": 24,
+    "scalarSavedSampleLldbSessions": 24,
+    "scalarCases": [
+        {
+            "path": "build/test-results/floating-registers/run.RAkIdJwZ/x86_64/exec/baseline/lldb/result.json",
+            "sha256": "44c7b2d216ee11c99b63a9cce9d6076d05783fe7240cd5f8c7cf4e1c94090d5b",
+            "target": "x86_64",
+            "role": "exec",
+            "sample": "baseline",
+            "sessions": 2
+        },
+        {
+            "path": "build/test-results/floating-registers/run.RAkIdJwZ/x86_64/exec/rebased/lldb/result.json",
+            "sha256": "4cc825c324c9ab0a6f16eca0436b4d206da8fa2da09a611456a5e546c2891b73",
+            "target": "x86_64",
+            "role": "exec",
+            "sample": "rebased",
+            "sessions": 2
+        },
+        {
+            "path": "build/test-results/floating-registers/run.RAkIdJwZ/x86_64/exec/repeat/lldb/result.json",
+            "sha256": "44c7b2d216ee11c99b63a9cce9d6076d05783fe7240cd5f8c7cf4e1c94090d5b",
+            "target": "x86_64",
+            "role": "exec",
+            "sample": "repeat",
+            "sessions": 2
+        },
+        {
+            "path": "build/test-results/floating-registers/run.RAkIdJwZ/x86_64/pie/baseline/lldb/result.json",
+            "sha256": "bf1fad4e7ce5f453e6a67e15c34bf29b936e75693687004e627b53592f5a462d",
+            "target": "x86_64",
+            "role": "pie",
+            "sample": "baseline",
+            "sessions": 2
+        },
+        {
+            "path": "build/test-results/floating-registers/run.RAkIdJwZ/x86_64/pie/rebased/lldb/result.json",
+            "sha256": "7c11f7b07783ce476129ae7ca08f05f7655109525f9b15a33be178bd66255e39",
+            "target": "x86_64",
+            "role": "pie",
+            "sample": "rebased",
+            "sessions": 2
+        },
+        {
+            "path": "build/test-results/floating-registers/run.RAkIdJwZ/x86_64/pie/repeat/lldb/result.json",
+            "sha256": "bf1fad4e7ce5f453e6a67e15c34bf29b936e75693687004e627b53592f5a462d",
+            "target": "x86_64",
+            "role": "pie",
+            "sample": "repeat",
+            "sessions": 2
+        },
+        {
+            "path": "build/test-results/floating-registers/run.RAkIdJwZ/aarch64/exec/baseline/lldb/result.json",
+            "sha256": "2be8fe396b60854c7f98719ba8c11b2e2b2e04bd12d6e73be80ec582cf252d08",
+            "target": "aarch64",
+            "role": "exec",
+            "sample": "baseline",
+            "sessions": 2
+        },
+        {
+            "path": "build/test-results/floating-registers/run.RAkIdJwZ/aarch64/exec/rebased/lldb/result.json",
+            "sha256": "c6649fb4a0b77c5bf503d87b077c6a92ab850aef01b76b10f710964ef5566dad",
+            "target": "aarch64",
+            "role": "exec",
+            "sample": "rebased",
+            "sessions": 2
+        },
+        {
+            "path": "build/test-results/floating-registers/run.RAkIdJwZ/aarch64/exec/repeat/lldb/result.json",
+            "sha256": "2be8fe396b60854c7f98719ba8c11b2e2b2e04bd12d6e73be80ec582cf252d08",
+            "target": "aarch64",
+            "role": "exec",
+            "sample": "repeat",
+            "sessions": 2
+        },
+        {
+            "path": "build/test-results/floating-registers/run.RAkIdJwZ/aarch64/pie/baseline/lldb/result.json",
+            "sha256": "bf13e5cab4e964a3e8afd2217755c3e9c29d19704827d536fcfe09cb19ec2357",
+            "target": "aarch64",
+            "role": "pie",
+            "sample": "baseline",
+            "sessions": 2
+        },
+        {
+            "path": "build/test-results/floating-registers/run.RAkIdJwZ/aarch64/pie/rebased/lldb/result.json",
+            "sha256": "e54b93096a7656c86fad4ea1bb356dfe3e19dbd92a9444d896a8c47bd60002ee",
+            "target": "aarch64",
+            "role": "pie",
+            "sample": "rebased",
+            "sessions": 2
+        },
+        {
+            "path": "build/test-results/floating-registers/run.RAkIdJwZ/aarch64/pie/repeat/lldb/result.json",
+            "sha256": "bf13e5cab4e964a3e8afd2217755c3e9c29d19704827d536fcfe09cb19ec2357",
+            "target": "aarch64",
+            "role": "pie",
+            "sample": "repeat",
+            "sessions": 2
+        }
+    ],
+    "vectorCases": [
+        {
+            "path": "build/lldb-contract-preflight/vector-final-exec/result.json",
+            "sha256": "9c2e0d11b01aef2d372ea7c5c20add4b00652e6d3ed099b88165945dc21cd44d",
+            "role": "exec",
+            "sessions": 2
+        },
+        {
+            "path": "build/lldb-contract-preflight/vector-final-pie/result.json",
+            "sha256": "483e86b8ae0fa4a88034b5e5598f4a4c82ef761ec7af12b3ff97e19347f2725a",
+            "role": "pie",
+            "sessions": 2
+        },
+        {
+            "path": "build/lldb-contract-preflight/vector-final-pie-rebased/result.json",
+            "sha256": "f69bf71201ff24e193966bc672f047ebda245885146289423569ad8723721a77",
+            "role": "pie-rebased",
+            "sessions": 2
+        }
+    ],
+    "vectorFullTraceSessions": 6,
+    "vectorFreshPipelineWithExistingFailureCancellationControls": {
+        "path": "build/lldb-contract-preflight/vector-hook/exec.amcc13nb/result.json",
+        "sha256": "413319190e699796c23c70741306086ed3ae475f35ddd465d60f945abba68437"
+    },
+    "qemuCpu": "cortex-a53",
+    "versions": {
+        "debugger": "lldb version 18.1.3",
+        "transport": "qemu-aarch64 version 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1.18)"
+    },
+    "sveNegativeControls": [
+        {
+            "mode": "compiler",
+            "observations": [
+                {
+                    "function": "vector_plain",
+                    "error": "error: Unable to convert register kind=1 reg_num=64 to a native register number.",
+                    "sveRegistersPresent": true,
+                    "neonRegisterAbsent": true
+                }
+            ]
+        },
+        {
+            "mode": "forge",
+            "observations": [
+                {
+                    "function": "vector_plain",
+                    "error": "error: Unable to convert register kind=1 reg_num=64 to a native register number.",
+                    "sveRegistersPresent": true,
+                    "neonRegisterAbsent": true
+                }
+            ]
+        }
+    ],
+    "lint": {
+        "pythonCompile": "PASS",
+        "bashSyntax": "PASS",
+        "actionlint": "PASS",
+        "gitDiffCheck": "PASS",
+        "shellcheck": "Six pre-existing diagnostics identical to HEAD; no new diagnostics"
+    },
+    "retainedFailedExperiments": [
+        "Default QEMU SVE cannot map Neon with compiler or Forge symbols; exact failure reproduced by permanent --check-sve-limitation.",
+        "Initial full-vector observer incorrectly required inline-parent PC equal machine PC; corrected scope/PC handling matches every independent GDB offset.",
+        "Initial signed-vector SBValue.GetValueAsSigned zero-extends; final checks require displayed sign and signed 32-bit data.",
+        "FORGE_FP_BASELINE=1 means historical unavailable-value producer baseline, not fast test selection; invocation fails expected GDB refusal. Full standard invocation passes unchanged GDB checks."
+    ],
+    "sourceSha256": {
+        ".github/workflows/ci.yml": "f062b0577edab99dcbdf7fae98ec6877bdb2117e3e749a236230a389ef9a17ca",
+        "src/test/integration/lldb_consumer.py": "a3b0b2e8071bd513466f3d6b358b9646e501e41d7aa101809cab3d9baedc61a4",
+        "src/test/integration/aarch64-vector.py": "4e3755fb4c2b23d01f8fb53e8eba8a707c85c4aa366cbd7297b9789c7dc58ce5",
+        "src/test/integration/aarch64-vector-lldb.py": "d15cec57215f7ee0018df1555562f6c3e69644d80c87321359228681a3b60121",
+        "src/test/integration/aarch64-vector-lldb-observe.py": "584d9590d10655d0b7d277bf3dd7e9a206cdae5aa369f79e297ec4b5e01849b2",
+        "src/test/integration/floating-registers-export.sh": "c47e1ecc4e37b954eab1adc9872ef97be1b87d9b7bda5000cccd1ab9d2172ee6",
+        "src/test/integration/floating-registers-lldb.py": "e2423658314c31bf553bc3e5db833e483913234dbeccf28a5dbb5838e737ad57",
+        "src/test/integration/floating-registers-lldb-observe.py": "86e64c2a2cf1b5ab9a31fefe9404c5601958ce5ca1d871070657099ea051f4f2",
+        "src/test/integration/floating-registers-gdb.py": "1b5e968fc60c5257dbad0cf02dd33a15799bc272a1c388284842e66af1600a24",
+        "src/test/integration/aarch64-vector-gdb.py": "148931bf0b24d4b91be34a9cdfa97e0526b0dceb314c3ebf4b1de76c8bda820f",
+        "src/test/integration/aarch64-vector-locations.py": "a5dcaa033208a59e92c05e9654fef376a6a92ebc25d8e403af26ffd7493f5206",
+        "src/test/integration/ghidra_scripts/PrepareFloatingRegisters.java": "1d8180d5c7c7e9f646b1b3dd8c5d3808f65dd1b544fd1a0c79f53db2143eb431",
+        "src/test/integration/ghidra_scripts/PrepareAarch64Vector.java": "d32321b6c571226db25b62b501c499c753ea4a6553ae6a013a2961a0c448dbcd",
+        "src/test/fixtures/fp_register_aliases.c": "34c2193d47b409e9cc450debf76c6c1b1bb4ed40fb60cb550ee6cd1972cf6f86",
+        "src/test/fixtures/aarch64-vector.c": "c128c6cd74bb5b6867e8fe5a94776fe0152a6d9b6979fd4889cc48382a683a95",
+        "docs/LLDB-FLOATING-VECTORS.md": "d1678e8dac77fb4714983734d16a87eaf12003415e4083b5afec6b525eda051e"
+    },
+    "remaining": [
+        "Hosted exact-head validation and protected integration",
+        "LLDB discovery/runtime controls and final consumer support contract",
+        "Issue109 build-ID installation"
+    ],
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/lldb-floating-vectors.tar.gz",
+        "sha256": "b62752ce01ae158af1d1ca5da8f684dcd47111c5aff6e23c4a81a0b644ca0ca1",
+        "bytes": 2580953,
+        "regularFilesVerified": 1827
+    }
+}

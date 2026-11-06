@@ -50,7 +50,7 @@ if [[ "$storage_form" == explicit-pieces ]]; then root+="-pieces"; fi
 if [[ "$elf_layout" == sectionless ]]; then root+="-sectionless"; fi
 mkdir -p "$root"
 results=$(mktemp -d "$root/run.XXXXXXXX")
-projects=$(mktemp -d /tmp/forge-floating-registers.XXXXXXXX)
+projects=$(mktemp -d "${TMPDIR:-/tmp}/forge-floating-registers.XXXXXXXX")
 cleanup() {
     qemu_socket_cleanup
     rm -rf -- "$projects"
@@ -264,6 +264,10 @@ PY
             sha256sum -c "$case_root/input.sha256" >"$case_dir/input-preservation.txt"
             cp "$output" "$case_dir/floating.dbg"
             cp "$output.c" "$case_dir/floating.dbg.c"
+            if [[ -n ${FORGE_LLDB:-} && ( "$target" == x86_64 || "$target" == aarch64 ) ]]; then
+                python3 "$repository/src/test/integration/floating-registers-lldb.py" \
+                    "$case_root" "$case_dir/lldb" --target "$target" --lldb "$FORGE_LLDB"
+            fi
             echo "floating-register-case=$target/$role/$sample PASS" | tee "$case_dir/result.txt"
         done
         if [[ ${FORGE_FP_BASELINE:-0} != 1 ]]; then
@@ -271,6 +275,14 @@ PY
             cmp "$case_root/baseline/floating.dbg.c" "$case_root/repeat/floating.dbg.c"
         fi
     done
+    if [[ -n ${FORGE_LLDB:-} && ${FORGE_FP_BASELINE:-0} != 1 &&
+            ( "$target" == x86_64 || "$target" == aarch64 ) ]]; then
+        for role in "${roles[@]}"; do
+            python3 "$repository/src/test/integration/automatic-discovery-lldb.py" \
+                "$results/$target/$role" "$results/$target/$role/lldb-discovery" \
+                --target "$target" --lldb "$FORGE_LLDB"
+        done
+    fi
 done
 if [[ "$abi_profile" == mips-fp32 ]]; then snapshot_fp32_inputs after; fi
 echo 'floating-registers-export=PASS'

@@ -122,12 +122,12 @@ for target in "${targets[@]}"; do
     test -n "$inspect_address"
     test -n "$word_address"
     test -n "$byte_address"
-    "$ghidra_dir/support/analyzeHeadless" "$case_dir/project" BitFieldValues \
+    export_command=("$ghidra_dir/support/analyzeHeadless" "$case_dir/project" BitFieldValues
         -deleteProject -import "$input" -analysisTimeoutPerFile 120 \
         -scriptPath "$repository_dir/src/test/integration/ghidra_scripts" \
         -postScript ApplyBitFieldFixture.java "$inspect_address" "$word_address" "$byte_address" \
-        -postScript GhidraDwarfForge.java --packaged-natives "--output=$output" \
-        > "$case_dir/export.log" 2>&1
+        -postScript GhidraDwarfForge.java --packaged-natives "--output=$output")
+    "${export_command[@]}" > "$case_dir/export.log" 2>&1
     grep -Fq 'GhidraDwarfForge symbol export PASS' "$case_dir/export.log"
     grep -Fq 'storage=1 base=4' "$case_dir/export.log"
     sha256sum -c "$case_dir/input.sha256" > "$case_dir/input-preservation.txt"
@@ -164,6 +164,22 @@ for target in "${targets[@]}"; do
         END { finish_member(); exit bad || count != 4 }
     ' "$case_dir/info.txt"
     sha256sum -c "$case_dir/input.sha256" > "$case_dir/input-preservation.txt"
+    if [[ -n "${FORGE_LLDB:-}" ]]; then
+        case "$target" in
+            x86_64|aarch64)
+                cp "$output" "$case_dir/first.dbg"
+                cp "$output.c" "$case_dir/first.dbg.c"
+                "${export_command[@]}" > "$case_dir/repeat-export.log" 2>&1
+                grep -Fq 'GhidraDwarfForge symbol export PASS' "$case_dir/repeat-export.log"
+                cmp "$output" "$case_dir/first.dbg"
+                cmp "$output.c" "$case_dir/first.dbg.c"
+                sha256sum -c "$case_dir/input.sha256" > "$case_dir/repeat-input-preservation.txt"
+                python3 "$repository_dir/src/test/integration/bitfield-lldb.py" \
+                    "$case_dir" --target "$target" --lldb "$FORGE_LLDB"
+                ;;
+            *) echo "LLDB bitfield profile is not validated for $target" >&2; exit 64 ;;
+        esac
+    fi
     echo "bitfield-values-$target=PASS"
 done
 

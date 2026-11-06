@@ -4,6 +4,11 @@ set -euo pipefail
 repository_dir=$(realpath "$(dirname "$0")/../../..")
 fixture_dir=${FORGE_SYMBOL_FIXTURES:-"$repository_dir/build/fixtures"}
 result_dir=${FORGE_GDB_SYMBOL_RESULTS:-"$repository_dir/build/test-results/qemu-gdb-symbols"}
+artifact_suffix=${FORGE_SYMBOL_SUFFIX:-ghidra-forge.dbg}
+[[ "$artifact_suffix" =~ ^[a-zA-Z0-9_-][a-zA-Z0-9_.-]*[.]dbg$ ]] || {
+    echo 'invalid symbol export artifact suffix' >&2
+    exit 64
+}
 source "$repository_dir/src/test/integration/qemu-socket.sh"
 fixture_role=${FIXTURE_ROLE:-exec}
 fixture_input_suffix=${FIXTURE_INPUT_SUFFIX:-stripped}
@@ -127,7 +132,7 @@ run_native() {
     local target=x86_64
     local function
     function=$(function_name "$target")
-    local source_file="$fixture_dir/$target/semantic.$fixture_role.ghidra-forge.dbg.c"
+    local source_file="$fixture_dir/$target/semantic.$fixture_role.$artifact_suffix.c"
     local definition_line source_break_line
     definition_line=$(grep -n -m1 -E "^[[:alnum:]_* ]+[[:space:]]${function}[(]" \
         "$source_file" | cut -d: -f1)
@@ -164,7 +169,7 @@ run_native() {
         -ex "set debuginfod enabled off" \
         -ex "set auto-solib-add off" \
         -ex "file $fixture_dir/$target/semantic.$fixture_role.$fixture_input_suffix" \
-        -ex "symbol-file $fixture_dir/$target/semantic.$fixture_role.ghidra-forge.dbg" \
+        -ex "symbol-file $fixture_dir/$target/semantic.$fixture_role.$artifact_suffix" \
         "${type_commands[@]}" \
         -ex "info functions $function" \
         -ex "list $function" \
@@ -197,7 +202,7 @@ run_emulated() {
     local target=$1 emulator=$2 sysroot=$3
     local function
     function=$(function_name "$target")
-    local source_file="$fixture_dir/$target/semantic.$fixture_role.ghidra-forge.dbg.c"
+    local source_file="$fixture_dir/$target/semantic.$fixture_role.$artifact_suffix.c"
     local definition_line source_break_line
     definition_line=$(grep -n -m1 -E "^[[:alnum:]_* ]+[[:space:]]${function}[(]" \
         "$source_file" | cut -d: -f1)
@@ -264,7 +269,7 @@ run_emulated() {
         -ex "set auto-solib-add off" \
         -ex "set sysroot $sysroot" \
         -ex "file $fixture_dir/$target/semantic.$fixture_role.$fixture_input_suffix" \
-        -ex "symbol-file $fixture_dir/$target/semantic.$fixture_role.ghidra-forge.dbg" \
+        -ex "symbol-file $fixture_dir/$target/semantic.$fixture_role.$artifact_suffix" \
         -ex "target remote $qemu_socket_path" \
         "${type_commands[@]}" \
         -ex "info functions $function" \
