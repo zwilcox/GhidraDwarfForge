@@ -28,6 +28,8 @@ gdb.Breakpoint("*cf_recurse", temporary=True)
 gdb.execute("continue" if remote or shared else "run")
 checkpoint_address = int(gdb.parse_and_eval("&cf_checkpoint"))
 recurse_address = int(gdb.parse_and_eval("&cf_recurse"))
+gap_addresses = ({name: int(gdb.parse_and_eval('&' + name)) for name in
+    ('cf_gap_jump', 'cf_gap_first', 'cf_gap_after')} if os.environ.get('FORGE_FRAME_GAPS') == '1' else {})
 
 
 def frames():
@@ -53,6 +55,13 @@ trace = []
 checkpoint = False
 for unused in range(128):
     stack = frames()
+    if uses_cfi and gap_addresses and stack[0]['pc'] in (gap_addresses['cf_gap_jump'], gap_addresses['cf_gap_after']):
+        gdb.write('FORGE_GAP_BEGIN\n')
+        gdb.execute('set debug frame 1')
+        gdb.execute('maintenance flush register-cache')
+        stack = frames()
+        gdb.execute('set debug frame 0')
+        gdb.write('FORGE_GAP_END\n')
     trace.append(stack)
     name = stack[0]["name"]
     if stack[0]['pc'] in (checkpoint_address, recurse_address):
@@ -86,6 +95,14 @@ for unused in range(128):
 else:
     raise AssertionError("instruction trace exceeded fixture bounds")
 shape_evidence = {}
+if gap_addresses:
+    pcs = [stack[0]['pc'] for stack in trace]
+    assert pcs.count(gap_addresses['cf_gap_jump']) == pcs.count(gap_addresses['cf_gap_after']) == 4
+    assert not any(gap_addresses['cf_gap_first'] <= pc < gap_addresses['cf_gap_after'] for pc in pcs)
+    crossings = sum(left == gap_addresses['cf_gap_jump'] and right == gap_addresses['cf_gap_after']
+        for left, right in zip(pcs, pcs[1:]))
+    assert crossings == 4
+    shape_evidence['gapCrossings'] = crossings
 if profile == "shrinkwrap":
     labels = ("cf_entry_branch", "cf_saved", "cf_allocated", "cf_restored", "cf_fast_return")
     if os.environ["FORGE_FRAME_TARGET"] == "aarch64":

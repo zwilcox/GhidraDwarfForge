@@ -1,5 +1,16 @@
 # Unwind infrastructure integration (#112)
 
+**Current state: CONFIRMED local production integration; hosted acceptance
+pending.** PR176 includes current main through `5b4ca014` and normal opt-in
+strict/conditioned wrapper and GUI entry points. The later local
+[production journeys](PRODUCTION-UNWIND.md), [compiler frame-pointer cases](FRAME-POINTER-UNWIND.md)
+and [discontiguous/refusal cases](DISCONTIGUOUS-UNWIND.md) supersede the separate
+entry-point limitation described in the historical checkpoint below. Original
+exports remain off by default. The [revised ADR](ADR-0002-DEBUG-FRAME.md) states
+the explicit conditions and excluded profiles. No release acceptance is claimed.
+
+## Historical initial consolidation checkpoint
+
 **CONFIRMED locally; hosted acceptance pending.** The integration branch combines
 the existing unwind commits with main `8041fdab` using normal merge history.
 This is the common validation/integration route for the work reviewed in PRs
@@ -65,17 +76,19 @@ for the tested merge, package/source hashes and raw archive.
 
 ## Remaining acceptance
 
-The consolidation requires its own current-base protected CI and artifact review.
-PR175's final annotation acceptance documentation keeps integration priority.
-Older PRs should be reconciled only after their changes are accepted through this
-route; passing a subset of the older branches is insufficient.
+The consolidated branch requires its current-base protected CI, native Windows
+execution and exact artifact review. PR175 is already merged and #116/#114 are
+closed. PR167–174 should be reconciled only after their changes are accepted
+through this route; older component passes do not replace the combined gate.
 
-Full #112 still requires the unchanged compiler-C recovery cases, an explicit
-resolution of the global-store/stack-alias policy, complete evidence/provenance and
-ADR enablement, and the normal CLI/GUI flow with analyst knowledge preserved.
-Current strict memory behavior and ADR-0002's production prohibition remain in
-force. No ordinary export selects synthesized frames. The broader goal then
-continues with #110 LLDB validation and #109 build-ID installation.
+The unchanged compiler-C cases, explicit conditional memory policy, normal
+CLI/GUI flows, preserved analyst knowledge, frame-pointer caller values and
+actual split-body runtime/refusal checks now have local evidence in the linked
+checkpoints. Native Windows/transported-artifact consumers and the latest full
+hosted matrix remain unverified until their runs pass. A requirement-by-requirement
+#112 audit must bind those results, limitations and the ADR before closure.
+The broader goal then continues with #110 LLDB validation and #109 build-ID
+installation.
 
 ## Standalone large-ELF CI correction
 

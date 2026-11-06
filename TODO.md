@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally — discontiguous runtime and refusal cases for #112:** both
+targets pass non-PIE/PIE strict normal exports of curated split function bodies,
+including compression, rebasing, deterministic repeat, saved comments and
+read-only project preservation. Forty exports, twenty generated strict-validated
+sidecars and 32 GDB sessions pass. All ordinary callers select DWARF at 160
+retained reference/positive gap stops; partial-instruction ownership explicitly
+omits that function's CFI and selects runtime fallback. No production algorithm
+changed. See `docs/DISCONTIGUOUS-UNWIND.md`. Native Windows, combined hosted/artifact
+and final #112/ADR acceptance remain, then #110/#109.
+
 **CONFIRMED locally — compiler frame pointers for #112:** unchanged compiler C
 with explicit frame-pointer use passes both targets' recovered and normal export
 paths: 28 exports, ten failure/invalid-option controls, sixteen validated sidecars

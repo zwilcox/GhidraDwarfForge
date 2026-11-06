@@ -1084,6 +1084,19 @@ jobs:
             "build/test-results/production-frame-pointer/$TARGET" \
             "build/test-results/frame-pointer-values/$TARGET"
 
+      - name: Validate discontiguous unwind ranges and partial-instruction refusals
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/discontiguous-unwind.py \
+            "build/test-results/discontiguous-unwind/$TARGET" --target "$TARGET" \
+            --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP"
+          python3 src/test/integration/discontiguous-unwind-controls.py \
+            "build/test-results/discontiguous-unwind/$TARGET" \
+            "build/test-results/discontiguous-unwind-controls/$TARGET" \
+            --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP"
+
       - name: Validate real native exports with recovered frames and source
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
         env:
