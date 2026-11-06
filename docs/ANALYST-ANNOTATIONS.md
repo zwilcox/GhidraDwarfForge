@@ -466,8 +466,7 @@ The x86 default-off source remains byte-identical to the prior accepted source.
 Independent decoded-line projections preserve the same address/source-text pairs
 and report counts in all four profiles. See `evidence/source-context.json`.
 
-**PLANNED remaining acceptance:** broader ARM mode and delay-slot body
-boundary controls; Windows journeys; current
+**PLANNED remaining acceptance:** current Windows journeys and
 hosted target/workload acceptance. The new tests and local success do not close
 #114 or the remaining #116 host/workload requirements.
 
@@ -494,7 +493,7 @@ Real global types and values remain usable. AArch64's system-DSO warning matches
 the compiler control exactly; strict inherited-frame diagnostics retain their
 independent corroboration. The fresh x86 annotation pipeline passes with both
 these cases and its existing default/context/cancellation checks. See
-`evidence/failed-source-context.json`. Current hosted, Windows and broader mode/delay-gap acceptance still remain.
+`evidence/failed-source-context.json`. Current hosted and Windows acceptance still remain.
 
 **CONFIRMED local intrinsic controls:** `intrinsic-context-x86_64.c` contains a
 real CPUID and ordinary functions named `halt_baddata` and `cpuid_basic_info`.
@@ -543,3 +542,28 @@ cleanup. Compiler and Forge GDB logs report normal exits and their PASS markers.
 This establishes the earlier catalog-comparison correction only; newer equate
 and context changes still need their own hosted acceptance. See
 `evidence/annotation-windows-workload-review.json`.
+
+**CONFIRMED delay-slot containment:** the native listing API can include a delay
+slot's operations in the branch's `getPcode()` result, with every operation tagged
+by the branch address. A MIPS branch/slot fixture reproduced an `INT_ADD` effect
+crossing a deliberately excluded slot despite operation-address filtering.
+The generic reader now collects the bounded window's byte evidence before
+requesting p-code. Every delay slot must be decoded, fully observed and contained
+in the selected body range. Missing, partial, capped or nested slot evidence
+produces an explicit omission reason for both p-code variants. The branch's
+own bytes and assembly remain available. No architecture-specific switch or
+native producer call was added.
+
+Both MIPS byte orders exercise complete slots, excluded slots, partially included
+slots, instruction caps and byte caps, including every observed cancellation
+checkpoint. A source-built ARM→Thumb→ARM function independently verifies real
+context masks/values and an excluded literal gap. Seven genuine native failure
+exports pass GNU/LLVM/pinned strict validation and QEMU/GDB: diagnostic files are
+readable without invented executable rows; stepping follows the actual ARM mode
+transitions and both MIPS branch paths with the expected slot values. Compiler
+controls reproduce the ARM system-DSO warning exactly. Fresh-process outputs are
+identical; bytes, libraries and saved programs remain unchanged. All five existing
+instruction/source-context pipelines pass with the changed production classes.
+CI runs the new harness on ARM32 and both MIPS32 lanes. See
+`evidence/context-boundaries.json`. Current hosted/Windows/workload acceptance
+remains necessary for #114/#116 completion.

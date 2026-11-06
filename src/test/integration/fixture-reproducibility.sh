@@ -101,6 +101,8 @@ expected_sources=(
     local-definition-flow.c
     merged-local-mappings.c
     minimal.c
+    mips-delay-context.S
+    mips-delay-context.c
     mips-floating-call.c
     mips-fpr-system-start.S
     mips-truncated-space-start.S

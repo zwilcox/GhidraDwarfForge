@@ -35,6 +35,7 @@ public final class GhidraInstructionContext {
         private final Program program;
         private final Limits limits;
         private final Set<Address> observed = new HashSet<>();
+        private final Set<Address> complete = new HashSet<>();
         private int bytes;
         public Budget(Function function, Limits limits) {
             owner = Objects.requireNonNull(function).getEntryPoint();
@@ -113,6 +114,7 @@ public final class GhidraInstructionContext {
         var next = program.getListing().getInstructionAfter(instruction.getMinAddress());
         if (next != null && next.getMinAddress().equals(instruction.getMaxAddress().next())) selected.add(next);
         int triggerBytes = 0;
+        var pending = new ArrayList<Pending>();
         for (var item : selected) {
             monitor.checkCancelled();
             if (!range.contains(item.getMinAddress()) ||
@@ -142,16 +144,52 @@ public final class GhidraInstructionContext {
             boolean complete = length > 0 && parsed > 0 && bytes.bytes().length >= parsed &&
                 bytes.bytes().length == length && bytes.status().equals("COMPLETE");
             String assembly = complete && mode.assembly() ? item.toString() : null;
-            Pcode pcode = complete && mode.pcode() ? pcode(item, range, budget.limits.operationsPerInstruction(), monitor)
-                : new Pcode(List.of(), List.of(), List.of(complete ? "PCODE_NOT_REQUESTED" : "INCOMPLETE_INSTRUCTION_BYTES"));
-            observations.add(new Observation(item.getMinAddress(), item.getMaxAddress(), length, parsed, bytes.bytes(),
+            var observation = new Observation(item.getMinAddress(), item.getMaxAddress(), length, parsed, bytes.bytes(),
                 complete ? "COMPLETE" : bytes.status().equals("COMPLETE") ? "INCOMPLETE_PARSED_BYTES" : bytes.status(),
                 assembly, context(program, item.getMinAddress()), item.isInDelaySlot(), item.getDelaySlotDepth(),
-                item.getFlowOverride().name(), pcode));
+                item.getFlowOverride().name(), new Pcode(List.of(), List.of(), List.of()));
+            pending.add(new Pending(item, observation, complete));
             budget.observed.add(item.getMinAddress());
+            if (complete) budget.complete.add(item.getMinAddress());
+        }
+        // Delay-slot effects may be folded into the owner's p-code, all tagged
+        // with its address. Inspect byte evidence for the whole selected window
+        // before requesting p-code; filtering operation addresses is insufficient.
+        for (var item : pending) {
+            monitor.checkCancelled();
+            String unavailable = !item.complete() ? "INCOMPLETE_INSTRUCTION_BYTES" :
+                !mode.pcode() ? "PCODE_NOT_REQUESTED" : delaySlotEvidence(item.instruction(), range, budget, monitor);
+            Pcode pcode = unavailable == null
+                ? pcode(item.instruction(), range, budget.limits.operationsPerInstruction(), monitor)
+                : new Pcode(List.of(), List.of(), List.of(unavailable));
+            var value = item.observation();
+            observations.add(new Observation(value.start(), value.listingEnd(), value.listingLength(), value.parsedLength(),
+                value.bytes(), value.byteStatus(), value.assembly(), value.context(), value.inDelaySlot(),
+                value.delaySlotDepth(), value.flowOverride(), pcode));
         }
         monitor.checkCancelled();
         return snapshot(program, function, focus, range, observations, reused, diagnostics);
+    }
+
+    private record Pending(Instruction instruction, Observation observation, boolean complete) { }
+
+    private static String delaySlotEvidence(Instruction instruction, AddressRange range, Budget budget,
+            TaskMonitor monitor) throws CancelledException {
+        int depth = instruction.getDelaySlotDepth();
+        if (depth > budget.limits.instructionsPerFunction()) return "DELAY_SLOT_CONTEXT_LIMIT";
+        Instruction previous = instruction;
+        for (int index = 0; index < depth; index++) {
+            monitor.checkCancelled();
+            Address address = previous.getMaxAddress().next();
+            if (address == null || !range.contains(address)) return "DELAY_SLOT_OUTSIDE_SELECTED_BODY_RANGE";
+            Instruction slot = instruction.getProgram().getListing().getInstructionAt(address);
+            if (slot == null || !slot.isInDelaySlot() || !range.contains(slot.getMaxAddress()))
+                return "INCOMPLETE_DELAY_SLOT_CONTEXT";
+            if (!budget.complete.contains(address)) return "DELAY_SLOT_BYTES_NOT_OBSERVED";
+            if (slot.getDelaySlotDepth() != 0) return "NESTED_DELAY_SLOT_CONTEXT";
+            previous = slot;
+        }
+        return null;
     }
 
     private record Bytes(byte[] bytes, String status) {
