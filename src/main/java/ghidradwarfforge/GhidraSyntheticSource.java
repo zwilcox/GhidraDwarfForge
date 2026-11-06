@@ -79,7 +79,7 @@ public final class GhidraSyntheticSource {
     @FunctionalInterface
     public interface DecompileOperation {
         DecompileResults decompile(DecompInterface decompiler, Function function,
-                int timeoutSeconds, TaskMonitor monitor);
+                int timeoutSeconds, TaskMonitor monitor) throws CancelledException;
     }
 
     private GhidraSyntheticSource() {
@@ -139,7 +139,18 @@ public final class GhidraSyntheticSource {
         DecompInterface decompiler = allocation.hasReturnCorrections()
             ? new GhidraAllocationDecompiler(allocation, monitor, diagnostic) : new DecompInterface();
         try {
-            decompiler.setOptions(new DecompileOptions());
+            var options = new DecompileOptions();
+            // Listing text is preserved separately with its exact category/address.
+            // Native warnings remain part of the decompiler's synthetic output.
+            options.setPRECommentIncluded(false);
+            options.setPLATECommentIncluded(false);
+            options.setPOSTCommentIncluded(false);
+            options.setEOLCommentIncluded(false);
+            options.setHeadCommentIncluded(false);
+            options.setWARNCommentIncluded(true);
+            if (!decompiler.setOptions(options)) {
+                throw new IllegalStateException("decompiler rejected source comment options");
+            }
             decompiler.toggleCCode(true);
             decompiler.toggleSyntaxTree(true);
             if (!decompiler.openProgram(program)) {
@@ -204,6 +215,9 @@ public final class GhidraSyntheticSource {
                                     ? "decompilation did not complete" : failureDiagnostic));
                         decompiler.resetDecompiler();
                     }
+                }
+                catch (java.util.concurrent.CancellationException cancelled) {
+                    throw new CancelledException();
                 }
                 catch (RuntimeException failure) {
                     texts.add(new FunctionText(symbol.name(), symbol.address(), null,

@@ -6,6 +6,10 @@ param(
     [string] $Output,
     [switch] $GdbLoader,
     [string] $CompressDebugSections = 'none',
+    [string] $SourceContext = 'off',
+    [string] $AnnotationRecordLimit,
+    [string] $AnnotationTextLimit,
+    [string] $AnnotationSourceLimit,
     [string] $Import,
     [string] $ProjectDirectory,
     [string] $ProjectName,
@@ -23,6 +27,9 @@ function Exit-Usage([string] $Message) {
 
 if ($CompressDebugSections -notin @('none', 'zlib')) {
     Exit-Usage '-CompressDebugSections must be none or zlib'
+}
+if ($SourceContext -cnotin @('off', 'assembly', 'pcode', 'both')) {
+    Exit-Usage '-SourceContext must be off, assembly, pcode or both'
 }
 
 function Get-AbsoluteFilesystemPath([string] $Path) {
@@ -260,6 +267,18 @@ try {
     }
     if ($CompressDebugSections -eq 'zlib') {
         $exportOptions += @('--compress-debug-sections=zlib')
+    }
+    if ($SourceContext -cne 'off') {
+        $exportOptions += @("--source-context=$SourceContext")
+    }
+    foreach ($entry in @(
+        @('AnnotationRecordLimit', 'annotation-record-limit'),
+        @('AnnotationTextLimit', 'annotation-text-limit'),
+        @('AnnotationSourceLimit', 'annotation-source-limit')
+    )) {
+        if ($PSBoundParameters.ContainsKey($entry[0])) {
+            $exportOptions += @("--$($entry[1])=$($PSBoundParameters[$entry[0]])")
+        }
     }
 
     if ($importMode) {

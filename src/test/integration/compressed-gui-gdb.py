@@ -58,6 +58,8 @@ def main():
         'break gui_recovered_add', 'python', 'import hashlib, os', 'exits=[]',
         'gdb.events.exited.connect(lambda event: exits.append(getattr(event, "exit_code", None)))', 'end', 'run',
         'python', 'frame=gdb.selected_frame()', 'assert frame.name() == "gui_recovered_add"',
+        'constant=gdb.parse_and_eval("GUI_EQUATE_VALUE")',
+        'assert int(constant) == 0x31415926 and constant.type.sizeof == 4 and constant.address is None',
         'symbol=gdb.lookup_global_symbol("gui_recovered_add") or gdb.lookup_static_symbol("gui_recovered_add")',
         'assert symbol and symbol.is_function and symbol.symtab',
         'path=frame.find_sal().symtab.fullname()',

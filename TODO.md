@@ -278,6 +278,248 @@ tests. ADR-0002 remains unchanged for production. This does not complete #112;
 #116/#114 PR166 hosted acceptance remains the first priority, followed by the
 full #112/#110/#109 goal. Hosted reference checks are PRESENT, UNVERIFIED.
 
+**CONFIRMED intrinsic report retention correction — #116/#114:** current-head
+run `42176440117` failed the final x86-64 retention audit because the intrinsic
+harness reused wrapper stdout as its raw strict-report path. Independent artifact
+review found exactly four overwritten reports and 589 intact passing reports.
+The paths are now separate and the standalone harness checks retention before
+success. Fresh installed exports pass all four modes/eight exports, deterministic
+pairs, GNU/LLVM/strict validation, GDB and four retained reports. The existing
+three positive/ten negative retention controls pass. Production code is unchanged;
+635 installed classes match the reviewed head. See
+`docs/evidence/intrinsic-report-retention.json`. The same head's Windows workload
+and independent consumer review passed, but fresh hosted gates remain required
+before PR166 integration. Full #112/#110/#109 remain open.
+
+**CONFIRMED context report retention correction — #116/#114:** run
+`42160948862` at `3543c78` failed the final MIPS little-endian retention audit.
+The boundary harness reused its wrapper stdout path as the strict validator's
+raw report path, overwriting the already-validated header with a success marker.
+The wrapper now has a separate log, and the standalone harness rechecks report
+retention before success. Fresh ARM32 and both MIPS byte orders pass fourteen
+native exports (seven deterministic output pairs), GNU/LLVM/pinned strict checks,
+compiler/Forge QEMU GDB, and all seven retained reports. Report-damage controls
+pass three positive and ten negative cases. The original damaged hosted report
+remains rejected; no checker rule changed. See
+`docs/evidence/context-report-retention.json`. Fresh hosted acceptance is still
+required before PR166 integration; #112/#110/#109 remain open.
+
+**CONFIRMED Windows workload and independent consumer review — #116/#114:**
+run `42160948934` at `3543c78` passes both workloads and downstream Linux GDB.
+Independent archive review binds the package's 635 production classes, six
+Windows checkout helpers, corpus files, 1,136 unchanged protected inputs, and
+all eleven export/profile samples per workload. Paired DWARF is identical;
+source changes are exactly the annotation catalog. Original frame bytes and
+strict diagnostic multiplicities match on Windows and Linux; source relocation,
+PIE bias, function lookup, stepping, global values and return/exit oracles pass.
+The existing U-Boot decompilation timeout is identical in both versions. Hosted
+median baseline/candidate times were 111.67/117.16 seconds for SQLite and
+236.43/244.03 for U-Boot; these observations do not isolate causation or establish
+a stable performance regression. See
+`docs/evidence/annotation-windows-current-review.json`. The separate integration
+run failed boundary-report retention as recorded above; this successful workload
+review does not replace fresh exact-head acceptance or close either issue.
+
+**CONFIRMED GUI test-order correction — #116/#114:** hosted run `42153031601`
+failed the context Off equality check after its native attachment refresh deliberately
+renamed the function. Retained source differs only in the declaration/call name and
+its resulting equate-conflict diagnostic. Context choices now run before that
+mutation, preserving exact equality and all attachment checks. The current hosted
+package passes the corrected local Linux GUI journey, validators and GDB; the
+combined OS-authorized and Windows journeys still require hosted reruns. See
+`docs/evidence/context-gui-ordering.json`. No production exporter change.
+
+**CONFIRMED delay-slot containment and ARM mode controls — #114:** native
+MIPS p-code folds delay-slot effects under the branch address, so operation-address
+filtering alone crossed a selected body gap. The reader now completes bounded
+byte observations first and requires every delay slot in that same range before
+emitting either p-code variant. It retains the branch bytes/assembly and explains
+omissions. Both MIPS byte orders pass complete/gap/partial/budget controls;
+ARM→Thumb→ARM context and literal gaps pass independently. Seven real native
+failure exports pass validators and QEMU/GDB; all five existing context pipelines
+also pass. See `docs/evidence/context-boundaries.json`. Current hosted targets,
+Windows interaction and workload acceptance remain for #116/#114, then
+#112/#110/#109. No issue is closed by these local results.
+
+**CONFIRMED Linux context chooser — #114:** the installed Script Manager
+launcher passes actual Cancel/Off/Assembly/P-code/Both interactions. Off preserves
+default source; all enabled choices retain diagnostic warnings. All four pairs
+pass GNU/LLVM/pinned strict validation and live GDB, with identical 83 executable
+address/source-text rows and no executable context comments. See
+`docs/evidence/context-gui.json`. Windows interaction is wired but remains
+**PRESENT, UNVERIFIED** for this addition. Current hosted/workload acceptance remains before closing #116/#114;
+mode/delay-gap controls are recorded above.
+
+**CONFIRMED historical Windows workload review:** run `42139043195` at
+`7e14037` passed Windows SQLite/U-Boot exports and downstream Linux GDB consumers.
+Retained artifact hashes, all ten paired samples per workload and exact source
+prefix/catalog hashes confirm the listing-catalog comparison fix. This does not
+substitute for current-head validation; see
+`docs/evidence/annotation-windows-workload-review.json`.
+
+**CONFIRMED local intrinsic controls — #114:** an x86-64 CPUID fixture passes
+all four context modes through the installed exporter, GNU/LLVM/pinned strict
+validators and live GDB. Independent native token inspection distinguishes actual
+CALLOTHER operations from ordinary calls named `halt_baddata` and
+`cpuid_basic_info`. Context comments have no executable rows; address/source-text
+pairs match context-off exactly. Fresh-process outputs and saved inputs are
+unchanged. See `docs/evidence/intrinsic-context.json`. Windows interaction,
+current hosted/workload gates remain;
+then continue #112/#110/#109. Neither #114 nor #116 is closed.
+
+**CONFIRMED local all-failed source lookup — #114:** source-bearing exports
+retain a DWARF5 file table without executable rows when all decompilations fail.
+Real native all-failed/mixed cases pass validators and native/QEMU GDB on x86-64,
+AArch64 PIE and both MIPS32 byte orders. Failed functions remain signature-free;
+coverage gains no executable evidence. Fresh x86 annotation integration passes.
+See `docs/evidence/failed-source-context.json`. Windows and current hosted acceptance remain. The normal merge
+`efed29e` incorporates accepted #108 documentation and restores PR166 CI.
+
+**CONFIRMED local optional instruction context — #114:** the reader and native
+warning/failure composition pass all five profiles. Four context-enabled default
+exporter profiles pass validators, native/QEMU GDB, deterministic reruns and eleven
+cancellation/recovery stages each; default-off x86 source is unchanged. CLI and
+an opt-in GUI launcher use the shared mode. Windows interaction and current hosted acceptance remain required. All-failed and intrinsic checks are recorded above. See `docs/evidence/source-context.json` and `docs/ANALYST-ANNOTATIONS.md`.
+#108's final PR165 passed all fifteen checks and merged normally as `6793b701`;
+issue #108 is closed. Remaining goal: #116/#114, then #112/#110/#109.
+
+**CONFIRMED CI fixture correction — #116:** add the retained-name C++ fixture
+to the explicit source inventory. Both local x86-64 and AArch64 reproducibility
+checks pass (15 artifacts each). Run `42143872354` failed before exporter tests;
+fresh full hosted validation remains required. #114 context is still in progress.
+
+**CONFIRMED reference details, cancellation and Linux desktop — #116:** each
+equate reference now retains its own resolved width/sign/value beside its owner
+and status. Five default cases pass seven in-flight cancellation points and a
+same-process retry each, including native constant emission and the equate
+compositor. Previous output pairs and saved programs remain unchanged. Both
+ordinary and compressed Script Manager journeys preserve all comment categories
+and typed lookup, with validators, GDB and a relocated compressed-artifact
+consumer passing. The shared Windows journey now includes these checks; hosted
+Windows acceptance remains pending. See `docs/evidence/equate-cancellation-gui.json`.
+Optional #114 context and later #112/#110/#109 remain in scope.
+
+**CONFIRMED default equate integration — #116:** the shared exporter now collects
+live high-p-code evidence, writes a reversible non-executable lookup catalog and
+emits collision-safe synthetic constants. Four Linux profiles (x86-64, AArch64
+PIE and both MIPS32 byte orders) plus a fresh x86-64 pipeline pass structural
+validators, deterministic reruns, unchanged inputs/projects and 140 GDB lookups
+per case. A retained C++ name fixture proves original function breakpoints and
+synthetic type-name collisions. Recovered coverage is unchanged. See
+`docs/evidence/equate-default-export.json`. The fixture's saved nonzero-first-use
+local remains explicitly unavailable; these tests do not establish its lifetime.
+GUI/Windows/full hosted acceptance, optional #114 context, and later
+#112/#110/#109 remain required. Earlier component-only notes are historical.
+
+**CONFIRMED Windows workload comparison correction — #116:** run
+`42134637694` failed because its frozen pre-annotation source hash excluded the
+new catalog. Actual SQLite DWARF and report semantics match exactly; the old
+source SHA is reproduced by the exact prefix before 12,044 appended listing
+comments. The workload harness now permits only this bounded source addition,
+keeps identical cross-version DWARF/semantics and complete per-version/profile
+repeatability, and retains both source versions. Portable mutation controls pass;
+fresh full Windows/U-Boot execution remains pending. See
+`docs/evidence/annotation-windows-catalog.json`.
+
+**CONFIRMED isolated equate emission — #116:** the production producer now
+emits synthetic constants with stable planned lookup names, exact signed/unsigned
+values and explicit const types. Four profiles pass GNU/LLVM/pinned strict and
+104 GDB lookups each; width controls exposed and corrected a big-endian padding
+bug that validators missed. Name planning passes saved-model/ELF collision,
+identity, cancellation and independent hashing checks. Default collection/source
+catalog wiring and retained demangled-name collision coverage remain required;
+see `docs/evidence/equate-constants.json` and `docs/ANALYST-ANNOTATIONS.md`.
+#114 context and the later #112/#110/#109 work remain in scope.
+
+**CONFIRMED equate evidence component — #116:** enum metadata, decoded operand
+values and live high-p-code constants now have separate validated observations.
+Four saved profiles and a fresh full x86-64 pipeline pass identical independent
+readbacks, eleven negative controls, all 26 interpretation cancellation points
+and checked callback cancellation. Source/validator/GDB checks still pass in the
+full pipeline. See `docs/evidence/equate-evidence.json`. Default equate collection,
+collision-safe debugger names and constant emission remain required.
+
+**CONFIRMED second CI correction:** after the wrapper fix, run `42133208293`
+reached the architecture guard and flagged a generic local named `pc` and a
+comment mentioning MIPS32. Renaming the local and removing the target-specific
+example from that comment preserves behavior. The unchanged gate and its seven
+rejection controls pass locally; fresh hosted acceptance remains required.
+
+**CONFIRMED CI portability correction — #116/#114:** PR #166 run
+`42132969992` stopped in the wrapper test because its new assertion required
+`rg`, absent on the extension-build runner. The assertion now uses the existing
+`grep` dependency; the complete Linux wrapper test passes locally. Exporter
+behavior is unchanged. A new hosted run is required; this failed run is not
+acceptance evidence.
+
+**CONFIRMED installed default comments — #116/#114:** the shared export script
+now preserves stored listing comments with separate native warning handling.
+Five Linux headless cases (four architecture profiles plus a fresh x86-64
+pipeline) pass GNU/LLVM/pinned strict validation, GDB source/type/global checks,
+identical reruns and four pre-publication limit failures each. An actual JFR
+recording includes the new source-annotations phase with unchanged artifacts.
+See `docs/evidence/annotation-default-export.json`. GUI interaction, Windows,
+hosted/full workload acceptance, equate debugger values and optional context
+remain required. Earlier component-only notes below describe historical scope.
+
+**CONFIRMED controlled saved-comment export — #116/#114:** listing comments now
+compose with actual native token evidence on x86-64, AArch64 PIE and MIPS32 in
+both byte orders. GNU/LLVM/pinned strict validation and native/QEMU GDB pass;
+comments remain non-executable, failed decompilation retains a symbol-only
+function and readable catalog, and fresh JVM exports are identical. The complete
+x86-64 pipeline also passes. See `docs/evidence/annotation-placement.json`.
+Default GUI/headless wiring, equate debugger values and optional context remain
+planned. #108 implementation is merged as PR #164; its final documentation is
+in PR #165 with hosted checks running. Earlier progress notes below are historical.
+
+**CONFIRMED packaged raw inventory — #116/#114:** `GhidraAnnotationInventory`
+now reads all listing categories and exact stored equates/references while retaining
+Ghidra address objects. Four saved-program profiles pass independent readback,
+complete address counts, exact limits, incomplete-inventory rejection and every
+observed cancellation checkpoint. Two reopens preserve all project files. The
+complete new x86-64 build/curate/extract CI sequence also passes locally; hosted
+execution is pending. See `docs/evidence/annotation-inventory.json`. Production
+source placement, equate interpretation/debugger values and optional context remain
+planned. #108 protected integration remains the priority.
+
+**CONFIRMED isolated exporter integration — #116/#114:** controlled annotations
+now pass through the real producer and matched ELF writer. GNU/LLVM/pinned strict
+validation and native x86-64 GDB pass: six inserted comment rows remain
+non-executable, original source mappings and variable values survive, and source
+lookup works from an unrelated working directory. Eight artifacts are identical
+across fresh producer JVMs; the unchanged baseline also passes. See
+`docs/evidence/annotation-emission.json`. The CI case is added but has not run
+hosted. Saved-program extraction and production GUI/headless integration remain
+planned; #108 protected integration is still the priority.
+
+**CONFIRMED components only — #116/#114 text and line composition:** the
+reversible encoder and a separate compositor now preserve annotation payloads,
+original source bytes, function boundaries and all executable line/token evidence.
+Model/writer checks retain coverage across both address widths and byte orders;
+538 composition cancellation checkpoints, budget/negative controls, C lexical
+checks, Gradle smoke and extension packaging pass. See
+`docs/evidence/annotation-composition.json` and `annotation-text.json` beside it.
+Neither component is connected to the production exporter yet. Real Ghidra
+extraction, validator/GDB integration and hosted acceptance remain planned;
+#108 protected integration remains the priority.
+
+**CONFIRMED preparation only — #116/#114:** eight compiler-reference cases now
+pass sixteen native/QEMU GDB value/width checks each. Four saved-program cases
+preserve actual conflicting local/type/enum/global names alongside all fifty
+comments and fourteen equates, with identical independent reopens. Local storage
+comes from observed compiler GDB entry-SP evidence; dynamic-only constant53 still
+resolves. See `docs/evidence/annotation-saved-conflicts.json` and
+`docs/ANALYST-ANNOTATIONS.md`. Production annotation implementation remains
+planned; #108 protected integration is still the current priority.
+Four profiles also pass real native instruction-limit failure, pre-cancelled
+invocation and recovery through the same interfaces with unchanged projects.
+See `docs/evidence/annotation-native-failures.json`; this does not establish
+production export failure/cancellation behavior.
+A saved-equate producer/consumer experiment additionally passes 528 constant
+checks in two frames on four profiles without shadowing real names; see
+`docs/evidence/annotation-name-policy.json`. This uses a separate synthetic
+unit alongside compiler DWARF, not the production recovered sidecar.
+
 **CONFIRMED — #108 implementation integrated and final acceptance published:**
 all fifteen integration jobs and five performance jobs pass at `6e0cb95`.
 Independent package, raw DWARF/GDB, host GUI, workload and complete ARM32 reviews

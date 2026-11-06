@@ -1,0 +1,75 @@
+{
+    "issue": 114,
+    "status": "CONFIRMED local Linux Script Manager context chooser; Windows PRESENT, UNVERIFIED",
+    "archive": {
+        "path": "build/test-results/context-gui.tar.gz",
+        "sha256": "bb8177dbb69415b27f24d5ade259439f95eab1541c929ed0a209b2ab85a74ef8",
+        "bytes": 3479341,
+        "files": 385,
+        "manifest": "build/test-results/context-gui.tar.manifest.json",
+        "manifestSha256": "cebc239ec6f5c2325c1b20d46f5513bf80f4d34befa6e13643debc5ba4d322e2"
+    },
+    "lineEvidence": {
+        "status": "PASS",
+        "modes": {
+            "off": {
+                "contextRows": 0,
+                "executableRows": 83
+            },
+            "assembly": {
+                "contextRows": 443,
+                "executableRows": 83
+            },
+            "p-code": {
+                "contextRows": 443,
+                "executableRows": 83
+            },
+            "both": {
+                "contextRows": 443,
+                "executableRows": 83
+            }
+        }
+    },
+    "commands": {
+        "command": [
+            "bash",
+            "src/test/integration/gui-script-manager.sh",
+            "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/build/installations/context-gui-laqhadh_/ghidra",
+            "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/build/installations/context-gui-laqhadh_/ghidra/Ghidra/Extensions/GhidraDwarfForge",
+            "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/linux-x86-export-reference/semantic.exec.stripped",
+            "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/linux-x86-export-reference/semantic.exec.reference"
+        ],
+        "environment": {
+            "JAVA_BIN": "/usr/lib/jvm/java-21-openjdk-amd64/bin/java",
+            "JAVA_HOME": "/usr/lib/jvm/java-21-openjdk-amd64",
+            "XVFB_BIN": "/home/ziggy/GhidraDwarfForge-worktrees/debuglink-transaction/build/test-tools/gui/root/usr/bin/Xvfb",
+            "OPENBOX_BIN": "/home/ziggy/GhidraDwarfForge-worktrees/debuglink-transaction/build/test-tools/gui/root/usr/bin/openbox",
+            "LD_LIBRARY_PATH": "/home/ziggy/GhidraDwarfForge-worktrees/debuglink-transaction/build/test-tools/gui/root/usr/lib/x86_64-linux-gnu",
+            "XDG_DATA_DIRS": "/home/ziggy/GhidraDwarfForge-worktrees/debuglink-transaction/build/test-tools/gui/root/usr/share:/usr/local/share:/usr/share",
+            "DWARFDUMP": "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/dwarfdump-linux-validation/bin/dwarfdump"
+        }
+    },
+    "sourceSha256": {
+        "src/test/integration/gui/GuiScriptManagerSmoke.java": "da1afcf0aaeeeee332c1d8df7724ebae8b4d3b5b19784d0c6acf942c1de01180",
+        "src/test/integration/gui-script-manager.sh": "27bf1eb0fb0ccc2022edd8367ac17f062cc3ef3e2f01345323aed025f177fb1e",
+        "src/test/integration/gui-context-evidence.py": "c33162f90aad6131db195d3dad09931c46e544e11933084dddef116a33487303",
+        "src/test/integration/windows-gui-script-manager.ps1": "11b088c2f41f4a72576ba5cd3725756131ff4bee4a889a2757d23aeddf3704a6"
+    },
+    "acceptance": [
+        "Installed launcher discovered at its packaged path and launched by real Script Manager double-click.",
+        "Actual mouse/keyboard choice: initial Off; session remembered choice; Cancel/Off/Assembly/P-code/Both screenshots retained.",
+        "Cancel starts no producer and writes no artifacts; original and previous output pair hashes unchanged for all choices.",
+        "Off source byte-identical to default export; enabled choices preserve native warning catalog.",
+        "All4 selected pairs pass GNU/LLVM/pinned strict and live GDB names/types/equate/list/next/step/exit.",
+        "Independent line rows: identical83 executable address/source-text pairs in every mode; zero executable comment rows.",
+        "Existing ordinary GUI annotation/equate, output cancellation, attachment-preview/preparation and coverage CLI checks also pass."
+    ],
+    "limits": [
+        "This GUI fixture exercises native unmapped warnings; per-mode assembly/p-code payload selection and intrinsic triggers are independently proved by intrinsic-context.json.",
+        "Windows shared interaction and validators are wired but not executed locally; current hosted acceptance remains required."
+    ],
+    "testCorrections": [
+        "Pinned Ghidra doAsk remembers last explicit choice; check fresh Off and remembered choices instead of demanding Off each rerun.",
+        "Private Python ZIP extraction dropped executable permissions. The complete GUI/validator/GDB checks passed; final coverage CLI launcher failed EACCES. Restored original archive modes in task-owned installation and reran that final CLI check successfully. No production source changed."
+    ]
+}

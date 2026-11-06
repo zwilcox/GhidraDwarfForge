@@ -1,0 +1,196 @@
+{
+    "issues": [
+        116,
+        114
+    ],
+    "status": "CONFIRMED fixture preparation only; production annotation export PLANNED",
+    "baseline": {
+        "ghidra": "12.0.3",
+        "java": 21,
+        "baseCommit": "6e0cb9549ce77895b3d988e4ecd801322086516a"
+    },
+    "cases": [
+        {
+            "target": "x86_64",
+            "role": "exec",
+            "result": "/dev/shm/forge-annotation-fixtures/final/x86_64-exec-pltbr2eg/result.json",
+            "sha256": "28cebb07ec75b282fbfc08e36acbc80c1a76f96145e22e99fa33d511acd48e92",
+            "gdbValues": 14,
+            "runtimeAddress": {
+                "linkTime": 4198662,
+                "runtime": 4198662,
+                "loadBias": 0
+            },
+            "curation": [
+                {
+                    "result": "/dev/shm/forge-annotation-fixtures/final/x86_64-exec-pltbr2eg/curation-b4ws338s/result.json",
+                    "sha256": "00395b947368992e1e3c8d7acbb42349b9186d999096d2eead825ee7027f15d5",
+                    "projectChanges": [
+                        [
+                            "Annotations.rep/idata/~index.bak",
+                            "Annotations.rep/idata/~journal.bak"
+                        ],
+                        []
+                    ],
+                    "comments": 50,
+                    "equates": 13,
+                    "readbackSha256": "1679b835382f7dd23c8971778b0b368e7da82d44bc26fc4fda9b74a255f0bc68"
+                }
+            ]
+        },
+        {
+            "target": "x86_64",
+            "role": "pie",
+            "result": "/dev/shm/forge-annotation-fixtures/final/x86_64-pie-5fb860ey/result.json",
+            "sha256": "4233b75e2a20f29fa64ad6a04110e011c64b3055a1426d51ca59fc8eacac951a",
+            "gdbValues": 14,
+            "runtimeAddress": {
+                "linkTime": 4393,
+                "runtime": 103892334960937,
+                "loadBias": 103892334956544
+            },
+            "curation": []
+        },
+        {
+            "target": "aarch64",
+            "role": "exec",
+            "result": "/dev/shm/forge-annotation-fixtures/final/aarch64-exec-11jb4pl5/result.json",
+            "sha256": "2991fe95ac97c6dbbfd0891186196e119b67780bc6706e19998e93b3e059a1e0",
+            "gdbValues": 14,
+            "runtimeAddress": {
+                "linkTime": 4195880,
+                "runtime": 4195880,
+                "loadBias": 0
+            },
+            "curation": []
+        },
+        {
+            "target": "aarch64",
+            "role": "pie",
+            "result": "/dev/shm/forge-annotation-fixtures/final/aarch64-pie-9tun6p_4/result.json",
+            "sha256": "8562e0fbddc1c63ba7e97b03edf15d5e7f5724678557d03d33d1fa52cd2e3fc0",
+            "gdbValues": 14,
+            "runtimeAddress": {
+                "linkTime": 1816,
+                "runtime": 138632179287832,
+                "loadBias": 138632179286016
+            },
+            "curation": [
+                {
+                    "result": "/dev/shm/forge-annotation-fixtures/final/aarch64-pie-9tun6p_4/curation-7tcd8ju7/result.json",
+                    "sha256": "2277778258803ea011d505375691637d87aa352124a65fd346ddd824d6a29bad",
+                    "projectChanges": [
+                        [
+                            "Annotations.rep/idata/~index.bak",
+                            "Annotations.rep/idata/~journal.bak"
+                        ],
+                        []
+                    ],
+                    "comments": 50,
+                    "equates": 13,
+                    "readbackSha256": "5c6f859f2d541621efe3c4a582e71dad4a552d5e2e83afa19d55c951c0300745"
+                }
+            ]
+        },
+        {
+            "target": "mips32be",
+            "role": "exec",
+            "result": "/dev/shm/forge-annotation-fixtures/final/mips32be-exec-g80iry16/result.json",
+            "sha256": "d0d3cc8ccab61ffd7a2d2978d951a4ccb59e73976f8520af268ee048429f1803",
+            "gdbValues": 14,
+            "runtimeAddress": {
+                "linkTime": 4195872,
+                "runtime": 4195872,
+                "loadBias": 0
+            },
+            "curation": [
+                {
+                    "result": "/dev/shm/forge-annotation-fixtures/final/mips32be-exec-g80iry16/curation-c76zr3zg/result.json",
+                    "sha256": "c1a043f47ed7693f7eaa2623d7c3fc2488a8b64893c470d4a2d8d70fafd53d08",
+                    "projectChanges": [
+                        [
+                            "Annotations.rep/idata/~index.bak",
+                            "Annotations.rep/idata/~journal.bak"
+                        ],
+                        []
+                    ],
+                    "comments": 50,
+                    "equates": 13,
+                    "readbackSha256": "5e5ef79cb158d07e3efc334db825afa950372283a8f1f2bf89e84517924ed34c"
+                }
+            ]
+        },
+        {
+            "target": "mips32be",
+            "role": "pie",
+            "result": "/dev/shm/forge-annotation-fixtures/final/mips32be-pie-ew005d_g/result.json",
+            "sha256": "9d37b7f98f5d79ca789383cc00850de9db5da47b32fdee89d86a7622205054a9",
+            "gdbValues": 14,
+            "runtimeAddress": {
+                "linkTime": 1984,
+                "runtime": 1431635904,
+                "loadBias": 1431633920
+            },
+            "curation": []
+        },
+        {
+            "target": "mips32le",
+            "role": "exec",
+            "result": "/dev/shm/forge-annotation-fixtures/final/mips32le-exec-ro_tybk6/result.json",
+            "sha256": "07eebd4c24b5bc287de85fa4f9cb6e9eb9b5913b9e562b6bf438ba17a734d6ef",
+            "gdbValues": 14,
+            "runtimeAddress": {
+                "linkTime": 4195872,
+                "runtime": 4195872,
+                "loadBias": 0
+            },
+            "curation": [
+                {
+                    "result": "/dev/shm/forge-annotation-fixtures/final/mips32le-exec-ro_tybk6/curation-k8bwbg8_/result.json",
+                    "sha256": "e48f806bbd6e4f8d464d5c513658c45e3123c6ff3925eede9ab01a3ebab80b9d",
+                    "projectChanges": [
+                        [
+                            "Annotations.rep/idata/~index.bak",
+                            "Annotations.rep/idata/~journal.bak"
+                        ],
+                        []
+                    ],
+                    "comments": 50,
+                    "equates": 13,
+                    "readbackSha256": "12c338f096a04087f9a0068751a4d9e0bf6017a5511ace7867d504f38e2a7dca"
+                }
+            ]
+        },
+        {
+            "target": "mips32le",
+            "role": "pie",
+            "result": "/dev/shm/forge-annotation-fixtures/final/mips32le-pie-ebwe4o83/result.json",
+            "sha256": "8c089e125d92e03fe2b2ede448bff72c2bde5bae322782bb306990f0d51c1b88",
+            "gdbValues": 14,
+            "runtimeAddress": {
+                "linkTime": 1984,
+                "runtime": 1431635904,
+                "loadBias": 1431633920
+            },
+            "curation": []
+        }
+    ],
+    "evidenceArchive": {
+        "path": "build/test-results/annotation-fixture-evidence.tar.gz",
+        "sha256": "483deab0099b2e4728d36caca3598885e762553e895a5b7c831d7439cbfcfc10",
+        "bytes": 242272
+    },
+    "retainedFindings": [
+        "Initial use of the full integration script directory compiled unrelated scripts against an installation without the extension; preparation now copies only its standalone script into a private directory.",
+        "Initial strict check incorrectly supplied the compiler artifact as its own original and was correctly rejected. The harness now corroborates only exact inherited frame bytes and diagnostics against the distinct stripped compiler copy.",
+        "A single signed 32-bit stack min-to-max scan omitted all five comments at Stack[-8], while direct lookup succeeded. Pinned AddressMapDB masks offsets to unsigned 32-bit keys without splitting non-memory ranges. Separate negative/nonnegative scans bounded to its encodable offset domain recover all records; AddressSet must not merge the scans.",
+        "Initial AArch64 PIE preparation assumed link-time addresses were Ghidra addresses and could not locate the function. Translation now uses the original minimum PT_LOAD virtual address and actual Ghidra image base."
+    ],
+    "limits": [
+        "ARM32 fixture path is present but unverified here: arm-linux-gnueabihf-gcc is unavailable on the current PATH.",
+        "No production comment/equate/context export claim. Dynamic-only equates, explicit saved local/type conflict curation, genuine native decompiler failure and exporter cancellation tests remain to add.",
+        "Compiler reference DWARF and GDB observations do not establish Forge artifact correctness.",
+        "Only first-reopen Ghidra index/journal backup maintenance is allowed; second reopen and input files remain unchanged.",
+        "Private project databases and failed exploratory attempts are retained in /dev/shm/forge-annotation-fixtures; compact archive excludes database files."
+    ]
+}

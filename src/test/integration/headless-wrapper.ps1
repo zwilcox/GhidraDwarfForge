@@ -121,6 +121,12 @@ exit /b %FAKE_HEADLESS_EXIT%
     Assert-Condition ($launchedArguments -match '(?:^|\s)"?-loader"?\s+"?ElfLoader"?(?:\s|$)') `
         'import wrapper did not select the ELF loader'
     $null = Invoke-Wrapper 0 $importOptions
+    $null = Invoke-Wrapper 0 ($importOptions + @('-AnnotationRecordLimit', '123',
+        '-AnnotationTextLimit', '456', '-AnnotationSourceLimit', '789'))
+    $launchedArguments = Get-Content -LiteralPath $argumentLog -Raw
+    foreach ($option in @('--annotation-record-limit=123', '--annotation-text-limit=456', '--annotation-source-limit=789')) {
+        Assert-Condition ($launchedArguments.Contains($option)) "missing annotation option: $option"
+    }
     $null = Invoke-Wrapper 0 $projectOptions
     $launchedArguments = Get-Content -LiteralPath $argumentLog -Raw
     Assert-Condition ($launchedArguments -notmatch '(?:^|\s)"?-loader"?(?:\s|$)') `
@@ -175,6 +181,14 @@ exit /b %FAKE_HEADLESS_EXIT%
         throw 'explicit none unexpectedly changed default exporter arguments'
     }
     $null = Invoke-Wrapper 64 ($importOptions + @('-CompressDebugSections', 'zstd'))
+    foreach ($mode in @('assembly', 'pcode', 'both')) {
+        $null = Invoke-Wrapper 0 ($importOptions + @('-SourceContext', $mode))
+        Assert-Condition ((Get-Content -LiteralPath $argumentLog -Raw).Contains("--source-context=$mode")) 'context option was not forwarded'
+    }
+    $null = Invoke-Wrapper 0 ($importOptions + @('-SourceContext', 'off'))
+    Assert-Condition ((Get-Content -LiteralPath $argumentLog -Raw) -notmatch '--source-context=') 'off changed exporter arguments'
+    $null = Invoke-Wrapper 64 ($importOptions + @('-SourceContext', 'invalid'))
+    $null = Invoke-Wrapper 64 ($importOptions + @('-SourceContext', 'BOTH'))
     foreach ($log in @($output, "$output.c", "$output.gdb.py")) {
         Assert-RejectedLog $log ($importOptions + @('-Output', $output))
     }

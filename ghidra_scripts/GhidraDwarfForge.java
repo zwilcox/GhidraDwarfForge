@@ -76,6 +76,9 @@ public class GhidraDwarfForge extends GhidraScript {
         }
 
         Map<String, String> options = parseOptions(arguments);
+        var annotationLimits = ghidradwarfforge.source.AnnotationLimits.fromOptions(options);
+        var sourceContextMode = ghidradwarfforge.source.SourceContextMode.parse(
+            options.getOrDefault("source-context", "off"));
         var compression = ghidradwarfforge.elf.DebugSectionCompression.parse(
             options.getOrDefault("compress-debug-sections", "none"));
         boolean attachmentPreparation = options.containsKey("attachment-preparation");
@@ -197,10 +200,23 @@ public class GhidraDwarfForge extends GhidraScript {
         monitor.checkCancelled();
         var allocation = ghidradwarfforge.targets.TargetParameterAllocation.forProgram(
             currentProgram, originalElf, monitor, diagnostic);
+        var inventory = ExportPhase.measure("annotation-inventory", () ->
+            ghidradwarfforge.GhidraAnnotationInventory.read(currentProgram,
+                new ghidradwarfforge.GhidraAnnotationInventory.Limits(
+                    annotationLimits.records(), annotationLimits.textUnits()), monitor));
+        var dynamicEquates = new ghidradwarfforge.GhidraEquateEvidence.DynamicCollector(currentProgram, inventory, monitor);
+        var sourceContext = new ghidradwarfforge.GhidraSourceContext(currentProgram, sourceContextMode,
+            ghidradwarfforge.GhidraSourceContext.Limits.DEFAULT);
         var decompilation = ExportPhase.measure("decompilation-and-source", () ->
             GhidraSyntheticSource.decompileDetailed(currentProgram, functions,
-                rebaseDelta, monitor, allocation, diagnostic));
-        var source = decompilation.source();
+                rebaseDelta, monitor, (decompiler, function, timeout, taskMonitor) -> {
+                    var result = decompiler.decompileFunction(function, timeout, taskMonitor);
+                    sourceContext.accept(function, result, taskMonitor);
+                    if (result != null && result.decompileCompleted() && result.getHighFunction() != null) {
+                        dynamicEquates.accept(result.getHighFunction(), taskMonitor);
+                    }
+                    return result;
+                }, allocation, diagnostic));
         monitor.checkCancelled();
         var registers = ghidradwarfforge.locations.TargetRegisterMap.forElf(
             target.name(), originalElf, monitor::isCancelled);
@@ -213,6 +229,37 @@ public class GhidraDwarfForge extends GhidraScript {
                 target, originalElf, extractedTypes, monitor, diagnostic);
         });
         monitor.checkCancelled();
+        var annotated = ExportPhase.measure("source-annotations", () -> {
+            var contextualSource = sourceContext.compose(decompilation.source(), rebaseDelta,
+                annotationLimits.sourceBytes(), monitor);
+            var evidence = ghidradwarfforge.GhidraEquateEvidence.interpret(currentProgram, inventory,
+                dynamicEquates.snapshot(monitor), monitor);
+            if (evidence.isEmpty()) {
+                var comments = ghidradwarfforge.GhidraListingAnnotationSource.compose(currentProgram,
+                    inventory, contextualSource, rebaseDelta, annotationLimits.sourceBytes(), monitor).source();
+                return new PreparedSource(comments,
+                    new ghidradwarfforge.annotations.SyntheticConstants(List.of(), java.util.Set.of()));
+            }
+            var reserved = ghidradwarfforge.elf.EquateNameReservations.read(originalElf, typeModel,
+                functions, aliases, monitor::isCancelled, diagnostic);
+            reserved = ghidradwarfforge.GhidraEquateNames.extend(currentProgram, reserved, monitor);
+            var catalog = ghidradwarfforge.annotations.EquateCatalog.plan(evidence, reserved, reserved.size(), monitor::isCancelled);
+            var constants = catalog.entries().stream().flatMap(entry -> entry.constants().stream())
+                .map(constant -> new ghidradwarfforge.annotations.SyntheticConstant(constant.name(),
+                    constant.value().bits(), constant.value().signed(), constant.value().value())).toList();
+            try {
+                var comments = ghidradwarfforge.GhidraListingAnnotationSource.compose(currentProgram,
+                    inventory, contextualSource, rebaseDelta, annotationLimits.sourceBytes(), monitor).source();
+                var source = ghidradwarfforge.GhidraEquateSource.compose(comments, catalog, annotationLimits.sourceBytes(), monitor);
+                return new PreparedSource(source, new ghidradwarfforge.annotations.SyntheticConstants(constants,
+                    reserved.namedReservations()));
+            }
+            catch (IllegalArgumentException limit) {
+                throw new IllegalArgumentException(limit.getMessage() +
+                    "; raise --annotation-source-limit to preserve the full source; outputs were not published", limit);
+            }
+        });
+        var source = annotated.source();
         var resultHolder = new MinimalDwarfSidecarExporter.ExportResult[1];
         var stagedSidecarHolder = new Path[1];
         var reportHolder = new PreparedReport[1];
@@ -224,7 +271,7 @@ public class GhidraDwarfForge extends GhidraScript {
                 input, stagedOutput,
                 consumer, producer, functions, source, typeModel,
                 sourceOutput.getFileName().toString(), monitor::isCancelled,
-                modeCues, aliases, aliasModeCues, sectionModes, diagnostic);
+                modeCues, aliases, aliasModeCues, sectionModes, annotated.constants(), diagnostic);
             stagedSidecarHolder[0] = stagedOutput;
         };
         ArtifactPairPublisher.StagedWriter sourceWriter = stagedSource -> {
@@ -326,6 +373,9 @@ public class GhidraDwarfForge extends GhidraScript {
         }
     }
 
+    private record PreparedSource(ghidradwarfforge.source.SyntheticSourceFile source,
+            ghidradwarfforge.annotations.SyntheticConstants constants) { }
+
     private record PreparedReport(String json, String outputHash, String sourceHash,
             CoverageReportClaims coverage, String status) { }
 
@@ -364,7 +414,9 @@ public class GhidraDwarfForge extends GhidraScript {
             if (!name.equals("libdwarf") && !name.equals("libdwarfp") &&
                     !name.equals("input") && !name.equals("output") &&
                     !name.equals("packaged-natives") && !name.equals("gdb-loader") && !name.equals("attachment-preparation") &&
-                    !name.equals("compress-debug-sections")) {
+                    !name.equals("compress-debug-sections") && !name.equals("source-context") &&
+                    !name.equals("annotation-record-limit") && !name.equals("annotation-text-limit") &&
+                    !name.equals("annotation-source-limit")) {
                 throw new IllegalArgumentException("unknown option --" + name);
             }
             if ((name.equals("packaged-natives") || name.equals("gdb-loader") || name.equals("attachment-preparation")) &&

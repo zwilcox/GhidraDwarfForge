@@ -70,6 +70,13 @@ public final class Dwarf5LineTable {
 
     public static Result buildWithPlan(String fileName, String sourceDirectory, int addressBytes,
             ByteOrder byteOrder, List<FunctionSymbol> functions, List<SourceLine> sourceLines) {
+        return buildWithPlan(fileName, sourceDirectory, addressBytes, byteOrder, functions, sourceLines, false);
+    }
+
+    /** Retain a source-file table even when no instruction has defensible source evidence. */
+    public static Result buildWithPlan(String fileName, String sourceDirectory, int addressBytes,
+            ByteOrder byteOrder, List<FunctionSymbol> functions, List<SourceLine> sourceLines,
+            boolean retainFileTable) {
         if (fileName == null || fileName.isBlank() || fileName.indexOf('\0') >= 0) {
             throw new IllegalArgumentException("invalid line-table file name");
         }
@@ -112,7 +119,11 @@ public final class Dwarf5LineTable {
             writeExtended(program, DW_LNE_END_SEQUENCE, new byte[0]);
         }
         if (sequences.isEmpty()) {
-            return new Result(new byte[0], sequences);
+            if (!retainFileTable) return new Result(new byte[0], sequences);
+            // Select the DWARF 5 file without emitting a matrix row or an address.
+            // Consumers can list file:line while function addresses remain unmapped.
+            program.write(DW_LNS_SET_FILE);
+            writeUleb(program, 0);
         }
 
         ByteArrayOutputStream header = new ByteArrayOutputStream();

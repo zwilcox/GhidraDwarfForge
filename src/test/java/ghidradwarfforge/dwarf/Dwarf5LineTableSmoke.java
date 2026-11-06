@@ -79,6 +79,23 @@ public final class Dwarf5LineTableSmoke {
                     require(readString(header).equals("fixture.dbg.c") && header.get() == 0,
                         "source filename/directory index");
                     require(header.position() == headerEnd, "header length");
+                    require(Arrays.equals(explicit, Dwarf5LineTable.buildWithPlan("fixture.dbg.c",
+                        directory, width, order, List.of(later, split), mappings, true).section()),
+                        "file-table retention changed normal line sequences");
+                    var diagnostic = Dwarf5LineTable.buildWithPlan("fixture.dbg.c", directory,
+                        width, order, List.of(later, split), List.of(), true);
+                    byte[] diagnosticBytes = diagnostic.section();
+                    ByteBuffer diagnosticHeader = ByteBuffer.wrap(diagnosticBytes).order(order);
+                    require(diagnosticHeader.getInt() == diagnosticBytes.length - 4, "file-only unit length");
+                    diagnosticHeader.position(8);
+                    int fileHeaderLength = diagnosticHeader.getInt();
+                    require(diagnosticBytes.length == 12 + fileHeaderLength + 2, "file-only program size");
+                    require(diagnosticBytes[diagnosticBytes.length - 2] == 4 &&
+                        diagnosticBytes[diagnosticBytes.length - 1] == 0 && diagnostic.sequences().isEmpty(),
+                        "file-only program must select file zero without matrix rows");
+                    require(Dwarf5LineTable.buildWithPlan("fixture.dbg.c", directory, width, order,
+                        List.of(later), List.of()).section().length == 0,
+                        "source-free exports must not gain a file table");
                     require(Arrays.equals(explicit, Dwarf5LineTable.build("fixture.dbg.c",
                         directory, width, order, List.of(split, later), mappings.reversed())),
                         "directory-aware deterministic output");

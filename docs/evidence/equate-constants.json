@@ -1,0 +1,130 @@
+{
+    "status": "CONFIRMED isolated production constant emission and packaged name planning; default equate wiring PLANNED",
+    "dateUtc": "2026-11-06T00:36:15.378625+00:00",
+    "parent": "d00260103d5deb2240ee13e711ca79b7d339e52a",
+    "sourceSha256": {
+        "src/main/java/ghidradwarfforge/annotations/EquateCatalog.java": "19745433ff43f59a280c6689ef37a74ebbe7cb5102e0d707e8aa0194decf415c",
+        "src/main/java/ghidradwarfforge/annotations/SyntheticConstant.java": "1c6bd587dcbe66de0f23fd26b9b5bea85ce950820f96e2cbc62c1c07f94b7b8a",
+        "src/main/java/ghidradwarfforge/elf/EquateNameReservations.java": "a51d37eeb16b36b6d237b49fdde09e6d5b7e93125515a143c3a88e8b29b4a505",
+        "src/main/java/ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter.java": "43d60ee920afa5d176b630c66a6f7fc1a7a0c23506d7422422f06696df36e192",
+        "src/test/java/ghidradwarfforge/nativeapi/EquateConstantsSmoke.java": "0c0460c269092d0c5c73139a4e56dc7761d9b903e09e4f1ff7ac643869244be9",
+        "src/test/integration/equate-constants.py": "eac1d0fd406658325c3255f9995967c740c0ce475799fceb72cc728b27ba3e41",
+        "src/test/integration/equate-evidence.py": "f7413be24768075bf8ee4a3405e8d8ada5f1d2894e97f71af294b9e02899a2d4",
+        "src/test/integration/ghidra_scripts/VerifyEquateEvidence.java": "e339506090cbe98a040d7b5a41c3f2c0eb70e9c8c20b67077106ae50ede0ea55",
+        "src/test/integration/annotation-inventory-pipeline.py": "64a521ceca7ee72df62b9413a3a92fec0fe2dc48b12915d91a5d0be10414c75f"
+    },
+    "producerAudit": {
+        "libdwarf": "2.3.2",
+        "revision": "af7b278c6aa2ae9daad94fb7f8bffdc0e9980993",
+        "header": "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/native-windows-build-diagnostics/strict-checker-build/build.wKCIdX8I/libdwarf-2.3.2/src/lib/libdwarfp/libdwarfp.h",
+        "sha256": "3fd4cc23c0f9363d1b8875f45c06363d196413475d75fd28e3be915a40d7f7ae",
+        "verifiedSignatures": [
+            "dwarf_add_AT_any_value_sleb_a: Dwarf_P_Die,Dwarf_Half,Dwarf_Signed,Dwarf_P_Attribute*,Dwarf_Error*",
+            "dwarf_add_AT_any_value_uleb_a: Dwarf_P_Die,Dwarf_Half,Dwarf_Unsigned,Dwarf_P_Attribute*,Dwarf_Error*"
+        ],
+        "mapping": "Existing fixed-width long mappings and existing error/pointer checks; no new JNA declaration"
+    },
+    "cases": [
+        {
+            "root": "/dev/shm/forge-equate-native/equate-constants-z2kd7lmq",
+            "resultSha256": "4b0218969360f1776b55a47d2ec549279882a71458b5a8d9ec06e237d5fc5293",
+            "constants": 52,
+            "gdbChecks": 104,
+            "artifactSha256": "d547fdb9c3705f967831853ba3814787ed1220269d3b9e15e19e7cd20ec4175d"
+        },
+        {
+            "root": "/dev/shm/forge-equate-native/equate-constants-g28lapbu",
+            "resultSha256": "1a9c4eb3a405d9e40cf87e2c977e5f848828d29175e36aedc740e70ee78df694",
+            "constants": 52,
+            "gdbChecks": 104,
+            "artifactSha256": "1545e755eef9109bb16b12ebed7931b1cd48e8bb9a67e7277eebc52c4759421c"
+        },
+        {
+            "root": "/dev/shm/forge-equate-native/equate-constants-n658gfxd",
+            "resultSha256": "7f6c4cc8304b5bb8e5f3613e23b11f6125b738c8e3425eb3a101645953d14691",
+            "constants": 52,
+            "gdbChecks": 104,
+            "artifactSha256": "9f24ef2903e6ff54c126a019cfd3c9623f2e6d66a2c9617b5ad281ceb75ef4fe"
+        },
+        {
+            "root": "/dev/shm/forge-equate-native/equate-constants-zk98ncyo",
+            "resultSha256": "a22d83b92c0405c63426e71ebbcfdb5c5e9ac3900a687c390843c3011dac932d",
+            "constants": 52,
+            "gdbChecks": 104,
+            "artifactSha256": "bca96d63df19ca4f95ef86f6f3c80008db1e03f70df4454a56af22f92879bc57"
+        },
+        {
+            "root": "/dev/shm/forge-equate-native-pipeline/x86_64-qcu59o4c/equate-constants-c06427hg",
+            "resultSha256": "afe75a270ea50fc60817c055afe5c6538add07eaa48157baf50e19348f1ce5a0",
+            "constants": 52,
+            "gdbChecks": 104,
+            "artifactSha256": "1f43dec467c74622c055ce6685adc5c25d72c90733c58625a7c3f522b76a6074"
+        }
+    ],
+    "nameCases": [
+        {
+            "root": "/dev/shm/forge-equate-native-pipeline/x86_64-qcu59o4c/x86_64-exec-izajr_wb/curation-8xem8flz/equate-evidence-ym11_oat",
+            "resultSha256": "58983c8dddcd3458e218853a435ec411bfc73aca5884b983448505ac9f4a9160",
+            "constantCount": 35,
+            "directCount": 1,
+            "cancellationPoints": 413
+        },
+        {
+            "root": "/dev/shm/forge-annotation-conflicts/aarch64-pie-ybpmddrh/curation-kpin1hmj/equate-evidence-hhuvr0_3",
+            "resultSha256": "d7add88e78b00f1866d7595386eaa6af3dd0bfae0abd7ace24bf457c3790567a",
+            "constantCount": 35,
+            "directCount": 1,
+            "cancellationPoints": 413
+        },
+        {
+            "root": "/dev/shm/forge-annotation-conflicts/mips32be-exec-8msufgpw/curation-v1ml2ljg/equate-evidence-75bt_cdc",
+            "resultSha256": "ce31d81285ea9915e7e8bdde118d36b8e444f3b1b1ee5bf2728d1ba28a0f9604",
+            "constantCount": 35,
+            "directCount": 1,
+            "cancellationPoints": 413
+        },
+        {
+            "root": "/dev/shm/forge-annotation-conflicts/mips32le-exec-0e1h0_c9/curation-8vl36dtv/equate-evidence-e_ae60i5",
+            "resultSha256": "ca8e332e39de5cdf0b8fc85464ceb275c88f1e923dc73f3158cad8f637a13120",
+            "constantCount": 35,
+            "directCount": 1,
+            "cancellationPoints": 413
+        }
+    ],
+    "pipeline": {
+        "status": "PASS_PACKAGED_ANNOTATION_INVENTORY",
+        "target": "x86_64",
+        "role": "exec",
+        "case": "/dev/shm/forge-equate-native-pipeline/x86_64-qcu59o4c/x86_64-exec-izajr_wb",
+        "curation": "/dev/shm/forge-equate-native-pipeline/x86_64-qcu59o4c/x86_64-exec-izajr_wb/curation-8xem8flz",
+        "inventory": "/dev/shm/forge-equate-native-pipeline/x86_64-qcu59o4c/x86_64-exec-izajr_wb/curation-8xem8flz/inventory-528i2d8u",
+        "equateEvidence": "/dev/shm/forge-equate-native-pipeline/x86_64-qcu59o4c/x86_64-exec-izajr_wb/curation-8xem8flz/equate-evidence-ym11_oat",
+        "constants": "/dev/shm/forge-equate-native-pipeline/x86_64-qcu59o4c/equate-constants-c06427hg",
+        "placement": "/dev/shm/forge-equate-native-pipeline/x86_64-qcu59o4c/x86_64-exec-izajr_wb/curation-8xem8flz/placement-0i_u4spd",
+        "defaultExport": "/dev/shm/forge-equate-native-pipeline/x86_64-qcu59o4c/x86_64-exec-izajr_wb/curation-8xem8flz/default-export-yn2s9pmg"
+    },
+    "productionClassCount": 616,
+    "productionClassAuditSha256": "11ec31dd85a256bd6490c973155a4ef6389e999e8d132fb8e9513c1043c4c529",
+    "installedJar": "/dev/shm/forge-equate-native-module-ti74xjcy/GhidraDwarfForge/lib/GhidraDwarfForge.jar",
+    "installedJarSha256": "a3f70f4a4ab06ba20c075cd834837e58c1cc461d2aff8211e8a1378cfeb30906",
+    "archive": {
+        "path": "build/test-results/equate-constants.tar.gz",
+        "sha256": "42b91d828af4f19955685a48a39a53b06775af97bd6f45f27764e94259b76db1",
+        "bytes": 602471,
+        "files": 972
+    },
+    "failuresRetained": [
+        "Missing partial-byte padding: big-endian unsigned one-bit constant 1 displayed as 0 while structural validators passed. Corrected with target-order DW_AT_data_bit_offset.",
+        "Pinned libdwarf restricted unsigned-constant helper rejected DW_AT_data_bit_offset with DW_DLE_INPUT_ATTR_BAD; existing audited arbitrary ULEB helper succeeds.",
+        "Anonymous base type displayed as invalid type in GDB; allocated named synthetic types now checked including a deliberate name conflict.",
+        "AArch64 first read failed with ENOSPC in Ghidra database scratch. First retry readbacks matched but all-state assertion failed; initial/intermediate snapshots were not persisted by the older harness, so exact transient files are UNCERTAIN. Current project hashes match earlier successful snapshot; final retry passes all three snapshots. Harness now writes snapshots before assertions."
+    ],
+    "remaining": [
+        "Default equate collection, source catalog and producer wiring",
+        "Live-frame recovered local/global coexistence tests in normal exporter",
+        "Retained consumer demangled-name collision coverage",
+        "Optional source context #114",
+        "GUI/Windows and full hosted/workload gates",
+        "Later goal issues #112, #110, #109"
+    ]
+}

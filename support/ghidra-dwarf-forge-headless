@@ -17,6 +17,11 @@ Common options:
   --gdb-loader            Also generate <sidecar>.gdb.py for explicit GDB loading
   --compress-debug-sections=none|zlib
                           Optional ELF debug-section compression (default: none)
+  --annotation-record-limit=<n>  Stored comment/equate/reference limit (default: 1000000)
+  --annotation-text-limit=<n>    Stored UTF-16 text units (default: 16777216)
+  --annotation-source-limit=<n>  Complete source UTF-8 bytes (default: 134217728)
+  --source-context=off|assembly|pcode|both
+                          Instruction context for incomplete source (default: off)
   --log=<path>            Preserve the complete headless transcript
   --analysis-timeout=<s> Import-mode analysis timeout (default: 120)
 
@@ -118,12 +123,14 @@ input=
 output=
 gdb_loader=0
 debug_compression=none
+source_context=off
 import_path=
 project_dir=
 project_name=
 program=
 log_path=
 analysis_timeout=120
+annotation_options=()
 
 for argument in "$@"; do
     case "$argument" in
@@ -134,6 +141,9 @@ for argument in "$@"; do
         --output=*) output=${argument#*=} ;;
         --gdb-loader) gdb_loader=1 ;;
         --compress-debug-sections=*) debug_compression=${argument#*=} ;;
+        --source-context=*) source_context=${argument#*=} ;;
+        --annotation-record-limit=*|--annotation-text-limit=*|--annotation-source-limit=*)
+            annotation_options+=("$argument") ;;
         --import=*) import_path=${argument#*=} ;;
         --project-dir=*) project_dir=${argument#*=} ;;
         --project-name=*) project_name=${argument#*=} ;;
@@ -147,6 +157,10 @@ done
 
 [[ "$debug_compression" == none || "$debug_compression" == zlib ]] ||
     die_usage "--compress-debug-sections must be none or zlib"
+case "$source_context" in
+    off|assembly|pcode|both) ;;
+    *) die_usage "--source-context must be off, assembly, pcode or both" ;;
+esac
 [[ -n "$ghidra_dir" ]] || die_usage "--ghidra-dir or GHIDRA_INSTALL_DIR is required"
 if [[ -n "$consumer" && -z "$producer" || -z "$consumer" && -n "$producer" ]]; then
     die_usage "--libdwarf and --libdwarfp must be supplied together"
@@ -218,6 +232,8 @@ fi
 [[ -n "$output" ]] && export_options+=("--output=$output")
 ((gdb_loader)) && export_options+=("--gdb-loader")
 [[ "$debug_compression" == zlib ]] && export_options+=("--compress-debug-sections=zlib")
+[[ "$source_context" != off ]] && export_options+=("--source-context=$source_context")
+export_options+=("${annotation_options[@]}")
 
 if ((import_mode)); then
     [[ -f "$import_path" ]] || die_usage "import ELF does not exist: $import_path"
