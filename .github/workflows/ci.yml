@@ -628,7 +628,7 @@ jobs:
               packagedNativeLibrariesSmoke existingDebugSidecarSmoke callFrameEncoderSmoke unwindFlowSmoke ghidraUnwindInstructionsSmoke unwindAbiProfileSmoke \
               unwindCallsSmoke ghidraUnwindCallsSmoke unwindFrameRowsSmoke elfCodeBytesSmoke originalFrameRangesSmoke originalFrameSourcesSmoke elfRuntimeRelocationsSmoke elfRelocationEffectsSmoke \
               extendedSectionNumberingSmoke elfImageReaderSmoke \
-              elfCopyCancellationSmoke ghidraImageBaseSmoke buildExtension
+              elfCopyCancellationSmoke ghidraImageBaseSmoke exportConsistencySmoke buildExtension
             python3 -B src/test/integration/debuglink-basename.py \
                 --jar "$PWD/build/libs/GhidraDwarfForge.jar" \
                 --results "$PWD/build/test-results/extension-build/debuglink-basename"
@@ -1004,6 +1004,14 @@ jobs:
               "build/test-results/cfi-encoder/$TARGET" "build/test-results/cfi-writer/$TARGET/$encoding" \
               --original-encoding "$encoding" --dwarfdump "$DWARFDUMP"
           done
+
+      - name: Reject input and program changes before export publication
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/export-consistency.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+            "build/test-results/export-consistency/$TARGET" --dwarfdump "$DWARFDUMP"
 
       - name: Validate recovered CFI in executables, PIE and loaded shared libraries
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'

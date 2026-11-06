@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — export consistency prerequisite for #112:** the installed
+exporter now checks input bytes and Ghidra's modification counter after extraction
+and before publishing pairs or companions. A real failing-before mutation
+reproduction is retained. Twenty-six native checks and eight installed failure
+controls pass on x86-64/AArch64; twelve successful exports are deterministic and
+four sidecars pass validators and GDB. See `docs/EXPORT-CONSISTENCY.md`. This is an
+optimistic guard, not a frozen snapshot. Recovered-frame integration and hosted
+acceptance remain open; PR166 retains first priority.
+
 **CONFIRMED locally — #112 program-wide recovery collection:** valid call groups
 now combine into one deterministic plan with per-root refusal diagnostics and
 original-byte evidence. Mixed valid/invalid programs, shared-callee deduplication,

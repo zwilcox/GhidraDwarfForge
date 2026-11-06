@@ -153,7 +153,9 @@ public class GhidraDwarfForge extends GhidraScript {
             ghidradwarfforge.output.CompanionArtifactPublisher.validate(
                 input, output, sourceOutput, companionOutput, consumer, producer);
         }
-        String inputHash = sha256(input);
+        var consistency = ghidradwarfforge.GhidraExportConsistency.capture(
+            currentProgram, input, monitor::isCancelled);
+        String inputHash = consistency.inputSha256();
         String importedHash = currentProgram.getExecutableSHA256();
         if (importedHash != null && !importedHash.isBlank() &&
                 !importedHash.equalsIgnoreCase(inputHash)) {
@@ -214,6 +216,9 @@ public class GhidraDwarfForge extends GhidraScript {
         var resultHolder = new MinimalDwarfSidecarExporter.ExportResult[1];
         var stagedSidecarHolder = new Path[1];
         var reportHolder = new PreparedReport[1];
+        consistency.requireUnchanged(monitor::isCancelled);
+        ArtifactPairPublisher.PrePublishCheck prePublishCheck = () ->
+            consistency.requireUnchanged(monitor::isCancelled);
         ArtifactPairPublisher.StagedWriter sidecarWriter = stagedOutput -> {
             resultHolder[0] = new MinimalDwarfSidecarExporter(compression).export(
                 input, stagedOutput,
@@ -255,19 +260,16 @@ public class GhidraDwarfForge extends GhidraScript {
                     sourceWriter.write(stagedSource);
                     String companion = ghidradwarfforge.elf.GdbCompanion.render(input,
                         stagedSidecar, stagedSource, output, sourceOutput, monitor::isCancelled);
-                    if (!inputHash.equals(sha256(input))) {
-                        throw new IOException("Original ELF changed after Ghidra import identity verification");
-                    }
                     Files.writeString(stagedCompanion, companion, java.nio.charset.StandardCharsets.UTF_8);
-                }, monitor::checkCancelled);
+                }, prePublishCheck::check);
         }
         else if (attachmentPreparation) {
             ArtifactPairPublisher.stageAndPublishNew(output, sourceOutput,
-                sidecarWriter, sourceWriter, monitor::checkCancelled);
+                sidecarWriter, sourceWriter, prePublishCheck);
         }
         else {
             ArtifactPairPublisher.stageAndPublish(output, sourceOutput,
-                sidecarWriter, sourceWriter, monitor::checkCancelled);
+                sidecarWriter, sourceWriter, prePublishCheck);
         }
         MinimalDwarfSidecarExporter.ExportResult result = resultHolder[0];
         PreparedReport prepared = reportHolder[0];

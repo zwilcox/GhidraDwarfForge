@@ -170,6 +170,18 @@ tasks.register("unwindFrameRecoveryProbe", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/unwind-frame-probe/cache").absolutePath
 }
 
+tasks.register("exportConsistencySmoke", JavaExec) {
+    group = "verification"
+    description = "Rejects changed program/input evidence and honors consistency-check cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.GhidraExportConsistencySmoke"
+    args ghidraInstallDir, layout.buildDirectory.dir("test-results/export-consistency").get().asFile
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/export-consistency/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/export-consistency/cache").absolutePath
+}
+
 tasks.register("ghidraUnwindCallsSmoke", JavaExec) {
     group = "verification"
     description = "Checks native direct and recursive callee proofs and rejected effects"
