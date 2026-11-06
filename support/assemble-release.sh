@@ -77,6 +77,14 @@ for report_launcher in ghidra-dwarf-forge-report ghidra-dwarf-forge-report.ps1; 
 done
 chmod 755 "$module/support/ghidra-dwarf-forge-report"
 
+for build_id_launcher in ghidra-dwarf-forge-build-id ghidra-dwarf-forge-build-id.ps1; do
+    [[ -s "$module/support/$build_id_launcher" ]] || {
+        echo "base ZIP is missing build-ID launcher: $build_id_launcher" >&2
+        exit 1
+    }
+done
+chmod 755 "$module/support/ghidra-dwarf-forge-build-id"
+
 for bundled_directory in os third_party/libdwarf third_party/windows-runtime; do
     if [[ -e "$module/$bundled_directory" || -L "$module/$bundled_directory" ]]; then
         echo "base ZIP already contains $bundled_directory; supply the unbundled Gradle extension ZIP" >&2

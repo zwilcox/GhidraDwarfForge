@@ -154,6 +154,13 @@ def main():
     assert os.getxattr(inherited, 'system.posix_acl_access') != os.getxattr(acl_source, 'system.posix_acl_access')
     preservation('explicit-over-inherited-acl', acl_source, inherited)
     preservation('remove-inherited-acl', original, inherited)
+    for mode in [0o444, 0o555]:
+        readonly = fixture / ('readonly-acl-' + oct(mode))
+        shutil.copy2(acl_source, readonly)
+        os.chmod(readonly, mode)
+        owned = fixture / ('readonly-stage-' + oct(mode))
+        owned.write_bytes(b'new private stage bytes')
+        preservation('readonly-acl-' + oct(mode), readonly, owned)
     expected = inspect('stale-source-snapshot', original)
     os.setxattr(original, b'user.concurrent', b'changed after snapshot')
     before = facts(stage)

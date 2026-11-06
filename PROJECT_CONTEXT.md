@@ -1,5 +1,20 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local #109 command and Linux acceptance checkpoint (2026-11-06):**
+the packaged command now provides explicit install/update/remove/recover, bounded
+SHA-bound requests, preview, cancellation and GDB setup. The production Linux
+host passes 226 checks and 50 fresh GDB sessions across all five targets' exec/PIE
+layouts. This includes crash/recovery controls, identity refusals and read-only
+mode/ACL/user-attribute preservation. Four fresh saved-program exports additionally
+prove analyst name/type/member refresh in exec and PIE with the old exports absent.
+Two independently reproduced read-only installation/refresh defects are corrected;
+the final tested package, native metadata oracle and shared attachment regressions
+pass. See `docs/BUILD-ID-INSTALLATION.md` and `docs/evidence/build-id-command-linux.json`.
+Windows launcher code is **PRESENT, UNVERIFIED**. Shared/sectionless installation,
+installation-specific LLDB/perf acceptance, Windows acceptance and the full hosted
+gate/protected integration remain outstanding. #110 integration still precedes
+goal completion. Earlier transaction/component-only scope notes below are historical.
+
 **CONFIRMED local #109 transaction checkpoint:** installation/update/removal and
 recovery now pass 123 controls with both the test metadata host and the production
 Linux ext4 host. Ten exec/PIE target layouts pass fresh GDB discovery, source,

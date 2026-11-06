@@ -1,9 +1,11 @@
 # Build-ID installation transaction checkpoint
 
-Tracking: #109. **CONFIRMED locally:** the internal transaction and Linux ext4
-host pass the checks below. **PLANNED:** the public launcher, Windows installer
-acceptance, the remaining consumer matrix and protected integration. This is not
-a completed installer feature or a release claim.
+Tracking: #109. **CONFIRMED locally:** the transaction, packaged public command
+and Linux ext4 host pass the checks below. Windows installer acceptance, the
+remaining consumer matrix and protected integration are incomplete. This is not
+a completed installer feature or a release claim. See the
+[command guide](BUILD-ID-INSTALLATION.md) and
+[latest Linux receipt](evidence/build-id-command-linux.json).
 
 ## Contract
 
@@ -76,7 +78,7 @@ The probe can also select the existing Windows host, but **PRESENT, UNVERIFIED**
 applies to installer use of that host. Its attachment tests do not prove Windows
 installation, locking, generation records or recovery.
 
-## Observed local validation
+## Historical transaction-only validation
 
 The receipt is [build-id-transaction.json](evidence/build-id-transaction.json).
 
@@ -113,10 +115,38 @@ Historical interrupted harness runs are retained: one assumed raw logs had a
 ENOSPC before an operation. The corrected suite explicitly selects its JNA
 temporary directory. Neither interrupted run is counted as a pass.
 
+## Command and production Linux acceptance
+
+The final tested package passes 226 checks and 50 fresh GDB sessions on all five
+targets' exec/PIE layouts, using the production Linux ext4 host throughout. Twenty
+sessions are empty/removed-root negative controls; the remaining thirty prove
+installed source/value/stepping behavior. The command subset contributes 27
+checks and ten GDB sessions, including spaces, Unicode, literal quotes/dollar
+signs, request refusal, cancellation and four read-only permission profiles.
+
+Two regressions were reproduced against the preceding package: applying user
+attributes after a final read-only chmod failed with errno 13, and reopening a
+sealed read-only stage during refresh failed with AccessDeniedException. Metadata
+application now temporarily enables owner-write only on the private owned stage,
+applies the access ACL after user attributes, and restores the exact final mode.
+Publication copies new bytes with the selected existing registration metadata in
+one operation, without reopening the completed read-only file for writing.
+Independent native checks cover modes 0444/0555, raw user attributes and access
+ACLs. Four real-command install/refresh cases independently compare mode, uid/gid,
+mtime and all visible attributes; every original input retains its bytes/metadata.
+
+The shared file-store, target-store, transaction and operation smoke suites pass
+75, 63, 532 and 103 checks respectively. Their model-host scope is recorded and
+does not substitute for the production Linux checks. Four fresh packaged headless
+exports from saved Ghidra programs additionally prove actual analyst name/type/
+member edits survive explicit refresh in exec and PIE; four fresh GDB sessions
+use only the installation and retained source with old exports absent.
+
 ## Remaining acceptance
 
-The compression-different refresh fixtures prove replacement, not an actual
-analyst name/type edit. Add the curated refresh oracle, shared and applicable
-sectionless discovery, LLDB and perf installation-specific checks, native Windows
-acceptance, launcher/setup/cancellation behavior, workflow coverage and protected
-integration. Retained component tests do not establish those requirements.
+Add shared and applicable sectionless installation/discovery, installation-specific
+LLDB and perf checks, native Windows acceptance and protected integration. The
+workflow now invokes the production Linux matrix and saved-program refresh tests,
+but the updated hosted gate is not yet accepted. The Windows command is present
+and explicitly unverified. Retained component tests do not establish those
+remaining requirements.

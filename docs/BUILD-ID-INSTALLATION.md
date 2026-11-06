@@ -1,0 +1,138 @@
+# Install a Forge export by build ID
+
+**Development status:** the Linux command has local end-to-end validation.
+Windows command code is **PRESENT, UNVERIFIED** for this installer. Full #109
+consumer acceptance and protected integration remain outstanding. See the
+[transaction checkpoint](BUILD-ID-TRANSACTION.md) and
+[Linux command receipt](evidence/build-id-command-linux.json) for the tested scope.
+
+Installation associates an export with the original ELF's existing build ID.
+It leaves the executable unchanged, retains the source and export report, and
+publishes a validated sidecar under an explicitly selected debug root. GDB must
+be configured to search that root. Ordinary export never installs automatically.
+
+## Linux invocation
+
+Use Java 21 or later, Ghidra 12.0.3 and the installed Forge extension. The initial
+Linux host supports Intel LP64 with the selected files and debug root on ext4.
+Create the debug root yourself with the access permissions you want.
+
+Save an absolute-path request as UTF-8 JSON:
+
+```json
+{
+    "schema": "forge-build-id-request-v1",
+    "action": "install",
+    "root": "/home/me/debug-symbols",
+    "files": {
+        "original": "/home/me/program",
+        "sidecar": "/home/me/program.dbg",
+        "source": "/home/me/program.dbg.c",
+        "report": "/home/me/export.json"
+    },
+    "tools": {
+        "helper": "/path/to/GhidraDwarfForge/os/linux_x86_64/forge-validator-supervisor",
+        "readelf": "/usr/bin/readelf",
+        "llvm": "/usr/bin/llvm-dwarfdump",
+        "strict": "/path/to/dwarfdump-linux-validation/libexec/dwarfdump",
+        "configuration": "/path/to/dwarfdump-linux-validation/share/dwarfdump/dwarfdump.conf"
+    }
+}
+```
+
+Use the completed export's original report, with hashes matching all three
+selected files. The strict checker and configuration must be the pinned
+libdwarf 2.3.2 validation bundle used by Forge. A report saying validation passed
+does not bypass the command's fresh GNU, LLVM and strict checks. Tool paths are
+your explicit selections; paths mentioned in an export report are not executed.
+
+Select the saved request, compute its SHA-256, then run:
+
+```bash
+request_path=/absolute/request.json
+request_sha=$(sha256sum -- "$request_path")
+request_sha=${request_sha%% *}
+/path/to/GhidraDwarfForge/support/ghidra-dwarf-forge-build-id \
+    --ghidra-dir=/path/to/ghidra_12.0.3_PUBLIC \
+    --request="$request_path" \
+    --request-sha256="$request_sha"
+```
+
+The launcher prints one preview JSON object and then one execution result.
+`--preview` prints selections without installing or executing validators. No
+target-change confirmation or elevation is required by the command. Permission
+failures are reported without retrying with greater privilege.
+
+The request is bounded to 1 MiB. Unknown or duplicate fields, unknown actions,
+relative paths and mismatching request hashes are errors. After editing a request,
+compute its new hash. An installation root cannot contain the host search-path
+separator, a line break or leading/trailing whitespace. Spaces and Unicode are
+supported by the tested Linux command and its GDB setup.
+
+## GDB setup and source retention
+
+A successful result includes `registration`, `source`, `state` and
+`gdbSetupCommand`. Apply that command **before** loading the original in a fresh
+GDB session, for example:
+
+```gdb
+set debug-file-directory /home/me/debug-symbols
+file /home/me/program
+break recovered_function
+list recovered_function
+```
+
+`set debug-file-directory` replaces GDB's current search-path setting. Include
+other desired search roots yourself if needed. Installation does not modify
+GDB configuration, populate perf's separate cache, or prove another consumer's
+discovery behavior. Installation-specific LLDB/perf acceptance remains pending.
+
+The installed DWARF points at a retained source generation within the root.
+The original export directory can disappear without losing that source. Keep
+the root at its installed path. Moving it leaves stale DWARF references and
+causes update/recovery to refuse; use the retained exported sidecar, source and
+report to install into a fresh root instead. Generations are not pruned.
+
+## Update, removal and recovery
+
+For a new analyst export of the same original, select the new sidecar/source/
+report and change the request action to `update`. A different export will not
+silently replace an installed one through `install`. An unchanged export is an
+idempotent no-op. A build-ID match with different original executable bytes is
+refused; equal IDs alone do not establish file identity.
+
+Removal and recovery use the build ID printed by installation:
+
+```json
+{
+    "schema": "forge-build-id-request-v1",
+    "action": "remove",
+    "root": "/home/me/debug-symbols",
+    "buildId": "<existing-lowercase-build-id>"
+}
+```
+
+Removal unregisters only the verified managed sidecar and retains old source
+generations. To reconcile an interrupted operation, use action `recover` with
+the same root and ID. It commits an observed completed publication or aborts an
+unpublished preparation. It never guesses ownership or automatically publishes
+a cancelled preparation. Keep all state and diagnostics if it refuses.
+
+`--cancel-file=/absolute/empty-file` observes a fresh empty file owned by the
+caller. Changing or removing it requests cancellation. `--cancel-on-stdin`
+requests cancellation on any input byte or EOF; keep that stream open while
+the operation runs. Cancellation is cooperative. Once publication begins, the
+transaction finishes synchronization and readback before returning. Exit 130
+means cancellation was observed; exit 1 means failure. State records remain
+authoritative if a process exits or result output is lost.
+
+## Windows launcher status
+
+`support/ghidra-dwarf-forge-build-id.ps1` accepts `-RequestFile`,
+`-RequestSha256`, `-GhidraDirectory`, optional `-ExtensionDirectory`,
+`-JavaExecutable`, `-CancellationFile` and `-Preview`. It transports request
+paths as UTF-8 base64 and never invokes a shell or requests elevation.
+The Windows host requires the existing local NTFS/raw-security metadata
+contract. `-EnableSecurityPrivilege` explicitly enables an already assigned
+token privilege for that host and restores it afterward; it does not obtain
+an administrator token. Installer-specific Windows acceptance is still required.

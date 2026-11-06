@@ -8,6 +8,8 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.ByteArrayInputStream;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -15,7 +17,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 
-/** Bounded, duplicate-rejecting internal installation records; recorded paths are always relative. */
+/** Bounded, duplicate-rejecting installation records and explicit command requests. */
 final class BuildIdRecords {
     private static final ReportJsonReader.Limits LIMITS =
         new ReportJsonReader.Limits(1024 * 1024, 16384, 8, 20000, 1);
@@ -23,15 +25,23 @@ final class BuildIdRecords {
     private BuildIdRecords() { }
 
     static JsonObject read(Path path, BooleanSupplier cancelled) throws IOException {
-        try (var json = new JsonReader(new ReportJsonReader(Files.newInputStream(path,
-                StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS), cancelled, LIMITS))) {
+        return read(Files.newInputStream(path, StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS), cancelled);
+    }
+
+    static JsonObject read(byte[] bytes, BooleanSupplier cancelled) throws IOException {
+        return read(new ByteArrayInputStream(bytes), cancelled);
+    }
+
+    private static JsonObject read(InputStream input, BooleanSupplier cancelled) throws IOException {
+        try (var stream = input;
+                var json = new JsonReader(new ReportJsonReader(stream, cancelled, LIMITS))) {
             json.setLenient(false);
             JsonElement value = readValue(json, new int[] { 0 });
             require(value.isJsonObject() && json.peek() == JsonToken.END_DOCUMENT, "invalid build-ID record document");
             return value.getAsJsonObject();
         }
         catch (IllegalArgumentException | IllegalStateException invalid) {
-            throw new IOException("invalid build-ID record: " + path, invalid);
+            throw new IOException("invalid build-ID record", invalid);
         }
     }
 

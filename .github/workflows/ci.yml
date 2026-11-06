@@ -787,7 +787,7 @@ jobs:
           packages=(gdb-multiarch llvm dwarfdump)
           case "$TARGET" in
             x86_64)
-              packages+=(gcc g++ gcc-multilib libc6-dev-i386 binutils gdb libc6-i386 qemu-user-static xvfb openbox x11-utils libxtst6 libxi6 libxrender1)
+              packages+=(gcc g++ gcc-multilib libc6-dev-i386 binutils gdb libc6-i386 qemu-user-static xvfb openbox x11-utils libxtst6 libxi6 libxrender1 acl)
               ;;
             aarch64)
               packages+=(gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
@@ -2534,6 +2534,8 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
         run: |
+          set -euo pipefail
+          mkdir -p build/test-results/build-id
           if [[ "$TARGET" == x86_64 || "$TARGET" == aarch64 ]]; then
               export FORGE_LLDB=lldb-18
               # Offline DWARF lookup does not require the running kernel's perf
@@ -2547,8 +2549,24 @@ jobs:
               GHIDRA_DEBUG_COMPRESSION="$compression" src/test/integration/floating-registers-export.sh \
                 "$GHIDRA_INSTALL_DIR" \
                 "$PWD/native-integration/libdwarf.so.2.3.2" \
-                "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
+                "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET" \
+                | tee "build/test-results/build-id/floating-$compression.log"
           done
+          none_run=$(sed -n 's/^floating-register-results=//p' build/test-results/build-id/floating-none.log)
+          zlib_run=$(sed -n 's/^floating-register-results=//p' build/test-results/build-id/floating-zlib.log)
+          python3 src/test/integration/build-id-matrix.py "$none_run" "$zlib_run" \
+              "$PWD/build/test-results/build-id/installation" --target "$TARGET" \
+              --ghidra "$GHIDRA_INSTALL_DIR" --jar "$FORGE_SOURCE_RELOCATION_JAR" \
+              --test-classes "$FORGE_DERIVED_TEST_CLASSES"
+          if [[ "$TARGET" == x86_64 ]]; then
+              for role in exec pie; do
+                  python3 src/test/integration/build-id-curated-refresh.py \
+                      --ghidra "$GHIDRA_INSTALL_DIR" --fixture-dir "$PWD/build/fixtures" --role "$role" \
+                      --tools-configuration "$PWD/build/test-results/build-id/installation/none-exec.json" \
+                      --output "$PWD/build/test-results/build-id/curated-$role" \
+                      --scratch "$RUNNER_TEMP/build-id-curated-$role" --java "$(command -v java)"
+              done
+          fi
 
       - name: ARM register pair prefix at an ordinary terminal return
         if: matrix.target == 'arm32'

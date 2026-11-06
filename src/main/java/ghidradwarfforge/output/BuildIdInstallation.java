@@ -134,18 +134,12 @@ public final class BuildIdInstallation {
             JsonObject manifest = session.sealGeneration(generation, originalSha, key, relocation.fileName());
             var manifestFile = AttachmentFileStore.observe(generation.resolve("generation.json"), host, cancelled);
             hook.at(Boundary.GENERATION_SEALED);
-            var stage = AttachmentFileStore.backup(binding.files().get("sidecar"), transaction.resolve("publish.debug"), host, cancelled);
-            if (current != null) {
-                var existing = snapshot(object(current, "registration"), session.registration);
-                AttachmentFileStore.unchanged(existing, host, cancelled);
-                // An explicit refresh retains the installed file's access metadata.
-                try (FileChannel channel = FileChannel.open(stage.path(), StandardOpenOption.WRITE, LinkOption.NOFOLLOW_LINKS)) {
-                    host.preserveMetadata(existing.path(), existing.fingerprint(), stage.path());
-                    channel.force(true);
-                }
-                stage = AttachmentFileStore.observe(stage.path(), host, cancelled);
-                require(stage.digest().equals(binding.files().get("sidecar").digest()), "publication stage bytes changed");
-            }
+            // Select access metadata before sealing the new copy. Reopening a
+            // completed read-only copy for writing would make explicit refresh fail.
+            var metadataSource = current == null ? binding.files().get("sidecar") :
+                snapshot(object(current, "registration"), session.registration);
+            var stage = AttachmentFileStore.copyWithMetadata(binding.files().get("sidecar"), metadataSource,
+                transaction.resolve("publish.debug"), host, cancelled);
             JsonObject next = new JsonObject();
             next.addProperty("generation", operation);
             next.add("manifest", snapshot(manifestFile));
@@ -596,7 +590,7 @@ public final class BuildIdInstallation {
         snapshot(object(installation, "registration"), Path.of("installed.debug"));
     }
 
-    private static void validateId(String id) throws IOException {
+    static void validateId(String id) throws IOException {
         require(id != null && id.matches("[0-9a-f]{2,248}") && (id.length() & 1) == 0,
             "build ID must be canonical lowercase hex and fit the supported 1..124-byte filename profile");
     }
