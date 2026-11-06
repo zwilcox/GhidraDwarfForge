@@ -50,7 +50,9 @@ int main(void)
 EOF
 cc -O0 -g -gdwarf-5 -fno-pie -no-pie "$work/fixture.c" -o "$work/fixture.elf"
 mkdir "$work/classes"
-javac -d "$work/classes" \
+# Resolve the writer's pure-Java dependency closure from this checkout.
+# Keep the isolated compiler/runtime classpath free of Ghidra and native libraries.
+javac -sourcepath "$repository_dir/src/main/java" -d "$work/classes" \
     "$repository_dir/src/main/java/ghidradwarfforge/elf/ElfImage.java" \
     "$repository_dir/src/main/java/ghidradwarfforge/elf/ElfLocalSymbol.java" \
     "$repository_dir/src/main/java/ghidradwarfforge/elf/ElfLocalMappingSymbol.java" \

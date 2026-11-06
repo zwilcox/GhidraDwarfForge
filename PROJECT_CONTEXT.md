@@ -32,6 +32,14 @@ shipping policy. The new suite passes 82 checks; strict native export regression
 pass on both targets. See `docs/UNWIND-STACK-SEPARATION.md`. Conditional projection,
 provenance and compiler/GDB acceptance remain next; normal CLI/GUI synthesis is off.
 
+**CONFIRMED local PR176 CI correction:** hosted run `42217484551` failed the
+standalone large-ELF test because its hand-maintained `javac` inputs omitted the
+new frame writer dependencies. Adding the current production source path fixes
+that compilation without Ghidra/native dependencies. The unchanged >2 GiB test
+passes with a 64 MiB Java heap, GNU/LLVM/pinned strict validators and GDB behavior.
+See `docs/CFI-INTEGRATION.md`. The updated hosted gate is still required; no
+production source changed and full #112/#110/#109 remain incomplete.
+
 **CONFIRMED locally — combined unwind integration:** current main `8041fdab`
 and the preserved unwind commit stack now share one tested branch. Both
 annotation-aware normal exports and explicit frame exports retain their APIs.
