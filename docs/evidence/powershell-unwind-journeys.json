@@ -1,0 +1,123 @@
+{
+    "status": "CONFIRMED Linux PowerShell adapter with real export; native Windows/hosted validation pending",
+    "utc": "2026-11-06T14:32:28.267384+00:00",
+    "parent": "b47b8529a080483a2a54c1e4fb9c43b785f0bfef",
+    "sourceSha256": {
+        ".github/workflows/ci.yml": "4f2bfc91f5bc3a49e0b51ebe6237fb6ae0c69e29e0d30dd2ecdff04fdb8bf7d7",
+        "PROJECT_CONTEXT.md": "c218b08290dddb31c6750c25772d5e29f9057245dbb0672f10329e82a252a2c9",
+        "TODO.md": "0e8c334c4400f1987cf1926ba7260296f14fe40361d01e238068654517cc18b5",
+        "docs/PRODUCTION-UNWIND.md": "109841e4ea1f050b31e5375077d55edeaf02a31a54121715850886c9959e9baa",
+        "src/test/integration/powershell-unwind-export.py": "4283c9688b9a5fb33e766e7458150517bb8ccad027c31b243c715e8412007dcd",
+        "src/test/integration/powershell-unwind-gdb.py": "0e348d82e650f3510aaa184732eb932f3332d03100b44fb57ba86a4547400736"
+    },
+    "productionPackage": {
+        "sha256": "8323cf31467f7e52b9831bace06d936403c71bf62987af7d765b91c842526a88",
+        "jarSha256": "3346f363e47a97807a356cc38e6bd8d3f8c89ac3e67a57b5cb3c832cf61d7e6e",
+        "sourceCount": 210,
+        "classCount": 738,
+        "entryPointSha256": {
+            "ghidra_scripts/GhidraDwarfForge.java": "f549a6f39a1f78ad8e9c523276f0d2518a6023521e02c8f7ef1dccccff4e565a",
+            "ghidra_scripts/ExportGhidraDwarfForgeWithUnwind.java": "3ea1e27401d52e8a28893a30bd82e7e6b96cd756c2e1d7116629b5bbf02f7070",
+            "support/ghidra-dwarf-forge-headless": "b532f71f64355f794668e0b0fca4cb9fab33bb0d247fd5ebda43f33c7d96a6c5",
+            "support/ghidra-dwarf-forge-headless.ps1": "d61ec582ea4929687fab323cf92b5b6affaebeaa20c1ef0bc0b232583faf993e"
+        },
+        "scope": "All current production sources/classes and entry points match; subsequent test/workflow/docs changes are separate"
+    },
+    "adapter": {
+        "source": "/dev/shm/forge-cfi-recovery-worktree/build/production-unwind-gui-installation/ghidra",
+        "destination": "/dev/shm/forge-cfi-recovery-worktree/build/powershell-unwind-installation/ghidra",
+        "originalLauncherSha256": "ba5412ceb5568dff4051de7b506cbfdbbd8f525a30558de024269d026132f44a",
+        "scope": "Linux-only executable adapter for PowerShell to real Linux analyzeHeadless. Does not establish native Windows behavior.",
+        "adapterSha256": "cf4cf0221cd9be9630fde935c1f69430143d9c040582694c15d03c0e1a814d42"
+    },
+    "powershellRuntime": {
+        "path": "/home/ziggy/GhidraDwarfForge-worktrees/debuglink-transaction/build/test-tools/pwsh-7.6.8/runtime/pwsh",
+        "sha256": "873de21f04b6a0269c220f9c8396ff5cd639e8deb058a32cc26df54b69bbff8d",
+        "version": "PowerShell 7.6.8"
+    },
+    "producer": {
+        "sha256": "a3e1cff5b084950b17a9354c896bc1293b0761c20f33e115f504c2c48bfc6ddd",
+        "status": "PASS_POWERSHELL_UNWIND_EXPORT",
+        "host": "Linux",
+        "packagedNatives": true,
+        "exports": 5,
+        "invalidControls": 1,
+        "artifacts": [
+            {
+                "mode": "off",
+                "sidecarSha256": "8cca063f588d96f18663ab0c7176a458db5f91a75c07074eae2ef185280f98fa"
+            },
+            {
+                "mode": "strict",
+                "sidecarSha256": "984558d0f5f4719acc243a2619ea8caef04b0945469ae38c22bea41ec71229a1"
+            },
+            {
+                "mode": "conditioned",
+                "sidecarSha256": "a2db71d6f8684a55666797d91cd111072d87137e3520c3ef54ab5efb9292a39e"
+            },
+            {
+                "mode": "compressed",
+                "sidecarSha256": "296f4b8cfd40da2d660a5ea1be3a248acf5152ba3007393cabddfb314dffabe9"
+            }
+        ],
+        "generationSha256": {
+            "compressed.dbg": "296f4b8cfd40da2d660a5ea1be3a248acf5152ba3007393cabddfb314dffabe9",
+            "compressed.dbg.c": "1adf18c43778e2ef0bbcd0d3428f6e9ef0203d82ef624d6e30ca3307b57c500e",
+            "compressed.dbg.unwind.json": "67c381bca2c221e76e0faea2e2a0ca4b103497f92532a9abec8f30c9bb8f374d",
+            "compressed.dbg.gdb.py": "9c34e23bcee79bffdea0f76c94175f4d23ac5d4640e3fa700f5c12fec1e0cf93"
+        },
+        "originalSha256": "efe86a35c5aa518d184cfe3fd75fb7cc13864eabbf6cdf968ac7766fffad1029",
+        "referenceSha256": "0abcca41e6fb61e4ab6f870e68f1372fd42aefdf9c5084302cbe5e40269d1b17",
+        "protectedSha256": {
+            "/dev/shm/forge-cfi-recovery-worktree/build/powershell-unwind-installation/ghidra/Ghidra/Extensions/GhidraDwarfForge/support/ghidra-dwarf-forge-headless.ps1": "d61ec582ea4929687fab323cf92b5b6affaebeaa20c1ef0bc0b232583faf993e",
+            "/dev/shm/forge-cfi-recovery-worktree/build/powershell-unwind-installation/ghidra/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "3346f363e47a97807a356cc38e6bd8d3f8c89ac3e67a57b5cb3c832cf61d7e6e",
+            "/dev/shm/forge-cfi-recovery-worktree/build/relocated-pointer-exact-exec/x86_64-exec/compiler/without-cfi": "efe86a35c5aa518d184cfe3fd75fb7cc13864eabbf6cdf968ac7766fffad1029",
+            "/dev/shm/forge-cfi-recovery-worktree/build/relocated-pointer-exact-exec/x86_64-exec/compiler/reference": "0abcca41e6fb61e4ab6f870e68f1372fd42aefdf9c5084302cbe5e40269d1b17"
+        },
+        "gdb": "NOT_RUN_PRODUCER_HOST",
+        "pinnedStrict": "DEFERRED_TO_LINUX_CONSUMER"
+    },
+    "consumer": {
+        "sha256": "1abc16708bb09277d739276f603de1f4b8cce5ae0c9fb3f4d065f56cf15e958d",
+        "status": "PASS_POWERSHELL_UNWIND_GDB",
+        "gdbSessions": 6,
+        "boundarySnapshots": 90,
+        "artifacts": [
+            {
+                "mode": "off",
+                "sidecarSha256": "8cca063f588d96f18663ab0c7176a458db5f91a75c07074eae2ef185280f98fa"
+            },
+            {
+                "mode": "strict",
+                "sidecarSha256": "984558d0f5f4719acc243a2619ea8caef04b0945469ae38c22bea41ec71229a1"
+            },
+            {
+                "mode": "conditioned",
+                "sidecarSha256": "a2db71d6f8684a55666797d91cd111072d87137e3520c3ef54ab5efb9292a39e"
+            },
+            {
+                "mode": "compressed",
+                "sidecarSha256": "296f4b8cfd40da2d660a5ea1be3a248acf5152ba3007393cabddfb314dffabe9"
+            }
+        ],
+        "loaderScope": "Companion bytes preserved; direct symbol loading after host transfer. No companion relocation claim."
+    },
+    "parserCheck": [
+        "parse=PASS src/test/integration/windows-gui-script-manager.ps1",
+        "parse=PASS support/ghidra-dwarf-forge-headless.ps1"
+    ],
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/powershell-unwind-journeys.tar.gz",
+        "sha256": "f163ec8d98bc71bcd9f0f24a009b64439d4e3269936f721662097e58214c9ef2",
+        "bytes": 617094,
+        "verification": "Every archived regular file read and compared by SHA-256"
+    },
+    "remaining": [
+        "Native Windows GUI and PowerShell execution",
+        "Windows-produced unchanged artifacts through Linux strict/GDB consumers",
+        "Combined hosted gate and protected integration",
+        "Full issue112 acceptance/ADR audit",
+        "Issue110 LLDB",
+        "Issue109 build-ID installation"
+    ]
+}

@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally — PowerShell unwind forwarding for #112:** the installed
+PowerShell wrapper passes five real Linux exports through an explicit isolated
+launcher adapter, preserves its four-file generation on an invalid range, and
+passes four GNU/LLVM/pinned strict checks plus six compiler-reference GDB
+sessions. This does not establish native Windows process/DLL behavior. CI now
+runs the same producer on Windows and requires Windows provenance in its Linux
+GDB consumer. Cross-host companion relocation is not claimed. See
+`docs/PRODUCTION-UNWIND.md` and `docs/evidence/powershell-unwind-journeys.json`.
+Full #112 hosted/ADR acceptance remains, followed by #110 and #109.
+
 **CONFIRMED locally — production unwind journeys for #112:** real installed
 GUI choices pass on x86-64 and AArch64, including three cancellation points per
 target. The actual GDB companion loads all six target/image-role combinations

@@ -116,9 +116,28 @@ image base from the saved program's loader metadata.
 
 CI now invokes these Linux journeys and adds a native Windows chooser run whose
 artifacts feed Linux strict validation and GDB. The Windows additions are
-**PRESENT, UNVERIFIED** until their hosted execution passes. Native PowerShell
-normal-wrapper synthesis and complete hosted/ADR acceptance remain required.
+**PRESENT, UNVERIFIED** until their hosted execution passes. Complete native
+Windows and hosted/ADR acceptance remain required.
 These local checks do not complete #112.
 See [the checkpoint receipt](evidence/production-unwind-entry.json).
 The additional journeys are recorded in
 [their receipt](evidence/production-unwind-journeys.json).
+
+**CONFIRMED locally — PowerShell forwarding:** a portable PowerShell runtime
+invokes the installed wrapper against real Linux headless Ghidra through an
+explicit Linux launcher adapter in an isolated installation. Five exports cover
+off, strict, conditioned and compressed modes, including a deterministic repeat
+of the four-file sidecar/source/evidence/loader generation. Invalid ranges fail
+with code 10 and preserve that generation. Packaged natives are selected and the
+input remains unchanged. Independent Linux GNU/LLVM/pinned strict checks pass on
+all four sidecars; six GDB sessions compare boundary and return traces with the
+compiler reference. This validates PowerShell parsing/forwarding and real export,
+not Windows process launching or native DLL behavior.
+
+CI runs the same producer through native Windows PowerShell and its actual
+`analyzeHeadless.bat`. The Linux consumer requires a Windows producer receipt,
+verifies transported hashes and exercises unchanged generated CFI. It loads
+symbols directly after transport: generated companions contain producer-host
+paths, so this check does not claim companion relocation between hosts. Existing
+Linux companion tests remain separate. See
+[the PowerShell checkpoint](evidence/powershell-unwind-journeys.json).
