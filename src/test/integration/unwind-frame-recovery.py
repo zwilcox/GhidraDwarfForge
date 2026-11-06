@@ -71,15 +71,16 @@ def main():
             # contains no records and is retained unchanged in the input.
             assert not any(s['name'] in ('.debug_frame', '.eh_frame') and s['size'] for s in info['sections'])
             run(['readelf', '--debug-dump=frames', original], case / 'original-frames.log')
-            symbols = {}
+            imported_symbols = {}
             for line in run(['readelf', '-Ws', reference], case / 'symbols.log').splitlines():
                 fields = line.split()
-                if len(fields) == 8 and fields[7] in ('cf_checkpoint', 'cf_recurse'):
-                    symbols[fields[7]] = (int(fields[1], 16), int(fields[2]))
-            assert len(symbols) == 2
+                if len(fields) == 8 and fields[7] in ('cf_checkpoint', 'cf_recurse', '_start'):
+                    imported_symbols[fields[7]] = (int(fields[1], 16), int(fields[2]))
+            assert len(imported_symbols) == 3
+            symbols = {name: value for name, value in imported_symbols.items() if name != '_start'}
             records = []
             data = original.read_bytes()
-            for name, (address, size) in sorted(symbols.items()):
+            for name, (address, size) in sorted(imported_symbols.items()):
                 section, = [s for s in info['sections'] if s['type'] == 1 and s['flags'] & 4 and
                             s['address'] <= address and address + size <= s['address'] + s['size']]
                 offset = section['offset'] + address - section['address']

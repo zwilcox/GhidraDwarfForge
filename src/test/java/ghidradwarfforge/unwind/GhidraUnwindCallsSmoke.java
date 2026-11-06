@@ -44,6 +44,7 @@ public final class GhidraUnwindCallsSmoke {
             for (String shape : List.of("leaf", "direct", "self", "mutual", "gap", "unreachable", "patched", "clobber", "unknown-write", "bad-stack", "missing", "indirect", "custom")) {
                 run(arm, shape);
             }
+            mixed(arm);
         }
         Files.writeString(output.resolve("native.txt"), evidence.toString());
         System.out.println("ghidra-unwind-calls-smoke=PASS checks=" + checks);
@@ -163,6 +164,9 @@ public final class GhidraUnwindCallsSmoke {
                     require(proof.originalBytes().size() == proof.captures().values().stream()
                         .mapToInt(capture -> capture.observations().size()).sum(), "original byte agreement omitted an instruction");
                     var planned = GhidraUnwindFrames.plan(proof, 0, TaskMonitor.DUMMY);
+                    var collected = GhidraUnwindRecovery.recover(program, image, 0, TaskMonitor.DUMMY);
+                    require(collected.refusals().isEmpty() && collected.plan().orElseThrow().equals(planned.plan()) &&
+                        collected.originalBytes().equals(proof.originalBytes()), "program collection changed a proved group");
                     require(planned.plan().frames().size() == (shape.equals("gap") || shape.equals("unreachable") ? 2 : source.size()),
                         "frame coverage bridged a body gap or omitted a callee");
                     require(planned.observations().stream().filter(row -> !row.projection().covered()).count() ==
@@ -197,6 +201,9 @@ public final class GhidraUnwindCallsSmoke {
                         var fullProof = GhidraUnwindCalls.verify(program, functions.get(0x1000), full, 0, TaskMonitor.DUMMY);
                         require(GhidraUnwindFrames.plan(fullProof, 0, TaskMonitor.DUMMY).plan().frames().isEmpty(),
                             "original full coverage did not suppress synthesis");
+                        var covered = GhidraUnwindRecovery.recover(program, full, 0, TaskMonitor.DUMMY);
+                        require(covered.plan().orElseThrow().frames().isEmpty() && covered.refusals().isEmpty() &&
+                            covered.verifiedFunctions().size() == source.size(), "collection lost original-frame precedence");
                         ElfImage unrelated = framed(image, tag + "-original-unrelated", new long[][] {{0x2000, 32}});
                         var unrelatedProof = GhidraUnwindCalls.verify(program, functions.get(0x1000), unrelated, 0, TaskMonitor.DUMMY);
                         require(GhidraUnwindFrames.plan(unrelatedProof, 0, TaskMonitor.DUMMY).equals(planned),
@@ -285,6 +292,9 @@ public final class GhidraUnwindCallsSmoke {
                     };
                     require(rejected.getMessage().contains(expected), "native counterexample failed for an unrelated reason: " + tag);
                     evidence.append(tag).append(" rejected=").append(rejected.getMessage()).append('\n');
+                    var omitted = GhidraUnwindRecovery.recover(program, image, 0, TaskMonitor.DUMMY);
+                    require(omitted.plan().isEmpty() && omitted.verifiedFunctions().isEmpty() &&
+                        omitted.refusals().size() == source.size(), "refused program produced a partial plan or lost diagnostics");
                 }
                 for (var item : source.entrySet()) {
                     byte[] expected = HexFormat.of().parseHex(item.getValue()); byte[] actual = new byte[expected.length];
@@ -293,6 +303,85 @@ public final class GhidraUnwindCallsSmoke {
                         Arrays.equals(actual, expected), "native verification changed program bytes");
                 }
                 require(Arrays.equals(originalImage, image.bytes()), "verification changed the original ELF");
+            }
+            finally { program.endTransaction(transaction, false); }
+        }
+        finally { program.release(owner); }
+    }
+
+    /** Earlier invalid roots and callers must not suppress unrelated valid leaves. */
+    private static void mixed(boolean arm) throws Exception {
+        String tag = (arm ? "aarch64" : "x86") + "-mixed-program";
+        String leaf = arm ? "c0035fd6" : "c3";
+        var source = new LinkedHashMap<Integer, String>();
+        source.put(0x1000, (arm ? "200000f9" : "488907") + leaf);
+        source.put(0x1100, leaf);
+        source.put(0x1200, caller(arm, 0x1200, 0x1100, false));
+        source.put(0x1300, caller(arm, 0x1300, 0x1000, false));
+        var language = DefaultLanguageService.getLanguageService().getLanguage(
+            new LanguageID(arm ? "AARCH64:LE:64:v8A" : "x86:LE:64:default"));
+        Object owner = new Object();
+        var program = new ProgramDB(tag, language, language.getCompilerSpecByID(new CompilerSpecID(arm ? "default" : "gcc")), owner);
+        try {
+            int transaction = program.startTransaction("mixed recovery fixture");
+            try {
+                ElfImage image = image(arm, tag, source);
+                byte[] original = image.bytes();
+                var empty = GhidraUnwindRecovery.recover(program, image, 0, TaskMonitor.DUMMY);
+                require(empty.plan().isEmpty() && empty.refusals().isEmpty(), "empty program inferred a profile or frame");
+                // Reverse creation order must not determine collection order.
+                for (var item : new java.util.ArrayList<>(source.entrySet()).reversed()) {
+                    byte[] bytes = HexFormat.of().parseHex(item.getValue());
+                    var entry = language.getDefaultSpace().getAddress(item.getKey());
+                    var body = new AddressSet(entry, entry.add(bytes.length - 1));
+                    program.getMemory().createInitializedBlock("text" + item.getKey(), entry, bytes.length,
+                        (byte) 0, TaskMonitor.DUMMY, false).setExecute(true);
+                    program.getMemory().setBytes(entry, bytes);
+                    require(new DisassembleCommand(entry, body, true).applyTo(program, TaskMonitor.DUMMY), "decode mixed fixture");
+                    program.getFunctionManager().createFunction("mixed_" + item.getKey(), entry, body, SourceType.USER_DEFINED);
+                }
+                var recovered = GhidraUnwindRecovery.recover(program, image, 0, TaskMonitor.DUMMY);
+                require(recovered.verifiedFunctions().stream().map(a -> a.getOffset()).toList().equals(List.of(0x1100L, 0x1200L)),
+                    "invalid root suppressed valid independent functions");
+                require(recovered.refusals().keySet().stream().map(a -> a.getOffset()).toList().equals(List.of(0x1000L, 0x1300L)) &&
+                    recovered.refusals().values().stream().allMatch(s -> s.contains("store is not proved below entry stack")),
+                    "invalid caller/callee refusal was lost or changed");
+                require(recovered.plan().orElseThrow().frames().stream().map(Frame::address).toList().equals(List.of(0x1100L, 0x1200L)),
+                    "shared callee frame was duplicated or output order changed");
+                int[] polls = {0};
+                var counting = new TaskMonitorAdapter(true) {
+                    @Override public void checkCancelled() { polls[0]++; }
+                };
+                require(GhidraUnwindRecovery.recover(program, image, 0, counting).equals(recovered), "counting changed collected evidence");
+                for (int limit = 1; limit <= polls[0]; limit++) {
+                    int stop = limit; int[] seen = {0};
+                    var cancelled = new TaskMonitorAdapter(true) {
+                        @Override public void checkCancelled() throws CancelledException {
+                            if (++seen[0] == stop) throw new CancelledException();
+                        }
+                    };
+                    try {
+                        GhidraUnwindRecovery.recover(program, image, 0, cancelled);
+                        throw new AssertionError("collection returned a partial result after cancellation");
+                    }
+                    catch (CancelledException expected) { checks++; }
+                }
+                require(GhidraUnwindRecovery.recover(program, image, 0, TaskMonitor.DUMMY).equals(recovered), "cancellation poisoned retry");
+                Path originalPath = output.resolve(tag + ".elf"), saved = output.resolve(tag + ".saved");
+                Files.move(originalPath, saved);
+                try {
+                    GhidraUnwindRecovery.recover(program, image, 0, TaskMonitor.DUMMY);
+                    throw new AssertionError("missing original ELF became a per-function omission");
+                }
+                catch (java.io.IOException expected) { checks++; }
+                finally { Files.move(saved, originalPath); }
+                require(GhidraUnwindRecovery.recover(program, image, 0, TaskMonitor.DUMMY).equals(recovered), "I/O failure poisoned retry");
+                long delta = 0x400000;
+                program.setImageBase(program.getImageBase().add(delta), true);
+                var rebased = GhidraUnwindRecovery.recover(program, image, delta, TaskMonitor.DUMMY);
+                require(rebased.plan().equals(recovered.plan()), "program rebase changed original-image frame rules");
+                require(Arrays.equals(original, image.bytes()), "collection changed original ELF bytes");
+                evidence.append(tag).append(" collection-polls=").append(polls[0]).append(" result=").append(recovered).append('\n');
             }
             finally { program.endTransaction(transaction, false); }
         }

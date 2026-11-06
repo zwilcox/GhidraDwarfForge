@@ -1,5 +1,14 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 program-wide recovery collection:** valid call groups
+now combine into one deterministic plan with per-root refusal diagnostics and
+original-byte evidence. Mixed valid/invalid programs, shared-callee deduplication,
+original precedence, I/O failures and 5,965 injected collection cancellation
+checkpoints pass within a 10,491-check native suite. Twelve runtime cases pass
+using the collected plan, including explicitly refused startup functions. See
+`docs/UNWIND-PROGRAM-RECOVERY.md`. Production-exporter wiring, the unchanged
+compiler-C case and hosted acceptance remain open. PR166 retains first priority.
+
 **CONFIRMED locally — #112 shared-library runtime frames:** both controlled
 fixture families now run after dynamic loading on native x86-64 and QEMU AArch64.
 Twelve executable/PIE/shared cases pass across twenty-four sidecars and sixty

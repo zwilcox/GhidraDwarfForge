@@ -99,7 +99,17 @@ public final class UnwindFrameRecoveryProbe {
                 if (!expectedFailure.isEmpty()) throw new AssertionError("unproved fixture unexpectedly qualified");
                 var planned = GhidraUnwindFrames.plan(evidence, rebase, TaskMonitor.DUMMY);
                 if (planned.observations().stream().anyMatch(row -> !row.projection().covered())) throw new AssertionError("fixture has omitted rows");
-                writePlan(Path.of(args[3]), planned.plan());
+                var recovered = GhidraUnwindRecovery.recover(program, image, rebase, TaskMonitor.DUMMY);
+                var expectedRefusals = functions.containsKey("_start") ?
+                    java.util.Set.of(functions.get("_start").getEntryPoint()) : java.util.Set.<ghidra.program.model.address.Address>of();
+                if (!recovered.refusals().keySet().equals(expectedRefusals) ||
+                        recovered.refusals().values().stream().anyMatch(reason ->
+                            !reason.equals("ELF process entry is not an ordinary called frame") && !reason.contains("opaque reachable effects")) ||
+                        !recovered.plan().orElseThrow().equals(planned.plan()) ||
+                        !recovered.originalBytes().equals(evidence.originalBytes())) {
+                    throw new AssertionError("program collection differs from the independently verified call group");
+                }
+                writePlan(Path.of(args[3]), recovered.plan().orElseThrow());
                 var observations = new StringBuilder();
                 evidence.captures().forEach((function, captured) -> observations.append(function).append(' ').append(captured).append('\n'));
                 planned.observations().forEach(row -> observations.append(row).append('\n'));
@@ -109,6 +119,7 @@ public final class UnwindFrameRecoveryProbe {
                     .append(' ').append(match.sha256()).append('\n'));
                 Files.writeString(Path.of(args[3] + ".original-bytes.txt"), matches.toString());
                 Files.writeString(Path.of(args[3] + ".evidence.txt"), observations.toString());
+                Files.writeString(Path.of(args[3] + ".program.txt"), recovered.toString() + "\n");
                 System.out.println("recovered-frame-plan=PASS frames=" + planned.plan().frames().size() + " instructions=" + planned.observations().size());
             }
             finally { program.endTransaction(transaction, false); }
