@@ -67,6 +67,17 @@ raw expression checks, strict validators and GDB values. ARM register bit pieces
 remain unchanged. The three focused Java smoke suites pass, including 1,032
 composite-flow checks. This is not an ARM32 LLDB support claim.
 
+The broader ARM aggregate oracle also checks natural compiler parameters that
+split between r3 and the entry stack. Its decoder required the new memory byte
+pieces, but a final exact-byte comparison still expected the former bit-piece
+encoding. The corrected comparison keeps r3's register bit piece and requires
+exact 4/1/8-byte memory tails for pair, packed and three-word aggregates. Ten
+fresh little-/big-endian exec/PIE/rebased cases, including little-endian shared
+objects, pass compiler/GDB/physical-carrier comparisons, deterministic reruns,
+strict validation and failure/cancellation controls. See the
+[regression receipt](evidence/arm-memory-piece-regression.json). Hosted acceptance
+remains pending; this is not an ARM LLDB claim.
+
 ## Reproduction and remaining scope
 
 ```bash
