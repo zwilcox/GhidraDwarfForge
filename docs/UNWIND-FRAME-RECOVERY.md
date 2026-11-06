@@ -3,7 +3,7 @@
 **CONFIRMED locally:** instruction-state projection and native recovered CFI
 pass structural validators and GDB comparisons for the bounded recursive
 assembler fixture on x86-64/AArch64 non-PIE and PIE. **PLANNED:** integration into
-the real exporter, wider memory alias proofs, original-byte agreement and
+the real exporter, wider memory alias proofs and
 original-CFI precedence, plus the full compiler/shared/failure matrix. This
 checkpoint does not enable production synthesis or complete #112.
 
@@ -109,8 +109,9 @@ that absolute/image-relative writes cannot alias caller stack storage. This
 required case remains open; the fixture is unchanged. The assembler experiment
 above is additional evidence, not a replacement acceptance target.
 
-Before production synthesis, complete the wider memory proof, original-byte
-agreement, trusted original coverage/precedence, exporter diagnostics and
+Original-byte agreement is now required and locally validated; see
+[its contract and evidence](UNWIND-CODE-AGREEMENT.md). Before production synthesis,
+complete the wider memory proof, trusted original coverage/precedence, exporter diagnostics and
 atomic publication/cancellation, and the compiler/shrink-wrapped/discontiguous/
 shared/rebased runtime matrix in [the full contract](SYNTHETIC-CFI-EVIDENCE.md).
 PR166 hosted/workload acceptance still has priority; #112/#110/#109 remain open.

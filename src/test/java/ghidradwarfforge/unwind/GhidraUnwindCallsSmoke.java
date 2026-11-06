@@ -38,7 +38,7 @@ public final class GhidraUnwindCallsSmoke {
             new HeadlessGhidraApplicationConfiguration());
         output = Path.of(args[1]); Files.createDirectories(output);
         for (boolean arm : List.of(false, true)) {
-            for (String shape : List.of("leaf", "direct", "self", "mutual", "gap", "unreachable", "clobber", "unknown-write", "bad-stack", "missing", "indirect", "custom")) {
+            for (String shape : List.of("leaf", "direct", "self", "mutual", "gap", "unreachable", "patched", "clobber", "unknown-write", "bad-stack", "missing", "indirect", "custom")) {
                 run(arm, shape);
             }
         }
@@ -61,11 +61,23 @@ public final class GhidraUnwindCallsSmoke {
         return "4154" + (recursive ? "4885ff74094883ef01" : "") +
             call(false, address + (recursive ? 11 : 2), target) + "415cc3";
     }
-    private static ElfImage image(boolean arm, String tag) throws Exception {
-        var bytes = ByteBuffer.allocate(64).order(ByteOrder.LITTLE_ENDIAN);
+    private static ElfImage image(boolean arm, String tag, Map<Integer, String> source) throws Exception {
+        int headerEnd = 64 + 56 * source.size();
+        var bytes = ByteBuffer.allocate(headerEnd + source.values().stream().mapToInt(hex -> hex.length() / 2).sum())
+            .order(ByteOrder.LITTLE_ENDIAN);
         bytes.put(new byte[] {0x7f, 'E', 'L', 'F', 2, 1, 1, 0, 0});
         bytes.putShort(16, (short) 2).putShort(18, (short) (arm ? 183 : 62)).putInt(20, 1);
         bytes.putLong(24, 0x9000).putShort(52, (short) 64);
+        bytes.putLong(32, 64).putShort(54, (short) 56).putShort(56, (short) source.size());
+        int offset = headerEnd, index = 0;
+        for (var item : source.entrySet()) {
+            byte[] code = HexFormat.of().parseHex(item.getValue());
+            int position = 64 + 56 * index++;
+            bytes.putInt(position, 1).putInt(position + 4, 5).putLong(position + 8, offset)
+                .putLong(position + 16, item.getKey()).putLong(position + 32, code.length)
+                .putLong(position + 40, code.length).putLong(position + 48, 1);
+            bytes.position(offset); bytes.put(code); offset += code.length;
+        }
         Path path = output.resolve(tag + ".elf"); Files.write(path, bytes.array());
         return ElfImage.read(path);
     }
@@ -75,6 +87,7 @@ public final class GhidraUnwindCallsSmoke {
         var source = new LinkedHashMap<Integer, String>();
         switch (shape) {
             case "leaf" -> source.put(0x1000, leaf);
+            case "patched" -> source.put(0x1000, arm ? "f37bbfa9f37bc1a8c0035fd6" : "4154415cc3");
             case "gap", "unreachable" -> source.put(0x1000, arm ? "020000141f2003d5c0035fd6" : "eb0190c3");
             case "self" -> source.put(0x1000, caller(arm, 0x1000, 0x1000, true));
             case "mutual" -> {
@@ -102,6 +115,7 @@ public final class GhidraUnwindCallsSmoke {
                 var functions = new LinkedHashMap<Integer, Function>();
                 for (var item : source.entrySet()) {
                     byte[] bytes = HexFormat.of().parseHex(item.getValue());
+                    if (shape.equals("patched")) bytes[arm ? 0 : 1]++;
                     var entry = language.getDefaultSpace().getAddress(item.getKey());
                     program.getMemory().createInitializedBlock("text" + item.getKey(), entry, bytes.length,
                         (byte) 0, TaskMonitor.DUMMY, false).setExecute(true);
@@ -117,12 +131,15 @@ public final class GhidraUnwindCallsSmoke {
                     functions.put(item.getKey(), program.getFunctionManager().createFunction("callee_" + item.getKey(), entry, body, SourceType.USER_DEFINED));
                 }
                 if (shape.equals("custom")) functions.get(0x1100).setCustomVariableStorage(true);
-                ElfImage image = image(arm, tag);
+                ElfImage image = image(arm, tag, source);
+                byte[] originalImage = image.bytes();
                 boolean positive = List.of("leaf", "direct", "self", "mutual", "gap", "unreachable").contains(shape);
                 try {
                     var proof = GhidraUnwindCalls.verify(program, functions.get(0x1000), image, 0, TaskMonitor.DUMMY);
                     require(positive, "unsupported native callee accepted: " + tag);
                     require(proof.verified().bodies().size() == source.size(), "native closure omitted a callee");
+                    require(proof.originalBytes().size() == proof.captures().values().stream()
+                        .mapToInt(capture -> capture.observations().size()).sum(), "original byte agreement omitted an instruction");
                     var planned = GhidraUnwindFrames.plan(proof, 0, TaskMonitor.DUMMY);
                     require(planned.plan().frames().size() == (shape.equals("gap") || shape.equals("unreachable") ? 2 : source.size()),
                         "frame coverage bridged a body gap or omitted a callee");
@@ -192,6 +209,7 @@ public final class GhidraUnwindCallsSmoke {
                         case "unknown-write" -> "store is not proved below entry stack";
                         case "bad-stack" -> "return target or stack restoration is unproved";
                         case "custom" -> "function convention is not the audited ordinary ABI";
+                        case "patched" -> "decoded instruction differs from original ELF";
                         default -> "opaque reachable effects";
                     };
                     require(rejected.getMessage().contains(expected), "native counterexample failed for an unrelated reason: " + tag);
@@ -199,9 +217,11 @@ public final class GhidraUnwindCallsSmoke {
                 }
                 for (var item : source.entrySet()) {
                     byte[] expected = HexFormat.of().parseHex(item.getValue()); byte[] actual = new byte[expected.length];
+                    if (shape.equals("patched")) expected[arm ? 0 : 1]++;
                     require(program.getMemory().getBytes(language.getDefaultSpace().getAddress(item.getKey()), actual) == actual.length &&
                         Arrays.equals(actual, expected), "native verification changed program bytes");
                 }
+                require(Arrays.equals(originalImage, image.bytes()), "verification changed the original ELF");
             }
             finally { program.endTransaction(transaction, false); }
         }

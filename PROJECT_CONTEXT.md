@@ -1,5 +1,16 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 original instruction agreement:** the native call
+verifier now checks every captured instruction against its original executable
+load mapping and retains file-offset/hash evidence. Patched instruction, sparse
+file, sectionless, overlap, cancellation and rebase controls pass (140 ELF and
+4148 native checks); all four recovered-CFI runtime cases still pass validators
+and GDB, with independently checked complete byte coverage. See
+`docs/UNWIND-CODE-AGREEMENT.md`. Production publication identity, global-write
+alias proof, original unwind precedence and the full exporter matrix remain
+required. PR166 hosted/workload integration retains priority; #112/#110/#109
+remain open.
+
 **CONFIRMED locally — #112 native recovered CFI runtime checkpoint:** recovered
 instruction states now produce complete frame rows with explicit unknown/gap
 omissions. An AArch64 GDB caller-PC bias exposed a pre-call link-register rule
@@ -9,7 +20,7 @@ validation and match independent GDB traces at 40/36 instruction stops, includin
 actual DWARF unwinder selection across five ordinary frames. Rebased independent
 JVM plans and repeated sidecars are deterministic. See
 `docs/UNWIND-FRAME-RECOVERY.md`. The test-only importer/CU is not production-exporter
-acceptance: global-write alias proof, original-byte/coverage checks and the full
+acceptance: global-write alias proof, original unwind coverage checks and the full
 compiler/shared/failure matrix remain required. PR166 hosted/workload priority
 and the full #112/#110/#109 scope are unchanged.
 

@@ -626,7 +626,7 @@ jobs:
               dwarfAddressRangesSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
               packagedNativeLibrariesSmoke existingDebugSidecarSmoke callFrameEncoderSmoke unwindFlowSmoke ghidraUnwindInstructionsSmoke unwindAbiProfileSmoke \
-              unwindCallsSmoke ghidraUnwindCallsSmoke unwindFrameRowsSmoke \
+              unwindCallsSmoke ghidraUnwindCallsSmoke unwindFrameRowsSmoke elfCodeBytesSmoke \
               extendedSectionNumberingSmoke elfImageReaderSmoke \
               elfCopyCancellationSmoke ghidraImageBaseSmoke buildExtension
             python3 -B src/test/integration/debuglink-basename.py \
@@ -1003,7 +1003,7 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
         run: |
-          ./gradlew unwindFrameRowsSmoke ghidraUnwindCallsSmoke
+          ./gradlew unwindFrameRowsSmoke ghidraUnwindCallsSmoke elfCodeBytesSmoke
           python3 src/test/integration/unwind-frame-recovery.py build/classes/java \
             "build/test-results/unwind-frame-recovery/$TARGET" --target "$TARGET" --dwarfdump "$DWARFDUMP"
 

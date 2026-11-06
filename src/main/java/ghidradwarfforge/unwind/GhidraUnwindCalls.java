@@ -8,6 +8,8 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.nio.ByteOrder;
+import java.io.IOException;
+import java.util.HexFormat;
 
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Function;
@@ -17,6 +19,8 @@ import ghidra.program.model.pcode.PcodeOp;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 import ghidradwarfforge.elf.ElfImage;
+import ghidradwarfforge.elf.ElfCodeBytes;
+import ghidradwarfforge.AddressNormalizer;
 import ghidradwarfforge.targets.UnwindAbiProfile;
 import ghidradwarfforge.unwind.UnwindCalls.*;
 import ghidradwarfforge.unwind.UnwindFlow.*;
@@ -24,14 +28,17 @@ import ghidradwarfforge.unwind.UnwindFlow.*;
 /** Native direct-call closure; no external/indirect callee contract is assumed. */
 public final class GhidraUnwindCalls {
     public record Evidence(UnwindAbiProfile.Bound profile, ByteOrder byteOrder, Verified<Address> verified,
-            Map<Address, GhidraUnwindInstructions.Captured> captures) {
-        public Evidence { captures = Collections.unmodifiableMap(new LinkedHashMap<>(captures)); }
+            Map<Address, GhidraUnwindInstructions.Captured> captures, Map<Address, ElfCodeBytes.Match> originalBytes) {
+        public Evidence {
+            captures = Collections.unmodifiableMap(new LinkedHashMap<>(captures));
+            originalBytes = Collections.unmodifiableMap(new LinkedHashMap<>(originalBytes));
+        }
     }
     private GhidraUnwindCalls() { }
 
-    /** Caller must hold a consistent program view; original ELF byte agreement is a separate obligation. */
+    /** Caller must hold a consistent program view and retain input identity through final publication. */
     public static Evidence verify(Program program, Function root, ElfImage image, long rebaseDelta, TaskMonitor monitor)
-            throws CancelledException {
+            throws CancelledException, IOException {
         if (root.getProgram() != program) throw new IllegalArgumentException("function belongs to another program");
         var profile = UnwindAbiProfile.select(program, root, image, rebaseDelta, monitor);
         var preserved = new LinkedHashMap<Cell, Incoming>();
@@ -91,12 +98,24 @@ public final class GhidraUnwindCalls {
             captures.put(function.getEntryPoint(), captured);
         }
         try {
-            var verified = UnwindCalls.verify(bodies, contract, () -> {
+            java.util.function.BooleanSupplier cancelled = () -> {
                 try { monitor.checkCancelled(); return false; }
-                catch (CancelledException cancelled) { return true; }
-            });
+                catch (CancelledException failure) { return true; }
+            };
+            var originalBytes = new LinkedHashMap<Address, ElfCodeBytes.Match>();
+            try (var original = ElfCodeBytes.open(image, cancelled)) {
+                for (var captured : captures.values()) {
+                    for (var instruction : captured.observations().entrySet()) {
+                        monitor.checkCancelled();
+                        long normalized = AddressNormalizer.toElfAddress(instruction.getKey().getOffset(), rebaseDelta);
+                        originalBytes.put(instruction.getKey(), original.requireMatches(normalized,
+                            HexFormat.of().parseHex(instruction.getValue().bytes()), cancelled));
+                    }
+                }
+            }
+            var verified = UnwindCalls.verify(bodies, contract, cancelled);
             monitor.checkCancelled();
-            return new Evidence(profile, image.byteOrder(), verified, captures);
+            return new Evidence(profile, image.byteOrder(), verified, captures, originalBytes);
         }
         catch (CancellationException cancelled) { throw new CancelledException(); }
     }

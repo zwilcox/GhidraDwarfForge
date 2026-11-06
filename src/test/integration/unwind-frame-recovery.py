@@ -77,8 +77,24 @@ def main():
                 run([*gradle, 'unwindFrameRecoveryProbe', '-PframeInput=' + str(original),
                      '-PframeFunctions=' + str(functions), '-PframePlan=' + str(plan),
                      '-PframeRebase=' + hex(delta)], case / f'recover-{delta:x}.log')
+                matched = []
+                for line in Path(str(plan) + '.original-bytes.txt').read_text().splitlines():
+                    address_text, offset_text, length_text, sha256 = line.split()
+                    address, offset, length = int(address_text, 16), int(offset_text, 16), int(length_text)
+                    section, = [s for s in info['sections'] if s['type'] == 1 and s['flags'] & 4 and
+                                s['address'] <= address and address + length <= s['address'] + s['size']]
+                    assert offset == section['offset'] + address - section['address']
+                    assert sha256 == hashlib.sha256(data[offset:offset + length]).hexdigest()
+                    matched.append((address, address + length))
+                for start, size in symbols.values():
+                    cursor = start
+                    for first, last in sorted(pair for pair in matched if start <= pair[0] < start + size):
+                        assert first == cursor and last > first and last <= start + size
+                        cursor = last
+                    assert cursor == start + size, 'original-byte proof omitted function instructions'
                 plans.append(plan)
             assert plans[0].read_bytes() == plans[1].read_bytes(), 'database rebasing changed original-image CFI rules'
+            assert Path(str(plans[0]) + '.original-bytes.txt').read_bytes() == Path(str(plans[1]) + '.original-bytes.txt').read_bytes()
             modes = [('reference', reference), ('absent', original)]
             for compression in ('none', 'zlib'):
                 artifact, raw = case / (compression + '.dbg'), case / (compression + '.frame')

@@ -1,0 +1,172 @@
+{
+    "issue": 112,
+    "status": "CONFIRMED local original instruction agreement; production integration and hosted acceptance pending",
+    "sources": {
+        "src/main/java/ghidradwarfforge/elf/ElfCodeBytes.java": "4e68038db291241321322d080ed08dd756264234ec9f3dbe73fbf4a81031dcfa",
+        "src/main/java/ghidradwarfforge/unwind/GhidraUnwindCalls.java": "a97b5db26a54e77d4da24f476d58af4a40d2d54b0c02b9744b6281d8e832c00f",
+        "src/test/java/ghidradwarfforge/elf/ElfCodeBytesSmoke.java": "29f4971a5249bffcba003a788766deb4f700ccafa7b7f89a38ad4c9886713496",
+        "src/test/java/ghidradwarfforge/unwind/GhidraUnwindCallsSmoke.java": "73a61360bcfe177088f5a9c20a6a91a15e5af81dbc1e29f483a82956741a44fb",
+        "src/test/java/ghidradwarfforge/unwind/UnwindFrameRecoveryProbe.java": "9b325164f9f177ffb92b2600714d06126b058021af8bb5bda9e047761f3a3e40",
+        "src/test/integration/unwind-frame-recovery.py": "7c9020b0fc97e18af5ea03abf8f85c73bae5df267a7036a8868e10d5e3135e99",
+        ".github/workflows/ci.yml": "f8ce0138eccbb2010259c23f6647038ccd0b4d5e954f5aed88c24db8d9225b97",
+        "build.gradle": "05d08963743a9b81168538bc8beb38a848736983dba8cfef0db1a0de818e1bc1"
+    },
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/unwind-code-agreement.tar.gz",
+        "sha256": "c95869234097fb102c575bc30494f18ae4cf1b6ceea1d7d72afe9e4b454b3566",
+        "bytes": 267307
+    },
+    "commands": [
+        "JAVA_HOME=<Java21> GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC ./gradlew --init-script build/flow-gradle/init.gradle --project-cache-dir build/flow-gradle/cache elfCodeBytesSmoke ghidraUnwindCallsSmoke unwindFrameRowsSmoke unwindCallsSmoke unwindFlowSmoke unwindAbiProfileSmoke ghidraUnwindInstructionsSmoke callFrameEncoderSmoke buildExtension",
+        "JAVA_HOME=<Java21> GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC python3 src/test/integration/unwind-frame-recovery.py build/flow-gradle/output/classes/java build/frame-recovery-code-agreement-final --java <Java21>/bin/java --gradle-init build/flow-gradle/init.gradle --gradle-cache build/flow-gradle/cache --dwarfdump <pinned-validation-bundle>/bin/dwarfdump",
+        "bash src/test/integration/architecture-neutrality.sh",
+        "actionlint .github/workflows/ci.yml"
+    ],
+    "validation": {
+        "elfChecks": 140,
+        "nativeFixtures": 26,
+        "nativeChecks": 4148,
+        "projectionChecks": 77,
+        "callChecks": 182,
+        "flowChecks": 102,
+        "profileChecks": 235,
+        "captureChecks": 653,
+        "encoderChecks": 158,
+        "buildExtension": "PASS",
+        "architectureGuard": "PASS",
+        "workflowLint": "PASS",
+        "artifacts": 8,
+        "gdbRuns": 16,
+        "originalByteEvidenceCompleteAndRebaseIdentical": true,
+        "validators": [
+            "GNU readelf headers/sections/info/abbrev/aranges/decodedline/frames",
+            "LLVM verify and debug-frame",
+            "strict libdwarf 2.3.2 af7b278c6aa2ae9daad94fb7f8bffdc0e9980993"
+        ]
+    },
+    "cases": [
+        {
+            "target": "x86_64",
+            "role": "exec",
+            "inputHashes": {
+                "/dev/shm/forge-cfi-recovery-worktree/src/test/fixtures/cfi-encoder-x86_64.S": "3cb8bccb6687902cd55a4c4a6fce7d4ee54204b6baa7af3e1e3d938ccf03c16b",
+                "/dev/shm/forge-cfi-recovery-worktree/build/frame-recovery-code-agreement-final/x86_64-exec/reference": "cce05cb2747938c44a2cd726147641ba92609a9da80cef45fbf40124ca2994be",
+                "/dev/shm/forge-cfi-recovery-worktree/build/frame-recovery-code-agreement-final/x86_64-exec/original": "f6be2fbdd00853b9cec6ce41656416aa8a336f65e5404aa27e6635dee3100674"
+            },
+            "planSha256": "285a0101c3ed014beebc5d4a2c48bf0cb5410ce588bc5e439c0ddbc27ad7be9e",
+            "frameSha256": "96d768e73589890d080f2a330e3736ab2da86f28dceef2a1208485cab525c230",
+            "byteEvidenceSha256": "92da57e90481cad64367fc6f902e9e4e69179de784f1126abf0ed7d0088dba51",
+            "instructions": 13,
+            "runtimeModes": [
+                "reference",
+                "absent",
+                "none",
+                "zlib"
+            ],
+            "warnings": {
+                "reference": [],
+                "absent": [],
+                "none": [],
+                "zlib": []
+            }
+        },
+        {
+            "target": "x86_64",
+            "role": "pie",
+            "inputHashes": {
+                "/dev/shm/forge-cfi-recovery-worktree/src/test/fixtures/cfi-encoder-x86_64.S": "3cb8bccb6687902cd55a4c4a6fce7d4ee54204b6baa7af3e1e3d938ccf03c16b",
+                "/dev/shm/forge-cfi-recovery-worktree/build/frame-recovery-code-agreement-final/x86_64-pie/reference": "4fa615a4f6067d38a198bda99ee07499f0065e61b36032fc70b54b2abc582a74",
+                "/dev/shm/forge-cfi-recovery-worktree/build/frame-recovery-code-agreement-final/x86_64-pie/original": "e108cfb677661a89af0a19ffc87e52e9301cbc0e46beb50f2b1838f950ff6a43"
+            },
+            "planSha256": "07e63299db6ac45ac43ef485e28c8aa454108c85675a6f4b9632bf78e73cfaad",
+            "frameSha256": "7180c068a467033ad5178afa198b148f735e57b2839697ded1616f951a392f79",
+            "byteEvidenceSha256": "16be7b71a4290008fca7d5c2218938e12806bdb7d93b1fbd521cb411c8810fb9",
+            "instructions": 13,
+            "runtimeModes": [
+                "reference",
+                "absent",
+                "none",
+                "zlib"
+            ],
+            "warnings": {
+                "reference": [],
+                "absent": [],
+                "none": [],
+                "zlib": []
+            }
+        },
+        {
+            "target": "aarch64",
+            "role": "exec",
+            "inputHashes": {
+                "/dev/shm/forge-cfi-recovery-worktree/src/test/fixtures/cfi-encoder-aarch64.S": "e69ddbf056c73498c972e5e8225e4129ac928a691cf1b94f86ac84d306864d81",
+                "/dev/shm/forge-cfi-recovery-worktree/build/frame-recovery-code-agreement-final/aarch64-exec/reference": "ed570315e030a761525ff94de5f5ae29c5159cfd37d78a172e522dead01d116c",
+                "/dev/shm/forge-cfi-recovery-worktree/build/frame-recovery-code-agreement-final/aarch64-exec/original": "6dcc4915bb6975114d7ddd84e387e2912ec844d822146a06392a87b999f7055e"
+            },
+            "planSha256": "a6cd5d39b190ce693017afaf34f64c6a6bebe24b2569f3d7651bd5d38a0185b8",
+            "frameSha256": "a550f2ff866990938b9961766fb532c34c51450f4d227dfb5e97fde7964473f1",
+            "byteEvidenceSha256": "2597b21d8d57ee5c2c2a11a46e7f9ab194b7bf7fdf451ad48c3dd0485905852d",
+            "instructions": 12,
+            "runtimeModes": [
+                "reference",
+                "absent",
+                "none",
+                "zlib"
+            ],
+            "warnings": {
+                "reference": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "absent": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "none": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "zlib": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ]
+            }
+        },
+        {
+            "target": "aarch64",
+            "role": "pie",
+            "inputHashes": {
+                "/dev/shm/forge-cfi-recovery-worktree/src/test/fixtures/cfi-encoder-aarch64.S": "e69ddbf056c73498c972e5e8225e4129ac928a691cf1b94f86ac84d306864d81",
+                "/dev/shm/forge-cfi-recovery-worktree/build/frame-recovery-code-agreement-final/aarch64-pie/reference": "2e622bda76566343f5ab5617ae2baf4bbff055d9bc7828e703b8c067c3d08ac7",
+                "/dev/shm/forge-cfi-recovery-worktree/build/frame-recovery-code-agreement-final/aarch64-pie/original": "702d1a33ec5656e350b3605ac2b27a8a7f9282d9133da5c4d1d47307c6664c47"
+            },
+            "planSha256": "e3f1eb32643011200addaf2627437aacf4005ff1170de7afee4d273a789733c6",
+            "frameSha256": "4ed2dff827c7fae7d97bfe3102ceacd5453f275ab02a96fa5dc2f8a65da62697",
+            "byteEvidenceSha256": "4ebb2e3027c14392644d450c5b9b497720f1886330d04a9b82d08684955a266e",
+            "instructions": 12,
+            "runtimeModes": [
+                "reference",
+                "absent",
+                "none",
+                "zlib"
+            ],
+            "warnings": {
+                "reference": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "absent": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "none": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "zlib": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ]
+            }
+        }
+    ],
+    "remaining": [
+        "Global-write alias proof for unchanged C compiler fixture",
+        "Trusted original unwind coverage/precedence",
+        "Production exporter integration, diagnostics and atomic publication identity/cancellation",
+        "Full compiler/shared/shrink-wrapped/failure matrix",
+        "Current PR166 hosted/workload integration, full #112/#110/#109 goal"
+    ]
+}

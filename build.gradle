@@ -113,6 +113,14 @@ tasks.register("unwindFrameRowsSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.unwind.UnwindFrameRowsSmoke"
 }
 
+tasks.register("elfCodeBytesSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks original ELF instruction agreement, load ambiguity and bounded reads"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.ElfCodeBytesSmoke"
+}
+
 tasks.register("unwindFrameRecoveryProbe", JavaExec) {
     group = "verification"
     description = "Recovers CFI plans from native runtime-fixture instructions"

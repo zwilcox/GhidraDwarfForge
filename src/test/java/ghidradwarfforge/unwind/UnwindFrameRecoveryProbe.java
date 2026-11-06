@@ -22,7 +22,7 @@ import ghidra.util.task.TaskMonitor;
 import ghidradwarfforge.elf.ElfImage;
 import ghidradwarfforge.unwind.CallFramePlan.*;
 
-/** Test-only native byte/range importer. Production original-byte agreement is separate. */
+/** Test-only native byte/range importer exercising mandatory original-byte agreement. */
 public final class UnwindFrameRecoveryProbe {
     public static void main(String[] args) throws Exception {
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
@@ -65,6 +65,11 @@ public final class UnwindFrameRecoveryProbe {
                 var observations = new StringBuilder();
                 evidence.captures().forEach((function, captured) -> observations.append(function).append(' ').append(captured).append('\n'));
                 planned.observations().forEach(row -> observations.append(row).append('\n'));
+                var matches = new StringBuilder();
+                evidence.originalBytes().forEach((address, match) -> matches.append(Long.toHexString(match.address()))
+                    .append(' ').append(Long.toHexString(match.fileOffset())).append(' ').append(match.bytes())
+                    .append(' ').append(match.sha256()).append('\n'));
+                Files.writeString(Path.of(args[3] + ".original-bytes.txt"), matches.toString());
                 Files.writeString(Path.of(args[3] + ".evidence.txt"), observations.toString());
                 System.out.println("recovered-frame-plan=PASS frames=" + planned.plan().frames().size() + " instructions=" + planned.observations().size());
             }
