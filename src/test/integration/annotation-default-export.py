@@ -25,6 +25,7 @@ def main():
         parser.add_argument(name, type=Path)
     parser.add_argument('--placement-control', type=Path,
         help='successful controlled placement export for exact unannotated GDB warning comparison')
+    parser.add_argument('--equate-evidence', type=Path, help='independently validated saved-equate planner observations')
     args = parser.parse_args()
     ghidra, curation = args.ghidra.resolve(strict=True), args.curation.resolve(strict=True)
     reference = curation.parent
@@ -43,6 +44,8 @@ def main():
         module / 'ghidra_scripts/GhidraDwarfForge.java', Path(__file__),
         harness / 'annotation-default-gdb.py', harness / 'annotation-default-gdb.sh']
     protected = {str(p): digest(p) for p in protected_paths}
+    if args.equate_evidence:
+        protected[str(args.equate_evidence.resolve())] = digest(args.equate_evidence)
     output = root / 'forge.dbg'
     commands = []
 
@@ -64,6 +67,8 @@ def main():
         log = run(phase, command)
         assert 'GhidraDwarfForge symbol export PASS' in log
         assert 'ERROR REPORT SCRIPT ERROR' not in log
+        script_origin, = re.findall(r'(?m)^INFO  SCRIPT: (.+GhidraDwarfForge\.java) \(HeadlessAnalyzer\)', log)
+        assert Path(script_origin).resolve() == (module / 'ghidra_scripts/GhidraDwarfForge.java').resolve(), script_origin
         generations.append({name: digest(root / name) for name in ('forge.dbg', 'forge.dbg.c')})
         states.append(snapshot(project))
     assert generations[0] == generations[1]
@@ -91,6 +96,28 @@ def main():
         assert payload == expected[key], key
         inserted.update(range(index + 1, index + count + 2))
     assert seen == expected.keys() and len(seen) == 50
+    equate_count = 0
+    if args.equate_evidence:
+        observations = json.loads(args.equate_evidence.read_text())
+        constants = [c for e in observations['constants'] for c in e['constants']]
+        assert len(constants) == 35
+        heading = '/* Ghidra equate (synthetic lookup; no storage or lifetime) */'
+        start = rows.index(heading)
+        assert rows.count(heading) == len(saved['equates']) == 14
+        decoded = ''.join(json.loads('"' + row[3:-3].replace('"', '\\"') + '"')
+            for row in rows[start:] if row != heading)
+        for entry in observations['constants']:
+            assert 'Stored name: ' + entry['storedName'] + '\n' in decoded
+            assert 'Direct lookup: ' + entry['directReason'] + '\n' in decoded
+            for constant in entry['constants']:
+                value = constant['value']
+                number = value['value'] if value['signed'] else value['value'] & ((1 << value['bits']) - 1)
+                text = ('Lookup ' + constant['name'] + ' [' + constant['view'] + '; ' +
+                    ('signed ' if value['signed'] else 'unsigned ') + str(value['bits']) + ' bits] = ' + str(number) + '\n')
+                assert text in decoded, text
+        inserted.update(range(start + 1, len(rows) + 1))
+        (root / 'equate-expected.json').write_text(json.dumps(constants, indent=4) + '\n')
+        equate_count = len(constants)
     for view in ('info', 'abbrev', 'aranges', 'decodedline'):
         text = run(view, ['readelf', '--debug-dump=' + view, output])
         assert not re.search(r'(?im)(warning:|error:)', text)
@@ -132,6 +159,7 @@ def main():
     assert protected == {p: digest(Path(p)) for p in protected}
     result = {'status': 'PASS_INSTALLED_DEFAULT_COMMENTS', 'target': receipt['target'],
         'role': receipt['role'], 'comments': len(seen), 'rawLineRows': len(raw),
+        'equateConstants': equate_count,
         'generations': generations, 'protected': protected, 'limitFailures': list(failures),
         'originalProjectUnchanged': True, 'firstReopenBackupChanges': changed,
         'warnings': warnings, 'compilerWarnings': compiler_warnings,

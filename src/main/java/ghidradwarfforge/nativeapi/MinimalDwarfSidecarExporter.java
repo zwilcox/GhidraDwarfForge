@@ -94,6 +94,7 @@ import com.sun.jna.ptr.PointerByReference;
 
 import ghidradwarfforge.elf.ElfImage;
 import ghidradwarfforge.annotations.SyntheticConstant;
+import ghidradwarfforge.annotations.SyntheticConstants;
 import ghidradwarfforge.coverage.ExportEmission;
 import ghidradwarfforge.coverage.ExportEmission.ExpressionLocation;
 import ghidradwarfforge.coverage.ExportEmission.FunctionEmission;
@@ -389,7 +390,19 @@ public final class MinimalDwarfSidecarExporter {
             List<ElfFunctionAlias> aliases, List<ElfFunctionModeCue> aliasModeCues,
             List<ghidradwarfforge.elf.Arm32SectionModes.Evidence> sectionModes,
             List<SyntheticConstant> constants, java.util.function.Consumer<String> diagnostic) throws IOException {
-        constants = List.copyOf(constants);
+        return export(input, output, consumerLibrary, producerLibrary, functions, syntheticSource,
+            typeModel, sourceFileName, cancelled, modeCues, aliases, aliasModeCues, sectionModes,
+            new SyntheticConstants(constants, Set.of()), diagnostic);
+    }
+
+    public ExportResult export(Path input, Path output, Path consumerLibrary,
+            Path producerLibrary, List<FunctionSymbol> functions,
+            SyntheticSourceFile syntheticSource, ProgramTypeModel typeModel,
+            String sourceFileName, BooleanSupplier cancelled, List<ElfFunctionModeCue> modeCues,
+            List<ElfFunctionAlias> aliases, List<ElfFunctionModeCue> aliasModeCues,
+            List<ghidradwarfforge.elf.Arm32SectionModes.Evidence> sectionModes,
+            SyntheticConstants syntheticConstants, java.util.function.Consumer<String> diagnostic) throws IOException {
+        var constants = syntheticConstants.values();
         var constantNames = new java.util.HashSet<String>();
         for (var constant : constants) {
             checkCancelled(cancelled);
@@ -423,7 +436,7 @@ public final class MinimalDwarfSidecarExporter {
         if (!constants.isEmpty()) {
             var namesModel = typeModel == null ? new ProgramTypeModel(new TypeGraph(List.of()), List.of(), List.of()) : typeModel;
             var reserved = ghidradwarfforge.elf.EquateNameReservations.read(elf, namesModel, ordered, aliases,
-                cancelled, diagnostic);
+                cancelled, diagnostic).withNames(syntheticConstants.reservedNames(), cancelled);
             for (var constant : constants) {
                 checkCancelled(cancelled);
                 if (reserved.test(constant.name())) throw new IllegalArgumentException("synthetic constant shadows a real name");

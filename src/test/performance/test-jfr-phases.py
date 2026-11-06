@@ -33,7 +33,7 @@ class PhaseControls(unittest.TestCase):
                 self.assertEqual(result['phases']['export']['elapsedSeconds'], 20)
 
     def test_every_unrecognized_subset_rejected(self):
-        names = sorted(phases.PHASES | phases.TYPE_COVERAGE_PHASES)
+        names = sorted(phases.PHASES | phases.TYPE_COVERAGE_PHASES | phases.EQUATE_PHASES)
         for mask in range(1 << len(names)):
             selected = {name for bit, name in enumerate(names) if mask & (1 << bit)}
             if selected in phases.COMPLETE_PHASE_SETS:

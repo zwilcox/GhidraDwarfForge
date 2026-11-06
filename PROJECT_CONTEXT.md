@@ -1,5 +1,17 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED default equate integration — #116:** the shared exporter now collects
+live high-p-code evidence, writes a reversible non-executable lookup catalog and
+emits collision-safe synthetic constants. Four Linux profiles (x86-64, AArch64
+PIE and both MIPS32 byte orders) plus a fresh x86-64 pipeline pass structural
+validators, deterministic reruns, unchanged inputs/projects and 140 GDB lookups
+per case. A retained C++ name fixture proves original function breakpoints and
+synthetic type-name collisions. Recovered coverage is unchanged. See
+`docs/evidence/equate-default-export.json`. The fixture's saved nonzero-first-use
+local remains explicitly unavailable; these tests do not establish its lifetime.
+GUI/Windows/full hosted acceptance, optional #114 context, and later
+#112/#110/#109 remain required. Earlier component-only notes are historical.
+
 **CONFIRMED Windows workload comparison correction — #116:** run
 `42134637694` failed because its frozen pre-annotation source hash excluded the
 new catalog. Actual SQLite DWARF and report semantics match exactly; the old

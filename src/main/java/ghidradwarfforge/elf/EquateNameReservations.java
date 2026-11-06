@@ -3,6 +3,7 @@ package ghidradwarfforge.elf;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.CodingErrorAction;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -26,6 +27,27 @@ public final class EquateNameReservations implements Predicate<String> {
     }
 
     public long size() { return (long) names.size() + original.size(); }
+
+    public Set<String> namedReservations() { return names; }
+
+    public EquateNameReservations withNames(Set<String> additional, BooleanSupplier cancelled) {
+        var combined = new HashSet<>(names);
+        for (String name : additional) { check(cancelled); add(combined, name); }
+        return new EquateNameReservations(combined, original);
+    }
+
+    /** Exact UTF-8 spellings only; undecodable names remain reserved byte-for-byte. */
+    public List<String> originalSpellings(BooleanSupplier cancelled) {
+        var result = new java.util.TreeSet<String>();
+        var decoder = StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT)
+            .onUnmappableCharacter(CodingErrorAction.REPORT);
+        for (var name : original) {
+            check(cancelled);
+            try { result.add(decoder.decode(name.asReadOnlyBuffer()).toString()); }
+            catch (java.nio.charset.CharacterCodingException invalid) { /* No lossy alias. */ }
+        }
+        return List.copyOf(result);
+    }
 
     @Override public boolean test(String name) {
         return names.contains(name) || original.contains(ByteBuffer.wrap(name.getBytes(StandardCharsets.UTF_8)));

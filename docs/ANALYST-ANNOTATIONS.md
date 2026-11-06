@@ -1,10 +1,10 @@
 # Analyst annotations and optional instruction context
 
-**PLANNED:** issues #116/#114 will preserve listing comments and equates in
-synthetic source and debugger lookup, with optional assembly/p-code context.
-The default export entry points now include listing comments. Equate debugger
-lookup and optional context remain planned. The installed-path tests below pass
-locally on Linux; earlier component-only notes describe their historical scope. #108
+**CONFIRMED Linux default integration:** issues #116/#114 preserve listing
+comments and equates through the shared exporter. Equates have a non-executable
+source catalog and tested synthetic debugger constants. Optional assembly/p-code
+context, GUI/Windows interaction and full hosted/workload acceptance remain
+**PLANNED**. Earlier component-only notes describe their historical scope. #108
 implementation is merged; its final documentation is tracked by PR #165.
 
 **CONFIRMED fixture preparation:** `analyst-annotations.c` builds deterministic
@@ -343,12 +343,38 @@ cancellation and out-of-range values are rejected without replacing a prior
 output. The integration pipeline runs this process before the existing comment
 placement/default-export checks.
 
-**PLANNED:** wire equate collection and its source catalog into normal export,
-prove default-export values in live frames alongside recovered locals/globals,
-and exercise retained demangled-name collisions. The current reservations cover
-raw ELF spellings and modeled qualified names; completeness for additional
-consumer demangled spellings is **UNCERTAIN**. Optional assembly/p-code context,
-GUI/Windows interaction and full hosted/workload acceptance also remain required.
+**CONFIRMED default integration:** inventory is captured before decompilation;
+dynamic observations are collected while each successful high function remains
+live. After type extraction, name reservations include the curated model, raw
+ELF bytes and read-only observations from applicable Ghidra demanglers. Nothing
+is applied back to the program. Invalid UTF-8 symbol bytes remain reserved
+exactly; they are not decoded lossily. A separate producer value object carries
+additional reservations so generated type names cannot shadow retained functions.
+
+The reversible appended catalog records each exact stored name, database signed
+value and unsigned bit pattern, direct-name decision, all typed lookup names,
+enum status/member metadata, and each address-space/operand/dynamic-hash owner
+with its resolution status. It has no executable rows or fabricated lifetime.
+Annotation inventory and composition have separate complete JFR phases.
+
+[Default export evidence](evidence/equate-default-export.json) covers four saved
+profiles and a fresh full x86-64 pipeline: 35 constants, bare and file-qualified
+lookup in two live frames (140 checks per case), assignment rejection, unchanged
+real globals/types, exact reruns, independent validators and atomic limit failures.
+The saved conflicting local still has an unsupported nonzero first-use offset:
+GDB retains the four-byte local symbol and reports its value unavailable. The
+test proves an equate does not replace that local; it does not establish its
+location or claim that its value is available. Non-artifact report content,
+including recovered coverage, matches the previous comment-only exports exactly.
+
+A separate GNU C++ fixture renames two functions in Ghidra while retaining their
+original mangled ELF symbols. Both original demangled names still break in the
+correct curated functions; ten synthetic constants pass twenty lookups, and a
+synthetic type name receives a collision suffix. This fixture now runs in the
+x86-64 annotation pipeline. Completeness for all consumer-specific demangled
+spellings remains **UNCERTAIN**; this evidence establishes the tested GNU C++ case.
+GUI/Windows interaction, full hosted/workload acceptance and optional #114
+assembly/p-code context remain required.
 
 The earlier Windows workload run `42134637694` stopped at its historical
 cross-version source-byte assertion. Inspection of its actual SQLite artifact

@@ -48,6 +48,7 @@ def main():
     placement = None
     default_export = None
     constants = None
+    retained_names = None
     if args.consumer:
         classes = root / 'classes'
         classes.mkdir()
@@ -70,13 +71,19 @@ def main():
         assert json.loads((placement / 'result.json').read_text())['status'] == 'PASS_SAVED_COMMENT_PLACEMENT'
         run('default-export', ['python3', harness / 'annotation-default-export.py', args.ghidra, curation,
             args.consumer.resolve(strict=True), args.producer.resolve(strict=True),
-            '--placement-control', placement])
+            '--placement-control', placement, '--equate-evidence', equate_evidence / 'read1.json'])
         default_export, = curation.glob('default-export-*')
         assert json.loads((default_export / 'result.json').read_text())['status'] == 'PASS_INSTALLED_DEFAULT_COMMENTS'
+        if args.target == 'x86_64':
+            run('retained-names', ['python3', harness / 'equate-retained-names.py', args.ghidra,
+                args.consumer.resolve(strict=True), args.producer.resolve(strict=True), root])
+            retained_names, = root.glob('retained-equates-*')
+            assert json.loads((retained_names / 'result.json').read_text())['status'] == 'PASS_RETAINED_DEMANGLED_EQUATES'
     (root / 'result.json').write_text(json.dumps({'status': result['status'], 'target': args.target,
         'role': role, 'case': str(case), 'curation': str(curation), 'inventory': str(inventory),
         'equateEvidence': str(equate_evidence),
         'constants': str(constants) if constants else None,
+        'retainedNames': str(retained_names) if retained_names else None,
         'placement': str(placement) if placement else None,
         'defaultExport': str(default_export) if default_export else None}, indent=4) + '\n')
     print('annotation-inventory-pipeline=PASS ' + args.target + ' ' + role)
