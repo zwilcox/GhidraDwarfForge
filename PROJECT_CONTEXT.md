@@ -1,5 +1,16 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 processor-typed runtime frames:** a real source-built
+AMD64 `SHT_X86_64_UNWIND` input reproduced the former PROGBITS-only refusal.
+An isolated target description now recognizes the validated ELF64 little-endian
+layout while refusing unexpected source names, wrong targets/layouts and unknown
+types. The final package passes 1,256 inventory/cancellation checks, complete
+checker controls, six processor-type cases and six ordinary x86-64/AArch64
+regressions: 108 exports, 24 failure controls, 48 sidecars and 108 GDB sessions.
+See `docs/TYPED-UNWIND-SECTIONS.md`. Hosted stack acceptance and full #112 policy,
+compiler-reference and normal CLI/GUI enablement remain incomplete. PR175 and
+PR166's separate main-push runs are still active; no issue is closed by this result.
+
 **CONFIRMED locally — #112 runtime/original frame coexistence:** twelve real
 export cases pass across x86-64/AArch64, both assembler families and exec/PIE/shared
 roles. Original `.eh_frame` and `.eh_frame_hdr` retain exact bytes and geometry;

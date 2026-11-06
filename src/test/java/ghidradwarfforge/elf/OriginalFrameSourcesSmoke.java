@@ -133,6 +133,7 @@ public final class OriginalFrameSourcesSmoke {
             require(OriginalFrameSources.inspect(image, () -> false).equals(result), "cancelled inventory poisoned retry");
             for (var invalid : List.of(
                     new Section(name, 8, flags, stored),
+                    new Section(name, 0x70000001, flags, stored),
                     new Section(name, 1, flags | (packed ? 2 : 0), stored))) {
                 if (invalid.type() == 1 && !packed) continue;
                 reject(() -> OriginalFrameSources.inspect(fixture(path, wide, order, List.of(invalid)), () -> false));
@@ -200,6 +201,12 @@ public final class OriginalFrameSourcesSmoke {
         catch (java.io.IOException expected) { checks++; }
         var empty = fixture(path, wide, order, List.of());
         require(OriginalFrameSources.inspect(empty, () -> false).sources().isEmpty(), "invented absent source");
+        if (wide && order == ByteOrder.LITTLE_ENDIAN) {
+            for (String name : List.of(".extra_unwind", ".eh_frame.extra", "")) {
+                reject(() -> OriginalFrameSources.inspect(fixture(path, wide, order,
+                    List.of(new Section(name, 0x70000001, 2, new byte[] {0, 0, 0, 0}))), () -> false));
+            }
+        }
         var header = new Section(".eh_frame_hdr", 1, 2, new byte[] {1, 0, 0, 0});
         reject(() -> OriginalFrameSources.inspect(fixture(path, wide, order, List.of(header)), () -> false));
         var stale = fixture(path, wide, order, List.of(new Section(".debug_frame", 1, 0, plain)));
@@ -227,6 +234,37 @@ public final class OriginalFrameSourcesSmoke {
             "legacy sectionless API changed behavior");
         require(OriginalFrameSources.inspect(ElfImage.read(path), () -> false).sources().getFirst().programHeaders(),
             "named/program-header agreement missing");
+        byte[] typed = named.clone();
+        ByteBuffer.wrap(typed).order(order).putShort(18, (short) 62)
+            .putInt(0x900 + shSize + 4, 0x70000001);
+        Files.write(path, typed);
+        if (wide && order == ByteOrder.LITTLE_ENDIAN) {
+            var typedImage = ElfImage.read(path);
+            var typedSource = OriginalFrameSources.inspect(typedImage, () -> false).sources().getFirst();
+            require(typedSource.records().equals(discovered.records()) && typedSource.programHeaders(),
+                "processor frame section type changed established runtime inventory");
+            cancelEvery(typedImage);
+            require(Arrays.equals(typed, Files.readAllBytes(path)), "typed frame inventory changed input");
+            // A named source without a program-header search table is valid too.
+            byte[] noHeader = typed.clone();
+            var noHeaderFields = ByteBuffer.wrap(noHeader).order(order);
+            noHeaderFields.putLong(32, 0).putShort(54, (short) 0).putShort(56, (short) 0);
+            Files.write(path, noHeader);
+            var namedOnly = OriginalFrameSources.inspect(ElfImage.read(path), () -> false).sources().getFirst();
+            require(namedOnly.records().equals(discovered.records()) && !namedOnly.programHeaders(),
+                "typed named-only frame source changed records");
+            for (int machine : List.of(3, 8, 40, 183, 243)) {
+                byte[] foreign = typed.clone();
+                ByteBuffer.wrap(foreign).order(order).putShort(18, (short) machine);
+                Files.write(path, foreign);
+                reject(() -> OriginalFrameSources.inspect(ElfImage.read(path), () -> false));
+            }
+        }
+        else reject(() -> OriginalFrameSources.inspect(ElfImage.read(path), () -> false));
+        byte[] unknown = typed.clone();
+        ByteBuffer.wrap(unknown).order(order).putInt(0x900 + shSize + 4, 0x70000002);
+        Files.write(path, unknown);
+        reject(() -> OriginalFrameSources.inspect(ElfImage.read(path), () -> false));
         for (String fault : List.of("offset", "address", "short", "tail", "header", "header-pc")) {
             byte[] bad = named.clone(); var change = ByteBuffer.wrap(bad).order(order);
             if (fault.equals("tail")) bad[0x328] = 1;

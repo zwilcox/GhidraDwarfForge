@@ -100,7 +100,7 @@ def generated_suffix(raw, prefix, expected):
     assert decode(suffix, 8, 'little') == expected
 
 
-def add_runtime_frames(case, target, role, family, expected, dwarfdump):
+def add_runtime_frames(case, target, role, family, expected, dwarfdump, processor_type=False):
     """Source-build partial runtime CFI and an independent complete reference."""
     source = ROOT / 'src/test/fixtures' / ('cfi-' + family + '-' + target + '.S')
     text = source.read_text()
@@ -111,6 +111,10 @@ def add_runtime_frames(case, target, role, family, expected, dwarfdump):
     partial = (first + 'cf_recurse:' + middle + '    .size cf_recurse,.-cf_recurse' + last)
     partial = partial.replace('.cfi_sections .debug_frame', '.cfi_sections .eh_frame')
     complete = text.replace('.cfi_sections .debug_frame', '.cfi_sections .eh_frame, .debug_frame')
+    if processor_type:
+        assert target == 'x86_64'
+        partial = partial.replace('    .cfi_sections', '    .section .eh_frame,"a",@unwind\n    .cfi_sections', 1)
+        complete = complete.replace('    .cfi_sections', '    .section .eh_frame,"a",@unwind\n    .cfi_sections', 1)
     prefix = '' if target == 'x86_64' else 'aarch64-linux-gnu-'
     flags = {'exec': ['-static', '-no-pie'], 'pie': ['-fPIE', '-static-pie'],
         'shared': ['-fPIC', '-shared', '-Wl,-Bsymbolic', '-DCFI_SHARED']}[role]
@@ -136,6 +140,9 @@ def add_runtime_frames(case, target, role, family, expected, dwarfdump):
     old_symbols, new_symbols = symbols(previous), symbols(original)
     assert new_symbols == symbols(reference)
     old_meta, new_meta, ref_meta = map(metadata, (previous, original, reference))
+    for info in (new_meta, ref_meta):
+        frame, = [s for s in info['sections'] if s['name'] == '.eh_frame']
+        assert frame['type'] == (0x70000001 if processor_type else 1)
     for name in ('.text', '.rodata'):
         new, = [s for s in new_meta['sections'] if s['name'] == name]
         ref, = [s for s in ref_meta['sections'] if s['name'] == name]
@@ -214,7 +221,11 @@ def main():
         help='Retain assembler leaf/outer-boundary records and recover only the uncovered recursive frame')
     originals.add_argument('--original-runtime', action='store_true',
         help='Source-build original leaf/outer-boundary .eh_frame and recover the recursive frame')
+    parser.add_argument('--runtime-section-type', choices=('progbits', 'processor'), default='progbits',
+        help='Processor type requires --original-runtime --target x86_64')
     args = parser.parse_args()
+    if args.runtime_section_type == 'processor' and (not args.original_runtime or args.target != 'x86_64'):
+        parser.error('processor section type requires --original-runtime --target x86_64')
     assert bool(args.libdwarf) == bool(args.libdwarfp)
     work = args.output.resolve(); work.mkdir(parents=True, exist_ok=False)
     ghidra = args.ghidra.resolve(strict=True)
@@ -251,7 +262,8 @@ def main():
         if args.original_encoding:
             original_prefix, original_range = add_original_frames(case, target, args.original_encoding)
         if args.original_runtime:
-            expected, original_range = add_runtime_frames(case, target, role, family, expected, args.dwarfdump)
+            expected, original_range = add_runtime_frames(case, target, role, family, expected, args.dwarfdump,
+                args.runtime_section_type == 'processor')
             inputs += ['original.S', 'reference.S', 'prior-original']
         if original_range:
             remaining = [f for f in expected if (f['address'], f['size']) != original_range]
@@ -377,6 +389,7 @@ def main():
         outcomes.append({'target': target, 'role': role, 'family': family, 'artifacts': artifacts,
             'originalEncoding': args.original_encoding, 'originalFrameRange': original_range,
             'originalRuntime': args.original_runtime,
+            'runtimeSectionType': args.runtime_section_type,
             'originalFramePrefixSha256': hashlib.sha256(original_prefix).hexdigest() if original_prefix else None,
             'runtime': results, 'sourceRuntime': source_results, 'warnings': warnings, 'inputHashes': before,
             'successfulExports': 9, 'failureControls': 2})
@@ -387,6 +400,7 @@ def main():
     (work / 'result.json').write_text(json.dumps({'status': 'PASS_NATIVE_FRAME_EXPORT', 'protected': protected,
         'failedSourceName': args.failed_source_name, 'originalEncoding': args.original_encoding, 'cases': outcomes,
         'originalRuntime': args.original_runtime,
+        'runtimeSectionType': args.runtime_section_type,
         'scope': 'Real ELF import, decompiler, native producer and staged frame writer; explicit test entry, not enabled CLI synthesis'}, indent=4) + '\n')
 
 

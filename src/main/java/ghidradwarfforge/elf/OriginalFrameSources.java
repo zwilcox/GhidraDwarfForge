@@ -17,6 +17,7 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
 import ghidradwarfforge.unwind.OriginalFrameRanges;
+import ghidradwarfforge.targets.UnwindSectionProfile;
 
 /**
  * Complete named/program-header source inventory or an explicit failure.
@@ -75,6 +76,9 @@ public final class OriginalFrameSources {
         boolean debugSeen = false, namedHeader = false, programHeader = false;
         for (var section : image.sections()) {
             check(cancelled);
+            require(!UnwindSectionProfile.isProcessorFrameType(image, section.type) ||
+                section.size == 0 || section.name.equals(".eh_frame"),
+                "processor frame source has an unqualified section name");
             if (section.name.equals(".eh_frame_hdr") && section.size != 0) namedHeader = true;
             if (section.name.equals(".eh_frame")) {
                 require(namedEh == null, "multiple named original EH frame sources");
@@ -111,7 +115,8 @@ public final class OriginalFrameSources {
             image.requireUnchanged(input);
             for (var section : sections) {
                 check(cancelled);
-                require(section.type == 1, "original frame source is not PROGBITS");
+                require(UnwindSectionProfile.isFrameData(image, section.name, section.type),
+                    "original frame source has an unsupported section type for this target");
                 require(section.size <= MAX_BYTES - budget.stored, "original frame stored-byte budget exceeded");
                 budget.stored += section.size;
                 byte[] stored = read(image, input, section.offset, section.size, cancelled);
