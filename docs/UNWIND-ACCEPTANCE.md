@@ -1,28 +1,29 @@
 # Synthetic unwind acceptance audit (#112)
 
-**CONFIRMED local evidence; combined hosted acceptance remains incomplete.**
+**CONFIRMED implementation acceptance at the tested and merged head below.**
 This audit covers the six original issue requirements and the additional matrix
-promised in `SYNTHETIC-CFI-EVIDENCE.md`. It does not close #112. The implementation
-is opt-in and limited to the ordinary integer x86-64 SysV LP64 and AArch64 AAPCS64
+promised in `SYNTHETIC-CFI-EVIDENCE.md`. Issue closure awaits integration of this
+final documentation update. The implementation is opt-in and limited to the ordinary integer x86-64 SysV LP64 and AArch64 AAPCS64
 LP64 profiles in [ADR-0002](ADR-0002-DEBUG-FRAME.md).
 
 The audited production implementation is unchanged between `23fbfef`, the
 Windows producer head `1872477`, and the split-body checkpoint `da74f01`.
 The audit adds only six negative decoder cases to the profile test. Historical
 component receipts identify their own versions; they are not whole-tree passes
-for the current branch. The current-head required gate, artifact review and
-protected integration remain mandatory.
+for the current branch. The final current-head gate, artifact review and
+protected implementation integration have passed as recorded below. Historical checkpoints retain their
+original scope and do not substitute for that gate.
 
 ## Requirement-to-evidence map
 
 | Original requirement | Implementation and executable evidence | Assessment |
 | --- | --- | --- |
-| New evidence model and ADR before synthesis; preserve trusted CFI and original executable | [Evidence model](SYNTHETIC-CFI-EVIDENCE.md), revised ADR, `OriginalFrameSources`, `OriginalUnwindCoverage`, `OriginalFrameRanges`, `InheritedFrameBytes` and `MatchedElfSidecarWriter`. `unwind-export.py` exercises plain/gABI/GNU original `.debug_frame`, original runtime `.eh_frame`/header, disjoint new records, compression, rebasing and original hashes. `production-unwind-saved.py` repeats these through saved projects and the installed normal wrapper. [Original coexistence](NATIVE-FRAME-COEXISTENCE.md), [runtime coexistence](RUNTIME-FRAME-COEXISTENCE.md), [typed sections](TYPED-UNWIND-SECTIONS.md). | **CONFIRMED locally** for the documented source/layout bounds; current combined hosted acceptance pending. |
+| New evidence model and ADR before synthesis; preserve trusted CFI and original executable | [Evidence model](SYNTHETIC-CFI-EVIDENCE.md), revised ADR, `OriginalFrameSources`, `OriginalUnwindCoverage`, `OriginalFrameRanges`, `InheritedFrameBytes` and `MatchedElfSidecarWriter`. `unwind-export.py` exercises plain/gABI/GNU original `.debug_frame`, original runtime `.eh_frame`/header, disjoint new records, compression, rebasing and original hashes. `production-unwind-saved.py` repeats these through saved projects and the installed normal wrapper. [Original coexistence](NATIVE-FRAME-COEXISTENCE.md), [runtime coexistence](RUNTIME-FRAME-COEXISTENCE.md), [typed sections](TYPED-UNWIND-SECTIONS.md). | **CONFIRMED locally** for the documented source/layout bounds; confirmed by the final combined hosted gate below. |
 | Instruction-varying CFA, saved registers and CFG joins through isolated ABI descriptions; reject incomplete/conflicting evidence | `targets/UnwindAbiProfile`, `GhidraUnwindInstructions`, `UnwindFlow`, `GhidraUnwindCalls`, `UnwindCalls`, `UnwindFrameRows`, `GhidraUnwindRecovery` and `DwarfDebugFrame`. The profile, native instruction, flow, call, projection and encoder smoke suites exercise actual Sleigh effects, caller identities, exact saves/restores, fixed-point joins, invalidation, refusal and cancellation. `unwind-frame-recovery.py` and `unwind-export.py` exercise the recovered rules through real ELF/GDB. | **CONFIRMED locally** within the explicit profile and memory policies; tests of an isolated encoder are not evidence of recovery by themselves. |
-| Nested calls, recursion, omitted frame pointers, split/shrink-wrapped saves and invalid/partial instructions for each profile | `compiler-unwind-export.py` uses independent unchanged C compiler references; `--frame-pointer keep` and `frame-pointer-gdb.py` additionally observe real recursive RBP/X29 values. `unwind-frame-recovery.py --fixture-family shrinkwrap` covers alternate save paths. `discontiguous-unwind.py` curates two real body ranges and checks every ordinary caller at gap crossings; `discontiguous-unwind-controls.py` removes part of a decoded branch and requires root refusal and runtime fallback. Both targets have local evidence. | **CONFIRMED locally**; [frame-pointer](FRAME-POINTER-UNWIND.md) and [split-body](DISCONTIGUOUS-UNWIND.md) checkpoints still need the full updated hosted gate. |
+| Nested calls, recursion, omitted frame pointers, split/shrink-wrapped saves and invalid/partial instructions for each profile | `compiler-unwind-export.py` uses independent unchanged C compiler references; `--frame-pointer keep` and `frame-pointer-gdb.py` additionally observe real recursive RBP/X29 values. `unwind-frame-recovery.py --fixture-family shrinkwrap` covers alternate save paths. `discontiguous-unwind.py` curates two real body ranges and checks every ordinary caller at gap crossings; `discontiguous-unwind-controls.py` removes part of a decoded branch and requires root refusal and runtime fallback. Both targets have local evidence. | **CONFIRMED locally**; [frame-pointer](FRAME-POINTER-UNWIND.md) and [split-body](DISCONTIGUOUS-UNWIND.md) checkpoints also pass the final combined hosted gate below. |
 | Independent compiler references plus GDB backtraces, caller values, finish and instruction-boundary stepping on no-CFI native/QEMU targets | `synthetic-cfi-reference.py`, `compiler-cfi-boundaries-gdb.py`, `synthetic-cfi-reference-gdb.py`, `cfi-encoder-gdb.py` and the production wrapper/companion harnesses. Separate no-CFI inputs retain the reference's allocated bytes; comparisons include caller PCs/SP offsets/register witnesses, nested/recursive returns and actual DWARF unwinder selection. Plain/compressed, exec/PIE/shared and database-rebased exports are covered across the linked checkpoints. | **CONFIRMED locally**, including Linux GDB consumption of native Windows-produced artifacts described below. Actual native Windows GDB execution of Linux ELF is not claimed. |
 | Distinguish ordinary and interrupt/signal/exception frames; no latter claim without runtime validation | Positive instruction/profile selection, process-entry refusal and explicit unsupported-profile diagnostics. The audit's `unwindAbiProfileSmoke` decodes and rejects x86-64 SYSCALL/INT/IRETQ and AArch64 SVC/HVC/ERET through both the instruction guard and complete guarded capture. Existing controls reject hidden/visible PAC, SIMD and wrong mode. | **CONFIRMED refusal controls**; asynchronous-frame recovery is deliberately unsupported. ABI metadata and a normal-looking instruction sequence do not prove arbitrary code obeys an ordinary ABI. No function-name heuristic or claim to unwind across a signal trampoline is made. |
-| GNU/LLVM/pinned strict validators, determinism, genuine failures/cancellation, unchanged originals and published support/omission policy | All generated matrix artifacts use `readelf`, `llvm-dwarfdump` and `check-dwarfdump.py` with the pinned consumer. `ProductionUnwindControls.java` injects cancellation and failure during recovery, frame serialization, evidence and loader generation; it requires byte-identical preceding four-file generations, unchanged program state and no staging leaks. Normal wrapper/saved-project tests repeat exports and hash input/project/outputs. `UnwindEvidenceJson` records `NOT_RUN`, original bytes/rules/omissions and explicit external conditions. [Production contract](PRODUCTION-UNWIND.md), ADR and profile docs publish the limits. | **CONFIRMED locally** and for the scoped native Windows producer/consumer checkpoint below. Full latest-head hosted validation and final ADR acceptance pending. |
+| GNU/LLVM/pinned strict validators, determinism, genuine failures/cancellation, unchanged originals and published support/omission policy | All generated matrix artifacts use `readelf`, `llvm-dwarfdump` and `check-dwarfdump.py` with the pinned consumer. `ProductionUnwindControls.java` injects cancellation and failure during recovery, frame serialization, evidence and loader generation; it requires byte-identical preceding four-file generations, unchanged program state and no staging leaks. Normal wrapper/saved-project tests repeat exports and hash input/project/outputs. `UnwindEvidenceJson` records `NOT_RUN`, original bytes/rules/omissions and explicit external conditions. [Production contract](PRODUCTION-UNWIND.md), ADR and profile docs publish the limits. | **CONFIRMED locally** and for the scoped native Windows producer/consumer checkpoint below. Final combined hosted validation and scoped ADR acceptance are recorded below. |
 
 ## Additional promised cases and limits
 
@@ -75,8 +76,9 @@ Fourteen GDB sessions pass: six PowerShell and eight GUI sessions, including
 independent reference traces, 90 executed ordinary boundaries per boundary
 trace, caller values, selected DWARF unwinders and recursive returns. These use
 direct symbol loading after transport; cross-host relocation of the companion's
-recorded absolute paths is not claimed. This local consumer evidence does not
-replace the queued hosted consumer or the new full-head gate.
+recorded absolute paths is not claimed. This historical local consumer evidence
+does not replace current-head evidence; the final gate and new Windows artifact
+review are recorded below.
 
 ## Audit provenance and remaining gates
 
@@ -88,14 +90,49 @@ integrity, not new semantic acceptance of every historical source version.
 The expanded ABI profile suite passes **775 checks**, including all six newly
 decoded special transitions; these negative tests do not alter emitted artifacts.
 
-Before closing #112:
+## Final implementation acceptance (2026-11-06)
 
-1. Pass the latest combined branch's protected `required-validation` gate,
-   including both synthesis target lanes, native Windows and transported-artifact
-   consumers. Review its retained exact-head results and package identity.
-2. Resolve any failures without weakening the original criteria. Bind that hosted
-   evidence and the local checkpoints to the final ADR/support boundary.
-3. Integrate through normal protected history and reconcile superseded component
-   PRs 167–174. No release is authorized merely by this acceptance audit.
-4. Continue the existing goal with #110 LLDB validation, then #109 build-ID
-   installation; neither task is complete or replaced by #112 evidence.
+Head `06348e1ab923e37ab86ed5f08f86003e40af6d48` passes every production job in
+[run 42242341105](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42242341105),
+including `required-validation`. PR #176 merged through normal protection as
+`6b582b4007311f334b954d361458b0775c35904e`. Both commits have tree
+`a7ea61c973305c5477205b0ede773c7cf3a81505`. No bypass or history rewrite was used.
+
+Independent review downloaded the exact-head package, native and target
+artifacts, checked their recorded hashes and revalidated retained strict reports
+against their raw checker output. Counts below are reports, not unique binaries:
+
+| Hosted target | Positive strict reports | Intentional rejection controls | Reviewed unwind result records |
+| --- | ---: | ---: | ---: |
+| x86-64 | 883 | 89 | 41 |
+| AArch64 | 678 | 9 | 39 |
+| ARM32 | 595 | 1 | 0 |
+| MIPS32 big-endian | 339 | 1 | 0 |
+| MIPS32 little-endian | 339 | 1 | 0 |
+
+The three latter rows are regression coverage, not new synthesis profiles.
+Checker self-tests and expected invalid-input reports are kept separate from
+positive reports. Inherited-CFI diagnostics are corroborated by the existing
+strict-check policy and raw logs, not treated as blanket warning exemptions.
+Hosted runtime results are reviewed as hosted evidence; this is not a claim
+that every hosted runtime was rerun locally.
+
+The current package's 464 manifest entries, 738 classes and 210 production
+sources match the accepted head. Native exports/dependencies and packaged native
+hashes match the corresponding platform builds. Current native Windows artifact
+`13517844236` also passes review: eight generated sidecars pass independent GNU,
+LLVM and pinned strict checks, with fourteen fresh local compiler-reference GDB
+sessions. The hosted Windows producer and transported consumer both pass.
+
+The [final acceptance receipt](evidence/unwind-final-acceptance.json) records
+job IDs, archive hashes, package/native identity, raw review counts and component
+ancestry. Earlier review status strings inside that receipt preserve their
+observation time; the top-level final gate supersedes their pending-job notes.
+All PR #167–#174 head commits are ancestors of the merged implementation, so their
+component histories are preserved. The ADR accepts the bounded opt-in feature;
+it does not authorize a release.
+
+Remaining administrative acceptance: integrate this final documentation update
+through normal protection, then close #112. Continue the existing goal with
+#110 LLDB validation and #109 build-ID installation. Neither task is completed
+or replaced by this unwind evidence.

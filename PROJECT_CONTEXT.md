@@ -1,5 +1,18 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED #112 implementation acceptance:** PR #176 merged normally as
+`6b582b4007311f334b954d361458b0775c35904e`; its tree exactly matches tested head
+`06348e1`. Run `42242341105` passes every required job, including both synthesis
+targets, the other three target regressions, Linux/Windows native builds and
+Windows-produced artifact consumption. Independent retained-artifact review
+rechecks 2,834 positive strict reports, intentional rejection controls, package
+identity and native provenance. See `docs/UNWIND-ACCEPTANCE.md` and its final
+receipt. The ADR now accepts only the documented opt-in ordinary integer
+profiles; no release or asynchronous-frame support is implied. Final acceptance
+documentation is awaiting protected integration alongside the combined #110
+LLDB stack. #110 hosted acceptance and #109 installation remain unfinished.
+Earlier checkpoint-specific pending statements below are historical.
+
 **CONFIRMED local #110 automatic-discovery checkpoint:** configured build-ID
 roots resolve compiler/Forge symbols and pass actual x86-64/AArch64 exec/PIE
 and shared-library runtime checks. Wrong and unconfigured roots are rejected.
