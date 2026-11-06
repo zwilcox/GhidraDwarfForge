@@ -302,7 +302,50 @@ project/input hashes agree.
 python3 src/test/integration/equate-evidence.py "$GHIDRA_INSTALL_DIR" /path/to/curation-case
 ```
 
-This is interpretation evidence, not debugger-constant support. The default
-exporter still needs to collect these observations, reserve all real names,
-allocate stable synthetic handles, emit the artificial constants and provide the
-source lookup catalog. Those are the next implementation steps for #116.
+The interpretation checkpoint above preceded the allocator and isolated
+production emitter described below. Default exporter collection and the source
+lookup catalog remain required for #116.
+
+The constant plan now reserves modeled function, parameter, local, global,
+static, type, member, enumerator, class and namespace names, plus retained ELF
+symbol bytes. Stable ASCII aliases encode an exact UTF-16 stored-name identity;
+value/reference edits do not change that identity. Every equate retains signed
+64-bit database and unsigned 64-bit bit-pattern views. Enum, decoded operand
+and dynamic views remain distinct. A direct display name requires a unique,
+unreserved safe identifier and defensible typed evidence. Ambiguous or malformed
+records retain aliases and an explicit reason instead of claiming a typed name.
+Independent Python hashing/value checks supplement the packaged Java checks.
+
+The producer accepts a separate Ghidra-independent constant value model. It emits
+artificial CU-owned const variables with `DW_AT_const_value` and no location,
+lexical lifetime or executable source row. Synthetic types and constants do not
+enter recovered-type/variable coverage. Generated type names are also allocated
+against reserved names; unnamed base types were standards-valid but GDB rendered
+them as an invalid type. Signed and unsigned values use the existing audited
+64-bit libdwarf 2.3.2 LEB128 bindings, with no new native declarations.
+
+An actual big-endian GDB failure exposed missing padding on partial-byte base
+types. The corrected emitter uses the target byte order for
+`DW_AT_data_bit_offset`, as specified by [DWARF 5 section 5.1](https://dwarfstd.org/doc/DWARF5.pdf).
+Unsigned constant 1 with a one-bit type now displays as 1 on big-endian MIPS;
+the prior encoding displayed 0 despite passing all structural validators.
+The pinned producer rejects its restricted unsigned-constant helper for this
+attribute; its already-audited arbitrary ULEB helper is used instead. Both failed
+experiments remain in the evidence archive.
+
+See [the constant-emission receipt](evidence/equate-constants.json) for isolated
+real-producer GNU/LLVM/pinned strict validation, two-process deterministic output,
+and GDB value/width/const-type/addresslessness checks on x86-64, AArch64 PIE and
+MIPS32 in both byte orders. Each case includes the saved 35 constant views,
+sixteen extra width/extreme controls and a generated-type collision. Bare and
+file-qualified expressions are both checked. Duplicate/real-name collisions,
+cancellation and out-of-range values are rejected without replacing a prior
+output. The integration pipeline runs this process before the existing comment
+placement/default-export checks.
+
+**PLANNED:** wire equate collection and its source catalog into normal export,
+prove default-export values in live frames alongside recovered locals/globals,
+and exercise retained demangled-name collisions. The current reservations cover
+raw ELF spellings and modeled qualified names; completeness for additional
+consumer demangled spellings is **UNCERTAIN**. Optional assembly/p-code context,
+GUI/Windows interaction and full hosted/workload acceptance also remain required.

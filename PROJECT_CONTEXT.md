@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED isolated equate emission — #116:** the production producer now
+emits synthetic constants with stable planned lookup names, exact signed/unsigned
+values and explicit const types. Four profiles pass GNU/LLVM/pinned strict and
+104 GDB lookups each; width controls exposed and corrected a big-endian padding
+bug that validators missed. Name planning passes saved-model/ELF collision,
+identity, cancellation and independent hashing checks. Default collection/source
+catalog wiring and retained demangled-name collision coverage remain required;
+see `docs/evidence/equate-constants.json` and `docs/ANALYST-ANNOTATIONS.md`.
+#114 context and the later #112/#110/#109 work remain in scope.
+
 **CONFIRMED equate evidence component — #116:** enum metadata, decoded operand
 values and live high-p-code constants now have separate validated observations.
 Four saved profiles and a fresh full x86-64 pipeline pass identical independent

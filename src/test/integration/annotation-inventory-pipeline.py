@@ -2,6 +2,7 @@
 """Build, curate and independently reopen the packaged annotation inventory fixture."""
 import argparse
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -46,7 +47,23 @@ def main():
     assert json.loads((equate_evidence / 'result.json').read_text())['status'] == 'PASS_PACKAGED_EQUATE_EVIDENCE'
     placement = None
     default_export = None
+    constants = None
     if args.consumer:
+        classes = root / 'classes'
+        classes.mkdir()
+        java_home = Path(os.environ['JAVA_HOME'])
+        module = args.ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar'
+        gson = args.ghidra / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar'
+        jna = args.ghidra / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar'
+        classpath = os.pathsep.join(map(str, [classes, module.resolve(strict=True), gson.resolve(strict=True), jna.resolve(strict=True)]))
+        run('compile-constants', [java_home / 'bin/javac', '-cp', classpath, '-d', classes,
+            harness.parent / 'java/ghidradwarfforge/nativeapi/EquateConstantsSmoke.java'])
+        run('constants', ['python3', harness / 'equate-constants.py', case, equate_evidence / 'read1.json', root,
+            '--classpath', classpath, '--java', java_home / 'bin/java',
+            '--consumer', args.consumer.resolve(strict=True), '--producer', args.producer.resolve(strict=True),
+            '--dwarfdump', os.environ.get('DWARFDUMP', 'dwarfdump')])
+        constants, = root.glob('equate-constants-*')
+        assert json.loads((constants / 'result.json').read_text())['status'] == 'PASS_ISOLATED_PRODUCTION_CONSTANTS'
         run('placement', ['python3', harness / 'annotation-placement.py', args.ghidra, curation,
             args.consumer.resolve(strict=True), args.producer.resolve(strict=True)])
         placement, = curation.glob('placement-*')
@@ -59,6 +76,7 @@ def main():
     (root / 'result.json').write_text(json.dumps({'status': result['status'], 'target': args.target,
         'role': role, 'case': str(case), 'curation': str(curation), 'inventory': str(inventory),
         'equateEvidence': str(equate_evidence),
+        'constants': str(constants) if constants else None,
         'placement': str(placement) if placement else None,
         'defaultExport': str(default_export) if default_export else None}, indent=4) + '\n')
     print('annotation-inventory-pipeline=PASS ' + args.target + ' ' + role)

@@ -150,6 +150,100 @@ public class VerifyEquateEvidence extends GhidraScript {
             catch (CancelledException expected) { }
         }
         var result = new TreeMap<String, Object>();
+        var image = ghidradwarfforge.elf.ElfImage.read(Path.of(currentProgram.getExecutablePath()));
+        var target = ghidradwarfforge.GhidraTargetAgreement.requireAgreement(currentProgram, image);
+        var allFunctions = GhidraFunctionSymbols.extract(currentProgram, monitor, ignored -> { }, 0);
+        var registers = ghidradwarfforge.locations.TargetRegisterMap.forElf(target.name(), image, monitor::isCancelled);
+        var types = ghidradwarfforge.GhidraTypeGraph.extract(currentProgram, allFunctions, registers,
+            0, monitor, ignored -> { }, Map.of(), Map.of());
+        var reserved = ghidradwarfforge.elf.EquateNameReservations.read(image, types, allFunctions, List.of(),
+            monitor::isCancelled, ignored -> { });
+        var originalOnly = ghidradwarfforge.elf.EquateNameReservations.read(image,
+            new ghidradwarfforge.types.ProgramTypeModel(new ghidradwarfforge.types.TypeGraph(List.of()), List.of(), List.of()),
+            List.of(), List.of(), monitor::isCancelled, ignored -> { });
+        if (!originalOnly.test("__libc_start_main")) throw new AssertionError("retained ELF import name not reserved");
+        for (String name : List.of("ANNOTATION_LOCAL", "ANNOTATION_COLLISION", "ANNOTATION_TYPE",
+                "ANNOTATION_ENUM_COLLISION", "member", "annotation_probe")) {
+            if (!reserved.test(name)) throw new AssertionError("unreserved real name " + name);
+        }
+        int[] nameChecks = {0};
+        var catalog = ghidradwarfforge.annotations.EquateCatalog.plan(evidence, reserved, reserved.size(),
+            () -> { nameChecks[0]++; return false; });
+        var reversed = new ArrayList<>(evidence);
+        java.util.Collections.reverse(reversed);
+        if (!catalog.equals(ghidradwarfforge.annotations.EquateCatalog.plan(reversed, reserved,
+                reserved.size(), monitor::isCancelled))) throw new AssertionError("order changed names");
+        var names = new java.util.HashSet<String>();
+        var constantRows = new ArrayList<TreeMap<String, Object>>();
+        int directCount = 0;
+        for (var entry : catalog.entries()) {
+            var namesRow = new TreeMap<String, Object>();
+            namesRow.put("storedName", entry.evidence().stored().storedName());
+            namesRow.put("constants", entry.constants());
+            namesRow.put("directReason", entry.directReason());
+            constantRows.add(namesRow);
+            if (entry.constants().stream().noneMatch(c -> c.view().equals("stored")) ||
+                    entry.constants().stream().noneMatch(c -> c.view().equals("bits"))) {
+                throw new AssertionError("raw database views missing");
+            }
+            for (var constant : entry.constants()) {
+                if (!names.add(constant.name()) || reserved.test(constant.name()) ||
+                        !ghidradwarfforge.annotations.EquateCatalog.safeIdentifier(constant.name())) {
+                    throw new AssertionError("unsafe or conflicting constant name " + constant.name());
+                }
+                if (constant.direct()) {
+                    directCount++;
+                    if (!constant.name().equals("ANNOTATION_NEGATIVE")) throw new AssertionError("unjustified direct name");
+                }
+            }
+        }
+        if (directCount != 1) throw new AssertionError("direct enum lookup missing");
+        try {
+            ghidradwarfforge.annotations.EquateCatalog.plan(List.of(evidence.getFirst(), evidence.getFirst()),
+                reserved, reserved.size(), monitor::isCancelled);
+            throw new AssertionError("duplicate stored identity accepted");
+        }
+        catch (IllegalArgumentException expected) { }
+        var rawEntry = evidence.stream().filter(e -> e.stored().storedName().equals("ANNOTATION_DYNAMIC_ONLY")).findFirst().orElseThrow();
+        var editedValue = new EquateValue(rawEntry.stored().storedName(), 54, List.of());
+        var edited = GhidraEquateEvidence.interpret(currentProgram, only(editedValue), Map.of(), monitor);
+        var editedCatalog = ghidradwarfforge.annotations.EquateCatalog.plan(edited, reserved, reserved.size(), monitor::isCancelled);
+        var originalEntry = catalog.entries().stream().filter(e -> e.evidence().equals(rawEntry)).findFirst().orElseThrow();
+        for (String view : List.of("stored", "bits")) {
+            String oldName = originalEntry.constants().stream().filter(c -> c.view().equals(view)).findFirst().orElseThrow().name();
+            String newName = editedCatalog.entries().getFirst().constants().stream().filter(c -> c.view().equals(view)).findFirst().orElseThrow().name();
+            if (!oldName.equals(newName)) throw new AssertionError("value/reference edit changed identity alias");
+        }
+        String collision = catalog.entries().getFirst().constants().getFirst().name();
+        var collided = ghidradwarfforge.annotations.EquateCatalog.plan(evidence,
+            name -> name.equals(collision) || reserved.test(name), reserved.size() + 1, monitor::isCancelled);
+        if (collided.entries().stream().flatMap(e -> e.constants().stream()).anyMatch(c -> c.name().equals(collision))) {
+            throw new AssertionError("synthetic alias shadows a real name");
+        }
+        for (String unsafe : List.of("while", "_X", "with space", "λ", "1number", "bool")) {
+            if (ghidradwarfforge.annotations.EquateCatalog.safeIdentifier(unsafe)) throw new AssertionError("unsafe direct spelling");
+        }
+        var identities = new ArrayList<String>();
+        for (String value : List.of("\ud800", "\ud801", "\ufffd", "é", "e\u0301")) {
+            identities.add(ghidradwarfforge.annotations.EquateCatalog.aliasBase(value, monitor::isCancelled));
+        }
+        if (new java.util.HashSet<>(identities).size() != identities.size()) throw new AssertionError("name identity normalized");
+        for (int point = 1; point <= nameChecks[0]; point++) {
+            final int stop = point;
+            int[] count = {0};
+            try {
+                ghidradwarfforge.annotations.EquateCatalog.plan(evidence, reserved, reserved.size(),
+                    () -> ++count[0] == stop);
+                throw new AssertionError("name allocation ignored cancellation " + point);
+            }
+            catch (java.util.concurrent.CancellationException expected) { }
+        }
+        result.put("constants", constantRows);
+        result.put("constantCount", names.size());
+        result.put("directCount", directCount);
+        result.put("nameCancellationPoints", nameChecks[0]);
+        result.put("identityControls", identities);
+        result.put("reservedNameCount", reserved.size());
         result.put("origin", GhidraEquateEvidence.class.getProtectionDomain().getCodeSource().getLocation().toString());
         result.put("equates", rows);
         result.put("enumCount", enumCount);
