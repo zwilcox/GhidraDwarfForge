@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED Windows workload comparison correction — #116:** run
+`42134637694` failed because its frozen pre-annotation source hash excluded the
+new catalog. Actual SQLite DWARF and report semantics match exactly; the old
+source SHA is reproduced by the exact prefix before 12,044 appended listing
+comments. The workload harness now permits only this bounded source addition,
+keeps identical cross-version DWARF/semantics and complete per-version/profile
+repeatability, and retains both source versions. Portable mutation controls pass;
+fresh full Windows/U-Boot execution remains pending. See
+`docs/evidence/annotation-windows-catalog.json`.
+
 **CONFIRMED isolated equate emission — #116:** the production producer now
 emits synthetic constants with stable planned lookup names, exact signed/unsigned
 values and explicit const types. Four profiles pass GNU/LLVM/pinned strict and

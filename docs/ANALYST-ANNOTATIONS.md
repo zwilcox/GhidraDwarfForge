@@ -349,3 +349,14 @@ and exercise retained demangled-name collisions. The current reservations cover
 raw ELF spellings and modeled qualified names; completeness for additional
 consumer demangled spellings is **UNCERTAIN**. Optional assembly/p-code context,
 GUI/Windows interaction and full hosted/workload acceptance also remain required.
+
+The earlier Windows workload run `42134637694` stopped at its historical
+cross-version source-byte assertion. Inspection of its actual SQLite artifact
+proves that DWARF and report semantics are unchanged and that removing only the
+appended 12,044-comment catalog reproduces the recorded baseline source SHA-256.
+The comparison now recognizes that exact prefix/catalog relation, retains both
+source versions, and still rejects other source changes, any DWARF difference,
+and any per-version/profile nondeterminism. Eleven malformed/executable mutation
+controls reject. The three portable comparison tests and three phase-reader tests
+pass; fresh complete Windows/U-Boot pairs and downstream GDB remain pending.
+See [the hosted artifact review](evidence/annotation-windows-catalog.json).

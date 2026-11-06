@@ -42,6 +42,7 @@ def main():
     if os.name != 'nt' or not 2 <= args.pairs <= 10:
         parser.error('native Windows and 2..10 pairs required')
     support = load('export-benchmark')
+    catalog = load('catalog-source-equivalence')
     corpus = args.corpus.resolve(strict=True)
     metadata = json.loads((corpus / 'corpus.json').read_text())
     assert metadata['schemaVersion'] == 1 and metadata['status'] == 'BUILT'
@@ -59,7 +60,8 @@ def main():
         path.write_text(json.dumps(value, indent=4) + '\n', encoding='utf-8')
     protected = [Path(__file__).resolve(), helper, SOURCE / 'export-benchmark.py',
         SOURCE / 'headless-observations.py', SOURCE / 'jfr-phases.py',
-        SOURCE / 'coverage-measurement-package.py', args.baseline_control_receipt.resolve(strict=True),
+        SOURCE / 'coverage-measurement-package.py', SOURCE / 'catalog-source-equivalence.py',
+        args.baseline_control_receipt.resolve(strict=True),
         corpus / 'corpus.json']
     protected += [corpus / name for name in metadata['files']]
     for ghidra in installations.values():
@@ -131,7 +133,9 @@ def main():
         write(case / 'project-before.json', project_before)
         output = case / (binary.name + '.dbg')
         selected_report = case / 'candidate-first.report.json'
-        samples, first_hashes, first_semantics, first_reports = [], None, None, {}
+        samples, first_hashes, first_semantics, first_reports = [], {}, None, {}
+        first_sources = {}
+        source_comparison = None
         exports = [(pair, variant, False) for pair in range(args.pairs)
             for variant in (('baseline', 'candidate') if pair % 2 == 0 else ('candidate', 'baseline'))]
         exports.append((args.pairs, 'candidate', True))
@@ -181,9 +185,17 @@ def main():
                 assert hashlib.file_digest(stream, 'sha256').hexdigest() == report_sha
             hashes = [support.digest(Path(str(output) + suffix)) for suffix in ('', '.c')]
             semantics = {key: report[key] for key in ('status', 'counts', 'failedFunctions', 'skippedFunctions')}
-            if first_hashes is None:
-                first_hashes, first_semantics = hashes, semantics
-            assert hashes == first_hashes and semantics == first_semantics, 'paired/profile output changed'
+            if first_semantics is None:
+                first_semantics = semantics
+            assert semantics == first_semantics, 'paired/profile semantics changed'
+            assert hashes == first_hashes.setdefault(variant, hashes), 'variant/profile output changed'
+            if variant not in first_sources:
+                first_sources[variant] = Path(str(output) + '.c').read_bytes()
+                (case / (variant + '-first.dbg.c')).write_bytes(first_sources[variant])
+            if len(first_hashes) == 2:
+                assert first_hashes['baseline'][0] == first_hashes['candidate'][0], 'paired DWARF changed'
+                source_comparison = catalog.compare(first_sources['baseline'], first_sources['candidate'])
+                write(case / 'source-comparison.json', source_comparison)
             sample.update(pair=pair, variant=variant, artifactSha256=hashes,
                 reportSha256=report_sha, reportUtf8Bytes=len(raw_report))
             if profiled:
@@ -227,7 +239,8 @@ def main():
             workload['program'] + '.rep/idata/~journal.bak'}, changes
         summary = {'status': 'WINDOWS_EXPORT_VALIDATED_GDB_PENDING', 'workload': workload,
             'sourceDirectory': str(case), 'sidecar': output.name, 'import': imported,
-            'samples': samples, 'artifactSha256': first_hashes, 'semantics': first_semantics,
+            'samples': samples, 'artifactSha256': first_hashes['candidate'],
+            'artifactSha256ByVariant': first_hashes, 'sourceComparison': source_comparison, 'semantics': first_semantics,
             'mediansSeconds': {variant: statistics.median(s['elapsedSeconds'] for s in samples
                 if s['variant'] == variant) for variant in installations},
             'validation': validation, 'strict': json.loads((case / 'strict-checks.log.check.json').read_text()),
