@@ -105,6 +105,49 @@ public final class UnwindFlowSmoke {
         State postIncrement = after(List.of(new Copy(TEMP, SP), add(SP, SP, 8), new Load(SAVED, TEMP)));
         require(postIncrement.values().get(SAVED).equals(RETURN), "post-increment load lost old-address memory");
         require(postIncrement.memory().isEmpty(), "post-increment retained released memory after instruction");
+        var snapshots = new ArrayList<State>();
+        var postIncrementGraph = Map.of(0, node(List.of(new Copy(TEMP, SP), add(SP, SP, 8), new Load(SAVED, TEMP))));
+        var observed = UnwindFlow.analyze(postIncrementGraph, 0, seed(), SP, () -> false,
+            (instruction, index, effect, before) -> {
+                require(instruction == 0 && index == snapshots.size(), "replay effect order changed");
+                snapshots.add(before);
+            });
+        require(observed.after().get(0).equals(postIncrement), "observation changed post-increment semantics");
+        require(snapshots.get(2).values().get(TEMP).equals(new StackAddress(0, 8)), "replay lost temporary old stack address");
+        require(snapshots.get(2).memory().get(new Slot(0, 8)).equals(RETURN), "replay prematurely expired old stack slot");
+        require(snapshots.get(0).equals(seed()), "later effects mutated an earlier snapshot");
+        try {
+            snapshots.get(0).values().clear();
+            throw new AssertionError("observer snapshot is mutable");
+        }
+        catch (UnsupportedOperationException expected) { checks++; }
+        var seenInstructions = new ArrayList<Integer>();
+        var finalLoop = UnwindFlow.analyze(loop, 0, seed(), SP, () -> false,
+            (instruction, index, effect, before) -> {
+                seenInstructions.add(instruction);
+                require(!before.values().containsKey(SAVED), "observer saw speculative first-loop identity");
+            });
+        require(seenInstructions.equals(List.of(2)), "replay repeated an effect during convergence");
+        require(finalLoop.equals(loopResult), "observation changed loop fixed point or transfer accounting");
+        UnwindFlow.analyze(unreachable, 0, seed(), SP, () -> false,
+            (instruction, index, effect, before) -> { throw new AssertionError("unreachable effect was observed"); });
+        checks++;
+        rejected(() -> UnwindFlow.analyze(postIncrementGraph, 0, seed(), SP, () -> false,
+            (instruction, index, effect, before) -> { throw new IllegalArgumentException("callee effect rejected"); }));
+        int[] replayPolls = {0};
+        UnwindFlow.analyze(postIncrementGraph, 0, seed(), SP, () -> { replayPolls[0]++; return false; },
+            (instruction, index, effect, before) -> { });
+        for (int limit = 1; limit <= replayPolls[0]; limit++) {
+            int stop = limit; int[] poll = {0};
+            try {
+                UnwindFlow.analyze(postIncrementGraph, 0, seed(), SP, () -> ++poll[0] == stop,
+                    (instruction, index, effect, before) -> { });
+                throw new AssertionError("replay ignored cancellation");
+            }
+            catch (CancellationException expected) { checks++; }
+        }
+        require(UnwindFlow.analyze(postIncrementGraph, 0, seed(), SP, () -> false).after().get(0).equals(postIncrement),
+            "replay cancellation contaminated retry");
         require(after(List.of(new Copy(SAVED, new Constant(1, 4)))).values().get(SAVED) == null,
             "width-changing copy fabricated a full caller value");
         require(after(List.of(new Kill(SP))).memory().isEmpty(), "lost stack anchor retained stack ownership");

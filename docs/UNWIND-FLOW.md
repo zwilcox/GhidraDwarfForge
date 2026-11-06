@@ -29,6 +29,17 @@ at the intermediate operation lost valid restores. The failing native trace is
 retained; both native and effect-level regressions now prove the load and the
 subsequent expiration. Explicit stores still invalidate overlaps immediately.
 
+The optional effect observer replays each reachable instruction once after the
+fixed point converges. It supplies immutable pre-effect snapshots including
+instruction temporaries and stack memory that is still live within that
+instruction. A verifier can inspect store addresses and call boundaries without
+reimplementing transfer semantics or trusting optimistic first-visit facts.
+Replay uses the same transfer function, and its final state must match the
+analysis result. Observer rejection or cancellation prevents a result; consumers
+must publish no call proof until the entire analysis/replay has returned.
+Unreachable effects are not observed. The observer is infrastructure for the
+remaining callee verifier, not a verified call summary by itself.
+
 A call effect requires an explicit, separate proof identifier, preserved physical
 cells, stack adjustment and optional memory-write bound. A missing bound means
 arbitrary memory effects; it cannot silently preserve saved slots. The model
@@ -75,10 +86,13 @@ src/test/integration/architecture-neutrality.sh
 actionlint
 ```
 
-The effect suite has 75 checks covering exact saves/restores, conflicting and
+The effect suite now has 102 checks covering exact saves/restores, conflicting and
 agreeing joins in both traversal orders, loops, unreachable paths, partial
 register/memory writes, unknown stores/calls, stack switches/releases, width and
-overflow controls, every observed cancellation poll and retry.
+overflow controls, every observed cancellation poll and retry. New replay
+controls cover final loop facts, exactly-once reachable effects, immutable
+snapshots, post-increment temporaries/live slots, verifier rejection and
+cancellation during convergence and replay.
 
 Seventeen actual Sleigh-decoded cases across x86-64 and AArch64 originally passed 582 checks; mandatory policy cancellation polls now bring the suite to 653.
 They include agreeing/conflicting split saves, conditional save/restore paths,
@@ -100,3 +114,6 @@ respect original-CFI precedence; run the real exporter with compiler/GDB oracles
 on the full required non-PIE/PIE/shared/rebased and failure/cancellation matrix.
 The [evidence model](SYNTHETIC-CFI-EVIDENCE.md) and
 [ABI audit](UNWIND-ABI-AUDIT.md) remain the full acceptance contract.
+
+The later [replay receipt](evidence/unwind-replay.json) records the 102-check
+checkpoint; earlier receipts retain their original source hashes and counts.

@@ -135,8 +135,29 @@ public final class UnwindFlow {
     }
     public record Result<K>(Map<K, State> before, Map<K, State> after, int transfers) { }
 
+    @FunctionalInterface
+    public interface EffectObserver<K> {
+        /** Called only during replay of converged, reachable states; snapshots include instruction temporaries. */
+        void observe(K instruction, int index, Effect effect, State before);
+    }
+    @FunctionalInterface
+    private interface StepObserver {
+        void observe(int index, Effect effect, State before);
+    }
+
     public static <K> Result<K> analyze(Map<K, Node<K>> graph, K entry, State seed,
             Cell stackPointer, BooleanSupplier cancelled) {
+        return analyzeInternal(graph, entry, seed, stackPointer, cancelled, null);
+    }
+
+    /** A verifier may reject a final effect; no result is returned after rejection or cancellation. */
+    public static <K> Result<K> analyze(Map<K, Node<K>> graph, K entry, State seed,
+            Cell stackPointer, BooleanSupplier cancelled, EffectObserver<K> observer) {
+        return analyzeInternal(graph, entry, seed, stackPointer, cancelled, Objects.requireNonNull(observer));
+    }
+
+    private static <K> Result<K> analyzeInternal(Map<K, Node<K>> graph, K entry, State seed,
+            Cell stackPointer, BooleanSupplier cancelled, EffectObserver<K> observer) {
         Objects.requireNonNull(cancelled);
         check(cancelled);
         Objects.requireNonNull(stackPointer);
@@ -167,7 +188,7 @@ public final class UnwindFlow {
             if (++transfers > MAX_TRANSFERS) throw new IllegalArgumentException("unwind fixed-point budget exceeded");
             K key = queue.removeFirst();
             queued.remove(key);
-            State out = transfer(before.get(key), nodes.get(key).effects(), stackPointer, cancelled);
+            State out = transfer(before.get(key), nodes.get(key).effects(), stackPointer, cancelled, null);
             if (out.equals(after.put(key, out))) continue;
             for (K target : nodes.get(key).successors()) {
                 check(cancelled);
@@ -177,6 +198,18 @@ public final class UnwindFlow {
                     before.put(target, merged);
                     if (queued.add(target)) queue.addLast(target);
                 }
+            }
+        }
+        if (observer != null) {
+            // Verifiers must never authorize writes from optimistic first-visit states.
+            // Replay each reachable instruction once after all joins have converged.
+            for (var item : nodes.entrySet()) {
+                check(cancelled);
+                K key = item.getKey();
+                if (!before.containsKey(key)) continue;
+                State replayed = transfer(before.get(key), item.getValue().effects(), stackPointer, cancelled,
+                    (index, effect, state) -> observer.observe(key, index, effect, state));
+                if (!replayed.equals(after.get(key))) throw new IllegalStateException("unwind replay differs from fixed point");
             }
         }
         check(cancelled);
@@ -197,12 +230,15 @@ public final class UnwindFlow {
         return new State(values, memory);
     }
 
-    private static State transfer(State input, List<Effect> effects, Cell stackPointer, BooleanSupplier cancelled) {
+    private static State transfer(State input, List<Effect> effects, Cell stackPointer, BooleanSupplier cancelled,
+            StepObserver observer) {
         var values = new LinkedHashMap<>(input.values());
         var memory = new LinkedHashMap<>(input.memory());
         boolean stackWritten = false;
-        for (Effect effect : effects) {
+        for (int index = 0; index < effects.size(); index++) {
             check(cancelled);
+            Effect effect = effects.get(index);
+            if (observer != null) observer.observe(index, effect, new State(values, memory));
             if (effect instanceof Store store) {
                 Value address = read(store.address(), values);
                 Value value = read(store.input(), values);

@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 converged-effect verification hook:** the flow
+analysis can now replay final reachable states through the same transfer logic,
+exposing immutable per-effect snapshots for callee write-bound verification.
+The 102-check flow suite covers speculative-loop rejection, old-address
+post-increment semantics, rejection and cancellation; profile/native/encoder
+regressions and extension build pass. This is a prerequisite for the still
+PLANNED verified call summaries, not proof of arbitrary call behavior. See
+`docs/evidence/unwind-replay.json`. Full goal scope and PR166 priority are unchanged.
+
 **CONFIRMED locally — #112 ordinary unwind profile boundary:** exact ELF and
 Ghidra compiler/convention selection now seeds separate caller/register/stack
 identities. Mandatory instruction policies reject hidden AArch64 PAC (observed
