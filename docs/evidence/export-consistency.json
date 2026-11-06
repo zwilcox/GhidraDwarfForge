@@ -1,0 +1,115 @@
+{
+    "status": "CONFIRMED locally; hosted and fresh GUI attachment-preparation acceptance unverified",
+    "baseCommit": "b0f05da62717550547fe46571d458a9de51068d9",
+    "utc": "2026-11-06T10:23:02.114790+00:00",
+    "sourceSha256": {
+        ".github/workflows/ci.yml": "6f0f388d4699fe4576e2f454208b2ea2a0269bc67c946b29d9e21b084258022f",
+        "PROJECT_CONTEXT.md": "51bc1049bba1d04194669af73bebef491dd6609c6a2d009f84ed8d92fec8e8a9",
+        "TODO.md": "ede92233e49b285dcd5931a7d81379a72ecf84567c25f09068d6c1f299c383f7",
+        "build.gradle": "3b3c4a60e9f8e15fa80c3f7fb33b141554d1fc26413c714863fbd4b1c2bc201e",
+        "ghidra_scripts/GhidraDwarfForge.java": "e065347d0435ae799c030d10e60c3d22be2f0ef357741381d77de396d7cef348",
+        "src/main/java/ghidradwarfforge/GhidraExportConsistency.java": "a152900c005c1fa0044b5bebea2338080a49bc6f6fafc3a9cbf1ef214154d2f1",
+        "src/test/java/ghidradwarfforge/GhidraExportConsistencySmoke.java": "49082db0e90e410ca0ddc533a0dc5435bc02eb1fe9351136a0f36dc57bbbc56d",
+        "src/test/integration/export-consistency.py": "d01e890c59b05fb7bc461280c0410a59661cd9b7e478fe2cc3d9dfec3b49a463",
+        "src/test/integration/export-consistency-gdb.sh": "26060f280b85a1306862685a7426e6be9c8595e51831bc14e48ffd2a7017b46f",
+        "src/test/integration/ghidra_scripts/ExportConsistencyControls.java": "f0515e66c2069654c7757faddd781e13128a1481260cd9e6a08381c07384e1c7",
+        "docs/EXPORT-CONSISTENCY.md": "6edf792e8060af1ce7c152b6557718b7f63b912247636b5bdb5e7ae1fd3a98fc"
+    },
+    "ghidraApiSha256": {
+        "ghidra/framework/model/DomainObject.java": "f7c5ad646824b0bb930a4b6ab94847855a819c702ef9c943259d1cc6c21d9f89",
+        "ghidra/framework/data/DomainObjectAdapter.java": "578746ece5956e7b29f7dda6949f4741b3ee314bd64e887f8a7ba7402e047777",
+        "ghidra/app/script/GhidraScript.java": "7943e023f1f44521b1266009c0b59806c63972c5c166d0518bfdfbe9ea44caab",
+        "ghidra/program/flatapi/FlatProgramAPI.java": "5b7a007f9426b07bd06c08351e349acd979f214cc74d1ce00113beb9439c71d4"
+    },
+    "testedInstallation": {
+        "base": "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/build/installations/delay-context-fq0igjhz/ghidra",
+        "package": "/dev/shm/forge-cfi-recovery-worktree/build/flow-gradle/dist/ghidra_12.0.3_PUBLIC_20261106_GhidraDwarfForge.zip",
+        "sha256": "77a400eafa608f6ddc3c7c825ba9dadf55b8370ad462d3e9234f6f0e77869fae",
+        "installed": "/dev/shm/forge-cfi-recovery-worktree/build/consistency-installation/ghidra"
+    },
+    "cases": {
+        "x86_64": {
+            "status": "PASS_EXPORT_CONSISTENCY",
+            "target": "x86_64",
+            "controls": 4,
+            "successfulExports": 6,
+            "protected": {
+                "/dev/shm/forge-cfi-recovery-worktree/build/fixtures/x86_64/semantic.exec.reference": "308653c852d29bc74692f4259698543276e745112c769046e372570d3ee2a1c4",
+                "/dev/shm/forge-cfi-recovery-worktree/build/consistency-installation/ghidra/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "635993a7e6b43eeb8baeb42437d10f328ca564fc6ccc3a8d50c7bf8d0a2beb39",
+                "/dev/shm/forge-cfi-recovery-worktree/build/consistency-installation/ghidra/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java": "e065347d0435ae799c030d10e60c3d22be2f0ef357741381d77de396d7cef348",
+                "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarf.so.2.3.2": "613d86accc88ea0fe369b7d6ade0d4fe605a451a7675b0c2453f21b328de81b7",
+                "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarfp.so.2.3.2": "fa82f4524de69634c7301fa5bdd53327aa89040da92c1d086271df51119531ad"
+            },
+            "artifacts": [
+                {
+                    "mode": "pair",
+                    "sha256": "b29981a740617258085a15ea7f01d83e8f7b7fc562371ba1f784fd30b4675c2f",
+                    "sourceSha256": "d8b5b29581919e76a8bff7ff3f83c3a824b02e3fe012bcd067a9d5fd29675f20"
+                },
+                {
+                    "mode": "companion",
+                    "sha256": "31d04c6e14c6931b006ca0086aef2dcddcd7e7929b9c10b95139401b4664e177",
+                    "sourceSha256": "d8b5b29581919e76a8bff7ff3f83c3a824b02e3fe012bcd067a9d5fd29675f20"
+                }
+            ],
+            "compilerReferenceWarnings": []
+        },
+        "aarch64": {
+            "status": "PASS_EXPORT_CONSISTENCY",
+            "target": "aarch64",
+            "controls": 4,
+            "successfulExports": 6,
+            "protected": {
+                "/dev/shm/forge-cfi-recovery-worktree/build/fixtures/aarch64/semantic.exec.reference": "a1bb93de2291f6056da1615386b7eb248037e3b514a431094120253fd15e1f95",
+                "/dev/shm/forge-cfi-recovery-worktree/build/consistency-installation/ghidra/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "635993a7e6b43eeb8baeb42437d10f328ca564fc6ccc3a8d50c7bf8d0a2beb39",
+                "/dev/shm/forge-cfi-recovery-worktree/build/consistency-installation/ghidra/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java": "e065347d0435ae799c030d10e60c3d22be2f0ef357741381d77de396d7cef348",
+                "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarf.so.2.3.2": "613d86accc88ea0fe369b7d6ade0d4fe605a451a7675b0c2453f21b328de81b7",
+                "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarfp.so.2.3.2": "fa82f4524de69634c7301fa5bdd53327aa89040da92c1d086271df51119531ad"
+            },
+            "artifacts": [
+                {
+                    "mode": "pair",
+                    "sha256": "9e9fb03fe4b77ff142b6dd4bcaa972976b9caa2a601a63901f61c3ac43ff7260",
+                    "sourceSha256": "a93625ed52c37cbe9d2dfe3053efd1a16d656302811bc82651ca2275c10597cc"
+                },
+                {
+                    "mode": "companion",
+                    "sha256": "ee9d497473a11b8e495cedccc5c48d7cb217afb43ec8e87dbbeeb4c572620ba6",
+                    "sourceSha256": "a93625ed52c37cbe9d2dfe3053efd1a16d656302811bc82651ca2275c10597cc"
+                }
+            ],
+            "compilerReferenceWarnings": [
+                "warning: BFD: warning: system-supplied DSO at 0x400000860000 has a corrupt string table index"
+            ]
+        }
+    },
+    "nativeChecks": 26,
+    "totals": {
+        "injectedFailures": 8,
+        "successfulExports": 12,
+        "finalSidecars": 4,
+        "generatedGdbSessions": 4,
+        "compilerGdbSessions": 2
+    },
+    "scope": "Production script checks input digests and Ghidra modification counter after extraction and before pair/companion/fresh attachment publication. Optimistic checks, not snapshot/lock guarantees. No synthetic CFI enabling change. Two extra input digest reads for ordinary pair exports; workload cost remains to profile.",
+    "commands": [
+        "JAVA_HOME=<Java21> GHIDRA_INSTALL_DIR=<Ghidra12.0.3> ./gradlew --init-script build/flow-gradle/init.gradle --project-cache-dir build/flow-gradle/cache exportConsistencySmoke buildExtension",
+        "JAVA_HOME=<Java21> python3 src/test/integration/export-consistency.py build/consistency-installation/ghidra <x86_64|aarch64> build/consistency-validated-<target> --dwarfdump <pinned>/bin/dwarfdump --libdwarf <pinned>/libdwarf.so.2.3.2 --libdwarfp <pinned>/libdwarfp.so.2.3.2",
+        "actionlint .github/workflows/ci.yml",
+        "bash src/test/integration/architecture-neutrality.sh",
+        "python3 -m py_compile src/test/integration/export-consistency.py",
+        "bash -n src/test/integration/export-consistency-gdb.sh",
+        "git diff --check"
+    ],
+    "failuresRetained": [
+        "consistency-before/missing-installation.log: stale old installation launch did not run",
+        "consistency-before/export.log: actual old exporter published after input mutation",
+        "consistency-x86_64/export.log: fixed ordinary guards pass; first harness expected only the new input diagnostic, corrected to accept earlier existing companion correspondence rejection"
+    ],
+    "nativePin": "af7b278c6aa2ae9daad94fb7f8bffdc0e9980993",
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/export-consistency.tar.gz",
+        "sha256": "fab6a3b7f616bc2dc86d09befec5499b7117903c8782084bc504ce3ddd9429d3",
+        "bytes": 5590697
+    }
+}

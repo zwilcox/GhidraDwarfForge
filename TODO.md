@@ -1,5 +1,420 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED scoped Windows checkpoint and #112 acceptance audit:** native Windows
+run `42235627038` passes the new PowerShell and GUI producers at `1872477`.
+Its eight downloaded sidecars pass fresh local GNU/LLVM/pinned strict validation
+and fourteen compiler-reference GDB sessions, with transport hashes preserved.
+Six new actual decoder refusal cases cover syscall/interrupt/exception transitions;
+the expanded profile suite passes 775 checks. The six original issue requirements
+and promised matrix now have an explicit evidence map in `docs/UNWIND-ACCEPTANCE.md`.
+The latest full hosted gate, exact artifact review, final ADR acceptance and
+protected integration remain; #112 is not complete. Then continue #110/#109.
+Earlier checkpoint-specific pending statements below are historical.
+
+**CONFIRMED locally — discontiguous runtime and refusal cases for #112:** both
+targets pass non-PIE/PIE strict normal exports of curated split function bodies,
+including compression, rebasing, deterministic repeat, saved comments and
+read-only project preservation. Forty exports, twenty generated strict-validated
+sidecars and 32 GDB sessions pass. All ordinary callers select DWARF at 160
+retained reference/positive gap stops; partial-instruction ownership explicitly
+omits that function's CFI and selects runtime fallback. No production algorithm
+changed. See `docs/DISCONTIGUOUS-UNWIND.md`. Native Windows, combined hosted/artifact
+and final #112/ADR acceptance remain, then #110/#109.
+
+**CONFIRMED locally — compiler frame pointers for #112:** unchanged compiler C
+with explicit frame-pointer use passes both targets' recovered and normal export
+paths: 28 exports, ten failure/invalid-option controls, sixteen validated sidecars
+and 42 GDB sessions. The additional caller-value oracle matches RBP/X29 at every
+executed ordinary boundary (99 x86-64, 85 AArch64), including recursive callers.
+No production algorithm change was needed. See `docs/FRAME-POINTER-UNWIND.md`.
+Actual noncontiguous-body runtime coverage, native Windows/hosted and final ADR
+acceptance remain; #112 is incomplete, followed by #110/#109. PR176's lint fix
+passed its hosted lint job in run `42235627038`; the remaining jobs are pending.
+
+**CONFIRMED hosted lint correction:** PR176's updated head `50b1da3` started
+run `42235018469`; ShellCheck rejected the unquoted literal `role=exec` in the
+new GUI step. Quoting it reproduces and resolves SC2209 with explicit local
+ShellCheck. Prior local Actionlint invocations omitted optional ShellCheck because
+it was absent from PATH. See `docs/evidence/powershell-unwind-ci-lint.json`.
+The production code and validated outputs are unchanged; updated hosted acceptance
+is still required. Full #112, then #110/#109, remain active.
+
+**CONFIRMED locally — PowerShell unwind forwarding for #112:** the installed
+PowerShell wrapper passes five real Linux exports through an explicit isolated
+launcher adapter, preserves its four-file generation on an invalid range, and
+passes four GNU/LLVM/pinned strict checks plus six compiler-reference GDB
+sessions. This does not establish native Windows process/DLL behavior. CI now
+runs the same producer on Windows and requires Windows provenance in its Linux
+GDB consumer. Cross-host companion relocation is not claimed. See
+`docs/PRODUCTION-UNWIND.md` and `docs/evidence/powershell-unwind-journeys.json`.
+Full #112 hosted/ADR acceptance remains, followed by #110 and #109.
+
+**CONFIRMED locally — production unwind journeys for #112:** real installed
+GUI choices pass on x86-64 and AArch64, including three cancellation points per
+target. The actual GDB companion loads all six target/image-role combinations
+with matching compiler-reference boundary and return traces. Eight rebased saved
+projects pass 32 exports and 24 GDB sessions while preserving analyst comments,
+project files, original CFI and original executable bytes. GNU/LLVM/pinned strict
+checks pass on all 24 GUI/saved-project sidecars. See
+`docs/PRODUCTION-UNWIND.md` and `docs/evidence/production-unwind-journeys.json`.
+CI wiring includes these tests and a Windows GUI-to-Linux-GDB handoff; the new
+Windows path is PRESENT, UNVERIFIED. Native PowerShell synthesis, hosted gates
+and the full #112 acceptance audit remain. #110/#109 remain next; #74/#108 and
+#116/#114 are complete. Earlier pending local-journey notes are historical.
+
+**CONFIRMED locally — normal-wrapper unwind integration for #112:** off/strict/
+conditioned/compressed exports pass on x86-64 and AArch64 executable/PIE/shared
+compiler fixtures, including deterministic generations, bound evidence, validators
+and instruction-boundary/recursive-return GDB comparisons. The normal exporter
+preserves analyst comments/constants with generated frames and passes sixteen
+real recovery/serialization/evidence/loader cancellation/failure controls across
+the two shared-library cases, including rebasing and typed constant lookup.
+See `docs/PRODUCTION-UNWIND.md`. The dedicated GUI chooser and Windows path are
+PRESENT, UNVERIFIED; existing-CFI production journeys and hosted gates remain.
+PR175 merged as `5b4ca014`, closing #116/#114; PR176 run `42221824335` still runs.
+#112 is incomplete; #110/#109 remain next. Earlier pending entries are historical.
+
+**CONFIRMED locally — relocated-pointer compiler matrix for #112:** both targets
+now pass executable/PIE/shared exports of the unchanged C fixture. AArch64's GOT
+load uses a separately acknowledged fixed-pointer condition qualified from
+original relative-relocation/RELRO metadata; it is not an inferred runtime fact.
+The six cases pass 54 exports, 24 staged controls, 24 sidecars and 78 GDB sessions;
+strict regressions and 14 native refusal controls also pass. See
+`docs/RELOCATED-POINTER-UNWIND.md`. The exact tested package is recorded in its
+receipt. Normal CLI/GUI synthesis, shipping policy, additional compiler/state
+variation and ADR acceptance remain incomplete. Full #112/#110/#109 stay open.
+PR176's CI fix is merged into this branch; its hosted gate remains pending.
+PR175 passed all fifteen jobs and merged normally as `5b4ca014`; #116/#114
+are closed with the acceptance map on main. Earlier pending entries are historical.
+
+**CONFIRMED locally — complete executed compiler instruction paths for #112:**
+all four conditioned sidecar variants now match independent compiler references
+at every executed ordinary instruction boundary: 90 snapshots on x86-64 and 77
+on AArch64. Caller PCs, stack-pointer offsets, saved-register witnesses and actual
+DWARF unwinder selection agree throughout prologues, nested/recursive calls, the
+global write and returns. The new matrix passes 18 exports, 8 failure controls,
+8 sidecars and 26 GDB sessions. See `docs/CONDITIONED-COMPILER-UNWIND.md`. This is
+one executed non-PIE path per target, not universal coverage or proof of external
+stack separation. Normal CLI/GUI synthesis remains off; #112/#110/#109 stay open.
+PR176's large-ELF compile correction is pushed as `34c42c3`; its new gate and
+PR175's existing gate remain pending.
+
+**CONFIRMED locally — conditioned compiler/GDB export for #112:** explicit
+projection and collection retain their accepted stack-separation condition in
+normalized evidence JSON. Real headless exports of unchanged compiler C match
+all observed backtrace/register/recursive-return states on x86-64 and AArch64:
+18 exports, 8 failure controls, 8 sidecars and 16 GDB sessions. Strict regressions
+also pass on both targets. See `docs/CONDITIONED-COMPILER-UNWIND.md`. The external
+condition is not proved; normal CLI/GUI synthesis and shipping policy remain
+unsettled. Full #112/#110/#109 remain incomplete. PR176's standalone large-ELF
+compile dependency failure is being corrected separately; PR175 retains priority.
+
+**CONFIRMED locally — conditional stack-separation analysis for #112:** explicit
+external address-range conditions now remain attached to flows, verified call
+groups and summaries; strict callers reject conditional summaries. Both unchanged
+compiler fixtures pass conditional four-function proofs at original/rebased
+addresses while strict and one-byte-short conditions still refuse. Unqualified
+frame projection rejects conditional evidence, so this does not emit CFI or settle
+shipping policy. The new suite passes 82 checks; strict native export regressions
+pass on both targets. See `docs/UNWIND-STACK-SEPARATION.md`. Conditional projection,
+provenance and compiler/GDB acceptance remain next; normal CLI/GUI synthesis is off.
+
+**CONFIRMED local PR176 CI correction:** hosted run `42217484551` failed the
+standalone large-ELF test because its hand-maintained `javac` inputs omitted the
+new frame writer dependencies. Adding the current production source path fixes
+that compilation without Ghidra/native dependencies. The unchanged >2 GiB test
+passes with a 64 MiB Java heap, GNU/LLVM/pinned strict validators and GDB behavior.
+See `docs/CFI-INTEGRATION.md`. The updated hosted gate is still required; no
+production source changed and full #112/#110/#109 remain incomplete.
+
+**CONFIRMED locally — combined unwind integration:** current main `8041fdab`
+and the preserved unwind commit stack now share one tested branch. Both
+annotation-aware normal exports and explicit frame exports retain their APIs.
+Two saved-annotation profiles, eight native-frame cases and all intrinsic-context
+modes pass with 38 retained strict reports. The combined package has 730 matching
+Java 21 classes and 207 matching production sources. See `docs/CFI-INTEGRATION.md`.
+This replaces the planned serial integration route for PR167–174; those PRs remain
+open until combined hosted acceptance. PR175 keeps priority. Full #112 compiler,
+policy, provenance/ADR and normal-entry-point acceptance remain incomplete.
+
+**CONFIRMED locally — #112 captured unwind descriptions:** bounded deterministic
+JSON now records recovered instruction/byte evidence, exact frame rules, omissions
+and root refusals, bound to staged artifact/source hashes without claiming
+independent validation. The component passes 720 checks. Sixteen native/QEMU
+cases pass 144 exports, 64 failure controls, 64 sidecars and 144 GDB sessions;
+compressed/original runtime frames, rebases and failed decompilation are included.
+See `docs/UNWIND-EVIDENCE-REPORT.md`. Standard CLI/GUI synthesis and report
+publication, full compiler-reference/ADR acceptance and hosted stack integration
+remain incomplete. PR175 still awaits its architecture gate; #110/#109 remain queued.
+
+**CONFIRMED locally — #112 processor-typed runtime frames:** a real source-built
+AMD64 `SHT_X86_64_UNWIND` input reproduced the former PROGBITS-only refusal.
+An isolated target description now recognizes the validated ELF64 little-endian
+layout while refusing unexpected source names, wrong targets/layouts and unknown
+types. The final package passes 1,256 inventory/cancellation checks, complete
+checker controls, six processor-type cases and six ordinary x86-64/AArch64
+regressions: 108 exports, 24 failure controls, 48 sidecars and 108 GDB sessions.
+See `docs/TYPED-UNWIND-SECTIONS.md`. Hosted stack acceptance and full #112 policy,
+compiler-reference and normal CLI/GUI enablement remain incomplete. PR175 and
+PR166's separate main-push runs are still active; no issue is closed by this result.
+
+**CONFIRMED locally — #112 runtime/original frame coexistence:** twelve real
+export cases pass across x86-64/AArch64, both assembler families and exec/PIE/shared
+roles. Original `.eh_frame` and `.eh_frame_hdr` retain exact bytes and geometry;
+only uncovered recursive records are generated. This includes 108 exports,
+24 staged failure controls, 48 validator-clean/corroborated sidecars and 108 GDB
+sessions. The complete matrix was rerun after correcting input-summary receipt
+names and adding standalone retention checks. See
+`docs/RUNTIME-FRAME-COEXISTENCE.md`. Hosted acceptance, compiler-C storage policy,
+ADR/provenance and normal CLI/GUI enablement remain open. PR166 has merged as
+`8041fdab`; its final acceptance documentation is PR175. Earlier pending-PR166
+statements below are historical. Full #112/#110/#109 remain incomplete.
+
+**CONFIRMED locally — #112 native original/generated frame coexistence:**
+thirty-six real-export cases pass with plain/gABI/GNU original records across
+both initial targets, fixture families and exec/PIE/shared roles: 324 exports,
+72 failure controls, 144 sidecars and 324 GDB sessions. Original leaf/outer-boundary
+records remain exact; only the uncovered recursive frame is generated. An
+incomplete-original AArch64 control matches the independent assembler's same
+four frames and unavailable-x29 error, without inventing missing knowledge.
+Four no-original shared regressions also pass. See
+`docs/NATIVE-FRAME-COEXISTENCE.md`. Hosted acceptance, user-facing enablement and
+compiler-C storage policy remain open; PR166 retains priority.
+
+**CONFIRMED locally — #112 real native frame export:** an explicit internal API
+now joins actual ELF import, decompiler/type extraction, native DWARF production
+and qualified frame packaging. Fourteen cases pass on x86-64/AArch64 across
+ordinary/shrink-wrapped exec/PIE/shared fixtures and failed decompilation:
+126 successful exports, 28 failure controls, 56 sidecars and 126 GDB sessions.
+Unchanged-program reruns are deterministic; rebased frame rules and debugger
+traces agree. Ordinary export regressions also pass. See
+`docs/NATIVE-FRAME-EXPORT.md`. Standard CLI/GUI synthesis, unchanged compiler-C
+storage policy, coexistence through this API and hosted acceptance remain open.
+PR166 retains first integration priority; #112/#110/#109 are not complete.
+
+**CONFIRMED locally — export consistency prerequisite for #112:** the installed
+exporter now checks input bytes and Ghidra's modification counter after extraction
+and before publishing pairs or companions. A real failing-before mutation
+reproduction is retained. Twenty-six native checks and eight installed failure
+controls pass on x86-64/AArch64; twelve successful exports are deterministic and
+four sidecars pass validators and GDB. See `docs/EXPORT-CONSISTENCY.md`. This is an
+optimistic guard, not a frozen snapshot. Recovered-frame integration and hosted
+acceptance remain open; PR166 retains first priority.
+
+**CONFIRMED locally — #112 program-wide recovery collection:** valid call groups
+now combine into one deterministic plan with per-root refusal diagnostics and
+original-byte evidence. Mixed valid/invalid programs, shared-callee deduplication,
+original precedence, I/O failures and 5,965 injected collection cancellation
+checkpoints pass within a 10,491-check native suite. Twelve runtime cases pass
+using the collected plan, including explicitly refused startup functions. See
+`docs/UNWIND-PROGRAM-RECOVERY.md`. Production-exporter wiring, the unchanged
+compiler-C case and hosted acceptance remain open. PR166 retains first priority.
+
+**CONFIRMED locally — #112 shared-library runtime frames:** both controlled
+fixture families now run after dynamic loading on native x86-64 and QEMU AArch64.
+Twelve executable/PIE/shared cases pass across twenty-four sidecars and sixty
+GDB sessions, including absent/disabled-CFI controls. The oracle checks actual
+relocated function addresses and ABI stack alignment; two initial test defects
+and their corrections are retained. See `docs/UNWIND-SHARED-RUNTIME.md`. These
+assembly references do not replace unchanged compiler-C or production-exporter
+acceptance. Hosted additions remain PRESENT, UNVERIFIED; PR166 keeps priority.
+
+**CONFIRMED locally — #112 split/shrink-wrapped runtime frames:** four new
+x86-64/AArch64 non-PIE/PIE cases exercise both an unsaved early return and separate
+allocation/register-save transitions before a common return. The existing proof
+and projection pass without production algorithm changes: eight sidecars,
+sixteen debugger sessions, 51/53 instruction stops, original/rebased agreement,
+and unchanged inputs. Default-family regressions and all five fixture inventories
+also pass. See `docs/UNWIND-SHRINKWRAP.md`. These controlled assembly references
+do not replace the unchanged compiler-C acceptance. Automatic integration and
+full #112/#110/#109 remain PLANNED; PR166 retains first integration priority.
+
+**CONFIRMED locally — #112 qualified frame writer:** an explicit plan API now
+checks original coverage/loader writes, decodes original plain/GNU/gABI frame
+records with identity checks, and emits one active composed frame section while
+retaining original stored bytes. Twelve cases/twenty-four sidecars and GDB
+comparisons pass, including every observed writer cancellation poll. See
+`docs/QUALIFIED-FRAME-WRITER.md`. Automatic synthesis and full evidence/ADR
+acceptance remain PLANNED. PR166 integration retains first priority.
+
+**CONFIRMED locally — #112 frame composition:** original compiler CIE/FDE bytes
+can remain an exact prefix while disjoint generated records use correct section
+offsets. 362 component checks and four x86-64/AArch64 exec/PIE cases pass across
+eight validator-clean sidecars and eight compiler-comparison GDB sessions.
+See `docs/FRAME-COMPOSITION.md`. Automatic exporter integration, global-store
+evidence and full synthesis acceptance remain PLANNED; the ordinary raw-frame
+collision guard remains active. PR166 still has first integration priority.
+
+**CONFIRMED locally — #112 compiler memory effects:** direct RAM operands now
+become explicit loads/stores with collision-free temporary coordinates. Audited
+ENDBR64/CSET/SETNZ support removes earlier compiler-reference blockers; 751
+profile, 1849 native instruction and 4470 native callee checks pass, along with
+encoder/recovered-frame validator and GDB regressions. Both unchanged compiler
+references resolve the exact global store and still refuse the unproved stack
+alias, including rebased probes. No storage-separation assumption was enabled;
+that profile boundary is awaiting user preference. See `docs/UNWIND-MEMORY-EFFECTS.md`.
+Production integration and full #112/#110/#109 acceptance remain PLANNED.
+
+**CONFIRMED hosted — #112 preservation prerequisite:** PR167 at `06dbfec7`
+passes all five targets, Windows and required-validation. Independent downloaded
+artifact review verifies thirty preservation cases, sixty packaged exports,
+thirty raw checker reports and six removed-frame controls. PR167 is ready,
+not merged; PR166 (#116/#114) still has first integration priority. See
+`docs/evidence/original-cfi-hosted-review.json`.
+
+**CONFIRMED locally — #112 original unwind precedence:** selected loader write
+footprints now protect the recovery verifier's original code/frame evidence.
+The planner excludes whole instructions touched by original FDE coverage, splits
+ranges at those omissions, and preserves unrelated recovered coverage. 282 effect
+checks, 4352 native checks, four compiler/loader executions and all four existing
+recovered-CFI validator/GDB runtime cases pass. PIE COPY and implicit GOT/DT_DEBUG
+writes have explicit controls. See `docs/ORIGINAL-UNWIND-PRECEDENCE.md` for pinned
+sources, limitations and retained fixture failures. Production integration,
+global-write alias proof and full #112/#110/#109 acceptance remain PLANNED;
+PR166 current-head integration still has priority. Hosted additions are
+PRESENT, UNVERIFIED.
+
+**CONFIRMED locally — #112 runtime relocation inventory:** the new bounded
+reader preserves gABI REL/RELA/PLT/RELR records, raw dynamic tags and table
+provenance, distinguishes retained link relocations, and rejects ambiguous or
+incomplete input. 932 component checks and twelve compiler cases/twenty-four
+named/sectionless variants pass against independent byte/GNU inventories.
+AArch64 RELR uses explicit LLD 18; initial compiler/validator/tool limitations
+are retained. See `docs/RUNTIME-RELOCATION-INVENTORY.md`. Processor-specific
+write/resolver effects and unknown relocation schemes still require qualification;
+this component does not authorize synthesis. Original/generated precedence,
+production integration and full #112/#110/#109 acceptance remain open. PR166's
+current checks at `86f0253` retain priority.
+
+**CONFIRMED locally — #112 original ELF frame sources:** named, compressed,
+sectionless and unnamed frame inventories now retain file/hash evidence and
+cross-check EH search-table addresses against referenced FDEs. The initial
+collector's mismatched-address acceptance has a failing-before regression.
+1158 source checks and 36 compiler-built variants pass alongside range,
+sectionless and encoder regressions. See docs/ORIGINAL-FRAME-SOURCES.md.
+Runtime relocation qualification, precedence and production integration remain
+PLANNED; these inventories alone do not authorize synthesis. PR166 integration
+and the full #112/#110/#109 objective remain open.
+
+**CONFIRMED locally — #112 original frame range reader:** complete CIE/FDE
+header inventories now distinguish declared coverage from unknown metadata.
+The bounded parser passes 4275 checks; twelve unchanged compiler-reference
+exec/PIE/shared cases across x86-64/AArch64 and debug/EH formats agree with GNU
+and LLVM. Strict EH alignment diagnostics are retained and corroborated against
+independent byte-identical rebuilds. See docs/ORIGINAL-FRAME-RANGES.md.
+ELF source/decompression/relocation qualification, precedence and production
+integration remain PLANNED; parsed ranges do not certify unwind rule semantics.
+PR166 integration and the full #112/#110/#109 goal remain open.
+
+**CONFIRMED locally — #112 original instruction agreement:** the native call
+verifier now checks every captured instruction against its original executable
+load mapping and retains file-offset/hash evidence. Patched instruction, sparse
+file, sectionless, overlap, cancellation and rebase controls pass (140 ELF and
+4148 native checks); all four recovered-CFI runtime cases still pass validators
+and GDB, with independently checked complete byte coverage. See
+`docs/UNWIND-CODE-AGREEMENT.md`. Production publication identity, global-write
+alias proof, original unwind precedence and the full exporter matrix remain
+required. PR166 hosted/workload integration retains priority; #112/#110/#109
+remain open.
+
+**CONFIRMED locally — #112 native recovered CFI runtime checkpoint:** recovered
+instruction states now produce complete frame rows with explicit unknown/gap
+omissions. An AArch64 GDB caller-PC bias exposed a pre-call link-register rule
+that validators accepted; call rows now require agreement before and after the
+call. Both targets' non-PIE/PIE plain/compressed artifacts pass GNU/LLVM/strict
+validation and match independent GDB traces at 40/36 instruction stops, including
+actual DWARF unwinder selection across five ordinary frames. Rebased independent
+JVM plans and repeated sidecars are deterministic. See
+`docs/UNWIND-FRAME-RECOVERY.md`. The test-only importer/CU is not production-exporter
+acceptance: global-write alias proof, original unwind coverage checks and the full
+compiler/shared/failure matrix remain required. PR166 hosted/workload priority
+and the full #112/#110/#109 scope are unchanged.
+
+**CONFIRMED locally — #112 closed callee obligations:** direct/self/mutual
+callee groups now verify actual native call targets, all reachable return
+identities and stack-relative write bounds before publishing a summary. The
+pure suite passes 182 checks; twenty native fixtures pass 662, with cancellation,
+retry and expected negative diagnostics. See `docs/UNWIND-CALLS.md`. This initial
+stack-writing verifier does not yet prove global-write alias safety: the existing
+compiler fixture's `cfi_sink` write remains an explicit outstanding requirement.
+Full projection/byte-agreement/precedence/exporter/GDB acceptance, #110 and #109
+remain open; PR166 current hosted/workload integration still has priority.
+
+**CONFIRMED locally — #112 converged-effect verification hook:** the flow
+analysis can now replay final reachable states through the same transfer logic,
+exposing immutable per-effect snapshots for callee write-bound verification.
+The 102-check flow suite covers speculative-loop rejection, old-address
+post-increment semantics, rejection and cancellation; profile/native/encoder
+regressions and extension build pass. This is a prerequisite for the still
+PLANNED verified call summaries, not proof of arbitrary call behavior. See
+`docs/evidence/unwind-replay.json`. Full goal scope and PR166 priority are unchanged.
+
+**CONFIRMED locally — #112 ordinary unwind profile boundary:** exact ELF and
+Ghidra compiler/convention selection now seeds separate caller/register/stack
+identities. Mandatory instruction policies reject hidden AArch64 PAC (observed
+empty p-code), SIMD and wrong execution modes. Eleven native fixtures pass 235
+checks, including complete return identities and cancellation/retry; existing
+flow/native/encoder suites and extension build pass. See
+`docs/UNWIND-PROFILES.md`. Verified call summaries, frame projection, original-byte
+agreement and production synthesis remain PLANNED. PR166 current hosted/workload
+acceptance retains priority; full #112/#110/#109 remain open.
+
+**CONFIRMED locally — #112 caller-identity flow component:** a fixed-point
+analysis and real Ghidra instruction adapter now prove agreeing joins, reject
+conflicting facts, track exact saves/restores and preserve discontiguous decoded
+bodies. Native AArch64 post-increment evidence exposed premature stack-slot
+expiration; it now occurs at the machine-instruction boundary. The effect suite
+passes 75 checks and 17 native instruction cases pass 582, including cancellation,
+partial/override rejection and missing-call-proof omissions. See
+`docs/UNWIND-FLOW.md`. ABI selection is now tested above; verified call summaries, rule projection and
+production synthesis remain PLANNED; current PR166 integration has priority.
+
+**CONFIRMED pinned unwind ABI observations — #112:** AMD64 psABI
+`e1ce098331da5dbd66e1ffc74162380bcc213236` and the existing Arm 2025Q4
+`daa7a94ca55973736c0e434a67a6e4bbcd35d7fa` baseline are captured with source hashes.
+Ghidra's AArch64 unaffected-X30 entry cannot prove incoming LR survival through
+calls; caller return-address identity needs separate treatment. The audit also
+records partial SIMD preservation and ordinary versus process-entry conventions.
+See `docs/UNWIND-ABI-AUDIT.md`. Profile selection and instruction/control-flow
+components now have local evidence above; production recovery remains PLANNED; no new architecture support is claimed.
+
+**CONFIRMED locally — #112 CIE initialization audit correction:** explicit
+immutable CIE rules replace the encoder's unconditional undefined defaults.
+Pinned AADWARF64's used-callee-saved initialization requirement exposed the gap;
+the prior X19 CIE fails the new independent assertion despite earlier GDB passes.
+All target harnesses pass again and the component suite now has 158 checks. See
+`docs/evidence/cfi-explicit-cie.json`. Production recovery remains PLANNED and
+current hosted acceptance is still required.
+
+**CONFIRMED locally — #112 explicit CFI encoder:** the immutable rule model,
+pure Java serializer and aligned plain/compressed ELF packaging pass 155 component
+checks and independent GNU/LLVM/pinned strict validation. Both runtime targets
+pass non-PIE/PIE reference comparisons at every recorded instruction boundary,
+with explicit DWARF-unwinder and malformed-frame controls. A full-4-GiB ELF32
+length rejection has failing-before evidence. See `docs/CFI-RULE-ENCODER.md`.
+CI is wired but hosted execution is PRESENT, UNVERIFIED. Ghidra recovery and
+production synthesis remain PLANNED; this does not complete #112. #116/#114
+integration remains first, then full #112/#110/#109.
+
+**CONFIRMED locally — #112 original-CFI preservation:** thirty real-export/GDB
+cases pass on x86-64 and AArch64 across exec/PIE/shared, compression, rebasing and
+retained link relocations. Original frame bytes stay active and unchanged;
+generated collisions fail safely. Twelve component cases cover both ELF widths,
+byte orders, cancellation and ET_REL omission. See
+`docs/ORIGINAL-CFI-PRESERVATION.md`. Hosted acceptance, trusted coverage planning,
+ABI audit, rule recovery/encoding and the full synthetic-CFI matrix remain open.
+This does not complete #112 or change the #116/#114 → #112 → #110 → #109 priority.
+
+**CONFIRMED locally — #112 compiler-reference checkpoint; production PLANNED:**
+x86-64 and AArch64 reference harnesses pass structural and runtime checks with
+explicit absent-CFI/disabled-unwinder controls. The AArch64 fallback reproduces
+the complete backtrace; acceptance therefore checks actual DWARF unwinder use.
+`docs/SYNTHETIC-CFI-EVIDENCE.md` records the proposed evidence model and remaining
+preservation, extraction, encoding, prologue/join/failure and production-GDB
+tests. ADR-0002 remains unchanged for production. This does not complete #112;
+#116/#114 PR166 hosted acceptance remains the first priority, followed by the
+full #112/#110/#109 goal. Hosted reference checks are PRESENT, UNVERIFIED.
+
 **CONFIRMED integrated #116/#114:** PR166 at `21f8da3` passes all fifteen
 integration jobs and the performance workflow. Independent package, five-target,
 Windows host/workload and consumer review passes; normal protected merge

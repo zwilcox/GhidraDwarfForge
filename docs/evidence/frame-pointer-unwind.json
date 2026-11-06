@@ -1,0 +1,399 @@
+{
+    "status": "CONFIRMED local compiler frame-pointer and caller-value runtime acceptance; hosted/full112 pending",
+    "utc": "2026-11-06T14:45:22.227638+00:00",
+    "parent": "187247735ec4b132e6a4f37ae399ce62dee98a7c",
+    "sourceSha256": {
+        ".github/workflows/ci.yml": "c576d3ccc4c410d8dc5078aaff5b2bf5e93cec7a678f5d9ca662779024ded5cf",
+        "PROJECT_CONTEXT.md": "e2e9eefcd7b306aa91609167a6b5ac2c4cd19b157c3b89055abcaa48a73a7678",
+        "TODO.md": "25a309d783289b113e04fafe4d58002ef046c4e20ccb5a9d3862a4ce7c2681cf",
+        "src/test/integration/compiler-cfi-boundaries-gdb.py": "6ee5fab7718deb0f05e26b031b7e173aab8a3dd359f6641e183ede9a9c2b468a",
+        "src/test/integration/compiler-unwind-export.py": "f8530de8ac17bdc85fae6809df859075180825eb5fa2bdfe44e3459458eae465",
+        "src/test/integration/synthetic-cfi-reference.py": "5bf0284717ee2c22435a7a3125134f386c5f603365e4ac1e42f47a711e7b4e82",
+        "docs/FRAME-POINTER-UNWIND.md": "e204b32f4a98124d778bb499b1431f8cb131641f45304c48d47714d649ac2d98",
+        "src/test/integration/frame-pointer-gdb.py": "999293888f026b11805ad16db3cf64399432e9a35ecd07cbc77e87a14c715afa"
+    },
+    "package": {
+        "sha256": "8323cf31467f7e52b9831bace06d936403c71bf62987af7d765b91c842526a88",
+        "jarSha256": "3346f363e47a97807a356cc38e6bd8d3f8c89ac3e67a57b5cb3c832cf61d7e6e",
+        "sourceCount": 210,
+        "classCount": 738,
+        "entryPointSha256": {
+            "ghidra_scripts/GhidraDwarfForge.java": "f549a6f39a1f78ad8e9c523276f0d2518a6023521e02c8f7ef1dccccff4e565a",
+            "ghidra_scripts/ExportGhidraDwarfForgeWithUnwind.java": "3ea1e27401d52e8a28893a30bd82e7e6b96cd756c2e1d7116629b5bbf02f7070",
+            "support/ghidra-dwarf-forge-headless": "b532f71f64355f794668e0b0fca4cb9fab33bb0d247fd5ebda43f33c7d96a6c5",
+            "support/ghidra-dwarf-forge-headless.ps1": "d61ec582ea4929687fab323cf92b5b6affaebeaa20c1ef0bc0b232583faf993e"
+        },
+        "scope": "All current production sources/classes and entry points match; subsequent test/workflow/docs changes are separate"
+    },
+    "results": {
+        "compiler": {
+            "sha256": "84fe868801fb7a7b569c7bf456bee725dac97e08e719090cdeb67d94762f7366",
+            "status": "PASS_CONDITIONED_COMPILER_EXPORT",
+            "cases": [
+                {
+                    "target": "x86_64",
+                    "role": "exec",
+                    "framePointer": "keep",
+                    "externalCondition": "402000:402007",
+                    "fixedPointers": [],
+                    "exports": 9,
+                    "failureControls": 4,
+                    "gdbSessions": 13,
+                    "artifacts": [
+                        {
+                            "variant": "none",
+                            "sha256": "bd2b0d31039222d048702f00937478acb6c46370c8db33e5120ac90f8f775878",
+                            "evidence": {
+                                "sha256": "9d5b307238873113b7d23ab6e667f04b934f69421252f0f50e96324dd0ff9169",
+                                "observations": 51,
+                                "generatedRows": 51,
+                                "refusedRoots": 1
+                            },
+                            "selectedDwarfLevels": [
+                                0,
+                                1,
+                                2,
+                                3,
+                                4,
+                                5,
+                                6
+                            ],
+                            "traceSnapshots": 25,
+                            "boundarySnapshots": 99,
+                            "boundaryResultSha256": "1ba44f20b1875e16e4a74f6516cf0714888ad46b298360461ed4ec0ffcdc426f",
+                            "gdbResultSha256": "96202a37c13f267d9ecf3fdf511c1704020ffa55e60a97459ebf72d04110c81f"
+                        },
+                        {
+                            "variant": "zlib",
+                            "sha256": "11cd3fd6142ea61f2c1e372b14c99fc81a58a23fb069e2fada17d2c7564056df",
+                            "evidence": {
+                                "sha256": "5afccb2e076fe76076c74ccfe337be514020e50aea33d00ffbdf898618853523",
+                                "observations": 51,
+                                "generatedRows": 51,
+                                "refusedRoots": 1
+                            },
+                            "selectedDwarfLevels": [
+                                0,
+                                1,
+                                2,
+                                3,
+                                4,
+                                5,
+                                6
+                            ],
+                            "traceSnapshots": 25,
+                            "boundarySnapshots": 99,
+                            "boundaryResultSha256": "1ba44f20b1875e16e4a74f6516cf0714888ad46b298360461ed4ec0ffcdc426f",
+                            "gdbResultSha256": "96202a37c13f267d9ecf3fdf511c1704020ffa55e60a97459ebf72d04110c81f"
+                        },
+                        {
+                            "variant": "before-rebase-none",
+                            "sha256": "bd2b0d31039222d048702f00937478acb6c46370c8db33e5120ac90f8f775878",
+                            "evidence": {
+                                "sha256": "d838ee070801c67e5fd009ce7987fd1cfdfde7d1b9504983cf5dab898c94cb11",
+                                "observations": 51,
+                                "generatedRows": 51,
+                                "refusedRoots": 1
+                            },
+                            "selectedDwarfLevels": [
+                                0,
+                                1,
+                                2,
+                                3,
+                                4,
+                                5,
+                                6
+                            ],
+                            "traceSnapshots": 25,
+                            "boundarySnapshots": 99,
+                            "boundaryResultSha256": "1ba44f20b1875e16e4a74f6516cf0714888ad46b298360461ed4ec0ffcdc426f",
+                            "gdbResultSha256": "96202a37c13f267d9ecf3fdf511c1704020ffa55e60a97459ebf72d04110c81f"
+                        },
+                        {
+                            "variant": "before-rebase-zlib",
+                            "sha256": "11cd3fd6142ea61f2c1e372b14c99fc81a58a23fb069e2fada17d2c7564056df",
+                            "evidence": {
+                                "sha256": "9a20b403a4fcfc20a5502f259b0c5389304247261081f9a40d40059d7ffac3c0",
+                                "observations": 51,
+                                "generatedRows": 51,
+                                "refusedRoots": 1
+                            },
+                            "selectedDwarfLevels": [
+                                0,
+                                1,
+                                2,
+                                3,
+                                4,
+                                5,
+                                6
+                            ],
+                            "traceSnapshots": 25,
+                            "boundarySnapshots": 99,
+                            "boundaryResultSha256": "1ba44f20b1875e16e4a74f6516cf0714888ad46b298360461ed4ec0ffcdc426f",
+                            "gdbResultSha256": "96202a37c13f267d9ecf3fdf511c1704020ffa55e60a97459ebf72d04110c81f"
+                        }
+                    ],
+                    "compilerReferenceResultSha256": "07ec8c72c0fdd1a52a9de27939ad45e6f967827c0dd69b14f9c34f3f097d0219"
+                },
+                {
+                    "target": "aarch64",
+                    "role": "exec",
+                    "framePointer": "keep",
+                    "externalCondition": "4101b8:4101bf",
+                    "fixedPointers": [],
+                    "exports": 9,
+                    "failureControls": 4,
+                    "gdbSessions": 13,
+                    "artifacts": [
+                        {
+                            "variant": "none",
+                            "sha256": "7def31655203df8830235bab939d94a0d410a9791e68b4e23a790c2217aff513",
+                            "evidence": {
+                                "sha256": "cbc9946f9968cb5cc805f72c9334b365851bda1e198b8025863bab6b0915941b",
+                                "observations": 46,
+                                "generatedRows": 46,
+                                "refusedRoots": 1
+                            },
+                            "selectedDwarfLevels": [
+                                0,
+                                1,
+                                2,
+                                3,
+                                4,
+                                5,
+                                6
+                            ],
+                            "traceSnapshots": 21,
+                            "boundarySnapshots": 85,
+                            "boundaryResultSha256": "8bcad2ac83807bba175a896f0947b4ca5597457d39ba9874f12f429f6cec0cfb",
+                            "gdbResultSha256": "e592804c23ae6507a89add1f7afd89cddfced7d3fe3362ae06ac8df564a5aa31"
+                        },
+                        {
+                            "variant": "zlib",
+                            "sha256": "0964d643dfbdb0ecd01710afc76450b328820bc541a6e5c45a478db0f0706afd",
+                            "evidence": {
+                                "sha256": "badc5f7f3ce8900a5f92a9291d0d97c819ed00d38ebe6d05b448bc7cc6dbc561",
+                                "observations": 46,
+                                "generatedRows": 46,
+                                "refusedRoots": 1
+                            },
+                            "selectedDwarfLevels": [
+                                0,
+                                1,
+                                2,
+                                3,
+                                4,
+                                5,
+                                6
+                            ],
+                            "traceSnapshots": 21,
+                            "boundarySnapshots": 85,
+                            "boundaryResultSha256": "8bcad2ac83807bba175a896f0947b4ca5597457d39ba9874f12f429f6cec0cfb",
+                            "gdbResultSha256": "e592804c23ae6507a89add1f7afd89cddfced7d3fe3362ae06ac8df564a5aa31"
+                        },
+                        {
+                            "variant": "before-rebase-none",
+                            "sha256": "7def31655203df8830235bab939d94a0d410a9791e68b4e23a790c2217aff513",
+                            "evidence": {
+                                "sha256": "0d668c2e2c4ecac9e62a272a456b0f7b84ef07ebc96a472c21ab7121a2b09782",
+                                "observations": 46,
+                                "generatedRows": 46,
+                                "refusedRoots": 1
+                            },
+                            "selectedDwarfLevels": [
+                                0,
+                                1,
+                                2,
+                                3,
+                                4,
+                                5,
+                                6
+                            ],
+                            "traceSnapshots": 21,
+                            "boundarySnapshots": 85,
+                            "boundaryResultSha256": "8bcad2ac83807bba175a896f0947b4ca5597457d39ba9874f12f429f6cec0cfb",
+                            "gdbResultSha256": "e592804c23ae6507a89add1f7afd89cddfced7d3fe3362ae06ac8df564a5aa31"
+                        },
+                        {
+                            "variant": "before-rebase-zlib",
+                            "sha256": "0964d643dfbdb0ecd01710afc76450b328820bc541a6e5c45a478db0f0706afd",
+                            "evidence": {
+                                "sha256": "c10888549b37075eee94efdb26b25cfc34874b46c4c7607b4310e21bdf589226",
+                                "observations": 46,
+                                "generatedRows": 46,
+                                "refusedRoots": 1
+                            },
+                            "selectedDwarfLevels": [
+                                0,
+                                1,
+                                2,
+                                3,
+                                4,
+                                5,
+                                6
+                            ],
+                            "traceSnapshots": 21,
+                            "boundarySnapshots": 85,
+                            "boundaryResultSha256": "8bcad2ac83807bba175a896f0947b4ca5597457d39ba9874f12f429f6cec0cfb",
+                            "gdbResultSha256": "e592804c23ae6507a89add1f7afd89cddfced7d3fe3362ae06ac8df564a5aa31"
+                        }
+                    ],
+                    "compilerReferenceResultSha256": "f77333ce432c94870939cf391e87b0c3b03ddb8c11ee5bc37e9e1194ad445002"
+                }
+            ],
+            "protectedSha256": {
+                "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarf.so.2.3.2": "613d86accc88ea0fe369b7d6ade0d4fe605a451a7675b0c2453f21b328de81b7",
+                "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarfp.so.2.3.2": "fa82f4524de69634c7301fa5bdd53327aa89040da92c1d086271df51119531ad",
+                "/dev/shm/forge-cfi-recovery-worktree/build/production-unwind-gui-installation/ghidra/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "3346f363e47a97807a356cc38e6bd8d3f8c89ac3e67a57b5cb3c832cf61d7e6e",
+                "/dev/shm/forge-cfi-recovery-worktree/src/test/fixtures/synthetic-cfi.c": "82cc164cd030be86b50b0affa496c4b617ed183c35a5d6c82a6460c1aacf9145",
+                "/dev/shm/forge-cfi-recovery-worktree/src/test/fixtures/synthetic-cfi-shared-driver.c": "bd6ec84ae215586b6f3eb881c902fab3a775cb18521aa17e5cc8f23749e35e5a",
+                "/dev/shm/forge-cfi-recovery-worktree/src/test/integration/synthetic-cfi-reference.py": "5bf0284717ee2c22435a7a3125134f386c5f603365e4ac1e42f47a711e7b4e82",
+                "/dev/shm/forge-cfi-recovery-worktree/src/test/integration/synthetic-cfi-reference-gdb.py": "87c2dc5cffeaf0fab2496bee38e2473ec3b194ec62abb9e86d6ea16dd569f1f5",
+                "/dev/shm/forge-cfi-recovery-worktree/src/test/integration/synthetic-cfi-reference-gdb.sh": "6f43ee92b95345efc751513f62e8dcf1959b1407a13d2fe08cbc3d1c44f1f4b3",
+                "/dev/shm/forge-cfi-recovery-worktree/src/test/integration/compiler-cfi-boundaries-gdb.py": "169f6d37ef70de1cde6f3572b3a1d5a7e24f034116b95410589bfcd3c82a46ef",
+                "/dev/shm/forge-cfi-recovery-worktree/src/test/integration/ghidra_scripts/ExportRecoveredFrames.java": "d5260c4e0bcf0f55076805040d75f88409a392f0ef4902c54bb9bf668b51df5d",
+                "/dev/shm/forge-cfi-recovery-worktree/src/test/integration/ghidra_scripts/RecoveredFrameExportControls.java": "34e9036df5a182533c954a13538671975f6aa367013b0230bfaa2eed9a1cf604",
+                "/dev/shm/forge-cfi-recovery-worktree/build/compiler-frame-pointer-first/x86_64-exec/compiler/without-cfi": "5f7a5cce184f1728384f2317a7c143c4fed712050a6c020bdcf90b3c15165371",
+                "/dev/shm/forge-cfi-recovery-worktree/build/compiler-frame-pointer-first/x86_64-exec/compiler/reference": "db326a08906f712260c470cd22c652121a5f74601086579218c5c7cecb3423a3",
+                "/dev/shm/forge-cfi-recovery-worktree/build/compiler-frame-pointer-first/aarch64-exec/compiler/without-cfi": "6f6911b25a3a669ddce2c29db5783d89d70d155f8757ab217fdcf21589e7e293",
+                "/dev/shm/forge-cfi-recovery-worktree/build/compiler-frame-pointer-first/aarch64-exec/compiler/reference": "06383789604a2b9dfaff4ffbe8edcf4a9af9568660b62d28860db08be4374701"
+            },
+            "scope": "Explicit test condition; executed ordinary instruction-path compiler equivalence; no universal separation proof or CLI/GUI enablement"
+        },
+        "production": {
+            "sha256": "df1d8b6f15651c7c7daa60693e50c8acbc227dba949d73ebeecfa7c75d7a3f68",
+            "status": "PASS_PRODUCTION_UNWIND",
+            "cases": [
+                {
+                    "target": "x86_64",
+                    "role": "exec",
+                    "exports": 5,
+                    "invalidOptionControls": 1,
+                    "gdbSessions": 5,
+                    "boundarySnapshots": 99,
+                    "artifacts": [
+                        {
+                            "mode": "off",
+                            "sha256": "30e78fa09c05ae92e8c17557fb317c169557a28eecfc2fb03540118dd3b5b946"
+                        },
+                        {
+                            "mode": "strict",
+                            "sha256": "b8182563b2b8e14b4edd666c000b1aaeb353724c4d25135f398eb716d1477041"
+                        },
+                        {
+                            "mode": "conditioned",
+                            "sha256": "2abd02e6604b43865f6d0f0df0e1ed39ab4f0ce7a9576f269ec67e98dbfd0a3e"
+                        },
+                        {
+                            "mode": "compressed",
+                            "sha256": "544ed85e87aa5ab8f4327ed03d015f397948480861b8c00bce471d424f3585a0"
+                        }
+                    ]
+                },
+                {
+                    "target": "aarch64",
+                    "role": "exec",
+                    "exports": 5,
+                    "invalidOptionControls": 1,
+                    "gdbSessions": 5,
+                    "boundarySnapshots": 85,
+                    "artifacts": [
+                        {
+                            "mode": "off",
+                            "sha256": "4ea5da193d1b07a470879559b7c320556c8420dc71273dc0c98daf929e9920c2"
+                        },
+                        {
+                            "mode": "strict",
+                            "sha256": "0f187c91ed48544834ae0d69e71a7bb033954ceaa1fd94c924faaa678ca1dffb"
+                        },
+                        {
+                            "mode": "conditioned",
+                            "sha256": "538fa52ff0a88143cd38a8ad784060e9222d9a960fed85f2d65024d16ae23ce7"
+                        },
+                        {
+                            "mode": "compressed",
+                            "sha256": "b73b07d5704dd30de9bb0e0840c63d08813b6b049aab24db93131ffca0a39ca2"
+                        }
+                    ]
+                }
+            ],
+            "protectedSha256": {
+                "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarf.so.2.3.2": "613d86accc88ea0fe369b7d6ade0d4fe605a451a7675b0c2453f21b328de81b7",
+                "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarfp.so.2.3.2": "fa82f4524de69634c7301fa5bdd53327aa89040da92c1d086271df51119531ad",
+                "/dev/shm/forge-cfi-recovery-worktree/build/production-unwind-gui-installation/ghidra/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "3346f363e47a97807a356cc38e6bd8d3f8c89ac3e67a57b5cb3c832cf61d7e6e",
+                "/dev/shm/forge-cfi-recovery-worktree/build/compiler-frame-pointer-first/x86_64-exec/compiler/without-cfi": "5f7a5cce184f1728384f2317a7c143c4fed712050a6c020bdcf90b3c15165371",
+                "/dev/shm/forge-cfi-recovery-worktree/build/compiler-frame-pointer-first/x86_64-exec/compiler/reference": "db326a08906f712260c470cd22c652121a5f74601086579218c5c7cecb3423a3",
+                "/dev/shm/forge-cfi-recovery-worktree/build/compiler-frame-pointer-first/aarch64-exec/compiler/without-cfi": "6f6911b25a3a669ddce2c29db5783d89d70d155f8757ab217fdcf21589e7e293",
+                "/dev/shm/forge-cfi-recovery-worktree/build/compiler-frame-pointer-first/aarch64-exec/compiler/reference": "06383789604a2b9dfaff4ffbe8edcf4a9af9568660b62d28860db08be4374701"
+            }
+        },
+        "callerValues": {
+            "sha256": "478b49725a11f9876e4d469b2b3db638cd1df7b8ab8d8d3312f362e9f009ead5",
+            "status": "PASS_FRAME_POINTER_VALUES",
+            "cases": [
+                {
+                    "target": "x86_64",
+                    "role": "exec",
+                    "snapshots": 99,
+                    "recursiveFramePointerValues": [
+                        "-120",
+                        "-152",
+                        "-24",
+                        "-56",
+                        "-88"
+                    ],
+                    "gdbSessions": 3,
+                    "protectedSha256": {
+                        "/dev/shm/forge-cfi-recovery-worktree/build/compiler-frame-pointer-first/x86_64-exec/compiler/reference": "db326a08906f712260c470cd22c652121a5f74601086579218c5c7cecb3423a3",
+                        "/dev/shm/forge-cfi-recovery-worktree/build/compiler-frame-pointer-first/x86_64-exec/compiler/without-cfi": "5f7a5cce184f1728384f2317a7c143c4fed712050a6c020bdcf90b3c15165371",
+                        "/dev/shm/forge-cfi-recovery-worktree/build/production-frame-pointer-first/x86_64-exec/conditioned.dbg": "2abd02e6604b43865f6d0f0df0e1ed39ab4f0ce7a9576f269ec67e98dbfd0a3e",
+                        "/dev/shm/forge-cfi-recovery-worktree/build/production-frame-pointer-first/x86_64-exec/compressed.dbg": "544ed85e87aa5ab8f4327ed03d015f397948480861b8c00bce471d424f3585a0"
+                    }
+                },
+                {
+                    "target": "aarch64",
+                    "role": "exec",
+                    "snapshots": 85,
+                    "recursiveFramePointerValues": [
+                        "-112",
+                        "-144",
+                        "-176",
+                        "-48",
+                        "-80"
+                    ],
+                    "gdbSessions": 3,
+                    "protectedSha256": {
+                        "/dev/shm/forge-cfi-recovery-worktree/build/compiler-frame-pointer-first/aarch64-exec/compiler/reference": "06383789604a2b9dfaff4ffbe8edcf4a9af9568660b62d28860db08be4374701",
+                        "/dev/shm/forge-cfi-recovery-worktree/build/compiler-frame-pointer-first/aarch64-exec/compiler/without-cfi": "6f6911b25a3a669ddce2c29db5783d89d70d155f8757ab217fdcf21589e7e293",
+                        "/dev/shm/forge-cfi-recovery-worktree/build/production-frame-pointer-first/aarch64-exec/conditioned.dbg": "538fa52ff0a88143cd38a8ad784060e9222d9a960fed85f2d65024d16ae23ce7",
+                        "/dev/shm/forge-cfi-recovery-worktree/build/production-frame-pointer-first/aarch64-exec/compressed.dbg": "b73b07d5704dd30de9bb0e0840c63d08813b6b049aab24db93131ffca0a39ca2"
+                    }
+                }
+            ]
+        }
+    },
+    "counts": {
+        "exports": 28,
+        "failureAndInvalidOptionControls": 10,
+        "validatedSidecars": 16,
+        "gdbSessions": 42
+    },
+    "oracleVersions": {
+        "compilerAndProduction": "Existing default boundary branch, before opt-in frame-pointer values were added",
+        "beforeValuesHelperSha256": "169f6d37ef70de1cde6f3572b3a1d5a7e24f034116b95410589bfcd3c82a46ef",
+        "callerValues": "Current optional frame-pointer branch; retained artifact hashes reverified"
+    },
+    "remaining": [
+        "Actual noncontiguous-body export/runtime evidence",
+        "Native Windows and current-head hosted acceptance",
+        "Full112/ADR audit and protected integration",
+        "Issue110 LLDB",
+        "Issue109 build-ID installation"
+    ],
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/frame-pointer-unwind.tar.gz",
+        "sha256": "4c5925fc0751ac4e61b644aeee3d1ac58e689a7e1e0ccb59db5f4b4ac1c1a79d",
+        "bytes": 3712534,
+        "verification": "Every archived regular file read and SHA-256 compared with retained original"
+    }
+}

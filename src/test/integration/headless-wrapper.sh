@@ -78,6 +78,12 @@ for option in --annotation-record-limit=123 --annotation-text-limit=456 --annota
     grep -Fxq -- "$option" "$argument_log"
 done
 
+run_status 0 SUCCESS 0 --import="$input" --synthesize-unwind=conditioned \
+    --unwind-stack-separation=100:107 --unwind-relocated-pointers=fixed
+for option in --synthesize-unwind=conditioned --unwind-stack-separation=100:107 --unwind-relocated-pointers=fixed; do
+    grep -Fxq -- "$option" "$argument_log"
+done
+
 run_status 0 PARTIAL 0 --import="$input"
 run_status 10 FATAL 0 --import="$input"
 run_status 11 CANCELLED 0 --import="$input"
@@ -122,9 +128,9 @@ mkdir -p "$work/lexical" "$work/physical/child"
 ln -s "$work/physical/child" "$work/lexical/alias"
 ambiguous_input="$work/lexical/alias/../original.elf"
 protected=("$input" "$consumer" "$producer" "$fake_ghidra/support/analyzeHeadless")
-for protected_file in "$override" "$output" "$output.c" "$output.gdb.py" \
-        "$override.dbg" "$override.dbg.c" "$override.dbg.gdb.py" \
-        "$explicit_output" "$explicit_output.c" "$explicit_output.gdb.py" \
+for protected_file in "$override" "$output" "$output.c" "$output.gdb.py" "$output.unwind.json" \
+        "$override.dbg" "$override.dbg.c" "$override.dbg.gdb.py" "$override.dbg.unwind.json" \
+        "$explicit_output" "$explicit_output.c" "$explicit_output.gdb.py" "$explicit_output.unwind.json" \
         "$project_dir/Existing.gpr" "$project_dir/Existing.lock" \
         "$project_database" "$packaged_library" \
         "$work/lexical/original.elf" "$work/physical/original.elf" \
@@ -179,6 +185,13 @@ reject_log "$input" --import="$input" --input="$override"
 reject_log "$override" --import="$input" --input="$override"
 reject_log "$explicit_output" --import="$input" --output="$explicit_output"
 reject_log "$explicit_output.c" --import="$input" --output="$explicit_output"
+reject_log "$explicit_output.unwind.json" --import="$input" --output="$explicit_output" --synthesize-unwind=strict
+ln "$explicit_output.unwind.json" "$work/unwind-hardlink.log"
+reject_log "$work/unwind-hardlink.log" --import="$input" --output="$explicit_output"
+ln -s "$explicit_output.unwind.json" "$work/unwind-symlink.log"
+reject_log "$work/unwind-symlink.log" --import="$input" --output="$explicit_output"
+reject_log "$output.unwind.json" --import="$input"
+reject_log "$override.dbg.unwind.json" --import="$input" --input="$override"
 reject_log "$explicit_output.gdb.py" --import="$input" --output="$explicit_output" --gdb-loader
 ln "$explicit_output.gdb.py" "$work/companion-hardlink.log"
 reject_log "$work/companion-hardlink.log" --import="$input" --output="$explicit_output"

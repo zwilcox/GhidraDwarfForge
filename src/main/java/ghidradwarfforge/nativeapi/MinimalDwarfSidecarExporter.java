@@ -402,6 +402,51 @@ public final class MinimalDwarfSidecarExporter {
             List<ElfFunctionAlias> aliases, List<ElfFunctionModeCue> aliasModeCues,
             List<ghidradwarfforge.elf.Arm32SectionModes.Evidence> sectionModes,
             SyntheticConstants syntheticConstants, java.util.function.Consumer<String> diagnostic) throws IOException {
+        return exportInternal(input, output, consumerLibrary, producerLibrary, functions, syntheticSource,
+            typeModel, sourceFileName, cancelled, modeCues, aliases, aliasModeCues, sectionModes,
+            syntheticConstants, diagnostic, null);
+    }
+
+    /**
+     * Explicit internal integration path for already proved frame rules. The caller
+     * must bind the plan to its Ghidra/input evidence and guard staged publication.
+     * Standard script/GUI exports do not select this path or infer any frame rules.
+     */
+    public ExportResult exportWithFrames(Path input, Path output, Path consumerLibrary,
+            Path producerLibrary, List<FunctionSymbol> functions,
+            SyntheticSourceFile syntheticSource, ProgramTypeModel typeModel,
+            String sourceFileName, BooleanSupplier cancelled, List<ElfFunctionModeCue> modeCues,
+            List<ElfFunctionAlias> aliases, List<ElfFunctionModeCue> aliasModeCues,
+            List<ghidradwarfforge.elf.Arm32SectionModes.Evidence> sectionModes,
+            java.util.function.Consumer<String> diagnostic, ghidradwarfforge.unwind.CallFramePlan framePlan) throws IOException {
+        return exportWithFrames(input, output, consumerLibrary, producerLibrary, functions, syntheticSource,
+            typeModel, sourceFileName, cancelled, modeCues, aliases, aliasModeCues, sectionModes,
+            new SyntheticConstants(List.of(), Set.of()), diagnostic, framePlan);
+    }
+
+    /** Retains analyst constants when adding independently recovered frame rules. */
+    public ExportResult exportWithFrames(Path input, Path output, Path consumerLibrary,
+            Path producerLibrary, List<FunctionSymbol> functions,
+            SyntheticSourceFile syntheticSource, ProgramTypeModel typeModel,
+            String sourceFileName, BooleanSupplier cancelled, List<ElfFunctionModeCue> modeCues,
+            List<ElfFunctionAlias> aliases, List<ElfFunctionModeCue> aliasModeCues,
+            List<ghidradwarfforge.elf.Arm32SectionModes.Evidence> sectionModes,
+            SyntheticConstants syntheticConstants, java.util.function.Consumer<String> diagnostic,
+            ghidradwarfforge.unwind.CallFramePlan framePlan) throws IOException {
+        Objects.requireNonNull(framePlan, "proved frame plan");
+        return exportInternal(input, output, consumerLibrary, producerLibrary, functions, syntheticSource,
+            typeModel, sourceFileName, cancelled, modeCues, aliases, aliasModeCues, sectionModes,
+            syntheticConstants, diagnostic, framePlan);
+    }
+
+    private ExportResult exportInternal(Path input, Path output, Path consumerLibrary,
+            Path producerLibrary, List<FunctionSymbol> functions,
+            SyntheticSourceFile syntheticSource, ProgramTypeModel typeModel,
+            String sourceFileName, BooleanSupplier cancelled, List<ElfFunctionModeCue> modeCues,
+            List<ElfFunctionAlias> aliases, List<ElfFunctionModeCue> aliasModeCues,
+            List<ghidradwarfforge.elf.Arm32SectionModes.Evidence> sectionModes,
+            SyntheticConstants syntheticConstants, java.util.function.Consumer<String> diagnostic,
+            ghidradwarfforge.unwind.CallFramePlan framePlan) throws IOException {
         var constants = syntheticConstants.values();
         var constantNames = new java.util.HashSet<String>();
         for (var constant : constants) {
@@ -431,6 +476,9 @@ public final class MinimalDwarfSidecarExporter {
 
         ElfImage elf = ElfImage.read(source);
         DwarfTarget target = DwarfTarget.fromElf(elf);
+        if (framePlan != null && (framePlan.addressBytes() != target.addressBytes() || framePlan.order() != elf.byteOrder())) {
+            throw new IllegalArgumentException("frame plan target layout differs from original ELF");
+        }
         typeModel = target.applyCallRestrictions(elf, typeModel, cancelled, diagnostic);
         Map<Integer, String> constantTypeNames = new java.util.TreeMap<>();
         if (!constants.isEmpty()) {
@@ -537,10 +585,14 @@ public final class MinimalDwarfSidecarExporter {
             throw new IllegalStateException("producer supplied an unexpected address lookup");
         }
         try (var phase = ExportPhase.start("elf-packaging")) {
-            new MatchedElfSidecarWriter(compression).write(elf, destination, sections, supplemental, cancelled, diagnostic);
+            var writer = new MatchedElfSidecarWriter(compression);
+            if (framePlan == null) writer.write(elf, destination, sections, supplemental, cancelled, diagnostic);
+            else writer.writeWithFrames(elf, destination, sections, supplemental, framePlan, cancelled, diagnostic);
             phase.completed = true;
         }
-        return new ExportResult(target, ordered.size(), List.copyOf(sections.keySet()),
+        var emittedSections = new ArrayList<>(sections.keySet());
+        if (framePlan != null && !framePlan.frames().isEmpty()) emittedSections.add(".debug_frame");
+        return new ExportResult(target, ordered.size(), List.copyOf(emittedSections),
             version, production.emission());
     }
 

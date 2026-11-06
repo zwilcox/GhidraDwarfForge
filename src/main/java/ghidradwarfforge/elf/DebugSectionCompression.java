@@ -27,13 +27,20 @@ public enum DebugSectionCompression {
     }
 
     Stored encode(byte[] plain, boolean wide, ByteOrder order, BooleanSupplier cancelled) {
+        return encode(plain, wide, order, 1, cancelled);
+    }
+
+    Stored encode(byte[] plain, boolean wide, ByteOrder order, int plainAlignment, BooleanSupplier cancelled) {
         Objects.requireNonNull(plain, "plain");
         Objects.requireNonNull(order, "order");
         Objects.requireNonNull(cancelled, "cancelled");
+        if (plainAlignment <= 0 || (plainAlignment & (plainAlignment - 1)) != 0 || plainAlignment > 8) {
+            throw new IllegalArgumentException("unsupported plain debug-section alignment");
+        }
         checkCancelled(cancelled);
         int headerSize = wide ? 24 : 12;
         if (this == NONE || plain.length <= headerSize) {
-            return new Stored(plain, false, 1);
+            return new Stored(plain, false, plainAlignment);
         }
         // Input and output chunks bound each native deflate call. Compression
         // stops once its header/payload cannot be smaller than the original;
@@ -55,7 +62,7 @@ public enum DebugSectionCompression {
                 }
                 int count = deflater.deflate(buffer);
                 if (count >= plain.length - headerSize - compressed.size()) {
-                    return new Stored(plain, false, 1);
+                    return new Stored(plain, false, plainAlignment);
                 }
                 compressed.write(buffer, 0, count);
                 if (count == 0 && !deflater.finished() && !deflater.needsInput()) {
@@ -68,11 +75,11 @@ public enum DebugSectionCompression {
             if (wide) {
                 result.putInt(0); // Elf64_Chdr.ch_reserved
                 result.putLong(plain.length);
-                result.putLong(1); // Existing Forge DWARF has uncompressed alignment 1.
+                result.putLong(plainAlignment);
             }
             else {
                 result.putInt(plain.length);
-                result.putInt(1);
+                result.putInt(plainAlignment);
             }
             result.put(compressed.toByteArray());
             return new Stored(result.array(), true, wide ? 8 : 4);

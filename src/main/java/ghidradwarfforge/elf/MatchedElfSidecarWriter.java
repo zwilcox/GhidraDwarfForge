@@ -86,6 +86,47 @@ public final class MatchedElfSidecarWriter {
     public void write(ElfImage image, Path output, Map<String, byte[]> debugSections,
             List<? extends ElfLocalSymbol> symbols, BooleanSupplier cancelled,
             java.util.function.Consumer<String> diagnostic) throws IOException {
+        write(image, output, debugSections, symbols, cancelled, diagnostic, false);
+    }
+
+    /**
+     * Package an already proved frame plan after independently qualifying original
+     * metadata and loader writes. This method does not infer or certify frame rules.
+     * Ordinary exporter calls continue to preserve originals without synthesis.
+     */
+    public void writeWithFrames(ElfImage image, Path output, Map<String, byte[]> debugSections,
+            List<? extends ElfLocalSymbol> symbols, ghidradwarfforge.unwind.CallFramePlan plan,
+            BooleanSupplier cancelled, java.util.function.Consumer<String> diagnostic) throws IOException {
+        Objects.requireNonNull(plan, "frame plan");
+        checkCancelled(cancelled);
+        if (plan.addressBytes() != (image.is64Bit() ? 8 : 4) || plan.order() != image.byteOrder()) {
+            throw new IllegalArgumentException("frame plan target layout differs from original ELF");
+        }
+        if (debugSections.containsKey(".debug_frame")) {
+            throw new IllegalArgumentException("frame plan cannot accompany caller-supplied frame bytes");
+        }
+        if (plan.frames().isEmpty()) {
+            write(image, output, debugSections, symbols, cancelled, diagnostic);
+            return;
+        }
+        var coverage = OriginalUnwindCoverage.inspect(image, cancelled);
+        for (var frame : plan.frames()) {
+            checkCancelled(cancelled);
+            if (coverage.overlaps(frame.address(), frame.size())) {
+                throw new IllegalArgumentException("generated frame overlaps original unwind coverage");
+            }
+            coverage.effects().requireUnchanged(frame.address(), frame.size(), cancelled);
+        }
+        byte[] original = OriginalFrameSources.debugFrameBytes(image, coverage.sources(), cancelled);
+        byte[] composed = ghidradwarfforge.dwarf.DwarfDebugFrame.append(original, plan, cancelled);
+        var sections = new LinkedHashMap<>(debugSections);
+        sections.put(".debug_frame", composed);
+        write(image, output, sections, symbols, cancelled, diagnostic, true);
+    }
+
+    private void write(ElfImage image, Path output, Map<String, byte[]> debugSections,
+            List<? extends ElfLocalSymbol> symbols, BooleanSupplier cancelled,
+            java.util.function.Consumer<String> diagnostic, boolean composedFrames) throws IOException {
         Objects.requireNonNull(image, "image");
         Objects.requireNonNull(cancelled, "cancelled");
         Objects.requireNonNull(diagnostic, "diagnostic");
@@ -112,8 +153,15 @@ public final class MatchedElfSidecarWriter {
                 throw new IllegalArgumentException("invalid debug section " + entry.getKey());
             }
         }
+        if (!composedFrames && debugSections.containsKey(".debug_frame") && image.sections().stream()
+                .anyMatch(section -> isOriginalDebugFrame(section.name))) {
+            // Replacing source/type DIEs does not invalidate original unwind
+            // rules. A future synthesis planner must reconcile coverage first;
+            // this writer must never silently overwrite either encoding.
+            throw new IllegalArgumentException("generated .debug_frame conflicts with original unwind metadata");
+        }
 
-        Layout layout = prepare(image, debugSections, symbols, cancelled, diagnostic);
+        Layout layout = prepare(image, debugSections, symbols, cancelled, diagnostic, composedFrames);
         Path temporary = Files.createTempFile(parent, ".ghidra-dwarf-forge-", ".tmp");
         boolean moved = false;
         try {
@@ -164,7 +212,7 @@ public final class MatchedElfSidecarWriter {
     /** Plan and validate the append-only layout before copying any input bytes. */
     private Layout prepare(ElfImage image, Map<String, byte[]> debugSections,
             List<? extends ElfLocalSymbol> symbols, BooleanSupplier cancelled,
-            java.util.function.Consumer<String> diagnostic) throws IOException {
+            java.util.function.Consumer<String> diagnostic, boolean composedFrames) throws IOException {
         long offset = image.fileSize();
         List<Section> sections = new ArrayList<>();
         if (image.sections().isEmpty()) {
@@ -181,6 +229,12 @@ public final class MatchedElfSidecarWriter {
             }
         }
         else {
+            boolean linkedImage = image.type() == 2 || image.type() == 3;
+            if (!linkedImage && image.sections().stream()
+                    .anyMatch(section -> isOriginalDebugFrame(section.name))) {
+                diagnostic.accept("Original debug-frame metadata remains retired: " +
+                    "preservation requires a linked ET_EXEC or ET_DYN image");
+            }
             Set<String> replacementNames = new HashSet<>();
             for (Section section : image.sections()) {
                 Section copy = section.copy();
@@ -196,7 +250,13 @@ public final class MatchedElfSidecarWriter {
                 else if (section.originalIndex == image.sectionNameIndex()) {
                     copy.name = ".shstrtab.old";
                 }
+                else if (composedFrames && isOriginalDebugFrame(copy.name)) {
+                    // The exact decoded records remain active in the composed
+                    // section. Keep the old stored encoding inert in the prefix.
+                    copy.name = ".forge.stale" + copy.name;
+                }
                 else if (isInheritedDebugMetadata(copy.name) &&
+                        !(linkedImage && isOriginalDebugFrame(copy.name)) &&
                         (!debugSections.containsKey(copy.name) ||
                             !replacementNames.add(copy.name))) {
                     copy.name = ".forge.stale" + copy.name;
@@ -208,7 +268,8 @@ public final class MatchedElfSidecarWriter {
 
         List<byte[]> debugPayloads = new ArrayList<>();
         for (Map.Entry<String, byte[]> entry : debugSections.entrySet()) {
-            var stored = compression.encode(entry.getValue(), image.is64Bit(), image.byteOrder(), cancelled);
+            int plainAlignment = entry.getKey().equals(".debug_frame") ? (image.is64Bit() ? 8 : 4) : 1;
+            var stored = compression.encode(entry.getValue(), image.is64Bit(), image.byteOrder(), plainAlignment, cancelled);
             long dataOffset = addOffset(offset, stored.alignment() - 1) & -stored.alignment();
             int padding = Math.toIntExact(dataOffset - offset);
             if (padding != 0) {
@@ -586,10 +647,17 @@ public final class MatchedElfSidecarWriter {
         // The current export replaces the original debug view. Old indexes,
         // compressed DWARF, and separate-debug references must not remain active
         // alongside the newly generated sections. Their bytes are still retained.
+        // prepare() exempts original call-frame information in linked images:
+        // it is independent of the replaced DIE/line view. ET_REL still needs
+        // relocation processing and must not expose unresolved frame bytes.
         return name.startsWith(".debug_") || name.startsWith(".zdebug_") ||
             name.startsWith(".rel.debug_") || name.startsWith(".rela.debug_") ||
             name.equals(".gdb_index") || name.equals(".gnu_debuglink") ||
             name.equals(".gnu_debugaltlink") || name.equals(".gnu_debugdata");
+    }
+
+    private static boolean isOriginalDebugFrame(String name) {
+        return name.equals(".debug_frame") || name.equals(".zdebug_frame");
     }
 
     private static void omitRelocationSection(Section section) {

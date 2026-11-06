@@ -5,6 +5,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
@@ -16,6 +18,10 @@ final class SectionlessUnwind {
     private static final long PT_GNU_EH_FRAME = 0x6474e550L;
     private static final int MAX_RECORDS = 262144;
 
+    record Discovery(ElfImage.Section section, Map<Long, Long> initialLocations) {
+        Discovery { initialLocations = Map.copyOf(initialLocations); }
+    }
+
     private SectionlessUnwind() {
     }
 
@@ -25,6 +31,19 @@ final class SectionlessUnwind {
         if (!image.sections().isEmpty()) {
             return null;
         }
+        return fromProgramHeaders(image, cancelled, diagnostic);
+    }
+
+    /** Same discovery proof, also available for cross-checking a named frame source. */
+    static ElfImage.Section fromProgramHeaders(ElfImage image, BooleanSupplier cancelled,
+            Consumer<String> diagnostic) throws IOException {
+        Discovery discovery = inventoryFromProgramHeaders(image, cancelled, diagnostic);
+        return discovery == null ? null : discovery.section();
+    }
+
+    static Discovery inventoryFromProgramHeaders(ElfImage image, BooleanSupplier cancelled,
+            Consumer<String> diagnostic) throws IOException {
+        checkCancelled(cancelled);
         try {
             ElfImage.Segment header = null;
             for (var segment : image.segments()) {
@@ -49,7 +68,7 @@ final class SectionlessUnwind {
         }
     }
 
-    private static ElfImage.Section read(Reader reader, ElfImage.Segment header) throws IOException {
+    private static Discovery read(Reader reader, ElfImage.Segment header) throws IOException {
         require(header.fileSize >= 4 && header.fileSize <= ElfImage.MAX_NAME_TABLE_BYTES,
             "unsupported PT_GNU_EH_FRAME size");
         require(reader.locate(header.virtualAddress, header.fileSize) == header.offset,
@@ -64,6 +83,7 @@ final class SectionlessUnwind {
         long count = encoded(reader, bytes, header.virtualAddress, countEncoding);
         require(count > 0 && count <= MAX_RECORDS, "unwind search-table count outside supported bounds");
         Set<Long> referenced = new HashSet<>();
+        var initialLocations = new LinkedHashMap<Long, Long>();
         long lastPc = -1;
         long end = start;
         for (long index = 0; index < count; index++) {
@@ -72,6 +92,7 @@ final class SectionlessUnwind {
             long fde = encoded(reader, bytes, header.virtualAddress, tableEncoding);
             require(initialLocation > lastPc && referenced.add(fde), "unordered or duplicate unwind search-table entry");
             lastPc = initialLocation;
+            initialLocations.put(fde, initialLocation);
             require(fde >= start && fde - start <= ElfImage.MAX_TABLE_BYTES - 8,
                 "unwind FDE outside bounded frame extent");
             long length = length(reader.bytes(fde, 4).getInt());
@@ -116,7 +137,7 @@ final class SectionlessUnwind {
         result.offset = offset;
         result.size = end - start;
         result.alignment = 1;
-        return result;
+        return new Discovery(result, initialLocations);
     }
 
     private static long length(int value) {

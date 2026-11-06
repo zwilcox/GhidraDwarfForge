@@ -1,5 +1,26 @@
 # Integration fixtures
 
+`runtime-relocations.c` creates ordinary and clustered relative dynamic
+relocations, including a PLT call. Its independent inventory harness builds
+x86-64/AArch64 executable, PIE and shared-object variants with retained link
+relocations and optional RELR packing. Sectionless copies must retain identical
+runtime inventories. It does not establish unwind synthesis or runtime ABI
+support for another target.
+
+`synthetic-cfi.c` and its two `synthetic-cfi-start-*.S` startup files are
+freestanding x86-64/AArch64 compiler references for #112. The dedicated
+`synthetic-cfi-reference.py` harness builds them with `.debug_frame` and no
+runtime unwind tables, then creates a separate input with debug information
+removed. It compares compiler, absent-CFI and disabled-DWARF-unwinder behavior
+through nested calls and recursive returns. This tests the independent oracle;
+it does not establish production synthetic-CFI support. See
+`docs/SYNTHETIC-CFI-EVIDENCE.md` for commands and remaining acceptance.
+`synthetic-cfi-shared-driver.c` supplies a real `dlopen` consumer and a stable
+call-preserved register witness for the original-CFI preservation matrix. Its
+load-bias observation supports explicit shared-sidecar loading in GDB. The
+preservation fixture explicitly curates source-built function names/extents;
+it never supplies unwind rules to the exporter.
+
 `semantic.c` and `shared_semantic.c` are redistributable source-built fixtures
 shared across target architectures. They intentionally contain functions,
 globals, parameters, locals, arrays, an enum, union, typedef, function pointer,
@@ -713,6 +734,13 @@ compiler-DWARF references. Both byte orders also run the production exporter;
 unproven Ghidra double-pair locations remain unavailable. Wrong-carrier and
 wrong-mode controls are required. See
 [the reference contract](../../../docs/MIPS-FPR-SYSTEM-REFERENCE.md).
+
+`cfi-encoder-x86_64.S` and `cfi-encoder-aarch64.S` are freestanding recursive
+assembler references for explicit call-frame rule serialization. Their separate
+stripped inputs execute under native GDB or QEMU/GDB with reference, generated
+plain/compressed, and absent CFI. The harness compares caller/register traces at
+instruction boundaries for non-PIE and static PIE. These plans do not recover
+rules from Ghidra. See [the encoder contract](../../../docs/CFI-RULE-ENCODER.md).
 
 `analyst-annotations.c` is the compiler reference for planned listing-comment,
 equate and optional instruction-context preservation. It provides real name

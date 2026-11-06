@@ -13,11 +13,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/** Recoverable publication of a complete sidecar/source/companion generation. */
+/** Recoverable publication of a sidecar/source generation with one or two companions. */
 public final class CompanionArtifactPublisher {
     @FunctionalInterface
     public interface StagedWriter {
         void write(Path sidecar, Path source, Path companion) throws Exception;
+    }
+
+    @FunctionalInterface
+    public interface GenerationWriter {
+        void write(List<Path> stages) throws Exception;
     }
 
     @FunctionalInterface
@@ -43,7 +48,11 @@ public final class CompanionArtifactPublisher {
     /** Preflight all destinations before staging, without following output leaves for replacement. */
     public static void validate(Path input, Path sidecar, Path source, Path companion,
             Path... additionalInputs) throws IOException {
-        List<Path> targets = resolve(input, sidecar, source, companion);
+        validate(input, List.of(sidecar, source, companion), additionalInputs);
+    }
+
+    public static void validate(Path input, List<Path> outputs, Path... additionalInputs) throws IOException {
+        List<Path> targets = resolve(input, outputs);
         for (Path additional : additionalInputs) {
             Path protectedPath = FileSystemPaths.resolveLeaf(additional, "protected input");
             for (Path target : targets) {
@@ -62,20 +71,32 @@ public final class CompanionArtifactPublisher {
     static void stageAndPublish(Path input, Path sidecar, Path source, Path companion,
             StagedWriter writer, ArtifactPairPublisher.PrePublishCheck check, InstallHook hook)
             throws Exception {
+        stageAndPublish(input, List.of(sidecar, source, companion),
+            stages -> writer.write(stages.get(0), stages.get(1), stages.get(2)), check, hook);
+    }
+
+    /** First two paths are sidecar/source; remaining paths are generation-bound companions. */
+    public static void stageAndPublish(Path input, List<Path> outputs,
+            GenerationWriter writer, ArtifactPairPublisher.PrePublishCheck check) throws Exception {
+        stageAndPublish(input, outputs, writer, check, index -> { });
+    }
+
+    static void stageAndPublish(Path input, List<Path> outputs, GenerationWriter writer,
+            ArtifactPairPublisher.PrePublishCheck check, InstallHook hook) throws Exception {
         Objects.requireNonNull(writer, "writer");
         Objects.requireNonNull(check, "check");
         Objects.requireNonNull(hook, "hook");
-        List<Path> targets = resolve(input, sidecar, source, companion);
+        List<Path> targets = resolve(input, outputs);
         List<State> previous = new ArrayList<>();
         for (Path target : targets) {
             previous.add(observe(target, check));
         }
         check.check();
         Path directory = Files.createTempDirectory(targets.get(0).getParent(), ".forge-generation-");
-        Path[] stages = new Path[3];
-        Path[] backups = new Path[3];
-        State[] installed = new State[3];
-        boolean[] replaced = new boolean[3];
+        Path[] stages = new Path[targets.size()];
+        Path[] backups = new Path[targets.size()];
+        State[] installed = new State[targets.size()];
+        boolean[] replaced = new boolean[targets.size()];
         boolean retainRecovery = false;
         Exception failure = null;
         try {
@@ -85,7 +106,7 @@ public final class CompanionArtifactPublisher {
                 stages[index] = Files.createTempFile(directory.getParent(),
                     directory.getFileName() + "-stage-" + index + "-", ".staged");
             }
-            writer.write(stages[0], stages[1], stages[2]);
+            writer.write(List.of(stages));
             for (Path stage : stages) {
                 if (!Files.isRegularFile(stage, LinkOption.NOFOLLOW_LINKS)) {
                     throw new IOException("generation writer did not produce a regular staged file");
@@ -177,15 +198,20 @@ public final class CompanionArtifactPublisher {
         }
     }
 
-    private static List<Path> resolve(Path input, Path sidecar, Path source, Path companion)
+    private static List<Path> resolve(Path input, List<Path> outputs)
             throws IOException {
         Path original = FileSystemPaths.resolveLeaf(input, "original ELF");
         if (!Files.isRegularFile(original) || !Files.isReadable(original)) {
             throw new IOException("original ELF is not a readable regular file: " + original);
         }
-        List<Path> targets = List.of(FileSystemPaths.resolveLeaf(sidecar, "sidecar"),
-            FileSystemPaths.resolveLeaf(source, "source"),
-            FileSystemPaths.resolveLeaf(companion, "GDB companion"));
+        outputs = List.copyOf(outputs);
+        if (outputs.size() < 3 || outputs.size() > 4) {
+            throw new IllegalArgumentException("generation needs sidecar/source and one or two companions");
+        }
+        List<Path> targets = new ArrayList<>();
+        for (int index = 0; index < outputs.size(); index++) {
+            targets.add(FileSystemPaths.resolveLeaf(outputs.get(index), "generation output " + index));
+        }
         List<Path> all = new ArrayList<>(targets);
         all.add(original);
         for (int first = 0; first < all.size(); first++) {
@@ -198,7 +224,7 @@ public final class CompanionArtifactPublisher {
         Path parent = targets.get(0).getParent();
         for (Path target : targets) {
             if (!parent.equals(target.getParent())) {
-                throw new IOException("sidecar, source and GDB companion must share an output directory");
+                throw new IOException("all generation outputs must share an output directory");
             }
             try {
                 var attributes = Files.readAttributes(target, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);

@@ -213,7 +213,7 @@ public final class SectionlessUnwindSmoke {
         }
     }
 
-    private static byte[] fixture(boolean wide, ByteOrder order, int encoding) {
+    static byte[] fixture(boolean wide, ByteOrder order, int encoding) {
         ByteBuffer b = ByteBuffer.allocate(0x800).order(order);
         b.put(new byte[] {0x7f, 'E', 'L', 'F', (byte) (wide ? 2 : 1), (byte) (order == ByteOrder.LITTLE_ENDIAN ? 1 : 2), 1});
         b.putShort(16, (short) 2).putShort(18, (short) (wide ? 62 : 3)).putInt(20, 1);

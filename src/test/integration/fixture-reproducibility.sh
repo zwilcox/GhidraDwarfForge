@@ -64,6 +64,10 @@ expected_sources=(
     bitfield-values.c
     call-memory-boundaries.c
     calling-convention.c
+    cfi-encoder-aarch64.S
+    cfi-encoder-x86_64.S
+    cfi-shrinkwrap-aarch64.S
+    cfi-shrinkwrap-x86_64.S
     composite-register-prefix.c
     composite-value-flow.c
     curated-thunk.c
@@ -123,7 +127,11 @@ expected_sources=(
     recovered-parameter-types.c
     register-copy.c
     register_prefix.c
+    relocation-effects-consumer.c
+    relocation-effects-main.c
+    relocation-effects-provider.c
     retained-function-aliases.cpp
+    runtime-relocations.c
     same-name-types.cpp
     second-register-copy.c
     semantic.c
@@ -136,6 +144,10 @@ expected_sources=(
     stack-local-effects.c
     stack-spill.c
     stack-value-transitions.c
+    synthetic-cfi-shared-driver.c
+    synthetic-cfi-start-aarch64.S
+    synthetic-cfi-start-x86_64.S
+    synthetic-cfi.c
     terminal-composite.c
 )
 mapfile -t actual_sources < <(

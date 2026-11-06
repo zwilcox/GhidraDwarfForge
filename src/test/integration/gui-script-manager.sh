@@ -21,6 +21,7 @@ test -s "$module/ghidra_scripts/GhidraDwarfForge.java"
 test -s "$module/ghidra_scripts/ExportGhidraDwarfForge.java"
 (cd "$module" && sha256sum -c RELEASE-SHA256SUMS) >/dev/null
 root="$repository/build/test-results/gui-script-manager"
+if [[ ${GHIDRA_GUI_UNWIND:-0} == 1 ]]; then root="$repository/build/test-results/gui-unwind"; fi
 mkdir -p "$root"
 work=$(mktemp -d "$root/run.XXXXXXXX")
 mkdir -p "$work/classes" "$work/settings" "$work/cache" "$work/tmp" "$work/user" \
@@ -35,7 +36,7 @@ cleanup() {
         kill "$xvfb_pid" 2>/dev/null || true
         wait "$xvfb_pid" 2>/dev/null || true
     fi
-    for restricted in "$work/select/readonly" "$work/cancel/readonly"; do
+    for restricted in "$work/select/readonly" "$work/cancel/readonly" "$work/readonly"; do
         if [[ -d "$restricted" ]]; then
             chmod u+w "$restricted"
         fi
@@ -103,7 +104,19 @@ DISPLAY=":$display" timeout 60 "$java" -Djava.awt.headless=false \
     -Duser.home="$work/user" -Djava.io.tmpdir="$work/tmp" \
     -cp "$work/classes" GuiWindowGeometrySmoke "$work/native-geometry" \
     > "$work/native-geometry.log" 2>&1
-function_address=$(readelf -Ws "$reference" | awk '$8 == "recovered_add" && !found++ { print $2 }')
+if [[ ${GHIDRA_GUI_UNWIND:-0} == 1 ]]; then
+    function_address=$(python3 - "$reference" <<'PYTHON'
+import re, subprocess, sys
+text = subprocess.check_output(['readelf', '-sW', sys.argv[1]], text=True)
+values = set(re.findall(r'(?m)^\s*\d+:\s*([0-9a-f]+)\s+8\s+OBJECT\s+GLOBAL\s+DEFAULT\s+\d+\s+cfi_sink$', text))
+assert len(values) == 1
+first = int(values.pop(), 16)
+print(f'{first:x}:{first+7:x}')
+PYTHON
+)
+else
+    function_address=$(readelf -Ws "$reference" | awk '$8 == "recovered_add" && !found++ { print $2 }')
+fi
 test -n "$function_address"
 gui_timeout=300
 if [[ ${GHIDRA_GUI_NATIVE_ATTACHMENT:-0} == 1 ]]; then
@@ -130,6 +143,11 @@ DISPLAY=":$display" timeout "$gui_timeout" "$java" --enable-native-access=ALL-UN
     "$ghidra" "$module" "$fixture" "$work" "$function_address" \
     2>&1 | tee "$work/gui.log"
 kill -0 "$openbox_pid"
+if [[ ${GHIDRA_GUI_UNWIND:-0} == 1 ]]; then
+    python3 "$repository/src/test/integration/gui-unwind-evidence.py" "$work" "$reference" \
+        --target "${GHIDRA_GUI_UNWIND_TARGET:?target required}" --dwarfdump "${DWARFDUMP:?pinned checker required}"
+    exit 0
+fi
 validate_pair() {
     local work=$1 input=$2 sidecar=$3 validation_case=$4
     local start_command

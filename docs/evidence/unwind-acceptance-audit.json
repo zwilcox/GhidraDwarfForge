@@ -1,0 +1,142 @@
+{
+    "status": "CONFIRMED scoped native Windows production, local Linux consumption and refusal audit; final hosted/ADR integration incomplete",
+    "utc": "2026-11-06T15:21:09.573128+00:00",
+    "parent": "da74f019826db64fc73762415949bad897240184",
+    "sourceSha256": {
+        "PROJECT_CONTEXT.md": "425d261198f69fc2769a2d4ded6dcd7dae2c669cf67172330ae081ef42ca9276",
+        "TODO.md": "f57c0f9a875da8a5642ade640c485d92ceb30ef8bed424c4cf90ca4f48136515",
+        "docs/ADR-0002-DEBUG-FRAME.md": "9e9b6f6089346906d7aa316ae23184890de873b81890ef16c156d20ad683b600",
+        "docs/CFI-INTEGRATION.md": "f74bd4c64509c58afda8494af0fffff08afe832901ebe3fb9d2d5170a8b712ac",
+        "docs/PRODUCTION-UNWIND.md": "882e8193a961884c7e80d4f8e90959f04defe8fdd53f7b9893a461211b9465de",
+        "docs/SYNTHETIC-CFI-EVIDENCE.md": "ce2d75f56e5f767ba6a94e3c3c7a68561eb3283f19c5cefc96b0de13618e8a16",
+        "docs/UNWIND-PROFILES.md": "cbcc5498d6bac6e7bccffc67fa00f48a1efad06aa22d11d23c0100008abeeb3b",
+        "src/test/java/ghidradwarfforge/unwind/UnwindAbiProfileSmoke.java": "3664cc8660cd97ce73c0886ed7df01e66e8d6a49d9316ce06531f41e92177def",
+        "docs/UNWIND-ACCEPTANCE.md": "5889957049e19b2c04ad11c930828d19e35d309bcd8d986faf46cdfc930f80bc",
+        ".github/workflows/ci.yml": "2452931656e52e745b50eea508632960553b9609451c083c55473499bd5eb902",
+        "src/test/integration/powershell-unwind-gdb.py": "0e348d82e650f3510aaa184732eb932f3332d03100b44fb57ba86a4547400736",
+        "src/test/integration/windows-unwind-gdb.py": "474cc7a07ed1db9a44fdac8276bba714ba6253c62180432b3126f06a7c3cb834",
+        "src/test/integration/gui-unwind-evidence.py": "f135b405ee766e8cc5d92619b5761636856d48f4c338a724ac917c04264b665e",
+        "src/test/integration/compiler-cfi-boundaries-gdb.py": "6ee5fab7718deb0f05e26b031b7e173aab8a3dd359f6641e183ede9a9c2b468a",
+        "src/test/integration/compiler-unwind-export.py": "f8530de8ac17bdc85fae6809df859075180825eb5fa2bdfe44e3459458eae465",
+        "src/test/integration/synthetic-cfi-reference-gdb.py": "87c2dc5cffeaf0fab2496bee38e2473ec3b194ec62abb9e86d6ea16dd569f1f5",
+        "src/test/integration/synthetic-cfi-reference-gdb.sh": "6f43ee92b95345efc751513f62e8dcf1959b1407a13d2fe08cbc3d1c44f1f4b3"
+    },
+    "profile": {
+        "checks": 775,
+        "specialTransitions": [
+            "x86-64 SYSCALL",
+            "x86-64 INT",
+            "x86-64 IRETQ",
+            "AArch64 SVC",
+            "AArch64 HVC",
+            "AArch64 ERET"
+        ],
+        "logSha256": "b6958a2a642e7ed3389effc6449f5bc1118b7383956150bb5e2e0e752459bb66",
+        "scope": "Native Sleigh decoder and guarded-capture refusal; no special-frame runtime support"
+    },
+    "windows": {
+        "run": 42235627038,
+        "head": "187247735ec4b132e6a4f37ae399ce62dee98a7c",
+        "job": 127959283321,
+        "conclusion": "success",
+        "artifact": 13515745229,
+        "artifactZipSha256": "6c41ddafcd72e1c23272f7e5b365cc0039d13cc446e4587913e33dbe58ab4b57",
+        "productionAndProducerScriptsUnchangedThroughParent": true,
+        "powershellExports": 5,
+        "invalidRangeControls": 1,
+        "guiChoices": 7,
+        "guiExports": 4,
+        "guiCancellations": 3,
+        "producerJarSha256": "3346f363e47a97807a356cc38e6bd8d3f8c89ac3e67a57b5cb3c832cf61d7e6e",
+        "consumers": "Fresh local Linux runs on Windows artifact; hosted consumers and full latest-head gate remain pending",
+        "strictReports": [
+            {
+                "path": "windows-187/gui-consumer/conditioned-fixed/strict.log.check.json",
+                "reportSha256": "3a73417de38346274e7e2bcc40d45aa75d119c8da4620566d0bac4a7cd4a8215",
+                "rawSha256": "f6347aafc1047533701614c056955c1ebaf0e23d3af5df35c75382d083a94e85",
+                "reportedErrors": 0
+            },
+            {
+                "path": "windows-187/gui-consumer/conditioned-no-pointers/strict.log.check.json",
+                "reportSha256": "b98da6faf156d3066bb2c85780bb467e5f15d9e5f43e9aac04a457d2a4a587a1",
+                "rawSha256": "f6347aafc1047533701614c056955c1ebaf0e23d3af5df35c75382d083a94e85",
+                "reportedErrors": 0
+            },
+            {
+                "path": "windows-187/gui-consumer/off/strict.log.check.json",
+                "reportSha256": "e9cc9aa71be4abab29179678856b51a3092003b49f7351af46031a6200c504cb",
+                "rawSha256": "f6347aafc1047533701614c056955c1ebaf0e23d3af5df35c75382d083a94e85",
+                "reportedErrors": 0
+            },
+            {
+                "path": "windows-187/gui-consumer/strict/strict.log.check.json",
+                "reportSha256": "5649473f0ba1c0db99f56408a644f3cc72e4b46642073aa340bac3127347e6a5",
+                "rawSha256": "f6347aafc1047533701614c056955c1ebaf0e23d3af5df35c75382d083a94e85",
+                "reportedErrors": 0
+            },
+            {
+                "path": "windows-187/powershell-consumer/compressed-strict.log.check.json",
+                "reportSha256": "f904d55c60807a8de20d19d61f626cf6fc95eea8340b7c7bd4b7d957086c7f9e",
+                "rawSha256": "f6347aafc1047533701614c056955c1ebaf0e23d3af5df35c75382d083a94e85",
+                "reportedErrors": 0
+            },
+            {
+                "path": "windows-187/powershell-consumer/conditioned-strict.log.check.json",
+                "reportSha256": "e5c5f6b5fa0d4e39ff4bcd129a1298d4141e571c0a87aac00b4488e52a66ee9e",
+                "rawSha256": "f6347aafc1047533701614c056955c1ebaf0e23d3af5df35c75382d083a94e85",
+                "reportedErrors": 0
+            },
+            {
+                "path": "windows-187/powershell-consumer/off-strict.log.check.json",
+                "reportSha256": "6b66474ff4ba5961ec43583a893605e066a68fbfc7114b7b75b9ca9475ff73f8",
+                "rawSha256": "f6347aafc1047533701614c056955c1ebaf0e23d3af5df35c75382d083a94e85",
+                "reportedErrors": 0
+            },
+            {
+                "path": "windows-187/powershell-consumer/strict-strict.log.check.json",
+                "reportSha256": "05951869c3012c995cfcd1528159d3b6cb483bd80f34fa48db6e8d94b1fd2254",
+                "rawSha256": "f6347aafc1047533701614c056955c1ebaf0e23d3af5df35c75382d083a94e85",
+                "reportedErrors": 0
+            }
+        ],
+        "gdbSessionCommands": {
+            "powershell-consumer": [
+                "windows-187/powershell-consumer/compiler-boundaries-command.log.command.json",
+                "windows-187/powershell-consumer/compiler-return-command.log.command.json",
+                "windows-187/powershell-consumer/compressed-boundaries-command.log.command.json",
+                "windows-187/powershell-consumer/compressed-return-command.log.command.json",
+                "windows-187/powershell-consumer/conditioned-boundaries-command.log.command.json",
+                "windows-187/powershell-consumer/conditioned-return-command.log.command.json"
+            ],
+            "gui-consumer": [
+                "windows-187/gui-consumer/compiler-boundaries-command.log.command.json",
+                "windows-187/gui-consumer/compiler-return-command.log.command.json",
+                "windows-187/gui-consumer/conditioned-fixed/boundaries-command.log.command.json",
+                "windows-187/gui-consumer/conditioned-fixed/compiler-boundaries-command.log.command.json",
+                "windows-187/gui-consumer/conditioned-fixed/returns-command.log.command.json",
+                "windows-187/gui-consumer/conditioned-no-pointers/boundaries-command.log.command.json",
+                "windows-187/gui-consumer/conditioned-no-pointers/compiler-boundaries-command.log.command.json",
+                "windows-187/gui-consumer/conditioned-no-pointers/returns-command.log.command.json"
+            ]
+        },
+        "runtimeScope": "90 executed ordinary boundary snapshots per trace; caller values and recursive returns; direct symbol loading, no cross-host companion relocation claim"
+    },
+    "historicalArchiveAudit": {
+        "count": 21,
+        "indexSha256": "24feee8838f5fb42eea8b66f59e96b70b2a26cdf6f5d4c521b340c3a454162eb",
+        "scope": "Archive integrity and full regular-member readability; not semantic test acceptance"
+    },
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/unwind-acceptance-audit.tar.gz",
+        "sha256": "5abfc33931ed2af504801510cfd081a4e4e4b0723852f1e104c8aa665b2566e7",
+        "bytes": 35803343,
+        "regularMembersVerified": 1659,
+        "verification": "Every archived regular file read and SHA-256 compared with retained source"
+    },
+    "remaining": [
+        "Latest combined required-validation and exact artifact review",
+        "Final ADR/support acceptance and protected integration",
+        "Reconcile component PR167-174 after acceptance",
+        "Continue full goal with issue110 then issue109"
+    ]
+}

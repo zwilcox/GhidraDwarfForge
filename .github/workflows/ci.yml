@@ -625,9 +625,10 @@ jobs:
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfAddressRangesSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
-              packagedNativeLibrariesSmoke existingDebugSidecarSmoke \
+              packagedNativeLibrariesSmoke existingDebugSidecarSmoke callFrameEncoderSmoke unwindFlowSmoke ghidraUnwindInstructionsSmoke unwindAbiProfileSmoke \
+              unwindCallsSmoke unwindStackSeparationSmoke unwindOptionsSmoke elfRelocatedPointersSmoke ghidraUnwindCallsSmoke unwindFrameRowsSmoke unwindEvidenceJsonSmoke elfCodeBytesSmoke originalFrameRangesSmoke originalFrameSourcesSmoke elfRuntimeRelocationsSmoke elfRelocationEffectsSmoke \
               extendedSectionNumberingSmoke elfImageReaderSmoke \
-              elfCopyCancellationSmoke ghidraImageBaseSmoke buildExtension
+              elfCopyCancellationSmoke ghidraImageBaseSmoke exportConsistencySmoke buildExtension
             python3 -B src/test/integration/debuglink-basename.py \
                 --jar "$PWD/build/libs/GhidraDwarfForge.jar" \
                 --results "$PWD/build/test-results/extension-build/debuglink-basename"
@@ -787,7 +788,7 @@ jobs:
               ;;
             aarch64)
               packages+=(gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
-                libc6-dev-arm64-cross qemu-user-static)
+                libc6-dev-arm64-cross qemu-user-static lld-18 gdb xvfb openbox x11-utils libxtst6 libxi6 libxrender1)
               ;;
             arm32)
               packages+=(gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf binutils-arm-linux-gnueabihf
@@ -980,6 +981,226 @@ jobs:
           make -C src/test/fixtures "$TARGET"
           src/test/integration/fixture-reproducibility.sh "$TARGET"
 
+      - name: Validate independent compiler unwind references
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/synthetic-cfi-reference.py "$TARGET" \
+            "build/test-results/synthetic-cfi-reference/$TARGET" --dwarfdump "$DWARFDUMP"
+
+      - name: Validate explicit CFI encoder plans and debugger behavior
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          ./gradlew callFrameEncoderSmoke
+          python3 src/test/integration/cfi-encoder.py build/classes/java \
+            "build/test-results/cfi-encoder/$TARGET" --target "$TARGET" --dwarfdump "$DWARFDUMP"
+          python3 src/test/integration/cfi-composition.py build/classes/java \
+            "build/test-results/cfi-encoder/$TARGET" "build/test-results/cfi-composition/$TARGET" --dwarfdump "$DWARFDUMP"
+          for encoding in plain gabi gnu; do
+            python3 src/test/integration/cfi-composition.py build/classes/java \
+              "build/test-results/cfi-encoder/$TARGET" "build/test-results/cfi-writer/$TARGET/$encoding" \
+              --original-encoding "$encoding" --dwarfdump "$DWARFDUMP"
+          done
+
+      - name: Reject input and program changes before export publication
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/export-consistency.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+            "build/test-results/export-consistency/$TARGET" --dwarfdump "$DWARFDUMP"
+
+      - name: Validate recovered CFI in executables, PIE and loaded shared libraries
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          ./gradlew unwindFrameRowsSmoke ghidraUnwindCallsSmoke elfCodeBytesSmoke
+          python3 src/test/integration/unwind-frame-recovery.py build/classes/java \
+            "build/test-results/unwind-frame-recovery/$TARGET" --target "$TARGET" --dwarfdump "$DWARFDUMP"
+          python3 src/test/integration/unwind-frame-recovery.py build/classes/java \
+            "build/test-results/unwind-shrinkwrap/$TARGET" --target "$TARGET" \
+            --fixture-family shrinkwrap --dwarfdump "$DWARFDUMP"
+          python3 src/test/integration/compiler-memory-effects.py \
+            "build/test-results/compiler-memory-effects/$TARGET" --target "$TARGET" --conditional-proof
+
+      - name: Compare conditioned native frames with unchanged compiler references
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for role in exec pie shared; do
+            options=()
+            if [[ "$role" == shared ]]; then options+=(--relocated-pointers); fi
+            python3 src/test/integration/compiler-unwind-export.py \
+              "build/test-results/compiler-unwind-export/$TARGET/$role" --target "$TARGET" --role "$role" "${options[@]}" \
+              --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP" \
+              --libdwarf "$PWD/native-integration/libdwarf.so.2.3.2" \
+              --libdwarfp "$PWD/native-integration/libdwarfp.so.2.3.2"
+            python3 src/test/integration/production-unwind-export.py \
+              "build/test-results/compiler-unwind-export/$TARGET/$role" \
+              "build/test-results/production-unwind-export/$TARGET/$role" \
+              --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP" \
+              --libdwarf "$PWD/native-integration/libdwarf.so.2.3.2" \
+              --libdwarfp "$PWD/native-integration/libdwarfp.so.2.3.2"
+            python3 src/test/integration/production-unwind-companion.py \
+              "build/test-results/production-unwind-export/$TARGET/$role" \
+              "build/test-results/compiler-unwind-export/$TARGET/$role" \
+              "build/test-results/production-unwind-companion/$TARGET/$role"
+          done
+          python3 src/test/integration/production-unwind-controls.py \
+            "build/test-results/compiler-unwind-export/$TARGET/shared" \
+            "build/test-results/production-unwind-controls/$TARGET" \
+            --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP" \
+            --libdwarf "$PWD/native-integration/libdwarf.so.2.3.2" \
+            --libdwarfp "$PWD/native-integration/libdwarfp.so.2.3.2"
+          python3 src/test/integration/compiler-pointer-refusals.py \
+            "build/test-results/compiler-pointer-refusals/$TARGET" --target "$TARGET" \
+            --ghidra "$GHIDRA_INSTALL_DIR" \
+            --libdwarf "$PWD/native-integration/libdwarf.so.2.3.2" \
+            --libdwarfp "$PWD/native-integration/libdwarfp.so.2.3.2"
+
+      - name: Validate compiler frame pointers and recovered caller values
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/compiler-unwind-export.py \
+            "build/test-results/compiler-frame-pointer/$TARGET" --target "$TARGET" --frame-pointer keep \
+            --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP" \
+            --libdwarf "$PWD/native-integration/libdwarf.so.2.3.2" \
+            --libdwarfp "$PWD/native-integration/libdwarfp.so.2.3.2"
+          python3 src/test/integration/production-unwind-export.py \
+            "build/test-results/compiler-frame-pointer/$TARGET" \
+            "build/test-results/production-frame-pointer/$TARGET" \
+            --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP" \
+            --libdwarf "$PWD/native-integration/libdwarf.so.2.3.2" \
+            --libdwarfp "$PWD/native-integration/libdwarfp.so.2.3.2"
+          python3 src/test/integration/frame-pointer-gdb.py \
+            "build/test-results/compiler-frame-pointer/$TARGET" \
+            "build/test-results/production-frame-pointer/$TARGET" \
+            "build/test-results/frame-pointer-values/$TARGET"
+
+      - name: Validate discontiguous unwind ranges and partial-instruction refusals
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/discontiguous-unwind.py \
+            "build/test-results/discontiguous-unwind/$TARGET" --target "$TARGET" \
+            --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP"
+          python3 src/test/integration/discontiguous-unwind-controls.py \
+            "build/test-results/discontiguous-unwind/$TARGET" \
+            "build/test-results/discontiguous-unwind-controls/$TARGET" \
+            --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP"
+
+      - name: Validate real native exports with recovered frames and source
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for family in unwind-frame-recovery unwind-shrinkwrap; do
+            python3 src/test/integration/unwind-export.py "$GHIDRA_INSTALL_DIR" \
+              "build/test-results/$family/$TARGET" "build/test-results/native-$family/$TARGET" \
+              --target "$TARGET" --dwarfdump "$DWARFDUMP"
+          done
+          python3 src/test/integration/unwind-export.py "$GHIDRA_INSTALL_DIR" \
+            "build/test-results/unwind-frame-recovery/$TARGET" "build/test-results/native-frame-failed-source/$TARGET" \
+            --target "$TARGET" --roles exec --failed-source-name cf_checkpoint --dwarfdump "$DWARFDUMP"
+
+      - name: Preserve original records alongside recovered native frame exports
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for encoding in plain gabi gnu; do
+            for family in unwind-frame-recovery unwind-shrinkwrap; do
+              python3 src/test/integration/unwind-export.py "$GHIDRA_INSTALL_DIR" \
+                "build/test-results/$family/$TARGET" "build/test-results/native-coexistence/$encoding/$family/$TARGET" \
+                --target "$TARGET" --original-encoding "$encoding" --dwarfdump "$DWARFDUMP"
+            done
+          done
+
+      - name: Preserve runtime unwind records alongside recovered native frames
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for family in unwind-frame-recovery unwind-shrinkwrap; do
+            python3 src/test/integration/unwind-export.py "$GHIDRA_INSTALL_DIR" \
+              "build/test-results/$family/$TARGET" "build/test-results/native-runtime-coexistence/$family/$TARGET" \
+              --target "$TARGET" --original-runtime --dwarfdump "$DWARFDUMP"
+          done
+
+      - name: Export rebased saved projects with original and recovered unwind records
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          # Cover both targets, all image roles, each original compression, and
+          # ordinary/shrink-wrapped frames through the installed normal wrapper.
+          while read -r encoding family role; do
+            python3 src/test/integration/production-unwind-saved.py \
+              "build/test-results/native-coexistence/$encoding/$family/$TARGET" \
+              "build/test-results/production-unwind-saved/$TARGET/$encoding" \
+              --target "$TARGET" --roles "$role" --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP"
+          done <<'CASES'
+          plain unwind-frame-recovery exec
+          gabi unwind-shrinkwrap pie
+          gnu unwind-frame-recovery shared
+          CASES
+          python3 src/test/integration/production-unwind-saved.py \
+            "build/test-results/native-runtime-coexistence/unwind-shrinkwrap/$TARGET" \
+            "build/test-results/production-unwind-saved/$TARGET/runtime" \
+            --target "$TARGET" --roles shared --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP"
+
+      - name: Preserve processor-typed runtime unwind records
+        if: matrix.target == 'x86_64'
+        run: |
+          for family in unwind-frame-recovery unwind-shrinkwrap; do
+            python3 src/test/integration/unwind-export.py "$GHIDRA_INSTALL_DIR" \
+              "build/test-results/$family/x86_64" "build/test-results/typed-runtime-coexistence/$family" \
+              --target x86_64 --original-runtime --runtime-section-type processor --dwarfdump "$DWARFDUMP"
+          done
+
+      - name: Preserve inherited unavailable-register limits
+        if: matrix.target == 'aarch64'
+        run: |
+          python3 src/test/integration/unwind-incomplete-original.py "$GHIDRA_INSTALL_DIR" \
+            build/test-results/unwind-frame-recovery/aarch64 \
+            build/test-results/native-inherited-unavailable/aarch64 --dwarfdump "$DWARFDUMP"
+
+      - name: Compare original frame ranges with independent compiler and validator inventories
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          ./gradlew originalFrameRangesSmoke originalFrameSourcesSmoke
+          python3 src/test/integration/original-frame-ranges.py build/classes/java \
+            "build/test-results/original-frame-ranges/$TARGET" --target "$TARGET" --dwarfdump "$DWARFDUMP"
+
+      - name: Compare runtime relocation tables with independent GNU inventories
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          ./gradlew elfRuntimeRelocationsSmoke
+          python3 src/test/integration/runtime-relocations.py build/classes/java \
+            "build/test-results/runtime-relocations/$TARGET" --target "$TARGET" --dwarfdump "$DWARFDUMP"
+
+      - name: Verify COPY and TLS descriptor loader effects
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          ./gradlew elfRelocationEffectsSmoke
+          python3 src/test/integration/relocation-effects.py \
+            --classes "build/classes/java/main:build/classes/java/test" \
+            --output "build/test-results/relocation-effects/$TARGET" --target "$TARGET"
+
       - name: Verify fixture identity and stripping
         env:
           TARGET: ${{ matrix.target }}
@@ -997,6 +1218,14 @@ jobs:
             exit 1
           fi
           readelf -Ws "$partial" | grep -Eq '[[:space:]]recovered_add$'
+
+      - name: Preserve original compiler CFI through actual export and GDB
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/original-cfi-preservation.py "$TARGET" "$GHIDRA_INSTALL_DIR" \
+            "build/test-results/original-cfi-preservation/$TARGET" --dwarfdump "$DWARFDUMP"
 
       - name: Headless Ghidra preflight
         env:
@@ -2366,6 +2595,25 @@ jobs:
             "$PWD/build/fixtures/x86_64/semantic.exec.stripped" \
             "$PWD/build/fixtures/x86_64/semantic.exec.reference"
 
+      - name: Installed unwind chooser cancellation, export and debugger behavior
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+          GHIDRA_GUI_UNWIND: '1'
+        run: |
+          role='exec'
+          export GHIDRA_GUI_UNWIND_TARGET="$TARGET"
+          if [[ "$TARGET" == aarch64 ]]; then
+            role=shared
+            export GHIDRA_GUI_UNWIND_SHARED=1 GHIDRA_GUI_UNWIND_POINTER_REQUIRED=1
+          fi
+          compiler="$PWD/build/test-results/compiler-unwind-export/$TARGET/$role/$TARGET-$role/compiler"
+          export GHIDRA_GUI_UNWIND_DRIVER="$compiler/driver"
+          src/test/integration/gui-script-manager.sh \
+            "$GHIDRA_INSTALL_DIR" \
+            "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
+            "$compiler/without-cfi" "$compiler/reference"
+
       - name: Installed Script Manager discovery, export, console, and cancellation
         if: matrix.target == 'x86_64'
         run: |
@@ -2551,6 +2799,17 @@ jobs:
             build/fixtures/x86_64/semantic.exec.ghidra-forge.dbg.c
           if-no-files-found: error
 
+      - name: Build independent compiler unwind input for native Windows GUI
+        run: |
+          python3 src/test/integration/synthetic-cfi-reference.py x86_64 \
+            build/test-results/windows-unwind-reference --dwarfdump "$PWD/validation-tool/bin/dwarfdump"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux-x86-unwind-reference
+          path: build/test-results/windows-unwind-reference/
+          if-no-files-found: error
+
       - name: Unprivileged GUI attachment, curated refresh, and recovery through explicit authorization
         run: |
           DWARFDUMP="$PWD/validation-tool/bin/dwarfdump" \
@@ -2567,6 +2826,7 @@ jobs:
           path: |
             build/test-results/headless-symbol-export/
             build/test-results/gui-authorization/
+            build/test-results/windows-unwind-reference/
           if-no-files-found: warn
           retention-days: 14
 
@@ -2635,6 +2895,11 @@ jobs:
         with:
           name: linux-x86-export-reference
           path: linux-reference
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: linux-x86-unwind-reference
+          path: linux-unwind-reference
 
       - uses: actions/download-artifact@v8
         with:
@@ -2895,6 +3160,35 @@ jobs:
             -Reference (Resolve-Path 'linux-reference\semantic.exec.reference').Path
           Remove-Item Env:\GHIDRA_GUI_COMPRESSION
 
+      - name: Native PowerShell normal unwind exports and preserved generations
+        shell: pwsh
+        timeout-minutes: 15
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+        run: |
+          $mingwBin = Join-Path $env:MSYS2_LOCATION 'mingw64\bin'
+          $env:PATH = "$mingwBin;$env:PATH"
+          python src/test/integration/powershell-unwind-export.py `
+            linux-unwind-reference build/test-results/windows-host/powershell-unwind `
+            --ghidra $env:GHIDRA_INSTALL_DIR --powershell (Get-Command pwsh).Source `
+            --readelf (Join-Path $mingwBin 'readelf.exe') --llvm (Join-Path $mingwBin 'llvm-dwarfdump.exe')
+          if ($LASTEXITCODE -ne 0) { throw 'Native PowerShell unwind generation failed' }
+
+      - name: Native Windows unwind chooser cancellation and exports
+        shell: pwsh
+        timeout-minutes: 15
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+          GHIDRA_GUI_UNWIND: '1'
+        run: |
+          $mingwBin = Join-Path $env:MSYS2_LOCATION 'mingw64\bin'
+          $env:PATH = "$mingwBin;$env:PATH"
+          .\src\test\integration\windows-gui-script-manager.ps1 `
+            -GhidraDirectory $env:GHIDRA_INSTALL_DIR `
+            -ModuleDirectory (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions\GhidraDwarfForge') `
+            -Fixture (Resolve-Path 'linux-unwind-reference\without-cfi').Path `
+            -Reference (Resolve-Path 'linux-unwind-reference\reference').Path
+
       - name: Clean Windows installed-release export without external natives
         shell: pwsh
         env:
@@ -2977,6 +3271,14 @@ jobs:
           python3 src/test/integration/compressed-gui-gdb.py \
               --incoming "$PWD/windows-artifacts/windows-host/gui-script-manager" \
               --results "$PWD/build/test-results/windows-attachment-gdb/compression"
+          python3 src/test/integration/windows-unwind-gdb.py \
+              "$PWD/windows-artifacts/windows-host/gui-unwind" \
+              "$PWD/build/test-results/windows-attachment-gdb/unwind" \
+              --dwarfdump "$DWARFDUMP"
+          python3 src/test/integration/powershell-unwind-gdb.py \
+              "$PWD/windows-artifacts/windows-host/powershell-unwind" \
+              "$PWD/build/test-results/windows-attachment-gdb/powershell-unwind" \
+              --producer-host Windows --dwarfdump "$DWARFDUMP"
       - uses: actions/upload-artifact@v7
         if: always()
         with:
