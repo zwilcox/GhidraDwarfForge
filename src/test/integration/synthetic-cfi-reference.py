@@ -52,6 +52,7 @@ def main():
     parser.add_argument("output", type=Path)
     parser.add_argument("--dwarfdump", required=True)
     parser.add_argument("--role", choices=("exec", "pie", "shared"), default="exec")
+    parser.add_argument("--frame-pointer", choices=("omit", "keep"), default="omit")
     args = parser.parse_args()
     work = args.output.resolve()
     work.mkdir(parents=True, exist_ok=False)
@@ -70,7 +71,7 @@ def main():
     source = ROOT / "src/test/fixtures/synthetic-cfi.c"
     start = source.with_name("synthetic-cfi-start-" + args.target + ".S")
     protected = {str(path): digest(path) for path in (source, start)}
-    flags = ["-O1", "-g", "-gdwarf-5", "-fomit-frame-pointer",
+    flags = ["-O1", "-g", "-gdwarf-5", "-fomit-frame-pointer" if args.frame_pointer == "omit" else "-fno-omit-frame-pointer",
              "-fno-optimize-sibling-calls", "-fno-asynchronous-unwind-tables",
              "-fno-unwind-tables", "-nostdlib", "-Wl,--build-id=none"]
     role_flags = {"exec": ["-fno-pie", "-no-pie", "-static"],
@@ -88,6 +89,12 @@ def main():
     for name in ("reference", "reference-repeat"):
         run([prefix + "gcc", *flags, *role_flags, *inputs, "-o", work / name], work / (name + "-build"))
     assert reference.read_bytes() == (work / "reference-repeat").read_bytes()
+    if args.frame_pointer == "keep":
+        run([prefix + "objdump", "-d", reference], work / "frame-pointer-disassembly")
+        text = (work / "frame-pointer-disassembly.stdout").read_text()
+        recursive = text.split('<cfi_recursive>:', 1)[1].split('\n\n', 1)[0]
+        pattern = r'\bmov\s+%rsp,%rbp' if args.target == 'x86_64' else r'\b(?:mov\s+x29, sp|add\s+x29, sp, #0x0)'
+        assert re.search(pattern, recursive), 'compiler did not establish a frame pointer in the recursive function'
     run([prefix + "objcopy", "--strip-debug", reference, original], work / "strip")
     ref_info, ref_allocated, ref_ph = image(reference)
     input_info, input_allocated, input_ph = image(original)
@@ -131,7 +138,7 @@ def main():
     # record that result rather than pretending all no-CFI backtraces fail.
     assert modes["compiler"]["complete"]
     assert protected == {path: digest(Path(path)) for path in protected}
-    report = {"status": "PASS_COMPILER_REFERENCE", "target": args.target, "role": args.role,
+    report = {"status": "PASS_COMPILER_REFERENCE", "target": args.target, "role": args.role, "framePointer": args.frame_pointer,
               "scope": "Independent compiler reference only; no Forge CFI emitted or tested",
               "toolSha256": tool_hashes,
               "protectedSha256": protected, "modes": modes, "runtimeWarnings": warnings,

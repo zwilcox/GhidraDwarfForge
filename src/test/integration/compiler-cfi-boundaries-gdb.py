@@ -53,6 +53,9 @@ for unused in range(512):
     while frame is not None and len(stack) < 12:
         row = {'name': frame.name(), 'relativePc': int(frame.pc()) - (root_address if frame.name() == root_name else main_address),
                'stackDelta': int(frame.read_register(stack_register)) - entry_stack}
+        if os.environ.get('FORGE_CFI_FRAME_POINTER_VALUES') == '1':
+            pointer = int(frame.read_register('rbp' if register == 'r12' else 'x29'))
+            row['framePointer'] = 'zero' if pointer == 0 else pointer - entry_stack
         try:
             row['witness'] = int(frame.read_register(register))
         except gdb.error as error:

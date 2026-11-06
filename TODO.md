@@ -1,5 +1,15 @@
 # TODO.md — GhidraDwarfForge
 
+**CONFIRMED locally — compiler frame pointers for #112:** unchanged compiler C
+with explicit frame-pointer use passes both targets' recovered and normal export
+paths: 28 exports, ten failure/invalid-option controls, sixteen validated sidecars
+and 42 GDB sessions. The additional caller-value oracle matches RBP/X29 at every
+executed ordinary boundary (99 x86-64, 85 AArch64), including recursive callers.
+No production algorithm change was needed. See `docs/FRAME-POINTER-UNWIND.md`.
+Actual noncontiguous-body runtime coverage, native Windows/hosted and final ADR
+acceptance remain; #112 is incomplete, followed by #110/#109. PR176's lint fix
+passed its hosted lint job in run `42235627038`; the remaining jobs are pending.
+
 **CONFIRMED hosted lint correction:** PR176's updated head `50b1da3` started
 run `42235018469`; ShellCheck rejected the unquoted literal `role=exec` in the
 new GUI step. Quoting it reproduces and resolves SC2209 with explicit local

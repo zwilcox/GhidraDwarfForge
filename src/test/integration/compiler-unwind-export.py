@@ -45,6 +45,7 @@ def main():
     parser.add_argument('output', type=Path)
     parser.add_argument('--relocated-pointers', action='store_true', help='Explicitly condition immutable loader-established pointer slots')
     parser.add_argument('--role', choices=('exec', 'pie', 'shared'), default='exec')
+    parser.add_argument('--frame-pointer', choices=('omit', 'keep'), default='omit')
     parser.add_argument('--target', choices=('x86_64', 'aarch64', 'all'), default='all')
     parser.add_argument('--ghidra', required=True, type=Path)
     parser.add_argument('--libdwarf', required=True, type=Path)
@@ -70,7 +71,7 @@ def main():
         case = work / (target + '-' + args.role); case.mkdir()
         reference_dir = case / 'compiler'
         run([sys.executable, SCRIPTS / 'synthetic-cfi-reference.py', target, reference_dir,
-            '--dwarfdump', args.dwarfdump, '--role', args.role], case / 'reference.log')
+            '--dwarfdump', args.dwarfdump, '--role', args.role, '--frame-pointer', args.frame_pointer], case / 'reference.log')
         reference_result = json.loads((reference_dir / 'result.json').read_text())
         assert reference_result['status'] == 'PASS_COMPILER_REFERENCE'
         original = reference_dir / 'without-cfi'
@@ -188,7 +189,7 @@ def main():
             case / 'gdb-disabled-command.log', runtime_env)
         assert 'unwinder="dwarf2"' not in Path(str(disabled) + '.log').read_text()
         assert protected == {path: digest(Path(path)) for path in protected}
-        results.append({'target': target, 'role': args.role, 'externalCondition': condition, 'fixedPointers': fixed_pointers, 'exports': 9, 'failureControls': 4,
+        results.append({'target': target, 'role': args.role, 'framePointer': args.frame_pointer, 'externalCondition': condition, 'fixedPointers': fixed_pointers, 'exports': 9, 'failureControls': 4,
             'gdbSessions': 13, 'artifacts': artifacts, 'compilerReferenceResultSha256': digest(reference_dir / 'result.json')})
     report = {'status': 'PASS_CONDITIONED_COMPILER_EXPORT', 'cases': results, 'protectedSha256': protected,
         'scope': 'Explicit test condition; executed ordinary instruction-path compiler equivalence; no universal separation proof or CLI/GUI enablement'}
