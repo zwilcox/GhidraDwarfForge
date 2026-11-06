@@ -222,7 +222,8 @@ public final class MatchedElfSidecarWriter {
 
         List<byte[]> debugPayloads = new ArrayList<>();
         for (Map.Entry<String, byte[]> entry : debugSections.entrySet()) {
-            var stored = compression.encode(entry.getValue(), image.is64Bit(), image.byteOrder(), cancelled);
+            int plainAlignment = entry.getKey().equals(".debug_frame") ? (image.is64Bit() ? 8 : 4) : 1;
+            var stored = compression.encode(entry.getValue(), image.is64Bit(), image.byteOrder(), plainAlignment, cancelled);
             long dataOffset = addOffset(offset, stored.alignment() - 1) & -stored.alignment();
             int padding = Math.toIntExact(dataOffset - offset);
             if (padding != 0) {

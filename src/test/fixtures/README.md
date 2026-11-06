@@ -727,3 +727,10 @@ compiler-DWARF references. Both byte orders also run the production exporter;
 unproven Ghidra double-pair locations remain unavailable. Wrong-carrier and
 wrong-mode controls are required. See
 [the reference contract](../../../docs/MIPS-FPR-SYSTEM-REFERENCE.md).
+
+`cfi-encoder-x86_64.S` and `cfi-encoder-aarch64.S` are freestanding recursive
+assembler references for explicit call-frame rule serialization. Their separate
+stripped inputs execute under native GDB or QEMU/GDB with reference, generated
+plain/compressed, and absent CFI. The harness compares caller/register traces at
+instruction boundaries for non-PIE and static PIE. These plans do not recover
+rules from Ghidra. See [the encoder contract](../../../docs/CFI-RULE-ENCODER.md).

@@ -156,8 +156,9 @@ owned startup fixture fixes it; independent builds now match.
 
 - Obtain hosted acceptance of original-metadata preservation. Implement trusted
   coverage discovery/merging before any synthesis alongside existing frames.
-- Audit and pin both ABI descriptions; add a pure range/rule encoder with
-  independent structural and malformed-input tests.
+- Audit and pin both ABI descriptions. The [explicit rule encoder](CFI-RULE-ENCODER.md)
+  now passes local structural, malformed-input and runtime tests; hosted acceptance
+  remains required and its fixture plans are not recovered Ghidra evidence.
 - Implement evidence extraction and control-flow analysis in Ghidra, with
   complete/partial/invalid instruction, join-conflict, stack-alias, opaque-call,
   cancellation and bounded-resource controls.

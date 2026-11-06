@@ -1,5 +1,15 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 explicit CFI encoder:** the immutable rule model,
+pure Java serializer and aligned plain/compressed ELF packaging pass 155 component
+checks and independent GNU/LLVM/pinned strict validation. Both runtime targets
+pass non-PIE/PIE reference comparisons at every recorded instruction boundary,
+with explicit DWARF-unwinder and malformed-frame controls. A full-4-GiB ELF32
+length rejection has failing-before evidence. See `docs/CFI-RULE-ENCODER.md`.
+CI is wired but hosted execution is PRESENT, UNVERIFIED. Ghidra recovery and
+production synthesis remain PLANNED; this does not complete #112. #116/#114
+integration remains first, then full #112/#110/#109.
+
 **CONFIRMED locally — #112 original-CFI preservation prerequisite:** linked
 sidecars now retain compiler `.debug_frame`/`.zdebug_frame`; colliding generated
 frames are rejected and ET_REL frames remain inactive with a diagnostic.

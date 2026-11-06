@@ -625,7 +625,7 @@ jobs:
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfAddressRangesSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
-              packagedNativeLibrariesSmoke existingDebugSidecarSmoke \
+              packagedNativeLibrariesSmoke existingDebugSidecarSmoke callFrameEncoderSmoke \
               extendedSectionNumberingSmoke elfImageReaderSmoke \
               elfCopyCancellationSmoke ghidraImageBaseSmoke buildExtension
             python3 -B src/test/integration/debuglink-basename.py \
@@ -987,6 +987,15 @@ jobs:
         run: |
           python3 src/test/integration/synthetic-cfi-reference.py "$TARGET" \
             "build/test-results/synthetic-cfi-reference/$TARGET" --dwarfdump "$DWARFDUMP"
+
+      - name: Validate explicit CFI encoder plans and debugger behavior
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          ./gradlew callFrameEncoderSmoke
+          python3 src/test/integration/cfi-encoder.py build/classes/java \
+            "build/test-results/cfi-encoder/$TARGET" --target "$TARGET" --dwarfdump "$DWARFDUMP"
 
       - name: Verify fixture identity and stripping
         env:

@@ -63,6 +63,8 @@ expected_sources=(
     bitfield-values.c
     call-memory-boundaries.c
     calling-convention.c
+    cfi-encoder-aarch64.S
+    cfi-encoder-x86_64.S
     composite-register-prefix.c
     composite-value-flow.c
     curated-thunk.c

@@ -81,6 +81,14 @@ tasks.register("debugCompressionSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.elf.DebugCompressionSmoke"
 }
 
+tasks.register("callFrameEncoderSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit call-frame plan rejection, determinism and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.unwind.CallFrameEncoderSmoke"
+}
+
 tasks.register("packagedNativeProducerSmoke", JavaExec) {
     group = "verification"
     description = "Resolves and runs the packaged libdwarf pair in an isolated JVM"
