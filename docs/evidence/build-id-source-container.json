@@ -1,0 +1,259 @@
+{
+    "status": "CONFIRMED_LOCAL_SOURCE_ELF_STAGE_RELOCATION",
+    "parent": "e137b4306bd1b42c3b2d586b4fa9a52cc2068de5",
+    "installation": {
+        "installation": "/dev/shm/forge-lldb-worktree/build/source-container/ghidra",
+        "packageSha256": "7f4845c22a56491a03e4cea96f1dbf38e1dd41b03659360cc5da2e04fec54860",
+        "jarSha256": "2f080c93d99ad5365b83f42520764b69c377a115863d136743c1e4b4230e7ab5"
+    },
+    "productionSourcesCompared": 212,
+    "producerExports": 60,
+    "strictReports": 80,
+    "relocatedCases": [
+        {
+            "path": "build/test-results/floating-registers/run.GOTpxRWM/arm32/exec/source-relocation",
+            "target": "arm32",
+            "role": "exec",
+            "compression": "none",
+            "gdb": true,
+            "lldb": false,
+            "perf": false,
+            "installedSha256": "ae4c03a18920be54036dd87047dde8366fdfeccde03a92d5dec2a754541ecc01",
+            "sourceSha256": "7c0fe538d29d1ab835bdee097fb233d68f51cef88279d47bf47a440e1148a4e2"
+        },
+        {
+            "path": "build/test-results/floating-registers/run.GOTpxRWM/arm32/pie/source-relocation",
+            "target": "arm32",
+            "role": "pie",
+            "compression": "none",
+            "gdb": true,
+            "lldb": false,
+            "perf": false,
+            "installedSha256": "617cfe2b72bdb6ef8fda414e2c6df5d9f71e81dda0fc634ca895f92d8337573a",
+            "sourceSha256": "d101a297a38b2b46ccd6423dfcc6bf21a3e5e7b0de83179011a5800514d3bcff"
+        },
+        {
+            "path": "build/test-results/floating-registers/run.GOTpxRWM/mips32be/exec/source-relocation",
+            "target": "mips32be",
+            "role": "exec",
+            "compression": "none",
+            "gdb": true,
+            "lldb": false,
+            "perf": false,
+            "installedSha256": "1817af01e3b2e15d42fed172580b6e08c8139255e33505adadd4b8e0ca15b702",
+            "sourceSha256": "152ca0c966a205d968b999cda3d8237322a67660576b1bb67f7333183f8211d1"
+        },
+        {
+            "path": "build/test-results/floating-registers/run.GOTpxRWM/mips32be/pie/source-relocation",
+            "target": "mips32be",
+            "role": "pie",
+            "compression": "none",
+            "gdb": true,
+            "lldb": false,
+            "perf": false,
+            "installedSha256": "95b3d96e98ebd2824540ae8ca76a7d50839ce23f9efa9c2f45bd9a5f9a3fc29e",
+            "sourceSha256": "5a594ab3314b5a41ea27bfc2f62ebce1c0badc00d0fa658c737d2b59704f930d"
+        },
+        {
+            "path": "build/test-results/floating-registers/run.GOTpxRWM/mips32le/exec/source-relocation",
+            "target": "mips32le",
+            "role": "exec",
+            "compression": "none",
+            "gdb": true,
+            "lldb": false,
+            "perf": false,
+            "installedSha256": "2814c4fc2b60c178d291ce80623d33cf2e2645aa9b8c5d4b7913f3c36158d37a",
+            "sourceSha256": "cad5c22a5b11846528214dd20f60f8b8d966f2435d4a8295d83ce4820c8e01f7"
+        },
+        {
+            "path": "build/test-results/floating-registers/run.GOTpxRWM/mips32le/pie/source-relocation",
+            "target": "mips32le",
+            "role": "pie",
+            "compression": "none",
+            "gdb": true,
+            "lldb": false,
+            "perf": false,
+            "installedSha256": "0b66d927ec5c1afe8e57b3ce67da13028fab8d5fc3a7e2f0b18d68a6dad0aa51",
+            "sourceSha256": "9d23c293463370427c3c81becee1289d75f8bee052de8c0211f5c45c1e491218"
+        },
+        {
+            "path": "build/test-results/floating-registers/run.TeM410z3/aarch64/exec/source-relocation",
+            "target": "aarch64",
+            "role": "exec",
+            "compression": "none",
+            "gdb": true,
+            "lldb": true,
+            "perf": true,
+            "installedSha256": "b0b30cbe6f4982872970f8b8e3c57c1dc3c872f323945db8570117e2ec303640",
+            "sourceSha256": "f8e730f1ead87b4e6ea30bcf3c3bc828814b5f69cbaf33973b22a117f2437ef8"
+        },
+        {
+            "path": "build/test-results/floating-registers/run.TeM410z3/aarch64/pie/source-relocation",
+            "target": "aarch64",
+            "role": "pie",
+            "compression": "none",
+            "gdb": true,
+            "lldb": true,
+            "perf": true,
+            "installedSha256": "023d33eab7d833d20329fdcfcce6900abe6fcf830590a26eceec9e47b11ac61b",
+            "sourceSha256": "43e366d0f0c54ed3ab7f8de06d573f942f4039a9a5c87004a81a8ae54e8ad34b"
+        },
+        {
+            "path": "build/test-results/floating-registers/run.TeM410z3/x86_64/exec/source-relocation",
+            "target": "x86_64",
+            "role": "exec",
+            "compression": "none",
+            "gdb": true,
+            "lldb": true,
+            "perf": true,
+            "installedSha256": "af248887b02279ade491e24f2fb0cccbc3eaf611e154c6dd27ac677e8766360f",
+            "sourceSha256": "5ed212ac5e786e3bf0d7073afd00b6fbafa7e16908c9ffd5e6a98f4dbc160984"
+        },
+        {
+            "path": "build/test-results/floating-registers/run.TeM410z3/x86_64/pie/source-relocation",
+            "target": "x86_64",
+            "role": "pie",
+            "compression": "none",
+            "gdb": true,
+            "lldb": true,
+            "perf": true,
+            "installedSha256": "ba1b61200a73771b4cc317f5e90044c9f755ac13a0d01c63026533a6b3f4f370",
+            "sourceSha256": "5fe7e71ff7c7ad2069bb474693d880bb3bf67b99812eaab444197ca648464f8b"
+        },
+        {
+            "path": "build/test-results/floating-registers/run.LvBvkXAk/arm32/exec/source-relocation",
+            "target": "arm32",
+            "role": "exec",
+            "compression": "zlib",
+            "gdb": true,
+            "lldb": false,
+            "perf": false,
+            "installedSha256": "d4c650683d7847352881bb8e307be9b65fc8e6af9d8d0cf9f9c686bec7769ba7",
+            "sourceSha256": "7c0fe538d29d1ab835bdee097fb233d68f51cef88279d47bf47a440e1148a4e2"
+        },
+        {
+            "path": "build/test-results/floating-registers/run.LvBvkXAk/arm32/pie/source-relocation",
+            "target": "arm32",
+            "role": "pie",
+            "compression": "zlib",
+            "gdb": true,
+            "lldb": false,
+            "perf": false,
+            "installedSha256": "a494f0af3ca509c795e405f767d31607788ec74126e62e477c0bd4e82bf1283f",
+            "sourceSha256": "d101a297a38b2b46ccd6423dfcc6bf21a3e5e7b0de83179011a5800514d3bcff"
+        },
+        {
+            "path": "build/test-results/floating-registers/run.LvBvkXAk/mips32be/exec/source-relocation",
+            "target": "mips32be",
+            "role": "exec",
+            "compression": "zlib",
+            "gdb": true,
+            "lldb": false,
+            "perf": false,
+            "installedSha256": "13482c41a8d48851de600bda5bcbe85886ee36ffac95710ac850cd08b710cb94",
+            "sourceSha256": "152ca0c966a205d968b999cda3d8237322a67660576b1bb67f7333183f8211d1"
+        },
+        {
+            "path": "build/test-results/floating-registers/run.LvBvkXAk/mips32be/pie/source-relocation",
+            "target": "mips32be",
+            "role": "pie",
+            "compression": "zlib",
+            "gdb": true,
+            "lldb": false,
+            "perf": false,
+            "installedSha256": "e3a0236bab541fd4dfb4ee9077c9fa8b817f51454bff705b31c801989e13c1eb",
+            "sourceSha256": "5a594ab3314b5a41ea27bfc2f62ebce1c0badc00d0fa658c737d2b59704f930d"
+        },
+        {
+            "path": "build/test-results/floating-registers/run.LvBvkXAk/mips32le/exec/source-relocation",
+            "target": "mips32le",
+            "role": "exec",
+            "compression": "zlib",
+            "gdb": true,
+            "lldb": false,
+            "perf": false,
+            "installedSha256": "c0ccb6e9f6178ba2bd2e1a2d185379b79756828a5367ed587d47d2803b79764b",
+            "sourceSha256": "cad5c22a5b11846528214dd20f60f8b8d966f2435d4a8295d83ce4820c8e01f7"
+        },
+        {
+            "path": "build/test-results/floating-registers/run.LvBvkXAk/mips32le/pie/source-relocation",
+            "target": "mips32le",
+            "role": "pie",
+            "compression": "zlib",
+            "gdb": true,
+            "lldb": false,
+            "perf": false,
+            "installedSha256": "c975b173d559391b9950e92cd9660a85a448741e0e93af59ab49aa3aac9530d3",
+            "sourceSha256": "9d23c293463370427c3c81becee1289d75f8bee052de8c0211f5c45c1e491218"
+        },
+        {
+            "path": "build/test-results/floating-registers/run.cnMmbrGO/aarch64/exec/source-relocation",
+            "target": "aarch64",
+            "role": "exec",
+            "compression": "zlib",
+            "gdb": true,
+            "lldb": true,
+            "perf": true,
+            "installedSha256": "e51ba9d7f40a08bc7b39bba85354ad143783be50bdb1f437274a1be371761c0f",
+            "sourceSha256": "f8e730f1ead87b4e6ea30bcf3c3bc828814b5f69cbaf33973b22a117f2437ef8"
+        },
+        {
+            "path": "build/test-results/floating-registers/run.cnMmbrGO/aarch64/pie/source-relocation",
+            "target": "aarch64",
+            "role": "pie",
+            "compression": "zlib",
+            "gdb": true,
+            "lldb": true,
+            "perf": true,
+            "installedSha256": "c475379a2f3a624e7b30be9b58f97bd568da621f3ecb267912464a3278d104cb",
+            "sourceSha256": "43e366d0f0c54ed3ab7f8de06d573f942f4039a9a5c87004a81a8ae54e8ad34b"
+        },
+        {
+            "path": "build/test-results/floating-registers/run.cnMmbrGO/x86_64/exec/source-relocation",
+            "target": "x86_64",
+            "role": "exec",
+            "compression": "zlib",
+            "gdb": true,
+            "lldb": true,
+            "perf": true,
+            "installedSha256": "6d1f558a1f9c44ee7cc314474dd571ab93c8e89dea816a95ac0a9c7e3c39ab63",
+            "sourceSha256": "5ed212ac5e786e3bf0d7073afd00b6fbafa7e16908c9ffd5e6a98f4dbc160984"
+        },
+        {
+            "path": "build/test-results/floating-registers/run.cnMmbrGO/x86_64/pie/source-relocation",
+            "target": "x86_64",
+            "role": "pie",
+            "compression": "zlib",
+            "gdb": true,
+            "lldb": true,
+            "perf": true,
+            "installedSha256": "3dbfabfd4e79e7cb6c7c2575396dec6aed924aaa6ee0846a68a9cd779747552e",
+            "sourceSha256": "5fe7e71ff7c7ad2069bb474693d880bb3bf67b99812eaab444197ca648464f8b"
+        }
+    ],
+    "containerRefusals": 130,
+    "containerCancellationBoundaries": 13741,
+    "sectionRefusals": 420,
+    "sectionCancellationBoundaries": 10216,
+    "checks": [
+        "complete original ELF byte comparison with only three section offset/size field exceptions",
+        "independently decoded replacement bytes match pure DWARF transformation",
+        "unchanged input executable/sidecar/source/reference/labels and JAR hashes",
+        "old source absent during automatic GDB lookup20, LLDB8, offlineperf8",
+        "byte-identical deterministic repeat and idempotent relocation",
+        "nonempty staging channel refused without modifying its contents",
+        "active source relocations, duplicate/allocated source sections, header/payload overlap and malformed compression refused"
+    ],
+    "rawCommands": "build/source-container/*-*.command.json and per-consumer command JSON in the raw archive",
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/build-id-source-container.tar.gz",
+        "sha256": "a05a026c119fad3dd6c15f6982dec3f8c0aa4a2f4c13aa8cca2113da3f569d8f",
+        "verifiedRegularMembers": 3709
+    },
+    "limits": [
+        "Native-inclusive package built with existing audited Linux/Windows native artifacts; new implementation is Java-only.",
+        "Local execution is Linux; hosted all-target and Windows regression gate pending.",
+        "Pinned strict reports retain only independently corroborated original frame diagnostics; no new unexplained diagnostics accepted.",
+        "This writes unpublished private stages only. Installation pair validation, host metadata/durability, ownership/update/removal and recovery remain unimplemented."
+    ]
+}

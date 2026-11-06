@@ -2542,10 +2542,12 @@ jobs:
               export FORGE_PERF
           fi
           export FORGE_SOURCE_RELOCATION_JAR="$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar"
-          src/test/integration/floating-registers-export.sh \
-            "$GHIDRA_INSTALL_DIR" \
-            "$PWD/native-integration/libdwarf.so.2.3.2" \
-            "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
+          for compression in none zlib; do
+              GHIDRA_DEBUG_COMPRESSION="$compression" src/test/integration/floating-registers-export.sh \
+                "$GHIDRA_INSTALL_DIR" \
+                "$PWD/native-integration/libdwarf.so.2.3.2" \
+                "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
+          done
 
       - name: ARM register pair prefix at an ordinary terminal return
         if: matrix.target == 'arm32'

@@ -1,5 +1,16 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED local #109 ELF source-relocation stage:** production code now copies
+the matched sidecar, appends relocated plain/zlib payloads, and changes only
+three section offset/size fields. Sixty fresh exports and twenty relocated
+exec/PIE cases across all five targets pass structural/GDB checks; eight
+x86-64/AArch64 cases also pass LLDB and offline perf. Original bytes, compression,
+line programs, deterministic repeats and cancellation/refusal controls pass.
+See `docs/SOURCE-SIDECAR-RELOCATION.md` and its receipt. Full hosted acceptance
+remains pending. The installer's pair binding, retained generations, permissions,
+atomic install/update/removal and recovery remain PLANNED; this is only an
+unpublished staging writer. #110 protected integration remains required.
+
 **CONFIRMED local #109 source-relocation component:** a pure Java transformer
 changes only the synthetic CU/line directory, retaining DIE offsets, existing
 strings and executable line-program bytes. Ten exec/PIE cases across all five

@@ -28,6 +28,13 @@ if [[ "$elf_layout" != sections && "$elf_layout" != sectionless ]] ||
     echo 'FORGE_FP_ELF_LAYOUT must be sections, or sectionless with mips-fp32' >&2
     exit 64
 fi
+compression=${GHIDRA_DEBUG_COMPRESSION:-none}
+case "$compression" in
+    none|zlib) ;;
+    *) echo 'GHIDRA_DEBUG_COMPRESSION must be none or zlib' >&2; exit 64 ;;
+esac
+export_options=()
+if [[ "$compression" != none ]]; then export_options+=("--compress-debug-sections=$compression"); fi
 targets=("$@")
 if [[ ${#targets[@]} -eq 0 ]]; then
     if [[ "$abi_profile" == mips-fp32 ]]; then targets=(mips32be mips32le)
@@ -194,7 +201,7 @@ for target in "${targets[@]}"; do
                 -scriptPath "$repository/src/test/integration/ghidra_scripts" "${rebase[@]}" \
                 -postScript PrepareFloatingRegisters.java "$target" "$case_root/labels.txt" \
                 -postScript GhidraDwarfForge.java "--libdwarf=$consumer" "--libdwarfp=$producer" \
-                "--output=$output" >"$case_dir/headless.txt" 2>&1
+                "--output=$output" "${export_options[@]}" >"$case_dir/headless.txt" 2>&1
             grep -Fq 'floating-register-preparation=PASS' "$case_dir/headless.txt"
             if [[ "$abi_profile" == mips-fp32 ]]; then
                 grep -Fq 'floating-fp32-abi=PASS pairs=16' "$case_dir/headless.txt"

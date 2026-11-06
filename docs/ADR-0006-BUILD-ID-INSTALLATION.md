@@ -60,12 +60,16 @@ program, existing strings, DIE offsets and all original input hashes. The latest
 smoke checks also prove deterministic repeats and idempotent relocation.
 The full new-head hosted gate remains **PRESENT, UNVERIFIED**.
 
-The first executable oracle uses an independent test-only ELF packager. The
-production container transformation, including preservation of compression and
-all unrelated section records, remains **PLANNED**. It must reject active
-relocations targeting changed debug sections rather than inventing a relocation
-policy. It must not reuse an object-file utility that attempts to reconstruct
-loadable segments: GNU objcopy rejected the tested non-loadable matched sidecar.
+The initial oracle used an independent test-only ELF packager. **CONFIRMED
+locally:** the production `SyntheticSourceSidecar` now writes an unpublished
+stage while preserving unrelated bytes and each changed section's compression
+and alignment. It refuses active source relocations and header/payload overlap;
+it does not invent relocation records or reconstruct loadable segments. GNU
+objcopy rejected the earlier non-loadable matched-sidecar experiment. The
+current oracle independently checks decoded sections and all original ELF bytes
+against the production stage. See `SOURCE-SIDECAR-RELOCATION.md` and its twenty
+plain/zlib runtime cases. This does not implement publication, metadata
+preservation, pair binding or the installation transaction below.
 
 ## Planned identity and publication contract
 

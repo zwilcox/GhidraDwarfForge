@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate source-only DWARF relocation with independent ELF packaging and debuggers."""
+"""Validate production source/ELF relocation with independent byte checks and debuggers."""
 import argparse
 import hashlib
 import importlib.util
@@ -12,6 +12,7 @@ import socket
 import struct
 import subprocess
 import time
+import zlib
 import lldb_consumer
 
 
@@ -57,7 +58,8 @@ def main():
     classes = root / 'classes'
     classes.mkdir()
     command([java.with_name('javac'), '-Xlint:all', '-Werror', '-cp', jar, '-d', classes,
-        repo / 'src/test/java/ghidradwarfforge/dwarf/SyntheticSourceRelocationSmoke.java'], root / 'compile.log')
+        repo / 'src/test/java/ghidradwarfforge/dwarf/SyntheticSourceRelocationSmoke.java',
+        repo / 'src/test/java/ghidradwarfforge/elf/SyntheticSourceSidecarSmoke.java'], root / 'compile.log')
     spec = importlib.util.spec_from_file_location('fixture_elf', script_root / 'elf-build-id.py')
     elf = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(elf)
@@ -65,35 +67,51 @@ def main():
     order, wide, sections = elf.sections(before)
     raw = root / 'sections'
     raw.mkdir()
+    def plain_section(data, section):
+        flags, = struct.unpack_from(order + ('Q' if wide else 'I'), data, section['header'] + 8)
+        assert flags & 2 == 0
+        stored = data[section['offset']:section['offset'] + section['size']]
+        if not flags & 0x800:
+            return stored
+        if wide:
+            kind, reserved, size, alignment = struct.unpack_from(order + 'IIQQ', stored)
+            assert reserved == 0
+        else:
+            kind, size, alignment = struct.unpack_from(order + 'III', stored)
+        assert kind == 1 and size <= 64 * 1024 * 1024 and alignment in (1, 2, 4, 8)
+        stream = zlib.decompressobj()
+        plain = stream.decompress(stored[24 if wide else 12:], size + 1)
+        assert len(plain) == size and stream.eof and not stream.unused_data and not stream.unconsumed_tail
+        return plain
+
     for name in ('info', 'abbrev', 'str', 'line'):
-        section = sections['.debug_' + name]
-        flags, = struct.unpack_from(order + ('Q' if wide else 'I'), before, section['header'] + 8)
-        assert flags & 0x802 == 0, 'this initial oracle requires plain nonallocated sections'
-        (raw / name).write_bytes(before[section['offset']:section['offset'] + section['size']])
+        (raw / name).write_bytes(plain_section(before, sections['.debug_' + name]))
     rewritten = root / 'rewritten'
     command([java, '-cp', str(jar) + os.pathsep + str(classes),
         'ghidradwarfforge.dwarf.SyntheticSourceRelocationSmoke', raw, rewritten,
         generation, 'little' if order == '<' else 'big'], root / 'relocation.log')
     assert (rewritten / 'file-name.txt').read_text() == source.name
     assert Path((rewritten / 'previous-directory.txt').read_text()) == source.parent
-    # Independent fixture packager: append the changed plain sections and alter
-    # only their section offset/size fields. This is not the production installer.
-    after = bytearray(before)
-    changed_headers = set()
-    for name in ('info', 'str', 'line'):
-        data = (rewritten / name).read_bytes()
-        section = sections['.debug_' + name]
-        location = section['header'] + (24 if wide else 16)
-        struct.pack_into(order + ('QQ' if wide else 'II'), after, location, len(after), len(data))
-        changed_headers.update(range(location, location + (16 if wide else 8)))
-        after.extend(data)
-    assert all(a == b or i in changed_headers for i, (a, b) in enumerate(zip(before, after)))
     build_id, = set(re.findall(r'Build ID: ([0-9a-f]+)',
         subprocess.check_output(['readelf', '-n', str(original)], text=True)))
     debug_root = root / 'debug root'
     installed = debug_root / '.build-id' / build_id[:2] / (build_id[2:] + '.debug')
     installed.parent.mkdir(parents=True)
-    installed.write_bytes(after)
+    command([java, '-cp', str(jar) + os.pathsep + str(classes),
+        'ghidradwarfforge.elf.SyntheticSourceSidecarSmoke', sidecar, installed, generation],
+        root / 'container.log')
+    after = installed.read_bytes()
+    after_order, after_wide, after_sections = elf.sections(after)
+    assert (after_order, after_wide) == (order, wide)
+    assert set(after_sections) == set(sections)
+    changed_headers = set()
+    for name in ('info', 'str', 'line'):
+        section = sections['.debug_' + name]
+        location = section['header'] + (24 if wide else 16)
+        changed_headers.update(range(location, location + (16 if wide else 8)))
+        assert plain_section(after, after_sections['.debug_' + name]) == (rewritten / name).read_bytes()
+    assert len(after) >= len(before)
+    assert all(a == b or i in changed_headers for i, (a, b) in enumerate(zip(before, after)))
     binary = root / 'original'
     shutil.copy2(original, binary)
     command(['readelf', '-hSWn', installed], root / 'elf.log')
@@ -190,7 +208,7 @@ def main():
         'installedSha256': digest(installed), 'sourceSha256': digest(retained_source),
         'sourceDirectory': str(generation), 'javaSource': str(jar),
         'gdb': True, 'lldb': bool(args.lldb), 'perf': bool(args.perf),
-        'scope': 'Production pure-section relocator with independent test-only ELF packaging; '
+        'scope': 'Production DWARF and ELF stage relocators with independent decoded-section and byte checks; '
             'original source absent during real automatic-lookup runtime checks; no installer transaction.'}, indent=4) + '\n')
     print('source-relocation=PASS ' + args.target + ' ' + fixture.name)
 
