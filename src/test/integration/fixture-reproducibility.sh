@@ -120,6 +120,9 @@ expected_sources=(
     recovered-parameter-types.c
     register-copy.c
     register_prefix.c
+    relocation-effects-consumer.c
+    relocation-effects-main.c
+    relocation-effects-provider.c
     retained-function-aliases.cpp
     runtime-relocations.c
     same-name-types.cpp
