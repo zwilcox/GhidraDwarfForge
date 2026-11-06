@@ -10,6 +10,7 @@ import java.util.concurrent.CancellationException;
 import java.util.function.BooleanSupplier;
 
 import ghidradwarfforge.unwind.CallFramePlan;
+import ghidradwarfforge.unwind.OriginalFrameRanges;
 import ghidradwarfforge.unwind.CallFramePlan.*;
 
 /** DWARF 5 section, CIE version 4, DWARF32 lengths; no architecture inference. */
@@ -20,6 +21,66 @@ public final class DwarfDebugFrame {
     private DwarfDebugFrame() { }
 
     public static byte[] build(CallFramePlan plan, BooleanSupplier cancelled) {
+        return build(plan, 0, cancelled);
+    }
+
+    /**
+     * Preserve a decoded original section as an exact prefix and append disjoint
+     * generated records. This checks packaging/coverage, not original CFI semantics
+     * or the recovery evidence behind the plan. ELF source/relocation qualification
+     * remains the caller's responsibility; this is not a writer collision bypass.
+     */
+    public static byte[] append(byte[] original, CallFramePlan plan, BooleanSupplier cancelled) {
+        Objects.requireNonNull(original, "original frame bytes");
+        Objects.requireNonNull(plan, "plan");
+        Objects.requireNonNull(cancelled, "cancelled");
+        checkCancelled(cancelled);
+        if (original.length == 0) return build(plan, cancelled);
+        if (original.length > MAX_SECTION_BYTES || original.length % plan.addressBytes() != 0) {
+            throw new IllegalArgumentException("original frame prefix exceeds size or alignment bounds");
+        }
+        var inventory = OriginalFrameRanges.read(original, plan.order(), plan.addressBytes(),
+            OriginalFrameRanges.Format.DEBUG_FRAME, 0, cancelled);
+        var sorted = new ArrayList<>(inventory.frames());
+        sorted.sort((left, right) -> Long.compareUnsigned(left.address(), right.address()));
+        var intervals = new java.util.TreeMap<Long, Long>(Long::compareUnsigned);
+        for (var frame : sorted) {
+            checkCancelled(cancelled);
+            if (frame.size() == 0) continue;
+            long end = frame.address() + frame.size() - 1;
+            var prior = intervals.lastEntry();
+            if (prior != null && Long.compareUnsigned(prior.getValue(), frame.address()) >= 0) {
+                if (Long.compareUnsigned(end, prior.getValue()) > 0) intervals.put(prior.getKey(), end);
+            }
+            else intervals.put(frame.address(), end);
+        }
+        for (var frame : plan.frames()) {
+            checkCancelled(cancelled);
+            var prior = intervals.floorEntry(frame.address());
+            var next = intervals.ceilingEntry(frame.address());
+            if ((prior != null && Long.compareUnsigned(prior.getValue(), frame.address()) >= 0) ||
+                    (next != null && Long.compareUnsigned(next.getKey(), frame.address() + frame.size() - 1) <= 0)) {
+                throw new IllegalArgumentException("generated frame overlaps original coverage");
+            }
+        }
+        byte[] generated = build(plan, original.length, cancelled);
+        if (generated.length > MAX_SECTION_BYTES - original.length) {
+            throw new IllegalArgumentException("combined frame section budget exceeded");
+        }
+        byte[] result = new byte[original.length + generated.length];
+        for (int offset = 0; offset < original.length; offset += 32768) {
+            checkCancelled(cancelled);
+            System.arraycopy(original, offset, result, offset, Math.min(32768, original.length - offset));
+        }
+        for (int offset = 0; offset < generated.length; offset += 32768) {
+            checkCancelled(cancelled);
+            System.arraycopy(generated, offset, result, original.length + offset, Math.min(32768, generated.length - offset));
+        }
+        checkCancelled(cancelled);
+        return result;
+    }
+
+    private static byte[] build(CallFramePlan plan, int sectionOffset, BooleanSupplier cancelled) {
         Objects.requireNonNull(plan, "plan");
         Objects.requireNonNull(cancelled, "cancelled");
         checkCancelled(cancelled);
@@ -76,7 +137,7 @@ public final class DwarfDebugFrame {
             checkCancelled(cancelled);
             int entry = out.size();
             out.integer(0, 4);
-            out.integer(cie, 4); // section-relative .debug_frame CIE pointer
+            out.integer(sectionOffset + cie, 4); // section-relative .debug_frame CIE pointer
             out.integer(frame.address(), plan.addressBytes());
             out.integer(frame.size(), plan.addressBytes());
             Cfa priorCfa = null;

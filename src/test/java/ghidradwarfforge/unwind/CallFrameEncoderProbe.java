@@ -20,7 +20,7 @@ import ghidradwarfforge.unwind.CallFramePlan.*;
 /** Test-only plan protocol. No extraction inference or native producer is involved. */
 public final class CallFrameEncoderProbe {
     public static void main(String[] args) throws Exception {
-        if (args.length != 5) throw new IllegalArgumentException("plan input output raw-frame compression");
+        if (args.length != 5 && args.length != 6) throw new IllegalArgumentException("plan input output raw-frame compression [original-prefix]");
         List<String> lines = Files.readAllLines(Path.of(args[0]));
         String[] header = lines.getFirst().split(" ");
         int width = Integer.parseInt(header[0]);
@@ -83,7 +83,9 @@ public final class CallFrameEncoderProbe {
             else throw new IllegalArgumentException("unknown plan record");
         }
         if (size != 0) frames.add(new Frame(address, size, rows));
-        byte[] bytes = DwarfDebugFrame.build(new CallFramePlan(width, order, returnRegister, registers, initialRules, frames), () -> false);
+        var plan = new CallFramePlan(width, order, returnRegister, registers, initialRules, frames);
+        byte[] bytes = args.length == 6 ? DwarfDebugFrame.append(Files.readAllBytes(Path.of(args[5])), plan, () -> false) :
+            DwarfDebugFrame.build(plan, () -> false);
         // The repository's strict checker requires a completed CU. This
         // fixture-only CU identifies the explicit test plan, not original C
         // source, and supplies no lines, types or recovered unwind evidence.
@@ -91,6 +93,13 @@ public final class CallFrameEncoderProbe {
         byte[] name = "plan.txt\0".getBytes(StandardCharsets.UTF_8);
         long low = frames.stream().mapToLong(Frame::address).min().orElse(0);
         long high = frames.stream().mapToLong(frame -> frame.address() + frame.size()).max().orElse(0);
+        if (args.length == 6) {
+            for (var frame : OriginalFrameRanges.read(bytes, order, width,
+                    OriginalFrameRanges.Format.DEBUG_FRAME, 0, () -> false).frames()) {
+                low = Math.min(low, frame.address());
+                high = Math.max(high, frame.address() + frame.size());
+            }
+        }
         ByteBuffer info = ByteBuffer.allocate(12 + 1 + producer.length + name.length + width + 8).order(order);
         info.putInt(info.capacity() - 4).putShort((short) 5).put((byte) 1).put((byte) width).putInt(0);
         info.put((byte) 1).put(producer).put(name);

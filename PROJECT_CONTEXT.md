@@ -1,5 +1,13 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — #112 frame composition:** original compiler CIE/FDE bytes
+can remain an exact prefix while disjoint generated records use correct section
+offsets. 362 component checks and four x86-64/AArch64 exec/PIE cases pass across
+eight validator-clean sidecars and eight compiler-comparison GDB sessions.
+See `docs/FRAME-COMPOSITION.md`. Production writer qualification/integration,
+global-store evidence and full synthesis acceptance remain PLANNED; the writer's
+collision guard remains active. PR166 still has first integration priority.
+
 **CONFIRMED locally — #112 compiler memory effects:** direct RAM operands now
 become explicit loads/stores with collision-free temporary coordinates. Audited
 ENDBR64/CSET/SETNZ support removes earlier compiler-reference blockers; 751

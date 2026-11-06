@@ -62,6 +62,45 @@ public final class CallFrameEncoderSmoke {
                 require(Arrays.equals(encoded, DwarfDebugFrame.build(value, () -> false)));
                 require(DwarfDebugFrame.build(plan(width, order, List.of()), () -> false).length == 0);
                 rejected(() -> DwarfDebugFrame.build(plan(width, order, List.of(first, first)), () -> false));
+                byte[] prefix = DwarfDebugFrame.build(plan(width, order, List.of(first)), () -> false);
+                var addition = plan(width, order, List.of(second));
+                int[] appendPolls = { 0 };
+                byte[] combined = DwarfDebugFrame.append(prefix, addition, () -> { appendPolls[0]++; return false; });
+                require(Arrays.equals(prefix, Arrays.copyOf(combined, prefix.length)));
+                var inventory = OriginalFrameRanges.read(combined, order, width,
+                    OriginalFrameRanges.Format.DEBUG_FRAME, 0, () -> false);
+                require(inventory.cies() == 2 && inventory.frames().size() == 2);
+                require(inventory.frames().get(0).cieOffset() == 0 && inventory.frames().get(1).cieOffset() == prefix.length);
+                require(Arrays.equals(prefix, DwarfDebugFrame.append(prefix, plan(width, order, List.of()), () -> false)));
+                rejected(() -> DwarfDebugFrame.append(prefix, value, () -> false));
+                rejected(() -> DwarfDebugFrame.append(prefix, plan(width, order,
+                    List.of(new Frame(0xfff, 2, List.of(row(0xfff, 8))))), () -> false));
+                rejected(() -> DwarfDebugFrame.append(prefix, plan(width, order,
+                    List.of(new Frame(0x103f, 2, List.of(row(0x103f, 8))))), () -> false));
+                rejected(() -> DwarfDebugFrame.append(Arrays.copyOf(prefix, prefix.length - 1), addition, () -> false));
+                rejected(() -> DwarfDebugFrame.append(Arrays.copyOf(prefix, prefix.length + width), addition, () -> false));
+                // A short nested original FDE must not hide the enclosing FDE's
+                // tail during predecessor lookup for generated coverage.
+                byte[] nested = encoded.clone();
+                var originalInventory = OriginalFrameRanges.read(nested, order, width,
+                    OriginalFrameRanges.Format.DEBUG_FRAME, 0, () -> false);
+                int nestedAddress = originalInventory.frames().get(1).offset() + 8;
+                var fields = java.nio.ByteBuffer.wrap(nested).order(order);
+                if (width == 8) fields.putLong(nestedAddress, 0x1010); else fields.putInt(nestedAddress, 0x1010);
+                rejected(() -> DwarfDebugFrame.append(nested, plan(width, order,
+                    List.of(new Frame(0x1030, 1, List.of(row(0x1030, 8))))), () -> false));
+                require(DwarfDebugFrame.append(nested, plan(width, order,
+                    List.of(new Frame(0x1040, 1, List.of(row(0x1040, 8))))), () -> false).length > nested.length);
+                for (int limit = 1; limit <= appendPolls[0]; limit++) {
+                    int selected = limit;
+                    int[] count = { 0 };
+                    try {
+                        DwarfDebugFrame.append(prefix, addition, () -> ++count[0] == selected);
+                        throw new AssertionError("frame composition ignored cancellation " + selected);
+                    }
+                    catch (CancellationException expected) { checks++; }
+                }
+                require(Arrays.equals(combined, DwarfDebugFrame.append(prefix, addition, () -> false)));
             }
         }
         rejected(() -> new Frame(0x1000, 0, List.of(row(0x1000, 8))));
