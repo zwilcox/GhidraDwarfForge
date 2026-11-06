@@ -1,15 +1,11 @@
 # Export coverage and evidence scorecards
 
-**CONFIRMED locally:** the production exporter emits per-function source,
-variable-location and type scorecards in schema-two reports. The installed CLI
-and GUI display, save and compare that evidence. Structural validators, GDB,
-actual curation regressions, failure/cancellation controls and report-limit tests
-pass locally, including five-pair SQLite/U-Boot measurements. Windows host and
-workload acceptance also pass at `3829626`. Final review corrected an unavailable
-variable-inventory display and a malformed terminal test fixture; the corrected
-host/target gate and protected integration remain pending for issue #108.
-The [acceptance map](COVERAGE-ACCEPTANCE.md) distinguishes the required evidence
-from completed local checks and pending hosted review.
+**CONFIRMED:** schema-two static scorecards, installed CLI/GUI save and comparison,
+raw DWARF/GDB checks, curation, cancellation/report-limit controls and measured
+Linux/Windows workload costs are accepted at `6e0cb95`. All five target lanes and
+both hosts pass; PR164 merged normally as `41e85b9`. The
+[acceptance map](COVERAGE-ACCEPTANCE.md) and
+[final receipt](evidence/coverage-ci-6e0cb95.json) record exact scope and limits.
 
 These are static export-coverage metrics, not execution coverage, probability of
 correctness, original compiler knowledge or complete semantic equivalence.
@@ -188,7 +184,7 @@ On Windows, use `support/ghidra-dwarf-forge-report.ps1` with `-ReportFile`, opti
 canonical Base64 UTF-8 across Java's Windows launcher boundary. Arguments are
 passed directly to a separate process, and output streams without retaining the
 complete comparison in the PowerShell parent. Hosted Windows GUI and large-report
-CLI acceptance pass at `3829626`; see the receipts below.
+CLI acceptance pass at `6e0cb95`; see the final receipt.
 
 ## Comparison correspondence and limits
 
@@ -249,13 +245,14 @@ retry is supported. Results are modeless plain text with a 64 KiB UTF-16 detail
 prefix. Comparison continues counting after clipping and shows the exact change
 total; the CLI provides the complete changes.
 
-## Validation evidence and remaining acceptance
+## Validation evidence and recorded costs
 
 Retained receipts distinguish component/protocol controls from actual artifacts
 and debugger behavior:
 
 | Evidence | What it establishes within its recorded scope |
 | --- | --- |
+| [Final acceptance](evidence/coverage-ci-6e0cb95.json) | Current five-target/host/GUI/workload gates, raw reviews, source/package bindings and normal protected merge. |
 | [Type report](evidence/coverage-type-report.json) | Strict definition-two graph/roots, raw-DWARF/GDB checks and production staging controls. |
 | [Variable comparison](evidence/coverage-variable-comparison.json) | 65,536 interval controls plus actual x86-64/AArch64 PIE rebase/use-site-edit/rename pairs, raw location lists and GDB values. |
 | [Type pairs](evidence/coverage-type-pairs.json) | Real producer resolved/opaque swaps, attachment loss after source failure, independent DIE predictions, CLI and GDB. |
@@ -267,7 +264,7 @@ and debugger behavior:
 | [Windows host](evidence/coverage-ci-3829626-windows.json) | Actual GUI save/comparison/error/retry in three modes, visible controls, artifact bindings and independent GDB. |
 | [Windows measurement control](evidence/coverage-windows-measurement-control.json) | Audited derivation from the exact published main package, clean-build class equality and rejecting package/class controls. |
 | [Windows workloads](evidence/coverage-ci-3829626-workloads.json) | Ten alternating pairs, two profiled exports, actual large-report CLI, strict validators on both hosts and compiler/Forge GDB. |
-| [Final review fixes](evidence/coverage-final-review-fixes.json) | Unknown-inventory presentation regression and packaged CLI checks; valid terminal versus malformed retained-coverage preparation controls. Fresh hosted acceptance remains required. |
+| [Final review fixes](evidence/coverage-final-review-fixes.json) | Unknown-inventory presentation regression and packaged CLI checks; valid terminal versus malformed retained-coverage preparation controls. Subsequent hosted acceptance is recorded in the final receipt. |
 
 **CONFIRMED locally:** median export wall time increases from 34.62 to 39.28 seconds
 for SQLite and 114.82 to 126.58 seconds for U-Boot. Median process maximum RSS
@@ -279,7 +276,7 @@ separate report-tool observations. U-Boot retains its one known decompilation
 failure. Strict frame diagnostics are corroborated against the original, with
 zero unexplained errors.
 
-**CONFIRMED on Windows:** median export wall time is 87.08/87.34 seconds for
+**HISTORICAL Windows measurement at `3829626`:** median export wall time is 87.08/87.34 seconds for
 SQLite and 184.17/192.16 seconds for U-Boot. Median peak job commitment is
 1.31/1.33 GB and 1.35/2.40 GB respectively; this includes the process tree and
 is not Linux RSS. Five alternating pairs preserve identical sidecar/source bytes
@@ -289,8 +286,10 @@ observations. Only Ghidra index/journal backups change in the saved projects;
 program data and original inputs remain unchanged. Both actual JFR recordings
 and independent Linux GDB consumer checks pass.
 
-The current five-target gate and protected integration remain required. The
-measurement baseline has the same isolated array-key correction as the candidate to isolate
+The current `6e0cb95` Windows run measures medians of 96.98/104.00 seconds
+for SQLite and 226.18/238.55 seconds for U-Boot, with peak job commitment of
+1.14/1.33 GB and 1.33/2.32 GB. Reports are 23,768,801 and 58,740,503 bytes.
+All current gates pass and PR164 is integrated. The measurement baseline has the same isolated array-key correction as the candidate to isolate
 scorecard cost while retaining exact artifact equality. Failed runs are retained
 and excluded from successful measurements. One host's measurements do not imply
 a general speed or memory guarantee.
