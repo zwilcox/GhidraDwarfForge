@@ -35,6 +35,8 @@ import ghidra.util.task.SwingUpdateManager;
 
 /** Uses the installed Script Manager table and Run task, not direct script construction. */
 public final class GuiScriptManagerSmoke {
+    private static final boolean WITH_UNWIND = "1".equals(System.getenv("GHIDRA_GUI_UNWIND"));
+    private static final String UNWIND_EXPORT = "ExportGhidraDwarfForgeWithUnwind.java";
     private static final String PREFLIGHT = "GhidraDwarfForge.java";
     private static final boolean WITH_COMPRESSION = "1".equals(System.getenv("GHIDRA_GUI_COMPRESSION"));
     private static final String EXPORT = WITH_COMPRESSION ? "ExportCompressedGhidraDwarfForge.java" :
@@ -138,7 +140,13 @@ public final class GuiScriptManagerSmoke {
                         module.resolve("ghidra_scripts").resolve(script).toRealPath()),
                         "Script Manager discovered a different source: " + found);
                 }
-                for (boolean cancel : new boolean[] { false, true }) {
+                if (WITH_UNWIND) {
+                    var found = GhidraScriptUtil.findScriptByName(UNWIND_EXPORT);
+                    GuiTestSupport.require(found != null && found.getFile(false).toPath().toRealPath().equals(
+                        module.resolve("ghidra_scripts").resolve(UNWIND_EXPORT).toRealPath()), "wrong installed unwind launcher");
+                    runUnwindCase(tool, fixture, results, arguments[4]);
+                }
+                else for (boolean cancel : new boolean[] { false, true }) {
                     runCase(tool, fixture, results, arguments[4], cancel);
                 }
             }
@@ -150,11 +158,141 @@ public final class GuiScriptManagerSmoke {
             GuiTestSupport.onSwing(() -> { frontEnd.dispose(); return null; });
             project.close();
         }
+        if (WITH_UNWIND) {
+            Files.writeString(results.resolve("result.txt"), "installed-unwind-chooser=PASS\nchoices=7\nexports=4\ncancellations=3\n");
+            System.out.println("gui-unwind=PASS");
+            return;
+        }
         Files.writeString(results.resolve("result.txt"),
             "installed-script-discovery=PASS\nnative-free-preflight-run=PASS\n" +
             "script-manager-export-selection=PASS\nscript-manager-export-cancellation=PASS\n" +
             "console-report-presentation=PASS\noriginal-input-preservation=PASS\n");
         System.out.println("gui-script-manager=PASS");
+    }
+
+    private static void runUnwindCase(ProbeTool tool, Path fixture, Path results, String range) throws Exception {
+        Path restricted = Files.createDirectory(results.resolve("readonly"));
+        Path input = Files.copy(fixture, restricted.resolve("fixture"));
+        String originalHash = GuiTestSupport.sha256(input);
+        ProgramManager manager = tool.getService(ProgramManager.class);
+        ConsoleService console = tool.getService(ConsoleService.class);
+        try (var imported = ProgramLoader.builder().source(input.toFile()).load()) {
+            Object owner = new Object();
+            Program program = imported.getPrimary().getDomainObject(owner);
+            try {
+                int transaction = program.startTransaction("Analyze unwind GUI fixture");
+                try { new FlatProgramAPI(program, TaskMonitor.DUMMY).analyzeAll(program); }
+                finally { program.endTransaction(transaction, true); }
+                GuiTestSupport.onSwing(() -> { manager.openProgram(program); return null; });
+                try (var permissions = new GuiTestSupport.ReadOnlyDirectory(restricted, results.resolve("permissions.txt"))) {
+                    long modification = program.getModificationNumber();
+                    for (String mode : java.util.List.of("cancel-main", "cancel-range", "cancel-pointer", "off", "strict",
+                            "conditioned-no-pointers", "conditioned-fixed")) {
+                        Path work = Files.createDirectory(results.resolve(mode));
+                        Path output = Files.createDirectory(work.resolve("output"));
+                        boolean cancel = mode.startsWith("cancel-");
+                        var preserved = new java.util.LinkedHashMap<Path, String>();
+                        if (cancel) for (String suffix : java.util.List.of(".dbg", ".dbg.c", ".dbg.unwind.json")) {
+                            Path path = Files.writeString(output.resolve("fixture" + suffix), "previous generation " + suffix);
+                            preserved.put(path, GuiTestSupport.sha256(path));
+                        }
+                        clearConsole(console);
+                        var interaction = CompletableFuture.runAsync(() -> {
+                            try {
+                                var robot = new Robot(); robot.setAutoDelay(80);
+                                var dialog = GuiTestSupport.dialog("Call-frame recovery");
+                                var choices = (javax.swing.JComboBox<?>) GuiTestSupport.find(dialog,
+                                    component -> component instanceof javax.swing.JComboBox<?>);
+                                if (mode.equals("cancel-main")) {
+                                    GuiTestSupport.onSwing(() -> {
+                                        GuiTestSupport.require("Off".equals(choices.getSelectedItem()), "first unwind choice must be Off");
+                                        return null;
+                                    });
+                                    GuiTestSupport.screenshot(robot, dialog, work.resolve("mode.png"));
+                                    GuiTestSupport.clickButton(robot, dialog, "Cancel");
+                                    return;
+                                }
+                                String selected = mode.equals("off") ? "Off" : mode.equals("strict") ? "Strict" : "Explicit memory conditions";
+                                chooseUnwind(robot, dialog, selected);
+                                GuiTestSupport.screenshot(robot, dialog, work.resolve("mode.png"));
+                                GuiTestSupport.clickButton(robot, dialog, "OK");
+                                if (selected.equals("Explicit memory conditions")) {
+                                    dialog = GuiTestSupport.dialog("External stack condition");
+                                    GuiTestSupport.screenshot(robot, dialog, work.resolve("range.png"));
+                                    if (mode.equals("cancel-range")) { GuiTestSupport.clickButton(robot, dialog, "Cancel"); return; }
+                                    GuiTestSupport.enterText("External stack condition", range);
+                                    dialog = GuiTestSupport.dialog("External pointer condition");
+                                    if (mode.equals("cancel-pointer")) {
+                                        var pointerChoices = (javax.swing.JComboBox<?>) GuiTestSupport.find(dialog,
+                                            component -> component instanceof javax.swing.JComboBox<?>);
+                                        GuiTestSupport.onSwing(() -> {
+                                            GuiTestSupport.require("No".equals(pointerChoices.getSelectedItem()), "first pointer choice must be No");
+                                            return null;
+                                        });
+                                        GuiTestSupport.screenshot(robot, dialog, work.resolve("pointer.png"));
+                                        GuiTestSupport.clickButton(robot, dialog, "Cancel"); return;
+                                    }
+                                    chooseUnwind(robot, dialog, mode.equals("conditioned-fixed") ? "Yes, record this condition" : "No");
+                                    GuiTestSupport.screenshot(robot, dialog, work.resolve("pointer.png"));
+                                    GuiTestSupport.clickButton(robot, dialog, "OK");
+                                }
+                                GuiTestSupport.operateChooser(output, work, false);
+                            }
+                            catch (Exception failure) { throw new RuntimeException(failure); }
+                        });
+                        launchFromTable(tool, UNWIND_EXPORT, work.resolve("manager.png"));
+                        interaction.get(100, TimeUnit.SECONDS);
+                        awaitConsole(console, cancel ? "User cancelled script." : "Finished!");
+                        String transcript = consoleText(console);
+                        Files.writeString(work.resolve("console.txt"), transcript);
+                        if (cancel) {
+                            GuiTestSupport.require(!transcript.contains("native policy:") && !transcript.contains("symbol export PASS"), "cancelled chooser started exporter");
+                            for (var item : preserved.entrySet()) GuiTestSupport.require(item.getValue().equals(GuiTestSupport.sha256(item.getKey())), "chooser cancellation changed previous files");
+                        }
+                        else {
+                            GuiTestSupport.require(transcript.contains("symbol export PASS") && transcript.contains("verified packaged libraries") &&
+                                !transcript.contains("\"status\":\"FATAL\""), "GUI unwind export failed");
+                            var coverage = GuiTestSupport.dialog(ghidradwarfforge.output.CoverageReportGui.TITLE);
+                            var robot = new Robot();
+                            GuiTestSupport.screenshot(robot, coverage, work.resolve("coverage.png"));
+                            GuiTestSupport.clickButton(robot, coverage, "Close");
+                            if (!mode.equals("off")) {
+                                var evidence = com.google.gson.JsonParser.parseString(Files.readString(output.resolve("fixture.dbg.unwind.json"))).getAsJsonObject();
+                                boolean expected = mode.equals("conditioned-fixed") || (mode.equals("conditioned-no-pointers") &&
+                                    !"1".equals(System.getenv("GHIDRA_GUI_UNWIND_POINTER_REQUIRED")));
+                                GuiTestSupport.require(evidence.get("hasPlan").getAsBoolean() == expected, "GUI selection changed expected frame eligibility");
+                                GuiTestSupport.require(evidence.get("sidecarSha256").getAsString().equals(GuiTestSupport.sha256(output.resolve("fixture.dbg"))), "GUI evidence sidecar mismatch");
+                                GuiTestSupport.require(evidence.get("sourceSha256").getAsString().equals(GuiTestSupport.sha256(output.resolve("fixture.dbg.c"))), "GUI evidence source mismatch");
+                            }
+                        }
+                        try (var files = Files.list(output)) {
+                            GuiTestSupport.require(files.count() == (mode.equals("off") ? 2 : 3), "unexpected GUI output count or staging leak");
+                        }
+                        GuiTestSupport.require(originalHash.equals(GuiTestSupport.sha256(input)) && modification == program.getModificationNumber(), "GUI export changed original or program");
+                        Files.writeString(work.resolve("result.txt"), "choice=" + mode + "\nresult=PASS\n");
+                    }
+                }
+                finally { GuiTestSupport.onSwing(() -> { manager.closeProgram(program, true); return null; }); }
+            }
+            finally { program.release(owner); }
+        }
+    }
+
+    private static void chooseUnwind(Robot robot, java.awt.Dialog dialog, String selected) throws Exception {
+        var choices = (javax.swing.JComboBox<?>) GuiTestSupport.find(dialog,
+            component -> component instanceof javax.swing.JComboBox<?>);
+        GuiTestSupport.require(choices != null, "unwind choice control missing");
+        int index = GuiTestSupport.onSwing(() -> {
+            for (int i = 0; i < choices.getItemCount(); i++) if (selected.equals(choices.getItemAt(i))) return i;
+            throw new AssertionError("unwind choice missing: " + selected);
+        });
+        GuiTestSupport.foregroundWindow(choices);
+        GuiTestSupport.click(robot, GuiTestSupport.bounds(choices), 1);
+        robot.keyPress(java.awt.event.KeyEvent.VK_HOME); robot.keyRelease(java.awt.event.KeyEvent.VK_HOME);
+        for (int i = 0; i < index; i++) { robot.keyPress(java.awt.event.KeyEvent.VK_DOWN); robot.keyRelease(java.awt.event.KeyEvent.VK_DOWN); }
+        robot.keyPress(java.awt.event.KeyEvent.VK_ENTER); robot.keyRelease(java.awt.event.KeyEvent.VK_ENTER);
+        robot.waitForIdle();
+        GuiTestSupport.onSwing(() -> { GuiTestSupport.require(selected.equals(choices.getSelectedItem()), "unwind choice not applied"); return null; });
     }
 
     private static void runCase(ProbeTool tool, Path fixture, Path results,

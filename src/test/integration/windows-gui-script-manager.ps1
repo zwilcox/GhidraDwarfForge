@@ -35,6 +35,9 @@ foreach ($entry in $manifest) {
     }
 }
 $root = Join-Path $repository 'build\test-results\windows-host\gui-script-manager'
+if ($env:GHIDRA_GUI_UNWIND -eq '1') {
+    $root = Join-Path $repository 'build\test-results\windows-host\gui-unwind'
+}
 $work = Join-Path $root ('run.' + [Guid]::NewGuid().ToString('N') + ' GUI paths')
 foreach ($directory in @('', 'classes', 'settings', 'cache', 'tmp', 'user')) {
     New-Item -ItemType Directory -Force (Join-Path $work $directory) | Out-Null
@@ -83,10 +86,17 @@ Write-JavaArguments $compileArgs @('--release', '21', '-cp', $classpath, '-d', $
 if ($LASTEXITCODE -ne 0) { throw "GUI driver compilation failed: $LASTEXITCODE" }
 
 Invoke-Validator 'readelf.exe' @('-Ws', $referencePath) 'reference-symbols'
+$symbolName = if ($env:GHIDRA_GUI_UNWIND -eq '1') { 'cfi_sink' } else { 'recovered_add' }
 $symbol = Get-Content -LiteralPath (Join-Path $work 'reference-symbols.txt') |
-    Where-Object { $_ -match '\srecovered_add$' } | Select-Object -First 1
-if ($null -eq $symbol) { throw 'compiler reference has no recovered_add symbol' }
+    Where-Object { $_ -match ('\s' + [regex]::Escape($symbolName) + '$') } | Select-Object -First 1
+if ($null -eq $symbol) { throw "compiler reference has no $symbolName symbol" }
 $functionAddress = ($symbol.Trim() -split '\s+')[1]
+if ($env:GHIDRA_GUI_UNWIND -eq '1') {
+    $fields = $symbol.Trim() -split '\s+'
+    $first = [Convert]::ToUInt64($functionAddress, 16)
+    $last = $first + [UInt64]::Parse($fields[2]) - 1
+    $functionAddress = $first.ToString('x') + ':' + $last.ToString('x')
+}
 if ($env:GHIDRA_GUI_NATIVE_ATTACHMENT -eq '1') {
     if ([string]::IsNullOrWhiteSpace($env:FORGE_GUI_CHECKER_BUNDLE)) {
         throw 'Explicit pinned checker bundle required for native GUI attachment'
@@ -119,6 +129,22 @@ Write-JavaArguments $runArgs @('--enable-native-access=ALL-UNNAMED',
 if ($LASTEXITCODE -ne 0) { throw "Windows Script Manager journey failed: $LASTEXITCODE; see $work" }
 if ((Get-FileHash -LiteralPath $fixturePath -Algorithm SHA256).Hash -ne $before) {
     throw 'Windows GUI journey modified the source fixture'
+}
+if ($env:GHIDRA_GUI_UNWIND -eq '1') {
+    foreach ($mode in @('off', 'strict', 'conditioned-no-pointers', 'conditioned-fixed')) {
+        $artifact = Join-Path $work "$mode/output/fixture.dbg"
+        Invoke-Validator 'readelf.exe' @('-h', '-S', '--debug-dump=frames,info,abbrev,aranges,decodedline', $artifact) "$mode-gnu"
+        Invoke-Validator 'llvm-dwarfdump.exe' @('--verify', $artifact) "$mode-llvm"
+    }
+    Copy-Item -LiteralPath $referencePath -Destination (Join-Path $work 'compiler-reference')
+    $referenceHash = (Get-FileHash -LiteralPath $referencePath -Algorithm SHA256).Hash
+    @('windows-unwind-structural-validation=PASS',
+        'gdb-linux-elf-runtime=NOT_RUN_ON_WINDOWS_HOST',
+        'pinned-strict-validation=DEFERRED_TO_LINUX_CONSUMER',
+        "source-fixture-sha256=$before",
+        "compiler-reference-sha256=$referenceHash") | Add-Content -LiteralPath (Join-Path $work 'result.txt')
+    Write-Output 'windows-gui-unwind-integration=PASS'
+    return
 }
 
 function Test-ExportedPair {

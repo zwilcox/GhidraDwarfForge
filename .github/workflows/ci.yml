@@ -788,7 +788,7 @@ jobs:
               ;;
             aarch64)
               packages+=(gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
-                libc6-dev-arm64-cross qemu-user-static lld-18)
+                libc6-dev-arm64-cross qemu-user-static lld-18 gdb xvfb openbox x11-utils libxtst6 libxi6 libxrender1)
               ;;
             arm32)
               packages+=(gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf binutils-arm-linux-gnueabihf
@@ -1046,6 +1046,10 @@ jobs:
               --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP" \
               --libdwarf "$PWD/native-integration/libdwarf.so.2.3.2" \
               --libdwarfp "$PWD/native-integration/libdwarfp.so.2.3.2"
+            python3 src/test/integration/production-unwind-companion.py \
+              "build/test-results/production-unwind-export/$TARGET/$role" \
+              "build/test-results/compiler-unwind-export/$TARGET/$role" \
+              "build/test-results/production-unwind-companion/$TARGET/$role"
           done
           python3 src/test/integration/production-unwind-controls.py \
             "build/test-results/compiler-unwind-export/$TARGET/shared" \
@@ -1096,6 +1100,28 @@ jobs:
               "build/test-results/$family/$TARGET" "build/test-results/native-runtime-coexistence/$family/$TARGET" \
               --target "$TARGET" --original-runtime --dwarfdump "$DWARFDUMP"
           done
+
+      - name: Export rebased saved projects with original and recovered unwind records
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          # Cover both targets, all image roles, each original compression, and
+          # ordinary/shrink-wrapped frames through the installed normal wrapper.
+          while read -r encoding family role; do
+            python3 src/test/integration/production-unwind-saved.py \
+              "build/test-results/native-coexistence/$encoding/$family/$TARGET" \
+              "build/test-results/production-unwind-saved/$TARGET/$encoding" \
+              --target "$TARGET" --roles "$role" --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP"
+          done <<'CASES'
+          plain unwind-frame-recovery exec
+          gabi unwind-shrinkwrap pie
+          gnu unwind-frame-recovery shared
+          CASES
+          python3 src/test/integration/production-unwind-saved.py \
+            "build/test-results/native-runtime-coexistence/unwind-shrinkwrap/$TARGET" \
+            "build/test-results/production-unwind-saved/$TARGET/runtime" \
+            --target "$TARGET" --roles shared --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP"
 
       - name: Preserve processor-typed runtime unwind records
         if: matrix.target == 'x86_64'
@@ -2535,6 +2561,25 @@ jobs:
             "$PWD/build/fixtures/x86_64/semantic.exec.stripped" \
             "$PWD/build/fixtures/x86_64/semantic.exec.reference"
 
+      - name: Installed unwind chooser cancellation, export and debugger behavior
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+          GHIDRA_GUI_UNWIND: '1'
+        run: |
+          role=exec
+          export GHIDRA_GUI_UNWIND_TARGET="$TARGET"
+          if [[ "$TARGET" == aarch64 ]]; then
+            role=shared
+            export GHIDRA_GUI_UNWIND_SHARED=1 GHIDRA_GUI_UNWIND_POINTER_REQUIRED=1
+          fi
+          compiler="$PWD/build/test-results/compiler-unwind-export/$TARGET/$role/$TARGET-$role/compiler"
+          export GHIDRA_GUI_UNWIND_DRIVER="$compiler/driver"
+          src/test/integration/gui-script-manager.sh \
+            "$GHIDRA_INSTALL_DIR" \
+            "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
+            "$compiler/without-cfi" "$compiler/reference"
+
       - name: Installed Script Manager discovery, export, console, and cancellation
         if: matrix.target == 'x86_64'
         run: |
@@ -2720,6 +2765,17 @@ jobs:
             build/fixtures/x86_64/semantic.exec.ghidra-forge.dbg.c
           if-no-files-found: error
 
+      - name: Build independent compiler unwind input for native Windows GUI
+        run: |
+          python3 src/test/integration/synthetic-cfi-reference.py x86_64 \
+            build/test-results/windows-unwind-reference --dwarfdump "$PWD/validation-tool/bin/dwarfdump"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux-x86-unwind-reference
+          path: build/test-results/windows-unwind-reference/
+          if-no-files-found: error
+
       - name: Unprivileged GUI attachment, curated refresh, and recovery through explicit authorization
         run: |
           DWARFDUMP="$PWD/validation-tool/bin/dwarfdump" \
@@ -2736,6 +2792,7 @@ jobs:
           path: |
             build/test-results/headless-symbol-export/
             build/test-results/gui-authorization/
+            build/test-results/windows-unwind-reference/
           if-no-files-found: warn
           retention-days: 14
 
@@ -2804,6 +2861,11 @@ jobs:
         with:
           name: linux-x86-export-reference
           path: linux-reference
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: linux-x86-unwind-reference
+          path: linux-unwind-reference
 
       - uses: actions/download-artifact@v8
         with:
@@ -3064,6 +3126,21 @@ jobs:
             -Reference (Resolve-Path 'linux-reference\semantic.exec.reference').Path
           Remove-Item Env:\GHIDRA_GUI_COMPRESSION
 
+      - name: Native Windows unwind chooser cancellation and exports
+        shell: pwsh
+        timeout-minutes: 15
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+          GHIDRA_GUI_UNWIND: '1'
+        run: |
+          $mingwBin = Join-Path $env:MSYS2_LOCATION 'mingw64\bin'
+          $env:PATH = "$mingwBin;$env:PATH"
+          .\src\test\integration\windows-gui-script-manager.ps1 `
+            -GhidraDirectory $env:GHIDRA_INSTALL_DIR `
+            -ModuleDirectory (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions\GhidraDwarfForge') `
+            -Fixture (Resolve-Path 'linux-unwind-reference\without-cfi').Path `
+            -Reference (Resolve-Path 'linux-unwind-reference\reference').Path
+
       - name: Clean Windows installed-release export without external natives
         shell: pwsh
         env:
@@ -3146,6 +3223,10 @@ jobs:
           python3 src/test/integration/compressed-gui-gdb.py \
               --incoming "$PWD/windows-artifacts/windows-host/gui-script-manager" \
               --results "$PWD/build/test-results/windows-attachment-gdb/compression"
+          python3 src/test/integration/windows-unwind-gdb.py \
+              "$PWD/windows-artifacts/windows-host/gui-unwind" \
+              "$PWD/build/test-results/windows-attachment-gdb/unwind" \
+              --dwarfdump "$DWARFDUMP"
       - uses: actions/upload-artifact@v7
         if: always()
         with:

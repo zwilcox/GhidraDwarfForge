@@ -26,7 +26,8 @@ The PowerShell parameters are `-SynthesizeUnwind`, `-UnwindStackSeparation` and
 Strict and Explicit memory conditions. Its first choice is Off; conditional
 choices request the ranges and a separate pointer choice. Cancelling a chooser
 must publish nothing. Normal non-interactive script options are identical on
-both hosts. Windows and GUI behavior remain unverified for this change.
+both hosts. Linux GUI behavior is validated below; native Windows execution
+remains pending.
 
 ## Artifacts and interaction with existing features
 
@@ -85,7 +86,39 @@ advertised typed lookup and the actual catalog source line. This respects the
 existing annotation policy; product behavior was not changed to invent a type or
 source placement. The failed test is retained separately.
 
-Actual chooser journeys, Windows execution, saved-project wrapper journeys,
-original-CFI coexistence through normal entry points and hosted gates remain
-required before acceptance. These local checks do not complete #112.
+**CONFIRMED locally — production journeys:** the installed Script Manager passes
+seven actual chooser journeys on each of x86-64 non-PIE and AArch64 shared-library
+inputs: four exports and cancellation at each of the three choices. Initial Off
+and No choices, output fallback, native package selection, unchanged program/input
+and bound evidence are asserted. All eight sidecars pass GNU, LLVM and pinned
+strict validation. Generated rules match independent compiler references in GDB
+at ordinary instruction boundaries and through recursive returns. These checks
+exercise a private Xvfb/Openbox display, without using the user's desktop.
+
+The real `.gdb.py` companion passes all six target/image-role combinations and
+18 GDB sessions. The generated symbols are initially absent. The test exercises
+automatic load-bias detection (or an explicit refusal when mappings are absent),
+unload, rejection of an incorrect explicit bias, then successful loading with
+the measured bias. Boundary and return traces match the compiler reference.
+
+Eight rebased saved-project cases pass 32 normal-wrapper exports, 16 validated
+sidecars and 24 GDB sessions. Both targets cover plain original `.debug_frame`
+in non-PIE, GABI-compressed original frames with shrink-wrapped PIE, GNU-compressed
+original frames in shared libraries, and runtime `.eh_frame` with shrink-wrapped
+shared libraries. Repeated generations are byte-identical; the saved project
+files and observed analyst comments/image base remain unchanged. Combined frame
+bytes match the prior independently validated native exports; inherited sections
+retain their metadata and bytes. This samples all named dimensions, not every
+combination of them. The first test attempt incorrectly expected evidence JSON
+in historical fixtures that predated it. That failed attempt is retained; the
+corrected test decodes their retained raw frame records and reads the original
+image base from the saved program's loader metadata.
+
+CI now invokes these Linux journeys and adds a native Windows chooser run whose
+artifacts feed Linux strict validation and GDB. The Windows additions are
+**PRESENT, UNVERIFIED** until their hosted execution passes. Native PowerShell
+normal-wrapper synthesis and complete hosted/ADR acceptance remain required.
+These local checks do not complete #112.
 See [the checkpoint receipt](evidence/production-unwind-entry.json).
+The additional journeys are recorded in
+[their receipt](evidence/production-unwind-journeys.json).

@@ -29,8 +29,10 @@ case "$FORGE_CFI_MODE" in
     *) echo "unsupported reference mode: $FORGE_CFI_MODE" >&2; exit 2 ;;
 esac
 export FORGE_CFI_SYMBOLS="$symbols"
+export FORGE_CFI_ORIGINAL="$original" FORGE_CFI_LOAD_HELPER="$script_dir/unwind-companion-gdb.py"
 runtime=$original
 load_symbols=$symbols
+if [[ "${FORGE_CFI_COMPANION:-}" == 1 ]]; then load_symbols=$original; fi
 inferior_args=()
 if [[ "${FORGE_CFI_SHARED:-}" == 1 ]]; then
     runtime=$(realpath "${FORGE_CFI_DRIVER:?shared fixture needs a driver}")

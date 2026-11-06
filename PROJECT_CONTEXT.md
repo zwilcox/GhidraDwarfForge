@@ -1,5 +1,18 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED locally — production unwind journeys for #112:** real installed
+GUI choices pass on x86-64 and AArch64, including three cancellation points per
+target. The actual GDB companion loads all six target/image-role combinations
+with matching compiler-reference boundary and return traces. Eight rebased saved
+projects pass 32 exports and 24 GDB sessions while preserving analyst comments,
+project files, original CFI and original executable bytes. GNU/LLVM/pinned strict
+checks pass on all 24 GUI/saved-project sidecars. See
+`docs/PRODUCTION-UNWIND.md` and `docs/evidence/production-unwind-journeys.json`.
+CI wiring includes these tests and a Windows GUI-to-Linux-GDB handoff; the new
+Windows path is PRESENT, UNVERIFIED. Native PowerShell synthesis, hosted gates
+and the full #112 acceptance audit remain. #110/#109 remain next; #74/#108 and
+#116/#114 are complete. Earlier pending local-journey notes are historical.
+
 **CONFIRMED locally — normal-wrapper unwind integration for #112:** off/strict/
 conditioned/compressed exports pass on x86-64 and AArch64 executable/PIE/shared
 compiler fixtures, including deterministic generations, bound evidence, validators

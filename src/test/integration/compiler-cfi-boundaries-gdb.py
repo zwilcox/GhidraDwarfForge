@@ -1,6 +1,7 @@
 """Record every executed ordinary instruction boundary using an independent reference."""
 import json
 import os
+import runpy
 from pathlib import Path
 
 import gdb
@@ -11,6 +12,8 @@ remote = os.environ.get('FORGE_CFI_REMOTE', '')
 assert os.environ['FORGE_CFI_MODE'] == 'compiler'
 fixed_pointers = json.loads(os.environ.get('FORGE_CFI_FIXED_POINTERS', '[]'))
 shared = os.environ.get('FORGE_CFI_SHARED', '') == '1'
+companion = os.environ.get('FORGE_CFI_COMPANION', '') == '1'
+loader = runpy.run_path(os.environ['FORGE_CFI_LOAD_HELPER']) if companion else None
 root_name = 'main' if shared else '_start'
 if remote:
     gdb.execute('target remote ' + remote)
@@ -19,9 +22,13 @@ if shared:
     gdb.execute('continue' if remote else 'run')
     bias = int(gdb.parse_and_eval('cfi_module_bias'))
     assert bias > 0, 'shared library was not relocated'
-    gdb.execute('add-symbol-file "' + os.environ['FORGE_CFI_SYMBOLS'] + '" -o ' + hex(bias))
+    if companion: loader['load_companion'](os.environ['FORGE_CFI_SYMBOLS'], bias)
+    else: gdb.execute('add-symbol-file "' + os.environ['FORGE_CFI_SYMBOLS'] + '" -o ' + hex(bias))
+elif companion:
+    if not remote: gdb.execute('starti')
+    loader['load_companion'](os.environ['FORGE_CFI_SYMBOLS'], loader['image_bias'](os.environ['FORGE_CFI_ORIGINAL']))
 gdb.Breakpoint('*cfi_main', temporary=True)
-gdb.execute('continue' if remote or shared else 'run')
+gdb.execute('continue' if remote or shared or companion else 'run')
 main_address = int(gdb.parse_and_eval('&cfi_main'))
 root_address = int(gdb.parse_and_eval('&main')) if shared else main_address
 entry_stack = int(gdb.newest_frame().read_register(stack_register))

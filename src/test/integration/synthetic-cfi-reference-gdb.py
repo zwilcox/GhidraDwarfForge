@@ -2,6 +2,7 @@
 
 import json
 import os
+import runpy
 from pathlib import Path
 
 import gdb
@@ -11,6 +12,8 @@ mode = os.environ["FORGE_CFI_MODE"]
 register = os.environ["FORGE_CFI_REGISTER"]
 remote = os.environ.get("FORGE_CFI_REMOTE", "")
 shared = os.environ.get("FORGE_CFI_SHARED", "") == "1"
+companion = os.environ.get("FORGE_CFI_COMPANION", "") == "1"
+loader = runpy.run_path(os.environ["FORGE_CFI_LOAD_HELPER"]) if companion else None
 root_name = "main" if shared else "_start"
 expected_names = ["cfi_checkpoint"] + ["cfi_recursive"] * 4 + [
     "cfi_outer", "cfi_main", root_name]
@@ -47,9 +50,13 @@ if shared:
     bias = int(gdb.parse_and_eval("cfi_module_bias"))
     assert bias > 0, "shared library was not relocated"
     symbols = os.environ["FORGE_CFI_SYMBOLS"]
-    gdb.execute('add-symbol-file "' + symbols + '" -o ' + hex(bias))
+    if companion: loader['load_companion'](symbols, bias)
+    else: gdb.execute('add-symbol-file "' + symbols + '" -o ' + hex(bias))
+elif companion:
+    if not remote: gdb.execute('starti')
+    loader['load_companion'](os.environ['FORGE_CFI_SYMBOLS'], loader['image_bias'](os.environ['FORGE_CFI_ORIGINAL']))
 gdb.Breakpoint("*cfi_checkpoint", temporary=True)
-gdb.execute("continue" if remote or shared else "run")
+gdb.execute("continue" if remote or shared or companion else "run")
 checkpoint_address = int(gdb.parse_and_eval("&cfi_checkpoint"))
 gdb.execute("set debug frame 1")
 gdb.execute("maintenance flush register-cache")
